@@ -12,7 +12,15 @@ export function humanSize(value?: number) {
 
 export function shortDate(value?: string) {
   if (!value) return '-'
-  return value.replace('T', ' ').slice(0, 16)
+  const normalized = value.trim()
+  if (/(?:Z|[+-]\d{2}:?\d{2})$/i.test(normalized)) {
+    const date = new Date(normalized)
+    if (!Number.isNaN(date.getTime())) {
+      const pad = (part: number) => String(part).padStart(2, '0')
+      return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`
+    }
+  }
+  return normalized.replace('T', ' ').slice(0, 16)
 }
 
 export function downloadPath(relativePath?: string) {

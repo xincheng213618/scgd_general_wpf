@@ -213,7 +213,7 @@ export function HomePage() {
           </Space>
           <div className="landing-version-note">
             当前发布版本 {latestVersion}
-            {latest?.modified && <span> · {shortDate(latest.modified_display || latest.modified)}</span>}
+            {latest?.modified && <span> · {shortDate(latest.modified || latest.modified_display)}</span>}
           </div>
         </div>
         <div className="landing-proof" aria-label="发布概况">

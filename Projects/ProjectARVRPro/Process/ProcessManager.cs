@@ -21,6 +21,7 @@ namespace ProjectARVRPro.Process
         private const string PersistFileName = "ProcessMetas.json";
         private const string GroupPersistFileName = "ProcessGroups.json";
         private const string ExportConfigFilter = "ARVR流程配置 (*.arvrprocess.json)|*.arvrprocess.json|JSON文件 (*.json)|*.json|所有文件 (*.*)|*.*";
+
         private static string PersistDirectory => ViewResultManager.DirectoryPath;
         private static string PersistFilePath => Path.Combine(PersistDirectory, PersistFileName);
         private static string GroupPersistFilePath => Path.Combine(PersistDirectory, GroupPersistFileName);

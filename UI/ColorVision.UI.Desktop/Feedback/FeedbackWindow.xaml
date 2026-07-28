@@ -123,9 +123,17 @@
                                     CornerRadius="5"
                                     Margin="0,0,0,8"
                                     Padding="10">
-                                <CheckBox IsChecked="{Binding IsChecked}">
-                                    <Grid>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <CheckBox IsChecked="{Binding IsChecked}"
+                                              VerticalAlignment="Top"
+                                              Margin="0,2,8,0"/>
+                                    <Grid Grid.Column="1">
                                         <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
                                             <RowDefinition Height="Auto"/>
                                             <RowDefinition Height="Auto"/>
                                         </Grid.RowDefinitions>
@@ -135,8 +143,26 @@
                                                    FontSize="12"
                                                    Margin="0,3,0,0"
                                                    Style="{StaticResource FeedbackSecondaryTextBlockStyle}"/>
+                                        <StackPanel Grid.Row="2"
+                                                    Orientation="Horizontal"
+                                                    Margin="0,8,0,0"
+                                                    Visibility="{Binding TimeRangeVisibility, Mode=OneWay}">
+                                            <TextBlock Text="{x:Static properties:Resources.FeedbackLogRange}"
+                                                       Margin="0,0,6,0"/>
+                                            <ComboBox Width="112"
+                                                      ItemsSource="{Binding TimeRangeOptions, Mode=OneWay}"
+                                                      DisplayMemberPath="DisplayName"
+                                                      SelectedValuePath="Days"
+                                                      SelectedValue="{Binding SelectedDays, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                            <Button Content="{x:Static properties:Resources.OpenLogFolder}"
+                                                    Click="OpenLogFolder_Click"
+                                                    Tag="{Binding}"
+                                                    IsEnabled="{Binding CanOpenLogDirectory, Mode=OneWay}"
+                                                    Margin="8,0,0,0"
+                                                    Padding="9,2"/>
+                                        </StackPanel>
                                     </Grid>
-                                </CheckBox>
+                                </Grid>
                             </Border>
                         </DataTemplate>
                     </ListBox.ItemTemplate>
@@ -154,7 +180,13 @@
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <TextBlock Text="{x:Static properties:Resources.Attachments}" FontWeight="SemiBold"/>
+            <StackPanel>
+                <TextBlock Text="{x:Static properties:Resources.Attachments}" FontWeight="SemiBold"/>
+                <TextBlock Text="{x:Static properties:Resources.OfflinePackageHint}"
+                           FontSize="11"
+                           Margin="0,3,0,0"
+                           Style="{StaticResource FeedbackSecondaryTextBlockStyle}"/>
+            </StackPanel>
             <Button x:Name="AddFileButton"
                     Grid.Column="1"
                     Content="{x:Static properties:Resources.AddFile}"
@@ -184,6 +216,7 @@
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Text="{Binding FileName}" VerticalAlignment="Center" Margin="0,0,8,0"/>
                                 <TextBlock Grid.Column="1"
@@ -192,6 +225,13 @@
                                            Margin="0,0,8,0"
                                            Style="{StaticResource FeedbackSecondaryTextBlockStyle}"/>
                                 <Button Grid.Column="2"
+                                        Content="{x:Static properties:Resources.OpenFolder}"
+                                        Click="OpenAttachmentFolder_Click"
+                                        Tag="{Binding}"
+                                        IsEnabled="{Binding FileExists, Mode=OneWay}"
+                                        Margin="0,0,6,0"
+                                        Padding="8,1"/>
+                                <Button Grid.Column="3"
                                         Content="x"
                                         Click="RemoveAttachment_Click"
                                         Tag="{Binding}"

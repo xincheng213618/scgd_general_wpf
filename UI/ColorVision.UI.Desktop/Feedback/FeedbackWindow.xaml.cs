@@ -1,4 +1,5 @@
 #pragma warning disable CA1852,CA1863
+using ColorVision.Common.Utilities;
 using ColorVision.Themes;
 using ColorVision.UI.Marketplace;
 using log4net;
@@ -18,16 +19,21 @@ namespace ColorVision.UI.Desktop.Feedback
     {
         public string FilePath { get; set; } = string.Empty;
         public string FileName => Path.GetFileName(FilePath);
+        public bool FileExists => File.Exists(FilePath);
         public string SizeText => File.Exists(FilePath)
             ? $"({new FileInfo(FilePath).Length / 1024.0:F1} KB)"
             : "(pending)";
     }
+
+    public readonly record struct FeedbackLogRangeOption(int Days, string DisplayName);
 
     /// <summary>
     /// Represents a selectable IFeedbackLogCollector shown in the diagnostic items list.
     /// </summary>
     public class CollectorItem : INotifyPropertyChanged
     {
+        private static readonly int[] TimeRangeDays = [1, 3, 7, 14, 30];
+
         public event PropertyChangedEventHandler? PropertyChanged;
         private void OnPropertyChanged([CallerMemberName] string? name = null) =>
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
@@ -35,6 +41,24 @@ namespace ColorVision.UI.Desktop.Feedback
         public IFeedbackLogCollector Collector { get; }
         public string Name => Collector.Name;
         public string Description => Collector.Description ?? string.Empty;
+        public Visibility TimeRangeVisibility => Collector is IFeedbackLogTimeRangeCollector
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+        public IReadOnlyList<FeedbackLogRangeOption> TimeRangeOptions { get; }
+        public bool CanOpenLogDirectory => Collector is IFeedbackLogTimeRangeCollector collector
+            && Directory.Exists(collector.LogDirectory);
+        public int SelectedDays
+        {
+            get => Collector is IFeedbackLogTimeRangeCollector collector ? collector.RecentDays : 7;
+            set
+            {
+                if (Collector is IFeedbackLogTimeRangeCollector collector && collector.RecentDays != value)
+                {
+                    collector.RecentDays = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
 
         public bool IsChecked { get => _isChecked; set { _isChecked = value; OnPropertyChanged(); } }
         private bool _isChecked;
@@ -43,6 +67,11 @@ namespace ColorVision.UI.Desktop.Feedback
         {
             Collector = collector;
             _isChecked = collector.IsSelectedByDefault;
+            TimeRangeOptions = TimeRangeDays
+                .Select(days => new FeedbackLogRangeOption(
+                    days,
+                    string.Format(Properties.Resources.FeedbackRecentDays, days)))
+                .ToArray();
         }
     }
 
@@ -240,7 +269,10 @@ namespace ColorVision.UI.Desktop.Feedback
                     return false;
                 }
 
-                _attachments.Add(new AttachmentItem { FilePath = result.ZipPath });
+                var attachment = new AttachmentItem { FilePath = result.ZipPath };
+                _attachments.Add(attachment);
+                AttachmentsList.SelectedItem = attachment;
+                AttachmentsList.ScrollIntoView(attachment);
                 StatusText.Text = string.Format(Properties.Resources.LogsPackaged, Path.GetFileName(result.ZipPath));
                 return true;
             }
@@ -453,6 +485,21 @@ namespace ColorVision.UI.Desktop.Feedback
             finally
             {
                 SetInputEnabled(true);
+            }
+        }
+
+        private void OpenAttachmentFolder_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button { Tag: AttachmentItem item } && File.Exists(item.FilePath))
+                PlatformHelper.OpenFolderAndSelectFile(item.FilePath);
+        }
+
+        private void OpenLogFolder_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button { Tag: CollectorItem { Collector: IFeedbackLogTimeRangeCollector collector } }
+                && Directory.Exists(collector.LogDirectory))
+            {
+                PlatformHelper.OpenFolder(collector.LogDirectory);
             }
         }
 

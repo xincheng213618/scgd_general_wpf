@@ -188,6 +188,19 @@ namespace ProjectARVRPro
             }
         }
 
+        public ProjectARVRReuslt? FindByBatchId(int batchId)
+        {
+            if (batchId <= 0)
+                return null;
+
+            ProjectARVRReuslt? loadedResult = ViewResluts.FirstOrDefault(item => item.BatchId == batchId);
+            return loadedResult
+                ?? _db.Queryable<ProjectARVRReuslt>()
+                    .Where(item => item.BatchId == batchId)
+                    .OrderBy(item => item.Id, OrderByType.Desc)
+                    .First();
+        }
+
         public void Save(ProjectARVRReuslt item)
         {
             if (item == null) return;

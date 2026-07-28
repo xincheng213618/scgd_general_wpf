@@ -56,23 +56,7 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
         public ObservableCollection<TemplateModel<FlowParam>> templateModels { get; set; } = TemplateFlow.Params;
         public RelayCommand EditCommand { get; set; }
 
-        // New properties for creation
-        public string NewMetaName { get => _NewMetaName; set { _NewMetaName = value; OnPropertyChanged(); CommandManager.InvalidateRequerySuggested(); } }
-        private string _NewMetaName;
-
-        public TemplateModel<FlowParam> SelectedTemplate { get => _SelectedTemplate; set { _SelectedTemplate = value; OnPropertyChanged(); CommandManager.InvalidateRequerySuggested(); } }
-        private TemplateModel<FlowParam> _SelectedTemplate;
-
-        public IPostProcessor SelectedProcess { get => _SelectedProcess; set { _SelectedProcess = value; OnPropertyChanged(); CommandManager.InvalidateRequerySuggested(); } }
-        private IPostProcessor _SelectedProcess;
-
-        public TemplateModel<FlowParam> UpdateTemplate { get => _UpdateTemplate; set { _UpdateTemplate = value; OnPropertyChanged(); CommandManager.InvalidateRequerySuggested(); } }
-        private TemplateModel<FlowParam> _UpdateTemplate;
-
-        public IPostProcessor UpdateProcess { get => _UpdateProcess; set { _UpdateProcess = value; OnPropertyChanged(); CommandManager.InvalidateRequerySuggested(); } }
-        private IPostProcessor _UpdateProcess;
-
-        public PostProcessMeta SelectedProcessMeta { get => _SelectedProcessMeta; set { _SelectedProcessMeta = value; OnPropertyChanged(); OnSelectedProcessMetaChanged(); CommandManager.InvalidateRequerySuggested(); } }
+        public PostProcessMeta SelectedProcessMeta { get => _SelectedProcessMeta; set { _SelectedProcessMeta = value; OnPropertyChanged(); CommandManager.InvalidateRequerySuggested(); } }
         private PostProcessMeta _SelectedProcessMeta;
 
         public RelayCommand AddMetaCommand { get; set; }
@@ -88,9 +72,9 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
             LoadProcesses();
             ProcessMetas.CollectionChanged += ProcessMetas_CollectionChanged;
             EditCommand = new RelayCommand(a => Edit());
-            AddMetaCommand = new RelayCommand(a => AddMeta(), a => CanAddMeta());
+            AddMetaCommand = new RelayCommand(a => AddMeta(), a => Processes.Count > 0 && templateModels.Count > 0);
             RemoveMetaCommand = new RelayCommand(a => RemoveMeta(), a => SelectedProcessMeta != null);
-            UpdateMetaCommand = new RelayCommand(a => UpdateMeta(), a => CanUpdateMeta());
+            UpdateMetaCommand = new RelayCommand(a => UpdateMeta(), a => SelectedProcessMeta != null);
             MoveUpCommand = new RelayCommand(a => MoveUp(), a => CanMoveUp());
             MoveDownCommand = new RelayCommand(a => MoveDown(), a => CanMoveDown());
             LoadPersistedMetas();
@@ -178,30 +162,36 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
             processManagerWindow.ShowDialog();
         }
 
-        private bool CanAddMeta()
-        {
-            return !string.IsNullOrWhiteSpace(NewMetaName) && SelectedTemplate != null && SelectedProcess != null;
-        }
-
         private void AddMeta()
         {
-            if (!CanAddMeta()) return;
-            if (ProcessMetas.Any(m => m.Name.Equals(NewMetaName, StringComparison.OrdinalIgnoreCase)))
+            var dialog = new PostProcessMetaEditWindow(
+                templateModels,
+                Processes,
+                "新增后处理项")
+            {
+                Owner = Application.Current.GetActiveWindow(),
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            };
+            if (dialog.ShowDialog() != true || dialog.SelectedTemplate == null || dialog.SelectedProcess == null)
+                return;
+
+            if (ProcessMetas.Any(meta => meta.Name.Equals(dialog.MetaName, StringComparison.OrdinalIgnoreCase)))
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.DuplicateName, "ColorVision");
                 return;
             }
-            
-            // Create a new instance of the batch process for this meta to have its own config
-            var newProcess = SelectedProcess.CreateInstance();
-            
-            ProcessMetas.Add(new PostProcessMeta
+
+            object? config = dialog.SelectedProcess.GetConfig();
+            var meta = new PostProcessMeta
             {
-                Name = NewMetaName,
-                TemplateName = SelectedTemplate.Key,
-                PostProcessor = newProcess
-            });
-            NewMetaName = string.Empty;
+                Name = dialog.MetaName,
+                TemplateName = dialog.SelectedTemplate.Key,
+                PostProcessor = dialog.SelectedProcess,
+                ConfigJson = config == null ? string.Empty : JsonConvert.SerializeObject(config),
+                Tag = dialog.MetaTag
+            };
+            ProcessMetas.Add(meta);
+            SelectedProcessMeta = meta;
         }
 
         private void RemoveMeta()
@@ -213,28 +203,41 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
             }
         }
 
-        private void OnSelectedProcessMetaChanged()
-        {
-            if (SelectedProcessMeta != null)
-            {
-                // Populate update fields when a PostProcessMeta is selected
-                UpdateTemplate = templateModels.FirstOrDefault(t => t.Key == SelectedProcessMeta.TemplateName);
-                UpdateProcess = Processes.FirstOrDefault(p => p.GetType().FullName == SelectedProcessMeta.PostProcessor?.GetType().FullName);
-            }
-        }
-
-        private bool CanUpdateMeta()
-        {
-            return SelectedProcessMeta != null && UpdateTemplate != null && UpdateProcess != null;
-        }
-
         private void UpdateMeta()
         {
-            if (!CanUpdateMeta()) return;
-            
-            // Update the selected PostProcessMeta with new values
-            SelectedProcessMeta.TemplateName = UpdateTemplate.Key;
-            SelectedProcessMeta.PostProcessor = UpdateProcess;
+            PostProcessMeta? selectedMeta = SelectedProcessMeta;
+            if (selectedMeta == null)
+                return;
+
+            var dialog = new PostProcessMetaEditWindow(
+                templateModels,
+                Processes,
+                "编辑后处理项",
+                selectedMeta.Name,
+                selectedMeta.TemplateName,
+                selectedMeta.PostProcessor,
+                selectedMeta.Tag)
+            {
+                Owner = Application.Current.GetActiveWindow(),
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            };
+            if (dialog.ShowDialog() != true || dialog.SelectedTemplate == null || dialog.SelectedProcess == null)
+                return;
+
+            if (ProcessMetas.Any(meta =>
+                    !ReferenceEquals(meta, selectedMeta)
+                    && meta.Name.Equals(dialog.MetaName, StringComparison.OrdinalIgnoreCase)))
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.DuplicateName, "ColorVision");
+                return;
+            }
+
+            object? config = dialog.SelectedProcess.GetConfig();
+            selectedMeta.Name = dialog.MetaName;
+            selectedMeta.TemplateName = dialog.SelectedTemplate.Key;
+            selectedMeta.PostProcessor = dialog.SelectedProcess;
+            selectedMeta.ConfigJson = config == null ? string.Empty : JsonConvert.SerializeObject(config);
+            selectedMeta.Tag = dialog.MetaTag;
         }
 
         private bool CanMoveUp()

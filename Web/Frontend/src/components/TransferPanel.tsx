@@ -38,7 +38,7 @@ export function TransferPanel({ onAuthRequired }: { onAuthRequired?: () => void 
   const columns: ColumnsType<TransferFile> = [
     { title: '文件名', dataIndex: 'name' },
     { title: '大小', dataIndex: 'size', width: 120, render: (value) => humanSize(value) },
-    { title: '修改时间', dataIndex: 'modified_display', width: 180, render: (value, record) => value || shortDate(record.modified) },
+    { title: '修改时间', dataIndex: 'modified_display', width: 180, render: (value, record) => shortDate(record.modified || value) },
     {
       title: '操作',
       width: 180,

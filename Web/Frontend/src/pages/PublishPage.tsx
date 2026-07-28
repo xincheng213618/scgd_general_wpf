@@ -27,7 +27,7 @@ import {
 } from '../services/site'
 import type { PublishIntegrityReport } from '../types/admin'
 import type { CvwsContext, UploadContext } from '../types/site'
-import { humanSize } from '../utils/format'
+import { humanSize, shortDate } from '../utils/format'
 import { UploadProgress } from '../components/UploadProgress'
 
 const integrityStatusText = {
@@ -233,7 +233,7 @@ function CvwsPublishPanel() {
     { title: '文件名', dataIndex: 'fileName' },
     { title: '版本', dataIndex: 'version', width: 140 },
     { title: '大小', dataIndex: 'size', width: 120, render: (value) => humanSize(value) },
-    { title: '修改时间', dataIndex: 'modifiedDisplay', width: 180 },
+    { title: '修改时间', dataIndex: 'modifiedDisplay', width: 180, render: (value, record) => shortDate(record.modified || value) },
     { title: '操作', width: 100, render: (_, record) => <Button href={record.downloadUrl}>下载</Button> },
   ]
 

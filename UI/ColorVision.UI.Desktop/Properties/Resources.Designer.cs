@@ -943,11 +943,29 @@ namespace ColorVision.UI.Desktop.Properties {
         }
 
         /// <summary>
+        ///   查找类似 日志范围 的本地化字符串。
+        /// </summary>
+        public static string FeedbackLogRange {
+            get {
+                return ResourceManager.GetString("FeedbackLogRange", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 请描述您遇到的问题或建议... 的本地化字符串。
         /// </summary>
         public static string FeedbackPlaceholder {
             get {
                 return ResourceManager.GetString("FeedbackPlaceholder", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 最近 {0} 天 的本地化字符串。
+        /// </summary>
+        public static string FeedbackRecentDays {
+            get {
+                return ResourceManager.GetString("FeedbackRecentDays", resourceCulture);
             }
         }
 
@@ -1564,6 +1582,15 @@ namespace ColorVision.UI.Desktop.Properties {
         }
 
         /// <summary>
+        ///   查找类似 无网络时，可打开压缩包所在文件夹后手动复制。 的本地化字符串。
+        /// </summary>
+        public static string OfflinePackageHint {
+            get {
+                return ResourceManager.GetString("OfflinePackageHint", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 打开 的本地化字符串。
         /// </summary>
         public static string Open {
@@ -1614,6 +1641,15 @@ namespace ColorVision.UI.Desktop.Properties {
         public static string OpenFolder {
             get {
                 return ResourceManager.GetString("OpenFolder", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 打开日志目录 的本地化字符串。
+        /// </summary>
+        public static string OpenLogFolder {
+            get {
+                return ResourceManager.GetString("OpenLogFolder", resourceCulture);
             }
         }
 

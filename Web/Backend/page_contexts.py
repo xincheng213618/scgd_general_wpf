@@ -58,7 +58,7 @@ def _build_filesystem_spotlight(overview: list[dict[str, Any]]) -> list[dict[str
                 "icon": meta["icon"],
                 "exists": info is not None,
                 "file_count": int(info.get("file_count", 0) or 0) if info else 0,
-                "modified": str(info.get("modified", ""))[:19] if info else "未创建",
+                "modified": str(info.get("modified", "")) if info else "未创建",
             }
         )
     return items
@@ -332,7 +332,7 @@ def _build_recent_change_dashboard(
             {
                 "title": str(release.get("display_title", release.get("version", "版本记录"))),
                 "subtitle": f"当前制品 · {release.get('kind_label', release.get('kind', '文件记录'))}",
-                "timestamp": str(release.get("modified_display", "")),
+                "timestamp": str(release.get("modified") or release.get("modified_display", "")),
                 "sort_key": str(release.get("modified", "")),
                 "href": f"/download/{release.get('relative_path', '')}",
                 "action_label": "下载",
@@ -345,7 +345,7 @@ def _build_recent_change_dashboard(
             {
                 "title": str(release.get("display_title", release.get("version", "历史记录"))),
                 "subtitle": f"历史制品 · {release.get('kind_label', release.get('kind', '文件记录'))}",
-                "timestamp": str(release.get("modified_display", "")),
+                "timestamp": str(release.get("modified") or release.get("modified_display", "")),
                 "sort_key": str(release.get("modified", "")),
                 "href": f"/download/{release.get('relative_path', '')}",
                 "action_label": "下载",
@@ -585,6 +585,8 @@ def build_tools_page_context(storage: Path, *, cache_manager=None) -> dict[str, 
                         "path": item["relative_path"],
                         "relative_path": item["relative_path"],
                         "modified": (item.get("modified_display") or item.get("modified", ""))[:19],
+                        "modified_iso": item.get("modified", ""),
+                        "modified_display": item.get("modified_display", ""),
                         "size": item.get("size", 0),
                         "file_count": item.get("file_count", 0),
                     })

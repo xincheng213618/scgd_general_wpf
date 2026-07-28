@@ -110,6 +110,12 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
             RefreshPropertyPanel();
         }
 
+        private void ListView_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            if (DataContext is PostProcessManager manager && manager.UpdateMetaCommand.CanExecute(null))
+                manager.UpdateMetaCommand.Execute(null);
+        }
+
         private void RefreshPropertyPanel()
         {
             PropertyPanel.Children.Clear();

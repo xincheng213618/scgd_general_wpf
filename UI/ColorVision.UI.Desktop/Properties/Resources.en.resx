@@ -402,6 +402,18 @@
   <data name="LogsPackaged" xml:space="preserve">
     <value>Logs packaged: {0}</value>
   </data>
+  <data name="FeedbackLogRange" xml:space="preserve">
+    <value>Log range</value>
+  </data>
+  <data name="FeedbackRecentDays" xml:space="preserve">
+    <value>Last {0} days</value>
+  </data>
+  <data name="OpenLogFolder" xml:space="preserve">
+    <value>Open log folder</value>
+  </data>
+  <data name="OfflinePackageHint" xml:space="preserve">
+    <value>When offline, open the packaged file's folder and copy it manually.</value>
+  </data>
   <data name="FeedbackEmptyWarning" xml:space="preserve">
     <value>Please enter a message or add attachments</value>
   </data>

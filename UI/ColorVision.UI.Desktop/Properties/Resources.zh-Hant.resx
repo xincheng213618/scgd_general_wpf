@@ -503,6 +503,18 @@
   <data name="LogsPackaged" xml:space="preserve">
     <value>日誌已打包: {0}</value>
   </data>
+  <data name="FeedbackLogRange" xml:space="preserve">
+    <value>日誌範圍</value>
+  </data>
+  <data name="FeedbackRecentDays" xml:space="preserve">
+    <value>最近 {0} 天</value>
+  </data>
+  <data name="OpenLogFolder" xml:space="preserve">
+    <value>開啟日誌目錄</value>
+  </data>
+  <data name="OfflinePackageHint" xml:space="preserve">
+    <value>無網路時，可開啟壓縮檔所在資料夾後手動複製。</value>
+  </data>
   <data name="FeedbackEmptyWarning" xml:space="preserve">
     <value>請輸入反饋信息或添加附件</value>
   </data>

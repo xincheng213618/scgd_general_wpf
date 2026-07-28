@@ -24,98 +24,27 @@
         <Grid Grid.Column="0">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
-            <GroupBox Header="{x:Static properties:Resources.CreateProcessMeta}" Padding="8" Margin="0 0 0 8" Grid.Row="0">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="160"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="180"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="180"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
-
-                    <TextBlock Text="{x:Static properties:Resources.Name}" VerticalAlignment="Center" Margin="0 0 4 0"/>
-                    <TextBox Grid.Column="1" Text="{Binding NewMetaName, UpdateSourceTrigger=PropertyChanged}"/>
-
-                    <TextBlock Grid.Column="2" Text="{x:Static properties:Resources.FlowTemplate}" VerticalAlignment="Center" Margin="12 0 4 0"/>
-                    <ComboBox Grid.Column="3" ItemsSource="{Binding templateModels}" DisplayMemberPath="Key" SelectedItem="{Binding SelectedTemplate}"/>
-
-                    <TextBlock Grid.Column="4" VerticalAlignment="Center" Margin="12 0 4 0"><Run Text="{x:Static properties:Resources.ProcessClass}"/><Run Text=":"/></TextBlock>
-                    <ComboBox Grid.Column="5" ItemsSource="{Binding Processes}" SelectedItem="{Binding SelectedProcess}">
-                        <ComboBox.ItemTemplate>
-                            <DataTemplate>
-                                <TextBlock Text="{Binding Converter={StaticResource TypeNameConverter}}" 
-                                          ToolTip="{Binding Converter={StaticResource ProcessTooltipConverter}}"/>
-                            </DataTemplate>
-                        </ComboBox.ItemTemplate>
-                    </ComboBox>
-                    <StackPanel Orientation="Horizontal" Grid.Column="6">
-                        <Button  Content="{x:Static properties:Resources.Add}" Margin="12 0 0 0" Padding="12 4" Command="{Binding AddMetaCommand}"/>
-                        <Button Grid.Column="1" Margin="5,1,5,0" HorizontalAlignment="Left" Command="{Binding PostProcessConfig.EditCommand}" Padding="2" Height="30" Width="30" >
-                            <Button.Triggers>
-                                <EventTrigger RoutedEvent="Button.Click">
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <DoubleAnimation Storyboard.TargetName="rotateTransform2" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </EventTrigger>
-                            </Button.Triggers>
-                            <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" RenderTransformOrigin="0.5,0.5" FontSize="20" Foreground="{DynamicResource GlobalTextBrush}">
-                                <TextBlock.RenderTransform>
-                                    <RotateTransform x:Name="rotateTransform2"/>
-                                </TextBlock.RenderTransform>
-                            </TextBlock>
-                        </Button>
-                    </StackPanel>
-                </Grid>
-            </GroupBox>
-
-            <GroupBox Header="{x:Static properties:Resources.UpdateProcessMeta}" Padding="8" Margin="0 0 0 8" Grid.Row="1">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="180"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="180"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-
-                    <TextBlock VerticalAlignment="Center" Margin="0 0 4 0"><Run Text="{x:Static properties:Resources.FlowTemplate}"/><Run Text=":"/></TextBlock>
-                    <ComboBox Grid.Column="1" ItemsSource="{Binding templateModels}" DisplayMemberPath="Key" SelectedItem="{Binding UpdateTemplate}"/>
-
-                    <TextBlock Grid.Column="2" VerticalAlignment="Center" Margin="12 0 4 0"><Run Text="{x:Static properties:Resources.ProcessClass}"/><Run Text=":"/></TextBlock>
-                    <ComboBox Grid.Column="3" ItemsSource="{Binding Processes}" SelectedItem="{Binding UpdateProcess}">
-                        <ComboBox.ItemTemplate>
-                            <DataTemplate>
-                                <TextBlock Text="{Binding Converter={StaticResource TypeNameConverter}}" 
-                                          ToolTip="{Binding Converter={StaticResource ProcessTooltipConverter}}"/>
-                            </DataTemplate>
-                        </ComboBox.ItemTemplate>
-                    </ComboBox>
-
-                    <Button Grid.Column="4" Content="{x:Static properties:Resources.Update}" Margin="12 0 0 0" Padding="12 4" Command="{Binding UpdateMetaCommand}"/>
-                </Grid>
-            </GroupBox>
-
-            <StackPanel Orientation="Horizontal" Grid.Row="2" Margin="0 0 0 8">
-                <Button Content="{x:Static properties:Resources.DeleteSelected}" Padding="12 4" Command="{Binding RemoveMetaCommand}"/>
+            <DockPanel Grid.Row="0" Margin="0 0 0 8">
+                <Button DockPanel.Dock="Right" Command="{Binding PostProcessConfig.EditCommand}"
+                        Padding="2" Height="30" Width="30" ToolTip="{x:Static properties:Resources.PropertyConfig}">
+                    <TextBlock Text="&#xE713;" HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets"
+                               FontSize="20" Foreground="{DynamicResource GlobalTextBrush}"/>
+                </Button>
+                <Button Content="新增" Padding="12 4" Command="{Binding AddMetaCommand}"/>
+                <Button Content="编辑" Padding="12 4" Margin="8 0 0 0" Command="{Binding UpdateMetaCommand}"/>
+                <Button Content="{x:Static properties:Resources.DeleteSelected}" Padding="12 4" Margin="8 0 0 0"
+                        Command="{Binding RemoveMetaCommand}"/>
                 <Button Content="{x:Static properties:Resources.MoveUp}" Padding="12 4" Margin="8 0 0 0" Command="{Binding MoveUpCommand}"/>
                 <Button Content="{x:Static properties:Resources.MoveDown}" Padding="12 4" Margin="8 0 0 0" Command="{Binding MoveDownCommand}"/>
                 <TextBlock Text="  ({x:Static properties:Resources.ProcessOrderHint})" VerticalAlignment="Center" Margin="12 0 0 0" Foreground="Gray"/>
-            </StackPanel>
+            </DockPanel>
 
-            <ListView Grid.Row="3" ItemsSource="{Binding ProcessMetas}" SelectedItem="{Binding SelectedProcessMeta}" x:Name="lvMetas" SelectionChanged="ListView_SelectionChanged">
+            <ListView Grid.Row="1" ItemsSource="{Binding ProcessMetas}" SelectedItem="{Binding SelectedProcessMeta}"
+                      x:Name="lvMetas" SelectionChanged="ListView_SelectionChanged"
+                      MouseDoubleClick="ListView_MouseDoubleClick">
                 <ListView.View>
                     <GridView>
                         <GridViewColumn Header="{x:Static properties:Resources.SerialNumber1}" Width="50">
