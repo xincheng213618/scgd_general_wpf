@@ -40,9 +40,6 @@ namespace ColorVision.Engine.FlowProcessing
         public FlowEngineConfig Config { get; set; }
 
         public RelayCommand AutoSizeCommand { get; set; }
-        public RelayCommand OpenDocumentCommand { get; set; }
-        public RelayCommand NewDocumentCommand { get; set; }
-
         public RelayCommand RefreshCommand { get; set; }
         public RelayCommand RunFlowCommand { get; set; }
         public RelayCommand StopFlowCommand { get; set; }
@@ -65,8 +62,6 @@ namespace ColorVision.Engine.FlowProcessing
         public FlowControl FlowControl => _isStandalone ? _standaloneFlowControl! : FlowEngineManager.FlowControl;
         public CVCommonNode? LastNode => _executionSession.LastNode;
         public bool IsStandalone => _isStandalone;
-        public Visibility RuntimeVisibility => _isStandalone ? Visibility.Collapsed : Visibility.Visible;
-        public Visibility StandaloneVisibility => _isStandalone ? Visibility.Visible : Visibility.Collapsed;
 
         private readonly bool _isStandalone;
         private readonly FlowControl? _standaloneFlowControl;
@@ -81,7 +76,6 @@ namespace ColorVision.Engine.FlowProcessing
         private bool _saveStandaloneFlowParam;
         private CVCommonNode? _executionDetailsNode;
         private string? _standaloneStartNodeName;
-        private ComboBox? _standaloneStartNodeComboBox;
         private bool _runtimeSelectionInitialized;
 
         public ViewFlow(FlowEngineManager flowEngineManager) : this(flowEngineManager, false)
@@ -113,8 +107,6 @@ namespace ColorVision.Engine.FlowProcessing
             _executionSession = new FlowExecutionSession(flowEngineManager, this);
 
             AutoSizeCommand = new RelayCommand(a => _layoutService.FitToViewport());
-            OpenDocumentCommand = new RelayCommand(a => OpenDocument(), a => _isStandalone);
-            NewDocumentCommand = new RelayCommand(a => NewDocument(), a => _isStandalone);
             RefreshCommand = new RelayCommand(a => Refresh());
             RunFlowCommand = new RelayCommand(a => RunFlow());
             StopFlowCommand = new RelayCommand(a => StopFlow());
@@ -122,10 +114,32 @@ namespace ColorVision.Engine.FlowProcessing
             SaveCommand = new RelayCommand(a => Save());
             AutoAlignmentCommand = new RelayCommand(a => AutoAlignment());
             OpenFlowTemplateCommand = new RelayCommand(a => OpenFlowTemplate());
-            NewFlowCommand = new RelayCommand(a => NewFlow());
+            NewFlowCommand = new RelayCommand(a =>
+            {
+                if (_isStandalone)
+                    NewDocument();
+                else
+                    NewFlow();
+            });
             DeleteFlowCommand = new RelayCommand(a => DeleteFlow(), a => !_isStandalone && FlowEngineManager.GetInstance().SelectedFlowParam != null);
-            ExportFlowCommand = new RelayCommand(a => ExportFlow(), a => !_isStandalone && FlowEngineManager.GetInstance().SelectedFlowParam != null);
-            ImportFlowCommand = new RelayCommand(a => ImportFlow(), a => !_isStandalone);
+            ExportFlowCommand = new RelayCommand(
+                a =>
+                {
+                    if (_isStandalone)
+                        SaveStandaloneDocument();
+                    else
+                        ExportFlow();
+                },
+                a => _isStandalone
+                    ? STNodeEditorMain.Nodes.Count > 0
+                    : FlowEngineManager.GetInstance().SelectedFlowParam != null);
+            ImportFlowCommand = new RelayCommand(a =>
+            {
+                if (_isStandalone)
+                    OpenDocument();
+                else
+                    ImportFlow();
+            });
             ImportModuleCommand = new RelayCommand(a => ImportModule(), a => TemplateFlow.Params.Count > 0);
 
             this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Save, (s, e) => Save(), (s, e) => { e.CanExecute = true; }));
@@ -773,67 +787,12 @@ namespace ColorVision.Engine.FlowProcessing
             _executionSession.StopFlow();
         }
 
-        private void StartNodeComboBox_Initialized(object sender, EventArgs e)
-        {
-            _standaloneStartNodeComboBox = (ComboBox)sender;
-        }
-
-        private void StartNodeComboBox_Loaded(object sender, RoutedEventArgs e)
-        {
-            if (_isStandalone)
-            {
-                RefreshStandaloneStartNodeSelection();
-            }
-            else
-            {
-                RefreshRuntimeStartNodeSelection();
-            }
-        }
-
-        private void StartNodeComboBox_DropDownOpened(object sender, EventArgs e)
-        {
-            if (_isStandalone)
-                RefreshStandaloneStartNodeSelection();
-            else
-                RefreshRuntimeStartNodeSelection();
-        }
-
-        private void StartNodeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (sender is not ComboBox comboBox)
-                return;
-
-            if (_isStandalone)
-            {
-                _standaloneStartNodeName = comboBox.SelectedItem as string;
-                _executionSession.SelectStartNode(_standaloneStartNodeName);
-            }
-            else
-                _executionSession.SelectStartNode(comboBox.SelectedItem as string);
-        }
-
-        internal void RefreshRuntimeStartNodeSelection()
-        {
-            if (_standaloneStartNodeComboBox == null)
-                return;
-
-            string[] startNodeNames = _executionSession.RefreshStartNodeSelection(
-                _standaloneStartNodeComboBox.SelectedItem as string);
-            _standaloneStartNodeComboBox.ItemsSource = startNodeNames;
-            _standaloneStartNodeComboBox.SelectedItem = _executionSession.SelectedStartNodeName;
-        }
-
         private string? RefreshStandaloneStartNodeSelection()
         {
             string[] startNodeNames = FlowEngineControl.GetStartNodeNames();
             if (string.IsNullOrWhiteSpace(_standaloneStartNodeName)
                 || !startNodeNames.Contains(_standaloneStartNodeName))
                 _standaloneStartNodeName = startNodeNames.FirstOrDefault();
-            if (_standaloneStartNodeComboBox != null)
-            {
-                _standaloneStartNodeComboBox.ItemsSource = startNodeNames;
-                _standaloneStartNodeComboBox.SelectedItem = _standaloneStartNodeName;
-            }
             return _standaloneStartNodeName;
         }
 
