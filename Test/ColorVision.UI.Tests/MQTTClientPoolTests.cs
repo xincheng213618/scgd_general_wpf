@@ -148,6 +148,40 @@ public class MQTTClientPoolTests
     }
 
     [Fact]
+    public async Task ConsecutiveOwnerHandoffReusesBrokerSubscriptionWithoutUnsubscribe()
+    {
+        string server = $"mqtt-pool-topic-handoff-{Guid.NewGuid():N}";
+        const int port = 1883;
+        const string userName = "test-user";
+        const string topic = "FLOW/CMD/S1";
+        var (client, proxy) = CreateTrackingClient(isConnected: true);
+        Guid outgoingOwner = Guid.NewGuid();
+        Guid incomingOwner = Guid.NewGuid();
+
+        try
+        {
+            MQTTClientPool.SetActiveEndpoint(server, port, userName);
+            Assert.True(MQTTClientPool.Register(client, server, port, userName));
+            Assert.True(await MQTTClientPool.TrySubscribeAsync(client, outgoingOwner, topic));
+            Assert.Equal(1, proxy.SubscribeCalls);
+
+            await MQTTClientPool.ReleaseOwnerTopicsAsync(client, outgoingOwner);
+            Assert.True(await MQTTClientPool.TrySubscribeAsync(client, incomingOwner, topic));
+
+            Assert.Equal(1, proxy.SubscribeCalls);
+            Assert.Equal(0, proxy.UnsubscribeCalls);
+
+            Assert.True(await MQTTClientPool.TryUnsubscribeAsync(client, incomingOwner, topic));
+            Assert.Equal(1, proxy.UnsubscribeCalls);
+        }
+        finally
+        {
+            MQTTClientPool.SetActiveEndpoint(server + "-new", port, userName);
+            MQTTClientPool.Release(client);
+        }
+    }
+
+    [Fact]
     public async Task CancelledSubscriptionDoesNotLeaveAnOwnerRegistration()
     {
         string server = $"mqtt-pool-cancelled-topic-{Guid.NewGuid():N}";

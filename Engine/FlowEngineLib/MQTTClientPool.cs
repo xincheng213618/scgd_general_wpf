@@ -527,38 +527,39 @@ internal static class MQTTClientPool
         }
     }
 
-    public static async Task ReleaseOwnerTopicsAsync(
+    public static Task ReleaseOwnerTopicsAsync(
         IMqttClient client,
         Guid ownerId,
         CancellationToken cancellationToken = default)
     {
-        var releaseStopwatch = System.Diagnostics.Stopwatch.StartNew();
-        string[] topics;
+        cancellationToken.ThrowIfCancellationRequested();
         lock (_lock)
         {
             PoolEntry entry = FindEntryLocked(client);
             if (entry == null)
             {
-                return;
+                return Task.CompletedTask;
             }
-            topics = entry.Topics
-                .Where(item => item.Value.Owners.Contains(ownerId))
-                .Select(item => item.Key)
-                .ToArray();
-        }
 
-        foreach (string topic in topics)
-        {
-            await TryUnsubscribeAsync(client, ownerId, topic, cancellationToken);
+            foreach (string topic in entry.Topics
+                         .Where(item => item.Value.Owners.Contains(ownerId))
+                         .Select(item => item.Key)
+                         .ToArray())
+            {
+                TopicRegistration registration = entry.Topics[topic];
+                registration.Owners.Remove(ownerId);
+                // Keep one broker subscription per distinct topic on the active
+                // connection so the next flow can take ownership without a
+                // blocking unsubscribe/subscribe round trip. Explicit topic
+                // changes and endpoint retirement still perform cleanup.
+                if (registration.Owners.Count == 0 &&
+                    (entry.Retired || !entry.Client.IsConnected))
+                {
+                    entry.Topics.Remove(topic);
+                }
+            }
         }
-        releaseStopwatch.Stop();
-        if (releaseStopwatch.Elapsed >= SlowSubscriptionThreshold)
-        {
-            logger.InfoFormat(
-                "MQTT owner-topic release slow => topics={0}, total={1}ms",
-                topics.Length,
-                releaseStopwatch.ElapsedMilliseconds);
-        }
+        return Task.CompletedTask;
     }
 
     public static void MarkDisconnected(IMqttClient client)
