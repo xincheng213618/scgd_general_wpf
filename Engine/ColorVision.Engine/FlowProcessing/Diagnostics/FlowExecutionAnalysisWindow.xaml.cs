@@ -107,10 +107,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
 
             if (_initialBatch?.Id > 0)
             {
-                string serialNumber = _initialBatch.Name
-                    ?? _initialBatch.Code
-                    ?? requestedNodeRecord?.SerialNumber
-                    ?? string.Empty;
+                string serialNumber = ResolveBatchSerialNumber(_initialBatch, requestedNodeRecord);
                 return new InitialRunSelection(
                     _initialBatch.Id,
                     serialNumber,
@@ -125,6 +122,16 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                     runRecord.BatchId,
                     runRecord.SerialNumber ?? string.Empty,
                     requestedNodeRecord?.Id);
+        }
+
+        internal static string ResolveBatchSerialNumber(
+            MeasureBatchModel batch,
+            FlowNodeRecord? fallbackRecord = null)
+        {
+            return batch.Code
+                ?? batch.Name
+                ?? fallbackRecord?.SerialNumber
+                ?? string.Empty;
         }
 
         private async Task LoadRunAsync(int batchId, string? serialNumber, int? preferredRecordId)

@@ -88,6 +88,8 @@ namespace ProjectARVRPro
         private string _lastFlowFailureMessage = string.Empty;
         private IProcess? _currentFlowProcess;
         private int _currentFlowTemplateId;
+        private MeasureBatchModel? _currentFlowBatch;
+        private readonly FlowNodeExecutionRecorder _flowNodeExecutionRecorder = new FlowNodeExecutionRecorder();
         private bool _isFlowStartPending;
         private bool _isFlowLifecycleActive;
 
@@ -366,6 +368,10 @@ namespace ProjectARVRPro
                 _ => ContextMenu_BatchDataHistory(),
                 _ => listView1.SelectedItem is ProjectARVRReuslt item && item.BatchId > 0);
 
+            var flowExecutionAnalysisCommand = new RelayCommand(
+                _ => ContextMenu_FlowExecutionAnalysis(),
+                _ => listView1.SelectedItem is ProjectARVRReuslt item && item.BatchId > 0);
+
             var viewTestResultCommand = new RelayCommand(
                 _ => ContextMenu_ViewTestResult(),
                 _ => listView1.SelectedItem is ProjectARVRReuslt item && !string.IsNullOrEmpty(item.ViewResultJson));
@@ -376,6 +382,7 @@ namespace ProjectARVRPro
             contextMenu.Items.Add(new Separator());
             contextMenu.Items.Add(new MenuItem() { Command = openFolderCommand, Header = "OpenFolderAndSelectFile" });
             contextMenu.Items.Add(new MenuItem() { Command = batchHistoryCommand, Header = "流程结果查询" });
+            contextMenu.Items.Add(new MenuItem() { Command = flowExecutionAnalysisCommand, Header = "流程执行分析" });
             contextMenu.Items.Add(new MenuItem() { Command = viewTestResultCommand, Header = "查看测试结果" });
 
             // 右键菜单打开时刷新 CanExecute 状态
@@ -405,21 +412,48 @@ namespace ProjectARVRPro
 
         private void ContextMenu_BatchDataHistory()
         {
-            if (listView1.SelectedItem is not ProjectARVRReuslt item) return;
-
-            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-
-            var Batch = Db.Queryable<MeasureBatchModel>().Where(a => a.Id == item.BatchId).First();
-            if (Batch == null)
+            MeasureBatchModel? batch = GetSelectedMeasureBatch();
+            if (batch == null)
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), "找不到批次号，请检查流程配置", "ColorVision");
                 return;
             }
             var frame = new Frame();
-            var batchDataHistory = new MeasureBatchPage(frame, Batch);
+            var batchDataHistory = new MeasureBatchPage(frame, batch);
             var window = new Window() { Owner = Application.Current.GetActiveWindow() };
             window.Content = batchDataHistory;
             window.Show();
+        }
+
+        private void ContextMenu_FlowExecutionAnalysis()
+        {
+            MeasureBatchModel? batch = GetSelectedMeasureBatch();
+            if (batch == null)
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), "找不到批次号，请检查流程配置", "ColorVision");
+                return;
+            }
+
+            var window = new FlowExecutionAnalysisWindow(batch)
+            {
+                Owner = Application.Current.GetActiveWindow(),
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            };
+            window.Show();
+        }
+
+        private MeasureBatchModel? GetSelectedMeasureBatch()
+        {
+            if (listView1.SelectedItem is not ProjectARVRReuslt item || item.BatchId <= 0)
+                return null;
+
+            using var db = new SqlSugarClient(new ConnectionConfig
+            {
+                ConnectionString = MySqlControl.GetConnectionString(),
+                DbType = SqlSugar.DbType.MySql,
+                IsAutoCloseConnection = true,
+            });
+            return db.Queryable<MeasureBatchModel>().Where(batch => batch.Id == item.BatchId).First();
         }
 
         private void ContextMenu_ViewTestResult()
@@ -445,14 +479,20 @@ namespace ProjectARVRPro
             if (FlowTemplate.SelectedIndex < 0) return Task.CompletedTask;
 
             MqttRCService.GetInstance().QueryServices();
+            foreach (CVCommonNode node in STNodeEditorMain.Nodes.OfType<CVCommonNode>())
+                node.nodeRunEvent -= UpdateMsg;
+            _flowNodeExecutionRecorder.DetachNodes();
+
             string Refreshdata = TemplateFlow.Params[FlowTemplate.SelectedIndex].Value.DataBase64;
             flowEngine.LoadFromBase64(Refreshdata, MqttRCService.GetInstance().ServiceTokens);
 
-            foreach (var item in STNodeEditorMain.Nodes.OfType<CVCommonNode>())
+            CVCommonNode[] flowNodes = STNodeEditorMain.Nodes.OfType<CVCommonNode>().ToArray();
+            foreach (CVCommonNode item in flowNodes)
             {
                 item.nodeRunEvent -= UpdateMsg;
                 item.nodeRunEvent += UpdateMsg;
             }
+            _flowNodeExecutionRecorder.AttachNodes(flowNodes);
             return Task.CompletedTask;
         }
 
@@ -608,10 +648,7 @@ namespace ProjectARVRPro
                 stopwatch.Reset();
                 stopwatch.Start();
 
-                MeasureBatchModel measureBatchModel = new MeasureBatchModel() { Name = CurrentFlowResult.SN, Code = CurrentFlowResult.Code };
-                using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-                int id = Db.Insertable(measureBatchModel).ExecuteReturnIdentity();
-                CurrentFlowResult.BatchId = id;
+                CreateCurrentFlowBatch();
 
                 _isFlowLifecycleActive = true;
                 if (!await flowControl.TryStartAsync(CurrentFlowResult.Code, cancellationToken))
@@ -637,6 +674,90 @@ namespace ProjectARVRPro
         {
             var serverNodes = new ObservableCollection<CVBaseServerNode>(STNodeEditorMain.Nodes.OfType<CVBaseServerNode>());
             return await PreProcessManager.GetInstance().ExecuteAsync(flowName, serialNumber, serverNodes);
+        }
+
+        private void CreateCurrentFlowBatch()
+        {
+            _currentFlowBatch = new MeasureBatchModel
+            {
+                TId = _currentFlowTemplateId > 0 ? _currentFlowTemplateId : null,
+                Name = CurrentFlowResult.SN,
+                Code = CurrentFlowResult.Code,
+            };
+            using var db = new SqlSugarClient(new ConnectionConfig
+            {
+                ConnectionString = MySqlControl.GetConnectionString(),
+                DbType = SqlSugar.DbType.MySql,
+                IsAutoCloseConnection = true,
+            });
+            _currentFlowBatch.Id = db.Insertable(_currentFlowBatch).ExecuteReturnIdentity();
+            CurrentFlowResult.BatchId = _currentFlowBatch.Id;
+            _flowNodeExecutionRecorder.StartRun(_currentFlowBatch.Id, CurrentFlowResult.Code);
+        }
+
+        private async Task FinalizeCurrentFlowRunAsync(FlowControlData flowResult)
+        {
+            string serialNumber = string.IsNullOrWhiteSpace(flowResult.SerialNumber)
+                ? CurrentFlowResult.Code
+                : flowResult.SerialNumber;
+            flowResult.SerialNumber = serialNumber;
+
+            long elapsedMilliseconds = Math.Max(0, stopwatch.ElapsedMilliseconds);
+            CurrentFlowResult.RunTime = elapsedMilliseconds;
+            CurrentFlowResult.FlowStatus = flowResult.FlowStatus;
+
+            FlowNodeRecordDataBaseHelper.RecordFlowRun(
+                _currentFlowTemplateId,
+                FlowName,
+                serialNumber,
+                flowResult.FlowStatus,
+                elapsedMilliseconds);
+
+            try
+            {
+                MeasureBatchModel? batch = _currentFlowBatch;
+                if (batch == null && CurrentFlowResult.BatchId > 0)
+                    batch = BatchResultMasterDao.Instance.GetById(CurrentFlowResult.BatchId);
+                if (batch != null)
+                {
+                    batch.TId = _currentFlowTemplateId > 0 ? _currentFlowTemplateId : null;
+                    batch.TotalTime = elapsedMilliseconds > int.MaxValue
+                        ? int.MaxValue
+                        : (int)elapsedMilliseconds;
+                    batch.FlowStatus = flowResult.FlowStatus;
+                    batch.Result = flowResult.Params ?? flowResult.Message ?? flowResult.EventName;
+                    using var db = new SqlSugarClient(new ConnectionConfig
+                    {
+                        ConnectionString = MySqlControl.GetConnectionString(),
+                        DbType = SqlSugar.DbType.MySql,
+                        IsAutoCloseConnection = true,
+                    });
+                    db.Updateable(batch).ExecuteCommand();
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error($"回写流程批次失败 => batchId={CurrentFlowResult.BatchId}, serialNumber={serialNumber}", ex);
+            }
+
+            try
+            {
+                TimeSpan nodeEventDrainDelay = flowResult.FlowStatus == FlowStatus.Completed
+                    ? TimeSpan.Zero
+                    : TimeSpan.FromSeconds(1);
+                await _flowNodeExecutionRecorder.CompleteRunAsync(
+                    serialNumber,
+                    nodeEventDrainDelay,
+                    TimeSpan.FromSeconds(5));
+            }
+            catch (Exception ex)
+            {
+                log.Error($"结束流程节点统计失败 => batchId={CurrentFlowResult.BatchId}, serialNumber={serialNumber}", ex);
+            }
+            finally
+            {
+                _currentFlowBatch = null;
+            }
         }
 
         private void ResetStepProgress()
@@ -700,12 +821,15 @@ namespace ProjectARVRPro
 
             CurrentFlowResult.FlowStatus = FlowStatus.Failed;
             CurrentFlowResult.Msg = message;
-            FlowNodeRecordDataBaseHelper.RecordFlowRun(
-                _currentFlowTemplateId,
-                FlowName,
-                CurrentFlowResult.Code,
-                CurrentFlowResult.FlowStatus,
-                stopwatch.ElapsedMilliseconds);
+            await FinalizeCurrentFlowRunAsync(new FlowControlData
+            {
+                EventName = "Failed",
+                Status = StatusTypeEnum.Failed,
+                SerialNumber = CurrentFlowResult.Code,
+                Message = message,
+                Params = message,
+                TotalTime = stopwatch.ElapsedMilliseconds,
+            });
             await ExecuteProcessFailureAsync(process ?? _currentFlowProcess);
             RecordFlowFailure(message);
 
@@ -857,13 +981,7 @@ namespace ProjectARVRPro
             timer.Change(Timeout.Infinite, 500); // 停止定时器
 
             log.Info($"流程执行Elapsed Time: {stopwatch.ElapsedMilliseconds} ms");
-            CurrentFlowResult.RunTime  = stopwatch.ElapsedMilliseconds;
-            FlowNodeRecordDataBaseHelper.RecordFlowRun(
-                _currentFlowTemplateId,
-                FlowName,
-                FlowControlData.SerialNumber,
-                FlowControlData.FlowStatus,
-                CurrentFlowResult.RunTime);
+            await FinalizeCurrentFlowRunAsync(FlowControlData);
             logTextBox.Text = FlowName + Environment.NewLine + FlowControlData.EventName;
 
             if (FlowControlData.EventName == "Completed")
@@ -1683,12 +1801,7 @@ namespace ProjectARVRPro
                     LastFlowTime = await Task.Run(
                         () => FlowNodeRecordDataBaseHelper.GetLastCompletedFlowElapsed(templateParam.Id, FlowName));
 
-                    MeasureBatchModel measureBatchModel = new MeasureBatchModel() { Name = CurrentFlowResult.SN, Code = CurrentFlowResult.Code };
-                    using (var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true }))
-                    {
-                        int id = Db.Insertable(measureBatchModel).ExecuteReturnIdentity();
-                        CurrentFlowResult.BatchId = id;
-                    }
+                    CreateCurrentFlowBatch();
 
                     flowControl.FlowCompleted += completedHandler;
                     stopwatch.Reset();
@@ -1702,8 +1815,10 @@ namespace ProjectARVRPro
                         {
                             EventName = "Failed",
                             Status = StatusTypeEnum.Failed,
+                            SerialNumber = CurrentFlowResult.Code,
                             ErrorNodeName = meta.Name,
-                            Params = $"{meta.Name}({meta.FlowTemplate}) {FlowStartRejectedMessage}"
+                            Message = $"{meta.Name}({meta.FlowTemplate}) {FlowStartRejectedMessage}",
+                            Params = $"{meta.Name}({meta.FlowTemplate}) {FlowStartRejectedMessage}",
                         };
                     }
                     else
@@ -1723,8 +1838,10 @@ namespace ProjectARVRPro
                             {
                                 EventName = "OverTime",
                                 Status = StatusTypeEnum.OverTime,
+                                SerialNumber = CurrentFlowResult.Code,
                                 ErrorNodeName = meta.Name,
-                                Params = $"{meta.Name}({meta.FlowTemplate}) OverTime 10min"
+                                Message = $"{meta.Name}({meta.FlowTemplate}) OverTime 10min",
+                                Params = $"{meta.Name}({meta.FlowTemplate}) OverTime 10min",
                             };
                         }
                         else
@@ -1737,13 +1854,7 @@ namespace ProjectARVRPro
                     timer.Change(Timeout.Infinite, 500);
                     log.Info($"流程 {meta.Name} 完成: {flowResult.EventName}, 耗时 {stopwatch.ElapsedMilliseconds}ms");
 
-                    CurrentFlowResult.RunTime = stopwatch.ElapsedMilliseconds;
-                    FlowNodeRecordDataBaseHelper.RecordFlowRun(
-                        _currentFlowTemplateId,
-                        FlowName,
-                        flowResult.SerialNumber,
-                        flowResult.FlowStatus,
-                        CurrentFlowResult.RunTime);
+                    await FinalizeCurrentFlowRunAsync(flowResult);
                     logTextBox.Text = FlowName + Environment.NewLine + flowResult.EventName;
 
                     if (flowResult.EventName == "Completed")
@@ -1838,6 +1949,27 @@ namespace ProjectARVRPro
 
             ImageView.Dispose();
             flowControl.Stop();
+            stopwatch.Stop();
+            if (_currentFlowBatch?.Id > 0 && CurrentFlowResult != null)
+            {
+                try
+                {
+                    FinalizeCurrentFlowRunAsync(new FlowControlData
+                    {
+                        EventName = "Canceled",
+                        Status = StatusTypeEnum.Canceled,
+                        SerialNumber = CurrentFlowResult.Code,
+                        Message = "ARVRWindow closed",
+                        Params = "ARVRWindow closed",
+                        TotalTime = stopwatch.ElapsedMilliseconds,
+                    }).GetAwaiter().GetResult();
+                }
+                catch (Exception ex)
+                {
+                    log.Warn("关闭窗口时更新流程批次状态失败。", ex);
+                }
+            }
+            _flowNodeExecutionRecorder.Dispose();
             _isFlowStartPending = false;
             _isFlowLifecycleActive = false;
             flowEngine.Dispose();
