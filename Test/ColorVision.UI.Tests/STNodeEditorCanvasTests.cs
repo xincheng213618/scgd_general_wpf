@@ -211,6 +211,38 @@ namespace ColorVision.UI.Tests
         }
 
         [Fact]
+        public void PropertyEditorFirstRender_PositionsWhileHidden()
+        {
+            RunInSta(() =>
+            {
+                var panel = new System.Windows.Controls.Border
+                {
+                    Width = 300,
+                    Height = 240,
+                    Visibility = System.Windows.Visibility.Collapsed
+                };
+                bool positionedWhileHidden = false;
+
+                FlowEditorCanvas.PreparePropertyPanelForFirstRender(
+                    panel,
+                    new System.Windows.Size(420, 520),
+                    measuredSize =>
+                    {
+                        positionedWhileHidden = panel.Visibility == System.Windows.Visibility.Hidden;
+                        Assert.Equal(300, measuredSize.Width);
+                        Assert.Equal(240, measuredSize.Height);
+                        System.Windows.Controls.Canvas.SetLeft(panel, 640);
+                        System.Windows.Controls.Canvas.SetTop(panel, 320);
+                    });
+
+                Assert.True(positionedWhileHidden);
+                Assert.Equal(System.Windows.Visibility.Visible, panel.Visibility);
+                Assert.Equal(640, System.Windows.Controls.Canvas.GetLeft(panel));
+                Assert.Equal(320, System.Windows.Controls.Canvas.GetTop(panel));
+            });
+        }
+
+        [Fact]
         public void NodeMovement_HidesEmbeddedPropertyEditor()
         {
             RunInSta(() =>

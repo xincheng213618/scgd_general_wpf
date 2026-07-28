@@ -1747,16 +1747,14 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private string ResolveLocalCameraId(bool ignoreConfiguredId = false)
         {
+            if (!ignoreConfiguredId && !string.IsNullOrWhiteSpace(Device.Config.CameraID))
+            {
+                return Device.Config.CameraID.Trim();
+            }
+
             if (!TryGetLocalCameraIds(out IReadOnlyList<string> cameraIds))
             {
                 return ignoreConfiguredId ? string.Empty : Device.Config.CameraID ?? string.Empty;
-            }
-
-            if (!ignoreConfiguredId
-                && !string.IsNullOrWhiteSpace(Device.Config.CameraID)
-                && cameraIds.Contains(Device.Config.CameraID, StringComparer.OrdinalIgnoreCase))
-            {
-                return Device.Config.CameraID;
             }
 
             string cameraCode = Device.Config.CameraCode ?? string.Empty;
