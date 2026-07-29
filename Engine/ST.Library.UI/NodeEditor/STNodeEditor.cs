@@ -242,6 +242,8 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 
 	private bool m_disposed;
 
+	private bool m_is_loaded;
+
 	[Browsable(false)]
 	public float CanvasOffsetX => _CanvasOffsetX;
 
@@ -831,8 +833,16 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 			Interval = TimeSpan.FromMilliseconds(30)
 		};
 		m_animation_timer.Tick += AnimationTimer_Tick;
-		Loaded += (_, _) => m_animation_timer.Start();
-		Unloaded += (_, _) => m_animation_timer.Stop();
+		Loaded += (_, _) =>
+		{
+			m_is_loaded = true;
+			UpdateAnimationTimerState();
+		};
+		Unloaded += (_, _) =>
+		{
+			m_is_loaded = false;
+			m_animation_timer.Stop();
+		};
 	}
 
 	protected internal virtual void OnSelectedChanged(EventArgs e)
@@ -974,6 +984,12 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 
 	private void AnimationTimer_Tick(object sender, EventArgs e)
 	{
+		if (m_disposed)
+		{
+			m_animation_timer.Stop();
+			return;
+		}
+
 		bool redraw = false;
 		float nextX = MoveTowards(_CanvasOffsetX, m_real_canvas_x);
 		float nextY = MoveTowards(_CanvasOffsetY, m_real_canvas_y);
@@ -986,8 +1002,8 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 			redraw = true;
 		}
 
-		int remaining = m_time_alert - (int)DateTime.Now.Subtract(m_dt_alert).TotalMilliseconds;
-		int alpha = remaining >= 0 ? 255 : remaining <= -1000 ? 0 : (int)(255f + remaining / 1000f * 255f);
+		double remaining = m_time_alert - DateTime.UtcNow.Subtract(m_dt_alert).TotalMilliseconds;
+		int alpha = remaining >= 0 ? 255 : remaining <= -1000 ? 0 : (int)(255d + remaining / 1000d * 255d);
 		if (alpha != m_alpha_alert)
 		{
 			m_alpha_alert = alpha;
@@ -996,6 +1012,27 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 		if (redraw)
 		{
 			Invalidate();
+		}
+		UpdateAnimationTimerState();
+	}
+
+	private bool HasPendingAnimation()
+	{
+		return _CanvasOffsetX != m_real_canvas_x
+			|| _CanvasOffsetY != m_real_canvas_y
+			|| m_alpha_alert > 0;
+	}
+
+	private void UpdateAnimationTimerState()
+	{
+		if (!m_disposed && m_is_loaded && HasPendingAnimation())
+		{
+			if (!m_animation_timer.IsEnabled)
+				m_animation_timer.Start();
+		}
+		else if (m_animation_timer.IsEnabled)
+		{
+			m_animation_timer.Stop();
 		}
 	}
 
@@ -2747,6 +2784,7 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 		if (_LimitCanvasToContentBounds && _Nodes.Count == 0)
 		{
 			m_real_canvas_x = (m_real_canvas_y = 10f);
+			UpdateAnimationTimerState();
 			return;
 		}
 		if (_LimitCanvasToContentBounds)
@@ -2774,11 +2812,12 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 		}
 		if (bAnimation)
 		{
-			if ((ma & CanvasMoveArgs.Left) == CanvasMoveArgs.Left)
+			bool moveAll = ma == CanvasMoveArgs.All;
+			if (moveAll || (ma & CanvasMoveArgs.Left) == CanvasMoveArgs.Left)
 			{
 				m_real_canvas_x = x;
 			}
-			if ((ma & CanvasMoveArgs.Top) == CanvasMoveArgs.Top)
+			if (moveAll || (ma & CanvasMoveArgs.Top) == CanvasMoveArgs.Top)
 			{
 				m_real_canvas_y = y;
 			}
@@ -2789,6 +2828,7 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 			m_real_canvas_y = (_CanvasOffsetY = y);
 			Invalidate();
 		}
+		UpdateAnimationTimerState();
 		OnCanvasMoved(EventArgs.Empty);
 	}
 
@@ -3229,13 +3269,14 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 		m_forecolor_alert = foreColor;
 		m_backcolor_alert = backColor;
 		m_time_alert = nTime;
-		m_dt_alert = DateTime.Now;
+		m_dt_alert = DateTime.UtcNow;
 		m_alpha_alert = 255;
 		m_al = al;
 		if (bRedraw)
 		{
 			Invalidate();
 		}
+		UpdateAnimationTimerState();
 	}
 
 	public STNode SetActiveNode(STNode node)
@@ -3328,6 +3369,7 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 			return;
 		}
 		m_disposed = true;
+		m_is_loaded = false;
 		DisposeEditing();
 		m_animation_timer.Stop();
 		m_animation_timer.Tick -= AnimationTimer_Tick;

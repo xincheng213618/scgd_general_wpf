@@ -5,6 +5,16 @@ All notable changes to the SystemMonitor plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.3.4] - 2026-07-29
+
+### Changed
+- Stop periodic monitoring while the detail view and all dynamic status-bar items are hidden.
+- Initialize Windows performance counters lazily and read only the enabled CPU or RAM metrics.
+- Resume monitoring immediately when the detail view opens or a dynamic status-bar item is enabled.
+
+### Fixed
+- Eliminate the persistent idle CPU usage caused by polling four performance counters every second when monitoring was not visible.
+
 ## [1.0.1] - 2025-10-10
 
 ### Added

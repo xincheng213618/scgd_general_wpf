@@ -58,6 +58,9 @@ namespace SystemMonitor
 
     public partial class SystemMonitorControl : UserControl
     {
+        private SystemMonitors? _monitor;
+        private bool _isMonitoringActive;
+
         public SystemMonitorControl()
         {
             InitializeComponent();
@@ -65,7 +68,25 @@ namespace SystemMonitor
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            this.DataContext = SystemMonitors.GetInstance();
+            _monitor = SystemMonitors.GetInstance();
+            DataContext = _monitor;
+        }
+
+        private void UserControl_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (_isMonitoringActive) return;
+
+            _monitor ??= SystemMonitors.GetInstance();
+            _monitor.SetDetailViewActive(true);
+            _isMonitoringActive = true;
+        }
+
+        private void UserControl_Unloaded(object sender, RoutedEventArgs e)
+        {
+            if (!_isMonitoringActive || _monitor == null) return;
+
+            _monitor.SetDetailViewActive(false);
+            _isMonitoringActive = false;
         }
     }
 }

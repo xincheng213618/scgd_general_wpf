@@ -1,7 +1,10 @@
 #pragma warning disable CA1707
 using ColorVision.Engine.FlowProcessing.Editor;
 using ST.Library.UI.NodeEditor;
+using System.Reflection;
 using System.Runtime.ExceptionServices;
+using System.Windows;
+using System.Windows.Threading;
 
 namespace ColorVision.UI.Tests
 {
@@ -56,6 +59,81 @@ namespace ColorVision.UI.Tests
 
                 Assert.Equal(10000f, editor.CanvasOffsetX);
                 Assert.Equal(-10000f, editor.CanvasOffsetY);
+            });
+        }
+
+        [Fact]
+        public void AnimationTimer_RemainsStoppedWhenLoadedEditorIsIdle()
+        {
+            RunInSta(() =>
+            {
+                using var editor = new STNodeEditor();
+                Window window = ShowLoaded(editor);
+                try
+                {
+                    Assert.False(GetAnimationTimer(editor).IsEnabled);
+                }
+                finally
+                {
+                    window.Close();
+                }
+            });
+        }
+
+        [Fact]
+        public void AnimationTimer_StopsAfterAnimatedCanvasMovementCompletes()
+        {
+            RunInSta(() =>
+            {
+                using var editor = new STNodeEditor
+                {
+                    LimitCanvasToContentBounds = false
+                };
+                Window window = ShowLoaded(editor);
+                try
+                {
+                    editor.MoveCanvas(120f, -80f, bAnimation: true, CanvasMoveArgs.All);
+
+                    DispatcherTimer timer = GetAnimationTimer(editor);
+                    Assert.True(timer.IsEnabled);
+                    AdvanceAnimationUntilIdle(editor);
+                    Assert.Equal(120f, editor.CanvasOffsetX);
+                    Assert.Equal(-80f, editor.CanvasOffsetY);
+                    Assert.False(timer.IsEnabled);
+                }
+                finally
+                {
+                    window.Close();
+                }
+            });
+        }
+
+        [Fact]
+        public void AnimationTimer_StopsAfterAlertFadeCompletes()
+        {
+            RunInSta(() =>
+            {
+                using var editor = new STNodeEditor();
+                Window window = ShowLoaded(editor);
+                try
+                {
+                    editor.ShowAlert(
+                        "done",
+                        System.Drawing.Color.White,
+                        System.Drawing.Color.Black,
+                        -1001,
+                        AlertLocation.RightBottom,
+                        bRedraw: false);
+
+                    DispatcherTimer timer = GetAnimationTimer(editor);
+                    Assert.True(timer.IsEnabled);
+                    AdvanceAnimation(editor);
+                    Assert.False(timer.IsEnabled);
+                }
+                finally
+                {
+                    window.Close();
+                }
             });
         }
 
@@ -619,6 +697,46 @@ namespace ColorVision.UI.Tests
                 }
             }
             return alpha;
+        }
+
+        private static Window ShowLoaded(STNodeEditor editor)
+        {
+            var window = new Window
+            {
+                Content = editor,
+                ShowInTaskbar = false,
+                WindowStyle = WindowStyle.None,
+                Width = 1,
+                Height = 1,
+                Left = -10000,
+                Top = -10000
+            };
+            window.Show();
+            Assert.True(editor.IsLoaded);
+            return window;
+        }
+
+        private static DispatcherTimer GetAnimationTimer(STNodeEditor editor)
+        {
+            return Assert.IsType<DispatcherTimer>(
+                typeof(STNodeEditor)
+                    .GetField("m_animation_timer", BindingFlags.Instance | BindingFlags.NonPublic)!
+                    .GetValue(editor));
+        }
+
+        private static void AdvanceAnimationUntilIdle(STNodeEditor editor)
+        {
+            DispatcherTimer timer = GetAnimationTimer(editor);
+            for (int i = 0; i < 200 && timer.IsEnabled; i++)
+                AdvanceAnimation(editor);
+            Assert.False(timer.IsEnabled);
+        }
+
+        private static void AdvanceAnimation(STNodeEditor editor)
+        {
+            typeof(STNodeEditor)
+                .GetMethod("AnimationTimer_Tick", BindingFlags.Instance | BindingFlags.NonPublic)!
+                .Invoke(editor, [editor, EventArgs.Empty]);
         }
 
         private static void RunInSta(Action action)

@@ -9,7 +9,10 @@
              xmlns:themes="https://schemas.colorvision.cn/wpf/themes"
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance local:SystemMonitors}"
-             d:DesignHeight="700" d:DesignWidth="850" Initialized="UserControl_Initialized">
+             d:DesignHeight="700" d:DesignWidth="850"
+             Initialized="UserControl_Initialized"
+             Loaded="UserControl_Loaded"
+             Unloaded="UserControl_Unloaded">
     <UserControl.Resources>
         <Style x:Key="CardBorder" TargetType="{x:Type Border}">
             <Setter Property="Background" Value="{DynamicResource GlobalBackground}" />
