@@ -510,4 +510,19 @@
   <data name="DB_FieldBatchId" xml:space="preserve"><value>Batch ID</value></data>
   <data name="DB_FieldTestType" xml:space="preserve"><value>Test Type</value></data>
   <data name="DB_FieldRunTime" xml:space="preserve"><value>Run Time</value></data>
+  <data name="DB_Close" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="DB_TableMaintenance" xml:space="preserve">
+    <value>Table maintenance</value>
+  </data>
+  <data name="DB_ClearTableConfirm" xml:space="preserve">
+    <value>Clear all data from this table? This action cannot be undone.</value>
+  </data>
+  <data name="DB_TruncateTableConfirm" xml:space="preserve">
+    <value>Truncate this table? All data will be deleted and the identity reset. This action cannot be undone.</value>
+  </data>
+  <data name="DB_OperationFailed" xml:space="preserve">
+    <value>Operation failed: {0}</value>
+  </data>
 </root>

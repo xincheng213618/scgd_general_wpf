@@ -15,6 +15,7 @@ using System.Linq;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Threading;
 
@@ -45,6 +46,7 @@ namespace ColorVision.Database
         public QueryOperator Operator { get; set; } // "=", ">", "<", ">=", "<=", "LIKE"
         public object? Value { get; set; }
         public string? InputText { get; set; }
+        internal bool HasSavedState { get; set; }
         public FrameworkElement? UiRow { get; set; }
         public Control? ValueEditor { get; set; }
         public TextBlock? ErrorText { get; set; }
@@ -104,6 +106,7 @@ namespace ColorVision.Database
         public virtual void RemoveCondition(QueryCondition condition) { }
         public virtual void ResetConditions() { }
         public virtual void AddAllPropertyInfos() { }
+        internal virtual void SaveSessionState() { }
         public virtual void QueryDB() => OnPreQuery();
 
         public virtual void DeleteAll() { }
@@ -116,6 +119,7 @@ namespace ColorVision.Database
         public ISugarQueryable<T> Query { get; set; } = null!;
         public IList<T> ViewResluts { get; set; }
         internal ObservableCollection<QueryCondition> QueryConditions { get; } = new();
+        private bool _sessionStateLoaded;
 
         public GenericQuery(SqlSugarClient db, IList<T> viewResluts) : base(db)
         {
@@ -127,13 +131,17 @@ namespace ColorVision.Database
 
         public override FrameworkElement GetControl()
         {
-            QueryStackPanel = new StackPanel();
+            RestoreSessionState();
             return QueryStackPanel;
         }
 
         public override void AddPropertyInfo(PropertyInfo property)
         {
-            var queryCondition = new QueryCondition { Property = property };
+            AddCondition(new QueryCondition { Property = property });
+        }
+
+        private void AddCondition(QueryCondition queryCondition)
+        {
             QueryStackPanel.Children.Add(GenericQueryConditionSupport.CreateConditionRow(queryCondition, RemoveCondition_Click));
             QueryConditions.Add(queryCondition);
             LastConditionEditor = queryCondition.ValueEditor;
@@ -162,13 +170,49 @@ namespace ColorVision.Database
             QueryStackPanel.Children.Clear();
             QueryConditions.Clear();
             LastConditionEditor = null;
+            GenericQuerySessionStore.Clear(typeof(T));
             OnConditionsChanged(QueryConditions.Count);
         }
 
         public override void AddAllPropertyInfos()
         {
-            foreach (var kvp in PropertyInfos)
+            foreach (var kvp in PropertyInfos.Where(item => QueryConditions.All(condition => condition.Property.Name != item.Value.Name)))
                 AddPropertyInfo(kvp.Value);
+        }
+
+        internal override void SaveSessionState()
+        {
+            GenericQuerySessionStore.Save(typeof(T), QueryConditions, QueryConfig);
+        }
+
+        private void RestoreSessionState()
+        {
+            if (_sessionStateLoaded)
+                return;
+
+            _sessionStateLoaded = true;
+            GenericQuerySessionState? state = GenericQuerySessionStore.Load(typeof(T));
+            if (state == null)
+                return;
+
+            QueryConfig.Count = state.Count;
+            QueryConfig.OrderByType = state.OrderByType;
+            foreach (GenericQueryConditionState savedCondition in state.Conditions)
+            {
+                PropertyInfo? property = PropertyInfos.Select(item => item.Value)
+                    .FirstOrDefault(item => item.Name == savedCondition.PropertyName);
+                if (property == null)
+                    continue;
+
+                AddCondition(new QueryCondition
+                {
+                    Property = property,
+                    Operator = savedCondition.Operator,
+                    InputText = savedCondition.InputText,
+                    Value = savedCondition.Value,
+                    HasSavedState = true
+                });
+            }
         }
 
         public override void QueryDB()
@@ -223,6 +267,7 @@ namespace ColorVision.Database
         public IList<T1> ViewResluts { get; set; }
         internal ObservableCollection<QueryCondition> QueryConditions { get; } = new();
         Func<T, T1> Converter { get; set; }
+        private bool _sessionStateLoaded;
 
         public GenericQuery(SqlSugarClient db, IList<T1> viewResluts,Func<T, T1> converter) :base (db)
         {
@@ -235,13 +280,17 @@ namespace ColorVision.Database
 
         public override FrameworkElement GetControl()
         {
-            QueryStackPanel = new StackPanel();
+            RestoreSessionState();
             return QueryStackPanel;
         }
 
         public override void AddPropertyInfo(PropertyInfo property)
         {
-            var queryCondition = new QueryCondition { Property = property };
+            AddCondition(new QueryCondition { Property = property });
+        }
+
+        private void AddCondition(QueryCondition queryCondition)
+        {
             QueryStackPanel.Children.Add(GenericQueryConditionSupport.CreateConditionRow(queryCondition, RemoveCondition_Click));
             QueryConditions.Add(queryCondition);
             LastConditionEditor = queryCondition.ValueEditor;
@@ -270,13 +319,49 @@ namespace ColorVision.Database
             QueryStackPanel.Children.Clear();
             QueryConditions.Clear();
             LastConditionEditor = null;
+            GenericQuerySessionStore.Clear(typeof(T));
             OnConditionsChanged(QueryConditions.Count);
         }
 
         public override void AddAllPropertyInfos()
         {
-            foreach (var kvp in PropertyInfos)
+            foreach (var kvp in PropertyInfos.Where(item => QueryConditions.All(condition => condition.Property.Name != item.Value.Name)))
                 AddPropertyInfo(kvp.Value);
+        }
+
+        internal override void SaveSessionState()
+        {
+            GenericQuerySessionStore.Save(typeof(T), QueryConditions, QueryConfig);
+        }
+
+        private void RestoreSessionState()
+        {
+            if (_sessionStateLoaded)
+                return;
+
+            _sessionStateLoaded = true;
+            GenericQuerySessionState? state = GenericQuerySessionStore.Load(typeof(T));
+            if (state == null)
+                return;
+
+            QueryConfig.Count = state.Count;
+            QueryConfig.OrderByType = state.OrderByType;
+            foreach (GenericQueryConditionState savedCondition in state.Conditions)
+            {
+                PropertyInfo? property = PropertyInfos.Select(item => item.Value)
+                    .FirstOrDefault(item => item.Name == savedCondition.PropertyName);
+                if (property == null)
+                    continue;
+
+                AddCondition(new QueryCondition
+                {
+                    Property = property,
+                    Operator = savedCondition.Operator,
+                    InputText = savedCondition.InputText,
+                    Value = savedCondition.Value,
+                    HasSavedState = true
+                });
+            }
         }
 
         public override void QueryDB()
@@ -349,6 +434,7 @@ namespace ColorVision.Database
             SortDirectionCB.SelectedIndex = GenericQueryBase.QueryConfig.OrderByType == OrderByType.Desc ? 0 : 1;
 
             GenericQueryBase.ConditionsChanged += (_, _) => UpdateConditionState();
+            GenericQueryBase.QueryCompleted += GenericQueryBase_QueryCompleted;
             UpdateConditionState();
             Dispatcher.BeginInvoke(PropertyInfoCB.Focus, DispatcherPriority.Input);
         }
@@ -373,7 +459,7 @@ namespace ColorVision.Database
             {
                 await Dispatcher.Yield(DispatcherPriority.Background);
                 GenericQueryBase.QueryDB();
-                DialogResult = true;
+                GenericQueryBase.SaveSessionState();
             }
             catch (Exception ex)
             {
@@ -391,10 +477,15 @@ namespace ColorVision.Database
             if (PropertyInfoCB.SelectedValue is PropertyInfo property)
             {
                 GenericQueryBase.AddPropertyInfo(property);
-                PropertyInfoCB.SelectedIndex = -1;
-                StatusText.Text = Properties.Resources.DB_Ready;
+                StatusText.Text = string.Empty;
                 GenericQueryBase.LastConditionEditor?.Focus();
             }
+        }
+
+        private void AddAllPropertyInfo_Click(object sender, RoutedEventArgs e)
+        {
+            GenericQueryBase.AddAllPropertyInfos();
+            StatusText.Text = string.Empty;
         }
 
         private void PropertyInfoCB_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -414,12 +505,17 @@ namespace ColorVision.Database
         private void ResetConditions_Click(object sender, RoutedEventArgs e)
         {
             GenericQueryBase.ResetConditions();
-            StatusText.Text = Properties.Resources.DB_ResetDone;
+            StatusText.Text = string.Empty;
         }
 
         private void Cancel_Click(object sender, RoutedEventArgs e)
         {
-            DialogResult = false;
+            Close();
+        }
+
+        private void Window_Closing(object? sender, CancelEventArgs e)
+        {
+            GenericQueryBase.SaveSessionState();
         }
 
         private void UpdateConditionState()
@@ -427,6 +523,52 @@ namespace ColorVision.Database
             var hasConditions = GenericQueryBase.ConditionCount > 0;
             EmptyStatePanel.Visibility = hasConditions ? Visibility.Collapsed : Visibility.Visible;
             ResetConditionsButton.Visibility = hasConditions ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        private void GenericQueryBase_QueryCompleted(object? sender, QueryCompletedEventArgs e)
+        {
+            StatusText.Text = string.Format(Properties.Resources.DB_QueryComplete, e.ResultCount);
+        }
+
+        private void MoreButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (MoreButton.ContextMenu == null)
+                return;
+
+            MoreButton.ContextMenu.PlacementTarget = MoreButton;
+            MoreButton.ContextMenu.Placement = PlacementMode.Bottom;
+            MoreButton.ContextMenu.IsOpen = true;
+        }
+
+        private void DeleteAll_Click(object sender, RoutedEventArgs e)
+        {
+            if (MessageBox.Show(Properties.Resources.DB_ClearTableConfirm, Properties.Resources.DB_TableMaintenance,
+                MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+                return;
+
+            RunTableOperation(GenericQueryBase.DeleteAll);
+        }
+
+        private void TruncateTable_Click(object sender, RoutedEventArgs e)
+        {
+            if (MessageBox.Show(Properties.Resources.DB_TruncateTableConfirm, Properties.Resources.DB_TableMaintenance,
+                MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+                return;
+
+            RunTableOperation(GenericQueryBase.TruncateTable);
+        }
+
+        private void RunTableOperation(Action operation)
+        {
+            try
+            {
+                operation();
+                StatusText.Text = Properties.Resources.DB_Success;
+            }
+            catch (Exception ex)
+            {
+                StatusText.Text = string.Format(Properties.Resources.DB_OperationFailed, ex.Message);
+            }
         }
     }
 }

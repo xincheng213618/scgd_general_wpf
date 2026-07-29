@@ -248,21 +248,13 @@
                         </RowDefinition>
                     </Grid.RowDefinitions>
                     <Border Grid.Row="0" Visibility="{Binding ProgressControlVisibility, Converter={StaticResource bool2VisibilityConverter}}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="5" Margin="5,0,5,5">
-                        <ScrollViewer x:Name="stepBarScrollViewer"
-                                      HorizontalScrollBarVisibility="Auto"
-                                      VerticalScrollBarVisibility="Disabled"
-                                      HorizontalContentAlignment="Center"
-                                      PanningMode="HorizontalOnly"
-                                      CanContentScroll="False"
-                                      Focusable="False">
-                            <hc:StepBar x:Name="stepBar" StepIndex="{Binding StepIndex}" Margin="0,3,0,2" HorizontalAlignment="Center">
-                                <hc:StepBar.ItemContainerStyle>
-                                    <Style TargetType="{x:Type hc:StepBarItem}" BasedOn="{StaticResource StepBarItemHorizontalTop}">
-                                        <Setter Property="Margin" Value="4,0"/>
-                                    </Style>
-                                </hc:StepBar.ItemContainerStyle>
-                            </hc:StepBar>
-                        </ScrollViewer>
+                        <hc:StepBar x:Name="stepBar" StepIndex="{Binding StepIndex}" Margin="0,3,0,2" HorizontalAlignment="Center">
+                            <hc:StepBar.ItemContainerStyle>
+                                <Style TargetType="{x:Type hc:StepBarItem}" BasedOn="{StaticResource StepBarItemHorizontalTop}">
+                                    <Setter Property="Margin" Value="4,0"/>
+                                </Style>
+                            </hc:StepBar.ItemContainerStyle>
+                        </hc:StepBar>
                     </Border>
                     <RichTextBox x:Name="outputText" Grid.Row="1" Visibility="{Binding ResultControlVisibility, Converter={StaticResource bool2VisibilityConverter}}" Background="Transparent" Foreground="{DynamicResource GlobalTextBrush}" FontFamily="Courier New" VerticalScrollBarVisibility="Auto" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="5,0,5,0" IsReadOnly="True" IsDocumentEnabled="True">
                         <FlowDocument>

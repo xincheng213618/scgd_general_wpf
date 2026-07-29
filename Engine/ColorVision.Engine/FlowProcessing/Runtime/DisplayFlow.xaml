@@ -42,7 +42,6 @@
                             Background="Transparent"
                             BorderThickness="0"
                             Padding="2"
-                            Height="24"
                             Width="24">
                         <TextBlock Text="&#xE713;"
                                    HorizontalAlignment="Center"
@@ -54,7 +53,7 @@
                               Margin="5,0"
                               Style="{StaticResource ComboBoxExtend.Small}"
                               ItemsSource="{Binding FlowParams}"
-                              SelectedIndex="{Binding TemplateFlowParamsIndex}"
+                              SelectedIndex="{Binding TemplateFlowParamsIndex}" VerticalAlignment="Center"
                               DisplayMemberPath="Key"
                               SelectionChanged="ComboBoxFlow_SelectionChanged"
                               ToolTip="{x:Static properties:Resources.Workflow}"/>

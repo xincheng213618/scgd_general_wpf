@@ -30,7 +30,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
             InitializeComponent();
 
-            Title = DisplayAlgorithmVisibilityConfig.Instance.GetNameOverride(meta.Name, meta.DisplayName);
+            Title = meta.DisplayName;
             List<DeviceAlgorithm> deviceList = devices.ToList();
             DeviceSelector.ItemsSource = deviceList;
             DevicePanel.Visibility = deviceList.Count > 1 ? Visibility.Visible : Visibility.Collapsed;

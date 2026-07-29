@@ -150,7 +150,8 @@ namespace ColorVision.Database
             rowGrid.Children.Add(fieldLabel);
 
             var operators = GetOperatorOptions(condition.Property.PropertyType);
-            condition.Operator = operators[0].Value;
+            if (!condition.HasSavedState || !operators.Any(option => option.Value == condition.Operator))
+                condition.Operator = operators[0].Value;
             var operatorComboBox = new ComboBox
             {
                 ItemsSource = operators,
@@ -214,6 +215,9 @@ namespace ColorVision.Database
             foreach (var condition in conditions)
             {
                 ClearError(condition);
+                if (!HasConditionValue(condition))
+                    continue;
+
                 if (!TryGetConditionValue(condition, out var value, out var error))
                 {
                     SetError(condition, error);
@@ -232,6 +236,14 @@ namespace ColorVision.Database
             }
 
             return query;
+        }
+
+        internal static bool HasConditionValue(QueryCondition condition)
+        {
+            var propertyType = Nullable.GetUnderlyingType(condition.Property.PropertyType) ?? condition.Property.PropertyType;
+            return propertyType.IsEnum || propertyType == typeof(bool) || propertyType == typeof(DateTime)
+                ? condition.Value != null
+                : !string.IsNullOrWhiteSpace(condition.InputText);
         }
 
         internal static bool TryGetConditionValue(QueryCondition condition, out object? value, out string error)
@@ -299,6 +311,7 @@ namespace ColorVision.Database
                     .ToList();
                 var comboBox = CreateValueComboBox(values, displayName);
                 comboBox.SelectionChanged += (_, _) => condition.Value = comboBox.SelectedValue;
+                comboBox.SelectedValue = condition.Value;
                 return comboBox;
             }
 
@@ -311,6 +324,7 @@ namespace ColorVision.Database
                 };
                 var comboBox = CreateValueComboBox(values, displayName);
                 comboBox.SelectionChanged += (_, _) => condition.Value = comboBox.SelectedValue;
+                comboBox.SelectedValue = condition.Value;
                 return comboBox;
             }
 
@@ -323,6 +337,7 @@ namespace ColorVision.Database
                 };
                 AutomationProperties.SetName(datePicker, string.Format(Resources.DB_FilterValueAutomationName, displayName));
                 datePicker.SelectedDateChanged += (_, _) => condition.Value = datePicker.SelectedDate;
+                datePicker.SelectedDate = condition.Value as DateTime?;
                 return datePicker;
             }
 
@@ -334,6 +349,7 @@ namespace ColorVision.Database
             };
             AutomationProperties.SetName(textBox, string.Format(Resources.DB_FilterValueAutomationName, displayName));
             textBox.TextChanged += (_, _) => condition.InputText = textBox.Text;
+            textBox.Text = condition.InputText ?? string.Empty;
             return textBox;
         }
 

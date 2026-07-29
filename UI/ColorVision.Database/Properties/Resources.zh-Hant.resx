@@ -510,4 +510,19 @@
   <data name="DB_FieldBatchId" xml:space="preserve"><value>批次 ID</value></data>
   <data name="DB_FieldTestType" xml:space="preserve"><value>測試類型</value></data>
   <data name="DB_FieldRunTime" xml:space="preserve"><value>執行時間</value></data>
+  <data name="DB_Close" xml:space="preserve">
+    <value>關閉</value>
+  </data>
+  <data name="DB_TableMaintenance" xml:space="preserve">
+    <value>資料表維護</value>
+  </data>
+  <data name="DB_ClearTableConfirm" xml:space="preserve">
+    <value>確定清空目前資料表的全部資料？此操作無法復原。</value>
+  </data>
+  <data name="DB_TruncateTableConfirm" xml:space="preserve">
+    <value>確定截斷目前資料表？全部資料將被刪除並重設自動編號，此操作無法復原。</value>
+  </data>
+  <data name="DB_OperationFailed" xml:space="preserve">
+    <value>操作失敗：{0}</value>
+  </data>
 </root>

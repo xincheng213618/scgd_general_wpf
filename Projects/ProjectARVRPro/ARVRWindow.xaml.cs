@@ -774,7 +774,6 @@ namespace ProjectARVRPro
                     stepBarItem.SetValue(HandyControl.Controls.StepBarItem.StatusProperty, StepStatus.Waiting);
             }
 
-            stepBarScrollViewer?.ScrollToLeftEnd();
         }
 
         private void RefreshStepBar()

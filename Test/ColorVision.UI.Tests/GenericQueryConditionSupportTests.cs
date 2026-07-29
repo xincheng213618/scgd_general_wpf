@@ -6,6 +6,7 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
 using System.Threading;
+using System.Windows.Controls;
 
 namespace ColorVision.UI.Tests;
 
@@ -75,6 +76,70 @@ public sealed class GenericQueryConditionSupportTests : IDisposable
     }
 
     [Fact]
+    public void ApplyConditions_IgnoresBlankRows()
+    {
+        SqlSugarClient db = CreateDatabase();
+        db.Insertable(new List<QueryEntity>
+        {
+            new QueryEntity { Id = 1, ZIndex = 0, Name = "first" },
+            new QueryEntity { Id = 2, ZIndex = 20, Name = "second" }
+        }).ExecuteCommand();
+
+        QueryCondition[] conditions =
+        [
+            new()
+            {
+                Property = typeof(QueryEntity).GetProperty(nameof(QueryEntity.ZIndex))!,
+                Operator = QueryOperator.Equal
+            },
+            new()
+            {
+                Property = typeof(QueryEntity).GetProperty(nameof(QueryEntity.Name))!,
+                Operator = QueryOperator.Equal,
+                InputText = "second"
+            }
+        ];
+
+        QueryEntity result = Assert.Single(GenericQueryConditionSupport
+            .ApplyConditions(db.Queryable<QueryEntity>(), conditions)
+            .ToList());
+
+        Assert.Equal(2, result.Id);
+    }
+
+    [Fact]
+    public void SessionState_RestoresLastAppliedConditionsAndSettings()
+    {
+        RunOnSta(() =>
+        {
+            GenericQuerySessionStore.ClearAll();
+            SqlSugarClient db = CreateDatabase();
+            PropertyInfo nameProperty = typeof(QueryEntity).GetProperty(nameof(QueryEntity.Name))!;
+            var firstQuery = new GenericQuery<QueryEntity>(db, new List<QueryEntity>());
+            firstQuery.GetControl();
+            firstQuery.AddPropertyInfo(nameProperty);
+            QueryCondition firstCondition = Assert.Single(firstQuery.QueryConditions);
+            firstCondition.Operator = QueryOperator.NotEqual;
+            firstCondition.InputText = "remember";
+            firstQuery.QueryConfig.Count = 250;
+            firstQuery.QueryConfig.OrderByType = OrderByType.Asc;
+            firstQuery.SaveSessionState();
+
+            var restoredQuery = new GenericQuery<QueryEntity>(db, new List<QueryEntity>());
+            restoredQuery.GetControl();
+            QueryCondition restoredCondition = Assert.Single(restoredQuery.QueryConditions);
+
+            Assert.Equal(nameof(QueryEntity.Name), restoredCondition.Property.Name);
+            Assert.Equal(QueryOperator.NotEqual, restoredCondition.Operator);
+            Assert.Equal("remember", restoredCondition.InputText);
+            Assert.Equal("remember", Assert.IsType<TextBox>(restoredCondition.ValueEditor).Text);
+            Assert.Equal(250, restoredQuery.QueryConfig.Count);
+            Assert.Equal(OrderByType.Asc, restoredQuery.QueryConfig.OrderByType);
+            GenericQuerySessionStore.ClearAll();
+        });
+    }
+
+    [Fact]
     public void InvalidCondition_DoesNotClearExistingResults()
     {
         RunOnSta(() =>
@@ -112,6 +177,7 @@ public sealed class GenericQueryConditionSupportTests : IDisposable
 
     public void Dispose()
     {
+        GenericQuerySessionStore.ClearAll();
         foreach (SqlSugarClient client in _clients)
         {
             client.Close();

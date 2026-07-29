@@ -490,4 +490,19 @@
   <data name="DB_FieldBatchId" xml:space="preserve"><value>批次 ID</value></data>
   <data name="DB_FieldTestType" xml:space="preserve"><value>测试类型</value></data>
   <data name="DB_FieldRunTime" xml:space="preserve"><value>运行时间</value></data>
+  <data name="DB_Close" xml:space="preserve">
+    <value>关闭</value>
+  </data>
+  <data name="DB_TableMaintenance" xml:space="preserve">
+    <value>表维护</value>
+  </data>
+  <data name="DB_ClearTableConfirm" xml:space="preserve">
+    <value>确定清空当前表的全部数据？此操作不可撤销。</value>
+  </data>
+  <data name="DB_TruncateTableConfirm" xml:space="preserve">
+    <value>确定截断当前表？全部数据将被删除并重置自增序号，此操作不可撤销。</value>
+  </data>
+  <data name="DB_OperationFailed" xml:space="preserve">
+    <value>操作失败：{0}</value>
+  </data>
 </root>

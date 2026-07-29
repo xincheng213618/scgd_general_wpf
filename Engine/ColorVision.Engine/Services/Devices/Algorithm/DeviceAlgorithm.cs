@@ -34,11 +34,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                 propertyEditorWindow.ShowDialog();
 
             }, a => AccessControl.Check(PermissionMode.Administrator));
-
-            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.AlgorithmVisibilitySettings, Command = new RelayCommand(a =>
-            {
-                new DisplayAlgorithmVisibilityWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-            })});
         }
 
         private void Con_Submited(object? sender, EventArgs e)

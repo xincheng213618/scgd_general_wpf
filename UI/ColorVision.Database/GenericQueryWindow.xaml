@@ -8,97 +8,98 @@
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:GenericQueryBase}"
         Title="{x:Static properties:Resources.DB_AdvancedQuery}"
-        Height="620" Width="800" MinHeight="520" MinWidth="680"
+        Height="520" Width="760" MinHeight="420" MinWidth="640"
         Background="{StaticResource GlobalBackground}"
-        Initialized="Window_Initialized">
+        Initialized="Window_Initialized"
+        Closing="Window_Closing">
     <Window.Resources>
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
         </Style>
     </Window.Resources>
 
-    <Grid Margin="16">
+    <Grid Margin="12">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <StackPanel Grid.Row="0" Margin="0,0,0,14">
-            <TextBlock Text="{x:Static properties:Resources.DB_FilterDataTitle}" FontSize="20" FontWeight="SemiBold"/>
-            <TextBlock Text="{x:Static properties:Resources.DB_FilterDataDescription}" Margin="0,4,0,0" Opacity="0.72"/>
-        </StackPanel>
-
-        <Border Grid.Row="1" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
-                Background="{DynamicResource GlobalBorderBrush}" CornerRadius="6" Padding="12" Margin="0,0,0,12">
+        <Border Grid.Row="0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                Background="{DynamicResource GlobalBorderBrush}" CornerRadius="6" Padding="10" Margin="0,0,0,10">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <TextBlock Text="{x:Static properties:Resources.DB_AddFilterField}"
-                           VerticalAlignment="Center" FontWeight="SemiBold" Margin="0,0,12,0"/>
+                <TextBlock Text="{x:Static properties:Resources.DB_FilterFieldColumn}"
+                           VerticalAlignment="Center" FontWeight="SemiBold" Margin="0,0,10,0"/>
                 <ComboBox x:Name="PropertyInfoCB" Grid.Column="1"
                           DisplayMemberPath="Key" SelectedValuePath="Value"
-                          MinHeight="32" MaxWidth="420" HorizontalAlignment="Stretch"
+                          MinHeight="32" HorizontalAlignment="Stretch"
+                          IsEditable="True" IsTextSearchEnabled="True" StaysOpenOnEdit="True"
                           SelectionChanged="PropertyInfoCB_SelectionChanged"
                           PreviewKeyDown="PropertyInfoCB_PreviewKeyDown"
                           AutomationProperties.Name="{x:Static properties:Resources.DB_SelectFilterField}"/>
                 <Button x:Name="AddConditionButton" Grid.Column="2"
-                        Content="{x:Static properties:Resources.DB_AddCondition}"
-                        Click="AddPropertyInfo_Click" Margin="10,0,0,0"
-                        MinWidth="96" MinHeight="32" Padding="12,4"
+                        Content="{x:Static properties:Resources.DB_Add}"
+                        Click="AddPropertyInfo_Click" Margin="8,0,0,0"
+                        MinWidth="76" MinHeight="32" Padding="10,4"
                         IsEnabled="False"
                         Background="{DynamicResource PrimaryBrush}" Foreground="White"/>
+                <Button Grid.Column="3" Content="{x:Static properties:Resources.DB_AddAll}"
+                        Click="AddAllPropertyInfo_Click" Margin="8,0,0,0"
+                        MinHeight="32" Padding="10,4"/>
+                <Button x:Name="MoreButton" Grid.Column="4" Content="•••"
+                        Click="MoreButton_Click" Margin="8,0,0,0"
+                        Width="42" MinHeight="32"
+                        ToolTip="{x:Static properties:Resources.DB_TableMaintenance}">
+                    <Button.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem Header="{x:Static properties:Resources.DB_ClearTable}" Click="DeleteAll_Click"/>
+                            <MenuItem Header="{x:Static properties:Resources.DB_TruncateTable}" Click="TruncateTable_Click"/>
+                        </ContextMenu>
+                    </Button.ContextMenu>
+                </Button>
             </Grid>
         </Border>
 
-        <Border Grid.Row="2" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
-                CornerRadius="6" Padding="12" Margin="0,0,0,12">
+        <Border Grid.Row="1" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                CornerRadius="6" Padding="10" Margin="0,0,0,10">
             <Grid>
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
-                <DockPanel Margin="0,0,0,10">
-                    <Button x:Name="ResetConditionsButton" DockPanel.Dock="Right"
-                            Content="{x:Static properties:Resources.DB_ClearConditions}"
-                            Click="ResetConditions_Click" Padding="10,3"
-                            Visibility="Collapsed"/>
-                    <StackPanel>
-                        <TextBlock Text="{x:Static properties:Resources.DB_FilterConditions}" FontWeight="SemiBold"/>
-                        <TextBlock Text="{x:Static properties:Resources.DB_AllConditionsMustMatch}"
-                                   Margin="0,3,0,0" Opacity="0.68" FontSize="12"/>
-                    </StackPanel>
-                </DockPanel>
-
-                <Grid Grid.Row="1" Margin="10,0,50,6">
+                <Grid Margin="10,0,0,6">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="170"/>
                         <ColumnDefinition Width="125"/>
                         <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="{x:Static properties:Resources.DB_FilterFieldColumn}" Opacity="0.68"/>
                     <TextBlock Grid.Column="1" Text="{x:Static properties:Resources.DB_FilterOperatorColumn}" Opacity="0.68"/>
                     <TextBlock Grid.Column="2" Text="{x:Static properties:Resources.DB_FilterValueColumn}" Opacity="0.68"/>
+                    <Button x:Name="ResetConditionsButton" Grid.Column="3"
+                            Content="{x:Static properties:Resources.DB_ClearConditions}"
+                            Click="ResetConditions_Click" Margin="8,-4,0,0" Padding="8,2"
+                            Visibility="Collapsed"/>
                 </Grid>
 
-                <Grid Grid.Row="2">
-                    <StackPanel x:Name="EmptyStatePanel" VerticalAlignment="Center" HorizontalAlignment="Center"
-                                MaxWidth="540" Margin="20">
-                        <TextBlock Text="{x:Static properties:Resources.DB_NoFilterConditions}"
-                                   FontSize="16" FontWeight="SemiBold" TextAlignment="Center"/>
-                        <TextBlock Text="{x:Static properties:Resources.DB_NoFilterConditionsDescription}"
-                                   Margin="0,6,0,0" TextAlignment="Center" TextWrapping="Wrap" Opacity="0.68"/>
-                    </StackPanel>
-
+                <Grid Grid.Row="1">
+                    <TextBlock x:Name="EmptyStatePanel"
+                               Text="{x:Static properties:Resources.DB_NoFilterConditions}"
+                               VerticalAlignment="Center" HorizontalAlignment="Center"
+                               Opacity="0.58"/>
                     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                         <Grid x:Name="QueryGrid"/>
                     </ScrollViewer>
@@ -106,44 +107,49 @@
             </Grid>
         </Border>
 
-        <Border Grid.Row="3" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
-                Background="{DynamicResource GlobalBorderBrush}" CornerRadius="6" Padding="12" Margin="0,0,0,8">
+        <Border Grid.Row="2" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                Background="{DynamicResource GlobalBorderBrush}" CornerRadius="6" Padding="10" Margin="0,0,0,8">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="90"/>
-                    <ColumnDefinition Width="30"/>
+                    <ColumnDefinition Width="82"/>
+                    <ColumnDefinition Width="28"/>
                     <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="170"/>
+                    <ColumnDefinition Width="150"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
                 <TextBlock Text="{x:Static properties:Resources.DB_MaxResults}" VerticalAlignment="Center" FontWeight="SemiBold"/>
-                <TextBox x:Name="MaxResultsTextBox" Grid.Column="1" Margin="10,0,0,0"
+                <TextBox x:Name="MaxResultsTextBox" Grid.Column="1" Margin="8,0,0,0"
                          MinHeight="30" VerticalContentAlignment="Center" TextAlignment="Right"
                          AutomationProperties.Name="{x:Static properties:Resources.DB_MaxResults}"/>
                 <TextBlock Grid.Column="2" Text="{x:Static properties:Resources.DB_ResultUnit}"
                            VerticalAlignment="Center" Margin="6,0,0,0"/>
                 <TextBlock Grid.Column="3" Text="{x:Static properties:Resources.DB_SortById}"
-                           VerticalAlignment="Center" FontWeight="SemiBold" Margin="24,0,0,0"/>
-                <ComboBox x:Name="SortDirectionCB" Grid.Column="4" Margin="10,0,0,0" MinHeight="30">
+                           VerticalAlignment="Center" FontWeight="SemiBold" Margin="18,0,0,0"/>
+                <ComboBox x:Name="SortDirectionCB" Grid.Column="4" Margin="8,0,0,0" MinHeight="30">
                     <ComboBoxItem Content="{x:Static properties:Resources.DB_NewestFirst}"/>
                     <ComboBoxItem Content="{x:Static properties:Resources.DB_OldestFirst}"/>
                 </ComboBox>
             </Grid>
         </Border>
 
+        <Expander Grid.Row="3" Header="SQL" Margin="2,0,2,6">
+            <TextBox Text="{Binding Sql}" IsReadOnly="True" TextWrapping="Wrap"
+                     MaxHeight="74" Padding="8" Margin="0,4,0,0"
+                     VerticalScrollBarVisibility="Auto"/>
+        </Expander>
+
         <TextBlock x:Name="StatusText" Grid.Row="4"
-                   Text="{x:Static properties:Resources.DB_Ready}"
-                   MinHeight="22" Margin="2,0,0,8" TextWrapping="Wrap"
+                   MinHeight="20" Margin="2,0,0,6" TextWrapping="Wrap"
                    AutomationProperties.LiveSetting="Assertive"/>
 
         <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right">
-            <Button Content="{x:Static properties:Resources.Cancel}" MinWidth="88" MinHeight="34"
-                    Padding="14,5" IsCancel="True" Click="Cancel_Click"/>
+            <Button Content="{x:Static properties:Resources.DB_Close}" MinWidth="82" MinHeight="34"
+                    Padding="12,5" IsCancel="True" Click="Cancel_Click"/>
             <Button x:Name="ApplyFilterButton"
-                    Content="{x:Static properties:Resources.DB_ApplyFilter}"
-                    MinWidth="112" MinHeight="34" Padding="14,5" Margin="10,0,0,0"
+                    Content="{x:Static properties:Resources.DB_Query}"
+                    MinWidth="96" MinHeight="34" Padding="12,5" Margin="8,0,0,0"
                     IsDefault="True" Click="Query_Click"
                     Background="{DynamicResource PrimaryBrush}" Foreground="White"/>
         </StackPanel>

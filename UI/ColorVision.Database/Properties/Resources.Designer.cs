@@ -250,6 +250,24 @@ namespace ColorVision.Database.Properties {
         }
         
         /// <summary>
+        ///   查找类似 确定清空当前表的全部数据？此操作不可撤销。 的本地化字符串。
+        /// </summary>
+        public static string DB_ClearTableConfirm {
+            get {
+                return ResourceManager.GetString("DB_ClearTableConfirm", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 关闭 的本地化字符串。
+        /// </summary>
+        public static string DB_Close {
+            get {
+                return ResourceManager.GetString("DB_Close", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 确认删除 的本地化字符串。
         /// </summary>
         public static string DB_ConfirmDelete {
@@ -790,6 +808,15 @@ namespace ColorVision.Database.Properties {
         }
 
         /// <summary>
+        ///   查找类似 操作失败：{0} 的本地化字符串。
+        /// </summary>
+        public static string DB_OperationFailed {
+            get {
+                return ResourceManager.GetString("DB_OperationFailed", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 包含 的本地化字符串。
         /// </summary>
         public static string DB_OperatorContains {
@@ -1168,6 +1195,15 @@ namespace ColorVision.Database.Properties {
         }
         
         /// <summary>
+        ///   查找类似 表维护 的本地化字符串。
+        /// </summary>
+        public static string DB_TableMaintenance {
+            get {
+                return ResourceManager.GetString("DB_TableMaintenance", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 截断表 的本地化字符串。
         /// </summary>
         public static string DB_TruncateTable {
@@ -1176,6 +1212,15 @@ namespace ColorVision.Database.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 确定截断当前表？全部数据将被删除并重置自增序号，此操作不可撤销。 的本地化字符串。
+        /// </summary>
+        public static string DB_TruncateTableConfirm {
+            get {
+                return ResourceManager.GetString("DB_TruncateTableConfirm", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 撤销 的本地化字符串。
         /// </summary>
