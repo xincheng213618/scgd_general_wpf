@@ -1,10 +1,13 @@
 import base64
 import copy
+import http.client
 import tempfile
+import threading
 import unittest
 from pathlib import Path
 
 import app as marketplace_app
+from werkzeug.serving import make_server
 from transfer_files import (
     TransferFileError,
     delete_transfer_file,
@@ -163,6 +166,33 @@ class TransferRouteTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 201)
         self.assertEqual((self.storage / "Transfer" / "large.bin").read_bytes(), b"larger-than-one-byte")
+
+    def test_transfer_upload_completes_without_waiting_for_client_disconnect(self):
+        server = make_server("127.0.0.1", 0, marketplace_app.app, threaded=True)
+        server_thread = threading.Thread(target=server.serve_forever, daemon=True)
+        server_thread.start()
+        connection = http.client.HTTPConnection("127.0.0.1", server.server_port, timeout=2)
+        payload = b"x" * 4097
+
+        try:
+            connection.request(
+                "PUT",
+                "/api/transfer/files/keep-alive.bin",
+                body=payload,
+                headers={
+                    **self._auth_headers(),
+                    "Content-Type": "application/octet-stream",
+                },
+            )
+            response = connection.getresponse()
+            response.read()
+
+            self.assertEqual(response.status, 201)
+            self.assertEqual((self.storage / "Transfer" / "keep-alive.bin").read_bytes(), payload)
+        finally:
+            connection.close()
+            server.shutdown()
+            server_thread.join(timeout=3)
 
     def test_transfer_api_rejects_subdirectories(self):
         response = self.client.put(

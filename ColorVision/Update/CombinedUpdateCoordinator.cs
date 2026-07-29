@@ -33,13 +33,38 @@ namespace ColorVision.Update
         Plugins = 2,
     }
 
+    internal sealed class UpdateCheckReuseState
+    {
+        private bool _startupResultAvailable;
+
+        public UpdateCheckReuseState(bool isStartupCheck)
+        {
+            _startupResultAvailable = isStartupCheck;
+        }
+
+        public bool TryReuse(bool isCompleted, bool isCompletedSuccessfully, bool isInteractiveRequest)
+        {
+            if (!isCompleted)
+            {
+                if (isInteractiveRequest)
+                    _startupResultAvailable = false;
+                return true;
+            }
+
+            if (!isCompletedSuccessfully || !isInteractiveRequest || !_startupResultAvailable)
+                return false;
+
+            _startupResultAvailable = false;
+            return true;
+        }
+    }
+
     public static class CombinedUpdateCoordinator
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(CombinedUpdateCoordinator));
         private static readonly SemaphoreSlim _locker = new(1, 1);
         private static readonly object _updateCheckLock = new();
         private static readonly object _prefetchLock = new();
-        private static readonly TimeSpan SharedUpdateCheckDuration = TimeSpan.FromMinutes(5);
         private static readonly TimeSpan InteractiveRetryDelay = TimeSpan.FromMilliseconds(250);
         private static readonly TimeSpan PrefetchDelay = TimeSpan.FromSeconds(30);
         private static SharedUpdateCheck? _sharedUpdateCheck;
@@ -72,6 +97,7 @@ namespace ColorVision.Update
                             includeApplicationUpdates: true,
                             includePluginUpdates: true,
                             includeCurrentHostPluginUpdatesWhenFullApplicationUpdate: false,
+                            requestKind: UpdateCheckRequestKind.Interactive,
                             cancellationToken: previewCancellation.Token);
                         if (ShouldRetryInteractiveCheck(plansResult.ServerCheckStatus))
                         {
@@ -81,6 +107,7 @@ namespace ColorVision.Update
                                 includeApplicationUpdates: true,
                                 includePluginUpdates: true,
                                 includeCurrentHostPluginUpdatesWhenFullApplicationUpdate: false,
+                                requestKind: UpdateCheckRequestKind.Interactive,
                                 cancellationToken: previewCancellation.Token);
                         }
 
@@ -196,6 +223,7 @@ namespace ColorVision.Update
                     includeApplicationUpdates: includeApplicationUpdates,
                     includePluginUpdates: includePluginUpdates,
                     includeCurrentHostPluginUpdatesWhenFullApplicationUpdate: true,
+                    requestKind: UpdateCheckRequestKind.Startup,
                     cancellationToken: cancellationToken);
                 AutoUpdatePlan? applicationPlan = plansResult.ApplicationPlan;
                 CombinedPluginUpdatePlan? pluginPlan = plansResult.PluginPlan;
@@ -499,6 +527,7 @@ namespace ColorVision.Update
                 includeApplicationUpdates: AutoUpdateConfig.Instance.IsAutoUpdate,
                 includePluginUpdates: MarketplaceWindowConfig.Instance.IsAutoUpdate,
                 includeCurrentHostPluginUpdatesWhenFullApplicationUpdate: false,
+                requestKind: UpdateCheckRequestKind.Refresh,
                 cancellationToken: cancellationToken);
             return (result.ApplicationPlan, result.PluginPlan);
         }
@@ -507,6 +536,7 @@ namespace ColorVision.Update
             bool includeApplicationUpdates,
             bool includePluginUpdates,
             bool includeCurrentHostPluginUpdatesWhenFullApplicationUpdate,
+            UpdateCheckRequestKind requestKind,
             CancellationToken cancellationToken)
         {
             bool includeCurrentHostPlugins = includeApplicationUpdates
@@ -514,7 +544,6 @@ namespace ColorVision.Update
                 && includeCurrentHostPluginUpdatesWhenFullApplicationUpdate;
             SharedUpdateCheck sharedCheck;
             bool reused;
-            bool wasInProgress;
             lock (_updateCheckLock)
             {
                 reused = _sharedUpdateCheck != null
@@ -522,7 +551,8 @@ namespace ColorVision.Update
                         _sharedUpdateCheck,
                         includeApplicationUpdates,
                         includePluginUpdates,
-                        includeCurrentHostPlugins);
+                        includeCurrentHostPlugins,
+                        requestKind);
                 if (reused)
                 {
                     sharedCheck = _sharedUpdateCheck!;
@@ -533,22 +563,17 @@ namespace ColorVision.Update
                         includeApplicationUpdates,
                         includePluginUpdates,
                         includeCurrentHostPlugins,
+                        new UpdateCheckReuseState(requestKind == UpdateCheckRequestKind.Startup),
                         BuildSharedUpdateCheckAsync(
                             includeApplicationUpdates,
                             includePluginUpdates,
                             includeCurrentHostPlugins));
                     _sharedUpdateCheck = sharedCheck;
                 }
-
-                wasInProgress = !sharedCheck.Task.IsCompleted;
             }
 
             if (reused)
-            {
-                log.Info(wasInProgress
-                    ? "Reusing the update check already in progress."
-                    : "Reusing the recent update check result.");
-            }
+                log.Info("Reusing the update check already in progress or the unconsumed startup result.");
 
             UpdatePlanCheckResult result = await sharedCheck.Task.WaitAsync(cancellationToken);
             return CopyUpdatePlansForConsumer(
@@ -571,15 +596,15 @@ namespace ColorVision.Update
             return new UpdatePlanCheckResult(
                 plansResult.ApplicationPlan,
                 plansResult.PluginPlan,
-                plansResult.ServerCheckStatus,
-                DateTimeOffset.UtcNow);
+                plansResult.ServerCheckStatus);
         }
 
         private static bool CanReuseSharedUpdateCheck(
             SharedUpdateCheck sharedCheck,
             bool includeApplicationUpdates,
             bool includePluginUpdates,
-            bool includeCurrentHostPluginUpdatesWhenFullApplicationUpdate)
+            bool includeCurrentHostPluginUpdatesWhenFullApplicationUpdate,
+            UpdateCheckRequestKind requestKind)
         {
             if (!CanReuseUpdateCheckOptions(
                 sharedCheck.IncludeApplicationUpdates,
@@ -592,12 +617,10 @@ namespace ColorVision.Update
                 return false;
             }
 
-            if (!sharedCheck.Task.IsCompleted)
-                return true;
-
-            return sharedCheck.Task.IsCompletedSuccessfully
-                && sharedCheck.Task.Result.ServerCheckStatus == UpdateServerCheckStatus.Success
-                && DateTimeOffset.UtcNow - sharedCheck.Task.Result.CompletedAt <= SharedUpdateCheckDuration;
+            return sharedCheck.ReuseState.TryReuse(
+                sharedCheck.Task.IsCompleted,
+                sharedCheck.Task.IsCompletedSuccessfully,
+                requestKind == UpdateCheckRequestKind.Interactive);
         }
 
         internal static bool CanReuseUpdateCheckOptions(
@@ -706,14 +729,21 @@ namespace ColorVision.Update
         private sealed record UpdatePlanCheckResult(
             AutoUpdatePlan? ApplicationPlan,
             CombinedPluginUpdatePlan? PluginPlan,
-            UpdateServerCheckStatus ServerCheckStatus,
-            DateTimeOffset CompletedAt);
+            UpdateServerCheckStatus ServerCheckStatus);
 
         private sealed record SharedUpdateCheck(
             bool IncludeApplicationUpdates,
             bool IncludePluginUpdates,
             bool IncludeCurrentHostPluginUpdatesWhenFullApplicationUpdate,
+            UpdateCheckReuseState ReuseState,
             Task<UpdatePlanCheckResult> Task);
+
+        private enum UpdateCheckRequestKind
+        {
+            Startup,
+            Interactive,
+            Refresh,
+        }
 
         internal static Version? ResolvePluginPlanHostVersion(
             AutoUpdatePlan? applicationPlan,

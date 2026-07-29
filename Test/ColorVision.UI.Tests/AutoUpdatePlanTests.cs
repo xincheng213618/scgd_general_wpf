@@ -74,6 +74,47 @@ namespace ColorVision.UI.Tests
         }
 
         [Fact]
+        public void FirstInteractiveCheckConsumesTheCompletedStartupResultOnlyOnce()
+        {
+            UpdateCheckReuseState reuseState = new(isStartupCheck: true);
+
+            Assert.True(reuseState.TryReuse(
+                isCompleted: true,
+                isCompletedSuccessfully: true,
+                isInteractiveRequest: true));
+            Assert.False(reuseState.TryReuse(
+                isCompleted: true,
+                isCompletedSuccessfully: true,
+                isInteractiveRequest: true));
+        }
+
+        [Fact]
+        public void InteractiveCheckSharesAnInFlightStartupRequestWithoutCachingItsResult()
+        {
+            UpdateCheckReuseState reuseState = new(isStartupCheck: true);
+
+            Assert.True(reuseState.TryReuse(
+                isCompleted: false,
+                isCompletedSuccessfully: false,
+                isInteractiveRequest: true));
+            Assert.False(reuseState.TryReuse(
+                isCompleted: true,
+                isCompletedSuccessfully: true,
+                isInteractiveRequest: true));
+        }
+
+        [Fact]
+        public void CompletedInteractiveCheckIsNeverReused()
+        {
+            UpdateCheckReuseState reuseState = new(isStartupCheck: false);
+
+            Assert.False(reuseState.TryReuse(
+                isCompleted: true,
+                isCompletedSuccessfully: true,
+                isInteractiveRequest: true));
+        }
+
+        [Fact]
         public void OfflineInstallerCommandDownloadsTheLatestFullInstallerToTheDesktop()
         {
             string command = AutoUpdater.BuildOfflineInstallerDownloadPowerShellCommand(
