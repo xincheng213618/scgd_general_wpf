@@ -80,8 +80,30 @@ namespace ColorVision.Engine.FlowProcessing.Editor
 
         private void FlowEditorCanvas_SizeChanged(object sender, SizeChangedEventArgs e)
         {
+            PreserveCanvasCenter(e.PreviousSize, e.NewSize);
             UpdatePropertyPanelSizeLimit();
             QueuePropertyPanelPositionUpdate();
+        }
+
+        private void PreserveCanvasCenter(System.Windows.Size previousSize, System.Windows.Size newSize)
+        {
+            if (STNodeEditorMain.Nodes.Count == 0 ||
+                previousSize.Width <= 0 ||
+                previousSize.Height <= 0 ||
+                newSize.Width <= 0 ||
+                newSize.Height <= 0)
+                return;
+
+            float offsetX = (float)((newSize.Width - previousSize.Width) / 2);
+            float offsetY = (float)((newSize.Height - previousSize.Height) / 2);
+            if (offsetX == 0 && offsetY == 0)
+                return;
+
+            STNodeEditorMain.MoveCanvas(
+                STNodeEditorMain.CanvasOffsetX + offsetX,
+                STNodeEditorMain.CanvasOffsetY + offsetY,
+                bAnimation: false,
+                CanvasMoveArgs.All);
         }
 
         private void PropertyEditorPanel_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
