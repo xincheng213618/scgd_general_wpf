@@ -12,6 +12,15 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(conversation);
             ArgumentNullException.ThrowIfNull(assistantMessage);
 
+            PrepareTerminalEvidence(assistantMessage);
+            CopilotAssistantMessagePresenter.FinalizeMessage(assistantMessage);
+            SetUsage(conversation, assistantMessage, usage);
+        }
+
+        internal static void PrepareTerminalEvidence(CopilotChatMessage assistantMessage)
+        {
+            ArgumentNullException.ThrowIfNull(assistantMessage);
+
             assistantMessage.CompleteActiveAgentTraces(
                 CopilotToolExecutionState.Interrupted,
                 CopilotToolFailureKind.Internal,
@@ -24,8 +33,6 @@ namespace ColorVision.Copilot
                     ? "回答达到应用显示上限；已保留前面的内容，可缩小问题范围后重新生成。"
                     : "Agent 最终回答达到应用显示上限；已保留前面的内容，但回答可能不完整。");
             }
-            CopilotAssistantMessagePresenter.FinalizeMessage(assistantMessage);
-            SetUsage(conversation, assistantMessage, usage);
         }
 
         public static void CompleteCancellation(

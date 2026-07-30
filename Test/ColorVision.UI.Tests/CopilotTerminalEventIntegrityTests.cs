@@ -178,6 +178,25 @@ public sealed class CopilotTerminalEventIntegrityTests
     }
 
     [Fact]
+    public void TerminalEvidenceMarksTruncatedCompletedAnswerInterruptedBeforeFinalization()
+    {
+        var assistant = new CopilotChatMessage(CopilotChatRole.Assistant, "Partial final answer.")
+        {
+            RequestMode = CopilotAgentMode.Auto,
+            AgentStopReason = CopilotAgentStopReason.Completed,
+            IsResponseContentTruncated = true,
+        };
+        assistant.UpsertAgentTrace(CreateTrace("running", CopilotToolExecutionState.Running));
+
+        CopilotHostedTurnCompletion.PrepareTerminalEvidence(assistant);
+
+        Assert.True(assistant.WasResponseInterrupted);
+        Assert.Equal(CopilotAgentStopReason.Completed, assistant.AgentStopReason);
+        Assert.Contains("回答可能不完整", assistant.ResponseInterruptionDetail, StringComparison.Ordinal);
+        AssertInterruptedMissingTerminalResult(Assert.Single(assistant.AgentTraceEntries));
+    }
+
+    [Fact]
     public void AppExitRecoveryClosesRunningTraceAsInterrupted()
     {
         var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");

@@ -22,6 +22,7 @@ public sealed class CopilotGoalContinuationTests
             goal,
             CopilotAgentMode.Auto,
             CopilotAgentStopReason.Completed,
+            wasResponseInterrupted: false,
             new CopilotTokenUsage(120, 30, 150).Add(continueEvaluation.Usage),
             continueEvaluation,
             now.AddMinutes(1));
@@ -42,6 +43,7 @@ public sealed class CopilotGoalContinuationTests
             continued.Goal,
             CopilotAgentMode.Auto,
             CopilotAgentStopReason.Completed,
+            wasResponseInterrupted: false,
             new CopilotTokenUsage(80, 20, 100).Add(achievedEvaluation.Usage),
             achievedEvaluation,
             now.AddMinutes(2));
@@ -68,6 +70,7 @@ public sealed class CopilotGoalContinuationTests
             goal,
             CopilotAgentMode.Auto,
             stopReason,
+            wasResponseInterrupted: false,
             new CopilotTokenUsage(20, 5, 25),
             evaluation: null,
             DateTimeOffset.UtcNow.AddMinutes(1));
@@ -89,6 +92,7 @@ public sealed class CopilotGoalContinuationTests
             goal,
             CopilotAgentMode.Plan,
             CopilotAgentStopReason.Completed,
+            wasResponseInterrupted: false,
             CopilotTokenUsage.Empty,
             new CopilotGoalEvaluationResult(
                 CopilotGoalEvaluationVerdict.Continue,
@@ -116,6 +120,7 @@ public sealed class CopilotGoalContinuationTests
                 goal,
                 CopilotAgentMode.Auto,
                 CopilotAgentStopReason.Completed,
+                wasResponseInterrupted: false,
                 CopilotTokenUsage.Empty,
                 evaluation,
                 DateTimeOffset.UtcNow.AddMinutes(round));
@@ -132,6 +137,30 @@ public sealed class CopilotGoalContinuationTests
             CopilotGoalContinuationPolicy.MaximumConsecutiveContinuations,
             goal.ConsecutiveContinuationCount);
         Assert.Contains("避免无界循环", goal.LastEvaluationReason, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void InterruptedCompletedTurnCannotAchieveOrContinuePersistentGoal()
+    {
+        var goal = CopilotConversationGoal.Create("Finish with a complete final response", DateTimeOffset.UtcNow);
+
+        var decision = CopilotGoalContinuationPolicy.Evaluate(
+            goal,
+            CopilotAgentMode.Auto,
+            CopilotAgentStopReason.Completed,
+            wasResponseInterrupted: true,
+            new CopilotTokenUsage(20, 5, 25),
+            new CopilotGoalEvaluationResult(
+                CopilotGoalEvaluationVerdict.Achieved,
+                "The truncated answer claimed success.",
+                CopilotTokenUsage.Empty),
+            DateTimeOffset.UtcNow.AddMinutes(1));
+
+        Assert.Equal(CopilotGoalTurnAction.Pause, decision.Action);
+        Assert.Equal(CopilotConversationGoalState.Paused, decision.Goal.State);
+        Assert.Equal(1, decision.Goal.TurnCount);
+        Assert.Equal(0, decision.Goal.EvaluationCount);
+        Assert.Contains("模型输出不完整", decision.Reason, StringComparison.Ordinal);
     }
 
     [Theory]

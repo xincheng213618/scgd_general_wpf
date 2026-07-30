@@ -412,6 +412,7 @@ namespace ColorVision.Copilot
             CopilotConversationGoal goal,
             CopilotAgentMode mode,
             CopilotAgentStopReason stopReason,
+            bool wasResponseInterrupted,
             CopilotTokenUsage turnUsage,
             CopilotGoalEvaluationResult? evaluation,
             DateTimeOffset now)
@@ -419,6 +420,9 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(goal);
             if (!goal.IsStructurallyValid() || !goal.IsActive)
                 return new CopilotGoalTurnDecision(goal, CopilotGoalTurnAction.None, string.Empty);
+
+            if (wasResponseInterrupted && stopReason == CopilotAgentStopReason.Completed)
+                stopReason = CopilotAgentStopReason.IncompleteOutput;
 
             if (mode is not (CopilotAgentMode.Auto or CopilotAgentMode.Code))
             {

@@ -2569,6 +2569,7 @@ namespace ColorVision.Copilot
             try
             {
                 var usage = await RunConversationTurnAsync(hostedRun, conversation, requestProfile, userMessage, assistantMessage, turnSnapshot, refreshExternalContext);
+                CopilotHostedTurnCompletion.PrepareTerminalEvidence(assistantMessage);
                 var goalResult = await ProcessGoalAfterTurnAsync(
                     hostedRun,
                     conversation,
@@ -3708,7 +3709,8 @@ namespace ColorVision.Copilot
                 return CopilotGoalPostTurnResult.Empty;
 
             CopilotGoalEvaluationResult? evaluation = null;
-            if (assistantMessage.AgentStopReason == CopilotAgentStopReason.Completed
+            if (context.TurnEvidence.StopReason == CopilotAgentStopReason.Completed
+                && !context.TurnEvidence.WasResponseInterrupted
                 && userMessage.RequestMode is CopilotAgentMode.Auto or CopilotAgentMode.Code)
             {
                 evaluation = await _goalCompletionEvaluator.EvaluateAsync(
@@ -3723,7 +3725,8 @@ namespace ColorVision.Copilot
             var decision = CopilotGoalContinuationPolicy.Evaluate(
                 context.Goal,
                 userMessage.RequestMode,
-                assistantMessage.AgentStopReason,
+                context.TurnEvidence.StopReason,
+                context.TurnEvidence.WasResponseInterrupted,
                 turnUsage.Add(evaluationUsage),
                 evaluation,
                 DateTimeOffset.UtcNow);
