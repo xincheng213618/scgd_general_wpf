@@ -340,6 +340,12 @@ namespace ColorVision.Copilot
 
         public bool UseCompactMessageLayout => _state.UseCompactMessageLayout;
 
+        public bool UseMultilineComposer => _state.UseMultilineComposer;
+
+        public string ComposerInputToolTip => UseMultilineComposer
+            ? "多行模式：Enter 换行，Shift+Enter 或 Ctrl+Enter 发送；↑/↓ 浏览请求历史；补全列表中可用 → 接受；Ctrl+R 搜索历史；Ctrl+S 暂存或恢复草稿；Ctrl+E 展开编辑"
+            : "标准模式：Enter 发送，Shift+Enter 换行；↑/↓ 浏览请求历史；补全列表中可用 → 接受；Ctrl+R 搜索历史；Ctrl+S 暂存或恢复草稿；Ctrl+E 展开编辑";
+
         public Thickness MessageListPadding =>
             CopilotCompactMessageLayout.Resolve(UseCompactMessageLayout).MessageListPadding;
 
@@ -1374,20 +1380,22 @@ namespace ColorVision.Copilot
         public string InputPlaceholder => IsPromptHistorySearchOpen
             ? $"搜索{PromptHistorySearchScopeLabel}的可见历史请求"
             : IsEditingMessage
-            ? "修改后按 Enter 重新发送"
+            ? $"修改后按 {ComposerSubmitShortcutLabel} 重新发送"
             : IsViewingActiveRun
                 ? IsAnsweringUserQuestion
-                    ? "输入问题答案并按 Enter；也可直接选择上方选项"
+                    ? $"输入问题答案并按 {ComposerSubmitShortcutLabel}；也可直接选择上方选项"
                     : ActiveHostedRun?.State switch
                     {
                         CopilotHostedRunState.PauseRequested => "任务正在暂停 · 当前输入会保留到任务结束",
                         CopilotHostedRunState.CancelRequested => "任务正在取消 · 当前输入会保留到任务结束",
-                        _ when IsAgentRequestActive => "Enter 调整 · Tab 排队 · @ 关联 · /btw 旁路 · /fork 分支",
+                        _ when IsAgentRequestActive => $"{ComposerSubmitShortcutLabel} 调整 · Tab 排队 · @ 关联 · /btw 旁路 · /fork 分支",
                         _ => "正在生成回复 · 可使用 /status 或 /btw",
                     }
                 : ResolveComposerRequestMode() == CopilotAgentMode.Plan
                     ? "计划模式 · 输入任务；只读分析，不执行修改"
                 : IsConversationEmpty ? "随心输入 · @ 关联 · / 或 $ 命令" : "要求后续变更 · @ 关联 · / 或 $ 命令";
+
+        private string ComposerSubmitShortcutLabel => UseMultilineComposer ? "Shift+Enter" : "Enter";
 
         public bool IsEditingMessage => !string.IsNullOrWhiteSpace(_editingConversationId)
             && !string.IsNullOrWhiteSpace(_editingUserMessageId);
@@ -2021,6 +2029,9 @@ namespace ColorVision.Copilot
                     break;
                 case CopilotLocalCommandKind.CompactMode:
                     ChangeCompactMessageLayout(command, invocation.Arguments);
+                    break;
+                case CopilotLocalCommandKind.MultilineComposer:
+                    ChangeMultilineComposerPreference(command, invocation.Arguments);
                     break;
                 case CopilotLocalCommandKind.CopyResponse:
                     CopyAssistantResponse(command, invocation.Arguments);
@@ -5487,6 +5498,32 @@ namespace ColorVision.Copilot
                 command,
                 $"消息布局已切换为{(useCompactLayout ? "紧凑" : "标准")}间距。\n\n"
                 + "该偏好只改变本地消息密度；不会压缩会话上下文，也不调用模型或工具。");
+        }
+
+        private void ChangeMultilineComposerPreference(CopilotLocalCommand command, string arguments)
+        {
+            if (!CopilotMultilineComposerPreference.TryResolve(
+                    arguments,
+                    UseMultilineComposer,
+                    out var enabled))
+            {
+                ShowLocalCommandResult(command, CopilotMultilineComposerPreference.Usage);
+                return;
+            }
+
+            if (_state.SetUseMultilineComposer(enabled))
+            {
+                OnPropertyChanged(nameof(UseMultilineComposer));
+                OnPropertyChanged(nameof(ComposerInputToolTip));
+                OnPropertyChanged(nameof(InputPlaceholder));
+                PersistState(immediate: true);
+            }
+
+            ShowLocalCommandResult(
+                command,
+                enabled
+                    ? "多行输入模式已开启：Enter 插入换行，Shift+Enter 或 Ctrl+Enter 发送。\n\n该偏好只改变当前设备的输入按键，不修改消息、模型或权限。"
+                    : "多行输入模式已关闭：Enter 发送，Shift+Enter 插入换行；Ctrl+Enter 仍可发送。\n\n该偏好只改变当前设备的输入按键，不修改消息、模型或权限。");
         }
 
         private bool CanResumeAgentTask(CopilotAgentTaskSummary? task)

@@ -2414,7 +2414,7 @@
                                  PreviewKeyDown="PromptTextBox_PreviewKeyDown"
                                  Text="{Binding InputText, UpdateSourceTrigger=PropertyChanged}"
                                  TextWrapping="Wrap"
-                                 ToolTip="↑/↓ 浏览请求历史；补全列表中可用 → 接受；Ctrl+R 搜索历史；Ctrl+S 暂存或恢复草稿；Ctrl+E 展开编辑"
+                                 ToolTip="{Binding ComposerInputToolTip}"
                                  VerticalContentAlignment="Top"
                                  VerticalScrollBarVisibility="Auto" />
                     </Grid>

@@ -113,6 +113,8 @@ namespace ColorVision.Copilot
                 _document[nameof(CopilotChatState.UseCompactMessageLayout)] = true;
             if (!state.EnablePromptHistoryCompletions)
                 _document[nameof(CopilotChatState.EnablePromptHistoryCompletions)] = false;
+            if (state.UseMultilineComposer)
+                _document[nameof(CopilotChatState.UseMultilineComposer)] = true;
             if (_queuedFollowUpRecoveryDocuments != null)
                 _document[nameof(CopilotChatState.QueuedFollowUpRecoveries)] = _queuedFollowUpRecoveryDocuments;
         }
@@ -795,6 +797,7 @@ namespace ColorVision.Copilot
                 || !IsOptionalBoolean(document.GetValue(nameof(CopilotChatState.ShowMessageTimestamps), StringComparison.OrdinalIgnoreCase))
                 || !IsOptionalBoolean(document.GetValue(nameof(CopilotChatState.UseCompactMessageLayout), StringComparison.OrdinalIgnoreCase))
                 || !IsOptionalBoolean(document.GetValue(nameof(CopilotChatState.EnablePromptHistoryCompletions), StringComparison.OrdinalIgnoreCase))
+                || !IsOptionalBoolean(document.GetValue(nameof(CopilotChatState.UseMultilineComposer), StringComparison.OrdinalIgnoreCase))
                 || document.GetValue(nameof(CopilotChatState.Conversations), StringComparison.OrdinalIgnoreCase) is not JArray conversations)
             {
                 return false;

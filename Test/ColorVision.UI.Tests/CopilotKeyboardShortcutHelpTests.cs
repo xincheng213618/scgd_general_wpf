@@ -45,6 +45,9 @@ public sealed class CopilotKeyboardShortcutHelpTests
         Assert.Contains("Ctrl+/ — 打开这份快捷键速查", report);
         Assert.Contains("Ctrl+R — 搜索当前会话的可见历史请求", report);
         Assert.Contains("Ctrl+R — 重命名高亮会话，不切换", report);
+        Assert.Contains("Enter — 标准模式发送；多行模式插入换行", report);
+        Assert.Contains("Shift+Enter — 标准模式插入换行；多行模式发送", report);
+        Assert.Contains("Ctrl+Enter — 标准与多行模式均发送", report);
         Assert.Contains("Esc — 停止当前回复；Agent 有安全检查点时先暂停，再按一次取消", report);
         Assert.Contains("Esc Esc — 打开会话回溯点清单，不立即回溯", report);
         Assert.Contains("不会绕过权限或确认", report);

@@ -904,18 +904,28 @@ namespace ColorVision.Copilot
                 return;
             }
 
-            if (e.Key != Key.Enter || (Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift)
+            if (e.Key != Key.Enter || DataContext is not CopilotChatViewModel viewModel)
                 return;
 
-            if (DataContext is CopilotChatViewModel viewModel)
+            var modifiers = Keyboard.Modifiers;
+            var enterAction = CopilotMultilineComposerPreference.ResolveEnterAction(
+                viewModel.UseMultilineComposer,
+                (modifiers & ModifierKeys.Shift) == ModifierKeys.Shift,
+                (modifiers & ModifierKeys.Control) == ModifierKeys.Control);
+            var commandSuggestionConsumesEnter =
+                modifiers == ModifierKeys.None && viewModel.HasLocalCommandSuggestions;
+            if (enterAction == CopilotComposerEnterAction.InsertLine
+                && !commandSuggestionConsumesEnter)
             {
-                if (!viewModel.TryCompleteLocalCommandForSubmission())
-                {
-                    e.Handled = true;
-                    return;
-                }
-                viewModel.SendCommand.Execute(null);
+                return;
             }
+
+            if (!viewModel.TryCompleteLocalCommandForSubmission())
+            {
+                e.Handled = true;
+                return;
+            }
+            viewModel.SendCommand.Execute(null);
 
             e.Handled = true;
         }
