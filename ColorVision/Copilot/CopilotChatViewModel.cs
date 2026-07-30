@@ -195,6 +195,8 @@ namespace ColorVision.Copilot
             RetryMessageCommand = new RelayCommand<CopilotChatMessage>(message => RunUiOperation(() => RetryMessageAsync(message, refreshExternalContext: false), "重新生成回复"), CanRegenerateMessage);
             RefreshMessageCommand = new RelayCommand<CopilotChatMessage>(message => RunUiOperation(() => RetryMessageAsync(message, refreshExternalContext: true), "刷新附件与网页后重新生成"), CanRegenerateMessage);
             ContinueAgentTasksCommand = new RelayCommand<CopilotChatMessage>(ContinueAgentTasks, CanContinueAgentTasks);
+            ExecuteApprovedPlanCommand = new RelayCommand<CopilotChatMessage>(ExecuteApprovedPlan, CanExecuteApprovedPlan);
+            ContinuePlanningCommand = new RelayCommand<CopilotChatMessage>(ContinuePlanning, CanContinuePlanning);
             RequestWorkspaceRollbackCommand = new RelayCommand<CopilotAgentTraceEntry>(RequestWorkspaceRollback, CanRequestWorkspaceRollback);
             OpenWorkspaceChangeFileCommand = new RelayCommand<CopilotWorkspaceChangeFile>(OpenWorkspaceChangeFile, CanOpenWorkspaceChangeFile);
             OpenAgentTaskCommand = new RelayCommand<CopilotAgentTaskSummary>(OpenAgentTask, task => task != null && CanSwitchConversation);
@@ -454,6 +456,10 @@ namespace ColorVision.Copilot
         public ICommand RefreshMessageCommand { get; }
 
         public ICommand ContinueAgentTasksCommand { get; }
+
+        public ICommand ExecuteApprovedPlanCommand { get; }
+
+        public ICommand ContinuePlanningCommand { get; }
 
         public ICommand RequestWorkspaceRollbackCommand { get; }
 
@@ -1929,15 +1935,19 @@ namespace ColorVision.Copilot
                 }));
         }
 
-        private Task SendAsync() => SendAsync(null, null);
+        private Task SendAsync() => SendAsync(null, null, null);
 
-        private async Task SendAsync(string? directPrompt, CopilotAgentMode? directMode)
+        private async Task SendAsync(
+            string? directPrompt,
+            CopilotAgentMode? directMode,
+            string? directRequestContent = null)
         {
             var isDirectSubmission = directPrompt != null;
             var prompt = (directPrompt ?? InputText ?? string.Empty).Trim();
+            var modelPrompt = (directRequestContent ?? prompt).Trim();
             if (string.IsNullOrWhiteSpace(prompt))
                 return;
-            if (!TryValidateComposerCharacterLimit(prompt))
+            if (!TryValidateComposerCharacterLimit(modelPrompt))
                 return;
             if (!isDirectSubmission && !IsEditingMessage && TryExecuteLocalCommand(prompt))
                 return;
@@ -1953,7 +1963,7 @@ namespace ColorVision.Copilot
             }
 
             var requestProfile = CopilotResponsePresentationGuidance.CreateRequestProfile(SelectedProfile);
-            if (!TryValidatePromptBudget(prompt, requestMode, requestProfile))
+            if (!TryValidatePromptBudget(modelPrompt, requestMode, requestProfile))
                 return;
             var requestAttachments = isDirectSubmission
                 ? Array.Empty<CopilotAttachmentItem>()
@@ -1988,6 +1998,7 @@ namespace ColorVision.Copilot
             var userMessage = new CopilotChatMessage(CopilotChatRole.User, prompt)
             {
                 RequestMode = requestMode,
+                RequestContent = directRequestContent ?? string.Empty,
                 RecoveryRequest = recoveryRequest,
                 Attachments = new ObservableCollection<CopilotAttachmentItem>(turnSnapshot.Attachments),
                 AttachmentSnapshotCaptured = true,
@@ -2304,7 +2315,8 @@ namespace ColorVision.Copilot
             var agentResult = result.AgentRunResult
                 ?? throw new InvalidOperationException("Agent turn completed without an agent result.");
             hostedRun.SetAgentStopReason(agentResult.StopReason);
-            userMessage.RequestContent = agentResult.PreparedUserMessageContent;
+            if (!CopilotPlanHandoff.IsApprovedExecutionRequest(userMessage.RequestContent))
+                userMessage.RequestContent = agentResult.PreparedUserMessageContent;
             assistantMessage.AgentTaskLedger = agentResult.TaskLedger;
             assistantMessage.AgentStopReason = agentResult.StopReason;
             assistantMessage.AgentRunBudget = agentResult.Budget;
@@ -3574,6 +3586,55 @@ namespace ColorVision.Copilot
             SetPendingRequestModeOverride(CopilotAgentMode.Auto);
             InputText = decision.UserMessage;
             RunUiOperation(SendAsync, "继续 Agent 任务");
+        }
+
+        private bool CanExecuteApprovedPlan(CopilotChatMessage? message)
+        {
+            return CanUseCompletedPlan(message, CopilotAgentMode.Auto)
+                && CopilotPlanHandoff.TryCreateExecutionRequest(message, out _);
+        }
+
+        private void ExecuteApprovedPlan(CopilotChatMessage? message)
+        {
+            if (!CanExecuteApprovedPlan(message)
+                || !CopilotPlanHandoff.TryCreateExecutionRequest(message, out var request))
+            {
+                return;
+            }
+
+            RunUiOperation(
+                () => SendAsync(request.VisiblePrompt, CopilotAgentMode.Auto, request.ModelPrompt),
+                "执行批准的计划");
+        }
+
+        private bool CanContinuePlanning(CopilotChatMessage? message)
+        {
+            return CanUseCompletedPlan(message, CopilotAgentMode.Plan);
+        }
+
+        private void ContinuePlanning(CopilotChatMessage? message)
+        {
+            if (!CanContinuePlanning(message))
+                return;
+
+            SetPendingRequestModeOverride(CopilotAgentMode.Plan);
+            if (IsInputEmpty)
+                InputText = CopilotPlanHandoff.ContinuePlanningPrompt;
+        }
+
+        private bool CanUseCompletedPlan(CopilotChatMessage? message, CopilotAgentMode nextMode)
+        {
+            if (IsEditingMessage
+                || SelectedProfile?.IsConfigured != true
+                || !CanScheduleComposerRequest(nextMode)
+                || message?.HasCompletedPlan != true
+                || SelectedConversation == null)
+            {
+                return false;
+            }
+
+            var latestAssistant = SelectedConversation.Messages.LastOrDefault(candidate => !candidate.IsUser);
+            return ReferenceEquals(latestAssistant, message);
         }
 
         private bool CanRequestWorkspaceRollback(CopilotAgentTraceEntry? trace)
@@ -5326,12 +5387,13 @@ namespace ColorVision.Copilot
             }
 
             var prompt = (userMessage.Content ?? string.Empty).Trim();
+            var modelPrompt = CopilotPlanHandoff.ResolveEffectiveUserText(prompt, userMessage.RequestContent);
             if (string.IsNullOrWhiteSpace(prompt))
                 return;
 
             var requestProfile = CopilotResponsePresentationGuidance.CreateRequestProfile(SelectedProfile);
-            if (!TryValidateComposerCharacterLimit(prompt)
-                || !TryValidatePromptBudget(prompt, userMessage.RequestMode, requestProfile))
+            if (!TryValidateComposerCharacterLimit(modelPrompt)
+                || !TryValidatePromptBudget(modelPrompt, userMessage.RequestMode, requestProfile))
             {
                 return;
             }

@@ -147,6 +147,8 @@ namespace ColorVision.Copilot
                     OnPropertyChanged(nameof(IsUser));
                     OnPropertyChanged(nameof(Header));
                     OnPropertyChanged(nameof(HasResponseInterruption));
+                    OnPropertyChanged(nameof(HasCompletedPlan));
+                    OnPropertyChanged(nameof(HasAgentTaskState));
                 }
             }
         }
@@ -196,7 +198,19 @@ namespace ColorVision.Copilot
         }
         private string _content = string.Empty;
 
-        public bool IsResponseContentTruncated { get; set; }
+        public bool IsResponseContentTruncated
+        {
+            get => _isResponseContentTruncated;
+            set
+            {
+                if (SetProperty(ref _isResponseContentTruncated, value))
+                {
+                    OnPropertyChanged(nameof(HasCompletedPlan));
+                    OnPropertyChanged(nameof(HasAgentTaskState));
+                }
+            }
+        }
+        private bool _isResponseContentTruncated;
 
         public bool ShouldSerializeIsResponseContentTruncated() => IsResponseContentTruncated;
 
@@ -283,6 +297,11 @@ namespace ColorVision.Copilot
                     OnPropertyChanged(nameof(RetryActionToolTip));
                     OnPropertyChanged(nameof(RefreshActionToolTip));
                     OnPropertyChanged(nameof(ShowsRefreshAction));
+                    OnPropertyChanged(nameof(HasCompletedPlan));
+                    OnPropertyChanged(nameof(HasAgentTaskState));
+                    OnPropertyChanged(nameof(AgentTaskProgressLabel));
+                    OnPropertyChanged(nameof(AgentStopReasonLabel));
+                    OnPropertyChanged(nameof(AgentTaskSummaryToolTip));
                 }
             }
         }
@@ -319,6 +338,8 @@ namespace ColorVision.Copilot
                     OnPropertyChanged(nameof(HasThinkingTrace));
                     OnPropertyChanged(nameof(ThinkingHeader));
                     OnPropertyChanged(nameof(ThinkingSummaryToolTip));
+                    OnPropertyChanged(nameof(HasCompletedPlan));
+                    OnPropertyChanged(nameof(HasAgentTaskState));
                 }
             }
         }
@@ -335,6 +356,8 @@ namespace ColorVision.Copilot
                 {
                     OnPropertyChanged(nameof(HasResponseInterruption));
                     OnPropertyChanged(nameof(ResponseInterruptionText));
+                    OnPropertyChanged(nameof(HasCompletedPlan));
+                    OnPropertyChanged(nameof(HasAgentTaskState));
                 }
             }
         }
@@ -536,7 +559,10 @@ namespace ColorVision.Copilot
         public bool HasAgentTaskLedger => !IsUser && AgentTaskLedger.TotalCount > 0;
 
         [JsonIgnore]
-        public bool HasAgentTaskState => !IsUser && (HasAgentTaskLedger || HasAgentBlockers || HasRecoverableAgentTasks);
+        public bool HasAgentTaskState => !IsUser && (HasAgentTaskLedger || HasAgentBlockers || HasRecoverableAgentTasks || HasCompletedPlan);
+
+        [JsonIgnore]
+        public bool HasCompletedPlan => CopilotPlanHandoff.IsCompletedPlan(this);
 
         [JsonIgnore]
         public bool HasIncompleteAgentTasks => HasAgentTaskLedger && AgentTaskLedger.RemainingCount > 0;
@@ -602,13 +628,16 @@ namespace ColorVision.Copilot
         public string AgentTaskModeLabel => string.Equals(AgentTaskLedger.Mode, "plan", StringComparison.OrdinalIgnoreCase) ? "计划" : "执行";
 
         [JsonIgnore]
-        public string AgentTaskProgressLabel => $"{AgentTaskLedger.CompletedCount}/{AgentTaskLedger.TotalCount} 已完成";
+        public string AgentTaskProgressLabel => RequestMode == CopilotAgentMode.Plan
+            ? $"{AgentTaskLedger.TotalCount} 个计划步骤"
+            : $"{AgentTaskLedger.CompletedCount}/{AgentTaskLedger.TotalCount} 已完成";
 
         [JsonIgnore]
         public string AgentStopReasonLabel => AgentStopReason switch
         {
             CopilotAgentStopReason.None when IsExecutionInProgress => "任务执行中",
             CopilotAgentStopReason.None when HasIncompleteAgentTasks => "任务尚未完成",
+            CopilotAgentStopReason.Completed when RequestMode == CopilotAgentMode.Plan => "计划已生成",
             CopilotAgentStopReason.Completed => "任务完成",
             CopilotAgentStopReason.AwaitingUser => "等待用户决定",
             CopilotAgentStopReason.ApprovalDenied => "审批未通过",
@@ -1468,6 +1497,7 @@ namespace ColorVision.Copilot
         {
             OnPropertyChanged(nameof(HasAgentTaskLedger));
             OnPropertyChanged(nameof(HasAgentTaskState));
+            OnPropertyChanged(nameof(HasCompletedPlan));
             OnPropertyChanged(nameof(HasIncompleteAgentTasks));
             OnPropertyChanged(nameof(HasRecoverableFinalAnswer));
             OnPropertyChanged(nameof(HasRecoverableAgentTasks));
@@ -1685,6 +1715,8 @@ namespace ColorVision.Copilot
             OnPropertyChanged(nameof(HasResponseTimeline));
             OnPropertyChanged(nameof(HasLegacyResponseLayout));
             OnPropertyChanged(nameof(HasLegacyThinkingTrace));
+            OnPropertyChanged(nameof(HasCompletedPlan));
+            OnPropertyChanged(nameof(HasAgentTaskState));
         }
 
         private IReadOnlyList<CopilotResponseTimelineItem> BuildResponseTimelineItems()

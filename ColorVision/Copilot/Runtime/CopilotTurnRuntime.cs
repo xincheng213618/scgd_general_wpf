@@ -124,8 +124,11 @@ namespace ColorVision.Copilot
             CopilotTurnEventSink eventSink,
             CancellationToken cancellationToken)
         {
-            var recoveryTaskContext = CopilotAgentRecoveryTaskContext.Resolve(
+            var effectiveUserText = CopilotPlanHandoff.ResolveEffectiveUserText(
                 request.UserText,
+                request.ExistingRequestContent);
+            var recoveryTaskContext = CopilotAgentRecoveryTaskContext.Resolve(
+                effectiveUserText,
                 request.Recovery,
                 request.SessionCheckpoint);
             var requestPlan = CopilotAgentRequestFactory.Prepare(

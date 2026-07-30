@@ -1389,15 +1389,32 @@
                                                 Visibility="{Binding HasAgentTaskState, Converter={StaticResource bool2VisibilityConverter}}">
                                             <StackPanel>
                                                 <DockPanel LastChildFill="True">
-                                                    <Button DockPanel.Dock="Right"
-                                                            Margin="8,0,0,0"
-                                                            Padding="10,3"
-                                                            Command="{Binding DataContext.ContinueAgentTasksCommand, Source={x:Reference Root}}"
-                                                            CommandParameter="{Binding}"
-                                                            Content="{Binding AgentRecoveryActionLabel}"
-                                                            Style="{StaticResource MessageActionButtonStyle}"
-                                                            ToolTip="{Binding AgentRecoveryToolTip}"
-                                                            Visibility="{Binding HasRecoverableAgentTasks, Converter={StaticResource bool2VisibilityConverter}}" />
+                                                    <StackPanel DockPanel.Dock="Right"
+                                                                Margin="8,0,0,0"
+                                                                Orientation="Horizontal">
+                                                        <Button Padding="10,3"
+                                                                Command="{Binding DataContext.ContinueAgentTasksCommand, Source={x:Reference Root}}"
+                                                                CommandParameter="{Binding}"
+                                                                Content="{Binding AgentRecoveryActionLabel}"
+                                                                Style="{StaticResource MessageActionButtonStyle}"
+                                                                ToolTip="{Binding AgentRecoveryToolTip}"
+                                                                Visibility="{Binding HasRecoverableAgentTasks, Converter={StaticResource bool2VisibilityConverter}}" />
+                                                        <Button Padding="10,3"
+                                                                Command="{Binding DataContext.ContinuePlanningCommand, Source={x:Reference Root}}"
+                                                                CommandParameter="{Binding}"
+                                                                Content="继续规划"
+                                                                Style="{StaticResource MessageActionButtonStyle}"
+                                                                ToolTip="切回计划模式，在输入框中补充反馈后生成修订计划"
+                                                                Visibility="{Binding HasCompletedPlan, Converter={StaticResource bool2VisibilityConverter}}" />
+                                                        <Button Margin="0"
+                                                                Padding="10,3"
+                                                                Command="{Binding DataContext.ExecuteApprovedPlanCommand, Source={x:Reference Root}}"
+                                                                CommandParameter="{Binding}"
+                                                                Content="执行计划"
+                                                                Style="{StaticResource MessageActionButtonStyle}"
+                                                                ToolTip="批准这份计划并作为新的执行任务开始；受保护操作仍按当前权限策略处理"
+                                                                Visibility="{Binding HasCompletedPlan, Converter={StaticResource bool2VisibilityConverter}}" />
+                                                    </StackPanel>
                                                     <StackPanel Orientation="Horizontal">
                                                         <TextBlock VerticalAlignment="Center"
                                                                    FontSize="12"
