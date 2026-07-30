@@ -863,6 +863,15 @@
 
                         <Button Margin="0,0,6,0"
                                 Style="{StaticResource CopilotIconButtonStyle}"
+                                Command="{Binding OpenConversationFindCommand}"
+                                ToolTip="查找当前会话 (Ctrl+F)">
+                            <TextBlock FontFamily="Segoe MDL2 Assets"
+                                       FontSize="14"
+                                       Text="&#xE721;" />
+                        </Button>
+
+                        <Button Margin="0,0,6,0"
+                                Style="{StaticResource CopilotIconButtonStyle}"
                                 Command="{Binding NewChatCommand}"
                                 IsEnabled="{Binding CanSwitchConversation}"
                                 ToolTip="新建会话 (Ctrl+N)">
@@ -877,6 +886,7 @@
 
             <Grid Grid.Row="1">
                 <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
@@ -1054,8 +1064,72 @@
                     </StackPanel>
                 </Border>
 
+                <Border Grid.Row="1"
+                        Margin="18,8,18,0"
+                        Padding="8,5"
+                        Style="{StaticResource CopilotInsetBorderStyle}"
+                        BorderThickness="1"
+                        CornerRadius="7"
+                        Visibility="{Binding IsConversationFindOpen, Converter={StaticResource bool2VisibilityConverter}}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock VerticalAlignment="Center"
+                                   FontFamily="Segoe MDL2 Assets"
+                                   FontSize="12"
+                                   Foreground="{DynamicResource GlobalTextBrush}"
+                                   Opacity="0.5"
+                                   Text="&#xE721;" />
+                        <TextBox x:Name="ConversationFindTextBox"
+                                 Grid.Column="1"
+                                 Margin="7,0,8,0"
+                                 Padding="0"
+                                 VerticalContentAlignment="Center"
+                                 Background="Transparent"
+                                 BorderThickness="0"
+                                 FontSize="11"
+                                 Foreground="{DynamicResource GlobalTextBrush}"
+                                 MaxLength="256"
+                                 PreviewKeyDown="ConversationFindTextBox_PreviewKeyDown"
+                                 Text="{Binding ConversationFindText, UpdateSourceTrigger=PropertyChanged}"
+                                 ToolTip="查找当前会话可见内容；Enter 下一个，Shift+Enter 上一个，Esc 关闭" />
+                        <TextBlock Grid.Column="2"
+                                   MinWidth="52"
+                                   Margin="0,0,6,0"
+                                   VerticalAlignment="Center"
+                                   FontSize="10"
+                                   Foreground="{DynamicResource GlobalTextBrush}"
+                                   Opacity="0.58"
+                                   Text="{Binding ConversationFindStatusText}"
+                                   TextAlignment="Right" />
+                        <Button Grid.Column="3"
+                                Margin="0,0,3,0"
+                                Style="{StaticResource AttachmentCloseButtonStyle}"
+                                Command="{Binding FindPreviousConversationMatchCommand}"
+                                Content="↑"
+                                ToolTip="上一个匹配项 (Shift+Enter)" />
+                        <Button Grid.Column="4"
+                                Margin="0,0,3,0"
+                                Style="{StaticResource AttachmentCloseButtonStyle}"
+                                Command="{Binding FindNextConversationMatchCommand}"
+                                Content="↓"
+                                ToolTip="下一个匹配项 (Enter)" />
+                        <Button Grid.Column="5"
+                                Style="{StaticResource AttachmentCloseButtonStyle}"
+                                Command="{Binding CloseConversationFindCommand}"
+                                Content="×"
+                                ToolTip="关闭查找 (Esc)" />
+                    </Grid>
+                </Border>
+
                 <TextBlock x:Name="EmptyStateTextBlock"
-                           Grid.Row="1"
+                           Grid.Row="2"
                            HorizontalAlignment="Center"
                            VerticalAlignment="Center"
                            MaxWidth="320"
@@ -1067,7 +1141,7 @@
                            Visibility="Collapsed" />
 
                 <StackPanel x:Name="CompactHistoryPanel"
-                            Grid.Row="1"
+                            Grid.Row="2"
                             MaxWidth="620"
                             Margin="24,34,24,18"
                             HorizontalAlignment="Stretch"
@@ -1137,7 +1211,7 @@
                 </StackPanel>
 
                 <ListBox x:Name="MessagesListBox"
-                         Grid.Row="1"
+                         Grid.Row="2"
                          Padding="16,12,16,12"
                          Background="Transparent"
                          BorderThickness="0"
@@ -1170,8 +1244,33 @@
                             <Setter Property="Template">
                                 <Setter.Value>
                                     <ControlTemplate TargetType="{x:Type ListBoxItem}">
-                                        <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+                                        <Border x:Name="ConversationFindHighlight"
+                                                Padding="0"
+                                                Background="Transparent"
+                                                BorderBrush="Transparent"
+                                                BorderThickness="0"
+                                                CornerRadius="7">
+                                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding IsConversationFindMatch}" Value="True">
+                                                <Setter TargetName="ConversationFindHighlight"
+                                                        Property="Background"
+                                                        Value="{DynamicResource GlobalBorderBrush1}" />
+                                                <Setter TargetName="ConversationFindHighlight"
+                                                        Property="Padding"
+                                                        Value="4" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsCurrentConversationFindMatch}" Value="True">
+                                                <Setter TargetName="ConversationFindHighlight"
+                                                        Property="BorderBrush"
+                                                        Value="{StaticResource CopilotControlBrush}" />
+                                                <Setter TargetName="ConversationFindHighlight"
+                                                        Property="BorderThickness"
+                                                        Value="1" />
+                                            </DataTrigger>
+                                        </ControlTemplate.Triggers>
                                     </ControlTemplate>
                                 </Setter.Value>
                             </Setter>
@@ -1591,7 +1690,7 @@
                 </ListBox>
 
                 <Button x:Name="ScrollToLatestButton"
-                        Grid.Row="1"
+                        Grid.Row="2"
                         Panel.ZIndex="10"
                         MinHeight="30"
                         Margin="0,0,0,14"
@@ -2766,7 +2865,7 @@
                                          PreviewKeyDown="ConversationSearchTextBox_PreviewKeyDown"
                                          Text="{Binding ConversationSearchText, UpdateSourceTrigger=PropertyChanged}"
                                          TextChanged="ConversationSearchTextBox_TextChanged"
-                                         ToolTip="搜索会话 (Ctrl+F)；↑↓ 选择，Enter 切换，Ctrl+R 重命名，Esc 退出" />
+                                         ToolTip="搜索会话 (Ctrl+G)；↑↓ 选择，Enter 切换，Ctrl+R 重命名，Esc 退出" />
                             </Grid>
                             <Button Grid.Column="2"
                                     Style="{StaticResource AttachmentCloseButtonStyle}"

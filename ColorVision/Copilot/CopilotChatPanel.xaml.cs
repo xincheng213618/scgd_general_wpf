@@ -103,6 +103,17 @@ namespace ColorVision.Copilot
 
             if (e.Key == Key.F && Keyboard.Modifiers == ModifierKeys.Control)
             {
+                if (DataContext is CopilotChatViewModel openFindViewModel)
+                {
+                    openFindViewModel.OpenConversationFind();
+                    FocusConversationFind();
+                    e.Handled = true;
+                }
+                return;
+            }
+
+            if (e.Key == Key.G && Keyboard.Modifiers == ModifierKeys.Control)
+            {
                 FocusConversationSearch();
                 e.Handled = true;
                 return;
@@ -137,6 +148,16 @@ namespace ColorVision.Copilot
             if (ProfileSelectorPopup.IsOpen)
             {
                 CloseProfileSelectorPopup();
+                e.Handled = true;
+                return;
+            }
+
+            if (ConversationFindTextBox.IsKeyboardFocusWithin
+                && DataContext is CopilotChatViewModel closeFindViewModel
+                && closeFindViewModel.CloseConversationFindCommand.CanExecute(null))
+            {
+                closeFindViewModel.CloseConversationFindCommand.Execute(null);
+                FocusPromptInput();
                 e.Handled = true;
                 return;
             }
@@ -180,6 +201,17 @@ namespace ColorVision.Copilot
                 FocusPromptInput();
                 e.Handled = true;
             }
+        }
+
+        private void FocusConversationFind()
+        {
+            CloseProfileSelectorPopup();
+            Dispatcher.BeginInvoke(DispatcherPriority.Input, () =>
+            {
+                ConversationFindTextBox.Focus();
+                Keyboard.Focus(ConversationFindTextBox);
+                ConversationFindTextBox.SelectAll();
+            });
         }
 
         private void FocusConversationSearch()
@@ -307,6 +339,23 @@ namespace ColorVision.Copilot
             {
                 UpdateEmptyStateVisibility();
             }
+
+            if (e.PropertyName == nameof(CopilotChatViewModel.IsConversationFindOpen)
+                && _attachedViewModel.IsConversationFindOpen)
+            {
+                FocusConversationFind();
+            }
+
+            if (e.PropertyName == nameof(CopilotChatViewModel.CurrentConversationFindMatch)
+                && _attachedViewModel.CurrentConversationFindMatch is { } match)
+            {
+                Dispatcher.BeginInvoke(DispatcherPriority.Loaded, () =>
+                {
+                    MessagesListBox.ScrollIntoView(match);
+                    if (MessagesListBox.ItemContainerGenerator.ContainerFromItem(match) is FrameworkElement container)
+                        container.BringIntoView();
+                });
+            }
         }
 
         private void ResetMessageSubscriptions(ObservableCollection<CopilotChatMessage>? messages)
@@ -363,6 +412,9 @@ namespace ColorVision.Copilot
                 || e.PropertyName == nameof(CopilotChatMessage.ExecutionContent)
                 || e.PropertyName == nameof(CopilotChatMessage.ReasoningContent))
             {
+                if (_attachedViewModel?.IsConversationFindOpen == true)
+                    _attachedViewModel.RefreshConversationFind();
+
                 if (_isScrollToBottomPending || IsNearBottom())
                     ScrollToBottom();
                 else
@@ -829,6 +881,31 @@ namespace ColorVision.Copilot
         {
             _isConversationSidebarExpanded = !_isConversationSidebarExpanded;
             UpdateResponsiveLayout();
+        }
+
+        private void ConversationFindTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (DataContext is not CopilotChatViewModel viewModel)
+                return;
+
+            if (e.Key == Key.Escape && Keyboard.Modifiers == ModifierKeys.None)
+            {
+                if (viewModel.CloseConversationFindCommand.CanExecute(null))
+                    viewModel.CloseConversationFindCommand.Execute(null);
+                FocusPromptInput();
+                e.Handled = true;
+                return;
+            }
+
+            if (e.Key != Key.Enter
+                || Keyboard.Modifiers is not (ModifierKeys.None or ModifierKeys.Shift))
+            {
+                return;
+            }
+
+            var previous = Keyboard.Modifiers == ModifierKeys.Shift;
+            if (viewModel.MoveConversationFind(previous))
+                e.Handled = true;
         }
 
         private void ConversationSearchTextBox_TextChanged(object sender, TextChangedEventArgs e)

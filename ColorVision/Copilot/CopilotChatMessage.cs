@@ -168,6 +168,22 @@ namespace ColorVision.Copilot
         public bool IsUser => Role == CopilotChatRole.User;
 
         [JsonIgnore]
+        public bool IsConversationFindMatch
+        {
+            get => _isConversationFindMatch;
+            private set => SetProperty(ref _isConversationFindMatch, value);
+        }
+        private bool _isConversationFindMatch;
+
+        [JsonIgnore]
+        public bool IsCurrentConversationFindMatch
+        {
+            get => _isCurrentConversationFindMatch;
+            private set => SetProperty(ref _isCurrentConversationFindMatch, value);
+        }
+        private bool _isCurrentConversationFindMatch;
+
+        [JsonIgnore]
         public string Header => IsUser ? CopilotUiText.UserHeader : string.IsNullOrWhiteSpace(AssistantName) ? "AI" : AssistantName;
 
         public string AssistantName
@@ -1296,6 +1312,12 @@ namespace ColorVision.Copilot
             OnPropertyChanged(nameof(HasThinkingContent));
             OnPropertyChanged(nameof(ThinkingHeader));
             OnPropertyChanged(nameof(ThinkingSummaryToolTip));
+        }
+
+        internal void SetConversationFindState(bool isMatch, bool isCurrent)
+        {
+            IsConversationFindMatch = isMatch;
+            IsCurrentConversationFindMatch = isMatch && isCurrent;
         }
 
         internal bool SetReportedUsage(CopilotTokenUsage usage)

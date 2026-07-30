@@ -48,6 +48,7 @@ namespace ColorVision.Copilot
         private readonly CopilotAgentTaskHost _taskHost;
         private readonly CopilotLocalGitDiffService _localGitDiffService;
         private readonly CopilotPromptHistoryNavigator _promptHistoryNavigator = new();
+        private readonly CopilotConversationFindNavigator _conversationFindNavigator = new();
         private readonly CopilotConfig _config;
         private readonly ICopilotChatStateStore _stateStore;
         private readonly CopilotChatStateSaveScheduler _stateSaveScheduler;
@@ -88,7 +89,9 @@ namespace ColorVision.Copilot
         private CopilotComposerDraftSnapshot? _composerDraftBeforeMessageEdit;
         private CopilotComposerReferenceItem? _selectedComposerReference;
         private string _conversationSearchText = string.Empty;
+        private string _conversationFindText = string.Empty;
         private string _composerReferenceSessionKey = string.Empty;
+        private bool _isConversationFindOpen;
         private bool _isComposerReferenceMentionActive;
         private bool _isComposerReferenceSearchPending;
         private bool _hasPendingMcpActions;
@@ -182,6 +185,10 @@ namespace ColorVision.Copilot
                 _ => CompactConversationFromUi(),
                 _ => IsConversationContextReduced && !IsBusy && !_isCompactingConversation && SelectedConversation != null);
             ClearConversationSearchCommand = new RelayCommand(_ => ConversationSearchText = string.Empty, _ => HasConversationSearchQuery);
+            OpenConversationFindCommand = new RelayCommand(_ => OpenConversationFind(), _ => SelectedConversation != null);
+            CloseConversationFindCommand = new RelayCommand(_ => CloseConversationFind(), _ => IsConversationFindOpen);
+            FindPreviousConversationMatchCommand = new RelayCommand(_ => MoveConversationFind(previous: true), _ => HasConversationFindMatches);
+            FindNextConversationMatchCommand = new RelayCommand(_ => MoveConversationFind(previous: false), _ => HasConversationFindMatches);
             SelectConversationCommand = new RelayCommand<CopilotConversationRecord>(
                 conversation => SelectConversation(conversation, persist: true),
                 conversation => CanSwitchConversation && conversation != null);
@@ -444,6 +451,14 @@ namespace ColorVision.Copilot
 
         public ICommand ClearConversationSearchCommand { get; }
 
+        public ICommand OpenConversationFindCommand { get; }
+
+        public ICommand CloseConversationFindCommand { get; }
+
+        public ICommand FindPreviousConversationMatchCommand { get; }
+
+        public ICommand FindNextConversationMatchCommand { get; }
+
         public ICommand SelectConversationCommand { get; }
 
         public ICommand PrimaryActionCommand { get; }
@@ -573,6 +588,54 @@ namespace ColorVision.Copilot
         public bool HasConversationSearchQuery => !IsConversationSearchEmpty;
 
         public bool HasNoConversationSearchResults => HasConversationSearchQuery && FilteredConversations.Count == 0;
+
+        public bool IsConversationFindOpen
+        {
+            get => _isConversationFindOpen;
+            private set
+            {
+                if (!SetProperty(ref _isConversationFindOpen, value))
+                    return;
+
+                OnPropertyChanged(nameof(CurrentConversationFindMatch));
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+
+        public string ConversationFindText
+        {
+            get => _conversationFindText;
+            set
+            {
+                var normalized = CopilotConversationFindNavigator.NormalizeQuery(value);
+                if (!SetProperty(ref _conversationFindText, normalized))
+                    return;
+
+                OnPropertyChanged(nameof(HasConversationFindQuery));
+                RefreshConversationFind();
+            }
+        }
+
+        public bool HasConversationFindQuery => ConversationFindText.Length > 0;
+
+        public bool HasConversationFindMatches =>
+            IsConversationFindOpen && _conversationFindNavigator.Matches.Count > 0;
+
+        public string ConversationFindStatusText
+        {
+            get
+            {
+                if (!HasConversationFindQuery)
+                    return "输入关键词";
+                if (_conversationFindNavigator.Matches.Count == 0)
+                    return "0 项";
+
+                return $"{_conversationFindNavigator.SelectedIndex + 1} / {_conversationFindNavigator.Matches.Count}";
+            }
+        }
+
+        public CopilotChatMessage? CurrentConversationFindMatch =>
+            IsConversationFindOpen ? _conversationFindNavigator.Current : null;
 
         public bool HasAttachments => Attachments.Count > 0;
 
@@ -1426,6 +1489,9 @@ namespace ColorVision.Copilot
                     RunUiOperation(
                         () => ExportConversationFromCommandAsync(command, invocation.Arguments),
                         "导出会话");
+                    break;
+                case CopilotLocalCommandKind.FindInConversation:
+                    OpenConversationFind(invocation.Arguments);
                     break;
                 case CopilotLocalCommandKind.SelectModel:
                     SelectModelProfile(command, invocation.Arguments);
@@ -4818,6 +4884,7 @@ namespace ColorVision.Copilot
             RefreshFilteredConversations();
             RefreshAgentTasks();
             RefreshComposerTokenEstimate();
+            RefreshConversationFind();
             CommandManager.InvalidateRequerySuggested();
         }
 
@@ -4932,6 +4999,75 @@ namespace ColorVision.Copilot
                 && text.Contains(term, StringComparison.OrdinalIgnoreCase);
         }
 
+        public void OpenConversationFind()
+        {
+            OpenConversationFind(ConversationFindText);
+        }
+
+        private void OpenConversationFind(string? query)
+        {
+            DismissLocalCommandResult();
+            IsConversationFindOpen = true;
+            var normalized = CopilotConversationFindNavigator.NormalizeQuery(query);
+            if (!string.Equals(ConversationFindText, normalized, StringComparison.Ordinal))
+                ConversationFindText = normalized;
+            else
+                RefreshConversationFind();
+        }
+
+        public void CloseConversationFind()
+        {
+            if (!IsConversationFindOpen)
+                return;
+
+            ClearConversationFindState(Messages);
+            _conversationFindNavigator.Refresh([], string.Empty);
+            IsConversationFindOpen = false;
+            NotifyConversationFindStateChanged();
+        }
+
+        public bool MoveConversationFind(bool previous)
+        {
+            if (!IsConversationFindOpen || !_conversationFindNavigator.Move(previous))
+                return false;
+
+            ApplyConversationFindState();
+            NotifyConversationFindStateChanged();
+            return true;
+        }
+
+        internal void RefreshConversationFind()
+        {
+            if (!IsConversationFindOpen)
+                return;
+
+            _conversationFindNavigator.Refresh(Messages, ConversationFindText);
+            ApplyConversationFindState();
+            NotifyConversationFindStateChanged();
+        }
+
+        private void ApplyConversationFindState()
+        {
+            var matches = _conversationFindNavigator.Matches.ToHashSet();
+            var current = _conversationFindNavigator.Current;
+            foreach (var message in Messages)
+                message.SetConversationFindState(matches.Contains(message), ReferenceEquals(message, current));
+        }
+
+        private static void ClearConversationFindState(IEnumerable<CopilotChatMessage>? messages)
+        {
+            foreach (var message in messages ?? Array.Empty<CopilotChatMessage>())
+                message?.SetConversationFindState(isMatch: false, isCurrent: false);
+        }
+
+        private void NotifyConversationFindStateChanged()
+        {
+            OnPropertyChanged(nameof(HasConversationFindMatches));
+            OnPropertyChanged(nameof(ConversationFindStatusText));
+            OnPropertyChanged(nameof(CurrentConversationFindMatch));
+            CommandManager.InvalidateRequerySuggested();
+        }
+
         private static string NormalizeConversationSearchText(string? value)
         {
             var normalized = value ?? string.Empty;
@@ -4986,6 +5122,7 @@ namespace ColorVision.Copilot
                     var preferredProfile = ResolveProfile(preferredProfileId) ?? ResolveProfile(_selectedConversation?.ProfileId);
                     SelectProfile(preferredProfile, syncConversation: true, persist: false);
                 }
+                RefreshConversationFind();
                 return;
             }
 
@@ -4998,6 +5135,7 @@ namespace ColorVision.Copilot
             if (_selectedConversation != null)
                 _selectedConversation.Messages.CollectionChanged -= Messages_CollectionChanged;
 
+            ClearConversationFindState(_selectedConversation?.Messages);
             _selectedConversation = conversation;
             _promptHistoryNavigator.Reset();
             DismissLocalCommandResult();
@@ -5015,6 +5153,7 @@ namespace ColorVision.Copilot
             OnPropertyChanged(nameof(HasAttachments));
             OnPropertyChanged(nameof(IsConversationEmpty));
             OnPropertyChanged(nameof(InputPlaceholder));
+            RefreshConversationFind();
             OnComposerAccessModeChanged();
             RefreshPendingActions();
             RefreshConversationBranchFamily();
@@ -5300,7 +5439,7 @@ namespace ColorVision.Copilot
 
         private void RenameConversation(CopilotConversationRecord? conversation)
         {
-            if (!CanRenameConversation(conversation))
+            if (conversation == null || !CanRenameConversation(conversation))
                 return;
 
             var window = new CopilotTextInputWindow(
