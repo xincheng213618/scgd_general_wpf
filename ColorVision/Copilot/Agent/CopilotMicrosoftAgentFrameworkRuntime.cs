@@ -245,6 +245,7 @@ namespace ColorVision.Copilot
             await using var externalToolLease = await _externalToolProvider.DiscoverAsync(request, cancellationToken);
             foreach (var diagnostic in externalToolLease.Diagnostics)
                 emit(CopilotAgentEvent.RuntimeDiagnostic(diagnostic));
+            capabilitySnapshot = _capabilityCatalog.GetSnapshot();
             var registeredToolCount = _toolRegistry.Tools.Count + externalToolLease.Tools.Count;
             var availableTools = MergeAvailableTools(request, _toolRegistry.FindTools(request), externalToolLease.Tools, emit);
             emit(CopilotAgentEvent.RuntimeDiagnostic($"Request tool surface · {availableTools.Length}/{registeredToolCount} candidate tool(s) selected after mode and intent filtering."));
@@ -276,6 +277,7 @@ namespace ColorVision.Copilot
                 _toolExecutor,
                 _approvalCoordinator,
                 emit,
+                () => _capabilityCatalog.GetSnapshot().Revision,
                 delegatedRun => chatClient?.RecordDelegatedRunUsage(delegatedRun),
                 toolBudgetCancellation.RequestCancellation);
             var executionContract = CopilotAgentExecutionContract.Create(request, availableTools);
@@ -2033,6 +2035,7 @@ namespace ColorVision.Copilot
             private readonly CopilotToolExecutor _toolExecutor;
             private readonly CopilotFrameworkApprovalCoordinator _approvalCoordinator;
             private readonly Action<CopilotAgentEvent> _emit;
+            private readonly Func<long> _capabilityRevisionProvider;
             private readonly List<CopilotAgentStepRecord> _stepRecords = new();
             private readonly Dictionary<string, ToolAttemptState> _attemptsBySignature = new(StringComparer.OrdinalIgnoreCase);
             private readonly Dictionary<CopilotFrameworkApprovalReservationKey, FrameworkApprovalReservation> _approvedCalls = new();
@@ -2052,6 +2055,7 @@ namespace ColorVision.Copilot
                 CopilotToolExecutor toolExecutor,
                 CopilotFrameworkApprovalCoordinator approvalCoordinator,
                 Action<CopilotAgentEvent> emit,
+                Func<long> capabilityRevisionProvider,
                 Action<CopilotDelegatedRunUsage>? recordDelegatedRunUsage = null,
                 Action? onToolBudgetExhausted = null)
             {
@@ -2062,6 +2066,7 @@ namespace ColorVision.Copilot
                 _toolExecutor = toolExecutor;
                 _approvalCoordinator = approvalCoordinator;
                 _emit = emit;
+                _capabilityRevisionProvider = capabilityRevisionProvider ?? throw new ArgumentNullException(nameof(capabilityRevisionProvider));
                 _recordDelegatedRunUsage = recordDelegatedRunUsage;
                 _toolBudgetCompletionGate = new CopilotAgentToolBudgetCompletionGate(onToolBudgetExhausted);
             }
@@ -2591,15 +2596,21 @@ namespace ColorVision.Copilot
                         ToolCall = CreateToolCall(tool, toolInput),
                     }
                     : CreateInvocation(approvalReservation, frameworkApprovalGranted: true);
-                if (approvalReservation != null && !CanBeginApprovedExecution(approvalReservation))
+                if (approvalReservation != null
+                    && !CanBeginApprovedExecution(
+                        approvalReservation,
+                        out var approvalFailureCode,
+                        out var approvalFailureReason))
                 {
-                    var decision = CopilotFrameworkApprovalDecision.PolicyDenied(
-                        "The approved Agent Framework action is no longer executable.");
+                    _approvalCoordinator.Cancel(
+                        approvalReservation.ApprovalActionId,
+                        approvalFailureReason);
+                    var decision = CopilotFrameworkApprovalDecision.PolicyDenied(approvalFailureReason);
                     Reject(approvalReservation, decision);
                     return CopilotFrameworkToolResultFormatter.FormatRejected(
                         tool.Name,
                         decision.Reason,
-                        "approval_no_longer_executable",
+                        approvalFailureCode,
                         CopilotToolFailureKind.Authorization);
                 }
 
@@ -2635,18 +2646,32 @@ namespace ColorVision.Copilot
                 return CopilotFrameworkToolResultFormatter.Format(outcome);
             }
 
-            private bool CanBeginApprovedExecution(FrameworkApprovalReservation reservation)
+            private bool CanBeginApprovedExecution(
+                FrameworkApprovalReservation reservation,
+                out string failureCode,
+                out string failureReason)
             {
                 if (!CopilotAgentToolInputExactBinding.MatchesExecutionSignature(
                     reservation.Tool.Name,
                     reservation.ToolInput,
                     reservation.Signature))
                 {
+                    failureCode = "approval_operation_binding_changed";
+                    failureReason = "The approved tool call arguments no longer match the exact operation binding.";
+                    return false;
+                }
+
+                if (!CopilotCapabilityRevisionAuthorization.TryValidate(
+                    reservation.ExecutionScope,
+                    _capabilityRevisionProvider,
+                    out failureReason))
+                {
+                    failureCode = "approval_capability_revision_changed";
                     return false;
                 }
 
                 var currentWorkspacePath = GetCurrentWorkspacePath();
-                return reservation.ApprovedByFullAccess
+                var canBegin = reservation.ApprovedByFullAccess
                     ? CopilotAgentAccessPolicy.CanAutoApprove(
                         _request,
                         reservation.Tool,
@@ -2658,6 +2683,16 @@ namespace ColorVision.Copilot
                         reservation.ApprovalArgumentsDigest,
                         reservation.CallId,
                         reservation.ExecutionScope);
+                if (canBegin)
+                {
+                    failureCode = string.Empty;
+                    failureReason = string.Empty;
+                    return true;
+                }
+
+                failureCode = "approval_no_longer_executable";
+                failureReason = "The approved Agent Framework action no longer matches the active task, workspace, access policy, or approval state.";
+                return false;
             }
 
             private CopilotToolInvocation CreateInvocation(FrameworkApprovalReservation reservation, bool frameworkApprovalGranted)

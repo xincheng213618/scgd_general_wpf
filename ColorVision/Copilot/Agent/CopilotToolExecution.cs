@@ -46,6 +46,36 @@ namespace ColorVision.Copilot
         public string ConcurrencyKey { get; internal init; } = string.Empty;
     }
 
+    internal static class CopilotToolInvocationContext
+    {
+        private static readonly AsyncLocal<CopilotToolInvocation?> CurrentInvocation = new();
+
+        public static CopilotToolInvocation? Current => CurrentInvocation.Value;
+
+        public static IDisposable Enter(CopilotToolInvocation invocation)
+        {
+            ArgumentNullException.ThrowIfNull(invocation);
+            var previous = CurrentInvocation.Value;
+            CurrentInvocation.Value = invocation;
+            return new Scope(previous);
+        }
+
+        private sealed class Scope(CopilotToolInvocation? previous) : IDisposable
+        {
+            private CopilotToolInvocation? _previous = previous;
+            private int _disposed;
+
+            public void Dispose()
+            {
+                if (Interlocked.Exchange(ref _disposed, 1) != 0)
+                    return;
+
+                CurrentInvocation.Value = _previous;
+                _previous = null;
+            }
+        }
+    }
+
     public sealed class CopilotToolExecutionOutcome
     {
         public CopilotToolInvocation Invocation { get; init; } = null!;
@@ -498,43 +528,44 @@ namespace ColorVision.Copilot
             }
         }
 
-        private static Task<CopilotToolResult> ExecuteToolAsync(
+        private static async Task<CopilotToolResult> ExecuteToolAsync(
             CopilotToolInvocation invocation,
             CopilotToolProgressContext progress,
             CancellationToken cancellationToken)
         {
+            using var invocationContext = CopilotToolInvocationContext.Enter(invocation);
             if (invocation.FrameworkApprovalGranted
                 && invocation.Tool is ICopilotFrameworkApprovedProgressReportingTool approvedProgressTool)
             {
-                return approvedProgressTool.ExecuteApprovedWithProgressAsync(
+                return await approvedProgressTool.ExecuteApprovedWithProgressAsync(
                     invocation.AgentRequest,
                     invocation.ToolInput,
                     progress,
-                    cancellationToken);
+                    cancellationToken).ConfigureAwait(false);
             }
 
             if (invocation.FrameworkApprovalGranted
                 && invocation.Tool is ICopilotFrameworkApprovedTool approvedTool)
             {
-                return approvedTool.ExecuteApprovedAsync(
+                return await approvedTool.ExecuteApprovedAsync(
                     invocation.AgentRequest,
                     invocation.ToolInput,
-                    cancellationToken);
+                    cancellationToken).ConfigureAwait(false);
             }
 
             if (invocation.Tool is ICopilotProgressReportingTool progressTool)
             {
-                return progressTool.ExecuteWithProgressAsync(
+                return await progressTool.ExecuteWithProgressAsync(
                     invocation.AgentRequest,
                     invocation.ToolInput,
                     progress,
-                    cancellationToken);
+                    cancellationToken).ConfigureAwait(false);
             }
 
-            return invocation.Tool.ExecuteAsync(
+            return await invocation.Tool.ExecuteAsync(
                 invocation.AgentRequest,
                 invocation.ToolInput,
-                cancellationToken);
+                cancellationToken).ConfigureAwait(false);
         }
 
         private static string FormatReportedProgress(CopilotToolProgressUpdate? progress)

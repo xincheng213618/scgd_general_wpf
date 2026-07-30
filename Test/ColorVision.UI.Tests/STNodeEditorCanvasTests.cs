@@ -321,6 +321,33 @@ namespace ColorVision.UI.Tests
         }
 
         [Fact]
+        public void PropertyEditorPanel_LongContentDoesNotExceedMaximumWidth()
+        {
+            RunInSta(() =>
+            {
+                using var canvas = new FlowEditorCanvas();
+                canvas.NodePropertyPanel.Children.Add(new System.Windows.Controls.TextBox
+                {
+                    Text = new string('W', 200),
+                    Width = 2000
+                });
+                canvas.NodePropertyPanelContainer.Visibility = System.Windows.Visibility.Visible;
+
+                canvas.Measure(new System.Windows.Size(1200, 800));
+                canvas.Arrange(new System.Windows.Rect(0, 0, 1200, 800));
+                canvas.UpdateLayout();
+
+                Assert.Equal(
+                    FlowEditorCanvas.PropertyPanelMaxWidth,
+                    canvas.NodePropertyPanelContainer.MaxWidth);
+                Assert.InRange(
+                    canvas.NodePropertyPanelContainer.ActualWidth,
+                    0,
+                    FlowEditorCanvas.PropertyPanelMaxWidth);
+            });
+        }
+
+        [Fact]
         public void NodeMovement_HidesEmbeddedPropertyEditor()
         {
             RunInSta(() =>

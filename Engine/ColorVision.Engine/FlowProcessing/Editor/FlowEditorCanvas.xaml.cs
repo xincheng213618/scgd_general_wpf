@@ -15,7 +15,7 @@ namespace ColorVision.Engine.FlowProcessing.Editor
 {
     public partial class FlowEditorCanvas : UserControl, IDisposable
     {
-        internal const double PropertyPanelMaxWidth = 420;
+        internal const double PropertyPanelMaxWidth = 360;
         internal const double PropertyPanelMaxHeight = 520;
         internal const double PropertyPanelNodeGap = 10;
 
