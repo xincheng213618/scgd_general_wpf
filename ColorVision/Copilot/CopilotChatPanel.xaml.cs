@@ -112,6 +112,17 @@ namespace ColorVision.Copilot
                 return;
             }
 
+            if (e.Key == Key.O && Keyboard.Modifiers == ModifierKeys.Control)
+            {
+                if (DataContext is CopilotChatViewModel viewModel
+                    && viewModel.CopyLatestResponseCommand.CanExecute(null))
+                {
+                    viewModel.CopyLatestResponseCommand.Execute(null);
+                    e.Handled = true;
+                }
+                return;
+            }
+
             if (e.Key != Key.Escape)
                 return;
 

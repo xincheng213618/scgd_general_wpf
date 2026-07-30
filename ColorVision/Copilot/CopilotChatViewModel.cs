@@ -194,6 +194,9 @@ namespace ColorVision.Copilot
             PasteImageAttachmentCommand = new RelayCommand(_ => PasteImageAttachment(), _ => !IsBusy);
             AttachCurrentLiveContextCommand = new RelayCommand(_ => AttachCurrentLiveContext(), _ => CanAttachCurrentLiveContext);
             CopyMessageCommand = new RelayCommand<CopilotChatMessage>(CopyMessage, message => !string.IsNullOrWhiteSpace(message?.Content));
+            CopyLatestResponseCommand = new RelayCommand(
+                _ => CopyAssistantResponse(CopilotLocalCommandCatalog.FindExact("/copy")!, string.Empty),
+                _ => Volatile.Read(ref _disposeState) == 0 && SelectedConversation != null);
             BranchConversationCommand = new RelayCommand<CopilotChatMessage>(BranchConversation, CanBranchConversation);
             OpenBranchOriginCommand = new RelayCommand<CopilotConversationRecord>(OpenBranchOrigin, CanOpenBranchOrigin);
             EditMessageCommand = new RelayCommand<CopilotChatMessage>(BeginEditMessage, CanEditMessage);
@@ -460,6 +463,8 @@ namespace ColorVision.Copilot
             : "添加附件";
 
         public ICommand CopyMessageCommand { get; }
+
+        public ICommand CopyLatestResponseCommand { get; }
 
         public ICommand BranchConversationCommand { get; }
 
@@ -1394,6 +1399,9 @@ namespace ColorVision.Copilot
                     break;
                 case CopilotLocalCommandKind.RenameConversation:
                     RenameCurrentConversation(command, invocation.Arguments);
+                    break;
+                case CopilotLocalCommandKind.CopyResponse:
+                    CopyAssistantResponse(command, invocation.Arguments);
                     break;
                 case CopilotLocalCommandKind.NewConversation:
                     DismissLocalCommandResult();
@@ -3521,6 +3529,41 @@ namespace ColorVision.Copilot
             }
 
             DismissLocalCommandResult();
+        }
+
+        private void CopyAssistantResponse(CopilotLocalCommand command, string requestedOrdinal)
+        {
+            if (!CopilotConversationService.TryParseAssistantResponseOrdinal(requestedOrdinal, out var ordinal))
+            {
+                ShowLocalCommandResult(command, "序号必须是大于 0 的整数，例如 /copy 或 /copy 2。");
+                return;
+            }
+
+            var message = CopilotConversationService.FindNthLatestCompletedAssistantResponse(
+                SelectedConversation,
+                ordinal);
+            if (message == null)
+            {
+                ShowLocalCommandResult(
+                    command,
+                    ordinal == 1
+                        ? "当前会话还没有可复制的已完成回答。"
+                        : $"当前会话没有倒数第 {ordinal:N0} 条可复制的已完成回答。");
+                return;
+            }
+
+            var text = BuildMessageClipboardText(message);
+            if (!TrySetClipboardText(text, out var errorMessage))
+            {
+                ShowLocalCommandResult(command, "复制失败：" + errorMessage);
+                return;
+            }
+
+            ShowLocalCommandResult(
+                command,
+                ordinal == 1
+                    ? $"已复制最近一条已完成回答（{text.Length:N0} 个字符）。"
+                    : $"已复制倒数第 {ordinal:N0} 条已完成回答（{text.Length:N0} 个字符）。");
         }
 
         private CopilotConversationRecord ResolveNewConversationTarget()
@@ -5659,18 +5702,29 @@ namespace ColorVision.Copilot
             if (string.IsNullOrWhiteSpace(text))
                 return;
 
-            try
-            {
-                Clipboard.SetText(text);
-            }
-            catch (Exception ex)
+            if (!TrySetClipboardText(text, out var errorMessage))
             {
                 MessageBox.Show(
                     Application.Current.GetActiveWindow(),
-                    $"Failed to copy message: {CopilotUserFacingErrorFormatter.Sanitize(ex.Message)}",
+                    $"Failed to copy message: {errorMessage}",
                     "ColorVision",
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
+            }
+        }
+
+        private static bool TrySetClipboardText(string text, out string errorMessage)
+        {
+            try
+            {
+                Clipboard.SetText(text);
+                errorMessage = string.Empty;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                errorMessage = CopilotUserFacingErrorFormatter.Sanitize(ex.Message);
+                return false;
             }
         }
 

@@ -76,6 +76,46 @@ namespace ColorVision.Copilot
                 : 0;
         }
 
+        internal static bool TryParseAssistantResponseOrdinal(string? value, out int ordinal)
+        {
+            var normalized = value?.Trim() ?? string.Empty;
+            if (normalized.Length == 0)
+            {
+                ordinal = 1;
+                return true;
+            }
+
+            return int.TryParse(normalized, out ordinal) && ordinal > 0;
+        }
+
+        internal static CopilotChatMessage? FindNthLatestCompletedAssistantResponse(
+            CopilotConversationRecord? conversation,
+            int ordinal)
+        {
+            if (conversation == null || ordinal <= 0)
+                return null;
+
+            for (var index = conversation.Messages.Count - 1; index >= 0; index--)
+            {
+                var message = conversation.Messages[index];
+                if (message == null
+                    || message.IsUser
+                    || message.IsThinkingInProgress
+                    || message.WasResponseInterrupted
+                    || message.IsContentDisplayOnly
+                    || string.IsNullOrWhiteSpace(message.Content))
+                {
+                    continue;
+                }
+
+                ordinal--;
+                if (ordinal == 0)
+                    return message;
+            }
+
+            return null;
+        }
+
         public static CopilotConversationRecord ResolveNewTarget(
             ObservableCollection<CopilotConversationRecord> conversations,
             CopilotConversationRecord? selectedConversation,
