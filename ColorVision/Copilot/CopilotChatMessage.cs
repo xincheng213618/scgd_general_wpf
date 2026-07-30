@@ -130,7 +130,7 @@ namespace ColorVision.Copilot
         internal const string ReasoningTruncationMarker = "\n...<reasoning truncated by app>";
         internal const string ResponseInterruptionModelMarker =
             "<assistant_response_interrupted>\n"
-            + "The preceding assistant response ended before completion. Treat any preceding text as partial context, not as a completed answer. "
+            + "The assistant turn ended before producing a complete response. Treat any retained text as partial context, not as a completed answer. "
             + "Do not infer that unfinished steps, tool calls, file changes, or verification succeeded. Re-check current evidence before continuing.\n"
             + "</assistant_response_interrupted>";
         private const int MinimumRequestContentCompressionCharacters = 1_024;

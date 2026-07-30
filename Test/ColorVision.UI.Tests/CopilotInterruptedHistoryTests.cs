@@ -82,4 +82,69 @@ public sealed class CopilotInterruptedHistoryTests
         Assert.False(assistant.WasResponseInterrupted);
         Assert.Equal("Partial answer.", assistant.ModelContent);
     }
+
+    [Fact]
+    public void HostedAgentCancellationPreservesPartialTextAndClosesTheModelTurn()
+    {
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        conversation.Messages.Add(new CopilotChatMessage(CopilotChatRole.User, "Apply both changes."));
+        var assistant = new CopilotChatMessage(CopilotChatRole.Assistant, "Applied the first change.")
+        {
+            RequestMode = CopilotAgentMode.Auto,
+        };
+        conversation.Messages.Add(assistant);
+
+        CopilotHostedTurnCompletion.CompleteCancellation(
+            conversation,
+            assistant,
+            CopilotAgentControlIntent.Cancel);
+        var snapshot = CopilotConversationRequestBuilder.CaptureHistorySnapshot(conversation);
+
+        Assert.True(assistant.WasResponseInterrupted);
+        Assert.Equal(CopilotAgentStopReason.Cancelled, assistant.AgentStopReason);
+        Assert.Contains("Applied the first change.", snapshot.ModelMessages[1].Content, StringComparison.Ordinal);
+        Assert.Contains(CopilotChatMessage.ResponseInterruptionModelMarker, snapshot.ModelMessages[1].Content, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void HostedFailureWithoutTextStillClosesTheModelTurn()
+    {
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        conversation.Messages.Add(new CopilotChatMessage(CopilotChatRole.User, "Inspect the workspace."));
+        var assistant = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty);
+        conversation.Messages.Add(assistant);
+
+        CopilotHostedTurnCompletion.CompleteFailure(
+            conversation,
+            assistant,
+            "Connection failed at https://secret.example.test.",
+            "https://secret.example.test.");
+        var snapshot = CopilotConversationRequestBuilder.CaptureHistorySnapshot(conversation);
+
+        Assert.True(assistant.WasResponseInterrupted);
+        Assert.True(assistant.IsContentDisplayOnly);
+        Assert.Equal(CopilotChatMessage.ResponseInterruptionModelMarker, snapshot.ModelMessages[1].Content);
+        Assert.DoesNotContain("secret.example.test", snapshot.ModelMessages[1].Content, StringComparison.Ordinal);
+        Assert.Single(snapshot.VisibleMessages);
+    }
+
+    [Fact]
+    public void QueuedCancellationClosesTheUnstartedModelTurn()
+    {
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        conversation.Messages.Add(new CopilotChatMessage(CopilotChatRole.User, "Run this after the current task."));
+        var assistant = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty)
+        {
+            RequestMode = CopilotAgentMode.Code,
+        };
+        conversation.Messages.Add(assistant);
+
+        CopilotHostedTurnCompletion.CompleteBeforeStartCancellation(assistant);
+        var snapshot = CopilotConversationRequestBuilder.CaptureHistorySnapshot(conversation);
+
+        Assert.True(assistant.WasResponseInterrupted);
+        Assert.Equal(CopilotAgentStopReason.Cancelled, assistant.AgentStopReason);
+        Assert.Equal(CopilotChatMessage.ResponseInterruptionModelMarker, snapshot.ModelMessages[1].Content);
+        Assert.Single(snapshot.VisibleMessages);
+    }
 }
