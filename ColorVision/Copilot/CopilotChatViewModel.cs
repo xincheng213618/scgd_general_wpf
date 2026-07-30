@@ -2191,7 +2191,13 @@ namespace ColorVision.Copilot
         {
             var mode = ResolveComposerRequestMode();
             var agentContextEnabled = mode != CopilotAgentMode.Chat;
-            var history = CopilotConversationRequestBuilder.CaptureHistorySelection(SelectedConversation, ResolveConversationHistoryLimits(SelectedProfile));
+            var selectedProfile = SelectedProfile;
+            var conversation = SelectedConversation;
+            var requestProfile = selectedProfile == null
+                ? null
+                : CreateConversationRequestProfile(selectedProfile, conversation);
+            var historyLimits = ResolveConversationHistoryLimits(requestProfile);
+            var history = CopilotConversationRequestBuilder.CaptureHistorySelection(conversation, historyLimits);
             var projectInstructions = Array.Empty<CopilotProjectInstructionDocument>();
             var trustedProjectRoots = Array.Empty<string>();
             CopilotAgentSkillUsageSnapshot? skillUsage = null;
@@ -2213,14 +2219,14 @@ namespace ColorVision.Copilot
             var agentExtensionSnapshot = CopilotAgentExtensionBridge.Shared.GetSnapshot();
             var toolHookSurface = CopilotToolExecutor.GetSharedHookSurfaceSnapshot();
             var agentDefaults = _config.AgentDefaults;
-            var historyLimits = ResolveConversationHistoryLimits(SelectedProfile);
             var retainedHistoryWeight = history.Messages.Sum(message => CopilotTokenEstimator.EstimateTextWeight(message.Content));
-            var compaction = SelectedConversation?.Compaction;
+            var compaction = conversation?.Compaction;
             return CopilotContextDiagnostics.Format(new CopilotContextDiagnosticSnapshot
             {
-                ProfileLabel = SelectedProfile?.DisplayLabel ?? string.Empty,
+                ProfileLabel = requestProfile?.DisplayLabel ?? string.Empty,
                 Mode = mode,
-                SystemPromptCharacters = SelectedProfile?.EffectiveSystemPrompt.Length ?? 0,
+                ResponsePersonality = conversation?.ResponsePersonality ?? CopilotResponsePersonality.None,
+                SystemPromptCharacters = requestProfile?.EffectiveSystemPrompt.Length ?? 0,
                 SourceHistoryMessages = history.SourceMessageCount,
                 RetainedHistoryMessages = history.Messages.Length,
                 SourceHistoryCharacters = history.SourceCharacters,
@@ -2236,9 +2242,9 @@ namespace ColorVision.Copilot
                 HistoryContextWindowTokens = agentDefaults.ContextWindowTokens,
                 CompactedSourceMessages = compaction?.SourceMessageCount ?? 0,
                 CompactionSummaryCharacters = compaction?.Summary.Length ?? 0,
-                ConversationGoalCharacters = SelectedConversation?.Goal?.Objective.Length ?? 0,
-                ConversationGoalActive = SelectedConversation?.Goal?.IsActive == true,
-                ConversationGoalAchieved = SelectedConversation?.Goal?.IsAchieved == true,
+                ConversationGoalCharacters = conversation?.Goal?.Objective.Length ?? 0,
+                ConversationGoalActive = conversation?.Goal?.IsActive == true,
+                ConversationGoalAchieved = conversation?.Goal?.IsAchieved == true,
                 AttachmentCount = Attachments.Count,
                 FileAttachmentCount = Attachments.Count(item => item.Type == CopilotAttachmentType.File),
                 ImageAttachmentCount = Attachments.Count(item => item.Type == CopilotAttachmentType.Image),

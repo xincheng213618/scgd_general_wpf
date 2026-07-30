@@ -13,6 +13,8 @@ namespace ColorVision.Copilot
 
         public CopilotAgentMode Mode { get; init; }
 
+        public CopilotResponsePersonality ResponsePersonality { get; init; }
+
         public int SystemPromptCharacters { get; init; }
 
         public int SourceHistoryMessages { get; init; }
@@ -113,7 +115,14 @@ namespace ColorVision.Copilot
             builder.AppendLine();
             builder.Append("模型：").AppendLine(string.IsNullOrWhiteSpace(snapshot.ProfileLabel) ? "未选择" : snapshot.ProfileLabel.Trim());
             builder.Append("模式：").AppendLine(snapshot.Mode.ToString());
-            builder.Append("系统提示：").Append(FormatCount(snapshot.SystemPromptCharacters)).AppendLine(" 字符");
+            builder.Append("回答风格：")
+                .Append(CopilotResponsePersonalitySelection.GetDisplayName(snapshot.ResponsePersonality))
+                .Append('（')
+                .Append(CopilotResponsePersonalitySelection.GetCommandToken(snapshot.ResponsePersonality))
+                .AppendLine("）");
+            builder.Append("有效系统提示：")
+                .Append(FormatCount(snapshot.SystemPromptCharacters))
+                .AppendLine(" 字符（已应用宿主响应规则）");
             builder.Append("对话历史：");
             if (snapshot.SourceHistoryMessages <= 0)
             {

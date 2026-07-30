@@ -5,6 +5,31 @@ namespace ColorVision.UI.Tests;
 
 public sealed class CopilotContextDiagnosticsTests
 {
+    [Theory]
+    [InlineData(CopilotResponsePersonality.None, "回答风格：无（none）")]
+    [InlineData(CopilotResponsePersonality.Friendly, "回答风格：友好（friendly）")]
+    [InlineData(CopilotResponsePersonality.Pragmatic, "回答风格：务实（pragmatic）")]
+    public void EffectiveRequestPresentationIsInspectable(
+        CopilotResponsePersonality personality,
+        string expectedPersonality)
+    {
+        var source = new CopilotProfileConfig();
+        source.UseSystemPromptOverride("base prompt");
+        var requestProfile = CopilotResponsePresentationGuidance.CreateRequestProfile(source, personality);
+
+        var report = CopilotContextDiagnostics.Format(new CopilotContextDiagnosticSnapshot
+        {
+            ResponsePersonality = personality,
+            SystemPromptCharacters = requestProfile.EffectiveSystemPrompt.Length,
+        });
+
+        Assert.Contains(expectedPersonality, report);
+        Assert.Contains(
+            $"有效系统提示：{requestProfile.EffectiveSystemPrompt.Length:N0} 字符（已应用宿主响应规则）",
+            report);
+        Assert.True(requestProfile.EffectiveSystemPrompt.Length > source.EffectiveSystemPrompt.Length);
+    }
+
     [Fact]
     public void TrustedProjectRootUsesTheFullNormalizedPath()
     {
