@@ -85,6 +85,7 @@ namespace ColorVision.Copilot
             new("/doctor", "检查模型、会话保存、任务、MCP、Hook 与 Skill 健康度", CopilotLocalCommandKind.Doctor, AvailableWhileAgentRuns: true, Usage: "/doctor"),
             new("/feedback", "反馈当前 Copilot 会话问题，可补充问题说明", CopilotLocalCommandKind.Feedback, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/feedback [问题说明]"),
             new("/tasks", "查看正在运行、排队及等待恢复的 Agent 任务", CopilotLocalCommandKind.Tasks, AvailableWhileAgentRuns: true, Usage: "/tasks"),
+            new("/ps", "同 /tasks；查看正在运行、排队及等待恢复的 Agent 任务", CopilotLocalCommandKind.Tasks, AvailableWhileAgentRuns: true, Usage: "/ps"),
             new("/queue", "查看当前会话等待执行的后续请求", CopilotLocalCommandKind.Queue, AvailableWhileAgentRuns: true, Usage: "/queue"),
             new("/approve", "查看待确认操作，或打开指定操作的原生审查窗口", CopilotLocalCommandKind.Approve, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/approve [N]"),
             new("/usage", "查看当前会话已记录的输入、输出与缓存 Token", CopilotLocalCommandKind.Usage, AvailableWhileAgentRuns: true, Usage: "/usage"),

@@ -18,6 +18,19 @@ public sealed class CopilotTaskDiagnosticsTests
     }
 
     [Fact]
+    public void PsCommandUsesTheSameReadOnlyTaskDiagnostics()
+    {
+        var invocation = CopilotLocalCommandCatalog.Parse("/ps");
+
+        Assert.NotNull(invocation);
+        Assert.Equal(CopilotLocalCommandKind.Tasks, invocation.Command.Kind);
+        Assert.Empty(invocation.Arguments);
+        Assert.True(invocation.Command.AvailableWhileAgentRuns);
+        Assert.Contains(CopilotLocalCommandCatalog.Suggest("/p"), command => command.Name == "/ps");
+        Assert.Null(CopilotLocalCommandCatalog.Parse("/ps all"));
+    }
+
+    [Fact]
     public void ReportSeparatesHostedRunsFromTasksThatNeedAttention()
     {
         var now = new DateTimeOffset(2026, 7, 30, 12, 0, 0, TimeSpan.Zero);
