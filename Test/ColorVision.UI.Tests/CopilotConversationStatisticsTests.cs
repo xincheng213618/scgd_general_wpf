@@ -46,7 +46,8 @@ public sealed class CopilotConversationStatisticsTests
         Assert.Equal(2, snapshot.StoredConversations);
         Assert.Equal(2, snapshot.ActiveConversations);
         Assert.Equal(2, snapshot.UserTurns);
-        Assert.Equal(2, snapshot.CompletedResponses);
+        Assert.Equal(2, snapshot.TerminalResponses);
+        Assert.Equal(0, snapshot.InterruptedResponses);
         Assert.Equal(2, snapshot.TrackedResponses);
         Assert.Equal(300, snapshot.Usage.InputTokens);
         Assert.Equal(150, snapshot.Usage.OutputTokens);
@@ -80,7 +81,8 @@ public sealed class CopilotConversationStatisticsTests
 
         Assert.Equal(new DateOnly(2026, 7, 1), snapshot.StartDate);
         Assert.Equal(1, snapshot.UserTurns);
-        Assert.Equal(1, snapshot.CompletedResponses);
+        Assert.Equal(1, snapshot.TerminalResponses);
+        Assert.Equal(0, snapshot.InterruptedResponses);
         Assert.Equal(1, snapshot.TrackedResponses);
         Assert.Equal(1, snapshot.ActiveResponses);
         Assert.Equal(30, snapshot.Usage.EffectiveTotalTokens);
@@ -104,7 +106,7 @@ public sealed class CopilotConversationStatisticsTests
 
         Assert.Contains("/stats · 本地会话统计", report, StringComparison.Ordinal);
         Assert.Contains("范围：全部本地历史 · 2026-07-29 至 2026-07-30", report, StringComparison.Ordinal);
-        Assert.Contains("Provider Token：已记录回答 1/2", report, StringComparison.Ordinal);
+        Assert.Contains("Provider Token：已记录轮次 1/2", report, StringComparison.Ordinal);
         Assert.Contains("未纳入：1 条旧回答、失败回答或未返回 Token 元数据的回答。", report, StringComparison.Ordinal);
         Assert.Contains("全历史当前连续 2 天 · 最长连续 2 天", report, StringComparison.Ordinal);
         Assert.Contains("会话分支复制的历史前缀不会重复计数", report, StringComparison.Ordinal);
@@ -112,6 +114,32 @@ public sealed class CopilotConversationStatisticsTests
         Assert.Equal(
             "/stats 参数无效。可用 /stats、/stats 7、/stats 30 或 /stats all。",
             CopilotConversationStatistics.Format([conversation], now, "weekly"));
+    }
+
+    [Fact]
+    public void InterruptedResponsesRemainInUsageButHaveDistinctTerminalStatus()
+    {
+        var now = new DateTimeOffset(2026, 7, 30, 12, 0, 0, TimeSpan.FromHours(8));
+        var conversation = new CopilotConversationRecord();
+        var interrupted = CreateAssistantMessage(
+            new DateTime(2026, 7, 30, 11, 0, 0),
+            new CopilotTokenUsage(40, 10, 50));
+        interrupted.MarkResponseInterrupted("Provider stopped early.");
+        conversation.Messages.Add(interrupted);
+
+        var snapshot = CopilotConversationStatistics.Capture(
+            [conversation],
+            now,
+            CopilotConversationStatisticsWindow.SevenDays);
+        var report = CopilotConversationStatistics.Format(snapshot);
+
+        Assert.Equal(1, snapshot.TerminalResponses);
+        Assert.Equal(1, snapshot.InterruptedResponses);
+        Assert.Equal(1, snapshot.TrackedResponses);
+        Assert.Equal(50, snapshot.Usage.EffectiveTotalTokens);
+        Assert.Contains("已结束回答 1 · 标记中断 1", report, StringComparison.Ordinal);
+        Assert.Contains("Provider Token：已记录轮次 1/1", report, StringComparison.Ordinal);
+        Assert.DoesNotContain("已完成回答", report, StringComparison.Ordinal);
     }
 
     private static CopilotChatMessage CreateUserMessage(DateTime createdAt)

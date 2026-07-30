@@ -2591,7 +2591,7 @@ namespace ColorVision.Copilot
                     usage);
                 goalOutcomeRecorded = true;
                 usage = usage.Add(goalResult.EvaluationUsage);
-                CopilotHostedTurnCompletion.CompleteSuccessfully(conversation, assistantMessage, usage);
+                CopilotHostedTurnCompletion.CompleteTerminalTurn(conversation, assistantMessage, usage);
                 UpdateConversationMetadata(conversation, touch: true);
                 await PersistStateAndFlushAsync();
                 if (goalResult.ShouldQueueContinuation)

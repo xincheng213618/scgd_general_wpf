@@ -17,7 +17,8 @@ namespace ColorVision.Copilot
         DateOnly Date,
         int ActiveConversations,
         int UserTurns,
-        int CompletedResponses,
+        int TerminalResponses,
+        int InterruptedResponses,
         int TrackedResponses,
         int UnreportedResponses,
         int ActiveResponses,
@@ -30,7 +31,8 @@ namespace ColorVision.Copilot
         int StoredConversations,
         int ActiveConversations,
         int UserTurns,
-        int CompletedResponses,
+        int TerminalResponses,
+        int InterruptedResponses,
         int TrackedResponses,
         int UnreportedResponses,
         int ActiveResponses,
@@ -117,7 +119,8 @@ namespace ColorVision.Copilot
                 source.Length,
                 activeConversationIndices.Count,
                 SaturatingSum(dailyActivity.Select(day => day.UserTurns)),
-                SaturatingSum(dailyActivity.Select(day => day.CompletedResponses)),
+                SaturatingSum(dailyActivity.Select(day => day.TerminalResponses)),
+                SaturatingSum(dailyActivity.Select(day => day.InterruptedResponses)),
                 SaturatingSum(dailyActivity.Select(day => day.TrackedResponses)),
                 SaturatingSum(dailyActivity.Select(day => day.UnreportedResponses)),
                 SaturatingSum(dailyActivity.Select(day => day.ActiveResponses)),
@@ -146,15 +149,17 @@ namespace ColorVision.Copilot
                 .AppendLine(" 个")
                 .Append("交互：提问 ")
                 .Append(FormatCount(snapshot.UserTurns))
-                .Append(" · 已完成回答 ")
-                .Append(FormatCount(snapshot.CompletedResponses))
+                .Append(" · 已结束回答 ")
+                .Append(FormatCount(snapshot.TerminalResponses))
+                .Append(" · 标记中断 ")
+                .Append(FormatCount(snapshot.InterruptedResponses))
                 .Append(" · 进行中 ")
                 .Append(FormatCount(snapshot.ActiveResponses))
                 .AppendLine()
-                .Append("Provider Token：已记录回答 ")
+                .Append("Provider Token：已记录轮次 ")
                 .Append(FormatCount(snapshot.TrackedResponses))
                 .Append('/')
-                .Append(FormatCount(snapshot.CompletedResponses))
+                .Append(FormatCount(snapshot.TerminalResponses))
                 .Append(" · 输入 ")
                 .Append(FormatTokens(snapshot.Usage.InputTokens))
                 .Append(" · 输出 ")
@@ -318,6 +323,7 @@ namespace ColorVision.Copilot
                                 0,
                                 0,
                                 0,
+                                0,
                                 CopilotTokenUsage.Empty);
                     })
                     .ToArray();
@@ -340,7 +346,9 @@ namespace ColorVision.Copilot
                     .Append(" · 提问 ")
                     .Append(FormatCount(day.UserTurns))
                     .Append(" · 回答 ")
-                    .Append(FormatCount(day.CompletedResponses))
+                    .Append(FormatCount(day.TerminalResponses))
+                    .Append(" · 中断 ")
+                    .Append(FormatCount(day.InterruptedResponses))
                     .Append(" · Token ")
                     .AppendLine(FormatTokens(day.Usage.EffectiveTotalTokens));
             }
@@ -381,7 +389,9 @@ namespace ColorVision.Copilot
 
             public int UserTurns { get; private set; }
 
-            public int CompletedResponses { get; private set; }
+            public int TerminalResponses { get; private set; }
+
+            public int InterruptedResponses { get; private set; }
 
             public int TrackedResponses { get; private set; }
 
@@ -406,7 +416,9 @@ namespace ColorVision.Copilot
                     return;
                 }
 
-                CompletedResponses++;
+                TerminalResponses++;
+                if (message.WasResponseInterrupted)
+                    InterruptedResponses++;
                 if (!message.ReportedUsage.HasAny)
                     return;
 
@@ -420,9 +432,10 @@ namespace ColorVision.Copilot
                     Date,
                     _conversationIndices.Count,
                     UserTurns,
-                    CompletedResponses,
+                    TerminalResponses,
+                    InterruptedResponses,
                     TrackedResponses,
-                    Math.Max(0, CompletedResponses - TrackedResponses),
+                    Math.Max(0, TerminalResponses - TrackedResponses),
                     ActiveResponses,
                     Usage);
             }

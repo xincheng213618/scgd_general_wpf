@@ -168,7 +168,7 @@ public sealed class CopilotTerminalEventIntegrityTests
         assistant.UpsertAgentTrace(CreateTrace("running", CopilotToolExecutionState.Running));
         conversation.Messages.Add(assistant);
 
-        CopilotHostedTurnCompletion.CompleteSuccessfully(
+        CopilotHostedTurnCompletion.CompleteTerminalTurn(
             conversation,
             assistant,
             CopilotTokenUsage.Empty);

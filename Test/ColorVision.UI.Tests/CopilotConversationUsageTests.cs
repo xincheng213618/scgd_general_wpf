@@ -18,17 +18,17 @@ public sealed class CopilotConversationUsageTests
     }
 
     [Fact]
-    public void CompletedResponsesPersistAndAggregateProviderReportedUsage()
+    public void TerminalResponsesPersistAndAggregateProviderReportedUsage()
     {
         var conversation = CreateConversation();
         var first = AddAssistant(conversation, "First answer");
-        CopilotHostedTurnCompletion.CompleteSuccessfully(
+        CopilotHostedTurnCompletion.CompleteTerminalTurn(
             conversation,
             first,
             new CopilotTokenUsage(100, 20, 120, 40));
         var unreported = AddAssistant(conversation, "Legacy answer");
         var second = AddAssistant(conversation, "Second answer");
-        CopilotHostedTurnCompletion.CompleteSuccessfully(
+        CopilotHostedTurnCompletion.CompleteTerminalTurn(
             conversation,
             second,
             new CopilotTokenUsage(200, 50, 260));
@@ -47,6 +47,29 @@ public sealed class CopilotConversationUsageTests
         Assert.Contains("Provider", report, StringComparison.Ordinal);
         Assert.Contains("不代表账户账单", report, StringComparison.Ordinal);
         Assert.Contains("进行中：1 条", report, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void InterruptedResponsesKeepActualUsageWithoutMasqueradingAsComplete()
+    {
+        var conversation = CreateConversation();
+        var interrupted = AddAssistant(conversation, "Partial answer");
+        interrupted.MarkResponseInterrupted("Provider stopped early.");
+
+        CopilotHostedTurnCompletion.CompleteTerminalTurn(
+            conversation,
+            interrupted,
+            new CopilotTokenUsage(80, 20, 100));
+
+        var snapshot = CopilotConversationUsageDiagnostics.Capture(conversation);
+        var report = CopilotConversationUsageDiagnostics.Format(conversation);
+
+        Assert.Equal(1, snapshot.TrackedResponses);
+        Assert.Equal(1, snapshot.InterruptedResponses);
+        Assert.Equal(100, snapshot.TotalUsage.EffectiveTotalTokens);
+        Assert.Contains("已记录轮次：1", report, StringComparison.Ordinal);
+        Assert.Contains("标记中断：1 条", report, StringComparison.Ordinal);
+        Assert.DoesNotContain("成功完成", report, StringComparison.Ordinal);
     }
 
     [Fact]

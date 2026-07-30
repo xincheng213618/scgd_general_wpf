@@ -9,6 +9,7 @@ namespace ColorVision.Copilot
         CopilotTokenUsage TotalUsage,
         CopilotTokenUsage LastUsage,
         int TrackedResponses,
+        int InterruptedResponses,
         int UnreportedResponses,
         int ActiveResponses);
 
@@ -17,7 +18,7 @@ namespace ColorVision.Copilot
         public static CopilotConversationUsageSnapshot Capture(CopilotConversationRecord? conversation)
         {
             if (conversation == null)
-                return new CopilotConversationUsageSnapshot(CopilotTokenUsage.Empty, CopilotTokenUsage.Empty, 0, 0, 0);
+                return new CopilotConversationUsageSnapshot(CopilotTokenUsage.Empty, CopilotTokenUsage.Empty, 0, 0, 0, 0);
 
             var assistantMessages = conversation.Messages
                 .Where(message => message != null && !message.IsUser)
@@ -35,6 +36,7 @@ namespace ColorVision.Copilot
             var trackedResponses = completedResponses
                 .Where(message => message.ReportedUsage.HasAny)
                 .ToArray();
+            var interruptedResponses = completedResponses.Count(message => message.WasResponseInterrupted);
             var totalUsage = trackedResponses.Aggregate(
                 CopilotTokenUsage.Empty,
                 (total, message) => total.Add(message.ReportedUsage));
@@ -43,6 +45,7 @@ namespace ColorVision.Copilot
                 totalUsage,
                 lastUsage,
                 trackedResponses.Length,
+                interruptedResponses,
                 completedResponses.Length - trackedResponses.Length,
                 activeResponses);
         }
@@ -66,7 +69,7 @@ namespace ColorVision.Copilot
             else
             {
                 builder
-                    .Append("已记录回答：")
+                    .Append("已记录轮次：")
                     .Append(snapshot.TrackedResponses.ToString("N0", CultureInfo.CurrentCulture))
                     .AppendLine()
                     .Append("累计输入：")
@@ -93,6 +96,13 @@ namespace ColorVision.Copilot
                     .AppendLine(FormatTokens(snapshot.LastUsage.EffectiveTotalTokens));
             }
 
+            if (snapshot.InterruptedResponses > 0)
+            {
+                builder
+                    .Append("标记中断：")
+                    .Append(snapshot.InterruptedResponses.ToString("N0", CultureInfo.CurrentCulture))
+                    .AppendLine(" 条；若 Provider 返回了 Token 元数据，仍按实际用量计入。");
+            }
             if (snapshot.UnreportedResponses > 0)
             {
                 builder
@@ -105,7 +115,7 @@ namespace ColorVision.Copilot
                 builder
                     .Append("进行中：")
                     .Append(snapshot.ActiveResponses.ToString("N0", CultureInfo.CurrentCulture))
-                    .AppendLine(" 条回答将在成功完成并收到 Token 元数据后计入。");
+                    .AppendLine(" 条回答将在结束并收到 Token 元数据后计入。");
             }
 
             builder.Append("范围：仅统计当前会话消息中由 Provider 返回并由应用保存的 Token；不代表账户账单、套餐余额、费用或速率限制。");

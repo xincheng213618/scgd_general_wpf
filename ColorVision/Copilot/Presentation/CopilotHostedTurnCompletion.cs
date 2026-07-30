@@ -4,7 +4,7 @@ namespace ColorVision.Copilot
 {
     public static class CopilotHostedTurnCompletion
     {
-        public static void CompleteSuccessfully(
+        public static void CompleteTerminalTurn(
             CopilotConversationRecord conversation,
             CopilotChatMessage assistantMessage,
             CopilotTokenUsage usage)
