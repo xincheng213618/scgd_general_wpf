@@ -77,9 +77,15 @@ namespace ColorVision.Copilot
             {
                 var blocker = Message.AgentBlockers.FirstOrDefault(item => item != null && item.IsStructurallyValid());
                 if (blocker?.Kind == CopilotAgentBlockerKind.ProviderOutput)
-                    return blocker.Code == "provider_interrupted"
-                        ? Conversation.AgentSessionCheckpoint == null ? "恢复点未能保存，请重新发送请求" : "已保存当前进度，可安全恢复"
-                        : "模型未返回最终回答";
+                    return blocker.Code switch
+                    {
+                        "provider_interrupted" => Conversation.AgentSessionCheckpoint == null
+                            ? "恢复点未能保存，请重新发送请求"
+                            : "已保存当前进度，可安全恢复",
+                        "provider_output_length" => "最终回答达到输出上限，已保留部分内容",
+                        "provider_content_filtered" => "最终回答被内容策略提前停止",
+                        _ => "模型未返回最终回答",
+                    };
                 if (blocker != null && !string.IsNullOrWhiteSpace(blocker.Summary))
                     return blocker.Summary;
 
