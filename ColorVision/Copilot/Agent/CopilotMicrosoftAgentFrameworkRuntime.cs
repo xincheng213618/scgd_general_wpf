@@ -874,18 +874,26 @@ namespace ColorVision.Copilot
             if (controlIntent == CopilotAgentControlIntent.None)
                 timeBudgetExhausted |= timeBudgetCancellation.IsCancellationRequested && !callerCancellationToken.IsCancellationRequested;
             var outputLengthLimitReached = IsLengthLimitedOutput(providerFinishReason);
+            var outputContentFiltered = IsContentFilteredOutput(providerFinishReason);
             if (outputLengthLimitReached)
             {
                 emit(CopilotAgentEvent.RuntimeDiagnostic(
                     "The provider reached its maximum output length before completing the Agent answer; starting one bounded no-tools finalization call instead of accepting partial text."));
             }
+            else if (outputContentFiltered)
+            {
+                emit(CopilotAgentEvent.RuntimeDiagnostic(
+                    "The provider content filter stopped the Agent answer; allowed partial text will be retained without an automatic retry."));
+            }
             var hasModelFinalAnswer = !providerInterrupted
                 && !outputLengthLimitReached
+                && !outputContentFiltered
                 && !string.IsNullOrWhiteSpace(answerText.ToString());
             if (controlIntent == CopilotAgentControlIntent.None
                 && !timeBudgetExhausted
                 && !providerInterrupted
                 && !contextWindowExceeded
+                && !outputContentFiltered
                 && (!hasModelFinalAnswer || toolBudgetForcedFinalization))
             {
                 emit(CopilotAgentEvent.RuntimeDiagnostic(toolBudgetForcedFinalization
@@ -903,6 +911,7 @@ namespace ColorVision.Copilot
                     .Normalize(repairPrompt.Messages.Append(new CopilotRequestMessage("user", repairInstruction)))
                     .Select(ToFrameworkMessage)
                     .ToArray();
+                hasModelFinalAnswer = false;
                 try
                 {
                     var repairResponse = await contextRecoveryChatClient.GetResponseAsync(
@@ -912,19 +921,34 @@ namespace ColorVision.Copilot
                     foreach (var usageContent in repairResponse.Messages.SelectMany(message => message.Contents).OfType<UsageContent>())
                         usage = usage.Add(ToCopilotUsage(usageContent.Details));
                     var repairLengthLimited = IsLengthLimitedOutput(repairResponse.FinishReason);
-                    var repairedText = repairLengthLimited ? string.Empty : ExtractFinalAnswerText(repairResponse);
+                    var repairContentFiltered = IsContentFilteredOutput(repairResponse.FinishReason);
+                    var repairedText = ExtractFinalAnswerText(repairResponse);
+                    outputLengthLimitReached = repairLengthLimited;
+                    outputContentFiltered = repairContentFiltered;
                     if (repairLengthLimited)
                     {
                         emit(CopilotAgentEvent.RuntimeDiagnostic(
-                            "The bounded no-tools finalization call also reached its maximum output length; partial replacement text was rejected."));
+                            "The bounded no-tools finalization call also reached its maximum output length; allowed partial text was retained without replacing earlier output."));
                     }
-                    if (!string.IsNullOrWhiteSpace(repairedText))
+                    else if (repairContentFiltered)
+                    {
+                        emit(CopilotAgentEvent.RuntimeDiagnostic(
+                            "The bounded no-tools finalization call was stopped by the provider content filter; filtered replacement text was not accepted as complete and earlier partial output was retained."));
+                    }
+                    if (!repairLengthLimited
+                        && !repairContentFiltered
+                        && !string.IsNullOrWhiteSpace(repairedText))
                     {
                         if (answerText.Length > 0)
                             emit(CopilotAgentEvent.AnswerReset());
                         emit(CopilotAgentEvent.AnswerDelta(repairedText));
                         hasModelFinalAnswer = true;
                         emit(CopilotAgentEvent.RuntimeDiagnostic("The bounded no-tools finalization call produced the final answer."));
+                    }
+                    else if (!string.IsNullOrWhiteSpace(repairedText))
+                    {
+                        if (answerText.Length == 0)
+                            emit(CopilotAgentEvent.AnswerDelta(repairedText));
                     }
                     else
                     {
@@ -939,16 +963,24 @@ namespace ColorVision.Copilot
                 {
                     emit(CopilotAgentEvent.RuntimeDiagnostic($"The bounded no-tools finalization call failed ({CopilotAgentTraceEntry.Sanitize(ex.Message)})."));
                 }
-
-                if (!hasModelFinalAnswer)
-                {
-                    emit(CopilotAgentEvent.AnswerDelta(
-                        "模型没有返回可显示的最终回答。本轮上下文和工具执行记录已经保留，可使用“重试最终回答”仅重新生成总结，不会再次调用工具。"));
-                }
             }
             if (controlIntent == CopilotAgentControlIntent.None
                 && !timeBudgetExhausted
                 && !providerInterrupted
+                && !contextWindowExceeded
+                && !hasModelFinalAnswer)
+            {
+                var partialAnswerPrefix = answerText.Length > 0 ? "\n\n" : string.Empty;
+                emit(CopilotAgentEvent.AnswerDelta(outputContentFiltered
+                    ? partialAnswerPrefix + "最终回答被提供商内容策略提前停止；已保留以上允许返回的内容，可调整请求后重试最终回答。"
+                    : outputLengthLimitReached
+                        ? partialAnswerPrefix + "最终回答达到模型输出上限；已保留以上部分内容，可稍后重试最终回答。"
+                        : "模型没有返回可显示的最终回答。本轮上下文和工具执行记录已经保留，可使用“重试最终回答”仅重新生成总结，不会再次调用工具。"));
+            }
+            if (controlIntent == CopilotAgentControlIntent.None
+                && !timeBudgetExhausted
+                && !providerInterrupted
+                && hasModelFinalAnswer
                 && CopilotNarrowEvidenceAnswerPolicy.TryGetUnsupportedFindingReason(
                     request,
                     answerText.ToString(),
@@ -960,7 +992,9 @@ namespace ColorVision.Copilot
                 emit(CopilotAgentEvent.AnswerDelta(CopilotNarrowEvidenceAnswerPolicy.BuildNoVerifiedFindingAnswer(request)));
                 hasModelFinalAnswer = true;
             }
-            if (controlIntent == CopilotAgentControlIntent.None && !timeBudgetExhausted)
+            if (controlIntent == CopilotAgentControlIntent.None
+                && !timeBudgetExhausted
+                && hasModelFinalAnswer)
             {
                 var sourceAppendix = CopilotWebEvidenceSourceLedger.BuildMissingSourceAppendix(
                     bridge.StepRecords,
@@ -1093,6 +1127,17 @@ namespace ColorVision.Copilot
                 && !blockers.Any(blocker => blocker.Kind == CopilotAgentBlockerKind.ProviderOutput))
             {
                 blockers = blockers.Append(CreateProviderOutputBlocker(timeBudgetExhausted, requestBudgetExhausted: true)).ToArray();
+            }
+            if (!hasModelFinalAnswer
+                && (outputLengthLimitReached || outputContentFiltered))
+            {
+                blockers = blockers
+                    .Where(blocker => blocker.Kind != CopilotAgentBlockerKind.ProviderOutput)
+                    .Prepend(CreateProviderOutputBlocker(
+                        timeBudgetExhausted: false,
+                        outputLengthLimited: outputLengthLimitReached,
+                        outputContentFiltered: outputContentFiltered))
+                    .ToArray();
             }
             if (stopReason == CopilotAgentStopReason.TaskPassLimit && blockers.Any(blocker => blocker.Kind == CopilotAgentBlockerKind.ToolFailure))
                 stopReason = CopilotAgentStopReason.Blocked;
@@ -1405,13 +1450,13 @@ namespace ColorVision.Copilot
                                     ? "provider_output_budget"
                                     : "provider_empty_output",
                 Summary = timeBudgetExhausted
-                    ? "The final-answer-only provider call exhausted its time budget."
+                    ? "The provider did not complete the Agent final answer before its time budget expired."
                     : contextWindowExceeded
                         ? "The provider rejected the request as larger than its actual context window after one bounded compaction recovery."
                         : outputLengthLimited
-                            ? "The final-answer-only provider call reached its maximum output length."
+                            ? "The provider reached its maximum output length before the Agent final answer completed."
                             : outputContentFiltered
-                                ? "The provider content policy stopped the final-answer-only response."
+                                ? "The provider content policy stopped the Agent final answer."
                                 : requestBudgetExhausted
                                     ? "The Agent request budget was exhausted before a final answer was produced."
                                     : "The model returned no final answer after the bounded finalization attempt.",
