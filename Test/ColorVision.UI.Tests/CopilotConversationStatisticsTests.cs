@@ -1,0 +1,136 @@
+using ColorVision.Copilot;
+
+namespace ColorVision.UI.Tests;
+
+public sealed class CopilotConversationStatisticsTests
+{
+    [Fact]
+    public void StatsCommandIsLocalAndAvailableDuringAnActiveRun()
+    {
+        var invocation = CopilotLocalCommandCatalog.Parse("/stats 30");
+
+        Assert.NotNull(invocation);
+        Assert.Equal(CopilotLocalCommandKind.Statistics, invocation.Command.Kind);
+        Assert.Equal("30", invocation.Arguments);
+        Assert.True(invocation.Command.AvailableWhileAgentRuns);
+        Assert.Contains(CopilotLocalCommandCatalog.Suggest("/"), command => command.Name == "/stats");
+    }
+
+    [Fact]
+    public void CaptureDoesNotDoubleCountHistoryCopiedIntoABranch()
+    {
+        var now = new DateTimeOffset(2026, 7, 30, 12, 0, 0, TimeSpan.FromHours(8));
+        var root = new CopilotConversationRecord
+        {
+            CreatedAt = new DateTime(2026, 7, 28, 9, 0, 0),
+            UpdatedAt = new DateTime(2026, 7, 28, 9, 5, 0),
+        };
+        root.Messages.Add(CreateUserMessage(new DateTime(2026, 7, 28, 9, 0, 0)));
+        var rootResponse = CreateAssistantMessage(
+            new DateTime(2026, 7, 28, 9, 5, 0),
+            new CopilotTokenUsage(100, 50, 150, 40));
+        root.Messages.Add(rootResponse);
+
+        var branch = CopilotConversationBranchService.CreateBranch(root, rootResponse, "Alternative");
+        branch.CreatedAt = new DateTime(2026, 7, 29, 10, 0, 0);
+        branch.Messages.Add(CreateUserMessage(new DateTime(2026, 7, 30, 10, 0, 0)));
+        branch.Messages.Add(CreateAssistantMessage(
+            new DateTime(2026, 7, 30, 10, 2, 0),
+            new CopilotTokenUsage(200, 100, 300, 80)));
+
+        var snapshot = CopilotConversationStatistics.Capture(
+            [root, branch],
+            now,
+            CopilotConversationStatisticsWindow.SevenDays);
+
+        Assert.Equal(2, snapshot.StoredConversations);
+        Assert.Equal(2, snapshot.ActiveConversations);
+        Assert.Equal(2, snapshot.UserTurns);
+        Assert.Equal(2, snapshot.CompletedResponses);
+        Assert.Equal(2, snapshot.TrackedResponses);
+        Assert.Equal(300, snapshot.Usage.InputTokens);
+        Assert.Equal(150, snapshot.Usage.OutputTokens);
+        Assert.Equal(450, snapshot.Usage.EffectiveTotalTokens);
+        Assert.Equal(120, snapshot.Usage.EffectiveCachedInputTokens);
+    }
+
+    [Fact]
+    public void ThirtyDayWindowExcludesOlderMessagesAndSeparatesActiveResponses()
+    {
+        var now = new DateTimeOffset(2026, 7, 30, 12, 0, 0, TimeSpan.FromHours(8));
+        var conversation = new CopilotConversationRecord();
+        conversation.Messages.Add(CreateUserMessage(new DateTime(2026, 6, 10, 8, 0, 0)));
+        conversation.Messages.Add(CreateAssistantMessage(
+            new DateTime(2026, 6, 10, 8, 1, 0),
+            new CopilotTokenUsage(500, 250, 750)));
+        conversation.Messages.Add(CreateUserMessage(new DateTime(2026, 7, 25, 8, 0, 0)));
+        conversation.Messages.Add(CreateAssistantMessage(
+            new DateTime(2026, 7, 25, 8, 1, 0),
+            new CopilotTokenUsage(20, 10, 30)));
+        conversation.Messages.Add(new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty)
+        {
+            CreatedAt = new DateTime(2026, 7, 30, 11, 59, 0),
+            IsResponsePending = true,
+        });
+
+        var snapshot = CopilotConversationStatistics.Capture(
+            [conversation],
+            now,
+            CopilotConversationStatisticsWindow.ThirtyDays);
+
+        Assert.Equal(new DateOnly(2026, 7, 1), snapshot.StartDate);
+        Assert.Equal(1, snapshot.UserTurns);
+        Assert.Equal(1, snapshot.CompletedResponses);
+        Assert.Equal(1, snapshot.TrackedResponses);
+        Assert.Equal(1, snapshot.ActiveResponses);
+        Assert.Equal(30, snapshot.Usage.EffectiveTotalTokens);
+    }
+
+    [Fact]
+    public void FormatShowsLocalActivityAndRejectsUnsupportedScopes()
+    {
+        var now = new DateTimeOffset(2026, 7, 30, 12, 0, 0, TimeSpan.FromHours(8));
+        var conversation = new CopilotConversationRecord();
+        conversation.Messages.Add(CreateUserMessage(new DateTime(2026, 7, 29, 9, 0, 0)));
+        conversation.Messages.Add(CreateAssistantMessage(
+            new DateTime(2026, 7, 29, 9, 1, 0),
+            new CopilotTokenUsage(10, 5, 15)));
+        conversation.Messages.Add(CreateUserMessage(new DateTime(2026, 7, 30, 9, 0, 0)));
+        conversation.Messages.Add(CreateAssistantMessage(
+            new DateTime(2026, 7, 30, 9, 1, 0),
+            CopilotTokenUsage.Empty));
+
+        var report = CopilotConversationStatistics.Format([conversation], now, "all");
+
+        Assert.Contains("/stats · 本地会话统计", report, StringComparison.Ordinal);
+        Assert.Contains("范围：全部本地历史 · 2026-07-29 至 2026-07-30", report, StringComparison.Ordinal);
+        Assert.Contains("Provider Token：已记录回答 1/2", report, StringComparison.Ordinal);
+        Assert.Contains("未纳入：1 条旧回答、失败回答或未返回 Token 元数据的回答。", report, StringComparison.Ordinal);
+        Assert.Contains("全历史当前连续 2 天 · 最长连续 2 天", report, StringComparison.Ordinal);
+        Assert.Contains("会话分支复制的历史前缀不会重复计数", report, StringComparison.Ordinal);
+        Assert.DoesNotContain('$', report);
+        Assert.Equal(
+            "/stats 参数无效。可用 /stats、/stats 7、/stats 30 或 /stats all。",
+            CopilotConversationStatistics.Format([conversation], now, "weekly"));
+    }
+
+    private static CopilotChatMessage CreateUserMessage(DateTime createdAt)
+    {
+        return new CopilotChatMessage(CopilotChatRole.User, "Question")
+        {
+            CreatedAt = createdAt,
+        };
+    }
+
+    private static CopilotChatMessage CreateAssistantMessage(
+        DateTime createdAt,
+        CopilotTokenUsage usage)
+    {
+        var message = new CopilotChatMessage(CopilotChatRole.Assistant, "Answer")
+        {
+            CreatedAt = createdAt,
+        };
+        message.SetReportedUsage(usage);
+        return message;
+    }
+}

@@ -10,6 +10,7 @@ namespace ColorVision.Copilot
         Doctor,
         Tasks,
         Usage,
+        Statistics,
         Context,
         Permissions,
         Skills,
@@ -46,7 +47,7 @@ namespace ColorVision.Copilot
 
     public static class CopilotLocalCommandCatalog
     {
-        private const int MaxSuggestions = 29;
+        private const int MaxSuggestions = 30;
 
         private static readonly CopilotLocalCommand[] Commands =
         [
@@ -54,6 +55,7 @@ namespace ColorVision.Copilot
             new("/doctor", "检查模型、会话保存、任务、MCP、Hook 与 Skill 健康度", CopilotLocalCommandKind.Doctor, AvailableWhileAgentRuns: true),
             new("/tasks", "查看正在运行、排队及等待恢复的 Agent 任务", CopilotLocalCommandKind.Tasks, AvailableWhileAgentRuns: true),
             new("/usage", "查看当前会话已记录的输入、输出与缓存 Token", CopilotLocalCommandKind.Usage, AvailableWhileAgentRuns: true),
+            new("/stats", "汇总最近 7 天、30 天或全部本地会话活动", CopilotLocalCommandKind.Statistics, AcceptsArguments: true, AvailableWhileAgentRuns: true),
             new("/context", "查看本地上下文、预算与注入统计", CopilotLocalCommandKind.Context, AvailableWhileAgentRuns: true),
             new("/permissions", "查看当前文件范围、能力与审批策略", CopilotLocalCommandKind.Permissions, AvailableWhileAgentRuns: true),
             new("/hooks", "查看生效 Hook、模块来源与最近运行健康度", CopilotLocalCommandKind.Hooks, AvailableWhileAgentRuns: true),

@@ -1377,6 +1377,12 @@ namespace ColorVision.Copilot
                 case CopilotLocalCommandKind.Usage:
                     ShowLocalCommandResult(command, CopilotConversationUsageDiagnostics.Format(SelectedConversation));
                     break;
+                case CopilotLocalCommandKind.Statistics:
+                    ShowLocalCommandResult(command, CopilotConversationStatistics.Format(
+                        Conversations,
+                        DateTimeOffset.Now,
+                        invocation.Arguments));
+                    break;
                 case CopilotLocalCommandKind.Context:
                     ShowLocalCommandResult(command, BuildContextDiagnosticsReport());
                     break;
