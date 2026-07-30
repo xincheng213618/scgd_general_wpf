@@ -95,8 +95,7 @@ namespace ColorVision.Copilot
                 return false;
 
             task.Conversation.AgentSessionCheckpoint = null;
-            task.Message.AgentStopReason = CopilotAgentStopReason.Cancelled;
-            task.Message.AgentBlockers = Array.Empty<CopilotAgentBlockerSnapshot>();
+            task.Message.IsAgentRecoveryDismissed = true;
             task.Conversation.Touch();
             task.Conversation.RefreshSummary();
             return true;
@@ -106,6 +105,7 @@ namespace ColorVision.Copilot
         {
             var message = conversation.Messages.LastOrDefault(candidate => candidate != null && !candidate.IsUser);
             if (message == null
+                || message.IsAgentRecoveryDismissed
                 || (message.AgentTaskLedger.RemainingCount <= 0 && !message.HasRecoverableAgentTasks))
                 return null;
 

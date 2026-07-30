@@ -84,6 +84,7 @@ namespace ColorVision.Copilot
         {
             if (message == null
                 || message.IsUser
+                || message.IsAgentRecoveryDismissed
                 || checkpoint?.IsStructurallyValid() != true
                 || profile?.IsConfigured != true)
             {

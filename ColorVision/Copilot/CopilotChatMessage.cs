@@ -659,6 +659,19 @@ namespace ColorVision.Copilot
         [JsonIgnore]
         public CopilotAgentRecoveryRequest? RecoveryRequest { get; set; }
 
+        public bool IsAgentRecoveryDismissed
+        {
+            get => _isAgentRecoveryDismissed;
+            set
+            {
+                if (SetProperty(ref _isAgentRecoveryDismissed, value))
+                    OnAgentTaskStateChanged();
+            }
+        }
+        private bool _isAgentRecoveryDismissed;
+
+        public bool ShouldSerializeIsAgentRecoveryDismissed() => IsAgentRecoveryDismissed;
+
         [JsonIgnore]
         public bool HasAgentTaskLedger => !IsUser && AgentTaskLedger.TotalCount > 0;
 
@@ -672,7 +685,8 @@ namespace ColorVision.Copilot
         public bool HasIncompleteAgentTasks => HasAgentTaskLedger && AgentTaskLedger.RemainingCount > 0;
 
         [JsonIgnore]
-        public bool HasRecoverableFinalAnswer => !HasIncompleteAgentTasks
+        public bool HasRecoverableFinalAnswer => !IsAgentRecoveryDismissed
+            && !HasIncompleteAgentTasks
             && ((WasResponseInterrupted && AgentStopReason == CopilotAgentStopReason.Completed)
                 || AgentStopReason == CopilotAgentStopReason.Interrupted
                 || (AgentStopReason is (CopilotAgentStopReason.IncompleteOutput
@@ -681,14 +695,15 @@ namespace ColorVision.Copilot
                     && AgentBlockers.Any(blocker => blocker?.Kind == CopilotAgentBlockerKind.ProviderOutput)));
 
         [JsonIgnore]
-        public bool HasRecoverableAgentTasks => (!IsUser && AgentStopReason == CopilotAgentStopReason.Paused)
-            || (HasIncompleteAgentTasks
-                && AgentStopReason is CopilotAgentStopReason.BudgetExhausted
-                    or CopilotAgentStopReason.TaskPassLimit
-                    or CopilotAgentStopReason.Paused
-                    or CopilotAgentStopReason.ProviderFailure)
-            || (HasIncompleteAgentTasks && AgentStopReason == CopilotAgentStopReason.Interrupted)
-            || HasRecoverableFinalAnswer;
+        public bool HasRecoverableAgentTasks => !IsAgentRecoveryDismissed
+            && ((!IsUser && AgentStopReason == CopilotAgentStopReason.Paused)
+                || (HasIncompleteAgentTasks
+                    && AgentStopReason is CopilotAgentStopReason.BudgetExhausted
+                        or CopilotAgentStopReason.TaskPassLimit
+                        or CopilotAgentStopReason.Paused
+                        or CopilotAgentStopReason.ProviderFailure)
+                || (HasIncompleteAgentTasks && AgentStopReason == CopilotAgentStopReason.Interrupted)
+                || HasRecoverableFinalAnswer);
 
         [JsonIgnore]
         public string AgentRecoveryActionLabel => HasRecoverableFinalAnswer
@@ -1639,6 +1654,7 @@ namespace ColorVision.Copilot
             OnPropertyChanged(nameof(HasAgentTaskState));
             OnPropertyChanged(nameof(HasCompletedPlan));
             OnPropertyChanged(nameof(HasIncompleteAgentTasks));
+            OnPropertyChanged(nameof(IsAgentRecoveryDismissed));
             OnPropertyChanged(nameof(HasRecoverableFinalAnswer));
             OnPropertyChanged(nameof(HasRecoverableAgentTasks));
             OnPropertyChanged(nameof(AgentRecoveryActionLabel));
