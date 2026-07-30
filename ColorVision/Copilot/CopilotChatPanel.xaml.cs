@@ -724,7 +724,11 @@ namespace ColorVision.Copilot
 
             if (DataContext is CopilotChatViewModel viewModel)
             {
-                viewModel.TryCompleteLocalCommand();
+                if (!viewModel.TryCompleteLocalCommandForSubmission())
+                {
+                    e.Handled = true;
+                    return;
+                }
                 viewModel.SendCommand.Execute(null);
             }
 

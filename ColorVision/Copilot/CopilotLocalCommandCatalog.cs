@@ -44,7 +44,17 @@ namespace ColorVision.Copilot
         CopilotLocalCommandKind Kind,
         bool AcceptsArguments = false,
         bool AvailableWhileAgentRuns = false,
-        string Usage = "");
+        string Usage = "",
+        IReadOnlyList<CopilotLocalCommandArgument>? Arguments = null,
+        bool RequiresMoreInputAfterCompletion = false)
+    {
+        public string CompletionText => Name + (AcceptsArguments ? " " : string.Empty);
+    }
+
+    public sealed record CopilotLocalCommandArgument(
+        string Value,
+        string Description,
+        bool AcceptsArguments = false);
 
     public sealed record CopilotLocalCommandInvocation(
         CopilotLocalCommand Command,
@@ -62,18 +72,39 @@ namespace ColorVision.Copilot
             new("/feedback", "反馈当前 Copilot 会话问题，可补充问题说明", CopilotLocalCommandKind.Feedback, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/feedback [问题说明]"),
             new("/tasks", "查看正在运行、排队及等待恢复的 Agent 任务", CopilotLocalCommandKind.Tasks, AvailableWhileAgentRuns: true, Usage: "/tasks"),
             new("/usage", "查看当前会话已记录的输入、输出与缓存 Token", CopilotLocalCommandKind.Usage, AvailableWhileAgentRuns: true, Usage: "/usage"),
-            new("/stats", "汇总最近 7 天、30 天或全部本地会话活动", CopilotLocalCommandKind.Statistics, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/stats [7|30|all]"),
+            new("/stats", "汇总最近 7 天、30 天或全部本地会话活动", CopilotLocalCommandKind.Statistics, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/stats [7|30|all]", Arguments:
+            [
+                new("7", "最近 7 个本机日历日"),
+                new("30", "最近 30 个本机日历日"),
+                new("all", "全部本地会话历史"),
+            ]),
             new("/context", "查看本地上下文、预算与注入统计", CopilotLocalCommandKind.Context, AvailableWhileAgentRuns: true, Usage: "/context"),
-            new("/permissions", "选择按需确认/临时自动复核，或查看权限状态", CopilotLocalCommandKind.Permissions, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/permissions [status|ask|auto]"),
+            new("/permissions", "选择按需确认/临时自动复核，或查看权限状态", CopilotLocalCommandKind.Permissions, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/permissions [status|ask|auto]", Arguments:
+            [
+                new("status", "显示当前文件范围、能力与审批策略"),
+                new("ask", "恢复受保护操作逐次确认"),
+                new("auto", "为下一任务或当前任务临时启用自动复核"),
+            ]),
             new("/init", "为当前项目生成根级 AGENTS.md，不覆盖已有项目指令", CopilotLocalCommandKind.InitializeProject, Usage: "/init"),
             new("/hooks", "查看生效 Hook、模块来源与最近运行健康度", CopilotLocalCommandKind.Hooks, AvailableWhileAgentRuns: true, Usage: "/hooks"),
             new("/skills", "查看 Skill 使用率、连续未加载与降级状态", CopilotLocalCommandKind.Skills, AvailableWhileAgentRuns: true, Usage: "/skills"),
             new("/mcp", "查看本地 MCP 服务、审批与最近调用状态", CopilotLocalCommandKind.Mcp, AvailableWhileAgentRuns: true, Usage: "/mcp"),
-            new("/diff", "查看已暂存、未暂存补丁和未跟踪文件", CopilotLocalCommandKind.Diff, AcceptsArguments: true, Usage: "/diff [both|staged|unstaged]"),
+            new("/diff", "查看已暂存、未暂存补丁和未跟踪文件", CopilotLocalCommandKind.Diff, AcceptsArguments: true, Usage: "/diff [both|staged|unstaged]", Arguments:
+            [
+                new("both", "同时查看已暂存和未暂存变更"),
+                new("staged", "只查看已暂存变更"),
+                new("unstaged", "只查看未暂存变更和未跟踪文件"),
+            ]),
             new("/compact", "压缩早期对话，可在命令后补充聚焦要求", CopilotLocalCommandKind.Compact, AcceptsArguments: true, Usage: "/compact [聚焦要求]"),
             new("/review", "只读审查当前工作区变更，可补充关注点", CopilotLocalCommandKind.Review, AcceptsArguments: true, Usage: "/review [关注点]"),
             new("/plan", "只读分析并生成可执行计划，可在命令后直接填写任务", CopilotLocalCommandKind.Plan, AcceptsArguments: true, Usage: "/plan [任务]"),
-            new("/goal", "查看或管理当前会话的持续目标", CopilotLocalCommandKind.Goal, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/goal [目标|edit <新目标>|pause|resume|clear]"),
+            new("/goal", "查看或管理当前会话的持续目标", CopilotLocalCommandKind.Goal, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/goal [目标|edit <新目标>|pause|resume|clear]", Arguments:
+            [
+                new("edit", "修改当前持续目标", AcceptsArguments: true),
+                new("pause", "暂停当前持续目标"),
+                new("resume", "恢复已暂停的持续目标"),
+                new("clear", "清除当前持续目标"),
+            ]),
             new("/resume", "搜索并切换已有 Copilot 会话，可补充标题或关键词", CopilotLocalCommandKind.ResumeConversation, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/resume [会话 ID|标题|关键词]"),
             new("/rename", "重命名当前 Copilot 会话；省略名称时打开输入窗口", CopilotLocalCommandKind.RenameConversation, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/rename [新名称]"),
             new("/copy", "复制最近已完成的回答；可用 /copy 2 选择倒数第二条", CopilotLocalCommandKind.CopyResponse, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/copy [N]"),
@@ -115,16 +146,21 @@ namespace ColorVision.Copilot
 
         public static IReadOnlyList<CopilotLocalCommand> Suggest(
             string? input,
-            IReadOnlyList<CopilotAgentSkillCatalogItem>? skills = null)
+            IReadOnlyList<CopilotAgentSkillCatalogItem>? skills = null,
+            IReadOnlyList<CopilotProfileConfig>? profiles = null,
+            CopilotProfileConfig? selectedProfile = null)
         {
-            var normalized = Normalize(input);
-            if (normalized.Length == 0
-                || normalized[0] is not '/' and not '$'
-                || normalized.Any(char.IsWhiteSpace)
-                || normalized.StartsWith('/') && FindExact(normalized) != null)
+            var normalized = (input ?? string.Empty).TrimStart();
+            if (normalized.Length == 0 || normalized[0] is not '/' and not '$')
             {
                 return Array.Empty<CopilotLocalCommand>();
             }
+
+            var separatorIndex = normalized.IndexOfAny([' ', '\t', '\r', '\n']);
+            if (separatorIndex >= 0)
+                return SuggestArguments(normalized, separatorIndex, profiles, selectedProfile);
+            if (normalized.StartsWith('/') && FindExact(normalized) != null)
+                return Array.Empty<CopilotLocalCommand>();
 
             var suggestions = normalized.StartsWith('/')
                 ? Commands.Where(command => command.Name.StartsWith(normalized, StringComparison.OrdinalIgnoreCase))
@@ -142,6 +178,104 @@ namespace ColorVision.Copilot
                 .Concat(skillSuggestions)
                 .DistinctBy(command => command.Name, StringComparer.OrdinalIgnoreCase)
                 .Take(MaxSuggestions)
+                .ToArray();
+        }
+
+        private static CopilotLocalCommand[] SuggestArguments(
+            string input,
+            int separatorIndex,
+            IReadOnlyList<CopilotProfileConfig>? profiles,
+            CopilotProfileConfig? selectedProfile)
+        {
+            if (input[0] != '/')
+                return Array.Empty<CopilotLocalCommand>();
+
+            var name = input[..separatorIndex];
+            var command = Commands.FirstOrDefault(item =>
+                string.Equals(item.Name, name, StringComparison.OrdinalIgnoreCase));
+            if (command?.AcceptsArguments != true)
+                return Array.Empty<CopilotLocalCommand>();
+
+            var query = input[(separatorIndex + 1)..].TrimStart();
+            if (command.Kind == CopilotLocalCommandKind.Help)
+                query = query.TrimStart('/');
+            var arguments = ResolveArguments(command, profiles, selectedProfile);
+            return arguments
+                .Where(argument => argument.Value.StartsWith(query, StringComparison.OrdinalIgnoreCase))
+                .Where(argument => argument.AcceptsArguments
+                    || !string.Equals(argument.Value, query, StringComparison.OrdinalIgnoreCase))
+                .Take(MaxSuggestions)
+                .Select(argument => new CopilotLocalCommand(
+                    command.Name + " " + argument.Value,
+                    "参数 · " + argument.Description,
+                    command.Kind,
+                    AcceptsArguments: argument.AcceptsArguments,
+                    AvailableWhileAgentRuns: command.AvailableWhileAgentRuns,
+                    Usage: command.Usage,
+                    RequiresMoreInputAfterCompletion: argument.AcceptsArguments))
+                .ToArray();
+        }
+
+        private static IReadOnlyList<CopilotLocalCommandArgument> ResolveArguments(
+            CopilotLocalCommand command,
+            IReadOnlyList<CopilotProfileConfig>? profiles,
+            CopilotProfileConfig? selectedProfile)
+        {
+            if (command.Kind == CopilotLocalCommandKind.Help)
+            {
+                return Commands.Select(item => new CopilotLocalCommandArgument(
+                        item.Name[1..],
+                        item.Description))
+                    .ToArray();
+            }
+
+            if (command.Kind == CopilotLocalCommandKind.SelectModel)
+                return BuildProfileArguments(profiles, selectedProfile);
+            if (command.Kind == CopilotLocalCommandKind.SelectReasoning)
+                return BuildReasoningArguments(selectedProfile);
+            return command.Arguments ?? Array.Empty<CopilotLocalCommandArgument>();
+        }
+
+        private static CopilotLocalCommandArgument[] BuildProfileArguments(
+            IReadOnlyList<CopilotProfileConfig>? profiles,
+            CopilotProfileConfig? selectedProfile)
+        {
+            var candidates = (profiles ?? Array.Empty<CopilotProfileConfig>())
+                .Where(profile => profile != null)
+                .ToArray();
+            var duplicateLabels = candidates
+                .GroupBy(profile => profile.DisplayLabel, StringComparer.OrdinalIgnoreCase)
+                .Where(group => group.Count() > 1)
+                .Select(group => group.Key)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            return candidates.Select(profile =>
+                {
+                    var value = duplicateLabels.Contains(profile.DisplayLabel)
+                        ? profile.Id
+                        : profile.DisplayLabel;
+                    var current = ReferenceEquals(profile, selectedProfile)
+                        || string.Equals(profile.Id, selectedProfile?.Id, StringComparison.Ordinal);
+                    var description = profile.SecondaryLabel;
+                    if (current)
+                        description += " · 当前";
+                    return new CopilotLocalCommandArgument(
+                        value,
+                        description);
+                })
+                .DistinctBy(argument => argument.Value, StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+        }
+
+        private static CopilotLocalCommandArgument[] BuildReasoningArguments(
+            CopilotProfileConfig? selectedProfile)
+        {
+            if (!CopilotReasoningCapabilities.HasConfigurableReasoning(selectedProfile))
+                return Array.Empty<CopilotLocalCommandArgument>();
+
+            return CopilotReasoningCapabilities.GetOptions(selectedProfile)
+                .Select(option => new CopilotLocalCommandArgument(
+                    CopilotReasoningCapabilities.GetCommandToken(option.Mode),
+                    option.Description + (option.IsSelected ? " · 当前" : string.Empty)))
                 .ToArray();
         }
 

@@ -1028,20 +1028,27 @@ namespace ColorVision.Copilot
                 if (IsEditingMessage)
                     return Array.Empty<CopilotLocalCommand>();
 
-                var input = (InputText ?? string.Empty).Trim();
+                var input = (InputText ?? string.Empty).TrimStart();
                 if (input.Length == 0 || input[0] is not '/' and not '$')
                     return Array.Empty<CopilotLocalCommand>();
-                if (input.StartsWith('/') && CopilotLocalCommandCatalog.FindExact(input) != null)
-                    return Array.Empty<CopilotLocalCommand>();
                 if (ResolveComposerRequestMode() == CopilotAgentMode.Chat)
-                    return CopilotLocalCommandCatalog.Suggest(input);
+                {
+                    return CopilotLocalCommandCatalog.Suggest(
+                        input,
+                        profiles: Profiles,
+                        selectedProfile: SelectedProfile);
+                }
 
                 var turnSnapshot = CaptureHostedTurnSnapshot(Attachments);
                 var trustedProjectRoots = CopilotAgentRequestFactory.BuildTrustedProjectRootPaths(turnSnapshot);
                 var skills = CopilotAgentSkillCatalog.DiscoverCached(
                     trustedProjectRoots,
                     _config.AgentDefaults.CreateSkillOverrideSnapshot());
-                return CopilotLocalCommandCatalog.Suggest(input, skills);
+                return CopilotLocalCommandCatalog.Suggest(
+                    input,
+                    skills,
+                    Profiles,
+                    SelectedProfile);
             }
         }
 
@@ -1288,8 +1295,19 @@ namespace ColorVision.Copilot
             if (command == null)
                 return false;
 
-            InputText = command.Name + (command.AcceptsArguments ? " " : string.Empty);
+            InputText = command.CompletionText;
             return true;
+        }
+
+        internal bool TryCompleteLocalCommandForSubmission()
+        {
+            var suggestions = LocalCommandSuggestions;
+            if (suggestions.Count == 0)
+                return true;
+
+            var command = suggestions[0];
+            InputText = command.CompletionText;
+            return !command.RequiresMoreInputAfterCompletion;
         }
 
         private CopilotHostedAgentRun? ActiveHostedRun => _taskHost.ActiveRun;
@@ -4920,6 +4938,8 @@ namespace ColorVision.Copilot
             OnPropertyChanged(nameof(Conversations));
             OnPropertyChanged(nameof(EmptyStateText));
             OnPropertyChanged(nameof(CanSelectProfile));
+            OnPropertyChanged(nameof(LocalCommandSuggestions));
+            OnPropertyChanged(nameof(HasLocalCommandSuggestions));
             RefreshMcpStatus();
 
             var conversation = Conversations.FirstOrDefault(item => item.Id == preferredConversationId)
@@ -5325,6 +5345,8 @@ namespace ColorVision.Copilot
             OnPropertyChanged(nameof(SelectedProfileReasoningLabel));
             OnPropertyChanged(nameof(SelectedProfileReasoningToolTip));
             OnPropertyChanged(nameof(HasConfigurableReasoning));
+            OnPropertyChanged(nameof(LocalCommandSuggestions));
+            OnPropertyChanged(nameof(HasLocalCommandSuggestions));
         }
 
         private CopilotConversationRecord EnsureConversation()

@@ -2222,7 +2222,7 @@
                                                 Command="{Binding DataContext.CompleteLocalCommandCommand, Source={x:Reference Root}}"
                                                 CommandParameter="{Binding}"
                                                 Click="LocalCommandSuggestionButton_Click"
-                                                ToolTip="点击或使用 Tab 补全；Enter 执行">
+                                                ToolTip="点击或使用 Tab 补全；Enter 在参数完整时执行">
                                             <Grid>
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="Auto" />

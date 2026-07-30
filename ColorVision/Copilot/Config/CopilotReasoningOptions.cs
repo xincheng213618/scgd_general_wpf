@@ -162,7 +162,7 @@ namespace ColorVision.Copilot
             };
         }
 
-        private static string GetCommandToken(CopilotReasoningMode mode)
+        internal static string GetCommandToken(CopilotReasoningMode mode)
         {
             return mode switch
             {
