@@ -1518,6 +1518,11 @@ namespace ColorVision.Copilot
                 case CopilotLocalCommandKind.Tasks:
                     ShowLocalCommandResult(command, BuildTaskDiagnosticsReport());
                     break;
+                case CopilotLocalCommandKind.Queue:
+                    ShowLocalCommandResult(command, CopilotQueuedFollowUpDiagnostics.Format(
+                        QueuedFollowUps,
+                        SelectedConversation?.Id));
+                    break;
                 case CopilotLocalCommandKind.Usage:
                     ShowLocalCommandResult(command, CopilotConversationUsageDiagnostics.Format(SelectedConversation));
                     break;

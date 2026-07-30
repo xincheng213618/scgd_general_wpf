@@ -16,6 +16,7 @@ namespace ColorVision.Copilot
                 CopilotLocalCommandKind.Status,
                 CopilotLocalCommandKind.Doctor,
                 CopilotLocalCommandKind.Tasks,
+                CopilotLocalCommandKind.Queue,
                 CopilotLocalCommandKind.Usage,
                 CopilotLocalCommandKind.Statistics,
                 CopilotLocalCommandKind.Context,
