@@ -225,6 +225,7 @@ namespace ColorVision.Copilot
             DetachViewModel(_attachedViewModel);
 
             _attachedViewModel = viewModel;
+            viewModel.ConversationSearchRequested += ViewModel_ConversationSearchRequested;
             viewModel.PropertyChanged += ViewModel_PropertyChanged;
             ResetMessageSubscriptions(viewModel.Messages);
             UpdateEmptyStateVisibility();
@@ -236,9 +237,16 @@ namespace ColorVision.Copilot
                 || viewModel != null && !ReferenceEquals(_attachedViewModel, viewModel))
                 return;
 
+            _attachedViewModel.ConversationSearchRequested -= ViewModel_ConversationSearchRequested;
             _attachedViewModel.PropertyChanged -= ViewModel_PropertyChanged;
             ResetMessageSubscriptions(null);
             _attachedViewModel = null;
+        }
+
+        private void ViewModel_ConversationSearchRequested(object? sender, EventArgs e)
+        {
+            if (ReferenceEquals(sender, _attachedViewModel))
+                FocusConversationSearch();
         }
 
         private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)

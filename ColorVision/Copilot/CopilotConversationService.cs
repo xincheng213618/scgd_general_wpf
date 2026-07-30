@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 
@@ -20,6 +21,31 @@ namespace ColorVision.Copilot
                 && (conversation.HasDraft
                     || conversation.Attachments.Count > 0
                     || conversation.Messages.Any(message => !string.IsNullOrWhiteSpace(message.Content)));
+        }
+
+        public static CopilotConversationRecord? FindUniqueResumeTarget(
+            IEnumerable<CopilotConversationRecord> conversations,
+            string? query)
+        {
+            ArgumentNullException.ThrowIfNull(conversations);
+            var normalizedQuery = query?.Trim() ?? string.Empty;
+            if (normalizedQuery.Length == 0)
+                return null;
+
+            var candidates = conversations.Where(conversation => conversation != null).ToArray();
+            var idMatch = candidates.FirstOrDefault(conversation =>
+                string.Equals(conversation.Id, normalizedQuery, StringComparison.Ordinal));
+            if (idMatch != null)
+                return idMatch;
+
+            var titleMatches = candidates
+                .Where(conversation => string.Equals(
+                    conversation.Title.Trim(),
+                    normalizedQuery,
+                    StringComparison.OrdinalIgnoreCase))
+                .Take(2)
+                .ToArray();
+            return titleMatches.Length == 1 ? titleMatches[0] : null;
         }
 
         public static CopilotConversationRecord ResolveNewTarget(

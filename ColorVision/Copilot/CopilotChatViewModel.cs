@@ -274,6 +274,8 @@ namespace ColorVision.Copilot
 
         public ObservableCollection<CopilotConversationRecord> Conversations => _state.Conversations;
 
+        public event EventHandler? ConversationSearchRequested;
+
         public ObservableCollection<CopilotConversationRecord> CompactHistoryConversations { get; } = new();
 
         public ObservableCollection<CopilotConversationRecord> FilteredConversations { get; } = new();
@@ -1386,6 +1388,9 @@ namespace ColorVision.Copilot
                     break;
                 case CopilotLocalCommandKind.Goal:
                     ManageConversationGoal(command, invocation.Arguments);
+                    break;
+                case CopilotLocalCommandKind.ResumeConversation:
+                    ResumeConversation(command, invocation.Arguments);
                     break;
                 case CopilotLocalCommandKind.NewConversation:
                     DismissLocalCommandResult();
@@ -3460,6 +3465,32 @@ namespace ColorVision.Copilot
                 SelectConversation(conversation, persist: false);
                 PersistState();
             }
+        }
+
+        private void ResumeConversation(CopilotLocalCommand command, string query)
+        {
+            if (!CanSwitchConversation)
+            {
+                ShowLocalCommandResult(command, "当前状态不能切换会话；请先结束消息编辑或等待当前普通对话完成。");
+                return;
+            }
+
+            var normalizedQuery = NormalizeConversationSearchText(query.Trim());
+            var exactMatch = CopilotConversationService.FindUniqueResumeTarget(
+                Conversations,
+                normalizedQuery);
+            if (exactMatch != null)
+            {
+                ConversationSearchText = string.Empty;
+                DismissLocalCommandResult();
+                SelectConversation(exactMatch, persist: true, preferredProfileId: exactMatch.ProfileId);
+                return;
+            }
+
+            ConversationSearchText = normalizedQuery;
+            RefreshFilteredConversations();
+            DismissLocalCommandResult();
+            ConversationSearchRequested?.Invoke(this, EventArgs.Empty);
         }
 
         private CopilotConversationRecord ResolveNewConversationTarget()
