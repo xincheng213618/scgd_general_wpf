@@ -85,6 +85,8 @@ namespace ColorVision.Copilot
 
         public int EnabledExternalMcpServers { get; init; }
 
+        public CopilotToolExecutionHookRegistrySnapshot? ToolHookSurface { get; init; }
+
         public IReadOnlyList<CopilotAgentExtensionSourceSnapshot> AgentExtensions { get; init; } = Array.Empty<CopilotAgentExtensionSourceSnapshot>();
 
         public IReadOnlyList<CopilotAgentExtensionIssue> AgentExtensionIssues { get; init; } = Array.Empty<CopilotAgentExtensionIssue>();
@@ -194,6 +196,7 @@ namespace ColorVision.Copilot
             builder.Append("外部 MCP：")
                 .Append(FormatCount(snapshot.EnabledExternalMcpServers))
                 .AppendLine(" 个启用服务；仅在 Agent 请求中发现工具");
+            AppendToolHookDetails(builder, snapshot.ToolHookSurface);
             AppendAgentExtensionDetails(builder, snapshot.AgentExtensions, snapshot.AgentExtensionIssues);
             AppendOptimizationSuggestions(builder, snapshot);
             return builder.ToString().TrimEnd();
@@ -267,6 +270,10 @@ namespace ColorVision.Copilot
                 .Append(FormatCount(extensions.Sum(extension => extension.ActiveToolCount)))
                 .Append('/')
                 .Append(FormatCount(extensions.Sum(extension => extension.DeclaredToolCount)))
+                .Append(" 个已激活/声明；Hook ")
+                .Append(FormatCount(extensions.Sum(extension => extension.ActiveHookCount)))
+                .Append('/')
+                .Append(FormatCount(extensions.Sum(extension => extension.DeclaredHookCount)))
                 .AppendLine(" 个已激活/声明");
 
             foreach (var extension in extensions.Take(12))
@@ -281,6 +288,10 @@ namespace ColorVision.Copilot
                     .Append(FormatCount(extension.ActiveToolCount))
                     .Append('/')
                     .Append(FormatCount(extension.DeclaredToolCount))
+                    .Append(" · hooks ")
+                    .Append(FormatCount(extension.ActiveHookCount))
+                    .Append('/')
+                    .Append(FormatCount(extension.DeclaredHookCount))
                     .AppendLine();
             }
             if (extensions.Count > 12)
@@ -294,6 +305,38 @@ namespace ColorVision.Copilot
             }
             if (issues.Count > 8)
                 builder.Append("  ! ...另有 ").Append(FormatCount(issues.Count - 8)).AppendLine(" 个问题未展开");
+        }
+
+        private static void AppendToolHookDetails(
+            StringBuilder builder,
+            CopilotToolExecutionHookRegistrySnapshot? hookSurface)
+        {
+            if (hookSurface?.IsStructurallyValid() != true)
+            {
+                builder.AppendLine("工具 Hook：无有效运行时快照");
+                return;
+            }
+
+            builder.Append("工具 Hook：")
+                .Append(FormatCount(hookSurface.Entries.Count))
+                .Append(" 个已生效 · revision ")
+                .Append(FormatCount(hookSurface.Revision));
+            if (!string.IsNullOrWhiteSpace(hookSurface.Fingerprint))
+                builder.Append(" · fingerprint ").Append(hookSurface.Fingerprint[..Math.Min(12, hookSurface.Fingerprint.Length)]);
+            builder.AppendLine();
+
+            foreach (var hook in hookSurface.Entries.Take(16))
+            {
+                builder.Append("  - ")
+                    .Append(FormatInlineDiagnosticText(hook.SourceId, "unknown", 160))
+                    .Append(" · matcher ")
+                    .Append(FormatInlineDiagnosticText(hook.ToolNamePattern, "*", 120))
+                    .Append(" · order ")
+                    .Append(hook.Order)
+                    .AppendLine();
+            }
+            if (hookSurface.Entries.Count > 16)
+                builder.Append("  - ...另有 ").Append(FormatCount(hookSurface.Entries.Count - 16)).AppendLine(" 个 Hook 未展开");
         }
 
         private static string FormatInlineDiagnosticText(string? value, string fallback, int maxLength)

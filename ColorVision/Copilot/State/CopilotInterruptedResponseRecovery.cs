@@ -16,6 +16,11 @@ namespace ColorVision.Copilot
 
             assistantMessage.IsExecutionInProgress = false;
             assistantMessage.IsReasoningInProgress = false;
+            assistantMessage.CompleteActiveAgentTraces(
+                CopilotToolExecutionState.Interrupted,
+                CopilotToolFailureKind.Internal,
+                "tool_terminal_event_missing",
+                "Execution was interrupted when the application exited before an authoritative tool result was saved.");
             assistantMessage.MarkThinkingCompleted();
             assistantMessage.WasResponseInterrupted = true;
             if (string.IsNullOrWhiteSpace(assistantMessage.Content))

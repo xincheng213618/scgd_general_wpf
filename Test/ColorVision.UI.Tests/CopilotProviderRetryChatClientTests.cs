@@ -129,10 +129,12 @@ public sealed class CopilotProviderRetryChatClientTests
             },
             Mode = CopilotAgentMode.Code,
         };
+        var toolExecutor = new CopilotToolExecutor(new CopilotToolExecutionHookRegistry());
+        var expectedHookSurface = toolExecutor.GetHookSurfaceSnapshot();
         var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
             new CopilotToolRegistry([]),
             new CopilotAgentContextBuilder(),
-            new CopilotToolExecutor(),
+            toolExecutor,
             _ => provider,
             new PublishingExternalToolProvider(catalog),
             catalog);
@@ -142,6 +144,9 @@ public sealed class CopilotProviderRetryChatClientTests
         Assert.Equal(CopilotAgentStopReason.Completed, result.StopReason);
         Assert.Equal(1, catalog.GetSnapshot().Revision);
         Assert.Equal(catalog.GetSnapshot().Revision, request.RuntimeExecutionScope.CapabilityRevision);
+        var checkpoint = Assert.IsType<CopilotAgentSessionCheckpoint>(result.SessionCheckpoint);
+        Assert.Equal(CopilotAgentSessionCheckpoint.CurrentHookSurfaceVersion, checkpoint.HookSurfaceVersion);
+        Assert.Equal(expectedHookSurface.Fingerprint, checkpoint.HookSurfaceFingerprint);
     }
 
     private static async Task DrainAsync(IAsyncEnumerable<ChatResponseUpdate> updates)

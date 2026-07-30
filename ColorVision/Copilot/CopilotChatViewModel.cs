@@ -1296,6 +1296,9 @@ namespace ColorVision.Copilot
                 case CopilotLocalCommandKind.Permissions:
                     ShowLocalCommandResult(command, BuildPermissionDiagnosticsReport());
                     break;
+                case CopilotLocalCommandKind.Hooks:
+                    ShowLocalCommandResult(command, BuildHookDiagnosticsReport());
+                    break;
                 case CopilotLocalCommandKind.Skills:
                     ShowLocalCommandResult(command, BuildAgentSkillDiagnosticsReport());
                     break;
@@ -1642,6 +1645,18 @@ namespace ColorVision.Copilot
             });
         }
 
+        private static string BuildHookDiagnosticsReport()
+        {
+            var extensionSnapshot = CopilotAgentExtensionBridge.Shared.GetSnapshot();
+            return CopilotHookDiagnostics.Format(new CopilotHookDiagnosticSnapshot
+            {
+                HookSurface = CopilotToolExecutor.GetSharedHookSurfaceSnapshot(),
+                ExtensionSources = extensionSnapshot.Sources,
+                ExtensionIssues = extensionSnapshot.Issues,
+                RecentToolExecutions = CopilotToolExecutionAuditLogger.GetRecentEntries(30),
+            });
+        }
+
         private void ShowLocalCommandResult(CopilotLocalCommand command, string report)
         {
             LocalCommandResultTitle = $"{command.Name} · 本地快照";
@@ -1672,6 +1687,7 @@ namespace ColorVision.Copilot
 
             var capabilitySnapshot = CopilotCapabilityCatalog.Shared.GetSnapshot();
             var agentExtensionSnapshot = CopilotAgentExtensionBridge.Shared.GetSnapshot();
+            var toolHookSurface = CopilotToolExecutor.GetSharedHookSurfaceSnapshot();
             var agentDefaults = _config.AgentDefaults;
             var historyLimits = ResolveConversationHistoryLimits(SelectedProfile);
             var retainedHistoryWeight = history.Messages.Sum(message => CopilotTokenEstimator.EstimateTextWeight(message.Content));
@@ -1719,6 +1735,7 @@ namespace ColorVision.Copilot
                 AgentTimeoutSeconds = agentDefaults.TimeoutSeconds,
                 RegisteredCapabilities = capabilitySnapshot.Capabilities.Count,
                 EnabledExternalMcpServers = _config.ExternalMcpServers.Count(server => server?.Enabled == true),
+                ToolHookSurface = toolHookSurface,
                 AgentExtensions = agentExtensionSnapshot.Sources,
                 AgentExtensionIssues = agentExtensionSnapshot.Issues,
             });
@@ -3403,7 +3420,8 @@ namespace ColorVision.Copilot
                 message,
                 SelectedConversation.AgentSessionCheckpoint,
                 SelectedProfile,
-                CopilotCapabilityCatalog.Shared.GetSnapshot()).IsAvailable;
+                CopilotCapabilityCatalog.Shared.GetSnapshot(),
+                CopilotToolExecutor.GetSharedHookSurfaceSnapshot()).IsAvailable;
         }
 
         private void ContinueAgentTasks(CopilotChatMessage? message)
@@ -3415,7 +3433,8 @@ namespace ColorVision.Copilot
                 message,
                 SelectedConversation?.AgentSessionCheckpoint,
                 SelectedProfile,
-                CopilotCapabilityCatalog.Shared.GetSnapshot());
+                CopilotCapabilityCatalog.Shared.GetSnapshot(),
+                CopilotToolExecutor.GetSharedHookSurfaceSnapshot());
             if (!decision.IsAvailable)
                 return;
 
@@ -3489,7 +3508,8 @@ namespace ColorVision.Copilot
                 task.Message,
                 task.Conversation.AgentSessionCheckpoint,
                 profile,
-                CopilotCapabilityCatalog.Shared.GetSnapshot()).IsAvailable;
+                CopilotCapabilityCatalog.Shared.GetSnapshot(),
+                CopilotToolExecutor.GetSharedHookSurfaceSnapshot()).IsAvailable;
         }
 
         private void ResumeAgentTask(CopilotAgentTaskSummary? task)

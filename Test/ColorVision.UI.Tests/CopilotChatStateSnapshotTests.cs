@@ -258,6 +258,24 @@ public class CopilotChatStateSnapshotTests
             CompletedAtUtc = DateTimeOffset.Parse("2026-07-26T01:02:04+00:00"),
             TimeoutMs = 30_000,
             ResultSummary = "Read the requested file.",
+            HookRuns =
+            [
+                new CopilotToolExecutionHookRun
+                {
+                    SourceId = "test:policy",
+                    Phase = CopilotToolExecutionHookPhase.BeforeExecute,
+                    State = CopilotToolExecutionHookState.Completed,
+                    DurationMs = 2,
+                },
+                new CopilotToolExecutionHookRun
+                {
+                    SourceId = "test:audit",
+                    Phase = CopilotToolExecutionHookPhase.AfterExecute,
+                    State = CopilotToolExecutionHookState.Failed,
+                    DurationMs = 3,
+                    FailureCode = "tool_hook_failed",
+                },
+            ],
         });
         assistant.RecordResponseTimelineTool("call-1");
         assistant.AppendResponseTimelineText("The file was inspected.");
@@ -291,6 +309,9 @@ public class CopilotChatStateSnapshotTests
         Assert.NotNull(traceDocument[nameof(CopilotAgentTraceEntry.CompletedAtUtc)]);
         Assert.NotNull(traceDocument[nameof(CopilotAgentTraceEntry.TimeoutMs)]);
         Assert.NotNull(traceDocument[nameof(CopilotAgentTraceEntry.ResultSummary)]);
+        Assert.Equal(
+            2,
+            Assert.IsType<JArray>(traceDocument[nameof(CopilotAgentTraceEntry.HookRuns)]).Count);
         Assert.Null(traceDocument[nameof(CopilotAgentTraceEntry.Attempt)]);
         Assert.Null(traceDocument[nameof(CopilotAgentTraceEntry.MaxAttempts)]);
         Assert.Null(traceDocument[nameof(CopilotAgentTraceEntry.Access)]);
@@ -334,6 +355,19 @@ public class CopilotChatStateSnapshotTests
         Assert.Equal(CopilotToolExecutionState.Completed, restoredTrace.State);
         Assert.Equal(30_000, restoredTrace.TimeoutMs);
         Assert.Equal("Read the requested file.", restoredTrace.ResultSummary);
+        Assert.Collection(
+            restoredTrace.HookRuns,
+            hookRun =>
+            {
+                Assert.Equal("test:policy", hookRun.SourceId);
+                Assert.Equal(CopilotToolExecutionHookState.Completed, hookRun.State);
+            },
+            hookRun =>
+            {
+                Assert.Equal("test:audit", hookRun.SourceId);
+                Assert.Equal(CopilotToolExecutionHookState.Failed, hookRun.State);
+                Assert.Equal("tool_hook_failed", hookRun.FailureCode);
+            });
         Assert.Equal(2, restoredMessage.ResponseTimelineEvents.Count);
         Assert.Equal(CopilotResponseTimelineEventKind.ToolCall, restoredMessage.ResponseTimelineEvents[0].Kind);
         Assert.Equal("call-1", restoredMessage.ResponseTimelineEvents[0].CallId);

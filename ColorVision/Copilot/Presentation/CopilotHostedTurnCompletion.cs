@@ -12,6 +12,11 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(conversation);
             ArgumentNullException.ThrowIfNull(assistantMessage);
 
+            assistantMessage.CompleteActiveAgentTraces(
+                CopilotToolExecutionState.Interrupted,
+                CopilotToolFailureKind.Internal,
+                "tool_terminal_event_missing",
+                "The hosted turn completed before this tool call emitted an authoritative terminal result.");
             CopilotAssistantMessagePresenter.FinalizeMessage(assistantMessage);
             SetUsage(conversation, usage);
         }
@@ -25,6 +30,11 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(assistantMessage);
 
             CompleteThinking(assistantMessage);
+            assistantMessage.CompleteActiveAgentTraces(
+                CopilotToolExecutionState.Cancelled,
+                CopilotToolFailureKind.Cancelled,
+                "tool_execution_cancelled",
+                "The tool call was cancelled with the hosted Agent turn.");
             if (controlIntent == CopilotAgentControlIntent.Cancel)
             {
                 conversation.AgentSessionCheckpoint = null;
@@ -59,6 +69,11 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(assistantMessage);
 
             CompleteThinking(assistantMessage);
+            assistantMessage.CompleteActiveAgentTraces(
+                CopilotToolExecutionState.Interrupted,
+                CopilotToolFailureKind.Internal,
+                "tool_terminal_event_missing",
+                "The hosted Agent turn failed before this tool call emitted an authoritative terminal result.");
             var normalizedError = CopilotUserFacingErrorFormatter.Sanitize(errorMessage, sensitiveValues);
             if (!string.IsNullOrWhiteSpace(assistantMessage.Content))
             {
@@ -77,6 +92,11 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(assistantMessage);
 
             CompleteThinking(assistantMessage);
+            assistantMessage.CompleteActiveAgentTraces(
+                CopilotToolExecutionState.Cancelled,
+                CopilotToolFailureKind.Cancelled,
+                "tool_execution_cancelled",
+                "The queued Agent turn was cancelled before the tool call completed.");
             if (assistantMessage.RequestMode != CopilotAgentMode.Chat)
                 assistantMessage.AgentStopReason = CopilotAgentStopReason.Cancelled;
             CopilotAssistantMessagePresenter.SetFallbackContent(assistantMessage, assistantMessage.RequestMode == CopilotAgentMode.Chat

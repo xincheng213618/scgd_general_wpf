@@ -1571,6 +1571,37 @@ namespace ColorVision.Copilot
             OnPropertyChanged(nameof(AgentRecoveryToolTip));
         }
 
+        internal bool CompleteActiveAgentTraces(
+            CopilotToolExecutionState terminalState,
+            CopilotToolFailureKind failureKind,
+            string failureCode,
+            string errorMessage,
+            DateTimeOffset? completedAtUtc = null)
+        {
+            if (AgentTraceEntries == null || AgentTraceEntries.Count == 0)
+                return false;
+
+            var completedAt = completedAtUtc ?? DateTimeOffset.UtcNow;
+            var changed = false;
+            foreach (var entry in AgentTraceEntries.Where(entry => entry != null))
+            {
+                changed |= entry.CompleteActiveExecution(
+                    terminalState,
+                    failureKind,
+                    failureCode,
+                    errorMessage,
+                    completedAt);
+            }
+
+            if (!changed)
+                return false;
+
+            RebuildExecutionContentFromAgentTrace();
+            OnPropertyChanged(nameof(AgentRecoveryActionLabel));
+            OnPropertyChanged(nameof(AgentRecoveryToolTip));
+            return true;
+        }
+
         public void RebuildExecutionContentFromAgentTrace()
         {
             if (AgentTraceEntries == null || AgentTraceEntries.Count == 0)

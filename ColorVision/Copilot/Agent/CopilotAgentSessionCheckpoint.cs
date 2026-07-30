@@ -18,6 +18,8 @@ namespace ColorVision.Copilot
         ToolSurfaceDrift,
         EnvironmentSnapshotMissing,
         EnvironmentDrift,
+        HookSurfaceSnapshotMissing,
+        HookSurfaceDrift,
     }
 
     public sealed class CopilotAgentCheckpointCapability
@@ -50,7 +52,9 @@ namespace ColorVision.Copilot
             or CopilotAgentCheckpointCompatibilityKind.ToolSurfaceSnapshotMissing
             or CopilotAgentCheckpointCompatibilityKind.ToolSurfaceDrift
             or CopilotAgentCheckpointCompatibilityKind.EnvironmentSnapshotMissing
-            or CopilotAgentCheckpointCompatibilityKind.EnvironmentDrift;
+            or CopilotAgentCheckpointCompatibilityKind.EnvironmentDrift
+            or CopilotAgentCheckpointCompatibilityKind.HookSurfaceSnapshotMissing
+            or CopilotAgentCheckpointCompatibilityKind.HookSurfaceDrift;
     }
 
     public sealed class CopilotAgentSessionCheckpoint
@@ -67,6 +71,7 @@ namespace ColorVision.Copilot
         public const int MaxTaskIntentTextLength = 8_000;
         public const int CurrentToolSurfaceVersion = 1;
         public const int CurrentEnvironmentVersion = CopilotAgentEnvironmentContext.CurrentVersion;
+        public const int CurrentHookSurfaceVersion = 1;
 
         private string _serializedSessionJson = string.Empty;
         private string _serializedSessionPayload = string.Empty;
@@ -120,6 +125,10 @@ namespace ColorVision.Copilot
 
         public string EnvironmentFingerprint { get; init; } = string.Empty;
 
+        public int HookSurfaceVersion { get; init; }
+
+        public string HookSurfaceFingerprint { get; init; } = string.Empty;
+
         public IReadOnlyList<CopilotAgentEvidenceArtifact> EvidenceArtifacts { get; init; } = Array.Empty<CopilotAgentEvidenceArtifact>();
 
         public IReadOnlyList<CopilotRequestMessage> ConversationMemory { get; init; } = Array.Empty<CopilotRequestMessage>();
@@ -143,19 +152,26 @@ namespace ColorVision.Copilot
 
         public bool IsUsableFor(CopilotProfileConfig profile)
         {
-            return EvaluateFor(profile, CopilotCapabilityCatalog.Shared.GetSnapshot()).CanResume;
+            return EvaluateFor(
+                profile,
+                CopilotCapabilityCatalog.Shared.GetSnapshot(),
+                hookSurfaceSnapshot: CopilotToolExecutor.GetSharedHookSurfaceSnapshot()).CanResume;
         }
 
         public bool IsUsableFor(CopilotProfileConfig profile, CopilotCapabilityCatalogSnapshot capabilitySnapshot)
         {
-            return EvaluateFor(profile, capabilitySnapshot).CanResume;
+            return EvaluateFor(
+                profile,
+                capabilitySnapshot,
+                hookSurfaceSnapshot: CopilotToolExecutor.GetSharedHookSurfaceSnapshot()).CanResume;
         }
 
         public CopilotAgentCheckpointCompatibility EvaluateFor(
             CopilotProfileConfig profile,
             CopilotCapabilityCatalogSnapshot capabilitySnapshot,
             IReadOnlyCollection<string>? availableToolNames = null,
-            CopilotAgentEnvironmentContext? environmentContext = null)
+            CopilotAgentEnvironmentContext? environmentContext = null,
+            CopilotToolExecutionHookRegistrySnapshot? hookSurfaceSnapshot = null)
         {
             ArgumentNullException.ThrowIfNull(capabilitySnapshot);
             if (profile == null || !IsStructurallyValid())
@@ -212,6 +228,18 @@ namespace ColorVision.Copilot
                     return CreateCompatibility(CopilotAgentCheckpointCompatibilityKind.EnvironmentDrift, capabilitySnapshot);
             }
 
+            if (hookSurfaceSnapshot != null)
+            {
+                if (HookSurfaceVersion != CurrentHookSurfaceVersion
+                    || !IsSha256(HookSurfaceFingerprint)
+                    || !hookSurfaceSnapshot.IsStructurallyValid())
+                {
+                    return CreateCompatibility(CopilotAgentCheckpointCompatibilityKind.HookSurfaceSnapshotMissing, capabilitySnapshot);
+                }
+                if (!string.Equals(HookSurfaceFingerprint, hookSurfaceSnapshot.Fingerprint, StringComparison.OrdinalIgnoreCase))
+                    return CreateCompatibility(CopilotAgentCheckpointCompatibilityKind.HookSurfaceDrift, capabilitySnapshot);
+            }
+
             return CreateCompatibility(CopilotAgentCheckpointCompatibilityKind.Compatible, capabilitySnapshot);
         }
 
@@ -235,6 +263,9 @@ namespace ColorVision.Copilot
                 || EnvironmentVersion is < 0 or > CurrentEnvironmentVersion
                 || (EnvironmentVersion == 0 && !string.IsNullOrEmpty(EnvironmentFingerprint))
                 || (EnvironmentVersion == CurrentEnvironmentVersion && !IsSha256(EnvironmentFingerprint))
+                || HookSurfaceVersion is < 0 or > CurrentHookSurfaceVersion
+                || (HookSurfaceVersion == 0 && !string.IsNullOrEmpty(HookSurfaceFingerprint))
+                || (HookSurfaceVersion == CurrentHookSurfaceVersion && !IsSha256(HookSurfaceFingerprint))
                 || (Capabilities?.Any(capability => capability == null
                     || string.IsNullOrWhiteSpace(capability.Id)
                     || capability.Id.Length > 200
@@ -282,7 +313,8 @@ namespace ColorVision.Copilot
             IReadOnlyCollection<string>? availableToolNames = null,
             IReadOnlyList<CopilotRequestMessage>? conversationMemory = null,
             CopilotAgentEnvironmentContext? environmentContext = null,
-            string? taskIntentText = null)
+            string? taskIntentText = null,
+            CopilotToolExecutionHookRegistrySnapshot? hookSurfaceSnapshot = null)
         {
             ArgumentNullException.ThrowIfNull(profile);
             var json = serializedSessionJson?.Trim() ?? string.Empty;
@@ -315,6 +347,8 @@ namespace ColorVision.Copilot
             var persistedTaskIntentText = NormalizeTaskIntentText(taskIntentText);
             if (environmentContext?.IsStructurallyValid() == false)
                 return null;
+            if (hookSurfaceSnapshot?.IsStructurallyValid() == false)
+                return null;
 
             var checkpoint = new CopilotAgentSessionCheckpoint
             {
@@ -333,6 +367,8 @@ namespace ColorVision.Copilot
                 AvailableToolNames = persistedToolNames,
                 EnvironmentVersion = environmentContext == null ? 0 : CurrentEnvironmentVersion,
                 EnvironmentFingerprint = environmentContext?.Fingerprint ?? string.Empty,
+                HookSurfaceVersion = hookSurfaceSnapshot == null ? 0 : CurrentHookSurfaceVersion,
+                HookSurfaceFingerprint = hookSurfaceSnapshot?.Fingerprint ?? string.Empty,
                 EvidenceArtifacts = persistedEvidence,
                 ConversationMemory = persistedConversationMemory,
                 TaskIntentText = persistedTaskIntentText,
@@ -354,6 +390,8 @@ namespace ColorVision.Copilot
                 AvailableToolNames = AvailableToolNames,
                 EnvironmentVersion = EnvironmentVersion,
                 EnvironmentFingerprint = EnvironmentFingerprint,
+                HookSurfaceVersion = HookSurfaceVersion,
+                HookSurfaceFingerprint = HookSurfaceFingerprint,
                 EvidenceArtifacts = EvidenceArtifacts,
                 ConversationMemory = ConversationMemory,
                 TaskIntentText = TaskIntentText,

@@ -81,6 +81,16 @@ namespace ColorVision.Copilot
                 "ColorVision policy denied this protected tool call: " + detail);
         }
 
+        public static CopilotFrameworkApprovalDecision Cancelled(string reason)
+        {
+            var detail = string.IsNullOrWhiteSpace(reason)
+                ? "The protected tool call was cancelled before execution."
+                : reason.Trim();
+            return new CopilotFrameworkApprovalDecision(
+                CopilotFrameworkApprovalDecisionKind.Cancelled,
+                detail);
+        }
+
         public static CopilotFrameworkApprovalDecision ApprovedByFullAccess()
         {
             return new CopilotFrameworkApprovalDecision(

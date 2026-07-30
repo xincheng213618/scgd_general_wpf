@@ -11,8 +11,9 @@ namespace ColorVision.Copilot
 {
     public sealed class CopilotAgentTraceEntry : ViewModelBase
     {
-        public const int CurrentSchemaVersion = 9;
+        public const int CurrentSchemaVersion = 10;
         private const int MaxSummaryLength = 800;
+        private const int MaxPersistedHookRuns = 64;
 
         public int SchemaVersion { get; set; } = CurrentSchemaVersion;
 
@@ -59,6 +60,8 @@ namespace ColorVision.Copilot
         public long QueueDurationMs { get; set; }
 
         public long TimeoutMs { get; set; }
+
+        public List<CopilotToolExecutionHookRun> HookRuns { get; set; } = new();
 
         public string ProgressMessage { get; set; } = string.Empty;
 
@@ -151,6 +154,8 @@ namespace ColorVision.Copilot
         public bool ShouldSerializeQueueDurationMs() => QueueDurationMs != 0;
 
         public bool ShouldSerializeTimeoutMs() => TimeoutMs != 0;
+
+        public bool ShouldSerializeHookRuns() => HookRuns?.Count > 0;
 
         public bool ShouldSerializeProgressMessage() => !string.IsNullOrWhiteSpace(ProgressMessage);
 
@@ -332,6 +337,24 @@ namespace ColorVision.Copilot
                 {
                     builder.AppendLine().Append("Failure code: ").Append(FailureCode);
                 }
+                if (HookRuns?.Count > 0)
+                {
+                    builder.AppendLine().Append("Hooks:");
+                    foreach (var hookRun in HookRuns)
+                    {
+                        builder.AppendLine()
+                            .Append("- ")
+                            .Append(FormatHookPhase(hookRun.Phase))
+                            .Append(' ')
+                            .Append(hookRun.SourceId)
+                            .Append(" · ")
+                            .Append(FormatHookState(hookRun.State))
+                            .Append(" · ")
+                            .Append(FormatDuration(hookRun.DurationMs));
+                        if (!string.IsNullOrWhiteSpace(hookRun.FailureCode))
+                            builder.Append(" · ").Append(hookRun.FailureCode);
+                    }
+                }
                 if (!string.IsNullOrWhiteSpace(ApprovalActionId))
                     builder.AppendLine().Append("Approval action: ").Append(ApprovalActionId);
                 if (!string.IsNullOrWhiteSpace(ArgumentSummary) && ArgumentSummary != "(none)")
@@ -369,10 +392,23 @@ namespace ColorVision.Copilot
             return entry;
         }
 
-        public static CopilotAgentTraceEntry FromResult(CopilotToolExecutionInfo execution, CopilotToolResult? result)
+        public static CopilotAgentTraceEntry FromResult(
+            CopilotToolExecutionInfo execution,
+            CopilotToolResult? result,
+            IReadOnlyList<CopilotToolExecutionHookRun>? hookRuns = null)
         {
             ArgumentNullException.ThrowIfNull(execution);
             var entry = FromExecution(execution);
+            if (hookRuns != null)
+            {
+                foreach (var hookRun in hookRuns)
+                {
+                    if (entry.HookRuns.Count >= MaxPersistedHookRuns)
+                        break;
+                    if (hookRun?.IsStructurallyValid() == true)
+                        entry.HookRuns.Add(hookRun);
+                }
+            }
             if (result != null)
             {
                 var summary = !string.IsNullOrWhiteSpace(result.Summary) ? result.Summary : result.Content;
@@ -405,6 +441,59 @@ namespace ColorVision.Copilot
             }
 
             return entry;
+        }
+
+        internal bool CompleteActiveExecution(
+            CopilotToolExecutionState terminalState,
+            CopilotToolFailureKind failureKind,
+            string failureCode,
+            string errorMessage,
+            DateTimeOffset completedAtUtc)
+        {
+            if (State is not (CopilotToolExecutionState.Pending
+                or CopilotToolExecutionState.Running
+                or CopilotToolExecutionState.AwaitingApproval))
+            {
+                return false;
+            }
+            if (terminalState is not (CopilotToolExecutionState.Cancelled
+                or CopilotToolExecutionState.Interrupted))
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(terminalState),
+                    terminalState,
+                    "An active trace can only be closed as cancelled or interrupted without an authoritative tool result.");
+            }
+
+            State = terminalState;
+            FailureKind = failureKind;
+            FailureCode = CopilotToolFailureCode.Normalize(failureCode);
+            RetryEligible = false;
+            CompletedAtUtc = completedAtUtc;
+            if (StartedAtUtc != default)
+            {
+                DurationMs = Math.Max(
+                    DurationMs,
+                    (long)Math.Max(0, (completedAtUtc - StartedAtUtc).TotalMilliseconds));
+            }
+            ErrorMessage = Sanitize(errorMessage);
+
+            OnPropertyChanged(nameof(State));
+            OnPropertyChanged(nameof(FailureKind));
+            OnPropertyChanged(nameof(FailureCode));
+            OnPropertyChanged(nameof(RetryEligible));
+            OnPropertyChanged(nameof(CompletedAtUtc));
+            OnPropertyChanged(nameof(DurationMs));
+            OnPropertyChanged(nameof(ErrorMessage));
+            OnPropertyChanged(nameof(IsFailure));
+            OnPropertyChanged(nameof(ActivityGlyph));
+            OnPropertyChanged(nameof(ActivityLabel));
+            OnPropertyChanged(nameof(ActivityDurationLabel));
+            OnPropertyChanged(nameof(ActivityProgressLabel));
+            OnPropertyChanged(nameof(ActivityDescription));
+            OnPropertyChanged(nameof(DiagnosticDetails));
+            OnPropertyChanged(nameof(CanRequestWorkspaceRollback));
+            return true;
         }
 
         internal bool MarkWorkspaceChangeSetRolledBack(string changeSetId)
@@ -486,6 +575,22 @@ namespace ColorVision.Copilot
         public bool EnsureValid(DateTimeOffset recoveredAtUtc)
         {
             var changed = false;
+            HookRuns ??= new List<CopilotToolExecutionHookRun>();
+            var seenHookRuns = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            for (var index = 0; index < HookRuns.Count; index++)
+            {
+                var hookRun = HookRuns[index];
+                var identity = hookRun == null
+                    ? string.Empty
+                    : $"{(int)hookRun.Phase}:{hookRun.SourceId}";
+                if (hookRun?.IsStructurallyValid() != true
+                    || !seenHookRuns.Add(identity)
+                    || index >= MaxPersistedHookRuns)
+                {
+                    HookRuns.RemoveAt(index--);
+                    changed = true;
+                }
+            }
             WorkspaceChangedFiles ??= new List<CopilotWorkspaceChangeFile>();
             var seenWorkspacePaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             for (var index = 0; index < WorkspaceChangedFiles.Count; index++)
@@ -880,6 +985,24 @@ namespace ColorVision.Copilot
         {
             return durationMs < 1000 ? $"{Math.Max(0, durationMs)}ms" : $"{durationMs / 1000d:0.#}s";
         }
+
+        private static string FormatHookPhase(CopilotToolExecutionHookPhase phase) => phase switch
+        {
+            CopilotToolExecutionHookPhase.BeforeExecute => "before",
+            CopilotToolExecutionHookPhase.AfterExecute => "after",
+            _ => "unknown",
+        };
+
+        private static string FormatHookState(CopilotToolExecutionHookState state) => state switch
+        {
+            CopilotToolExecutionHookState.Completed => "completed",
+            CopilotToolExecutionHookState.Denied => "denied",
+            CopilotToolExecutionHookState.Failed => "failed",
+            CopilotToolExecutionHookState.TimedOut => "timed out",
+            CopilotToolExecutionHookState.Cancelled => "cancelled",
+            CopilotToolExecutionHookState.Skipped => "skipped",
+            _ => "unknown",
+        };
 
         private static string FormatDiagnosticState(CopilotToolExecutionState state) => state switch
         {

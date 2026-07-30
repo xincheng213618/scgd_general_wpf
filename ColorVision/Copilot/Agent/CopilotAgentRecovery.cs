@@ -72,7 +72,8 @@ namespace ColorVision.Copilot
             CopilotChatMessage? message,
             CopilotAgentSessionCheckpoint? checkpoint,
             CopilotProfileConfig? profile,
-            CopilotCapabilityCatalogSnapshot capabilitySnapshot)
+            CopilotCapabilityCatalogSnapshot capabilitySnapshot,
+            CopilotToolExecutionHookRegistrySnapshot? hookSurfaceSnapshot = null)
         {
             if (message == null
                 || message.IsUser
@@ -101,7 +102,10 @@ namespace ColorVision.Copilot
                 return CopilotAgentRecoveryDecision.Unavailable;
             }
 
-            var compatibility = checkpoint.EvaluateFor(profile, capabilitySnapshot);
+            var compatibility = checkpoint.EvaluateFor(
+                profile,
+                capabilitySnapshot,
+                hookSurfaceSnapshot: hookSurfaceSnapshot);
             if (compatibility.Kind == CopilotAgentCheckpointCompatibilityKind.Invalid)
                 return CopilotAgentRecoveryDecision.Unavailable;
 

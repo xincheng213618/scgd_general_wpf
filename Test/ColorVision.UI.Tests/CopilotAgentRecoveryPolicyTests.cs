@@ -103,6 +103,43 @@ public sealed class CopilotAgentRecoveryPolicyTests
     }
 
     [Fact]
+    public void HookSurfaceDriftChangesResumeEntryPointToReplan()
+    {
+        var profile = CreateProfile();
+        var capabilitySnapshot = CopilotCapabilityCatalog.Shared.GetSnapshot();
+        var registry = new CopilotToolExecutionHookRegistry();
+        var executor = new CopilotToolExecutor(registry);
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordRunStarted();
+        journal.RecordStop(CopilotAgentStopReason.Paused);
+        var checkpoint = CopilotAgentSessionCheckpoint.Create(
+            profile,
+            "{}",
+            capabilitySnapshot,
+            taskEventJournal: journal.Snapshot(),
+            hookSurfaceSnapshot: executor.GetHookSurfaceSnapshot());
+        var message = new CopilotChatMessage(CopilotChatRole.Assistant, "Paused")
+        {
+            AgentStopReason = CopilotAgentStopReason.Paused,
+        };
+        using var registration = registry.Register(
+            "test:recovery-drift",
+            new NoOpHook(),
+            "^RecoveryProbe$");
+
+        var decision = CopilotAgentRecoveryPolicy.Evaluate(
+            message,
+            checkpoint,
+            profile,
+            capabilitySnapshot,
+            executor.GetHookSurfaceSnapshot());
+
+        Assert.True(decision.IsAvailable);
+        Assert.Equal(CopilotAgentRecoveryMode.Replan, decision.Request!.Mode);
+        Assert.Equal("重新规划", decision.ActionLabel);
+    }
+
+    [Fact]
     public void ReplanRecoveryRetainsOriginalTaskIntentForToolSelection()
     {
         const string originalTask = "只读审计 C:\\workspace\\ColorVision\\Copilot，列出至少 30 条可验证的问题；不要修改任何文件。";
@@ -199,5 +236,22 @@ public sealed class CopilotAgentRecoveryPolicyTests
             Model = "test-model",
             MaxTokens = 4_096,
         };
+    }
+
+    private sealed class NoOpHook : ICopilotToolExecutionHook
+    {
+        public Task<CopilotToolExecutionHookDecision> BeforeExecuteAsync(
+            CopilotToolExecutionHookContext context,
+            CancellationToken cancellationToken)
+        {
+            return Task.FromResult(CopilotToolExecutionHookDecision.Proceed);
+        }
+
+        public Task AfterExecuteAsync(
+            CopilotToolExecutionOutcome outcome,
+            CancellationToken cancellationToken)
+        {
+            return Task.CompletedTask;
+        }
     }
 }

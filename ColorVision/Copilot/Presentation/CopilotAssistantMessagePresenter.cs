@@ -64,6 +64,11 @@ namespace ColorVision.Copilot
                     CompleteThinking(assistantMessage);
                     return CopilotAgentEventPresentationResult.Handled(CopilotAgentEventPersistenceMode.Immediate);
                 case CopilotAgentEventType.Completed:
+                    assistantMessage.CompleteActiveAgentTraces(
+                        CopilotToolExecutionState.Interrupted,
+                        CopilotToolFailureKind.Internal,
+                        "tool_terminal_event_missing",
+                        "The Agent turn completed before this tool call emitted an authoritative terminal result.");
                     CompleteThinking(assistantMessage);
                     return CopilotAgentEventPresentationResult.Handled(CopilotAgentEventPersistenceMode.Immediate);
                 default:
@@ -181,7 +186,10 @@ namespace ColorVision.Copilot
             assistantMessage.MarkThinkingStarted();
             if (agentEvent.ToolExecution != null)
             {
-                assistantMessage.UpsertAgentTrace(CopilotAgentTraceEntry.FromResult(agentEvent.ToolExecution, agentEvent.ToolResult));
+                assistantMessage.UpsertAgentTrace(CopilotAgentTraceEntry.FromResult(
+                    agentEvent.ToolExecution,
+                    agentEvent.ToolResult,
+                    agentEvent.ToolExecutionHookRuns));
                 assistantMessage.RecordResponseTimelineTool(agentEvent.ToolExecution.CallId);
             }
             else

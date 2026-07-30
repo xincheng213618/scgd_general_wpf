@@ -777,6 +777,9 @@ namespace ColorVision.Copilot
 
         public CopilotToolExecutionInfo? ToolExecution { get; init; }
 
+        public IReadOnlyList<CopilotToolExecutionHookRun> ToolExecutionHookRuns { get; init; } =
+            Array.Empty<CopilotToolExecutionHookRun>();
+
         public CopilotToolProgressUpdate? Progress { get; init; }
 
         public CopilotAgentSessionCheckpoint? SessionCheckpoint { get; init; }
@@ -839,7 +842,10 @@ namespace ColorVision.Copilot
             };
         }
 
-        public static CopilotAgentEvent FromToolResult(CopilotToolResult result, CopilotToolExecutionInfo? execution = null)
+        public static CopilotAgentEvent FromToolResult(
+            CopilotToolResult result,
+            CopilotToolExecutionInfo? execution = null,
+            IReadOnlyList<CopilotToolExecutionHookRun>? hookRuns = null)
         {
             return new CopilotAgentEvent
             {
@@ -847,6 +853,7 @@ namespace ColorVision.Copilot
                 Text = result?.Summary ?? string.Empty,
                 ToolResult = result,
                 ToolExecution = execution,
+                ToolExecutionHookRuns = hookRuns?.ToArray() ?? Array.Empty<CopilotToolExecutionHookRun>(),
             };
         }
 

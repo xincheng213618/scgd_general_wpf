@@ -374,7 +374,11 @@ namespace ColorVision.Copilot
 
         public void RecordStop(CopilotAgentStopReason reason)
         {
-            Append(CopilotAgentTaskEventType.RunStopped, RunId, reason.ToString(), $"Agent run stopped with reason {reason}.");
+            lock (_syncRoot)
+            {
+                CloseDanglingToolExecutions(reason);
+                Append(CopilotAgentTaskEventType.RunStopped, RunId, reason.ToString(), $"Agent run stopped with reason {reason}.");
+            }
         }
 
         public void RecordBlocker(CopilotAgentBlockerSnapshot blocker)
@@ -460,6 +464,53 @@ namespace ColorVision.Copilot
                     Events = _events.ToArray(),
                 };
             }
+        }
+
+        private void CloseDanglingToolExecutions(CopilotAgentStopReason stopReason)
+        {
+            var latestStarts = _events
+                .Where(item => item.Type == CopilotAgentTaskEventType.ToolStarted
+                    && string.Equals(item.RunId, RunId, StringComparison.Ordinal))
+                .GroupBy(item => item.SubjectId, StringComparer.Ordinal)
+                .Select(group => group.OrderByDescending(item => item.Sequence).First())
+                .Where(start => !_events.Any(item =>
+                    string.Equals(item.RunId, RunId, StringComparison.Ordinal)
+                    && item.Sequence > start.Sequence
+                    && IsTerminalToolEvent(item, start.SubjectId)))
+                .OrderBy(item => item.Sequence)
+                .ToArray();
+            if (latestStarts.Length == 0)
+                return;
+
+            var cancelled = stopReason == CopilotAgentStopReason.Cancelled;
+            var state = cancelled
+                ? CopilotToolExecutionState.Cancelled.ToString()
+                : CopilotToolExecutionState.Interrupted.ToString();
+            var failureCode = cancelled
+                ? "tool_execution_cancelled"
+                : "tool_terminal_event_missing";
+            var summary = cancelled
+                ? "Tool execution was cancelled before a terminal result was recorded."
+                : "Tool execution was interrupted before a terminal result was recorded.";
+            foreach (var start in latestStarts)
+            {
+                Append(
+                    CopilotAgentTaskEventType.ToolCompleted,
+                    start.SubjectId,
+                    state,
+                    summary,
+                    start.ToolName,
+                    failureCode: failureCode);
+            }
+        }
+
+        private static bool IsTerminalToolEvent(CopilotAgentTaskEvent item, string callSubjectId)
+        {
+            return (item.Type == CopilotAgentTaskEventType.ToolCompleted
+                    && string.Equals(item.SubjectId, callSubjectId, StringComparison.Ordinal))
+                || (item.Type == CopilotAgentTaskEventType.ApprovalDenied
+                    && (string.Equals(item.SubjectId, callSubjectId, StringComparison.Ordinal)
+                        || item.RelatedIds.Contains(callSubjectId, StringComparer.Ordinal)));
         }
 
         private void Append(

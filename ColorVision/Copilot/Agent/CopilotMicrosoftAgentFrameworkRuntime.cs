@@ -251,11 +251,17 @@ namespace ColorVision.Copilot
             emit(CopilotAgentEvent.RuntimeDiagnostic($"Request tool surface · {availableTools.Length}/{registeredToolCount} candidate tool(s) selected after mode and intent filtering."));
             var availableToolNames = availableTools.Select(tool => tool.Name).ToArray();
             var environmentContext = CopilotAgentEnvironmentContext.Capture(request);
+            var hookSurfaceSnapshot = _toolExecutor.GetHookSurfaceSnapshot();
             var executionScope = baseExecutionScope.WithRuntimeSnapshot(
                 environmentContext.Fingerprint,
                 capabilitySnapshot.Revision);
             request.RuntimeExecutionScope = executionScope;
-            var checkpointCompatibility = requestedCheckpoint?.EvaluateFor(request.Profile, capabilitySnapshot, availableToolNames, environmentContext);
+            var checkpointCompatibility = requestedCheckpoint?.EvaluateFor(
+                request.Profile,
+                capabilitySnapshot,
+                availableToolNames,
+                environmentContext,
+                hookSurfaceSnapshot);
             var requiresCheckpointReplan = checkpointCompatibility?.Kind == CopilotAgentCheckpointCompatibilityKind.ProfileChanged
                 || checkpointCompatibility?.RequiresReplan == true;
             var recovery = NormalizeRecoveryRequest(request.Recovery, requestedCheckpoint, availableTools, requiresCheckpointReplan);
@@ -525,6 +531,7 @@ namespace ColorVision.Copilot
                 capabilitySnapshot,
                 availableToolNames,
                 environmentContext,
+                hookSurfaceSnapshot,
                 previousEvidenceArtifacts,
                 bridge,
                 todoProvider,
@@ -650,7 +657,9 @@ namespace ColorVision.Copilot
                             }
                             catch (OperationCanceledException)
                             {
-                                _approvalCoordinator.Cancel(handle);
+                                bridge.CancelApproval(
+                                    reservation,
+                                    "The approval request was cancelled with the Agent run.");
                                 throw;
                             }
                             if (decision.IsApproved)
@@ -1034,7 +1043,8 @@ namespace ColorVision.Copilot
                         availableToolNames,
                         conversationMemory,
                         environmentContext,
-                        request.TaskIntentText);
+                        request.TaskIntentText,
+                        hookSurfaceSnapshot);
                     if (sessionCheckpoint == null)
                         emit(CopilotAgentEvent.RuntimeDiagnostic("Agent session checkpoint exceeded its session or capability persistence limit and was not saved."));
                 }
@@ -1415,6 +1425,10 @@ namespace ColorVision.Copilot
                 return "Persisted Agent session predates runtime environment tracking; its internal task state was discarded and Agent Framework will re-plan against the current host and workspace.";
             if (compatibility.Kind == CopilotAgentCheckpointCompatibilityKind.EnvironmentDrift)
                 return "Agent runtime environment changed (workspace, active document, shell, time zone, or Git state). Persisted internal task state was discarded and Agent Framework will re-plan from visible conversation history in the current environment.";
+            if (compatibility.Kind == CopilotAgentCheckpointCompatibilityKind.HookSurfaceSnapshotMissing)
+                return "Persisted Agent session predates tool-hook surface tracking; its internal task state was discarded and Agent Framework will re-plan under the current authorization hooks.";
+            if (compatibility.Kind == CopilotAgentCheckpointCompatibilityKind.HookSurfaceDrift)
+                return "Agent tool-hook surface changed. Persisted internal task state was discarded and Agent Framework will re-plan before any further tool authorization.";
 
             var removed = compatibility.RemovedCapabilityIds.Count;
             var changed = compatibility.ChangedCapabilityIds.Count;
@@ -1915,6 +1929,7 @@ namespace ColorVision.Copilot
             private readonly CopilotCapabilityCatalogSnapshot _capabilitySnapshot;
             private readonly IReadOnlyList<string> _availableToolNames;
             private readonly CopilotAgentEnvironmentContext _environmentContext;
+            private readonly CopilotToolExecutionHookRegistrySnapshot _hookSurfaceSnapshot;
             private readonly IReadOnlyList<CopilotAgentEvidenceArtifact> _previousEvidenceArtifacts;
             private readonly HarnessToolBridge _bridge;
             private readonly TodoProvider? _todoProvider;
@@ -1933,6 +1948,7 @@ namespace ColorVision.Copilot
                 CopilotCapabilityCatalogSnapshot capabilitySnapshot,
                 IReadOnlyList<string> availableToolNames,
                 CopilotAgentEnvironmentContext environmentContext,
+                CopilotToolExecutionHookRegistrySnapshot hookSurfaceSnapshot,
                 IReadOnlyList<CopilotAgentEvidenceArtifact> previousEvidenceArtifacts,
                 HarnessToolBridge bridge,
                 TodoProvider? todoProvider,
@@ -1947,6 +1963,7 @@ namespace ColorVision.Copilot
                 _capabilitySnapshot = capabilitySnapshot;
                 _availableToolNames = availableToolNames;
                 _environmentContext = environmentContext;
+                _hookSurfaceSnapshot = hookSurfaceSnapshot;
                 _previousEvidenceArtifacts = previousEvidenceArtifacts;
                 _bridge = bridge;
                 _todoProvider = todoProvider;
@@ -1998,7 +2015,8 @@ namespace ColorVision.Copilot
                         _availableToolNames,
                         conversationMemory,
                         _environmentContext,
-                        _request.TaskIntentText);
+                        _request.TaskIntentText,
+                        _hookSurfaceSnapshot);
                     if (checkpoint == null)
                     {
                         _emit(CopilotAgentEvent.RuntimeDiagnostic("Incremental Agent checkpoint was rejected because the serialized state was invalid."));
@@ -2027,7 +2045,7 @@ namespace ColorVision.Copilot
             }
         }
 
-        private sealed class HarnessToolBridge
+        internal sealed class HarnessToolBridge
         {
             private readonly CopilotAgentRequest _request;
             private readonly CopilotExecutionScope _executionScope;
@@ -2227,11 +2245,22 @@ namespace ColorVision.Copilot
 
                 foreach (var reservation in outstanding)
                 {
-                    _approvalCoordinator.Cancel(
-                        reservation.ApprovalActionId,
+                    CancelApproval(
+                        reservation,
                         "The approved action was not executed before the Agent run ended.");
-                    _toolBudgetCompletionGate.CompleteRound(reservation.Round);
                 }
+            }
+
+            public void CancelApproval(
+                FrameworkApprovalReservation reservation,
+                string reason)
+            {
+                ArgumentNullException.ThrowIfNull(reservation);
+                var cancellation = CopilotFrameworkApprovalDecision.Cancelled(reason);
+                _approvalCoordinator.Cancel(
+                    reservation.ApprovalActionId,
+                    cancellation.Reason);
+                Reject(reservation, cancellation);
             }
 
             public void Reject(FrameworkApprovalReservation reservation, CopilotFrameworkApprovalDecision decision)
@@ -2250,10 +2279,13 @@ namespace ColorVision.Copilot
                     Summary = decision.FormatToolSummary(reservation.Tool.Name),
                     ErrorMessage = decision.Reason,
                     FailureKind = failureKind,
+                    FailureCode = GetApprovalFailureCode(decision.Kind),
                 };
                 var execution = CreateApprovalExecutionInfo(
                     reservation,
-                    CopilotToolExecutionState.Denied,
+                    decision.Kind == CopilotFrameworkApprovalDecisionKind.Cancelled
+                        ? CopilotToolExecutionState.Cancelled
+                        : CopilotToolExecutionState.Denied,
                     reservation.ApprovalActionId,
                     DateTimeOffset.UtcNow,
                     failureKind);
@@ -2266,6 +2298,19 @@ namespace ColorVision.Copilot
                     RecordOutcome(reservation.Signature, outcome);
                 }
                 _emit(CopilotAgentEvent.FromToolResult(result, execution));
+            }
+
+            private static string GetApprovalFailureCode(
+                CopilotFrameworkApprovalDecisionKind decisionKind)
+            {
+                return decisionKind switch
+                {
+                    CopilotFrameworkApprovalDecisionKind.Rejected => "approval_rejected",
+                    CopilotFrameworkApprovalDecisionKind.Expired => "approval_expired",
+                    CopilotFrameworkApprovalDecisionKind.Cancelled => "approval_cancelled",
+                    CopilotFrameworkApprovalDecisionKind.PolicyDenied => "approval_policy_denied",
+                    _ => string.Empty,
+                };
             }
 
             public void RecordUnknownToolCall(FunctionCallContent functionCall)

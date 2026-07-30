@@ -18,6 +18,7 @@ namespace ColorVision.Copilot
         ForkConversation,
         SideQuestion,
         Skill,
+        Hooks,
     }
 
     public sealed record CopilotLocalCommand(
@@ -40,6 +41,7 @@ namespace ColorVision.Copilot
             new("/status", "查看模型、Agent、工作区与连接状态", CopilotLocalCommandKind.Status, AvailableWhileAgentRuns: true),
             new("/context", "查看本地上下文、预算与注入统计", CopilotLocalCommandKind.Context, AvailableWhileAgentRuns: true),
             new("/permissions", "查看当前文件范围、能力与审批策略", CopilotLocalCommandKind.Permissions, AvailableWhileAgentRuns: true),
+            new("/hooks", "查看生效 Hook、模块来源与最近运行健康度", CopilotLocalCommandKind.Hooks, AvailableWhileAgentRuns: true),
             new("/skills", "查看 Skill 使用率、连续未加载与降级状态", CopilotLocalCommandKind.Skills, AvailableWhileAgentRuns: true),
             new("/mcp", "查看本地 MCP 服务、审批与最近调用状态", CopilotLocalCommandKind.Mcp, AvailableWhileAgentRuns: true),
             new("/diff", "查看已暂存、未暂存补丁和未跟踪文件", CopilotLocalCommandKind.Diff, AcceptsArguments: true),
