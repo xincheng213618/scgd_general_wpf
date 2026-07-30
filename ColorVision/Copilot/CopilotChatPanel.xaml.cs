@@ -681,6 +681,19 @@ namespace ColorVision.Copilot
 
             if (Keyboard.Modifiers == ModifierKeys.None
                 && e.Key is Key.Up or Key.Down
+                && DataContext is CopilotChatViewModel commandViewModel
+                && commandViewModel.TryNavigateLocalCommandSuggestion(previous: e.Key == Key.Up))
+            {
+                LocalCommandSuggestionListBox.SelectedIndex =
+                    commandViewModel.SelectedLocalCommandSuggestionIndex;
+                if (LocalCommandSuggestionListBox.SelectedItem != null)
+                    LocalCommandSuggestionListBox.ScrollIntoView(LocalCommandSuggestionListBox.SelectedItem);
+                e.Handled = true;
+                return;
+            }
+
+            if (Keyboard.Modifiers == ModifierKeys.None
+                && e.Key is Key.Up or Key.Down
                 && DataContext is CopilotChatViewModel historyViewModel
                 && (historyViewModel.IsInputEmpty || historyViewModel.IsNavigatingPromptHistory)
                 && historyViewModel.TryNavigatePromptHistory(previous: e.Key == Key.Up))

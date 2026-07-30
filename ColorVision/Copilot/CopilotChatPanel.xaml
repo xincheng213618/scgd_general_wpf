@@ -2213,16 +2213,35 @@
                             BorderThickness="1"
                             CornerRadius="7"
                             Visibility="{Binding HasLocalCommandSuggestions, Converter={StaticResource bool2VisibilityConverter}}">
-                        <ScrollViewer VerticalScrollBarVisibility="Auto">
-                            <ItemsControl ItemsSource="{Binding LocalCommandSuggestions}">
-                                <ItemsControl.ItemTemplate>
+                        <DockPanel LastChildFill="True">
+                            <DockPanel DockPanel.Dock="Top" Margin="10,6,10,3">
+                                <TextBlock DockPanel.Dock="Right"
+                                           VerticalAlignment="Center"
+                                           FontSize="9"
+                                           Opacity="0.48"
+                                           Text="↑↓ 选择 · Tab 补全 · Enter 执行" />
+                                <TextBlock VerticalAlignment="Center"
+                                           FontSize="10"
+                                           FontWeight="SemiBold"
+                                           Opacity="0.68"
+                                           Text="/ 或 $ 命令" />
+                            </DockPanel>
+                            <ListBox x:Name="LocalCommandSuggestionListBox"
+                                     Background="Transparent"
+                                     BorderThickness="0"
+                                     ItemContainerStyle="{StaticResource ComposerPopoverListBoxItemStyle}"
+                                     ItemsSource="{Binding LocalCommandSuggestions}"
+                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                     ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                     SelectedIndex="{Binding SelectedLocalCommandSuggestionIndex, Mode=TwoWay}">
+                                <ListBox.ItemTemplate>
                                     <DataTemplate>
                                         <Button Padding="10,6"
                                                 Style="{StaticResource ComposerPopoverButtonStyle}"
                                                 Command="{Binding DataContext.CompleteLocalCommandCommand, Source={x:Reference Root}}"
                                                 CommandParameter="{Binding}"
                                                 Click="LocalCommandSuggestionButton_Click"
-                                                ToolTip="点击或使用 Tab 补全；Enter 在参数完整时执行">
+                                                ToolTip="点击，或用 ↑↓ 选择后按 Tab 补全；Enter 在参数完整时执行">
                                             <Grid>
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="Auto" />
@@ -2243,9 +2262,9 @@
                                             </Grid>
                                         </Button>
                                     </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </ScrollViewer>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </DockPanel>
                     </Border>
 
                     <Grid Grid.Row="5"

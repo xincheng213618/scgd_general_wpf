@@ -105,6 +105,7 @@ namespace ColorVision.Copilot
         private bool _isRetryingStatePersistence;
         private long _sideQuestionVersion;
         private long _composerReferenceRefreshVersion;
+        private int _selectedLocalCommandSuggestionIndex = -1;
         private int _disposeState;
 
         public CopilotChatViewModel()
@@ -923,8 +924,7 @@ namespace ColorVision.Copilot
                         _promptHistoryNavigator.Reset();
                     UpdateSelectedConversationDraft(normalizedValue);
                     OnPropertyChanged(nameof(IsInputEmpty));
-                    OnPropertyChanged(nameof(LocalCommandSuggestions));
-                    OnPropertyChanged(nameof(HasLocalCommandSuggestions));
+                    RefreshLocalCommandSuggestions();
                     OnPropertyChanged(nameof(CanSubmitUserQuestionAnswer));
                     OnPropertyChanged(nameof(CanSteerCurrentRun));
                     OnPropertyChanged(nameof(CanQueueCurrentRunFollowUp));
@@ -1054,6 +1054,28 @@ namespace ColorVision.Copilot
 
         public bool HasLocalCommandSuggestions => LocalCommandSuggestions.Count > 0;
 
+        public int SelectedLocalCommandSuggestionIndex
+        {
+            get => _selectedLocalCommandSuggestionIndex;
+            set => SetProperty(ref _selectedLocalCommandSuggestionIndex, value);
+        }
+
+        public bool TryNavigateLocalCommandSuggestion(bool previous)
+        {
+            var suggestions = LocalCommandSuggestions;
+            if (suggestions.Count == 0)
+            {
+                SelectedLocalCommandSuggestionIndex = -1;
+                return false;
+            }
+
+            SelectedLocalCommandSuggestionIndex = CopilotSuggestionSelection.Move(
+                SelectedLocalCommandSuggestionIndex,
+                suggestions.Count,
+                previous);
+            return true;
+        }
+
         public bool HasComposerReferenceSuggestions => ComposerReferenceSuggestions.Count > 0;
 
         public bool IsComposerReferenceMentionActive
@@ -1106,9 +1128,10 @@ namespace ColorVision.Copilot
             var currentIndex = SelectedComposerReference == null
                 ? -1
                 : ComposerReferenceSuggestions.IndexOf(SelectedComposerReference);
-            var nextIndex = previous
-                ? (currentIndex <= 0 ? ComposerReferenceSuggestions.Count - 1 : currentIndex - 1)
-                : (currentIndex + 1) % ComposerReferenceSuggestions.Count;
+            var nextIndex = CopilotSuggestionSelection.Move(
+                currentIndex,
+                ComposerReferenceSuggestions.Count,
+                previous);
             SelectedComposerReference = ComposerReferenceSuggestions[nextIndex];
             return true;
         }
@@ -1291,7 +1314,7 @@ namespace ColorVision.Copilot
         public bool TryCompleteLocalCommand(CopilotLocalCommand? command = null)
         {
             var suggestions = LocalCommandSuggestions;
-            command ??= suggestions.Count > 0 ? suggestions[0] : null;
+            command ??= GetSelectedLocalCommandSuggestion(suggestions);
             if (command == null)
                 return false;
 
@@ -1302,12 +1325,35 @@ namespace ColorVision.Copilot
         internal bool TryCompleteLocalCommandForSubmission()
         {
             var suggestions = LocalCommandSuggestions;
-            if (suggestions.Count == 0)
+            var command = GetSelectedLocalCommandSuggestion(suggestions);
+            if (command == null)
                 return true;
 
-            var command = suggestions[0];
             InputText = command.CompletionText;
             return !command.RequiresMoreInputAfterCompletion;
+        }
+
+        private CopilotLocalCommand? GetSelectedLocalCommandSuggestion(
+            IReadOnlyList<CopilotLocalCommand> suggestions)
+        {
+            var selectedIndex = CopilotSuggestionSelection.Normalize(
+                SelectedLocalCommandSuggestionIndex,
+                suggestions.Count);
+            if (selectedIndex < 0)
+                return null;
+
+            SelectedLocalCommandSuggestionIndex = selectedIndex;
+            return suggestions[selectedIndex];
+        }
+
+        private void RefreshLocalCommandSuggestions()
+        {
+            var suggestions = LocalCommandSuggestions;
+            var selectedIndex = CopilotSuggestionSelection.Reset(suggestions.Count);
+
+            OnPropertyChanged(nameof(LocalCommandSuggestions));
+            SelectedLocalCommandSuggestionIndex = selectedIndex;
+            OnPropertyChanged(nameof(HasLocalCommandSuggestions));
         }
 
         private CopilotHostedAgentRun? ActiveHostedRun => _taskHost.ActiveRun;
@@ -4707,6 +4753,7 @@ namespace ColorVision.Copilot
         {
             OnPropertyChanged(nameof(PrimaryActionToolTip));
             OnPropertyChanged(nameof(InputPlaceholder));
+            RefreshLocalCommandSuggestions();
             RefreshComposerTokenEstimate();
         }
 
@@ -4938,8 +4985,7 @@ namespace ColorVision.Copilot
             OnPropertyChanged(nameof(Conversations));
             OnPropertyChanged(nameof(EmptyStateText));
             OnPropertyChanged(nameof(CanSelectProfile));
-            OnPropertyChanged(nameof(LocalCommandSuggestions));
-            OnPropertyChanged(nameof(HasLocalCommandSuggestions));
+            RefreshLocalCommandSuggestions();
             RefreshMcpStatus();
 
             var conversation = Conversations.FirstOrDefault(item => item.Id == preferredConversationId)
@@ -5345,8 +5391,7 @@ namespace ColorVision.Copilot
             OnPropertyChanged(nameof(SelectedProfileReasoningLabel));
             OnPropertyChanged(nameof(SelectedProfileReasoningToolTip));
             OnPropertyChanged(nameof(HasConfigurableReasoning));
-            OnPropertyChanged(nameof(LocalCommandSuggestions));
-            OnPropertyChanged(nameof(HasLocalCommandSuggestions));
+            RefreshLocalCommandSuggestions();
         }
 
         private CopilotConversationRecord EnsureConversation()
@@ -6509,8 +6554,7 @@ namespace ColorVision.Copilot
             _editingUserMessageId = normalizedUserMessageId;
             OnPropertyChanged(nameof(IsEditingMessage));
             OnPropertyChanged(nameof(InputPlaceholder));
-            OnPropertyChanged(nameof(LocalCommandSuggestions));
-            OnPropertyChanged(nameof(HasLocalCommandSuggestions));
+            RefreshLocalCommandSuggestions();
             OnPropertyChanged(nameof(HasLocalCommandResult));
             CommandManager.InvalidateRequerySuggested();
         }
