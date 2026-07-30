@@ -2167,11 +2167,19 @@
                                                 Click="PromptHistorySearchResultButton_Click"
                                                 Style="{StaticResource ComposerPopoverButtonStyle}"
                                                 ToolTip="恢复到输入框，不会自动发送">
-                                            <TextBlock MaxWidth="760"
-                                                       FontSize="11"
-                                                       Text="{Binding Preview}"
-                                                       TextTrimming="CharacterEllipsis"
-                                                       TextWrapping="NoWrap" />
+                                            <StackPanel MaxWidth="760">
+                                                <TextBlock FontSize="11"
+                                                           Text="{Binding Preview}"
+                                                           TextTrimming="CharacterEllipsis"
+                                                           TextWrapping="NoWrap" />
+                                                <TextBlock Margin="0,3,0,0"
+                                                           FontSize="9"
+                                                           Opacity="0.52"
+                                                           Text="{Binding SourceSummary}"
+                                                           TextTrimming="CharacterEllipsis"
+                                                           TextWrapping="NoWrap"
+                                                           Visibility="{Binding HasSourceSummary, Converter={StaticResource bool2VisibilityConverter}}" />
+                                            </StackPanel>
                                         </Button>
                                     </DataTemplate>
                                 </ListBox.ItemTemplate>

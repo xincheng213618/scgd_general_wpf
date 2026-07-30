@@ -43,6 +43,7 @@ public sealed class CopilotPromptHistorySearchTests
         Assert.DoesNotContain(results, item => item.Text.Contains("hidden request", StringComparison.Ordinal));
         Assert.DoesNotContain(results, item => item.Preview.Contains("private attachment", StringComparison.Ordinal));
         Assert.DoesNotContain(results, item => item.Text.Contains("Assistant answer", StringComparison.Ordinal));
+        Assert.All(results, item => Assert.False(item.HasSourceSummary));
     }
 
     [Theory]
@@ -86,7 +87,10 @@ public sealed class CopilotPromptHistorySearchTests
     [Fact]
     public void AllConversationSearchUsesVisiblePromptsAndKeepsNewestDuplicate()
     {
-        var firstConversation = new CopilotConversationRecord();
+        var firstConversation = new CopilotConversationRecord
+        {
+            Title = "Camera calibration",
+        };
         firstConversation.Messages.Add(new CopilotChatMessage(CopilotChatRole.User, "Shared request")
         {
             CreatedAt = new DateTime(2026, 7, 29, 10, 0, 0),
@@ -97,7 +101,10 @@ public sealed class CopilotPromptHistorySearchTests
             CreatedAt = new DateTime(2026, 7, 29, 11, 0, 0),
         });
 
-        var secondConversation = new CopilotConversationRecord();
+        var secondConversation = new CopilotConversationRecord
+        {
+            Title = "Flow diagnostics",
+        };
         secondConversation.Messages.Add(new CopilotChatMessage(CopilotChatRole.Assistant, "Assistant answer")
         {
             CreatedAt = new DateTime(2026, 7, 30, 9, 0, 0),
@@ -113,7 +120,30 @@ public sealed class CopilotPromptHistorySearchTests
             string.Empty);
 
         Assert.Equal(["Shared request", "Older request"], results.Select(item => item.Text));
+        Assert.Equal("Flow diagnostics · 2026-07-30 10:00", results[0].SourceSummary);
+        Assert.Equal("Camera calibration · 2026-07-29 11:00", results[1].SourceSummary);
+        Assert.All(results, item => Assert.True(item.HasSourceSummary));
         Assert.DoesNotContain(results, item => item.Text.Contains("hidden", StringComparison.Ordinal));
         Assert.DoesNotContain(results, item => item.Text.Contains("Assistant", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void AllConversationSourceTitleIsBoundedWithoutSplittingSurrogatePairs()
+    {
+        var conversation = new CopilotConversationRecord
+        {
+            Title = new string('x', CopilotPromptHistorySearch.MaximumSourceTitleCharacters - 1) + "😀tail",
+        };
+        conversation.Messages.Add(new CopilotChatMessage(CopilotChatRole.User, "Inspect result")
+        {
+            CreatedAt = new DateTime(2026, 7, 31, 8, 30, 0),
+        });
+
+        var result = Assert.Single(CopilotPromptHistorySearch.SearchAll([conversation], string.Empty));
+        var title = result.SourceSummary.Split(" · ", StringSplitOptions.None)[0];
+
+        Assert.Equal(CopilotPromptHistorySearch.MaximumSourceTitleCharacters - 1, title.Length);
+        Assert.DoesNotContain('�', title);
+        Assert.EndsWith("x", title, StringComparison.Ordinal);
     }
 }
