@@ -278,6 +278,14 @@ namespace ColorVision.Copilot
 
         public ObservableCollection<CopilotConversationRecord> FilteredConversations { get; } = new();
 
+        public IReadOnlyList<CopilotConversationBranchFamilyMember> ConversationBranchFamily { get; private set; } =
+            Array.Empty<CopilotConversationBranchFamilyMember>();
+
+        public bool HasConversationBranchFamily => ConversationBranchFamily.Count > 1;
+
+        public string ConversationBranchFamilyLabel =>
+            $"会话树 · {ConversationBranchFamily.Count.ToString(System.Globalization.CultureInfo.CurrentCulture)}";
+
         public ObservableCollection<CopilotAgentTaskSummary> AgentTasks { get; } = new();
 
         public bool HasAgentTasks => AgentTasks.Count > 0;
@@ -4518,6 +4526,17 @@ namespace ColorVision.Copilot
 
             OnPropertyChanged(nameof(HasNoConversationSearchResults));
             OnPropertyChanged(nameof(SelectedConversation));
+            RefreshConversationBranchFamily();
+        }
+
+        private void RefreshConversationBranchFamily()
+        {
+            ConversationBranchFamily = CopilotConversationBranchService.BuildBranchFamily(
+                Conversations,
+                SelectedConversation);
+            OnPropertyChanged(nameof(ConversationBranchFamily));
+            OnPropertyChanged(nameof(HasConversationBranchFamily));
+            OnPropertyChanged(nameof(ConversationBranchFamilyLabel));
         }
 
         private void ScheduleConversationSearchRefresh()
@@ -4648,6 +4667,7 @@ namespace ColorVision.Copilot
             OnPropertyChanged(nameof(InputPlaceholder));
             OnComposerAccessModeChanged();
             RefreshPendingActions();
+            RefreshConversationBranchFamily();
             RefreshCompactHistoryConversations();
             NotifyHostedRunStateChanged();
             PublishSelectedTaskEventJournal();

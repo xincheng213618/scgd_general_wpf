@@ -140,6 +140,77 @@ public sealed class CopilotConversationBranchServiceTests
     }
 
     [Fact]
+    public void BranchFamilyOrdersRootParentsAndSiblingsDeterministically()
+    {
+        var root = CreateBranchableConversation("root");
+        root.Id = "root";
+        var firstBranch = CreateBranch(root, "first", "first", DateTimeOffset.Parse("2026-07-30T01:00:00Z"));
+        var nestedBranch = CreateBranch(firstBranch, "nested", "nested", DateTimeOffset.Parse("2026-07-30T02:00:00Z"));
+        var siblingBranch = CreateBranch(root, "sibling", "sibling", DateTimeOffset.Parse("2026-07-30T03:00:00Z"));
+
+        var family = CopilotConversationBranchService.BuildBranchFamily(
+            [nestedBranch, siblingBranch, root, firstBranch],
+            nestedBranch);
+
+        Assert.Equal(
+            ["root", "first", "nested", "sibling"],
+            family.Select(member => member.Conversation.Id));
+        Assert.Equal([0, 1, 2, 1], family.Select(member => member.Depth));
+        Assert.True(family[0].IsRoot);
+        Assert.False(family[0].HasMissingParent);
+        Assert.True(family[2].IsCurrent);
+        Assert.Contains("根会话", family[0].DisplayLabel);
+        Assert.StartsWith("    ↳", family[2].DisplayLabel);
+    }
+
+    [Fact]
+    public void BranchFamilyKeepsBranchesWhosePersistedParentsAreMissing()
+    {
+        var root = CreateBranchableConversation("root");
+        root.Id = "root";
+        var direct = CreateBranch(root, "direct", "direct", DateTimeOffset.Parse("2026-07-30T01:00:00Z"));
+        var orphan = CreateBranch(root, "orphan", "orphan", DateTimeOffset.Parse("2026-07-30T02:00:00Z"));
+        Assert.NotNull(orphan.BranchOrigin);
+        orphan.BranchOrigin.ParentConversationId = "deleted-parent";
+        var orphanChild = CreateBranch(orphan, "orphan-child", "orphan child", DateTimeOffset.Parse("2026-07-30T00:30:00Z"));
+
+        var family = CopilotConversationBranchService.BuildBranchFamily(
+            [orphanChild, orphan, direct, root],
+            orphan);
+
+        Assert.Equal(["root", "direct", "orphan", "orphan-child"], family.Select(member => member.Conversation.Id));
+        var orphanMember = Assert.Single(family, member => member.Conversation.Id == "orphan");
+        Assert.Equal(1, orphanMember.Depth);
+        Assert.True(orphanMember.HasMissingParent);
+        Assert.True(orphanMember.IsCurrent);
+        Assert.Contains("源会话缺失", orphanMember.DisplayLabel);
+        Assert.Equal(2, Assert.Single(family, member => member.Conversation.Id == "orphan-child").Depth);
+    }
+
+    [Fact]
+    public void BranchFamilyTerminatesAndDoesNotDuplicateCyclicLineage()
+    {
+        var root = CreateBranchableConversation("root");
+        root.Id = "root";
+        var first = CreateBranch(root, "first", "first", DateTimeOffset.Parse("2026-07-30T01:00:00Z"));
+        var second = CreateBranch(root, "second", "second", DateTimeOffset.Parse("2026-07-30T02:00:00Z"));
+        Assert.NotNull(first.BranchOrigin);
+        Assert.NotNull(second.BranchOrigin);
+        first.BranchOrigin.ParentConversationId = second.Id;
+        second.BranchOrigin.ParentConversationId = first.Id;
+
+        var family = CopilotConversationBranchService.BuildBranchFamily(
+            [second, root, first],
+            first);
+
+        Assert.Equal(3, family.Count);
+        Assert.Equal(3, family.Select(member => member.Conversation.Id).Distinct().Count());
+        Assert.Equal("root", family[0].Conversation.Id);
+        Assert.Contains(family, member => member.Conversation.Id == "first" && member.IsCurrent);
+        Assert.All(family, member => Assert.InRange(member.Depth, 0, 12));
+    }
+
+    [Fact]
     public void BranchLineageSurvivesChatStateRestart()
     {
         var stateRoot = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
@@ -334,6 +405,24 @@ public sealed class CopilotConversationBranchServiceTests
         conversation.Messages.Add(new CopilotChatMessage(CopilotChatRole.User, "Inspect the current state."));
         conversation.Messages.Add(new CopilotChatMessage(CopilotChatRole.Assistant, "The current state is ready."));
         return conversation;
+    }
+
+    private static CopilotConversationRecord CreateBranch(
+        CopilotConversationRecord source,
+        string id,
+        string title,
+        DateTimeOffset forkedAtUtc)
+    {
+        var branch = CreateBranchableConversation(title);
+        branch.Id = id;
+        branch.BranchOrigin = new CopilotConversationBranchOrigin
+        {
+            ParentConversationId = source.Id,
+            RootConversationId = source.BranchOrigin?.RootConversationId ?? source.Id,
+            ThroughMessageId = source.Messages[1].Id,
+            ForkedAtUtc = forkedAtUtc,
+        };
+        return branch;
     }
 
     private static CopilotAgentTraceEntry CreateWorkspaceApplyTrace()

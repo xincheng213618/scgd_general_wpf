@@ -332,6 +332,28 @@ namespace ColorVision.Copilot
             element.ContextMenu.IsOpen = true;
         }
 
+        private void ConversationBranchFamilyButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not FrameworkElement element || element.ContextMenu == null)
+                return;
+
+            element.ContextMenu.PlacementTarget = element;
+            element.ContextMenu.Placement = PlacementMode.Bottom;
+            element.ContextMenu.IsOpen = true;
+        }
+
+        private void ConversationBranchFamilyMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (DataContext is not CopilotChatViewModel viewModel
+                || sender is not MenuItem { DataContext: CopilotConversationBranchFamilyMember member }
+                || !viewModel.SelectConversationCommand.CanExecute(member.Conversation))
+            {
+                return;
+            }
+
+            viewModel.SelectConversationCommand.Execute(member.Conversation);
+        }
+
         private void ComposerReferenceMenuItem_Click(object sender, RoutedEventArgs e)
         {
             if (DataContext is not CopilotChatViewModel viewModel)

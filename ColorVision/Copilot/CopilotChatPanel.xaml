@@ -832,6 +832,35 @@
                                        Text="&#xE8A7;" />
                         </Button>
 
+                        <Button x:Name="ConversationBranchFamilyButton"
+                                Margin="0,0,6,0"
+                                Padding="6,2"
+                                VerticalAlignment="Center"
+                                Background="Transparent"
+                                BorderBrush="{DynamicResource ButtonBorderBrush}"
+                                Click="ConversationBranchFamilyButton_Click"
+                                Content="{Binding ConversationBranchFamilyLabel}"
+                                FontSize="10"
+                                Foreground="{DynamicResource GlobalTextBrush}"
+                                IsEnabled="{Binding CanSwitchConversation}"
+                                Opacity="0.72"
+                                ToolTip="打开当前根会话及其全部分支；会话切换不会继承其他分支的运行状态、授权或 checkpoint。"
+                                Visibility="{Binding HasConversationBranchFamily, Converter={StaticResource bool2VisibilityConverter}}">
+                            <Button.ContextMenu>
+                                <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}"
+                                             ItemsSource="{Binding ConversationBranchFamily}">
+                                    <ContextMenu.ItemContainerStyle>
+                                        <Style TargetType="{x:Type MenuItem}">
+                                            <Setter Property="Header" Value="{Binding DisplayLabel}" />
+                                            <Setter Property="IsCheckable" Value="True" />
+                                            <Setter Property="IsChecked" Value="{Binding IsCurrent, Mode=OneWay}" />
+                                            <EventSetter Event="Click" Handler="ConversationBranchFamilyMenuItem_Click" />
+                                        </Style>
+                                    </ContextMenu.ItemContainerStyle>
+                                </ContextMenu>
+                            </Button.ContextMenu>
+                        </Button>
+
                         <Button Margin="0,0,6,0"
                                 Style="{StaticResource CopilotIconButtonStyle}"
                                 Command="{Binding NewChatCommand}"
