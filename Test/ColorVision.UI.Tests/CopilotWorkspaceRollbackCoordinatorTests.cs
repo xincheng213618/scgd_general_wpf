@@ -1,6 +1,7 @@
 using ColorVision.Copilot;
 using ColorVision.Copilot.Mcp;
 using System.IO;
+using System.Text;
 
 namespace ColorVision.UI.Tests
 {
@@ -139,6 +140,204 @@ namespace ColorVision.UI.Tests
         }
 
         [Fact]
+        public async Task AppliedChangeSetSurvivesRestartInUserEncryptedCheckpoint()
+        {
+            var testRoot = Path.Combine(
+                Path.GetTempPath(),
+                "ColorVisionDurableRollback",
+                Guid.NewGuid().ToString("N"));
+            var workspacePath = Path.Combine(testRoot, "Workspace");
+            var checkpointPath = Path.Combine(testRoot, "Checkpoints");
+            Directory.CreateDirectory(workspacePath);
+            try
+            {
+                const string beforeText = "checkpoint-before-secret";
+                const string afterText = "checkpoint-after-secret";
+                const string deletedText = "checkpoint-deleted-secret";
+                const string createdText = "checkpoint-created-secret";
+                var targetPath = Path.Combine(workspacePath, "target.txt");
+                var deletedPath = Path.Combine(workspacePath, "deleted.txt");
+                var createdPath = Path.Combine(workspacePath, "nested", "created.txt");
+                await File.WriteAllTextAsync(targetPath, beforeText);
+                await File.WriteAllTextAsync(deletedPath, deletedText);
+                var request = CreateWorkspaceRequest(
+                    "durable-rollback-conversation",
+                    workspacePath);
+                var firstStore = new CopilotWorkspacePatchStore(
+                    new CopilotWorkspaceChangeSetCheckpointStore(checkpointPath));
+                var preview = await firstStore.PreviewPatchEnvelopeAsync(
+                    request,
+                    new CopilotAgentToolInput
+                    {
+                        Arguments = new Dictionary<string, object?>
+                        {
+                            ["operations"] = new object[]
+                            {
+                                new
+                                {
+                                    operation = "update",
+                                    path = "target.txt",
+                                    oldText = beforeText,
+                                    newText = afterText,
+                                },
+                                new
+                                {
+                                    operation = "add",
+                                    path = "nested/created.txt",
+                                    content = createdText,
+                                },
+                                new
+                                {
+                                    operation = "delete",
+                                    path = "deleted.txt",
+                                },
+                            },
+                        },
+                    },
+                    CancellationToken.None);
+                Assert.True(preview.Success, preview.ErrorMessage);
+                var changeSetId = ReadMetadata(preview.Content, "change_set_id");
+                var changeSetInput = new CopilotAgentToolInput
+                {
+                    Arguments = new Dictionary<string, object?>
+                    {
+                        ["changeSetId"] = changeSetId,
+                    },
+                };
+
+                var applied = await firstStore.ApplyPatchEnvelopeAsync(
+                    request,
+                    changeSetInput,
+                    CancellationToken.None);
+
+                Assert.True(applied.Success, applied.ErrorMessage);
+                Assert.Equal(afterText, await File.ReadAllTextAsync(targetPath));
+                Assert.Equal(createdText, await File.ReadAllTextAsync(createdPath));
+                Assert.False(File.Exists(deletedPath));
+                var checkpointFile = Assert.Single(Directory.GetFiles(
+                    checkpointPath,
+                    "*.checkpoint",
+                    SearchOption.TopDirectoryOnly));
+                var encryptedHex = Convert.ToHexString(await File.ReadAllBytesAsync(checkpointFile));
+                Assert.DoesNotContain(
+                    Convert.ToHexString(Encoding.UTF8.GetBytes(beforeText)),
+                    encryptedHex,
+                    StringComparison.OrdinalIgnoreCase);
+                Assert.DoesNotContain(
+                    Convert.ToHexString(Encoding.UTF8.GetBytes(afterText)),
+                    encryptedHex,
+                    StringComparison.OrdinalIgnoreCase);
+                Assert.DoesNotContain(
+                    Convert.ToHexString(Encoding.UTF8.GetBytes(deletedText)),
+                    encryptedHex,
+                    StringComparison.OrdinalIgnoreCase);
+                Assert.DoesNotContain(
+                    Convert.ToHexString(Encoding.UTF8.GetBytes(createdText)),
+                    encryptedHex,
+                    StringComparison.OrdinalIgnoreCase);
+
+                var restartedStore = new CopilotWorkspacePatchStore(
+                    new CopilotWorkspaceChangeSetCheckpointStore(checkpointPath));
+                var presentation = restartedStore.CreateChangeSetApprovalPresentation(
+                    changeSetInput,
+                    rollback: true);
+                Assert.Contains("target.txt", presentation.ReviewDetails, StringComparison.OrdinalIgnoreCase);
+                Assert.DoesNotContain(
+                    "no longer available",
+                    presentation.Description,
+                    StringComparison.OrdinalIgnoreCase);
+
+                var wrongConversation = CreateWorkspaceRequest(
+                    "different-conversation",
+                    workspacePath);
+                var rejected = await restartedStore.RollbackPatchEnvelopeAsync(
+                    wrongConversation,
+                    changeSetInput,
+                    CancellationToken.None);
+                Assert.False(rejected.Success);
+                Assert.Equal(CopilotToolFailureKind.Authorization, rejected.FailureKind);
+                Assert.Equal(afterText, await File.ReadAllTextAsync(targetPath));
+                Assert.Equal(createdText, await File.ReadAllTextAsync(createdPath));
+                Assert.False(File.Exists(deletedPath));
+
+                var differentWorkspacePath = Path.Combine(testRoot, "DifferentWorkspace");
+                Directory.CreateDirectory(differentWorkspacePath);
+                var wrongWorkspace = CreateWorkspaceRequest(
+                    request.ConversationId,
+                    differentWorkspacePath);
+                rejected = await restartedStore.RollbackPatchEnvelopeAsync(
+                    wrongWorkspace,
+                    changeSetInput,
+                    CancellationToken.None);
+                Assert.False(rejected.Success);
+                Assert.Equal(CopilotToolFailureKind.Authorization, rejected.FailureKind);
+                Assert.Equal(afterText, await File.ReadAllTextAsync(targetPath));
+
+                var rolledBack = await restartedStore.RollbackPatchEnvelopeAsync(
+                    request,
+                    changeSetInput,
+                    CancellationToken.None);
+
+                Assert.True(rolledBack.Success, rolledBack.ErrorMessage);
+                Assert.Equal(beforeText, await File.ReadAllTextAsync(targetPath));
+                Assert.False(File.Exists(createdPath));
+                Assert.False(Directory.Exists(Path.GetDirectoryName(createdPath)));
+                Assert.Equal(deletedText, await File.ReadAllTextAsync(deletedPath));
+                Assert.Empty(Directory.GetFiles(
+                    checkpointPath,
+                    "*.checkpoint",
+                    SearchOption.TopDirectoryOnly));
+            }
+            finally
+            {
+                Directory.Delete(testRoot, recursive: true);
+            }
+        }
+
+        [Fact]
+        public void CorruptCheckpointIsDiscardedWithoutBreakingRollbackReview()
+        {
+            var checkpointPath = Path.Combine(
+                Path.GetTempPath(),
+                "ColorVisionCorruptRollback",
+                Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(checkpointPath);
+            try
+            {
+                var changeSetSuffix = Guid.NewGuid().ToString("N");
+                var changeSetId = "workspace-change-set:" + changeSetSuffix;
+                File.WriteAllBytes(
+                    Path.Combine(checkpointPath, changeSetSuffix + ".checkpoint"),
+                    [0x01, 0x02, 0x03, 0x04]);
+                var restartedStore = new CopilotWorkspacePatchStore(
+                    new CopilotWorkspaceChangeSetCheckpointStore(checkpointPath));
+
+                var presentation = restartedStore.CreateChangeSetApprovalPresentation(
+                    new CopilotAgentToolInput
+                    {
+                        Arguments = new Dictionary<string, object?>
+                        {
+                            ["changeSetId"] = changeSetId,
+                        },
+                    },
+                    rollback: true);
+
+                Assert.Contains(
+                    "no longer available",
+                    presentation.Description,
+                    StringComparison.OrdinalIgnoreCase);
+                Assert.Empty(Directory.GetFiles(
+                    checkpointPath,
+                    "*.checkpoint",
+                    SearchOption.TopDirectoryOnly));
+            }
+            finally
+            {
+                Directory.Delete(checkpointPath, recursive: true);
+            }
+        }
+
+        [Fact]
         public async Task InvalidChangeSetDoesNotCreateApprovalOrEmitTrace()
         {
             var workspacePath = Path.Combine(
@@ -173,6 +372,24 @@ namespace ColorVision.UI.Tests
             {
                 Directory.Delete(workspacePath, recursive: true);
             }
+        }
+
+        private static CopilotAgentRequest CreateWorkspaceRequest(
+            string conversationId,
+            string workspacePath)
+        {
+            return new CopilotAgentRequest
+            {
+                ConversationId = conversationId,
+                TaskId = "durable-workspace-change",
+                WorkspacePath = workspacePath,
+                UserText = "Update the requested workspace file.",
+                TaskIntentText = "Update the requested workspace file.",
+                SearchRootPaths = [workspacePath],
+                TrustedProjectRootPaths = [workspacePath],
+                WritableLocalRootPaths = [workspacePath],
+                Mode = CopilotAgentMode.Auto,
+            };
         }
 
         private static string ReadMetadata(string? content, string key)

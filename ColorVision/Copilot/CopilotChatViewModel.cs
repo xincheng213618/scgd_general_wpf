@@ -3961,7 +3961,7 @@ namespace ColorVision.Copilot
             if (trace?.CanRequestWorkspaceRollback != true)
             {
                 LocalCommandResultTitle = "无法撤销文件修改";
-                LocalCommandResultText = "这次修改的安全回滚记录已经失效、已被使用，或应用已重新启动。";
+                LocalCommandResultText = "这次修改的安全回滚记录已失效、已被使用，或与当前会话及工作区状态不再匹配。";
                 return;
             }
 

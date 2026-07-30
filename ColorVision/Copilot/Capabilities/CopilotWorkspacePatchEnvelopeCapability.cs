@@ -64,7 +64,11 @@ namespace ColorVision.Copilot
                     previewIds.Add(previewId);
                 }
 
-                var result = CreateChangeSetPreview(previewIds.ToArray(), "PreviewWorkspacePatchEnvelope", minimumFiles: 1);
+                var result = CreateChangeSetPreview(
+                    request,
+                    previewIds.ToArray(),
+                    "PreviewWorkspacePatchEnvelope",
+                    minimumFiles: 1);
                 if (!result.Success)
                     ReleaseEnvelopePreviews(previewIds);
                 return result;

@@ -107,7 +107,8 @@ namespace ColorVision.Copilot
 
         internal static ICopilotTool[] CreateCoreDefaultTools()
         {
-            var workspacePatchStore = new CopilotWorkspacePatchStore();
+            var workspacePatchStore = new CopilotWorkspacePatchStore(
+                CopilotWorkspaceChangeSetCheckpointStore.CreateDefault());
             var applicationCapabilities = CopilotApplicationCapabilityInvokerFactory.CreateDefault();
             return new ICopilotTool[]
             {
