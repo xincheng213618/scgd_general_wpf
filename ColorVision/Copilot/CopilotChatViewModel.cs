@@ -3305,7 +3305,8 @@ namespace ColorVision.Copilot
                         goal,
                         CopilotConversationRequestBuilder
                             .CaptureHistorySnapshot(conversation)
-                            .VisibleMessages);
+                            .VisibleMessages,
+                        CopilotGoalTurnEvidence.Capture(assistantMessage));
                 },
                 fallback: null as CopilotGoalEvaluationContext);
             if (context == null)
@@ -3319,6 +3320,7 @@ namespace ColorVision.Copilot
                     requestProfile,
                     context.Goal,
                     context.Transcript,
+                    context.TurnEvidence,
                     hostedRun.CancellationToken).ConfigureAwait(false);
             }
 
@@ -6698,7 +6700,8 @@ namespace ColorVision.Copilot
 
         private sealed record CopilotGoalEvaluationContext(
             CopilotConversationGoal Goal,
-            IReadOnlyList<CopilotRequestMessage> Transcript);
+            IReadOnlyList<CopilotRequestMessage> Transcript,
+            CopilotGoalTurnEvidence TurnEvidence);
 
         private sealed record CopilotGoalPostTurnResult(
             CopilotTokenUsage EvaluationUsage,
