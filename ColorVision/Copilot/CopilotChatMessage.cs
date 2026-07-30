@@ -2533,6 +2533,15 @@ namespace ColorVision.Copilot
         }
         private bool _isPinned;
 
+        public bool IsArchived
+        {
+            get => _isArchived;
+            set => SetProperty(ref _isArchived, value);
+        }
+        private bool _isArchived;
+
+        public bool ShouldSerializeIsArchived() => IsArchived;
+
         public string PreviewText
         {
             get => _previewText;

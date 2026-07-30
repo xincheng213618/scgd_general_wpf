@@ -16,6 +16,7 @@ namespace ColorVision.Copilot
                 && !conversation.HasComposerStash
                 && !conversation.HasCustomTitle
                 && !conversation.IsPinned
+                && !conversation.IsArchived
                 && string.Equals(conversation.Title, CopilotUiText.NewConversationTitle, StringComparison.Ordinal)
                 && string.Equals(conversation.PreviewText, CopilotUiText.EmptyConversationPreview, StringComparison.Ordinal)
                 && conversation.LastUsageInputTokens == 0

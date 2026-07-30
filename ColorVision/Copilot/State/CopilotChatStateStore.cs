@@ -808,6 +808,7 @@ namespace ColorVision.Copilot
                     || !IsOptionalString(conversation.GetValue(nameof(CopilotConversationRecord.DraftText), StringComparison.OrdinalIgnoreCase))
                     || !IsOptionalComposerStash(conversation.GetValue(nameof(CopilotConversationRecord.ComposerStash), StringComparison.OrdinalIgnoreCase))
                     || !IsOptionalObject(conversation.GetValue(nameof(CopilotConversationRecord.BranchOrigin), StringComparison.OrdinalIgnoreCase))
+                    || !IsOptionalBoolean(conversation.GetValue(nameof(CopilotConversationRecord.IsArchived), StringComparison.OrdinalIgnoreCase))
                     || messages.Any(item => item is not JObject)
                     || attachments.Any(item => item is not JObject))
                 {

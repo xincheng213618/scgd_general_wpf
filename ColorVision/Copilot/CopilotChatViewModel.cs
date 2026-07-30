@@ -1138,7 +1138,9 @@ namespace ColorVision.Copilot
             var initialResults = CopilotPromptHistorySearch.Search(conversation.Messages, string.Empty);
             if (initialResults.Count == 0)
             {
-                initialResults = CopilotPromptHistorySearch.SearchAll(Conversations, string.Empty);
+                initialResults = CopilotPromptHistorySearch.SearchAll(
+                    CopilotConversationArchiveService.GetActive(Conversations),
+                    string.Empty);
                 _promptHistorySearchScope = CopilotPromptHistorySearchScope.AllConversations;
             }
             if (initialResults.Count == 0)
@@ -1223,7 +1225,9 @@ namespace ColorVision.Copilot
 
             var preferredText = SelectedPromptHistorySearchResult?.Text;
             var results = _promptHistorySearchScope == CopilotPromptHistorySearchScope.AllConversations
-                ? CopilotPromptHistorySearch.SearchAll(Conversations, InputText)
+                ? CopilotPromptHistorySearch.SearchAll(
+                    CopilotConversationArchiveService.GetActive(Conversations),
+                    InputText)
                 : CopilotPromptHistorySearch.Search(conversation.Messages, InputText);
             PromptHistorySearchResults.Clear();
             foreach (var result in results)
@@ -1987,6 +1991,12 @@ namespace ColorVision.Copilot
                     break;
                 case CopilotLocalCommandKind.ResumeConversation:
                     ResumeConversation(command, invocation.Arguments);
+                    break;
+                case CopilotLocalCommandKind.ArchiveConversation:
+                    ArchiveCurrentConversation(command);
+                    break;
+                case CopilotLocalCommandKind.UnarchiveConversation:
+                    UnarchiveConversation(command, invocation.Arguments);
                     break;
                 case CopilotLocalCommandKind.RenameConversation:
                     RenameCurrentConversation(command, invocation.Arguments);
@@ -4441,7 +4451,7 @@ namespace ColorVision.Copilot
 
             var normalizedQuery = NormalizeConversationSearchText(query.Trim());
             var exactMatch = CopilotConversationService.FindUniqueResumeTarget(
-                Conversations,
+                CopilotConversationArchiveService.GetActive(Conversations),
                 normalizedQuery);
             if (exactMatch != null)
             {
@@ -4455,6 +4465,90 @@ namespace ColorVision.Copilot
             RefreshFilteredConversations();
             DismissLocalCommandResult();
             ConversationSearchRequested?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void ArchiveCurrentConversation(CopilotLocalCommand command)
+        {
+            var conversation = SelectedConversation;
+            if (conversation == null || conversation.IsArchived)
+            {
+                ShowLocalCommandResult(command, "当前没有可归档的活动会话。");
+                return;
+            }
+            if (IsBusy || !CanSwitchConversation || IsSideQuestionRunning || HasExclusiveLocalOperation)
+            {
+                ShowLocalCommandResult(command, "当前会话仍有请求、旁路问题或本地操作正在执行，请完成或停止后再归档。");
+                return;
+            }
+            if (HasPendingActions
+                || QueuedFollowUps.Any(item => string.Equals(
+                    item.ConversationId,
+                    conversation.Id,
+                    StringComparison.Ordinal)))
+            {
+                ShowLocalCommandResult(command, "当前会话仍有待审批操作或后续队列；请先处理这些状态，避免把待办隐藏。");
+                return;
+            }
+            if (conversation.Goal?.IsActive == true)
+            {
+                ShowLocalCommandResult(command, "当前会话的持续目标仍在运行；请先暂停或清除目标再归档。");
+                return;
+            }
+            if (conversation.AgentSessionCheckpoint != null
+                || CopilotAgentTaskIndex.Build([conversation]).Count > 0)
+            {
+                ShowLocalCommandResult(command, "当前会话仍有可恢复 Agent 任务；请先继续或明确放弃恢复项再归档。");
+                return;
+            }
+
+            var archivedTitle = conversation.Title;
+            conversation.IsArchived = true;
+            conversation.Touch();
+            conversation.RefreshSummary();
+            var activeConversations = CopilotConversationArchiveService.GetActive(Conversations);
+            var replacement = activeConversations.Count > 0
+                ? activeConversations[0]
+                : CreateConversation();
+            SelectConversation(replacement, persist: false, preferredProfileId: replacement.ProfileId);
+            RefreshCompactHistoryConversations();
+            RefreshFilteredConversations();
+            RefreshConversationBranchFamily();
+            PersistState(immediate: true);
+            ShowLocalCommandResult(
+                command,
+                $"已归档“{archivedTitle}”。内容仍保留，但已从常用会话列表和 /resume 中隐藏。\n\n"
+                + "使用 /archived 查看，或 /unarchive <会话 ID 或唯一完整标题> 恢复。");
+        }
+
+        private void UnarchiveConversation(CopilotLocalCommand command, string query)
+        {
+            if (IsBusy || !CanSwitchConversation)
+            {
+                ShowLocalCommandResult(command, "当前状态不能恢复归档会话；请先结束消息编辑或等待当前请求完成。");
+                return;
+            }
+
+            var normalizedQuery = (query ?? string.Empty).Trim();
+            var conversation = CopilotConversationArchiveService.FindUniqueArchived(
+                Conversations,
+                normalizedQuery);
+            if (conversation == null)
+            {
+                ShowLocalCommandResult(
+                    command,
+                    CopilotConversationArchiveService.FormatArchived(Conversations, normalizedQuery));
+                return;
+            }
+
+            conversation.IsArchived = false;
+            conversation.Touch();
+            conversation.RefreshSummary();
+            CopilotConversationService.MoveToPreferredIndex(Conversations, conversation);
+            RefreshCompactHistoryConversations();
+            RefreshFilteredConversations();
+            SelectConversation(conversation, persist: false, preferredProfileId: conversation.ProfileId);
+            PersistState(immediate: true);
+            ShowLocalCommandResult(command, $"已恢复“{conversation.Title}”，会话内容和草稿均保持不变。");
         }
 
         private void RenameCurrentConversation(CopilotLocalCommand command, string requestedTitle)
@@ -5826,7 +5920,10 @@ namespace ColorVision.Copilot
         private void RefreshCompactHistoryConversations()
         {
             var history = Conversations
-                .Where(conversation => !ReferenceEquals(conversation, SelectedConversation) && CopilotConversationService.IsHistory(conversation))
+                .Where(conversation =>
+                    !conversation.IsArchived
+                    && !ReferenceEquals(conversation, SelectedConversation)
+                    && CopilotConversationService.IsHistory(conversation))
                 .Take(CompactHistoryLimit)
                 .ToArray();
 
@@ -5849,9 +5946,10 @@ namespace ColorVision.Copilot
                 .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
                 .Take(MaximumConversationSearchTerms)
                 .ToArray();
+            var activeConversations = CopilotConversationArchiveService.GetActive(Conversations);
             var matches = terms.Length == 0
-                ? Conversations.ToArray()
-                : Conversations.Where(conversation => MatchesConversationSearch(conversation, terms)).ToArray();
+                ? activeConversations
+                : activeConversations.Where(conversation => MatchesConversationSearch(conversation, terms)).ToArray();
 
             FilteredConversations.Clear();
             foreach (var conversation in matches)
@@ -5865,7 +5963,7 @@ namespace ColorVision.Copilot
         private void RefreshConversationBranchFamily()
         {
             ConversationBranchFamily = CopilotConversationBranchService.BuildBranchFamily(
-                Conversations,
+                CopilotConversationArchiveService.GetActive(Conversations),
                 SelectedConversation);
             OnPropertyChanged(nameof(ConversationBranchFamily));
             OnPropertyChanged(nameof(HasConversationBranchFamily));
@@ -6013,7 +6111,8 @@ namespace ColorVision.Copilot
 
         private void RefreshAgentTasks()
         {
-            var tasks = CopilotAgentTaskIndex.Build(Conversations);
+            var tasks = CopilotAgentTaskIndex.Build(
+                CopilotConversationArchiveService.GetActive(Conversations));
             AgentTasks.Clear();
             foreach (var task in tasks)
                 AgentTasks.Add(task);
@@ -6026,7 +6125,10 @@ namespace ColorVision.Copilot
 
         private int CountHistoryConversations()
         {
-            return Conversations.Count(conversation => !ReferenceEquals(conversation, SelectedConversation) && CopilotConversationService.IsHistory(conversation));
+            return Conversations.Count(conversation =>
+                !conversation.IsArchived
+                && !ReferenceEquals(conversation, SelectedConversation)
+                && CopilotConversationService.IsHistory(conversation));
         }
 
         private void Attachments_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -6040,6 +6142,9 @@ namespace ColorVision.Copilot
 
         private void SelectConversation(CopilotConversationRecord? conversation, bool persist, string? preferredProfileId = null)
         {
+            if (conversation?.IsArchived == true)
+                return;
+
             if (IsPromptHistorySearchOpen)
                 DismissPromptHistorySearch();
 
@@ -7170,9 +7275,13 @@ namespace ColorVision.Copilot
 
         private bool CanOpenBranchOrigin(CopilotConversationRecord? branch)
         {
+            var origin = branch == null
+                ? null
+                : CopilotConversationBranchService.FindBranchOriginTarget(Conversations, branch);
             return CanSwitchConversation
                 && branch != null
-                && CopilotConversationBranchService.FindBranchOriginTarget(Conversations, branch) != null;
+                && origin != null
+                && !origin.IsArchived;
         }
 
         private void OpenBranchOrigin(CopilotConversationRecord? branch)

@@ -6,7 +6,7 @@ namespace ColorVision.Copilot
 {
     public sealed class CopilotChatState
     {
-        public const int CurrentSchemaVersion = 24;
+        public const int CurrentSchemaVersion = 25;
 
         public int SchemaVersion { get; set; } = CurrentSchemaVersion;
 
@@ -139,17 +139,21 @@ namespace ColorVision.Copilot
 
             changed |= CopilotQueuedFollowUpRecovery.RestoreToDrafts(this);
 
-            if (Conversations.Count == 0)
+            var activeConversations = Conversations
+                .Where(conversation => !conversation.IsArchived)
+                .ToArray();
+            if (activeConversations.Length == 0)
             {
                 var conversation = CopilotConversationRecord.CreateEmpty(ActiveProfileId, config.FindProfile(ActiveProfileId)?.DisplayLabel ?? string.Empty);
-                Conversations.Add(conversation);
+                Conversations.Insert(0, conversation);
                 ActiveConversationId = conversation.Id;
                 return true;
             }
 
-            if (string.IsNullOrWhiteSpace(ActiveConversationId) || Conversations.All(conversation => conversation.Id != ActiveConversationId))
+            if (string.IsNullOrWhiteSpace(ActiveConversationId)
+                || activeConversations.All(conversation => conversation.Id != ActiveConversationId))
             {
-                ActiveConversationId = Conversations[0].Id;
+                ActiveConversationId = activeConversations[0].Id;
                 changed = true;
             }
 
