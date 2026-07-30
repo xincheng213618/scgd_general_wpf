@@ -147,6 +147,57 @@ public sealed class CopilotLocalCommandArgumentSuggestionTests
         Assert.Empty(CopilotLocalCommandCatalog.Suggest("/model "));
     }
 
+    [Fact]
+    public void ActiveRunSuggestionsOnlyIncludeExecutableFixedCommands()
+    {
+        var suggestions = CopilotLocalCommandCatalog.Suggest(
+            "/",
+            composerContext: CopilotLocalCommandComposerContext.ActiveRun);
+
+        Assert.NotEmpty(suggestions);
+        Assert.All(suggestions, item => Assert.True(item.AvailableWhileAgentRuns));
+        Assert.Contains(suggestions, item => item.Name == "/status");
+        Assert.Contains(suggestions, item => item.Name == "/fork");
+        Assert.DoesNotContain(suggestions, item => item.Name == "/model");
+        Assert.DoesNotContain(suggestions, item => item.Name == "/diff");
+        Assert.DoesNotContain(suggestions, item => item.Name == "/init");
+    }
+
+    [Fact]
+    public void ActiveRunArgumentSuggestionsFollowTheirParentAvailability()
+    {
+        var profile = CreateProfile("profile-primary", "Primary", CopilotVendorType.DeepSeek);
+        var permissions = CopilotLocalCommandCatalog.Suggest(
+            "/permissions ",
+            composerContext: CopilotLocalCommandComposerContext.ActiveRun);
+        var help = CopilotLocalCommandCatalog.Suggest(
+            "/help ",
+            composerContext: CopilotLocalCommandComposerContext.ActiveRun);
+
+        Assert.Equal(
+            ["/permissions status", "/permissions ask", "/permissions auto"],
+            permissions.Select(item => item.Name));
+        Assert.Equal(CopilotLocalCommandCatalog.All.Count, help.Count);
+        Assert.Empty(CopilotLocalCommandCatalog.Suggest(
+            "/model ",
+            profiles: [profile],
+            selectedProfile: profile,
+            composerContext: CopilotLocalCommandComposerContext.ActiveRun));
+    }
+
+    [Fact]
+    public void ActiveRunKeepsDynamicSkillsAvailableForAgentInput()
+    {
+        var suggestions = CopilotLocalCommandCatalog.Suggest(
+            "/work",
+            [new CopilotAgentSkillCatalogItem("workflow", "Inspect the current workflow")],
+            composerContext: CopilotLocalCommandComposerContext.ActiveRun);
+
+        var skill = Assert.Single(suggestions);
+        Assert.Equal("/workflow", skill.Name);
+        Assert.Equal(CopilotLocalCommandKind.Skill, skill.Kind);
+    }
+
     private static CopilotProfileConfig CreateProfile(
         string id,
         string name,

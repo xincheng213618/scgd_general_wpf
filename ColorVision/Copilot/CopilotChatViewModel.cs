@@ -1028,6 +1028,10 @@ namespace ColorVision.Copilot
                 if (IsEditingMessage)
                     return Array.Empty<CopilotLocalCommand>();
 
+                var composerContext = ResolveLocalCommandComposerContext();
+                if (!CopilotLocalCommandAvailabilityPolicy.CanShowSuggestions(composerContext))
+                    return Array.Empty<CopilotLocalCommand>();
+
                 var input = (InputText ?? string.Empty).TrimStart();
                 if (input.Length == 0 || input[0] is not '/' and not '$')
                     return Array.Empty<CopilotLocalCommand>();
@@ -1036,7 +1040,8 @@ namespace ColorVision.Copilot
                     return CopilotLocalCommandCatalog.Suggest(
                         input,
                         profiles: Profiles,
-                        selectedProfile: SelectedProfile);
+                        selectedProfile: SelectedProfile,
+                        composerContext: composerContext);
                 }
 
                 var turnSnapshot = CaptureHostedTurnSnapshot(Attachments);
@@ -1048,9 +1053,15 @@ namespace ColorVision.Copilot
                     input,
                     skills,
                     Profiles,
-                    SelectedProfile);
+                    SelectedProfile,
+                    composerContext);
             }
         }
+
+        public string LocalCommandSuggestionHeader => ResolveLocalCommandComposerContext()
+            == CopilotLocalCommandComposerContext.ActiveRun
+                ? "运行中可用命令或 Skill"
+                : "/ 或 $ 命令";
 
         public bool HasLocalCommandSuggestions => LocalCommandSuggestions.Count > 0;
 
@@ -1368,6 +1379,17 @@ namespace ColorVision.Copilot
         private bool IsViewingActiveRun => string.Equals(ActiveHostedRun?.ConversationId, SelectedConversation?.Id, StringComparison.Ordinal);
 
         private bool IsViewingQueuedRun => SelectedHostedRun?.State == CopilotHostedRunState.Queued;
+
+        private CopilotLocalCommandComposerContext ResolveLocalCommandComposerContext()
+        {
+            if (IsAnsweringUserQuestion)
+                return CopilotLocalCommandComposerContext.AwaitingUserAnswer;
+            if (IsViewingQueuedRun)
+                return CopilotLocalCommandComposerContext.QueuedRun;
+            return IsViewingActiveRun
+                ? CopilotLocalCommandComposerContext.ActiveRun
+                : CopilotLocalCommandComposerContext.Idle;
+        }
 
         private CopilotChatMessage? ActiveUserQuestionMessage
         {
@@ -2918,6 +2940,8 @@ namespace ColorVision.Copilot
             OnPropertyChanged(nameof(PrimaryActionGlyph));
             OnPropertyChanged(nameof(PrimaryActionToolTip));
             OnPropertyChanged(nameof(InputPlaceholder));
+            OnPropertyChanged(nameof(LocalCommandSuggestionHeader));
+            RefreshLocalCommandSuggestions();
             RefreshAgentRunNotice();
         }
 
@@ -2928,6 +2952,8 @@ namespace ColorVision.Copilot
             OnPropertyChanged(nameof(CanSteerCurrentRun));
             OnPropertyChanged(nameof(CanQueueCurrentRunFollowUp));
             OnPropertyChanged(nameof(InputPlaceholder));
+            OnPropertyChanged(nameof(LocalCommandSuggestionHeader));
+            RefreshLocalCommandSuggestions();
             CommandManager.InvalidateRequerySuggested();
         }
 
@@ -4041,7 +4067,9 @@ namespace ColorVision.Copilot
                 var invocation = CopilotLocalCommandCatalog.Parse(InputText);
                 if (invocation != null)
                 {
-                    if (invocation.Command.AvailableWhileAgentRuns)
+                    if (CopilotLocalCommandAvailabilityPolicy.CanExecute(
+                        invocation.Command,
+                        ResolveLocalCommandComposerContext()))
                         TryExecuteLocalCommand(InputText);
                     else
                         ReportUnavailableLocalCommandDuringRun(invocation.Command);
@@ -4137,7 +4165,9 @@ namespace ColorVision.Copilot
             var localCommand = CopilotLocalCommandCatalog.Parse(prompt);
             if (localCommand != null)
             {
-                if (localCommand.Command.AvailableWhileAgentRuns)
+                if (CopilotLocalCommandAvailabilityPolicy.CanExecute(
+                    localCommand.Command,
+                    ResolveLocalCommandComposerContext()))
                     return TryExecuteLocalCommand(prompt);
                 ReportUnavailableLocalCommandDuringRun(localCommand.Command);
                 return false;

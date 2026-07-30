@@ -2224,7 +2224,7 @@
                                            FontSize="10"
                                            FontWeight="SemiBold"
                                            Opacity="0.68"
-                                           Text="/ 或 $ 命令" />
+                                           Text="{Binding LocalCommandSuggestionHeader}" />
                             </DockPanel>
                             <ListBox x:Name="LocalCommandSuggestionListBox"
                                      Background="Transparent"

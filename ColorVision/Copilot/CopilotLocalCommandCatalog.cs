@@ -148,22 +148,27 @@ namespace ColorVision.Copilot
             string? input,
             IReadOnlyList<CopilotAgentSkillCatalogItem>? skills = null,
             IReadOnlyList<CopilotProfileConfig>? profiles = null,
-            CopilotProfileConfig? selectedProfile = null)
+            CopilotProfileConfig? selectedProfile = null,
+            CopilotLocalCommandComposerContext composerContext = CopilotLocalCommandComposerContext.Idle)
         {
             var normalized = (input ?? string.Empty).TrimStart();
-            if (normalized.Length == 0 || normalized[0] is not '/' and not '$')
+            if (!CopilotLocalCommandAvailabilityPolicy.CanShowSuggestions(composerContext)
+                || normalized.Length == 0
+                || normalized[0] is not '/' and not '$')
             {
                 return Array.Empty<CopilotLocalCommand>();
             }
 
             var separatorIndex = normalized.IndexOfAny([' ', '\t', '\r', '\n']);
             if (separatorIndex >= 0)
-                return SuggestArguments(normalized, separatorIndex, profiles, selectedProfile);
+                return SuggestArguments(normalized, separatorIndex, profiles, selectedProfile, composerContext);
             if (normalized.StartsWith('/') && FindExact(normalized) != null)
                 return Array.Empty<CopilotLocalCommand>();
 
             var suggestions = normalized.StartsWith('/')
-                ? Commands.Where(command => command.Name.StartsWith(normalized, StringComparison.OrdinalIgnoreCase))
+                ? Commands.Where(command =>
+                    CopilotLocalCommandAvailabilityPolicy.CanSuggest(command, composerContext)
+                    && command.Name.StartsWith(normalized, StringComparison.OrdinalIgnoreCase))
                 : Enumerable.Empty<CopilotLocalCommand>();
             var skillSuggestions = (skills ?? Array.Empty<CopilotAgentSkillCatalogItem>())
                 .Select(skill => new CopilotLocalCommand(
@@ -185,7 +190,8 @@ namespace ColorVision.Copilot
             string input,
             int separatorIndex,
             IReadOnlyList<CopilotProfileConfig>? profiles,
-            CopilotProfileConfig? selectedProfile)
+            CopilotProfileConfig? selectedProfile,
+            CopilotLocalCommandComposerContext composerContext)
         {
             if (input[0] != '/')
                 return Array.Empty<CopilotLocalCommand>();
@@ -193,7 +199,8 @@ namespace ColorVision.Copilot
             var name = input[..separatorIndex];
             var command = Commands.FirstOrDefault(item =>
                 string.Equals(item.Name, name, StringComparison.OrdinalIgnoreCase));
-            if (command?.AcceptsArguments != true)
+            if (command?.AcceptsArguments != true
+                || !CopilotLocalCommandAvailabilityPolicy.CanSuggest(command, composerContext))
                 return Array.Empty<CopilotLocalCommand>();
 
             var query = input[(separatorIndex + 1)..].TrimStart();
