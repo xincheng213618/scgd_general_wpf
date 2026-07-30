@@ -1368,6 +1368,9 @@ namespace ColorVision.Copilot
                 case CopilotLocalCommandKind.Status:
                     ShowLocalCommandResult(command, BuildStatusDiagnosticsReport());
                     break;
+                case CopilotLocalCommandKind.Doctor:
+                    ShowLocalCommandResult(command, BuildDoctorDiagnosticsReport());
+                    break;
                 case CopilotLocalCommandKind.Tasks:
                     ShowLocalCommandResult(command, BuildTaskDiagnosticsReport());
                     break;
@@ -1497,6 +1500,77 @@ namespace ColorVision.Copilot
                 McpListenerEnabled = _config.McpEnabled,
                 McpListenerRunning = CopilotMcpServer.Instance.IsRunning,
                 EnabledExternalMcpServers = _config.ExternalMcpServers.Count(server => server?.Enabled == true),
+                PendingApprovals = CopilotMcpConfirmationStore.Instance.PendingCount,
+            });
+        }
+
+        private string BuildDoctorDiagnosticsReport()
+        {
+            var profile = SelectedProfile;
+            var enabledExternalMcpServers = _config.ExternalMcpServers
+                .Where(server => server?.Enabled == true)
+                .ToArray();
+            var connectedExternalMcpServers = new List<string>();
+            var unavailableExternalMcpServers = new List<string>();
+            var changedExternalMcpServers = new List<string>();
+            var uncheckedExternalMcpServers = new List<string>();
+            foreach (var server in enabledExternalMcpServers)
+            {
+                if (!CopilotMcpClientHealthRegistry.TryGetSnapshot(server, out var health)
+                    || health.State == CopilotMcpClientHealthState.Unknown)
+                {
+                    uncheckedExternalMcpServers.Add(server.Name);
+                }
+                else if (health.CacheInvalidated)
+                {
+                    changedExternalMcpServers.Add(server.Name);
+                }
+                else if (health.State == CopilotMcpClientHealthState.Connected)
+                {
+                    connectedExternalMcpServers.Add(server.Name);
+                }
+                else
+                {
+                    unavailableExternalMcpServers.Add(server.Name);
+                }
+            }
+
+            var hookSurface = CopilotToolExecutor.GetSharedHookSurfaceSnapshot();
+            var extensionSnapshot = CopilotAgentExtensionBridge.Shared.GetSnapshot();
+            var recentHookFailureCount = CopilotToolExecutionAuditLogger.GetRecentEntries(30)
+                .SelectMany(entry => entry.HookRuns ?? Array.Empty<CopilotToolExecutionHookRun>())
+                .Count(run => run?.IsStructurallyValid() == true
+                    && run.State is CopilotToolExecutionHookState.Failed or CopilotToolExecutionHookState.TimedOut);
+            var recentMcpFailureCount = CopilotMcpAuditLogger.GetRecentEntries(20)
+                .Count(entry => !entry.Success
+                    && DateTimeOffset.UtcNow - entry.TimestampUtc <= RecentMcpFailureWindow);
+            var skillUsage = CopilotAgentSkillUsageStore.Shared.GetSnapshot();
+            return CopilotDoctorDiagnostics.Format(new CopilotDoctorDiagnosticSnapshot
+            {
+                ProfileLabel = profile?.DisplayLabel ?? string.Empty,
+                ProfileConfigured = profile?.IsConfigured == true,
+                ProfileUsesInsecureHttp = profile != null && CopilotProviderEndpoint.Validate(profile).IsInsecureHttp,
+                StatePersistenceNotice = StatePersistenceNoticeText,
+                StatePersistenceBlocked = _stateStore is CopilotChatStateStore stateStore && stateStore.IsStatePersistenceBlocked,
+                StateRecoveryNotice = StateRecoveryNoticeText,
+                TaskHostShutdown = _taskHost.IsShutdown,
+                QueuedAgentRuns = _taskHost.QueuedCount,
+                MaximumQueuedAgentRuns = _taskHost.MaxQueuedRuns,
+                McpListenerEnabled = _config.McpEnabled,
+                McpListenerRunning = CopilotMcpServer.Instance.IsRunning,
+                RecentMcpFailureCount = recentMcpFailureCount,
+                EnabledExternalMcpServers = enabledExternalMcpServers.Length,
+                ConnectedExternalMcpServers = connectedExternalMcpServers,
+                UnavailableExternalMcpServers = unavailableExternalMcpServers,
+                ChangedExternalMcpServers = changedExternalMcpServers,
+                UncheckedExternalMcpServers = uncheckedExternalMcpServers,
+                HookSurfaceValid = hookSurface.IsStructurallyValid(),
+                EffectiveHookCount = hookSurface.Entries.Count,
+                ExtensionSourceCount = extensionSnapshot.Sources.Count,
+                ExtensionIssueCount = extensionSnapshot.Issues.Count,
+                RecentHookFailureCount = recentHookFailureCount,
+                TrackedSkillCount = skillUsage.Entries.Count,
+                ExplicitOnlySkillCount = skillUsage.HistoricalExplicitOnlySkills.Count,
                 PendingApprovals = CopilotMcpConfirmationStore.Instance.PendingCount,
             });
         }
