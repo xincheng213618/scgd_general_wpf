@@ -243,13 +243,13 @@ namespace ColorVision.Copilot
             });
         }
 
-        private void FocusPromptInput()
+        private void FocusPromptInput(int caretIndex = -1)
         {
             Dispatcher.BeginInvoke(DispatcherPriority.Input, () =>
             {
                 PromptTextBox.Focus();
                 Keyboard.Focus(PromptTextBox);
-                MovePromptCaretToEnd();
+                ApplyPromptCaret(caretIndex);
             });
         }
 
@@ -842,8 +842,7 @@ namespace ColorVision.Copilot
                 return;
             }
 
-            FocusPromptInput();
-            ApplyPromptCaret(restoredCaretIndex);
+            FocusPromptInput(restoredCaretIndex);
         }
 
         private void EditMessageButton_Click(object sender, RoutedEventArgs e)
