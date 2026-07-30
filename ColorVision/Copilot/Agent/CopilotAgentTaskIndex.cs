@@ -111,6 +111,8 @@ namespace ColorVision.Copilot
 
             var attentionKind = message.AgentStopReason switch
             {
+                CopilotAgentStopReason.Completed when message.HasRecoverableFinalAnswer =>
+                    CopilotAgentTaskAttentionKind.IncompleteOutput,
                 CopilotAgentStopReason.Paused => CopilotAgentTaskAttentionKind.Paused,
                 CopilotAgentStopReason.AwaitingUser => CopilotAgentTaskAttentionKind.AwaitingUser,
                 CopilotAgentStopReason.ApprovalDenied => CopilotAgentTaskAttentionKind.ApprovalDenied,

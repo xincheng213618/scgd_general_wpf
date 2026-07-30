@@ -57,6 +57,83 @@ public sealed class CopilotAgentRecoveryPolicyTests
     }
 
     [Fact]
+    public void TruncatedCompletedRunOffersFinalAnswerOnlyRecovery()
+    {
+        var profile = CreateProfile();
+        var capabilitySnapshot = CopilotCapabilityCatalog.Shared.GetSnapshot();
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordRunStarted();
+        journal.RecordStop(CopilotAgentStopReason.Completed);
+        var checkpoint = CopilotAgentSessionCheckpoint.Create(
+            profile,
+            "{}",
+            capabilitySnapshot,
+            taskEventJournal: journal.Snapshot());
+        var message = new CopilotChatMessage(CopilotChatRole.Assistant, "Partial final answer")
+        {
+            AgentStopReason = CopilotAgentStopReason.Completed,
+            WasResponseInterrupted = true,
+        };
+
+        var decision = CopilotAgentRecoveryPolicy.Evaluate(
+            message,
+            checkpoint,
+            profile,
+            capabilitySnapshot);
+
+        Assert.NotNull(checkpoint);
+        Assert.True(message.HasRecoverableFinalAnswer);
+        Assert.True(message.HasRecoverableAgentTasks);
+        Assert.True(decision.IsAvailable);
+        Assert.Equal(CopilotAgentRecoveryMode.Finalize, decision.Request!.Mode);
+        Assert.Equal(CopilotAgentStopReason.Completed, decision.Request.PreviousStopReason);
+        Assert.True(decision.Request.PreviousResponseWasInterrupted);
+        Assert.Equal("重试最终回答", decision.ActionLabel);
+
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        conversation.AgentSessionCheckpoint = checkpoint;
+        conversation.Messages.Add(message);
+        var task = Assert.Single(CopilotAgentTaskIndex.Build([conversation]));
+        Assert.Equal(CopilotAgentTaskAttentionKind.IncompleteOutput, task.AttentionKind);
+        Assert.True(task.CanResume);
+    }
+
+    [Fact]
+    public void CompletedFinalizeRequestRequiresInterruptedResponseProof()
+    {
+        Assert.False(new CopilotAgentRecoveryRequest
+        {
+            Mode = CopilotAgentRecoveryMode.Finalize,
+            PreviousStopReason = CopilotAgentStopReason.Completed,
+        }.IsStructurallyValid());
+        Assert.True(new CopilotAgentRecoveryRequest
+        {
+            Mode = CopilotAgentRecoveryMode.Finalize,
+            PreviousStopReason = CopilotAgentStopReason.Completed,
+            PreviousResponseWasInterrupted = true,
+        }.IsStructurallyValid());
+    }
+
+    [Fact]
+    public void InterruptedStateRefreshesFinalAnswerRecoveryBindings()
+    {
+        var message = new CopilotChatMessage(CopilotChatRole.Assistant, "Partial final answer")
+        {
+            AgentStopReason = CopilotAgentStopReason.Completed,
+        };
+        var changedProperties = new List<string>();
+        message.PropertyChanged += (_, args) => changedProperties.Add(args.PropertyName ?? string.Empty);
+
+        message.WasResponseInterrupted = true;
+
+        Assert.True(message.HasRecoverableFinalAnswer);
+        Assert.Contains(nameof(CopilotChatMessage.HasRecoverableFinalAnswer), changedProperties);
+        Assert.Contains(nameof(CopilotChatMessage.HasRecoverableAgentTasks), changedProperties);
+        Assert.Contains(nameof(CopilotChatMessage.AgentRecoveryActionLabel), changedProperties);
+        Assert.Contains(nameof(CopilotChatMessage.AgentRecoveryToolTip), changedProperties);
+    }
+
+    [Fact]
     public void ProviderFailureWithIncompleteTasksKeepsResumeEntryPoint()
     {
         var profile = CreateProfile();

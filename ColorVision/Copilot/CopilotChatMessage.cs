@@ -394,8 +394,7 @@ namespace ColorVision.Copilot
                 {
                     OnPropertyChanged(nameof(HasResponseInterruption));
                     OnPropertyChanged(nameof(ResponseInterruptionText));
-                    OnPropertyChanged(nameof(HasCompletedPlan));
-                    OnPropertyChanged(nameof(HasAgentTaskState));
+                    OnAgentTaskStateChanged();
                 }
             }
         }
@@ -674,7 +673,8 @@ namespace ColorVision.Copilot
 
         [JsonIgnore]
         public bool HasRecoverableFinalAnswer => !HasIncompleteAgentTasks
-            && (AgentStopReason == CopilotAgentStopReason.Interrupted
+            && ((WasResponseInterrupted && AgentStopReason == CopilotAgentStopReason.Completed)
+                || AgentStopReason == CopilotAgentStopReason.Interrupted
                 || (AgentStopReason is (CopilotAgentStopReason.IncompleteOutput
                         or CopilotAgentStopReason.BudgetExhausted
                         or CopilotAgentStopReason.ProviderFailure)
