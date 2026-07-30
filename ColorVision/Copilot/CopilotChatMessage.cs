@@ -2730,6 +2730,12 @@ namespace ColorVision.Copilot
 
         public CopilotAgentSessionCheckpoint? AgentSessionCheckpoint { get; set; }
 
+        public CopilotAgentTaskEventJournalSnapshot? LatestAgentTaskEventJournal { get; set; }
+
+        public bool ShouldSerializeLatestAgentTaskEventJournal() =>
+            LatestAgentTaskEventJournal?.Events?.Count > 0
+            && LatestAgentTaskEventJournal.IsStructurallyValid();
+
         public CopilotConversationCompaction? Compaction { get; set; }
 
         public CopilotConversationBranchOrigin? BranchOrigin
@@ -2926,6 +2932,18 @@ namespace ColorVision.Copilot
                 AgentSessionCheckpoint = null;
                 changed = true;
             }
+            if (LatestAgentTaskEventJournal != null
+                && (LatestAgentTaskEventJournal.Events?.Count is not > 0
+                    || !LatestAgentTaskEventJournal.IsStructurallyValid()))
+            {
+                LatestAgentTaskEventJournal = null;
+                changed = true;
+            }
+            if (LatestAgentTaskEventJournal == null
+                && AgentSessionCheckpoint?.TaskEventJournal is { Events.Count: > 0 } checkpointJournal)
+            {
+                changed |= UpdateLatestAgentTaskEventJournal(checkpointJournal);
+            }
             if (Compaction != null && !Compaction.IsStructurallyValid())
             {
                 Compaction = null;
@@ -2972,6 +2990,26 @@ namespace ColorVision.Copilot
             }
 
             return changed;
+        }
+
+        internal bool UpdateLatestAgentTaskEventJournal(CopilotAgentTaskEventJournalSnapshot? journal)
+        {
+            if (journal?.Events?.Count is not > 0 || !journal.IsStructurallyValid())
+                return false;
+
+            var currentEvents = LatestAgentTaskEventJournal?.Events;
+            var currentLast = currentEvents?.Count > 0 ? currentEvents[^1] : null;
+            var candidateLast = journal.Events[^1];
+            if (LatestAgentTaskEventJournal?.IsStructurallyValid() == true
+                && currentLast != null
+                && string.Equals(currentLast.RunId, candidateLast.RunId, StringComparison.Ordinal)
+                && currentLast.Sequence >= candidateLast.Sequence)
+            {
+                return false;
+            }
+
+            LatestAgentTaskEventJournal = journal;
+            return true;
         }
 
         internal IEnumerable<CopilotAttachmentItem> EnumerateReferencedAttachments()

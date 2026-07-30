@@ -1875,6 +1875,9 @@ namespace ColorVision.Copilot
                 case CopilotLocalCommandKind.Tasks:
                     ShowLocalCommandResult(command, BuildTaskDiagnosticsReport());
                     break;
+                case CopilotLocalCommandKind.TaskLog:
+                    ShowLocalCommandResult(command, CopilotAgentTaskEventDiagnostics.Format(SelectedConversation));
+                    break;
                 case CopilotLocalCommandKind.Queue:
                     ShowLocalCommandResult(command, CopilotQueuedFollowUpDiagnostics.Format(
                         QueuedFollowUps,
@@ -3327,6 +3330,7 @@ namespace ColorVision.Copilot
             assistantMessage.AgentStopReason = agentResult.StopReason;
             assistantMessage.AgentRunBudget = agentResult.Budget;
             assistantMessage.AgentBlockers = agentResult.Blockers;
+            conversation.UpdateLatestAgentTaskEventJournal(agentResult.TaskEventJournal);
             conversation.AgentSessionCheckpoint = agentResult.SessionCheckpoint;
             if (string.IsNullOrWhiteSpace(assistantMessage.Content))
             {
@@ -4120,6 +4124,7 @@ namespace ColorVision.Copilot
                         }
 
                         conversation.AgentSessionCheckpoint = agentEvent.SessionCheckpoint;
+                        conversation.UpdateLatestAgentTaskEventJournal(agentEvent.SessionCheckpoint.TaskEventJournal);
                         assistantMessage.AgentTaskLedger = agentEvent.TaskLedger;
                         persistState = true;
                         persistImmediately = true;
@@ -8217,7 +8222,8 @@ namespace ColorVision.Copilot
         private void PublishSelectedTaskEventJournal()
         {
             var conversation = SelectedConversation;
-            var journal = conversation?.AgentSessionCheckpoint?.TaskEventJournal;
+            var journal = conversation?.LatestAgentTaskEventJournal
+                ?? conversation?.AgentSessionCheckpoint?.TaskEventJournal;
             if (conversation != null
                 && journal?.Events?.Count > 0
                 && journal.IsStructurallyValid()
