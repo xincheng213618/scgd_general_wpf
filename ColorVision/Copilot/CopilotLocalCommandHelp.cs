@@ -43,6 +43,7 @@ namespace ColorVision.Copilot
                 CopilotLocalCommandKind.ResumeConversation,
                 CopilotLocalCommandKind.RenameConversation,
                 CopilotLocalCommandKind.RewindConversation,
+                CopilotLocalCommandKind.NavigateTurn,
                 CopilotLocalCommandKind.SearchPromptHistory,
                 CopilotLocalCommandKind.Transcript,
                 CopilotLocalCommandKind.CopyResponse,

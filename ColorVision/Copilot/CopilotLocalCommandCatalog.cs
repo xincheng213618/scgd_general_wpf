@@ -32,6 +32,7 @@ namespace ColorVision.Copilot
         ResumeConversation,
         RenameConversation,
         RewindConversation,
+        NavigateTurn,
         SearchPromptHistory,
         Transcript,
         CopyResponse,
@@ -128,6 +129,7 @@ namespace ColorVision.Copilot
             new("/resume", "搜索并切换已有 Copilot 会话，可补充标题或关键词", CopilotLocalCommandKind.ResumeConversation, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/resume [会话 ID|标题|关键词]"),
             new("/rename", "重命名当前 Copilot 会话；省略名称时打开输入窗口", CopilotLocalCommandKind.RenameConversation, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/rename [新名称]"),
             new("/rewind", "从历史请求创建仅会话回溯分支，并恢复原请求供修改", CopilotLocalCommandKind.RewindConversation, AcceptsArguments: true, Usage: "/rewind [N]"),
+            new("/turn", "定位当前会话倒数第 N 条用户请求；1 表示最近一条", CopilotLocalCommandKind.NavigateTurn, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/turn [N]"),
             new("/history", "搜索可见历史请求，可切换当前/全部会话并恢复到输入框", CopilotLocalCommandKind.SearchPromptHistory, Usage: "/history"),
             new("/transcript", "展开或收起当前会话的推理与工具活动", CopilotLocalCommandKind.Transcript, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/transcript [expand|collapse]", Arguments:
             [

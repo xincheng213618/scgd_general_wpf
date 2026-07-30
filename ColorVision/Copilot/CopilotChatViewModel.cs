@@ -1918,6 +1918,9 @@ namespace ColorVision.Copilot
                 case CopilotLocalCommandKind.RewindConversation:
                     RewindConversation(command, invocation.Arguments);
                     break;
+                case CopilotLocalCommandKind.NavigateTurn:
+                    NavigateToConversationTurn(command, invocation.Arguments);
+                    break;
                 case CopilotLocalCommandKind.SearchPromptHistory:
                     OpenPromptHistorySearch(command);
                     break;
@@ -1977,6 +1980,25 @@ namespace ColorVision.Copilot
                 IsBusy
                     ? "请先等待当前任务结束或停止任务，再搜索历史请求。"
                     : "当前会话没有可搜索的可见历史请求。");
+        }
+
+        private void NavigateToConversationTurn(
+            CopilotLocalCommand command,
+            string requestedOrdinal)
+        {
+            var result = CopilotConversationTurnNavigation.Resolve(
+                SelectedConversation,
+                requestedOrdinal);
+            if (result.Message == null)
+            {
+                ShowLocalCommandResult(command, result.Report);
+                return;
+            }
+
+            DismissLocalCommandResult();
+            MessageNavigationRequested?.Invoke(
+                this,
+                new CopilotChatMessageNavigationRequestedEventArgs(result.Message));
         }
 
         private void ChangeTranscriptExpansion(
