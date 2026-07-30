@@ -201,6 +201,55 @@ public sealed class CopilotComposerAccessAndReferenceTests
     }
 
     [Fact]
+    public void TemporaryGrantAutoReviewsOnlyUnsupportedProtectedToolsInTheExactTaskScope()
+    {
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Model");
+        var workspacePath = Path.Combine(Path.GetTempPath(), "copilot-auto-review-workspace");
+        var deterministicTool = new TestTool(
+            CopilotToolAccess.Write,
+            CopilotToolApprovalMode.Always,
+            allowsTemporaryFullAccess: true);
+        var reviewableTool = new TestTool(
+            CopilotToolAccess.Write,
+            CopilotToolApprovalMode.Always,
+            allowsTemporaryFullAccess: false);
+        conversation.PrepareFullAccessGrant(
+            workspacePath,
+            "task-auto-review",
+            DateTimeOffset.UtcNow.AddMinutes(15));
+
+        Assert.True(CopilotAgentAccessPolicy.CanAutoReview(
+            CreateRequest(conversation, "task-auto-review", workspacePath),
+            reviewableTool,
+            workspacePath));
+        Assert.False(CopilotAgentAccessPolicy.CanAutoReview(
+            CreateRequest(conversation, "task-auto-review", workspacePath),
+            deterministicTool,
+            workspacePath));
+        Assert.False(CopilotAgentAccessPolicy.CanAutoReview(
+            CreateRequest(conversation, "task-auto-review", workspacePath, CopilotAgentMode.Review),
+            reviewableTool,
+            workspacePath));
+        Assert.False(CopilotAgentAccessPolicy.CanAutoReview(
+            CreateRequest(conversation, "task-other", workspacePath),
+            reviewableTool,
+            workspacePath));
+        Assert.False(CopilotAgentAccessPolicy.CanAutoReview(
+            CreateRequest(
+                conversation,
+                "task-auto-review",
+                workspacePath,
+                conversationId: "conversation-other"),
+            reviewableTool,
+            workspacePath));
+        Assert.False(CopilotAgentAccessPolicy.CanAutoReview(
+            CreateRequest(conversation, "task-auto-review", workspacePath),
+            reviewableTool,
+            workspacePath + "-other"));
+        Assert.Equal(CopilotAgentAccessMode.ConfirmProtectedActions, conversation.AccessMode);
+    }
+
+    [Fact]
     public void OnlyPathAndHashBoundWorkspaceEnvelopeToolsAllowTemporaryApproval()
     {
         var autoApprovableToolNames = CopilotToolRegistry.CreateCoreDefaultTools()

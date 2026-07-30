@@ -44,6 +44,10 @@ namespace ColorVision.Copilot.Mcp
         public string ProviderCallId { get; init; } = string.Empty;
 
         public string ArgumentsSignature { get; init; } = string.Empty;
+
+        public string ApprovalDecisionSource { get; init; } = string.Empty;
+
+        public string ApprovalDecisionReason { get; init; } = string.Empty;
     }
 
     internal static class CopilotMcpAuditLogger
@@ -137,7 +141,13 @@ namespace ColorVision.Copilot.Mcp
 
         public static void ActionCreated(ConfirmableAction action) => RecordActionEvent("action_created", action, true, "Created pending confirmable action.");
 
-        public static void ActionApproved(ConfirmableAction action) => RecordActionEvent("action_approved", action, true, "Approved by ColorVision user.");
+        public static void ActionApproved(ConfirmableAction action) => RecordActionEvent(
+            "action_approved",
+            action,
+            true,
+            string.Equals(action.ApprovalDecisionSource, "automatic-review", StringComparison.Ordinal)
+                ? "Approved by the automatic permission reviewer."
+                : "Approved by the ColorVision user.");
 
         public static void ActionRejected(ConfirmableAction action) => RecordActionEvent("action_rejected", action, false, "Rejected by ColorVision user.");
 
@@ -165,6 +175,8 @@ namespace ColorVision.Copilot.Mcp
                 ConversationId = Sanitize(action.RequestContext.ConversationId),
                 TaskId = Sanitize(action.RequestContext.TaskId),
                 WorkspacePath = Sanitize(action.RequestContext.WorkspacePath),
+                ApprovalDecisionSource = Sanitize(action.ApprovalDecisionSource),
+                ApprovalDecisionReason = Sanitize(action.ApprovalDecisionReason),
             }, executionScope);
 
             lock (SyncRoot)
@@ -174,7 +186,7 @@ namespace ColorVision.Copilot.Mcp
                     RecentEntries.RemoveRange(0, RecentEntries.Count - MaxEntries);
             }
 
-            Log.Info($"MCP action event. TimestampUtc={entry.TimestampUtc:O} Event={entry.ToolName} ActionId={entry.ActionId} Tool={action.ToolName} Conversation={EmptyLabel(entry.ConversationId)} Task={EmptyLabel(entry.TaskId)} Run={EmptyLabel(entry.RunId)} Workspace={EmptyLabel(entry.WorkspacePath)} Caller={EmptyLabel(entry.CallerSource)} ScopeId={EmptyLabel(entry.ScopeId)} Success={entry.Success} Message={EmptyLabel(entry.ErrorMessage)}");
+            Log.Info($"MCP action event. TimestampUtc={entry.TimestampUtc:O} Event={entry.ToolName} ActionId={entry.ActionId} Tool={action.ToolName} Conversation={EmptyLabel(entry.ConversationId)} Task={EmptyLabel(entry.TaskId)} Run={EmptyLabel(entry.RunId)} Workspace={EmptyLabel(entry.WorkspacePath)} Caller={EmptyLabel(entry.CallerSource)} ScopeId={EmptyLabel(entry.ScopeId)} ApprovalSource={EmptyLabel(entry.ApprovalDecisionSource)} ApprovalReason={EmptyLabel(entry.ApprovalDecisionReason)} Success={entry.Success} Message={EmptyLabel(entry.ErrorMessage)}");
         }
 
         private static CopilotMcpAuditEntry WithExecutionScope(
@@ -202,6 +214,8 @@ namespace ColorVision.Copilot.Mcp
                 ScopeId = Sanitize(executionScope.ScopeId),
                 ProviderCallId = Sanitize(executionScope.ProviderCallId),
                 ArgumentsSignature = Sanitize(executionScope.ArgumentsSignature),
+                ApprovalDecisionSource = Sanitize(entry.ApprovalDecisionSource),
+                ApprovalDecisionReason = Sanitize(entry.ApprovalDecisionReason),
             };
         }
 

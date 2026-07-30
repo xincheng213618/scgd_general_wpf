@@ -744,8 +744,8 @@ namespace ColorVision.Copilot
         public string ComposerAccessModeLabel => !IsComposerFullAccess
             ? "按需确认"
             : SelectedConversation?.IsFullAccessPreparedForNextTask == true
-                ? "临时自动批准 · 下一任务"
-                : "临时自动批准 · 本任务";
+                ? "自动复核 · 下一任务"
+                : "自动复核 · 本任务";
 
         public string ComposerAccessModeToolTip => IsComposerFullAccess
             ? BuildFullAccessToolTip()
@@ -2241,7 +2241,7 @@ namespace ColorVision.Copilot
                         && ReferenceEquals(SelectedConversation, conversation))
                     {
                         OnComposerAccessModeChanged();
-                        SetPendingActionFeedback("本任务的临时自动批准已结束，后续受保护操作恢复按需确认。");
+                        SetPendingActionFeedback("本任务的临时自动复核授权已结束，后续受保护操作恢复按需确认。");
                     }
                 });
                 RefreshAgentTasks();
@@ -2743,7 +2743,7 @@ namespace ColorVision.Copilot
             if (conversation?.ExpireFullAccessGrantIfNeeded() == true)
             {
                 OnComposerAccessModeChanged();
-                SetPendingActionFeedback("临时自动批准已到期，受保护操作恢复按需确认。");
+                SetPendingActionFeedback("临时自动复核授权已到期，受保护操作恢复按需确认。");
             }
             else if (conversation?.AccessMode == CopilotAgentAccessMode.FullAccess)
             {
@@ -2752,7 +2752,7 @@ namespace ColorVision.Copilot
                     && conversation.RevokeFullAccessGrant())
                 {
                     OnComposerAccessModeChanged();
-                    SetPendingActionFeedback("工作区已变化，临时自动批准已撤销。");
+                    SetPendingActionFeedback("工作区已变化，临时自动复核授权已撤销。");
                 }
             }
             RefreshPendingActions();
@@ -2868,7 +2868,7 @@ namespace ColorVision.Copilot
             var turnSnapshot = CaptureHostedTurnSnapshot(conversation.Attachments);
             if (string.IsNullOrWhiteSpace(turnSnapshot.SolutionDirectoryPath))
             {
-                SetPendingActionFeedback("请先打开一个项目工作区，再启用临时自动批准。");
+                SetPendingActionFeedback("请先打开一个项目工作区，再启用临时自动复核。");
                 return;
             }
 
@@ -2883,8 +2883,8 @@ namespace ColorVision.Copilot
                 DateTimeOffset.UtcNow.Add(CopilotAgentAccessContext.MaximumFullAccessLifetime));
             OnComposerAccessModeChanged();
             SetPendingActionFeedback(string.IsNullOrWhiteSpace(taskId)
-                ? "已为下一任务启用临时自动批准（最长 15 分钟）。当前仅工作区补丁及回滚可自动执行；已有待审批操作仍需单独决定。"
-                : "已为本任务启用临时自动批准（最长 15 分钟）。当前仅工作区补丁及回滚可自动执行；已有待审批操作仍需单独决定。");
+                ? "已为下一任务启用临时自动复核（最长 15 分钟）。工作区补丁及回滚仍按确定性范围规则批准；其他受保护调用由独立模型复核，风险较高、无法判断或复核失败时仍等待用户。已有待审批操作不受影响。"
+                : "已为本任务启用临时自动复核（最长 15 分钟）。工作区补丁及回滚仍按确定性范围规则批准；其他受保护调用由独立模型复核，风险较高、无法判断或复核失败时仍等待用户。已有待审批操作不受影响。");
             PersistState(immediate: true);
         }
 
@@ -2939,7 +2939,7 @@ namespace ColorVision.Copilot
                 ? "当前 ColorVision 应用"
                 : conversation.FullAccessWorkspacePath;
             var expires = conversation?.FullAccessExpiresAtUtc?.ToLocalTime().ToString("HH:mm:ss") ?? "15 分钟内";
-            return $"临时自动批准仅对{scope}及工作区“{workspace}”有效，最晚 {expires} 失效。当前仅自动批准已预览且执行前逐文件复核路径和 SHA-256 的工作区补丁及回滚；模板、Flow、批量转换、Shell、菜单和数据库仍逐项确认。任务结束、工作区变化或应用重启后恢复按需确认。";
+            return $"临时自动复核仅对{scope}及工作区“{workspace}”有效，最晚 {expires} 失效。已预览的工作区补丁及回滚仍按逐文件路径和 SHA-256 的确定性规则批准；其他受保护调用仅在提供完整原生审批详情时，才由独立、无工具的权限模型复核，每次复核会增加一次模型调用。仅 LOW/MEDIUM 风险可自动批准，HIGH/CRITICAL、详情缺失或过长、格式错误、超时或模型失败仍等待用户。任务结束、工作区变化或应用重启后恢复按需确认。";
         }
 
         private static bool WorkspacePathsMatch(string expectedPath, string currentPath)

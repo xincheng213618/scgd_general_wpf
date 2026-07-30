@@ -2213,12 +2213,12 @@
                                               Command="{Binding SetComposerAccessModeCommand}"
                                               CommandParameter="{x:Static local:CopilotAgentAccessMode.ConfirmProtectedActions}"
                                               ToolTip="受保护操作执行前逐次确认。" />
-                                    <MenuItem Header="临时自动批准（仅下一任务/本任务）"
+                                    <MenuItem Header="临时自动复核（仅下一任务/本任务）"
                                               IsCheckable="True"
                                               IsChecked="{Binding IsComposerFullAccess, Mode=OneWay}"
                                               Command="{Binding SetComposerAccessModeCommand}"
                                               CommandParameter="{x:Static local:CopilotAgentAccessMode.FullAccess}"
-                                              ToolTip="最长 15 分钟，当前仅自动批准已预览且执行前逐文件复核路径和 SHA-256 的工作区补丁及回滚；模板、Flow、批量转换、Shell、菜单和数据库仍逐项确认。" />
+                                              ToolTip="最长 15 分钟并绑定任务与工作区。结构化补丁走确定性范围规则；其他受保护调用仅在提供完整原生审批详情时由独立模型复核，每次复核会增加一次模型调用。仅 LOW/MEDIUM 风险自动批准，无法判断或较高风险仍等待用户。" />
                                 </ContextMenu>
                             </Button.ContextMenu>
                             <StackPanel Orientation="Horizontal">

@@ -253,6 +253,10 @@ namespace ColorVision.Copilot.Mcp
 
         public string ExecutionResultText { get; internal set; } = string.Empty;
 
+        public string ApprovalDecisionSource { get; internal set; } = string.Empty;
+
+        public string ApprovalDecisionReason { get; internal set; } = string.Empty;
+
         public DateTimeOffset? CompletedAt { get; internal set; }
 
         public DateTimeOffset CreatedAt { get; init; }
@@ -616,6 +620,31 @@ namespace ColorVision.Copilot.Mcp
         public bool Approve(
             string actionId,
             CopilotConfirmationReviewContext reviewContext,
+            out string message) =>
+            ApproveCore(
+                actionId,
+                reviewContext,
+                decisionSource: "user",
+                decisionReason: string.Empty,
+                out message);
+
+        internal bool ApproveAutomatically(
+            string actionId,
+            CopilotConfirmationReviewContext reviewContext,
+            string decisionReason,
+            out string message) =>
+            ApproveCore(
+                actionId,
+                reviewContext,
+                decisionSource: "automatic-review",
+                decisionReason,
+                out message);
+
+        private bool ApproveCore(
+            string actionId,
+            CopilotConfirmationReviewContext reviewContext,
+            string decisionSource,
+            string decisionReason,
             out string message)
         {
             var action = Find(actionId);
@@ -642,13 +671,20 @@ namespace ColorVision.Copilot.Mcp
                     return false;
                 }
 
+                action.ApprovalDecisionSource = Sanitize(decisionSource);
+                action.ApprovalDecisionReason = Sanitize(decisionReason);
                 action.Status = ConfirmableActionStatus.Approved;
             }
 
             CopilotMcpAuditLogger.ActionApproved(action);
             RaiseActionStatusChanged(action);
             RaiseActionsChanged();
-            message = "The action was approved.";
+            message = string.Equals(
+                action.ApprovalDecisionSource,
+                "automatic-review",
+                StringComparison.Ordinal)
+                ? "The action was approved by the automatic permission reviewer."
+                : "The action was approved.";
             return true;
         }
 

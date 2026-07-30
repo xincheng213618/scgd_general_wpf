@@ -339,14 +339,28 @@ namespace ColorVision.Copilot
             RecordApprovalDecision(execution.ToolName, execution.CallId, execution.ApprovalActionId, approved);
         }
 
-        public void RecordApprovalDecision(string toolName, string callId, string approvalActionId, bool approved)
+        public void RecordApprovalDecision(
+            string toolName,
+            string callId,
+            string approvalActionId,
+            bool approved,
+            string decisionSource = "")
         {
             var approvalId = CopilotAgentTaskEventIds.ForApproval(approvalActionId);
+            var source = (decisionSource ?? string.Empty).Trim();
             Append(
                 approved ? CopilotAgentTaskEventType.ApprovalApproved : CopilotAgentTaskEventType.ApprovalDenied,
                 approvalId,
-                approved ? "approved" : "denied",
-                approved ? "Protected tool call was approved." : "Protected tool call was denied or expired.",
+                approved
+                    ? string.IsNullOrWhiteSpace(source) ? "approved" : "approved:" + source
+                    : "denied",
+                approved
+                    ? string.Equals(source, nameof(CopilotFrameworkApprovalDecisionSource.AutomaticReview), StringComparison.Ordinal)
+                        ? "Protected tool call was approved by automatic permission review."
+                        : string.Equals(source, nameof(CopilotFrameworkApprovalDecisionSource.TemporaryGrant), StringComparison.Ordinal)
+                            ? "Protected tool call was approved by the temporary task grant."
+                            : "Protected tool call was approved by the user."
+                    : "Protected tool call was denied or expired.",
                 toolName,
                 [CopilotAgentTaskEventIds.ForCall(callId)]);
         }

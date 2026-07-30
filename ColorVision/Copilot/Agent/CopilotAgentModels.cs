@@ -291,6 +291,30 @@ namespace ColorVision.Copilot
                 && IsWriteScopeContainedByWorkspace(request, currentWorkspacePath);
         }
 
+        public static bool CanAutoReview(
+            CopilotAgentRequest request,
+            ICopilotTool tool,
+            string currentWorkspacePath)
+        {
+            ArgumentNullException.ThrowIfNull(request);
+            ArgumentNullException.ThrowIfNull(tool);
+            if (request.AccessContext.RevokeIfWorkspaceChanged(currentWorkspacePath))
+                return false;
+            if (string.IsNullOrWhiteSpace(currentWorkspacePath)
+                || !WorkspacePathsMatch(request.WorkspacePath, currentWorkspacePath))
+            {
+                return false;
+            }
+
+            return request.AccessContext.AllowsUnattendedProtectedActionsFor(
+                    request.ConversationId,
+                    request.TaskId,
+                    currentWorkspacePath)
+                && !CopilotToolIntentPolicy.IsReadOnlyMode(request.Mode)
+                && tool.Capability.RequiresNativeApproval
+                && !tool.Capability.AllowsTemporaryFullAccess;
+        }
+
         private static bool IsWriteScopeContainedByWorkspace(
             CopilotAgentRequest request,
             string workspacePath)
