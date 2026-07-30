@@ -998,6 +998,7 @@ namespace ColorVision.Copilot
                 OnPropertyChanged(nameof(HasPromptHistorySearchResults));
                 OnPropertyChanged(nameof(PromptHistorySearchHeader));
                 OnPropertyChanged(nameof(PromptHistorySearchStatusText));
+                OnPropertyChanged(nameof(CanOpenExpandedComposerEditor));
                 RefreshLocalCommandSuggestions();
                 CommandManager.InvalidateRequerySuggested();
             }
@@ -1293,6 +1294,9 @@ namespace ColorVision.Copilot
         public bool IsEditingMessage => !string.IsNullOrWhiteSpace(_editingConversationId)
             && !string.IsNullOrWhiteSpace(_editingUserMessageId);
 
+        public bool CanOpenExpandedComposerEditor =>
+            !IsPromptHistorySearchOpen && !IsComposerReferenceMentionActive;
+
         public string EditingMessageStatusText => "正在编辑上一条请求；发送后将替换原回复";
 
         public bool IsInputEmpty => string.IsNullOrWhiteSpace(InputText);
@@ -1376,6 +1380,7 @@ namespace ColorVision.Copilot
                 OnPropertyChanged(nameof(IsComposerReferencePopoverOpen));
                 OnPropertyChanged(nameof(HasComposerReferenceStatus));
                 OnPropertyChanged(nameof(ComposerReferenceStatusText));
+                OnPropertyChanged(nameof(CanOpenExpandedComposerEditor));
             }
         }
 

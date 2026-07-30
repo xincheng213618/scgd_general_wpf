@@ -2359,7 +2359,7 @@
                                  PreviewKeyDown="PromptTextBox_PreviewKeyDown"
                                  Text="{Binding InputText, UpdateSourceTrigger=PropertyChanged}"
                                  TextWrapping="Wrap"
-                                 ToolTip="↑/↓ 浏览请求历史；Ctrl+R 搜索历史；Ctrl+S 暂存或恢复草稿"
+                                 ToolTip="↑/↓ 浏览请求历史；Ctrl+R 搜索历史；Ctrl+S 暂存或恢复草稿；Ctrl+E 展开编辑"
                                  VerticalContentAlignment="Top"
                                  VerticalScrollBarVisibility="Auto" />
                     </Grid>
@@ -2500,6 +2500,16 @@
                                     Margin="4,0"
                                     HorizontalAlignment="Right"
                                     Orientation="Horizontal">
+                            <Button Width="28"
+                                    Height="28"
+                                    Margin="0,0,4,0"
+                                    AutomationProperties.Name="展开编辑 Copilot 提示词"
+                                    Click="OpenPromptEditorButton_Click"
+                                    Content="↗"
+                                    FontSize="13"
+                                    IsEnabled="{Binding CanOpenExpandedComposerEditor}"
+                                    Style="{StaticResource CopilotIconButtonStyle}"
+                                    ToolTip="展开编辑当前输入（Ctrl+E；Ctrl+Enter 保存）" />
                             <Button Width="62"
                                     Height="28"
                                     Margin="0,0,4,0"

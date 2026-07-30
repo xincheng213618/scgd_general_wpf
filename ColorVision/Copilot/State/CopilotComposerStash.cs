@@ -33,7 +33,7 @@ namespace ColorVision.Copilot
             CopilotAgentMode requestMode,
             IEnumerable<CopilotAttachmentItem>? attachments)
         {
-            var normalizedText = BoundText(text ?? string.Empty);
+            var normalizedText = CopilotComposerTextLimits.Bound(text);
             return new CopilotComposerStash
             {
                 Text = normalizedText,
@@ -49,7 +49,7 @@ namespace ColorVision.Copilot
         internal bool EnsureValid()
         {
             var changed = false;
-            var normalizedText = BoundText(Text ?? string.Empty);
+            var normalizedText = CopilotComposerTextLimits.Bound(Text);
             if (!string.Equals(Text, normalizedText, StringComparison.Ordinal))
             {
                 Text = normalizedText;
@@ -98,18 +98,5 @@ namespace ColorVision.Copilot
                 .ToArray();
         }
 
-        private static string BoundText(string value)
-        {
-            if (value.Length <= CopilotConversationHistoryWindow.MaximumContentCharacterLimit)
-                return value;
-
-            var retainedLength = CopilotConversationHistoryWindow.MaximumContentCharacterLimit;
-            if (char.IsHighSurrogate(value[retainedLength - 1])
-                && char.IsLowSurrogate(value[retainedLength]))
-            {
-                retainedLength--;
-            }
-            return value[..retainedLength];
-        }
     }
 }

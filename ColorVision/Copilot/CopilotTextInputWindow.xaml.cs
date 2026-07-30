@@ -9,6 +9,7 @@ namespace ColorVision.Copilot
     public partial class CopilotTextInputWindow : Window
     {
         private readonly int _maximumLength;
+        private readonly int _initialCaretIndex;
 
         public CopilotTextInputWindow(
             string title,
@@ -16,17 +17,21 @@ namespace ColorVision.Copilot
             string initialText = "",
             bool isMultiline = false,
             bool isReadOnly = false,
-            int maximumLength = 0)
+            int maximumLength = 0,
+            int initialCaretIndex = -1,
+            bool acceptsTab = false)
         {
             InitializeComponent();
             this.ApplyCaption();
 
             _maximumLength = Math.Max(0, maximumLength);
+            _initialCaretIndex = initialCaretIndex;
             Title = title;
             DescriptionTextBlock.Text = description;
-            InputTextBox.Text = initialText;
             InputTextBox.MaxLength = _maximumLength;
+            InputTextBox.Text = initialText;
             InputTextBox.AcceptsReturn = isMultiline;
+            InputTextBox.AcceptsTab = acceptsTab;
             InputTextBox.IsReadOnly = isReadOnly;
             InputTextBox.MinHeight = isMultiline ? 140 : 38;
             InputTextBox.VerticalContentAlignment = isMultiline ? VerticalAlignment.Top : VerticalAlignment.Center;
@@ -49,6 +54,10 @@ namespace ColorVision.Copilot
 
         public string ResultText => InputTextBox.Text.Trim();
 
+        public string RawResultText => InputTextBox.Text;
+
+        public int ResultCaretIndex => InputTextBox.CaretIndex;
+
         private void InputTextBox_TextChanged(object sender, TextChangedEventArgs e) => UpdateCharacterCount();
 
         private void UpdateCharacterCount()
@@ -59,7 +68,9 @@ namespace ColorVision.Copilot
         private void CopilotTextInputWindow_Loaded(object sender, RoutedEventArgs e)
         {
             InputTextBox.Focus();
-            InputTextBox.CaretIndex = InputTextBox.Text.Length;
+            InputTextBox.CaretIndex = _initialCaretIndex < 0
+                ? InputTextBox.Text.Length
+                : Math.Clamp(_initialCaretIndex, 0, InputTextBox.Text.Length);
         }
 
         private void CopilotTextInputWindow_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -68,6 +79,13 @@ namespace ColorVision.Copilot
             {
                 e.Handled = true;
                 DialogResult = true;
+                return;
+            }
+
+            if (!InputTextBox.IsReadOnly && e.Key == Key.Escape)
+            {
+                e.Handled = true;
+                DialogResult = false;
                 return;
             }
 

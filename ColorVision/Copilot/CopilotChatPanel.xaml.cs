@@ -710,6 +710,12 @@ namespace ColorVision.Copilot
                 return;
             }
 
+            if (e.Key == Key.E && Keyboard.Modifiers == ModifierKeys.Control)
+            {
+                e.Handled = OpenExpandedPromptEditor();
+                return;
+            }
+
             if (Keyboard.Modifiers == ModifierKeys.None
                 && DataContext is CopilotChatViewModel referenceViewModel
                 && referenceViewModel.IsComposerReferenceMentionActive)
@@ -843,6 +849,51 @@ namespace ColorVision.Copilot
             }
 
             FocusPromptInput(restoredCaretIndex);
+        }
+
+        private void OpenPromptEditorButton_Click(object sender, RoutedEventArgs e)
+        {
+            OpenExpandedPromptEditor();
+        }
+
+        private bool OpenExpandedPromptEditor()
+        {
+            if (DataContext is not CopilotChatViewModel viewModel
+                || !viewModel.CanOpenExpandedComposerEditor)
+            {
+                return false;
+            }
+
+            var initialCaretIndex = PromptTextBox.CaretIndex;
+            var window = new CopilotTextInputWindow(
+                "编辑 Copilot 提示词",
+                "编辑当前未发送内容；Ctrl+Enter 保存，Esc 或取消保持原内容。附件和请求模式不会改变。",
+                viewModel.InputText,
+                isMultiline: true,
+                maximumLength: viewModel.ComposerMaximumCharacters,
+                initialCaretIndex: initialCaretIndex,
+                acceptsTab: true)
+            {
+                Width = 720,
+                Height = 480,
+                MinWidth = 520,
+                MinHeight = 320,
+                Owner = Window.GetWindow(this) ?? Application.Current.GetActiveWindow(),
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            };
+
+            if (window.ShowDialog() != true)
+            {
+                FocusPromptInput(initialCaretIndex);
+                return true;
+            }
+
+            var snapshot = CopilotComposerEditorSnapshot.Capture(
+                window.RawResultText,
+                window.ResultCaretIndex);
+            viewModel.InputText = snapshot.Text;
+            FocusPromptInput(snapshot.CaretIndex);
+            return true;
         }
 
         private void EditMessageButton_Click(object sender, RoutedEventArgs e)
