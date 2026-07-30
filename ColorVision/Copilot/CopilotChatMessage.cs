@@ -128,6 +128,11 @@ namespace ColorVision.Copilot
         internal const string CompressedRequestContentPrefix = "cv-request-gzip-v1:";
         internal const string ResponseTruncationMarker = "\n\n...<response truncated by app>";
         internal const string ReasoningTruncationMarker = "\n...<reasoning truncated by app>";
+        internal const string ResponseInterruptionModelMarker =
+            "<assistant_response_interrupted>\n"
+            + "The preceding assistant response ended before completion. Treat any preceding text as partial context, not as a completed answer. "
+            + "Do not infer that unfinished steps, tool calls, file changes, or verification succeeded. Re-check current evidence before continuing.\n"
+            + "</assistant_response_interrupted>";
         private const int MinimumRequestContentCompressionCharacters = 1_024;
         private const int MaximumCompressibleRequestContentCharacters = CopilotAgentSessionCheckpoint.MaxSerializedSessionCharacters;
         private const int MaximumResponseInterruptionDetailLength = 800;
@@ -424,9 +429,21 @@ namespace ColorVision.Copilot
         }
 
         [JsonIgnore]
-        public string ModelContent => IsContentDisplayOnly
-            ? string.Empty
-            : string.IsNullOrWhiteSpace(RequestContent) ? Content : RequestContent;
+        public string ModelContent
+        {
+            get
+            {
+                var content = IsContentDisplayOnly
+                    ? string.Empty
+                    : string.IsNullOrWhiteSpace(RequestContent) ? Content : RequestContent;
+                if (IsUser || !WasResponseInterrupted)
+                    return content;
+
+                return string.IsNullOrWhiteSpace(content)
+                    ? ResponseInterruptionModelMarker
+                    : content.TrimEnd() + "\n\n" + ResponseInterruptionModelMarker;
+            }
+        }
 
         public string ExecutionContent
         {

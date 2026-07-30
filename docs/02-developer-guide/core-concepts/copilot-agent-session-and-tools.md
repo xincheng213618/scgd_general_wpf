@@ -41,6 +41,8 @@ Runtime 使用 Harness 的 `ChatHistoryProvider.InvokedAsync` 正式持久化边
 
 模型供应商调用使用独立的传输重试层。HTTP 408、429、5xx、无响应连接错误、超时和 I/O 中断只有在尚未收到第一个流式更新时才会退避重试；默认最多请求三次，间隔 250ms、500ms。首个文本、usage 或 FunctionCall 更新一旦出现，后续中断绝不重放已有输出；若本轮已有文本或业务工具 step，Runtime 会记录 `ProviderFailure` 与 `provider_interrupted` blocker，并在不再次调用 Provider 的情况下读取 todo、合并 evidence/journal、序列化当前 Harness Session。开放 todo 通过 `Resume` 恢复同一 Session；没有开放 todo 时通过 `Finalize` 只生成最终回答。尚无任何实质进展的 400/401/403 等永久错误、连接失败和调用方取消仍直接向上传播。重试层位于 Token 预算层外侧，因此每次真实供应商请求都计入 `ProviderCalls`；诊断只记录失败类别、尝试序号和等待时间，不保存响应正文或异常消息。
 
+`CopilotChatMessage.ModelContent` 会把既有 `WasResponseInterrupted` 状态转换成固定的 `<assistant_response_interrupted>` 模型边界。部分 Assistant 正文保留在标记前；display-only 的应用退出恢复提示不会作为模型回答重放，但仍生成一个 Assistant 边界来闭合上一轮。标记不拼接 `ResponseInterruptionDetail`，避免把提供商错误、地址或本地化 UI 文本重新注入模型；`Content`、可见历史、复制和导出仍保持原样。`CopilotConversationRequestBuilder`、主动压缩、旁路问题和完成评估都读取同一个 `ModelContent`，因此中断语义不会在不同请求路径间漂移。新的生成尝试调用 `MarkThinkingStarted` 后清除中断状态，正常回答不携带该标记。这个边界沿用 Codex 默认的 model-visible interrupt message，并与 Claude Code“中断后保留已完成工作、允许重定向”和 grok turn hook 的 cancellation context 保持同一连续性原则，不把中断解释为回滚、完成证明或新的授权。
+
 运行时不会在工具内部暗中自动重跑。首次失败会把 `failure_kind`、`retry_allowed` 和 `attempt` 交回 Agent Framework；只有模型再次发出完全相同的调用时才触发重试。重试必须同时满足：
 
 - 工具声明 `Idempotent`。
