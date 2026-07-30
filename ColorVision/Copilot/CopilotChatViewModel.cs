@@ -1569,6 +1569,9 @@ namespace ColorVision.Copilot
                 case CopilotLocalCommandKind.RenameConversation:
                     RenameCurrentConversation(command, invocation.Arguments);
                     break;
+                case CopilotLocalCommandKind.RewindConversation:
+                    RewindConversation(command, invocation.Arguments);
+                    break;
                 case CopilotLocalCommandKind.CopyResponse:
                     CopyAssistantResponse(command, invocation.Arguments);
                     break;
@@ -6539,6 +6542,86 @@ namespace ColorVision.Copilot
                 ShowLocalCommandResult(
                     command,
                     "无法创建会话分支：" + CopilotUserFacingErrorFormatter.Sanitize(ex.Message));
+            }
+        }
+
+        private void RewindConversation(CopilotLocalCommand command, string requestedOrdinal)
+        {
+            var source = SelectedConversation;
+            if (source == null || IsBusy || IsEditingMessage || !CanSwitchConversation)
+            {
+                ShowLocalCommandResult(command, "当前状态不能回溯会话；请先结束正在运行的请求或消息编辑。");
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(requestedOrdinal))
+            {
+                ShowLocalCommandResult(command, CopilotConversationRewindService.Format(source));
+                return;
+            }
+            if (!CopilotConversationRewindService.TryResolve(source, requestedOrdinal, out var point))
+            {
+                ShowLocalCommandResult(command, "回溯序号必须对应一条现有用户请求，例如 /rewind 1。输入 /rewind 可查看可用回溯点。");
+                return;
+            }
+
+            if (source.Attachments.Count > 0)
+            {
+                var replaceAttachments = MessageBox.Show(
+                    Application.Current.GetActiveWindow(),
+                    "回溯会用所选历史请求的附件快照替换当前待发送附件；源会话和文件不会改变。是否继续？",
+                    "ColorVision",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Question);
+                if (replaceAttachments != MessageBoxResult.Yes)
+                {
+                    ShowLocalCommandResult(command, "会话回溯已取消；当前会话和待发送附件均未改变。");
+                    return;
+                }
+            }
+
+            try
+            {
+                var restoredAttachments = point.UserMessage.AttachmentSnapshotCaptured
+                    ? point.UserMessage.Attachments.Select(attachment => attachment.CreateSnapshot()).ToArray()
+                    : Array.Empty<CopilotAttachmentItem>();
+                if (restoredAttachments.Length > MaximumComposerAttachments)
+                    throw new InvalidOperationException($"历史请求包含超过 {MaximumComposerAttachments:N0} 个附件，不能安全恢复到输入框。");
+
+                var branch = CopilotConversationBranchService.CreateRewindBranch(
+                    source,
+                    point.UserMessage);
+                foreach (var attachment in restoredAttachments)
+                    branch.Attachments.Add(attachment);
+                branch.DraftText = point.UserMessage.Content;
+                InsertAndSelectConversationBranch(branch);
+
+                _pendingAgentRecoveryRequest = null;
+                ClearPendingRequestModeOverride();
+                SetPendingRequestModeOverride(Enum.IsDefined(point.UserMessage.RequestMode)
+                    ? point.UserMessage.RequestMode
+                    : CopilotAgentMode.Chat);
+                InputText = point.UserMessage.Content;
+                UpdateAttachmentsState(branch);
+
+                var attachmentText = point.AttachmentCount > 0
+                    ? $"，并恢复 {point.AttachmentCount:N0} 个附件快照"
+                    : point.UserMessage.HasAttachments
+                        ? "；该旧请求没有可靠的附件快照，附件未恢复"
+                        : string.Empty;
+                ShowLocalCommandResult(
+                    command,
+                    $"已从“{source.Title}”创建回溯分支“{branch.Title}”，定位到倒数第 {point.Ordinal:N0} 条请求之前。"
+                    + Environment.NewLine
+                    + $"原请求已恢复到输入框{attachmentText}，可修改后发送；不会自动执行。"
+                    + Environment.NewLine
+                    + "源会话、当前文件和外部操作保持不变；Agent checkpoint 与临时授权未继承。");
+            }
+            catch (Exception ex)
+            {
+                ShowLocalCommandResult(
+                    command,
+                    "无法回溯会话：" + CopilotUserFacingErrorFormatter.Sanitize(ex.Message));
             }
         }
 

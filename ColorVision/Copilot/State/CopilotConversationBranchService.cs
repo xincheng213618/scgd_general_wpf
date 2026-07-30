@@ -84,6 +84,31 @@ namespace ColorVision.Copilot
                 allowInProgressSnapshot: true);
         }
 
+        public static CopilotConversationRecord CreateRewindBranch(
+            CopilotConversationRecord source,
+            CopilotChatMessage fromUserMessage,
+            string? requestedTitle = null)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(fromUserMessage);
+            var userIndex = source.Messages.IndexOf(fromUserMessage);
+            if (userIndex < 0
+                || !fromUserMessage.IsUser
+                || string.IsNullOrWhiteSpace(fromUserMessage.Id)
+                || string.IsNullOrWhiteSpace(fromUserMessage.Content))
+            {
+                throw new InvalidOperationException("A conversation rewind requires a visible user message from the source conversation.");
+            }
+
+            var copyThroughIndex = FindPreviousCompletedAssistantIndex(source, userIndex - 1);
+            return CreateCopiedBranch(
+                source,
+                fromUserMessage.Id,
+                copyThroughIndex,
+                requestedTitle,
+                capturesInProgressTurn: false);
+        }
+
         private static CopilotConversationRecord CreateBranchCore(
             CopilotConversationRecord source,
             CopilotChatMessage throughAssistantMessage,
@@ -101,6 +126,21 @@ namespace ColorVision.Copilot
             }
 
             var capturesInProgressTurn = throughAssistantMessage.IsThinkingInProgress;
+            return CreateCopiedBranch(
+                source,
+                throughAssistantMessage.Id,
+                throughIndex,
+                requestedTitle,
+                capturesInProgressTurn);
+        }
+
+        private static CopilotConversationRecord CreateCopiedBranch(
+            CopilotConversationRecord source,
+            string originThroughMessageId,
+            int copyThroughIndex,
+            string? requestedTitle,
+            bool capturesInProgressTurn)
+        {
             var forkedAtUtc = DateTimeOffset.UtcNow;
             var branch = new CopilotConversationRecord
             {
@@ -118,7 +158,7 @@ namespace ColorVision.Copilot
                     RootConversationId = source.BranchOrigin?.IsStructurallyValid(source.Id) == true
                         ? source.BranchOrigin.RootConversationId
                         : source.Id,
-                    ThroughMessageId = throughAssistantMessage.Id,
+                    ThroughMessageId = originThroughMessageId,
                     ForkedAtUtc = forkedAtUtc,
                 },
                 Goal = source.Goal?.IsStructurallyValid() == true
@@ -127,7 +167,7 @@ namespace ColorVision.Copilot
             };
             var messageIdMap = new Dictionary<string, string>(StringComparer.Ordinal);
             var lastUserMode = CopilotAgentMode.Chat;
-            for (var index = 0; index <= throughIndex; index++)
+            for (var index = 0; index <= copyThroughIndex; index++)
             {
                 var sourceMessage = source.Messages[index];
                 if (sourceMessage.IsUser)
@@ -136,7 +176,7 @@ namespace ColorVision.Copilot
                 var clonedMessage = CloneMessage(
                     sourceMessage,
                     lastUserMode,
-                    capturesInProgressTurn && ReferenceEquals(sourceMessage, throughAssistantMessage));
+                    capturesInProgressTurn && index == copyThroughIndex);
                 branch.Messages.Add(clonedMessage);
                 if (!string.IsNullOrWhiteSpace(sourceMessage.Id))
                     messageIdMap.TryAdd(sourceMessage.Id, clonedMessage.Id);
@@ -158,6 +198,24 @@ namespace ColorVision.Copilot
 
             branch.RefreshSummary();
             return branch;
+        }
+
+        private static int FindPreviousCompletedAssistantIndex(
+            CopilotConversationRecord source,
+            int startIndex)
+        {
+            for (var index = Math.Min(startIndex, source.Messages.Count - 1); index >= 0; index--)
+            {
+                var message = source.Messages[index];
+                if (!message.IsUser
+                    && !message.IsThinkingInProgress
+                    && !string.IsNullOrWhiteSpace(message.Content))
+                {
+                    return index;
+                }
+            }
+
+            return -1;
         }
 
         public static CopilotChatMessage? FindCurrentBranchPoint(CopilotConversationRecord source)
