@@ -36,6 +36,7 @@ namespace ColorVision.Copilot
         SearchPromptHistory,
         Transcript,
         Timestamps,
+        CompactMode,
         CopyResponse,
         ExportConversation,
         FindInConversation,
@@ -142,6 +143,11 @@ namespace ColorVision.Copilot
             [
                 new("on", "显示用户与助手消息时间"),
                 new("off", "隐藏用户与助手消息时间"),
+            ]),
+            new("/compact-mode", "切换仅本地的紧凑消息间距，不压缩会话上下文", CopilotLocalCommandKind.CompactMode, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/compact-mode [on|off]", Arguments:
+            [
+                new("on", "减少消息列表与气泡间距"),
+                new("off", "恢复标准消息间距"),
             ]),
             new("/copy", "复制最近已完成的回答；可用 /copy 2 选择倒数第二条", CopilotLocalCommandKind.CopyResponse, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/copy [N]"),
             new("/export", "复制当前会话的可见 Markdown；可补充文件名并打开保存窗口", CopilotLocalCommandKind.ExportConversation, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/export [文件名.md|文件名.txt]"),

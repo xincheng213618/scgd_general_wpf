@@ -333,6 +333,20 @@ namespace ColorVision.Copilot
 
         public bool ShowMessageTimestamps => _state.ShowMessageTimestamps;
 
+        public bool UseCompactMessageLayout => _state.UseCompactMessageLayout;
+
+        public Thickness MessageListPadding =>
+            CopilotCompactMessageLayout.Resolve(UseCompactMessageLayout).MessageListPadding;
+
+        public Thickness MessageItemMargin =>
+            CopilotCompactMessageLayout.Resolve(UseCompactMessageLayout).MessageItemMargin;
+
+        public Thickness UserMessagePadding =>
+            CopilotCompactMessageLayout.Resolve(UseCompactMessageLayout).UserMessagePadding;
+
+        public Thickness AssistantActionsMargin =>
+            CopilotCompactMessageLayout.Resolve(UseCompactMessageLayout).AssistantActionsMargin;
+
         public ObservableCollection<CopilotQueuedFollowUp> QueuedFollowUps { get; } = new();
 
         public bool HasQueuedFollowUps => QueuedFollowUps.Count > 0;
@@ -1937,6 +1951,9 @@ namespace ColorVision.Copilot
                     break;
                 case CopilotLocalCommandKind.Timestamps:
                     ChangeMessageTimestampVisibility(command, invocation.Arguments);
+                    break;
+                case CopilotLocalCommandKind.CompactMode:
+                    ChangeCompactMessageLayout(command, invocation.Arguments);
                     break;
                 case CopilotLocalCommandKind.CopyResponse:
                     CopyAssistantResponse(command, invocation.Arguments);
@@ -5252,6 +5269,33 @@ namespace ColorVision.Copilot
                 command,
                 $"消息时间戳已{(show ? "显示" : "隐藏")}。\n\n"
                 + "该偏好只改变本地界面，不修改聊天内容，也不调用模型或工具。");
+        }
+
+        private void ChangeCompactMessageLayout(CopilotLocalCommand command, string arguments)
+        {
+            if (!CopilotCompactMessageLayout.TryResolvePreference(
+                    arguments,
+                    UseCompactMessageLayout,
+                    out var useCompactLayout))
+            {
+                ShowLocalCommandResult(command, CopilotCompactMessageLayout.Usage);
+                return;
+            }
+
+            if (_state.SetUseCompactMessageLayout(useCompactLayout))
+            {
+                OnPropertyChanged(nameof(UseCompactMessageLayout));
+                OnPropertyChanged(nameof(MessageListPadding));
+                OnPropertyChanged(nameof(MessageItemMargin));
+                OnPropertyChanged(nameof(UserMessagePadding));
+                OnPropertyChanged(nameof(AssistantActionsMargin));
+                PersistState(immediate: true);
+            }
+
+            ShowLocalCommandResult(
+                command,
+                $"消息布局已切换为{(useCompactLayout ? "紧凑" : "标准")}间距。\n\n"
+                + "该偏好只改变本地消息密度；不会压缩会话上下文，也不调用模型或工具。");
         }
 
         private bool CanResumeAgentTask(CopilotAgentTaskSummary? task)

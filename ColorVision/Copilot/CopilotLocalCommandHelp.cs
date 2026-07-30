@@ -47,6 +47,7 @@ namespace ColorVision.Copilot
                 CopilotLocalCommandKind.SearchPromptHistory,
                 CopilotLocalCommandKind.Transcript,
                 CopilotLocalCommandKind.Timestamps,
+                CopilotLocalCommandKind.CompactMode,
                 CopilotLocalCommandKind.CopyResponse,
                 CopilotLocalCommandKind.ExportConversation,
                 CopilotLocalCommandKind.FindInConversation,

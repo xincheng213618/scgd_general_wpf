@@ -6,7 +6,7 @@ namespace ColorVision.Copilot
 {
     public sealed class CopilotChatState
     {
-        public const int CurrentSchemaVersion = 21;
+        public const int CurrentSchemaVersion = 22;
 
         public int SchemaVersion { get; set; } = CurrentSchemaVersion;
 
@@ -23,6 +23,10 @@ namespace ColorVision.Copilot
         public bool ShowMessageTimestamps { get; set; } = true;
 
         public bool ShouldSerializeShowMessageTimestamps() => !ShowMessageTimestamps;
+
+        public bool UseCompactMessageLayout { get; set; }
+
+        public bool ShouldSerializeUseCompactMessageLayout() => UseCompactMessageLayout;
 
         public ObservableCollection<CopilotQueuedFollowUpRecoveryRecord> QueuedFollowUpRecoveries { get; set; } = new();
 
@@ -42,6 +46,15 @@ namespace ColorVision.Copilot
                 return false;
 
             ShowMessageTimestamps = show;
+            return true;
+        }
+
+        internal bool SetUseCompactMessageLayout(bool useCompactLayout)
+        {
+            if (UseCompactMessageLayout == useCompactLayout)
+                return false;
+
+            UseCompactMessageLayout = useCompactLayout;
             return true;
         }
 
