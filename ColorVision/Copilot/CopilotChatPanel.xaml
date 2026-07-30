@@ -2981,15 +2981,31 @@
                                                Foreground="{DynamicResource GlobalTextBrush}"
                                                Text="{Binding AgentTaskCountLabel}" />
                                 </Border>
-                                <TextBlock VerticalAlignment="Center"
-                                           FontSize="11"
-                                           FontWeight="SemiBold"
-                                           Foreground="{DynamicResource GlobalTextBrush}"
-                                           Opacity="0.72"
-                                           Text="Agent 任务" />
+                                <Button Padding="0"
+                                        Background="Transparent"
+                                        BorderBrush="Transparent"
+                                        Command="{Binding ToggleAgentTaskPanelCommand}"
+                                        ToolTip="{Binding AgentTaskPanelToolTip}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Width="14"
+                                                   VerticalAlignment="Center"
+                                                   FontSize="11"
+                                                   Foreground="{DynamicResource GlobalTextBrush}"
+                                                   Opacity="0.62"
+                                                   Text="{Binding AgentTaskPanelToggleGlyph}" />
+                                        <TextBlock VerticalAlignment="Center"
+                                                   FontSize="11"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource GlobalTextBrush}"
+                                                   Opacity="0.72"
+                                                   Text="Agent 任务" />
+                                    </StackPanel>
+                                </Button>
                             </DockPanel>
 
-                            <ScrollViewer MaxHeight="168" VerticalScrollBarVisibility="Auto">
+                            <ScrollViewer MaxHeight="168"
+                                          VerticalScrollBarVisibility="Auto"
+                                          Visibility="{Binding IsAgentTaskListVisible, Converter={StaticResource bool2VisibilityConverter}}">
                                 <ItemsControl ItemsSource="{Binding AgentTasks}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate DataType="{x:Type local:CopilotAgentTaskSummary}">

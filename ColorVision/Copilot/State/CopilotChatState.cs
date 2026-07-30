@@ -6,7 +6,7 @@ namespace ColorVision.Copilot
 {
     public sealed class CopilotChatState
     {
-        public const int CurrentSchemaVersion = 19;
+        public const int CurrentSchemaVersion = 20;
 
         public int SchemaVersion { get; set; } = CurrentSchemaVersion;
 
@@ -16,11 +16,21 @@ namespace ColorVision.Copilot
 
         public string ActiveProfileId { get; set; } = string.Empty;
 
+        public bool IsAgentTaskPanelExpanded { get; set; } = true;
+
+        public bool ShouldSerializeIsAgentTaskPanelExpanded() => !IsAgentTaskPanelExpanded;
+
         public ObservableCollection<CopilotQueuedFollowUpRecoveryRecord> QueuedFollowUpRecoveries { get; set; } = new();
 
         public bool ShouldSerializeQueuedFollowUpRecoveries() => QueuedFollowUpRecoveries?.Count > 0;
 
         internal int RecoveredQueuedFollowUpCount { get; set; }
+
+        internal bool ToggleAgentTaskPanelExpanded()
+        {
+            IsAgentTaskPanelExpanded = !IsAgentTaskPanelExpanded;
+            return IsAgentTaskPanelExpanded;
+        }
 
         public bool EnsureInitialized(CopilotConfig config)
         {

@@ -105,6 +105,8 @@ namespace ColorVision.Copilot
             };
             AddStringProperty(_document, nameof(CopilotChatState.ActiveConversationId), state.ActiveConversationId);
             AddStringProperty(_document, nameof(CopilotChatState.ActiveProfileId), state.ActiveProfileId);
+            if (!state.IsAgentTaskPanelExpanded)
+                _document[nameof(CopilotChatState.IsAgentTaskPanelExpanded)] = false;
             if (_queuedFollowUpRecoveryDocuments != null)
                 _document[nameof(CopilotChatState.QueuedFollowUpRecoveries)] = _queuedFollowUpRecoveryDocuments;
         }
@@ -783,6 +785,7 @@ namespace ColorVision.Copilot
         {
             if (!IsStringOrNull(document.GetValue(nameof(CopilotChatState.ActiveConversationId), StringComparison.OrdinalIgnoreCase))
                 || !IsStringOrNull(document.GetValue(nameof(CopilotChatState.ActiveProfileId), StringComparison.OrdinalIgnoreCase))
+                || !IsOptionalBoolean(document.GetValue(nameof(CopilotChatState.IsAgentTaskPanelExpanded), StringComparison.OrdinalIgnoreCase))
                 || document.GetValue(nameof(CopilotChatState.Conversations), StringComparison.OrdinalIgnoreCase) is not JArray conversations)
             {
                 return false;
@@ -827,6 +830,9 @@ namespace ColorVision.Copilot
         private static bool IsStringOrNull(JToken? token) => token?.Type is JTokenType.String or JTokenType.Null;
 
         private static bool IsOptionalString(JToken? token) => token == null || IsStringOrNull(token);
+
+        private static bool IsOptionalBoolean(JToken? token) =>
+            token == null || token.Type is JTokenType.Boolean or JTokenType.Null;
 
         private static bool IsOptionalObject(JToken? token) => token == null || token.Type == JTokenType.Null || token is JObject;
 

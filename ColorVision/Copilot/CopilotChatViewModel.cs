@@ -223,6 +223,7 @@ namespace ColorVision.Copilot
             OpenAgentTaskCommand = new RelayCommand<CopilotAgentTaskSummary>(OpenAgentTask, task => task != null && CanSwitchConversation);
             ResumeAgentTaskCommand = new RelayCommand<CopilotAgentTaskSummary>(ResumeAgentTask, CanResumeAgentTask);
             DismissAgentTaskCommand = new RelayCommand<CopilotAgentTaskSummary>(DismissAgentTask, task => task != null && !IsBusy);
+            ToggleAgentTaskPanelCommand = new RelayCommand(_ => ToggleAgentTaskPanel(), _ => HasAgentTasks);
             OpenAgentRunNoticeCommand = new RelayCommand(_ => OpenAgentRunNotice(), _ => HasAgentRunNotice);
             SteerCommand = new RelayCommand(_ => TrySteerCurrentRun(), _ => CanSteerCurrentRun);
             SubmitUserQuestionAnswerCommand = new RelayCommand(
@@ -317,6 +318,15 @@ namespace ColorVision.Copilot
         public bool HasAgentTasks => AgentTasks.Count > 0;
 
         public string AgentTaskCountLabel => AgentTasks.Count.ToString(System.Globalization.CultureInfo.CurrentCulture);
+
+        public bool IsAgentTaskPanelExpanded => _state.IsAgentTaskPanelExpanded;
+
+        public bool IsAgentTaskListVisible => HasAgentTasks && IsAgentTaskPanelExpanded;
+
+        public string AgentTaskPanelToggleGlyph => IsAgentTaskPanelExpanded ? "▾" : "▸";
+
+        public string AgentTaskPanelToolTip =>
+            $"{(IsAgentTaskPanelExpanded ? "收起" : "展开")} Agent 任务（Ctrl+T）";
 
         public ObservableCollection<CopilotQueuedFollowUp> QueuedFollowUps { get; } = new();
 
@@ -540,6 +550,8 @@ namespace ColorVision.Copilot
         public ICommand ResumeAgentTaskCommand { get; }
 
         public ICommand DismissAgentTaskCommand { get; }
+
+        public ICommand ToggleAgentTaskPanelCommand { get; }
 
         public ICommand OpenAgentRunNoticeCommand { get; }
 
@@ -5081,6 +5093,19 @@ namespace ColorVision.Copilot
             SelectConversation(task.Conversation, persist: true, preferredProfileId: task.Conversation.ProfileId);
         }
 
+        private void ToggleAgentTaskPanel()
+        {
+            if (!HasAgentTasks)
+                return;
+
+            _state.ToggleAgentTaskPanelExpanded();
+            OnPropertyChanged(nameof(IsAgentTaskPanelExpanded));
+            OnPropertyChanged(nameof(IsAgentTaskListVisible));
+            OnPropertyChanged(nameof(AgentTaskPanelToggleGlyph));
+            OnPropertyChanged(nameof(AgentTaskPanelToolTip));
+            PersistState();
+        }
+
         private bool CanResumeAgentTask(CopilotAgentTaskSummary? task)
         {
             if (task?.CanResume != true
@@ -5690,6 +5715,7 @@ namespace ColorVision.Copilot
 
             OnPropertyChanged(nameof(HasAgentTasks));
             OnPropertyChanged(nameof(AgentTaskCountLabel));
+            OnPropertyChanged(nameof(IsAgentTaskListVisible));
             CommandManager.InvalidateRequerySuggested();
         }
 

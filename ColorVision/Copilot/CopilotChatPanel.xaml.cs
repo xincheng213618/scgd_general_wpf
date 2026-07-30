@@ -142,6 +142,17 @@ namespace ColorVision.Copilot
                 return;
             }
 
+            if (e.Key == Key.T && Keyboard.Modifiers == ModifierKeys.Control)
+            {
+                if (DataContext is CopilotChatViewModel viewModel
+                    && viewModel.ToggleAgentTaskPanelCommand.CanExecute(null))
+                {
+                    viewModel.ToggleAgentTaskPanelCommand.Execute(null);
+                    e.Handled = true;
+                }
+                return;
+            }
+
             if (e.Key != Key.Escape)
                 return;
 
