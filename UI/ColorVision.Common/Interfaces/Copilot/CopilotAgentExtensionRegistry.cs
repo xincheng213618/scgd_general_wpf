@@ -23,6 +23,7 @@ namespace ColorVision.UI
         Code,
         Review,
         Diagnose,
+        Plan,
     }
 
     public sealed class CopilotModuleToolRequest

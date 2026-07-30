@@ -59,6 +59,7 @@ namespace ColorVision.Copilot
             CopilotAgentMode.Code,
             CopilotAgentMode.Review,
             CopilotAgentMode.Diagnose,
+            CopilotAgentMode.Plan,
         ];
 
         public int MaximumToolCalls { get; init; } = 6;
@@ -188,7 +189,7 @@ namespace ColorVision.Copilot
                 {
                     SourceId = "builtin",
                     SourceName = "ColorVision",
-                    SourceVersion = "8",
+                    SourceVersion = "9",
                     RoleId = ExploreRoleId,
                     ToolName = "DelegateExplore",
                     DisplayName = "Explore",
@@ -203,7 +204,7 @@ namespace ColorVision.Copilot
                 {
                     SourceId = "builtin",
                     SourceName = "ColorVision",
-                    SourceVersion = "1",
+                    SourceVersion = "2",
                     RoleId = ScoutRoleId,
                     ToolName = "DelegateScout",
                     DisplayName = "Scout",

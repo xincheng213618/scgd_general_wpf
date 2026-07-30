@@ -196,6 +196,31 @@ public sealed class CopilotToolExecutionHookIntegrityTests
     }
 
     [Fact]
+    public async Task BuiltInPlanPolicyUsesStableFailureCode()
+    {
+        var tool = new RecordingTool(writeCapable: true);
+        var events = new List<CopilotAgentEvent>();
+
+        var outcome = await new CopilotToolExecutor().ExecuteAsync(
+            CreateInvocation(tool, "plan-write", CopilotAgentMode.Plan),
+            events.Add,
+            CancellationToken.None);
+
+        AssertDeniedOutcome(
+            outcome,
+            "plan_mode_write_denied",
+            CopilotToolFailureKind.Authorization);
+        Assert.Equal(0, tool.ExecutionCount);
+        AssertHookRun(
+            outcome.HookRuns,
+            "builtin:write-tool-policy",
+            CopilotToolExecutionHookPhase.BeforeExecute,
+            CopilotToolExecutionHookState.Denied,
+            "plan_mode_write_denied");
+        AssertTerminalEvent(events, CopilotToolExecutionState.Denied, "plan_mode_write_denied");
+    }
+
+    [Fact]
     public async Task FailedAfterHookRemainsObservableWithoutChangingToolOutcomeOrModelPayload()
     {
         const string sensitiveMessage = "api_key=post-hook-secret";

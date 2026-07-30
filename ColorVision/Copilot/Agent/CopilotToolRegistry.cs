@@ -67,7 +67,7 @@ namespace ColorVision.Copilot
             if (tool.Capability.Access == CopilotToolAccess.ReadOnly)
                 return true;
 
-            return request.Mode is not (CopilotAgentMode.Review or CopilotAgentMode.Diagnose)
+            return !CopilotToolIntentPolicy.IsReadOnlyMode(request.Mode)
                 && !CopilotToolIntentPolicy.ExplicitlyDisallowsWriteAccess(request);
         }
 

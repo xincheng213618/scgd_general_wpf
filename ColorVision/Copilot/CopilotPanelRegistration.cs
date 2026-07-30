@@ -162,6 +162,7 @@ namespace ColorVision.Copilot
                 CopilotPromptMode.Web => CopilotAgentMode.Web,
                 CopilotPromptMode.Code => CopilotAgentMode.Code,
                 CopilotPromptMode.Diagnose => CopilotAgentMode.Diagnose,
+                CopilotPromptMode.Plan => CopilotAgentMode.Plan,
                 _ => CopilotAgentMode.Auto,
             };
         }

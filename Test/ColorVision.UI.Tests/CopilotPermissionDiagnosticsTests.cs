@@ -79,6 +79,7 @@ public sealed class CopilotPermissionDiagnosticsTests
     [InlineData(CopilotAgentMode.Chat, "不启动 Agent 工具循环")]
     [InlineData(CopilotAgentMode.Review, "运行时只暴露只读工具")]
     [InlineData(CopilotAgentMode.Diagnose, "运行时只暴露只读工具")]
+    [InlineData(CopilotAgentMode.Plan, "运行时只暴露只读工具")]
     public void DescribesModeSpecificToolBoundary(CopilotAgentMode mode, string expected)
     {
         string report = CopilotPermissionDiagnostics.Format(new CopilotPermissionDiagnosticSnapshot { Mode = mode });

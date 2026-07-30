@@ -222,6 +222,13 @@ namespace ColorVision.Copilot
             if (capability.Access == CopilotToolAccess.ReadOnly)
                 return Task.FromResult(CopilotToolExecutionHookDecision.Proceed);
 
+            if (invocation.AgentRequest.Mode == CopilotAgentMode.Plan)
+            {
+                return Task.FromResult(CopilotToolExecutionHookDecision.Deny(
+                    "Plan mode permits read-only tools only.",
+                    "plan_mode_write_denied"));
+            }
+
             if (invocation.AgentRequest.Mode == CopilotAgentMode.Review)
             {
                 return Task.FromResult(CopilotToolExecutionHookDecision.Deny(

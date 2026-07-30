@@ -95,6 +95,10 @@ public sealed class CopilotComposerAccessAndReferenceTests
             protectedTool,
             workspacePath));
         Assert.False(CopilotAgentAccessPolicy.CanAutoApprove(
+            CreateRequest(conversation, "task-1", workspacePath, CopilotAgentMode.Plan),
+            protectedTool,
+            workspacePath));
+        Assert.False(CopilotAgentAccessPolicy.CanAutoApprove(
             CreateRequest(conversation, "task-1", workspacePath),
             readTool,
             workspacePath));

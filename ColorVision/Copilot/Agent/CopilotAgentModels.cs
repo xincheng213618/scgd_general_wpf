@@ -32,6 +32,7 @@ namespace ColorVision.Copilot
         Code,
         Review,
         Diagnose,
+        Plan,
     }
 
     public enum CopilotAgentAccessMode
@@ -284,7 +285,7 @@ namespace ColorVision.Copilot
                     request.ConversationId,
                     request.TaskId,
                     currentWorkspacePath)
-                && request.Mode != CopilotAgentMode.Review
+                && !CopilotToolIntentPolicy.IsReadOnlyMode(request.Mode)
                 && tool.Capability.RequiresNativeApproval
                 && tool.Capability.AllowsTemporaryFullAccess
                 && IsWriteScopeContainedByWorkspace(request, currentWorkspacePath);

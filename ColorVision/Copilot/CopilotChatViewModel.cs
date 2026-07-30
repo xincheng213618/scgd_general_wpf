@@ -911,6 +911,8 @@ namespace ColorVision.Copilot
                         _ when IsAgentRequestActive => "Enter 调整 · Tab 排队 · @ 关联 · /btw 旁路提问",
                         _ => "正在生成回复 · 可使用 /status 或 /btw",
                     }
+                : ResolveComposerRequestMode() == CopilotAgentMode.Plan
+                    ? "计划模式 · 输入任务；只读分析，不执行修改"
                 : IsConversationEmpty ? "随心输入 · @ 关联 · / 或 $ 命令" : "要求后续变更 · @ 关联 · / 或 $ 命令";
 
         public bool IsEditingMessage => !string.IsNullOrWhiteSpace(_editingConversationId)
@@ -1357,6 +1359,9 @@ namespace ColorVision.Copilot
                 case CopilotLocalCommandKind.Review:
                     StartWorkspaceReview(command, invocation.Arguments);
                     break;
+                case CopilotLocalCommandKind.Plan:
+                    StartPlanRequest(command, invocation.Arguments);
+                    break;
                 case CopilotLocalCommandKind.NewConversation:
                     DismissLocalCommandResult();
                     StartNewChat();
@@ -1447,6 +1452,26 @@ namespace ColorVision.Copilot
             SetPendingRequestModeOverride(CopilotAgentMode.Review);
             InputText = prompt.ToString();
             RunUiOperation(SendAsync, "开始工作区审查");
+        }
+
+        private void StartPlanRequest(CopilotLocalCommand command, string task)
+        {
+            if (IsBusy)
+            {
+                ShowLocalCommandResult(command, "当前有请求正在执行，请完成或停止后再进入计划模式。");
+                return;
+            }
+
+            SetPendingRequestModeOverride(CopilotAgentMode.Plan);
+            if (string.IsNullOrWhiteSpace(task))
+            {
+                ShowLocalCommandResult(command, "下一条请求将使用计划模式：Copilot 只读取和分析相关证据，生成可执行计划，不会修改文件或应用状态。");
+                return;
+            }
+
+            DismissLocalCommandResult();
+            InputText = task.Trim();
+            RunUiOperation(SendAsync, "生成执行计划");
         }
 
         private async Task ShowGitDiffAsync(CopilotLocalCommand command, string scope)
@@ -3728,6 +3753,7 @@ namespace ColorVision.Copilot
         private void OnComposerRequestModeChanged()
         {
             OnPropertyChanged(nameof(PrimaryActionToolTip));
+            OnPropertyChanged(nameof(InputPlaceholder));
             RefreshComposerTokenEstimate();
         }
 

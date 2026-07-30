@@ -67,7 +67,7 @@ namespace ColorVision.Copilot
             builder.Append("当前模式：").Append(snapshot.Mode);
             if (snapshot.Mode == CopilotAgentMode.Chat)
                 builder.AppendLine("（不启动 Agent 工具循环）");
-            else if (snapshot.Mode is CopilotAgentMode.Review or CopilotAgentMode.Diagnose)
+            else if (CopilotToolIntentPolicy.IsReadOnlyMode(snapshot.Mode))
                 builder.AppendLine("（运行时只暴露只读工具）");
             else
                 builder.AppendLine("（工具仍按请求意图、运行时可用性和本地范围过滤）");

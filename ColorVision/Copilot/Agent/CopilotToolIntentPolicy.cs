@@ -709,6 +709,9 @@ namespace ColorVision.Copilot
                 return false;
             }
 
+            if (request.Mode == CopilotAgentMode.Plan)
+                return true;
+
             if (request.Recovery != null || ContainsAny(request.UserText, ExplicitPlanningMarkers))
                 return true;
 
@@ -761,7 +764,14 @@ namespace ColorVision.Copilot
 
         internal static bool ExplicitlyDisallowsWriteAccess(CopilotAgentRequest? request)
         {
-            return request != null && ContainsAny(request.UserText, ExplicitReadOnlyRequestMarkers);
+            return request != null
+                && (IsReadOnlyMode(request.Mode)
+                    || ContainsAny(request.UserText, ExplicitReadOnlyRequestMarkers));
+        }
+
+        internal static bool IsReadOnlyMode(CopilotAgentMode mode)
+        {
+            return mode is CopilotAgentMode.Plan or CopilotAgentMode.Review or CopilotAgentMode.Diagnose;
         }
 
         internal static bool ExplicitlyRequiresDelegatedWorkspaceEvidence(CopilotAgentRequest? request)

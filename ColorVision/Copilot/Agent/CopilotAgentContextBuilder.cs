@@ -409,7 +409,7 @@ namespace ColorVision.Copilot
             };
         }
 
-        private static string BuildModeInstruction(CopilotAgentMode mode)
+        internal static string BuildModeInstruction(CopilotAgentMode mode)
         {
             return mode switch
             {
@@ -417,6 +417,7 @@ namespace ColorVision.Copilot
                 CopilotAgentMode.Code => "Prioritize attached files and project context, but avoid asking the user to attach more files unless they explicitly ask what to attach next.",
                 CopilotAgentMode.Review => "Perform a read-only code review. Inspect the current Git working tree and relevant staged or unstaged diff before making claims. Never modify files, apply fixes, execute write-capable tools, or convert findings into implementation. Report actionable findings first, ordered by severity, with exact file paths and line numbers when evidence permits, impact, and concise remediation. If no findings remain, say so and identify residual risks or test gaps.",
                 CopilotAgentMode.Diagnose => "Prioritize recent logs, failure details, and context. Separate known facts from hypotheses.",
+                CopilotAgentMode.Plan => "Operate in user-selected plan-only mode. Inspect only the read-only evidence needed to make the plan concrete. You may ask a structured clarification question when materially different choices remain. Produce a concise, ordered, implementation-ready plan with verification criteria. Never modify files or application state, execute commands or validation, request write approval, or claim implementation or testing occurred.",
                 CopilotAgentMode.Explain => "Make the conclusion clear and keep any context-limit caveat brief.",
                 _ => "Prioritize the context supplied by the application and do not ignore tool results.",
             };

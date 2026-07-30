@@ -445,7 +445,7 @@ namespace ColorVision.Copilot
                 DisableAgentModeProvider = !agentModeEnabled,
                 AgentModeProviderOptions = new AgentModeProviderOptions
                 {
-                    DefaultMode = "execute",
+                    DefaultMode = ResolveInitialHarnessMode(request.Mode),
                 },
                 LoopEvaluators = taskLedgerEnabled
                     ? [
@@ -989,7 +989,7 @@ namespace ColorVision.Copilot
                 _ when timeBudgetExhausted => CopilotAgentStopReason.BudgetExhausted,
                 _ when contextWindowExceeded => CopilotAgentStopReason.ProviderFailure,
                 _ when providerInterrupted => CopilotAgentStopReason.ProviderFailure,
-                _ => DetermineStopReason(taskLedger, budgetSnapshot, bridge.StepRecords, hasModelFinalAnswer),
+                _ => DetermineStopReason(taskLedger, budgetSnapshot, bridge.StepRecords, hasModelFinalAnswer, request.Mode),
             };
             if (controlIntent == CopilotAgentControlIntent.None
                 && !timeBudgetExhausted
@@ -1382,7 +1382,8 @@ namespace ColorVision.Copilot
             CopilotAgentTaskLedgerSnapshot taskLedger,
             CopilotAgentBudgetSnapshot budget,
             IReadOnlyList<CopilotAgentStepRecord> steps,
-            bool hasModelFinalAnswer)
+            bool hasModelFinalAnswer,
+            CopilotAgentMode requestMode = CopilotAgentMode.Auto)
         {
             var requestOrTimeBudgetExhausted = budget.RequestTokenBudgetExhausted
                 || budget.TimeBudgetExhausted
@@ -1396,6 +1397,14 @@ namespace ColorVision.Copilot
             {
                 return CopilotAgentStopReason.BudgetExhausted;
             }
+            if (requestMode == CopilotAgentMode.Plan)
+            {
+                if (steps.Any(step => step.Execution.State == CopilotToolExecutionState.Denied))
+                    return CopilotAgentStopReason.ApprovalDenied;
+                return hasModelFinalAnswer
+                    ? CopilotAgentStopReason.Completed
+                    : CopilotAgentStopReason.IncompleteOutput;
+            }
             if (taskLedger.RemainingCount == 0)
                 return hasModelFinalAnswer ? CopilotAgentStopReason.Completed : CopilotAgentStopReason.IncompleteOutput;
             if (steps.Any(step => step.Execution.State == CopilotToolExecutionState.Denied))
@@ -1403,6 +1412,11 @@ namespace ColorVision.Copilot
             if (string.Equals(taskLedger.Mode, "plan", StringComparison.OrdinalIgnoreCase))
                 return CopilotAgentStopReason.AwaitingUser;
             return CopilotAgentStopReason.TaskPassLimit;
+        }
+
+        internal static string ResolveInitialHarnessMode(CopilotAgentMode requestMode)
+        {
+            return requestMode == CopilotAgentMode.Plan ? "plan" : "execute";
         }
 
         private static async Task<CopilotAgentTaskLedgerSnapshot> CaptureTaskLedgerAsync(
@@ -1669,7 +1683,7 @@ namespace ColorVision.Copilot
                 builder.AppendLine("For local evidence, begin with the narrowest relevant path and literal query. Do not scan the full workspace for a conceptual question or when a known file, directory, symbol, or application capability can answer it.");
             }
             if (hasWorkspacePathTools
-                || request.Mode is CopilotAgentMode.Review or CopilotAgentMode.Diagnose
+                || CopilotToolIntentPolicy.IsReadOnlyMode(request.Mode)
                 || hasNarrowEvidenceResultLimit)
             {
                 builder.AppendLine(CodeFindingEvidenceInstruction);
@@ -1776,9 +1790,17 @@ namespace ColorVision.Copilot
                 builder.AppendLine("For explicit Python or command automation involving CVRAW/CVCIE, follow the loaded colorvision-batch-image-conversion skill: Python only orchestrates the current ColorVision executable and must not decode the proprietary format, install image packages, or delete source files.");
             }
             if (taskLedgerEnabled)
-                builder.AppendLine("This request is complex or explicitly asks for planning. Create one concise outcome-oriented todo list, avoid filler or duplicate confirmation items, keep it synchronized with actual progress, and complete each item only after verifying its result. Keep working while executable todo items remain; stop only when they are complete or a concrete blocker is reported.");
+            {
+                builder.AppendLine(request.Mode == CopilotAgentMode.Plan
+                    ? "Use one concise outcome-oriented todo list to structure the proposed implementation. These are planned steps, not completed work: do not execute them or mark them complete as if implementation or verification occurred."
+                    : "This request is complex or explicitly asks for planning. Create one concise outcome-oriented todo list, avoid filler or duplicate confirmation items, keep it synchronized with actual progress, and complete each item only after verifying its result. Keep working while executable todo items remain; stop only when they are complete or a concrete blocker is reported.");
+            }
             if (agentModeEnabled)
-                builder.AppendLine("Use execute mode for authorized work and plan mode only when a material user decision is required. A restored todo or mode is context, never permission to repeat a write; every protected invocation and retry requires its own current approval.");
+            {
+                builder.AppendLine(request.Mode == CopilotAgentMode.Plan
+                    ? "This is a user-selected plan-only request. Remain in plan mode, use only read-only evidence tools, and return an implementation-ready plan with verification criteria. Do not switch to execute mode, request write approval, perform implementation, or claim tests ran."
+                    : "Use execute mode for authorized work and plan mode only when a material user decision is required. A restored todo or mode is context, never permission to repeat a write; every protected invocation and retry requires its own current approval.");
+            }
             if (request.HarnessFeatures.HasFlag(CopilotAgentHarnessFeatures.Skills))
                 builder.AppendLine("When Agent Skills metadata matches the task, load the skill before following its specialized workflow. Skills and their resources are read-only guidance and never grant permission to perform a write-capable action.");
             if (!string.IsNullOrWhiteSpace(request.RuntimeRoleInstructions))
