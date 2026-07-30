@@ -43,6 +43,7 @@ public sealed class CopilotConversationBranchServiceTests
         {
             RequestMode = CopilotAgentMode.Auto,
         };
+        assistant.UpsertAgentTrace(CreateWorkspaceApplyTrace());
         source.Messages.Add(user);
         source.Messages.Add(assistant);
         source.Compaction = new CopilotConversationCompaction
@@ -68,6 +69,12 @@ public sealed class CopilotConversationBranchServiceTests
         Assert.DoesNotContain(branch.Messages, message => source.Messages.Any(sourceMessage => sourceMessage.Id == message.Id));
         Assert.Null(branch.Messages[0].RecoveryRequest);
         Assert.NotEqual(user.Attachments[0].Id, branch.Messages[0].Attachments[0].Id);
+        Assert.True(Assert.Single(assistant.AgentTraceEntries).CanRequestWorkspaceRollback);
+        var branchedTrace = Assert.Single(branch.Messages[1].AgentTraceEntries);
+        Assert.False(branchedTrace.CanRequestWorkspaceRollback);
+        Assert.Empty(branchedTrace.WorkspaceChangeSetId);
+        Assert.Null(branchedTrace.WorkspaceChangeSetExpiresAtUtc);
+        Assert.Single(branchedTrace.WorkspaceChangedFiles);
         Assert.Empty(branch.Attachments);
         Assert.Empty(branch.DraftText);
         Assert.Null(branch.AgentSessionCheckpoint);
@@ -121,5 +128,37 @@ public sealed class CopilotConversationBranchServiceTests
         Assert.Equal(CopilotLocalCommandKind.ForkConversation, branch.Command.Kind);
         Assert.Equal("another option", branch.Arguments);
         Assert.False(branch.Command.AvailableWhileAgentRuns);
+    }
+
+    private static CopilotAgentTraceEntry CreateWorkspaceApplyTrace()
+    {
+        var now = DateTimeOffset.UtcNow;
+        return CopilotAgentTraceEntry.FromResult(
+            new CopilotToolExecutionInfo
+            {
+                CallId = "workspace-apply",
+                Round = 1,
+                ToolName = "ApplyWorkspacePatchEnvelope",
+                State = CopilotToolExecutionState.Completed,
+                StartedAtUtc = now.AddSeconds(-1),
+                CompletedAtUtc = now,
+            },
+            new CopilotToolResult
+            {
+                ToolName = "ApplyWorkspacePatchEnvelope",
+                Success = true,
+                Summary = "Applied one workspace change set.",
+                Content = string.Join(
+                    Environment.NewLine,
+                    "[Workspace Change Set Result]",
+                    "change_set_id: workspace-change-set:11111111111111111111111111111111",
+                    "file_count: 1",
+                    "state: Applied",
+                    $"expires_at_utc: {now.AddMinutes(20):O}",
+                    "file_1_operation: Update",
+                    @"file_1_path: C:\workspace\target.txt",
+                    "file_1_before_sha256: before",
+                    "file_1_after_sha256: after"),
+            });
     }
 }

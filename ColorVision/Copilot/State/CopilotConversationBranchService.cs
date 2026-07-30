@@ -92,6 +92,8 @@ namespace ColorVision.Copilot
             foreach (var attachment in clone.Attachments)
                 attachment.Id = Guid.NewGuid().ToString("N");
             clone.EnsureValid();
+            foreach (var trace in clone.AgentTraceEntries)
+                trace.DiscardWorkspaceRollbackAuthority();
             return clone;
         }
 

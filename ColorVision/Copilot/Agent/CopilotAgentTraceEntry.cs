@@ -11,9 +11,10 @@ namespace ColorVision.Copilot
 {
     public sealed class CopilotAgentTraceEntry : ViewModelBase
     {
-        public const int CurrentSchemaVersion = 10;
+        public const int CurrentSchemaVersion = 11;
         private const int MaxSummaryLength = 800;
         private const int MaxPersistedHookRuns = 64;
+        private static readonly TimeSpan MaximumWorkspaceRollbackLifetime = TimeSpan.FromMinutes(31);
 
         public int SchemaVersion { get; set; } = CurrentSchemaVersion;
 
@@ -101,10 +102,10 @@ namespace ColorVision.Copilot
 
         public long DelegatedQueueDurationMs { get; set; }
 
-        [JsonIgnore]
+        [JsonProperty]
         public string WorkspaceChangeSetId { get; private set; } = string.Empty;
 
-        [JsonIgnore]
+        [JsonProperty]
         public DateTimeOffset? WorkspaceChangeSetExpiresAtUtc { get; private set; }
 
         public bool WorkspaceChangeSetRolledBack { get; private set; }
@@ -140,6 +141,10 @@ namespace ColorVision.Copilot
         public bool ShouldSerializeFailureKind() => FailureKind != CopilotToolFailureKind.None;
 
         public bool ShouldSerializeWorkspaceChangeSetRolledBack() => WorkspaceChangeSetRolledBack;
+
+        public bool ShouldSerializeWorkspaceChangeSetId() => !string.IsNullOrWhiteSpace(WorkspaceChangeSetId);
+
+        public bool ShouldSerializeWorkspaceChangeSetExpiresAtUtc() => WorkspaceChangeSetExpiresAtUtc.HasValue;
 
         public bool ShouldSerializeWorkspaceChangedFiles() => WorkspaceChangedFiles?.Count > 0;
 
@@ -512,6 +517,21 @@ namespace ColorVision.Copilot
             return true;
         }
 
+        internal void DiscardWorkspaceRollbackAuthority()
+        {
+            if (string.IsNullOrWhiteSpace(WorkspaceChangeSetId)
+                && !WorkspaceChangeSetExpiresAtUtc.HasValue)
+            {
+                return;
+            }
+
+            WorkspaceChangeSetId = string.Empty;
+            WorkspaceChangeSetExpiresAtUtc = null;
+            OnPropertyChanged(nameof(WorkspaceChangeSetId));
+            OnPropertyChanged(nameof(WorkspaceChangeSetExpiresAtUtc));
+            OnPropertyChanged(nameof(CanRequestWorkspaceRollback));
+        }
+
         private void CaptureWorkspaceChangeSetMetadata(string? content)
         {
             if (!string.Equals(ToolName, "ApplyWorkspacePatchEnvelope", StringComparison.Ordinal)
@@ -784,7 +804,37 @@ namespace ColorVision.Copilot
                 changed = true;
             }
 
+            changed |= NormalizeWorkspaceRollbackAuthority(recoveredAtUtc);
             return changed;
+        }
+
+        private bool NormalizeWorkspaceRollbackAuthority(DateTimeOffset recoveredAtUtc)
+        {
+            var changeSetId = WorkspaceChangeSetId?.Trim() ?? string.Empty;
+            const string changeSetPrefix = "workspace-change-set:";
+            var validChangeSetId = changeSetId.StartsWith(changeSetPrefix, StringComparison.Ordinal)
+                && changeSetId.Length == changeSetPrefix.Length + 32
+                && Guid.TryParseExact(changeSetId[changeSetPrefix.Length..], "N", out _);
+            var expiresAtUtc = WorkspaceChangeSetExpiresAtUtc;
+            var retainsAuthority = string.Equals(ToolName, "ApplyWorkspacePatchEnvelope", StringComparison.Ordinal)
+                && State == CopilotToolExecutionState.Completed
+                && !WorkspaceChangeSetRolledBack
+                && validChangeSetId
+                && expiresAtUtc > recoveredAtUtc
+                && expiresAtUtc <= recoveredAtUtc.Add(MaximumWorkspaceRollbackLifetime);
+            if (retainsAuthority)
+            {
+                if (string.Equals(WorkspaceChangeSetId, changeSetId, StringComparison.Ordinal))
+                    return false;
+                WorkspaceChangeSetId = changeSetId;
+                return true;
+            }
+
+            if (string.IsNullOrEmpty(WorkspaceChangeSetId) && !WorkspaceChangeSetExpiresAtUtc.HasValue)
+                return false;
+            WorkspaceChangeSetId = string.Empty;
+            WorkspaceChangeSetExpiresAtUtc = null;
+            return true;
         }
 
         private static CopilotAgentTraceEntry FromExecution(CopilotToolExecutionInfo execution)
