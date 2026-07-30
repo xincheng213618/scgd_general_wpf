@@ -40,8 +40,6 @@ namespace ColorVision.Copilot
             ".jar", ".js", ".jse", ".lnk", ".msi", ".msp", ".pif", ".ps1", ".py", ".pyw", ".reg", ".scr",
             ".sct", ".sh", ".shb", ".shs", ".url", ".vb", ".vbe", ".vbs", ".ws", ".wsc", ".wsf", ".wsh",
         };
-        private const string CompactSystemPrompt = "You compact an existing conversation for seamless continuation. Preserve the user's active goal, constraints, decisions, verified facts, relevant files, commands and results, unfinished work, blockers, and safe next steps. Remove greetings, repetition, obsolete exploration, and verbose tool traces. Never invent facts or treat historical actions as current authorization. Return only a concise Markdown continuation summary.";
-
         private readonly CopilotChatService _chatService;
         private readonly ICopilotGoalCompletionEvaluator _goalCompletionEvaluator;
         private readonly ICopilotTurnRuntime _turnRuntime;
@@ -1977,11 +1975,11 @@ namespace ColorVision.Copilot
 
             var summaryMaximumWeight = ResolveConversationHistoryLimits(profile).MaximumContentCharacters;
             var compactProfile = profile.Clone();
-            compactProfile.UseSystemPromptOverride(CompactSystemPrompt);
+            compactProfile.UseSystemPromptOverride(CopilotConversationCompactionPrompt.SystemPrompt);
             compactProfile.MaxTokens = Math.Min(compactProfile.MaxTokens, CompactSummaryOutputTokens);
             compactProfile.Temperature = 0.1;
 
-            var compactRequest = BuildCompactRequest(focusInstructions);
+            var compactRequest = CopilotConversationCompactionPrompt.BuildRequest(focusInstructions);
             var historyLimits = ResolveConversationHistoryLimits(compactProfile);
             compactProfile.MaxTokens = Math.Min(
                 compactProfile.MaxTokens,
@@ -2014,6 +2012,7 @@ namespace ColorVision.Copilot
                 var summary = NormalizeCompactSummary(reply.Content, summaryMaximumWeight);
                 if (summary.Length == 0)
                     throw new InvalidOperationException("模型没有返回可用的压缩摘要。");
+                compactionPlan.TerminalEvidence.EnsurePreserved(summary);
                 if (!Conversations.Contains(conversation) || !conversation.Messages.Contains(compactionPlan.BoundaryMessage))
                     throw new InvalidOperationException("压缩期间会话已发生变化，结果未应用。");
 
@@ -2062,17 +2061,6 @@ namespace ColorVision.Copilot
                 return;
 
             RunUiOperation(() => CompactConversationAsync(command, string.Empty), "压缩上下文");
-        }
-
-        private static string BuildCompactRequest(string focusInstructions)
-        {
-            var builder = new StringBuilder();
-            builder.AppendLine("Create a continuation summary for all conversation context above.");
-            builder.AppendLine("Keep the active goal, user constraints and preferences, decisions, verified state, important paths and identifiers, completed work and evidence, remaining work, blockers, and the next concrete action.");
-            builder.AppendLine("Omit greetings, repetition, superseded alternatives, and low-value detail. Return only the summary.");
-            if (!string.IsNullOrWhiteSpace(focusInstructions))
-                builder.Append("Additional focus from the user: ").Append(focusInstructions.Trim());
-            return builder.ToString().Trim();
         }
 
         private static string NormalizeCompactSummary(string summary, int maximumWeight)
