@@ -1431,6 +1431,9 @@ namespace ColorVision.Copilot
             var command = invocation.Command;
             switch (command.Kind)
             {
+                case CopilotLocalCommandKind.Help:
+                    ShowLocalCommandResult(command, CopilotLocalCommandHelp.Format(invocation.Arguments));
+                    break;
                 case CopilotLocalCommandKind.Status:
                     ShowLocalCommandResult(command, BuildStatusDiagnosticsReport());
                     break;
