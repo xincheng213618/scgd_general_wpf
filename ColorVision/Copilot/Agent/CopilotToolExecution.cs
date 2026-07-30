@@ -231,9 +231,13 @@ namespace ColorVision.Copilot
 
             if (invocation.AgentRequest.Mode == CopilotAgentMode.Review)
             {
-                return Task.FromResult(CopilotToolExecutionHookDecision.Deny(
-                    "Review mode permits read-only tools only.",
-                    "review_mode_write_denied"));
+                if (invocation.Tool is not CopilotWorkspaceValidationTool
+                    || !CopilotToolIntentPolicy.NeedsWorkspaceValidation(invocation.AgentRequest))
+                {
+                    return Task.FromResult(CopilotToolExecutionHookDecision.Deny(
+                        "Review mode permits read-only tools and explicitly requested bounded workspace validation only.",
+                        "review_mode_write_denied"));
+                }
             }
 
             if (capability.RiskLevel == CopilotToolRiskLevel.High

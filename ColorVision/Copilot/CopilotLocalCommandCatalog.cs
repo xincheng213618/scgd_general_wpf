@@ -27,6 +27,7 @@ namespace ColorVision.Copilot
         Diff,
         Compact,
         Review,
+        Verify,
         Plan,
         ViewPlan,
         Goal,
@@ -122,6 +123,9 @@ namespace ColorVision.Copilot
             ]),
             new("/compact", "压缩早期对话，可在命令后补充聚焦要求", CopilotLocalCommandKind.Compact, AcceptsArguments: true, Usage: "/compact [聚焦要求]"),
             new("/review", "只读审查当前工作区变更，可补充关注点", CopilotLocalCommandKind.Review, AcceptsArguments: true, Usage: "/review [关注点]"),
+            new("/verify", "只读审查改动并经确认运行一次受限构建或测试", CopilotLocalCommandKind.Verify, AcceptsArguments: true, Usage: "/verify [关注点]"),
+            new("/check-work", "同 /verify；检查改动并收集真实验证证据", CopilotLocalCommandKind.Verify, AcceptsArguments: true, Usage: "/check-work [关注点]"),
+            new("/check", "同 /verify；检查改动并收集真实验证证据", CopilotLocalCommandKind.Verify, AcceptsArguments: true, Usage: "/check [关注点]"),
             new("/plan", "只读分析并生成可执行计划，可在命令后直接填写任务", CopilotLocalCommandKind.Plan, AcceptsArguments: true, Usage: "/plan [任务]"),
             new("/view-plan", "定位当前会话最近一份已完成计划", CopilotLocalCommandKind.ViewPlan, AvailableWhileAgentRuns: true, Usage: "/view-plan"),
             new("/goal", "查看或管理当前会话的持续目标", CopilotLocalCommandKind.Goal, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/goal [目标|edit <新目标>|pause|resume|clear]", Arguments:

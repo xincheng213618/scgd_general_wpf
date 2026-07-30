@@ -499,15 +499,17 @@ namespace ColorVision.Copilot
         {
             if (request == null
                 || request.Mode == CopilotAgentMode.Chat
-                || request.Mode == CopilotAgentMode.Review
-                || ExplicitlyDisallowsWriteAccess(request)
                 || request.WritableLocalRootPaths.Count == 0
                 || ContainsAny(request.UserText, WorkspaceValidationExplanationMarkers))
             {
                 return false;
             }
 
-            return ContainsAny(request.UserText, WorkspaceValidationMarkers);
+            var explicitlyRequestsValidation = ContainsAny(request.UserText, WorkspaceValidationMarkers);
+            if (request.Mode == CopilotAgentMode.Review)
+                return explicitlyRequestsValidation;
+
+            return explicitlyRequestsValidation && !ExplicitlyDisallowsWriteAccess(request);
         }
 
         public static bool NeedsPublicWebSearch(CopilotAgentRequest? request)

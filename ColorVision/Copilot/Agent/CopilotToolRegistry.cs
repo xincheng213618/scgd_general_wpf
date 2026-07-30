@@ -66,6 +66,12 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(request);
             if (tool.Capability.Access == CopilotToolAccess.ReadOnly)
                 return true;
+            if (request.Mode == CopilotAgentMode.Review
+                && tool is CopilotWorkspaceValidationTool
+                && CopilotToolIntentPolicy.NeedsWorkspaceValidation(request))
+            {
+                return true;
+            }
 
             return !CopilotToolIntentPolicy.IsReadOnlyMode(request.Mode)
                 && !CopilotToolIntentPolicy.ExplicitlyDisallowsWriteAccess(request);

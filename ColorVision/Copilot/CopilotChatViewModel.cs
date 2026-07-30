@@ -1925,6 +1925,9 @@ namespace ColorVision.Copilot
                 case CopilotLocalCommandKind.Review:
                     StartWorkspaceReview(command, invocation.Arguments);
                     break;
+                case CopilotLocalCommandKind.Verify:
+                    StartWorkspaceVerification(command, invocation.Arguments);
+                    break;
                 case CopilotLocalCommandKind.Plan:
                     StartPlanRequest(command, invocation.Arguments);
                     break;
@@ -2268,6 +2271,20 @@ namespace ColorVision.Copilot
             SetPendingRequestModeOverride(CopilotAgentMode.Review);
             InputText = prompt.ToString();
             RunUiOperation(SendAsync, "开始工作区审查");
+        }
+
+        private void StartWorkspaceVerification(CopilotLocalCommand command, string focusInstructions)
+        {
+            if (IsBusy)
+            {
+                ShowLocalCommandResult(command, "当前有请求正在执行，请完成或停止后再验证工作区。");
+                return;
+            }
+
+            DismissLocalCommandResult();
+            SetPendingRequestModeOverride(CopilotAgentMode.Review);
+            InputText = CopilotWorkspaceVerification.BuildPrompt(focusInstructions);
+            RunUiOperation(SendAsync, "验证工作区改动");
         }
 
         private void StartProjectInitialization(CopilotLocalCommand command)

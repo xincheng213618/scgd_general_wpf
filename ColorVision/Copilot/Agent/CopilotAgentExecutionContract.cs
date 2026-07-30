@@ -16,6 +16,7 @@ namespace ColorVision.Copilot
         AttachedFileEvidence,
         LocalFileEvidence,
         GitReviewEvidence,
+        GitReviewAndWorkspaceValidation,
         DirectUrlEvidence,
         PublicWebSearch,
         WorkspaceEdit,
@@ -115,6 +116,7 @@ namespace ColorVision.Copilot
                     CopilotAgentExecutionRequirement.AttachedFileEvidence => "attached file evidence",
                     CopilotAgentExecutionRequirement.LocalFileEvidence => "explicit local file evidence",
                     CopilotAgentExecutionRequirement.GitReviewEvidence => "Git working tree and diff evidence",
+                    CopilotAgentExecutionRequirement.GitReviewAndWorkspaceValidation => "Git working tree and diff evidence followed by approved workspace validation",
                     CopilotAgentExecutionRequirement.DirectUrlEvidence => "direct URL evidence",
                     CopilotAgentExecutionRequirement.PublicWebSearch => "explicit public web search",
                     CopilotAgentExecutionRequirement.WorkspaceEdit => "approved workspace edit",
@@ -241,6 +243,30 @@ namespace ColorVision.Copilot
                     attachedFilePaths,
                     requiredLocalFilePaths);
             }
+            if (request.Mode == CopilotAgentMode.Review)
+            {
+                var gitWorkingTreeTools = availableTools
+                    .Where(tool => string.Equals(tool.Name, "InspectGitWorkingTree", StringComparison.OrdinalIgnoreCase))
+                    .Select(tool => tool.Name)
+                    .ToArray();
+                var gitDiffTools = availableTools
+                    .Where(tool => string.Equals(tool.Name, "InspectGitDiff", StringComparison.OrdinalIgnoreCase))
+                    .Select(tool => tool.Name)
+                    .ToArray();
+                if (gitWorkingTreeTools.Length > 0 || gitDiffTools.Length > 0)
+                {
+                    return Required(
+                        needsValidation
+                            ? CopilotAgentExecutionRequirement.GitReviewAndWorkspaceValidation
+                            : CopilotAgentExecutionRequirement.GitReviewEvidence,
+                        needsValidation
+                            ? [gitWorkingTreeTools, gitDiffTools, workspaceValidationTools]
+                            : [gitWorkingTreeTools, gitDiffTools],
+                        prerequisiteToolGroups,
+                        attachedFilePaths,
+                        requiredLocalFilePaths);
+                }
+            }
             if (needsValidation)
             {
                 return Required(
@@ -276,27 +302,6 @@ namespace ColorVision.Copilot
                     prerequisiteToolGroups,
                     attachedFilePaths,
                     requiredLocalFilePaths);
-            }
-
-            if (request.Mode == CopilotAgentMode.Review)
-            {
-                var gitWorkingTreeTools = availableTools
-                    .Where(tool => string.Equals(tool.Name, "InspectGitWorkingTree", StringComparison.OrdinalIgnoreCase))
-                    .Select(tool => tool.Name)
-                    .ToArray();
-                var gitDiffTools = availableTools
-                    .Where(tool => string.Equals(tool.Name, "InspectGitDiff", StringComparison.OrdinalIgnoreCase))
-                    .Select(tool => tool.Name)
-                    .ToArray();
-                if (gitWorkingTreeTools.Length > 0 || gitDiffTools.Length > 0)
-                {
-                    return Required(
-                        CopilotAgentExecutionRequirement.GitReviewEvidence,
-                        [gitWorkingTreeTools, gitDiffTools],
-                        prerequisiteToolGroups,
-                        attachedFilePaths,
-                        requiredLocalFilePaths);
-                }
             }
 
             var urlFetchTools = availableTools.Where(CopilotToolIntentPolicy.IsUrlFetchTool).Select(tool => tool.Name);
@@ -530,6 +535,8 @@ namespace ColorVision.Copilot
                     $"Execution contract: the requested file creation, command execution, and validation are not complete in order. Create the file first, run it second, then call RunWorkspaceValidation. The next untried required tool is {preferred}.",
                 CopilotAgentExecutionRequirement.WorkspaceValidation =>
                     $"Execution contract: the user explicitly requested workspace validation, but no approved validation result was collected. Call {preferred} with a workspace solution or project path and report its structured passed/failed outcome; do not claim a build or test was run without this result.",
+                CopilotAgentExecutionRequirement.GitReviewAndWorkspaceValidation =>
+                    $"Execution contract: verification requires current Git working-tree and diff evidence followed by an approved bounded build or test. Call {preferred} for the next missing step and end with PASS only after every required result succeeds; never modify files or claim uncollected validation.",
                 CopilotAgentExecutionRequirement.WorkspaceRollback =>
                     usesPatchEnvelope
                         ? "Execution contract: the requested workspace rollback has not completed. Call RollbackWorkspacePatchEnvelope once with the exact prior changeSetId so every Add/Update/Delete operation is restored as one guarded unit."

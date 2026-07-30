@@ -34,6 +34,7 @@ namespace ColorVision.Copilot
                 CopilotLocalCommandKind.Diff,
                 CopilotLocalCommandKind.Compact,
                 CopilotLocalCommandKind.Review,
+                CopilotLocalCommandKind.Verify,
                 CopilotLocalCommandKind.Plan,
                 CopilotLocalCommandKind.ViewPlan,
                 CopilotLocalCommandKind.Goal,
