@@ -14,6 +14,7 @@ namespace ColorVision.Copilot
         private readonly CopilotImageUnderstandingService _imageUnderstandingService;
         private readonly CopilotContextRegistry _contextRegistry;
         private readonly CopilotMicrosoftAgentFrameworkRuntime _agentRuntime;
+        private readonly CopilotWorkspaceRollbackCoordinator _workspaceRollbackCoordinator;
 
         public CopilotTurnRuntime(CopilotChatService chatService)
         {
@@ -21,10 +22,15 @@ namespace ColorVision.Copilot
             _conversationRequestBuilder = new CopilotConversationRequestBuilder();
             _imageUnderstandingService = new CopilotImageUnderstandingService(_chatService);
             _contextRegistry = CopilotContextRegistry.CreateDefault();
+            var toolRegistry = CopilotToolRegistry.CreateDefault();
+            var toolExecutor = new CopilotToolExecutor();
             _agentRuntime = new CopilotMicrosoftAgentFrameworkRuntime(
-                CopilotToolRegistry.CreateDefault(),
+                toolRegistry,
                 new CopilotAgentContextBuilder(),
-                new CopilotToolExecutor());
+                toolExecutor);
+            _workspaceRollbackCoordinator = new CopilotWorkspaceRollbackCoordinator(
+                toolRegistry,
+                toolExecutor);
         }
 
         public IAsyncEnumerable<CopilotTurnEvent> RunAsync(
@@ -54,6 +60,15 @@ namespace ColorVision.Copilot
 
         public bool TryAnswerUserQuestion(string taskId, string requestId, string answer) =>
             _agentRuntime.TryAnswerUserQuestion(taskId, requestId, answer);
+
+        public Task<CopilotWorkspaceRollbackActionResult> RequestWorkspaceRollbackAsync(
+            CopilotWorkspaceRollbackActionRequest request,
+            Action<CopilotAgentEvent> onEvent,
+            CancellationToken cancellationToken) =>
+            _workspaceRollbackCoordinator.RequestAsync(
+                request,
+                onEvent,
+                cancellationToken);
 
         private async Task<CopilotTurnResult> RunChatAsync(
             CopilotTurnRequest request,

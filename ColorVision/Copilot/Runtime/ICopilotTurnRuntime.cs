@@ -15,6 +15,11 @@ namespace ColorVision.Copilot
         bool TryEnqueueSteeringMessage(string message);
 
         bool TryAnswerUserQuestion(string taskId, string requestId, string answer);
+
+        Task<CopilotWorkspaceRollbackActionResult> RequestWorkspaceRollbackAsync(
+            CopilotWorkspaceRollbackActionRequest request,
+            Action<CopilotAgentEvent> onEvent,
+            CancellationToken cancellationToken);
     }
 
     internal abstract record CopilotTurnEvent;

@@ -92,11 +92,16 @@ namespace ColorVision.Copilot.Mcp
 
         internal bool CanReviewFromConversation(string? conversationId)
         {
-            if (SourceKind != CopilotApprovalSourceKind.InAppAgent)
+            if (SourceKind is not (CopilotApprovalSourceKind.InAppAgent or CopilotApprovalSourceKind.ColorVisionUi)
+                || string.IsNullOrWhiteSpace(ConversationId))
+            {
                 return true;
+            }
 
-            return !string.IsNullOrWhiteSpace(ConversationId)
-                && string.Equals(ConversationId, (conversationId ?? string.Empty).Trim(), StringComparison.Ordinal);
+            return string.Equals(
+                ConversationId,
+                (conversationId ?? string.Empty).Trim(),
+                StringComparison.Ordinal);
         }
 
         internal static CopilotConfirmationRequestContext ForAgent(
@@ -443,7 +448,8 @@ namespace ColorVision.Copilot.Mcp
             bool resumesAgentOnApproval = false,
             CopilotConfirmationRequestContext? requestContext = null,
             string? exactArgumentsBinding = null,
-            string? reviewDetails = null)
+            string? reviewDetails = null,
+            string? agentCallId = null)
         {
             return CreateCore(
                 title,
@@ -454,7 +460,7 @@ namespace ColorVision.Copilot.Mcp
                 executor,
                 executeOnApproval,
                 resumesAgentOnApproval,
-                string.Empty,
+                agentCallId ?? string.Empty,
                 requestContext,
                 exactArgumentsBinding,
                 null,
@@ -1229,7 +1235,17 @@ namespace ColorVision.Copilot.Mcp
                 return false;
             }
 
-            if (requestContext.SourceKind is CopilotApprovalSourceKind.InAppAgent or CopilotApprovalSourceKind.ExternalMcp
+            if (requestContext.SourceKind == CopilotApprovalSourceKind.ColorVisionUi
+                && !string.IsNullOrWhiteSpace(requestContext.ConversationId)
+                && !string.Equals(requestContext.ConversationId, reviewConversationId, StringComparison.Ordinal))
+            {
+                message = "This approval belongs to a different Copilot conversation.";
+                return false;
+            }
+
+            if (requestContext.SourceKind is CopilotApprovalSourceKind.InAppAgent
+                    or CopilotApprovalSourceKind.ExternalMcp
+                    or CopilotApprovalSourceKind.ColorVisionUi
                 && !string.Equals(actionWorkspacePath, reviewWorkspacePath, StringComparison.OrdinalIgnoreCase))
             {
                 message = "The active workspace changed after this approval request was created.";

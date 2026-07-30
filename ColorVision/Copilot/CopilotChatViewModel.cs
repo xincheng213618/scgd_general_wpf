@@ -3952,9 +3952,8 @@ namespace ColorVision.Copilot
             return trace?.CanRequestWorkspaceRollback == true
                 && !IsBusy
                 && !IsEditingMessage
-                && SelectedConversation != null
-                && SelectedProfile?.IsConfigured == true
-                && CanScheduleComposerRequest(CopilotAgentMode.Auto);
+                && SelectedConversation?.Messages.Any(message => message.AgentTraceEntries.Contains(trace)) == true
+                && !HasActiveWorkspaceRollback(trace.WorkspaceChangeSetId);
         }
 
         private void RequestWorkspaceRollback(CopilotAgentTraceEntry? trace)
@@ -3966,8 +3965,94 @@ namespace ColorVision.Copilot
                 return;
             }
 
-            var prompt = $"撤销修改：请只回滚工作区变更集 {trace.WorkspaceChangeSetId}。必须调用 RollbackWorkspacePatchEnvelope，并使用这个精确的 changeSetId；不要改动其他文件。";
-            RunUiOperation(() => SendAsync(prompt, CopilotAgentMode.Auto), "撤销文件修改");
+            RunUiOperation(
+                () => RequestWorkspaceRollbackAsync(trace),
+                "撤销文件修改");
+        }
+
+        private async Task RequestWorkspaceRollbackAsync(CopilotAgentTraceEntry trace)
+        {
+            var conversation = SelectedConversation;
+            var assistantMessage = conversation?.Messages.FirstOrDefault(message =>
+                message.AgentTraceEntries.Contains(trace));
+            if (conversation == null || assistantMessage == null)
+            {
+                LocalCommandResultTitle = "无法撤销文件修改";
+                LocalCommandResultText = "这条修改记录不属于当前会话，未创建回滚请求。";
+                return;
+            }
+
+            var workspacePath = CaptureHostedTurnSnapshot(conversation.Attachments).SolutionDirectoryPath;
+            var result = await _turnRuntime.RequestWorkspaceRollbackAsync(
+                new CopilotWorkspaceRollbackActionRequest(
+                    conversation.Id,
+                    workspacePath,
+                    trace.WorkspaceChangeSetId),
+                agentEvent => ApplyDirectWorkspaceRollbackEvent(
+                    conversation,
+                    assistantMessage,
+                    trace.WorkspaceChangeSetId,
+                    agentEvent),
+                CancellationToken.None);
+            if (!result.Success || result.Action == null)
+            {
+                LocalCommandResultTitle = "无法撤销文件修改";
+                LocalCommandResultText = string.IsNullOrWhiteSpace(result.ErrorMessage)
+                    ? "安全回滚请求未能创建。"
+                    : result.ErrorMessage;
+                return;
+            }
+
+            SetPendingActionFeedback("已创建精确绑定的工作区回滚审批；无需再次调用模型。");
+            await ApprovePendingActionAsync(result.Action);
+        }
+
+        private void ApplyDirectWorkspaceRollbackEvent(
+            CopilotConversationRecord conversation,
+            CopilotChatMessage assistantMessage,
+            string changeSetId,
+            CopilotAgentEvent agentEvent)
+        {
+            CopilotUiDispatcher.Invoke(() =>
+            {
+                var presentationResult = CopilotAssistantMessagePresenter.ApplyAgentEvent(
+                    assistantMessage,
+                    agentEvent);
+                var rolledBack = agentEvent.Type == CopilotAgentEventType.ToolResult
+                    && agentEvent.ToolResult?.Success == true
+                    && string.Equals(
+                        agentEvent.ToolExecution?.ToolName,
+                        "RollbackWorkspacePatchEnvelope",
+                        StringComparison.Ordinal)
+                    && conversation.MarkWorkspaceChangeSetRolledBack(changeSetId);
+                if (rolledBack
+                    || presentationResult.PersistenceMode != CopilotAgentEventPersistenceMode.None)
+                {
+                    PersistState(immediate: rolledBack);
+                }
+                CommandManager.InvalidateRequerySuggested();
+            });
+        }
+
+        private bool HasActiveWorkspaceRollback(string changeSetId)
+        {
+            if (string.IsNullOrWhiteSpace(changeSetId) || SelectedConversation == null)
+                return false;
+
+            return SelectedConversation.Messages
+                .SelectMany(message => message.AgentTraceEntries)
+                .Any(entry =>
+                    string.Equals(
+                        entry.ToolName,
+                        "RollbackWorkspacePatchEnvelope",
+                        StringComparison.Ordinal)
+                    && string.Equals(
+                        entry.WorkspaceChangeSetId,
+                        changeSetId,
+                        StringComparison.Ordinal)
+                    && entry.State is CopilotToolExecutionState.Pending
+                        or CopilotToolExecutionState.Running
+                        or CopilotToolExecutionState.AwaitingApproval);
         }
 
         private static bool CanOpenWorkspaceChangeFile(CopilotWorkspaceChangeFile? file)
