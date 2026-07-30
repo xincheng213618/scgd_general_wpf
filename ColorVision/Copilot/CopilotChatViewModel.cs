@@ -4,6 +4,7 @@ using ColorVision.Solution.Workspace;
 using ColorVision.Copilot.Mcp;
 using ColorVision.Common.MVVM;
 using ColorVision.UI;
+using ColorVision.UI.Desktop.Feedback;
 using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
@@ -1433,6 +1434,11 @@ namespace ColorVision.Copilot
                     break;
                 case CopilotLocalCommandKind.Doctor:
                     ShowLocalCommandResult(command, BuildDoctorDiagnosticsReport());
+                    break;
+                case CopilotLocalCommandKind.Feedback:
+                    RunUiOperation(
+                        () => OpenFeedbackAsync(invocation.Arguments),
+                        "打开反馈");
                     break;
                 case CopilotLocalCommandKind.Tasks:
                     ShowLocalCommandResult(command, BuildTaskDiagnosticsReport());
@@ -5534,6 +5540,50 @@ namespace ColorVision.Copilot
                 _isExportingConversation = false;
                 CompleteAuxiliaryOperation(cancellation);
                 CommandManager.InvalidateRequerySuggested();
+            }
+        }
+
+        private async Task OpenFeedbackAsync(string report)
+        {
+            DismissLocalCommandResult();
+            var draft = CopilotFeedbackDraftBuilder.Create(SelectedConversation, report);
+            string? temporaryConversationPath = null;
+            try
+            {
+                if (draft.HasConversationAttachment)
+                {
+                    temporaryConversationPath = Path.Combine(
+                        Path.GetTempPath(),
+                        $"ColorVision_Copilot_Conversation_{DateTime.Now:yyyyMMdd_HHmmss}_{Guid.NewGuid():N}.md");
+                    await File.WriteAllTextAsync(
+                        temporaryConversationPath,
+                        draft.ConversationMarkdown,
+                        new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+                }
+
+                if (Volatile.Read(ref _disposeState) == 1)
+                    return;
+
+                var attachmentPaths = temporaryConversationPath == null
+                    ? Array.Empty<string>()
+                    : new[] { temporaryConversationPath };
+                var window = new FeedbackWindow(draft.Report, attachmentPaths)
+                {
+                    Owner = Application.Current.GetActiveWindow(),
+                    WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                };
+                window.ShowDialog();
+            }
+            finally
+            {
+                try
+                {
+                    if (temporaryConversationPath != null && File.Exists(temporaryConversationPath))
+                        File.Delete(temporaryConversationPath);
+                }
+                catch
+                {
+                }
             }
         }
 
