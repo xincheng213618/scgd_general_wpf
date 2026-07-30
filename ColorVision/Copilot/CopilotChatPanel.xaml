@@ -2765,7 +2765,7 @@
                                          PreviewKeyDown="ConversationSearchTextBox_PreviewKeyDown"
                                          Text="{Binding ConversationSearchText, UpdateSourceTrigger=PropertyChanged}"
                                          TextChanged="ConversationSearchTextBox_TextChanged"
-                                         ToolTip="搜索会话 (Ctrl+F)；↑↓ 选择，Enter 切换，Esc 退出" />
+                                         ToolTip="搜索会话 (Ctrl+F)；↑↓ 选择，Enter 切换，Ctrl+R 重命名，Esc 退出" />
                             </Grid>
                             <Button Grid.Column="2"
                                     Style="{StaticResource AttachmentCloseButtonStyle}"

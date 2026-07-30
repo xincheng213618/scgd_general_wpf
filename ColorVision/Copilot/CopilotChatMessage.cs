@@ -2836,6 +2836,12 @@ namespace ColorVision.Copilot
             HasCustomTitle = true;
         }
 
+        internal static bool TryNormalizeCustomTitle(string? title, out string normalizedTitle)
+        {
+            normalizedTitle = NormalizeText(title);
+            return normalizedTitle.Length is > 0 and <= MaximumTitleCharacters;
+        }
+
         public void SetGeneratedTitle(string title)
         {
             Title = title;

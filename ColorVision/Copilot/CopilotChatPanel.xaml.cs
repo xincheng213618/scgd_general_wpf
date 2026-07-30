@@ -745,6 +745,13 @@ namespace ColorVision.Copilot
 
         private void ConversationSearchTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
         {
+            if (e.Key == Key.R && Keyboard.Modifiers == ModifierKeys.Control)
+            {
+                if (RenameConversationSearchSelection())
+                    e.Handled = true;
+                return;
+            }
+
             if (Keyboard.Modifiers != ModifierKeys.None)
                 return;
 
@@ -761,6 +768,14 @@ namespace ColorVision.Copilot
 
         private void ConversationListBox_PreviewKeyDown(object sender, KeyEventArgs e)
         {
+            if (e.Key == Key.R && Keyboard.Modifiers == ModifierKeys.Control)
+            {
+                _hasConversationSearchPreviewSelection = ConversationListBox.SelectedIndex >= 0;
+                if (RenameConversationSearchSelection())
+                    e.Handled = true;
+                return;
+            }
+
             if (e.Key != Key.Enter || Keyboard.Modifiers != ModifierKeys.None)
                 return;
 
@@ -825,6 +840,34 @@ namespace ColorVision.Copilot
             _hasConversationSearchPreviewSelection = false;
             if (focusPrompt)
                 FocusPromptInput();
+            return true;
+        }
+
+        private bool RenameConversationSearchSelection()
+        {
+            FlushConversationSearchResults();
+            var targetIndex = CopilotConversationService.ResolveSearchCommitIndex(
+                ConversationListBox.Items.Count,
+                ConversationListBox.SelectedIndex,
+                _hasConversationSearchPreviewSelection);
+            if (targetIndex < 0
+                || ConversationListBox.Items[targetIndex] is not CopilotConversationRecord conversation
+                || DataContext is not CopilotChatViewModel viewModel
+                || !viewModel.RenameConversationCommand.CanExecute(conversation))
+            {
+                return false;
+            }
+
+            ConversationListBox.SelectedIndex = targetIndex;
+            _hasConversationSearchPreviewSelection = true;
+            viewModel.RenameConversationCommand.Execute(conversation);
+            var renamedIndex = ConversationListBox.Items.IndexOf(conversation);
+            _hasConversationSearchPreviewSelection = renamedIndex >= 0;
+            ConversationListBox.SelectedIndex = renamedIndex;
+            if (renamedIndex >= 0)
+            {
+                ConversationListBox.ScrollIntoView(conversation);
+            }
             return true;
         }
 

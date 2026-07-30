@@ -227,7 +227,7 @@ namespace ColorVision.Copilot
             DeleteQueuedFollowUpCommand = new RelayCommand<CopilotQueuedFollowUp>(DeleteQueuedFollowUp, item => item != null);
             OpenAttachmentCommand = new RelayCommand<CopilotAttachmentItem>(OpenAttachment, attachment => attachment != null);
             RemoveAttachmentCommand = new RelayCommand<CopilotAttachmentItem>(RemoveAttachment, attachment => !IsBusy && attachment != null);
-            RenameConversationCommand = new RelayCommand<CopilotConversationRecord>(RenameConversation, conversation => !IsBusy && conversation != null);
+            RenameConversationCommand = new RelayCommand<CopilotConversationRecord>(RenameConversation, CanRenameConversation);
             ExportConversationCommand = new RelayCommand<CopilotConversationRecord>(
                 conversation => RunUiOperation(() => ExportConversationAsync(conversation), "导出会话"),
                 CanExportConversation);
@@ -1391,6 +1391,9 @@ namespace ColorVision.Copilot
                     break;
                 case CopilotLocalCommandKind.ResumeConversation:
                     ResumeConversation(command, invocation.Arguments);
+                    break;
+                case CopilotLocalCommandKind.RenameConversation:
+                    RenameCurrentConversation(command, invocation.Arguments);
                     break;
                 case CopilotLocalCommandKind.NewConversation:
                     DismissLocalCommandResult();
@@ -3493,6 +3496,33 @@ namespace ColorVision.Copilot
             ConversationSearchRequested?.Invoke(this, EventArgs.Empty);
         }
 
+        private void RenameCurrentConversation(CopilotLocalCommand command, string requestedTitle)
+        {
+            var conversation = SelectedConversation;
+            if (!CanRenameConversation(conversation))
+            {
+                ShowLocalCommandResult(command, "当前没有可重命名的会话。");
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(requestedTitle))
+            {
+                DismissLocalCommandResult();
+                RenameConversation(conversation);
+                return;
+            }
+
+            if (!TryApplyConversationTitle(conversation!, requestedTitle))
+            {
+                ShowLocalCommandResult(
+                    command,
+                    $"会话名称不能为空且不能超过 {CopilotConversationRecord.MaximumTitleCharacters:N0} 个字符。");
+                return;
+            }
+
+            DismissLocalCommandResult();
+        }
+
         private CopilotConversationRecord ResolveNewConversationTarget()
         {
             var profile = SelectedProfile ?? ResolveProfile(_state.ActiveProfileId) ?? _config.GetPreferredDefaultProfile();
@@ -4990,7 +5020,7 @@ namespace ColorVision.Copilot
 
         private void RenameConversation(CopilotConversationRecord? conversation)
         {
-            if (conversation == null)
+            if (!CanRenameConversation(conversation))
                 return;
 
             var window = new CopilotTextInputWindow(
@@ -5006,10 +5036,24 @@ namespace ColorVision.Copilot
             if (window.ShowDialog() != true || string.IsNullOrWhiteSpace(window.ResultText))
                 return;
 
+            TryApplyConversationTitle(conversation!, window.ResultText);
+        }
+
+        private bool CanRenameConversation(CopilotConversationRecord? conversation) =>
+            Volatile.Read(ref _disposeState) == 0
+            && conversation != null
+            && Conversations.Contains(conversation);
+
+        private bool TryApplyConversationTitle(CopilotConversationRecord conversation, string? requestedTitle)
+        {
+            if (!CopilotConversationRecord.TryNormalizeCustomTitle(requestedTitle, out var normalizedTitle))
+                return false;
+
             CancelConversationTitleGeneration(conversation.Id);
-            conversation.SetCustomTitle(window.ResultText);
+            conversation.SetCustomTitle(normalizedTitle);
             RefreshFilteredConversations();
             PersistState();
+            return true;
         }
 
         private bool CanExportConversation(CopilotConversationRecord? conversation) => !_isExportingConversation

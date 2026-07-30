@@ -17,6 +17,7 @@ namespace ColorVision.Copilot
         Plan,
         Goal,
         ResumeConversation,
+        RenameConversation,
         NewConversation,
         ForkConversation,
         SideQuestion,
@@ -37,7 +38,7 @@ namespace ColorVision.Copilot
 
     public static class CopilotLocalCommandCatalog
     {
-        private const int MaxSuggestions = 16;
+        private const int MaxSuggestions = 20;
 
         private static readonly CopilotLocalCommand[] Commands =
         [
@@ -53,6 +54,7 @@ namespace ColorVision.Copilot
             new("/plan", "只读分析并生成可执行计划，可在命令后直接填写任务", CopilotLocalCommandKind.Plan, AcceptsArguments: true),
             new("/goal", "查看或管理当前会话的持续目标", CopilotLocalCommandKind.Goal, AcceptsArguments: true, AvailableWhileAgentRuns: true),
             new("/resume", "搜索并切换已有 Copilot 会话，可补充标题或关键词", CopilotLocalCommandKind.ResumeConversation, AcceptsArguments: true, AvailableWhileAgentRuns: true),
+            new("/rename", "重命名当前 Copilot 会话；省略名称时打开输入窗口", CopilotLocalCommandKind.RenameConversation, AcceptsArguments: true, AvailableWhileAgentRuns: true),
             new("/new", "开始一个新的 Copilot 会话", CopilotLocalCommandKind.NewConversation),
             new("/fork", "复制当前会话到新会话分支；Agent 运行时创建可见快照", CopilotLocalCommandKind.ForkConversation, AcceptsArguments: true, AvailableWhileAgentRuns: true),
             new("/branch", "同 /fork；只分叉会话，不创建 Git 分支", CopilotLocalCommandKind.ForkConversation, AcceptsArguments: true, AvailableWhileAgentRuns: true),
