@@ -45,6 +45,18 @@ namespace ColorVision.Copilot
 
         public bool CanResume => Conversation.AgentSessionCheckpoint != null && Message.HasRecoverableAgentTasks;
 
+        public string RecoveryActionLabel => Message.AgentRecoveryActionLabel;
+
+        public string RecoveryToolTip => Message.AgentRecoveryToolTip;
+
+        public string DismissToolTip => Message.HasRecoverableFinalAnswer
+            ? "放弃重试最终回答并清除恢复 checkpoint；原任务终态和审计证据仍保留"
+            : "放弃任务恢复并清除 checkpoint；原停止原因和审计证据仍保留";
+
+        public string DismissConfirmationText => Message.HasRecoverableFinalAnswer
+            ? $"放弃“{Title}”的最终回答恢复项？保存的恢复 checkpoint 会被清除，但已完成任务的终态和审计证据仍会保留。"
+            : $"放弃 Agent 任务“{Title}”的恢复项？保存的恢复 checkpoint 会被清除，但原停止原因和审计证据仍会保留。";
+
         public string StatusLabel => AttentionKind switch
         {
             CopilotAgentTaskAttentionKind.Paused => "已暂停",

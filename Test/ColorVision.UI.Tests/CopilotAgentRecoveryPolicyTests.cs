@@ -96,6 +96,10 @@ public sealed class CopilotAgentRecoveryPolicyTests
         var task = Assert.Single(CopilotAgentTaskIndex.Build([conversation]));
         Assert.Equal(CopilotAgentTaskAttentionKind.IncompleteOutput, task.AttentionKind);
         Assert.True(task.CanResume);
+        Assert.Equal("重试最终回答", task.RecoveryActionLabel);
+        Assert.Equal(message.AgentRecoveryToolTip, task.RecoveryToolTip);
+        Assert.Contains("最终回答恢复项", task.DismissConfirmationText, StringComparison.Ordinal);
+        Assert.Contains("原任务终态和审计证据仍保留", task.DismissToolTip, StringComparison.Ordinal);
     }
 
     [Fact]

@@ -27,6 +27,9 @@ public sealed class CopilotAgentTaskDismissalTests
         conversation.Messages.Add(message);
         var task = Assert.Single(CopilotAgentTaskIndex.Build([conversation]));
 
+        Assert.Equal("重试最终回答", task.RecoveryActionLabel);
+        Assert.Contains("最终回答恢复项", task.DismissConfirmationText, StringComparison.Ordinal);
+        Assert.Contains("原任务终态和审计证据仍保留", task.DismissToolTip, StringComparison.Ordinal);
         Assert.True(CopilotAgentTaskIndex.Dismiss(task));
 
         Assert.Null(conversation.AgentSessionCheckpoint);
@@ -74,6 +77,9 @@ public sealed class CopilotAgentTaskDismissalTests
         conversation.Messages.Add(message);
         var task = Assert.Single(CopilotAgentTaskIndex.Build([conversation]));
 
+        Assert.Equal("继续任务", task.RecoveryActionLabel);
+        Assert.Contains("Agent 任务", task.DismissConfirmationText, StringComparison.Ordinal);
+        Assert.Contains("原停止原因和审计证据仍保留", task.DismissToolTip, StringComparison.Ordinal);
         Assert.True(CopilotAgentTaskIndex.Dismiss(task));
 
         Assert.Equal(CopilotAgentStopReason.ProviderFailure, message.AgentStopReason);

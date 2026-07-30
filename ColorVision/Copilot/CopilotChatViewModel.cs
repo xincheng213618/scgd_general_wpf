@@ -1954,9 +1954,13 @@ namespace ColorVision.Copilot
                 CreateConversationRequestProfile(profile, conversation),
                 CopilotCapabilityCatalog.Shared.GetSnapshot()))
             {
+                var latestAssistant = conversation.Messages.LastOrDefault(message => message != null && !message.IsUser);
+                var isFinalAnswerRecovery = latestAssistant?.HasRecoverableFinalAnswer == true;
                 ShowLocalCommandResult(
                     command,
-                    "当前会话还有可安全继续的 Agent 任务。请先使用“继续任务”完成它，或在任务列表中明确放弃它，再压缩上下文；本次压缩未开始，checkpoint 已保留。");
+                    isFinalAnswerRecovery
+                        ? "当前会话的 Agent 工作已完成，但最终回答尚未完整返回。请先使用“重试最终回答”，或在任务列表中明确放弃这条恢复项，再压缩上下文；本次压缩未开始，checkpoint 已保留。"
+                        : $"当前会话还有可安全继续的 Agent 任务。请先使用“{latestAssistant?.AgentRecoveryActionLabel ?? "继续任务"}”处理它，或在任务列表中明确放弃它，再压缩上下文；本次压缩未开始，checkpoint 已保留。");
                 return;
             }
 
@@ -4772,7 +4776,7 @@ namespace ColorVision.Copilot
 
             if (MessageBox.Show(
                 Application.Current.GetActiveWindow(),
-                $"放弃 Agent 任务“{task.Title}”？保存的继续状态会被清除。",
+                task.DismissConfirmationText,
                 "ColorVision",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Question) != MessageBoxResult.Yes)

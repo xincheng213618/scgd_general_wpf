@@ -2967,7 +2967,7 @@
                                                         CommandParameter="{Binding}"
                                                         Content="▶"
                                                         FontSize="9"
-                                                        ToolTip="继续 Agent 任务"
+                                                        ToolTip="{Binding RecoveryToolTip}"
                                                         Visibility="{Binding CanResume, Converter={StaticResource bool2VisibilityConverter}}" />
                                                 <Button Grid.Column="2"
                                                         Width="24"
@@ -2980,7 +2980,7 @@
                                                         CommandParameter="{Binding}"
                                                         Content="×"
                                                         FontSize="13"
-                                                        ToolTip="放弃并清除继续状态" />
+                                                        ToolTip="{Binding DismissToolTip}" />
                                             </Grid>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
