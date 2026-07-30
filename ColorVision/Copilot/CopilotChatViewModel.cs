@@ -195,6 +195,7 @@ namespace ColorVision.Copilot
             AttachCurrentLiveContextCommand = new RelayCommand(_ => AttachCurrentLiveContext(), _ => CanAttachCurrentLiveContext);
             CopyMessageCommand = new RelayCommand<CopilotChatMessage>(CopyMessage, message => !string.IsNullOrWhiteSpace(message?.Content));
             BranchConversationCommand = new RelayCommand<CopilotChatMessage>(BranchConversation, CanBranchConversation);
+            OpenBranchOriginCommand = new RelayCommand<CopilotConversationRecord>(OpenBranchOrigin, CanOpenBranchOrigin);
             EditMessageCommand = new RelayCommand<CopilotChatMessage>(BeginEditMessage, CanEditMessage);
             CancelMessageEditCommand = new RelayCommand(_ => CancelMessageEdit(), _ => IsEditingMessage);
             RetryMessageCommand = new RelayCommand<CopilotChatMessage>(message => RunUiOperation(() => RetryMessageAsync(message, refreshExternalContext: false), "重新生成回复"), CanRegenerateMessage);
@@ -451,6 +452,8 @@ namespace ColorVision.Copilot
         public ICommand CopyMessageCommand { get; }
 
         public ICommand BranchConversationCommand { get; }
+
+        public ICommand OpenBranchOriginCommand { get; }
 
         public ICommand EditMessageCommand { get; }
 
@@ -5582,6 +5585,23 @@ namespace ColorVision.Copilot
                 && !message.IsThinkingInProgress
                 && !string.IsNullOrWhiteSpace(message.Content)
                 && SelectedConversation?.Messages.Contains(message) == true;
+        }
+
+        private bool CanOpenBranchOrigin(CopilotConversationRecord? branch)
+        {
+            return CanSwitchConversation
+                && branch != null
+                && CopilotConversationBranchService.FindBranchOriginTarget(Conversations, branch) != null;
+        }
+
+        private void OpenBranchOrigin(CopilotConversationRecord? branch)
+        {
+            if (!CanOpenBranchOrigin(branch))
+                return;
+
+            var origin = CopilotConversationBranchService.FindBranchOriginTarget(Conversations, branch!);
+            if (origin != null)
+                SelectConversation(origin, persist: true, preferredProfileId: origin.ProfileId);
         }
 
         private void ForkCurrentConversation(CopilotLocalCommand command, string requestedTitle)

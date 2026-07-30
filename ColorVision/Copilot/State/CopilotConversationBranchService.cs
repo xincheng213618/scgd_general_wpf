@@ -25,6 +25,7 @@ namespace ColorVision.Copilot
                 throw new InvalidOperationException("A branch requires a completed assistant message from the source conversation.");
             }
 
+            var forkedAtUtc = DateTimeOffset.UtcNow;
             var branch = new CopilotConversationRecord
             {
                 CreatedAt = DateTime.Now,
@@ -34,8 +35,17 @@ namespace ColorVision.Copilot
                 ProfileId = source.ProfileId,
                 Title = BuildBranchTitle(source.Title, requestedTitle),
                 UpdatedAt = DateTime.Now,
+                BranchOrigin = new CopilotConversationBranchOrigin
+                {
+                    ParentConversationId = source.Id,
+                    RootConversationId = source.BranchOrigin?.IsStructurallyValid(source.Id) == true
+                        ? source.BranchOrigin.RootConversationId
+                        : source.Id,
+                    ThroughMessageId = throughAssistantMessage.Id,
+                    ForkedAtUtc = forkedAtUtc,
+                },
                 Goal = source.Goal?.IsStructurallyValid() == true
-                    ? source.Goal.CopyForBranch(DateTimeOffset.UtcNow)
+                    ? source.Goal.CopyForBranch(forkedAtUtc)
                     : null,
             };
             var messageIdMap = new Dictionary<string, string>(StringComparer.Ordinal);
@@ -78,6 +88,27 @@ namespace ColorVision.Copilot
                 && !message.IsUser
                 && !message.IsThinkingInProgress
                 && !string.IsNullOrWhiteSpace(message.Content));
+        }
+
+        public static CopilotConversationRecord? FindBranchOriginTarget(
+            IEnumerable<CopilotConversationRecord> conversations,
+            CopilotConversationRecord branch)
+        {
+            ArgumentNullException.ThrowIfNull(conversations);
+            ArgumentNullException.ThrowIfNull(branch);
+            var origin = branch.BranchOrigin;
+            if (origin?.IsStructurallyValid(branch.Id) != true)
+                return null;
+
+            var candidates = conversations.Where(conversation => conversation != null).ToArray();
+            return candidates.FirstOrDefault(conversation => string.Equals(
+                    conversation.Id,
+                    origin.ParentConversationId,
+                    StringComparison.Ordinal))
+                ?? candidates.FirstOrDefault(conversation => string.Equals(
+                    conversation.Id,
+                    origin.RootConversationId,
+                    StringComparison.Ordinal));
         }
 
         private static CopilotChatMessage CloneMessage(CopilotChatMessage source, CopilotAgentMode lastUserMode)

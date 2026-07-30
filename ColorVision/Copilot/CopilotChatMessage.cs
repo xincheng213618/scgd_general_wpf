@@ -2341,7 +2341,11 @@ namespace ColorVision.Copilot
         public string Id
         {
             get => _id;
-            set => SetProperty(ref _id, NormalizeText(value));
+            set
+            {
+                if (SetProperty(ref _id, NormalizeText(value)))
+                    OnPropertyChanged(nameof(HasBranchOrigin));
+            }
         }
         private string _id = Guid.NewGuid().ToString("N");
 
@@ -2546,6 +2550,22 @@ namespace ColorVision.Copilot
 
         public CopilotConversationCompaction? Compaction { get; set; }
 
+        public CopilotConversationBranchOrigin? BranchOrigin
+        {
+            get => _branchOrigin;
+            set
+            {
+                if (SetProperty(ref _branchOrigin, value))
+                {
+                    OnPropertyChanged(nameof(HasBranchOrigin));
+                    OnPropertyChanged(nameof(BranchLabel));
+                }
+            }
+        }
+        private CopilotConversationBranchOrigin? _branchOrigin;
+
+        public bool ShouldSerializeBranchOrigin() => BranchOrigin != null;
+
         public CopilotConversationGoal? Goal
         {
             get => _goal;
@@ -2577,6 +2597,12 @@ namespace ColorVision.Copilot
 
         [JsonIgnore]
         public string PinMenuText => IsPinned ? CopilotUiText.UnpinMenuText : CopilotUiText.PinMenuText;
+
+        [JsonIgnore]
+        public bool HasBranchOrigin => BranchOrigin?.IsStructurallyValid(Id) == true;
+
+        [JsonIgnore]
+        public string BranchLabel => HasBranchOrigin ? "分支" : string.Empty;
 
         [JsonIgnore]
         public bool HasGoal => Goal?.IsStructurallyValid() == true;
@@ -2700,6 +2726,11 @@ namespace ColorVision.Copilot
             if (Compaction != null && !Compaction.IsStructurallyValid())
             {
                 Compaction = null;
+                changed = true;
+            }
+            if (BranchOrigin != null && !BranchOrigin.IsStructurallyValid(Id))
+            {
+                BranchOrigin = null;
                 changed = true;
             }
             if (Goal != null && !Goal.IsStructurallyValid())

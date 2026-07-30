@@ -1,4 +1,6 @@
 using ColorVision.Copilot;
+using System.Collections.ObjectModel;
+using System.IO;
 
 namespace ColorVision.UI.Tests;
 
@@ -79,6 +81,15 @@ public sealed class CopilotConversationBranchServiceTests
         Assert.Empty(branch.DraftText);
         Assert.Null(branch.AgentSessionCheckpoint);
         Assert.False(branch.LastUsage.HasAny);
+        Assert.True(branch.HasBranchOrigin);
+        Assert.NotNull(branch.BranchOrigin);
+        Assert.Equal(source.Id, branch.BranchOrigin.ParentConversationId);
+        Assert.Equal(source.Id, branch.BranchOrigin.RootConversationId);
+        Assert.Equal(assistant.Id, branch.BranchOrigin.ThroughMessageId);
+        Assert.NotEqual(default, branch.BranchOrigin.ForkedAtUtc);
+        Assert.Same(
+            source,
+            CopilotConversationBranchService.FindBranchOriginTarget([branch, source], branch));
         Assert.NotNull(branch.Compaction);
         Assert.Equal(branch.Messages[1].Id, branch.Compaction.ThroughMessageId);
         Assert.NotNull(branch.Goal);
@@ -95,6 +106,96 @@ public sealed class CopilotConversationBranchServiceTests
         Assert.NotNull(source.AgentSessionCheckpoint);
         Assert.True(source.LastUsage.HasAny);
         Assert.NotNull(user.RecoveryRequest);
+    }
+
+    [Fact]
+    public void NestedBranchKeepsRootAndFallsBackToItWhenItsParentIsMissing()
+    {
+        var root = CreateBranchableConversation("root");
+        var firstBranch = CopilotConversationBranchService.CreateBranch(
+            root,
+            root.Messages[1],
+            "first branch");
+        var nestedBranch = CopilotConversationBranchService.CreateBranch(
+            firstBranch,
+            firstBranch.Messages[1],
+            "nested branch");
+
+        Assert.NotNull(firstBranch.BranchOrigin);
+        Assert.Equal(root.Id, firstBranch.BranchOrigin.RootConversationId);
+        Assert.NotNull(nestedBranch.BranchOrigin);
+        Assert.Equal(firstBranch.Id, nestedBranch.BranchOrigin.ParentConversationId);
+        Assert.Equal(root.Id, nestedBranch.BranchOrigin.RootConversationId);
+        Assert.Equal(firstBranch.Messages[1].Id, nestedBranch.BranchOrigin.ThroughMessageId);
+        Assert.Same(
+            firstBranch,
+            CopilotConversationBranchService.FindBranchOriginTarget(
+                [root, firstBranch, nestedBranch],
+                nestedBranch));
+        Assert.Same(
+            root,
+            CopilotConversationBranchService.FindBranchOriginTarget(
+                [root, nestedBranch],
+                nestedBranch));
+    }
+
+    [Fact]
+    public void BranchLineageSurvivesChatStateRestart()
+    {
+        var stateRoot = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        try
+        {
+            var source = CreateBranchableConversation("source");
+            var branch = CopilotConversationBranchService.CreateBranch(
+                source,
+                source.Messages[1],
+                "persisted branch");
+            var state = new CopilotChatState
+            {
+                ActiveConversationId = branch.Id,
+                ActiveProfileId = "profile",
+                Conversations = new ObservableCollection<CopilotConversationRecord> { source, branch },
+            };
+
+            new CopilotChatStateStore(stateRoot).Save(state);
+
+            var restored = new CopilotChatStateStore(stateRoot).Load();
+            var restoredBranch = Assert.Single(restored.Conversations, conversation => conversation.Title == "persisted branch");
+            var restoredSource = Assert.Single(restored.Conversations, conversation => conversation.Title == "source");
+            Assert.True(restoredBranch.HasBranchOrigin);
+            Assert.NotNull(restoredBranch.BranchOrigin);
+            Assert.Equal(restoredSource.Id, restoredBranch.BranchOrigin.ParentConversationId);
+            Assert.Equal(restoredSource.Id, restoredBranch.BranchOrigin.RootConversationId);
+            Assert.Equal(restoredSource.Messages[1].Id, restoredBranch.BranchOrigin.ThroughMessageId);
+            Assert.NotEqual(default, restoredBranch.BranchOrigin.ForkedAtUtc);
+            Assert.Same(
+                restoredSource,
+                CopilotConversationBranchService.FindBranchOriginTarget(
+                    restored.Conversations,
+                    restoredBranch));
+        }
+        finally
+        {
+            if (Directory.Exists(stateRoot))
+                Directory.Delete(stateRoot, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void ConversationValidationDropsSelfReferentialBranchLineage()
+    {
+        var conversation = new CopilotConversationRecord();
+        conversation.BranchOrigin = new CopilotConversationBranchOrigin
+        {
+            ParentConversationId = conversation.Id,
+            RootConversationId = conversation.Id,
+            ThroughMessageId = Guid.NewGuid().ToString("N"),
+            ForkedAtUtc = DateTimeOffset.UtcNow,
+        };
+
+        Assert.True(conversation.EnsureValid());
+        Assert.Null(conversation.BranchOrigin);
+        Assert.False(conversation.HasBranchOrigin);
     }
 
     [Fact]
@@ -128,6 +229,20 @@ public sealed class CopilotConversationBranchServiceTests
         Assert.Equal(CopilotLocalCommandKind.ForkConversation, branch.Command.Kind);
         Assert.Equal("another option", branch.Arguments);
         Assert.False(branch.Command.AvailableWhileAgentRuns);
+    }
+
+    private static CopilotConversationRecord CreateBranchableConversation(string title)
+    {
+        var conversation = new CopilotConversationRecord
+        {
+            Title = title,
+            HasCustomTitle = true,
+            ProfileId = "profile",
+            ProfileDisplayName = "Profile",
+        };
+        conversation.Messages.Add(new CopilotChatMessage(CopilotChatRole.User, "Inspect the current state."));
+        conversation.Messages.Add(new CopilotChatMessage(CopilotChatRole.Assistant, "The current state is ready."));
+        return conversation;
     }
 
     private static CopilotAgentTraceEntry CreateWorkspaceApplyTrace()

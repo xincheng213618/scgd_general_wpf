@@ -756,6 +756,19 @@
                                    Foreground="{DynamicResource GlobalTextBrush}"
                                    Text="{Binding SelectedConversation.Title, FallbackValue={x:Static properties:Resources.CopilotNewConversation}, TargetNullValue={x:Static properties:Resources.CopilotNewConversation}}"
                                    TextTrimming="CharacterEllipsis" />
+                        <Button Margin="0,3,0,0"
+                                Padding="0"
+                                HorizontalAlignment="Left"
+                                Background="Transparent"
+                                BorderBrush="Transparent"
+                                Command="{Binding OpenBranchOriginCommand}"
+                                CommandParameter="{Binding SelectedConversation}"
+                                Content="↩ 返回源会话"
+                                Foreground="{DynamicResource GlobalTextBrush}"
+                                FontSize="10"
+                                Opacity="0.62"
+                                ToolTip="返回创建此分支的直接源会话；如果中间分支已删除，则返回仍存在的根会话。"
+                                Visibility="{Binding SelectedConversation.HasBranchOrigin, Converter={StaticResource bool2VisibilityConverter}}" />
                         <TextBlock Margin="0,3,0,0"
                                    FontSize="10"
                                    Foreground="{StaticResource CopilotControlBrush}"
@@ -2853,6 +2866,10 @@
                                             <MenuItem Header="导出 Markdown"
                                                       Command="{Binding DataContext.ExportConversationCommand, Source={x:Reference Root}}"
                                                       CommandParameter="{Binding}" />
+                                            <MenuItem Header="打开源会话"
+                                                      Command="{Binding DataContext.OpenBranchOriginCommand, Source={x:Reference Root}}"
+                                                      CommandParameter="{Binding}"
+                                                      Visibility="{Binding HasBranchOrigin, Converter={StaticResource bool2VisibilityConverter}}" />
                                             <Separator />
                                             <MenuItem Header="{x:Static properties:Resources.Delete}"
                                                       Command="{Binding DataContext.DeleteConversationCommand, Source={x:Reference Root}}"
@@ -2884,6 +2901,17 @@
                                                         </Style>
                                                     </TextBlock.Style>
                                                 </TextBlock>
+                                                <Border Margin="6,0,0,0"
+                                                        Padding="5,1"
+                                                        VerticalAlignment="Center"
+                                                        Background="{DynamicResource GlobalBorderBrush1}"
+                                                        CornerRadius="6"
+                                                        Visibility="{Binding HasBranchOrigin, Converter={StaticResource bool2VisibilityConverter}}">
+                                                    <TextBlock FontSize="9"
+                                                               Foreground="{DynamicResource GlobalTextBrush}"
+                                                               Opacity="0.66"
+                                                               Text="{Binding BranchLabel}" />
+                                                </Border>
                                                 <Border Margin="6,0,0,0"
                                                         Padding="5,1"
                                                         VerticalAlignment="Center"
