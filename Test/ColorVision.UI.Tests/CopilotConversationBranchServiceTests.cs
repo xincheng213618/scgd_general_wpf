@@ -16,8 +16,15 @@ public sealed class CopilotConversationBranchServiceTests
             ProfileDisplayName = "Test Profile",
             AgentSessionCheckpoint = new CopilotAgentSessionCheckpoint(),
             Goal = CopilotConversationGoal.Create(
-                "Inspect the camera workflow until every stage is verified",
-                DateTimeOffset.UtcNow),
+                    "Inspect the camera workflow until every stage is verified",
+                    DateTimeOffset.UtcNow)
+                .WithTurnOutcome(
+                    CopilotConversationGoalState.Active,
+                    new CopilotTokenUsage(90, 10, 100),
+                    evaluated: true,
+                    continued: true,
+                    "One stage remains.",
+                    DateTimeOffset.UtcNow.AddMinutes(1)),
         };
         source.SetLastUsage(new CopilotTokenUsage(100, 20, 120));
         source.Attachments.Add(CopilotAttachmentItem.CreateContext("composer context", "Composer"));
@@ -71,6 +78,9 @@ public sealed class CopilotConversationBranchServiceTests
         Assert.NotEqual(source.Goal.Id, branch.Goal.Id);
         Assert.Equal(source.Goal.Objective, branch.Goal.Objective);
         Assert.Equal(source.Goal.State, branch.Goal.State);
+        Assert.Equal(0, branch.Goal.TurnCount);
+        Assert.Equal(0, branch.Goal.EvaluationCount);
+        Assert.Equal(0, branch.Goal.TokensUsed);
 
         Assert.Equal("source-conversation", source.Id);
         Assert.Equal("unsent follow-up", source.DraftText);

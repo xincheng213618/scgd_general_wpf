@@ -45,6 +45,8 @@ namespace ColorVision.Copilot
 
         public bool ConversationGoalActive { get; init; }
 
+        public bool ConversationGoalAchieved { get; init; }
+
         public int AttachmentCount { get; init; }
 
         public int FileAttachmentCount { get; init; }
@@ -154,7 +156,11 @@ namespace ColorVision.Copilot
             }
             else
             {
-                builder.Append(snapshot.ConversationGoalActive ? "活动" : "已暂停")
+                builder.Append(snapshot.ConversationGoalActive
+                        ? "活动"
+                        : snapshot.ConversationGoalAchieved
+                            ? "已达成"
+                            : "已暂停")
                     .Append(" · ")
                     .Append(FormatCount(snapshot.ConversationGoalCharacters))
                     .AppendLine(" 字符；仅约束完成判定，不授予操作权限");

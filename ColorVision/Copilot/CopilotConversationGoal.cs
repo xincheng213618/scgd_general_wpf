@@ -7,11 +7,13 @@ namespace ColorVision.Copilot
     {
         Active,
         Paused,
+        Achieved,
     }
 
     public sealed class CopilotConversationGoal
     {
         public const int MaximumObjectiveCharacters = 4_000;
+        public const int MaximumReasonCharacters = 1_000;
         public const int CurrentStrategyVersion = 1;
 
         public int StrategyVersion { get; init; } = CurrentStrategyVersion;
@@ -26,8 +28,23 @@ namespace ColorVision.Copilot
 
         public DateTimeOffset UpdatedAtUtc { get; init; }
 
+        public int TurnCount { get; init; }
+
+        public int EvaluationCount { get; init; }
+
+        public long TokensUsed { get; init; }
+
+        public int ConsecutiveContinuationCount { get; init; }
+
+        public string LastEvaluationReason { get; init; } = string.Empty;
+
+        public DateTimeOffset? LastEvaluatedAtUtc { get; init; }
+
         [JsonIgnore]
         public bool IsActive => State == CopilotConversationGoalState.Active;
+
+        [JsonIgnore]
+        public bool IsAchieved => State == CopilotConversationGoalState.Achieved;
 
         public bool IsStructurallyValid()
         {
@@ -36,7 +53,19 @@ namespace ColorVision.Copilot
                 && IsValidObjective(Objective)
                 && Enum.IsDefined(State)
                 && CreatedAtUtc != default
-                && UpdatedAtUtc >= CreatedAtUtc;
+                && UpdatedAtUtc >= CreatedAtUtc
+                && TurnCount >= 0
+                && EvaluationCount is >= 0 and <= int.MaxValue
+                && EvaluationCount <= TurnCount
+                && TokensUsed >= 0
+                && ConsecutiveContinuationCount is >= 0 and <= int.MaxValue
+                && ConsecutiveContinuationCount <= EvaluationCount
+                && LastEvaluationReason != null
+                && LastEvaluationReason.Length <= MaximumReasonCharacters
+                && !LastEvaluationReason.Contains('\0')
+                && (!LastEvaluatedAtUtc.HasValue
+                    || (LastEvaluatedAtUtc.Value >= CreatedAtUtc
+                        && LastEvaluatedAtUtc.Value <= UpdatedAtUtc));
         }
 
         internal static CopilotConversationGoal Create(string objective, DateTimeOffset now)
@@ -54,23 +83,10 @@ namespace ColorVision.Copilot
             };
         }
 
-        internal CopilotConversationGoal WithObjective(string objective, DateTimeOffset now)
-        {
-            if (!TryNormalizeObjective(objective, out var normalized, out var errorMessage))
-                throw new ArgumentException(errorMessage, nameof(objective));
-
-            return new CopilotConversationGoal
-            {
-                StrategyVersion = StrategyVersion,
-                Id = Id,
-                Objective = normalized,
-                State = CopilotConversationGoalState.Active,
-                CreatedAtUtc = CreatedAtUtc,
-                UpdatedAtUtc = now < CreatedAtUtc ? CreatedAtUtc : now,
-            };
-        }
-
-        internal CopilotConversationGoal WithState(CopilotConversationGoalState state, DateTimeOffset now)
+        internal CopilotConversationGoal WithState(
+            CopilotConversationGoalState state,
+            DateTimeOffset now,
+            string? reason = null)
         {
             return new CopilotConversationGoal
             {
@@ -80,6 +96,42 @@ namespace ColorVision.Copilot
                 State = state,
                 CreatedAtUtc = CreatedAtUtc,
                 UpdatedAtUtc = now < CreatedAtUtc ? CreatedAtUtc : now,
+                TurnCount = TurnCount,
+                EvaluationCount = EvaluationCount,
+                TokensUsed = TokensUsed,
+                ConsecutiveContinuationCount = state == CopilotConversationGoalState.Active
+                    ? 0
+                    : ConsecutiveContinuationCount,
+                LastEvaluationReason = reason == null ? LastEvaluationReason : NormalizeReason(reason),
+                LastEvaluatedAtUtc = LastEvaluatedAtUtc,
+            };
+        }
+
+        internal CopilotConversationGoal WithTurnOutcome(
+            CopilotConversationGoalState state,
+            CopilotTokenUsage usage,
+            bool evaluated,
+            bool continued,
+            string? reason,
+            DateTimeOffset now)
+        {
+            var normalizedReason = NormalizeReason(reason);
+            return new CopilotConversationGoal
+            {
+                StrategyVersion = StrategyVersion,
+                Id = Id,
+                Objective = Objective,
+                State = state,
+                CreatedAtUtc = CreatedAtUtc,
+                UpdatedAtUtc = now < CreatedAtUtc ? CreatedAtUtc : now,
+                TurnCount = Increment(TurnCount),
+                EvaluationCount = evaluated ? Increment(EvaluationCount) : EvaluationCount,
+                TokensUsed = AddTokens(TokensUsed, usage.EffectiveTotalTokens),
+                ConsecutiveContinuationCount = continued
+                    ? Increment(ConsecutiveContinuationCount)
+                    : 0,
+                LastEvaluationReason = normalizedReason,
+                LastEvaluatedAtUtc = evaluated ? now : LastEvaluatedAtUtc,
             };
         }
 
@@ -92,6 +144,9 @@ namespace ColorVision.Copilot
                 State = State,
                 CreatedAtUtc = now,
                 UpdatedAtUtc = now,
+                LastEvaluationReason = State == CopilotConversationGoalState.Achieved
+                    ? LastEvaluationReason
+                    : string.Empty,
             };
         }
 
@@ -128,12 +183,35 @@ namespace ColorVision.Copilot
                 && objective.Length <= MaximumObjectiveCharacters
                 && !objective.Contains('\0');
         }
+
+        internal static string NormalizeReason(string? reason)
+        {
+            var normalized = (reason ?? string.Empty)
+                .Replace("\r\n", "\n", StringComparison.Ordinal)
+                .Replace('\r', '\n')
+                .Replace('\0', ' ')
+                .Trim();
+            return normalized.Length <= MaximumReasonCharacters
+                ? normalized
+                : normalized[..MaximumReasonCharacters].TrimEnd();
+        }
+
+        private static int Increment(int value) => value == int.MaxValue ? int.MaxValue : value + 1;
+
+        private static long AddTokens(long current, int additional)
+        {
+            var boundedAdditional = Math.Max(0, additional);
+            return current > long.MaxValue - boundedAdditional
+                ? long.MaxValue
+                : current + boundedAdditional;
+        }
     }
 
     internal sealed record CopilotConversationGoalCommandResult(
         CopilotConversationGoal? Goal,
         bool Changed,
-        string Message);
+        string Message,
+        bool StartsWork = false);
 
     internal static class CopilotConversationGoalCommand
     {
@@ -186,7 +264,8 @@ namespace ColorVision.Copilot
                 return new CopilotConversationGoalCommandResult(
                     resumed,
                     true,
-                    "持续目标已恢复；后续新 Agent 任务会重新绑定该目标。\n" + resumed.Objective);
+                    "持续目标已恢复；即将启动新的 Agent 轮次。\n" + resumed.Objective,
+                    StartsWork: true);
             }
 
             if (string.Equals(normalized, "edit", StringComparison.OrdinalIgnoreCase))
@@ -209,11 +288,12 @@ namespace ColorVision.Copilot
                 if (!CopilotConversationGoal.TryNormalizeObjective(objective, out _, out var editError))
                     return new CopilotConversationGoalCommandResult(current, false, editError);
 
-                var edited = current.WithObjective(objective, now);
+                var edited = CopilotConversationGoal.Create(objective, now);
                 return new CopilotConversationGoalCommandResult(
                     edited,
                     true,
-                    "持续目标已更新并恢复为活动状态。\n" + edited.Objective);
+                    "持续目标已更新并恢复为活动状态；即将启动首轮 Agent 工作。\n" + edited.Objective,
+                    StartsWork: true);
             }
 
             if (!CopilotConversationGoal.TryNormalizeObjective(normalized, out _, out var errorMessage))
@@ -223,10 +303,11 @@ namespace ColorVision.Copilot
             return new CopilotConversationGoalCommandResult(
                 created,
                 true,
-                (current == null ? "已设置持续目标。" : "已替换持续目标。")
+                (current == null ? "已设置持续目标并即将启动首轮 Agent 工作。" : "已替换持续目标并即将启动首轮 Agent 工作。")
                 + "\n"
                 + created.Objective
-                + "\n该目标约束后续任务的完成判定，但不授权写入、工具调用或外部副作用。");
+                + "\n该目标约束后续任务的完成判定，但不授权写入、工具调用或外部副作用。",
+                StartsWork: true);
         }
 
         private static CopilotConversationGoalCommandResult MissingGoal(
@@ -241,9 +322,43 @@ namespace ColorVision.Copilot
 
         private static string FormatStatus(CopilotConversationGoal goal)
         {
-            var state = goal.IsActive ? "活动" : "已暂停";
-            return $"持续目标 · {state}\n{goal.Objective}\n"
+            var state = goal.State switch
+            {
+                CopilotConversationGoalState.Active => "活动",
+                CopilotConversationGoalState.Achieved => "已达成",
+                _ => "已暂停",
+            };
+            var progress = goal.TurnCount == 0
+                ? "尚未完成首轮"
+                : $"{goal.TurnCount:N0} 轮 · {goal.EvaluationCount:N0} 次独立评估 · {goal.TokensUsed:N0} Token";
+            var latest = string.IsNullOrWhiteSpace(goal.LastEvaluationReason)
+                ? string.Empty
+                : "\n最近判断：" + goal.LastEvaluationReason;
+            return $"持续目标 · {state} · {progress}\n{goal.Objective}{latest}\n"
                 + "管理命令：/goal edit <新目标>、/goal pause、/goal resume、/goal clear。";
+        }
+    }
+
+    internal static class CopilotConversationGoalRecovery
+    {
+        public static bool PauseActiveGoalsAfterProcessRestart(
+            CopilotChatState state,
+            DateTimeOffset now)
+        {
+            ArgumentNullException.ThrowIfNull(state);
+            var changed = false;
+            foreach (var conversation in state.Conversations ?? [])
+            {
+                if (conversation?.Goal?.IsActive != true)
+                    continue;
+
+                conversation.Goal = conversation.Goal.WithState(
+                    CopilotConversationGoalState.Paused,
+                    now,
+                    "应用进程已重新启动；先前的自动续作不再运行，目标已安全暂停。使用 /goal resume 重新开始。");
+                changed = true;
+            }
+            return changed;
         }
     }
 }

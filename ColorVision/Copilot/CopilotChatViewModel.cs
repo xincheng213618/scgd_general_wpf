@@ -42,6 +42,7 @@ namespace ColorVision.Copilot
         private const string CompactSystemPrompt = "You compact an existing conversation for seamless continuation. Preserve the user's active goal, constraints, decisions, verified facts, relevant files, commands and results, unfinished work, blockers, and safe next steps. Remove greetings, repetition, obsolete exploration, and verbose tool traces. Never invent facts or treat historical actions as current authorization. Return only a concise Markdown continuation summary.";
 
         private readonly CopilotChatService _chatService;
+        private readonly ICopilotGoalCompletionEvaluator _goalCompletionEvaluator;
         private readonly ICopilotTurnRuntime _turnRuntime;
         private readonly CopilotSideQuestionService _sideQuestionService;
         private readonly CopilotAgentTaskHost _taskHost;
@@ -115,6 +116,7 @@ namespace ColorVision.Copilot
         public CopilotChatViewModel(CopilotChatService chatService, ICopilotChatStateStore stateStore)
         {
             _chatService = chatService ?? throw new ArgumentNullException(nameof(chatService));
+            _goalCompletionEvaluator = new CopilotGoalCompletionEvaluator(_chatService);
             _turnRuntime = new CopilotTurnRuntime(_chatService);
             _sideQuestionService = new CopilotSideQuestionService(_chatService);
             _taskHost = CopilotAgentTaskHost.Shared;
@@ -155,6 +157,9 @@ namespace ColorVision.Copilot
 
             _state = _stateStore.Load();
             var stateChanged = _state.EnsureInitialized(_config);
+            stateChanged |= CopilotConversationGoalRecovery.PauseActiveGoalsAfterProcessRestart(
+                _state,
+                DateTimeOffset.UtcNow);
             _stateStore.CleanupOrphanedAttachments(_state);
             InitializeStateRecoveryNotice();
             if (stateChanged)
@@ -1492,6 +1497,18 @@ namespace ColorVision.Copilot
                 return;
             }
 
+            var normalizedArguments = (arguments ?? string.Empty).Trim();
+            if (IsBusy
+                && normalizedArguments.Length > 0
+                && !string.Equals(normalizedArguments, "pause", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(normalizedArguments, "clear", StringComparison.OrdinalIgnoreCase))
+            {
+                ShowLocalCommandResult(
+                    command,
+                    "当前 Agent 任务运行中；此时可以查看、暂停或清除持续目标。请在当前轮结束后再设置、编辑或恢复目标。");
+                return;
+            }
+
             var result = CopilotConversationGoalCommand.Execute(
                 conversation.Goal,
                 arguments,
@@ -1505,6 +1522,15 @@ namespace ColorVision.Copilot
             }
 
             ShowLocalCommandResult(command, result.Message);
+            if (result.StartsWork && result.Goal?.IsActive == true)
+            {
+                RunUiOperation(
+                    () => SendAsync(
+                        result.Goal.Objective,
+                        CopilotAgentMode.Auto,
+                        result.Goal.Objective),
+                    "执行持续目标");
+            }
         }
 
         private async Task ShowGitDiffAsync(CopilotLocalCommand command, string scope)
@@ -1815,6 +1841,7 @@ namespace ColorVision.Copilot
                 CompactionSummaryCharacters = compaction?.Summary.Length ?? 0,
                 ConversationGoalCharacters = SelectedConversation?.Goal?.Objective.Length ?? 0,
                 ConversationGoalActive = SelectedConversation?.Goal?.IsActive == true,
+                ConversationGoalAchieved = SelectedConversation?.Goal?.IsAchieved == true,
                 AttachmentCount = Attachments.Count,
                 FileAttachmentCount = Attachments.Count(item => item.Type == CopilotAttachmentType.File),
                 ImageAttachmentCount = Attachments.Count(item => item.Type == CopilotAttachmentType.Image),
@@ -2144,24 +2171,65 @@ namespace ColorVision.Copilot
             CopilotAgentHostContextSnapshot turnSnapshot,
             bool refreshExternalContext)
         {
+            var boundGoalId = CopilotUiDispatcher.Invoke(
+                () => conversation.Goal?.IsActive == true ? conversation.Goal.Id : string.Empty,
+                fallback: string.Empty);
+            var goalOutcomeRecorded = false;
             try
             {
                 var usage = await RunConversationTurnAsync(hostedRun, conversation, requestProfile, userMessage, assistantMessage, turnSnapshot, refreshExternalContext);
+                var goalResult = await ProcessGoalAfterTurnAsync(
+                    hostedRun,
+                    conversation,
+                    requestProfile,
+                    userMessage,
+                    assistantMessage,
+                    boundGoalId,
+                    usage);
+                goalOutcomeRecorded = true;
+                usage = usage.Add(goalResult.EvaluationUsage);
                 CopilotHostedTurnCompletion.CompleteSuccessfully(conversation, assistantMessage, usage);
                 UpdateConversationMetadata(conversation, touch: true);
                 await PersistStateAndFlushAsync();
+                if (goalResult.ShouldQueueContinuation)
+                {
+                    CopilotUiDispatcher.Invoke(() =>
+                        TryQueueGoalContinuation(
+                            conversation,
+                            requestProfile,
+                            goalResult.GoalId,
+                            goalResult.Reason));
+                }
                 QueueConversationTitleGeneration(conversation, requestProfile);
             }
             catch (OperationCanceledException) when (hostedRun.CancellationToken.IsCancellationRequested)
             {
                 var controlIntent = hostedRun.RunControl?.Intent ?? CopilotAgentControlIntent.None;
                 CopilotHostedTurnCompletion.CompleteCancellation(conversation, assistantMessage, controlIntent);
+                if (!goalOutcomeRecorded)
+                {
+                    PauseBoundGoalAfterHostedTurnFailure(
+                        conversation,
+                        assistantMessage,
+                        boundGoalId,
+                        controlIntent == CopilotAgentControlIntent.Pause
+                            ? "用户暂停了当前 Agent 轮次，持续目标已同步暂停。"
+                            : "用户取消了当前 Agent 轮次，持续目标已暂停。");
+                }
                 UpdateConversationMetadata(conversation, touch: true);
                 await PersistStateAndFlushAsync();
             }
             catch (Exception ex)
             {
                 CopilotHostedTurnCompletion.CompleteFailure(conversation, assistantMessage, ex.Message, requestProfile.ApiKey);
+                if (!goalOutcomeRecorded)
+                {
+                    PauseBoundGoalAfterHostedTurnFailure(
+                        conversation,
+                        assistantMessage,
+                        boundGoalId,
+                        "Agent 轮次异常结束，持续目标已暂停；请检查本轮错误后使用 /goal resume 重试。");
+                }
                 UpdateConversationMetadata(conversation, touch: true);
                 await PersistStateAndFlushAsync();
             }
@@ -2178,6 +2246,37 @@ namespace ColorVision.Copilot
                 });
                 RefreshAgentTasks();
             }
+        }
+
+        private static void PauseBoundGoalAfterHostedTurnFailure(
+            CopilotConversationRecord conversation,
+            CopilotChatMessage assistantMessage,
+            string boundGoalId,
+            string reason)
+        {
+            if (string.IsNullOrWhiteSpace(boundGoalId))
+                return;
+
+            CopilotUiDispatcher.Invoke(() =>
+            {
+                var goal = conversation.Goal;
+                if (goal?.IsActive != true
+                    || !string.Equals(goal.Id, boundGoalId, StringComparison.Ordinal))
+                {
+                    return;
+                }
+
+                conversation.Goal = goal.WithTurnOutcome(
+                    CopilotConversationGoalState.Paused,
+                    CopilotTokenUsage.Empty,
+                    evaluated: false,
+                    continued: false,
+                    reason,
+                    DateTimeOffset.UtcNow);
+                CopilotAssistantMessagePresenter.AppendExecutionTrace(
+                    assistantMessage,
+                    "Goal pause · " + CopilotAgentTraceEntry.Sanitize(reason));
+            });
         }
 
         private async Task<CopilotTokenUsage> RunConversationTurnAsync(
@@ -3180,6 +3279,157 @@ namespace ColorVision.Copilot
             }
         }
 
+        private async Task<CopilotGoalPostTurnResult> ProcessGoalAfterTurnAsync(
+            CopilotHostedAgentRun hostedRun,
+            CopilotConversationRecord conversation,
+            CopilotProfileConfig requestProfile,
+            CopilotChatMessage userMessage,
+            CopilotChatMessage assistantMessage,
+            string boundGoalId,
+            CopilotTokenUsage turnUsage)
+        {
+            if (!hostedRun.IsAgent || string.IsNullOrWhiteSpace(boundGoalId))
+                return CopilotGoalPostTurnResult.Empty;
+
+            var context = CopilotUiDispatcher.Invoke(
+                () =>
+                {
+                    var goal = conversation.Goal;
+                    if (goal?.IsActive != true
+                        || !string.Equals(goal.Id, boundGoalId, StringComparison.Ordinal))
+                    {
+                        return null;
+                    }
+
+                    return new CopilotGoalEvaluationContext(
+                        goal,
+                        CopilotConversationRequestBuilder
+                            .CaptureHistorySnapshot(conversation)
+                            .VisibleMessages);
+                },
+                fallback: null as CopilotGoalEvaluationContext);
+            if (context == null)
+                return CopilotGoalPostTurnResult.Empty;
+
+            CopilotGoalEvaluationResult? evaluation = null;
+            if (assistantMessage.AgentStopReason == CopilotAgentStopReason.Completed
+                && userMessage.RequestMode is CopilotAgentMode.Auto or CopilotAgentMode.Code)
+            {
+                evaluation = await _goalCompletionEvaluator.EvaluateAsync(
+                    requestProfile,
+                    context.Goal,
+                    context.Transcript,
+                    hostedRun.CancellationToken).ConfigureAwait(false);
+            }
+
+            var evaluationUsage = evaluation?.Usage ?? CopilotTokenUsage.Empty;
+            var decision = CopilotGoalContinuationPolicy.Evaluate(
+                context.Goal,
+                userMessage.RequestMode,
+                assistantMessage.AgentStopReason,
+                turnUsage.Add(evaluationUsage),
+                evaluation,
+                DateTimeOffset.UtcNow);
+            var applied = CopilotUiDispatcher.Invoke(
+                () =>
+                {
+                    if (conversation.Goal?.IsActive != true
+                        || !string.Equals(conversation.Goal.Id, context.Goal.Id, StringComparison.Ordinal))
+                    {
+                        return false;
+                    }
+
+                    conversation.Goal = decision.Goal;
+                    CopilotAssistantMessagePresenter.AppendExecutionTrace(
+                        assistantMessage,
+                        "Goal "
+                        + decision.Action.ToString().ToLowerInvariant()
+                        + " · "
+                        + CopilotAgentTraceEntry.Sanitize(decision.Reason));
+                    return true;
+                },
+                fallback: false);
+            if (!applied)
+                return new CopilotGoalPostTurnResult(evaluationUsage, string.Empty, string.Empty, false);
+
+            return new CopilotGoalPostTurnResult(
+                evaluationUsage,
+                decision.Goal.Id,
+                decision.Reason,
+                decision.Action == CopilotGoalTurnAction.QueueContinuation);
+        }
+
+        private bool TryQueueGoalContinuation(
+            CopilotConversationRecord conversation,
+            CopilotProfileConfig requestProfile,
+            string goalId,
+            string reason)
+        {
+            var goal = conversation.Goal;
+            if (goal?.IsActive != true
+                || !string.Equals(goal.Id, goalId, StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            if (_queuedFollowUpsByRunId.Values.Any(item =>
+                string.Equals(item.ConversationId, conversation.Id, StringComparison.Ordinal)))
+            {
+                return true;
+            }
+
+            var prompt =
+                "继续处理当前持续目标。独立完成评估认为目标尚未达成："
+                + CopilotConversationGoal.NormalizeReason(reason)
+                + Environment.NewLine
+                + "根据现有证据选择下一项最有价值的工作并验证结果；不要把持续目标当作工具、写入、审批复用或扩大范围的授权。";
+            var requestProfileSnapshot = CopilotResponsePresentationGuidance.CreateRequestProfile(requestProfile);
+            var submissionContext = CaptureHostedTurnSnapshot(
+                conversation,
+                attachmentOverride: conversation.Attachments);
+            var itemReady = new TaskCompletionSource<CopilotQueuedFollowUp>(
+                TaskCreationOptions.RunContinuationsAsynchronously);
+            if (!_taskHost.TryScheduleFollowUp(
+                conversation.Id,
+                CopilotAgentMode.Auto,
+                async run =>
+                {
+                    var queuedItem = await itemReady.Task.ConfigureAwait(false);
+                    await ExecuteQueuedFollowUpAsync(run, queuedItem).ConfigureAwait(false);
+                },
+                out var queuedRun,
+                out var admission)
+                || queuedRun == null)
+            {
+                var pauseReason = "无法排入下一轮持续目标任务："
+                    + GetRequestAdmissionText(admission)
+                    + "。目标已暂停，避免静默丢失续作。";
+                conversation.Goal = goal.WithState(
+                    CopilotConversationGoalState.Paused,
+                    DateTimeOffset.UtcNow,
+                    pauseReason);
+                PersistState(immediate: true);
+                return false;
+            }
+
+            var queuedFollowUp = new CopilotQueuedFollowUp(
+                queuedRun.Id,
+                conversation.Id,
+                conversation.Title,
+                prompt,
+                CopilotAgentMode.Auto,
+                requestProfileSnapshot,
+                submissionContext,
+                goalId);
+            _queuedFollowUpsByRunId.Add(queuedRun.Id, queuedFollowUp);
+            QueuedFollowUps.Add(queuedFollowUp);
+            AddQueuedFollowUpRecovery(queuedFollowUp);
+            itemReady.SetResult(queuedFollowUp);
+            RefreshQueuedFollowUpPositions();
+            PersistState(immediate: true);
+            return true;
+        }
+
         private void StartNewChat()
         {
             if (!CanSwitchConversation)
@@ -3407,7 +3657,11 @@ namespace ColorVision.Copilot
                 () => PrepareQueuedFollowUpTurn(queuedFollowUp),
                 fallback: null as CopilotPreparedQueuedFollowUpTurn);
             if (preparedTurn == null)
+            {
+                if (queuedFollowUp.IsAutomaticGoalContinuation)
+                    return;
                 throw new InvalidOperationException("The queued Copilot follow-up could not be prepared on the UI thread.");
+            }
 
             await ExecuteHostedPreparedTurnAsync(
                 hostedRun,
@@ -3419,12 +3673,20 @@ namespace ColorVision.Copilot
                 refreshExternalContext: true).ConfigureAwait(false);
         }
 
-        private CopilotPreparedQueuedFollowUpTurn PrepareQueuedFollowUpTurn(CopilotQueuedFollowUp queuedFollowUp)
+        private CopilotPreparedQueuedFollowUpTurn? PrepareQueuedFollowUpTurn(CopilotQueuedFollowUp queuedFollowUp)
         {
             RemoveQueuedFollowUp(queuedFollowUp.RunId, removeRecoveryRecord: false);
             var conversation = Conversations.FirstOrDefault(candidate =>
                 string.Equals(candidate.Id, queuedFollowUp.ConversationId, StringComparison.Ordinal))
                 ?? throw new InvalidOperationException("The conversation for the queued Copilot follow-up no longer exists.");
+            if (queuedFollowUp.IsAutomaticGoalContinuation
+                && (conversation.Goal?.IsActive != true
+                    || !string.Equals(conversation.Goal.Id, queuedFollowUp.GoalId, StringComparison.Ordinal)))
+            {
+                RemoveQueuedFollowUpRecovery(queuedFollowUp.RunId);
+                PersistState(immediate: true);
+                return null;
+            }
             var submittedContext = queuedFollowUp.SubmissionContext;
             var turnSnapshot = new CopilotAgentHostContextSnapshot(
                 submittedContext.ActiveDocumentPath,
@@ -3480,8 +3742,24 @@ namespace ColorVision.Copilot
 
         private void DeleteQueuedFollowUp(CopilotQueuedFollowUp? queuedFollowUp)
         {
-            if (queuedFollowUp != null)
-                _taskHost.RequestCancel(queuedFollowUp.RunId);
+            if (queuedFollowUp == null || !_taskHost.RequestCancel(queuedFollowUp.RunId))
+                return;
+
+            if (!queuedFollowUp.IsAutomaticGoalContinuation)
+                return;
+
+            var conversation = Conversations.FirstOrDefault(item =>
+                string.Equals(item.Id, queuedFollowUp.ConversationId, StringComparison.Ordinal));
+            if (conversation?.Goal?.IsActive == true
+                && string.Equals(conversation.Goal.Id, queuedFollowUp.GoalId, StringComparison.Ordinal))
+            {
+                conversation.Goal = conversation.Goal.WithState(
+                    CopilotConversationGoalState.Paused,
+                    DateTimeOffset.UtcNow,
+                    "用户取消了已排队的自动续作，持续目标已暂停。");
+                UpdateConversationMetadata(conversation, touch: true);
+                PersistState(immediate: true);
+            }
         }
 
         private void RemoveQueuedFollowUp(string runId, bool removeRecoveryRecord = true)
@@ -5886,7 +6164,13 @@ namespace ColorVision.Copilot
             if (goal?.IsStructurallyValid() != true)
                 return "None";
 
-            return $"{(goal.IsActive ? "Active" : "Paused")}, {goal.Objective.Length:N0} characters"
+            var state = goal.State switch
+            {
+                CopilotConversationGoalState.Active => "Active",
+                CopilotConversationGoalState.Achieved => "Achieved",
+                _ => "Paused",
+            };
+            return $"{state}, {goal.Objective.Length:N0} characters, {goal.TurnCount:N0} turn(s), {goal.TokensUsed:N0} tokens"
                 + (goal.IsActive ? " (completion constraint only)" : string.Empty);
         }
 
@@ -6411,6 +6695,20 @@ namespace ColorVision.Copilot
             CopilotChatMessage UserMessage,
             CopilotChatMessage AssistantMessage,
             CopilotAgentHostContextSnapshot TurnSnapshot);
+
+        private sealed record CopilotGoalEvaluationContext(
+            CopilotConversationGoal Goal,
+            IReadOnlyList<CopilotRequestMessage> Transcript);
+
+        private sealed record CopilotGoalPostTurnResult(
+            CopilotTokenUsage EvaluationUsage,
+            string GoalId,
+            string Reason,
+            bool ShouldQueueContinuation)
+        {
+            public static CopilotGoalPostTurnResult Empty { get; } =
+                new(CopilotTokenUsage.Empty, string.Empty, string.Empty, false);
+        }
 
     }
 }

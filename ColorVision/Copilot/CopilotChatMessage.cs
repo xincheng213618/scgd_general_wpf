@@ -2584,14 +2584,29 @@ namespace ColorVision.Copilot
         [JsonIgnore]
         public string GoalDisplayText => Goal == null
             ? string.Empty
-            : $"{(Goal.IsActive ? "持续目标" : "目标已暂停")} · {BuildPreview(Goal.Objective, 120)}";
+            : $"{Goal.State switch
+            {
+                CopilotConversationGoalState.Active => "持续目标",
+                CopilotConversationGoalState.Achieved => "目标已达成",
+                _ => "目标已暂停",
+            }} · {BuildPreview(Goal.Objective, 120)}";
 
         [JsonIgnore]
         public string GoalToolTip => Goal == null
             ? string.Empty
-            : $"{(Goal.IsActive ? "活动目标会绑定到后续新 Agent 任务。" : "该目标已暂停，不会绑定到新任务。")}"
+            : $"{Goal.State switch
+            {
+                CopilotConversationGoalState.Active => "活动目标会绑定到后续新 Agent 任务，并在每轮后独立评估。",
+                CopilotConversationGoalState.Achieved => "独立完成评估已确认该目标达成。",
+                _ => "该目标已暂停，不会自动启动新任务。",
+            }}"
                 + Environment.NewLine
                 + Goal.Objective
+                + Environment.NewLine
+                + $"{Goal.TurnCount:N0} 轮 · {Goal.EvaluationCount:N0} 次独立评估 · {Goal.TokensUsed:N0} Token"
+                + (string.IsNullOrWhiteSpace(Goal.LastEvaluationReason)
+                    ? string.Empty
+                    : Environment.NewLine + "最近判断：" + Goal.LastEvaluationReason)
                 + Environment.NewLine
                 + "目标约束完成判定，但不授权写入、工具调用、审批复用或外部副作用。";
 
