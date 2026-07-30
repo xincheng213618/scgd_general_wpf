@@ -756,12 +756,17 @@ namespace ColorVision.Copilot
                     e.Handled = true;
                     return;
                 }
-                if (e.Key is Key.Enter or Key.Tab)
+                var isRightArrowCompletion = IsRightArrowCompletionGesture(e);
+                if (e.Key is Key.Enter or Key.Tab || isRightArrowCompletion)
                 {
-                    promptHistoryViewModel.TryCompletePromptHistorySearch();
-                    MovePromptCaretToEnd();
-                    e.Handled = true;
-                    return;
+                    var completed = promptHistoryViewModel.TryCompletePromptHistorySearch();
+                    if (completed)
+                        MovePromptCaretToEnd();
+                    if (e.Key is Key.Enter or Key.Tab || completed)
+                    {
+                        e.Handled = true;
+                        return;
+                    }
                 }
             }
 
@@ -814,7 +819,8 @@ namespace ColorVision.Copilot
                     e.Handled = true;
                     return;
                 }
-                if (e.Key is Key.Enter or Key.Tab)
+                var isRightArrowCompletion = IsRightArrowCompletionGesture(e);
+                if (e.Key is Key.Enter or Key.Tab || isRightArrowCompletion)
                 {
                     if (referenceViewModel.HasComposerReferenceSuggestions
                         && referenceViewModel.TryCompleteComposerReference())
@@ -824,7 +830,8 @@ namespace ColorVision.Copilot
                         return;
                     }
 
-                    if (CopilotComposerReferenceCatalog.ShouldConsumeReferenceCompletionKey(
+                    if (!isRightArrowCompletion
+                        && CopilotComposerReferenceCatalog.ShouldConsumeReferenceCompletionKey(
                             e.Key == Key.Tab,
                             referenceViewModel.HasComposerReferenceSuggestions,
                             referenceViewModel.IsComposerReferenceSearchPending))
@@ -871,7 +878,7 @@ namespace ColorVision.Copilot
             }
 
             if (DataContext is CopilotChatViewModel completionViewModel
-                && e.Key == Key.Tab
+                && (e.Key == Key.Tab || IsRightArrowCompletionGesture(e))
                 && completionViewModel.TryCompleteLocalCommand())
             {
                 MovePromptCaretToEnd();
@@ -902,6 +909,16 @@ namespace ColorVision.Copilot
             }
 
             e.Handled = true;
+        }
+
+        private bool IsRightArrowCompletionGesture(KeyEventArgs e)
+        {
+            return e.Key == Key.Right
+                && Keyboard.Modifiers == ModifierKeys.None
+                && CopilotComposerCompletionKeys.CanAcceptRightArrow(
+                    PromptTextBox.CaretIndex,
+                    PromptTextBox.SelectionLength,
+                    PromptTextBox.Text.Length);
         }
 
         private void LocalCommandSuggestionButton_Click(object sender, RoutedEventArgs e)

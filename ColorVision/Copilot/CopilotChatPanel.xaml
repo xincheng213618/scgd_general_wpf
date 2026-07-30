@@ -2146,7 +2146,7 @@
                                            VerticalAlignment="Center"
                                            FontSize="9"
                                            Opacity="0.48"
-                                           Text="↑↓ 选择 · Ctrl+S 范围 · Enter 恢复 · Esc 关闭" />
+                                           Text="↑↓ 选择 · Enter/→ 恢复 · Ctrl+S 范围 · Esc 关闭" />
                                 <TextBlock VerticalAlignment="Center"
                                            FontSize="10"
                                            FontWeight="SemiBold"
@@ -2209,7 +2209,7 @@
                                            VerticalAlignment="Center"
                                            FontSize="9"
                                            Opacity="0.48"
-                                           Text="↑↓ 选择 · Enter 关联 · Esc 关闭" />
+                                           Text="↑↓ 选择 · Enter/→ 关联 · Esc 关闭" />
                                 <TextBlock VerticalAlignment="Center"
                                            FontSize="10"
                                            FontWeight="SemiBold"
@@ -2290,7 +2290,7 @@
                                            VerticalAlignment="Center"
                                            FontSize="9"
                                            Opacity="0.48"
-                                           Text="↑↓ 选择 · Tab 补全 · Enter 执行" />
+                                           Text="↑↓ 选择 · Tab/→ 补全 · Enter 执行" />
                                 <TextBlock VerticalAlignment="Center"
                                            FontSize="10"
                                            FontWeight="SemiBold"
@@ -2312,7 +2312,7 @@
                                                 Command="{Binding DataContext.CompleteLocalCommandCommand, Source={x:Reference Root}}"
                                                 CommandParameter="{Binding}"
                                                 Click="LocalCommandSuggestionButton_Click"
-                                                ToolTip="点击，或用 ↑↓ 选择后按 Tab 补全；Enter 在参数完整时执行">
+                                                ToolTip="点击，或用 ↑↓ 选择后按 Tab/→ 补全；Enter 在参数完整时执行">
                                             <Grid>
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="Auto" />
@@ -2329,7 +2329,7 @@
                                                 <TextBlock Grid.Column="2"
                                                            Margin="14,0,0,0"
                                                            Opacity="0.48"
-                                                           Text="Tab 补全" />
+                                                           Text="Tab/→ 补全" />
                                             </Grid>
                                         </Button>
                                     </DataTemplate>
@@ -2375,7 +2375,7 @@
                                  PreviewKeyDown="PromptTextBox_PreviewKeyDown"
                                  Text="{Binding InputText, UpdateSourceTrigger=PropertyChanged}"
                                  TextWrapping="Wrap"
-                                 ToolTip="↑/↓ 浏览请求历史；Ctrl+R 搜索历史；Ctrl+S 暂存或恢复草稿；Ctrl+E 展开编辑"
+                                 ToolTip="↑/↓ 浏览请求历史；补全列表中可用 → 接受；Ctrl+R 搜索历史；Ctrl+S 暂存或恢复草稿；Ctrl+E 展开编辑"
                                  VerticalContentAlignment="Top"
                                  VerticalScrollBarVisibility="Auto" />
                     </Grid>
