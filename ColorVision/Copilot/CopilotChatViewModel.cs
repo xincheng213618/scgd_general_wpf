@@ -1795,6 +1795,9 @@ namespace ColorVision.Copilot
                 case CopilotLocalCommandKind.Help:
                     ShowLocalCommandResult(command, CopilotLocalCommandHelp.Format(invocation.Arguments));
                     break;
+                case CopilotLocalCommandKind.Shortcuts:
+                    ShowLocalCommandResult(command, CopilotKeyboardShortcutHelp.Format());
+                    break;
                 case CopilotLocalCommandKind.Status:
                     ShowLocalCommandResult(command, BuildStatusDiagnosticsReport());
                     break;
@@ -2515,6 +2518,13 @@ namespace ColorVision.Copilot
         {
             LocalCommandResultTitle = $"{command.Name} · 本地快照";
             LocalCommandResultText = report;
+        }
+
+        public void ShowKeyboardShortcutHelp()
+        {
+            var command = CopilotLocalCommandCatalog.FindExact("/shortcuts");
+            if (command != null)
+                ShowLocalCommandResult(command, CopilotKeyboardShortcutHelp.Format());
         }
 
         private string BuildContextDiagnosticsReport()

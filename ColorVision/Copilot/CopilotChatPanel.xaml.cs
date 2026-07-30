@@ -94,6 +94,15 @@ namespace ColorVision.Copilot
         private void CopilotChatPanel_PreviewKeyDown(object sender, KeyEventArgs e)
         {
             var key = e.Key == Key.System ? e.SystemKey : e.Key;
+            if (key is Key.Oem2 or Key.Divide
+                && Keyboard.Modifiers == ModifierKeys.Control
+                && DataContext is CopilotChatViewModel shortcutViewModel)
+            {
+                shortcutViewModel.ShowKeyboardShortcutHelp();
+                e.Handled = true;
+                return;
+            }
+
             if (key == Key.P && Keyboard.Modifiers == ModifierKeys.Alt)
             {
                 if (OpenProfileSelector())

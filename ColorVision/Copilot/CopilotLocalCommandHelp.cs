@@ -10,7 +10,7 @@ namespace ColorVision.Copilot
 
         private static readonly (string Title, CopilotLocalCommandKind[] Kinds)[] Sections =
         [
-            ("帮助", [CopilotLocalCommandKind.Help]),
+            ("帮助", [CopilotLocalCommandKind.Help, CopilotLocalCommandKind.Shortcuts]),
             ("状态与诊断",
             [
                 CopilotLocalCommandKind.Status,
