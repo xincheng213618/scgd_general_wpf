@@ -84,6 +84,7 @@ namespace ColorVision.Copilot
                             : "已保存当前进度，可安全恢复",
                         "provider_output_length" => "最终回答达到输出上限，已保留部分内容",
                         "provider_content_filtered" => "最终回答被内容策略提前停止",
+                        "provider_output_finish_reason" => "最终回答以未确认完成的状态结束",
                         _ => "模型未返回最终回答",
                     };
                 if (blocker != null && !string.IsNullOrWhiteSpace(blocker.Summary))

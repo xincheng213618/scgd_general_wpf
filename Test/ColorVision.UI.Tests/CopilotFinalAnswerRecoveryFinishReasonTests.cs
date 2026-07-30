@@ -46,16 +46,48 @@ public sealed class CopilotFinalAnswerRecoveryFinishReasonTests
     }
 
     [Fact]
+    public async Task MissingFinishReasonUsesCompatibleNaturalCompletionSemantics()
+    {
+        var fixture = CreateFixture(null);
+
+        var result = await fixture.Runtime.RunAsync(
+            fixture.Request,
+            fixture.Events.Add,
+            CancellationToken.None);
+
+        Assert.Equal(CopilotAgentStopReason.Completed, result.StopReason);
+        Assert.Null(result.SessionCheckpoint);
+        Assert.Empty(result.Blockers);
+        Assert.Equal("Recovered final answer.", JoinAnswer(fixture.Events));
+    }
+
+    [Fact]
+    public async Task UnknownFinishReasonRetainsPartialAnswerAndCheckpoint()
+    {
+        await AssertIncompleteRecoveryAsync(
+            new ChatFinishReason("provider_paused"),
+            "provider_output_finish_reason",
+            "最终回答以未确认完成的提供商状态结束",
+            "最终回答以未确认完成的状态结束");
+    }
+
+    [Fact]
     public void ProviderFinishReasonClassificationSeparatesPartialOutcomes()
     {
         Assert.True(CopilotMicrosoftAgentFrameworkRuntime.IsLengthLimitedOutput(ChatFinishReason.Length));
+        Assert.True(CopilotMicrosoftAgentFrameworkRuntime.IsLengthLimitedOutput(new ChatFinishReason("max_tokens")));
         Assert.False(CopilotMicrosoftAgentFrameworkRuntime.IsLengthLimitedOutput(ChatFinishReason.ContentFilter));
         Assert.True(CopilotMicrosoftAgentFrameworkRuntime.IsContentFilteredOutput(ChatFinishReason.ContentFilter));
+        Assert.True(CopilotMicrosoftAgentFrameworkRuntime.IsContentFilteredOutput(new ChatFinishReason("safety")));
         Assert.False(CopilotMicrosoftAgentFrameworkRuntime.IsContentFilteredOutput(ChatFinishReason.Stop));
+        Assert.True(CopilotMicrosoftAgentFrameworkRuntime.IsUnexpectedIncompleteOutput(ChatFinishReason.ToolCalls));
+        Assert.True(CopilotMicrosoftAgentFrameworkRuntime.IsUnexpectedIncompleteOutput(new ChatFinishReason("provider_paused")));
+        Assert.False(CopilotMicrosoftAgentFrameworkRuntime.IsUnexpectedIncompleteOutput(new ChatFinishReason("end_turn")));
+        Assert.False(CopilotMicrosoftAgentFrameworkRuntime.IsUnexpectedIncompleteOutput(null));
     }
 
     private static async Task AssertIncompleteRecoveryAsync(
-        ChatFinishReason finishReason,
+        ChatFinishReason? finishReason,
         string expectedBlockerCode,
         string expectedNotice,
         string expectedDetail)
@@ -90,7 +122,7 @@ public sealed class CopilotFinalAnswerRecoveryFinishReasonTests
         Assert.Equal("重试最终回答", task.RecoveryActionLabel);
     }
 
-    private static RecoveryFixture CreateFixture(ChatFinishReason finishReason)
+    private static RecoveryFixture CreateFixture(ChatFinishReason? finishReason)
     {
         var profile = new CopilotProfileConfig
         {
@@ -155,7 +187,7 @@ public sealed class CopilotFinalAnswerRecoveryFinishReasonTests
         CopilotAgentRequest Request,
         List<CopilotAgentEvent> Events);
 
-    private sealed class FinishReasonChatClient(ChatFinishReason finishReason) : IChatClient
+    private sealed class FinishReasonChatClient(ChatFinishReason? finishReason) : IChatClient
     {
         public Task<ChatResponse> GetResponseAsync(
             IEnumerable<ChatMessage> messages,

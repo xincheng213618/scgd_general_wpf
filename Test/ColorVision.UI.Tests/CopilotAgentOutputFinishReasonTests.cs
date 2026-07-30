@@ -81,6 +81,55 @@ public sealed class CopilotAgentOutputFinishReasonTests
         Assert.Equal("Recovered complete answer.", ReconstructAnswer(events));
     }
 
+    [Fact]
+    public async Task ToolRequestAtTerminalBoundaryUsesBoundedFinalization()
+    {
+        using var provider = new ScriptedFinishReasonChatClient(
+            ChatFinishReason.ToolCalls,
+            "Primary text before the unresolved tool request.",
+            ChatFinishReason.Stop,
+            "Recovered without another tool call.");
+        var events = new List<CopilotAgentEvent>();
+
+        var result = await CreateRuntime(provider).RunAsync(
+            CreateRequest(),
+            events.Add,
+            CancellationToken.None);
+
+        Assert.Equal(1, provider.StreamingCallCount);
+        Assert.Equal(1, provider.NonStreamingCallCount);
+        Assert.Equal(CopilotAgentStopReason.Completed, result.StopReason);
+        Assert.Empty(result.Blockers);
+        Assert.Equal("Recovered without another tool call.", ReconstructAnswer(events));
+        Assert.Contains(events, agentEvent =>
+            agentEvent.Type == CopilotAgentEventType.RuntimeDiagnostic
+            && agentEvent.Text.Contains("explicit non-success finish reason", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task UnknownRepairFinishReasonCannotUpgradePartialAnswer()
+    {
+        using var provider = new ScriptedFinishReasonChatClient(
+            ChatFinishReason.Length,
+            "Primary partial.",
+            new ChatFinishReason("provider_paused"),
+            "Unconfirmed replacement.");
+        var events = new List<CopilotAgentEvent>();
+
+        var result = await CreateRuntime(provider).RunAsync(
+            CreateRequest(),
+            events.Add,
+            CancellationToken.None);
+
+        Assert.Equal(CopilotAgentStopReason.IncompleteOutput, result.StopReason);
+        Assert.NotNull(result.SessionCheckpoint);
+        Assert.Equal("provider_output_finish_reason", Assert.Single(result.Blockers).Code);
+        var answer = ReconstructAnswer(events);
+        Assert.Contains("Primary partial.", answer, StringComparison.Ordinal);
+        Assert.DoesNotContain("Unconfirmed replacement.", answer, StringComparison.Ordinal);
+        Assert.Contains("未确认完成的提供商状态", answer, StringComparison.Ordinal);
+    }
+
     private static CopilotMicrosoftAgentFrameworkRuntime CreateRuntime(IChatClient provider)
     {
         return new CopilotMicrosoftAgentFrameworkRuntime(
