@@ -12,7 +12,20 @@ namespace ColorVision.Copilot
             return conversation != null
                 && conversation.Messages.Count == 0
                 && conversation.Attachments.Count == 0
-                && !conversation.HasDraft;
+                && !conversation.HasDraft
+                && !conversation.HasCustomTitle
+                && !conversation.IsPinned
+                && string.Equals(conversation.Title, CopilotUiText.NewConversationTitle, StringComparison.Ordinal)
+                && string.Equals(conversation.PreviewText, CopilotUiText.EmptyConversationPreview, StringComparison.Ordinal)
+                && conversation.LastUsageInputTokens == 0
+                && conversation.LastUsageOutputTokens == 0
+                && conversation.LastUsageTotalTokens == 0
+                && conversation.LastUsageCachedInputTokens == null
+                && conversation.AccessMode == CopilotAgentAccessMode.ConfirmProtectedActions
+                && conversation.AgentSessionCheckpoint == null
+                && conversation.Compaction == null
+                && conversation.BranchOrigin == null
+                && conversation.Goal == null;
         }
 
         public static bool IsHistory(CopilotConversationRecord? conversation)
@@ -150,8 +163,7 @@ namespace ColorVision.Copilot
             if (IsReusableEmpty(selectedConversation))
                 return selectedConversation!;
 
-            var reusableConversation = conversations.FirstOrDefault(IsReusableEmpty);
-            return reusableConversation ?? Create(conversations, profile);
+            return Create(conversations, profile);
         }
 
         public static CopilotConversationRecord Create(

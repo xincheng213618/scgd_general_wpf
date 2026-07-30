@@ -1412,6 +1412,9 @@ namespace ColorVision.Copilot
                     DismissLocalCommandResult();
                     StartNewChat();
                     break;
+                case CopilotLocalCommandKind.ClearConversation:
+                    ClearConversationContext(command, invocation.Arguments);
+                    break;
                 case CopilotLocalCommandKind.ForkConversation:
                     ForkCurrentConversation(command, invocation.Arguments);
                     break;
@@ -3470,6 +3473,7 @@ namespace ColorVision.Copilot
                 return;
             if (IsEditingMessage)
                 CancelMessageEdit();
+            _pendingAgentRecoveryRequest = null;
             ClearPendingRequestModeOverride();
 
             if (CopilotConversationService.IsReusableEmpty(SelectedConversation))
@@ -3481,6 +3485,29 @@ namespace ColorVision.Copilot
                 SelectConversation(conversation, persist: false);
                 PersistState();
             }
+        }
+
+        private void ClearConversationContext(CopilotLocalCommand command, string previousTitle)
+        {
+            if (IsBusy || !CanSwitchConversation)
+            {
+                ShowLocalCommandResult(command, "当前有请求正在执行，请完成或停止后再清空上下文。");
+                return;
+            }
+
+            var normalizedTitle = previousTitle.Trim();
+            if (normalizedTitle.Length > 0
+                && (SelectedConversation == null
+                    || !TryApplyConversationTitle(SelectedConversation, normalizedTitle)))
+            {
+                ShowLocalCommandResult(
+                    command,
+                    $"旧会话名称不能为空且不能超过 {CopilotConversationRecord.MaximumTitleCharacters:N0} 个字符。");
+                return;
+            }
+
+            DismissLocalCommandResult();
+            StartNewChat();
         }
 
         private void ResumeConversation(CopilotLocalCommand command, string query)
