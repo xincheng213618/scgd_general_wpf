@@ -2359,7 +2359,7 @@
                                  PreviewKeyDown="PromptTextBox_PreviewKeyDown"
                                  Text="{Binding InputText, UpdateSourceTrigger=PropertyChanged}"
                                  TextWrapping="Wrap"
-                                 ToolTip="输入为空时按 ↑/↓ 浏览本会话的请求历史"
+                                 ToolTip="↑/↓ 浏览请求历史；Ctrl+R 搜索历史；Ctrl+S 暂存或恢复草稿"
                                  VerticalContentAlignment="Top"
                                  VerticalScrollBarVisibility="Auto" />
                     </Grid>
@@ -2495,19 +2495,31 @@
                             </DockPanel>
                         </Border>
 
-                        <Button Grid.Row="0"
-                                Grid.Column="3"
-                                Width="44"
-                                Height="28"
-                                Margin="4,0"
-                                HorizontalAlignment="Right"
-                                AutomationProperties.Name="压缩已裁剪的会话上下文"
-                                Command="{Binding CompactConversationCommand}"
-                                Content="压缩"
-                                FontSize="10"
-                                Style="{StaticResource CopilotIconButtonStyle}"
-                                ToolTip="{Binding ConversationContextCompactionToolTip}"
-                                Visibility="{Binding IsConversationContextReduced, Converter={StaticResource bool2VisibilityConverter}}" />
+                        <StackPanel Grid.Row="0"
+                                    Grid.Column="3"
+                                    Margin="4,0"
+                                    HorizontalAlignment="Right"
+                                    Orientation="Horizontal">
+                            <Button Width="62"
+                                    Height="28"
+                                    Margin="0,0,4,0"
+                                    AutomationProperties.Name="恢复暂存的 Copilot 草稿"
+                                    Click="ComposerStashButton_Click"
+                                    Content="恢复草稿"
+                                    FontSize="10"
+                                    Style="{StaticResource CopilotIconButtonStyle}"
+                                    ToolTip="{Binding ComposerStashToolTip}"
+                                    Visibility="{Binding HasComposerStash, Converter={StaticResource bool2VisibilityConverter}}" />
+                            <Button Width="44"
+                                    Height="28"
+                                    AutomationProperties.Name="压缩已裁剪的会话上下文"
+                                    Command="{Binding CompactConversationCommand}"
+                                    Content="压缩"
+                                    FontSize="10"
+                                    Style="{StaticResource CopilotIconButtonStyle}"
+                                    ToolTip="{Binding ConversationContextCompactionToolTip}"
+                                    Visibility="{Binding IsConversationContextReduced, Converter={StaticResource bool2VisibilityConverter}}" />
+                        </StackPanel>
 
                         <Grid x:Name="ComposerSelectorGrid"
                               Grid.Row="0"

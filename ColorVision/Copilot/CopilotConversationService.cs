@@ -13,6 +13,7 @@ namespace ColorVision.Copilot
                 && conversation.Messages.Count == 0
                 && conversation.Attachments.Count == 0
                 && !conversation.HasDraft
+                && !conversation.HasComposerStash
                 && !conversation.HasCustomTitle
                 && !conversation.IsPinned
                 && string.Equals(conversation.Title, CopilotUiText.NewConversationTitle, StringComparison.Ordinal)
@@ -32,6 +33,7 @@ namespace ColorVision.Copilot
         {
             return conversation != null
                 && (conversation.HasDraft
+                    || conversation.HasComposerStash
                     || conversation.Attachments.Count > 0
                     || conversation.Messages.Any(message => !string.IsNullOrWhiteSpace(message.Content)));
         }

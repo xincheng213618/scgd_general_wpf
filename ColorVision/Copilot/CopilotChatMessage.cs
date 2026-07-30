@@ -2560,6 +2560,22 @@ namespace ColorVision.Copilot
 
         public bool ShouldSerializeDraftText() => HasDraft;
 
+        public CopilotComposerStash? ComposerStash
+        {
+            get => _composerStash;
+            set
+            {
+                if (SetProperty(ref _composerStash, value))
+                {
+                    OnPropertyChanged(nameof(HasComposerStash));
+                    OnPropertyChanged(nameof(ConversationListPreviewText));
+                }
+            }
+        }
+        private CopilotComposerStash? _composerStash;
+
+        public bool ShouldSerializeComposerStash() => HasComposerStash;
+
         public string ProfileId
         {
             get => _profileId;
@@ -2756,7 +2772,14 @@ namespace ColorVision.Copilot
         public bool HasDraft => !string.IsNullOrWhiteSpace(DraftText);
 
         [JsonIgnore]
-        public string ConversationListPreviewText => HasDraft ? $"草稿：{BuildPreview(DraftText, 42)}" : PreviewText;
+        public bool HasComposerStash => ComposerStash?.HasContent == true;
+
+        [JsonIgnore]
+        public string ConversationListPreviewText => HasDraft
+            ? $"草稿：{BuildPreview(DraftText, 42)}"
+            : HasComposerStash
+                ? BuildComposerStashPreview(ComposerStash!)
+                : PreviewText;
 
         [JsonIgnore]
         public string PinLabel => IsPinned ? CopilotUiText.PinnedLabel : string.Empty;
@@ -2850,6 +2873,15 @@ namespace ColorVision.Copilot
             {
                 DraftText = string.Empty;
                 changed = true;
+            }
+            if (ComposerStash != null)
+            {
+                changed |= ComposerStash.EnsureValid();
+                if (!ComposerStash.HasContent)
+                {
+                    ComposerStash = null;
+                    changed = true;
+                }
             }
             if (!Enum.IsDefined(ResponsePersonality))
             {
@@ -2945,6 +2977,9 @@ namespace ColorVision.Copilot
         internal IEnumerable<CopilotAttachmentItem> EnumerateReferencedAttachments()
         {
             foreach (var attachment in Attachments?.Where(attachment => attachment != null) ?? Enumerable.Empty<CopilotAttachmentItem>())
+                yield return attachment;
+
+            foreach (var attachment in ComposerStash?.Attachments?.Where(attachment => attachment != null) ?? Enumerable.Empty<CopilotAttachmentItem>())
                 yield return attachment;
 
             foreach (var message in Messages?.Where(message => message != null) ?? Enumerable.Empty<CopilotChatMessage>())
@@ -3049,6 +3084,15 @@ namespace ColorVision.Copilot
                 return normalized;
 
             return normalized[..maxLength] + "...";
+        }
+
+        private static string BuildComposerStashPreview(CopilotComposerStash stash)
+        {
+            var textPreview = BuildPreview(stash.Text, 34);
+            if (!string.IsNullOrWhiteSpace(textPreview))
+                return $"已暂存：{textPreview}";
+
+            return $"已暂存：{stash.Attachments.Count:N0} 个附件";
         }
 
         private static string NormalizeText(string? value) => value?.Trim() ?? string.Empty;

@@ -381,6 +381,22 @@ namespace ColorVision.Copilot
 
         public ObservableCollection<CopilotAttachmentItem> Attachments => SelectedConversation?.Attachments ?? _emptyAttachments;
 
+        public bool HasComposerStash => SelectedConversation?.HasComposerStash == true;
+
+        public string ComposerStashToolTip
+        {
+            get
+            {
+                var stash = SelectedConversation?.ComposerStash;
+                if (stash?.HasContent != true)
+                    return "按 Ctrl+S 暂存当前输入、附件和请求模式";
+
+                return $"恢复暂存草稿（Ctrl+S）"
+                    + Environment.NewLine
+                    + $"{stash.Text.Length:N0} 个字符 · {stash.Attachments.Count:N0} 个附件 · {FormatComposerRequestMode(stash.RequestMode)}模式";
+            }
+        }
+
         public ObservableCollection<CopilotComposerReferenceItem> ComposerReferenceSuggestions => _composerReferenceSuggestions;
 
         public ObservableCollection<CopilotPromptHistorySearchItem> PromptHistorySearchResults => _promptHistorySearchResults;
@@ -1129,6 +1145,94 @@ namespace ColorVision.Copilot
             OnPropertyChanged(nameof(HasPromptHistorySearchResults));
             OnPropertyChanged(nameof(PromptHistorySearchHeader));
             OnPropertyChanged(nameof(PromptHistorySearchStatusText));
+        }
+
+        public bool TryToggleComposerStash(int caretIndex, out int restoredCaretIndex)
+        {
+            restoredCaretIndex = -1;
+            var conversation = SelectedConversation;
+            if (conversation == null)
+                return false;
+
+            if (IsPromptHistorySearchOpen)
+            {
+                ShowComposerStashFeedback("暂存不可用", "请先完成或关闭历史请求搜索。");
+                return true;
+            }
+            if (IsEditingMessage)
+            {
+                ShowComposerStashFeedback("暂存不可用", "请先完成或取消当前消息编辑。");
+                return true;
+            }
+            if (HasExclusiveLocalOperation)
+            {
+                ShowComposerStashFeedback("暂存不可用", "请等待当前附件、上下文或会话压缩操作完成。");
+                return true;
+            }
+
+            var hasComposerContent = InputText.Length > 0 || conversation.Attachments.Count > 0;
+            if (hasComposerContent)
+            {
+                if (conversation.HasComposerStash)
+                {
+                    ShowComposerStashFeedback(
+                        "已有暂存草稿",
+                        "现有暂存不会被覆盖。请先发送或移走当前输入，再在空输入框按 Ctrl+S 恢复。");
+                    return true;
+                }
+
+                var capturedStash = CopilotComposerStash.Capture(
+                    InputText,
+                    caretIndex,
+                    ResolveComposerRequestMode(),
+                    conversation.Attachments);
+                conversation.ComposerStash = capturedStash;
+                conversation.Attachments.Clear();
+                InputText = string.Empty;
+                ClearPendingRequestModeOverride();
+                UpdateAttachmentsState(conversation);
+                NotifyComposerStashChanged();
+                ShowComposerStashFeedback(
+                    "草稿已暂存",
+                    $"已保存 {capturedStash.Text.Length:N0} 个字符和 {capturedStash.Attachments.Count:N0} 个附件；空输入框按 Ctrl+S 可恢复。");
+                return true;
+            }
+
+            var stash = conversation.ComposerStash;
+            if (stash?.HasContent != true)
+            {
+                ShowComposerStashFeedback("没有暂存草稿", "请先输入内容或添加附件，再按 Ctrl+S 暂存。");
+                return true;
+            }
+
+            var attachmentSnapshots = stash.CreateAttachmentSnapshots();
+            conversation.ComposerStash = null;
+            foreach (var attachment in attachmentSnapshots)
+                conversation.Attachments.Add(attachment);
+            InputText = stash.Text;
+            SetPendingRequestModeOverride(stash.RequestMode);
+            restoredCaretIndex = Math.Clamp(stash.CaretIndex, 0, InputText.Length);
+            UpdateAttachmentsState(conversation);
+            NotifyComposerStashChanged();
+            ShowComposerStashFeedback(
+                "草稿已恢复",
+                $"已恢复 {InputText.Length:N0} 个字符和 {attachmentSnapshots.Count:N0} 个附件；内容尚未发送。");
+            return true;
+        }
+
+        private void NotifyComposerStashChanged()
+        {
+            OnPropertyChanged(nameof(HasComposerStash));
+            OnPropertyChanged(nameof(ComposerStashToolTip));
+            RefreshCompactHistoryConversations();
+            if (HasConversationSearchQuery)
+                RefreshFilteredConversations();
+        }
+
+        private void ShowComposerStashFeedback(string title, string text)
+        {
+            LocalCommandResultTitle = title;
+            LocalCommandResultText = text;
         }
 
 
@@ -5037,6 +5141,19 @@ namespace ColorVision.Copilot
             return _pendingRequestModeOverride ?? CopilotAgentMode.Auto;
         }
 
+        private static string FormatComposerRequestMode(CopilotAgentMode mode) => mode switch
+        {
+            CopilotAgentMode.Chat => "聊天",
+            CopilotAgentMode.Auto => "自动",
+            CopilotAgentMode.Explain => "解释",
+            CopilotAgentMode.Web => "网页",
+            CopilotAgentMode.Code => "代码",
+            CopilotAgentMode.Review => "审查",
+            CopilotAgentMode.Diagnose => "诊断",
+            CopilotAgentMode.Plan => "计划",
+            _ => "自动",
+        };
+
         private bool CanScheduleComposerRequest(CopilotAgentMode mode)
         {
             return Volatile.Read(ref _disposeState) == 0
@@ -5454,9 +5571,11 @@ namespace ColorVision.Copilot
                 ContainsSearchTerm(conversation.Title, term)
                 || ContainsSearchTerm(conversation.PreviewText, term)
                 || ContainsSearchTerm(conversation.DraftText, term)
+                || ContainsSearchTerm(conversation.ComposerStash?.Text, term)
                 || ContainsSearchTerm(conversation.Goal?.Objective, term)
                 || ContainsSearchTerm(conversation.ProfileDisplayName, term)
                 || conversation.Attachments.Any(attachment => MatchesAttachmentSearch(attachment, term))
+                || (conversation.ComposerStash?.Attachments.Any(attachment => MatchesAttachmentSearch(attachment, term)) ?? false)
                 || conversation.Messages.Any(message => ContainsSearchTerm(message.Content, term)
                     || message.Attachments.Any(attachment => MatchesAttachmentSearch(attachment, term))));
         }
@@ -5632,6 +5751,8 @@ namespace ColorVision.Copilot
             OnPropertyChanged(nameof(Messages));
             OnPropertyChanged(nameof(Attachments));
             OnPropertyChanged(nameof(HasAttachments));
+            OnPropertyChanged(nameof(HasComposerStash));
+            OnPropertyChanged(nameof(ComposerStashToolTip));
             OnPropertyChanged(nameof(IsConversationEmpty));
             OnPropertyChanged(nameof(InputPlaceholder));
             RefreshConversationFind();

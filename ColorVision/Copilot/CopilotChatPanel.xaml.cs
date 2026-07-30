@@ -685,6 +685,20 @@ namespace ColorVision.Copilot
                 return;
             }
 
+            if (e.Key == Key.S
+                && Keyboard.Modifiers == ModifierKeys.Control
+                && DataContext is CopilotChatViewModel stashViewModel)
+            {
+                if (stashViewModel.TryToggleComposerStash(
+                    PromptTextBox.CaretIndex,
+                    out var restoredCaretIndex))
+                {
+                    ApplyPromptCaret(restoredCaretIndex);
+                }
+                e.Handled = true;
+                return;
+            }
+
             if (Keyboard.Modifiers == ModifierKeys.None
                 && DataContext is CopilotChatViewModel referenceViewModel
                 && referenceViewModel.IsComposerReferenceMentionActive)
@@ -807,15 +821,36 @@ namespace ColorVision.Copilot
             MovePromptCaretToEnd();
         }
 
+        private void ComposerStashButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (DataContext is not CopilotChatViewModel viewModel
+                || !viewModel.TryToggleComposerStash(
+                    PromptTextBox.CaretIndex,
+                    out var restoredCaretIndex))
+            {
+                return;
+            }
+
+            FocusPromptInput();
+            ApplyPromptCaret(restoredCaretIndex);
+        }
+
         private void EditMessageButton_Click(object sender, RoutedEventArgs e)
         {
             FocusPromptInput();
         }
 
-        private void MovePromptCaretToEnd()
+        private void ApplyPromptCaret(int caretIndex)
         {
             PromptTextBox.GetBindingExpression(TextBox.TextProperty)?.UpdateTarget();
-            PromptTextBox.CaretIndex = PromptTextBox.Text.Length;
+            PromptTextBox.CaretIndex = caretIndex < 0
+                ? PromptTextBox.Text.Length
+                : Math.Clamp(caretIndex, 0, PromptTextBox.Text.Length);
+        }
+
+        private void MovePromptCaretToEnd()
+        {
+            ApplyPromptCaret(-1);
         }
 
         private async void PromptTextBox_Pasting(object sender, DataObjectPastingEventArgs e)

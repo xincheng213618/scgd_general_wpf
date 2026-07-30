@@ -794,6 +794,7 @@ namespace ColorVision.Copilot
                     || conversation.GetValue(nameof(CopilotConversationRecord.Messages), StringComparison.OrdinalIgnoreCase) is not JArray messages
                     || conversation.GetValue(nameof(CopilotConversationRecord.Attachments), StringComparison.OrdinalIgnoreCase) is not JArray attachments
                     || !IsOptionalString(conversation.GetValue(nameof(CopilotConversationRecord.DraftText), StringComparison.OrdinalIgnoreCase))
+                    || !IsOptionalComposerStash(conversation.GetValue(nameof(CopilotConversationRecord.ComposerStash), StringComparison.OrdinalIgnoreCase))
                     || !IsOptionalObject(conversation.GetValue(nameof(CopilotConversationRecord.BranchOrigin), StringComparison.OrdinalIgnoreCase))
                     || messages.Any(item => item is not JObject)
                     || attachments.Any(item => item is not JObject))
@@ -828,6 +829,27 @@ namespace ColorVision.Copilot
         private static bool IsOptionalString(JToken? token) => token == null || IsStringOrNull(token);
 
         private static bool IsOptionalObject(JToken? token) => token == null || token.Type == JTokenType.Null || token is JObject;
+
+        private static bool IsOptionalComposerStash(JToken? token)
+        {
+            if (token == null || token.Type == JTokenType.Null)
+                return true;
+            if (token is not JObject stash
+                || !IsOptionalString(stash.GetValue(nameof(CopilotComposerStash.Text), StringComparison.OrdinalIgnoreCase)))
+            {
+                return false;
+            }
+
+            var caretIndex = stash.GetValue(nameof(CopilotComposerStash.CaretIndex), StringComparison.OrdinalIgnoreCase);
+            var requestMode = stash.GetValue(nameof(CopilotComposerStash.RequestMode), StringComparison.OrdinalIgnoreCase);
+            var attachments = stash.GetValue(nameof(CopilotComposerStash.Attachments), StringComparison.OrdinalIgnoreCase);
+            return (caretIndex == null || caretIndex.Type is JTokenType.Integer or JTokenType.Null)
+                && (requestMode == null || requestMode.Type is JTokenType.Integer or JTokenType.Null)
+                && (attachments == null
+                    || attachments.Type == JTokenType.Null
+                    || attachments is JArray attachmentArray
+                        && attachmentArray.All(item => item is JObject));
+        }
 
         private static bool IsPathUnderRoot(string path, string root)
         {
