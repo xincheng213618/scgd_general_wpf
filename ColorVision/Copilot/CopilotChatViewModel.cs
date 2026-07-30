@@ -281,6 +281,8 @@ namespace ColorVision.Copilot
 
         public event EventHandler? ProfileSelectionRequested;
 
+        public event EventHandler? ReasoningSelectionRequested;
+
         public ObservableCollection<CopilotConversationRecord> CompactHistoryConversations { get; } = new();
 
         public ObservableCollection<CopilotConversationRecord> FilteredConversations { get; } = new();
@@ -1410,6 +1412,9 @@ namespace ColorVision.Copilot
                     break;
                 case CopilotLocalCommandKind.SelectModel:
                     SelectModelProfile(command, invocation.Arguments);
+                    break;
+                case CopilotLocalCommandKind.SelectReasoning:
+                    SelectReasoningMode(command, invocation.Arguments);
                     break;
                 case CopilotLocalCommandKind.NewConversation:
                     DismissLocalCommandResult();
@@ -3643,6 +3648,63 @@ namespace ColorVision.Copilot
                 + $"推理：{profile.ReasoningLabel}"
                 + Environment.NewLine
                 + $"状态：{profile.ConfigurationStatusText}");
+        }
+
+        private void SelectReasoningMode(CopilotLocalCommand command, string query)
+        {
+            if (!CanSelectProfile)
+            {
+                ShowLocalCommandResult(
+                    command,
+                    IsBusy
+                        ? "当前有请求正在执行，请完成或停止后再调整推理强度。"
+                        : "当前没有可选择的模型 Profile，请先在 Copilot 设置中添加并配置模型。");
+                return;
+            }
+
+            var profile = SelectedProfile;
+            if (profile == null)
+            {
+                ShowLocalCommandResult(command, "当前没有选中的模型 Profile。");
+                return;
+            }
+            if (!HasConfigurableReasoning)
+            {
+                ShowLocalCommandResult(
+                    command,
+                    $"{profile.DisplayLabel} 未声明可配置的推理强度，将继续使用 Provider 默认值。");
+                return;
+            }
+
+            var normalizedQuery = query.Trim();
+            if (normalizedQuery.Length == 0)
+            {
+                DismissLocalCommandResult();
+                ReasoningSelectionRequested?.Invoke(this, EventArgs.Empty);
+                return;
+            }
+
+            var option = CopilotReasoningCapabilities.FindCommandOption(profile, normalizedQuery);
+            if (option == null)
+            {
+                ShowLocalCommandResult(
+                    command,
+                    $"当前 Profile 不支持推理级别“{normalizedQuery}”。"
+                    + Environment.NewLine
+                    + $"可用级别：{CopilotReasoningCapabilities.GetCommandOptionSummary(profile)}");
+                return;
+            }
+
+            var previousMode = CopilotReasoningCapabilities.GetEffectiveMode(profile);
+            SetSelectedProfileReasoningMode(option.Mode);
+            var changeLabel = previousMode == option.Mode ? "保持" : "已设置";
+            ShowLocalCommandResult(
+                command,
+                $"{profile.DisplayLabel} · 推理强度{changeLabel}为“{option.Label}”。"
+                + Environment.NewLine
+                + option.Description
+                + Environment.NewLine
+                + "该设置保存到当前模型 Profile，并用于后续请求。");
         }
 
         private CopilotConversationRecord ResolveNewConversationTarget()

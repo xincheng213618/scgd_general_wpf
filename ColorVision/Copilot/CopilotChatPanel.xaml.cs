@@ -251,6 +251,7 @@ namespace ColorVision.Copilot
             _attachedViewModel = viewModel;
             viewModel.ConversationSearchRequested += ViewModel_ConversationSearchRequested;
             viewModel.ProfileSelectionRequested += ViewModel_ProfileSelectionRequested;
+            viewModel.ReasoningSelectionRequested += ViewModel_ReasoningSelectionRequested;
             viewModel.PropertyChanged += ViewModel_PropertyChanged;
             ResetMessageSubscriptions(viewModel.Messages);
             UpdateEmptyStateVisibility();
@@ -264,6 +265,7 @@ namespace ColorVision.Copilot
 
             _attachedViewModel.ConversationSearchRequested -= ViewModel_ConversationSearchRequested;
             _attachedViewModel.ProfileSelectionRequested -= ViewModel_ProfileSelectionRequested;
+            _attachedViewModel.ReasoningSelectionRequested -= ViewModel_ReasoningSelectionRequested;
             _attachedViewModel.PropertyChanged -= ViewModel_PropertyChanged;
             ResetMessageSubscriptions(null);
             _attachedViewModel = null;
@@ -279,6 +281,12 @@ namespace ColorVision.Copilot
         {
             if (ReferenceEquals(sender, _attachedViewModel))
                 OpenProfileSelector();
+        }
+
+        private void ViewModel_ReasoningSelectionRequested(object? sender, EventArgs e)
+        {
+            if (ReferenceEquals(sender, _attachedViewModel))
+                OpenReasoningSelector();
         }
 
         private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -495,6 +503,44 @@ namespace ColorVision.Copilot
                 Keyboard.Focus(ProfileListBox);
                 if (viewModel.SelectedProfile != null)
                     ProfileListBox.ScrollIntoView(viewModel.SelectedProfile);
+            });
+            return true;
+        }
+
+        private bool OpenReasoningSelector()
+        {
+            if (DataContext is not CopilotChatViewModel viewModel
+                || !viewModel.CanSelectProfile
+                || !viewModel.HasConfigurableReasoning)
+            {
+                return false;
+            }
+
+            ProfileSelectorButton.IsChecked = true;
+            Dispatcher.BeginInvoke(DispatcherPriority.Input, () =>
+            {
+                if (!ProfileSelectorPopup.IsOpen)
+                    return;
+
+                SetProfileSelectorSubmenu(modelVisible: false, reasoningVisible: true);
+                ReasoningOptionsControl.UpdateLayout();
+                var selectedIndex = ReasoningOptionsControl.Items
+                    .Cast<CopilotReasoningOption>()
+                    .Select((option, index) => (option, index))
+                    .FirstOrDefault(item => item.option.IsSelected)
+                    .index;
+                var container = ReasoningOptionsControl.ItemContainerGenerator.ContainerFromIndex(selectedIndex);
+                var button = container == null ? null : FindVisualChild<Button>(container);
+                if (button != null)
+                {
+                    button.Focus();
+                    Keyboard.Focus(button);
+                }
+                else
+                {
+                    ReasoningSelectorRowButton.Focus();
+                    Keyboard.Focus(ReasoningSelectorRowButton);
+                }
             });
             return true;
         }
