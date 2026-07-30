@@ -29,7 +29,7 @@ public sealed class CopilotReasoningSelectionTests
             new("skill-four", "Four"),
         ];
         var bareSlash = CopilotLocalCommandCatalog.Suggest("/", skills);
-        Assert.Equal(27, bareSlash.Count);
+        Assert.Equal(28, bareSlash.Count);
         Assert.Contains(bareSlash, command => command.Name == "/skill-one");
         Assert.Contains(bareSlash, command => command.Name == "/skill-three");
         Assert.DoesNotContain(bareSlash, command => command.Name == "/skill-four");

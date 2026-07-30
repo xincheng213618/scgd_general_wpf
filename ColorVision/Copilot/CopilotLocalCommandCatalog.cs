@@ -7,6 +7,7 @@ namespace ColorVision.Copilot
     public enum CopilotLocalCommandKind
     {
         Status,
+        Tasks,
         Usage,
         Context,
         Permissions,
@@ -44,11 +45,12 @@ namespace ColorVision.Copilot
 
     public static class CopilotLocalCommandCatalog
     {
-        private const int MaxSuggestions = 27;
+        private const int MaxSuggestions = 28;
 
         private static readonly CopilotLocalCommand[] Commands =
         [
             new("/status", "查看模型、Agent、工作区与连接状态", CopilotLocalCommandKind.Status, AvailableWhileAgentRuns: true),
+            new("/tasks", "查看正在运行、排队及等待恢复的 Agent 任务", CopilotLocalCommandKind.Tasks, AvailableWhileAgentRuns: true),
             new("/usage", "查看当前会话已记录的输入、输出与缓存 Token", CopilotLocalCommandKind.Usage, AvailableWhileAgentRuns: true),
             new("/context", "查看本地上下文、预算与注入统计", CopilotLocalCommandKind.Context, AvailableWhileAgentRuns: true),
             new("/permissions", "查看当前文件范围、能力与审批策略", CopilotLocalCommandKind.Permissions, AvailableWhileAgentRuns: true),

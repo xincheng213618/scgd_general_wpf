@@ -1368,6 +1368,9 @@ namespace ColorVision.Copilot
                 case CopilotLocalCommandKind.Status:
                     ShowLocalCommandResult(command, BuildStatusDiagnosticsReport());
                     break;
+                case CopilotLocalCommandKind.Tasks:
+                    ShowLocalCommandResult(command, BuildTaskDiagnosticsReport());
+                    break;
                 case CopilotLocalCommandKind.Usage:
                     ShowLocalCommandResult(command, CopilotConversationUsageDiagnostics.Format(SelectedConversation));
                     break;
@@ -1496,6 +1499,14 @@ namespace ColorVision.Copilot
                 EnabledExternalMcpServers = _config.ExternalMcpServers.Count(server => server?.Enabled == true),
                 PendingApprovals = CopilotMcpConfirmationStore.Instance.PendingCount,
             });
+        }
+
+        private string BuildTaskDiagnosticsReport()
+        {
+            return CopilotTaskDiagnostics.Format(CopilotTaskDiagnostics.Capture(
+                _taskHost,
+                Conversations,
+                DateTimeOffset.UtcNow));
         }
 
         private void StartWorkspaceReview(CopilotLocalCommand command, string focusInstructions)
