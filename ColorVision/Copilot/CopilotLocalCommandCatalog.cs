@@ -52,8 +52,8 @@ namespace ColorVision.Copilot
             new("/plan", "只读分析并生成可执行计划，可在命令后直接填写任务", CopilotLocalCommandKind.Plan, AcceptsArguments: true),
             new("/goal", "查看或管理当前会话的持续目标", CopilotLocalCommandKind.Goal, AcceptsArguments: true, AvailableWhileAgentRuns: true),
             new("/new", "开始一个新的 Copilot 会话", CopilotLocalCommandKind.NewConversation),
-            new("/fork", "复制当前会话到新会话分支，可补充名称", CopilotLocalCommandKind.ForkConversation, AcceptsArguments: true),
-            new("/branch", "同 /fork；只分叉会话，不创建 Git 分支", CopilotLocalCommandKind.ForkConversation, AcceptsArguments: true),
+            new("/fork", "复制当前会话到新会话分支；Agent 运行时创建可见快照", CopilotLocalCommandKind.ForkConversation, AcceptsArguments: true, AvailableWhileAgentRuns: true),
+            new("/branch", "同 /fork；只分叉会话，不创建 Git 分支", CopilotLocalCommandKind.ForkConversation, AcceptsArguments: true, AvailableWhileAgentRuns: true),
             new("/btw", "从当前会话上下文回答一次旁路问题，不影响主任务", CopilotLocalCommandKind.SideQuestion, AcceptsArguments: true, AvailableWhileAgentRuns: true),
         ];
 

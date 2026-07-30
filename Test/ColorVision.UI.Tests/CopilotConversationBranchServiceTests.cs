@@ -213,6 +213,97 @@ public sealed class CopilotConversationBranchServiceTests
         var branchPoint = CopilotConversationBranchService.FindLatestBranchPoint(source);
 
         Assert.Same(complete, branchPoint);
+        Assert.Same(pending, CopilotConversationBranchService.FindCurrentBranchPoint(source));
+        Assert.Throws<InvalidOperationException>(() =>
+            CopilotConversationBranchService.CreateBranch(source, pending));
+    }
+
+    [Fact]
+    public void CreateCurrentBranchTurnsInProgressTurnIntoDurableInterruptedSnapshot()
+    {
+        var source = new CopilotConversationRecord
+        {
+            Id = "running-source",
+            Title = "Running source",
+            ProfileId = "profile",
+            ProfileDisplayName = "Profile",
+            AgentSessionCheckpoint = new CopilotAgentSessionCheckpoint(),
+        };
+        var user = new CopilotChatMessage(CopilotChatRole.User, "Continue the active inspection.")
+        {
+            RequestMode = CopilotAgentMode.Auto,
+        };
+        var assistant = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty)
+        {
+            RequestMode = CopilotAgentMode.Auto,
+            IsExecutionInProgress = true,
+        };
+        assistant.MarkThinkingStarted();
+        assistant.BeginResponseTimeline();
+        assistant.AppendResponseTimelineText("One file has been checked.");
+        var runningTrace = new CopilotAgentTraceEntry
+        {
+            CallId = "running-read",
+            Round = 1,
+            ToolName = "ReadTextFile",
+            State = CopilotToolExecutionState.Running,
+            StartedAtUtc = DateTimeOffset.UtcNow.AddSeconds(-2),
+        };
+        assistant.UpsertAgentTrace(runningTrace);
+        assistant.RecordResponseTimelineTool(runningTrace.CallId);
+        source.Messages.Add(user);
+        source.Messages.Add(assistant);
+
+        var branch = CopilotConversationBranchService.CreateCurrentBranch(source, "Running snapshot");
+
+        Assert.True(assistant.IsThinkingInProgress);
+        Assert.Equal(CopilotToolExecutionState.Running, Assert.Single(assistant.AgentTraceEntries).State);
+        Assert.NotNull(source.AgentSessionCheckpoint);
+        Assert.Equal(2, branch.Messages.Count);
+        Assert.Null(branch.AgentSessionCheckpoint);
+        Assert.NotNull(branch.BranchOrigin);
+        Assert.Equal(source.Id, branch.BranchOrigin.ParentConversationId);
+        Assert.Equal(assistant.Id, branch.BranchOrigin.ThroughMessageId);
+
+        var snapshot = branch.Messages[1];
+        Assert.False(snapshot.IsThinkingInProgress);
+        Assert.True(snapshot.WasResponseInterrupted);
+        Assert.True(snapshot.UsesResponseTimeline);
+        Assert.Contains("源会话仍会继续运行", snapshot.ResponseInterruptionDetail);
+        Assert.Contains("[会话分支快照", snapshot.Content);
+        Assert.Contains("[会话分支快照", snapshot.ModelContent);
+        var interruptedTrace = Assert.Single(snapshot.AgentTraceEntries);
+        Assert.Equal(CopilotToolExecutionState.Interrupted, interruptedTrace.State);
+        Assert.Equal("fork_snapshot_incomplete", interruptedTrace.FailureCode);
+        Assert.Contains("not running in this branch", interruptedTrace.ErrorMessage);
+
+        var stateRoot = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        try
+        {
+            new CopilotChatStateStore(stateRoot).Save(new CopilotChatState
+            {
+                ActiveConversationId = branch.Id,
+                ActiveProfileId = "profile",
+                Conversations = new ObservableCollection<CopilotConversationRecord> { branch },
+            });
+
+            var restored = new CopilotChatStateStore(stateRoot).Load();
+            var restoredBranch = Assert.Single(restored.Conversations);
+            var restoredSnapshot = restoredBranch.Messages[1];
+            Assert.False(restoredSnapshot.IsThinkingInProgress);
+            Assert.True(restoredSnapshot.WasResponseInterrupted);
+            Assert.True(restoredSnapshot.UsesResponseTimeline);
+            Assert.Contains("源会话仍会继续运行", restoredSnapshot.ResponseInterruptionDetail);
+            Assert.Contains("[会话分支快照", restoredSnapshot.ModelContent);
+            Assert.Equal(
+                CopilotToolExecutionState.Interrupted,
+                Assert.Single(restoredSnapshot.AgentTraceEntries).State);
+        }
+        finally
+        {
+            if (Directory.Exists(stateRoot))
+                Directory.Delete(stateRoot, recursive: true);
+        }
     }
 
     [Fact]
@@ -224,11 +315,11 @@ public sealed class CopilotConversationBranchServiceTests
         Assert.NotNull(fork);
         Assert.Equal(CopilotLocalCommandKind.ForkConversation, fork.Command.Kind);
         Assert.Equal("alternative approach", fork.Arguments);
-        Assert.False(fork.Command.AvailableWhileAgentRuns);
+        Assert.True(fork.Command.AvailableWhileAgentRuns);
         Assert.NotNull(branch);
         Assert.Equal(CopilotLocalCommandKind.ForkConversation, branch.Command.Kind);
         Assert.Equal("another option", branch.Arguments);
-        Assert.False(branch.Command.AvailableWhileAgentRuns);
+        Assert.True(branch.Command.AvailableWhileAgentRuns);
     }
 
     private static CopilotConversationRecord CreateBranchableConversation(string title)

@@ -922,7 +922,7 @@ namespace ColorVision.Copilot
                     {
                         CopilotHostedRunState.PauseRequested => "任务正在暂停 · 当前输入会保留到任务结束",
                         CopilotHostedRunState.CancelRequested => "任务正在取消 · 当前输入会保留到任务结束",
-                        _ when IsAgentRequestActive => "Enter 调整 · Tab 排队 · @ 关联 · /btw 旁路提问",
+                        _ when IsAgentRequestActive => "Enter 调整 · Tab 排队 · @ 关联 · /btw 旁路 · /fork 分支",
                         _ => "正在生成回复 · 可使用 /status 或 /btw",
                     }
                 : ResolveComposerRequestMode() == CopilotAgentMode.Plan
@@ -5621,21 +5621,24 @@ namespace ColorVision.Copilot
                 return;
             }
 
-            var branchPoint = CopilotConversationBranchService.FindLatestBranchPoint(source);
+            var branchPoint = CopilotConversationBranchService.FindCurrentBranchPoint(source);
             if (branchPoint == null)
             {
-                ShowLocalCommandResult(command, "当前会话还没有可分叉的完整回答。请先完成至少一轮对话。");
+                ShowLocalCommandResult(command, "当前会话还没有可分叉的回答。请先开始至少一轮对话。");
                 return;
             }
 
             try
             {
-                var branch = CreateAndSelectConversationBranch(source, branchPoint, normalizedTitle);
+                var capturedRunningTurn = branchPoint.IsThinkingInProgress;
+                var branch = CreateAndSelectCurrentConversationBranch(source, normalizedTitle);
                 ShowLocalCommandResult(
                     command,
                     $"已从“{source.Title}”复制 {branch.Messages.Count:N0} 条消息到“{branch.Title}”。"
                     + Environment.NewLine
-                    + "原会话保持不变；这里只分叉聊天历史，不会创建 Git 分支或回滚当前工作区。"
+                    + (capturedRunningTurn
+                        ? "源会话中的 Agent 仍会继续运行；分支已将当前回答标记为运行中快照，未完成工具不会在分支中继续。"
+                        : "原会话保持不变；这里只分叉聊天历史，不会创建 Git 分支或回滚当前工作区。")
                     + Environment.NewLine
                     + "未发送草稿、编辑区附件、Agent checkpoint 与会话级授权不会继承。");
             }
@@ -5673,6 +5676,19 @@ namespace ColorVision.Copilot
             string? requestedTitle)
         {
             var branch = CopilotConversationBranchService.CreateBranch(source, throughAssistantMessage, requestedTitle);
+            return InsertAndSelectConversationBranch(branch);
+        }
+
+        private CopilotConversationRecord CreateAndSelectCurrentConversationBranch(
+            CopilotConversationRecord source,
+            string? requestedTitle)
+        {
+            var branch = CopilotConversationBranchService.CreateCurrentBranch(source, requestedTitle);
+            return InsertAndSelectConversationBranch(branch);
+        }
+
+        private CopilotConversationRecord InsertAndSelectConversationBranch(CopilotConversationRecord branch)
+        {
             CopilotConversationService.Insert(Conversations, branch);
             SelectConversation(branch, persist: false, preferredProfileId: branch.ProfileId);
             PersistState(immediate: true);
