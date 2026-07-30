@@ -268,6 +268,9 @@ namespace ColorVision.Copilot
             SelectPromptHistorySearchResultCommand = new RelayCommand<CopilotPromptHistorySearchItem>(
                 result => TryCompletePromptHistorySearch(result),
                 result => IsPromptHistorySearchOpen && result != null);
+            AcceptPromptHistoryPrefixCompletionCommand = new RelayCommand(
+                _ => TryAcceptPromptHistoryPrefixCompletion(),
+                _ => HasPromptHistoryPrefixCompletion);
             SetComposerAccessModeCommand = new RelayCommand(
                 mode =>
                 {
@@ -623,6 +626,8 @@ namespace ColorVision.Copilot
         public ICommand SelectComposerReferenceCommand { get; }
 
         public ICommand SelectPromptHistorySearchResultCommand { get; }
+
+        public ICommand AcceptPromptHistoryPrefixCompletionCommand { get; }
 
         public ICommand SetComposerAccessModeCommand { get; }
 
@@ -996,6 +1001,7 @@ namespace ColorVision.Copilot
                     OnPropertyChanged(nameof(CanQueueCurrentRunFollowUp));
                     RefreshComposerReferenceSuggestions();
                     RefreshComposerTokenEstimate();
+                    NotifyPromptHistoryPrefixCompletionChanged();
                     CommandManager.InvalidateRequerySuggested();
                 }
             }
@@ -1019,6 +1025,7 @@ namespace ColorVision.Copilot
                 OnPropertyChanged(nameof(PromptHistorySearchStatusText));
                 OnPropertyChanged(nameof(CanOpenExpandedComposerEditor));
                 RefreshLocalCommandSuggestions();
+                NotifyPromptHistoryPrefixCompletionChanged();
                 CommandManager.InvalidateRequerySuggested();
             }
         }
@@ -1045,6 +1052,43 @@ namespace ColorVision.Copilot
         }
 
         public bool IsNavigatingPromptHistory => _promptHistoryNavigator.IsActive;
+
+        public bool HasPromptHistoryPrefixCompletion =>
+            TryResolvePromptHistoryPrefixCompletion(out _);
+
+        public string PromptHistoryPrefixCompletionText =>
+            TryResolvePromptHistoryPrefixCompletion(out var completion)
+                ? completion.FullText
+                : string.Empty;
+
+        public bool TryAcceptPromptHistoryPrefixCompletion()
+        {
+            if (!TryResolvePromptHistoryPrefixCompletion(out var completion))
+                return false;
+
+            InputText = completion.FullText;
+            return true;
+        }
+
+        private bool TryResolvePromptHistoryPrefixCompletion(
+            out CopilotPromptHistoryPrefixCompletion completion)
+        {
+            completion = default;
+            return !IsEditingMessage
+                && !IsPromptHistorySearchOpen
+                && !IsComposerReferenceMentionActive
+                && !HasLocalCommandSuggestions
+                && CopilotPromptHistoryPrefixCompletionResolver.TryResolve(
+                    SelectedConversation?.Messages,
+                    InputText,
+                    out completion);
+        }
+
+        private void NotifyPromptHistoryPrefixCompletionChanged()
+        {
+            OnPropertyChanged(nameof(HasPromptHistoryPrefixCompletion));
+            OnPropertyChanged(nameof(PromptHistoryPrefixCompletionText));
+        }
 
         public bool TryNavigatePromptHistory(bool previous)
         {
@@ -1428,6 +1472,7 @@ namespace ColorVision.Copilot
                 OnPropertyChanged(nameof(HasComposerReferenceStatus));
                 OnPropertyChanged(nameof(ComposerReferenceStatusText));
                 OnPropertyChanged(nameof(CanOpenExpandedComposerEditor));
+                NotifyPromptHistoryPrefixCompletionChanged();
             }
         }
 
@@ -5734,6 +5779,7 @@ namespace ColorVision.Copilot
             RefreshComposerTokenEstimate();
             RefreshConversationFind();
             RefreshPromptHistorySearchResults();
+            NotifyPromptHistoryPrefixCompletionChanged();
             CommandManager.InvalidateRequerySuggested();
         }
 
@@ -7374,6 +7420,7 @@ namespace ColorVision.Copilot
             OnPropertyChanged(nameof(IsEditingMessage));
             OnPropertyChanged(nameof(InputPlaceholder));
             RefreshLocalCommandSuggestions();
+            NotifyPromptHistoryPrefixCompletionChanged();
             OnPropertyChanged(nameof(HasLocalCommandResult));
             CommandManager.InvalidateRequerySuggested();
         }

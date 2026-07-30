@@ -2133,6 +2133,45 @@
                     </StackPanel>
 
                     <Border Grid.Row="4"
+                            Margin="0,0,0,6"
+                            Style="{StaticResource CopilotInsetBorderStyle}"
+                            BorderThickness="1"
+                            CornerRadius="7"
+                            Visibility="{Binding HasPromptHistoryPrefixCompletion, Converter={StaticResource bool2VisibilityConverter}}">
+                        <Button Padding="10,7"
+                                Command="{Binding AcceptPromptHistoryPrefixCompletionCommand}"
+                                Click="PromptHistoryPrefixCompletionButton_Click"
+                                Style="{StaticResource ComposerPopoverButtonStyle}"
+                                ToolTip="恢复这条当前会话中的历史请求，不会自动发送">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock VerticalAlignment="Center"
+                                           FontSize="9"
+                                           FontWeight="SemiBold"
+                                           Opacity="0.58"
+                                           Text="历史补全" />
+                                <TextBlock Grid.Column="1"
+                                           Margin="10,0,0,0"
+                                           VerticalAlignment="Center"
+                                           FontSize="11"
+                                           Text="{Binding PromptHistoryPrefixCompletionText}"
+                                           TextTrimming="CharacterEllipsis"
+                                           ToolTip="{Binding PromptHistoryPrefixCompletionText}" />
+                                <TextBlock Grid.Column="2"
+                                           Margin="12,0,0,0"
+                                           VerticalAlignment="Center"
+                                           FontSize="9"
+                                           Opacity="0.52"
+                                           Text="→ 接受" />
+                            </Grid>
+                        </Button>
+                    </Border>
+
+                    <Border Grid.Row="4"
                             MaxHeight="260"
                             Margin="0,0,0,6"
                             Style="{StaticResource CopilotInsetBorderStyle}"
