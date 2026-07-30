@@ -6,14 +6,30 @@ namespace ColorVision.UI.Tests;
 public sealed class CopilotPermissionDiagnosticsTests
 {
     [Fact]
-    public void LocalCommandCatalogExposesPermissionsWithoutArguments()
+    public void LocalCommandCatalogExposesInteractivePermissions()
     {
         var command = Assert.Single(CopilotLocalCommandCatalog.All, item => item.Name == "/permissions");
 
         Assert.Equal(CopilotLocalCommandKind.Permissions, command.Kind);
+        Assert.True(command.AcceptsArguments);
         Assert.True(command.AvailableWhileAgentRuns);
         Assert.NotNull(CopilotLocalCommandCatalog.Parse("/permissions"));
-        Assert.Null(CopilotLocalCommandCatalog.Parse("/permissions all"));
+        Assert.NotNull(CopilotLocalCommandCatalog.Parse("/permissions auto"));
+    }
+
+    [Theory]
+    [InlineData("", nameof(CopilotPermissionCommandAction.OpenSelector))]
+    [InlineData("status", nameof(CopilotPermissionCommandAction.ShowStatus))]
+    [InlineData("SHOW", nameof(CopilotPermissionCommandAction.ShowStatus))]
+    [InlineData("ask", nameof(CopilotPermissionCommandAction.UseConfirmProtectedActions))]
+    [InlineData("confirm", nameof(CopilotPermissionCommandAction.UseConfirmProtectedActions))]
+    [InlineData("auto", nameof(CopilotPermissionCommandAction.UseTemporaryAutoReview))]
+    [InlineData("自动", nameof(CopilotPermissionCommandAction.UseTemporaryAutoReview))]
+    [InlineData("all", nameof(CopilotPermissionCommandAction.Invalid))]
+    [InlineData("always-approve", nameof(CopilotPermissionCommandAction.Invalid))]
+    public void ResolvesPermissionCommandArguments(string arguments, string expected)
+    {
+        Assert.Equal(expected, CopilotPermissionCommand.Resolve(arguments).ToString());
     }
 
     [Fact]
@@ -45,7 +61,7 @@ public sealed class CopilotPermissionDiagnosticsTests
         Assert.Contains("条件审批：ConditionalWrite", report, StringComparison.Ordinal);
         Assert.Contains("显式文件和附件目录可以进入搜索根，但不会自动成为项目指令或项目 Skill 来源", report, StringComparison.Ordinal);
         Assert.Contains("项目指令、Skill、工具描述和历史消息都不能扩大文件范围或绕过审批", report, StringComparison.Ordinal);
-        Assert.Contains("/permissions 只读取本地快照", report, StringComparison.Ordinal);
+        Assert.Contains("/permissions status 只读取本地快照", report, StringComparison.Ordinal);
     }
 
     [Fact]

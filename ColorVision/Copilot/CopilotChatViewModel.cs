@@ -291,6 +291,8 @@ namespace ColorVision.Copilot
 
         public event EventHandler? ReasoningSelectionRequested;
 
+        public event EventHandler? AccessModeSelectionRequested;
+
         public ObservableCollection<CopilotConversationRecord> CompactHistoryConversations { get; } = new();
 
         public ObservableCollection<CopilotConversationRecord> FilteredConversations { get; } = new();
@@ -1456,7 +1458,7 @@ namespace ColorVision.Copilot
                     ShowLocalCommandResult(command, BuildContextDiagnosticsReport());
                     break;
                 case CopilotLocalCommandKind.Permissions:
-                    ShowLocalCommandResult(command, BuildPermissionDiagnosticsReport());
+                    HandlePermissionsCommand(command, invocation.Arguments);
                     break;
                 case CopilotLocalCommandKind.Hooks:
                     ShowLocalCommandResult(command, BuildHookDiagnosticsReport());
@@ -1981,6 +1983,31 @@ namespace ColorVision.Copilot
                 ExternalMcpServers = _config.ExternalMcpServers,
                 PendingApprovals = CopilotMcpConfirmationStore.Instance.PendingCount,
             });
+        }
+
+        private void HandlePermissionsCommand(CopilotLocalCommand command, string arguments)
+        {
+            switch (CopilotPermissionCommand.Resolve(arguments))
+            {
+                case CopilotPermissionCommandAction.OpenSelector:
+                    DismissLocalCommandResult();
+                    AccessModeSelectionRequested?.Invoke(this, EventArgs.Empty);
+                    break;
+                case CopilotPermissionCommandAction.ShowStatus:
+                    ShowLocalCommandResult(command, BuildPermissionDiagnosticsReport());
+                    break;
+                case CopilotPermissionCommandAction.UseConfirmProtectedActions:
+                    DismissLocalCommandResult();
+                    SetComposerAccessMode(CopilotAgentAccessMode.ConfirmProtectedActions);
+                    break;
+                case CopilotPermissionCommandAction.UseTemporaryAutoReview:
+                    DismissLocalCommandResult();
+                    SetComposerAccessMode(CopilotAgentAccessMode.FullAccess);
+                    break;
+                default:
+                    ShowLocalCommandResult(command, CopilotPermissionCommand.Usage);
+                    break;
+            }
         }
 
         private static string BuildHookDiagnosticsReport()

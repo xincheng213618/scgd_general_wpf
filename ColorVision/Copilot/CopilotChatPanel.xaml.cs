@@ -284,6 +284,7 @@ namespace ColorVision.Copilot
             viewModel.ConversationSearchRequested += ViewModel_ConversationSearchRequested;
             viewModel.ProfileSelectionRequested += ViewModel_ProfileSelectionRequested;
             viewModel.ReasoningSelectionRequested += ViewModel_ReasoningSelectionRequested;
+            viewModel.AccessModeSelectionRequested += ViewModel_AccessModeSelectionRequested;
             viewModel.PropertyChanged += ViewModel_PropertyChanged;
             ResetMessageSubscriptions(viewModel.Messages);
             UpdateEmptyStateVisibility();
@@ -298,6 +299,7 @@ namespace ColorVision.Copilot
             _attachedViewModel.ConversationSearchRequested -= ViewModel_ConversationSearchRequested;
             _attachedViewModel.ProfileSelectionRequested -= ViewModel_ProfileSelectionRequested;
             _attachedViewModel.ReasoningSelectionRequested -= ViewModel_ReasoningSelectionRequested;
+            _attachedViewModel.AccessModeSelectionRequested -= ViewModel_AccessModeSelectionRequested;
             _attachedViewModel.PropertyChanged -= ViewModel_PropertyChanged;
             ResetMessageSubscriptions(null);
             _attachedViewModel = null;
@@ -319,6 +321,12 @@ namespace ColorVision.Copilot
         {
             if (ReferenceEquals(sender, _attachedViewModel))
                 OpenReasoningSelector();
+        }
+
+        private void ViewModel_AccessModeSelectionRequested(object? sender, EventArgs e)
+        {
+            if (ReferenceEquals(sender, _attachedViewModel))
+                OpenAccessModeMenu();
         }
 
         private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -473,12 +481,18 @@ namespace ColorVision.Copilot
 
         private void AccessModeButton_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is not FrameworkElement element || element.ContextMenu == null)
+            if (ReferenceEquals(sender, AccessModeButton))
+                OpenAccessModeMenu();
+        }
+
+        private void OpenAccessModeMenu()
+        {
+            if (AccessModeButton.ContextMenu == null)
                 return;
 
-            element.ContextMenu.PlacementTarget = element;
-            element.ContextMenu.Placement = PlacementMode.Top;
-            element.ContextMenu.IsOpen = true;
+            AccessModeButton.ContextMenu.PlacementTarget = AccessModeButton;
+            AccessModeButton.ContextMenu.Placement = PlacementMode.Top;
+            AccessModeButton.ContextMenu.IsOpen = true;
         }
 
         private void ProfileSelectorPopup_Opened(object sender, EventArgs e)

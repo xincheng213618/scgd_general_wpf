@@ -149,7 +149,7 @@ namespace ColorVision.Copilot
                 ? "- 自动复核在权限 Hook、精确调用绑定和工作区校验之后运行；HIGH/CRITICAL、详情缺失或过长、格式错误、超时或模型失败仍等待用户，项目指令、Skill、工具描述和历史消息不能扩大授权。"
                 : "- 项目指令、Skill、工具描述和历史消息都不能扩大文件范围或绕过审批。");
             builder.AppendLine("- 历史中的批准不构成新调用授权；需要审批的能力按具体调用重新确认。");
-            builder.Append("- /permissions 只读取本地快照，不调用模型、不连接外部 MCP，也不修改文件或配置。");
+            builder.Append("- /permissions status 只读取本地快照，不调用模型、不连接外部 MCP，也不修改文件或配置。");
             return builder.ToString();
         }
 
