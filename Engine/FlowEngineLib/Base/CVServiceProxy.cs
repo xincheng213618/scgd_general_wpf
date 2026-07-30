@@ -167,10 +167,15 @@ public class CVServiceProxy
 			cVTransAction = GetCVTransByEvent(cVMQTTRequest.SerialNumber, cVMQTTRequest.EventName);
 			cVServerResponse = GetServerResponse(cVTransAction, cVMQTTRequest);
 		}
-		if (cVServerResponse != null && cVTransAction != null && cVTransAction.trans_action.FlowStatus == StatusTypeEnum.Runing && cVTransAction.m_sever_actionEvent.ContainsKey(cVServerResponse.Id))
+		if (cVServerResponse != null
+			&& cVTransAction != null
+			&& cVTransAction.trans_action.FlowStatus
+				== StatusTypeEnum.Runing
+			&& cVTransAction.TryGetActionCommand(
+				cVServerResponse.Id,
+				out CVBaseEventCmd cVBaseEventCmd))
 		{
 			logger.DebugFormat("DoServerStatusDataTransfer => {0}", JsonConvert.SerializeObject(cVTransAction.trans_action));
-			CVBaseEventCmd cVBaseEventCmd = cVTransAction.m_sever_actionEvent[cVServerResponse.Id];
 			cVBaseEventCmd.resp = cVServerResponse;
 			OnServerResponse(cVServerResponse);
 			if (!IsCacheActResponse(cVTransAction, cVServerResponse))
@@ -186,26 +191,15 @@ public class CVServiceProxy
 
 	protected CVBaseEventCmd AddActionCmd(CVTransAction trans, CVMQTTRequest sendEvent)
 	{
-		CVBaseEventCmd cVBaseEventCmd;
-		if (trans.m_sever_actionEvent.ContainsKey(sendEvent.MsgID))
-		{
-			cVBaseEventCmd = trans.m_sever_actionEvent[sendEvent.MsgID];
-		}
-		else
-		{
-			cVBaseEventCmd = new CVBaseEventCmd(sendEvent, null);
-			trans.m_sever_actionEvent.Add(sendEvent.MsgID, cVBaseEventCmd);
-		}
+		CVBaseEventCmd cVBaseEventCmd =
+			trans.GetOrAddActionCommand(sendEvent);
 		_ = cVBaseEventCmd.resp;
 		return cVBaseEventCmd;
 	}
 
 	protected void RemoveActionCmd(CVTransAction trans, string key)
 	{
-		if (trans.m_sever_actionEvent.ContainsKey(key))
-		{
-			trans.m_sever_actionEvent.Remove(key);
-		}
+		trans.TryTakeActionCommand(key, out _);
 	}
 
 	public void DoMinAction(CVTransAction trans, CVBaseEventCmd cmd)
@@ -334,7 +328,9 @@ public class CVServiceProxy
 	{
 		if (m_trans_action.TryGetValue(serialNumber, out var cVTransAction))
 		{
-			if (cVTransAction.m_sever_actionEvent.ContainsKey(svrEventId))
+			if (cVTransAction.TryGetActionCommand(
+					svrEventId,
+					out _))
 			{
 				logger.DebugFormat("{0} RemoveTrans => {1}/{2}", Title, serialNumber, svrEventId);
 				m_trans_action.TryRemove(serialNumber, out _);
@@ -394,7 +390,9 @@ public class CVServiceProxy
 		}
 		else
 		{
-			cVServerResponse = new CVServerResponse(trans.m_sever_actionEvent.First().Key, ActionStatusEnum.Failed, "Data is null", statusEvent.EventName, statusEvent.Data);
+			trans.TryGetFirstActionCommandKey(
+				out string messageId);
+			cVServerResponse = new CVServerResponse(messageId, ActionStatusEnum.Failed, "Data is null", statusEvent.EventName, statusEvent.Data);
 		}
 		return cVServerResponse;
 	}

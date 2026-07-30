@@ -99,7 +99,17 @@ public class CVFlowContainer : CVNodeContainer
 	private void Start_Finished(object sender, FlowStartEventArgs e)
 	{
 		BaseStartNode baseStartNode = sender as BaseStartNode;
-		this.Finished?.Invoke(sender, new FlowEngineEventArgs(baseStartNode.NodeName, e.SerialNumber, e.Status, e.TotalTime, e.Message, e.ErrorNodeName, e.ErrorNodeId));
+		this.Finished?.Invoke(
+			sender,
+			new FlowEngineEventArgs(
+				baseStartNode.NodeName,
+				e.SerialNumber,
+				e.Status,
+				e.TotalTime,
+				e.Message,
+				e.ErrorNodeName,
+				e.ErrorNodeId,
+				e.HandledFailures));
 	}
 
 	private void AddDevice(CVBaseServerNode node)

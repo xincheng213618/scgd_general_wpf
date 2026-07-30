@@ -275,6 +275,42 @@ namespace ColorVision.UI.Tests
             Assert.IsType<STNodeHub>(Assert.Single(container.Nodes.Cast<STNode>()));
         }
 
+        [Fact]
+        public void CanvasLoad_ReadsStreamsThatReturnPartialChunks()
+        {
+            var original = new STNodeHub();
+            original.Create();
+            byte[] canvas = CreateCanvasData(original.GetSaveData());
+            var container = new CVNodeContainer();
+            Assert.True(container.LoadAssembly(typeof(STNodeHub).Assembly));
+            using var stream = new ChunkedReadStream(canvas, maximumChunkSize: 1);
+
+            container.LoadCanvas(stream);
+
+            Assert.IsType<STNodeHub>(Assert.Single(container.Nodes.Cast<STNode>()));
+        }
+
+        [Fact]
+        public void CanvasLoad_LateCorruptionDoesNotReplaceExistingContainerGraph()
+        {
+            var original = new STNodeHub();
+            original.Create();
+            var replacement = new STNodeInHub();
+            replacement.Create();
+            var container = new CVNodeContainer();
+            Assert.True(container.LoadAssembly(typeof(STNodeHub).Assembly));
+            container.LoadCanvas(CreateCanvasData(original.GetSaveData()));
+            STNode existing = Assert.Single(container.Nodes.Cast<STNode>());
+            byte[] replacementCanvas = CreateCanvasData(replacement.GetSaveData());
+            Array.Resize(ref replacementCanvas, replacementCanvas.Length - 3);
+
+            Assert.Throws<InvalidDataException>(() =>
+                container.LoadCanvas(replacementCanvas));
+
+            Assert.Single(container.Nodes.Cast<STNode>());
+            Assert.Same(existing, container.Nodes[0]);
+        }
+
         private static byte[] ReplaceNodeIdentityForReadTest(byte[] nodeData, string modelKey, string typeGuid)
         {
             int offset = 0;
@@ -313,6 +349,62 @@ namespace ColorVision.UI.Tests
             }
 
             return stream.ToArray();
+        }
+
+        private sealed class ChunkedReadStream : Stream
+        {
+            private readonly MemoryStream inner;
+            private readonly int maximumChunkSize;
+
+            public ChunkedReadStream(byte[] data, int maximumChunkSize)
+            {
+                inner = new MemoryStream(data, writable: false);
+                this.maximumChunkSize = maximumChunkSize;
+            }
+
+            public override bool CanRead => true;
+            public override bool CanSeek => inner.CanSeek;
+            public override bool CanWrite => false;
+            public override long Length => inner.Length;
+            public override long Position
+            {
+                get => inner.Position;
+                set => inner.Position = value;
+            }
+
+            public override void Flush()
+            {
+            }
+
+            public override int Read(byte[] buffer, int offset, int count)
+            {
+                return inner.Read(
+                    buffer,
+                    offset,
+                    Math.Min(count, maximumChunkSize));
+            }
+
+            public override long Seek(long offset, SeekOrigin origin)
+            {
+                return inner.Seek(offset, origin);
+            }
+
+            public override void SetLength(long value)
+            {
+                throw new NotSupportedException();
+            }
+
+            public override void Write(byte[] buffer, int offset, int count)
+            {
+                throw new NotSupportedException();
+            }
+
+            protected override void Dispose(bool disposing)
+            {
+                if (disposing)
+                    inner.Dispose();
+                base.Dispose(disposing);
+            }
         }
 
         [Fact(Skip = RequiresStaUiTestRunner)]

@@ -236,6 +236,10 @@ public class SMUBaseNode : CVBaseServerNode, ICVLoopNextNode
 		string token = GetToken();
 		CVMQTTRequest cVMQTTRequest = new CVMQTTRequest(GetServiceName(), m_deviceCode, operatorCode, trans_action.SerialNumber, new SMUData(_channel, _source == SourceType.Voltage_V, m_cur_src_val, _limitVal, _IsAutoRng, _SrcRng, _LmtRng), token, base.ZIndex);
 		CVBaseEventCmd cmd = AddActionCmd(trans, cVMQTTRequest);
+		if (cmd == null)
+		{
+			return null;
+		}
 		string message = JsonConvert.SerializeObject(cVMQTTRequest, Formatting.None);
 		MQActionEvent mQActionEvent = new MQActionEvent(cVMQTTRequest.MsgID, m_nodeName, m_deviceCode, GetSendTopic(), cVMQTTRequest.EventName, message, token);
 		DoTransferToServer(trans, mQActionEvent, cmd);

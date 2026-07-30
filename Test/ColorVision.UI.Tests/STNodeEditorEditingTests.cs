@@ -410,6 +410,35 @@ public class STNodeEditorEditingTests
     }
 
     [Fact]
+    public void LoadCanvas_LateCorruptionKeepsCurrentEditorGraphAndSelection()
+    {
+        RunInSta(() =>
+        {
+            using var editor = CreateEditor();
+            var existing = CreateNode<EditorHistorySourceNode>();
+            editor.Nodes.Add(existing);
+            editor.AddSelectedNode(existing);
+            editor.SetActiveNode(existing);
+            editor.ClearHistory();
+
+            using var replacementEditor = CreateEditor();
+            replacementEditor.Nodes.Add(
+                CreateNode<EditorHistorySinkNode>());
+            byte[] corruptCanvas = replacementEditor.GetCanvasData();
+            Array.Resize(ref corruptCanvas, corruptCanvas.Length - 3);
+
+            Assert.Throws<InvalidDataException>(() =>
+                editor.LoadCanvas(corruptCanvas));
+
+            Assert.Single(editor.Nodes.Cast<STNode>());
+            Assert.Same(existing, editor.Nodes[0]);
+            Assert.Same(existing, editor.ActiveNode);
+            Assert.Contains(existing, editor.GetSelectedNode());
+            Assert.False(editor.CanUndo);
+        });
+    }
+
+    [Fact]
     public void NodePropertyChange_IsUndoableAndCoalescesTyping()
     {
         RunInSta(() =>

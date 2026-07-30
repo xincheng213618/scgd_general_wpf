@@ -178,7 +178,11 @@ namespace ColorVision.Engine.Templates.Flow
                 return null;
 
             // 验证 header: "STND" + version 1
-            if (stnData[0] != 83 || stnData[1] != 84 || stnData[2] != 78 || stnData[3] != 68)
+            if (stnData[0] != 83
+                || stnData[1] != 84
+                || stnData[2] != 78
+                || stnData[3] != 68
+                || stnData[4] != 1)
                 return null;
 
             try

@@ -1,4 +1,5 @@
 using System;
+using FlowEngineLib.Runtime;
 
 namespace FlowEngineLib;
 
@@ -35,4 +36,24 @@ public class FlowEngineNodeEndEventArgs : EventArgs
     /// 接收的MQTT响应内容(JSON)
     /// </summary>
     public string RecvPayload { get; set; }
+
+    /// <summary>
+    /// Runtime failure category, when this completion represents a failure.
+    /// </summary>
+    public FlowFailureKind? FailureKind { get; set; }
+
+    /// <summary>
+    /// True when a runtime-only error route accepted the failure.
+    /// </summary>
+    public bool FailureHandled { get; set; }
+
+    public string FailureRouteTargetNodeId { get; set; }
+
+    public bool WillRetry { get; set; }
+
+    public int AttemptNumber { get; set; } = 1;
+
+    public int MaxAttempts { get; set; } = 1;
+
+    public int RetryDelayMs { get; set; }
 }

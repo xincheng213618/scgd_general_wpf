@@ -222,6 +222,36 @@ public class FlowExecutionAnalysisPresentationTests
     }
 
     [Fact]
+    public void GetNodeExecutionOutcome_DoesNotCountCancellationAsFailure()
+    {
+        DateTime start =
+            new DateTime(2026, 7, 31, 10, 0, 0);
+        FlowNodeRecord record = CreateRecord(
+            1,
+            260,
+            "run-a",
+            "same-node",
+            "循环节点",
+            start,
+            100);
+        FlowNodeMessage canceled = CreateMessage(
+            1,
+            260,
+            "run-a",
+            "same-node",
+            start.AddMilliseconds(10));
+        canceled.State = FlowMessageState.Canceled;
+        canceled.StatusCode = -4;
+
+        FlowNodeExecutionOutcome outcome =
+            FlowExecutionAnalysisPresentation.GetNodeExecutionOutcome(
+                record,
+                new[] { canceled });
+
+        Assert.Equal(FlowNodeExecutionOutcome.Canceled, outcome);
+    }
+
+    [Fact]
     public void BuildNodeHistoryItems_LabelsTimeoutAsFailure()
     {
         DateTime start = new DateTime(2026, 7, 27, 10, 0, 0);

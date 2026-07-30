@@ -34,7 +34,7 @@ public class CVNodeCollection : IList, ICollection, IEnumerable
 		}
 	}
 
-	public bool IsSynchronized => true;
+	public bool IsSynchronized => false;
 
 	public object SyncRoot => this;
 
@@ -124,8 +124,8 @@ public class CVNodeCollection : IList, ICollection, IEnumerable
 			if (-1 == IndexOf(sTNode))
 			{
 				m_nodes[_Count++] = sTNode;
+				m_owner.OnNodeAdded(new STNodeEditorEventArgs(sTNode));
 			}
-			m_owner.OnNodeAdded(new STNodeEditorEventArgs(sTNode));
 		}
 	}
 
@@ -133,15 +133,15 @@ public class CVNodeCollection : IList, ICollection, IEnumerable
 	{
 		for (int i = 0; i < _Count; i++)
 		{
+			foreach (STNodeOption inputOption in m_nodes[i].GetAllInputOptions())
+			{
+				inputOption.DisconnectAllDetached();
+			}
+			foreach (STNodeOption outputOption in m_nodes[i].GetAllOutputOptions())
+			{
+				outputOption.DisconnectAllDetached();
+			}
 			m_nodes[i].Owner = null;
-			foreach (STNodeOption inputOption in m_nodes[i].InputOptions)
-			{
-				inputOption.DisConnectionAll();
-			}
-			foreach (STNodeOption outputOption in m_nodes[i].OutputOptions)
-			{
-				outputOption.DisConnectionAll();
-			}
 			m_owner.OnNodeRemoved(new STNodeEditorEventArgs(m_nodes[i]));
 		}
 		_Count = 0;
@@ -160,7 +160,7 @@ public class CVNodeCollection : IList, ICollection, IEnumerable
 
 	public void Insert(int nIndex, STNode node)
 	{
-		if (nIndex < 0 || nIndex >= _Count)
+		if (nIndex < 0 || nIndex > _Count)
 		{
 			throw new IndexOutOfRangeException("索引越界");
 		}
@@ -175,6 +175,7 @@ public class CVNodeCollection : IList, ICollection, IEnumerable
 		}
 		m_nodes[nIndex] = node;
 		_Count++;
+		m_owner.OnNodeAdded(new STNodeEditorEventArgs(node));
 	}
 
 	public void Remove(STNode node)
@@ -192,13 +193,24 @@ public class CVNodeCollection : IList, ICollection, IEnumerable
 		{
 			throw new IndexOutOfRangeException("索引越界");
 		}
-		m_nodes[nIndex].Owner = null;
+		STNode removedNode = m_nodes[nIndex];
+		foreach (STNodeOption inputOption in removedNode.GetAllInputOptions())
+		{
+			inputOption.DisconnectAllDetached();
+		}
+		foreach (STNodeOption outputOption in removedNode.GetAllOutputOptions())
+		{
+			outputOption.DisconnectAllDetached();
+		}
+		removedNode.Owner = null;
 		_Count--;
 		int i = nIndex;
 		for (int count = _Count; i < count; i++)
 		{
 			m_nodes[i] = m_nodes[i + 1];
 		}
+		m_nodes[_Count] = null;
+		m_owner.OnNodeRemoved(new STNodeEditorEventArgs(removedNode));
 	}
 
 	public void CopyTo(Array array, int index)
@@ -207,7 +219,7 @@ public class CVNodeCollection : IList, ICollection, IEnumerable
 		{
 			throw new ArgumentNullException("数组不能为空");
 		}
-		m_nodes.CopyTo(array, index);
+		Array.Copy(m_nodes, 0, array, index, _Count);
 	}
 
 	public IEnumerator GetEnumerator()

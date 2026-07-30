@@ -1,19 +1,28 @@
 using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
-using System.IO.Compression;
 using System.Reflection;
-using System.Text;
+using System.Linq;
 using ST.Library.UI.NodeEditor;
 
 namespace ST.Library.UI.NodeContainer;
 
-public class CVNodeContainer
+public class CVNodeContainer : IDisposable
 {
 	private CVNodeCollection _Nodes;
 
+	private bool _disposed;
+
 	protected static readonly Type m_type_node = typeof(STNode);
+
+	[Browsable(false)]
+	public float CanvasOffsetX { get; private set; } = 10f;
+
+	[Browsable(false)]
+	public float CanvasOffsetY { get; private set; } = 10f;
+
+	[Browsable(false)]
+	public float CanvasScale { get; private set; } = 1f;
 
 	[Browsable(false)]
 	public CVNodeCollection Nodes => _Nodes;
@@ -65,137 +74,69 @@ public class CVNodeContainer
 
 	public void LoadCanvas(Stream s)
 	{
-		int num = 0;
-		byte[] array = new byte[32];
-		s.Read(array, 0, 5);
-		if (!CheckHeader(array))
-		{
-			return;
-		}
+		ObjectDisposedException.ThrowIf(_disposed, this);
+		STNodeCanvasReader.Document document = STNodeCanvasReader.Read(s);
+		document.ConnectDetachedNodes();
+
+		// Commit only after the complete stream and all connections have been
+		// validated. The previous runtime graph survives any decode failure.
 		Clear();
-		using (GZipStream gZipStream = new GZipStream(s, CompressionMode.Decompress))
-		{
-			gZipStream.Read(array, 0, 16);
-			float num2 = BitConverter.ToSingle(array, 0);
-			float num3 = BitConverter.ToSingle(array, 4);
-			float num4 = BitConverter.ToSingle(array, 8);
-			int num5 = BitConverter.ToInt32(array, 12);
-			Dictionary<long, STNodeOption> dictionary = new Dictionary<long, STNodeOption>();
-			HashSet<STNodeOption> hashSet = new HashSet<STNodeOption>();
-			byte[] array2 = null;
-			for (int i = 0; i < num5; i++)
-			{
-				gZipStream.Read(array, 0, 4);
-				num = BitConverter.ToInt32(array, 0);
-				array2 = new byte[num];
-				gZipStream.Read(array2, 0, array2.Length);
-				STNode sTNode = null;
-				try
-				{
-					sTNode = GetNodeFromData(array2);
-				}
-				catch (Exception ex)
-				{
-					throw new Exception("加载节点时发生错误可能数据已损坏\r\n" + ex.Message, ex);
-				}
-				if (sTNode == null)
-				{
-					continue;
-				}
-				try
-				{
-					_Nodes.Add(sTNode);
-				}
-				catch (Exception innerException)
-				{
-					throw new Exception("加载节点出错-" + sTNode.Title, innerException);
-				}
-				foreach (STNodeOption inputOption in sTNode.InputOptions)
-				{
-					if (hashSet.Add(inputOption))
-					{
-						dictionary.Add(dictionary.Count, inputOption);
-					}
-				}
-				foreach (STNodeOption outputOption in sTNode.OutputOptions)
-				{
-					if (hashSet.Add(outputOption))
-					{
-						dictionary.Add(dictionary.Count, outputOption);
-					}
-				}
-			}
-			gZipStream.Read(array, 0, 4);
-			num5 = BitConverter.ToInt32(array, 0);
-			array2 = new byte[8];
-			for (int j = 0; j < num5; j++)
-			{
-				gZipStream.Read(array2, 0, array2.Length);
-				long num6 = BitConverter.ToInt64(array2, 0);
-				long key = num6 >> 32;
-				long key2 = (int)num6;
-				if (dictionary.ContainsKey(key) && dictionary.ContainsKey(key2))
-				{
-					dictionary[key].ConnectOption(dictionary[key2], isOwnerOfOwner: false);
-				}
-			}
-		}
+		CanvasOffsetX = document.CanvasOffsetX;
+		CanvasOffsetY = document.CanvasOffsetY;
+		CanvasScale = document.CanvasScale;
+		foreach (STNode node in document.Nodes)
+			_Nodes.Add(node);
 		foreach (STNode node in _Nodes)
 		{
 			node.OnEditorLoadCompleted();
 		}
 	}
 
-	private void Clear()
+	public void Clear()
 	{
+		ObjectDisposedException.ThrowIf(_disposed, this);
 		_Nodes.Clear();
+		CanvasOffsetX = 10f;
+		CanvasOffsetY = 10f;
+		CanvasScale = 1f;
 	}
 
-	private bool CheckHeader(byte[] header)
+	public void SaveCanvas(string fileName)
 	{
-		if (BitConverter.ToInt32(header, 0) != STNodeConstant.NodeFlagInt)
-		{
-			throw new InvalidDataException("无法识别的文件类型");
-		}
-		if (header[4] != 1)
-		{
-			throw new InvalidDataException("无法识别的文件版本号");
-		}
-		return true;
+		ObjectDisposedException.ThrowIf(_disposed, this);
+		using FileStream stream = new FileStream(fileName, FileMode.Create, FileAccess.Write);
+		SaveCanvas(stream);
 	}
 
-	private STNode GetNodeFromData(byte[] byData)
+	public void SaveCanvas(Stream stream)
 	{
-		int num = 0;
-		string text = Encoding.UTF8.GetString(byData, num + 1, byData[num]);
-		num += byData[num] + 1;
-		string text2 = Encoding.UTF8.GetString(byData, num + 1, byData[num]);
-		num += byData[num] + 1;
-		int num2 = 0;
-		Dictionary<string, byte[]> dictionary = new Dictionary<string, byte[]>();
-		while (num < byData.Length)
-		{
-			num2 = BitConverter.ToInt32(byData, num);
-			num += 4;
-			string key = Encoding.UTF8.GetString(byData, num, num2);
-			num += num2;
-			num2 = BitConverter.ToInt32(byData, num);
-			num += 4;
-			byte[] array = new byte[num2];
-			Array.Copy(byData, num, array, 0, num2);
-			num += num2;
-			dictionary.Add(key, array);
-		}
-		Type type = null;
-		STNodeTypeRegistry.TryGetNodeType(text2, text, out type);
-		if (type == null)
-		{
-			throw new TypeLoadException("无法找到类型 {" + text.Split('|')[1] + "} 所在程序集 确保程序集 {" + text.Split('|')[0] + "} 已被编辑器正确加载 可通过调用LoadAssembly()加载程序集");
-		}
-		STNode sTNode = (STNode)Activator.CreateInstance(type);
-		sTNode.Create();
-		sTNode.OnLoadNode(dictionary);
-		return sTNode;
+		ObjectDisposedException.ThrowIf(_disposed, this);
+		STNode[] nodes = _Nodes.Cast<STNode>().ToArray();
+		STNodeCanvasWriter.Write(
+			stream,
+			nodes,
+			STNodeCanvasWriter.GetConnections(nodes),
+			CanvasOffsetX,
+			CanvasOffsetY,
+			CanvasScale);
+	}
+
+	public byte[] GetCanvasData()
+	{
+		ObjectDisposedException.ThrowIf(_disposed, this);
+		using var stream = new MemoryStream();
+		SaveCanvas(stream);
+		return stream.ToArray();
+	}
+
+	public void Dispose()
+	{
+		if (_disposed)
+			return;
+
+		_Nodes.Clear();
+		_disposed = true;
+		GC.SuppressFinalize(this);
 	}
 
 	protected internal virtual void OnNodeAdded(STNodeEditorEventArgs e)

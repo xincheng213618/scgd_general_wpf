@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using FlowEngineLib.Base;
+using FlowEngineLib.Runtime;
 
 namespace FlowEngineLib;
 
@@ -19,7 +21,17 @@ public class FlowEngineEventArgs : EventArgs
 
 	public string ErrorNodeId { get; set; }
 
-	public FlowEngineEventArgs(string startNodeName, string serialNumber, StatusTypeEnum status, long totalTime, string message, string errorNodeName = "", string errorNodeId = "")
+	public IReadOnlyList<FlowHandledFailure> HandledFailures { get; set; }
+
+	public FlowEngineEventArgs(
+		string startNodeName,
+		string serialNumber,
+		StatusTypeEnum status,
+		long totalTime,
+		string message,
+		string errorNodeName = "",
+		string errorNodeId = "",
+		IReadOnlyList<FlowHandledFailure> handledFailures = null)
 	{
 		StartNodeName = startNodeName;
 		SerialNumber = serialNumber;
@@ -28,5 +40,6 @@ public class FlowEngineEventArgs : EventArgs
 		Message = message;
 		ErrorNodeName = errorNodeName;
 		ErrorNodeId = errorNodeId;
+		HandledFailures = handledFailures ?? Array.Empty<FlowHandledFailure>();
 	}
 }

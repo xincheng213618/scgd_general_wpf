@@ -51,11 +51,12 @@
 | 入口 | 当前链路 | 维护重点 |
 | --- | --- | --- |
 | UI 手动运行 | `ViewFlow` -> `FlowExecutionSession.RunFlowAsync()` -> `FlowControl.TryStartAsync(...)` | 创建 `MeasureBatchModel`，绑定 `FlowCompleted` |
-| 等待式运行 | `FlowEngineManager.RunFlowAsync()` | 给调度、自动化或外部调用等待流程结束 |
-| Quartz 调度 | `FlowJob.Execute(...)` -> `FlowExecutionCoordinator` -> `FlowEngineManager.RunFlowAsync()` | 通过 `Application.Current.Dispatcher` 切回 UI |
+| 等待引擎结束 | `FlowEngineManager.RunFlowAsync()` | 只等待流程图执行结束，不代表后处理成功 |
+| 等待最终结果 | `FlowEngineManager.RunFlowAndWaitForFinalizationAsync()` | 给调度、自动化或外部调用等待引擎和全部后处理结束 |
+| Quartz 调度 | `FlowJob.Execute(...)` -> `FlowExecutionCoordinator` -> `RunSelectedFlowAndWaitForFinalizationAsync()` | 通过 `Application.Current.Dispatcher` 切回 UI，并以最终结果决定任务状态 |
 | 停止流程 | `ViewFlow` -> `FlowExecutionSession.StopFlow()` -> `FlowControl.Stop()` | 批次状态更新为 `Canceled` |
 
-`FlowExecutionSession.FlowControl_FlowCompleted(...)` 会写回 `FlowStatus`、`TotalTime`、`Result`，触发 `FlowExecutionCompleted`，再进入项目包后续 `Processing(FlowEngineManager.Batch)`。`DisplayFlow` 只负责主程序视图注册、选中状态和服务重启。
+`EngineExecutionCompleted` 表示“流程图引擎已结束”，此时后处理可能仍在运行；原有 `FlowExecutionCompleted` 作为它的过时兼容别名保留，不能作为整次业务运行成功的依据。引擎结束后会执行配置的后处理；后处理分为 `Warning` 和 `Required`，其中必需后处理失败会把最终结果判为失败。外部调用、Quartz 调度和自动化应等待 `RunFinalized`，或直接调用 `RunFlowAndWaitForFinalizationAsync()` 取得 `FlowRunFinalizedData.FinalOutcome`。`DisplayFlow` 只负责主程序视图注册、选中状态和服务重启。
 
 ## 验收
 
@@ -65,8 +66,8 @@
 | 单流程导出 | `.cvflow` 包内有 `flow.stn` 和 `manifest.json` |
 | 单流程导入 | 同名模板环境下能重命名冲突模板并更新节点引用 |
 | 多流程导出 | zip 内是多个 `.stn`，不要误认为包含关联模板 |
-| 调度执行 | Quartz `FlowJob` 能启动流程并在 `context.Result` 返回 `FlowJobResult` |
-| 项目维护 | `FlowCompleted` 后批次状态、耗时、结果和项目包处理都能追踪 |
+| 调度执行 | Quartz `FlowJob` 能启动流程、等待后处理完成，并在 `context.Result` 返回最终 `FlowJobResult` |
+| 项目维护 | `RunFinalized` 后批次状态、耗时、节点尝试、Incident、后处理和最终结果都能追踪 |
 
 ## 边界
 

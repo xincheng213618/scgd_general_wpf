@@ -8,6 +8,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
     {
         Succeeded,
         Failed,
+        Canceled,
         Completed
     }
 
@@ -43,6 +44,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
         {
             FlowNodeExecutionOutcome.Succeeded => "成功",
             FlowNodeExecutionOutcome.Failed => "失败",
+            FlowNodeExecutionOutcome.Canceled => "已取消",
             _ => "未判定"
         };
 
@@ -51,6 +53,8 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
         public bool IsSucceeded => Outcome == FlowNodeExecutionOutcome.Succeeded;
 
         public bool IsFailed => Outcome == FlowNodeExecutionOutcome.Failed;
+
+        public bool IsCanceled => Outcome == FlowNodeExecutionOutcome.Canceled;
     }
 
     internal readonly record struct FlowNodeHistorySummary(
@@ -252,7 +256,9 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 items.Count(item => item.Outcome == FlowNodeExecutionOutcome.Succeeded),
                 items.Count(item => item.Outcome == FlowNodeExecutionOutcome.Failed),
                 items.Count(item => item.IsTimedOut),
-                items.Count(item => item.Outcome == FlowNodeExecutionOutcome.Completed),
+                items.Count(item =>
+                    item.Outcome == FlowNodeExecutionOutcome.Completed
+                    || item.Outcome == FlowNodeExecutionOutcome.Canceled),
                 CalculateAverage(successfulElapsed),
                 CalculateP95(successfulElapsed),
                 CalculateAverage(failedElapsed),
@@ -268,6 +274,12 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
 
             List<FlowNodeMessage> messageList = messages?.ToList()
                 ?? new List<FlowNodeMessage>();
+            if (messageList.Any(message =>
+                message.State == FlowMessageState.Canceled
+                || message.StatusCode == -4))
+            {
+                return FlowNodeExecutionOutcome.Canceled;
+            }
             if (messageList.Any(message =>
                 message.State == FlowMessageState.Fail
                 || message.State == FlowMessageState.Timeout

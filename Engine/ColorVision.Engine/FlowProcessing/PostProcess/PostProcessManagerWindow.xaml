@@ -58,6 +58,7 @@
                         <GridViewColumn Header="{x:Static properties:Resources.FlowTemplate}" Width="120" DisplayMemberBinding="{Binding TemplateName}"/>
                         <GridViewColumn Header="{x:Static properties:Resources.ProcessClass}" Width="140" DisplayMemberBinding="{Binding ProcessDisplayName}"/>
                         <GridViewColumn Header="{x:Static properties:Resources.Tag_Column}" Width="80" DisplayMemberBinding="{Binding Tag}"/>
+                        <GridViewColumn Header="失败策略" Width="80" DisplayMemberBinding="{Binding FailurePolicy}"/>
                         <GridViewColumn Header="{x:Static properties:Resources.Description}" Width="150" DisplayMemberBinding="{Binding ProcessDescription}"/>
                     </GridView>
                 </ListView.View>

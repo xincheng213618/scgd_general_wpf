@@ -124,6 +124,8 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
@@ -134,7 +136,11 @@
                     <TextBlock Grid.Row="2" Text="标签" Style="{StaticResource PanelTitleStyle}" Margin="0 16 0 8"/>
                     <TextBox Grid.Row="3" Text="{Binding Tag, UpdateSourceTrigger=PropertyChanged}"/>
 
-                    <Grid Grid.Row="4" Margin="0 18 0 0">
+                    <TextBlock Grid.Row="4" Text="失败策略" Style="{StaticResource PanelTitleStyle}" Margin="0 16 0 8"/>
+                    <ComboBox Grid.Row="5" ItemsSource="{Binding FailurePolicies}"
+                              SelectedItem="{Binding FailurePolicy}"/>
+
+                    <Grid Grid.Row="6" Margin="0 18 0 0">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>

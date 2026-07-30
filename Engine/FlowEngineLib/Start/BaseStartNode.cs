@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using FlowEngineLib.Base;
 using FlowEngineLib.MQTT;
+using FlowEngineLib.Runtime;
 using log4net;
 using ST.Library.UI.NodeEditor;
 
@@ -553,7 +554,16 @@ public abstract class BaseStartNode : CVCommonNode
 				message = flowStatus.ToString();
 			}
 		}
-		this.Finished?.Invoke(this, new FlowStartEventArgs(startAction.SerialNumber, flowStatus, (long)startAction.GetTotalTime().TotalMilliseconds, message, errorNodeName, errorNodeId));
+		this.Finished?.Invoke(
+			this,
+			new FlowStartEventArgs(
+				startAction.SerialNumber,
+				flowStatus,
+				(long)startAction.GetTotalTime().TotalMilliseconds,
+				message,
+				errorNodeName,
+				errorNodeId,
+				FlowFailureData.GetHandledFailures(startAction)));
 	}
 
 	private static string GetDataString(Dictionary<string, object> data, string key)

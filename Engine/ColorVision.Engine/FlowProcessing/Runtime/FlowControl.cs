@@ -3,8 +3,10 @@ using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services.RC;
 using FlowEngineLib;
 using FlowEngineLib.Base;
+using FlowEngineLib.Runtime;
 using log4net;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
@@ -44,6 +46,9 @@ namespace ColorVision.Engine.FlowProcessing
         public string ErrorNodeId { get; set; }
         public string Message { get; set; }
 
+        public IReadOnlyList<FlowHandledFailure> HandledFailures { get; set; } =
+            Array.Empty<FlowHandledFailure>();
+
         public StatusTypeEnum Status { get; set; }
 
         public long TotalTime { get; set; }
@@ -75,18 +80,31 @@ namespace ColorVision.Engine.FlowProcessing
         private static readonly ILog log = LogManager.GetLogger(typeof(FlowControl));
         private static readonly TimeSpan StartReadyTimeout = TimeSpan.FromSeconds(5);
         private FlowEngineControl flowEngine;
+        private readonly Func<List<MQTTServiceInfo>> serviceTokensProvider;
         private readonly object lifecycleLock = new object();
         public event EventHandler<FlowControlData> FlowCompleted;
 
         public string? SerialNumber { get; set; }
+        private string? activeStartNodeName;
 
         public FlowControl(MQTTControl mQTTControl)
         {
+            serviceTokensProvider = () => MqttRCService.GetInstance().ServiceTokens;
         }
 
         public FlowControl(MQTTControl mQTTControl, FlowEngineControl flowEngine) : this(mQTTControl)
         {
             this.flowEngine = flowEngine;
+        }
+
+        internal FlowControl(
+            MQTTControl mQTTControl,
+            FlowEngineControl flowEngine,
+            Func<List<MQTTServiceInfo>> serviceTokensProvider)
+            : this(mQTTControl, flowEngine)
+        {
+            this.serviceTokensProvider = serviceTokensProvider
+                ?? throw new ArgumentNullException(nameof(serviceTokensProvider));
         }
 
         private int _isFlowRun;
@@ -110,15 +128,23 @@ namespace ColorVision.Engine.FlowProcessing
         public void Stop()
         {
             string? serialNumber;
+            string? startNodeName;
             lock (lifecycleLock)
             {
                 flowEngine.Finished -= FinishedAsync;
                 serialNumber = SerialNumber;
+                startNodeName = activeStartNodeName;
                 SerialNumber = null;
+                activeStartNodeName = null;
                 IsFlowRun = false;
             }
             if (!string.IsNullOrWhiteSpace(serialNumber))
-                flowEngine.StopNode(serialNumber);
+            {
+                if (string.IsNullOrWhiteSpace(startNodeName))
+                    flowEngine.StopNode(serialNumber);
+                else
+                    flowEngine.StopNode(startNodeName, serialNumber);
+            }
         }
 
         public async Task<bool> TryStartAsync(string sn, CancellationToken cancellationToken = default)
@@ -140,7 +166,10 @@ namespace ColorVision.Engine.FlowProcessing
             {
                 readinessSucceeded = await flowEngine.EnsureStartNodeReadyAsync(startNodeName, StartReadyTimeout, cancellationToken);
                 if (readinessSucceeded)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
                     started = TryStart(startNodeName, sn);
+                }
                 return started;
             }
             finally
@@ -168,8 +197,9 @@ namespace ColorVision.Engine.FlowProcessing
 
                 IsFlowRun = true;
                 SerialNumber = sn;
+                activeStartNodeName = startNodeName;
 
-                var tol = MqttRCService.GetInstance().ServiceTokens;
+                List<MQTTServiceInfo> tol = serviceTokensProvider();
                 flowEngine.Finished -= FinishedAsync;
                 flowEngine.Finished += FinishedAsync;
                 try
@@ -178,6 +208,7 @@ namespace ColorVision.Engine.FlowProcessing
                     {
                         flowEngine.Finished -= FinishedAsync;
                         SerialNumber = null;
+                        activeStartNodeName = null;
                         IsFlowRun = false;
                         return false;
                     }
@@ -187,6 +218,7 @@ namespace ColorVision.Engine.FlowProcessing
                 {
                     flowEngine.Finished -= FinishedAsync;
                     SerialNumber = null;
+                    activeStartNodeName = null;
                     IsFlowRun = false;
                     throw;
                 }
@@ -196,27 +228,65 @@ namespace ColorVision.Engine.FlowProcessing
         public void FinishedAsync(object sender, FlowEngineEventArgs e)
         {
             FlowControlData data;
+            EventHandler<FlowControlData>? completedHandlers;
             lock (lifecycleLock)
             {
-                if (!string.Equals(e.SerialNumber, SerialNumber, StringComparison.Ordinal))
+                if (!string.Equals(e.SerialNumber, SerialNumber, StringComparison.Ordinal)
+                    || (!string.IsNullOrWhiteSpace(activeStartNodeName)
+                        && !string.Equals(e.StartNodeName, activeStartNodeName, StringComparison.Ordinal)))
                     return;
 
                 flowEngine.Finished -= FinishedAsync;
                 SerialNumber = null;
+                activeStartNodeName = null;
                 IsFlowRun = false;
-                data = new FlowControlData() { StartNodeName = e.StartNodeName, ErrorNodeName = e.ErrorNodeName, ErrorNodeId = e.ErrorNodeId, SerialNumber = e.SerialNumber, EventName = e.Status.ToString() , Status= e.Status, TotalTime = e.TotalTime, Message = e.Message, Params = e.Message };
+                data = new FlowControlData()
+                {
+                    StartNodeName = e.StartNodeName,
+                    ErrorNodeName = e.ErrorNodeName,
+                    ErrorNodeId = e.ErrorNodeId,
+                    SerialNumber = e.SerialNumber,
+                    EventName = e.Status.ToString(),
+                    Status = e.Status,
+                    TotalTime = e.TotalTime,
+                    Message = e.Message,
+                    Params = e.Message,
+                    HandledFailures =
+                        e.HandledFailures ?? Array.Empty<FlowHandledFailure>()
+                };
+                completedHandlers = FlowCompleted;
             }
             try
             {
                 var dispatcher = Application.Current?.Dispatcher;
                 if (dispatcher == null || dispatcher.CheckAccess())
-                    FlowCompleted?.Invoke(this, data);
+                    PublishFlowCompleted(completedHandlers, data);
                 else
-                    dispatcher.BeginInvoke(() => FlowCompleted?.Invoke(this, data));
+                    dispatcher.BeginInvoke(() => PublishFlowCompleted(completedHandlers, data));
             }
             catch (Exception ex)
             {
                 log.Error("流程完成事件异常", ex);
+            }
+        }
+
+        private void PublishFlowCompleted(
+            EventHandler<FlowControlData>? completedHandlers,
+            FlowControlData data)
+        {
+            if (completedHandlers == null)
+                return;
+
+            foreach (Delegate subscriber in completedHandlers.GetInvocationList())
+            {
+                try
+                {
+                    ((EventHandler<FlowControlData>)subscriber)(this, data);
+                }
+                catch (Exception ex)
+                {
+                    log.Error("流程完成订阅者处理失败", ex);
+                }
             }
         }
     }

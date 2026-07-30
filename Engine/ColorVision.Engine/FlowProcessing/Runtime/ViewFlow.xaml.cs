@@ -9,6 +9,8 @@ using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
+using ColorVision.Engine.Templates.Flow.Routing;
+using ColorVision.Engine.Templates.Flow.Versioning;
 using ColorVision.UI;
 using ColorVision.UI.Views;
 using FlowEngineLib;
@@ -18,6 +20,7 @@ using ST.Library.UI.NodeEditor;
 using System;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -46,6 +49,8 @@ namespace ColorVision.Engine.FlowProcessing
 
         public RelayCommand ClearCommand { get; set; }
         public RelayCommand SaveCommand { get; set; }
+        public RelayCommand VersionHistoryCommand { get; set; }
+        public RelayCommand ExecutionPolicyCommand { get; set; }
 
         public RelayCommand AutoAlignmentCommand { get; set; }
 
@@ -63,6 +68,39 @@ namespace ColorVision.Engine.FlowProcessing
         public CVCommonNode? LastNode => _executionSession.LastNode;
         public bool IsStandalone => _isStandalone;
 
+        /// <summary>
+        /// The graph engine has stopped. Post-processing may still be running.
+        /// </summary>
+        public event EventHandler<FlowControlData>? EngineExecutionCompleted
+        {
+            add => _executionSession.EngineExecutionCompleted += value;
+            remove => _executionSession.EngineExecutionCompleted -= value;
+        }
+
+        /// <summary>
+        /// Compatibility alias for <see cref="EngineExecutionCompleted"/>.
+        /// This event does not represent the final business outcome.
+        /// </summary>
+        [Obsolete(
+            "FlowExecutionCompleted reports graph-engine completion only. "
+            + "Use EngineExecutionCompleted for that phase, or RunFinalized "
+            + "for the final business outcome.")]
+        public event EventHandler<FlowControlData>? FlowExecutionCompleted
+        {
+            add => _executionSession.EngineExecutionCompleted += value;
+            remove => _executionSession.EngineExecutionCompleted -= value;
+        }
+
+        /// <summary>
+        /// The graph engine and all post-processing have reached a final
+        /// business outcome.
+        /// </summary>
+        public event EventHandler<FlowRunFinalizedData>? RunFinalized
+        {
+            add => _executionSession.RunFinalized += value;
+            remove => _executionSession.RunFinalized -= value;
+        }
+
         private readonly bool _isStandalone;
         private readonly FlowControl? _standaloneFlowControl;
         private readonly FlowNodeManager? _standaloneNodeManager;
@@ -77,6 +115,77 @@ namespace ColorVision.Engine.FlowProcessing
         private CVCommonNode? _executionDetailsNode;
         private string? _standaloneStartNodeName;
         private bool _runtimeSelectionInitialized;
+        private string? _documentLoadedContentHash;
+
+        internal bool ApplyExecutionPolicies(
+            FlowParam? flowParam,
+            out string? failureReason)
+        {
+            failureReason = null;
+            if (flowParam == null
+                || string.IsNullOrWhiteSpace(flowParam.FlowKey))
+            {
+                if (flowParam != null)
+                {
+                    flowParam.ExecutionPolicyRevision = null;
+                    flowParam.ExecutionPolicyHash = null;
+                    flowParam.ExecutionPolicySnapshotJson = null;
+                }
+                FlowExecutionPolicyRuntimeAdapter.Clear(
+                    FlowEngineControl);
+                return true;
+            }
+
+            if (!FlowExecutionPolicyStoreProvider.Shared.TryLoad(
+                    flowParam.FlowKey,
+                    out FlowExecutionPolicySnapshot snapshot,
+                    out failureReason))
+            {
+                flowParam.ExecutionPolicyRevision = null;
+                flowParam.ExecutionPolicyHash = null;
+                flowParam.ExecutionPolicySnapshotJson = null;
+                FlowExecutionPolicyRuntimeAdapter.Clear(
+                    FlowEngineControl);
+                log.Error(
+                    $"加载流程执行策略失败，已使用空策略：{failureReason}");
+                return false;
+            }
+
+            FlowExecutionPolicyRuntimeAdapter.Apply(
+                FlowEngineControl,
+                snapshot);
+            flowParam.ExecutionPolicyRevision = snapshot.Revision;
+            flowParam.ExecutionPolicyHash = snapshot.ContentHash;
+            flowParam.ExecutionPolicySnapshotJson =
+                JsonSerializer.Serialize(snapshot);
+            return true;
+        }
+
+        public bool TryFocusNode(Guid nodeGuid)
+        {
+            return _executionNavigator.TryFocusNode(nodeGuid);
+        }
+
+        internal void SetDocumentBaseline(FlowParam? flowParam)
+        {
+            if (flowParam == null
+                || string.IsNullOrWhiteSpace(flowParam.DataBase64))
+            {
+                _documentLoadedContentHash = null;
+                return;
+            }
+            try
+            {
+                _documentLoadedContentHash =
+                    FlowSemanticHash.ComputeBinaryHash(
+                        Convert.FromBase64String(
+                            flowParam.DataBase64));
+            }
+            catch (FormatException)
+            {
+                _documentLoadedContentHash = null;
+            }
+        }
 
         public ViewFlow(FlowEngineManager flowEngineManager) : this(flowEngineManager, false)
         {
@@ -112,6 +221,14 @@ namespace ColorVision.Engine.FlowProcessing
             StopFlowCommand = new RelayCommand(a => StopFlow());
             ClearCommand = new RelayCommand(a => Clear());
             SaveCommand = new RelayCommand(a => Save());
+            VersionHistoryCommand = new RelayCommand(
+                _ => ShowVersionHistory(),
+                _ => GetActiveFlowParam()?.FlowKey != null
+                    && !FlowControl.IsFlowRun);
+            ExecutionPolicyCommand = new RelayCommand(
+                _ => ShowExecutionPolicy(),
+                _ => GetActiveFlowParam()?.FlowKey != null
+                    && !FlowControl.IsFlowRun);
             AutoAlignmentCommand = new RelayCommand(a => AutoAlignment());
             OpenFlowTemplateCommand = new RelayCommand(a => OpenFlowTemplate());
             NewFlowCommand = new RelayCommand(a =>
@@ -341,8 +458,23 @@ namespace ColorVision.Engine.FlowProcessing
                 }
 
                 log.Info($"Save: 画布数据大小={canvasData.Length} bytes, FlowParam.Id={flowParam.Id}, Name={flowParam.Name}");
-                flowParam.DataBase64 = Convert.ToBase64String(canvasData);
-                TemplateFlow.Save2DB(flowParam);
+                string previousData = flowParam.DataBase64;
+                try
+                {
+                    flowParam.DataBase64 =
+                        Convert.ToBase64String(canvasData);
+                    TemplateFlow.Save2DB(
+                        flowParam,
+                        new FlowTemplateSaveCondition(
+                            _documentLoadedContentHash));
+                }
+                catch
+                {
+                    flowParam.DataBase64 = previousData;
+                    throw;
+                }
+                _documentLoadedContentHash =
+                    flowParam.LoadedContentHash;
                 STNodeEditorMain.MarkSaved();
                 log.Info("Save: 流程保存成功");
                 return true;
@@ -367,6 +499,106 @@ namespace ColorVision.Engine.FlowProcessing
             _ = RefreshRuntimeAsync();
         }
 
+        private FlowParam? GetActiveFlowParam()
+        {
+            return _isStandalone
+                ? _standaloneFlowParam
+                : FlowEngineManager.SelectedFlowParam;
+        }
+
+        private void ShowVersionHistory()
+        {
+            if (FlowControl.IsFlowRun)
+            {
+                MessageBox.Show(
+                    Application.Current.GetActiveWindow(),
+                    "流程正在运行，请在运行结束后查看或恢复版本。",
+                    "流程版本");
+                return;
+            }
+
+            FlowParam? flowParam = GetActiveFlowParam();
+            if (flowParam == null
+                || string.IsNullOrWhiteSpace(flowParam.FlowKey))
+            {
+                MessageBox.Show(
+                    Application.Current.GetActiveWindow(),
+                    "当前文档还没有可用的流程版本。",
+                    "流程版本");
+                return;
+            }
+
+            new FlowVersionHistoryWindow(
+                flowParam,
+                Refresh,
+                _documentLoadedContentHash,
+                () => FlowControl.IsFlowRun)
+            {
+                Owner = Application.Current.GetActiveWindow()
+            }.Show();
+        }
+
+        private void ShowExecutionPolicy()
+        {
+            FlowParam? flowParam = GetActiveFlowParam();
+            if (flowParam == null
+                || string.IsNullOrWhiteSpace(flowParam.FlowKey))
+            {
+                MessageBox.Show(
+                    Application.Current.GetActiveWindow(),
+                    "当前文档没有稳定 FlowKey，不能保存执行策略。",
+                    "流程执行策略");
+                return;
+            }
+            if (FlowControl.IsFlowRun)
+            {
+                MessageBox.Show(
+                    Application.Current.GetActiveWindow(),
+                    "流程正在运行，请在运行结束后修改执行策略。",
+                    "流程执行策略");
+                return;
+            }
+            if (STNodeEditorMain.IsModified)
+            {
+                MessageBoxResult result = MessageBox.Show(
+                    Application.Current.GetActiveWindow(),
+                    "执行策略通过节点 Guid 关联当前已保存版本。"
+                    + Environment.NewLine
+                    + "画布有未保存修改，是否先保存再继续？",
+                    "流程执行策略",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Question);
+                if (result != MessageBoxResult.Yes || !TrySave())
+                    return;
+
+                flowParam = GetActiveFlowParam();
+                if (flowParam == null)
+                    return;
+            }
+
+            STNode[] nodes = STNodeEditorMain.Nodes
+                .Cast<STNode>()
+                .ToArray();
+            new FlowExecutionPolicyWindow(
+                flowParam,
+                nodes,
+                _ =>
+                {
+                    if (!ApplyExecutionPolicies(
+                            flowParam,
+                            out string? failureReason))
+                    {
+                        throw new InvalidOperationException(
+                            failureReason
+                            ?? "重新加载流程执行策略失败。");
+                    }
+                    TemplateFlow.RefreshCatalogProjection(flowParam);
+                })
+            {
+                Owner = Application.Current.GetActiveWindow()
+            }.ShowDialog();
+        }
+
         internal Task RefreshRuntimeAsync()
         {
             return _executionSession.RefreshAsync();
@@ -387,6 +619,14 @@ namespace ColorVision.Engine.FlowProcessing
             return await _executionSession.RunFlowAndWaitAsync();
         }
 
+        internal async Task<FlowRunFinalizedData?> RunFlowAndWaitForFinalizationAsync(
+            TemplateModel<FlowParam>? flowTemplate = null)
+        {
+            if (flowTemplate != null)
+                await _executionSession.SelectFlowTemplateAsync(flowTemplate);
+            return await _executionSession.RunFlowAndWaitForFinalizationAsync();
+        }
+
         public void Clear()
         {
             if (_isStandalone)
@@ -396,6 +636,7 @@ namespace ColorVision.Engine.FlowProcessing
                 StopStandaloneFlow();
                 ShowExecutionSummary(string.Empty);
                 FlowEngineControl.FlowClear();
+                ApplyExecutionPolicies(null, out _);
                 RefreshStandaloneStartNodeSelection();
                 _standaloneNodeManager!.ClearDevice();
                 STNodeEditorMain.ClearHistory();
@@ -419,6 +660,7 @@ namespace ColorVision.Engine.FlowProcessing
                 return false;
 
             _standaloneFlowParam = null;
+            _documentLoadedContentHash = null;
             _standaloneFilePath = filePath;
             _standaloneDocumentName = Path.GetFileName(filePath);
             _saveStandaloneFlowParam = false;
@@ -426,6 +668,7 @@ namespace ColorVision.Engine.FlowProcessing
             StopStandaloneFlow();
             ShowExecutionSummary(string.Empty);
             FlowEngineControl.FlowClear();
+            ApplyExecutionPolicies(null, out _);
             if (filePath.EndsWith(".cvflow", StringComparison.OrdinalIgnoreCase))
             {
                 try
@@ -439,6 +682,11 @@ namespace ColorVision.Engine.FlowProcessing
                             DataBase64 = Convert.ToBase64String(stnData)
                         };
                         _standaloneFilePath = null;
+                        SetDocumentBaseline(
+                            _standaloneFlowParam);
+                        ApplyExecutionPolicies(
+                            _standaloneFlowParam,
+                            out _);
                         FlowEngineControl.LoadFromBase64(
                             _standaloneFlowParam.DataBase64,
                             MqttRCService.GetInstance().ServiceTokens);
@@ -455,7 +703,11 @@ namespace ColorVision.Engine.FlowProcessing
                 }
             }
 
-            FlowEngineControl.LoadFromFile(filePath, MqttRCService.GetInstance().ServiceTokens);
+            ApplyExecutionPolicies(null, out _);
+            _documentLoadedContentHash = null;
+            FlowEngineControl.LoadFromFile(
+                filePath,
+                MqttRCService.GetInstance().ServiceTokens);
             FitLoadedFlowToViewport();
             RefreshStandaloneStartNodeSelection();
             STNodeEditorMain.ClearHistory();
@@ -485,9 +737,11 @@ namespace ColorVision.Engine.FlowProcessing
             FlowEngineControl.FlowClear();
             try
             {
+                ApplyExecutionPolicies(flowParam, out _);
                 FlowEngineControl.LoadFromBase64(
                     flowParam.DataBase64,
                     MqttRCService.GetInstance().ServiceTokens);
+                SetDocumentBaseline(flowParam);
                 FitLoadedFlowToViewport();
                 RefreshStandaloneStartNodeSelection();
                 STNodeEditorMain.ClearHistory();
@@ -539,12 +793,14 @@ namespace ColorVision.Engine.FlowProcessing
             if (!ConfirmStandaloneDocumentReplacement())
                 return;
             _standaloneFlowParam = null;
+            _documentLoadedContentHash = null;
             _standaloneFilePath = null;
             _standaloneDocumentName = Properties.Resources.New;
             _saveStandaloneFlowParam = false;
             StopStandaloneFlow();
             ShowExecutionSummary(string.Empty);
             FlowEngineControl.FlowClear();
+            ApplyExecutionPolicies(null, out _);
             RefreshStandaloneStartNodeSelection();
             _standaloneNodeManager!.ClearDevice();
             STNodeEditorMain.ClearHistory();
@@ -581,8 +837,25 @@ namespace ColorVision.Engine.FlowProcessing
             {
                 if (_saveStandaloneFlowParam && _standaloneFlowParam != null)
                 {
-                    _standaloneFlowParam.DataBase64 = Convert.ToBase64String(canvasData);
-                    TemplateFlow.Save2DB(_standaloneFlowParam);
+                    string previousData =
+                        _standaloneFlowParam.DataBase64;
+                    try
+                    {
+                        _standaloneFlowParam.DataBase64 =
+                            Convert.ToBase64String(canvasData);
+                        TemplateFlow.Save2DB(
+                            _standaloneFlowParam,
+                            new FlowTemplateSaveCondition(
+                                _documentLoadedContentHash));
+                    }
+                    catch
+                    {
+                        _standaloneFlowParam.DataBase64 =
+                            previousData;
+                        throw;
+                    }
+                    _documentLoadedContentHash =
+                        _standaloneFlowParam.LoadedContentHash;
                 }
                 else
                 {

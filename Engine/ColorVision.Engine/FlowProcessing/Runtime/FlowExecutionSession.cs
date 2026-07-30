@@ -10,6 +10,7 @@ using ColorVision.Engine.Templates.Flow;
 using ColorVision.UI;
 using FlowEngineLib;
 using FlowEngineLib.Base;
+using FlowEngineLib.Runtime;
 using log4net;
 using SqlSugar;
 using ST.Library.UI.NodeEditor;
@@ -31,6 +32,10 @@ namespace ColorVision.Engine.FlowProcessing
         private readonly ViewFlow View;
         private readonly FlowEngineManager FlowEngineManager;
         private FlowControl FlowControl => View.FlowControl;
+        private readonly FlowRunExecutor _flowRunExecutor;
+        private readonly FlowRunFinalizer _runFinalizer;
+        private readonly FlowExecutionJournalCoordinator _journalCoordinator =
+            FlowExecutionJournalCoordinator.Shared;
         private readonly Timer _timer;
         private readonly Stopwatch _stopwatch = new();
         private MeasureBatchModel? _batch;
@@ -40,10 +45,15 @@ namespace ColorVision.Engine.FlowProcessing
         private volatile bool _flowCompletionPending;
         private string? _activeFlowSerialNumber;
         private bool _cancelFlowStartRequested;
-        private CancellationTokenSource? _flowStartCts;
+        private CancellationTokenSource? _flowRunCts;
+        private FlowExecutionJournalScope? _activeJournalScope;
         private readonly object _flowLifecycleSync = new();
         private string? _startNodeName;
         private const string FlowMqttNotReadyMessage = "流程 MQTT 连接尚未就绪，本次未启动。请检查 MQTT 配置或稍后重试。";
+
+        private readonly record struct FlowRunCoreResult(
+            FlowControlData? EngineResult,
+            FlowRunFinalizedData? FinalizedResult);
 
         private MeasureBatchModel? CurrentBatch
         {
@@ -60,7 +70,10 @@ namespace ColorVision.Engine.FlowProcessing
         {
             FlowEngineManager = flowEngineManager;
             View = view;
+            _flowRunExecutor = new FlowRunExecutor(FlowControl);
+            _runFinalizer = new FlowRunFinalizer();
             _timer = new Timer(UpdateRuntimeProgress, null, Timeout.Infinite, 100);
+            _journalCoordinator.StartRecovery();
             MqttRCService.GetInstance().ServiceTokensUpdated += MqttRCService_ServiceTokensUpdated;
         }
 
@@ -202,7 +215,9 @@ namespace ColorVision.Engine.FlowProcessing
                 }
                 ResetNodeTitleProgress();
                 View.FlowEngineControl.FlowClear();
+                View.ApplyExecutionPolicies(flowParam, out _);
                 View.FlowEngineControl.LoadFromBase64(flowParam.DataBase64, MqttRCService.GetInstance().ServiceTokens);
+                View.SetDocumentBaseline(flowParam);
                 View.FitLoadedFlowToViewport();
                 RefreshStartNodeSelection();
 
@@ -241,7 +256,9 @@ namespace ColorVision.Engine.FlowProcessing
             }
 
             ResetNodeTitleProgress();
+            View.ApplyExecutionPolicies(flowParam, out _);
             View.FlowEngineControl.LoadFromBase64(string.Empty);
+            View.SetDocumentBaseline(flowParam);
             RefreshStartNodeSelection();
             FlowEngineManager.CVBaseServerNodes.Clear();
             FlowEngineManager.SelectedFlowParam = flowParam;
@@ -253,23 +270,19 @@ namespace ColorVision.Engine.FlowProcessing
 
         private async Task CloseRunningFlowBeforeRefreshAsync()
         {
+            bool shouldStop;
             lock (_flowLifecycleSync)
             {
-                if (_flowCompletionPending && FlowControl?.IsFlowRun != true)
-                    _cancelFlowStartRequested = true;
+                shouldStop = _flowCompletionPending;
             }
 
-            while (_flowCompletionPending)
+            if (shouldStop)
             {
-                if (FlowControl?.IsFlowRun == true)
-                {
-                    log.Info("流程运行中触发刷新，先关闭当前流程。");
-                    StopFlow();
-                    await Task.Delay(100);
-                    break;
-                }
-                await Task.Delay(20);
+                log.Info("流程生命周期中触发刷新，先取消并等待当前流程收尾。");
+                StopFlow();
             }
+            while (_flowCompletionPending)
+                await Task.Delay(20);
         }
 
         private TemplateModel<FlowParam>? GetSelectedFlowTemplate()
@@ -308,9 +321,14 @@ namespace ColorVision.Engine.FlowProcessing
         }
 
         /// <summary>
-        /// 流程执行完成事件，外部（如定时任务）可订阅此事件以获取流程执行结果
+        /// 流程图引擎结束事件；此时后处理可能仍在运行。
         /// </summary>
-        public event EventHandler<FlowControlData>? FlowExecutionCompleted;
+        public event EventHandler<FlowControlData>? EngineExecutionCompleted;
+
+        /// <summary>
+        /// 流程及其后处理全部结束后发布的最终结果。
+        /// </summary>
+        public event EventHandler<FlowRunFinalizedData>? RunFinalized;
 
         /// <summary>
         /// 启动流程并等待执行完成，返回流程执行结果。
@@ -318,82 +336,64 @@ namespace ColorVision.Engine.FlowProcessing
         /// </summary>
         public async Task<FlowControlData?> RunFlowAndWaitAsync()
         {
-            var tcs = new TaskCompletionSource<FlowControlData?>(TaskCreationOptions.RunContinuationsAsynchronously);
-            string expectedSerialNumber = CreateFlowSerialNumber();
-
-            EventHandler<FlowControlData>? handler = null;
-            handler = (sender, data) =>
-            {
-                if (!string.Equals(data.SerialNumber, expectedSerialNumber, StringComparison.Ordinal))
-                    return;
-
-                FlowExecutionCompleted -= handler;
-                tcs.TrySetResult(data);
-            };
-
-            FlowExecutionCompleted += handler;
-
-            bool started;
-            try
-            {
-                started = await RunFlowCoreAsync(expectedSerialNumber);
-            }
-            catch
-            {
-                FlowExecutionCompleted -= handler;
-                throw;
-            }
-
-            if (!started)
-            {
-                FlowExecutionCompleted -= handler;
-                return null;
-            }
-            return await tcs.Task;
+            FlowRunCoreResult result = await RunFlowCoreAsync(CreateFlowSerialNumber());
+            return result.EngineResult;
         }
 
-        private async void FlowControl_FlowCompleted(object? sender, FlowControlData FlowControlData)
+        /// <summary>
+        /// 启动流程并等待引擎及全部后处理完成，返回最终结果。
+        /// 如果流程未能启动，返回 null。
+        /// </summary>
+        public async Task<FlowRunFinalizedData?> RunFlowAndWaitForFinalizationAsync()
         {
-            if (!string.Equals(FlowControlData.SerialNumber, _activeFlowSerialNumber, StringComparison.Ordinal))
-                return;
+            FlowRunCoreResult result = await RunFlowCoreAsync(CreateFlowSerialNumber());
+            return result.FinalizedResult;
+        }
+
+        private async Task<FlowRunFinalizedData?> FinalizeFlowCompletionAsync(
+            FlowControlData flowControlData,
+            FlowExecutionJournalScope? journalScope)
+        {
+            if (!string.Equals(flowControlData.SerialNumber, _activeFlowSerialNumber, StringComparison.Ordinal))
+                return null;
+
+            _stopwatch.Stop();
+            StopRuntimeTimer();
+            MeasureBatchModel? completedBatch = CurrentBatch;
+            string completedFlowName = _flowName;
+            long completedGeneration = Volatile.Read(ref _executionGeneration);
+            string? completedErrorNodeKey = string.IsNullOrWhiteSpace(flowControlData.ErrorNodeId)
+                ? flowControlData.ErrorNodeName
+                : flowControlData.ErrorNodeId;
 
             try
             {
-                _stopwatch.Stop();
-                _timer.Change(Timeout.Infinite, 500); // 停止定时器
-                MeasureBatchModel completedBatch = CurrentBatch
-                    ?? throw new InvalidOperationException("流程完成时找不到当前批次。");
-                string completedFlowName = _flowName;
-                long completedGeneration = Volatile.Read(ref _executionGeneration);
-                string? completedErrorNodeKey = string.IsNullOrWhiteSpace(FlowControlData.ErrorNodeId)
-                    ? FlowControlData.ErrorNodeName
-                    : FlowControlData.ErrorNodeId;
-
-                completedBatch.FlowStatus = FlowControlData.FlowStatus;
-                completedBatch.TotalTime = (int)_stopwatch.ElapsedMilliseconds;
-                completedBatch.Result = FlowControlData.Params;
-                try
+                if (completedBatch == null)
                 {
-                    using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-                    Db.Updateable(completedBatch).ExecuteReturnEntity();
+                    log.Error("流程完成时找不到当前批次。");
                 }
-                catch (Exception ex)
+                else
                 {
-                    log.Error("更新流程批次完成状态失败。", ex);
+                    completedBatch.FlowStatus = flowControlData.FlowStatus;
+                    completedBatch.TotalTime = (int)_stopwatch.ElapsedMilliseconds;
+                    completedBatch.Result = flowControlData.Params;
+                    try
+                    {
+                        using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                        Db.Updateable(completedBatch).ExecuteReturnEntity();
+                    }
+                    catch (Exception ex)
+                    {
+                        log.Error("更新流程批次完成状态失败。", ex);
+                    }
                 }
-                FlowNodeRecordDataBaseHelper.RecordFlowRun(
-                    completedBatch.TId ?? 0,
-                    completedFlowName,
-                    FlowControlData.SerialNumber,
-                    FlowControlData.FlowStatus,
-                    _stopwatch.ElapsedMilliseconds);
 
-                string lastNodes = string.IsNullOrWhiteSpace(FlowControlData.ErrorNodeName)
+                string lastNodes = string.IsNullOrWhiteSpace(flowControlData.ErrorNodeName)
                     ? (_runningNodeNames.IsEmpty ? _currentNodeName : string.Join(", ", _runningNodeNames.Values))
-                    : FlowControlData.ErrorNodeName;
+                    : flowControlData.ErrorNodeName;
                 _runningNodeNames.Clear();
                 ResetNodeTitleProgress();
-                string msg = $"{completedFlowName} {FlowControlData.EventName}{Environment.NewLine}{ColorVision.Engine.Properties.Resources.Flow_NodeLabel}{lastNodes}{Environment.NewLine}{FlowControlData.Params}{Environment.NewLine}{_stopwatch.ElapsedMilliseconds}ms";
+                string msg = $"{completedFlowName} {flowControlData.EventName}{Environment.NewLine}{ColorVision.Engine.Properties.Resources.Flow_NodeLabel}{lastNodes}{Environment.NewLine}{flowControlData.Params}{Environment.NewLine}{_stopwatch.ElapsedMilliseconds}ms";
                 CVCommonNode? failedNode;
                 lock (_executionStateSync)
                 {
@@ -417,46 +417,37 @@ namespace ColorVision.Engine.FlowProcessing
                 log.Info(msg);
 
                 await WaitForTerminalNodeEndAsync(completedErrorNodeKey, completedGeneration);
-                if (!string.Equals(FlowControlData.SerialNumber, _activeFlowSerialNumber, StringComparison.Ordinal))
-                    return;
-
-                PublishFlowExecutionCompleted(FlowControlData);
-
-                Application.Current.Dispatcher.BeginInvoke(() =>
-                {
-                    PostProcessing(completedBatch, completedFlowName);
-                });
+                await WaitForNodeWritesAsync();
             }
             catch (Exception ex)
             {
                 log.Error("处理流程完成事件失败。", ex);
             }
-            finally
-            {
-                if (string.Equals(FlowControlData.SerialNumber, _activeFlowSerialNumber, StringComparison.Ordinal))
-                {
-                    FlowControl.FlowCompleted -= FlowControl_FlowCompleted;
-                    lock (_flowLifecycleSync)
-                    {
-                        if (string.Equals(FlowControlData.SerialNumber, _activeFlowSerialNumber, StringComparison.Ordinal))
-                        {
-                            _activeFlowSerialNumber = null;
-                            _flowCompletionPending = false;
-                            _cancelFlowStartRequested = false;
-                        }
-                    }
-                    lock (_executionStateSync)
-                    {
-                        _terminalNodeEndCompletion?.TrySetResult(true);
-                        _terminalNodeEndCompletion = null;
-                    }
-                }
-            }
+
+            if (!string.Equals(flowControlData.SerialNumber, _activeFlowSerialNumber, StringComparison.Ordinal))
+                return null;
+
+            journalScope?.TryAppendEvent(
+                "engine-completed",
+                "EngineCompleted",
+                code: flowControlData.FlowStatus.ToString(),
+                message: flowControlData.Message);
+            PublishEngineExecutionCompleted(flowControlData);
+            FlowRunFinalizedData finalizedData =
+                await _runFinalizer.FinalizeAsync(
+                    new FlowRunFinalizationRequest(
+                        flowControlData,
+                        completedBatch,
+                        completedFlowName,
+                        _stopwatch.ElapsedMilliseconds),
+                    journalScope);
+            PublishRunFinalized(finalizedData);
+            return finalizedData;
         }
 
-        private void PublishFlowExecutionCompleted(FlowControlData data)
+        private void PublishEngineExecutionCompleted(FlowControlData data)
         {
-            Delegate[] handlers = FlowExecutionCompleted?.GetInvocationList() ?? Array.Empty<Delegate>();
+            Delegate[] handlers = EngineExecutionCompleted?.GetInvocationList() ?? Array.Empty<Delegate>();
             foreach (EventHandler<FlowControlData> handler in handlers.Cast<EventHandler<FlowControlData>>())
             {
                 try
@@ -466,6 +457,22 @@ namespace ColorVision.Engine.FlowProcessing
                 catch (Exception ex)
                 {
                     log.Error("流程完成订阅者处理失败。", ex);
+                }
+            }
+        }
+
+        private void PublishRunFinalized(FlowRunFinalizedData data)
+        {
+            Delegate[] handlers = RunFinalized?.GetInvocationList() ?? Array.Empty<Delegate>();
+            foreach (EventHandler<FlowRunFinalizedData> handler in handlers.Cast<EventHandler<FlowRunFinalizedData>>())
+            {
+                try
+                {
+                    handler(this, data);
+                }
+                catch (Exception ex)
+                {
+                    log.Error("流程最终完成订阅者处理失败。", ex);
                 }
             }
         }
@@ -499,54 +506,20 @@ namespace ColorVision.Engine.FlowProcessing
                     View.STNodeEditorMain.Nodes.OfType<CVBaseServerNode>()));
         }
         
-        private void PostProcessing(MeasureBatchModel batch, string flowName)
-        {
-            try
-            {
-                // Find all matching post-process entries for this flow template name
-                var matchingMetas = PostProcessManager.GetInstance().ProcessMetas
-                    .Where(m => string.Equals(m.TemplateName, flowName, StringComparison.OrdinalIgnoreCase) && m.PostProcessor != null)
-                    .ToList();
-
-
-                if (matchingMetas.Count > 0)
-                {
-                    log.Info($"匹配到 {matchingMetas.Count} 个自定义流程处理 {flowName}");
-                    
-                    var ctx = new PostProcessContext
-                    {
-                        Batch = batch,
-                        FlowName = flowName,
-                    };
-
-                    // Execute all matching processes sequentially
-                    foreach (var meta in matchingMetas)
-                    {
-                        log.Info($"执行自定义流程 {meta.Name} -> {meta.ProcessTypeName}");
-                        try
-                        {
-                            bool executed = meta.PostProcessor.Process(ctx);
-                            if (!executed)
-                            {
-                                log.Warn($"自定义 IProcess {meta.Name} 执行返回失败");
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            log.Error($"自定义 IProcess {meta.Name} 执行异常", ex);
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                log.Error("匹配/执行自定义 IProcess 出错", ex);
-            }
-        }
-
         private long _lastFlowTime;
 
         private string _currentNodeName = string.Empty;
+        private void StopRuntimeTimer()
+        {
+            try
+            {
+                _timer.Change(Timeout.Infinite, 500);
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+        }
+
         private void UpdateRuntimeProgress(object? sender)
         {
             if (FlowControl.IsFlowRun)
@@ -592,21 +565,31 @@ namespace ColorVision.Engine.FlowProcessing
         {
             public PendingNodeExecution(
                 string writeKey,
+                string invocationId,
                 FlowNodeRecord record,
                 FlowNodeMessage? message,
+                FlowExecutionJournalScope? journalScope,
                 long generation)
             {
                 WriteKey = writeKey;
+                InvocationId = invocationId;
                 Record = record;
                 Message = message;
+                JournalScope = journalScope;
                 Generation = generation;
             }
 
             public string WriteKey { get; }
 
+            public string InvocationId { get; }
+
             public FlowNodeRecord Record { get; }
 
             public FlowNodeMessage? Message { get; }
+
+            public FlowExecutionJournalScope? JournalScope { get; }
+
+            public FlowNodeAttempt? Attempt { get; set; }
 
             public long Generation { get; }
         }
@@ -813,7 +796,12 @@ namespace ColorVision.Engine.FlowProcessing
                 {
                     algorithmNode.IsSelected = nodeStillRunning;
 
-                    if (e.RecvStatusCode == 0)
+                    if (e.FailureKind == FlowFailureKind.Canceled)
+                    {
+                        algorithmNode.TitleColor =
+                            System.Drawing.Color.Gray;
+                    }
+                    else if (e.RecvStatusCode == 0)
                     {
                         algorithmNode.TitleColor = System.Drawing.Color.Green;
                     }
@@ -839,7 +827,13 @@ namespace ColorVision.Engine.FlowProcessing
                 if (execution.Message is FlowNodeMessage nodeMsg)
                 {
                     nodeMsg.RecvTime = DateTime.Now;
-                    if (e != null && !string.IsNullOrEmpty(e.RecvMsgId))
+                    if (e?.FailureKind == FlowFailureKind.Canceled)
+                    {
+                        nodeMsg.StatusCode = e.RecvStatusCode;
+                        nodeMsg.StatusMessage = e.RecvStatusMessage;
+                        nodeMsg.State = FlowMessageState.Canceled;
+                    }
+                    else if (e != null && !string.IsNullOrEmpty(e.RecvMsgId))
                     {
                         nodeMsg.RecvTopic = e.RecvTopic;
                         nodeMsg.RecvPayload = e.RecvPayload;
@@ -855,7 +849,125 @@ namespace ColorVision.Engine.FlowProcessing
                     QueueNodeWrite(execution.WriteKey, () => FlowNodeRecordDataBaseHelper.UpdateMessage(nodeMsg));
                 }
 
-                if (e?.RecvStatusCode != 0)
+                string attemptOutcome;
+                string? attemptErrorCode = null;
+                string? attemptErrorMessage = null;
+                if (e?.WillRetry == true)
+                {
+                    attemptOutcome = "Retrying";
+                    attemptErrorCode =
+                        e.FailureKind?.ToString() ?? "RetryableFailure";
+                    attemptErrorMessage = e.RecvStatusMessage;
+                }
+                else if (e?.FailureHandled == true)
+                {
+                    attemptOutcome = "HandledFailure";
+                    attemptErrorCode =
+                        e.FailureKind?.ToString() ?? "HandledFailure";
+                    attemptErrorMessage = e.RecvStatusMessage;
+                }
+                else if (e?.FailureKind == FlowFailureKind.Canceled)
+                {
+                    attemptOutcome = "Canceled";
+                    attemptErrorCode = "Canceled";
+                    attemptErrorMessage =
+                        e.RecvStatusMessage ?? "节点执行已取消。";
+                }
+                else if (e?.RecvStatusCode == 0)
+                {
+                    attemptOutcome = "Succeeded";
+                }
+                else if (e?.FailureKind == FlowFailureKind.Timeout
+                    || e == null
+                    || string.IsNullOrWhiteSpace(e.RecvMsgId)
+                    || !e.RecvStatusCode.HasValue)
+                {
+                    attemptOutcome = "TimedOut";
+                    attemptErrorCode = "Timeout";
+                    attemptErrorMessage = e?.RecvStatusMessage ?? "节点等待响应超时。";
+                }
+                else
+                {
+                    attemptOutcome = "Failed";
+                    attemptErrorCode = e.RecvStatusCode.Value.ToString();
+                    attemptErrorMessage = e.RecvStatusMessage;
+                }
+
+                QueueNodeWrite(execution.WriteKey, () =>
+                {
+                    execution.JournalScope?.TryCompleteAttempt(
+                        execution.Attempt,
+                        attemptOutcome,
+                        attemptErrorCode,
+                        attemptErrorMessage);
+                    if (string.Equals(
+                        attemptOutcome,
+                        "Retrying",
+                        StringComparison.Ordinal))
+                    {
+                        execution.JournalScope?.TryAppendEvent(
+                            $"node-retry-scheduled:{execution.InvocationId}",
+                            "NodeRetryScheduled",
+                            algorithmNode.NodeID,
+                            execution.Attempt?.Id,
+                            attemptErrorCode,
+                            attemptErrorMessage,
+                            System.Text.Json.JsonSerializer.Serialize(
+                                new
+                                {
+                                    AttemptNumber =
+                                        e?.AttemptNumber,
+                                    MaxAttempts =
+                                        e?.MaxAttempts,
+                                    RetryDelayMs =
+                                        e?.RetryDelayMs
+                                }));
+                    }
+                    else if (string.Equals(
+                        attemptOutcome,
+                        "HandledFailure",
+                        StringComparison.Ordinal))
+                    {
+                        execution.JournalScope?.TryAppendEvent(
+                            $"node-failure-handled:{execution.InvocationId}",
+                            "NodeFailureHandled",
+                            algorithmNode.NodeID,
+                            execution.Attempt?.Id,
+                            attemptErrorCode,
+                            attemptErrorMessage,
+                            System.Text.Json.JsonSerializer.Serialize(
+                                new
+                                {
+                                    TargetNodeId =
+                                        e?.FailureRouteTargetNodeId
+                                }));
+                    }
+                    else if (!string.Equals(
+                        attemptOutcome,
+                        "Succeeded",
+                        StringComparison.Ordinal)
+                        && !string.Equals(
+                            attemptOutcome,
+                            "Canceled",
+                            StringComparison.Ordinal))
+                    {
+                        execution.JournalScope?.TryCreateIncident(
+                            $"node-failure:{execution.InvocationId}",
+                            attemptOutcome == "TimedOut"
+                                ? "NodeTimeout"
+                                : "NodeExecutionFailed",
+                            "Error",
+                            $"{algorithmNode.OnGetDrawTitle()} {attemptOutcome}",
+                            algorithmNode.NodeID,
+                            execution.Attempt?.Id,
+                            attemptErrorMessage);
+                    }
+                });
+
+                if (e?.RecvStatusCode != 0
+                    && e?.FailureHandled != true
+                    && e?.WillRetry != true
+                    && e?.FailureKind != FlowFailureKind.Canceled)
                 {
                     string? completedErrorNodeKey;
                     string? completedSummaryMessage;
@@ -879,7 +991,21 @@ namespace ColorVision.Engine.FlowProcessing
                             execution.WriteKey,
                             completedErrorNodeKey,
                             completedSummaryMessage,
-                            generation);
+                        generation);
+                    }
+                }
+                else if (e?.FailureKind == FlowFailureKind.Canceled)
+                {
+                    lock (_executionStateSync)
+                    {
+                        if (FlowExecutionNavigator
+                            .IsExecutionNodeNameMatch(
+                                algorithmNode,
+                                _completedErrorNodeKey))
+                        {
+                            _terminalNodeEndCompletion
+                                ?.TrySetResult(true);
+                        }
                     }
                 }
             }
@@ -893,6 +1019,7 @@ namespace ColorVision.Engine.FlowProcessing
             if (sender is CVCommonNode algorithmNode)
             {
                 string writeKey = GetNodeExecutionKey(algorithmNode, e.SendMsgId, e.SerialNumber);
+                string invocationId = Guid.NewGuid().ToString("N");
                 LastNode = algorithmNode;
                 long generation = Volatile.Read(ref _executionGeneration);
                 _runningNodeCounts.AddOrUpdate(algorithmNode.NodeID, 1, (_, current) => current + 1);
@@ -935,7 +1062,13 @@ namespace ColorVision.Engine.FlowProcessing
                     };
                 }
 
-                var execution = new PendingNodeExecution(writeKey, record, msg, generation);
+                var execution = new PendingNodeExecution(
+                    writeKey,
+                    invocationId,
+                    record,
+                    msg,
+                    _activeJournalScope,
+                    generation);
                 _pendingNodeExecutions
                     .GetOrAdd(writeKey, _ => new ConcurrentQueue<PendingNodeExecution>())
                     .Enqueue(execution);
@@ -947,7 +1080,37 @@ namespace ColorVision.Engine.FlowProcessing
                         msg.NodeRecordId = record.Id;
                         FlowNodeRecordDataBaseHelper.InsertMessage(msg);
                     }
+
+                    execution.Attempt = execution.JournalScope?.TryBeginAttempt(
+                        algorithmNode.NodeID,
+                        execution.InvocationId,
+                        insertId > 0 ? insertId : null);
                 });
+            }
+        }
+
+        private async Task WaitForNodeWritesAsync()
+        {
+            Task[] pendingWrites;
+            lock (_nodeWriteSync)
+            {
+                pendingWrites = _nodeWriteTasks.Values
+                    .Where(task => !task.IsCompleted)
+                    .ToArray();
+            }
+            if (pendingWrites.Length == 0)
+                return;
+
+            try
+            {
+                await Task.WhenAll(pendingWrites);
+            }
+            catch (Exception ex)
+            {
+                // Legacy and journal writes are fail-open and already log their
+                // individual failures. Do not let a diagnostic task alter the
+                // flow result.
+                log.Warn("等待流程节点诊断记录完成时发生异常。", ex);
             }
         }
 
@@ -998,13 +1161,68 @@ namespace ColorVision.Engine.FlowProcessing
             return DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
         }
 
-        private async Task<bool> RunFlowCoreAsync(string? requestedSerialNumber = null)
+        private FlowExecutionJournalScope? TryBeginExecutionJournal(
+            FlowParam flowParam,
+            string flowName,
+            string serialNumber,
+            MeasureBatchModel batch)
+        {
+            try
+            {
+                FlowTemplateSnapshot snapshot =
+                    FlowTemplateSnapshotFactory.Create(
+                        flowParam.Id,
+                        flowParam.DataBase64 ?? string.Empty,
+                        templateRevision: flowParam.TemplateRevision,
+                        flowKey: flowParam.FlowKey);
+                return _journalCoordinator.TryBeginRun(
+                    snapshot,
+                    new FlowRunRecord
+                    {
+                        TemplateId = flowParam.Id,
+                        FlowKey = flowParam.FlowKey,
+                        FlowName = flowName,
+                        SerialNumber = serialNumber,
+                        BatchId = batch.Id > 0 ? batch.Id : null,
+                        TemplateRevision =
+                            flowParam.TemplateRevision,
+                        ExecutionPolicyRevision =
+                            flowParam.ExecutionPolicyRevision,
+                        ExecutionPolicyHash =
+                            flowParam.ExecutionPolicyHash,
+                        ExecutionPolicySnapshotJson =
+                            flowParam.ExecutionPolicySnapshotJson,
+                        RunKey = Guid.NewGuid().ToString("N"),
+                        StartedTimeUtc = DateTime.UtcNow,
+                    });
+            }
+            catch (Exception ex)
+            {
+                // Invalid legacy template content or an unavailable diagnostic
+                // store must not prevent the engine from running.
+                log.Error("创建流程运行快照失败，当前流程降级为 legacy 记录。", ex);
+                return null;
+            }
+        }
+
+        private static FlowFinalOutcome GetFinalOutcome(FlowStatus status)
+        {
+            return status switch
+            {
+                FlowStatus.Completed => FlowFinalOutcome.Succeeded,
+                FlowStatus.Canceled => FlowFinalOutcome.Canceled,
+                FlowStatus.OverTime => FlowFinalOutcome.TimedOut,
+                _ => FlowFinalOutcome.Failed,
+            };
+        }
+
+        private async Task<FlowRunCoreResult> RunFlowCoreAsync(string? requestedSerialNumber = null)
         {
             bool requiresServices = View.STNodeEditorMain.Nodes.OfType<CVBaseServerNode>().Any();
             if (requiresServices && !MqttRCService.GetInstance().IsConnect)
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(),ColorVision.Engine.Properties.Resources.RegistryCenterNotConnected);
-                return false;
+                return default;
             }
 
             if (requiresServices && MqttRCService.GetInstance().ServiceTokens.Count == 0)
@@ -1012,7 +1230,7 @@ namespace ColorVision.Engine.FlowProcessing
                 MqttRCService.GetInstance().QueryServices();
                 View.ShowExecutionSummary(ColorVision.Engine.Properties.Resources.TokenEmpty_RefreshingToken_PleaseRetry);
                 MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.TokenEmpty_RefreshingToken_PleaseRetry);
-                return false;
+                return default;
             }
 
             RefreshStartNodeSelection(_startNodeName);
@@ -1020,7 +1238,7 @@ namespace ColorVision.Engine.FlowProcessing
             if (string.IsNullOrWhiteSpace(startNodeName))
             {
                 MessageBox.Show(WindowHelpers.GetActiveWindow(), ColorVision.Engine.Properties.Resources.WorkflowStartNodeNotFound_RunFailed, "ColorVision");
-                return false;
+                return default;
             }
 
             TemplateModel<FlowParam>? selectedTemplate = GetSelectedFlowTemplate();
@@ -1028,30 +1246,32 @@ namespace ColorVision.Engine.FlowProcessing
             {
                 View.ShowExecutionSummary(ColorVision.Engine.Properties.Resources.Flow_NoValidFlowTemplateSelected);
                 log.Warn("未选择有效的流程模板");
-                return false;
+                return default;
             }
 
             string flowName = selectedTemplate.Key;
             FlowParam selectedFlowParam = selectedTemplate.Value;
             string sn = requestedSerialNumber ?? CreateFlowSerialNumber();
-            using CancellationTokenSource flowStartCts = new CancellationTokenSource();
+            using CancellationTokenSource flowRunCts = new CancellationTokenSource();
             lock (_flowLifecycleSync)
             {
                 if (_flowCompletionPending || FlowControl.IsFlowRun)
                 {
                     log.Info("流程正在运行或正在启动");
-                    return false;
+                    return default;
                 }
                 _activeFlowSerialNumber = sn;
                 _flowCompletionPending = true;
                 _cancelFlowStartRequested = false;
-                _flowStartCts = flowStartCts;
+                _flowRunCts = flowRunCts;
             }
 
             FlowEditorOperations.ClearSelection(View.STNodeEditorMain);
 
-            bool started = false;
+            bool engineStarted = false;
+            bool finalizationCompleted = false;
             MeasureBatchModel? preparedBatch = null;
+            FlowExecutionJournalScope? journalScope = null;
             FlowStatus unstartedBatchStatus = FlowStatus.Failed;
             string unstartedBatchResult = "Flow start failed";
             try
@@ -1062,7 +1282,13 @@ namespace ColorVision.Engine.FlowProcessing
                 ResetNodeTitleProgress();
                 await LoadNodeExpectedDurationsAsync();
                 if (!CanContinueFlowStart(sn))
-                    return false;
+                {
+                    unstartedBatchStatus = FlowStatus.Canceled;
+                    unstartedBatchResult = ColorVision.Engine.Properties.Resources.ExecutionCancelled;
+                    return new FlowRunCoreResult(
+                        CreateCanceledFlowData(startNodeName, sn, unstartedBatchResult),
+                        null);
+                }
 
                 foreach (var item in View.STNodeEditorMain.Nodes.OfType<CVBaseServerNode>())
                 {
@@ -1082,8 +1308,6 @@ namespace ColorVision.Engine.FlowProcessing
                 lock (_nodeWriteSync)
                     _nodeWriteTasks.Clear();
                 AttachExecutionNodeEvents();
-                FlowControl.FlowCompleted -= FlowControl_FlowCompleted;
-                FlowControl.FlowCompleted += FlowControl_FlowCompleted;
 
                 _stopwatch.Restart();
                 _timer.Change(0, 100); // 启动定时器
@@ -1097,79 +1321,165 @@ namespace ColorVision.Engine.FlowProcessing
                 using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
                 CurrentBatch.Id = Db.Insertable(CurrentBatch).ExecuteReturnIdentity();
                 preparedBatch = CurrentBatch;
+                journalScope = TryBeginExecutionJournal(
+                    selectedFlowParam,
+                    flowName,
+                    sn,
+                    CurrentBatch);
+                _activeJournalScope = journalScope;
+                journalScope?.TryAppendEvent(
+                    "pre-process-started",
+                    "PreProcessStarted",
+                    message: "流程前处理已开始。");
 
                 bool preresult = await PreProcessing(flowName, sn);
+                journalScope?.TryAppendEvent(
+                    "pre-process-completed",
+                    "PreProcessCompleted",
+                    code: preresult ? "Succeeded" : "Failed",
+                    message: preresult ? "流程前处理已完成。" : "流程前处理失败。");
                 if (!CanContinueFlowStart(sn))
                 {
                     unstartedBatchStatus = FlowStatus.Canceled;
                     unstartedBatchResult = ColorVision.Engine.Properties.Resources.ExecutionCancelled;
-                    return false;
+                    return new FlowRunCoreResult(
+                        CreateCanceledFlowData(startNodeName, sn, unstartedBatchResult),
+                        null);
                 }
                 if (!preresult)
                 {
                     unstartedBatchResult = ColorVision.Engine.Properties.Resources.Flow_PreprocessFailedCancelled;
                     View.ShowExecutionSummary(ColorVision.Engine.Properties.Resources.Flow_PreprocessFailedCancelled);
                     log.Warn("预处理失败，流程取消执行");
-                    return false;
+                    return default;
                 }
 
-                if (!await FlowControl.TryStartAsync(startNodeName, sn, flowStartCts.Token))
+                journalScope?.TryAppendEvent(
+                    "engine-starting",
+                    "EngineStarting",
+                    message: $"从节点 {startNodeName} 启动流程引擎。");
+                FlowRunExecutionResult execution = await _flowRunExecutor.RunAsync(
+                    startNodeName,
+                    sn,
+                    executionTimeout: null,
+                    flowRunCts.Token);
+                if (execution.Termination == FlowRunTermination.StartRejected)
                 {
                     unstartedBatchResult = FlowMqttNotReadyMessage;
                     View.ShowExecutionSummary(FlowMqttNotReadyMessage);
-                    return false;
+                    return default;
                 }
 
-                lock (_flowLifecycleSync)
+                if (!execution.Started)
                 {
-                    if (!string.Equals(sn, _activeFlowSerialNumber, StringComparison.Ordinal)
-                        || _cancelFlowStartRequested)
-                    {
-                        FlowControl.Stop();
-                        unstartedBatchStatus = FlowStatus.Canceled;
-                        unstartedBatchResult = ColorVision.Engine.Properties.Resources.ExecutionCancelled;
-                        return false;
-                    }
-                    started = true;
+                    unstartedBatchStatus = execution.Data.FlowStatus;
+                    unstartedBatchResult = execution.Data.Message;
+                    return new FlowRunCoreResult(execution.Data, null);
                 }
-                return true;
+
+                engineStarted = true;
+                FlowRunFinalizedData? finalizedResult =
+                    await FinalizeFlowCompletionAsync(execution.Data, journalScope);
+                finalizationCompleted = true;
+                return new FlowRunCoreResult(execution.Data, finalizedResult);
             }
-            catch (OperationCanceledException) when (flowStartCts.IsCancellationRequested)
+            catch (OperationCanceledException) when (flowRunCts.IsCancellationRequested)
             {
                 unstartedBatchStatus = FlowStatus.Canceled;
                 unstartedBatchResult = ColorVision.Engine.Properties.Resources.ExecutionCancelled;
-                return false;
+                return new FlowRunCoreResult(
+                    CreateCanceledFlowData(startNodeName, sn, unstartedBatchResult),
+                    null);
             }
             catch (Exception ex)
             {
                 unstartedBatchResult = ex.Message;
+                journalScope?.TryCreateIncident(
+                    "run-unhandled-exception",
+                    "UnhandledRunException",
+                    "Error",
+                    ex.Message,
+                    detailsJson: ex.ToString());
                 throw;
             }
             finally
             {
                 lock (_flowLifecycleSync)
                 {
-                    if (ReferenceEquals(_flowStartCts, flowStartCts))
-                        _flowStartCts = null;
+                    if (ReferenceEquals(_flowRunCts, flowRunCts))
+                        _flowRunCts = null;
                 }
-                if (!started)
+                if (!engineStarted)
                 {
                     if (preparedBatch?.Id > 0)
                         FinalizeUnstartedBatch(preparedBatch, unstartedBatchStatus, unstartedBatchResult);
-                    FlowControl.FlowCompleted -= FlowControl_FlowCompleted;
                     _stopwatch.Stop();
-                    _timer.Change(Timeout.Infinite, 500);
-                    lock (_flowLifecycleSync)
+                    StopRuntimeTimer();
+                }
+
+                if (journalScope != null
+                    && !journalScope.IsCompletionRequested)
+                {
+                    FlowFinalOutcome incompleteOutcome =
+                        GetFinalOutcome(unstartedBatchStatus);
+                    journalScope.TryAppendEvent(
+                        "run-ended-before-finalization",
+                        "RunEndedBeforeFinalization",
+                        code: unstartedBatchStatus.ToString(),
+                        message: unstartedBatchResult);
+                    journalScope.TryCompleteRun(
+                        unstartedBatchStatus,
+                        _stopwatch.ElapsedMilliseconds,
+                        incompleteOutcome);
+                }
+                else if (journalScope == null
+                    && preparedBatch != null
+                    && !finalizationCompleted)
+                {
+                    // Bounded fallback for journal initialization/snapshot
+                    // failures. Record exactly once at the terminal boundary.
+                    FlowNodeRecordDataBaseHelper.RecordFlowRun(
+                        preparedBatch.TId ?? 0,
+                        flowName,
+                        sn,
+                        unstartedBatchStatus,
+                        _stopwatch.ElapsedMilliseconds);
+                }
+
+                if (ReferenceEquals(_activeJournalScope, journalScope))
+                    _activeJournalScope = null;
+                journalScope?.Dispose();
+                lock (_flowLifecycleSync)
+                {
+                    if (string.Equals(sn, _activeFlowSerialNumber, StringComparison.Ordinal))
                     {
-                        if (string.Equals(sn, _activeFlowSerialNumber, StringComparison.Ordinal))
-                        {
-                            _activeFlowSerialNumber = null;
-                            _flowCompletionPending = false;
-                            _cancelFlowStartRequested = false;
-                        }
+                        _activeFlowSerialNumber = null;
+                        _flowCompletionPending = false;
+                        _cancelFlowStartRequested = false;
                     }
                 }
+                lock (_executionStateSync)
+                {
+                    _terminalNodeEndCompletion?.TrySetResult(true);
+                    _terminalNodeEndCompletion = null;
+                }
             }
+        }
+
+        private static FlowControlData CreateCanceledFlowData(
+            string startNodeName,
+            string serialNumber,
+            string message)
+        {
+            return new FlowControlData
+            {
+                StartNodeName = startNodeName,
+                SerialNumber = serialNumber,
+                EventName = StatusTypeEnum.Canceled.ToString(),
+                Status = StatusTypeEnum.Canceled,
+                Message = message,
+                Params = message
+            };
         }
 
         private void FinalizeUnstartedBatch(MeasureBatchModel batch, FlowStatus status, string result)
@@ -1193,7 +1503,8 @@ namespace ColorVision.Engine.FlowProcessing
             lock (_flowLifecycleSync)
             {
                 return string.Equals(serialNumber, _activeFlowSerialNumber, StringComparison.Ordinal)
-                    && !_cancelFlowStartRequested;
+                    && !_cancelFlowStartRequested
+                    && _flowRunCts?.IsCancellationRequested != true;
             }
         }
 
@@ -1210,47 +1521,46 @@ namespace ColorVision.Engine.FlowProcessing
 
         public void StopFlow(bool updateSummary = true)
         {
-            FlowControl.FlowCompleted -= FlowControl_FlowCompleted;
-            bool wasRunning = FlowControl?.IsFlowRun == true;
-            CancellationTokenSource? flowStartCts = null;
+            CancellationTokenSource? flowRunCts;
+            bool hasActiveLifecycle;
             lock (_flowLifecycleSync)
             {
-                if (_flowCompletionPending && !wasRunning)
+                hasActiveLifecycle = _flowCompletionPending;
+                if (hasActiveLifecycle)
                 {
                     _cancelFlowStartRequested = true;
-                    flowStartCts = _flowStartCts;
+                    flowRunCts = _flowRunCts;
                 }
                 else
+                    flowRunCts = null;
+            }
+            if (flowRunCts != null)
+            {
+                try
                 {
-                    _activeFlowSerialNumber = null;
-                    _flowCompletionPending = false;
-                    _cancelFlowStartRequested = false;
+                    flowRunCts.Cancel();
+                }
+                catch (ObjectDisposedException)
+                {
                 }
             }
-            flowStartCts?.Cancel();
-            InvalidateExecutionPresentation();
-            if (wasRunning)
+            else if (!hasActiveLifecycle && FlowControl.IsFlowRun)
+            {
                 FlowControl.Stop();
-            _stopwatch.Stop();
-            _timer.Change(Timeout.Infinite, 500); // 停止定时器
+            }
+
+            InvalidateExecutionPresentation();
             ResetNodeTitleProgress();
 
-            if (wasRunning && CurrentBatch?.Id > 0)
-            {
-                CurrentBatch.FlowStatus = FlowStatus.Canceled;
-                CurrentBatch.TotalTime = (int)_stopwatch.ElapsedMilliseconds;
-                using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-                Db.Updateable(CurrentBatch).ExecuteCommand();
-            }
             if (updateSummary)
                 View.ShowExecutionSummary(ColorVision.Engine.Properties.Resources.ExecutionCancelled);
-
         }
 
         public void Dispose()
         {
             _refreshCts?.Cancel();
             _refreshCts?.Dispose();
+            StopFlow(updateSummary: false);
             MqttRCService.GetInstance().ServiceTokensUpdated -= MqttRCService_ServiceTokensUpdated;
             DetachNodeEvents();
             ResetNodeTitleProgress();
