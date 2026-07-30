@@ -48,6 +48,30 @@ namespace ColorVision.Copilot
             return titleMatches.Length == 1 ? titleMatches[0] : null;
         }
 
+        internal static CopilotProfileConfig? FindUniqueProfileTarget(
+            IEnumerable<CopilotProfileConfig> profiles,
+            string? query)
+        {
+            ArgumentNullException.ThrowIfNull(profiles);
+            var normalizedQuery = query?.Trim() ?? string.Empty;
+            if (normalizedQuery.Length == 0)
+                return null;
+
+            var candidates = profiles.Where(profile => profile != null).ToArray();
+            var idMatch = candidates.FirstOrDefault(profile =>
+                string.Equals(profile.Id, normalizedQuery, StringComparison.Ordinal));
+            if (idMatch != null)
+                return idMatch;
+
+            var matches = candidates
+                .Where(profile =>
+                    string.Equals(profile.DisplayLabel, normalizedQuery, StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(profile.Model, normalizedQuery, StringComparison.OrdinalIgnoreCase))
+                .Take(2)
+                .ToArray();
+            return matches.Length == 1 ? matches[0] : null;
+        }
+
         internal static int ResolveSearchNavigationIndex(
             int itemCount,
             int selectedIndex,

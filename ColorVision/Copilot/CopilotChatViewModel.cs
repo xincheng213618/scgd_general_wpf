@@ -279,6 +279,8 @@ namespace ColorVision.Copilot
 
         public event EventHandler? ConversationSearchRequested;
 
+        public event EventHandler? ProfileSelectionRequested;
+
         public ObservableCollection<CopilotConversationRecord> CompactHistoryConversations { get; } = new();
 
         public ObservableCollection<CopilotConversationRecord> FilteredConversations { get; } = new();
@@ -1402,6 +1404,9 @@ namespace ColorVision.Copilot
                     break;
                 case CopilotLocalCommandKind.CopyResponse:
                     CopyAssistantResponse(command, invocation.Arguments);
+                    break;
+                case CopilotLocalCommandKind.SelectModel:
+                    SelectModelProfile(command, invocation.Arguments);
                     break;
                 case CopilotLocalCommandKind.NewConversation:
                     DismissLocalCommandResult();
@@ -3564,6 +3569,50 @@ namespace ColorVision.Copilot
                 ordinal == 1
                     ? $"已复制最近一条已完成回答（{text.Length:N0} 个字符）。"
                     : $"已复制倒数第 {ordinal:N0} 条已完成回答（{text.Length:N0} 个字符）。");
+        }
+
+        private void SelectModelProfile(CopilotLocalCommand command, string query)
+        {
+            if (!CanSelectProfile)
+            {
+                ShowLocalCommandResult(
+                    command,
+                    IsBusy
+                        ? "当前有请求正在执行，请完成或停止后再切换模型 Profile。"
+                        : "当前没有可选择的模型 Profile，请先在 Copilot 设置中添加并配置模型。");
+                return;
+            }
+
+            var normalizedQuery = query.Trim();
+            if (normalizedQuery.Length == 0)
+            {
+                DismissLocalCommandResult();
+                ProfileSelectionRequested?.Invoke(this, EventArgs.Empty);
+                return;
+            }
+
+            var profile = CopilotConversationService.FindUniqueProfileTarget(Profiles, normalizedQuery);
+            if (profile == null)
+            {
+                ShowLocalCommandResult(
+                    command,
+                    $"未找到唯一匹配“{normalizedQuery}”的 Profile 名或模型 ID，请从模型列表中选择。");
+                ProfileSelectionRequested?.Invoke(this, EventArgs.Empty);
+                return;
+            }
+
+            SelectedProfile = profile;
+            ShowLocalCommandResult(
+                command,
+                $"当前会话后续请求将使用：{profile.DisplayLabel}"
+                + Environment.NewLine
+                + $"模型：{(string.IsNullOrWhiteSpace(profile.Model) ? "未设置" : profile.Model)}"
+                + Environment.NewLine
+                + $"协议：{profile.ProviderLabel}"
+                + Environment.NewLine
+                + $"推理：{profile.ReasoningLabel}"
+                + Environment.NewLine
+                + $"状态：{profile.ConfigurationStatusText}");
         }
 
         private CopilotConversationRecord ResolveNewConversationTarget()

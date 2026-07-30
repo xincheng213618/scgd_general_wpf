@@ -93,6 +93,14 @@ namespace ColorVision.Copilot
 
         private void CopilotChatPanel_PreviewKeyDown(object sender, KeyEventArgs e)
         {
+            var key = e.Key == Key.System ? e.SystemKey : e.Key;
+            if (key == Key.P && Keyboard.Modifiers == ModifierKeys.Alt)
+            {
+                if (OpenProfileSelector())
+                    e.Handled = true;
+                return;
+            }
+
             if (e.Key == Key.F && Keyboard.Modifiers == ModifierKeys.Control)
             {
                 FocusConversationSearch();
@@ -242,6 +250,7 @@ namespace ColorVision.Copilot
 
             _attachedViewModel = viewModel;
             viewModel.ConversationSearchRequested += ViewModel_ConversationSearchRequested;
+            viewModel.ProfileSelectionRequested += ViewModel_ProfileSelectionRequested;
             viewModel.PropertyChanged += ViewModel_PropertyChanged;
             ResetMessageSubscriptions(viewModel.Messages);
             UpdateEmptyStateVisibility();
@@ -254,6 +263,7 @@ namespace ColorVision.Copilot
                 return;
 
             _attachedViewModel.ConversationSearchRequested -= ViewModel_ConversationSearchRequested;
+            _attachedViewModel.ProfileSelectionRequested -= ViewModel_ProfileSelectionRequested;
             _attachedViewModel.PropertyChanged -= ViewModel_PropertyChanged;
             ResetMessageSubscriptions(null);
             _attachedViewModel = null;
@@ -263,6 +273,12 @@ namespace ColorVision.Copilot
         {
             if (ReferenceEquals(sender, _attachedViewModel))
                 FocusConversationSearch();
+        }
+
+        private void ViewModel_ProfileSelectionRequested(object? sender, EventArgs e)
+        {
+            if (ReferenceEquals(sender, _attachedViewModel))
+                OpenProfileSelector();
         }
 
         private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -461,6 +477,26 @@ namespace ColorVision.Copilot
             ReasoningSubmenuBorder.Visibility = reasoningVisible ? Visibility.Visible : Visibility.Collapsed;
             var popupWidth = ProfileSelectorPopupMainWidth + (modelVisible || reasoningVisible ? ProfileSelectorPopupSubmenuWidth : 0);
             ProfileSelectorPopup.HorizontalOffset = ProfileSelectorButton.ActualWidth - popupWidth - ProfileSelectorPopupShadowInset;
+        }
+
+        private bool OpenProfileSelector()
+        {
+            if (DataContext is not CopilotChatViewModel viewModel || !viewModel.CanSelectProfile)
+                return false;
+
+            ProfileSelectorButton.IsChecked = true;
+            Dispatcher.BeginInvoke(DispatcherPriority.Input, () =>
+            {
+                if (!ProfileSelectorPopup.IsOpen)
+                    return;
+
+                SetProfileSelectorSubmenu(modelVisible: true, reasoningVisible: false);
+                ProfileListBox.Focus();
+                Keyboard.Focus(ProfileListBox);
+                if (viewModel.SelectedProfile != null)
+                    ProfileListBox.ScrollIntoView(viewModel.SelectedProfile);
+            });
+            return true;
         }
 
         private void CloseProfileSelectorPopup()
