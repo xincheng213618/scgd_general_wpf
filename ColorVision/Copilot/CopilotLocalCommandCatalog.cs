@@ -33,6 +33,7 @@ namespace ColorVision.Copilot
         RenameConversation,
         RewindConversation,
         SearchPromptHistory,
+        Transcript,
         CopyResponse,
         ExportConversation,
         FindInConversation,
@@ -128,6 +129,11 @@ namespace ColorVision.Copilot
             new("/rename", "重命名当前 Copilot 会话；省略名称时打开输入窗口", CopilotLocalCommandKind.RenameConversation, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/rename [新名称]"),
             new("/rewind", "从历史请求创建仅会话回溯分支，并恢复原请求供修改", CopilotLocalCommandKind.RewindConversation, AcceptsArguments: true, Usage: "/rewind [N]"),
             new("/history", "搜索可见历史请求，可切换当前/全部会话并恢复到输入框", CopilotLocalCommandKind.SearchPromptHistory, Usage: "/history"),
+            new("/transcript", "展开或收起当前会话的推理与工具活动", CopilotLocalCommandKind.Transcript, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/transcript [expand|collapse]", Arguments:
+            [
+                new("expand", "展开全部已有推理与工具活动"),
+                new("collapse", "收起全部已有推理与工具活动"),
+            ]),
             new("/copy", "复制最近已完成的回答；可用 /copy 2 选择倒数第二条", CopilotLocalCommandKind.CopyResponse, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/copy [N]"),
             new("/export", "复制当前会话的可见 Markdown；可补充文件名并打开保存窗口", CopilotLocalCommandKind.ExportConversation, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/export [文件名.md|文件名.txt]"),
             new("/find", "查找并定位当前会话中的可见消息", CopilotLocalCommandKind.FindInConversation, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/find [文本]"),
