@@ -34,6 +34,7 @@ namespace ColorVision.Copilot
                 CopilotLocalCommandKind.Compact,
                 CopilotLocalCommandKind.Review,
                 CopilotLocalCommandKind.Plan,
+                CopilotLocalCommandKind.ViewPlan,
                 CopilotLocalCommandKind.Goal,
             ]),
             ("会话与输出",

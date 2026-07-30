@@ -305,6 +305,7 @@ namespace ColorVision.Copilot
             viewModel.ProfileSelectionRequested += ViewModel_ProfileSelectionRequested;
             viewModel.ReasoningSelectionRequested += ViewModel_ReasoningSelectionRequested;
             viewModel.AccessModeSelectionRequested += ViewModel_AccessModeSelectionRequested;
+            viewModel.MessageNavigationRequested += ViewModel_MessageNavigationRequested;
             viewModel.PropertyChanged += ViewModel_PropertyChanged;
             ResetMessageSubscriptions(viewModel.Messages);
             UpdateEmptyStateVisibility();
@@ -320,6 +321,7 @@ namespace ColorVision.Copilot
             _attachedViewModel.ProfileSelectionRequested -= ViewModel_ProfileSelectionRequested;
             _attachedViewModel.ReasoningSelectionRequested -= ViewModel_ReasoningSelectionRequested;
             _attachedViewModel.AccessModeSelectionRequested -= ViewModel_AccessModeSelectionRequested;
+            _attachedViewModel.MessageNavigationRequested -= ViewModel_MessageNavigationRequested;
             _attachedViewModel.PropertyChanged -= ViewModel_PropertyChanged;
             ResetMessageSubscriptions(null);
             _attachedViewModel = null;
@@ -347,6 +349,14 @@ namespace ColorVision.Copilot
         {
             if (ReferenceEquals(sender, _attachedViewModel))
                 OpenAccessModeMenu();
+        }
+
+        private void ViewModel_MessageNavigationRequested(
+            object? sender,
+            CopilotChatMessageNavigationRequestedEventArgs e)
+        {
+            if (ReferenceEquals(sender, _attachedViewModel))
+                ScrollToMessage(e.Message);
         }
 
         private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -377,13 +387,21 @@ namespace ColorVision.Copilot
             if (e.PropertyName == nameof(CopilotChatViewModel.CurrentConversationFindMatch)
                 && _attachedViewModel.CurrentConversationFindMatch is { } match)
             {
-                Dispatcher.BeginInvoke(DispatcherPriority.Loaded, () =>
-                {
-                    MessagesListBox.ScrollIntoView(match);
-                    if (MessagesListBox.ItemContainerGenerator.ContainerFromItem(match) is FrameworkElement container)
-                        container.BringIntoView();
-                });
+                ScrollToMessage(match);
             }
+        }
+
+        private void ScrollToMessage(CopilotChatMessage message)
+        {
+            Dispatcher.BeginInvoke(DispatcherPriority.Loaded, () =>
+            {
+                if (_attachedViewModel?.Messages.Contains(message) != true)
+                    return;
+
+                MessagesListBox.ScrollIntoView(message);
+                if (MessagesListBox.ItemContainerGenerator.ContainerFromItem(message) is FrameworkElement container)
+                    container.BringIntoView();
+            });
         }
 
         private void ResetMessageSubscriptions(ObservableCollection<CopilotChatMessage>? messages)

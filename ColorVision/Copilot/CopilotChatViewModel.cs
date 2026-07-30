@@ -302,6 +302,8 @@ namespace ColorVision.Copilot
 
         public event EventHandler? AccessModeSelectionRequested;
 
+        internal event EventHandler<CopilotChatMessageNavigationRequestedEventArgs>? MessageNavigationRequested;
+
         public ObservableCollection<CopilotConversationRecord> CompactHistoryConversations { get; } = new();
 
         public ObservableCollection<CopilotConversationRecord> FilteredConversations { get; } = new();
@@ -1901,6 +1903,9 @@ namespace ColorVision.Copilot
                 case CopilotLocalCommandKind.Plan:
                     StartPlanRequest(command, invocation.Arguments);
                     break;
+                case CopilotLocalCommandKind.ViewPlan:
+                    ViewLatestCompletedPlan(command);
+                    break;
                 case CopilotLocalCommandKind.Goal:
                     ManageConversationGoal(command, invocation.Arguments);
                     break;
@@ -2236,6 +2241,23 @@ namespace ColorVision.Copilot
             DismissLocalCommandResult();
             InputText = task.Trim();
             RunUiOperation(SendAsync, "生成执行计划");
+        }
+
+        private void ViewLatestCompletedPlan(CopilotLocalCommand command)
+        {
+            var plan = CopilotConversationPlanNavigation.FindLatestCompletedPlan(SelectedConversation);
+            if (plan == null)
+            {
+                ShowLocalCommandResult(
+                    command,
+                    "当前会话没有已完成的计划。输入 /plan [任务] 可以先生成一份只读计划。");
+                return;
+            }
+
+            DismissLocalCommandResult();
+            MessageNavigationRequested?.Invoke(
+                this,
+                new CopilotChatMessageNavigationRequestedEventArgs(plan));
         }
 
         private void ManageConversationGoal(CopilotLocalCommand command, string arguments)
