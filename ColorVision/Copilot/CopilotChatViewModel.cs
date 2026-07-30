@@ -1523,6 +1523,9 @@ namespace ColorVision.Copilot
                         QueuedFollowUps,
                         SelectedConversation?.Id));
                     break;
+                case CopilotLocalCommandKind.Approve:
+                    HandlePendingApprovalCommand(command, invocation.Arguments);
+                    break;
                 case CopilotLocalCommandKind.Usage:
                     ShowLocalCommandResult(command, CopilotConversationUsageDiagnostics.Format(SelectedConversation));
                     break;
@@ -1617,6 +1620,26 @@ namespace ColorVision.Copilot
                     return false;
             }
             return true;
+        }
+
+        private void HandlePendingApprovalCommand(
+            CopilotLocalCommand command,
+            string arguments)
+        {
+            RefreshPendingActions();
+            var result = CopilotPendingApprovalCommand.Evaluate(
+                _pendingActions.Where(CanReviewPendingAction),
+                arguments,
+                DateTimeOffset.UtcNow);
+            if (!result.OpensReview)
+            {
+                ShowLocalCommandResult(command, result.Report);
+                return;
+            }
+
+            RunUiOperation(
+                () => ApprovePendingActionAsync(result.Action),
+                "审核待确认操作");
         }
 
         private string BuildStatusDiagnosticsReport()

@@ -22,7 +22,7 @@ public sealed class CopilotLocalCommandHelpTests
     [Fact]
     public void EveryFixedCommandDeclaresUsageBeginningWithItsName()
     {
-        Assert.Equal(35, CopilotLocalCommandCatalog.All.Count);
+        Assert.Equal(36, CopilotLocalCommandCatalog.All.Count);
         foreach (var command in CopilotLocalCommandCatalog.All)
         {
             Assert.False(string.IsNullOrWhiteSpace(command.Usage));
@@ -38,7 +38,7 @@ public sealed class CopilotLocalCommandHelpTests
         var report = CopilotLocalCommandHelp.Format(null);
         var lines = report.Split(Environment.NewLine);
 
-        Assert.Contains("Copilot 命令 · 35", report);
+        Assert.Contains("Copilot 命令 · 36", report);
         Assert.Contains("状态与诊断", report);
         Assert.Contains("工作区与 Agent", report);
         Assert.Contains("会话与输出", report);
@@ -82,6 +82,17 @@ public sealed class CopilotLocalCommandHelpTests
         Assert.StartsWith("/queue", report);
         Assert.Contains("等待执行的后续请求", report);
         Assert.Contains("参数：无", report);
+        Assert.Contains("Agent 运行中：可立即执行", report);
+    }
+
+    [Fact]
+    public void ApproveHelpKeepsNativeReviewExplicit()
+    {
+        var report = CopilotLocalCommandHelp.Format("approve");
+
+        Assert.StartsWith("/approve [N]", report);
+        Assert.Contains("原生审查窗口", report);
+        Assert.Contains("参数：可选", report);
         Assert.Contains("Agent 运行中：可立即执行", report);
     }
 
