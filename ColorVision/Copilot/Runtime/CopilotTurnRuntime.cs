@@ -52,6 +52,9 @@ namespace ColorVision.Copilot
 
         public bool TryEnqueueSteeringMessage(string message) => _agentRuntime.TryEnqueueSteeringMessage(message);
 
+        public bool TryAnswerUserQuestion(string taskId, string requestId, string answer) =>
+            _agentRuntime.TryAnswerUserQuestion(taskId, requestId, answer);
+
         private async Task<CopilotTurnResult> RunChatAsync(
             CopilotTurnRequest request,
             CopilotTurnEventSink eventSink,

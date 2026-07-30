@@ -27,6 +27,8 @@ namespace ColorVision.Copilot
         BlockerDetected,
         PauseRequested,
         CancelRequested,
+        UserQuestionRequested,
+        UserQuestionResolved,
     }
 
     public sealed class CopilotAgentTaskEvent
@@ -151,6 +153,11 @@ namespace ColorVision.Copilot
         public static string ForSteering(string? message)
         {
             return CreateHashedKey("steering", message);
+        }
+
+        public static string ForUserQuestion(string? requestId)
+        {
+            return CreateHashedKey("question", requestId);
         }
 
         internal static string CreateEventId(long sequence, string runId, CopilotAgentTaskEventType type, DateTimeOffset occurredAtUtc)
@@ -452,7 +459,29 @@ namespace ColorVision.Copilot
             }
 
             if (agentEvent.Type == CopilotAgentEventType.Error)
+            {
                 Append(CopilotAgentTaskEventType.RuntimeError, RunId, "error", agentEvent.Text);
+                return;
+            }
+
+            if ((agentEvent.Type is CopilotAgentEventType.UserQuestionRequested
+                    or CopilotAgentEventType.UserQuestionResolved)
+                && agentEvent.UserQuestion?.IsStructurallyValid() == true)
+            {
+                var question = agentEvent.UserQuestion;
+                var requested = agentEvent.Type == CopilotAgentEventType.UserQuestionRequested;
+                Append(
+                    requested
+                        ? CopilotAgentTaskEventType.UserQuestionRequested
+                        : CopilotAgentTaskEventType.UserQuestionResolved,
+                    CopilotAgentTaskEventIds.ForUserQuestion(question.RequestId),
+                    requested ? "pending" : question.Resolution.ToString(),
+                    requested
+                        ? "The Agent requested one structured user clarification."
+                        : question.Resolution == CopilotUserQuestionResolution.Answered
+                            ? "The structured user clarification was answered."
+                            : "The structured user clarification was cancelled.");
+            }
         }
 
         public CopilotAgentTaskEventJournalSnapshot Snapshot()

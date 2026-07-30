@@ -765,6 +765,8 @@ namespace ColorVision.Copilot
         Completed,
         CheckpointReady,
         CheckpointUpdated,
+        UserQuestionRequested,
+        UserQuestionResolved,
     }
 
     public sealed class CopilotAgentEvent
@@ -785,6 +787,8 @@ namespace ColorVision.Copilot
         public CopilotAgentSessionCheckpoint? SessionCheckpoint { get; init; }
 
         public CopilotAgentTaskLedgerSnapshot? TaskLedger { get; init; }
+
+        public CopilotUserQuestionSnapshot? UserQuestion { get; init; }
 
         internal CopilotProviderRetryInfo? ProviderRetry { get; init; }
 
@@ -919,6 +923,30 @@ namespace ColorVision.Copilot
                 Type = CopilotAgentEventType.CheckpointUpdated,
                 SessionCheckpoint = sessionCheckpoint,
                 TaskLedger = taskLedger,
+            };
+        }
+
+        public static CopilotAgentEvent UserQuestionRequested(CopilotUserQuestionSnapshot question)
+        {
+            ArgumentNullException.ThrowIfNull(question);
+            if (!question.IsPending || !question.IsStructurallyValid())
+                throw new ArgumentException("The user question request is not structurally valid.", nameof(question));
+            return new CopilotAgentEvent
+            {
+                Type = CopilotAgentEventType.UserQuestionRequested,
+                UserQuestion = question,
+            };
+        }
+
+        public static CopilotAgentEvent UserQuestionResolved(CopilotUserQuestionSnapshot question)
+        {
+            ArgumentNullException.ThrowIfNull(question);
+            if (question.IsPending || !question.IsStructurallyValid())
+                throw new ArgumentException("The resolved user question is not structurally valid.", nameof(question));
+            return new CopilotAgentEvent
+            {
+                Type = CopilotAgentEventType.UserQuestionResolved,
+                UserQuestion = question,
             };
         }
     }

@@ -202,6 +202,12 @@ namespace ColorVision.Copilot
             DismissAgentTaskCommand = new RelayCommand<CopilotAgentTaskSummary>(DismissAgentTask, task => task != null && !IsBusy);
             OpenAgentRunNoticeCommand = new RelayCommand(_ => OpenAgentRunNotice(), _ => HasAgentRunNotice);
             SteerCommand = new RelayCommand(_ => TrySteerCurrentRun(), _ => CanSteerCurrentRun);
+            SubmitUserQuestionAnswerCommand = new RelayCommand(
+                _ => TryAnswerCurrentUserQuestion(InputText),
+                _ => CanSubmitUserQuestionAnswer);
+            AnswerUserQuestionOptionCommand = new RelayCommand<CopilotUserQuestionOption>(
+                AnswerUserQuestionOption,
+                CanAnswerUserQuestionOption);
             QueueFollowUpCommand = new RelayCommand(_ => TryQueueCurrentRunFollowUp(), _ => CanQueueCurrentRunFollowUp);
             EditQueuedFollowUpCommand = new RelayCommand<CopilotQueuedFollowUp>(EditQueuedFollowUp, CanEditQueuedFollowUp);
             MoveQueuedFollowUpUpCommand = new RelayCommand<CopilotQueuedFollowUp>(
@@ -462,6 +468,10 @@ namespace ColorVision.Copilot
         public ICommand OpenAgentRunNoticeCommand { get; }
 
         public ICommand SteerCommand { get; }
+
+        public ICommand SubmitUserQuestionAnswerCommand { get; }
+
+        public ICommand AnswerUserQuestionOptionCommand { get; }
 
         public ICommand QueueFollowUpCommand { get; }
 
@@ -816,6 +826,7 @@ namespace ColorVision.Copilot
                     OnPropertyChanged(nameof(IsInputEmpty));
                     OnPropertyChanged(nameof(LocalCommandSuggestions));
                     OnPropertyChanged(nameof(HasLocalCommandSuggestions));
+                    OnPropertyChanged(nameof(CanSubmitUserQuestionAnswer));
                     OnPropertyChanged(nameof(CanSteerCurrentRun));
                     OnPropertyChanged(nameof(CanQueueCurrentRunFollowUp));
                     RefreshComposerReferenceSuggestions();
@@ -891,13 +902,15 @@ namespace ColorVision.Copilot
         public string InputPlaceholder => IsEditingMessage
             ? "修改后按 Enter 重新发送"
             : IsViewingActiveRun
-                ? ActiveHostedRun?.State switch
-                {
-                    CopilotHostedRunState.PauseRequested => "任务正在暂停 · 当前输入会保留到任务结束",
-                    CopilotHostedRunState.CancelRequested => "任务正在取消 · 当前输入会保留到任务结束",
-                    _ when IsAgentRequestActive => "Enter 调整 · Tab 排队 · @ 关联 · /btw 旁路提问",
-                    _ => "正在生成回复 · 可使用 /status 或 /btw",
-                }
+                ? IsAnsweringUserQuestion
+                    ? "输入问题答案并按 Enter；也可直接选择上方选项"
+                    : ActiveHostedRun?.State switch
+                    {
+                        CopilotHostedRunState.PauseRequested => "任务正在暂停 · 当前输入会保留到任务结束",
+                        CopilotHostedRunState.CancelRequested => "任务正在取消 · 当前输入会保留到任务结束",
+                        _ when IsAgentRequestActive => "Enter 调整 · Tab 排队 · @ 关联 · /btw 旁路提问",
+                        _ => "正在生成回复 · 可使用 /status 或 /btw",
+                    }
                 : IsConversationEmpty ? "随心输入 · @ 关联 · / 或 $ 命令" : "要求后续变更 · @ 关联 · / 或 $ 命令";
 
         public bool IsEditingMessage => !string.IsNullOrWhiteSpace(_editingConversationId)
@@ -1191,10 +1204,38 @@ namespace ColorVision.Copilot
 
         private bool IsViewingQueuedRun => SelectedHostedRun?.State == CopilotHostedRunState.Queued;
 
+        private CopilotChatMessage? ActiveUserQuestionMessage
+        {
+            get
+            {
+                var run = ActiveHostedRun;
+                if (run?.IsAgent != true)
+                    return null;
+                var conversation = Conversations.FirstOrDefault(item =>
+                    string.Equals(item.Id, run.ConversationId, StringComparison.Ordinal));
+                return conversation?.Messages.LastOrDefault(message =>
+                    !message.IsUser
+                    && message.UserQuestion?.IsPending == true
+                    && string.Equals(message.UserQuestion.TaskId, run.Id, StringComparison.Ordinal));
+            }
+        }
+
+        private CopilotUserQuestionSnapshot? ActiveUserQuestion => ActiveUserQuestionMessage?.UserQuestion;
+
+        public bool IsAnsweringUserQuestion => IsBusy
+            && IsAgentRequestActive
+            && IsViewingActiveRun
+            && ActiveHostedRunInteraction.AcceptsNewInput
+            && ActiveUserQuestion?.IsPending == true;
+
+        public bool CanSubmitUserQuestionAnswer => IsAnsweringUserQuestion
+            && CopilotUserQuestionSnapshot.TryNormalizeAnswer(InputText, out _);
+
         public bool CanSteerCurrentRun => IsBusy
             && IsAgentRequestActive
             && IsViewingActiveRun
             && ActiveHostedRunInteraction.AcceptsNewInput
+            && !IsAnsweringUserQuestion
             && !IsInputEmpty;
 
         public bool CanQueueCurrentRunFollowUp => CanSteerCurrentRun
@@ -1217,6 +1258,8 @@ namespace ColorVision.Copilot
                 OnPropertyChanged(nameof(PrimaryActionToolTip));
                 OnPropertyChanged(nameof(AttachmentMenuToolTip));
                 OnPropertyChanged(nameof(CanAttachCurrentLiveContext));
+                OnPropertyChanged(nameof(IsAnsweringUserQuestion));
+                OnPropertyChanged(nameof(CanSubmitUserQuestionAnswer));
                 OnPropertyChanged(nameof(CanSteerCurrentRun));
                 OnPropertyChanged(nameof(CanQueueCurrentRunFollowUp));
                 OnPropertyChanged(nameof(InputPlaceholder));
@@ -2372,12 +2415,24 @@ namespace ColorVision.Copilot
         {
             RefreshConversationRunStatuses();
             OnPropertyChanged(nameof(CanSwitchConversation));
+            OnPropertyChanged(nameof(IsAnsweringUserQuestion));
+            OnPropertyChanged(nameof(CanSubmitUserQuestionAnswer));
             OnPropertyChanged(nameof(CanSteerCurrentRun));
             OnPropertyChanged(nameof(CanQueueCurrentRunFollowUp));
             OnPropertyChanged(nameof(PrimaryActionGlyph));
             OnPropertyChanged(nameof(PrimaryActionToolTip));
             OnPropertyChanged(nameof(InputPlaceholder));
             RefreshAgentRunNotice();
+        }
+
+        private void NotifyUserQuestionStateChanged()
+        {
+            OnPropertyChanged(nameof(IsAnsweringUserQuestion));
+            OnPropertyChanged(nameof(CanSubmitUserQuestionAnswer));
+            OnPropertyChanged(nameof(CanSteerCurrentRun));
+            OnPropertyChanged(nameof(CanQueueCurrentRunFollowUp));
+            OnPropertyChanged(nameof(InputPlaceholder));
+            CommandManager.InvalidateRequerySuggested();
         }
 
         private void RefreshConversationRunStatuses()
@@ -2997,6 +3052,7 @@ namespace ColorVision.Copilot
             var persistState = false;
             var persistImmediately = false;
             var refreshAgentTasks = false;
+            var refreshUserQuestionState = false;
             try
             {
                 foreach (var agentEvent in agentEvents)
@@ -3025,6 +3081,10 @@ namespace ColorVision.Copilot
                     }
 
                     var presentationResult = CopilotAssistantMessagePresenter.ApplyAgentEvent(assistantMessage, agentEvent);
+                    refreshUserQuestionState |= agentEvent.Type is CopilotAgentEventType.UserQuestionRequested
+                        or CopilotAgentEventType.UserQuestionResolved
+                        or CopilotAgentEventType.Error
+                        or CopilotAgentEventType.Completed;
                     if (agentEvent.Type == CopilotAgentEventType.ToolResult
                         && agentEvent.ToolResult?.Success == true
                         && agentEvent.ToolExecution != null
@@ -3048,6 +3108,8 @@ namespace ColorVision.Copilot
                     PersistState(immediate: persistImmediately);
                 if (refreshAgentTasks)
                     RefreshAgentTasks();
+                if (refreshUserQuestionState)
+                    NotifyUserQuestionStateChanged();
             }
         }
 
@@ -3108,6 +3170,12 @@ namespace ColorVision.Copilot
         {
             if (IsViewingActiveRun)
             {
+                if (IsAnsweringUserQuestion)
+                {
+                    TryAnswerCurrentUserQuestion(InputText);
+                    return;
+                }
+
                 var invocation = CopilotLocalCommandCatalog.Parse(InputText);
                 if (invocation != null)
                 {
@@ -3125,6 +3193,45 @@ namespace ColorVision.Copilot
                 return;
 
             RunUiOperation(SendAsync, "发送请求");
+        }
+
+        private bool CanAnswerUserQuestionOption(CopilotUserQuestionOption? option)
+        {
+            var question = ActiveUserQuestion;
+            return option != null
+                && IsAnsweringUserQuestion
+                && question != null
+                && string.Equals(option.RequestId, question.RequestId, StringComparison.Ordinal)
+                && string.Equals(option.TaskId, question.TaskId, StringComparison.Ordinal)
+                && question.Options.Any(candidate =>
+                    string.Equals(candidate.Label, option.Label, StringComparison.Ordinal));
+        }
+
+        private void AnswerUserQuestionOption(CopilotUserQuestionOption? option)
+        {
+            if (CanAnswerUserQuestionOption(option))
+                TryAnswerCurrentUserQuestion(option!.Label);
+        }
+
+        private bool TryAnswerCurrentUserQuestion(string? answer)
+        {
+            var run = ActiveHostedRun;
+            var message = ActiveUserQuestionMessage;
+            var question = message?.UserQuestion;
+            if (run == null
+                || message == null
+                || question?.IsPending != true
+                || !IsAnsweringUserQuestion
+                || !CopilotUserQuestionSnapshot.TryNormalizeAnswer(answer, out var normalized)
+                || !_turnRuntime.TryAnswerUserQuestion(run.Id, question.RequestId, normalized))
+            {
+                return false;
+            }
+
+            message.UserQuestion = question.Resolve(CopilotUserQuestionResolution.Answered, normalized);
+            InputText = string.Empty;
+            NotifyUserQuestionStateChanged();
+            return true;
         }
 
         private void TrySteerCurrentRun()

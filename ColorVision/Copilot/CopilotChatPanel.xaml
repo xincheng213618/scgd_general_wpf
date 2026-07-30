@@ -1332,6 +1332,53 @@
                                                           Visibility="{Binding HasAgentTraceEntries, Converter={StaticResource bool2VisibilityConverter}}" />
                                         </StackPanel>
 
+                                        <Border Margin="0,8,0,10"
+                                                Padding="12,10"
+                                                Background="{DynamicResource GlobalBorderBrush}"
+                                                BorderBrush="{DynamicResource PrimaryBrush}"
+                                                BorderThickness="1"
+                                                CornerRadius="8"
+                                                Visibility="{Binding HasUserQuestion, Converter={StaticResource bool2VisibilityConverter}}">
+                                            <StackPanel>
+                                                <TextBlock FontSize="10"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="{DynamicResource PrimaryBrush}"
+                                                           Text="{Binding UserQuestion.Header}" />
+                                                <TextBlock Margin="0,4,0,0"
+                                                           FontSize="12"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="{DynamicResource GlobalTextBrush}"
+                                                           Text="{Binding UserQuestion.Question}"
+                                                           TextWrapping="Wrap" />
+                                                <ItemsControl Margin="0,8,0,0"
+                                                              ItemsSource="{Binding UserQuestion.Options}"
+                                                              Visibility="{Binding HasPendingUserQuestion, Converter={StaticResource bool2VisibilityConverter}}">
+                                                    <ItemsControl.ItemsPanel>
+                                                        <ItemsPanelTemplate>
+                                                            <WrapPanel />
+                                                        </ItemsPanelTemplate>
+                                                    </ItemsControl.ItemsPanel>
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <Button Margin="0,0,6,6"
+                                                                    Padding="10,4"
+                                                                    Command="{Binding DataContext.AnswerUserQuestionOptionCommand, Source={x:Reference Root}}"
+                                                                    CommandParameter="{Binding}"
+                                                                    Content="{Binding Label}"
+                                                                    Style="{StaticResource MessageActionButtonStyle}"
+                                                                    ToolTip="{Binding Description}" />
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                                <TextBlock Margin="0,2,0,0"
+                                                           FontSize="10"
+                                                           Foreground="{DynamicResource GlobalTextBrush}"
+                                                           Opacity="0.62"
+                                                           Text="{Binding UserQuestionStatusText}"
+                                                           TextWrapping="Wrap" />
+                                            </StackPanel>
+                                        </Border>
+
                                         <Border Margin="0,0,0,10"
                                                 Padding="10,8"
                                                 Background="{DynamicResource GlobalBorderBrush}"
@@ -2502,6 +2549,15 @@
                                     Grid.Column="5"
                                     Orientation="Horizontal"
                                     VerticalAlignment="Center">
+                            <Button Width="28"
+                                    Height="28"
+                                    Margin="0,0,6,0"
+                                    Command="{Binding SubmitUserQuestionAnswerCommand}"
+                                    Content="✓"
+                                    FontSize="15"
+                                    Style="{StaticResource CopilotIconButtonStyle}"
+                                    Visibility="{Binding CanSubmitUserQuestionAnswer, Converter={StaticResource bool2VisibilityConverter}}"
+                                    ToolTip="提交当前澄清问题的答案（Enter）" />
                             <Button Width="28"
                                     Height="28"
                                     Margin="0,0,6,0"

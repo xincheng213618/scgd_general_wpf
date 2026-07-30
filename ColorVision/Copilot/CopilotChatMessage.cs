@@ -495,6 +495,41 @@ namespace ColorVision.Copilot
         public bool ShouldSerializeAgentBlockers() => AgentBlockers?.Count > 0;
 
         [JsonIgnore]
+        public CopilotUserQuestionSnapshot? UserQuestion
+        {
+            get => _userQuestion;
+            set
+            {
+                var normalized = value?.IsStructurallyValid() == true ? value : null;
+                if (SetProperty(ref _userQuestion, normalized))
+                {
+                    OnPropertyChanged(nameof(HasUserQuestion));
+                    OnPropertyChanged(nameof(HasPendingUserQuestion));
+                    OnPropertyChanged(nameof(HasResolvedUserQuestion));
+                    OnPropertyChanged(nameof(UserQuestionStatusText));
+                }
+            }
+        }
+        private CopilotUserQuestionSnapshot? _userQuestion;
+
+        [JsonIgnore]
+        public bool HasUserQuestion => !IsUser && UserQuestion != null;
+
+        [JsonIgnore]
+        public bool HasPendingUserQuestion => HasUserQuestion && UserQuestion!.IsPending;
+
+        [JsonIgnore]
+        public bool HasResolvedUserQuestion => HasUserQuestion && !UserQuestion!.IsPending;
+
+        [JsonIgnore]
+        public string UserQuestionStatusText => UserQuestion?.Resolution switch
+        {
+            CopilotUserQuestionResolution.Answered => "已回答：" + UserQuestion.Answer,
+            CopilotUserQuestionResolution.Cancelled => "问题已取消",
+            _ => "可选择一个选项，或在输入框中直接回答。",
+        };
+
+        [JsonIgnore]
         public CopilotAgentRecoveryRequest? RecoveryRequest { get; set; }
 
         [JsonIgnore]

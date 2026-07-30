@@ -13,6 +13,8 @@ namespace ColorVision.Copilot
             CancellationToken cancellationToken);
 
         bool TryEnqueueSteeringMessage(string message);
+
+        bool TryAnswerUserQuestion(string taskId, string requestId, string answer);
     }
 
     internal abstract record CopilotTurnEvent;

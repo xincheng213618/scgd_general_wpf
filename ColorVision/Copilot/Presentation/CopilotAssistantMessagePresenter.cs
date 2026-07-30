@@ -59,8 +59,24 @@ namespace ColorVision.Copilot
                 case CopilotAgentEventType.AnswerReset:
                     assistantMessage.ResetResponseTimelineText();
                     return CopilotAgentEventPresentationResult.Handled(CopilotAgentEventPersistenceMode.Deferred);
+                case CopilotAgentEventType.UserQuestionRequested:
+                    assistantMessage.MarkThinkingStarted();
+                    assistantMessage.UserQuestion = agentEvent.UserQuestion;
+                    assistantMessage.IsExecutionInProgress = true;
+                    return CopilotAgentEventPresentationResult.Handled();
+                case CopilotAgentEventType.UserQuestionResolved:
+                    if (agentEvent.UserQuestion != null
+                        && string.Equals(
+                            assistantMessage.UserQuestion?.RequestId,
+                            agentEvent.UserQuestion.RequestId,
+                            StringComparison.Ordinal))
+                    {
+                        assistantMessage.UserQuestion = agentEvent.UserQuestion;
+                    }
+                    return CopilotAgentEventPresentationResult.Handled();
                 case CopilotAgentEventType.Error:
                     AppendExecutionTrace(assistantMessage, CopilotAgentTraceEntry.Sanitize(agentEvent.Text));
+                    CancelPendingUserQuestion(assistantMessage);
                     CompleteThinking(assistantMessage);
                     return CopilotAgentEventPresentationResult.Handled(CopilotAgentEventPersistenceMode.Immediate);
                 case CopilotAgentEventType.Completed:
@@ -69,6 +85,7 @@ namespace ColorVision.Copilot
                         CopilotToolFailureKind.Internal,
                         "tool_terminal_event_missing",
                         "The Agent turn completed before this tool call emitted an authoritative terminal result.");
+                    CancelPendingUserQuestion(assistantMessage);
                     CompleteThinking(assistantMessage);
                     return CopilotAgentEventPresentationResult.Handled(CopilotAgentEventPersistenceMode.Immediate);
                 default:
@@ -218,6 +235,16 @@ namespace ColorVision.Copilot
             assistantMessage.IsExecutionInProgress = false;
             assistantMessage.IsReasoningInProgress = false;
             assistantMessage.MarkThinkingCompleted();
+        }
+
+        private static void CancelPendingUserQuestion(CopilotChatMessage assistantMessage)
+        {
+            if (assistantMessage.UserQuestion?.IsPending == true)
+            {
+                assistantMessage.UserQuestion = assistantMessage.UserQuestion.Resolve(
+                    CopilotUserQuestionResolution.Cancelled,
+                    string.Empty);
+            }
         }
 
         private static string BuildToolTraceText(CopilotAgentEvent agentEvent)
