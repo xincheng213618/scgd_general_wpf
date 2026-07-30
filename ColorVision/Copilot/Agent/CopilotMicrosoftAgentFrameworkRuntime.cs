@@ -133,10 +133,10 @@ namespace ColorVision.Copilot
 
             try
             {
-                activeContext.MessageInjector.EnqueueMessages(activeContext.Session,
+                activeContext.MessageInjector.EnqueueMessagesAsync(activeContext.Session,
                 [
                     new Microsoft.Extensions.AI.ChatMessage(ChatRole.User, normalized),
-                ]);
+                ], CancellationToken.None).GetAwaiter().GetResult();
                 activeContext.TaskEventJournal.RecordSteering(normalized);
                 return true;
             }
@@ -465,7 +465,6 @@ namespace ColorVision.Copilot
                 MaximumIterationsPerRequest = runBudget.MaxToolCalls + HarnessFunctionIterationOverhead,
                 DisableCompaction = false,
                 DisableFileMemory = true,
-                DisableFileAccess = true,
                 DisableWebSearch = true,
                 DisableTodoProvider = !taskLedgerEnabled,
                 DisableAgentModeProvider = !agentModeEnabled,
@@ -1495,11 +1494,14 @@ namespace ColorVision.Copilot
             bool resumedFromCheckpoint,
             CancellationToken cancellationToken)
         {
+            var mode = modeProvider == null
+                ? "execute"
+                : await modeProvider.GetModeAsync(session, cancellationToken);
             if (todoProvider == null)
             {
                 return new CopilotAgentTaskLedgerSnapshot
                 {
-                    Mode = modeProvider?.GetMode(session) ?? "execute",
+                    Mode = mode,
                     ResumedFromCheckpoint = resumedFromCheckpoint,
                 };
             }
@@ -1507,7 +1509,7 @@ namespace ColorVision.Copilot
             var todos = await todoProvider.GetAllTodosAsync(session, cancellationToken);
             return new CopilotAgentTaskLedgerSnapshot
             {
-                Mode = modeProvider?.GetMode(session) ?? "execute",
+                Mode = mode,
                 ResumedFromCheckpoint = resumedFromCheckpoint,
                 Items = todos.Select(item => new CopilotAgentTaskItem
                 {
