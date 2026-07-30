@@ -203,6 +203,7 @@ namespace ColorVision.Engine.FlowProcessing
                 ResetNodeTitleProgress();
                 View.FlowEngineControl.FlowClear();
                 View.FlowEngineControl.LoadFromBase64(flowParam.DataBase64, MqttRCService.GetInstance().ServiceTokens);
+                View.FitLoadedFlowToViewport();
                 RefreshStartNodeSelection();
 
                 FlowEngineManager.SelectedFlowParam = flowParam;

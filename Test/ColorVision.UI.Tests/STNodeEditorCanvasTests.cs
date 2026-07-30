@@ -557,6 +557,36 @@ namespace ColorVision.UI.Tests
         }
 
         [Fact]
+        public void FlowEditorInitialLoad_FitsCanvasAfterFirstLayout()
+        {
+            RunInSta(() =>
+            {
+                using var canvas = new FlowEditorCanvas();
+                STNodeEditor editor = canvas.NodeEditor;
+                var node = new STNodeHub();
+                node.Create();
+                node.Left = 100;
+                node.Top = 100;
+                editor.Nodes.Add(node);
+                editor.MoveCanvas(5000f, -5000f, bAnimation: false, CanvasMoveArgs.All);
+
+                canvas.FitCanvasToNodesAfterLayout();
+                canvas.Measure(new System.Windows.Size(800, 450));
+                canvas.Arrange(new System.Windows.Rect(0, 0, 800, 450));
+                canvas.UpdateLayout();
+                Dispatcher.CurrentDispatcher.Invoke(
+                    DispatcherPriority.Background,
+                    new Action(() => { }));
+
+                float contentCenterX = editor.CanvasValidBounds.Left + editor.CanvasValidBounds.Width / 2f;
+                float contentCenterY = editor.CanvasValidBounds.Top + editor.CanvasValidBounds.Height / 2f;
+                Assert.Equal(400f, contentCenterX * editor.CanvasScale + editor.CanvasOffsetX, 3);
+                Assert.Equal(225f, contentCenterY * editor.CanvasScale + editor.CanvasOffsetY, 3);
+                Assert.InRange(editor.CanvasScale, 0.2f, 0.85f);
+            });
+        }
+
+        [Fact]
         public void DrawNodes_SkipsNodesOutsideTheViewport()
         {
             RunInSta(() =>

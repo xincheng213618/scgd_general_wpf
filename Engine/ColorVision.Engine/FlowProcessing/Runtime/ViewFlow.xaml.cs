@@ -294,6 +294,11 @@ namespace ColorVision.Engine.FlowProcessing
             _layoutService.FitToViewport();
         }
 
+        internal void FitLoadedFlowToViewport()
+        {
+            EditorCanvas.FitCanvasToNodesAfterLayout();
+        }
+
         public void Save()
         {
             TrySave();
@@ -437,6 +442,7 @@ namespace ColorVision.Engine.FlowProcessing
                         FlowEngineControl.LoadFromBase64(
                             _standaloneFlowParam.DataBase64,
                             MqttRCService.GetInstance().ServiceTokens);
+                        FitLoadedFlowToViewport();
                         RefreshStandaloneStartNodeSelection();
                         STNodeEditorMain.ClearHistory();
                         UpdateStandaloneWindowTitle(Path.GetFileName(filePath));
@@ -450,6 +456,7 @@ namespace ColorVision.Engine.FlowProcessing
             }
 
             FlowEngineControl.LoadFromFile(filePath, MqttRCService.GetInstance().ServiceTokens);
+            FitLoadedFlowToViewport();
             RefreshStandaloneStartNodeSelection();
             STNodeEditorMain.ClearHistory();
             UpdateStandaloneWindowTitle(Path.GetFileName(filePath));
@@ -481,6 +488,7 @@ namespace ColorVision.Engine.FlowProcessing
                 FlowEngineControl.LoadFromBase64(
                     flowParam.DataBase64,
                     MqttRCService.GetInstance().ServiceTokens);
+                FitLoadedFlowToViewport();
                 RefreshStandaloneStartNodeSelection();
                 STNodeEditorMain.ClearHistory();
             }
