@@ -6,7 +6,7 @@ namespace ColorVision.Copilot
 {
     public sealed class CopilotChatState
     {
-        public const int CurrentSchemaVersion = 23;
+        public const int CurrentSchemaVersion = 24;
 
         public int SchemaVersion { get; set; } = CurrentSchemaVersion;
 
@@ -27,6 +27,10 @@ namespace ColorVision.Copilot
         public bool UseCompactMessageLayout { get; set; }
 
         public bool ShouldSerializeUseCompactMessageLayout() => UseCompactMessageLayout;
+
+        public bool EnablePromptHistoryCompletions { get; set; } = true;
+
+        public bool ShouldSerializeEnablePromptHistoryCompletions() => !EnablePromptHistoryCompletions;
 
         public ObservableCollection<CopilotQueuedFollowUpRecoveryRecord> QueuedFollowUpRecoveries { get; set; } = new();
 
@@ -55,6 +59,15 @@ namespace ColorVision.Copilot
                 return false;
 
             UseCompactMessageLayout = useCompactLayout;
+            return true;
+        }
+
+        internal bool SetEnablePromptHistoryCompletions(bool enabled)
+        {
+            if (EnablePromptHistoryCompletions == enabled)
+                return false;
+
+            EnablePromptHistoryCompletions = enabled;
             return true;
         }
 

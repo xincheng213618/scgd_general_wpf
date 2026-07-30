@@ -336,6 +336,8 @@ namespace ColorVision.Copilot
 
         public bool ShowMessageTimestamps => _state.ShowMessageTimestamps;
 
+        public bool PromptHistoryCompletionsEnabled => _state.EnablePromptHistoryCompletions;
+
         public bool UseCompactMessageLayout => _state.UseCompactMessageLayout;
 
         public Thickness MessageListPadding =>
@@ -1074,7 +1076,8 @@ namespace ColorVision.Copilot
             out CopilotPromptHistoryPrefixCompletion completion)
         {
             completion = default;
-            return !IsEditingMessage
+            return PromptHistoryCompletionsEnabled
+                && !IsEditingMessage
                 && !IsPromptHistorySearchOpen
                 && !IsComposerReferenceMentionActive
                 && !HasLocalCommandSuggestions
@@ -1996,6 +1999,9 @@ namespace ColorVision.Copilot
                     break;
                 case CopilotLocalCommandKind.SearchPromptHistory:
                     OpenPromptHistorySearch(command);
+                    break;
+                case CopilotLocalCommandKind.PromptSuggestions:
+                    ChangePromptSuggestionPreference(command, invocation.Arguments);
                     break;
                 case CopilotLocalCommandKind.Transcript:
                     ChangeTranscriptExpansion(command, invocation.Arguments);
@@ -5336,6 +5342,30 @@ namespace ColorVision.Copilot
                 command,
                 $"消息时间戳已{(show ? "显示" : "隐藏")}。\n\n"
                 + "该偏好只改变本地界面，不修改聊天内容，也不调用模型或工具。");
+        }
+
+        private void ChangePromptSuggestionPreference(CopilotLocalCommand command, string arguments)
+        {
+            if (!CopilotPromptSuggestionPreference.TryResolve(
+                    arguments,
+                    PromptHistoryCompletionsEnabled,
+                    out var enabled))
+            {
+                ShowLocalCommandResult(command, CopilotPromptSuggestionPreference.Usage);
+                return;
+            }
+
+            if (_state.SetEnablePromptHistoryCompletions(enabled))
+            {
+                OnPropertyChanged(nameof(PromptHistoryCompletionsEnabled));
+                NotifyPromptHistoryPrefixCompletionChanged();
+                PersistState(immediate: true);
+            }
+
+            ShowLocalCommandResult(
+                command,
+                $"本地历史提示补全已{(enabled ? "开启" : "关闭")}。\n\n"
+                + "该偏好只控制当前设备上的输入提示；不会调用模型，不会修改或删除历史消息。");
         }
 
         private void ChangeCompactMessageLayout(CopilotLocalCommand command, string arguments)
