@@ -26,6 +26,7 @@ public sealed class CopilotLocalCommandArgumentSuggestionTests
     [InlineData("/permissions ", "/permissions status", "/permissions ask", "/permissions auto")]
     [InlineData("/stats ", "/stats 7", "/stats 30", "/stats all")]
     [InlineData("/diff ", "/diff both", "/diff staged", "/diff unstaged")]
+    [InlineData("/mcp ", "/mcp verbose")]
     public void StaticArgumentSuggestionsComeFromCommandMetadata(
         string input,
         params string[] expected)

@@ -1490,21 +1490,7 @@ namespace ColorVision.Copilot
 
         public string McpStatusToolTip
         {
-            get
-            {
-                var server = CopilotMcpServer.Instance;
-                var entries = CopilotMcpAuditLogger.GetRecentEntries(8);
-                return CopilotMcpDiagnostics.Format(new CopilotMcpDiagnosticSnapshot
-                {
-                    Endpoint = _config.McpEndpoint,
-                    Enabled = _config.McpEnabled,
-                    Running = server.IsRunning,
-                    PendingActions = CopilotMcpConfirmationStore.Instance.PendingCount,
-                    RecentEntries = entries,
-                    LastError = CopilotMcpAuditLogger.GetLastError(),
-                    StatusMessage = server.LastStatusMessage,
-                });
-            }
+            get => BuildMcpDiagnosticsReport(verbose: false);
         }
 
         private bool TryExecuteLocalCommand(string prompt)
@@ -1559,7 +1545,7 @@ namespace ColorVision.Copilot
                     ShowLocalCommandResult(command, BuildAgentSkillDiagnosticsReport());
                     break;
                 case CopilotLocalCommandKind.Mcp:
-                    ShowLocalCommandResult(command, McpStatusToolTip);
+                    HandleMcpCommand(command, invocation.Arguments);
                     break;
                 case CopilotLocalCommandKind.Diff:
                     RunUiOperation(() => ShowGitDiffAsync(command, invocation.Arguments), "读取 Git 变更");
@@ -1753,6 +1739,42 @@ namespace ColorVision.Copilot
                 _taskHost,
                 Conversations,
                 DateTimeOffset.UtcNow));
+        }
+
+        private void HandleMcpCommand(CopilotLocalCommand command, string arguments)
+        {
+            switch (CopilotMcpCommand.Resolve(arguments))
+            {
+                case CopilotMcpCommandAction.Summary:
+                    ShowLocalCommandResult(command, BuildMcpDiagnosticsReport(verbose: false));
+                    break;
+                case CopilotMcpCommandAction.Verbose:
+                    ShowLocalCommandResult(command, BuildMcpDiagnosticsReport(verbose: true));
+                    break;
+                default:
+                    ShowLocalCommandResult(command, CopilotMcpCommand.Usage);
+                    break;
+            }
+        }
+
+        private string BuildMcpDiagnosticsReport(bool verbose)
+        {
+            var server = CopilotMcpServer.Instance;
+            var externalServers = _config.ExternalMcpServers
+                .Where(candidate => candidate?.Enabled == true)
+                .Select(CopilotMcpDiagnostics.CaptureExternalServer)
+                .ToArray();
+            return CopilotMcpDiagnostics.Format(new CopilotMcpDiagnosticSnapshot
+            {
+                Endpoint = _config.McpEndpoint,
+                Enabled = _config.McpEnabled,
+                Running = server.IsRunning,
+                PendingActions = CopilotMcpConfirmationStore.Instance.PendingCount,
+                RecentEntries = CopilotMcpAuditLogger.GetRecentEntries(verbose ? 20 : 8),
+                LastError = CopilotMcpAuditLogger.GetLastError(),
+                StatusMessage = server.LastStatusMessage,
+                ExternalServers = externalServers,
+            }, verbose);
         }
 
         private void StartWorkspaceReview(CopilotLocalCommand command, string focusInstructions)

@@ -88,7 +88,10 @@ namespace ColorVision.Copilot
             new("/init", "为当前项目生成根级 AGENTS.md，不覆盖已有项目指令", CopilotLocalCommandKind.InitializeProject, Usage: "/init"),
             new("/hooks", "查看生效 Hook、模块来源与最近运行健康度", CopilotLocalCommandKind.Hooks, AvailableWhileAgentRuns: true, Usage: "/hooks"),
             new("/skills", "查看 Skill 使用率、连续未加载与降级状态", CopilotLocalCommandKind.Skills, AvailableWhileAgentRuns: true, Usage: "/skills"),
-            new("/mcp", "查看本地 MCP 服务、审批与最近调用状态", CopilotLocalCommandKind.Mcp, AvailableWhileAgentRuns: true, Usage: "/mcp"),
+            new("/mcp", "查看本机与外部 MCP 状态；verbose 展开脱敏诊断", CopilotLocalCommandKind.Mcp, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/mcp [verbose]", Arguments:
+            [
+                new("verbose", "展开外部服务策略、工具发现与最近健康快照"),
+            ]),
             new("/diff", "查看已暂存、未暂存补丁和未跟踪文件", CopilotLocalCommandKind.Diff, AcceptsArguments: true, Usage: "/diff [both|staged|unstaged]", Arguments:
             [
                 new("both", "同时查看已暂存和未暂存变更"),
