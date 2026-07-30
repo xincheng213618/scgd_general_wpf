@@ -220,6 +220,22 @@ namespace ColorVision.Copilot
                 UpdateResponsiveLayout();
                 FocusPromptInput();
                 e.Handled = true;
+                return;
+            }
+
+            if (PromptTextBox.IsKeyboardFocusWithin
+                && DataContext is CopilotChatViewModel composerViewModel
+                && (composerViewModel.IsPromptHistorySearchOpen
+                    || composerViewModel.IsComposerReferenceMentionActive))
+            {
+                return;
+            }
+
+            if (Keyboard.Modifiers == ModifierKeys.None
+                && DataContext is CopilotChatViewModel stopViewModel
+                && stopViewModel.TryStopCurrentReplyFromKeyboard())
+            {
+                e.Handled = true;
             }
         }
 

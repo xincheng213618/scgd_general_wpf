@@ -5531,33 +5531,38 @@ namespace ColorVision.Copilot
             return new CopilotPromptQueueResult(true, SelectedProfile?.IsConfigured == true);
         }
 
-        private void StopCurrentReply()
+        internal bool TryStopCurrentReplyFromKeyboard()
+        {
+            if (!IsViewingActiveRun
+                || ActiveHostedRunInteraction.PrimaryAction == CopilotHostedRunPrimaryAction.None)
+            {
+                return false;
+            }
+
+            return StopCurrentReply();
+        }
+
+        private bool StopCurrentReply()
         {
             var selectedRun = SelectedHostedRun;
             if (selectedRun?.State == CopilotHostedRunState.Queued)
-            {
-                _taskHost.RequestCancel(selectedRun.Id);
-                return;
-            }
+                return _taskHost.RequestCancel(selectedRun.Id);
 
             var activeRun = ActiveHostedRun;
             if (!IsViewingActiveRun || activeRun == null)
-                return;
+                return false;
 
             if (activeRun.State == CopilotHostedRunState.CancelRequested)
-                return;
+                return false;
             if (activeRun.State == CopilotHostedRunState.PauseRequested)
-            {
-                _taskHost.RequestCancel(activeRun.Id);
-                return;
-            }
+                return _taskHost.RequestCancel(activeRun.Id);
 
             // Match Codex's single-stop interaction: keep recovery state when a
             // safe checkpoint exists, otherwise cancel the in-flight turn.
             if (activeRun.IsAgent && _taskHost.RequestPause(activeRun.Id))
-                return;
+                return true;
 
-            _taskHost.RequestCancel(activeRun.Id);
+            return _taskHost.RequestCancel(activeRun.Id);
         }
 
         private void OpenSettings(CopilotSettingsPage initialPage = CopilotSettingsPage.Models)
