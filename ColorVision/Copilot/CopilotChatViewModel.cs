@@ -1410,6 +1410,11 @@ namespace ColorVision.Copilot
                 case CopilotLocalCommandKind.CopyResponse:
                     CopyAssistantResponse(command, invocation.Arguments);
                     break;
+                case CopilotLocalCommandKind.ExportConversation:
+                    RunUiOperation(
+                        () => ExportConversationFromCommandAsync(command, invocation.Arguments),
+                        "导出会话");
+                    break;
                 case CopilotLocalCommandKind.SelectModel:
                     SelectModelProfile(command, invocation.Arguments);
                     break;
@@ -5244,7 +5249,67 @@ namespace ColorVision.Copilot
             && Volatile.Read(ref _disposeState) == 0
             && CopilotConversationMarkdownExporter.CanExport(conversation);
 
-        private async Task ExportConversationAsync(CopilotConversationRecord? conversation)
+        private async Task ExportConversationFromCommandAsync(CopilotLocalCommand command, string requestedFileName)
+        {
+            var conversation = SelectedConversation;
+            if (!CanExportConversation(conversation))
+            {
+                ShowLocalCommandResult(
+                    command,
+                    _isExportingConversation
+                        ? "已有会话导出正在执行，请完成后再试。"
+                        : "当前会话还没有可导出的已完成消息。");
+                return;
+            }
+
+            if (!string.IsNullOrWhiteSpace(requestedFileName))
+            {
+                if (!CopilotConversationMarkdownExporter.TryNormalizeFileNameHint(
+                    requestedFileName,
+                    out var fileName,
+                    out var errorMessage))
+                {
+                    ShowLocalCommandResult(command, errorMessage);
+                    return;
+                }
+
+                await ExportConversationAsync(conversation, fileName);
+                return;
+            }
+
+            var snapshot = CopilotConversationMarkdownExporter.Capture(conversation!);
+            var cancellation = BeginAuxiliaryOperation();
+            _isExportingConversation = true;
+            ShowLocalCommandResult(command, "正在生成当前会话的可见 Markdown 快照。");
+            CommandManager.InvalidateRequerySuggested();
+            try
+            {
+                var markdown = await Task.Run(
+                    () => CopilotConversationMarkdownExporter.BuildMarkdown(snapshot, cancellation.Token),
+                    cancellation.Token);
+                if (Volatile.Read(ref _disposeState) == 1)
+                    return;
+                if (!TrySetClipboardText(markdown, out var errorMessage))
+                {
+                    ShowLocalCommandResult(command, "复制失败：" + errorMessage);
+                    return;
+                }
+
+                ShowLocalCommandResult(
+                    command,
+                    $"已复制当前会话的可见 Markdown（{snapshot.Messages.Count:N0} 条消息，{markdown.Length:N0} 个字符）。");
+            }
+            finally
+            {
+                _isExportingConversation = false;
+                CompleteAuxiliaryOperation(cancellation);
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+
+        private async Task ExportConversationAsync(
+            CopilotConversationRecord? conversation,
+            string? suggestedFileName = null)
         {
             if (!CanExportConversation(conversation))
                 return;
@@ -5254,7 +5319,7 @@ namespace ColorVision.Copilot
                 AddExtension = true,
                 CheckPathExists = true,
                 DefaultExt = ".md",
-                FileName = CopilotConversationMarkdownExporter.BuildFileName(conversation!),
+                FileName = suggestedFileName ?? CopilotConversationMarkdownExporter.BuildFileName(conversation!),
                 Filter = "Markdown 文档|*.md|文本文件|*.txt|所有文件|*.*",
                 OverwritePrompt = true,
                 Title = "导出 Copilot 会话",

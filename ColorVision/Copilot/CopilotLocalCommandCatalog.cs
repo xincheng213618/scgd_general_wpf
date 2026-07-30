@@ -20,6 +20,7 @@ namespace ColorVision.Copilot
         ResumeConversation,
         RenameConversation,
         CopyResponse,
+        ExportConversation,
         SelectModel,
         SelectReasoning,
         NewConversation,
@@ -43,7 +44,7 @@ namespace ColorVision.Copilot
 
     public static class CopilotLocalCommandCatalog
     {
-        private const int MaxSuggestions = 26;
+        private const int MaxSuggestions = 27;
 
         private static readonly CopilotLocalCommand[] Commands =
         [
@@ -62,6 +63,7 @@ namespace ColorVision.Copilot
             new("/resume", "搜索并切换已有 Copilot 会话，可补充标题或关键词", CopilotLocalCommandKind.ResumeConversation, AcceptsArguments: true, AvailableWhileAgentRuns: true),
             new("/rename", "重命名当前 Copilot 会话；省略名称时打开输入窗口", CopilotLocalCommandKind.RenameConversation, AcceptsArguments: true, AvailableWhileAgentRuns: true),
             new("/copy", "复制最近已完成的回答；可用 /copy 2 选择倒数第二条", CopilotLocalCommandKind.CopyResponse, AcceptsArguments: true, AvailableWhileAgentRuns: true),
+            new("/export", "复制当前会话的可见 Markdown；可补充文件名并打开保存窗口", CopilotLocalCommandKind.ExportConversation, AcceptsArguments: true, AvailableWhileAgentRuns: true),
             new("/model", "选择当前会话使用的模型 Profile；可补充 Profile 名或模型 ID", CopilotLocalCommandKind.SelectModel, AcceptsArguments: true),
             new("/reasoning", "选择当前模型 Profile 的推理强度；可补充受支持级别", CopilotLocalCommandKind.SelectReasoning, AcceptsArguments: true),
             new("/effort", "同 /reasoning；调整当前模型 Profile 的推理强度", CopilotLocalCommandKind.SelectReasoning, AcceptsArguments: true),
