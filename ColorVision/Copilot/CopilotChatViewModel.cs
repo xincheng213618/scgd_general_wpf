@@ -1547,6 +1547,9 @@ namespace ColorVision.Copilot
                 case CopilotLocalCommandKind.Mcp:
                     HandleMcpCommand(command, invocation.Arguments);
                     break;
+                case CopilotLocalCommandKind.Mention:
+                    OpenComposerMention(command, invocation.Arguments);
+                    break;
                 case CopilotLocalCommandKind.Diff:
                     RunUiOperation(() => ShowGitDiffAsync(command, invocation.Arguments), "读取 Git 变更");
                     break;
@@ -1775,6 +1778,23 @@ namespace ColorVision.Copilot
                 StatusMessage = server.LastStatusMessage,
                 ExternalServers = externalServers,
             }, verbose);
+        }
+
+        private void OpenComposerMention(CopilotLocalCommand command, string query)
+        {
+            if (!CopilotComposerReferenceCatalog.TryCreateMentionInput(
+                    query,
+                    out var mentionInput,
+                    out var errorMessage))
+            {
+                ShowLocalCommandResult(
+                    command,
+                    $"{errorMessage}{Environment.NewLine}用法：{command.Usage}");
+                return;
+            }
+
+            DismissLocalCommandResult();
+            InputText = mentionInput;
         }
 
         private void StartWorkspaceReview(CopilotLocalCommand command, string focusInstructions)

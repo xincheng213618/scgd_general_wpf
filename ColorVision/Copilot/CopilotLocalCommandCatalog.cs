@@ -18,6 +18,7 @@ namespace ColorVision.Copilot
         InitializeProject,
         Skills,
         Mcp,
+        Mention,
         Diff,
         Compact,
         Review,
@@ -62,7 +63,8 @@ namespace ColorVision.Copilot
 
     public static class CopilotLocalCommandCatalog
     {
-        private const int MaxSuggestions = 40;
+        private const int BaselineMaximumSuggestions = 40;
+        private const int MinimumBareSlashSkillSuggestions = 9;
 
         private static readonly CopilotLocalCommand[] Commands =
         [
@@ -92,6 +94,7 @@ namespace ColorVision.Copilot
             [
                 new("verbose", "展开外部服务策略、工具发现与最近健康快照"),
             ]),
+            new("/mention", "打开文件、模板与菜单的关联目录，可补充查询", CopilotLocalCommandKind.Mention, AcceptsArguments: true, Usage: "/mention [查询]"),
             new("/diff", "查看已暂存、未暂存补丁和未跟踪文件", CopilotLocalCommandKind.Diff, AcceptsArguments: true, Usage: "/diff [both|staged|unstaged]", Arguments:
             [
                 new("both", "同时查看已暂存和未暂存变更"),
@@ -124,6 +127,9 @@ namespace ColorVision.Copilot
         ];
 
         public static IReadOnlyList<CopilotLocalCommand> All => Commands;
+
+        private static int MaximumSuggestions =>
+            Math.Max(BaselineMaximumSuggestions, Commands.Length + MinimumBareSlashSkillSuggestions);
 
         public static CopilotLocalCommand? FindExact(string? input)
         {
@@ -185,7 +191,7 @@ namespace ColorVision.Copilot
             return suggestions
                 .Concat(skillSuggestions)
                 .DistinctBy(command => command.Name, StringComparer.OrdinalIgnoreCase)
-                .Take(MaxSuggestions)
+                .Take(MaximumSuggestions)
                 .ToArray();
         }
 
@@ -214,7 +220,7 @@ namespace ColorVision.Copilot
                 .Where(argument => argument.Value.StartsWith(query, StringComparison.OrdinalIgnoreCase))
                 .Where(argument => argument.AcceptsArguments
                     || !string.Equals(argument.Value, query, StringComparison.OrdinalIgnoreCase))
-                .Take(MaxSuggestions)
+                .Take(MaximumSuggestions)
                 .Select(argument => new CopilotLocalCommand(
                     command.Name + " " + argument.Value,
                     "参数 · " + argument.Description,

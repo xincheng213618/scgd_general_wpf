@@ -27,6 +27,7 @@ namespace ColorVision.Copilot
             ("工作区与 Agent",
             [
                 CopilotLocalCommandKind.InitializeProject,
+                CopilotLocalCommandKind.Mention,
                 CopilotLocalCommandKind.Diff,
                 CopilotLocalCommandKind.Compact,
                 CopilotLocalCommandKind.Review,

@@ -317,6 +317,52 @@ public sealed class CopilotComposerAccessAndReferenceTests
     }
 
     [Theory]
+    [InlineData(null, "@", "")]
+    [InlineData("", "@", "")]
+    [InlineData("  FlowParam  ", "@FlowParam", "FlowParam")]
+    [InlineData("模板 管理", "@模板 管理", "模板 管理")]
+    public void MentionCommandCreatesLiveComposerQuery(
+        string? query,
+        string expectedInput,
+        string expectedQuery)
+    {
+        Assert.True(CopilotComposerReferenceCatalog.TryCreateMentionInput(
+            query,
+            out var input,
+            out var errorMessage));
+        Assert.Equal(string.Empty, errorMessage);
+        Assert.Equal(expectedInput, input);
+        Assert.True(CopilotComposerReferenceCatalog.TryParseMention(input, out var mention));
+        Assert.Equal(expectedQuery, mention.Query);
+    }
+
+    [Theory]
+    [InlineData("first\nsecond", "单行")]
+    [InlineData("[SFR 模板]", "@[标题]")]
+    public void MentionCommandRejectsQueriesThatCannotOpenTheReferenceCatalog(
+        string query,
+        string expectedError)
+    {
+        Assert.False(CopilotComposerReferenceCatalog.TryCreateMentionInput(
+            query,
+            out var input,
+            out var errorMessage));
+        Assert.Equal(string.Empty, input);
+        Assert.Contains(expectedError, errorMessage, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void MentionCommandRejectsQueriesBeyondTheComposerSearchLimit()
+    {
+        Assert.False(CopilotComposerReferenceCatalog.TryCreateMentionInput(
+            new string('x', 81),
+            out var input,
+            out var errorMessage));
+        Assert.Equal(string.Empty, input);
+        Assert.Contains("80", errorMessage, StringComparison.Ordinal);
+    }
+
+    [Theory]
     [InlineData("mail@example.com")]
     [InlineData("请查看 @[SFR 模板] ")]
     [InlineData("第一行 @模板\n第二行")]

@@ -149,6 +149,18 @@ public sealed class CopilotLocalCommandArgumentSuggestionTests
     }
 
     [Fact]
+    public void MentionCommandPassesAFreeFormQueryToTheExistingReferenceCatalog()
+    {
+        var invocation = Assert.IsType<CopilotLocalCommandInvocation>(
+            CopilotLocalCommandCatalog.Parse("/mention FlowParam"));
+
+        Assert.Equal(CopilotLocalCommandKind.Mention, invocation.Command.Kind);
+        Assert.Equal("FlowParam", invocation.Arguments);
+        Assert.Equal("/mention [查询]", invocation.Command.Usage);
+        Assert.Empty(CopilotLocalCommandCatalog.Suggest("/mention "));
+    }
+
+    [Fact]
     public void ActiveRunSuggestionsOnlyIncludeExecutableFixedCommands()
     {
         var suggestions = CopilotLocalCommandCatalog.Suggest(
@@ -162,6 +174,7 @@ public sealed class CopilotLocalCommandArgumentSuggestionTests
         Assert.DoesNotContain(suggestions, item => item.Name == "/model");
         Assert.DoesNotContain(suggestions, item => item.Name == "/diff");
         Assert.DoesNotContain(suggestions, item => item.Name == "/init");
+        Assert.DoesNotContain(suggestions, item => item.Name == "/mention");
     }
 
     [Fact]
