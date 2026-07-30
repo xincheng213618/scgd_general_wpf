@@ -17,6 +17,13 @@ namespace ColorVision.Copilot
                 CopilotToolFailureKind.Internal,
                 "tool_terminal_event_missing",
                 "The hosted turn completed before this tool call emitted an authoritative terminal result.");
+            if (assistantMessage.IsResponseContentTruncated
+                && !assistantMessage.WasResponseInterrupted)
+            {
+                assistantMessage.MarkResponseInterrupted(assistantMessage.RequestMode == CopilotAgentMode.Chat
+                    ? "回答达到应用显示上限；已保留前面的内容，可缩小问题范围后重新生成。"
+                    : "Agent 最终回答达到应用显示上限；已保留前面的内容，但回答可能不完整。");
+            }
             CopilotAssistantMessagePresenter.FinalizeMessage(assistantMessage);
             SetUsage(conversation, assistantMessage, usage);
         }

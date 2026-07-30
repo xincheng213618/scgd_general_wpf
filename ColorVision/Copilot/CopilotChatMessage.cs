@@ -133,6 +133,13 @@ namespace ColorVision.Copilot
             + "The assistant turn ended before producing a complete response. Treat any retained text as partial context, not as a completed answer. "
             + "Do not infer that unfinished steps, tool calls, file changes, or verification succeeded. Re-check current evidence before continuing.\n"
             + "</assistant_response_interrupted>";
+        private const string IncompleteAgentOutcomeModelMarkerPrefix =
+            "<agent_turn_incomplete stop_reason=\"";
+        private const string IncompleteAgentOutcomeModelMarkerSuffix =
+            "\">\n"
+            + "The agent task did not reach a completed outcome. Treat any retained answer as a terminal status or partial result, not as evidence that remaining tasks, file changes, or verification succeeded. "
+            + "Re-check current evidence and the unresolved task state before continuing.\n"
+            + "</agent_turn_incomplete>";
         private const int MinimumRequestContentCompressionCharacters = 1_024;
         private const int MaximumCompressibleRequestContentCharacters = CopilotAgentSessionCheckpoint.MaxSerializedSessionCharacters;
         private const int MaximumResponseInterruptionDetailLength = 800;
@@ -436,14 +443,26 @@ namespace ColorVision.Copilot
                 var content = IsContentDisplayOnly
                     ? string.Empty
                     : string.IsNullOrWhiteSpace(RequestContent) ? Content : RequestContent;
-                if (IsUser || !WasResponseInterrupted)
+                if (IsUser)
                     return content;
-
-                return string.IsNullOrWhiteSpace(content)
-                    ? ResponseInterruptionModelMarker
-                    : content.TrimEnd() + "\n\n" + ResponseInterruptionModelMarker;
+                if (WasResponseInterrupted)
+                    return AppendModelMarker(content, ResponseInterruptionModelMarker);
+                if (RequestMode != CopilotAgentMode.Chat
+                    && AgentStopReason is not (CopilotAgentStopReason.None or CopilotAgentStopReason.Completed))
+                {
+                    var marker = IncompleteAgentOutcomeModelMarkerPrefix
+                        + AgentStopReason
+                        + IncompleteAgentOutcomeModelMarkerSuffix;
+                    return AppendModelMarker(content, marker);
+                }
+                return content;
             }
         }
+
+        private static string AppendModelMarker(string content, string marker) =>
+            string.IsNullOrWhiteSpace(content)
+                ? marker
+                : content.TrimEnd() + "\n\n" + marker;
 
         public string ExecutionContent
         {
