@@ -1827,6 +1827,16 @@ namespace ColorVision.Copilot
                 case CopilotLocalCommandKind.Shortcuts:
                     ShowLocalCommandResult(command, CopilotKeyboardShortcutHelp.Format());
                     break;
+                case CopilotLocalCommandKind.Recap:
+                    ShowLocalCommandResult(
+                        command,
+                        CopilotConversationRecap.Format(
+                            SelectedConversation,
+                            QueuedFollowUps.Count(item => string.Equals(
+                                item.ConversationId,
+                                SelectedConversation?.Id,
+                                StringComparison.Ordinal))));
+                    break;
                 case CopilotLocalCommandKind.Status:
                     ShowLocalCommandResult(command, BuildStatusDiagnosticsReport());
                     break;

@@ -38,6 +38,7 @@ namespace ColorVision.Copilot
             ]),
             ("会话与输出",
             [
+                CopilotLocalCommandKind.Recap,
                 CopilotLocalCommandKind.ResumeConversation,
                 CopilotLocalCommandKind.RenameConversation,
                 CopilotLocalCommandKind.RewindConversation,
