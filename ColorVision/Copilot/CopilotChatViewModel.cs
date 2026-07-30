@@ -4582,6 +4582,15 @@ namespace ColorVision.Copilot
             _conversationSearchDebounceTimer.Start();
         }
 
+        internal bool FlushConversationSearchRefresh()
+        {
+            if (!_conversationSearchDebounceTimer.IsEnabled)
+                return false;
+
+            RefreshFilteredConversations();
+            return true;
+        }
+
         private void ConversationSearchDebounceTimer_Tick(object? sender, EventArgs e) => RefreshFilteredConversations();
 
         private static bool MatchesConversationSearch(CopilotConversationRecord conversation, IReadOnlyList<string> terms)

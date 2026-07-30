@@ -48,6 +48,34 @@ namespace ColorVision.Copilot
             return titleMatches.Length == 1 ? titleMatches[0] : null;
         }
 
+        internal static int ResolveSearchNavigationIndex(
+            int itemCount,
+            int selectedIndex,
+            bool hasPreviewSelection,
+            int direction)
+        {
+            ArgumentOutOfRangeException.ThrowIfZero(direction);
+            if (itemCount <= 0)
+                return -1;
+            if (!hasPreviewSelection || selectedIndex < 0 || selectedIndex >= itemCount)
+                return direction < 0 ? itemCount - 1 : 0;
+
+            return Math.Clamp(selectedIndex + Math.Sign(direction), 0, itemCount - 1);
+        }
+
+        internal static int ResolveSearchCommitIndex(
+            int itemCount,
+            int selectedIndex,
+            bool hasPreviewSelection)
+        {
+            if (itemCount <= 0)
+                return -1;
+
+            return hasPreviewSelection && selectedIndex >= 0 && selectedIndex < itemCount
+                ? selectedIndex
+                : 0;
+        }
+
         public static CopilotConversationRecord ResolveNewTarget(
             ObservableCollection<CopilotConversationRecord> conversations,
             CopilotConversationRecord? selectedConversation,

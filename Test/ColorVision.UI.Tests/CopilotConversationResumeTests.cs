@@ -66,4 +66,26 @@ public sealed class CopilotConversationResumeTests
         Assert.Null(CopilotConversationService.FindUniqueResumeTarget(conversations, "missing"));
         Assert.Null(CopilotConversationService.FindUniqueResumeTarget(conversations, "   "));
     }
+
+    [Fact]
+    public void SearchNavigationStartsAtTheRelevantEdgeAndClampsWithinResults()
+    {
+        Assert.Equal(-1, CopilotConversationService.ResolveSearchNavigationIndex(0, -1, false, 1));
+        Assert.Equal(0, CopilotConversationService.ResolveSearchNavigationIndex(4, 2, false, 1));
+        Assert.Equal(3, CopilotConversationService.ResolveSearchNavigationIndex(4, 2, false, -1));
+        Assert.Equal(2, CopilotConversationService.ResolveSearchNavigationIndex(4, 1, true, 1));
+        Assert.Equal(0, CopilotConversationService.ResolveSearchNavigationIndex(4, 0, true, -1));
+        Assert.Equal(3, CopilotConversationService.ResolveSearchNavigationIndex(4, 3, true, 1));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            CopilotConversationService.ResolveSearchNavigationIndex(4, 0, true, 0));
+    }
+
+    [Fact]
+    public void SearchCommitUsesThePreviewOrDefaultsToTheFirstResult()
+    {
+        Assert.Equal(-1, CopilotConversationService.ResolveSearchCommitIndex(0, -1, false));
+        Assert.Equal(0, CopilotConversationService.ResolveSearchCommitIndex(3, 2, false));
+        Assert.Equal(2, CopilotConversationService.ResolveSearchCommitIndex(3, 2, true));
+        Assert.Equal(0, CopilotConversationService.ResolveSearchCommitIndex(3, 9, true));
+    }
 }

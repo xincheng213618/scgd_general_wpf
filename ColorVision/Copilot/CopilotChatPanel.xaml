@@ -2762,8 +2762,10 @@
                                          FontSize="11"
                                          Foreground="{DynamicResource GlobalTextBrush}"
                                          MaxLength="256"
+                                         PreviewKeyDown="ConversationSearchTextBox_PreviewKeyDown"
                                          Text="{Binding ConversationSearchText, UpdateSourceTrigger=PropertyChanged}"
-                                         ToolTip="搜索会话 (Ctrl+F)" />
+                                         TextChanged="ConversationSearchTextBox_TextChanged"
+                                         ToolTip="搜索会话 (Ctrl+F)；↑↓ 选择，Enter 切换，Esc 退出" />
                             </Grid>
                             <Button Grid.Column="2"
                                     Style="{StaticResource AttachmentCloseButtonStyle}"
@@ -2875,8 +2877,9 @@
                              Background="Transparent"
                              ItemContainerStyle="{StaticResource SidebarListBoxItemStyle}"
                              ItemsSource="{Binding FilteredConversations}"
+                             PreviewKeyDown="ConversationListBox_PreviewKeyDown"
+                             PreviewMouseLeftButtonUp="ConversationListBox_PreviewMouseLeftButtonUp"
                              SelectedItem="{Binding SelectedConversation, Mode=OneWay}"
-                             SelectionChanged="ConversationListBox_SelectionChanged"
                              IsEnabled="{Binding CanSwitchConversation}">
                         <ListBox.ItemTemplate>
                             <DataTemplate DataType="{x:Type local:CopilotConversationRecord}">
