@@ -50,7 +50,9 @@ namespace ColorVision.Copilot
 
         public bool HasAny => InputTokens > 0 || OutputTokens > 0 || TotalTokens > 0;
 
-        public int EffectiveTotalTokens => TotalTokens > 0 ? TotalTokens : Math.Max(0, InputTokens) + Math.Max(0, OutputTokens);
+        public int EffectiveTotalTokens => Math.Max(
+            Math.Max(0, TotalTokens),
+            AddClamped(InputTokens, OutputTokens));
 
         public int EffectiveCachedInputTokens => Math.Clamp(CachedInputTokens ?? 0, 0, Math.Max(0, InputTokens));
 
@@ -86,12 +88,13 @@ namespace ColorVision.Copilot
             if (!other.HasAny)
                 return this;
 
-            var inputTokens = Math.Max(0, InputTokens) + Math.Max(0, other.InputTokens);
-            var outputTokens = Math.Max(0, OutputTokens) + Math.Max(0, other.OutputTokens);
+            var inputTokens = AddClamped(InputTokens, other.InputTokens);
+            var outputTokens = AddClamped(OutputTokens, other.OutputTokens);
+            var totalTokens = AddClamped(EffectiveTotalTokens, other.EffectiveTotalTokens);
             int? cachedInputTokens = CachedInputTokens.HasValue || other.CachedInputTokens.HasValue
-                ? EffectiveCachedInputTokens + other.EffectiveCachedInputTokens
+                ? AddClamped(EffectiveCachedInputTokens, other.EffectiveCachedInputTokens)
                 : null;
-            return new CopilotTokenUsage(inputTokens, outputTokens, inputTokens + outputTokens, cachedInputTokens);
+            return new CopilotTokenUsage(inputTokens, outputTokens, totalTokens, cachedInputTokens);
         }
 
         public static string FormatCount(int value)
@@ -100,6 +103,13 @@ namespace ColorVision.Copilot
             return normalized >= 1000
                 ? $"{normalized / 1000d:0.#}k"
                 : normalized.ToString();
+        }
+
+        private static int AddClamped(int left, int right)
+        {
+            return (int)Math.Min(
+                int.MaxValue,
+                Math.Max(0L, left) + Math.Max(0L, right));
         }
     }
 
@@ -499,6 +509,49 @@ namespace ColorVision.Copilot
         private CopilotAgentBudgetSnapshot _agentRunBudget = new();
 
         public bool ShouldSerializeAgentRunBudget() => HasAgentRunMetrics;
+
+        public int ReportedUsageInputTokens
+        {
+            get => _reportedUsageInputTokens;
+            set => _reportedUsageInputTokens = Math.Max(0, value);
+        }
+        private int _reportedUsageInputTokens;
+
+        public int ReportedUsageOutputTokens
+        {
+            get => _reportedUsageOutputTokens;
+            set => _reportedUsageOutputTokens = Math.Max(0, value);
+        }
+        private int _reportedUsageOutputTokens;
+
+        public int ReportedUsageTotalTokens
+        {
+            get => _reportedUsageTotalTokens;
+            set => _reportedUsageTotalTokens = Math.Max(0, value);
+        }
+        private int _reportedUsageTotalTokens;
+
+        public int? ReportedUsageCachedInputTokens
+        {
+            get => _reportedUsageCachedInputTokens;
+            set => _reportedUsageCachedInputTokens = value.HasValue ? Math.Max(0, value.Value) : null;
+        }
+        private int? _reportedUsageCachedInputTokens;
+
+        [JsonIgnore]
+        public CopilotTokenUsage ReportedUsage => new(
+            ReportedUsageInputTokens,
+            ReportedUsageOutputTokens,
+            ReportedUsageTotalTokens,
+            ReportedUsageCachedInputTokens);
+
+        public bool ShouldSerializeReportedUsageInputTokens() => ReportedUsageInputTokens > 0;
+
+        public bool ShouldSerializeReportedUsageOutputTokens() => ReportedUsageOutputTokens > 0;
+
+        public bool ShouldSerializeReportedUsageTotalTokens() => ReportedUsageTotalTokens > 0;
+
+        public bool ShouldSerializeReportedUsageCachedInputTokens() => ReportedUsageCachedInputTokens.HasValue;
 
         public IReadOnlyList<CopilotAgentBlockerSnapshot> AgentBlockers
         {
@@ -1245,6 +1298,34 @@ namespace ColorVision.Copilot
             OnPropertyChanged(nameof(ThinkingSummaryToolTip));
         }
 
+        internal bool SetReportedUsage(CopilotTokenUsage usage)
+        {
+            var inputTokens = Math.Max(0, usage.InputTokens);
+            var outputTokens = Math.Max(0, usage.OutputTokens);
+            var totalTokens = usage.HasAny ? usage.EffectiveTotalTokens : 0;
+            int? cachedInputTokens = usage.HasAny && usage.CachedInputTokens.HasValue
+                ? Math.Clamp(usage.CachedInputTokens.Value, 0, inputTokens)
+                : null;
+            if (ReportedUsageInputTokens == inputTokens
+                && ReportedUsageOutputTokens == outputTokens
+                && ReportedUsageTotalTokens == totalTokens
+                && ReportedUsageCachedInputTokens == cachedInputTokens)
+            {
+                return false;
+            }
+
+            ReportedUsageInputTokens = inputTokens;
+            ReportedUsageOutputTokens = outputTokens;
+            ReportedUsageTotalTokens = totalTokens;
+            ReportedUsageCachedInputTokens = cachedInputTokens;
+            return true;
+        }
+
+        internal bool ClearReportedUsage()
+        {
+            return SetReportedUsage(CopilotTokenUsage.Empty);
+        }
+
         public bool EnsureValid()
         {
             var changed = false;
@@ -1372,6 +1453,7 @@ namespace ColorVision.Copilot
                 OnAgentRunMetricsChanged();
                 changed = true;
             }
+            changed |= SetReportedUsage(IsUser ? CopilotTokenUsage.Empty : ReportedUsage);
 
             var validBlockers = (_agentBlockers ?? Array.Empty<CopilotAgentBlockerSnapshot>())
                 .Where(item => item?.IsStructurallyValid() == true)
@@ -2752,6 +2834,15 @@ namespace ColorVision.Copilot
                     message.RequestMode = lastUserRequestMode;
                     changed = true;
                 }
+            }
+            var lastAssistantMessage = Messages.LastOrDefault(message =>
+                !message.IsUser
+                && !message.WasResponseInterrupted);
+            if (lastAssistantMessage != null
+                && !lastAssistantMessage.ReportedUsage.HasAny
+                && LastUsage.HasAny)
+            {
+                changed |= lastAssistantMessage.SetReportedUsage(LastUsage);
             }
 
             foreach (var attachment in Attachments)

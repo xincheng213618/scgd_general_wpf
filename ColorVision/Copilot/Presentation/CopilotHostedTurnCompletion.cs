@@ -18,7 +18,7 @@ namespace ColorVision.Copilot
                 "tool_terminal_event_missing",
                 "The hosted turn completed before this tool call emitted an authoritative terminal result.");
             CopilotAssistantMessagePresenter.FinalizeMessage(assistantMessage);
-            SetUsage(conversation, usage);
+            SetUsage(conversation, assistantMessage, usage);
         }
 
         public static void CompleteCancellation(
@@ -56,6 +56,7 @@ namespace ColorVision.Copilot
                 : assistantMessage.RequestMode == CopilotAgentMode.Chat
                     ? "当前回答已停止。"
                     : "Agent 任务已取消；本轮新 checkpoint 已丢弃。");
+            assistantMessage.ClearReportedUsage();
             conversation.ClearLastUsage();
         }
 
@@ -84,6 +85,7 @@ namespace ColorVision.Copilot
             {
                 CopilotAssistantMessagePresenter.SetFallbackContent(assistantMessage, $"请求失败：{normalizedError}");
             }
+            assistantMessage.ClearReportedUsage();
             conversation.ClearLastUsage();
         }
 
@@ -104,12 +106,21 @@ namespace ColorVision.Copilot
                 : "排队的 Agent 任务已取消，未调用模型或工具。");
         }
 
-        private static void SetUsage(CopilotConversationRecord conversation, CopilotTokenUsage usage)
+        private static void SetUsage(
+            CopilotConversationRecord conversation,
+            CopilotChatMessage assistantMessage,
+            CopilotTokenUsage usage)
         {
             if (usage.HasAny)
+            {
+                assistantMessage.SetReportedUsage(usage);
                 conversation.SetLastUsage(usage);
+            }
             else
+            {
+                assistantMessage.ClearReportedUsage();
                 conversation.ClearLastUsage();
+            }
         }
 
         private static void CompleteThinking(CopilotChatMessage assistantMessage)
