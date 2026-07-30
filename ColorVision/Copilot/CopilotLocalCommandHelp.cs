@@ -23,6 +23,7 @@ namespace ColorVision.Copilot
                 CopilotLocalCommandKind.Statistics,
                 CopilotLocalCommandKind.Context,
                 CopilotLocalCommandKind.Permissions,
+                CopilotLocalCommandKind.Settings,
                 CopilotLocalCommandKind.Hooks,
                 CopilotLocalCommandKind.Skills,
                 CopilotLocalCommandKind.Mcp,

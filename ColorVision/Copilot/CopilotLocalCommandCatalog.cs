@@ -20,6 +20,7 @@ namespace ColorVision.Copilot
         Statistics,
         Context,
         Permissions,
+        Settings,
         InitializeProject,
         Skills,
         Mcp,
@@ -110,6 +111,34 @@ namespace ColorVision.Copilot
                 new("status", "显示当前文件范围、能力与审批策略"),
                 new("ask", "恢复受保护操作逐次确认"),
                 new("auto", "为下一任务或当前任务临时启用自动复核"),
+            ]),
+            new("/settings", "打开模型、Agent、MCP 或后端同步设置", CopilotLocalCommandKind.Settings, AcceptsArguments: true, Usage: "/settings [models|agent|mcp|sync]", Arguments:
+            [
+                new("models", "模型 Profile、Endpoint 与推理设置"),
+                new("agent", "Agent 默认行为与上下文预算"),
+                new("mcp", "MCP 服务与控制能力"),
+                new("sync", "后端配置同步"),
+            ]),
+            new("/config", "同 /settings；打开 Copilot 设置", CopilotLocalCommandKind.Settings, AcceptsArguments: true, Usage: "/config [models|agent|mcp|sync]", Arguments:
+            [
+                new("models", "模型 Profile、Endpoint 与推理设置"),
+                new("agent", "Agent 默认行为与上下文预算"),
+                new("mcp", "MCP 服务与控制能力"),
+                new("sync", "后端配置同步"),
+            ]),
+            new("/preferences", "同 /settings；打开 Copilot 设置", CopilotLocalCommandKind.Settings, AcceptsArguments: true, Usage: "/preferences [models|agent|mcp|sync]", Arguments:
+            [
+                new("models", "模型 Profile、Endpoint 与推理设置"),
+                new("agent", "Agent 默认行为与上下文预算"),
+                new("mcp", "MCP 服务与控制能力"),
+                new("sync", "后端配置同步"),
+            ]),
+            new("/prefs", "同 /settings；打开 Copilot 设置", CopilotLocalCommandKind.Settings, AcceptsArguments: true, Usage: "/prefs [models|agent|mcp|sync]", Arguments:
+            [
+                new("models", "模型 Profile、Endpoint 与推理设置"),
+                new("agent", "Agent 默认行为与上下文预算"),
+                new("mcp", "MCP 服务与控制能力"),
+                new("sync", "后端配置同步"),
             ]),
             new("/init", "为当前项目生成根级 AGENTS.md，不覆盖已有项目指令", CopilotLocalCommandKind.InitializeProject, Usage: "/init"),
             new("/hooks", "查看生效 Hook、模块来源与最近运行健康度", CopilotLocalCommandKind.Hooks, AvailableWhileAgentRuns: true, Usage: "/hooks"),

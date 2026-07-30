@@ -1961,6 +1961,9 @@ namespace ColorVision.Copilot
                 case CopilotLocalCommandKind.Permissions:
                     HandlePermissionsCommand(command, invocation.Arguments);
                     break;
+                case CopilotLocalCommandKind.Settings:
+                    OpenSettingsFromCommand(command, invocation.Arguments);
+                    break;
                 case CopilotLocalCommandKind.InitializeProject:
                     StartProjectInitialization(command);
                     break;
@@ -5897,6 +5900,18 @@ namespace ColorVision.Copilot
                 return;
 
             ReloadStateFromConfig(window.ActiveProfileId);
+        }
+
+        private void OpenSettingsFromCommand(CopilotLocalCommand command, string arguments)
+        {
+            if (!CopilotSettingsCommand.TryResolvePage(arguments, out var page))
+            {
+                ShowLocalCommandResult(command, CopilotSettingsCommand.Usage);
+                return;
+            }
+
+            DismissLocalCommandResult();
+            OpenSettings(page);
         }
 
         private void ReloadStateFromConfig(string? preferredProfileId)
