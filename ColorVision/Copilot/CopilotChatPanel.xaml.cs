@@ -642,6 +642,49 @@ namespace ColorVision.Copilot
 
         private async void PromptTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
         {
+            if (DataContext is CopilotChatViewModel promptHistoryViewModel
+                && promptHistoryViewModel.IsPromptHistorySearchOpen
+                && Keyboard.Modifiers == ModifierKeys.None)
+            {
+                if (e.Key == Key.Escape)
+                {
+                    promptHistoryViewModel.DismissPromptHistorySearch();
+                    MovePromptCaretToEnd();
+                    e.Handled = true;
+                    return;
+                }
+                if (e.Key is Key.Up or Key.Down
+                    && promptHistoryViewModel.TryNavigatePromptHistorySearch(previous: e.Key == Key.Up))
+                {
+                    PromptHistorySearchListBox.SelectedItem =
+                        promptHistoryViewModel.SelectedPromptHistorySearchResult;
+                    if (PromptHistorySearchListBox.SelectedItem != null)
+                        PromptHistorySearchListBox.ScrollIntoView(PromptHistorySearchListBox.SelectedItem);
+                    e.Handled = true;
+                    return;
+                }
+                if (e.Key is Key.Enter or Key.Tab)
+                {
+                    promptHistoryViewModel.TryCompletePromptHistorySearch();
+                    MovePromptCaretToEnd();
+                    e.Handled = true;
+                    return;
+                }
+            }
+
+            if (e.Key == Key.R
+                && Keyboard.Modifiers == ModifierKeys.Control
+                && DataContext is CopilotChatViewModel openHistoryViewModel)
+            {
+                if (openHistoryViewModel.IsPromptHistorySearchOpen
+                    || openHistoryViewModel.TryOpenPromptHistorySearch())
+                {
+                    MovePromptCaretToEnd();
+                    e.Handled = true;
+                }
+                return;
+            }
+
             if (Keyboard.Modifiers == ModifierKeys.None
                 && DataContext is CopilotChatViewModel referenceViewModel
                 && referenceViewModel.IsComposerReferenceMentionActive)
@@ -756,6 +799,12 @@ namespace ColorVision.Copilot
         private void ComposerReferenceSuggestionButton_Click(object sender, RoutedEventArgs e)
         {
             FocusPromptInput();
+        }
+
+        private void PromptHistorySearchResultButton_Click(object sender, RoutedEventArgs e)
+        {
+            FocusPromptInput();
+            MovePromptCaretToEnd();
         }
 
         private void EditMessageButton_Click(object sender, RoutedEventArgs e)

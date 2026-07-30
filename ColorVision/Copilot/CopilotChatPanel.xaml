@@ -2131,6 +2131,61 @@
                             BorderBrush="{DynamicResource PrimaryBrush}"
                             BorderThickness="1"
                             CornerRadius="9"
+                            Visibility="{Binding IsPromptHistorySearchOpen, Converter={StaticResource bool2VisibilityConverter}}">
+                        <DockPanel LastChildFill="True">
+                            <DockPanel DockPanel.Dock="Top" Margin="10,7,10,4">
+                                <TextBlock DockPanel.Dock="Right"
+                                           VerticalAlignment="Center"
+                                           FontSize="9"
+                                           Opacity="0.48"
+                                           Text="↑↓ 选择 · Enter 恢复 · Esc 关闭" />
+                                <TextBlock VerticalAlignment="Center"
+                                           FontSize="10"
+                                           FontWeight="SemiBold"
+                                           Opacity="0.68"
+                                           Text="{Binding PromptHistorySearchHeader}" />
+                            </DockPanel>
+                            <TextBlock DockPanel.Dock="Top"
+                                       Margin="10,3,10,7"
+                                       FontSize="9"
+                                       Opacity="0.54"
+                                       Text="{Binding PromptHistorySearchStatusText}"
+                                       TextWrapping="Wrap" />
+                            <ListBox x:Name="PromptHistorySearchListBox"
+                                     Background="Transparent"
+                                     BorderThickness="0"
+                                     ItemContainerStyle="{StaticResource ComposerPopoverListBoxItemStyle}"
+                                     ItemsSource="{Binding PromptHistorySearchResults}"
+                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                     ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                     SelectedItem="{Binding SelectedPromptHistorySearchResult, Mode=TwoWay}">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Button Padding="10,7"
+                                                Command="{Binding DataContext.SelectPromptHistorySearchResultCommand, Source={x:Reference Root}}"
+                                                CommandParameter="{Binding}"
+                                                Click="PromptHistorySearchResultButton_Click"
+                                                Style="{StaticResource ComposerPopoverButtonStyle}"
+                                                ToolTip="恢复到输入框，不会自动发送">
+                                            <TextBlock MaxWidth="760"
+                                                       FontSize="11"
+                                                       Text="{Binding Preview}"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       TextWrapping="NoWrap" />
+                                        </Button>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </DockPanel>
+                    </Border>
+
+                    <Border Grid.Row="4"
+                            MaxHeight="260"
+                            Margin="0,0,0,6"
+                            Style="{StaticResource CopilotInsetBorderStyle}"
+                            BorderBrush="{DynamicResource PrimaryBrush}"
+                            BorderThickness="1"
+                            CornerRadius="9"
                             Visibility="{Binding IsComposerReferencePopoverOpen, Converter={StaticResource bool2VisibilityConverter}}">
                         <DockPanel LastChildFill="True">
                             <DockPanel DockPanel.Dock="Top" Margin="10,7,10,4">

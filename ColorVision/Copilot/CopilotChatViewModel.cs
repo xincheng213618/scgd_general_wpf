@@ -55,6 +55,7 @@ namespace ColorVision.Copilot
         private readonly ObservableCollection<CopilotAttachmentItem> _emptyAttachments = new();
         private readonly ObservableCollection<ConfirmableAction> _pendingActions = new();
         private readonly ObservableCollection<CopilotComposerReferenceItem> _composerReferenceSuggestions = new();
+        private readonly ObservableCollection<CopilotPromptHistorySearchItem> _promptHistorySearchResults = new();
         private readonly Dictionary<string, CopilotQueuedFollowUp> _queuedFollowUpsByRunId = new(StringComparer.Ordinal);
         private readonly Dictionary<string, CopilotNonBlockingCancellationSource> _conversationTitleGenerations = new(StringComparer.Ordinal);
         private readonly HashSet<CopilotNonBlockingCancellationSource> _auxiliaryOperationCancellations = new();
@@ -90,9 +91,12 @@ namespace ColorVision.Copilot
         private string _conversationSearchText = string.Empty;
         private string _conversationFindText = string.Empty;
         private string _composerReferenceSessionKey = string.Empty;
+        private string _promptHistorySearchConversationId = string.Empty;
+        private string _promptHistorySearchDraft = string.Empty;
         private bool _isConversationFindOpen;
         private bool _isComposerReferenceMentionActive;
         private bool _isComposerReferenceSearchPending;
+        private bool _isPromptHistorySearchOpen;
         private bool _hasPendingMcpActions;
         private bool _hasRecentMcpFailures;
         private bool _isApplyingPromptHistory;
@@ -104,6 +108,7 @@ namespace ColorVision.Copilot
         private long _sideQuestionVersion;
         private long _composerReferenceRefreshVersion;
         private int _selectedLocalCommandSuggestionIndex = -1;
+        private CopilotPromptHistorySearchItem? _selectedPromptHistorySearchResult;
         private int _disposeState;
 
         public CopilotChatViewModel()
@@ -258,6 +263,9 @@ namespace ColorVision.Copilot
             SelectComposerReferenceCommand = new RelayCommand<CopilotComposerReferenceItem>(
                 reference => TryCompleteComposerReference(reference),
                 reference => reference != null);
+            SelectPromptHistorySearchResultCommand = new RelayCommand<CopilotPromptHistorySearchItem>(
+                result => TryCompletePromptHistorySearch(result),
+                result => IsPromptHistorySearchOpen && result != null);
             SetComposerAccessModeCommand = new RelayCommand(
                 mode =>
                 {
@@ -374,6 +382,8 @@ namespace ColorVision.Copilot
         public ObservableCollection<CopilotAttachmentItem> Attachments => SelectedConversation?.Attachments ?? _emptyAttachments;
 
         public ObservableCollection<CopilotComposerReferenceItem> ComposerReferenceSuggestions => _composerReferenceSuggestions;
+
+        public ObservableCollection<CopilotPromptHistorySearchItem> PromptHistorySearchResults => _promptHistorySearchResults;
 
         public ObservableCollection<ConfirmableAction> PendingActions => _pendingActions;
 
@@ -564,6 +574,8 @@ namespace ColorVision.Copilot
         public ICommand CompleteLocalCommandCommand { get; }
 
         public ICommand SelectComposerReferenceCommand { get; }
+
+        public ICommand SelectPromptHistorySearchResultCommand { get; }
 
         public ICommand SetComposerAccessModeCommand { get; }
 
@@ -765,6 +777,8 @@ namespace ColorVision.Copilot
         {
             get
             {
+                if (IsPromptHistorySearchOpen)
+                    return "✓";
                 if (HasExclusiveLocalOperation)
                     return "■";
                 if (IsViewingActiveRun)
@@ -784,6 +798,10 @@ namespace ColorVision.Copilot
         {
             get
             {
+                if (IsPromptHistorySearchOpen)
+                    return HasPromptHistorySearchResults
+                        ? "把选中的历史请求恢复到输入框"
+                        : "请修改历史搜索关键词";
                 if (_isCompactingConversation)
                     return "停止上下文压缩";
                 if (_fileAttachmentCts != null)
@@ -920,7 +938,10 @@ namespace ColorVision.Copilot
                 {
                     if (!_isApplyingPromptHistory)
                         _promptHistoryNavigator.Reset();
-                    UpdateSelectedConversationDraft(normalizedValue);
+                    if (IsPromptHistorySearchOpen)
+                        RefreshPromptHistorySearchResults();
+                    else
+                        UpdateSelectedConversationDraft(normalizedValue);
                     OnPropertyChanged(nameof(IsInputEmpty));
                     RefreshLocalCommandSuggestions();
                     OnPropertyChanged(nameof(CanSubmitUserQuestionAnswer));
@@ -935,11 +956,47 @@ namespace ColorVision.Copilot
 
         public int ComposerMaximumCharacters => CopilotConversationHistoryWindow.MaximumContentCharacterLimit;
 
+        public bool IsPromptHistorySearchOpen
+        {
+            get => _isPromptHistorySearchOpen;
+            private set
+            {
+                if (!SetProperty(ref _isPromptHistorySearchOpen, value))
+                    return;
+
+                OnPropertyChanged(nameof(InputPlaceholder));
+                OnPropertyChanged(nameof(PrimaryActionGlyph));
+                OnPropertyChanged(nameof(PrimaryActionToolTip));
+                OnPropertyChanged(nameof(HasPromptHistorySearchResults));
+                OnPropertyChanged(nameof(PromptHistorySearchHeader));
+                OnPropertyChanged(nameof(PromptHistorySearchStatusText));
+                RefreshLocalCommandSuggestions();
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+
+        public bool HasPromptHistorySearchResults =>
+            IsPromptHistorySearchOpen && PromptHistorySearchResults.Count > 0;
+
+        public string PromptHistorySearchHeader =>
+            $"历史请求 · {PromptHistorySearchResults.Count:N0}";
+
+        public string PromptHistorySearchStatusText => HasPromptHistorySearchResults
+            ? "继续输入可筛选；选中后只恢复到输入框，不会自动发送。"
+            : "没有匹配的可见历史请求；请修改关键词或按 Esc 关闭。";
+
+        public CopilotPromptHistorySearchItem? SelectedPromptHistorySearchResult
+        {
+            get => _selectedPromptHistorySearchResult;
+            set => SetProperty(ref _selectedPromptHistorySearchResult, value);
+        }
+
         public bool IsNavigatingPromptHistory => _promptHistoryNavigator.IsActive;
 
         public bool TryNavigatePromptHistory(bool previous)
         {
             if (IsEditingMessage
+                || IsPromptHistorySearchOpen
                 || !_promptHistoryNavigator.TryNavigate(SelectedConversation, InputText, previous, out var text))
             {
                 return false;
@@ -971,6 +1028,109 @@ namespace ColorVision.Copilot
             }
         }
 
+        public bool TryOpenPromptHistorySearch()
+        {
+            var conversation = SelectedConversation;
+            if (IsPromptHistorySearchOpen || IsBusy || IsEditingMessage || conversation == null)
+                return false;
+
+            var initialResults = CopilotPromptHistorySearch.Search(conversation.Messages, string.Empty);
+            if (initialResults.Count == 0)
+                return false;
+
+            _promptHistorySearchConversationId = conversation.Id;
+            _promptHistorySearchDraft = InputText;
+            _promptHistoryNavigator.Reset();
+            DismissComposerReferenceSuggestions();
+            IsPromptHistorySearchOpen = true;
+            if (InputText.Length > 0)
+                InputText = string.Empty;
+            else
+                RefreshPromptHistorySearchResults();
+            return true;
+        }
+
+        public void DismissPromptHistorySearch()
+        {
+            if (!IsPromptHistorySearchOpen)
+                return;
+
+            ClosePromptHistorySearch(_promptHistorySearchDraft);
+        }
+
+        public bool TryNavigatePromptHistorySearch(bool previous)
+        {
+            if (!HasPromptHistorySearchResults)
+                return false;
+
+            var currentIndex = SelectedPromptHistorySearchResult == null
+                ? -1
+                : PromptHistorySearchResults.IndexOf(SelectedPromptHistorySearchResult);
+            var nextIndex = CopilotSuggestionSelection.Move(
+                currentIndex,
+                PromptHistorySearchResults.Count,
+                previous);
+            SelectedPromptHistorySearchResult = PromptHistorySearchResults[nextIndex];
+            return true;
+        }
+
+        public bool TryCompletePromptHistorySearch(
+            CopilotPromptHistorySearchItem? result = null)
+        {
+            result ??= SelectedPromptHistorySearchResult ?? PromptHistorySearchResults.FirstOrDefault();
+            if (!IsPromptHistorySearchOpen
+                || result == null
+                || !PromptHistorySearchResults.Contains(result))
+            {
+                return false;
+            }
+
+            ClosePromptHistorySearch(result.Text);
+            return true;
+        }
+
+        private void RefreshPromptHistorySearchResults()
+        {
+            var conversation = SelectedConversation;
+            if (!IsPromptHistorySearchOpen
+                || conversation == null
+                || !string.Equals(
+                    conversation.Id,
+                    _promptHistorySearchConversationId,
+                    StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            var preferredText = SelectedPromptHistorySearchResult?.Text;
+            var results = CopilotPromptHistorySearch.Search(
+                conversation.Messages,
+                InputText);
+            PromptHistorySearchResults.Clear();
+            foreach (var result in results)
+                PromptHistorySearchResults.Add(result);
+
+            SelectedPromptHistorySearchResult = PromptHistorySearchResults.FirstOrDefault(item =>
+                string.Equals(item.Text, preferredText, StringComparison.Ordinal))
+                ?? PromptHistorySearchResults.FirstOrDefault();
+            OnPropertyChanged(nameof(HasPromptHistorySearchResults));
+            OnPropertyChanged(nameof(PromptHistorySearchHeader));
+            OnPropertyChanged(nameof(PromptHistorySearchStatusText));
+        }
+
+        private void ClosePromptHistorySearch(string restoredText)
+        {
+            IsPromptHistorySearchOpen = false;
+            _promptHistorySearchConversationId = string.Empty;
+            _promptHistorySearchDraft = string.Empty;
+            PromptHistorySearchResults.Clear();
+            SelectedPromptHistorySearchResult = null;
+            InputText = restoredText ?? string.Empty;
+            OnPropertyChanged(nameof(HasPromptHistorySearchResults));
+            OnPropertyChanged(nameof(PromptHistorySearchHeader));
+            OnPropertyChanged(nameof(PromptHistorySearchStatusText));
+        }
+
 
         public IReadOnlyList<CopilotReasoningOption> SelectedProfileReasoningOptions => CopilotReasoningCapabilities.GetOptions(SelectedProfile);
 
@@ -996,7 +1156,9 @@ namespace ColorVision.Copilot
         }
         private string _inputText = string.Empty;
 
-        public string InputPlaceholder => IsEditingMessage
+        public string InputPlaceholder => IsPromptHistorySearchOpen
+            ? "搜索当前会话的可见历史请求"
+            : IsEditingMessage
             ? "修改后按 Enter 重新发送"
             : IsViewingActiveRun
                 ? IsAnsweringUserQuestion
@@ -1023,7 +1185,7 @@ namespace ColorVision.Copilot
         {
             get
             {
-                if (IsEditingMessage)
+                if (IsEditingMessage || IsPromptHistorySearchOpen)
                     return Array.Empty<CopilotLocalCommand>();
 
                 var composerContext = ResolveLocalCommandComposerContext();
@@ -1196,6 +1358,12 @@ namespace ColorVision.Copilot
 
         private void RefreshComposerReferenceSuggestions()
         {
+            if (IsPromptHistorySearchOpen)
+            {
+                DismissComposerReferenceSuggestions();
+                return;
+            }
+
             var input = InputText;
             if (!CopilotComposerReferenceCatalog.TryParseMention(input, out var mention))
             {
@@ -1436,6 +1604,8 @@ namespace ColorVision.Copilot
                     return;
 
                 _isBusy = value;
+                if (value && IsPromptHistorySearchOpen)
+                    DismissPromptHistorySearch();
                 OnPropertyChanged();
                 OnPropertyChanged(nameof(CanSwitchConversation));
                 OnPropertyChanged(nameof(CanSelectProfile));
@@ -1580,6 +1750,9 @@ namespace ColorVision.Copilot
                 case CopilotLocalCommandKind.RewindConversation:
                     RewindConversation(command, invocation.Arguments);
                     break;
+                case CopilotLocalCommandKind.SearchPromptHistory:
+                    OpenPromptHistorySearch(command);
+                    break;
                 case CopilotLocalCommandKind.CopyResponse:
                     CopyAssistantResponse(command, invocation.Arguments);
                     break;
@@ -1620,6 +1793,19 @@ namespace ColorVision.Copilot
                     return false;
             }
             return true;
+        }
+
+        private void OpenPromptHistorySearch(CopilotLocalCommand command)
+        {
+            DismissLocalCommandResult();
+            if (TryOpenPromptHistorySearch())
+                return;
+
+            ShowLocalCommandResult(
+                command,
+                IsBusy
+                    ? "请先等待当前任务结束或停止任务，再搜索历史请求。"
+                    : "当前会话没有可搜索的可见历史请求。");
         }
 
         private void HandlePendingApprovalCommand(
@@ -2424,6 +2610,12 @@ namespace ColorVision.Copilot
             CopilotAgentMode? directMode,
             string? directRequestContent = null)
         {
+            if (directPrompt == null && IsPromptHistorySearchOpen)
+            {
+                TryCompletePromptHistorySearch();
+                return;
+            }
+
             var isDirectSubmission = directPrompt != null;
             var prompt = (directPrompt ?? InputText ?? string.Empty).Trim();
             var modelPrompt = (directRequestContent ?? prompt).Trim();
@@ -4144,6 +4336,11 @@ namespace ColorVision.Copilot
 
         private void ExecutePrimaryAction()
         {
+            if (IsPromptHistorySearchOpen)
+            {
+                TryCompletePromptHistorySearch();
+                return;
+            }
             if (_isCompactingConversation)
             {
                 _compactConversationCts?.RequestCancellation();
@@ -4172,6 +4369,11 @@ namespace ColorVision.Copilot
 
         private void ExecuteSendOrSteer()
         {
+            if (IsPromptHistorySearchOpen)
+            {
+                TryCompletePromptHistorySearch();
+                return;
+            }
             if (IsViewingActiveRun)
             {
                 if (IsAnsweringUserQuestion)
@@ -5160,6 +5362,7 @@ namespace ColorVision.Copilot
             RefreshAgentTasks();
             RefreshComposerTokenEstimate();
             RefreshConversationFind();
+            RefreshPromptHistorySearchResults();
             CommandManager.InvalidateRequerySuggested();
         }
 
@@ -5387,6 +5590,9 @@ namespace ColorVision.Copilot
 
         private void SelectConversation(CopilotConversationRecord? conversation, bool persist, string? preferredProfileId = null)
         {
+            if (IsPromptHistorySearchOpen)
+                DismissPromptHistorySearch();
+
             if (conversation != null && HasConversationSearchQuery && !FilteredConversations.Contains(conversation))
                 ConversationSearchText = string.Empty;
 

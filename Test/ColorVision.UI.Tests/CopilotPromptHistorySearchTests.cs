@@ -1,0 +1,85 @@
+using ColorVision.Copilot;
+
+namespace ColorVision.UI.Tests;
+
+public sealed class CopilotPromptHistorySearchTests
+{
+    [Fact]
+    public void HistoryCommandIsIdleOnlyAndRejectsArguments()
+    {
+        var command = CopilotLocalCommandCatalog.Parse("/history");
+
+        Assert.NotNull(command);
+        Assert.Equal(CopilotLocalCommandKind.SearchPromptHistory, command.Command.Kind);
+        Assert.False(command.Command.AvailableWhileAgentRuns);
+        Assert.False(command.Command.AcceptsArguments);
+        Assert.Null(CopilotLocalCommandCatalog.Parse("/history camera"));
+        Assert.False(CopilotLocalCommandAvailabilityPolicy.CanExecute(
+            command.Command,
+            CopilotLocalCommandComposerContext.ActiveRun));
+    }
+
+    [Fact]
+    public void EmptyQueryReturnsRecentUniqueVisibleUserPromptsOnly()
+    {
+        var hidden = new CopilotChatMessage(CopilotChatRole.User, "Visible request")
+        {
+            RequestContent = "hidden request with private attachment body",
+        };
+        var messages = new[]
+        {
+            new CopilotChatMessage(CopilotChatRole.User, "First request"),
+            new CopilotChatMessage(CopilotChatRole.Assistant, "Assistant answer"),
+            new CopilotChatMessage(CopilotChatRole.User, "Repeated request"),
+            hidden,
+            new CopilotChatMessage(CopilotChatRole.User, "Repeated request"),
+        };
+
+        var results = CopilotPromptHistorySearch.Search(messages, null);
+
+        Assert.Equal(
+            ["Repeated request", "Visible request", "First request"],
+            results.Select(item => item.Text));
+        Assert.DoesNotContain(results, item => item.Text.Contains("hidden request", StringComparison.Ordinal));
+        Assert.DoesNotContain(results, item => item.Preview.Contains("private attachment", StringComparison.Ordinal));
+        Assert.DoesNotContain(results, item => item.Text.Contains("Assistant answer", StringComparison.Ordinal));
+    }
+
+    [Theory]
+    [InlineData("camera workflow")]
+    [InlineData("ccw")]
+    [InlineData("CAMERA")]
+    public void SearchSupportsTermsSubsequencesAndCaseInsensitiveMatches(string query)
+    {
+        var messages = new[]
+        {
+            new CopilotChatMessage(CopilotChatRole.User, "Unrelated diagnostics"),
+            new CopilotChatMessage(CopilotChatRole.User, "Camera calibration workflow"),
+        };
+
+        var result = Assert.Single(CopilotPromptHistorySearch.Search(messages, query));
+
+        Assert.Equal("Camera calibration workflow", result.Text);
+    }
+
+    [Fact]
+    public void SearchBoundsResultsAndSingleLinePreviewsWithoutChangingRestoredText()
+    {
+        var longPrompt = "Line one\r\n" + new string('x', 200);
+        var messages = Enumerable.Range(0, CopilotPromptHistorySearch.MaximumResults + 4)
+            .Select(index => new CopilotChatMessage(
+                CopilotChatRole.User,
+                index == 0 ? longPrompt : $"Prompt {index}"))
+            .ToArray();
+
+        var all = CopilotPromptHistorySearch.Search(messages, string.Empty);
+        var longResult = Assert.Single(CopilotPromptHistorySearch.Search(messages, "Line one"));
+
+        Assert.Equal(CopilotPromptHistorySearch.MaximumResults, all.Count);
+        Assert.Equal(longPrompt, longResult.Text);
+        Assert.DoesNotContain('\r', longResult.Preview);
+        Assert.DoesNotContain('\n', longResult.Preview);
+        Assert.EndsWith("…", longResult.Preview, StringComparison.Ordinal);
+        Assert.True(longResult.Preview.Length <= CopilotPromptHistorySearch.MaximumPreviewCharacters + 1);
+    }
+}
