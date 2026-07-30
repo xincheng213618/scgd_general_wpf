@@ -31,6 +31,7 @@ namespace ColorVision.Copilot
         FindInConversation,
         SelectModel,
         SelectReasoning,
+        SelectPersonality,
         NewConversation,
         ClearConversation,
         ForkConversation,
@@ -119,6 +120,12 @@ namespace ColorVision.Copilot
             new("/model", "选择当前会话使用的模型 Profile；可补充 Profile 名或模型 ID", CopilotLocalCommandKind.SelectModel, AcceptsArguments: true, Usage: "/model [Profile 名|模型 ID]"),
             new("/reasoning", "选择当前模型 Profile 的推理强度；可补充受支持级别", CopilotLocalCommandKind.SelectReasoning, AcceptsArguments: true, Usage: "/reasoning [auto|off|on|high|max]"),
             new("/effort", "同 /reasoning；调整当前模型 Profile 的推理强度", CopilotLocalCommandKind.SelectReasoning, AcceptsArguments: true, Usage: "/effort [auto|off|on|high|max]"),
+            new("/personality", "设置当前会话后续回答的默认沟通风格", CopilotLocalCommandKind.SelectPersonality, AcceptsArguments: true, Usage: "/personality [friendly|pragmatic|none]", Arguments:
+            [
+                new("friendly", "友好协作，同时保持直接和证据优先"),
+                new("pragmatic", "结果优先，简洁直接，只说明关键权衡"),
+                new("none", "不附加会话级沟通风格"),
+            ]),
             new("/new", "开始一个新的 Copilot 会话", CopilotLocalCommandKind.NewConversation, Usage: "/new"),
             new("/clear", "清空当前上下文并开始新会话；可先命名旧会话", CopilotLocalCommandKind.ClearConversation, AcceptsArguments: true, Usage: "/clear [旧会话名称]"),
             new("/fork", "复制当前会话到新会话分支；Agent 运行时创建可见快照", CopilotLocalCommandKind.ForkConversation, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/fork [新会话名称]"),

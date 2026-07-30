@@ -30,7 +30,7 @@ Runtime 使用 Harness 的 `ChatHistoryProvider.InvokedAsync` 正式持久化边
 
 检查点具备以下约束：
 
-- 使用 Profile ID、协议、Base URL、模型和系统提示的不可逆指纹做兼容性校验；配置变化后自动新建 Session。
+- 使用 Profile ID、协议、Base URL、模型和系统提示的不可逆指纹做兼容性校验；配置变化后自动新建 Session。`/personality` 作为会话级持久状态追加到请求提示，因此同一风格可继续原 Session，切换风格则保留 checkpoint 语义记忆并进入 replan，不直接复用旧提示身份下的计划。设计采用 [Codex `/personality`](https://learn.chatgpt.com/docs/developer-commands?surface=cli) 的 `friendly`、`pragmatic`、`none` 选择，并沿用 [Claude Code output styles](https://code.claude.com/docs/en/output-styles) 与 grok-build `persona_instructions` 的共同边界：沟通风格属于系统提示身份，不伪装成用户消息，也不能扩大任务、权限或安全边界。
 - 单个检查点上限 4,000,000 字符，超限或 JSON 损坏时不恢复。
 - 发起新请求时保留上一安全点，只有新的安全点成功保存后才替换；如果应用中途退出，启动归一化会把开放 run 标记为 `Interrupted`，由用户显式继续，不自动执行。
 - Chat 模式和重新生成回答不会复用 Framework 检查点。

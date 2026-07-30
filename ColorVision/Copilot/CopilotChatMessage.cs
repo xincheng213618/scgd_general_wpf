@@ -2522,6 +2522,16 @@ namespace ColorVision.Copilot
         }
         private string _profileDisplayName = string.Empty;
 
+        public CopilotResponsePersonality ResponsePersonality
+        {
+            get => _responsePersonality;
+            set => SetProperty(ref _responsePersonality, value);
+        }
+        private CopilotResponsePersonality _responsePersonality;
+
+        public bool ShouldSerializeResponsePersonality() =>
+            ResponsePersonality != CopilotResponsePersonality.None;
+
         [JsonIgnore]
         public CopilotAgentAccessMode AccessMode => _accessContext.Mode;
 
@@ -2787,6 +2797,11 @@ namespace ColorVision.Copilot
             if (_draftText == null)
             {
                 DraftText = string.Empty;
+                changed = true;
+            }
+            if (!Enum.IsDefined(ResponsePersonality))
+            {
+                ResponsePersonality = CopilotResponsePersonality.None;
                 changed = true;
             }
             if (_legacyAccessModeLoaded)

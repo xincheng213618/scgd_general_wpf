@@ -1588,6 +1588,9 @@ namespace ColorVision.Copilot
                 case CopilotLocalCommandKind.SelectReasoning:
                     SelectReasoningMode(command, invocation.Arguments);
                     break;
+                case CopilotLocalCommandKind.SelectPersonality:
+                    SelectResponsePersonality(command, invocation.Arguments);
+                    break;
                 case CopilotLocalCommandKind.NewConversation:
                     DismissLocalCommandResult();
                     StartNewChat();
@@ -1950,7 +1953,7 @@ namespace ColorVision.Copilot
             }
             if (CopilotAgentTaskContinuityPolicy.HasAvailableStructuredRecovery(
                 conversation,
-                profile,
+                CreateConversationRequestProfile(profile, conversation),
                 CopilotCapabilityCatalog.Shared.GetSnapshot()))
             {
                 ShowLocalCommandResult(
@@ -2299,7 +2302,7 @@ namespace ColorVision.Copilot
             if (HasSideQuestion)
                 DismissSideQuestion();
 
-            var requestProfile = CopilotResponsePresentationGuidance.CreateRequestProfile(profile);
+            var requestProfile = CreateConversationRequestProfile(profile, conversation);
             var conversationHistory = CopilotConversationRequestBuilder.CaptureHistorySnapshot(conversation);
             var historyLimits = ResolveConversationHistoryLimits(requestProfile);
             var cancellation = BeginAuxiliaryOperation();
@@ -2412,7 +2415,7 @@ namespace ColorVision.Copilot
                 return;
             }
 
-            var requestProfile = CopilotResponsePresentationGuidance.CreateRequestProfile(SelectedProfile);
+            var requestProfile = CreateConversationRequestProfile(SelectedProfile, SelectedConversation);
             if (!TryValidatePromptBudget(modelPrompt, requestMode, requestProfile))
                 return;
             var requestAttachments = isDirectSubmission
@@ -3783,7 +3786,7 @@ namespace ColorVision.Copilot
                 + CopilotConversationGoal.NormalizeReason(reason)
                 + Environment.NewLine
                 + "根据现有证据选择下一项最有价值的工作并验证结果；不要把持续目标当作工具、写入、审批复用或扩大范围的授权。";
-            var requestProfileSnapshot = CopilotResponsePresentationGuidance.CreateRequestProfile(requestProfile);
+            var requestProfileSnapshot = requestProfile.Clone();
             var submissionContext = CaptureHostedTurnSnapshot(
                 conversation,
                 attachmentOverride: conversation.Attachments);
@@ -4062,6 +4065,45 @@ namespace ColorVision.Copilot
                 + "该设置保存到当前模型 Profile，并用于后续请求。");
         }
 
+        private void SelectResponsePersonality(CopilotLocalCommand command, string query)
+        {
+            var conversation = EnsureConversation();
+            var normalizedQuery = query.Trim();
+            if (normalizedQuery.Length == 0)
+            {
+                ShowLocalCommandResult(
+                    command,
+                    $"当前会话风格：{CopilotResponsePersonalitySelection.GetDisplayName(conversation.ResponsePersonality)}"
+                    + Environment.NewLine
+                    + "可用风格：friendly、pragmatic、none。");
+                return;
+            }
+            if (!CopilotResponsePersonalitySelection.TryParse(normalizedQuery, out var personality))
+            {
+                ShowLocalCommandResult(
+                    command,
+                    $"不支持会话风格“{normalizedQuery}”。"
+                    + Environment.NewLine
+                    + "可用风格：friendly、pragmatic、none。");
+                return;
+            }
+
+            var previousPersonality = conversation.ResponsePersonality;
+            conversation.ResponsePersonality = personality;
+            conversation.Touch();
+            PersistState(immediate: true);
+            var changeLabel = previousPersonality == personality ? "保持" : "已设置";
+            var checkpointNote = conversation.AgentSessionCheckpoint == null || previousPersonality == personality
+                ? string.Empty
+                : Environment.NewLine + "已有 Agent checkpoint 会保留；继续任务时将按新风格重新规划，不会直接复用旧提示身份。";
+            ShowLocalCommandResult(
+                command,
+                $"当前会话风格{changeLabel}为“{CopilotResponsePersonalitySelection.GetDisplayName(personality)}”（{CopilotResponsePersonalitySelection.GetCommandToken(personality)}）。"
+                + Environment.NewLine
+                + "它只影响后续回答的默认表达，不改变任务范围、权限、安全规则、证据要求或用户明确指定的格式。"
+                + checkpointNote);
+        }
+
         private CopilotConversationRecord ResolveNewConversationTarget()
         {
             var profile = SelectedProfile ?? ResolveProfile(_state.ActiveProfileId) ?? _config.GetPreferredDefaultProfile();
@@ -4220,7 +4262,7 @@ namespace ColorVision.Copilot
                 return false;
             }
 
-            var requestProfile = CopilotResponsePresentationGuidance.CreateRequestProfile(profile);
+            var requestProfile = CreateConversationRequestProfile(profile, conversation);
             var submissionContext = CaptureHostedTurnSnapshot(conversation, attachmentOverride: conversation.Attachments);
             if (!TryValidateComposerAttachments(submissionContext.Attachments))
                 return false;
@@ -4488,7 +4530,7 @@ namespace ColorVision.Copilot
             return CopilotAgentRecoveryPolicy.Evaluate(
                 message,
                 SelectedConversation.AgentSessionCheckpoint,
-                SelectedProfile,
+                CreateConversationRequestProfile(SelectedProfile, SelectedConversation),
                 CopilotCapabilityCatalog.Shared.GetSnapshot(),
                 CopilotToolExecutor.GetSharedHookSurfaceSnapshot()).IsAvailable;
         }
@@ -4498,10 +4540,12 @@ namespace ColorVision.Copilot
             if (!CanContinueAgentTasks(message))
                 return;
 
+            var conversation = SelectedConversation!;
+            var profile = SelectedProfile!;
             var decision = CopilotAgentRecoveryPolicy.Evaluate(
                 message,
-                SelectedConversation?.AgentSessionCheckpoint,
-                SelectedProfile,
+                conversation.AgentSessionCheckpoint,
+                CreateConversationRequestProfile(profile, conversation),
                 CopilotCapabilityCatalog.Shared.GetSnapshot(),
                 CopilotToolExecutor.GetSharedHookSurfaceSnapshot());
             if (!decision.IsAvailable)
@@ -4710,7 +4754,7 @@ namespace ColorVision.Copilot
             return profile?.IsConfigured == true && CopilotAgentRecoveryPolicy.Evaluate(
                 task.Message,
                 task.Conversation.AgentSessionCheckpoint,
-                profile,
+                CreateConversationRequestProfile(profile, task.Conversation),
                 CopilotCapabilityCatalog.Shared.GetSnapshot(),
                 CopilotToolExecutor.GetSharedHookSurfaceSnapshot()).IsAvailable;
         }
@@ -5480,6 +5524,15 @@ namespace ColorVision.Copilot
         {
             var profile = SelectedProfile ?? ResolveProfile(_state.ActiveProfileId) ?? _config.GetPreferredDefaultProfile();
             return CopilotConversationService.Create(Conversations, profile);
+        }
+
+        private static CopilotProfileConfig CreateConversationRequestProfile(
+            CopilotProfileConfig profile,
+            CopilotConversationRecord? conversation)
+        {
+            return CopilotResponsePresentationGuidance.CreateRequestProfile(
+                profile,
+                conversation?.ResponsePersonality ?? CopilotResponsePersonality.None);
         }
 
         private void UpdateConversationMetadata(CopilotConversationRecord conversation, bool touch)
@@ -6640,7 +6693,7 @@ namespace ColorVision.Copilot
                 && !CopilotAgentTaskContinuityPolicy.HasAvailableStructuredRecovery(
                     conversation,
                     assistantMessage,
-                    SelectedProfile,
+                    CreateConversationRequestProfile(SelectedProfile, conversation),
                     CopilotCapabilityCatalog.Shared.GetSnapshot());
         }
 
@@ -6657,7 +6710,7 @@ namespace ColorVision.Copilot
             if (CopilotAgentTaskContinuityPolicy.HasAvailableStructuredRecovery(
                 conversation,
                 assistantMessage,
-                SelectedProfile,
+                CreateConversationRequestProfile(SelectedProfile, conversation),
                 CopilotCapabilityCatalog.Shared.GetSnapshot()))
             {
                 return;
@@ -6668,7 +6721,7 @@ namespace ColorVision.Copilot
             if (string.IsNullOrWhiteSpace(prompt))
                 return;
 
-            var requestProfile = CopilotResponsePresentationGuidance.CreateRequestProfile(SelectedProfile);
+            var requestProfile = CreateConversationRequestProfile(SelectedProfile, conversation);
             if (!TryValidateComposerCharacterLimit(modelPrompt)
                 || !TryValidatePromptBudget(modelPrompt, userMessage.RequestMode, requestProfile))
             {

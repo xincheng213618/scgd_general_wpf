@@ -51,6 +51,7 @@ namespace ColorVision.Copilot
             [
                 CopilotLocalCommandKind.SelectModel,
                 CopilotLocalCommandKind.SelectReasoning,
+                CopilotLocalCommandKind.SelectPersonality,
             ]),
         ];
 

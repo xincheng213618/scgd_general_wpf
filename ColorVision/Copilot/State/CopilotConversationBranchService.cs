@@ -109,6 +109,7 @@ namespace ColorVision.Copilot
                 IsPinned = false,
                 ProfileDisplayName = source.ProfileDisplayName,
                 ProfileId = source.ProfileId,
+                ResponsePersonality = source.ResponsePersonality,
                 Title = BuildBranchTitle(source.Title, requestedTitle),
                 UpdatedAt = DateTime.Now,
                 BranchOrigin = new CopilotConversationBranchOrigin

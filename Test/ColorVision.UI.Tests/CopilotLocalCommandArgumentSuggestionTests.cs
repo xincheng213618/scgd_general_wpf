@@ -54,8 +54,8 @@ public sealed class CopilotLocalCommandArgumentSuggestionTests
     public void HelpArgumentsCoverEveryFixedCommandWithoutDuplicatingSlash()
     {
         var all = CopilotLocalCommandCatalog.Suggest("/help ");
-        var filtered = CopilotLocalCommandCatalog.Suggest("/help per");
-        var filteredWithSlash = CopilotLocalCommandCatalog.Suggest("/help /per");
+        var filtered = CopilotLocalCommandCatalog.Suggest("/help perm");
+        var filteredWithSlash = CopilotLocalCommandCatalog.Suggest("/help /perm");
 
         Assert.Equal(CopilotLocalCommandCatalog.All.Count, all.Count);
         Assert.Contains(all, item => item.Name == "/help permissions");
@@ -161,6 +161,21 @@ public sealed class CopilotLocalCommandArgumentSuggestionTests
     }
 
     [Fact]
+    public void PersonalityCommandSuggestsOnlySupportedConversationStyles()
+    {
+        var invocation = Assert.IsType<CopilotLocalCommandInvocation>(
+            CopilotLocalCommandCatalog.Parse("/personality pragmatic"));
+        var suggestions = CopilotLocalCommandCatalog.Suggest("/personality ");
+
+        Assert.Equal(CopilotLocalCommandKind.SelectPersonality, invocation.Command.Kind);
+        Assert.Equal("pragmatic", invocation.Arguments);
+        Assert.False(invocation.Command.AvailableWhileAgentRuns);
+        Assert.Equal(
+            ["/personality friendly", "/personality pragmatic", "/personality none"],
+            suggestions.Select(item => item.Name));
+    }
+
+    [Fact]
     public void ActiveRunSuggestionsOnlyIncludeExecutableFixedCommands()
     {
         var suggestions = CopilotLocalCommandCatalog.Suggest(
@@ -175,6 +190,7 @@ public sealed class CopilotLocalCommandArgumentSuggestionTests
         Assert.DoesNotContain(suggestions, item => item.Name == "/diff");
         Assert.DoesNotContain(suggestions, item => item.Name == "/init");
         Assert.DoesNotContain(suggestions, item => item.Name == "/mention");
+        Assert.DoesNotContain(suggestions, item => item.Name == "/personality");
     }
 
     [Fact]

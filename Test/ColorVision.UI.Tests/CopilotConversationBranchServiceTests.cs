@@ -16,6 +16,7 @@ public sealed class CopilotConversationBranchServiceTests
             DraftText = "unsent follow-up",
             ProfileId = "profile-1",
             ProfileDisplayName = "Test Profile",
+            ResponsePersonality = CopilotResponsePersonality.Pragmatic,
             AgentSessionCheckpoint = new CopilotAgentSessionCheckpoint(),
             Goal = CopilotConversationGoal.Create(
                     "Inspect the camera workflow until every stage is verified",
@@ -66,6 +67,7 @@ public sealed class CopilotConversationBranchServiceTests
         Assert.False(branch.IsPinned);
         Assert.Equal(source.ProfileId, branch.ProfileId);
         Assert.Equal(source.ProfileDisplayName, branch.ProfileDisplayName);
+        Assert.Equal(source.ResponsePersonality, branch.ResponsePersonality);
         Assert.Equal(2, branch.Messages.Count);
         Assert.Equal(source.Messages.Select(message => message.Content), branch.Messages.Select(message => message.Content));
         Assert.DoesNotContain(branch.Messages, message => source.Messages.Any(sourceMessage => sourceMessage.Id == message.Id));
