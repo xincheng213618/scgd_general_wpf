@@ -6,7 +6,7 @@ namespace ColorVision.Copilot
 {
     public sealed class CopilotChatState
     {
-        public const int CurrentSchemaVersion = 20;
+        public const int CurrentSchemaVersion = 21;
 
         public int SchemaVersion { get; set; } = CurrentSchemaVersion;
 
@@ -20,6 +20,10 @@ namespace ColorVision.Copilot
 
         public bool ShouldSerializeIsAgentTaskPanelExpanded() => !IsAgentTaskPanelExpanded;
 
+        public bool ShowMessageTimestamps { get; set; } = true;
+
+        public bool ShouldSerializeShowMessageTimestamps() => !ShowMessageTimestamps;
+
         public ObservableCollection<CopilotQueuedFollowUpRecoveryRecord> QueuedFollowUpRecoveries { get; set; } = new();
 
         public bool ShouldSerializeQueuedFollowUpRecoveries() => QueuedFollowUpRecoveries?.Count > 0;
@@ -30,6 +34,15 @@ namespace ColorVision.Copilot
         {
             IsAgentTaskPanelExpanded = !IsAgentTaskPanelExpanded;
             return IsAgentTaskPanelExpanded;
+        }
+
+        internal bool SetShowMessageTimestamps(bool show)
+        {
+            if (ShowMessageTimestamps == show)
+                return false;
+
+            ShowMessageTimestamps = show;
+            return true;
         }
 
         public bool EnsureInitialized(CopilotConfig config)

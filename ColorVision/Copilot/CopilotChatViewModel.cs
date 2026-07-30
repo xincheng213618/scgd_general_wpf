@@ -331,6 +331,8 @@ namespace ColorVision.Copilot
         public string AgentTaskPanelToolTip =>
             $"{(IsAgentTaskPanelExpanded ? "收起" : "展开")} Agent 任务（Ctrl+T）";
 
+        public bool ShowMessageTimestamps => _state.ShowMessageTimestamps;
+
         public ObservableCollection<CopilotQueuedFollowUp> QueuedFollowUps { get; } = new();
 
         public bool HasQueuedFollowUps => QueuedFollowUps.Count > 0;
@@ -1926,6 +1928,9 @@ namespace ColorVision.Copilot
                     break;
                 case CopilotLocalCommandKind.Transcript:
                     ChangeTranscriptExpansion(command, invocation.Arguments);
+                    break;
+                case CopilotLocalCommandKind.Timestamps:
+                    ChangeMessageTimestampVisibility(command, invocation.Arguments);
                     break;
                 case CopilotLocalCommandKind.CopyResponse:
                     CopyAssistantResponse(command, invocation.Arguments);
@@ -5218,6 +5223,29 @@ namespace ColorVision.Copilot
             OnPropertyChanged(nameof(AgentTaskPanelToggleGlyph));
             OnPropertyChanged(nameof(AgentTaskPanelToolTip));
             PersistState();
+        }
+
+        private void ChangeMessageTimestampVisibility(CopilotLocalCommand command, string arguments)
+        {
+            if (!CopilotMessageTimestampPreference.TryResolve(
+                    arguments,
+                    ShowMessageTimestamps,
+                    out var show))
+            {
+                ShowLocalCommandResult(command, CopilotMessageTimestampPreference.Usage);
+                return;
+            }
+
+            if (_state.SetShowMessageTimestamps(show))
+            {
+                OnPropertyChanged(nameof(ShowMessageTimestamps));
+                PersistState(immediate: true);
+            }
+
+            ShowLocalCommandResult(
+                command,
+                $"消息时间戳已{(show ? "显示" : "隐藏")}。\n\n"
+                + "该偏好只改变本地界面，不修改聊天内容，也不调用模型或工具。");
         }
 
         private bool CanResumeAgentTask(CopilotAgentTaskSummary? task)

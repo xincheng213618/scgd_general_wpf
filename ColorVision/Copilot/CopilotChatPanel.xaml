@@ -1336,7 +1336,8 @@
                                                            VerticalAlignment="Center"
                                                            FontSize="10"
                                                            Style="{StaticResource UserMessageMetaTextStyle}"
-                                                           Text="{Binding TimeLabel}" />
+                                                           Text="{Binding TimeLabel}"
+                                                           Visibility="{Binding DataContext.ShowMessageTimestamps, Source={x:Reference Root}, Converter={StaticResource bool2VisibilityConverter}}" />
                                                 <StackPanel DockPanel.Dock="Right"
                                                             HorizontalAlignment="Right"
                                                             Orientation="Horizontal">
@@ -1651,6 +1652,13 @@
                                                     </Style.Triggers>
                                                 </Style>
                                             </StackPanel.Style>
+                                            <TextBlock Margin="0,0,8,0"
+                                                       VerticalAlignment="Center"
+                                                       FontSize="10"
+                                                       Foreground="{DynamicResource GlobalTextBrush}"
+                                                       Opacity="0.52"
+                                                       Text="{Binding TimeLabel}"
+                                                       Visibility="{Binding DataContext.ShowMessageTimestamps, Source={x:Reference Root}, Converter={StaticResource bool2VisibilityConverter}}" />
                                             <Button Style="{StaticResource MessageActionButtonStyle}"
                                                     Command="{Binding DataContext.CopyMessageCommand, Source={x:Reference Root}}"
                                                     CommandParameter="{Binding}"

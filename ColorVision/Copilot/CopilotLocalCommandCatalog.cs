@@ -35,6 +35,7 @@ namespace ColorVision.Copilot
         NavigateTurn,
         SearchPromptHistory,
         Transcript,
+        Timestamps,
         CopyResponse,
         ExportConversation,
         FindInConversation,
@@ -136,6 +137,11 @@ namespace ColorVision.Copilot
             [
                 new("expand", "展开全部已有推理与工具活动"),
                 new("collapse", "收起全部已有推理与工具活动"),
+            ]),
+            new("/timestamps", "显示或隐藏用户与助手消息的本地时间戳", CopilotLocalCommandKind.Timestamps, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/timestamps [on|off]", Arguments:
+            [
+                new("on", "显示用户与助手消息时间"),
+                new("off", "隐藏用户与助手消息时间"),
             ]),
             new("/copy", "复制最近已完成的回答；可用 /copy 2 选择倒数第二条", CopilotLocalCommandKind.CopyResponse, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/copy [N]"),
             new("/export", "复制当前会话的可见 Markdown；可补充文件名并打开保存窗口", CopilotLocalCommandKind.ExportConversation, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/export [文件名.md|文件名.txt]"),
