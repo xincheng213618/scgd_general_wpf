@@ -39,12 +39,15 @@
 
 | 包内文件 | 作用 |
 | --- | --- |
-| `flow.stn` | 流程画布二进制数据 |
-| `manifest.json` | `FlowPackageManifest`，记录流程名、版本和关联模板 |
+| `flow.stn` | 原样保存的 STND v1 画布二进制数据；`.cvflow` 升级不会修改其格式 |
+| `manifest.json` | 包版本、流程哈希和关联模板元数据 |
+| `templates/<sha256>.json` | v3 起按内容哈希存放的关联模板载荷，相同载荷在包内只保存一次 |
 
 导出时 `FlowPackageHelper.CollectTemplatesForExport(...)` 会扫描 STN 里的模板引用属性，如 `TempName`、`POITempName`、`SavePOITempName`、`OutputTemplateName`、`ModelName` 等，并继续扫描模板内容里的二级引用。
 
-导入时会读取包、创建关联模板、处理重名映射、改写 STN 模板引用，再把最终 STN 转成 Base64 作为新流程模板内容。
+`.cvflow` v3 是 ColorVision 自有的可演进包格式：`flow.stn` 和每个模板载荷都有 SHA-256 校验，导入还会有上限地完整解压并验证 STND v1；未知的未来大版本会明确拒绝，v1/v2 的 manifest 内联模板仍可导入。
+
+导入时先校验完整包，再以“模板类型 + 规范化有效内容”匹配本地模板：同名同内容直接复用，异名同内容映射到已有模板，同名不同内容才创建带流程名的冲突副本；重复导入同一个包会复用第一次产生的副本。发生名称映射后，会同时改写关联模板的二级引用和 STN 节点引用，再把最终 STN 转成 Base64 作为新流程模板内容。
 
 ## 运行链路
 
@@ -63,8 +66,8 @@
 | 场景 | 必验项 |
 | --- | --- |
 | 保存流程 | 新增节点、选择模板、保存、关闭、重开后参数仍在 |
-| 单流程导出 | `.cvflow` 包内有 `flow.stn` 和 `manifest.json` |
-| 单流程导入 | 同名模板环境下能重命名冲突模板并更新节点引用 |
+| 单流程导出 | `.cvflow` 包内有未改写的 `flow.stn`、`manifest.json` 和内容寻址模板载荷 |
+| 单流程导入 | 相同模板不重复创建；内容冲突时能重命名副本并更新节点及二级模板引用 |
 | 多流程导出 | zip 内是多个 `.stn`，不要误认为包含关联模板 |
 | 调度执行 | Quartz `FlowJob` 能启动流程、等待后处理完成，并在 `context.Result` 返回最终 `FlowJobResult` |
 | 项目维护 | `RunFinalized` 后批次状态、耗时、节点尝试、Incident、后处理和最终结果都能追踪 |

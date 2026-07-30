@@ -1,4 +1,5 @@
 ﻿using ColorVision.Database;
+using ColorVision.Engine.Templates.Flow;
 using ColorVision.UI.Extension;
 using Newtonsoft.Json;
 using SqlSugar;
@@ -12,7 +13,9 @@ using System.Windows;
 
 namespace ColorVision.Engine.Templates.POI
 {
-    public class TemplatePoi : ITemplate<PoiParam>, IITemplateLoad
+    public class TemplatePoi : ITemplate<PoiParam>,
+        IITemplateLoad,
+        IFlowPackageTemplateCodec
     {
         public static ObservableCollection<TemplateModel<PoiParam>> Params { get; set; } = new ObservableCollection<TemplateModel<PoiParam>>();
 
@@ -155,6 +158,94 @@ namespace ColorVision.Engine.Templates.POI
         {
             PoiParam.LoadPoiDetailFromDB(TemplateParams[index].Value);
             base.Export(index);
+        }
+
+        public object CaptureFlowPackageValue(int index)
+        {
+            PoiParam value = TemplateParams[index].Value;
+            IReadOnlyList<PoiPoint> persistedPoints =
+                ReadPoiPointsForFlowPackage(value.Id);
+            return CreatePortableSnapshot(value, persistedPoints);
+        }
+
+        private static IReadOnlyList<PoiPoint> ReadPoiPointsForFlowPackage(
+            int templateId)
+        {
+            if (templateId <= 0)
+                throw new InvalidDataException(
+                    $"POI 模板 ID {templateId} 无效，无法确认模板明细是否完整。");
+
+            try
+            {
+                using var db = new SqlSugarClient(
+                    new ConnectionConfig
+                    {
+                        ConnectionString =
+                            MySqlControl.GetConnectionString(),
+                        DbType = SqlSugar.DbType.MySql,
+                        IsAutoCloseConnection = true
+                    });
+                List<PoiDetailModel> details = db
+                    .Queryable<PoiDetailModel>()
+                    .Where(item => item.Pid == templateId)
+                    .OrderBy(item => item.Id)
+                    .ToList();
+                return details
+                    .Select(detail => new PoiPoint(detail))
+                    .ToList();
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidDataException(
+                    $"读取 POI 模板 {templateId} 的明细失败，已中止流程包导出。",
+                    ex);
+            }
+        }
+
+        internal static PoiParam CreatePortableSnapshot(
+            PoiParam source,
+            IEnumerable<PoiPoint>? authoritativePoints = null)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+
+            PoiParam snapshot =
+                JsonConvert.DeserializeObject<PoiParam>(
+                    JsonConvert.SerializeObject(source))
+                ?? throw new InvalidDataException(
+                    "无法创建可移植的 POI 模板快照。");
+            if (authoritativePoints != null)
+            {
+                List<PoiPoint> points =
+                    JsonConvert.DeserializeObject<List<PoiPoint>>(
+                        JsonConvert.SerializeObject(
+                            authoritativePoints))
+                    ?? throw new InvalidDataException(
+                        "无法创建可移植的 POI 点位快照。");
+                snapshot.PoiPoints =
+                    new ObservableCollection<PoiPoint>(points);
+            }
+
+            snapshot.Id = -1;
+            foreach (PoiPoint point in snapshot.PoiPoints)
+            {
+                point.Id = -1;
+            }
+            return snapshot;
+        }
+
+        public bool TryPrepareFlowPackageImport(
+            string templateName,
+            string serializedContent)
+        {
+            PoiParam? value =
+                JsonConvert.DeserializeObject<PoiParam>(
+                    serializedContent);
+            if (value == null)
+                return false;
+            PoiParam snapshot = CreatePortableSnapshot(value);
+            snapshot.Name = templateName;
+            ImportTemp = snapshot;
+            return true;
         }
 
         public override bool Import()
