@@ -28,6 +28,7 @@ public sealed class FlowRuntimeHost : IDisposable, IAsyncDisposable
     private readonly SemaphoreSlim _lifecycleGate = new(1, 1);
     private readonly CVNodeContainer _container;
     private readonly FlowNodeManager _nodeManager;
+    private readonly FlowRuntimeServiceResolver _serviceResolver;
     private readonly FlowEngineControl _control;
     private readonly FlowEngineRunner _runner;
     private CancellationTokenSource? _activeRunCts;
@@ -45,10 +46,12 @@ public sealed class FlowRuntimeHost : IDisposable, IAsyncDisposable
         _nodeManager = nodeManager
             ?? throw new ArgumentNullException(nameof(nodeManager));
         _container = new CVNodeContainer();
+        _serviceResolver = new FlowRuntimeServiceResolver();
         _control = new FlowEngineControl(
             _container,
             isAutoStartName: false,
-            _nodeManager);
+            _nodeManager,
+            _serviceResolver);
         _runner = new FlowEngineRunner(_control);
     }
 
@@ -115,8 +118,13 @@ public sealed class FlowRuntimeHost : IDisposable, IAsyncDisposable
     {
         ArgumentNullException.ThrowIfNull(canvasData);
         byte[] snapshot = (byte[])canvasData.Clone();
+        MQTTServiceInfo[] serviceSnapshot =
+            FlowRuntimeServiceResolver.CreateSnapshot(services);
+        FlowRuntimeServiceCatalog nextServiceCatalog =
+            FlowRuntimeServiceResolver.CreateCatalog(serviceSnapshot);
         await _lifecycleGate.WaitAsync(cancellationToken).ConfigureAwait(false);
         FlowRuntimeHostState previousState = _state;
+        FlowRuntimeServiceCatalog? previousServiceCatalog = null;
         try
         {
             ThrowIfDisposed();
@@ -129,9 +137,12 @@ public sealed class FlowRuntimeHost : IDisposable, IAsyncDisposable
 
             _state = FlowRuntimeHostState.Loading;
             cancellationToken.ThrowIfCancellationRequested();
-            _control.Load(snapshot, waitReady: false);
-            if (services != null)
-                _nodeManager.UpdateDevice(services.ToList());
+            previousServiceCatalog =
+                _serviceResolver.Replace(nextServiceCatalog);
+            using (_serviceResolver.EnterLoadScope())
+                _control.Load(snapshot, waitReady: false);
+            if (serviceSnapshot.Length > 0)
+                _nodeManager.UpdateDevice(serviceSnapshot.ToList());
             ContentHash = Convert.ToHexString(
                     SHA256.HashData(snapshot))
                 .ToLowerInvariant();
@@ -139,6 +150,8 @@ public sealed class FlowRuntimeHost : IDisposable, IAsyncDisposable
         }
         catch
         {
+            if (previousServiceCatalog != null)
+                _serviceResolver.Replace(previousServiceCatalog);
             _state = previousState == FlowRuntimeHostState.Ready
                 ? FlowRuntimeHostState.Ready
                 : FlowRuntimeHostState.Faulted;

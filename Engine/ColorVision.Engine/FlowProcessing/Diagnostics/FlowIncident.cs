@@ -52,6 +52,15 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
         [SugarColumn(ColumnName = "detected_time_utc")]
         public DateTime DetectedTimeUtc { get; set; }
 
+        [SugarColumn(ColumnName = "acknowledged_time_utc", IsNullable = true)]
+        public DateTime? AcknowledgedTimeUtc { get; set; }
+
+        [SugarColumn(ColumnName = "acknowledged_operator", IsNullable = true)]
+        public string? AcknowledgedOperator { get; set; }
+
+        [SugarColumn(ColumnName = "acknowledgment_note", IsNullable = true)]
+        public string? AcknowledgmentNote { get; set; }
+
         [SugarColumn(ColumnName = "resolved_time_utc", IsNullable = true)]
         public DateTime? ResolvedTimeUtc { get; set; }
 

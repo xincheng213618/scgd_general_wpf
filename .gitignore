@@ -66,6 +66,8 @@ BenchmarkDotNet.Artifacts/
 project.lock.json
 project.fragment.lock.json
 artifacts/
+!Engine/ColorVision.Engine/FlowProcessing/Artifacts/
+!Engine/ColorVision.Engine/FlowProcessing/Artifacts/**
 
 # ASP.NET Scaffolding
 ScaffoldingReadMe.txt

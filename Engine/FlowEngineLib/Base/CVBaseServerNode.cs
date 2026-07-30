@@ -29,6 +29,8 @@ public class CVBaseServerNode : CVCommonNode
 
 	internal FlowNodeRetryPolicy RuntimeRetryPolicy { get; set; }
 
+	internal IFlowServiceResolver RuntimeServiceResolver { get; set; }
+
 	protected STNodeOption m_op_svr_out_act;
 
 	protected STNodeOption m_op_end;
@@ -350,7 +352,7 @@ public class CVBaseServerNode : CVCommonNode
 	public string GetSendTopic()
 	{
 		string result = DefaultPublishTopic;
-		MQTTServiceInfo service = FlowServiceManager.Instance.GetService(m_nodeType, m_nodeName);
+		MQTTServiceInfo service = GetRuntimeService();
 		if (service != null)
 		{
 			result = service.PublishTopic;
@@ -361,7 +363,7 @@ public class CVBaseServerNode : CVCommonNode
 	public string GetRecvTopic()
 	{
 		string result = DefaultSubscribeTopic;
-		MQTTServiceInfo service = FlowServiceManager.Instance.GetService(m_nodeType, m_nodeName);
+		MQTTServiceInfo service = GetRuntimeService();
 		if (service != null)
 		{
 			result = service.SubscribeTopic;
@@ -1568,12 +1570,22 @@ public class CVBaseServerNode : CVCommonNode
 	protected string GetTokenHide()
 	{
 		string result = string.Empty;
-		MQTTServiceInfo service = FlowServiceManager.Instance.GetService(m_nodeType, m_nodeName);
+		MQTTServiceInfo service = GetRuntimeService();
 		if (service != null)
 		{
 			result = service.Token;
 		}
 		return result;
+	}
+
+	private MQTTServiceInfo GetRuntimeService()
+	{
+		IFlowServiceResolver serviceResolver =
+			RuntimeServiceResolver
+			?? FlowRuntimeServiceResolver.Ambient;
+		return serviceResolver != null
+			? serviceResolver.GetService(m_nodeType, m_nodeName)
+			: FlowServiceManager.Instance.GetService(m_nodeType, m_nodeName);
 	}
 
 	protected bool GetRecvMasterResult(AlgorithmPreStepParam param)

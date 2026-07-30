@@ -1,6 +1,8 @@
 ﻿#pragma warning disable CA1822,CA1863
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
+using ColorVision.Engine.FlowProcessing.Artifacts;
+using ColorVision.Engine.FlowProcessing.Artifacts.Persistence;
 using ColorVision.Engine.FlowProcessing.Compilation;
 using ColorVision.Engine.FlowProcessing.Editor;
 using ColorVision.Engine.Templates.Flow.Routing;
@@ -22,6 +24,11 @@ using System.Windows;
 
 namespace ColorVision.Engine.Templates.Flow
 {
+    public sealed record FlowSubflowConfigurationSaveResult(
+        FlowRevision FlowRevision,
+        FlowArtifactRevision? ArtifactRevision,
+        Exception? ArtifactFailure);
+
     public class MenuTemplateFlow : MenuItemBase
     {
         public override string OwnerGuid => nameof(MenuTemplate);
@@ -671,6 +678,11 @@ namespace ColorVision.Engine.Templates.Flow
                     subflows);
                 flowParam.TemplateRevision = revision.Revision;
                 flowParam.TemplateContentHash = revision.BinaryHash;
+                TrySaveArtifact(
+                    flowParam,
+                    subflows,
+                    publish: false,
+                    out _);
             }
             catch (Exception ex)
             {
@@ -690,6 +702,124 @@ namespace ColorVision.Engine.Templates.Flow
         {
             ArgumentNullException.ThrowIfNull(flowParam);
             TryRecordCatalogRevision(flowParam);
+        }
+
+        public static FlowSubflowConfigurationSaveResult
+            SaveSubflowConfiguration(
+                FlowParam flowParam,
+                FlowSubflowSidecar sidecar,
+                bool publishArtifact = false)
+        {
+            ArgumentNullException.ThrowIfNull(flowParam);
+            ArgumentNullException.ThrowIfNull(sidecar);
+            if (string.IsNullOrWhiteSpace(flowParam.FlowKey)
+                || string.IsNullOrWhiteSpace(flowParam.DataBase64))
+            {
+                throw new InvalidOperationException(
+                    "当前流程没有稳定 FlowKey 或 STN 数据。");
+            }
+
+            byte[] canvasData =
+                Convert.FromBase64String(flowParam.DataBase64);
+            FlowSubflowSidecar normalized =
+                FlowSubflowSidecarPersistence.Normalize(sidecar);
+            if (!FlowExecutionPolicyStoreProvider.Shared.TryLoad(
+                    flowParam.FlowKey,
+                    out FlowExecutionPolicySnapshot executionPolicy,
+                    out string? policyFailure))
+            {
+                throw new InvalidOperationException(
+                    $"流程执行策略无法读取：{policyFailure}");
+            }
+
+            FlowCanvasCatalogBuildResult projection =
+                new FlowCanvasCatalogBuilder().Build(
+                    canvasData,
+                    normalized,
+                    executionPolicy);
+            FlowNodeSearchDocument[] searchDocuments =
+                projection.SearchDocuments
+                    .Select(document =>
+                        WithFlowTemplateName(
+                            document,
+                            flowParam.Name))
+                    .ToArray();
+            FlowRevision revision =
+                FlowCatalogProvider.Shared.RecordEditorSave(
+                    flowParam.FlowKey,
+                    canvasData,
+                    projection.SemanticDocument,
+                    searchDocuments,
+                    message: $"Configure subflows for {flowParam.Name}");
+            FlowSubflowDefinitionStoreProvider.Shared.Append(
+                flowParam.FlowKey,
+                revision.Revision,
+                normalized);
+            flowParam.TemplateRevision = revision.Revision;
+            flowParam.TemplateContentHash = revision.BinaryHash;
+            flowParam.LoadedContentHash = revision.BinaryHash;
+
+            TrySaveArtifact(
+                flowParam,
+                normalized,
+                publishArtifact,
+                out FlowArtifactRevision? artifact,
+                out Exception? failure);
+            return new FlowSubflowConfigurationSaveResult(
+                revision,
+                artifact,
+                failure);
+        }
+
+        private static bool TrySaveArtifact(
+            FlowParam flowParam,
+            FlowSubflowSidecar sidecar,
+            bool publish,
+            out FlowArtifactRevision? revision)
+        {
+            return TrySaveArtifact(
+                flowParam,
+                sidecar,
+                publish,
+                out revision,
+                out _);
+        }
+
+        private static bool TrySaveArtifact(
+            FlowParam flowParam,
+            FlowSubflowSidecar sidecar,
+            bool publish,
+            out FlowArtifactRevision? revision,
+            out Exception? failure)
+        {
+            revision = null;
+            failure = null;
+            try
+            {
+                using FlowArtifactApplicationService service =
+                    FlowArtifactServiceProvider.Create();
+                revision = publish
+                    ? service.SavePublished(
+                        flowParam,
+                        sidecar,
+                        message:
+                            $"Publish subflows for {flowParam.Name}")
+                    : service.SaveDraft(
+                        flowParam,
+                        sidecar,
+                        message:
+                            $"Save artifact for {flowParam.Name}");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                failure = ex;
+                log.Error(
+                    $"流程 {flowParam.Name} 的 legacy STN/版本侧车已保存，"
+                    + "但 artifact 未保存或发布。",
+                    ex);
+                return false;
+            }
         }
 
         private static void UpdateLoadedContentHash(

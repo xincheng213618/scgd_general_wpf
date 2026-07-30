@@ -161,6 +161,57 @@ public class FlowDiagnosticsSchemaTests
         }
     }
 
+    [Fact]
+    public void SchemaMigrationAddsIncidentAcknowledgementColumnsToLegacyTable()
+    {
+        string dbPath = Path.Combine(
+            Path.GetTempPath(),
+            $"colorvision-flow-incident-schema-{Guid.NewGuid():N}.db");
+        SqlSugarClient? db = null;
+        try
+        {
+            db = CreateDb(dbPath);
+            db.Ado.ExecuteCommand(
+                """
+                CREATE TABLE FlowIncident (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    run_record_id INTEGER NOT NULL,
+                    incident_key TEXT NULL,
+                    attempt_id INTEGER NULL,
+                    node_id TEXT NULL,
+                    kind TEXT NOT NULL,
+                    severity TEXT NOT NULL,
+                    state TEXT NOT NULL,
+                    summary TEXT NOT NULL,
+                    details_json TEXT NULL,
+                    detected_time_utc TEXT NOT NULL,
+                    resolved_time_utc TEXT NULL,
+                    resolution TEXT NULL,
+                    operator_name TEXT NULL
+                );
+                """);
+
+            FlowDiagnosticsSchemaMigrator.EnsureSchema(db);
+            FlowDiagnosticsSchemaMigrator.EnsureSchema(db);
+
+            HashSet<string> columns = db.DbMaintenance
+                .GetColumnInfosByTableName("FlowIncident")
+                .Select(column => column.DbColumnName)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            Assert.Contains("acknowledged_time_utc", columns);
+            Assert.Contains("acknowledged_operator", columns);
+            Assert.Contains("acknowledgment_note", columns);
+        }
+        finally
+        {
+            db?.Ado.Close();
+            db?.Dispose();
+            Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+            if (File.Exists(dbPath))
+                File.Delete(dbPath);
+        }
+    }
+
     private static SqlSugarClient CreateDb(string dbPath)
     {
         return new SqlSugarClient(new ConnectionConfig

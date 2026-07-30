@@ -46,6 +46,8 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 		new Dictionary<string, FlowNodeRetryPolicy>(
 			StringComparer.OrdinalIgnoreCase);
 
+	private readonly IFlowServiceResolver runtimeServiceResolver;
+
 	private readonly object lifecycleLock = new object();
 
 	private readonly object stateLock = new object();
@@ -223,14 +225,39 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 		AttachNodeContainer(nodeContainer);
 	}
 
+	internal FlowEngineControl(
+		CVNodeContainer nodeContainer,
+		bool isAutoStartName,
+		FlowNodeManager nodeManager,
+		IFlowServiceResolver runtimeServiceResolver)
+		: this(
+			isAutoStartName,
+			nodeManager,
+			runtimeServiceResolver)
+	{
+		AttachNodeContainer(nodeContainer);
+	}
+
 	public FlowEngineControl(bool isAutoStartName)
 		: this(isAutoStartName, FlowNodeManager.Instance)
 	{
 	}
 
 	public FlowEngineControl(bool isAutoStartName, FlowNodeManager nodeManager)
+		: this(
+			isAutoStartName,
+			nodeManager,
+			runtimeServiceResolver: null)
+	{
+	}
+
+	private FlowEngineControl(
+		bool isAutoStartName,
+		FlowNodeManager nodeManager,
+		IFlowServiceResolver runtimeServiceResolver)
 	{
 		NodeManager = nodeManager ?? throw new ArgumentNullException(nameof(nodeManager));
+		this.runtimeServiceResolver = runtimeServiceResolver;
 		startNodeNames = new Dictionary<string, BaseStartNode>();
 		IsAutoStartName = isAutoStartName;
 		services = new Dictionary<string, ServiceNode>();
@@ -454,6 +481,8 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 				serverNode.RuntimeFailureRouter = failureRouter;
 				serverNode.RuntimeRetryPolicy =
 					GetRetryPolicyLocked(serverNode.NodeID);
+				serverNode.RuntimeServiceResolver =
+					runtimeServiceResolver;
 				attachedDeviceNodes.Add(serverNode, device);
 				RebuildServicesLocked();
 			}
@@ -489,6 +518,7 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 			{
 				serverNode.RuntimeFailureRouter = null;
 				serverNode.RuntimeRetryPolicy = null;
+				serverNode.RuntimeServiceResolver = null;
 				RebuildServicesLocked();
 				deviceToRemove = device;
 			}
@@ -689,6 +719,7 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 				{
 					serverNode.RuntimeFailureRouter = null;
 					serverNode.RuntimeRetryPolicy = null;
+					serverNode.RuntimeServiceResolver = null;
 				}
 			}
 			foreach (BaseStartNode startNode in startNodes)

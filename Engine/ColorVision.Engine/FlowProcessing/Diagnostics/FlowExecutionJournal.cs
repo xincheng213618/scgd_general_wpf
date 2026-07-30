@@ -896,6 +896,9 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
         {
             target.Id = source.Id;
             target.DetectedTimeUtc = source.DetectedTimeUtc;
+            target.AcknowledgedTimeUtc = source.AcknowledgedTimeUtc;
+            target.AcknowledgedOperator = source.AcknowledgedOperator;
+            target.AcknowledgmentNote = source.AcknowledgmentNote;
             target.ResolvedTimeUtc = source.ResolvedTimeUtc;
             target.Resolution = source.Resolution;
             target.OperatorName = source.OperatorName;

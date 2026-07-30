@@ -130,6 +130,144 @@ public sealed class FlowRuntimeHostTests
         });
     }
 
+    [Fact]
+    public void RuntimeHostsUseIsolatedMqttServiceSnapshots()
+    {
+        RunInSta(async () =>
+        {
+            byte[] canvas = CreateCanvas(new HeadlessServiceProbeNode());
+            MQTTServiceInfo globalService = CreateService(
+                "global/send",
+                "global/receive",
+                "global-token");
+            FlowServiceManager.Instance.AddMQTTService(globalService);
+            try
+            {
+                MQTTServiceInfo firstService = CreateService(
+                    "first/send",
+                    "first/receive",
+                    "first-token");
+                MQTTServiceInfo secondService = CreateService(
+                    "second/send",
+                    "second/receive",
+                    "second-token");
+                await using var first = new FlowRuntimeHost();
+                await using var second = new FlowRuntimeHost();
+                await using var unmapped = new FlowRuntimeHost();
+
+                await first.LoadAsync(canvas, new[] { firstService });
+                await second.LoadAsync(canvas, new[] { secondService });
+                await unmapped.LoadAsync(
+                    canvas,
+                    Array.Empty<MQTTServiceInfo>());
+                firstService.PublishTopic = "mutated/send";
+                firstService.SubscribeTopic = "mutated/receive";
+                firstService.Token = "mutated-token";
+
+                HeadlessServiceProbeNode firstNode =
+                    Assert.Single(first.Nodes.OfType<HeadlessServiceProbeNode>());
+                HeadlessServiceProbeNode secondNode =
+                    Assert.Single(second.Nodes.OfType<HeadlessServiceProbeNode>());
+                HeadlessServiceProbeNode unmappedNode =
+                    Assert.Single(unmapped.Nodes.OfType<HeadlessServiceProbeNode>());
+
+                Assert.Equal("first/send", firstNode.GetSendTopic());
+                Assert.Equal("first/receive", firstNode.GetRecvTopic());
+                Assert.Equal(
+                    "first/receive",
+                    firstNode.ConnectedReceiveTopic);
+                Assert.Equal("first-token", firstNode.ResolvedToken);
+                Assert.Equal("second/send", secondNode.GetSendTopic());
+                Assert.Equal("second/receive", secondNode.GetRecvTopic());
+                Assert.Equal(
+                    "second/receive",
+                    secondNode.ConnectedReceiveTopic);
+                Assert.Equal("second-token", secondNode.ResolvedToken);
+                Assert.Equal(
+                    unmappedNode.DefaultPublishTopic,
+                    unmappedNode.GetSendTopic());
+                Assert.Equal(
+                    unmappedNode.DefaultSubscribeTopic,
+                    unmappedNode.GetRecvTopic());
+                Assert.Equal(
+                    unmappedNode.DefaultSubscribeTopic,
+                    unmappedNode.ConnectedReceiveTopic);
+                Assert.Equal(string.Empty, unmappedNode.ResolvedToken);
+                Assert.Same(
+                    globalService,
+                    FlowServiceManager.Instance.GetService(
+                        HeadlessServiceProbeNode.ServiceType,
+                        HeadlessServiceProbeNode.ServiceCode));
+
+                var uiNode = new HeadlessServiceProbeNode();
+                Assert.Equal("global/send", uiNode.GetSendTopic());
+                Assert.Equal("global/receive", uiNode.GetRecvTopic());
+                Assert.Equal("global-token", uiNode.ResolvedToken);
+            }
+            finally
+            {
+                FlowServiceManager.Instance.Clear();
+            }
+        });
+    }
+
+    [Fact]
+    public void InvalidReloadKeepsPublishedMqttServiceSnapshot()
+    {
+        RunInSta(async () =>
+        {
+            byte[] canvas = CreateCanvas(new HeadlessServiceProbeNode());
+            byte[] corrupt = (byte[])canvas.Clone();
+            corrupt[^1] ^= 0x7f;
+            await using var host = new FlowRuntimeHost();
+            await host.LoadAsync(
+                canvas,
+                new[]
+                {
+                    CreateService(
+                        "published/send",
+                        "published/receive",
+                        "published-token")
+                });
+
+            await Assert.ThrowsAnyAsync<Exception>(
+                () => host.LoadAsync(
+                    corrupt,
+                    new[]
+                    {
+                        CreateService(
+                            "rejected/send",
+                            "rejected/receive",
+                            "rejected-token")
+                    }));
+
+            HeadlessServiceProbeNode node =
+                Assert.Single(host.Nodes.OfType<HeadlessServiceProbeNode>());
+            Assert.Equal("published/send", node.GetSendTopic());
+            Assert.Equal("published/receive", node.GetRecvTopic());
+            Assert.Equal(
+                "published/receive",
+                node.ConnectedReceiveTopic);
+            Assert.Equal("published-token", node.ResolvedToken);
+            Assert.Equal(FlowRuntimeHostState.Ready, host.State);
+        });
+    }
+
+    private static MQTTServiceInfo CreateService(
+        string publishTopic,
+        string subscribeTopic,
+        string token)
+    {
+        return new MQTTServiceInfo
+        {
+            ServiceType = HeadlessServiceProbeNode.ServiceType,
+            ServiceCode = HeadlessServiceProbeNode.ServiceCode,
+            PublishTopic = publishTopic,
+            SubscribeTopic = subscribeTopic,
+            Token = token
+        };
+    }
+
     private static byte[] CreateCanvas(STNode terminalNode)
     {
         using var editor = new STNodeEditor();
@@ -175,5 +313,36 @@ public sealed class HeadlessNeverEndNode : STNode
     {
         base.OnCreate();
         InputOptions.Add("IN", typeof(CVStartCFC), bSingle: true);
+    }
+}
+
+public sealed class HeadlessServiceProbeNode : CVBaseServerNode
+{
+    public const string ServiceType = "HEADLESS_SERVICE_RESOLVER_TEST";
+    public const string ServiceCode = "HEADLESS_SERVICE_RESOLVER_TEST_S01";
+
+    public HeadlessServiceProbeNode()
+        : base(
+            "Headless service probe",
+            ServiceType,
+            ServiceCode,
+            "HEADLESS_SERVICE_RESOLVER_TEST_DEV")
+    {
+    }
+
+    public string ResolvedToken => GetTokenHide();
+
+    public string? ConnectedReceiveTopic { get; private set; }
+
+    public STNodeOption Input => m_in_start;
+
+    public STNodeOption Output => m_op_end;
+
+    protected override void m_in_op_Connected(
+        object sender,
+        STNodeOptionEventArgs e)
+    {
+        ConnectedReceiveTopic = GetRecvTopic();
+        base.m_in_op_Connected(sender, e);
     }
 }
