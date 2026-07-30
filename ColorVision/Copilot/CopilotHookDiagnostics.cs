@@ -210,7 +210,7 @@ namespace ColorVision.Copilot
                     .Append('/')
                     .Append(entry.State)
                     .Append(" · ")
-                    .Append(run.Phase == CopilotToolExecutionHookPhase.BeforeExecute ? "before" : "after")
+                    .Append(FormatHookPhase(run.Phase))
                     .Append(" · ")
                     .Append(FormatInline(run.SourceId, "unknown", 160))
                     .Append(" · ")
@@ -243,6 +243,14 @@ namespace ColorVision.Copilot
             CopilotToolExecutionHookState.TimedOut => "timed_out",
             CopilotToolExecutionHookState.Cancelled => "cancelled",
             CopilotToolExecutionHookState.Skipped => "skipped",
+            _ => "unknown",
+        };
+
+        private static string FormatHookPhase(CopilotToolExecutionHookPhase phase) => phase switch
+        {
+            CopilotToolExecutionHookPhase.PermissionRequest => "permission",
+            CopilotToolExecutionHookPhase.BeforeExecute => "before",
+            CopilotToolExecutionHookPhase.AfterExecute => "after",
             _ => "unknown",
         };
 

@@ -298,9 +298,15 @@ namespace ColorVision.Copilot
             ICopilotModuleToolExecutionHook hook,
             Func<bool> isRegistrationActive)
         {
+            var adapter = hook is ICopilotModuleToolPermissionRequestHook permissionRequestHook
+                ? new CopilotModuleToolPermissionRequestHookAdapter(
+                    hook,
+                    permissionRequestHook,
+                    isRegistrationActive)
+                : new CopilotModuleToolExecutionHookAdapter(hook, isRegistrationActive);
             return new CopilotToolExecutionHookRegistrationDefinition(
                 BuildHookSourceId(extension.SourceId, hook.Name),
-                new CopilotModuleToolExecutionHookAdapter(hook, isRegistrationActive),
+                adapter,
                 NormalizeHookPattern(hook.ToolNamePattern),
                 hook.Order,
                 ComputeHookConfigurationFingerprint(extension, hook));
@@ -363,7 +369,7 @@ namespace ColorVision.Copilot
         }
     }
 
-    internal sealed class CopilotModuleToolExecutionHookAdapter : ICopilotToolExecutionHook
+    internal class CopilotModuleToolExecutionHookAdapter : ICopilotToolExecutionHook
     {
         private readonly ICopilotModuleToolExecutionHook _hook;
         private readonly Func<bool> _isRegistrationActive;
@@ -380,7 +386,7 @@ namespace ColorVision.Copilot
             CopilotToolExecutionHookContext context,
             CancellationToken cancellationToken)
         {
-            if (!_isRegistrationActive())
+            if (!IsRegistrationActive)
             {
                 return CopilotToolExecutionHookDecision.Deny(
                     "The business-module hook was unloaded before it could inspect this tool call.",
@@ -407,7 +413,7 @@ namespace ColorVision.Copilot
             CopilotToolExecutionOutcome outcome,
             CancellationToken cancellationToken)
         {
-            if (!_isRegistrationActive())
+            if (!IsRegistrationActive)
             {
                 throw new CopilotToolExecutionHookSkippedException(
                     "extension_hook_unloaded",
@@ -430,7 +436,9 @@ namespace ColorVision.Copilot
                 cancellationToken);
         }
 
-        private static CopilotModuleToolExecutionHookContext CreateContext(
+        protected bool IsRegistrationActive => _isRegistrationActive();
+
+        protected static CopilotModuleToolExecutionHookContext CreateContext(
             CopilotToolInvocation invocation)
         {
             var arguments = new Dictionary<string, object?>(
@@ -469,6 +477,48 @@ namespace ColorVision.Copilot
             CopilotToolExecutionState.AwaitingApproval => CopilotModuleToolExecutionState.AwaitingApproval,
             _ => CopilotModuleToolExecutionState.Failed,
         };
+    }
+
+    internal sealed class CopilotModuleToolPermissionRequestHookAdapter
+        : CopilotModuleToolExecutionHookAdapter, ICopilotToolPermissionRequestHook
+    {
+        private readonly ICopilotModuleToolPermissionRequestHook _permissionRequestHook;
+
+        public CopilotModuleToolPermissionRequestHookAdapter(
+            ICopilotModuleToolExecutionHook hook,
+            ICopilotModuleToolPermissionRequestHook permissionRequestHook,
+            Func<bool> isRegistrationActive)
+            : base(hook, isRegistrationActive)
+        {
+            _permissionRequestHook = permissionRequestHook
+                ?? throw new ArgumentNullException(nameof(permissionRequestHook));
+        }
+
+        public async Task<CopilotToolPermissionRequestDecision> OnPermissionRequestAsync(
+            CopilotToolPermissionRequestContext context,
+            CancellationToken cancellationToken)
+        {
+            if (!IsRegistrationActive)
+            {
+                return CopilotToolPermissionRequestDecision.Deny(
+                    "The business-module hook was unloaded before it could inspect this permission request.",
+                    "extension_hook_unloaded");
+            }
+
+            var decision = await _permissionRequestHook.OnPermissionRequestAsync(
+                CreateContext(context.Invocation),
+                cancellationToken);
+            if (decision?.ShouldPrompt != false)
+                return CopilotToolPermissionRequestDecision.Prompt;
+
+            return CopilotToolPermissionRequestDecision.Deny(
+                string.IsNullOrWhiteSpace(decision.Reason)
+                    ? "A business-module hook denied this permission request."
+                    : decision.Reason,
+                string.IsNullOrWhiteSpace(decision.FailureCode)
+                    ? "extension_permission_hook_denied"
+                    : decision.FailureCode);
+        }
     }
 
     internal sealed class CopilotModuleToolAdapter : ICopilotAgentDrivenTool, ICopilotFrameworkApprovedTool, ICopilotFrameworkApprovalPresentation, ICopilotCapabilityCatalogIdentity, ICopilotCapabilityCatalogVersionIdentity

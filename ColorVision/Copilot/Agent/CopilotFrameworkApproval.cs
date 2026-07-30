@@ -23,15 +23,21 @@ namespace ColorVision.Copilot
 
     internal sealed record CopilotFrameworkApprovalDecision
     {
-        private CopilotFrameworkApprovalDecision(CopilotFrameworkApprovalDecisionKind kind, string reason)
+        private CopilotFrameworkApprovalDecision(
+            CopilotFrameworkApprovalDecisionKind kind,
+            string reason,
+            string failureCode)
         {
             Kind = kind;
             Reason = reason;
+            FailureCode = CopilotToolFailureCode.Normalize(failureCode);
         }
 
         public CopilotFrameworkApprovalDecisionKind Kind { get; }
 
         public string Reason { get; }
+
+        public string FailureCode { get; }
 
         public bool IsApproved => Kind == CopilotFrameworkApprovalDecisionKind.Approved;
 
@@ -65,20 +71,23 @@ namespace ColorVision.Copilot
         {
             return status switch
             {
-                ConfirmableActionStatus.Approved => new(CopilotFrameworkApprovalDecisionKind.Approved, "Approved in ColorVision."),
-                ConfirmableActionStatus.Rejected => new(CopilotFrameworkApprovalDecisionKind.Rejected, "Rejected by the ColorVision user."),
-                ConfirmableActionStatus.Expired => new(CopilotFrameworkApprovalDecisionKind.Expired, "The ColorVision approval expired before a decision."),
-                ConfirmableActionStatus.Cancelled => new(CopilotFrameworkApprovalDecisionKind.Cancelled, "The ColorVision approval was cancelled before execution."),
+                ConfirmableActionStatus.Approved => new(CopilotFrameworkApprovalDecisionKind.Approved, "Approved in ColorVision.", string.Empty),
+                ConfirmableActionStatus.Rejected => new(CopilotFrameworkApprovalDecisionKind.Rejected, "Rejected by the ColorVision user.", "approval_rejected"),
+                ConfirmableActionStatus.Expired => new(CopilotFrameworkApprovalDecisionKind.Expired, "The ColorVision approval expired before a decision.", "approval_expired"),
+                ConfirmableActionStatus.Cancelled => new(CopilotFrameworkApprovalDecisionKind.Cancelled, "The ColorVision approval was cancelled before execution.", "approval_cancelled"),
                 _ => throw new ArgumentOutOfRangeException(nameof(status), status, "The confirmation action has no terminal approval decision."),
             };
         }
 
-        public static CopilotFrameworkApprovalDecision PolicyDenied(string reason)
+        public static CopilotFrameworkApprovalDecision PolicyDenied(
+            string reason,
+            string failureCode = "approval_policy_denied")
         {
             var detail = string.IsNullOrWhiteSpace(reason) ? "The protected tool call did not satisfy the approval policy." : reason.Trim();
             return new CopilotFrameworkApprovalDecision(
                 CopilotFrameworkApprovalDecisionKind.PolicyDenied,
-                "ColorVision policy denied this protected tool call: " + detail);
+                "ColorVision policy denied this protected tool call: " + detail,
+                string.IsNullOrWhiteSpace(failureCode) ? "approval_policy_denied" : failureCode);
         }
 
         public static CopilotFrameworkApprovalDecision Cancelled(string reason)
@@ -88,14 +97,16 @@ namespace ColorVision.Copilot
                 : reason.Trim();
             return new CopilotFrameworkApprovalDecision(
                 CopilotFrameworkApprovalDecisionKind.Cancelled,
-                detail);
+                detail,
+                "approval_cancelled");
         }
 
         public static CopilotFrameworkApprovalDecision ApprovedByFullAccess()
         {
             return new CopilotFrameworkApprovalDecision(
                 CopilotFrameworkApprovalDecisionKind.Approved,
-                "Approved by the current ColorVision task's temporary structured-workspace grant.");
+                "Approved by the current ColorVision task's temporary structured-workspace grant.",
+                string.Empty);
         }
     }
 

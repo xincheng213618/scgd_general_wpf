@@ -102,7 +102,7 @@ namespace ColorVision.Copilot
     internal static class CopilotToolExecutionAuditLogger
     {
         private const int MaxEntries = 200;
-        private const int MaxHookRuns = (CopilotToolExecutionHookRegistry.MaxRegistrations + 1) * 2;
+        private const int MaxHookRuns = (CopilotToolExecutionHookRegistry.MaxRegistrations + 1) * 3;
         private const int MaxHookSummaryCharacters = 4_000;
         private static readonly ILog Log = LogManager.GetLogger("ColorVision.Copilot.AgentToolAudit");
         private static readonly object SyncRoot = new();
@@ -197,8 +197,13 @@ namespace ColorVision.Copilot
             return builder.ToString();
         }
 
-        private static string FormatHookPhase(CopilotToolExecutionHookPhase phase) =>
-            phase == CopilotToolExecutionHookPhase.BeforeExecute ? "before" : "after";
+        private static string FormatHookPhase(CopilotToolExecutionHookPhase phase) => phase switch
+        {
+            CopilotToolExecutionHookPhase.PermissionRequest => "permission",
+            CopilotToolExecutionHookPhase.BeforeExecute => "before",
+            CopilotToolExecutionHookPhase.AfterExecute => "after",
+            _ => "unknown",
+        };
 
         private static string FormatHookState(CopilotToolExecutionHookState state) => state switch
         {

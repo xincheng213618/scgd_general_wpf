@@ -22,6 +22,7 @@ namespace ColorVision.Copilot
     {
         BeforeExecute,
         AfterExecute,
+        PermissionRequest,
     }
 
     public enum CopilotToolExecutionHookState

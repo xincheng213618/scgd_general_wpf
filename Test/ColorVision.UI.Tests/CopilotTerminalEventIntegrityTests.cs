@@ -65,6 +65,46 @@ public sealed class CopilotTerminalEventIntegrityTests
     }
 
     [Fact]
+    public async Task PermissionRequestEvidenceSurvivesAwaitingAndRejectedEvents()
+    {
+        var hook = new PromptPermissionHook();
+        var scenario = CreateApprovalScenario("permission-evidence", hook);
+        try
+        {
+            var permission = await scenario.Bridge.EvaluatePermissionRequestAsync(
+                scenario.Reservation,
+                CancellationToken.None);
+            Assert.True(permission.Decision.ShouldPrompt);
+
+            scenario.Bridge.PublishAwaitingApproval(
+                scenario.Reservation,
+                scenario.Handle.Action);
+            scenario.Bridge.Reject(
+                scenario.Reservation,
+                CopilotFrameworkApprovalDecision.FromStatus(
+                    ConfirmableActionStatus.Rejected));
+
+            var toolEvents = scenario.Events
+                .Where(item => item.Type == CopilotAgentEventType.ToolResult)
+                .ToArray();
+            Assert.Equal(2, toolEvents.Length);
+            Assert.All(toolEvents, item =>
+            {
+                var run = Assert.Single(item.ToolExecutionHookRuns);
+                Assert.Equal(CopilotToolExecutionHookPhase.PermissionRequest, run.Phase);
+                Assert.Equal(CopilotToolExecutionHookState.Completed, run.State);
+                Assert.Equal("fixed:0", run.SourceId);
+            });
+            var step = Assert.Single(scenario.Bridge.StepRecords);
+            Assert.Equal("approval_rejected", step.Observation.FailureCode);
+        }
+        finally
+        {
+            scenario.Coordinator.Cancel(scenario.Handle);
+        }
+    }
+
+    [Fact]
     public void AgentCompletedItemInterruptsOnlyTracesMissingTerminalResults()
     {
         var assistant = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty)
@@ -159,7 +199,9 @@ public sealed class CopilotTerminalEventIntegrityTests
         Assert.True(assistant.WasResponseInterrupted);
     }
 
-    private static ApprovalScenario CreateApprovalScenario(string suffix)
+    private static ApprovalScenario CreateApprovalScenario(
+        string suffix,
+        params ICopilotToolExecutionHook[] hooks)
     {
         var request = new CopilotAgentRequest
         {
@@ -196,7 +238,7 @@ public sealed class CopilotTerminalEventIntegrityTests
             request.RuntimeExecutionScope,
             [tool],
             maxToolCalls: 4,
-            new CopilotToolExecutor(),
+            new CopilotToolExecutor(hooks),
             coordinator,
             events.Add,
             capabilityRevisionProvider: () => 11);
@@ -320,5 +362,26 @@ public sealed class CopilotTerminalEventIntegrityTests
                 ToolName = Name,
                 Success = true,
             });
+    }
+
+    private sealed class PromptPermissionHook : ICopilotToolPermissionRequestHook
+    {
+        public Task<CopilotToolPermissionRequestDecision> OnPermissionRequestAsync(
+            CopilotToolPermissionRequestContext context,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return Task.FromResult(CopilotToolPermissionRequestDecision.Prompt);
+        }
+
+        public Task<CopilotToolExecutionHookDecision> BeforeExecuteAsync(
+            CopilotToolExecutionHookContext context,
+            CancellationToken cancellationToken) =>
+            Task.FromResult(CopilotToolExecutionHookDecision.Proceed);
+
+        public Task AfterExecuteAsync(
+            CopilotToolExecutionOutcome outcome,
+            CancellationToken cancellationToken) =>
+            Task.CompletedTask;
     }
 }

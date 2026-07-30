@@ -46,6 +46,32 @@ namespace ColorVision.UI
         }
     }
 
+    public sealed class CopilotModuleToolPermissionRequestDecision
+    {
+        public static CopilotModuleToolPermissionRequestDecision Prompt { get; } = new()
+        {
+            ShouldPrompt = true,
+        };
+
+        public bool ShouldPrompt { get; init; }
+
+        public string Reason { get; init; } = string.Empty;
+
+        public string FailureCode { get; init; } = string.Empty;
+
+        public static CopilotModuleToolPermissionRequestDecision Deny(
+            string reason,
+            string failureCode = "extension_permission_hook_denied")
+        {
+            return new CopilotModuleToolPermissionRequestDecision
+            {
+                ShouldPrompt = false,
+                Reason = reason ?? string.Empty,
+                FailureCode = failureCode ?? string.Empty,
+            };
+        }
+    }
+
     public enum CopilotModuleToolExecutionState
     {
         Completed,
@@ -92,5 +118,17 @@ namespace ColorVision.UI
         Task AfterExecuteAsync(
             CopilotModuleToolExecutionHookOutcome outcome,
             CancellationToken cancellationToken) => Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// An optional approval-boundary callback for protected tool calls. Returning
+    /// Prompt keeps the native ColorVision approval flow; hooks can deny a call
+    /// but cannot approve it on the user's behalf.
+    /// </summary>
+    public interface ICopilotModuleToolPermissionRequestHook : ICopilotModuleToolExecutionHook
+    {
+        Task<CopilotModuleToolPermissionRequestDecision> OnPermissionRequestAsync(
+            CopilotModuleToolExecutionHookContext context,
+            CancellationToken cancellationToken);
     }
 }

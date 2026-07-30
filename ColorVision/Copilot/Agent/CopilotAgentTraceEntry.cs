@@ -988,6 +988,7 @@ namespace ColorVision.Copilot
 
         private static string FormatHookPhase(CopilotToolExecutionHookPhase phase) => phase switch
         {
+            CopilotToolExecutionHookPhase.PermissionRequest => "permission",
             CopilotToolExecutionHookPhase.BeforeExecute => "before",
             CopilotToolExecutionHookPhase.AfterExecute => "after",
             _ => "unknown",

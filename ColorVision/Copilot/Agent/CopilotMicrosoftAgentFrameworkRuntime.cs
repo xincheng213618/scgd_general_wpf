@@ -641,34 +641,57 @@ namespace ColorVision.Copilot
                         }
                         else
                         {
-                            var handle = _approvalCoordinator.RequestApproval(
-                                reservation.Tool,
-                                request,
-                                reservation.ToolInput,
-                                reservation.CallId,
-                                cancellationToken,
-                                reservation.ExecutionScope);
-                            bridge.PublishAwaitingApproval(reservation, handle.Action);
-                            emit(CopilotAgentEvent.Status($"{reservation.Tool.Name} is waiting for explicit approval in ColorVision."));
-                            try
+                            var permissionOutcome = await bridge.EvaluatePermissionRequestAsync(
+                                reservation,
+                                cancellationToken);
+                            if (permissionOutcome.WasCancelled)
                             {
-                                decision = await handle.Decision;
+                                decision = CopilotFrameworkApprovalDecision.Cancelled(
+                                    permissionOutcome.Decision.Reason);
+                                bridge.Reject(reservation, decision);
                                 cancellationToken.ThrowIfCancellationRequested();
+                                throw new OperationCanceledException(
+                                    permissionOutcome.Decision.Reason,
+                                    cancellationToken);
                             }
-                            catch (OperationCanceledException)
+                            if (!permissionOutcome.Decision.ShouldPrompt)
                             {
-                                bridge.CancelApproval(
-                                    reservation,
-                                    "The approval request was cancelled with the Agent run.");
-                                throw;
-                            }
-                            if (decision.IsApproved)
-                            {
-                                bridge.Approve(reservation);
+                                decision = CopilotFrameworkApprovalDecision.PolicyDenied(
+                                    permissionOutcome.Decision.Reason,
+                                    permissionOutcome.Decision.FailureCode);
+                                bridge.Reject(reservation, decision);
                             }
                             else
                             {
-                                bridge.Reject(reservation, decision);
+                                var handle = _approvalCoordinator.RequestApproval(
+                                    reservation.Tool,
+                                    request,
+                                    reservation.ToolInput,
+                                    reservation.CallId,
+                                    cancellationToken,
+                                    reservation.ExecutionScope);
+                                bridge.PublishAwaitingApproval(reservation, handle.Action);
+                                emit(CopilotAgentEvent.Status($"{reservation.Tool.Name} is waiting for explicit approval in ColorVision."));
+                                try
+                                {
+                                    decision = await handle.Decision;
+                                    cancellationToken.ThrowIfCancellationRequested();
+                                }
+                                catch (OperationCanceledException)
+                                {
+                                    bridge.CancelApproval(
+                                        reservation,
+                                        "The approval request was cancelled with the Agent run.");
+                                    throw;
+                                }
+                                if (decision.IsApproved)
+                                {
+                                    bridge.Approve(reservation);
+                                }
+                                else
+                                {
+                                    bridge.Reject(reservation, decision);
+                                }
                             }
                         }
                         emit(CopilotAgentEvent.Status(decision.FormatStatus(reservation.Tool.Name)));
@@ -2205,6 +2228,19 @@ namespace ColorVision.Copilot
                 return true;
             }
 
+            public async Task<CopilotToolPermissionRequestOutcome> EvaluatePermissionRequestAsync(
+                FrameworkApprovalReservation reservation,
+                CancellationToken cancellationToken)
+            {
+                ArgumentNullException.ThrowIfNull(reservation);
+                var outcome = await _toolExecutor.EvaluatePermissionRequestAsync(
+                    CreateInvocation(reservation, frameworkApprovalGranted: false),
+                    cancellationToken);
+                reservation.PermissionHookRuns = outcome.HookRuns;
+                reservation.HookBindings = outcome.HookBindings;
+                return outcome;
+            }
+
             public void PublishAwaitingApproval(FrameworkApprovalReservation reservation, Mcp.ConfirmableAction action)
             {
                 reservation.ApprovalActionId = action.ActionId;
@@ -2223,7 +2259,10 @@ namespace ColorVision.Copilot
                         ExecuteOnApproval = false,
                     },
                 };
-                _emit(CopilotAgentEvent.FromToolResult(result, CreateApprovalExecutionInfo(reservation, CopilotToolExecutionState.AwaitingApproval, action.ActionId)));
+                _emit(CopilotAgentEvent.FromToolResult(
+                    result,
+                    CreateApprovalExecutionInfo(reservation, CopilotToolExecutionState.AwaitingApproval, action.ActionId),
+                    reservation.PermissionHookRuns));
             }
 
             public void Approve(FrameworkApprovalReservation reservation)
@@ -2279,7 +2318,7 @@ namespace ColorVision.Copilot
                     Summary = decision.FormatToolSummary(reservation.Tool.Name),
                     ErrorMessage = decision.Reason,
                     FailureKind = failureKind,
-                    FailureCode = GetApprovalFailureCode(decision.Kind),
+                    FailureCode = decision.FailureCode,
                 };
                 var execution = CreateApprovalExecutionInfo(
                     reservation,
@@ -2290,27 +2329,20 @@ namespace ColorVision.Copilot
                     DateTimeOffset.UtcNow,
                     failureKind);
                 var invocation = CreateInvocation(reservation, frameworkApprovalGranted: false);
-                var outcome = new CopilotToolExecutionOutcome { Invocation = invocation, Result = result, Execution = execution };
+                var outcome = new CopilotToolExecutionOutcome
+                {
+                    Invocation = invocation,
+                    Result = result,
+                    Execution = execution,
+                    HookRuns = reservation.PermissionHookRuns,
+                };
                 CopilotToolExecutionAuditLogger.Record(outcome);
                 lock (_syncRoot)
                 {
                     _stepRecords.Add(outcome.StepRecord);
                     RecordOutcome(reservation.Signature, outcome);
                 }
-                _emit(CopilotAgentEvent.FromToolResult(result, execution));
-            }
-
-            private static string GetApprovalFailureCode(
-                CopilotFrameworkApprovalDecisionKind decisionKind)
-            {
-                return decisionKind switch
-                {
-                    CopilotFrameworkApprovalDecisionKind.Rejected => "approval_rejected",
-                    CopilotFrameworkApprovalDecisionKind.Expired => "approval_expired",
-                    CopilotFrameworkApprovalDecisionKind.Cancelled => "approval_cancelled",
-                    CopilotFrameworkApprovalDecisionKind.PolicyDenied => "approval_policy_denied",
-                    _ => string.Empty,
-                };
+                _emit(CopilotAgentEvent.FromToolResult(result, execution, outcome.HookRuns));
             }
 
             public void RecordUnknownToolCall(FunctionCallContent functionCall)
@@ -2650,7 +2682,9 @@ namespace ColorVision.Copilot
                     _approvalCoordinator.Cancel(
                         approvalReservation.ApprovalActionId,
                         approvalFailureReason);
-                    var decision = CopilotFrameworkApprovalDecision.PolicyDenied(approvalFailureReason);
+                    var decision = CopilotFrameworkApprovalDecision.PolicyDenied(
+                        approvalFailureReason,
+                        approvalFailureCode);
                     Reject(approvalReservation, decision);
                     return CopilotFrameworkToolResultFormatter.FormatRejected(
                         tool.Name,
@@ -2756,6 +2790,8 @@ namespace ColorVision.Copilot
                     ToolCall = CreateToolCall(reservation.Tool, reservation.ToolInput),
                     FrameworkApprovalGranted = frameworkApprovalGranted,
                     ApprovalActionId = reservation.ApprovalActionId,
+                    InitialHookRuns = reservation.PermissionHookRuns,
+                    InitialHookBindings = reservation.HookBindings,
                 };
             }
 
@@ -2998,6 +3034,12 @@ namespace ColorVision.Copilot
                 public string ApprovalArgumentsDigest { get; set; } = string.Empty;
 
                 public bool ApprovedByFullAccess { get; set; }
+
+                internal IReadOnlyList<CopilotToolExecutionHookRun> PermissionHookRuns { get; set; } =
+                    Array.Empty<CopilotToolExecutionHookRun>();
+
+                internal IReadOnlyList<CopilotToolExecutionHookBinding> HookBindings { get; set; } =
+                    Array.Empty<CopilotToolExecutionHookBinding>();
             }
 
             private sealed class ToolAttemptState

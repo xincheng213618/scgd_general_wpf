@@ -59,6 +59,11 @@ public sealed class CopilotHookDiagnosticsTests
                     HookRuns =
                     [
                         CopilotToolExecutionHookRun.Create(
+                            "extension:test.extension:hook:policy",
+                            CopilotToolExecutionHookPhase.PermissionRequest,
+                            CopilotToolExecutionHookState.Completed,
+                            1),
+                        CopilotToolExecutionHookRun.Create(
                             "builtin:write-tool-policy",
                             CopilotToolExecutionHookPhase.BeforeExecute,
                             CopilotToolExecutionHookState.Completed,
@@ -81,7 +86,8 @@ public sealed class CopilotHookDiagnosticsTests
         Assert.Contains("模块来源：1 个 · Hook 1/1 个已生效/声明", report);
         Assert.Contains("Test extension · v1.2.3 · source test.extension · hooks 1/1", report);
         Assert.Contains("extension:test.extension:hook:policy · active · matcher ^Probe$ · order 25", report);
-        Assert.Contains("最近健康度：1 次工具调用 · 2 次 Hook 运行（完成 1，拒绝 1，失败 0，超时 0，取消 0，跳过 0）", report);
+        Assert.Contains("最近健康度：1 次工具调用 · 3 次 Hook 运行（完成 2，拒绝 1，失败 0，超时 0，取消 0，跳过 0）", report);
+        Assert.Contains("Probe/Denied · permission · extension:test.extension:hook:policy · completed · 1 ms", report);
         Assert.Contains("Probe/Denied · before · extension:test.extension:hook:policy · denied · 2 ms · module_policy_denied", report);
         Assert.Contains("不显示工具参数、结果正文或审批内容", report);
     }
