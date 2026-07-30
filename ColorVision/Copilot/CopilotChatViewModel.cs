@@ -1700,6 +1700,12 @@ namespace ColorVision.Copilot
 
         private bool IsViewingQueuedRun => SelectedHostedRun?.State == CopilotHostedRunState.Queued;
 
+        internal bool CanShowConversationRewindShortcut =>
+            SelectedConversation != null
+            && !IsBusy
+            && !IsEditingMessage
+            && CanSwitchConversation;
+
         private CopilotLocalCommandComposerContext ResolveLocalCommandComposerContext()
         {
             if (IsAnsweringUserQuestion)
@@ -5568,6 +5574,16 @@ namespace ColorVision.Copilot
             }
 
             return StopCurrentReply();
+        }
+
+        internal void ShowConversationRewindPointsFromKeyboard()
+        {
+            if (!CanShowConversationRewindShortcut)
+                return;
+
+            var command = CopilotLocalCommandCatalog.FindExact("/rewind");
+            if (command != null)
+                RewindConversation(command, string.Empty);
         }
 
         private bool StopCurrentReply()

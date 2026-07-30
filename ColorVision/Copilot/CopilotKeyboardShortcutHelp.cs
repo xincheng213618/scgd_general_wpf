@@ -22,6 +22,7 @@ namespace ColorVision.Copilot
             new("全局", "Ctrl+O", "复制最近一条已完成回答"),
             new("全局", "Ctrl+T", "收起或展开 Agent 任务明细"),
             new("运行中", "Esc", "停止当前回复；Agent 有安全检查点时先暂停，再按一次取消"),
+            new("空闲", "Esc Esc", "打开会话回溯点清单，不立即回溯"),
             new("输入框", "Enter", "发送；Agent 运行中作为 steering"),
             new("输入框", "Shift+Enter", "插入换行"),
             new("输入框", "Tab", "补全命令或引用；Agent 运行中排队后续请求"),

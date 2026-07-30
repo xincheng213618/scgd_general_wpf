@@ -33,6 +33,7 @@ namespace ColorVision.Copilot
         private CopilotChatViewModel? _attachedViewModel;
         private ObservableCollection<CopilotChatMessage>? _attachedMessages;
         private readonly HashSet<CopilotChatMessage> _attachedMessageItems = new();
+        private readonly CopilotDoubleEscapeGesture _rewindEscapeGesture = new();
         private ScrollViewer? _messagesScrollViewer;
         private bool _isCompactSidebar;
         private bool _isConversationSidebarExpanded = true;
@@ -94,6 +95,11 @@ namespace ColorVision.Copilot
         private void CopilotChatPanel_PreviewKeyDown(object sender, KeyEventArgs e)
         {
             var key = e.Key == Key.System ? e.SystemKey : e.Key;
+            var isPlainEscape = key == Key.Escape && Keyboard.Modifiers == ModifierKeys.None;
+            if (!isPlainEscape)
+                _rewindEscapeGesture.Reset();
+            var showRewindPoints = isPlainEscape
+                && _rewindEscapeGesture.Register(DateTimeOffset.UtcNow);
             if (key is Key.Oem2 or Key.Divide
                 && Keyboard.Modifiers == ModifierKeys.Control
                 && DataContext is CopilotChatViewModel shortcutViewModel)
@@ -167,6 +173,7 @@ namespace ColorVision.Copilot
 
             if (ProfileSelectorPopup.IsOpen)
             {
+                _rewindEscapeGesture.Reset();
                 CloseProfileSelectorPopup();
                 e.Handled = true;
                 return;
@@ -176,6 +183,7 @@ namespace ColorVision.Copilot
                 && DataContext is CopilotChatViewModel closeFindViewModel
                 && closeFindViewModel.CloseConversationFindCommand.CanExecute(null))
             {
+                _rewindEscapeGesture.Reset();
                 closeFindViewModel.CloseConversationFindCommand.Execute(null);
                 FocusPromptInput();
                 e.Handled = true;
@@ -187,6 +195,7 @@ namespace ColorVision.Copilot
                     && DataContext is CopilotChatViewModel focusedSearchViewModel
                     && focusedSearchViewModel.HasConversationSearchQuery))
             {
+                _rewindEscapeGesture.Reset();
                 if (DataContext is CopilotChatViewModel searchViewModel
                     && searchViewModel.ClearConversationSearchCommand.CanExecute(null))
                 {
@@ -200,6 +209,7 @@ namespace ColorVision.Copilot
             if (DataContext is CopilotChatViewModel historyViewModel
                 && historyViewModel.CancelPromptHistoryNavigation())
             {
+                _rewindEscapeGesture.Reset();
                 FocusPromptInput();
                 e.Handled = true;
                 return;
@@ -208,6 +218,7 @@ namespace ColorVision.Copilot
             if (DataContext is CopilotChatViewModel editViewModel
                 && editViewModel.CancelMessageEditCommand.CanExecute(null))
             {
+                _rewindEscapeGesture.Reset();
                 editViewModel.CancelMessageEditCommand.Execute(null);
                 FocusPromptInput();
                 e.Handled = true;
@@ -216,6 +227,7 @@ namespace ColorVision.Copilot
 
             if (_isCompactSidebar && _isConversationSidebarExpanded)
             {
+                _rewindEscapeGesture.Reset();
                 _isConversationSidebarExpanded = false;
                 UpdateResponsiveLayout();
                 FocusPromptInput();
@@ -228,15 +240,30 @@ namespace ColorVision.Copilot
                 && (composerViewModel.IsPromptHistorySearchOpen
                     || composerViewModel.IsComposerReferenceMentionActive))
             {
+                _rewindEscapeGesture.Reset();
                 return;
             }
 
-            if (Keyboard.Modifiers == ModifierKeys.None
-                && DataContext is CopilotChatViewModel stopViewModel
-                && stopViewModel.TryStopCurrentReplyFromKeyboard())
+            if (isPlainEscape
+                && DataContext is CopilotChatViewModel escapeViewModel)
             {
-                e.Handled = true;
+                if (escapeViewModel.TryStopCurrentReplyFromKeyboard())
+                {
+                    _rewindEscapeGesture.Reset();
+                    e.Handled = true;
+                    return;
+                }
+
+                if (escapeViewModel.CanShowConversationRewindShortcut)
+                {
+                    e.Handled = true;
+                    if (showRewindPoints)
+                        escapeViewModel.ShowConversationRewindPointsFromKeyboard();
+                    return;
+                }
             }
+
+            _rewindEscapeGesture.Reset();
         }
 
         private void FocusConversationFind()
@@ -285,6 +312,7 @@ namespace ColorVision.Copilot
 
         private void CopilotChatPanel_DataContextChanged(object sender, System.Windows.DependencyPropertyChangedEventArgs e)
         {
+            _rewindEscapeGesture.Reset();
             DetachViewModel(e.OldValue as CopilotChatViewModel);
             AttachViewModel(e.NewValue as CopilotChatViewModel);
             ScrollToBottom();
@@ -292,6 +320,7 @@ namespace ColorVision.Copilot
 
         private void CopilotChatPanel_Unloaded(object sender, System.Windows.RoutedEventArgs e)
         {
+            _rewindEscapeGesture.Reset();
             if (_isThemeSubscriptionActive)
             {
                 ThemeManager.Current.CurrentUIThemeChanged -= ThemeManager_CurrentUIThemeChanged;
