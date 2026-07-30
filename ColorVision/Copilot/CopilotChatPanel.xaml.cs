@@ -662,6 +662,16 @@ namespace ColorVision.Copilot
 
         private async void PromptTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
         {
+            if (DataContext is CopilotChatViewModel historyScopeViewModel
+                && historyScopeViewModel.IsPromptHistorySearchOpen
+                && e.Key == Key.S
+                && Keyboard.Modifiers == ModifierKeys.Control)
+            {
+                historyScopeViewModel.TryTogglePromptHistorySearchScope();
+                e.Handled = true;
+                return;
+            }
+
             if (DataContext is CopilotChatViewModel promptHistoryViewModel
                 && promptHistoryViewModel.IsPromptHistorySearchOpen
                 && Keyboard.Modifiers == ModifierKeys.None)

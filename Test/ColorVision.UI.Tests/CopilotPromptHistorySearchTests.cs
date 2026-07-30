@@ -82,4 +82,38 @@ public sealed class CopilotPromptHistorySearchTests
         Assert.EndsWith("…", longResult.Preview, StringComparison.Ordinal);
         Assert.True(longResult.Preview.Length <= CopilotPromptHistorySearch.MaximumPreviewCharacters + 1);
     }
+
+    [Fact]
+    public void AllConversationSearchUsesVisiblePromptsAndKeepsNewestDuplicate()
+    {
+        var firstConversation = new CopilotConversationRecord();
+        firstConversation.Messages.Add(new CopilotChatMessage(CopilotChatRole.User, "Shared request")
+        {
+            CreatedAt = new DateTime(2026, 7, 29, 10, 0, 0),
+            RequestContent = "hidden first request",
+        });
+        firstConversation.Messages.Add(new CopilotChatMessage(CopilotChatRole.User, "Older request")
+        {
+            CreatedAt = new DateTime(2026, 7, 29, 11, 0, 0),
+        });
+
+        var secondConversation = new CopilotConversationRecord();
+        secondConversation.Messages.Add(new CopilotChatMessage(CopilotChatRole.Assistant, "Assistant answer")
+        {
+            CreatedAt = new DateTime(2026, 7, 30, 9, 0, 0),
+        });
+        secondConversation.Messages.Add(new CopilotChatMessage(CopilotChatRole.User, "Shared request")
+        {
+            CreatedAt = new DateTime(2026, 7, 30, 10, 0, 0),
+            RequestContent = "hidden newest request",
+        });
+
+        var results = CopilotPromptHistorySearch.SearchAll(
+            [firstConversation, secondConversation],
+            string.Empty);
+
+        Assert.Equal(["Shared request", "Older request"], results.Select(item => item.Text));
+        Assert.DoesNotContain(results, item => item.Text.Contains("hidden", StringComparison.Ordinal));
+        Assert.DoesNotContain(results, item => item.Text.Contains("Assistant", StringComparison.Ordinal));
+    }
 }

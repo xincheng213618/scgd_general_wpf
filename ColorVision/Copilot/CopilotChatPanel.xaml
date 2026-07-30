@@ -2138,7 +2138,7 @@
                                            VerticalAlignment="Center"
                                            FontSize="9"
                                            Opacity="0.48"
-                                           Text="↑↓ 选择 · Enter 恢复 · Esc 关闭" />
+                                           Text="↑↓ 选择 · Ctrl+S 范围 · Enter 恢复 · Esc 关闭" />
                                 <TextBlock VerticalAlignment="Center"
                                            FontSize="10"
                                            FontWeight="SemiBold"

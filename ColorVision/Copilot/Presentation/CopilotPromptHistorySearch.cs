@@ -4,6 +4,12 @@ using System.Linq;
 
 namespace ColorVision.Copilot
 {
+    internal enum CopilotPromptHistorySearchScope
+    {
+        CurrentConversation,
+        AllConversations,
+    }
+
     public sealed record CopilotPromptHistorySearchItem(
         string Text,
         string Preview);
@@ -46,6 +52,19 @@ namespace ColorVision.Copilot
                     BuildPreview(item.Searchable)))
                 .ToArray();
             return candidates;
+        }
+
+        public static IReadOnlyList<CopilotPromptHistorySearchItem> SearchAll(
+            IEnumerable<CopilotConversationRecord>? conversations,
+            string? query)
+        {
+            var messages = (conversations ?? Array.Empty<CopilotConversationRecord>())
+                .Where(conversation => conversation != null)
+                .SelectMany(conversation => conversation.Messages ?? [])
+                .Where(message => message != null)
+                .OrderBy(message => message.CreatedAt)
+                .ToArray();
+            return Search(messages, query);
         }
 
         private static int Score(string candidate, string query)

@@ -93,6 +93,7 @@ namespace ColorVision.Copilot
         private string _composerReferenceSessionKey = string.Empty;
         private string _promptHistorySearchConversationId = string.Empty;
         private string _promptHistorySearchDraft = string.Empty;
+        private CopilotPromptHistorySearchScope _promptHistorySearchScope;
         private bool _isConversationFindOpen;
         private bool _isComposerReferenceMentionActive;
         private bool _isComposerReferenceSearchPending;
@@ -1008,11 +1009,16 @@ namespace ColorVision.Copilot
             IsPromptHistorySearchOpen && PromptHistorySearchResults.Count > 0;
 
         public string PromptHistorySearchHeader =>
-            $"历史请求 · {PromptHistorySearchResults.Count:N0}";
+            $"历史请求 · {PromptHistorySearchScopeLabel} · {PromptHistorySearchResults.Count:N0}";
 
         public string PromptHistorySearchStatusText => HasPromptHistorySearchResults
-            ? "继续输入可筛选；选中后只恢复到输入框，不会自动发送。"
-            : "没有匹配的可见历史请求；请修改关键词或按 Esc 关闭。";
+            ? "继续输入可筛选；Ctrl+S 切换范围，选中后只恢复到输入框，不会自动发送。"
+            : "没有匹配的可见历史请求；Ctrl+S 可切换范围，或按 Esc 关闭。";
+
+        public string PromptHistorySearchScopeLabel =>
+            _promptHistorySearchScope == CopilotPromptHistorySearchScope.AllConversations
+                ? "全部会话"
+                : "当前会话";
 
         public CopilotPromptHistorySearchItem? SelectedPromptHistorySearchResult
         {
@@ -1063,7 +1069,13 @@ namespace ColorVision.Copilot
             if (IsPromptHistorySearchOpen || IsBusy || IsEditingMessage || conversation == null)
                 return false;
 
+            _promptHistorySearchScope = CopilotPromptHistorySearchScope.CurrentConversation;
             var initialResults = CopilotPromptHistorySearch.Search(conversation.Messages, string.Empty);
+            if (initialResults.Count == 0)
+            {
+                initialResults = CopilotPromptHistorySearch.SearchAll(Conversations, string.Empty);
+                _promptHistorySearchScope = CopilotPromptHistorySearchScope.AllConversations;
+            }
             if (initialResults.Count == 0)
                 return false;
 
@@ -1076,6 +1088,19 @@ namespace ColorVision.Copilot
                 InputText = string.Empty;
             else
                 RefreshPromptHistorySearchResults();
+            return true;
+        }
+
+        public bool TryTogglePromptHistorySearchScope()
+        {
+            if (!IsPromptHistorySearchOpen)
+                return false;
+
+            _promptHistorySearchScope =
+                _promptHistorySearchScope == CopilotPromptHistorySearchScope.CurrentConversation
+                    ? CopilotPromptHistorySearchScope.AllConversations
+                    : CopilotPromptHistorySearchScope.CurrentConversation;
+            RefreshPromptHistorySearchResults();
             return true;
         }
 
@@ -1132,9 +1157,9 @@ namespace ColorVision.Copilot
             }
 
             var preferredText = SelectedPromptHistorySearchResult?.Text;
-            var results = CopilotPromptHistorySearch.Search(
-                conversation.Messages,
-                InputText);
+            var results = _promptHistorySearchScope == CopilotPromptHistorySearchScope.AllConversations
+                ? CopilotPromptHistorySearch.SearchAll(Conversations, InputText)
+                : CopilotPromptHistorySearch.Search(conversation.Messages, InputText);
             PromptHistorySearchResults.Clear();
             foreach (var result in results)
                 PromptHistorySearchResults.Add(result);
@@ -1145,6 +1170,8 @@ namespace ColorVision.Copilot
             OnPropertyChanged(nameof(HasPromptHistorySearchResults));
             OnPropertyChanged(nameof(PromptHistorySearchHeader));
             OnPropertyChanged(nameof(PromptHistorySearchStatusText));
+            OnPropertyChanged(nameof(PromptHistorySearchScopeLabel));
+            OnPropertyChanged(nameof(InputPlaceholder));
         }
 
         private void ClosePromptHistorySearch(string restoredText)
@@ -1152,12 +1179,14 @@ namespace ColorVision.Copilot
             IsPromptHistorySearchOpen = false;
             _promptHistorySearchConversationId = string.Empty;
             _promptHistorySearchDraft = string.Empty;
+            _promptHistorySearchScope = CopilotPromptHistorySearchScope.CurrentConversation;
             PromptHistorySearchResults.Clear();
             SelectedPromptHistorySearchResult = null;
             InputText = restoredText ?? string.Empty;
             OnPropertyChanged(nameof(HasPromptHistorySearchResults));
             OnPropertyChanged(nameof(PromptHistorySearchHeader));
             OnPropertyChanged(nameof(PromptHistorySearchStatusText));
+            OnPropertyChanged(nameof(PromptHistorySearchScopeLabel));
         }
 
         public bool TryToggleComposerStash(int caretIndex, out int restoredCaretIndex)
@@ -1274,7 +1303,7 @@ namespace ColorVision.Copilot
         private string _inputText = string.Empty;
 
         public string InputPlaceholder => IsPromptHistorySearchOpen
-            ? "搜索当前会话的可见历史请求"
+            ? $"搜索{PromptHistorySearchScopeLabel}的可见历史请求"
             : IsEditingMessage
             ? "修改后按 Enter 重新发送"
             : IsViewingActiveRun
