@@ -2546,6 +2546,23 @@ namespace ColorVision.Copilot
 
         public CopilotConversationCompaction? Compaction { get; set; }
 
+        public CopilotConversationGoal? Goal
+        {
+            get => _goal;
+            set
+            {
+                if (SetProperty(ref _goal, value))
+                {
+                    OnPropertyChanged(nameof(HasGoal));
+                    OnPropertyChanged(nameof(GoalDisplayText));
+                    OnPropertyChanged(nameof(GoalToolTip));
+                }
+            }
+        }
+        private CopilotConversationGoal? _goal;
+
+        public bool ShouldSerializeGoal() => Goal != null;
+
         [JsonIgnore]
         public string UpdatedLabel => UpdatedAt.Date == DateTime.Today ? UpdatedAt.ToString("HH:mm") : UpdatedAt.ToString("M/d");
 
@@ -2560,6 +2577,23 @@ namespace ColorVision.Copilot
 
         [JsonIgnore]
         public string PinMenuText => IsPinned ? CopilotUiText.UnpinMenuText : CopilotUiText.PinMenuText;
+
+        [JsonIgnore]
+        public bool HasGoal => Goal?.IsStructurallyValid() == true;
+
+        [JsonIgnore]
+        public string GoalDisplayText => Goal == null
+            ? string.Empty
+            : $"{(Goal.IsActive ? "持续目标" : "目标已暂停")} · {BuildPreview(Goal.Objective, 120)}";
+
+        [JsonIgnore]
+        public string GoalToolTip => Goal == null
+            ? string.Empty
+            : $"{(Goal.IsActive ? "活动目标会绑定到后续新 Agent 任务。" : "该目标已暂停，不会绑定到新任务。")}"
+                + Environment.NewLine
+                + Goal.Objective
+                + Environment.NewLine
+                + "目标约束完成判定，但不授权写入、工具调用、审批复用或外部副作用。";
 
         [JsonIgnore]
         public string AgentRunStatusLabel
@@ -2651,6 +2685,11 @@ namespace ColorVision.Copilot
             if (Compaction != null && !Compaction.IsStructurallyValid())
             {
                 Compaction = null;
+                changed = true;
+            }
+            if (Goal != null && !Goal.IsStructurallyValid())
+            {
+                Goal = null;
                 changed = true;
             }
 

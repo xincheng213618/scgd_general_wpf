@@ -15,6 +15,9 @@ public sealed class CopilotConversationBranchServiceTests
             ProfileId = "profile-1",
             ProfileDisplayName = "Test Profile",
             AgentSessionCheckpoint = new CopilotAgentSessionCheckpoint(),
+            Goal = CopilotConversationGoal.Create(
+                "Inspect the camera workflow until every stage is verified",
+                DateTimeOffset.UtcNow),
         };
         source.SetLastUsage(new CopilotTokenUsage(100, 20, 120));
         source.Attachments.Add(CopilotAttachmentItem.CreateContext("composer context", "Composer"));
@@ -64,6 +67,10 @@ public sealed class CopilotConversationBranchServiceTests
         Assert.False(branch.LastUsage.HasAny);
         Assert.NotNull(branch.Compaction);
         Assert.Equal(branch.Messages[1].Id, branch.Compaction.ThroughMessageId);
+        Assert.NotNull(branch.Goal);
+        Assert.NotEqual(source.Goal.Id, branch.Goal.Id);
+        Assert.Equal(source.Goal.Objective, branch.Goal.Objective);
+        Assert.Equal(source.Goal.State, branch.Goal.State);
 
         Assert.Equal("source-conversation", source.Id);
         Assert.Equal("unsent follow-up", source.DraftText);

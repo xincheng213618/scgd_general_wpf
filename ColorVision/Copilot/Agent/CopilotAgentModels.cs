@@ -408,6 +408,8 @@ namespace ColorVision.Copilot
 
         public string TaskIntentText { get; init; } = string.Empty;
 
+        public string ActiveGoalText { get; init; } = string.Empty;
+
         public CopilotProfileConfig Profile { get; init; } = null!;
 
         public IReadOnlyList<CopilotRequestMessage> History { get; init; } = Array.Empty<CopilotRequestMessage>();

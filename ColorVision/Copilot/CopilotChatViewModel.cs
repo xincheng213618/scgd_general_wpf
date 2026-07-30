@@ -1368,6 +1368,9 @@ namespace ColorVision.Copilot
                 case CopilotLocalCommandKind.Plan:
                     StartPlanRequest(command, invocation.Arguments);
                     break;
+                case CopilotLocalCommandKind.Goal:
+                    ManageConversationGoal(command, invocation.Arguments);
+                    break;
                 case CopilotLocalCommandKind.NewConversation:
                     DismissLocalCommandResult();
                     StartNewChat();
@@ -1478,6 +1481,30 @@ namespace ColorVision.Copilot
             DismissLocalCommandResult();
             InputText = task.Trim();
             RunUiOperation(SendAsync, "生成执行计划");
+        }
+
+        private void ManageConversationGoal(CopilotLocalCommand command, string arguments)
+        {
+            var conversation = SelectedConversation;
+            if (conversation == null)
+            {
+                ShowLocalCommandResult(command, "当前没有可管理的会话。请先新建会话。");
+                return;
+            }
+
+            var result = CopilotConversationGoalCommand.Execute(
+                conversation.Goal,
+                arguments,
+                DateTimeOffset.UtcNow);
+            if (result.Changed)
+            {
+                conversation.Goal = result.Goal;
+                UpdateConversationMetadata(conversation, touch: true);
+                PersistState();
+                RefreshComposerTokenEstimate();
+            }
+
+            ShowLocalCommandResult(command, result.Message);
         }
 
         private async Task ShowGitDiffAsync(CopilotLocalCommand command, string scope)
@@ -1786,6 +1813,8 @@ namespace ColorVision.Copilot
                 HistoryContextWindowTokens = agentDefaults.ContextWindowTokens,
                 CompactedSourceMessages = compaction?.SourceMessageCount ?? 0,
                 CompactionSummaryCharacters = compaction?.Summary.Length ?? 0,
+                ConversationGoalCharacters = SelectedConversation?.Goal?.Objective.Length ?? 0,
+                ConversationGoalActive = SelectedConversation?.Goal?.IsActive == true,
                 AttachmentCount = Attachments.Count,
                 FileAttachmentCount = Attachments.Count(item => item.Type == CopilotAttachmentType.File),
                 ImageAttachmentCount = Attachments.Count(item => item.Type == CopilotAttachmentType.Image),
@@ -2220,7 +2249,8 @@ namespace ColorVision.Copilot
                 _config.ExternalMcpServers,
                 conversation.Id,
                 hostedRun.Id,
-                conversation.AccessContext);
+                conversation.AccessContext,
+                conversation.Goal?.IsActive == true ? conversation.Goal.Objective : string.Empty);
             var eventProtocol = new CopilotTurnEventProtocol(userMessage.RequestMode);
             try
             {
@@ -3854,7 +3884,15 @@ namespace ColorVision.Copilot
                 maximumWeight = (long)maximumTokens * CopilotTokenEstimator.AsciiCharactersPerToken;
             }
 
-            var estimatedWeight = CopilotTokenEstimator.EstimateTextWeight(prompt);
+            var budgetText = mode != CopilotAgentMode.Chat
+                && SelectedConversation?.Goal?.IsActive == true
+                ? string.Join(
+                    Environment.NewLine,
+                    SelectedConversation.Goal.Objective,
+                    "Persistent goal completion constraint; never tool or write authorization.",
+                    prompt)
+                : prompt;
+            var estimatedWeight = CopilotTokenEstimator.EstimateTextWeight(budgetText);
             if (estimatedWeight <= maximumWeight)
                 return true;
 
@@ -4134,6 +4172,7 @@ namespace ColorVision.Copilot
                 ContainsSearchTerm(conversation.Title, term)
                 || ContainsSearchTerm(conversation.PreviewText, term)
                 || ContainsSearchTerm(conversation.DraftText, term)
+                || ContainsSearchTerm(conversation.Goal?.Objective, term)
                 || ContainsSearchTerm(conversation.ProfileDisplayName, term)
                 || conversation.Attachments.Any(attachment => MatchesAttachmentSearch(attachment, term))
                 || conversation.Messages.Any(message => ContainsSearchTerm(message.Content, term)
@@ -5812,6 +5851,7 @@ namespace ColorVision.Copilot
         {
             builder.AppendLine($"Model: {SelectedProfile?.DisplayLabel ?? "No model selected"}");
             builder.AppendLine($"Prompt: {BuildPromptSummary()}");
+            builder.AppendLine($"Persistent goal: {BuildConversationGoalSummary()}");
             builder.AppendLine($"Conversation context: {BuildConversationContextSummary()}");
             builder.AppendLine($"Attachments: {BuildAttachmentSummary()}");
             builder.AppendLine($"Window context: {BuildWindowContextSummary()}");
@@ -5838,6 +5878,16 @@ namespace ColorVision.Copilot
             return selection.WasReduced
                 ? $"{retained} retained from {selection.SourceMessageCount} message(s), {selection.SourceCharacters:N0} characters"
                 : retained;
+        }
+
+        private string BuildConversationGoalSummary()
+        {
+            var goal = SelectedConversation?.Goal;
+            if (goal?.IsStructurallyValid() != true)
+                return "None";
+
+            return $"{(goal.IsActive ? "Active" : "Paused")}, {goal.Objective.Length:N0} characters"
+                + (goal.IsActive ? " (completion constraint only)" : string.Empty);
         }
 
         private string BuildAttachmentSummary()

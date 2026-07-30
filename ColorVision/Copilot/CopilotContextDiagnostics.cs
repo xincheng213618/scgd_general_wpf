@@ -41,6 +41,10 @@ namespace ColorVision.Copilot
 
         public int CompactionSummaryCharacters { get; init; }
 
+        public int ConversationGoalCharacters { get; init; }
+
+        public bool ConversationGoalActive { get; init; }
+
         public int AttachmentCount { get; init; }
 
         public int FileAttachmentCount { get; init; }
@@ -142,6 +146,18 @@ namespace ColorVision.Copilot
                     .Append(" 条来源已归纳为 ")
                     .Append(FormatCount(snapshot.CompactionSummaryCharacters))
                     .AppendLine(" 字符摘要；完整记录仍保留在本地");
+            }
+            builder.Append("持续目标：");
+            if (snapshot.ConversationGoalCharacters <= 0)
+            {
+                builder.AppendLine("无");
+            }
+            else
+            {
+                builder.Append(snapshot.ConversationGoalActive ? "活动" : "已暂停")
+                    .Append(" · ")
+                    .Append(FormatCount(snapshot.ConversationGoalCharacters))
+                    .AppendLine(" 字符；仅约束完成判定，不授予操作权限");
             }
             builder.Append("附件：").AppendLine(FormatAttachments(snapshot));
             builder.Append("窗口上下文：").AppendLine(snapshot.HasLiveWindowContext ? "已提供" : "无");

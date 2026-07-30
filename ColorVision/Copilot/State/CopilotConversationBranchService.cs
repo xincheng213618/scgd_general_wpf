@@ -34,6 +34,9 @@ namespace ColorVision.Copilot
                 ProfileId = source.ProfileId,
                 Title = BuildBranchTitle(source.Title, requestedTitle),
                 UpdatedAt = DateTime.Now,
+                Goal = source.Goal?.IsStructurallyValid() == true
+                    ? source.Goal.CopyForBranch(DateTimeOffset.UtcNow)
+                    : null,
             };
             var messageIdMap = new Dictionary<string, string>(StringComparer.Ordinal);
             var lastUserMode = CopilotAgentMode.Chat;

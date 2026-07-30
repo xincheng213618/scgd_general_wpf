@@ -756,6 +756,13 @@
                                    Foreground="{DynamicResource GlobalTextBrush}"
                                    Text="{Binding SelectedConversation.Title, FallbackValue={x:Static properties:Resources.CopilotNewConversation}, TargetNullValue={x:Static properties:Resources.CopilotNewConversation}}"
                                    TextTrimming="CharacterEllipsis" />
+                        <TextBlock Margin="0,3,0,0"
+                                   FontSize="10"
+                                   Foreground="{StaticResource CopilotControlBrush}"
+                                   Text="{Binding SelectedConversation.GoalDisplayText}"
+                                   TextTrimming="CharacterEllipsis"
+                                   ToolTip="{Binding SelectedConversation.GoalToolTip}"
+                                   Visibility="{Binding SelectedConversation.HasGoal, Converter={StaticResource bool2VisibilityConverter}}" />
                         <Button Margin="0,3,0,0"
                                 Padding="0"
                                 HorizontalAlignment="Left"

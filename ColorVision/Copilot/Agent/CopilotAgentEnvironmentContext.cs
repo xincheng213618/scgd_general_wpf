@@ -11,7 +11,7 @@ namespace ColorVision.Copilot
 {
     public sealed class CopilotAgentEnvironmentContext
     {
-        public const int CurrentVersion = 2;
+        public const int CurrentVersion = 3;
         public const int MaxScopedPaths = 8;
         public const int MaxPathLength = 1_024;
 
@@ -42,6 +42,8 @@ namespace ColorVision.Copilot
         public string GitBranch { get; init; } = string.Empty;
 
         public string GitHead { get; init; } = string.Empty;
+
+        public string ActiveGoalFingerprint { get; init; } = string.Empty;
 
         public string Fingerprint { get; init; } = string.Empty;
 
@@ -77,6 +79,7 @@ namespace ColorVision.Copilot
                 GitRoot = git.Root,
                 GitBranch = git.Branch,
                 GitHead = git.Head,
+                ActiveGoalFingerprint = ComputeActiveGoalFingerprint(request.ActiveGoalText),
             };
             return context.WithFingerprint(ComputeFingerprint(context));
         }
@@ -98,6 +101,7 @@ namespace ColorVision.Copilot
                 ["git_root"] = EmptyAsNull(GitRoot),
                 ["git_branch"] = EmptyAsNull(GitBranch),
                 ["git_head"] = string.IsNullOrWhiteSpace(GitHead) ? null : GitHead[..Math.Min(12, GitHead.Length)],
+                ["active_goal_bound"] = !string.IsNullOrWhiteSpace(ActiveGoalFingerprint),
             };
             return JsonSerializer.Serialize(payload);
         }
@@ -118,6 +122,7 @@ namespace ColorVision.Copilot
                 && IsSafeOptionalValue(GitRoot, MaxPathLength)
                 && IsSafeOptionalValue(GitBranch, 512)
                 && IsSafeOptionalValue(GitHead, 64)
+                && (ActiveGoalFingerprint.Length == 0 || IsSha256(ActiveGoalFingerprint))
                 && IsSha256(Fingerprint);
         }
 
@@ -139,6 +144,7 @@ namespace ColorVision.Copilot
                 GitRoot = GitRoot,
                 GitBranch = GitBranch,
                 GitHead = GitHead,
+                ActiveGoalFingerprint = ActiveGoalFingerprint,
                 Fingerprint = fingerprint,
             };
         }
@@ -160,8 +166,23 @@ namespace ColorVision.Copilot
                 context.GitRoot,
                 context.GitBranch,
                 context.GitHead,
+                context.ActiveGoalFingerprint,
             });
             return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(stableData))).ToLowerInvariant();
+        }
+
+        private static string ComputeActiveGoalFingerprint(string? activeGoalText)
+        {
+            if (!CopilotConversationGoal.TryNormalizeObjective(
+                activeGoalText,
+                out var normalizedGoal,
+                out _))
+            {
+                return string.Empty;
+            }
+
+            return Convert.ToHexString(
+                SHA256.HashData(Encoding.UTF8.GetBytes(normalizedGoal))).ToLowerInvariant();
         }
 
         private static string[] NormalizeScopedRoots(IEnumerable<string>? roots)

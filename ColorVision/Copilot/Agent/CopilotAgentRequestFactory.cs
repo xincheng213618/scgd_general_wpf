@@ -144,6 +144,8 @@ namespace ColorVision.Copilot
         public CopilotAgentAccessContext AccessContext { get; init; } = new();
 
         public string TaskIntentText { get; init; } = string.Empty;
+
+        public string ActiveGoalText { get; init; } = string.Empty;
     }
 
     public static class CopilotAgentRequestFactory
@@ -241,6 +243,12 @@ namespace ColorVision.Copilot
                 TaskIntentText = string.IsNullOrWhiteSpace(input.TaskIntentText)
                     ? plan.UserText
                     : input.TaskIntentText.Trim(),
+                ActiveGoalText = CopilotConversationGoal.TryNormalizeObjective(
+                    input.ActiveGoalText,
+                    out var normalizedGoal,
+                    out _)
+                    ? normalizedGoal
+                    : string.Empty,
                 Profile = input.Profile,
                 History = input.History.ToArray(),
                 Attachments = plan.Attachments,

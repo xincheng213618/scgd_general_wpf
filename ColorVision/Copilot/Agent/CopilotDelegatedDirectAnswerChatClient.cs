@@ -81,6 +81,7 @@ namespace ColorVision.Copilot
         {
             answer = string.Empty;
             if (_taskLedgerEnabled
+                || !string.IsNullOrWhiteSpace(_request.ActiveGoalText)
                 || !_request.RequiresDelegatedWorkspaceEvidence
                 || _request.RequiredSuccessfulToolNames.Count != 1
                 || !string.Equals(

@@ -166,6 +166,7 @@ namespace ColorVision.Copilot
                 AccessContext = request.AccessContext,
                 ExternalMcpServers = request.ExternalMcpServers,
                 TaskIntentText = recoveryTaskContext.TaskIntentText,
+                ActiveGoalText = request.ActiveGoalText,
             });
             var result = await _agentRuntime.RunAsync(agentRequest, eventSink.OnAgentEvent, cancellationToken).ConfigureAwait(false);
             return CopilotTurnResult.FromAgent(request.Mode, imageUnderstanding.Usage.Add(result.Usage), result);

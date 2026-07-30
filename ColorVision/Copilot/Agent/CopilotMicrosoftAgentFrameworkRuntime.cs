@@ -339,6 +339,8 @@ namespace ColorVision.Copilot
             var projectInstructionCount = request.ProjectInstructions.Count(document => document?.IsStructurallyValid() == true);
             if (projectInstructionCount > 0)
                 emit(CopilotAgentEvent.RuntimeDiagnostic($"Project instructions enabled · {projectInstructionCount} scoped workspace instruction document(s)."));
+            if (!string.IsNullOrWhiteSpace(request.ActiveGoalText))
+                emit(CopilotAgentEvent.RuntimeDiagnostic($"Active conversation goal bound · {request.ActiveGoalText.Length:N0} character(s) · completion constraint only, never authorization."));
 
             var providerInactivityTimeouts =
                 CopilotProviderInactivityPolicy.Resolve(request.Profile);
