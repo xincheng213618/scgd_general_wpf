@@ -27,12 +27,16 @@ public sealed class CopilotReasoningSelectionTests
             new("skill-two", "Two"),
             new("skill-three", "Three"),
             new("skill-four", "Four"),
+            new("skill-five", "Five"),
+            new("skill-six", "Six"),
+            new("skill-seven", "Seven"),
+            new("skill-eight", "Eight"),
         ];
         var bareSlash = CopilotLocalCommandCatalog.Suggest("/", skills);
-        Assert.Equal(32, bareSlash.Count);
+        Assert.Equal(36, bareSlash.Count);
         Assert.Contains(bareSlash, command => command.Name == "/skill-one");
-        Assert.Contains(bareSlash, command => command.Name == "/skill-three");
-        Assert.DoesNotContain(bareSlash, command => command.Name == "/skill-four");
+        Assert.Contains(bareSlash, command => command.Name == "/skill-six");
+        Assert.DoesNotContain(bareSlash, command => command.Name == "/skill-seven");
     }
 
     [Theory]

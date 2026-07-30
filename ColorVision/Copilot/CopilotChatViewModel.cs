@@ -1460,6 +1460,9 @@ namespace ColorVision.Copilot
                 case CopilotLocalCommandKind.Permissions:
                     HandlePermissionsCommand(command, invocation.Arguments);
                     break;
+                case CopilotLocalCommandKind.InitializeProject:
+                    StartProjectInitialization(command);
+                    break;
                 case CopilotLocalCommandKind.Hooks:
                     ShowLocalCommandResult(command, BuildHookDiagnosticsReport());
                     break;
@@ -1679,6 +1682,28 @@ namespace ColorVision.Copilot
             SetPendingRequestModeOverride(CopilotAgentMode.Review);
             InputText = prompt.ToString();
             RunUiOperation(SendAsync, "开始工作区审查");
+        }
+
+        private void StartProjectInitialization(CopilotLocalCommand command)
+        {
+            if (IsBusy)
+            {
+                ShowLocalCommandResult(command, "当前有请求正在执行，请完成或停止后再初始化项目指令。");
+                return;
+            }
+
+            var workspaceRoot = CaptureHostedTurnSnapshot(Attachments).SolutionDirectoryPath;
+            var plan = CopilotProjectInitialization.Create(workspaceRoot);
+            if (!plan.CanStart)
+            {
+                ShowLocalCommandResult(command, plan.Message);
+                return;
+            }
+
+            DismissLocalCommandResult();
+            RunUiOperation(
+                () => SendAsync(plan.VisiblePrompt, CopilotAgentMode.Code, plan.ModelPrompt),
+                "初始化项目指令");
         }
 
         private void StartPlanRequest(CopilotLocalCommand command, string task)

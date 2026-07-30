@@ -13,7 +13,7 @@ API Key 和 MCP token 保存在本机加密配置中。发送问题前，应确�
 
 ## 输入区引用与访问模式
 
-在输入框中键入 `@` 可以搜索当前 ColorVision 模板、应用菜单和解决方案文件；也可以点击左下角 `+`，选择 **关联模板、菜单或文件（@）**，在当前光标位置打开同一候选目录。继续输入会过滤候选，使用 ↑/↓ 选择，Enter 或 Tab 关联，Esc 关闭候选。关联文件会加入本轮真实附件；关联模板或菜单会加入带来源标识的结构化上下文。已保存模板开放 `InspectSavedTemplate`（本机 MCP 名称为 `get_saved_template_context`）只读工具，从已加载集合读取精确 code 和保存名称对应的有界脱敏快照；模板类型引用开放 `InspectTemplateType`（`get_template_type_context`），只返回类型身份、已加载保存名称和参数字段 Schema，不读取参数值。两者都不查询数据库、不修改或保存模板。菜单引用携带稳定菜单 ID（没有 ID 时使用完整路径），后续明确要求执行时 `ExecuteMenu` 使用该 selector，避免按显示标题再次模糊匹配；引用本身不会触发执行，执行仍遵守当前审批策略。
+在输入框中键入 `@` 可以搜索当前 ColorVision 模板、应用菜单和解决方案文件；也可以点击左下角 `+`，选择 **关联模板、菜单或文件（@）**，在当前光标位置打开同一候选目录。继续输入会过滤候选，使用 ↑/↓ 选择，Enter 或 Tab 关联，Esc 关闭候选。关联文件会加入本轮真实附件；关联模板或菜单会加入带来源标识的结构化上下文。已保存模板开放 `InspectSavedTemplate`（本机 MCP 名称为 `get_saved_template_context`）只读工具，从已加载集合读取精确 code 和保存名称对应的有界脱敏快照；模板类型引用开放 `InspectTemplateType`（`get_template_type_context`），只返回类型身份、已加载保存名称和参数字段 Schema，不读取参数值。两者都不查询数据库、不修改或保存模板。菜单引用携带稳定菜单 ID（没有 ID 时使用完整路径），后续明确要求执行时 `ExecuteMenu` 使用该 selector，避免按显示标题再次模糊匹配；引用本身不会触发执行，执行仍遵守当前审批策略。打开项目或解决方案后，还可以输入 `/init` 为尚无共享项目指令的根目录生成 `AGENTS.md`：Copilot 会先检查 `AGENTS.override.md`、`AGENTS.md`、`CLAUDE.md` 和 `.claude/CLAUDE.md`，任一项已存在（包括空文件）便只提示现有路径，不覆盖或另建会遮蔽它的文件；检查通过后，Agent 才读取项目结构及相关开发文档，并提出只含一个新增 `AGENTS.md` 的补丁。预览不写文件，应用仍遵守当前原生审批；初始化不会编译、测试或修改其他文件，生成结果应由开发人员审阅并继续精炼。
 
 输入框左下角的盾牌按钮按会话选择 **按需确认** 或 **临时自动复核**。输入 `/permissions` 会打开同一个菜单；`/permissions status` 显示当前文件范围、能力和审批策略；`/permissions ask` 恢复按需确认；`/permissions auto` 启用现有的临时自动复核：
 

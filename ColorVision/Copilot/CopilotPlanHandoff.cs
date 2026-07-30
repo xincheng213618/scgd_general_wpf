@@ -81,6 +81,7 @@ namespace ColorVision.Copilot
         public static string ResolveEffectiveUserText(string? visiblePrompt, string? requestContent)
         {
             return IsApprovedExecutionRequest(requestContent)
+                    || CopilotProjectInitialization.IsInitializationRequest(requestContent)
                 ? requestContent!.Trim()
                 : (visiblePrompt ?? string.Empty).Trim();
         }
