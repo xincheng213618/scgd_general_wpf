@@ -172,10 +172,10 @@ public sealed class CopilotSubagentDiagnosticsTests
                 ToolName = "DelegateExplore",
                 State = CopilotToolExecutionState.Running,
             },
-            "Explore 子 Agent 已启动",
+            "Explore 子 Agent 正在调查",
             new CopilotToolProgressUpdate
             {
-                Message = "Explore 子 Agent 已启动",
+                Message = "Explore 子 Agent 正在调查",
                 DelegatedRun = new CopilotDelegatedRunProgress
                 {
                     RoleId = "explore",
@@ -183,14 +183,17 @@ public sealed class CopilotSubagentDiagnosticsTests
                     ResumeFromRunId = "explore-source",
                     RequestTokenBudget = 8_192,
                     QueueDurationMs = 25,
+                    ConsumedTokens = 2_048,
+                    ProviderCalls = 2,
+                    ToolCalls = 3,
                 },
             }));
         conversation.Messages.Add(assistant);
 
         var report = CopilotSubagentDiagnostics.Format(conversation, "runs");
 
-        Assert.Contains("#1 · explore · explore-live · state=Running · resumed_from=explore-source", report);
-        Assert.Contains("排队 25ms · tokens 0/8,192", report);
+        Assert.Contains("#1 · explore · explore-live · state=Running · resumed_from=explore-source · activity=Explore 子 Agent 正在调查", report);
+        Assert.Contains("排队 25ms · tokens 2,048/8,192 · 模型 2 · 工具 3", report);
         Assert.DoesNotContain("ID 待回传", report);
         Assert.DoesNotContain("等待子运行回传用量", report);
     }

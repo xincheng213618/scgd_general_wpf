@@ -404,6 +404,9 @@ namespace ColorVision.Copilot
                 entry.DelegatedResumeFromRunId = SanitizeIdentifier(reportedProgress.DelegatedRun.ResumeFromRunId);
                 entry.DelegatedRequestTokenBudget = Math.Max(0, reportedProgress.DelegatedRun.RequestTokenBudget);
                 entry.DelegatedQueueDurationMs = Math.Max(0, reportedProgress.DelegatedRun.QueueDurationMs);
+                entry.DelegatedConsumedTokens = Math.Max(0, reportedProgress.DelegatedRun.ConsumedTokens);
+                entry.DelegatedProviderCalls = Math.Max(0, reportedProgress.DelegatedRun.ProviderCalls);
+                entry.DelegatedToolCalls = Math.Max(0, reportedProgress.DelegatedRun.ToolCalls);
             }
             entry.ResultSummary = !string.IsNullOrWhiteSpace(entry.ProgressMessage)
                 ? entry.ProgressMessage

@@ -5,6 +5,21 @@ namespace ColorVision.UI.Tests;
 public sealed class CopilotDelegateSubagentToolTests
 {
     [Fact]
+    public void SubagentProgressObserverFailureIsIsolated()
+    {
+        var request = new CopilotSubagentRunRequest
+        {
+            ProgressUpdated = (_, _) => throw new InvalidOperationException("observer failed"),
+        };
+
+        var exception = Record.Exception(() => request.ReportProgress(
+            CopilotSubagentRunPhase.Exploration,
+            new CopilotAgentBudgetSnapshot { ConsumedTokens = 128 }));
+
+        Assert.Null(exception);
+    }
+
+    [Fact]
     public async Task RunningSubagentReportsIdentityAndBudgetBeforeCompletion()
     {
         var parentRequest = Request();
@@ -44,6 +59,39 @@ public sealed class CopilotDelegateSubagentToolTests
         Assert.Equal(
             CopilotSubagentCancelResult.NotFound,
             CopilotSubagentCoordination.RequestCancelActiveRun(parentRequest.ConversationId, runId));
+    }
+
+    [Fact]
+    public async Task RunningSubagentReportsLiveBudgetAndPhaseBeforeCompletion()
+    {
+        var runner = new ProgressReportingRunner();
+        var progressTool = Assert.IsAssignableFrom<ICopilotProgressReportingTool>(
+            new CopilotDelegateExploreTool(runner));
+        var progress = new CopilotToolProgressContext();
+        var execution = progressTool.ExecuteWithProgressAsync(
+            Request(),
+            Input(),
+            progress,
+            CancellationToken.None);
+
+        try
+        {
+            await runner.Started.Task.WaitAsync(TimeSpan.FromSeconds(1));
+            var snapshot = Assert.IsType<CopilotToolProgressUpdate>(progress.LatestSnapshot);
+            var delegatedRun = Assert.IsType<CopilotDelegatedRunProgress>(snapshot.DelegatedRun);
+
+            Assert.Equal("Explore 子 Agent 正在调查", snapshot.Message);
+            Assert.Equal(2_048, delegatedRun.ConsumedTokens);
+            Assert.Equal(2, delegatedRun.ProviderCalls);
+            Assert.Equal(3, delegatedRun.ToolCalls);
+            Assert.False(execution.IsCompleted);
+        }
+        finally
+        {
+            runner.Release.TrySetResult();
+        }
+
+        Assert.True((await execution.WaitAsync(TimeSpan.FromSeconds(1))).Success);
     }
 
     [Fact]
@@ -583,6 +631,45 @@ public sealed class CopilotDelegateSubagentToolTests
             CancellationToken cancellationToken)
         {
             Started.TrySetResult(runRequest);
+            await Release.Task.WaitAsync(cancellationToken);
+            return new CopilotSubagentResult
+            {
+                RoleId = role.Id,
+                RunId = runRequest.RunId,
+                RequestTokenBudget = runRequest.RequestTokenBudget,
+                QueueDurationMs = runRequest.QueueDurationMs,
+                Answer = "Verified finding.",
+                StopReason = CopilotAgentStopReason.Completed,
+                HasSuccessfulEvidence = true,
+                ToolNames = ["ReadLocalFile"],
+            };
+        }
+    }
+
+    private sealed class ProgressReportingRunner : ICopilotSubagentRunner
+    {
+        public TaskCompletionSource Started { get; } = new(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public TaskCompletionSource Release { get; } = new(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public async Task<CopilotSubagentResult> RunAsync(
+            CopilotAgentRequest parentRequest,
+            CopilotSubagentRoleDescriptor role,
+            CopilotSubagentRunRequest runRequest,
+            CancellationToken cancellationToken)
+        {
+            runRequest.ReportProgress(
+                CopilotSubagentRunPhase.Exploration,
+                new CopilotAgentBudgetSnapshot
+                {
+                    RequestTokenBudget = runRequest.RequestTokenBudget,
+                    ConsumedTokens = 2_048,
+                    ProviderCalls = 2,
+                    ToolCalls = 3,
+                });
+            Started.TrySetResult();
             await Release.Task.WaitAsync(cancellationToken);
             return new CopilotSubagentResult
             {

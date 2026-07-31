@@ -41,6 +41,12 @@ namespace ColorVision.Copilot
         public int RequestTokenBudget { get; init; }
 
         public long QueueDurationMs { get; init; }
+
+        public long ConsumedTokens { get; init; }
+
+        public int ProviderCalls { get; init; }
+
+        public int ToolCalls { get; init; }
     }
 
     public sealed class CopilotToolProgressContext
@@ -170,19 +176,35 @@ namespace ColorVision.Copilot
             CopilotDelegatedRunProgress? delegatedRun = null;
             if (update.DelegatedRun != null)
             {
+                var requestTokenBudget = Math.Clamp(
+                    update.DelegatedRun.RequestTokenBudget,
+                    0,
+                    (int)MaximumCount);
+                var consumedTokens = Math.Clamp(
+                    update.DelegatedRun.ConsumedTokens,
+                    0,
+                    MaximumCount);
+                if (requestTokenBudget > 0)
+                    consumedTokens = Math.Min(consumedTokens, requestTokenBudget);
                 delegatedRun = new CopilotDelegatedRunProgress
                 {
                     RoleId = NormalizeIdentifier(update.DelegatedRun.RoleId),
                     RunId = NormalizeIdentifier(update.DelegatedRun.RunId),
                     ResumeFromRunId = NormalizeIdentifier(update.DelegatedRun.ResumeFromRunId),
-                    RequestTokenBudget = Math.Clamp(
-                        update.DelegatedRun.RequestTokenBudget,
-                        0,
-                        (int)MaximumCount),
+                    RequestTokenBudget = requestTokenBudget,
                     QueueDurationMs = Math.Clamp(
                         update.DelegatedRun.QueueDurationMs,
                         0,
                         MaximumCount),
+                    ConsumedTokens = consumedTokens,
+                    ProviderCalls = Math.Clamp(
+                        update.DelegatedRun.ProviderCalls,
+                        0,
+                        (int)MaximumCount),
+                    ToolCalls = Math.Clamp(
+                        update.DelegatedRun.ToolCalls,
+                        0,
+                        (int)MaximumCount),
                 };
             }
 
@@ -226,7 +248,10 @@ namespace ColorVision.Copilot
                 && string.Equals(left.RunId, right.RunId, StringComparison.Ordinal)
                 && string.Equals(left.ResumeFromRunId, right.ResumeFromRunId, StringComparison.Ordinal)
                 && left.RequestTokenBudget == right.RequestTokenBudget
-                && left.QueueDurationMs == right.QueueDurationMs;
+                && left.QueueDurationMs == right.QueueDurationMs
+                && left.ConsumedTokens == right.ConsumedTokens
+                && left.ProviderCalls == right.ProviderCalls
+                && left.ToolCalls == right.ToolCalls;
         }
 
         private static string NormalizeIdentifier(string? value)

@@ -222,16 +222,21 @@ public sealed class CopilotSubagentBudgetFinalizationTests
                 TrustedProjectRootPaths = [root],
                 Mode = CopilotAgentMode.Code,
             };
+            var progressUpdates = new List<(
+                CopilotSubagentRunPhase Phase,
+                CopilotAgentBudgetSnapshot Budget)>();
+            var runRequest = new CopilotSubagentRunRequest
+            {
+                RunId = "explore-preloaded-evidence-test",
+                Task = $"Inspect budget evidence in {string.Join(", ", fileNames)} under {root}.",
+                RequestTokenBudget = 16_384,
+                ProgressUpdated = (phase, budget) => progressUpdates.Add((phase, budget)),
+            };
 
             var result = await runner.RunAsync(
                 parentRequest,
                 role,
-                new CopilotSubagentRunRequest
-                {
-                    RunId = "explore-preloaded-evidence-test",
-                    Task = $"Inspect budget evidence in {string.Join(", ", fileNames)} under {root}.",
-                    RequestTokenBudget = 16_384,
-                },
+                runRequest,
                 CancellationToken.None);
 
             Assert.Equal(expectedStopReason, result.StopReason);
@@ -241,6 +246,12 @@ public sealed class CopilotSubagentBudgetFinalizationTests
             Assert.Equal(["ReadLocalFile"], result.ToolNames);
             Assert.Equal(1, result.Budget.ToolCalls);
             Assert.Equal(1, result.Budget.ProviderCalls);
+            Assert.Contains(
+                progressUpdates,
+                update => update.Phase == CopilotSubagentRunPhase.Finalization
+                    && update.Budget.ProviderCalls == 1
+                    && update.Budget.ToolCalls == 1
+                    && update.Budget.ConsumedTokens > 0);
             Assert.True(
                 result.Budget.ConsumedTokens < 4_000,
                 $"Minimal finalization consumed an estimated {result.Budget.ConsumedTokens} tokens.");

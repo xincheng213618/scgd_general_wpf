@@ -13,6 +13,12 @@ using System.Threading.Tasks;
 
 namespace ColorVision.Copilot
 {
+    internal enum CopilotSubagentRunPhase
+    {
+        Exploration,
+        Finalization,
+    }
+
     public interface ICopilotSubagentRunner
     {
         Task<CopilotSubagentResult> RunAsync(
@@ -35,6 +41,25 @@ namespace ColorVision.Copilot
         public int RequestTokenBudget { get; init; }
 
         public long QueueDurationMs { get; init; }
+
+        internal Action<CopilotSubagentRunPhase, CopilotAgentBudgetSnapshot>? ProgressUpdated { get; set; }
+
+        internal void ReportProgress(
+            CopilotSubagentRunPhase phase,
+            CopilotAgentBudgetSnapshot budget)
+        {
+            ArgumentNullException.ThrowIfNull(budget);
+            try
+            {
+                ProgressUpdated?.Invoke(phase, budget);
+            }
+            catch (Exception ex)
+            {
+                Trace.TraceWarning(
+                    "Copilot subagent progress observer failed: {0}",
+                    CopilotUserFacingErrorFormatter.Sanitize(ex.Message));
+            }
+        }
     }
 
     public sealed class CopilotSubagentResult
@@ -172,6 +197,13 @@ namespace ColorVision.Copilot
                         {
                             answer.Append(agentEvent.Text);
                         }
+                        else if (agentEvent.Type == CopilotAgentEventType.BudgetUpdated
+                            && agentEvent.Budget != null)
+                        {
+                            runRequest.ReportProgress(
+                                CopilotSubagentRunPhase.Exploration,
+                                agentEvent.Budget);
+                        }
                     },
                     cancellationToken);
             }
@@ -216,6 +248,18 @@ namespace ColorVision.Copilot
                             else if (agentEvent.Type == CopilotAgentEventType.AnswerDelta)
                             {
                                 answer.Append(agentEvent.Text);
+                            }
+                            else if (agentEvent.Type == CopilotAgentEventType.BudgetUpdated
+                                && agentEvent.Budget != null)
+                            {
+                                runRequest.ReportProgress(
+                                    CopilotSubagentRunPhase.Finalization,
+                                    CombineBudgets(
+                                        result.Budget,
+                                        agentEvent.Budget,
+                                        runRequest.RequestTokenBudget,
+                                        stopwatch.Elapsed,
+                                        finalizationCompleted: false));
                             }
                         },
                         cancellationToken);
@@ -1195,18 +1239,12 @@ namespace ColorVision.Copilot
                 RequestTokenBudget = lease.RequestTokenBudget,
                 QueueDurationMs = lease.QueueDurationMs,
             };
-            progress?.Report(new CopilotToolProgressUpdate
+            if (progress != null)
             {
-                Message = $"{_role.DisplayName} 子 Agent 已启动",
-                DelegatedRun = new CopilotDelegatedRunProgress
-                {
-                    RoleId = _role.Id,
-                    RunId = childRun.RunId,
-                    ResumeFromRunId = childRun.ResumeFromRunId,
-                    RequestTokenBudget = childRun.RequestTokenBudget,
-                    QueueDurationMs = childRun.QueueDurationMs,
-                },
-            });
+                childRun.ProgressUpdated = (phase, budget) =>
+                    ReportSubagentProgress(progress, childRun, phase, budget);
+                ReportSubagentProgress(progress, childRun, phase: null, budget: null);
+            }
             CopilotSubagentResult result;
             using var runCancellation = CancellationTokenSource.CreateLinkedTokenSource(
                 cancellationToken,
@@ -1311,6 +1349,34 @@ namespace ColorVision.Copilot
                     WasTruncated = result.WasTruncated,
                 },
             };
+        }
+
+        private void ReportSubagentProgress(
+            CopilotToolProgressContext progress,
+            CopilotSubagentRunRequest runRequest,
+            CopilotSubagentRunPhase? phase,
+            CopilotAgentBudgetSnapshot? budget)
+        {
+            progress.Report(new CopilotToolProgressUpdate
+            {
+                Message = phase switch
+                {
+                    CopilotSubagentRunPhase.Exploration => $"{_role.DisplayName} 子 Agent 正在调查",
+                    CopilotSubagentRunPhase.Finalization => $"{_role.DisplayName} 子 Agent 正在整理结果",
+                    _ => $"{_role.DisplayName} 子 Agent 已启动",
+                },
+                DelegatedRun = new CopilotDelegatedRunProgress
+                {
+                    RoleId = _role.Id,
+                    RunId = runRequest.RunId,
+                    ResumeFromRunId = runRequest.ResumeFromRunId,
+                    RequestTokenBudget = runRequest.RequestTokenBudget,
+                    QueueDurationMs = runRequest.QueueDurationMs,
+                    ConsumedTokens = Math.Max(0, budget?.ConsumedTokens ?? 0),
+                    ProviderCalls = Math.Max(0, budget?.ProviderCalls ?? 0),
+                    ToolCalls = Math.Max(0, budget?.ToolCalls ?? 0),
+                },
+            });
         }
 
         private CopilotToolResult Cancelled(CopilotSubagentRunRequest runRequest)

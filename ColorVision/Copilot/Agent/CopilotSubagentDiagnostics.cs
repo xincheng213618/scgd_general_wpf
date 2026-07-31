@@ -25,6 +25,7 @@ namespace ColorVision.Copilot
         string ResumeFromRunId,
         string RoleId,
         CopilotToolExecutionState State,
+        string Activity,
         CopilotAgentStopReason StopReason,
         DateTimeOffset StartedAtUtc,
         long DurationMs,
@@ -137,6 +138,7 @@ namespace ColorVision.Copilot
                         trace.DelegatedResumeFromRunId,
                         roleId,
                         trace.State,
+                        trace.ProgressMessage,
                         trace.DelegatedStopReason,
                         trace.StartedAtUtc,
                         Math.Max(0, trace.DurationMs),
@@ -307,6 +309,11 @@ namespace ColorVision.Copilot
                     builder.Append(" · resumed_from=").Append(run.ResumeFromRunId);
                 if (run.StopReason != CopilotAgentStopReason.None)
                     builder.Append(" · stop=").Append(run.StopReason);
+                if (run.State == CopilotToolExecutionState.Running
+                    && !string.IsNullOrWhiteSpace(run.Activity))
+                {
+                    builder.Append(" · activity=").Append(run.Activity);
+                }
                 builder.AppendLine();
 
                 builder.Append("  ");
