@@ -57,6 +57,52 @@ public sealed class CopilotBackgroundShellOutputDeliveryTests
     }
 
     [Fact]
+    public async Task NextAgentRunReceivesDelayedTerminalBeforeCurrentUserRequest()
+    {
+        using var provider = new CapturingChatClient();
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry([]),
+            new CopilotAgentContextBuilder(),
+            new CopilotToolExecutor(),
+            _ => provider,
+            EmptyExternalToolProvider.Instance,
+            new CopilotCapabilityCatalog());
+        Assert.True(runtime.TryEnqueueBackgroundShellCommandCompletion(
+            CreateCompletedCommand("conversation")));
+
+        var result = await runtime.RunAsync(
+            CreateRequest("conversation", "Handle the current user request."),
+            _ => { },
+            CancellationToken.None);
+
+        Assert.Equal(CopilotAgentStopReason.Completed, result.StopReason);
+        var messages = Assert.Single(provider.StreamingCalls);
+        var finalUserMessage = Assert.Single(
+            messages,
+            message => message.Role == ChatRole.User);
+        var terminalEventIndex = finalUserMessage.Text.IndexOf(
+            "<background_command_event>",
+            StringComparison.Ordinal);
+        var currentRequestIndex = finalUserMessage.Text.IndexOf(
+            "Handle the current user request.",
+            StringComparison.Ordinal);
+        Assert.True(terminalEventIndex >= 0);
+        Assert.True(currentRequestIndex > terminalEventIndex);
+        Assert.Contains(
+            "\"background_id\":\"background:deferred\"",
+            finalUserMessage.Text,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "\"state\":\"completed\"",
+            finalUserMessage.Text,
+            StringComparison.Ordinal);
+        Assert.Single(
+            result.TaskEventJournal.Events,
+            item => item.Type
+                == CopilotAgentTaskEventType.BackgroundCommandCompleted);
+    }
+
+    [Fact]
     public async Task FailureBeforeFirstProviderUpdateReturnsDeliveryForRetry()
     {
         using var failingProvider =
@@ -107,6 +153,63 @@ public sealed class CopilotBackgroundShellOutputDeliveryTests
             item => item.Type
                 == CopilotAgentTaskEventType
                     .BackgroundCommandOutputObserved);
+    }
+
+    [Fact]
+    public async Task FailureBeforeFirstProviderUpdateReturnsTerminalForRetry()
+    {
+        using var failingProvider =
+            new FailBeforeFirstUpdateChatClient();
+        using var recoveredProvider = new CapturingChatClient();
+        var providerNumber = 0;
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry([]),
+            new CopilotAgentContextBuilder(),
+            new CopilotToolExecutor(),
+            _ => Interlocked.Increment(ref providerNumber) == 1
+                ? failingProvider
+                : recoveredProvider,
+            EmptyExternalToolProvider.Instance,
+            new CopilotCapabilityCatalog());
+        Assert.True(runtime.TryEnqueueBackgroundShellCommandCompletion(
+            CreateCompletedCommand("conversation")));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            runtime.RunAsync(
+                CreateRequest("conversation", "First attempt."),
+                _ => { },
+                CancellationToken.None));
+        var failedPrompt = Assert.Single(
+            Assert.Single(failingProvider.StreamingCalls),
+            message => message.Role == ChatRole.User);
+
+        var recoveredResult = await runtime.RunAsync(
+            CreateRequest("conversation", "Retry attempt."),
+            _ => { },
+            CancellationToken.None);
+
+        Assert.Equal(
+            CopilotAgentStopReason.Completed,
+            recoveredResult.StopReason);
+        var retriedPrompt = Assert.Single(
+            Assert.Single(recoveredProvider.StreamingCalls),
+            message => message.Role == ChatRole.User);
+        Assert.Contains(
+            "<background_command_event>",
+            failedPrompt.Text,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "<background_command_event>",
+            retriedPrompt.Text,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "\"background_id\":\"background:deferred\"",
+            retriedPrompt.Text,
+            StringComparison.Ordinal);
+        Assert.Single(
+            recoveredResult.TaskEventJournal.Events,
+            item => item.Type
+                == CopilotAgentTaskEventType.BackgroundCommandCompleted);
     }
 
     [Fact]

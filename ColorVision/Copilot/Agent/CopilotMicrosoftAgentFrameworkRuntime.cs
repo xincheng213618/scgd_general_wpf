@@ -43,10 +43,8 @@ namespace ColorVision.Copilot
         private readonly CopilotUserQuestionCoordinator _userQuestionCoordinator = new();
         private readonly CopilotBackgroundShellOutputEventInbox
             _backgroundShellOutputEventInbox = new();
-        private readonly Dictionary<string,
-            List<CopilotBackgroundShellCommandSnapshot>>
-            _deferredBackgroundShellCompletionsByConversation =
-                new(StringComparer.Ordinal);
+        private readonly CopilotBackgroundShellCompletionInbox
+            _backgroundShellCompletionInbox = new();
         private readonly object _backgroundOutputRoutingSyncRoot = new();
         private bool _isFrameworkApprovalPending;
         private readonly object _steeringSyncRoot = new();
@@ -165,54 +163,17 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(snapshot);
             lock (_backgroundOutputRoutingSyncRoot)
             {
-                return ShouldDeferBackgroundShellSignals()
-                    ? TryDeferBackgroundShellCommandCompletion(snapshot)
-                    : TryEnqueueBackgroundShellCommandCompletionCore(snapshot);
+                if (ShouldDeferBackgroundShellSignals())
+                    return TryDeferBackgroundShellCommandCompletion(snapshot);
+                return TryEnqueueBackgroundShellCommandCompletionCore(snapshot)
+                    || TryDeferBackgroundShellCommandCompletion(snapshot);
             }
         }
 
         private bool TryDeferBackgroundShellCommandCompletion(
             CopilotBackgroundShellCommandSnapshot snapshot)
         {
-            ActiveSteeringContext? activeContext;
-            lock (_steeringSyncRoot)
-                activeContext = _activeSteeringContext;
-
-            if (activeContext == null
-                || !CopilotBackgroundShellCommandAgentEvent.TryCreateMessage(
-                    snapshot,
-                    activeContext.ConversationId,
-                    out _))
-            {
-                return false;
-            }
-
-            if (!_deferredBackgroundShellCompletionsByConversation.TryGetValue(
-                    activeContext.ConversationId,
-                    out var completions))
-            {
-                completions = [];
-                _deferredBackgroundShellCompletionsByConversation[
-                    activeContext.ConversationId] = completions;
-            }
-
-            var existingIndex = completions.FindIndex(item =>
-                string.Equals(item.Id, snapshot.Id, StringComparison.Ordinal));
-            if (existingIndex >= 0)
-            {
-                completions[existingIndex] = snapshot;
-                return true;
-            }
-
-            if (completions.Count
-                >= CopilotBackgroundShellCommandRegistry
-                    .MaximumActivePerConversation)
-            {
-                return false;
-            }
-
-            completions.Add(snapshot);
-            return true;
+            return _backgroundShellCompletionInbox.TryEnqueue(snapshot);
         }
 
         private bool TryEnqueueBackgroundShellCommandCompletionCore(
@@ -350,25 +311,17 @@ namespace ColorVision.Copilot
             using var delivery =
                 _backgroundShellOutputEventInbox.BeginDelivery(
                     activeContext.ConversationId);
+            using var completionDelivery =
+                _backgroundShellCompletionInbox.BeginDelivery(
+                    activeContext.ConversationId);
             var outputMessages = CreateDeferredBackgroundOutputMessages(
                 delivery.Events,
                 activeContext.ConversationId);
-            var completions =
-                _deferredBackgroundShellCompletionsByConversation.TryGetValue(
-                    activeContext.ConversationId,
-                    out var deferredCompletions)
-                    ? deferredCompletions
-                    : [];
-            var completionMessages = completions
-                .Select(snapshot =>
-                    CopilotBackgroundShellCommandAgentEvent.TryCreateMessage(
-                        snapshot,
-                        activeContext.ConversationId,
-                        out var message)
-                        ? message
-                        : string.Empty)
-                .Where(message => !string.IsNullOrWhiteSpace(message))
-                .ToArray();
+            var completions = completionDelivery.Completions;
+            var completionMessages =
+                CreateDeferredBackgroundCompletionMessages(
+                    completions,
+                    activeContext.ConversationId);
             var messages = outputMessages
                 .Concat(completionMessages)
                 .ToArray();
@@ -377,10 +330,7 @@ namespace ColorVision.Copilot
                 if (delivery.Events.Count > 0)
                     delivery.Commit();
                 if (completions.Count > 0)
-                {
-                    _deferredBackgroundShellCompletionsByConversation.Remove(
-                        activeContext.ConversationId);
-                }
+                    completionDelivery.Commit();
                 return false;
             }
 
@@ -398,6 +348,7 @@ namespace ColorVision.Copilot
                     ],
                     CancellationToken.None).GetAwaiter().GetResult();
                 delivery.Commit();
+                completionDelivery.Commit();
                 foreach (var deferredEvent in delivery.Events)
                 {
                     activeContext.TaskEventJournal
@@ -407,12 +358,8 @@ namespace ColorVision.Copilot
                 foreach (var completion in completions)
                 {
                     activeContext.TaskEventJournal
-                        .RecordBackgroundShellCommandCompletion(completion);
-                }
-                if (completions.Count > 0)
-                {
-                    _deferredBackgroundShellCompletionsByConversation.Remove(
-                        activeContext.ConversationId);
+                        .RecordBackgroundShellCommandCompletion(
+                            completion.Snapshot);
                 }
                 return true;
             }
@@ -952,27 +899,42 @@ namespace ColorVision.Copilot
             using var deferredBackgroundOutputDelivery =
                 _backgroundShellOutputEventInbox.BeginDelivery(
                     request.ConversationId);
+            using var deferredBackgroundCompletionDelivery =
+                _backgroundShellCompletionInbox.BeginDelivery(
+                    request.ConversationId);
             var deferredBackgroundOutputEvents =
                 deferredBackgroundOutputDelivery.Events;
+            var deferredBackgroundCompletions =
+                deferredBackgroundCompletionDelivery.Completions;
             var deferredBackgroundOutputMessages =
                 CreateDeferredBackgroundOutputMessages(
                     deferredBackgroundOutputEvents,
                     request.ConversationId);
-            if (deferredBackgroundOutputMessages.Length > 0)
+            var deferredBackgroundCompletionMessages =
+                CreateDeferredBackgroundCompletionMessages(
+                    deferredBackgroundCompletions,
+                    request.ConversationId);
+            var deferredBackgroundSignalMessages =
+                deferredBackgroundOutputMessages
+                    .Concat(deferredBackgroundCompletionMessages)
+                    .ToArray();
+            if (deferredBackgroundSignalMessages.Length > 0)
             {
                 promptMessages = InsertEvidenceMessageBeforeCurrentUser(
                     promptMessages,
                     string.Join(
                         Environment.NewLine + Environment.NewLine,
-                        deferredBackgroundOutputMessages));
+                        deferredBackgroundSignalMessages));
                 emit(CopilotAgentEvent.RuntimeDiagnostic(
-                    $"Agent queued {deferredBackgroundOutputMessages.Length} bounded delayed background-output signal(s) from this conversation with the current request. Delivery remains pending until the provider returns its first update."));
+                    $"Agent queued {deferredBackgroundOutputMessages.Length} bounded delayed background-output signal(s) and {deferredBackgroundCompletionMessages.Length} delayed terminal signal(s) from this conversation with the current request. Delivery remains pending until the provider returns its first update."));
             }
-            else if (deferredBackgroundOutputEvents.Count > 0)
+            else if (deferredBackgroundOutputEvents.Count > 0
+                || deferredBackgroundCompletions.Count > 0)
             {
                 deferredBackgroundOutputDelivery.Commit();
+                deferredBackgroundCompletionDelivery.Commit();
                 emit(CopilotAgentEvent.RuntimeDiagnostic(
-                    "Invalid delayed background-output signals were discarded before provider delivery."));
+                    "Invalid delayed background signals were discarded before provider delivery."));
             }
             IReadOnlyList<Microsoft.Extensions.AI.ChatMessage> messages = CopilotRequestMessageSequence
                 .Normalize(promptMessages)
@@ -987,7 +949,7 @@ namespace ColorVision.Copilot
             var providerInterrupted = false;
             var contextWindowExceeded = false;
             var toolBudgetForcedFinalization = false;
-            var deferredBackgroundOutputAccepted = false;
+            var deferredBackgroundSignalsAccepted = false;
             var frameworkApprovalAwaitingProviderUpdate = false;
             AIChatFinishReason? providerFinishReason = null;
             try
@@ -1003,19 +965,26 @@ namespace ColorVision.Copilot
                             CompleteFrameworkApprovalRouting();
                             frameworkApprovalAwaitingProviderUpdate = false;
                         }
-                        if (!deferredBackgroundOutputAccepted
-                            && deferredBackgroundOutputMessages.Length > 0)
+                        if (!deferredBackgroundSignalsAccepted
+                            && deferredBackgroundSignalMessages.Length > 0)
                         {
                             deferredBackgroundOutputDelivery.Commit();
-                            deferredBackgroundOutputAccepted = true;
+                            deferredBackgroundCompletionDelivery.Commit();
+                            deferredBackgroundSignalsAccepted = true;
                             foreach (var deferredEvent in deferredBackgroundOutputEvents)
                             {
                                 taskEventJournalBuilder
                                     .RecordBackgroundShellCommandOutput(
                                         deferredEvent.EventArgs);
                             }
+                            foreach (var completion in deferredBackgroundCompletions)
+                            {
+                                taskEventJournalBuilder
+                                    .RecordBackgroundShellCommandCompletion(
+                                        completion.Snapshot);
+                            }
                             emit(CopilotAgentEvent.RuntimeDiagnostic(
-                                $"The provider produced its first update; {deferredBackgroundOutputMessages.Length} delayed background-output signal(s) are now marked delivered and their delivery IDs will not be replayed."));
+                                $"The provider produced its first update; {deferredBackgroundSignalMessages.Length} delayed background signal(s) are now marked delivered and will not be replayed."));
                         }
 
                         foreach (var usageContent in update.Contents.OfType<UsageContent>())
@@ -1963,11 +1932,7 @@ namespace ColorVision.Copilot
                     }
                 }
                 if (cleared)
-                {
                     _isFrameworkApprovalPending = false;
-                    _deferredBackgroundShellCompletionsByConversation.Remove(
-                        context.ConversationId);
-                }
             }
         }
 
@@ -2103,6 +2068,22 @@ namespace ColorVision.Copilot
                             deferredEvent,
                             conversationId,
                             out var message)
+                        ? message
+                        : string.Empty)
+                .Where(message => !string.IsNullOrWhiteSpace(message))
+                .ToArray();
+        }
+
+        private static string[] CreateDeferredBackgroundCompletionMessages(
+            IReadOnlyList<CopilotDeferredBackgroundShellCompletion> completions,
+            string conversationId)
+        {
+            return completions
+                .Select(completion =>
+                    CopilotBackgroundShellCommandAgentEvent.TryCreateMessage(
+                        completion.Snapshot,
+                        conversationId,
+                        out var message)
                         ? message
                         : string.Empty)
                 .Where(message => !string.IsNullOrWhiteSpace(message))
