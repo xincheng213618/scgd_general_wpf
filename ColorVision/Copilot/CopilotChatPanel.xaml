@@ -1931,7 +1931,7 @@
                                            VerticalAlignment="Center"
                                            FontSize="10"
                                            Opacity="0.54"
-                                           Text="Enter 调整当前任务 · Tab 排到下一轮" />
+                                           Text="{Binding FollowUpQueueHintText}" />
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock VerticalAlignment="Center"
                                                FontSize="11"
@@ -1982,8 +1982,18 @@
                                                     <StackPanel Grid.Column="2"
                                                                 Margin="8,0,0,0"
                                                                 Orientation="Horizontal">
+                                                        <Button Width="30"
+                                                                Height="22"
+                                                                Padding="0"
+                                                                Command="{Binding DataContext.SendQueuedFollowUpNowCommand, Source={x:Reference Root}}"
+                                                                CommandParameter="{Binding}"
+                                                                Content="立即"
+                                                                FontSize="9"
+                                                                Style="{StaticResource AttachmentCloseButtonStyle}"
+                                                                ToolTip="取消当前轮，把这条提升为下一轮立即执行" />
                                                         <Button Width="22"
                                                                 Height="22"
+                                                                Margin="4,0,0,0"
                                                                 Padding="0"
                                                                 Command="{Binding DataContext.MoveQueuedFollowUpUpCommand, Source={x:Reference Root}}"
                                                                 CommandParameter="{Binding}"

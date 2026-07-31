@@ -429,6 +429,39 @@ namespace ColorVision.Copilot
             out CopilotHostedAgentRun? run,
             out CopilotRequestAdmissionResult admission)
         {
+            return TryScheduleFollowUp(
+                conversationId,
+                mode,
+                operation,
+                runNext: false,
+                out run,
+                out admission);
+        }
+
+        internal bool TryScheduleFollowUpNext(
+            string conversationId,
+            CopilotAgentMode mode,
+            Func<CopilotHostedAgentRun, Task> operation,
+            out CopilotHostedAgentRun? run,
+            out CopilotRequestAdmissionResult admission)
+        {
+            return TryScheduleFollowUp(
+                conversationId,
+                mode,
+                operation,
+                runNext: true,
+                out run,
+                out admission);
+        }
+
+        private bool TryScheduleFollowUp(
+            string conversationId,
+            CopilotAgentMode mode,
+            Func<CopilotHostedAgentRun, Task> operation,
+            bool runNext,
+            out CopilotHostedAgentRun? run,
+            out CopilotRequestAdmissionResult admission)
+        {
             if (string.IsNullOrWhiteSpace(conversationId))
                 throw new ArgumentException("A conversation ID is required.", nameof(conversationId));
             ArgumentNullException.ThrowIfNull(operation);
@@ -444,7 +477,11 @@ namespace ColorVision.Copilot
                 }
 
                 run = new CopilotHostedAgentRun(normalizedConversationId, mode);
-                _queuedWorkItems.AddLast(new HostedRunWorkItem(run, operation));
+                var workItem = new HostedRunWorkItem(run, operation);
+                if (runNext)
+                    _queuedWorkItems.AddFirst(workItem);
+                else
+                    _queuedWorkItems.AddLast(workItem);
             }
 
             Publish(CopilotAgentTaskHostChangeKind.Queued, run);
@@ -644,6 +681,35 @@ namespace ColorVision.Copilot
             }
 
             Publish(CopilotAgentTaskHostChangeKind.QueueChanged, run);
+            return true;
+        }
+
+        public bool PromoteQueuedRun(string runId)
+        {
+            if (string.IsNullOrWhiteSpace(runId))
+                return false;
+
+            CopilotHostedAgentRun? run = null;
+            var changed = false;
+            lock (_gate)
+            {
+                var node = _queuedWorkItems.First;
+                while (node != null && !string.Equals(node.Value.Run.Id, runId, StringComparison.Ordinal))
+                    node = node.Next;
+                if (node == null)
+                    return false;
+
+                run = node.Value.Run;
+                if (node.Previous != null)
+                {
+                    _queuedWorkItems.Remove(node);
+                    _queuedWorkItems.AddFirst(node);
+                    changed = true;
+                }
+            }
+
+            if (changed)
+                Publish(CopilotAgentTaskHostChangeKind.QueueChanged, run);
             return true;
         }
 

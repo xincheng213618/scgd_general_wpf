@@ -25,7 +25,7 @@ namespace ColorVision.Copilot
             new("空闲", "Esc Esc", "打开会话回溯点清单，不立即回溯"),
             new("输入框", "Enter", "标准模式发送；多行模式插入换行"),
             new("输入框", "Shift+Enter", "标准模式插入换行；多行模式发送"),
-            new("输入框", "Ctrl+Enter", "标准与多行模式均发送"),
+            new("输入框", "Ctrl+Enter", "空闲时发送；Agent 运行中取消当前轮并把输入提升为下一轮"),
             new("输入框", "Tab", "补全命令或引用；Agent 运行中排队后续请求"),
             new("输入框", "Ctrl+R", "搜索当前会话的可见历史请求"),
             new("输入框", "Ctrl+S", "暂存当前草稿；空输入时恢复"),

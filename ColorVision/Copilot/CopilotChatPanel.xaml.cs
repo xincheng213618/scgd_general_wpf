@@ -925,6 +925,13 @@ namespace ColorVision.Copilot
                 e.Handled = true;
                 return;
             }
+            if (modifiers == ModifierKeys.Control
+                && viewModel.CanSteerCurrentRun)
+            {
+                viewModel.TrySendCurrentRunFollowUpNow();
+                e.Handled = true;
+                return;
+            }
             viewModel.SendCommand.Execute(null);
 
             e.Handled = true;
