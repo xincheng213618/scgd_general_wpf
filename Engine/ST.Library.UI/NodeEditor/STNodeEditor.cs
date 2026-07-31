@@ -239,9 +239,11 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 
 	private WriteableBitmap m_render_target;
 
-	private bool m_disposed;
+	private volatile bool m_disposed;
 
 	private bool m_is_loaded;
+
+	internal bool IsDisposed => m_disposed;
 
 	[Browsable(false)]
 	public float CanvasOffsetX => _CanvasOffsetX;
@@ -2594,14 +2596,33 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 
 	public IAsyncResult BeginInvoke(Delegate method, params object[] args)
 	{
-		if (method == null || m_disposed)
+		if (method == null
+			|| m_disposed
+			|| Dispatcher.HasShutdownStarted
+			|| Dispatcher.HasShutdownFinished)
 		{
 			return null;
 		}
-		DispatcherOperation operation = Dispatcher.BeginInvoke(
-			DispatcherPriority.Normal,
-			new Action(() => method.DynamicInvoke(args ?? Array.Empty<object>())));
-		return operation.Task;
+		try
+		{
+			DispatcherOperation operation = Dispatcher.BeginInvoke(
+				DispatcherPriority.Normal,
+				new Action(() =>
+				{
+					if (!m_disposed)
+					{
+						method.DynamicInvoke(args ?? Array.Empty<object>());
+					}
+				}));
+			return operation.Task;
+		}
+		catch (InvalidOperationException) when (
+			m_disposed
+			|| Dispatcher.HasShutdownStarted
+			|| Dispatcher.HasShutdownFinished)
+		{
+			return null;
+		}
 	}
 
 	public object Invoke(Delegate method)
