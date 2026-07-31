@@ -68,6 +68,8 @@ namespace ColorVision.Copilot
         public bool StandardOutputArchiveTruncated { get; init; }
 
         public bool StandardErrorArchiveTruncated { get; init; }
+
+        public long ObservationVersion { get; init; }
     }
 
     internal sealed record CopilotBackgroundShellProcessCompletion(
@@ -98,6 +100,8 @@ namespace ColorVision.Copilot
         public bool StandardOutputArchiveTruncated { get; init; }
 
         public bool StandardErrorArchiveTruncated { get; init; }
+
+        public long ObservationVersion { get; init; }
     }
 
     internal readonly record struct CopilotBackgroundShellProcessOutput(
@@ -112,7 +116,10 @@ namespace ColorVision.Copilot
         int ArchivedStandardOutputCharacters,
         int ArchivedStandardErrorCharacters,
         bool StandardOutputArchiveTruncated,
-        bool StandardErrorArchiveTruncated);
+        bool StandardErrorArchiveTruncated)
+    {
+        public long ObservationVersion { get; init; }
+    }
 
     internal interface ICopilotBackgroundShellProcess : IDisposable
     {
@@ -134,6 +141,11 @@ namespace ColorVision.Copilot
             CopilotBackgroundShellOutputStream stream,
             string literal,
             int offsetCharacters,
+            CancellationToken cancellationToken);
+
+        Task WaitForObservationChangeAsync(
+            long observationVersion,
+            TimeSpan timeout,
             CancellationToken cancellationToken);
 
         Task<CopilotBackgroundShellProcessCompletion> StopAsync(CancellationToken cancellationToken);
@@ -236,8 +248,6 @@ namespace ColorVision.Copilot
             CopilotOutputArchiveLimits.DefaultReadCharacters;
         public const int MaximumArchiveReadCharacters =
             CopilotOutputArchiveLimits.MaximumReadCharacters;
-        private static readonly TimeSpan ObservationPollInterval =
-            TimeSpan.FromMilliseconds(100);
 
         private readonly object _syncRoot = new();
         private readonly List<Entry> _entries = new();
@@ -635,15 +645,48 @@ namespace ColorVision.Copilot
 
                 var remaining = TimeSpan.FromSeconds(timeoutSeconds)
                     - stopwatch.Elapsed;
-                await Task.Delay(
-                        remaining <= TimeSpan.Zero
-                            ? TimeSpan.Zero
-                            : remaining < ObservationPollInterval
-                                ? remaining
-                                : ObservationPollInterval,
+                await WaitForObservationChangeAsync(
+                        normalizedConversationId,
+                        normalizedBackgroundId,
+                        snapshot.ObservationVersion,
+                        remaining,
                         cancellationToken)
                     .ConfigureAwait(false);
             }
+        }
+
+        private async Task WaitForObservationChangeAsync(
+            string conversationId,
+            string backgroundId,
+            long observationVersion,
+            TimeSpan timeout,
+            CancellationToken cancellationToken)
+        {
+            if (timeout <= TimeSpan.Zero)
+                return;
+
+            Entry? entry;
+            lock (_syncRoot)
+            {
+                RefreshCompletedEntriesUnderLock();
+                entry = _entries.SingleOrDefault(candidate =>
+                    string.Equals(
+                        candidate.ConversationId,
+                        conversationId,
+                        StringComparison.Ordinal)
+                    && string.Equals(
+                        candidate.Id,
+                        backgroundId,
+                        StringComparison.Ordinal));
+            }
+            if (entry == null)
+                return;
+
+            await entry.WaitForObservationChangeAsync(
+                    observationVersion,
+                    timeout,
+                    cancellationToken)
+                .ConfigureAwait(false);
         }
 
         private bool SearchArchivedOutput(
@@ -1091,7 +1134,10 @@ namespace ColorVision.Copilot
                         completion.ArchivedStandardOutputCharacters,
                         completion.ArchivedStandardErrorCharacters,
                         completion.StandardOutputArchiveTruncated,
-                        completion.StandardErrorArchiveTruncated);
+                        completion.StandardErrorArchiveTruncated)
+                    {
+                        ObservationVersion = completion.ObservationVersion,
+                    };
                 var standardOutput = BoundAndRedactOutput(
                     output.StandardOutput,
                     out var standardOutputTruncated);
@@ -1137,6 +1183,7 @@ namespace ColorVision.Copilot
                         output.StandardOutputArchiveTruncated,
                     StandardErrorArchiveTruncated =
                         output.StandardErrorArchiveTruncated,
+                    ObservationVersion = output.ObservationVersion,
                 };
             }
 
@@ -1160,6 +1207,15 @@ namespace ColorVision.Copilot
                     stream,
                     literal,
                     offsetCharacters,
+                    cancellationToken);
+
+            public Task WaitForObservationChangeAsync(
+                long observationVersion,
+                TimeSpan timeout,
+                CancellationToken cancellationToken) =>
+                _process.WaitForObservationChangeAsync(
+                    observationVersion,
+                    timeout,
                     cancellationToken);
 
             public async Task<CopilotBackgroundShellProcessCompletion> StopAsync(
@@ -1232,6 +1288,10 @@ namespace ColorVision.Copilot
         private readonly Task<string> _standardOutputTask;
         private readonly Task<string> _standardErrorTask;
         private readonly Task<CopilotBackgroundShellProcessCompletion> _completion;
+        private readonly object _observationSignalSyncRoot = new();
+        private TaskCompletionSource _observationChanged =
+            CreateObservationChangedSource();
+        private long _observationVersion;
         private int _terminationReason;
         private int _disposed;
 
@@ -1252,15 +1312,23 @@ namespace ColorVision.Copilot
                 0,
                 "\n...<earlier background output truncated>...\n",
                 _outputReadSource.Token,
-                _standardOutput.Append);
+                value => AppendOutput(_standardOutput, value));
             _standardErrorTask = CopilotProcessExecutionSupport.ReadBoundedAsync(
                 process.StandardError,
                 CopilotBackgroundShellCommandRegistry.MaximumOutputCharacters,
                 0,
                 "\n...<earlier background error output truncated>...\n",
                 _outputReadSource.Token,
-                _standardError.Append);
+                value => AppendOutput(_standardError, value));
             _completion = MonitorAsync(maximumLifetime);
+            _ = _completion.ContinueWith(
+                static (_, state) =>
+                    ((CopilotBackgroundShellProcess)state!)
+                        .SignalObservationChanged(),
+                this,
+                CancellationToken.None,
+                TaskContinuationOptions.ExecuteSynchronously,
+                TaskScheduler.Default);
         }
 
         public int ProcessId { get; }
@@ -1285,7 +1353,11 @@ namespace ColorVision.Copilot
                 standardOutput.ArchivedCharacters,
                 standardError.ArchivedCharacters,
                 standardOutput.ArchiveTruncated,
-                standardError.ArchiveTruncated);
+                standardError.ArchiveTruncated)
+            {
+                ObservationVersion =
+                    Volatile.Read(ref _observationVersion),
+            };
         }
 
         public CopilotRedactedOutputArchivePage ReadOutputArchive(
@@ -1311,6 +1383,35 @@ namespace ColorVision.Copilot
                     literal,
                     offsetCharacters,
                     cancellationToken);
+
+        public async Task WaitForObservationChangeAsync(
+            long observationVersion,
+            TimeSpan timeout,
+            CancellationToken cancellationToken)
+        {
+            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(
+                timeout,
+                TimeSpan.Zero);
+            Task notification;
+            lock (_observationSignalSyncRoot)
+            {
+                if (_observationVersion != observationVersion
+                    || _completion.IsCompleted)
+                {
+                    return;
+                }
+                notification = _observationChanged.Task;
+            }
+
+            try
+            {
+                await notification.WaitAsync(timeout, cancellationToken)
+                    .ConfigureAwait(false);
+            }
+            catch (TimeoutException)
+            {
+            }
+        }
 
         public async Task<CopilotBackgroundShellProcessCompletion> StopAsync(
             CancellationToken cancellationToken)
@@ -1389,11 +1490,14 @@ namespace ColorVision.Copilot
                         output.StandardOutputArchiveTruncated,
                     StandardErrorArchiveTruncated =
                         output.StandardErrorArchiveTruncated,
+                    ObservationVersion = output.ObservationVersion,
                 };
             }
             catch (Exception ex) when (ex is IOException or Win32Exception or InvalidOperationException or ObjectDisposedException)
             {
-                _standardError.Append(CopilotMcpAuditLogger.RedactText(ex.Message));
+                AppendOutput(
+                    _standardError,
+                    CopilotMcpAuditLogger.RedactText(ex.Message));
                 _standardOutput.CompleteArchive();
                 _standardError.CompleteArchive();
                 var output = GetOutputSnapshot();
@@ -1426,9 +1530,37 @@ namespace ColorVision.Copilot
                         output.StandardOutputArchiveTruncated,
                     StandardErrorArchiveTruncated =
                         output.StandardErrorArchiveTruncated,
+                    ObservationVersion = output.ObservationVersion,
                 };
             }
         }
+
+        private void AppendOutput(
+            BoundedOutput output,
+            string? value)
+        {
+            if (string.IsNullOrEmpty(value))
+                return;
+
+            output.Append(value);
+            SignalObservationChanged();
+        }
+
+        private void SignalObservationChanged()
+        {
+            TaskCompletionSource notification;
+            lock (_observationSignalSyncRoot)
+            {
+                if (_observationVersion < long.MaxValue)
+                    _observationVersion++;
+                notification = _observationChanged;
+                _observationChanged = CreateObservationChangedSource();
+            }
+            notification.TrySetResult();
+        }
+
+        private static TaskCompletionSource CreateObservationChangedSource() =>
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
 
         private static int? TryGetExitCode(Process process)
         {
@@ -1447,6 +1579,7 @@ namespace ColorVision.Copilot
             if (Interlocked.Exchange(ref _disposed, 1) == 1)
                 return;
 
+            SignalObservationChanged();
             Interlocked.CompareExchange(ref _terminationReason, 1, 0);
             _processJob?.TryTerminate();
             _processJob?.Dispose();

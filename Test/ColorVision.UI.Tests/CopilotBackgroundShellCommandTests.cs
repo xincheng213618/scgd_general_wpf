@@ -566,6 +566,56 @@ public sealed class CopilotBackgroundShellCommandTests
     }
 
     [Fact]
+    public async Task BoundedWaitBlocksOnSignalAndHonorsCancellation()
+    {
+        var launcher = new FakeBackgroundLauncher();
+        var registry = new CopilotBackgroundShellCommandRegistry(launcher);
+        var waitTool = new CopilotWaitForBackgroundShellCommandTool(registry);
+        var request = CreateRequest("wait without polling");
+        try
+        {
+            var started = await registry.StartAsync(
+                request,
+                CreateStartInput("Start-Sleep 30"),
+                CancellationToken.None);
+            Assert.True(started.Success, started.ErrorMessage);
+            using var cancellationSource = new CancellationTokenSource();
+            var waiting = waitTool.ExecuteAsync(
+                request,
+                CreateWaitInput(
+                    started.Snapshot!.Id,
+                    outputContains: "never-produced",
+                    timeoutSeconds: 2),
+                cancellationSource.Token);
+            var stopwatch = Stopwatch.StartNew();
+            while (launcher.LastProcess!.WaitForObservationChangeCallCount == 0
+                && stopwatch.Elapsed < TimeSpan.FromSeconds(1))
+            {
+                await Task.Delay(10);
+            }
+
+            Assert.Equal(
+                1,
+                launcher.LastProcess!.WaitForObservationChangeCallCount);
+            await Task.Delay(250);
+            Assert.Equal(
+                1,
+                launcher.LastProcess.WaitForObservationChangeCallCount);
+
+            cancellationSource.Cancel();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(
+                async () => await waiting);
+            Assert.Equal(
+                1,
+                launcher.LastProcess.WaitForObservationChangeCallCount);
+        }
+        finally
+        {
+            await registry.ShutdownAsync();
+        }
+    }
+
+    [Fact]
     public async Task BoundedWaitReportsGrowthWhenTheTruncatedPreviewIsStable()
     {
         var launcher = new FakeBackgroundLauncher();
@@ -1027,8 +1077,13 @@ public sealed class CopilotBackgroundShellCommandTests
     {
         private readonly TaskCompletionSource<CopilotBackgroundShellProcessCompletion>
             _completion = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly object _observationSignalSyncRoot = new();
+        private TaskCompletionSource _observationChanged =
+            CreateObservationChangedSource();
         private string _standardOutput = string.Empty;
         private string _standardError = string.Empty;
+        private long _observationVersion;
+        private int _waitForObservationChangeCallCount;
 
         public FakeBackgroundProcess(int processId)
         {
@@ -1046,10 +1101,14 @@ public sealed class CopilotBackgroundShellCommandTests
 
         public bool IsDisposed { get; private set; }
 
+        public int WaitForObservationChangeCallCount =>
+            Volatile.Read(ref _waitForObservationChangeCallCount);
+
         public void SetOutput(string standardOutput, string standardError)
         {
             _standardOutput = standardOutput;
             _standardError = standardError;
+            SignalObservationChanged();
         }
 
         public CopilotBackgroundShellProcessOutput GetOutputSnapshot() =>
@@ -1150,6 +1209,36 @@ public sealed class CopilotBackgroundShellCommandTests
                 ErrorMessage: string.Empty);
         }
 
+        public async Task WaitForObservationChangeAsync(
+            long observationVersion,
+            TimeSpan timeout,
+            CancellationToken cancellationToken)
+        {
+            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(
+                timeout,
+                TimeSpan.Zero);
+            Interlocked.Increment(
+                ref _waitForObservationChangeCallCount);
+            Task notification;
+            lock (_observationSignalSyncRoot)
+            {
+                if (_observationVersion != observationVersion
+                    || _completion.Task.IsCompleted)
+                {
+                    return;
+                }
+                notification = _observationChanged.Task;
+            }
+
+            try
+            {
+                await notification.WaitAsync(timeout, cancellationToken);
+            }
+            catch (TimeoutException)
+            {
+            }
+        }
+
         public Task<CopilotBackgroundShellProcessCompletion> StopAsync(
             CancellationToken cancellationToken)
         {
@@ -1170,7 +1259,10 @@ public sealed class CopilotBackgroundShellCommandTests
                     CreateOutputSnapshot().ArchivedStandardOutputCharacters,
                 ArchivedStandardErrorCharacters =
                     CreateOutputSnapshot().ArchivedStandardErrorCharacters,
+                ObservationVersion =
+                    Volatile.Read(ref _observationVersion),
             });
+            SignalObservationChanged();
             return _completion.Task;
         }
 
@@ -1193,7 +1285,10 @@ public sealed class CopilotBackgroundShellCommandTests
                     CreateOutputSnapshot().ArchivedStandardOutputCharacters,
                 ArchivedStandardErrorCharacters =
                     CreateOutputSnapshot().ArchivedStandardErrorCharacters,
+                ObservationVersion =
+                    Volatile.Read(ref _observationVersion),
             });
+            SignalObservationChanged();
         }
 
         private CopilotBackgroundShellProcessOutput CreateOutputSnapshot()
@@ -1224,12 +1319,34 @@ public sealed class CopilotBackgroundShellCommandTests
                     > archivedStandardOutputCharacters,
                 StandardErrorArchiveTruncated:
                     standardErrorArchive.Length
-                    > archivedStandardErrorCharacters);
+                    > archivedStandardErrorCharacters)
+            {
+                ObservationVersion =
+                    Volatile.Read(ref _observationVersion),
+            };
         }
+
+        private void SignalObservationChanged()
+        {
+            TaskCompletionSource notification;
+            lock (_observationSignalSyncRoot)
+            {
+                if (_observationVersion < long.MaxValue)
+                    _observationVersion++;
+                notification = _observationChanged;
+                _observationChanged =
+                    CreateObservationChangedSource();
+            }
+            notification.TrySetResult();
+        }
+
+        private static TaskCompletionSource CreateObservationChangedSource() =>
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
 
         public void Dispose()
         {
             IsDisposed = true;
+            SignalObservationChanged();
         }
     }
 }

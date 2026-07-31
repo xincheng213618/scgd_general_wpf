@@ -640,7 +640,7 @@ namespace ColorVision.Copilot
 
         public string Name => "WaitForBackgroundShellCommand";
 
-        public string Description => "Wait for at most 30 seconds until one exact current-conversation background command reaches a terminal state or its bounded redacted preview or capped temporary redacted stdout/stderr archive contains an optional literal marker. Archive matching is incremental and can find earlier output omitted from the rolling preview; bounded preview changes and pre-truncation character growth are reported through the live tool-progress stream while waiting. A timeout is an observed running state, not proof of readiness. Use ReadBackgroundShellCommandOutput for omitted archived evidence. This tool performs no process mutation, exposes no archive path, and never exposes another conversation.";
+        public string Description => "Wait for at most 30 seconds until one exact current-conversation background command reaches a terminal state or its bounded redacted preview or capped temporary redacted stdout/stderr archive contains an optional literal marker. Output growth and terminal transitions wake the wait without periodic polling; archive matching is incremental and can find earlier output omitted from the rolling preview. Bounded preview changes and pre-truncation character growth are reported through the live tool-progress stream while waiting. A timeout is an observed running state, not proof of readiness. Use ReadBackgroundShellCommandOutput for omitted archived evidence. This tool performs no process mutation, exposes no archive path, and never exposes another conversation.";
 
         public int MaximumObservationAttempts => 4;
 
