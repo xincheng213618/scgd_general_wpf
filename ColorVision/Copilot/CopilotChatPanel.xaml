@@ -2623,6 +2623,27 @@
                                     Margin="4,0"
                                     HorizontalAlignment="Right"
                                     Orientation="Horizontal">
+                            <Button MinWidth="60"
+                                    MaxWidth="82"
+                                    Height="28"
+                                    Margin="0,0,4,0"
+                                    Padding="5,0"
+                                    AutomationProperties.Name="查看当前 Copilot 模型供应商限额"
+                                    Command="{Binding ShowUsageDiagnosticsCommand}"
+                                    Content="{Binding ProviderRateLimitStatusLabel}"
+                                    FontSize="10"
+                                    ToolTip="{Binding ProviderRateLimitStatusToolTip}"
+                                    Visibility="{Binding IsProviderRateLimitStatusVisible, Converter={StaticResource bool2VisibilityConverter}}">
+                                <Button.Style>
+                                    <Style BasedOn="{StaticResource CopilotIconButtonStyle}" TargetType="Button">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsProviderRateLimitUnderPressure}" Value="True">
+                                                <Setter Property="Foreground" Value="{StaticResource CopilotControlWarningBrush}" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
                             <Button Width="60"
                                     Height="28"
                                     Margin="0,0,4,0"

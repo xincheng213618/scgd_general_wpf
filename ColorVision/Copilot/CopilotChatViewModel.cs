@@ -218,6 +218,7 @@ namespace ColorVision.Copilot
             ShowContextDiagnosticsCommand = new RelayCommand(
                 _ => ShowContextDiagnosticsFromUi(),
                 _ => SelectedConversation != null);
+            ShowUsageDiagnosticsCommand = new RelayCommand(_ => ShowUsageDiagnosticsFromUi());
             ClearConversationSearchCommand = new RelayCommand(_ => ConversationSearchText = string.Empty, _ => HasConversationSearchQuery);
             OpenConversationFindCommand = new RelayCommand(_ => OpenConversationFind(), _ => SelectedConversation != null);
             CloseConversationFindCommand = new RelayCommand(_ => CloseConversationFind(), _ => IsConversationFindOpen);
@@ -586,6 +587,8 @@ namespace ColorVision.Copilot
         public ICommand CompactConversationCommand { get; }
 
         public ICommand ShowContextDiagnosticsCommand { get; }
+
+        public ICommand ShowUsageDiagnosticsCommand { get; }
 
         public ICommand ClearConversationSearchCommand { get; }
 
@@ -1090,6 +1093,34 @@ namespace ColorVision.Copilot
             private set => SetProperty(ref _isConversationContextUnderPressure, value);
         }
         private bool _isConversationContextUnderPressure;
+
+        public bool IsProviderRateLimitStatusVisible
+        {
+            get => _isProviderRateLimitStatusVisible;
+            private set => SetProperty(ref _isProviderRateLimitStatusVisible, value);
+        }
+        private bool _isProviderRateLimitStatusVisible;
+
+        public string ProviderRateLimitStatusLabel
+        {
+            get => _providerRateLimitStatusLabel;
+            private set => SetProperty(ref _providerRateLimitStatusLabel, value ?? string.Empty);
+        }
+        private string _providerRateLimitStatusLabel = string.Empty;
+
+        public string ProviderRateLimitStatusToolTip
+        {
+            get => _providerRateLimitStatusToolTip;
+            private set => SetProperty(ref _providerRateLimitStatusToolTip, value ?? string.Empty);
+        }
+        private string _providerRateLimitStatusToolTip = string.Empty;
+
+        public bool IsProviderRateLimitUnderPressure
+        {
+            get => _isProviderRateLimitUnderPressure;
+            private set => SetProperty(ref _isProviderRateLimitUnderPressure, value);
+        }
+        private bool _isProviderRateLimitUnderPressure;
 
         public string InputText
         {
@@ -3962,6 +3993,22 @@ namespace ColorVision.Copilot
             var command = CopilotLocalCommandCatalog.FindExact("/context");
             if (command != null)
                 ShowLocalCommandResult(command, BuildContextDiagnosticsReport());
+        }
+
+        private void ShowUsageDiagnosticsFromUi()
+        {
+            var command = CopilotLocalCommandCatalog.FindExact("/usage");
+            if (command == null)
+                return;
+
+            ShowLocalCommandResult(
+                command,
+                CopilotUsageCommand.Format(
+                    SelectedConversation,
+                    Conversations,
+                    DateTimeOffset.Now,
+                    "session",
+                    CopilotProviderRateLimitTracker.GetSnapshot(SelectedProfile?.Id)));
         }
 
         private string BuildContextDiagnosticsReport()
@@ -10414,6 +10461,7 @@ namespace ColorVision.Copilot
         private void RefreshComposerTokenEstimate()
         {
             RefreshConversationContextState();
+            RefreshProviderRateLimitStatus();
 
             string summary;
             string details;
@@ -10447,6 +10495,16 @@ namespace ColorVision.Copilot
             ComposerTokenSummary = summary;
             ComposerTokenDetails = details;
             OnPropertyChanged(nameof(PrimaryActionToolTip));
+        }
+
+        private void RefreshProviderRateLimitStatus()
+        {
+            var presentation = CopilotProviderRateLimitStatusPresenter.Create(
+                CopilotProviderRateLimitTracker.GetSnapshot(SelectedProfile?.Id));
+            IsProviderRateLimitStatusVisible = presentation.IsVisible;
+            ProviderRateLimitStatusLabel = presentation.Label;
+            ProviderRateLimitStatusToolTip = presentation.ToolTip;
+            IsProviderRateLimitUnderPressure = presentation.IsUnderPressure;
         }
 
         private void RefreshConversationContextState()

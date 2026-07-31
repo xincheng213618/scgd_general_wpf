@@ -8,6 +8,74 @@ namespace ColorVision.UI.Tests;
 public sealed class CopilotProviderRateLimitTrackerTests
 {
     [Fact]
+    public void StatusPresentationIsHiddenWithoutCapturedHeaders()
+    {
+        var presentation = CopilotProviderRateLimitStatusPresenter.Create(
+            CopilotProviderRateLimitSnapshot.Empty);
+
+        Assert.False(presentation.IsVisible);
+        Assert.Empty(presentation.Label);
+        Assert.Empty(presentation.ToolTip);
+        Assert.False(presentation.IsUnderPressure);
+    }
+
+    [Fact]
+    public void StatusPresentationShowsLatestRequestBucketAndAccountBoundary()
+    {
+        var presentation = CopilotProviderRateLimitStatusPresenter.Create(
+            new CopilotProviderRateLimitSnapshot
+            {
+                CapturedAtUtc = new DateTimeOffset(2026, 7, 31, 8, 0, 0, TimeSpan.Zero),
+                RequestLimit = 20,
+                RequestRemaining = 19,
+                TokenLimit = 10_000,
+                TokenRemaining = 9_000,
+            });
+
+        Assert.True(presentation.IsVisible);
+        Assert.Equal("请求 19/20", presentation.Label);
+        Assert.False(presentation.IsUnderPressure);
+        Assert.Contains("供应商限额：请求：剩余 19/20", presentation.ToolTip, StringComparison.Ordinal);
+        Assert.Contains("可能已经过期", presentation.ToolTip, StringComparison.Ordinal);
+        Assert.Contains("不代表账户套餐余额或可用金额", presentation.ToolTip, StringComparison.Ordinal);
+        Assert.Contains("/usage session", presentation.ToolTip, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void StatusPresentationPrioritizesPressuredTokenBucket()
+    {
+        var presentation = CopilotProviderRateLimitStatusPresenter.Create(
+            new CopilotProviderRateLimitSnapshot
+            {
+                CapturedAtUtc = DateTimeOffset.UtcNow,
+                RequestLimit = 20,
+                RequestRemaining = 19,
+                TokenLimit = 10_000,
+                TokenRemaining = 900,
+            });
+
+        Assert.Equal("Token 900/10K", presentation.Label);
+        Assert.True(presentation.IsUnderPressure);
+    }
+
+    [Fact]
+    public void StatusPresentationMarksRetryAfterAsThrottled()
+    {
+        var presentation = CopilotProviderRateLimitStatusPresenter.Create(
+            new CopilotProviderRateLimitSnapshot
+            {
+                CapturedAtUtc = DateTimeOffset.UtcNow,
+                RequestLimit = 20,
+                RequestRemaining = 19,
+                RetryAfter = "4",
+            });
+
+        Assert.Equal("限流重试", presentation.Label);
+        Assert.True(presentation.IsUnderPressure);
+        Assert.Contains("Retry-After 4", presentation.ToolTip, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void CapturesOpenAiAndProjectRateLimitHeadersPerProfile()
     {
         var profileId = Guid.NewGuid().ToString("N");
