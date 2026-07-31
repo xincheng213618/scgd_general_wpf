@@ -678,6 +678,8 @@ namespace ColorVision.Copilot
 
             var providerInactivityTimeouts =
                 CopilotProviderInactivityPolicy.Resolve(request.Profile);
+            var usedDelegatedDirectAnswer = false;
+            var toolSurface = default(CopilotAgentToolSurfaceMetrics);
             var providerChatClient = new CopilotProviderInactivityChatClient(
                 new CopilotCancellationGuardChatClient(
                     _chatClientFactory(request.Profile)),
@@ -687,7 +689,15 @@ namespace ColorVision.Copilot
                 providerChatClient,
                 tokenBudget,
                 snapshot => emit(CopilotAgentEvent.RuntimeDiagnostic(
-                    $"Agent token budget exhausted after {snapshot.ProviderCalls} provider call(s); the model loop was stopped without replaying tools.")));
+                    $"Agent token budget exhausted after {snapshot.ProviderCalls} provider call(s); the model loop was stopped without replaying tools.")),
+                snapshot => emit(CopilotAgentEvent.BudgetUpdated(runBudget.CreateSnapshot(
+                    snapshot,
+                    stopwatch.Elapsed,
+                    bridge.StepRecords.Count,
+                    timeBudgetExhausted: false,
+                    bridge.ToolBudgetExhausted,
+                    usedDelegatedDirectAnswer,
+                    toolSurface))));
             var retryChatClient = new CopilotProviderRetryChatClient(
                 chatClient,
                 retry =>
@@ -703,7 +713,6 @@ namespace ColorVision.Copilot
                     chatClient.RecordContextRecovery(recoveryInfo);
                     emit(CopilotAgentEvent.RuntimeDiagnostic(recoveryInfo.ToDiagnosticText()));
                 });
-            var usedDelegatedDirectAnswer = false;
             var delegatedDirectAnswerChatClient = new CopilotDelegatedDirectAnswerChatClient(
                 contextRecoveryChatClient,
                 request,
@@ -758,7 +767,7 @@ namespace ColorVision.Copilot
                 + (requiresCheckpointReplan
                     ? "\n\nThe persisted task plan was discarded because its runtime context changed or predates safe checkpoint tracking. Re-plan from the current conversation and current tools before taking action; do not assume prior todo items remain valid."
                     : string.Empty);
-            var toolSurface = CopilotAgentToolSurfaceMetrics.Capture(
+            toolSurface = CopilotAgentToolSurfaceMetrics.Capture(
                 registeredToolCount,
                 availableTools,
                 harnessInstructions);
@@ -1742,7 +1751,12 @@ namespace ColorVision.Copilot
                 providerChatClient,
                 tokenBudget,
                 snapshot => emit(CopilotAgentEvent.RuntimeDiagnostic(
-                    $"Agent token budget exhausted after {snapshot.ProviderCalls} provider call(s); final-answer-only recovery stopped without invoking tools.")));
+                    $"Agent token budget exhausted after {snapshot.ProviderCalls} provider call(s); final-answer-only recovery stopped without invoking tools.")),
+                snapshot => emit(CopilotAgentEvent.BudgetUpdated(runBudget.CreateSnapshot(
+                    snapshot,
+                    stopwatch.Elapsed,
+                    toolCalls: 0,
+                    timeBudgetExhausted: false))));
             var retryChatClient = new CopilotProviderRetryChatClient(
                 chatClient,
                 retry =>

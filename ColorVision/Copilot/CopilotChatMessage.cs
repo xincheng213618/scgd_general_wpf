@@ -1300,7 +1300,11 @@ namespace ColorVision.Copilot
             get
             {
                 if (IsThinkingInProgress)
-                    return CopilotUiText.ProcessingHeader;
+                {
+                    return string.IsNullOrWhiteSpace(AgentRunCompactLabel)
+                        ? CopilotUiText.ProcessingHeader
+                        : $"{CopilotUiText.ProcessingHeader} · {AgentRunCompactLabel}";
+                }
 
                 var elapsed = FormatCompletedProcessingElapsed();
                 var header = string.IsNullOrWhiteSpace(elapsed)

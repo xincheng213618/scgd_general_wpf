@@ -74,6 +74,63 @@ public sealed class CopilotAgentTokenBudgetMetricsTests
     }
 
     [Fact]
+    public async Task BudgetChangedObserverReceivesProviderAndDelegatedUsage()
+    {
+        var snapshots = new List<CopilotAgentBudgetSnapshot>();
+        using var client = new CopilotTokenBudgetChatClient(
+            new UsageReportingChatClient(new UsageDetails
+            {
+                InputTokenCount = 10,
+                OutputTokenCount = 2,
+                TotalTokenCount = 12,
+            }),
+            new CopilotAgentTokenBudget
+            {
+                ContextWindowTokens = 64_000,
+                MaxOutputTokens = 4_096,
+                RequestTokenBudget = 128_000,
+            },
+            onBudgetChanged: snapshots.Add);
+
+        await client.GetResponseAsync([new ChatMessage(ChatRole.User, "Inspect the file.")]);
+
+        var providerSnapshot = Assert.Single(snapshots);
+        Assert.Equal(1, providerSnapshot.ProviderCalls);
+        Assert.Equal(12, providerSnapshot.ConsumedTokens);
+
+        client.RecordDelegatedRunUsage(new CopilotDelegatedRunUsage
+        {
+            ProviderCalls = 1,
+            ConsumedTokens = 8,
+            Usage = new CopilotTokenUsage(6, 2, 8),
+        });
+
+        Assert.Equal(2, snapshots.Count);
+        Assert.Equal(2, snapshots[1].ProviderCalls);
+        Assert.Equal(20, snapshots[1].ConsumedTokens);
+    }
+
+    [Fact]
+    public async Task BudgetChangedObserverFailureDoesNotFailProviderResponse()
+    {
+        using var client = new CopilotTokenBudgetChatClient(
+            new UsageReportingChatClient(new UsageDetails { TotalTokenCount = 12 }),
+            new CopilotAgentTokenBudget
+            {
+                ContextWindowTokens = 64_000,
+                MaxOutputTokens = 4_096,
+                RequestTokenBudget = 128_000,
+            },
+            onBudgetChanged: _ => throw new InvalidOperationException("observer failed"));
+
+        var response = await client.GetResponseAsync(
+            [new ChatMessage(ChatRole.User, "Inspect the file.")]);
+
+        Assert.Equal("Done.", response.Text);
+        Assert.Equal(12, client.Snapshot.ConsumedTokens);
+    }
+
+    [Fact]
     public async Task SnapshotSeparatesStreamingFirstResponseFromProviderWait()
     {
         using var client = new CopilotTokenBudgetChatClient(

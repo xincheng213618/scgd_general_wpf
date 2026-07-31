@@ -788,6 +788,7 @@ namespace ColorVision.Copilot
     {
         Status,
         RuntimeDiagnostic,
+        BudgetUpdated,
         ToolStarted,
         ToolProgress,
         ToolResult,
@@ -818,6 +819,8 @@ namespace ColorVision.Copilot
             Array.Empty<CopilotToolExecutionHookRun>();
 
         public CopilotToolProgressUpdate? Progress { get; init; }
+
+        public CopilotAgentBudgetSnapshot? Budget { get; init; }
 
         public CopilotAgentSessionCheckpoint? SessionCheckpoint { get; init; }
 
@@ -870,6 +873,16 @@ namespace ColorVision.Copilot
             {
                 Type = CopilotAgentEventType.RuntimeDiagnostic,
                 Text = text ?? string.Empty,
+            };
+        }
+
+        public static CopilotAgentEvent BudgetUpdated(CopilotAgentBudgetSnapshot budget)
+        {
+            ArgumentNullException.ThrowIfNull(budget);
+            return new CopilotAgentEvent
+            {
+                Type = CopilotAgentEventType.BudgetUpdated,
+                Budget = budget,
             };
         }
 

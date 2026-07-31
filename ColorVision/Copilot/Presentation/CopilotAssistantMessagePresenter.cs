@@ -41,6 +41,10 @@ namespace ColorVision.Copilot
                     assistantMessage.IsExecutionInProgress = true;
                     assistantMessage.IsExecutionExpanded = true;
                     return CopilotAgentEventPresentationResult.Handled(CopilotAgentEventPersistenceMode.Deferred);
+                case CopilotAgentEventType.BudgetUpdated:
+                    if (agentEvent.Budget != null)
+                        assistantMessage.AgentRunBudget = agentEvent.Budget;
+                    return CopilotAgentEventPresentationResult.Handled();
                 case CopilotAgentEventType.ToolStarted:
                     ApplyToolStarted(assistantMessage, agentEvent);
                     return CopilotAgentEventPresentationResult.Handled(CopilotAgentEventPersistenceMode.Deferred);

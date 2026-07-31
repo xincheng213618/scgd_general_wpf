@@ -82,6 +82,32 @@ public sealed class CopilotAgentOutputFinishReasonTests
     }
 
     [Fact]
+    public async Task RunningBudgetUpdatePrecedesCompletionAndMatchesTheResult()
+    {
+        using var provider = new ScriptedFinishReasonChatClient(
+            ChatFinishReason.Stop,
+            "Complete answer.",
+            repairFinishReason: null,
+            repairText: string.Empty);
+        var events = new List<CopilotAgentEvent>();
+
+        var result = await CreateRuntime(provider).RunAsync(
+            CreateRequest(),
+            events.Add,
+            CancellationToken.None);
+
+        var budgetEvents = events
+            .Where(agentEvent => agentEvent.Type == CopilotAgentEventType.BudgetUpdated)
+            .ToArray();
+        var latestBudget = Assert.Single(budgetEvents).Budget;
+        Assert.NotNull(latestBudget);
+        Assert.Equal(result.Budget.ProviderCalls, latestBudget.ProviderCalls);
+        Assert.Equal(result.Budget.ConsumedTokens, latestBudget.ConsumedTokens);
+        Assert.True(events.IndexOf(budgetEvents[0]) < events.FindIndex(
+            agentEvent => agentEvent.Type == CopilotAgentEventType.Completed));
+    }
+
+    [Fact]
     public async Task ToolRequestAtTerminalBoundaryUsesBoundedFinalization()
     {
         using var provider = new ScriptedFinishReasonChatClient(

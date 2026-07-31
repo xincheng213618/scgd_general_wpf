@@ -46,6 +46,28 @@ public sealed class CopilotAgentRunMetricsTests
     }
 
     [Fact]
+    public void BudgetUpdatedEventRefreshesTheInFlightRunSummary()
+    {
+        var assistant = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty);
+        assistant.MarkThinkingStarted();
+
+        var presentation = CopilotAssistantMessagePresenter.ApplyAgentEvent(
+            assistant,
+            CopilotAgentEvent.BudgetUpdated(new CopilotAgentBudgetSnapshot
+            {
+                ProviderCalls = 1,
+                ConsumedTokens = 1_200,
+                RequestTokenBudget = 128_000,
+            }));
+
+        Assert.True(presentation.IsHandled);
+        Assert.Equal(CopilotAgentEventPersistenceMode.None, presentation.PersistenceMode);
+        Assert.Equal(1, assistant.AgentRunBudget.ProviderCalls);
+        Assert.Equal(1_200, assistant.AgentRunBudget.ConsumedTokens);
+        Assert.Contains("模型 1 · 1.2k tokens", assistant.ThinkingHeader, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void DelegatedRunMetricsSeparateParentAndChildCallsAndRoundTrip()
     {
         var assistant = new CopilotChatMessage(CopilotChatRole.Assistant, "Grounded answer.")
