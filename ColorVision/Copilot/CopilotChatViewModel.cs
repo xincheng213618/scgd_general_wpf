@@ -41,7 +41,7 @@ namespace ColorVision.Copilot
             ".sct", ".sh", ".shb", ".shs", ".url", ".vb", ".vbe", ".vbs", ".ws", ".wsc", ".wsf", ".wsh",
         };
         private readonly CopilotChatService _chatService;
-        private readonly CopilotConversationTitleGenerator _conversationTitleGenerator;
+        private readonly CopilotConversationTitleCoordinator _conversationTitleCoordinator;
         private readonly ICopilotGoalCompletionEvaluator _goalCompletionEvaluator;
         private readonly ICopilotTurnRuntime _turnRuntime;
         private readonly CopilotAgentTaskHost _taskHost;
@@ -57,7 +57,6 @@ namespace ColorVision.Copilot
         private readonly ObservableCollection<CopilotComposerReferenceItem> _composerReferenceSuggestions = new();
         private readonly ObservableCollection<CopilotPromptHistorySearchItem> _promptHistorySearchResults = new();
         private readonly Dictionary<string, CopilotQueuedFollowUp> _queuedFollowUpsByRunId = new(StringComparer.Ordinal);
-        private readonly Dictionary<string, CopilotNonBlockingCancellationSource> _conversationTitleGenerations = new(StringComparer.Ordinal);
         private readonly CopilotCompletionNoticeCenter _completionNoticeCenter = new();
         private readonly HashSet<CopilotNonBlockingCancellationSource> _auxiliaryOperationCancellations = new();
         private readonly DispatcherTimer _conversationSearchDebounceTimer;
@@ -122,7 +121,9 @@ namespace ColorVision.Copilot
         public CopilotChatViewModel(CopilotChatService chatService, ICopilotChatStateStore stateStore)
         {
             _chatService = chatService ?? throw new ArgumentNullException(nameof(chatService));
-            _conversationTitleGenerator = new CopilotConversationTitleGenerator(_chatService);
+            _conversationTitleCoordinator = new CopilotConversationTitleCoordinator(
+                new CopilotConversationTitleGenerator(_chatService),
+                ApplyGeneratedConversationTitleAsync);
             _goalCompletionEvaluator = new CopilotGoalCompletionEvaluator(_chatService);
             _turnRuntime = new CopilotTurnRuntime(_chatService);
             _taskHost = CopilotAgentTaskHost.Shared;
@@ -2144,7 +2145,7 @@ namespace ColorVision.Copilot
                             goalResult.GoalId,
                             goalResult.Reason));
                 }
-                QueueConversationTitleGeneration(conversation, requestProfile);
+                _ = _conversationTitleCoordinator.QueueAsync(conversation, requestProfile);
             }
             catch (OperationCanceledException) when (hostedRun.CancellationToken.IsCancellationRequested)
             {

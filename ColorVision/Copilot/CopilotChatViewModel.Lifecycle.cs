@@ -197,7 +197,7 @@ namespace ColorVision.Copilot
             if (Interlocked.Exchange(ref _disposeState, 1) == 1)
                 return;
 
-            CancelAllConversationTitleGenerations();
+            _conversationTitleCoordinator.Dispose();
             CancelAllAuxiliaryOperations();
             if (Application.Current != null)
                 Application.Current.Exit -= Application_Exit;
