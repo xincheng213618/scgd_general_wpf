@@ -5,7 +5,7 @@ namespace ColorVision.Copilot
     internal static class CopilotPromptSuggestionPreference
     {
         internal const string Usage =
-            "用法：/suggestions [on|off|predict-on|predict-off|predict-model [current|Profile 名或模型 ID]]。on/off 管理本地历史补全；predict-* 管理轮次结束后的工具禁用模型预测。";
+            "用法：/suggestions [on|off]。管理当前设备上的本地历史补全，不调用模型。";
 
         internal static bool TryResolve(
             string? arguments,
@@ -32,52 +32,6 @@ namespace ColorVision.Copilot
             }
 
             enabled = currentlyEnabled;
-            return false;
-        }
-
-        internal static bool TryResolvePredicted(
-            string? arguments,
-            bool currentlyEnabled,
-            out bool enabled)
-        {
-            var normalized = (arguments ?? string.Empty).Trim();
-            if (string.Equals(normalized, "predict-on", StringComparison.OrdinalIgnoreCase))
-            {
-                enabled = true;
-                return true;
-            }
-
-            if (string.Equals(normalized, "predict-off", StringComparison.OrdinalIgnoreCase))
-            {
-                enabled = false;
-                return true;
-            }
-
-            enabled = currentlyEnabled;
-            return false;
-        }
-
-        internal static bool TryParsePredictedProfileCommand(
-            string? arguments,
-            out string query)
-        {
-            const string command = "predict-model";
-            var normalized = (arguments ?? string.Empty).Trim();
-            if (string.Equals(normalized, command, StringComparison.OrdinalIgnoreCase))
-            {
-                query = string.Empty;
-                return true;
-            }
-
-            if (normalized.Length > command.Length
-                && normalized.StartsWith(command, StringComparison.OrdinalIgnoreCase)
-                && char.IsWhiteSpace(normalized[command.Length]))
-            {
-                query = normalized[command.Length..].Trim();
-                return true;
-            }
-
-            query = string.Empty;
             return false;
         }
     }

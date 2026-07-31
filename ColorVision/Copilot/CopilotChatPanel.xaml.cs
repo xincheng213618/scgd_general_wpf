@@ -244,16 +244,6 @@ namespace ColorVision.Copilot
                 return;
             }
 
-            if (PromptTextBox.IsKeyboardFocusWithin
-                && isPlainEscape
-                && DataContext is CopilotChatViewModel predictedPromptViewModel
-                && predictedPromptViewModel.TryDismissPredictedNextPrompt())
-            {
-                _rewindEscapeGesture.Reset();
-                e.Handled = true;
-                return;
-            }
-
             if (isPlainEscape
                 && DataContext is CopilotChatViewModel escapeViewModel)
             {
@@ -887,15 +877,6 @@ namespace ColorVision.Copilot
                 }
             }
 
-            if (DataContext is CopilotChatViewModel predictedPromptCompletionViewModel
-                && IsPredictedPromptCompletionGesture(e)
-                && predictedPromptCompletionViewModel.TryAcceptPredictedNextPrompt())
-            {
-                MovePromptCaretToEnd();
-                e.Handled = true;
-                return;
-            }
-
             if (DataContext is CopilotChatViewModel promptCompletionViewModel
                 && IsRightArrowCompletionGesture(e)
                 && promptCompletionViewModel.TryAcceptPromptHistoryPrefixCompletion())
@@ -966,16 +947,6 @@ namespace ColorVision.Copilot
                     PromptTextBox.Text.Length);
         }
 
-        private bool IsPredictedPromptCompletionGesture(KeyEventArgs e)
-        {
-            return e.Key is Key.Tab or Key.Right
-                && Keyboard.Modifiers == ModifierKeys.None
-                && CopilotComposerCompletionKeys.CanAcceptRightArrow(
-                    PromptTextBox.CaretIndex,
-                    PromptTextBox.SelectionLength,
-                    PromptTextBox.Text.Length);
-        }
-
         private void LocalCommandSuggestionButton_Click(object sender, RoutedEventArgs e)
         {
             FocusPromptInput();
@@ -993,12 +964,6 @@ namespace ColorVision.Copilot
         }
 
         private void PromptHistoryPrefixCompletionButton_Click(object sender, RoutedEventArgs e)
-        {
-            FocusPromptInput();
-            MovePromptCaretToEnd();
-        }
-
-        private void PredictedNextPromptButton_Click(object sender, RoutedEventArgs e)
         {
             FocusPromptInput();
             MovePromptCaretToEnd();

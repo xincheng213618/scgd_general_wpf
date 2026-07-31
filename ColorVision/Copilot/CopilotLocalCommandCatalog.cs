@@ -260,13 +260,10 @@ namespace ColorVision.Copilot
             new("/rewind", "从历史请求创建仅会话回溯分支，并恢复原请求供修改", CopilotLocalCommandKind.RewindConversation, AcceptsArguments: true, Usage: "/rewind [N]"),
             new("/turn", "定位当前会话倒数第 N 条用户请求；1 表示最近一条", CopilotLocalCommandKind.NavigateTurn, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/turn [N]"),
             new("/history", "搜索可见历史请求，可切换当前/全部会话并恢复到输入框", CopilotLocalCommandKind.SearchPromptHistory, Usage: "/history"),
-            new("/suggestions", "管理本地历史补全和可选的轮次结束后下一请求预测", CopilotLocalCommandKind.PromptSuggestions, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/suggestions [on|off|predict-on|predict-off|predict-model [current|Profile]]", Arguments:
+            new("/suggestions", "管理当前设备上的本地历史补全", CopilotLocalCommandKind.PromptSuggestions, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/suggestions [on|off]", Arguments:
             [
                 new("on", "输入普通请求时显示当前会话的历史前缀补全"),
                 new("off", "隐藏本地历史前缀补全"),
-                new("predict-on", "启用轮次结束预测；仅在已选择可用预测 Profile 时调用"),
-                new("predict-off", "停止并隐藏下一请求预测，不影响本地历史补全"),
-                new("predict-model", "查看或选择专用于下一请求预测的模型 Profile"),
             ]),
             new("/transcript", "展开或收起当前会话的推理与工具活动", CopilotLocalCommandKind.Transcript, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/transcript [expand|collapse]", Arguments:
             [

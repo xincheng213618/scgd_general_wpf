@@ -334,11 +334,6 @@ namespace ColorVision.Copilot
                 .Append(state.UseCompactMessageLayout ? "开启" : "关闭")
                 .Append(" · 历史提示 ")
                 .Append(state.EnablePromptHistoryCompletions ? "开启" : "关闭")
-                .Append(" · 下一请求预测 ")
-                .Append(state.EnablePredictedPromptSuggestions ? "开启" : "关闭")
-                .Append(" · 预测路由 ")
-                .Append(CopilotPromptSuggestionProfileSelection.FormatStoredSelection(
-                    state.PredictedPromptProfileId))
                 .AppendLine(" · 来源 ChatState");
         }
 

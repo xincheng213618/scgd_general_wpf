@@ -45,7 +45,6 @@ namespace ColorVision.Copilot
         private readonly ICopilotGoalCompletionEvaluator _goalCompletionEvaluator;
         private readonly ICopilotTurnRuntime _turnRuntime;
         private readonly CopilotSideQuestionService _sideQuestionService;
-        private readonly CopilotNextPromptSuggestionService _nextPromptSuggestionService;
         private readonly CopilotAgentTaskHost _taskHost;
         private readonly CopilotRecurringPromptScheduler _recurringPromptScheduler = new();
         private readonly CopilotLocalGitDiffService _localGitDiffService;
@@ -73,7 +72,6 @@ namespace ColorVision.Copilot
         private CopilotNonBlockingCancellationSource? _fileAttachmentCts;
         private CopilotNonBlockingCancellationSource? _webPageAttachmentCts;
         private CopilotNonBlockingCancellationSource? _sideQuestionCts;
-        private CopilotNonBlockingCancellationSource? _nextPromptSuggestionCts;
         private CopilotNonBlockingCancellationSource? _composerReferenceRefreshCts;
         private CopilotSideConversationSession? _sideConversationSession;
         private CopilotLiveContext? _currentLiveContext;
@@ -100,10 +98,6 @@ namespace ColorVision.Copilot
         private string _sideQuestionPrompt = string.Empty;
         private string _sideQuestionAnswer = string.Empty;
         private string _sideQuestionStatusText = string.Empty;
-        private string _predictedNextPrompt = string.Empty;
-        private string _predictedNextPromptMetadata = string.Empty;
-        private string _lastPredictedPromptUsageText = string.Empty;
-        private string _predictedNextPromptConversationId = string.Empty;
         private string _editingConversationId = string.Empty;
         private string _editingUserMessageId = string.Empty;
         private CopilotComposerDraftSnapshot? _composerDraftBeforeMessageEdit;
@@ -127,7 +121,6 @@ namespace ColorVision.Copilot
         private bool _isSideQuestionRunning;
         private bool _isRetryingStatePersistence;
         private long _sideQuestionVersion;
-        private long _nextPromptSuggestionVersion;
         private long _composerReferenceRefreshVersion;
         private int _selectedLocalCommandSuggestionIndex = -1;
         private CopilotPromptHistorySearchItem? _selectedPromptHistorySearchResult;
@@ -149,7 +142,6 @@ namespace ColorVision.Copilot
             _goalCompletionEvaluator = new CopilotGoalCompletionEvaluator(_chatService);
             _turnRuntime = new CopilotTurnRuntime(_chatService);
             _sideQuestionService = new CopilotSideQuestionService(_chatService);
-            _nextPromptSuggestionService = new CopilotNextPromptSuggestionService(_chatService);
             _taskHost = CopilotAgentTaskHost.Shared;
             _localGitDiffService = new CopilotLocalGitDiffService();
             _config = CopilotConfig.Instance;
@@ -312,9 +304,6 @@ namespace ColorVision.Copilot
             AcceptPromptHistoryPrefixCompletionCommand = new RelayCommand(
                 _ => TryAcceptPromptHistoryPrefixCompletion(),
                 _ => HasPromptHistoryPrefixCompletion);
-            AcceptPredictedNextPromptCommand = new RelayCommand(
-                _ => TryAcceptPredictedNextPrompt(),
-                _ => HasPredictedNextPrompt);
             SetComposerAccessModeCommand = new RelayCommand(
                 mode =>
                 {
@@ -385,8 +374,6 @@ namespace ColorVision.Copilot
         public bool ShowMessageTimestamps => _state.ShowMessageTimestamps;
 
         public bool PromptHistoryCompletionsEnabled => _state.EnablePromptHistoryCompletions;
-
-        public bool PredictedPromptSuggestionsEnabled => _state.EnablePredictedPromptSuggestions;
 
         public bool UseCompactMessageLayout => _state.UseCompactMessageLayout;
 
@@ -734,8 +721,6 @@ namespace ColorVision.Copilot
         public ICommand SelectPromptHistorySearchResultCommand { get; }
 
         public ICommand AcceptPromptHistoryPrefixCompletionCommand { get; }
-
-        public ICommand AcceptPredictedNextPromptCommand { get; }
 
         public ICommand SetComposerAccessModeCommand { get; }
 
@@ -1151,13 +1136,6 @@ namespace ColorVision.Copilot
                 var normalizedValue = value ?? string.Empty;
                 if (SetProperty(ref _inputText, normalizedValue))
                 {
-                    if (CopilotPredictedPromptCompletion.ShouldClear(
-                            PredictedNextPrompt,
-                            normalizedValue,
-                            _nextPromptSuggestionCts != null))
-                    {
-                        ClearPredictedNextPrompt(cancelPending: true);
-                    }
                     if (!_isApplyingPromptHistory)
                         _promptHistoryNavigator.Reset();
                     if (IsPromptHistorySearchOpen)
@@ -1172,7 +1150,6 @@ namespace ColorVision.Copilot
                     RefreshComposerReferenceSuggestions();
                     RefreshComposerTokenEstimate();
                     NotifyPromptHistoryPrefixCompletionChanged();
-                    NotifyPredictedNextPromptCompletionChanged();
                     CommandManager.InvalidateRequerySuggested();
                 }
             }
@@ -1197,7 +1174,6 @@ namespace ColorVision.Copilot
                 OnPropertyChanged(nameof(CanOpenExpandedComposerEditor));
                 RefreshLocalCommandSuggestions();
                 NotifyPromptHistoryPrefixCompletionChanged();
-                OnPropertyChanged(nameof(HasPredictedNextPrompt));
                 CommandManager.InvalidateRequerySuggested();
             }
         }
@@ -1233,86 +1209,6 @@ namespace ColorVision.Copilot
                 ? completion.FullText
                 : string.Empty;
 
-        public string PredictedNextPrompt
-        {
-            get => _predictedNextPrompt;
-            private set
-            {
-                if (!SetProperty(ref _predictedNextPrompt, value ?? string.Empty))
-                    return;
-
-                NotifyPredictedNextPromptCompletionChanged();
-                CommandManager.InvalidateRequerySuggested();
-            }
-        }
-
-        public bool HasPredictedNextPrompt => TryResolvePredictedNextPromptCompletion(out _);
-
-        public string PredictedNextPromptCompletionText =>
-            TryResolvePredictedNextPromptCompletion(out var remainingText)
-                ? remainingText
-                : string.Empty;
-
-        public string PredictedNextPromptMetadata
-        {
-            get => _predictedNextPromptMetadata;
-            private set => SetProperty(ref _predictedNextPromptMetadata, value ?? string.Empty);
-        }
-
-        public string LastPredictedPromptUsageText
-        {
-            get => _lastPredictedPromptUsageText;
-            private set => SetProperty(ref _lastPredictedPromptUsageText, value ?? string.Empty);
-        }
-
-        public bool TryAcceptPredictedNextPrompt()
-        {
-            if (!HasPredictedNextPrompt)
-                return false;
-
-            var suggestion = PredictedNextPrompt;
-            ClearPredictedNextPrompt(cancelPending: true);
-            InputText = suggestion;
-            return true;
-        }
-
-        public bool TryDismissPredictedNextPrompt()
-        {
-            if (!IsInputEmpty || !HasPredictedNextPrompt)
-                return false;
-
-            ClearPredictedNextPrompt(cancelPending: true);
-            return true;
-        }
-
-        private bool TryResolvePredictedNextPromptCompletion(out string remainingText)
-        {
-            remainingText = string.Empty;
-            return PredictedPromptSuggestionsEnabled
-                && !IsEditingMessage
-                && !IsNavigatingPromptHistory
-                && string.Equals(
-                    _predictedNextPromptConversationId,
-                    SelectedConversation?.Id,
-                    StringComparison.Ordinal)
-                && !IsBusy
-                && !HasAttachments
-                && !HasQueuedFollowUps
-                && !IsPromptHistorySearchOpen
-                && !IsComposerReferenceMentionActive
-                && !HasLocalCommandSuggestions
-                && CopilotPredictedPromptCompletion.TryResolve(
-                    PredictedNextPrompt,
-                    InputText,
-                    out remainingText);
-        }
-
-        private void NotifyPredictedNextPromptCompletionChanged()
-        {
-            OnPropertyChanged(nameof(HasPredictedNextPrompt));
-            OnPropertyChanged(nameof(PredictedNextPromptCompletionText));
-        }
-
         public bool TryAcceptPromptHistoryPrefixCompletion()
         {
             if (!TryResolvePromptHistoryPrefixCompletion(out var completion))
@@ -1331,7 +1227,6 @@ namespace ColorVision.Copilot
                 && !IsPromptHistorySearchOpen
                 && !IsComposerReferenceMentionActive
                 && !HasLocalCommandSuggestions
-                && !HasPredictedNextPrompt
                 && CopilotPromptHistoryPrefixCompletionResolver.TryResolve(
                     SelectedConversation?.Messages,
                     InputText,
@@ -2094,7 +1989,6 @@ namespace ColorVision.Copilot
                 OnPropertyChanged(nameof(CanSteerCurrentRun));
                 OnPropertyChanged(nameof(CanQueueCurrentRunFollowUp));
                 OnPropertyChanged(nameof(InputPlaceholder));
-                OnPropertyChanged(nameof(HasPredictedNextPrompt));
                 RefreshComposerTokenEstimate();
                 CommandManager.InvalidateRequerySuggested();
             }
@@ -5064,16 +4958,12 @@ namespace ColorVision.Copilot
             }
             if (e.Kind == CopilotAgentTaskHostChangeKind.Started)
             {
-                if (string.Equals(SelectedConversation?.Id, e.Run.ConversationId, StringComparison.Ordinal))
-                    ClearPredictedNextPrompt(cancelPending: true);
                 RemoveQueuedFollowUp(e.Run.Id, removeRecoveryRecord: false);
             }
             else if (e.Kind == CopilotAgentTaskHostChangeKind.Completed)
                 RemoveQueuedFollowUp(e.Run.Id, removeRecoveryRecord: true);
             RefreshQueuedFollowUpPositions();
             NotifyHostedRunStateChanged();
-            if (e.Kind == CopilotAgentTaskHostChangeKind.Completed)
-                QueuePredictedNextPromptSuggestion(e.Run);
             CommandManager.InvalidateRequerySuggested();
         }
 
@@ -7425,7 +7315,6 @@ namespace ColorVision.Copilot
         private void OnQueuedFollowUpsChanged()
         {
             OnPropertyChanged(nameof(HasQueuedFollowUps));
-            OnPropertyChanged(nameof(HasPredictedNextPrompt));
             OnPropertyChanged(nameof(QueuedFollowUpCountLabel));
             OnPropertyChanged(nameof(CanQueueCurrentRunFollowUp));
             CommandManager.InvalidateRequerySuggested();
@@ -7739,47 +7628,6 @@ namespace ColorVision.Copilot
 
         private void ChangePromptSuggestionPreference(CopilotLocalCommand command, string arguments)
         {
-            if (CopilotPromptSuggestionPreference.TryParsePredictedProfileCommand(
-                    arguments,
-                    out var profileQuery))
-            {
-                ChangePredictedPromptProfile(command, profileQuery);
-                return;
-            }
-
-            if (CopilotPromptSuggestionPreference.TryResolvePredicted(
-                    arguments,
-                    PredictedPromptSuggestionsEnabled,
-                    out var predictionEnabled))
-            {
-                if (_state.SetEnablePredictedPromptSuggestions(predictionEnabled))
-                {
-                    OnPropertyChanged(nameof(PredictedPromptSuggestionsEnabled));
-                    OnPropertyChanged(nameof(HasPredictedNextPrompt));
-                    if (!predictionEnabled)
-                        ClearPredictedNextPrompt(cancelPending: true);
-                    PersistState(immediate: true);
-                }
-
-                var predictionDetails = "正在生成的预测已取消，现有预测已隐藏；本地历史前缀补全状态不变。";
-                if (predictionEnabled)
-                {
-                    var predictionProfile = CopilotPromptSuggestionProfileSelection.Resolve(
-                        Profiles,
-                        SelectedProfile,
-                        _state.PredictedPromptProfileId);
-                    predictionDetails = predictionProfile != null
-                        ? $"预测路由：{CopilotPromptSuggestionProfileSelection.FormatUsage(predictionProfile, CopilotTokenUsage.Empty)}。从下一次完整结束且没有排队后续的轮次开始，Copilot 会执行一次工具禁用、上下文有界的辅助模型调用；目标不可用时跳过，不回退到会话主模型。"
-                        : $"预测路由：{CopilotPromptSuggestionProfileSelection.Describe(Profiles, SelectedProfile, _state.PredictedPromptProfileId)}。当前不会产生后台模型请求；请使用 /suggestions predict-model current 或指定已配置 Profile。";
-                }
-
-                ShowLocalCommandResult(
-                    command,
-                    $"轮次结束后的下一请求预测已{(predictionEnabled ? "开启" : "关闭")}。\n\n"
-                    + predictionDetails);
-                return;
-            }
-
             if (!CopilotPromptSuggestionPreference.TryResolve(
                     arguments,
                     PromptHistoryCompletionsEnabled,
@@ -7800,199 +7648,6 @@ namespace ColorVision.Copilot
                 command,
                 $"本地历史提示补全已{(enabled ? "开启" : "关闭")}。\n\n"
                 + "该偏好只控制当前设备上的输入提示；不会调用模型，不会修改或删除历史消息。");
-        }
-
-        private void ChangePredictedPromptProfile(
-            CopilotLocalCommand command,
-            string query)
-        {
-            var normalizedQuery = query.Trim();
-            if (normalizedQuery.Length == 0)
-            {
-                ShowLocalCommandResult(
-                    command,
-                    $"下一请求预测：{(PredictedPromptSuggestionsEnabled ? "开启" : "关闭")}"
-                    + Environment.NewLine
-                    + $"预测路由：{CopilotPromptSuggestionProfileSelection.Describe(Profiles, SelectedProfile, _state.PredictedPromptProfileId)}"
-                    + Environment.NewLine
-                    + $"最近预测调用：{(string.IsNullOrWhiteSpace(LastPredictedPromptUsageText) ? "无" : LastPredictedPromptUsageText)}"
-                    + Environment.NewLine
-                    + BuildConfiguredPredictionProfileSummary()
-                    + Environment.NewLine
-                    + "设置：/suggestions predict-model current，或 /suggestions predict-model <Profile 名或模型 ID>。未选择或目标不可用时不会调用模型，也不会回退。");
-                return;
-            }
-
-            string storedProfileId;
-            if (string.Equals(normalizedQuery, "current", StringComparison.OrdinalIgnoreCase))
-            {
-                storedProfileId = CopilotPromptSuggestionProfileSelection.CurrentProfileId;
-            }
-            else
-            {
-                var profile = CopilotConversationService.FindUniqueProfileTarget(
-                    Profiles,
-                    normalizedQuery);
-                if (profile == null)
-                {
-                    ShowLocalCommandResult(
-                        command,
-                        $"未找到唯一匹配“{normalizedQuery}”的 Profile 名或模型 ID。"
-                        + Environment.NewLine
-                        + BuildConfiguredPredictionProfileSummary());
-                    return;
-                }
-                if (!profile.IsConfigured)
-                {
-                    ShowLocalCommandResult(
-                        command,
-                        $"{profile.DisplayLabel} 配置不完整，不能用于后台预测；请先在 /settings models 中完成配置。不会回退到其他模型。");
-                    return;
-                }
-
-                storedProfileId = profile.Id;
-            }
-
-            if (_state.SetPredictedPromptProfileId(storedProfileId))
-            {
-                ClearPredictedNextPrompt(cancelPending: true);
-                PersistState(immediate: true);
-            }
-
-            ShowLocalCommandResult(
-                command,
-                "下一请求预测模型已设置。"
-                + Environment.NewLine
-                + $"预测路由：{CopilotPromptSuggestionProfileSelection.Describe(Profiles, SelectedProfile, _state.PredictedPromptProfileId)}"
-                + Environment.NewLine
-                + "该路由只用于工具禁用的下一请求预测；不会改变当前会话模型。目标不可用时预测受控暂停，不会自动回退。");
-        }
-
-        private string BuildConfiguredPredictionProfileSummary()
-        {
-            var profiles = Profiles
-                .Where(profile => profile?.IsConfigured == true)
-                .Select(profile => CopilotPromptSuggestionProfileSelection.FormatUsage(
-                    profile,
-                    CopilotTokenUsage.Empty))
-                .ToArray();
-            return profiles.Length == 0
-                ? "可用预测 Profile：无"
-                : "可用预测 Profile：" + string.Join("；", profiles);
-        }
-
-        private void QueuePredictedNextPromptSuggestion(CopilotHostedAgentRun run)
-        {
-            var profile = CopilotPromptSuggestionProfileSelection.Resolve(
-                Profiles,
-                SelectedProfile,
-                _state.PredictedPromptProfileId);
-            if (!PredictedPromptSuggestionsEnabled
-                || IsBusy
-                || IsSideQuestionRunning
-                || !run.Completion.IsCompletedSuccessfully
-                || run.CancellationToken.IsCancellationRequested
-                || SelectedConversation is not { } conversation
-                || !string.Equals(conversation.Id, run.ConversationId, StringComparison.Ordinal)
-                || profile?.IsConfigured != true
-                || !IsInputEmpty
-                || HasAttachments
-                || HasQueuedFollowUps)
-            {
-                return;
-            }
-
-            var assistantMessage = conversation.Messages.LastOrDefault(message => !message.IsUser);
-            if (!CanPredictNextPrompt(run, assistantMessage))
-                return;
-
-            ClearPredictedNextPrompt(cancelPending: true);
-            var requestProfile = profile.Clone();
-            var history = CopilotConversationRequestBuilder.CaptureHistorySnapshot(conversation);
-            var historyLimits = ResolveConversationHistoryLimits(requestProfile);
-            var cancellation = BeginAuxiliaryOperation();
-            _nextPromptSuggestionCts = cancellation;
-            var version = ++_nextPromptSuggestionVersion;
-            var conversationId = conversation.Id;
-            CopilotUiTaskObserver.Run(
-                async () =>
-                {
-                    try
-                    {
-                        var result = await _nextPromptSuggestionService.SuggestAsync(
-                            requestProfile,
-                            history,
-                            historyLimits,
-                            cancellation.Token);
-                        var usageText = CopilotPromptSuggestionProfileSelection.FormatUsage(
-                            requestProfile,
-                            result.Usage);
-                        LastPredictedPromptUsageText = usageText;
-                        if (version != _nextPromptSuggestionVersion
-                            || cancellation.IsCancellationRequested
-                            || !string.Equals(SelectedConversation?.Id, conversationId, StringComparison.Ordinal)
-                            || !IsInputEmpty
-                            || IsBusy
-                            || HasAttachments
-                            || HasQueuedFollowUps)
-                        {
-                            return;
-                        }
-
-                        if (string.IsNullOrWhiteSpace(result.Suggestion))
-                            return;
-
-                        _predictedNextPromptConversationId = conversationId;
-                        PredictedNextPromptMetadata = usageText;
-                        PredictedNextPrompt = result.Suggestion;
-                        OnPropertyChanged(nameof(HasPredictedNextPrompt));
-                    }
-                    finally
-                    {
-                        if (ReferenceEquals(_nextPromptSuggestionCts, cancellation))
-                            _nextPromptSuggestionCts = null;
-                        CompleteAuxiliaryOperation(cancellation);
-                    }
-                },
-                "预测下一请求",
-                _ =>
-                {
-                    if (version == _nextPromptSuggestionVersion)
-                        ClearPredictedNextPrompt(cancelPending: false);
-                });
-        }
-
-        internal static bool CanPredictNextPrompt(
-            CopilotHostedAgentRun run,
-            CopilotChatMessage? assistantMessage)
-        {
-            if (assistantMessage == null
-                || assistantMessage.IsThinkingInProgress
-                || assistantMessage.IsResponsePending
-                || assistantMessage.WasResponseInterrupted
-                || string.IsNullOrWhiteSpace(assistantMessage.Content))
-            {
-                return false;
-            }
-
-            return !run.IsAgent
-                || run.AgentStopReason is CopilotAgentStopReason.Completed
-                    or CopilotAgentStopReason.AwaitingUser
-                    or CopilotAgentStopReason.ApprovalDenied
-                    or CopilotAgentStopReason.BudgetExhausted
-                    or CopilotAgentStopReason.TaskPassLimit
-                    or CopilotAgentStopReason.Blocked;
-        }
-
-        private void ClearPredictedNextPrompt(bool cancelPending)
-        {
-            _nextPromptSuggestionVersion++;
-            if (cancelPending)
-                _nextPromptSuggestionCts?.RequestCancellation();
-            _predictedNextPromptConversationId = string.Empty;
-            PredictedNextPromptMetadata = string.Empty;
-            PredictedNextPrompt = string.Empty;
-            NotifyPredictedNextPromptCompletionChanged();
         }
 
         private void ChangeCompactMessageLayout(CopilotLocalCommand command, string arguments)
@@ -8794,8 +8449,6 @@ namespace ColorVision.Copilot
 
         private void Attachments_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
-            if (Attachments.Count > 0)
-                ClearPredictedNextPrompt(cancelPending: true);
             InvalidateChatAttachmentTokenEstimate();
             RefreshComposerTokenEstimate();
             RefreshCompactHistoryConversations();
@@ -8828,7 +8481,6 @@ namespace ColorVision.Copilot
             }
 
             ResetSideQuestion();
-            ClearPredictedNextPrompt(cancelPending: true);
             if (IsEditingMessage)
                 CancelMessageEdit();
 
