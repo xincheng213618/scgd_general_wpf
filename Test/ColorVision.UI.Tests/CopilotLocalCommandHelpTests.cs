@@ -22,7 +22,7 @@ public sealed class CopilotLocalCommandHelpTests
     [Fact]
     public void EveryFixedCommandDeclaresUsageBeginningWithItsName()
     {
-        Assert.Equal(70, CopilotLocalCommandCatalog.All.Count);
+        Assert.Equal(58, CopilotLocalCommandCatalog.All.Count);
         foreach (var command in CopilotLocalCommandCatalog.All)
         {
             Assert.False(string.IsNullOrWhiteSpace(command.Usage));
@@ -38,7 +38,7 @@ public sealed class CopilotLocalCommandHelpTests
         var report = CopilotLocalCommandHelp.Format(null);
         var lines = report.Split(Environment.NewLine);
 
-        Assert.Contains("Copilot 命令 · 70", report);
+        Assert.Contains("Copilot 命令 · 58", report);
         Assert.Contains("状态与诊断", report);
         Assert.Contains("工作区与 Agent", report);
         Assert.Contains("会话与输出", report);
@@ -64,7 +64,7 @@ public sealed class CopilotLocalCommandHelpTests
     [InlineData("add-dir", "/add-dir [绝对目录|list|remove N|clear]", "后续 Agent 请求")]
     [InlineData("ps", "/ps [N|stop N|clear]", "后台命令")]
     [InlineData("personality", "/personality [friendly|pragmatic|none]", "默认沟通风格")]
-    [InlineData("EFFORT", "/effort [auto|off|on|high|max]", "同 /reasoning")]
+    [InlineData("EFFORT", "/reasoning [auto|off|on|high|max]", "别名：/effort")]
     public void DetailAcceptsNamesWithOrWithoutSlashAndPreservesAliases(
         string query,
         string expectedUsage,
@@ -75,6 +75,36 @@ public sealed class CopilotLocalCommandHelpTests
         Assert.StartsWith(expectedUsage, report);
         Assert.Contains(expectedText, report);
         Assert.Contains("参数：可选", report);
+    }
+
+    [Fact]
+    public void AliasesResolveToCanonicalCommandsWithoutDuplicatingTheCatalog()
+    {
+        var aliases = CopilotLocalCommandCatalog.All
+            .SelectMany(command => command.Aliases.Select(alias => (Command: command, Alias: alias)))
+            .ToArray();
+
+        Assert.Equal(12, aliases.Length);
+        Assert.Equal(
+            aliases.Length,
+            aliases.Select(item => item.Alias).Distinct(StringComparer.OrdinalIgnoreCase).Count());
+        foreach (var (command, alias) in aliases)
+        {
+            var invocation = Assert.IsType<CopilotLocalCommandInvocation>(
+                CopilotLocalCommandCatalog.Parse(alias));
+            Assert.Same(command, invocation.Command);
+            Assert.DoesNotContain(
+                CopilotLocalCommandCatalog.All,
+                candidate => string.Equals(candidate.Name, alias, StringComparison.OrdinalIgnoreCase));
+        }
+
+        var rootSuggestions = CopilotLocalCommandCatalog.Suggest("/");
+        Assert.DoesNotContain(
+            rootSuggestions,
+            suggestion => aliases.Any(item => string.Equals(
+                item.Alias,
+                suggestion.Name,
+                StringComparison.OrdinalIgnoreCase)));
     }
 
     [Fact]

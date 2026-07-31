@@ -391,6 +391,7 @@ public sealed class CopilotConversationBranchServiceTests
         Assert.True(fork.Command.AvailableWhileAgentRuns);
         Assert.NotNull(branch);
         Assert.Equal(CopilotLocalCommandKind.ForkConversation, branch.Command.Kind);
+        Assert.Same(fork.Command, branch.Command);
         Assert.Equal("another option", branch.Arguments);
         Assert.True(branch.Command.AvailableWhileAgentRuns);
     }

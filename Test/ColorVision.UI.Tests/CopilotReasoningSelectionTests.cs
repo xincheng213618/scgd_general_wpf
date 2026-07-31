@@ -18,8 +18,9 @@ public sealed class CopilotReasoningSelectionTests
         Assert.Equal(CopilotLocalCommandKind.SelectReasoning, effort.Command.Kind);
         Assert.Equal("max", effort.Arguments);
         Assert.False(effort.Command.AvailableWhileAgentRuns);
+        Assert.Same(reasoning.Command, effort.Command);
         Assert.Contains(CopilotLocalCommandCatalog.Suggest("/"), command => command.Name == "/reasoning");
-        Assert.Contains(CopilotLocalCommandCatalog.Suggest("/"), command => command.Name == "/effort");
+        Assert.DoesNotContain(CopilotLocalCommandCatalog.Suggest("/"), command => command.Name == "/effort");
 
         CopilotAgentSkillCatalogItem[] skills =
         [

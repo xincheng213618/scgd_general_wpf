@@ -38,6 +38,19 @@ public sealed class CopilotCommandInputRecoveryTests
         Assert.Contains("用法：/status", recovery.Message);
     }
 
+    [Fact]
+    public void AliasWithUnsupportedArgumentsReportsCanonicalUsageInsteadOfSending()
+    {
+        Assert.True(CopilotCommandInputRecoveryResolver.TryResolve(
+            "/session-info verbose",
+            Skills,
+            out var recovery));
+
+        Assert.Equal("/status · 用法", recovery.Title);
+        Assert.Contains("未发送给模型", recovery.Message);
+        Assert.Contains("用法：/status", recovery.Message);
+    }
+
     [Theory]
     [InlineData("/deploy-check now")]
     [InlineData("/DEPLOY-CHECK")]

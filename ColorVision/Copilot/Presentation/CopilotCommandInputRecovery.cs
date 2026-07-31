@@ -41,8 +41,7 @@ namespace ColorVision.Copilot
 
             if (token[0] == '/')
             {
-                var command = CopilotLocalCommandCatalog.All.FirstOrDefault(candidate =>
-                    string.Equals(candidate.Name, token, StringComparison.OrdinalIgnoreCase));
+                var command = CopilotLocalCommandCatalog.FindExact(token);
                 if (command != null)
                 {
                     if (CopilotLocalCommandCatalog.Parse(normalized) != null)

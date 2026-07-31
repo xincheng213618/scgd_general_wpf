@@ -87,8 +87,7 @@ namespace ColorVision.Copilot
             if (normalized.Length == 0)
                 return FormatOverview();
 
-            var command = CopilotLocalCommandCatalog.All.FirstOrDefault(item =>
-                string.Equals(item.Name, normalized, StringComparison.OrdinalIgnoreCase));
+            var command = CopilotLocalCommandCatalog.FindExact(normalized);
             return command == null
                 ? $"未找到命令“{normalized}”。输入 /help 查看全部命令，或输入 / 按名称过滤。"
                 : FormatCommand(command);
@@ -131,6 +130,11 @@ namespace ColorVision.Copilot
             builder.AppendLine(command.Description);
             builder.Append("参数：")
                 .AppendLine(command.AcceptsArguments ? "可选" : "无");
+            if (command.Aliases.Count > 0)
+            {
+                builder.Append("别名：")
+                    .AppendLine(string.Join("、", command.Aliases));
+            }
             builder.Append("Agent 运行中：")
                 .Append(command.AvailableWhileAgentRuns ? "可立即执行" : "当前任务结束后执行");
             return builder.ToString();

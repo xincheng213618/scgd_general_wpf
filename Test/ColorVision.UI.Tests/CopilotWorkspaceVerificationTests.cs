@@ -5,15 +5,15 @@ namespace ColorVision.UI.Tests;
 public sealed class CopilotWorkspaceVerificationTests
 {
     [Theory]
-    [InlineData("/verify", "/verify")]
-    [InlineData("/check-work auth", "/check-work")]
-    [InlineData("/check tests", "/check")]
-    public void VerificationCommandsShareTheSameBoundedWorkflow(string input, string expectedName)
+    [InlineData("/verify")]
+    [InlineData("/check-work auth")]
+    [InlineData("/check tests")]
+    public void VerificationCommandsShareTheSameBoundedWorkflow(string input)
     {
         var invocation = CopilotLocalCommandCatalog.Parse(input);
 
         Assert.NotNull(invocation);
-        Assert.Equal(expectedName, invocation.Command.Name);
+        Assert.Equal("/verify", invocation.Command.Name);
         Assert.Equal(CopilotLocalCommandKind.Verify, invocation.Command.Kind);
         Assert.False(invocation.Command.AvailableWhileAgentRuns);
     }

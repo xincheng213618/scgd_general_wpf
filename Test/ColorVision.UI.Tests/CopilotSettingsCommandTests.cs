@@ -17,6 +17,7 @@ public sealed class CopilotSettingsCommandTests
 
         Assert.NotNull(invocation);
         Assert.Equal(CopilotLocalCommandKind.Settings, invocation.Command.Kind);
+        Assert.Equal("/settings", invocation.Command.Name);
         Assert.False(invocation.Command.AvailableWhileAgentRuns);
         Assert.Equal(["models", "agent", "mcp", "sync"], invocation.Command.Arguments!.Select(item => item.Value));
         Assert.Equal(expectedArguments, invocation.Arguments);

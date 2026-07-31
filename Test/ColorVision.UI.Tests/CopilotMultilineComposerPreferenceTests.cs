@@ -18,6 +18,7 @@ public sealed class CopilotMultilineComposerPreferenceTests
 
         Assert.NotNull(invocation);
         Assert.Equal(CopilotLocalCommandKind.MultilineComposer, invocation.Command.Kind);
+        Assert.Equal("/multiline", invocation.Command.Name);
         Assert.True(invocation.Command.AvailableWhileAgentRuns);
         Assert.Equal(["on", "off"], invocation.Command.Arguments!.Select(item => item.Value));
         Assert.Equal(expectedArguments, invocation.Arguments);

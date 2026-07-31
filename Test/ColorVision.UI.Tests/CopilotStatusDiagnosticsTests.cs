@@ -133,6 +133,7 @@ public sealed class CopilotStatusDiagnosticsTests
 
         Assert.NotNull(invocation);
         Assert.Equal(CopilotLocalCommandKind.Status, invocation.Command.Kind);
+        Assert.Equal("/status", invocation.Command.Name);
         Assert.True(invocation.Command.AvailableWhileAgentRuns);
         Assert.Null(CopilotLocalCommandCatalog.Parse("/session-info now"));
     }

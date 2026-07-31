@@ -78,6 +78,8 @@ namespace ColorVision.Copilot
         bool RequiresMoreInputAfterCompletion = false)
     {
         public string CompletionText => Name + (AcceptsArguments ? " " : string.Empty);
+
+        public IReadOnlyList<string> Aliases { get; init; } = Array.Empty<string>();
     }
 
     public sealed record CopilotLocalCommandArgument(
@@ -99,8 +101,7 @@ namespace ColorVision.Copilot
             new("/help", "查看全部固定命令，或查询单个命令的用法", CopilotLocalCommandKind.Help, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/help [命令]"),
             new("/shortcuts", "查看按焦点作用域整理的键盘快捷键", CopilotLocalCommandKind.Shortcuts, AvailableWhileAgentRuns: true, Usage: "/shortcuts"),
             new("/recap", "回顾当前会话的目标、最近一轮与待执行状态", CopilotLocalCommandKind.Recap, AvailableWhileAgentRuns: true, Usage: "/recap"),
-            new("/status", "查看模型、Agent、工作区与连接状态", CopilotLocalCommandKind.Status, AvailableWhileAgentRuns: true, Usage: "/status"),
-            new("/session-info", "同 /status；查看当前会话身份、恢复与运行状态", CopilotLocalCommandKind.Status, AvailableWhileAgentRuns: true, Usage: "/session-info"),
+            new("/status", "查看模型、Agent、工作区与连接状态", CopilotLocalCommandKind.Status, AvailableWhileAgentRuns: true, Usage: "/status") { Aliases = ["/session-info"] },
             new("/debug-config", "查看 Copilot 配置来源链、会话覆盖与脱敏后的运行时有效值", CopilotLocalCommandKind.EffectiveConfig, AvailableWhileAgentRuns: true, Usage: "/debug-config"),
             new("/doctor", "检查模型、会话保存、任务、MCP、Hook 与 Skill 健康度", CopilotLocalCommandKind.Doctor, AvailableWhileAgentRuns: true, Usage: "/doctor"),
             new("/feedback", "反馈当前 Copilot 会话问题，可补充问题说明", CopilotLocalCommandKind.Feedback, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/feedback [问题说明]"),
@@ -147,18 +148,7 @@ namespace ColorVision.Copilot
                 new("close", "按 run_id 从默认列表关闭已结束子运行；结果与审计保留", AcceptsArguments: true),
                 new("steer", "按 run_id 向当前会话中的运行中子代理排入新指令", AcceptsArguments: true),
                 new("stop", "按 run_id 停止当前会话中的运行中子代理；父 Agent 继续", AcceptsArguments: true),
-            ]),
-            new("/subagents", "同 /agents；按活动或结束状态查看、关闭请求级子代理，或按 run_id 引导、停止并让父 Agent 继续", CopilotLocalCommandKind.Subagents, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/subagents [roles|runs [N]|active [N]|done [N]|show <run_id>|close <run_id>|steer <run_id> <message>|stop <run_id>]", Arguments:
-            [
-                new("roles", "只显示内置子代理角色及其只读能力"),
-                new("runs", "显示当前会话 N 次可见子运行；运行中优先，同状态新到旧", AcceptsArguments: true),
-                new("active", "只显示当前会话最近 N 次活动子运行", AcceptsArguments: true),
-                new("done", "只显示当前会话最近 N 次已结束子运行", AcceptsArguments: true),
-                new("show", "按 run_id 显示单次子运行的限长结果与审计详情", AcceptsArguments: true),
-                new("close", "按 run_id 从默认列表关闭已结束子运行；结果与审计保留", AcceptsArguments: true),
-                new("steer", "按 run_id 向当前会话中的运行中子代理排入新指令", AcceptsArguments: true),
-                new("stop", "按 run_id 停止当前会话中的运行中子代理；父 Agent 继续", AcceptsArguments: true),
-            ]),
+            ]) { Aliases = ["/subagents"] },
             new("/stats", "汇总最近 7 天、30 天或全部本地会话活动", CopilotLocalCommandKind.Statistics, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/stats [7|30|all]", Arguments:
             [
                 new("7", "最近 7 个本机日历日"),
@@ -169,11 +159,7 @@ namespace ColorVision.Copilot
             new("/memory", "预览工作区型 Agent 请求会加载的项目指令，或按编号打开源文件", CopilotLocalCommandKind.ProjectInstructions, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/memory [open N]", Arguments:
             [
                 new("open", "在内置编辑器中打开第 N 个生效指令文件", AcceptsArguments: true),
-            ]),
-            new("/instructions", "同 /memory；预览并打开当前目标的项目指令", CopilotLocalCommandKind.ProjectInstructions, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/instructions [open N]", Arguments:
-            [
-                new("open", "在内置编辑器中打开第 N 个生效指令文件", AcceptsArguments: true),
-            ]),
+            ]) { Aliases = ["/instructions"] },
             new("/permissions", "选择按需确认/临时自动复核，或查看权限状态", CopilotLocalCommandKind.Permissions, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/permissions [status|ask|auto]", Arguments:
             [
                 new("status", "显示当前文件范围、能力与审批策略"),
@@ -193,28 +179,7 @@ namespace ColorVision.Copilot
                 new("agent", "Agent 默认行为与上下文预算"),
                 new("mcp", "MCP 服务与控制能力"),
                 new("sync", "后端配置同步"),
-            ]),
-            new("/config", "同 /settings；打开 Copilot 设置", CopilotLocalCommandKind.Settings, AcceptsArguments: true, Usage: "/config [models|agent|mcp|sync]", Arguments:
-            [
-                new("models", "模型 Profile、Endpoint 与推理设置"),
-                new("agent", "Agent 默认行为与上下文预算"),
-                new("mcp", "MCP 服务与控制能力"),
-                new("sync", "后端配置同步"),
-            ]),
-            new("/preferences", "同 /settings；打开 Copilot 设置", CopilotLocalCommandKind.Settings, AcceptsArguments: true, Usage: "/preferences [models|agent|mcp|sync]", Arguments:
-            [
-                new("models", "模型 Profile、Endpoint 与推理设置"),
-                new("agent", "Agent 默认行为与上下文预算"),
-                new("mcp", "MCP 服务与控制能力"),
-                new("sync", "后端配置同步"),
-            ]),
-            new("/prefs", "同 /settings；打开 Copilot 设置", CopilotLocalCommandKind.Settings, AcceptsArguments: true, Usage: "/prefs [models|agent|mcp|sync]", Arguments:
-            [
-                new("models", "模型 Profile、Endpoint 与推理设置"),
-                new("agent", "Agent 默认行为与上下文预算"),
-                new("mcp", "MCP 服务与控制能力"),
-                new("sync", "后端配置同步"),
-            ]),
+            ]) { Aliases = ["/config", "/preferences", "/prefs"] },
             new("/init", "为当前项目生成根级 AGENTS.md，不覆盖已有项目指令", CopilotLocalCommandKind.InitializeProject, Usage: "/init"),
             new("/hooks", "查看生效 Hook、模块来源与最近运行健康度", CopilotLocalCommandKind.Hooks, AvailableWhileAgentRuns: true, Usage: "/hooks"),
             new("/skills", "查看 Skill 使用率、连续未加载与降级状态", CopilotLocalCommandKind.Skills, AvailableWhileAgentRuns: true, Usage: "/skills"),
@@ -232,9 +197,7 @@ namespace ColorVision.Copilot
             new("/rollback", "查看或安全撤销当前会话仍可回滚的精确文件修改", CopilotLocalCommandKind.RollbackWorkspace, AcceptsArguments: true, Usage: "/rollback [N]"),
             new("/compact", "压缩早期对话，可在命令后补充聚焦要求", CopilotLocalCommandKind.Compact, AcceptsArguments: true, Usage: "/compact [聚焦要求]"),
             new("/review", "只读审查当前工作区变更，可补充关注点", CopilotLocalCommandKind.Review, AcceptsArguments: true, Usage: "/review [关注点]"),
-            new("/verify", "只读审查改动并经确认运行一次受限构建或测试", CopilotLocalCommandKind.Verify, AcceptsArguments: true, Usage: "/verify [关注点]"),
-            new("/check-work", "同 /verify；检查改动并收集真实验证证据", CopilotLocalCommandKind.Verify, AcceptsArguments: true, Usage: "/check-work [关注点]"),
-            new("/check", "同 /verify；检查改动并收集真实验证证据", CopilotLocalCommandKind.Verify, AcceptsArguments: true, Usage: "/check [关注点]"),
+            new("/verify", "只读审查改动并经确认运行一次受限构建或测试", CopilotLocalCommandKind.Verify, AcceptsArguments: true, Usage: "/verify [关注点]") { Aliases = ["/check-work", "/check"] },
             new("/plan", "只读分析并生成可执行计划，可在命令后直接填写任务", CopilotLocalCommandKind.Plan, AcceptsArguments: true, Usage: "/plan [任务]"),
             new("/view-plan", "定位当前会话最近一份已完成计划", CopilotLocalCommandKind.ViewPlan, AvailableWhileAgentRuns: true, Usage: "/view-plan"),
             new("/goal", "查看或管理当前会话的持续目标", CopilotLocalCommandKind.Goal, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/goal [目标|edit <新目标>|pause|resume|clear]", Arguments:
@@ -247,8 +210,7 @@ namespace ColorVision.Copilot
             new("/resume", "搜索并切换已有 Copilot 会话，可补充标题或关键词", CopilotLocalCommandKind.ResumeConversation, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/resume [会话 ID|标题|关键词]"),
             new("/archive", "归档当前会话并从常用列表隐藏；不会删除内容", CopilotLocalCommandKind.ArchiveConversation, Usage: "/archive"),
             new("/delete", "永久删除当前会话；始终经过保留状态检查与原生二次确认", CopilotLocalCommandKind.DeleteConversation, Usage: "/delete"),
-            new("/unarchive", "列出或恢复已归档会话", CopilotLocalCommandKind.UnarchiveConversation, AcceptsArguments: true, Usage: "/unarchive [会话 ID|唯一完整标题|关键词]"),
-            new("/archived", "同 /unarchive；列出或恢复已归档会话", CopilotLocalCommandKind.UnarchiveConversation, AcceptsArguments: true, Usage: "/archived [会话 ID|唯一完整标题|关键词]"),
+            new("/unarchive", "列出或恢复已归档会话", CopilotLocalCommandKind.UnarchiveConversation, AcceptsArguments: true, Usage: "/unarchive [会话 ID|唯一完整标题|关键词]") { Aliases = ["/archived"] },
             new("/rename", "重命名当前 Copilot 会话；省略名称时打开输入窗口", CopilotLocalCommandKind.RenameConversation, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/rename [新名称]"),
             new("/rewind", "从历史请求创建仅会话回溯分支，并恢复原请求供修改", CopilotLocalCommandKind.RewindConversation, AcceptsArguments: true, Usage: "/rewind [N]"),
             new("/turn", "定位当前会话倒数第 N 条用户请求；1 表示最近一条", CopilotLocalCommandKind.NavigateTurn, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/turn [N]"),
@@ -277,12 +239,7 @@ namespace ColorVision.Copilot
             [
                 new("on", "Enter 换行，Shift+Enter 或 Ctrl+Enter 发送"),
                 new("off", "Enter 发送，Shift+Enter 换行"),
-            ]),
-            new("/ml", "同 /multiline；切换多行输入模式", CopilotLocalCommandKind.MultilineComposer, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/ml [on|off]", Arguments:
-            [
-                new("on", "Enter 换行，Shift+Enter 或 Ctrl+Enter 发送"),
-                new("off", "Enter 发送，Shift+Enter 换行"),
-            ]),
+            ]) { Aliases = ["/ml"] },
             new("/follow-up", "设置运行期间 Enter 默认调整当前任务或排到下一轮", CopilotLocalCommandKind.FollowUpBehavior, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/follow-up [steer|queue]", Arguments:
             [
                 new("steer", "Enter 调整当前运行，Tab 排到下一轮"),
@@ -296,8 +253,7 @@ namespace ColorVision.Copilot
             new("/export", "复制当前会话的可见 Markdown；可补充文件名并打开保存窗口", CopilotLocalCommandKind.ExportConversation, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/export [文件名.md|文件名.txt]"),
             new("/find", "查找并定位当前会话中的可见消息", CopilotLocalCommandKind.FindInConversation, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/find [文本]"),
             new("/model", "选择当前会话使用的模型 Profile；可补充 Profile 名或模型 ID", CopilotLocalCommandKind.SelectModel, AcceptsArguments: true, Usage: "/model [Profile 名|模型 ID]"),
-            new("/reasoning", "选择当前模型 Profile 的推理强度；可补充受支持级别", CopilotLocalCommandKind.SelectReasoning, AcceptsArguments: true, Usage: "/reasoning [auto|off|on|high|max]"),
-            new("/effort", "同 /reasoning；调整当前模型 Profile 的推理强度", CopilotLocalCommandKind.SelectReasoning, AcceptsArguments: true, Usage: "/effort [auto|off|on|high|max]"),
+            new("/reasoning", "选择当前模型 Profile 的推理强度；可补充受支持级别", CopilotLocalCommandKind.SelectReasoning, AcceptsArguments: true, Usage: "/reasoning [auto|off|on|high|max]") { Aliases = ["/effort"] },
             new("/personality", "设置当前会话后续回答的默认沟通风格", CopilotLocalCommandKind.SelectPersonality, AcceptsArguments: true, Usage: "/personality [friendly|pragmatic|none]", Arguments:
             [
                 new("friendly", "友好协作，同时保持直接和证据优先"),
@@ -306,9 +262,11 @@ namespace ColorVision.Copilot
             ]),
             new("/new", "开始一个新的 Copilot 会话", CopilotLocalCommandKind.NewConversation, Usage: "/new"),
             new("/clear", "清空当前上下文并开始新会话；可先命名旧会话", CopilotLocalCommandKind.ClearConversation, AcceptsArguments: true, Usage: "/clear [旧会话名称]"),
-            new("/fork", "复制当前会话到新会话分支；Agent 运行时创建可见快照", CopilotLocalCommandKind.ForkConversation, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/fork [新会话名称]"),
-            new("/branch", "同 /fork；只分叉会话，不创建 Git 分支", CopilotLocalCommandKind.ForkConversation, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/branch [新会话名称]"),
+            new("/fork", "复制当前会话到新会话分支；Agent 运行时创建可见快照", CopilotLocalCommandKind.ForkConversation, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/fork [新会话名称]") { Aliases = ["/branch"] },
         ];
+
+        private static readonly Dictionary<string, CopilotLocalCommand> CommandsByName =
+            BuildCommandLookup();
 
         public static IReadOnlyList<CopilotLocalCommand> All => Commands;
 
@@ -330,8 +288,8 @@ namespace ColorVision.Copilot
             var separatorIndex = normalized.IndexOfAny([' ', '\t', '\r', '\n']);
             var name = separatorIndex < 0 ? normalized : normalized[..separatorIndex];
             var arguments = separatorIndex < 0 ? string.Empty : normalized[(separatorIndex + 1)..].Trim();
-            var command = Commands.FirstOrDefault(item => string.Equals(item.Name, name, StringComparison.OrdinalIgnoreCase));
-            if (command == null || (!command.AcceptsArguments && arguments.Length > 0))
+            if (!CommandsByName.TryGetValue(name, out var command)
+                || (!command.AcceptsArguments && arguments.Length > 0))
                 return null;
 
             return new CopilotLocalCommandInvocation(command, arguments);
@@ -398,8 +356,7 @@ namespace ColorVision.Copilot
                 return Array.Empty<CopilotLocalCommand>();
 
             var name = input[..separatorIndex];
-            var command = Commands.FirstOrDefault(item =>
-                string.Equals(item.Name, name, StringComparison.OrdinalIgnoreCase));
+            CommandsByName.TryGetValue(name, out var command);
             if (command?.AcceptsArguments != true
                 || !CopilotLocalCommandAvailabilityPolicy.CanSuggest(command, composerContext))
                 return Array.Empty<CopilotLocalCommand>();
@@ -419,7 +376,7 @@ namespace ColorVision.Copilot
                     || !string.Equals(argument.Value, query, StringComparison.OrdinalIgnoreCase))
                 .Take(MaximumSuggestions)
                 .Select(argument => new CopilotLocalCommand(
-                    command.Name + " " + argument.Value,
+                    name + " " + argument.Value,
                     "参数 · " + argument.Description,
                     command.Kind,
                     AcceptsArguments: argument.AcceptsArguments,
@@ -427,6 +384,30 @@ namespace ColorVision.Copilot
                     Usage: command.Usage,
                     RequiresMoreInputAfterCompletion: argument.AcceptsArguments))
                 .ToArray();
+        }
+
+        private static Dictionary<string, CopilotLocalCommand> BuildCommandLookup()
+        {
+            var lookup = new Dictionary<string, CopilotLocalCommand>(StringComparer.OrdinalIgnoreCase);
+            foreach (var command in Commands)
+            {
+                AddCommandName(lookup, command.Name, command);
+                foreach (var alias in command.Aliases)
+                    AddCommandName(lookup, alias, command);
+            }
+
+            return lookup;
+        }
+
+        private static void AddCommandName(
+            Dictionary<string, CopilotLocalCommand> lookup,
+            string name,
+            CopilotLocalCommand command)
+        {
+            if (string.IsNullOrWhiteSpace(name) || name[0] != '/')
+                throw new InvalidOperationException($"Copilot command name '{name}' must begin with '/'.");
+            if (!lookup.TryAdd(name, command))
+                throw new InvalidOperationException($"Duplicate Copilot command name or alias '{name}'.");
         }
 
         private static IReadOnlyList<CopilotLocalCommandArgument> ResolveArguments(
