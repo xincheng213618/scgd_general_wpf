@@ -1238,6 +1238,8 @@ namespace ColorVision.Copilot
                         _process.StandardError).ConfigureAwait(false);
                 _standardOutput.ReplacePreview(standardOutput);
                 _standardError.ReplacePreview(standardError);
+                _standardOutput.CompleteArchive();
+                _standardError.CompleteArchive();
                 var exitCode = TryGetExitCode(_process);
                 var reason = Volatile.Read(ref _terminationReason);
                 var state = reason switch
@@ -1280,6 +1282,8 @@ namespace ColorVision.Copilot
             catch (Exception ex) when (ex is IOException or Win32Exception or InvalidOperationException or ObjectDisposedException)
             {
                 _standardError.Append(CopilotMcpAuditLogger.RedactText(ex.Message));
+                _standardOutput.CompleteArchive();
+                _standardError.CompleteArchive();
                 var output = GetOutputSnapshot();
                 return new CopilotBackgroundShellProcessCompletion(
                     Volatile.Read(ref _terminationReason) == 1
@@ -1417,6 +1421,8 @@ namespace ColorVision.Copilot
                     ArchiveTruncated: false,
                     ErrorMessage:
                         "The temporary redacted output archive is unavailable.");
+
+            public void CompleteArchive() => _archive?.Complete();
 
             private void AppendPreviewUnderLock(string value)
             {

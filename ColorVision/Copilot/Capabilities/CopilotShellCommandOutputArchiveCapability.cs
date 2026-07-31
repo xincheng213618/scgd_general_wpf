@@ -97,6 +97,12 @@ namespace ColorVision.Copilot
             }
         }
 
+        public void Complete()
+        {
+            _standardOutput?.Complete();
+            _standardError?.Complete();
+        }
+
         public CopilotShellCommandOutputArchiveSnapshot CreateSnapshot(
             string id,
             string conversationId,

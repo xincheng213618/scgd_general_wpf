@@ -32,24 +32,25 @@ public sealed class CopilotShellCommandOutputArchiveTests
             CopilotTemporaryRedactedOutputArchive.TryCreate(
                 "ShellOutput",
                 "stdout",
-                maximumCharacters: 48);
+                maximumCharacters: 64);
         Assert.NotNull(archive);
         var path = archive!.StoragePath;
-        var raw = "token=top-secret " + new string('x', 100);
+        var raw = "token=top-secret\n" + new string('x', 100);
         try
         {
             archive.Append(raw);
+            archive.Complete();
 
             Assert.True(File.Exists(path));
             Assert.Equal(raw.Length, archive.ObservedCharacters);
-            Assert.Equal(48, archive.ArchivedCharacters);
+            Assert.Equal(64, archive.ArchivedCharacters);
             Assert.True(archive.IsTruncated);
             var page = archive.Read(
                 offsetCharacters: 0,
-                maximumCharacters: 48,
+                maximumCharacters: 64,
                 CancellationToken.None);
             Assert.True(page.Available, page.ErrorMessage);
-            Assert.Equal(48, page.ReturnedCharacters);
+            Assert.Equal(64, page.ReturnedCharacters);
             Assert.True(page.EndOfAvailableOutput);
             Assert.True(page.ArchiveTruncated);
             Assert.Contains("token=<redacted>", page.Content);
@@ -73,6 +74,34 @@ public sealed class CopilotShellCommandOutputArchiveTests
         }
 
         Assert.False(File.Exists(path));
+    }
+
+    [Fact]
+    public void TemporaryArchiveRedactsSecretsSplitAcrossChunks()
+    {
+        using var archive =
+            CopilotTemporaryRedactedOutputArchive.TryCreate(
+                "ShellOutput",
+                "stdout",
+                maximumCharacters: 512);
+        Assert.NotNull(archive);
+
+        archive!.Append("prefix tok");
+        archive.Append("en=split-secret");
+        archive.Append("-value\nBearer ");
+        archive.Append("split-bearer suffix\nsafe");
+        archive.Complete();
+        var page = archive.Read(
+            0,
+            512,
+            CancellationToken.None);
+
+        Assert.True(page.Available, page.ErrorMessage);
+        Assert.Contains("prefix token=<redacted>", page.Content);
+        Assert.Contains("Bearer <redacted> suffix", page.Content);
+        Assert.EndsWith("safe", page.Content);
+        Assert.DoesNotContain("split-secret", page.Content);
+        Assert.DoesNotContain("split-bearer", page.Content);
     }
 
     [Fact]

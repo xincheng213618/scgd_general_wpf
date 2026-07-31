@@ -72,6 +72,7 @@ namespace ColorVision.UI.Tests
             [
                 typeof(CopilotTcpPortInspectionService),
                 typeof(CopilotShellCommandTool),
+                typeof(CopilotReadShellCommandOutputTool),
                 typeof(CopilotInspectGitWorkingTreeTool),
                 typeof(CopilotInspectGitDiffTool),
                 typeof(CopilotQueryDatabaseSqlTool),

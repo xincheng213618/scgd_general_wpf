@@ -157,6 +157,7 @@ namespace ColorVision.Copilot
                 outputCapture.EnsureCaptured(
                     processResult.StandardOutput,
                     processResult.StandardError);
+                outputCapture.Complete();
                 outputArchive = _outputArchiveRegistry.Retain(
                     request.ConversationId,
                     outputCapture,
@@ -652,10 +653,10 @@ namespace ColorVision.Copilot
                     observedStandardErrorCharacters,
                 StandardOutputTruncated =
                     observedStandardOutputCharacters
-                    > standardOutput.Length,
+                    > MaxStreamCharacters,
                 StandardErrorTruncated =
                     observedStandardErrorCharacters
-                    > standardError.Length,
+                    > MaxStreamCharacters,
             };
         }
 
