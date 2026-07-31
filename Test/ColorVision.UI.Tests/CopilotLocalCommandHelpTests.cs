@@ -22,7 +22,7 @@ public sealed class CopilotLocalCommandHelpTests
     [Fact]
     public void EveryFixedCommandDeclaresUsageBeginningWithItsName()
     {
-        Assert.Equal(63, CopilotLocalCommandCatalog.All.Count);
+        Assert.Equal(64, CopilotLocalCommandCatalog.All.Count);
         foreach (var command in CopilotLocalCommandCatalog.All)
         {
             Assert.False(string.IsNullOrWhiteSpace(command.Usage));
@@ -38,7 +38,7 @@ public sealed class CopilotLocalCommandHelpTests
         var report = CopilotLocalCommandHelp.Format(null);
         var lines = report.Split(Environment.NewLine);
 
-        Assert.Contains("Copilot 命令 · 63", report);
+        Assert.Contains("Copilot 命令 · 64", report);
         Assert.Contains("状态与诊断", report);
         Assert.Contains("工作区与 Agent", report);
         Assert.Contains("会话与输出", report);
@@ -82,6 +82,20 @@ public sealed class CopilotLocalCommandHelpTests
         Assert.StartsWith("/queue", report);
         Assert.Contains("等待执行的后续请求", report);
         Assert.Contains("参数：无", report);
+        Assert.Contains("Agent 运行中：可立即执行", report);
+    }
+
+    [Fact]
+    public void StopHelpExposesTheSafeHostedRunControl()
+    {
+        var invocation = Assert.IsType<CopilotLocalCommandInvocation>(
+            CopilotLocalCommandCatalog.Parse("/stop"));
+        var report = CopilotLocalCommandHelp.Format("stop");
+
+        Assert.Equal(CopilotLocalCommandKind.StopTask, invocation.Command.Kind);
+        Assert.True(invocation.Command.AvailableWhileAgentRuns);
+        Assert.StartsWith("/stop", report);
+        Assert.Contains("安全 checkpoint", report);
         Assert.Contains("Agent 运行中：可立即执行", report);
     }
 

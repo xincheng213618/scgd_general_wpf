@@ -1948,6 +1948,9 @@ namespace ColorVision.Copilot
                         QueuedFollowUps,
                         SelectedConversation?.Id));
                     break;
+                case CopilotLocalCommandKind.StopTask:
+                    StopTaskFromCommand(command);
+                    break;
                 case CopilotLocalCommandKind.Approve:
                     HandlePendingApprovalCommand(command, invocation.Arguments);
                     break;
@@ -6141,6 +6144,35 @@ namespace ColorVision.Copilot
             var command = CopilotLocalCommandCatalog.FindExact("/rewind");
             if (command != null)
                 RewindConversation(command, string.Empty);
+        }
+
+        private void StopTaskFromCommand(CopilotLocalCommand command)
+        {
+            var activeRun = ActiveHostedRun;
+            if (!IsViewingActiveRun || activeRun == null)
+            {
+                ShowLocalCommandResult(command, "当前会话没有正在运行的任务。");
+                return;
+            }
+
+            var previousState = activeRun.State;
+            if (!StopCurrentReply())
+            {
+                ShowLocalCommandResult(
+                    command,
+                    previousState == CopilotHostedRunState.CancelRequested
+                        ? "当前任务已在等待取消完成。"
+                        : "当前任务暂时无法停止；请查看 /tasks 或使用任务控制按钮。");
+                return;
+            }
+
+            ShowLocalCommandResult(
+                command,
+                previousState == CopilotHostedRunState.PauseRequested
+                    ? "已把当前 Agent 的暂停请求升级为取消；本轮不会继续执行。"
+                    : activeRun.IsAgent
+                        ? "已请求安全暂停当前 Agent；若没有可恢复 checkpoint，将取消当前轮次。"
+                        : "已请求取消当前聊天响应。");
         }
 
         private bool StopCurrentReply()

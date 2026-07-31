@@ -116,31 +116,38 @@ namespace ColorVision.Copilot
             if (right.Length == 0)
                 return left.Length;
 
-            var previous = new int[right.Length + 1];
-            var current = new int[right.Length + 1];
+            var distances = new int[left.Length + 1, right.Length + 1];
+            for (var leftIndex = 0; leftIndex <= left.Length; leftIndex++)
+                distances[leftIndex, 0] = leftIndex;
             for (var rightIndex = 0; rightIndex <= right.Length; rightIndex++)
-                previous[rightIndex] = rightIndex;
+                distances[0, rightIndex] = rightIndex;
 
             for (var leftIndex = 1; leftIndex <= left.Length; leftIndex++)
             {
-                current[0] = leftIndex;
                 for (var rightIndex = 1; rightIndex <= right.Length; rightIndex++)
                 {
                     var substitutionCost = char.ToUpperInvariant(left[leftIndex - 1])
                         == char.ToUpperInvariant(right[rightIndex - 1])
                             ? 0
                             : 1;
-                    current[rightIndex] = Math.Min(
+                    distances[leftIndex, rightIndex] = Math.Min(
                         Math.Min(
-                            current[rightIndex - 1] + 1,
-                            previous[rightIndex] + 1),
-                        previous[rightIndex - 1] + substitutionCost);
+                            distances[leftIndex, rightIndex - 1] + 1,
+                            distances[leftIndex - 1, rightIndex] + 1),
+                        distances[leftIndex - 1, rightIndex - 1] + substitutionCost);
+                    if (leftIndex > 1
+                        && rightIndex > 1
+                        && char.ToUpperInvariant(left[leftIndex - 1]) == char.ToUpperInvariant(right[rightIndex - 2])
+                        && char.ToUpperInvariant(left[leftIndex - 2]) == char.ToUpperInvariant(right[rightIndex - 1]))
+                    {
+                        distances[leftIndex, rightIndex] = Math.Min(
+                            distances[leftIndex, rightIndex],
+                            distances[leftIndex - 2, rightIndex - 2] + 1);
+                    }
                 }
-
-                (previous, current) = (current, previous);
             }
 
-            return previous[right.Length];
+            return distances[left.Length, right.Length];
         }
     }
 }

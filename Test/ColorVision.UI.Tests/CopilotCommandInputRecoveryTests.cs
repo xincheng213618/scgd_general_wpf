@@ -51,17 +51,21 @@ public sealed class CopilotCommandInputRecoveryTests
             out _));
     }
 
-    [Fact]
-    public void MistypedFixedCommandSuggestsTheClosestCommand()
+    [Theory]
+    [InlineData("/statsu", "/stats")]
+    [InlineData("/stpo", "/stop")]
+    public void MistypedFixedCommandSuggestsTheClosestCommand(
+        string input,
+        string expectedSuggestion)
     {
         Assert.True(CopilotCommandInputRecoveryResolver.TryResolve(
-            "/statsu",
+            input,
             Skills,
             out var recovery));
 
-        Assert.Equal("/statsu · 未找到", recovery.Title);
+        Assert.Equal(input + " · 未找到", recovery.Title);
         Assert.Contains("未发送给模型", recovery.Message);
-        Assert.Contains("你是否想输入：/stats", recovery.Message);
+        Assert.Contains("你是否想输入：" + expectedSuggestion, recovery.Message);
     }
 
     [Theory]

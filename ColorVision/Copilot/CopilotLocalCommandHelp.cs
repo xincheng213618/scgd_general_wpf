@@ -18,6 +18,7 @@ namespace ColorVision.Copilot
                 CopilotLocalCommandKind.Tasks,
                 CopilotLocalCommandKind.TaskLog,
                 CopilotLocalCommandKind.Queue,
+                CopilotLocalCommandKind.StopTask,
                 CopilotLocalCommandKind.Approve,
                 CopilotLocalCommandKind.Usage,
                 CopilotLocalCommandKind.Statistics,

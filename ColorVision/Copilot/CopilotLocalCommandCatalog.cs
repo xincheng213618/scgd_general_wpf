@@ -15,6 +15,7 @@ namespace ColorVision.Copilot
         Tasks,
         TaskLog,
         Queue,
+        StopTask,
         Approve,
         Usage,
         Statistics,
@@ -101,6 +102,7 @@ namespace ColorVision.Copilot
             new("/ps", "同 /tasks；查看正在运行、排队及等待恢复的 Agent 任务", CopilotLocalCommandKind.Tasks, AvailableWhileAgentRuns: true, Usage: "/ps"),
             new("/task-log", "查看当前会话最近的 Agent 工具、审批与停止事件", CopilotLocalCommandKind.TaskLog, AvailableWhileAgentRuns: true, Usage: "/task-log"),
             new("/queue", "查看当前会话等待执行的后续请求", CopilotLocalCommandKind.Queue, AvailableWhileAgentRuns: true, Usage: "/queue"),
+            new("/stop", "停止当前任务；有安全 checkpoint 时优先暂停，否则取消当前轮次", CopilotLocalCommandKind.StopTask, AvailableWhileAgentRuns: true, Usage: "/stop"),
             new("/approve", "查看待确认操作，或打开指定操作的原生审查窗口", CopilotLocalCommandKind.Approve, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/approve [N]"),
             new("/usage", "查看当前会话已记录的输入、输出与缓存 Token", CopilotLocalCommandKind.Usage, AvailableWhileAgentRuns: true, Usage: "/usage"),
             new("/stats", "汇总最近 7 天、30 天或全部本地会话活动", CopilotLocalCommandKind.Statistics, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/stats [7|30|all]", Arguments:
