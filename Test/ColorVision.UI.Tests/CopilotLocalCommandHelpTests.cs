@@ -22,7 +22,7 @@ public sealed class CopilotLocalCommandHelpTests
     [Fact]
     public void EveryFixedCommandDeclaresUsageBeginningWithItsName()
     {
-        Assert.Equal(58, CopilotLocalCommandCatalog.All.Count);
+        Assert.Equal(57, CopilotLocalCommandCatalog.All.Count);
         foreach (var command in CopilotLocalCommandCatalog.All)
         {
             Assert.False(string.IsNullOrWhiteSpace(command.Usage));
@@ -38,7 +38,7 @@ public sealed class CopilotLocalCommandHelpTests
         var report = CopilotLocalCommandHelp.Format(null);
         var lines = report.Split(Environment.NewLine);
 
-        Assert.Contains("Copilot 命令 · 58", report);
+        Assert.Contains("Copilot 命令 · 57", report);
         Assert.Contains("状态与诊断", report);
         Assert.Contains("工作区与 Agent", report);
         Assert.Contains("会话与输出", report);
@@ -84,7 +84,7 @@ public sealed class CopilotLocalCommandHelpTests
             .SelectMany(command => command.Aliases.Select(alias => (Command: command, Alias: alias)))
             .ToArray();
 
-        Assert.Equal(12, aliases.Length);
+        Assert.Equal(13, aliases.Length);
         Assert.Equal(
             aliases.Length,
             aliases.Select(item => item.Alias).Distinct(StringComparer.OrdinalIgnoreCase).Count());
@@ -187,11 +187,14 @@ public sealed class CopilotLocalCommandHelpTests
     public void UsageHelpIncludesLatestProviderLimits()
     {
         var report = CopilotLocalCommandHelp.Format("usage");
+        var aliasReport = CopilotLocalCommandHelp.Format("stats");
 
         Assert.StartsWith("/usage [session|daily|weekly|cumulative]", report);
         Assert.Contains("本地每日、每周与累计 Token 活动", report);
+        Assert.Contains("别名：/stats", report);
         Assert.Contains("参数：可选", report);
         Assert.Contains("Agent 运行中：可立即执行", report);
+        Assert.Equal(report, aliasReport);
     }
 
     [Fact]

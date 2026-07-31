@@ -15,7 +15,6 @@ namespace ColorVision.Copilot
 
     internal enum CopilotConversationStatisticsDetailMode
     {
-        Default,
         Daily,
         Weekly,
         Cumulative,
@@ -52,17 +51,6 @@ namespace ColorVision.Copilot
 
     internal static class CopilotConversationStatistics
     {
-        public static string Format(
-            IEnumerable<CopilotConversationRecord>? conversations,
-            DateTimeOffset now,
-            string? arguments)
-        {
-            if (!TryParseWindow(arguments, out var window))
-                return "/stats 参数无效。可用 /stats、/stats 7、/stats 30 或 /stats all。";
-
-            return Format(Capture(conversations, now, window));
-        }
-
         public static CopilotConversationStatisticsSnapshot Capture(
             IEnumerable<CopilotConversationRecord>? conversations,
             DateTimeOffset now,
@@ -139,14 +127,6 @@ namespace ColorVision.Copilot
                 dailyActivity);
         }
 
-        public static string Format(CopilotConversationStatisticsSnapshot snapshot)
-        {
-            return Format(
-                snapshot,
-                "/stats",
-                CopilotConversationStatisticsDetailMode.Default);
-        }
-
         public static string Format(
             CopilotConversationStatisticsSnapshot snapshot,
             string commandLabel,
@@ -213,31 +193,6 @@ namespace ColorVision.Copilot
             builder.Append("边界：只汇总本机已保存消息中由 Provider 返回的 Token；会话分支复制的历史前缀不会重复计数。"
                 + "统计不代表账户账单、信用额度、套餐余额、费用、速率限制或未返回用量的失败调用。");
             return builder.ToString().TrimEnd();
-        }
-
-        private static bool TryParseWindow(
-            string? arguments,
-            out CopilotConversationStatisticsWindow window)
-        {
-            var normalized = (arguments ?? string.Empty).Trim();
-            if (normalized.Length == 0 || string.Equals(normalized, "7", StringComparison.OrdinalIgnoreCase))
-            {
-                window = CopilotConversationStatisticsWindow.SevenDays;
-                return true;
-            }
-            if (string.Equals(normalized, "30", StringComparison.OrdinalIgnoreCase))
-            {
-                window = CopilotConversationStatisticsWindow.ThirtyDays;
-                return true;
-            }
-            if (string.Equals(normalized, "all", StringComparison.OrdinalIgnoreCase))
-            {
-                window = CopilotConversationStatisticsWindow.All;
-                return true;
-            }
-
-            window = default;
-            return false;
         }
 
         private static int ResolveOwnedMessageStartIndex(

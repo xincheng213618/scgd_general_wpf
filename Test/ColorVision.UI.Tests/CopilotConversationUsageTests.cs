@@ -10,6 +10,7 @@ public sealed class CopilotConversationUsageTests
     {
         var invocation = CopilotLocalCommandCatalog.Parse("/usage");
         var daily = CopilotLocalCommandCatalog.Parse("/usage daily");
+        var legacyStats = CopilotLocalCommandCatalog.Parse("/stats 30");
 
         Assert.NotNull(invocation);
         Assert.Equal(CopilotLocalCommandKind.Usage, invocation.Command.Kind);
@@ -19,7 +20,29 @@ public sealed class CopilotConversationUsageTests
         Assert.NotNull(daily);
         Assert.Same(invocation.Command, daily.Command);
         Assert.Equal("daily", daily.Arguments);
+        Assert.NotNull(legacyStats);
+        Assert.Same(invocation.Command, legacyStats.Command);
+        Assert.Equal("/stats", legacyStats.InvokedName);
+        Assert.Equal("30", legacyStats.Arguments);
         Assert.Contains(CopilotLocalCommandCatalog.Suggest("/"), command => command.Name == "/usage");
+    }
+
+    [Fact]
+    public void StatsAliasWithoutArgumentsKeepsTheLegacyDailyView()
+    {
+        var now = new DateTimeOffset(2026, 7, 31, 12, 0, 0, TimeSpan.FromHours(8));
+        var conversation = CreateConversation();
+
+        var report = CopilotUsageCommand.Format(
+            conversation,
+            [conversation],
+            now,
+            string.Empty,
+            CopilotProviderRateLimitSnapshot.Empty,
+            "/stats");
+
+        Assert.StartsWith("/usage daily · 本地会话统计", report);
+        Assert.Contains("范围：最近 7 天", report, StringComparison.Ordinal);
     }
 
     [Theory]

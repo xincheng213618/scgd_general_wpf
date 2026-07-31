@@ -24,7 +24,6 @@ namespace ColorVision.Copilot
                 CopilotLocalCommandKind.Approve,
                 CopilotLocalCommandKind.Usage,
                 CopilotLocalCommandKind.Subagents,
-                CopilotLocalCommandKind.Statistics,
                 CopilotLocalCommandKind.Context,
                 CopilotLocalCommandKind.ProjectInstructions,
                 CopilotLocalCommandKind.Permissions,

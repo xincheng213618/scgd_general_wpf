@@ -21,6 +21,7 @@ namespace ColorVision.Copilot
         Approve,
         Usage,
         Subagents,
+        [Obsolete("Use Usage. This value remains reserved to preserve enum numbering.")]
         Statistics,
         Context,
         ProjectInstructions,
@@ -89,7 +90,10 @@ namespace ColorVision.Copilot
 
     public sealed record CopilotLocalCommandInvocation(
         CopilotLocalCommand Command,
-        string Arguments);
+        string Arguments)
+    {
+        public string InvokedName { get; init; } = Command.Name;
+    }
 
     public static class CopilotLocalCommandCatalog
     {
@@ -137,7 +141,7 @@ namespace ColorVision.Copilot
                 new("daily", "最近 7 个本机日历日的逐日活动"),
                 new("weekly", "最近 30 个本机日历日的本地活动"),
                 new("cumulative", "全部本地会话历史累计"),
-            ]),
+            ]) { Aliases = ["/stats"] },
             new("/agents", "按活动或结束状态查看、关闭请求级子代理，或按 run_id 引导、停止子代理；父 Agent 继续运行", CopilotLocalCommandKind.Subagents, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/agents [roles|runs [N]|active [N]|done [N]|show <run_id>|close <run_id>|steer <run_id> <message>|stop <run_id>]", Arguments:
             [
                 new("roles", "只显示内置子代理角色及其只读能力"),
@@ -149,12 +153,6 @@ namespace ColorVision.Copilot
                 new("steer", "按 run_id 向当前会话中的运行中子代理排入新指令", AcceptsArguments: true),
                 new("stop", "按 run_id 停止当前会话中的运行中子代理；父 Agent 继续", AcceptsArguments: true),
             ]) { Aliases = ["/subagents"] },
-            new("/stats", "汇总最近 7 天、30 天或全部本地会话活动", CopilotLocalCommandKind.Statistics, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/stats [7|30|all]", Arguments:
-            [
-                new("7", "最近 7 个本机日历日"),
-                new("30", "最近 30 个本机日历日"),
-                new("all", "全部本地会话历史"),
-            ]),
             new("/context", "查看本地上下文、预算与注入统计", CopilotLocalCommandKind.Context, AvailableWhileAgentRuns: true, Usage: "/context"),
             new("/memory", "预览工作区型 Agent 请求会加载的项目指令，或按编号打开源文件", CopilotLocalCommandKind.ProjectInstructions, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/memory [open N]", Arguments:
             [
@@ -292,7 +290,10 @@ namespace ColorVision.Copilot
                 || (!command.AcceptsArguments && arguments.Length > 0))
                 return null;
 
-            return new CopilotLocalCommandInvocation(command, arguments);
+            return new CopilotLocalCommandInvocation(command, arguments)
+            {
+                InvokedName = name,
+            };
         }
 
         public static IReadOnlyList<CopilotLocalCommand> Suggest(

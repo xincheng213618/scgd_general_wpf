@@ -77,7 +77,8 @@ namespace ColorVision.Copilot
             var marker = token[0];
             var query = token[1..];
             var candidates = marker == '/'
-                ? CopilotLocalCommandCatalog.All.Select(command => command.Name)
+                ? CopilotLocalCommandCatalog.All.SelectMany(command =>
+                        command.Aliases.Prepend(command.Name))
                     .Concat(skills.Select(skill => "/" + skill.Name))
                 : skills.Select(skill => "$" + skill.Name);
             return candidates

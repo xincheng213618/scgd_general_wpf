@@ -5,15 +5,19 @@ namespace ColorVision.UI.Tests;
 public sealed class CopilotConversationStatisticsTests
 {
     [Fact]
-    public void StatsCommandIsLocalAndAvailableDuringAnActiveRun()
+    public void StatsAliasResolvesToUsageAndRemainsAvailableDuringAnActiveRun()
     {
         var invocation = CopilotLocalCommandCatalog.Parse("/stats 30");
+        var usage = CopilotLocalCommandCatalog.FindExact("/usage");
 
         Assert.NotNull(invocation);
-        Assert.Equal(CopilotLocalCommandKind.Statistics, invocation.Command.Kind);
+        Assert.Same(usage, invocation.Command);
+        Assert.Equal(CopilotLocalCommandKind.Usage, invocation.Command.Kind);
+        Assert.Equal("/stats", invocation.InvokedName);
         Assert.Equal("30", invocation.Arguments);
         Assert.True(invocation.Command.AvailableWhileAgentRuns);
-        Assert.Contains(CopilotLocalCommandCatalog.Suggest("/"), command => command.Name == "/stats");
+        Assert.Contains(CopilotLocalCommandCatalog.Suggest("/"), command => command.Name == "/usage");
+        Assert.DoesNotContain(CopilotLocalCommandCatalog.Suggest("/"), command => command.Name == "/stats");
     }
 
     [Fact]
@@ -89,7 +93,7 @@ public sealed class CopilotConversationStatisticsTests
     }
 
     [Fact]
-    public void FormatShowsLocalActivityAndRejectsUnsupportedScopes()
+    public void UsageCumulativeFormatShowsLocalActivity()
     {
         var now = new DateTimeOffset(2026, 7, 30, 12, 0, 0, TimeSpan.FromHours(8));
         var conversation = new CopilotConversationRecord();
@@ -102,18 +106,20 @@ public sealed class CopilotConversationStatisticsTests
             new DateTime(2026, 7, 30, 9, 1, 0),
             CopilotTokenUsage.Empty));
 
-        var report = CopilotConversationStatistics.Format([conversation], now, "all");
+        var report = CopilotUsageCommand.Format(
+            conversation,
+            [conversation],
+            now,
+            "all",
+            CopilotProviderRateLimitSnapshot.Empty);
 
-        Assert.Contains("/stats · 本地会话统计", report, StringComparison.Ordinal);
+        Assert.Contains("/usage cumulative · 本地会话统计", report, StringComparison.Ordinal);
         Assert.Contains("范围：全部本地历史 · 2026-07-29 至 2026-07-30", report, StringComparison.Ordinal);
         Assert.Contains("Provider Token：已记录轮次 1/2", report, StringComparison.Ordinal);
         Assert.Contains("未纳入：1 条旧回答、失败回答或未返回 Token 元数据的回答。", report, StringComparison.Ordinal);
         Assert.Contains("全历史当前连续 2 天 · 最长连续 2 天", report, StringComparison.Ordinal);
         Assert.Contains("会话分支复制的历史前缀不会重复计数", report, StringComparison.Ordinal);
         Assert.DoesNotContain('$', report);
-        Assert.Equal(
-            "/stats 参数无效。可用 /stats、/stats 7、/stats 30 或 /stats all。",
-            CopilotConversationStatistics.Format([conversation], now, "weekly"));
     }
 
     [Fact]
@@ -131,7 +137,10 @@ public sealed class CopilotConversationStatisticsTests
             [conversation],
             now,
             CopilotConversationStatisticsWindow.SevenDays);
-        var report = CopilotConversationStatistics.Format(snapshot);
+        var report = CopilotConversationStatistics.Format(
+            snapshot,
+            "/usage daily",
+            CopilotConversationStatisticsDetailMode.Daily);
 
         Assert.Equal(1, snapshot.TerminalResponses);
         Assert.Equal(1, snapshot.InterruptedResponses);

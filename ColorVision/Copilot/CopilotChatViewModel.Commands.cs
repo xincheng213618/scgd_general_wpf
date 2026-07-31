@@ -94,16 +94,11 @@ namespace ColorVision.Copilot
                             Conversations,
                             DateTimeOffset.Now,
                             invocation.Arguments,
-                            CopilotProviderRateLimitTracker.GetSnapshot(SelectedProfile?.Id)));
+                            CopilotProviderRateLimitTracker.GetSnapshot(SelectedProfile?.Id),
+                            invocation.InvokedName));
                     break;
                 case CopilotLocalCommandKind.Subagents:
                     HandleSubagentCommand(command, invocation.Arguments);
-                    break;
-                case CopilotLocalCommandKind.Statistics:
-                    ShowLocalCommandResult(command, CopilotConversationStatistics.Format(
-                        Conversations,
-                        DateTimeOffset.Now,
-                        invocation.Arguments));
                     break;
                 case CopilotLocalCommandKind.Context:
                     ShowLocalCommandResult(command, BuildContextDiagnosticsReport());

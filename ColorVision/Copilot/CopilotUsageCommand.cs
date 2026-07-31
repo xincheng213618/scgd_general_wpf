@@ -12,9 +12,15 @@ namespace ColorVision.Copilot
             IEnumerable<CopilotConversationRecord>? conversations,
             DateTimeOffset now,
             string? arguments,
-            CopilotProviderRateLimitSnapshot? providerRateLimits)
+            CopilotProviderRateLimitSnapshot? providerRateLimits,
+            string? invokedName = null)
         {
             var normalized = (arguments ?? string.Empty).Trim();
+            if (normalized.Length == 0
+                && string.Equals(invokedName, "/stats", StringComparison.OrdinalIgnoreCase))
+            {
+                normalized = "daily";
+            }
             if (normalized.Length == 0
                 || string.Equals(normalized, "session", StringComparison.OrdinalIgnoreCase))
             {
