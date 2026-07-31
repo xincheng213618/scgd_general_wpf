@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -2243,6 +2244,11 @@ namespace ColorVision.Copilot
                 ShowLocalCommandResult(command, CopilotQueuedFollowUpDiagnostics.Usage);
                 return;
             }
+            if (request.Action == CopilotQueuedFollowUpCommandAction.Clear)
+            {
+                ClearQueuedFollowUpsFromCommand(command);
+                return;
+            }
 
             var queuedFollowUp = CopilotQueuedFollowUpDiagnostics.FindByPosition(
                 QueuedFollowUps,
@@ -2307,6 +2313,66 @@ namespace ColorVision.Copilot
                         + (pausedGoal ? " 对应持续目标也已暂停。" : string.Empty));
                     break;
             }
+        }
+
+        private void ClearQueuedFollowUpsFromCommand(CopilotLocalCommand command)
+        {
+            var conversation = SelectedConversation;
+            var queuedFollowUps = CopilotQueuedFollowUpDiagnostics.GetItems(
+                QueuedFollowUps,
+                conversation?.Id);
+            if (conversation == null || queuedFollowUps.Count == 0)
+            {
+                ShowLocalCommandResult(command, "当前会话没有排队的后续请求，队列未修改。");
+                return;
+            }
+
+            var confirmation = MessageBox.Show(
+                Application.Current.GetActiveWindow(),
+                CopilotQueuedFollowUpDiagnostics.FormatClearConfirmation(
+                    conversation.Title,
+                    queuedFollowUps),
+                "ColorVision",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+            if (confirmation != MessageBoxResult.Yes)
+            {
+                ShowLocalCommandResult(command, "清空队列已取消；所有排队请求和持续目标均保持不变。");
+                return;
+            }
+
+            var cancelled = 0;
+            var pausedGoals = 0;
+            foreach (var queuedFollowUp in queuedFollowUps)
+            {
+                if (!TryDeleteQueuedFollowUp(queuedFollowUp, out var pausedGoal))
+                    continue;
+
+                cancelled++;
+                if (pausedGoal)
+                    pausedGoals++;
+            }
+
+            var failed = queuedFollowUps.Count - cancelled;
+            var builder = new StringBuilder()
+                .Append("已取消当前会话 ")
+                .Append(cancelled.ToString("N0", CultureInfo.CurrentCulture))
+                .Append(" / ")
+                .Append(queuedFollowUps.Count.ToString("N0", CultureInfo.CurrentCulture))
+                .AppendLine(" 条排队请求；其他会话队列未改变。");
+            if (pausedGoals > 0)
+            {
+                builder.Append("已暂停 ")
+                    .Append(pausedGoals.ToString("N0", CultureInfo.CurrentCulture))
+                    .AppendLine(" 个仍活动的对应持续目标。");
+            }
+            if (failed > 0)
+            {
+                builder.Append("另有 ")
+                    .Append(failed.ToString("N0", CultureInfo.CurrentCulture))
+                    .Append(" 条已开始执行或位置刚刚变化，未重复取消。");
+            }
+            ShowLocalCommandResult(command, builder.ToString().TrimEnd());
         }
 
         private string BuildStatusDiagnosticsReport()

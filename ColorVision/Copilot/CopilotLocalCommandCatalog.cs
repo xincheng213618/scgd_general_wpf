@@ -102,8 +102,9 @@ namespace ColorVision.Copilot
             new("/tasks", "查看正在运行、排队及等待恢复的 Agent 任务", CopilotLocalCommandKind.Tasks, AvailableWhileAgentRuns: true, Usage: "/tasks"),
             new("/ps", "同 /tasks；查看正在运行、排队及等待恢复的 Agent 任务", CopilotLocalCommandKind.Tasks, AvailableWhileAgentRuns: true, Usage: "/ps"),
             new("/task-log", "查看当前会话最近的 Agent 工具、审批与停止事件", CopilotLocalCommandKind.TaskLog, AvailableWhileAgentRuns: true, Usage: "/task-log"),
-            new("/queue", "查看或控制当前会话等待执行的后续请求", CopilotLocalCommandKind.Queue, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/queue [send N|edit N|up N|down N|delete N]", Arguments:
+            new("/queue", "查看或控制当前会话等待执行的后续请求", CopilotLocalCommandKind.Queue, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/queue [clear|send N|edit N|up N|down N|delete N]", Arguments:
             [
+                new("clear", "经原生确认取消当前会话全部排队请求"),
                 new("send", "把 #N 提升到下一项并停止当前任务", AcceptsArguments: true),
                 new("edit", "取消 #N 并把请求及附件恢复到输入框", AcceptsArguments: true),
                 new("up", "把 #N 向前移动一位", AcceptsArguments: true),

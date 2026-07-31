@@ -80,7 +80,7 @@ public sealed class CopilotLocalCommandHelpTests
     {
         var report = CopilotLocalCommandHelp.Format("queue");
 
-        Assert.StartsWith("/queue [send N|edit N|up N|down N|delete N]", report);
+        Assert.StartsWith("/queue [clear|send N|edit N|up N|down N|delete N]", report);
         Assert.Contains("查看或控制", report);
         Assert.Contains("参数：可选", report);
         Assert.Contains("Agent 运行中：可立即执行", report);

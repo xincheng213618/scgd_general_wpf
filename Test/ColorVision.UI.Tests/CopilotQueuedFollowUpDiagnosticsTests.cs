@@ -9,6 +9,7 @@ public sealed class CopilotQueuedFollowUpDiagnosticsTests
     {
         var invocation = CopilotLocalCommandCatalog.Parse("/queue");
         var send = CopilotLocalCommandCatalog.Parse("/queue send 3");
+        var clear = CopilotLocalCommandCatalog.Parse("/queue clear");
 
         Assert.NotNull(invocation);
         Assert.Equal(CopilotLocalCommandKind.Queue, invocation.Command.Kind);
@@ -17,10 +18,14 @@ public sealed class CopilotQueuedFollowUpDiagnosticsTests
         Assert.NotNull(send);
         Assert.Same(invocation.Command, send.Command);
         Assert.Equal("send 3", send.Arguments);
+        Assert.NotNull(clear);
+        Assert.Same(invocation.Command, clear.Command);
+        Assert.Equal("clear", clear.Arguments);
     }
 
     [Theory]
     [InlineData("", (int)CopilotQueuedFollowUpCommandAction.List, 0)]
+    [InlineData("clear", (int)CopilotQueuedFollowUpCommandAction.Clear, 0)]
     [InlineData("send 3", (int)CopilotQueuedFollowUpCommandAction.SendNow, 3)]
     [InlineData("now 2", (int)CopilotQueuedFollowUpCommandAction.SendNow, 2)]
     [InlineData("edit 4", (int)CopilotQueuedFollowUpCommandAction.Edit, 4)]
@@ -79,7 +84,24 @@ public sealed class CopilotQueuedFollowUpDiagnosticsTests
         Assert.DoesNotContain("run-private", report, StringComparison.Ordinal);
         Assert.DoesNotContain("goal-private", report, StringComparison.Ordinal);
         Assert.Contains("列表本身只读", report, StringComparison.Ordinal);
-        Assert.Contains("send、edit、up、down、delete", report, StringComparison.Ordinal);
+        Assert.Contains("clear、send、edit、up、down、delete", report, StringComparison.Ordinal);
+        Assert.Equal(
+            [first, second],
+            CopilotQueuedFollowUpDiagnostics.GetItems(
+                [second, foreign, first],
+                "conversation-1"));
+        var confirmation = CopilotQueuedFollowUpDiagnostics.FormatClearConfirmation(
+            "Conversation",
+            [first, second]);
+        Assert.Contains("Conversation", confirmation, StringComparison.Ordinal);
+        Assert.Contains("2 条排队后续", confirmation, StringComparison.Ordinal);
+        Assert.Contains("其中 1 条是自动续作", confirmation, StringComparison.Ordinal);
+        Assert.Contains("其他会话不受影响", confirmation, StringComparison.Ordinal);
+        Assert.DoesNotContain("First queued request", confirmation, StringComparison.Ordinal);
+        Assert.DoesNotContain("Second", confirmation, StringComparison.Ordinal);
+        Assert.DoesNotContain("run-private", confirmation, StringComparison.Ordinal);
+        Assert.DoesNotContain("goal-private", confirmation, StringComparison.Ordinal);
+        Assert.DoesNotContain(@"C:\private", confirmation, StringComparison.Ordinal);
         Assert.Same(
             second,
             CopilotQueuedFollowUpDiagnostics.FindByPosition(
