@@ -10,6 +10,7 @@ public sealed class CopilotConversationClearTests
     {
         var withoutTitle = CopilotLocalCommandCatalog.Parse("/clear");
         var withTitle = CopilotLocalCommandCatalog.Parse("/clear Camera calibration");
+        var legacyAlias = CopilotLocalCommandCatalog.Parse("/new");
 
         Assert.NotNull(withoutTitle);
         Assert.Equal(CopilotLocalCommandKind.ClearConversation, withoutTitle.Command.Kind);
@@ -18,7 +19,12 @@ public sealed class CopilotConversationClearTests
         Assert.NotNull(withTitle);
         Assert.Equal("Camera calibration", withTitle.Arguments);
         Assert.False(withTitle.Command.AvailableWhileAgentRuns);
+        Assert.NotNull(legacyAlias);
+        Assert.Same(withoutTitle.Command, legacyAlias.Command);
+        Assert.Equal(CopilotLocalCommandKind.ClearConversation, legacyAlias.Command.Kind);
+        Assert.Equal("/new", legacyAlias.InvokedName);
         Assert.Contains(CopilotLocalCommandCatalog.Suggest("/"), command => command.Name == "/clear");
+        Assert.DoesNotContain(CopilotLocalCommandCatalog.Suggest("/"), command => command.Name == "/new");
     }
 
     [Fact]

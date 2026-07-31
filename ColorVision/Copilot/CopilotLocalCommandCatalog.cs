@@ -61,6 +61,7 @@ namespace ColorVision.Copilot
         SelectModel,
         SelectReasoning,
         SelectPersonality,
+        [Obsolete("Use ClearConversation. This value remains reserved to preserve enum numbering.")]
         NewConversation,
         ClearConversation,
         ForkConversation,
@@ -258,8 +259,7 @@ namespace ColorVision.Copilot
                 new("pragmatic", "结果优先，简洁直接，只说明关键权衡"),
                 new("none", "不附加会话级沟通风格"),
             ]),
-            new("/new", "开始一个新的 Copilot 会话", CopilotLocalCommandKind.NewConversation, Usage: "/new"),
-            new("/clear", "清空当前上下文并开始新会话；可先命名旧会话", CopilotLocalCommandKind.ClearConversation, AcceptsArguments: true, Usage: "/clear [旧会话名称]"),
+            new("/clear", "清空当前上下文并开始新会话；可先命名旧会话", CopilotLocalCommandKind.ClearConversation, AcceptsArguments: true, Usage: "/clear [旧会话名称]") { Aliases = ["/new"] },
             new("/fork", "复制当前会话到新会话分支；Agent 运行时创建可见快照", CopilotLocalCommandKind.ForkConversation, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/fork [新会话名称]") { Aliases = ["/branch"] },
         ];
 

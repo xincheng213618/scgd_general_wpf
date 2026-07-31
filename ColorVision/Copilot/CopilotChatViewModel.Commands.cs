@@ -219,10 +219,6 @@ namespace ColorVision.Copilot
                 case CopilotLocalCommandKind.SelectPersonality:
                     SelectResponsePersonality(command, invocation.Arguments);
                     break;
-                case CopilotLocalCommandKind.NewConversation:
-                    DismissLocalCommandResult();
-                    StartNewChat();
-                    break;
                 case CopilotLocalCommandKind.ClearConversation:
                     ClearConversationContext(command, invocation.Arguments);
                     break;

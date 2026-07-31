@@ -67,7 +67,6 @@ namespace ColorVision.Copilot
                 CopilotLocalCommandKind.CopyResponse,
                 CopilotLocalCommandKind.ExportConversation,
                 CopilotLocalCommandKind.FindInConversation,
-                CopilotLocalCommandKind.NewConversation,
                 CopilotLocalCommandKind.ClearConversation,
                 CopilotLocalCommandKind.ForkConversation,
                 CopilotLocalCommandKind.Feedback,

@@ -22,7 +22,7 @@ public sealed class CopilotLocalCommandHelpTests
     [Fact]
     public void EveryFixedCommandDeclaresUsageBeginningWithItsName()
     {
-        Assert.Equal(57, CopilotLocalCommandCatalog.All.Count);
+        Assert.Equal(56, CopilotLocalCommandCatalog.All.Count);
         foreach (var command in CopilotLocalCommandCatalog.All)
         {
             Assert.False(string.IsNullOrWhiteSpace(command.Usage));
@@ -38,7 +38,7 @@ public sealed class CopilotLocalCommandHelpTests
         var report = CopilotLocalCommandHelp.Format(null);
         var lines = report.Split(Environment.NewLine);
 
-        Assert.Contains("Copilot 命令 · 57", report);
+        Assert.Contains("Copilot 命令 · 56", report);
         Assert.Contains("状态与诊断", report);
         Assert.Contains("工作区与 Agent", report);
         Assert.Contains("会话与输出", report);
@@ -65,6 +65,7 @@ public sealed class CopilotLocalCommandHelpTests
     [InlineData("ps", "/ps [N|stop N|clear]", "后台命令")]
     [InlineData("personality", "/personality [friendly|pragmatic|none]", "默认沟通风格")]
     [InlineData("EFFORT", "/reasoning [auto|off|on|high|max]", "别名：/effort")]
+    [InlineData("new", "/clear [旧会话名称]", "别名：/new")]
     public void DetailAcceptsNamesWithOrWithoutSlashAndPreservesAliases(
         string query,
         string expectedUsage,
@@ -84,7 +85,7 @@ public sealed class CopilotLocalCommandHelpTests
             .SelectMany(command => command.Aliases.Select(alias => (Command: command, Alias: alias)))
             .ToArray();
 
-        Assert.Equal(13, aliases.Length);
+        Assert.Equal(14, aliases.Length);
         Assert.Equal(
             aliases.Length,
             aliases.Select(item => item.Alias).Distinct(StringComparer.OrdinalIgnoreCase).Count());
