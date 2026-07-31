@@ -35,6 +35,30 @@ namespace ColorVision.Copilot
 
         public string ActiveProviderRetryRequestId { get; init; } = string.Empty;
 
+        public DateTimeOffset ProviderRateLimitCapturedAtUtc { get; init; }
+
+        public long? ProviderRequestLimit { get; init; }
+
+        public long? ProviderRequestRemaining { get; init; }
+
+        public string ProviderRequestReset { get; init; } = string.Empty;
+
+        public long? ProviderTokenLimit { get; init; }
+
+        public long? ProviderTokenRemaining { get; init; }
+
+        public string ProviderTokenReset { get; init; } = string.Empty;
+
+        public long? ProviderProjectTokenLimit { get; init; }
+
+        public long? ProviderProjectTokenRemaining { get; init; }
+
+        public string ProviderProjectTokenReset { get; init; } = string.Empty;
+
+        public string ProviderRateLimitRetryAfter { get; init; } = string.Empty;
+
+        public string ProviderRateLimitRequestId { get; init; } = string.Empty;
+
         public string ReasoningLabel { get; init; } = string.Empty;
 
         public CopilotAgentMode Mode { get; init; }
@@ -137,6 +161,7 @@ namespace ColorVision.Copilot
                 .Append(FormatCount(Math.Max(1, snapshot.ProviderMaximumAttempts)))
                 .AppendLine(" 次请求");
             AppendActiveProviderRetry(builder, snapshot);
+            AppendProviderRateLimits(builder, snapshot);
             builder.Append("模式：").Append(snapshot.Mode).Append(" · 推理 ").AppendLine(ValueOrFallback(snapshot.ReasoningLabel, "默认"));
             builder.Append("Agent：").Append(ValueOrFallback(snapshot.AgentState, "Idle"))
                 .Append(" · 队列 ").Append(FormatCount(snapshot.QueuedAgentRuns)).Append('/').AppendLine(FormatCount(snapshot.MaximumQueuedAgentRuns));
@@ -259,6 +284,102 @@ namespace ColorVision.Copilot
                     .Append(FormatDuration(snapshot.ActiveProviderRetryDelayMilliseconds));
             }
             builder.AppendLine();
+        }
+
+        private static void AppendProviderRateLimits(
+            StringBuilder builder,
+            CopilotStatusDiagnosticSnapshot snapshot)
+        {
+            if (snapshot.ProviderRateLimitCapturedAtUtc == default)
+            {
+                builder.AppendLine("供应商限额：尚未收到可识别的限额响应头");
+                return;
+            }
+
+            builder.Append("供应商限额：");
+            var hasValue = false;
+            AppendRateLimitBucket(
+                builder,
+                "请求",
+                snapshot.ProviderRequestRemaining,
+                snapshot.ProviderRequestLimit,
+                snapshot.ProviderRequestReset,
+                ref hasValue);
+            AppendRateLimitBucket(
+                builder,
+                "Token",
+                snapshot.ProviderTokenRemaining,
+                snapshot.ProviderTokenLimit,
+                snapshot.ProviderTokenReset,
+                ref hasValue);
+            AppendRateLimitBucket(
+                builder,
+                "项目 Token",
+                snapshot.ProviderProjectTokenRemaining,
+                snapshot.ProviderProjectTokenLimit,
+                snapshot.ProviderProjectTokenReset,
+                ref hasValue);
+            AppendRateLimitDetail(
+                builder,
+                "Retry-After ",
+                snapshot.ProviderRateLimitRetryAfter,
+                ref hasValue);
+            var requestId = CopilotProviderRequestId.Normalize(
+                snapshot.ProviderRateLimitRequestId);
+            AppendRateLimitDetail(builder, "请求 ", requestId, ref hasValue);
+            if (!hasValue)
+                builder.Append("已捕获响应头");
+            builder.Append(" · 快照 ")
+                .Append(snapshot.ProviderRateLimitCapturedAtUtc
+                    .ToUniversalTime()
+                    .ToString("yyyy-MM-dd HH:mm:ss 'UTC'", CultureInfo.InvariantCulture))
+                .AppendLine();
+        }
+
+        private static void AppendRateLimitBucket(
+            StringBuilder builder,
+            string label,
+            long? remaining,
+            long? limit,
+            string? reset,
+            ref bool hasValue)
+        {
+            if (!remaining.HasValue
+                && !limit.HasValue
+                && string.IsNullOrWhiteSpace(reset))
+            {
+                return;
+            }
+
+            if (hasValue)
+                builder.Append(" · ");
+            builder.Append(label);
+            if (remaining.HasValue || limit.HasValue)
+            {
+                builder.Append("：剩余 ")
+                    .Append(remaining.HasValue ? FormatCount(remaining.Value) : "unknown")
+                    .Append('/')
+                    .Append(limit.HasValue ? FormatCount(limit.Value) : "unknown");
+            }
+            var normalizedReset = FormatInline(reset, string.Empty, 128);
+            if (normalizedReset.Length > 0)
+                builder.Append("（重置 ").Append(normalizedReset).Append('）');
+            hasValue = true;
+        }
+
+        private static void AppendRateLimitDetail(
+            StringBuilder builder,
+            string label,
+            string? value,
+            ref bool hasValue)
+        {
+            var normalized = FormatInline(value, string.Empty, 128);
+            if (normalized.Length == 0)
+                return;
+            if (hasValue)
+                builder.Append(" · ");
+            builder.Append(label).Append(normalized);
+            hasValue = true;
         }
 
         private static string FormatShell(CopilotShellKind shell)

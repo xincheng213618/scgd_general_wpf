@@ -2842,6 +2842,7 @@ namespace ColorVision.Copilot
             var providerRetrySnapshot = activeRun?.ProviderRetrySnapshot
                 ?? CopilotHostedProviderRetrySnapshot.Empty;
             var latestProviderRetry = providerRetrySnapshot.Latest;
+            var providerRateLimits = CopilotProviderRateLimitTracker.GetSnapshot(profile?.Id);
             return CopilotStatusDiagnostics.Format(new CopilotStatusDiagnosticSnapshot
             {
                 ApplicationVersion = CopilotStatusDiagnostics.FormatApplicationVersion(
@@ -2862,6 +2863,18 @@ namespace ColorVision.Copilot
                     : (long)Math.Clamp(latestProviderRetry.Delay.TotalMilliseconds, 0, long.MaxValue),
                 ActiveProviderRetryFailureKind = latestProviderRetry?.FailureKind ?? string.Empty,
                 ActiveProviderRetryRequestId = latestProviderRetry?.RequestId ?? string.Empty,
+                ProviderRateLimitCapturedAtUtc = providerRateLimits.CapturedAtUtc,
+                ProviderRequestLimit = providerRateLimits.RequestLimit,
+                ProviderRequestRemaining = providerRateLimits.RequestRemaining,
+                ProviderRequestReset = providerRateLimits.RequestReset,
+                ProviderTokenLimit = providerRateLimits.TokenLimit,
+                ProviderTokenRemaining = providerRateLimits.TokenRemaining,
+                ProviderTokenReset = providerRateLimits.TokenReset,
+                ProviderProjectTokenLimit = providerRateLimits.ProjectTokenLimit,
+                ProviderProjectTokenRemaining = providerRateLimits.ProjectTokenRemaining,
+                ProviderProjectTokenReset = providerRateLimits.ProjectTokenReset,
+                ProviderRateLimitRetryAfter = providerRateLimits.RetryAfter,
+                ProviderRateLimitRequestId = providerRateLimits.RequestId,
                 ReasoningLabel = profile?.ReasoningLabel ?? "默认",
                 Mode = ResolveComposerRequestMode(),
                 AgentState = activeRun?.State.ToString() ?? "Idle",

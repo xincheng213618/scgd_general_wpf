@@ -2193,14 +2193,14 @@ namespace ColorVision.Copilot
                 {
                     ApiKey = profile.ApiKey,
                     BaseUrl = profile.BaseUrl.Trim().TrimEnd('/'),
-                    HttpClient = CopilotProviderHttpTransport.CreateClient(),
+                    HttpClient = CopilotProviderHttpTransport.CreateClient(profile.Id),
                 });
                 return anthropicClient.AsIChatClient(profile.Model, profile.MaxTokens);
             }
 
             return CopilotOpenAiAgentChatClientFactory.Create(
                 profile,
-                CopilotProviderHttpTransport.CreateClient());
+                CopilotProviderHttpTransport.CreateClient(profile.Id));
         }
 
         private static ChatOptions BuildChatOptions(CopilotProfileConfig profile, IList<AITool> tools)

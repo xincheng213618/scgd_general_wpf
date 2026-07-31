@@ -298,6 +298,7 @@ namespace ColorVision.Copilot
                 request,
                 inactivityTimeouts,
                 cancellationToken).ConfigureAwait(false);
+            CopilotProviderRateLimitTracker.Capture(config.Id, response);
             var remainingFirstResponseTimeout = SubtractElapsed(
                 inactivityTimeouts.FirstResponseTimeout,
                 firstResponseStopwatch.Elapsed);
