@@ -1,5 +1,6 @@
 using ColorVision.Copilot.Mcp;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -67,7 +68,7 @@ namespace ColorVision.Copilot
 
         public string Name => "StartBackgroundShellCommand";
 
-        public string Description => "Start one approved PowerShell or CMD command as an application-managed background process tree. The process is isolated to the current conversation, keeps a bounded redacted preview plus a capped temporary redacted output archive, expires automatically, and survives the Agent turn but never the ColorVision process. Starting confirms only that the process launched; use WaitForBackgroundShellCommand, InspectBackgroundShellCommands, ReadBackgroundShellCommandOutput, or a specialized diagnostic before claiming readiness. Every start requires native approval.";
+        public string Description => "Start one approved PowerShell or CMD command as an application-managed background process tree. The process is isolated to the current conversation, keeps a bounded redacted preview plus a capped temporary redacted output archive, expires automatically, and survives the Agent turn but never the ColorVision process. Starting confirms only that the process launched; use WaitForBackgroundShellCommand for one command, WaitForBackgroundShellCommands for a terminal-state group, InspectBackgroundShellCommands, ReadBackgroundShellCommandOutput, or a specialized diagnostic before claiming readiness. Every start requires native approval.";
 
         public CopilotToolCapabilityDescriptor Capability { get; } =
             CopilotToolCapabilityDescriptor.ProtectedWrite(
@@ -913,6 +914,341 @@ namespace ColorVision.Copilot
             };
     }
 
+    public sealed class CopilotWaitForBackgroundShellCommandsTool :
+        ICopilotAgentDrivenTool,
+        ICopilotProgressReportingTool,
+        ICopilotRepeatableObservationTool
+    {
+        private const int MaximumBackgroundIdCharacters = 128;
+
+        private static readonly CopilotToolInputSchema Schema =
+            CopilotToolInputSchema.FromJsonSchema(
+                JsonSerializer.SerializeToElement(new Dictionary<string, object?>
+                {
+                    ["type"] = "object",
+                    ["properties"] = new Dictionary<string, object?>
+                    {
+                        ["backgroundIds"] = new
+                        {
+                            type = "array",
+                            items = new
+                            {
+                                type = "string",
+                                minLength = 1,
+                                maxLength = MaximumBackgroundIdCharacters,
+                            },
+                            minItems = 1,
+                            maxItems =
+                                CopilotBackgroundShellCommandRegistry.MaximumGroupWaitCommands,
+                            uniqueItems = true,
+                            description = "One through four exact current-conversation background command ids.",
+                        },
+                        ["mode"] = new
+                        {
+                            type = "string",
+                            @enum = new[] { "any", "all" },
+                            description = "Return after any selected command reaches a terminal state, or after all do. Defaults to all.",
+                        },
+                        ["timeoutSeconds"] = new
+                        {
+                            type = "integer",
+                            minimum = CopilotBackgroundShellCommandRegistry.MinimumObservationTimeoutSeconds,
+                            maximum = CopilotBackgroundShellCommandRegistry.MaximumObservationTimeoutSeconds,
+                            description = "Maximum group observation interval. Defaults to 10 seconds.",
+                        },
+                    },
+                    ["required"] = new[] { "backgroundIds" },
+                    ["additionalProperties"] = false,
+                }));
+
+        private readonly CopilotBackgroundShellCommandRegistry _registry;
+
+        public CopilotWaitForBackgroundShellCommandsTool()
+            : this(CopilotBackgroundShellCommandRegistry.Shared)
+        {
+        }
+
+        internal CopilotWaitForBackgroundShellCommandsTool(
+            CopilotBackgroundShellCommandRegistry registry)
+        {
+            _registry = registry ?? throw new ArgumentNullException(nameof(registry));
+        }
+
+        public string Name => "WaitForBackgroundShellCommands";
+
+        public string Description => "Wait for at most 30 seconds until any or all of 1-4 exact current-conversation background commands reach terminal states. Completion tasks wake the group without periodic polling, and all ids are validated before waiting so another conversation is never exposed. This read-only tool reports bounded terminal metadata without duplicating each command's output; use WaitForBackgroundShellCommand for one command's output marker and InspectBackgroundShellCommands or ReadBackgroundShellCommandOutput for output evidence.";
+
+        public int MaximumObservationAttempts => 4;
+
+        public CopilotToolCapabilityDescriptor Capability { get; } =
+            CopilotToolCapabilityDescriptor.ReadOnly(
+                auditArgumentMode: CopilotToolAuditArgumentMode.NamesOnly,
+                evidenceMode: CopilotToolEvidenceMode.RedactedExcerpt);
+
+        public CopilotToolInputSchema InputSchema => Schema;
+
+        public bool CanHandle(CopilotAgentRequest request) => IsAvailable(request);
+
+        public bool IsAvailable(CopilotAgentRequest request)
+        {
+            return CopilotToolIntentPolicy.NeedsBackgroundShellInspection(request)
+                || _registry.GetSnapshots(request?.ConversationId).Count > 1;
+        }
+
+        public string GetConcurrencyKey(
+            CopilotAgentRequest request,
+            CopilotAgentToolInput toolInput) =>
+            "system:background-shell-status";
+
+        public Task<CopilotToolResult> ExecuteAsync(
+            CopilotAgentRequest request,
+            CopilotAgentToolInput toolInput,
+            CancellationToken cancellationToken) =>
+            ExecuteCoreAsync(
+                request,
+                toolInput,
+                progress: null,
+                cancellationToken);
+
+        public Task<CopilotToolResult> ExecuteWithProgressAsync(
+            CopilotAgentRequest request,
+            CopilotAgentToolInput toolInput,
+            CopilotToolProgressContext progress,
+            CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(progress);
+            return ExecuteCoreAsync(
+                request,
+                toolInput,
+                progress,
+                cancellationToken);
+        }
+
+        private async Task<CopilotToolResult> ExecuteCoreAsync(
+            CopilotAgentRequest request,
+            CopilotAgentToolInput toolInput,
+            CopilotToolProgressContext? progress,
+            CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(request);
+            toolInput ??= CopilotAgentToolInput.Empty;
+            if (!TryReadBackgroundIds(
+                    toolInput,
+                    out var backgroundIds,
+                    out var backgroundIdsError))
+            {
+                return ValidationFailure(backgroundIdsError);
+            }
+            if (!TryReadMode(toolInput, out var mode))
+                return ValidationFailure("mode must be any or all.");
+            if (!TryReadOptionalInt(
+                    toolInput,
+                    "timeoutSeconds",
+                    CopilotBackgroundShellCommandRegistry.DefaultObservationTimeoutSeconds,
+                    out var timeoutSeconds))
+            {
+                return ValidationFailure(
+                    $"timeoutSeconds must be an integer from {CopilotBackgroundShellCommandRegistry.MinimumObservationTimeoutSeconds} through {CopilotBackgroundShellCommandRegistry.MaximumObservationTimeoutSeconds}.");
+            }
+
+            var modeText = mode.ToString().ToLowerInvariant();
+            var lastTerminalCount = 0;
+            progress?.Report(
+                $"正在等待 {backgroundIds.Count} 个后台命令（{modeText}）");
+            void ReportSnapshots(
+                IReadOnlyList<CopilotBackgroundShellCommandSnapshot> snapshots)
+            {
+                if (progress == null)
+                    return;
+                var terminalCount = snapshots.Count(snapshot => !snapshot.IsActive);
+                if (terminalCount == lastTerminalCount)
+                    return;
+                lastTerminalCount = terminalCount;
+                progress.Report(
+                    $"后台命令已结束 {terminalCount}/{snapshots.Count}（{modeText}）");
+            }
+
+            var result = await _registry.WaitForTerminalGroupAsync(
+                    request.ConversationId,
+                    backgroundIds,
+                    mode,
+                    timeoutSeconds,
+                    progress == null ? null : ReportSnapshots,
+                    cancellationToken)
+                .ConfigureAwait(false);
+            if (!result.Success)
+            {
+                return new CopilotToolResult
+                {
+                    ToolName = Name,
+                    Success = false,
+                    Summary = "The background command group could not be observed.",
+                    ErrorMessage = result.ErrorMessage,
+                    FailureKind = result.FailureKind,
+                };
+            }
+
+            return new CopilotToolResult
+            {
+                ToolName = Name,
+                Success = true,
+                Summary = result.Observation
+                    == CopilotBackgroundShellCommandObservation.Terminal
+                    ? mode == CopilotBackgroundShellCommandGroupWaitMode.Any
+                        ? $"{result.TerminalCount} of {result.Snapshots.Count} background commands reached a terminal state."
+                        : $"All {result.Snapshots.Count} background commands reached terminal states."
+                    : $"{result.TerminalCount} of {result.Snapshots.Count} background commands had reached terminal states when the bounded group observation timed out.",
+                Content = CopilotBackgroundShellCommandFormatter.FormatGroupWaitResult(
+                    result),
+                ObservationCanRepeat =
+                    result.Observation
+                        == CopilotBackgroundShellCommandObservation.TimedOut
+                    && result.Snapshots.Any(snapshot => snapshot.IsActive),
+                ObservationProgressSignature =
+                    CreateObservationProgressSignature(
+                        result.Mode,
+                        result.Snapshots),
+            };
+        }
+
+        internal static string CreateObservationProgressSignature(
+            CopilotBackgroundShellCommandGroupWaitMode mode,
+            IReadOnlyList<CopilotBackgroundShellCommandSnapshot> snapshots)
+        {
+            var content = mode.ToString() + "\0" + string.Join(
+                "\u001e",
+                snapshots
+                    .OrderBy(snapshot => snapshot.Id, StringComparer.Ordinal)
+                    .Select(snapshot =>
+                        snapshot.Id
+                        + "\0"
+                        + CopilotWaitForBackgroundShellCommandTool
+                            .CreateObservationProgressSignature(snapshot)));
+            return Convert.ToHexString(
+                    SHA256.HashData(Encoding.UTF8.GetBytes(content)))
+                .ToLowerInvariant();
+        }
+
+        private static bool TryReadBackgroundIds(
+            CopilotAgentToolInput input,
+            out IReadOnlyList<string> backgroundIds,
+            out string error)
+        {
+            backgroundIds = Array.Empty<string>();
+            error =
+                $"backgroundIds must contain 1 through {CopilotBackgroundShellCommandRegistry.MaximumGroupWaitCommands} unique non-empty ids.";
+            if (!input.Arguments.TryGetValue("backgroundIds", out var raw)
+                || raw == null)
+            {
+                return false;
+            }
+
+            IEnumerable? values = raw switch
+            {
+                JsonElement { ValueKind: JsonValueKind.Array } element =>
+                    element.EnumerateArray().Select(item => (object)item).ToArray(),
+                IEnumerable enumerable and not string => enumerable,
+                _ => null,
+            };
+            if (values == null)
+                return false;
+
+            var parsed = new List<string>();
+            foreach (var item in values)
+            {
+                var backgroundId = item switch
+                {
+                    string text => text.Trim(),
+                    JsonElement { ValueKind: JsonValueKind.String } element =>
+                        (element.GetString() ?? string.Empty).Trim(),
+                    _ => string.Empty,
+                };
+                if (backgroundId.Length is < 1 or > MaximumBackgroundIdCharacters)
+                    return false;
+                parsed.Add(backgroundId);
+                if (parsed.Count
+                    > CopilotBackgroundShellCommandRegistry.MaximumGroupWaitCommands)
+                {
+                    return false;
+                }
+            }
+            if (parsed.Count == 0
+                || parsed.Distinct(StringComparer.Ordinal).Count() != parsed.Count)
+            {
+                return false;
+            }
+
+            backgroundIds = parsed;
+            error = string.Empty;
+            return true;
+        }
+
+        private static bool TryReadMode(
+            CopilotAgentToolInput input,
+            out CopilotBackgroundShellCommandGroupWaitMode mode)
+        {
+            mode = CopilotBackgroundShellCommandGroupWaitMode.All;
+            if (!input.Arguments.TryGetValue("mode", out var raw) || raw == null)
+                return true;
+            var text = raw switch
+            {
+                string value => value,
+                JsonElement { ValueKind: JsonValueKind.String } element =>
+                    element.GetString() ?? string.Empty,
+                _ => string.Empty,
+            };
+            if (string.Equals(text, "any", StringComparison.OrdinalIgnoreCase))
+            {
+                mode = CopilotBackgroundShellCommandGroupWaitMode.Any;
+                return true;
+            }
+            return string.Equals(text, "all", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool TryReadOptionalInt(
+            CopilotAgentToolInput input,
+            string name,
+            int defaultValue,
+            out int value)
+        {
+            if (!input.Arguments.TryGetValue(name, out var raw) || raw == null)
+            {
+                value = defaultValue;
+                return true;
+            }
+            if (raw is int intValue)
+                value = intValue;
+            else if (raw is long longValue
+                && longValue is >= int.MinValue and <= int.MaxValue)
+            {
+                value = (int)longValue;
+            }
+            else if (raw is JsonElement element
+                && element.ValueKind == JsonValueKind.Number
+                && element.TryGetInt32(out var elementValue))
+            {
+                value = elementValue;
+            }
+            else
+            {
+                value = 0;
+                return false;
+            }
+            return value is >= CopilotBackgroundShellCommandRegistry.MinimumObservationTimeoutSeconds
+                and <= CopilotBackgroundShellCommandRegistry.MaximumObservationTimeoutSeconds;
+        }
+
+        private CopilotToolResult ValidationFailure(string error) =>
+            new()
+            {
+                ToolName = Name,
+                Success = false,
+                Summary = "The background command group observation request is invalid.",
+                ErrorMessage = error,
+                FailureKind = CopilotToolFailureKind.Validation,
+            };
+    }
+
     public sealed class CopilotStopBackgroundShellCommandTool :
         ICopilotFrameworkApprovedTool,
         ICopilotFrameworkContextualApprovalPresentation,
@@ -1126,6 +1462,35 @@ namespace ColorVision.Copilot
                 .Append(FormatToolSnapshot(result.Snapshot, includeOutput: true))
                 .ToString()
                 .TrimEnd();
+        }
+
+        public static string FormatGroupWaitResult(
+            CopilotBackgroundShellCommandGroupWaitResult result)
+        {
+            ArgumentNullException.ThrowIfNull(result);
+            var builder = new StringBuilder()
+                .AppendLine("[Background Shell Group Observation]")
+                .Append("mode: ")
+                .AppendLine(result.Mode.ToString().ToLowerInvariant())
+                .Append("observation: ")
+                .AppendLine(result.Observation
+                    == CopilotBackgroundShellCommandObservation.Terminal
+                        ? "terminal"
+                        : "timed_out")
+                .Append("terminal_count: ")
+                .AppendLine(result.TerminalCount.ToString(CultureInfo.InvariantCulture))
+                .Append("total_count: ")
+                .AppendLine(result.Snapshots.Count.ToString(CultureInfo.InvariantCulture))
+                .Append("elapsed_ms: ")
+                .AppendLine(Math.Max(
+                    0,
+                    (long)result.Elapsed.TotalMilliseconds).ToString(
+                        CultureInfo.InvariantCulture))
+                .AppendLine()
+                .Append(FormatToolSnapshots(
+                    result.Snapshots,
+                    includeOutput: false));
+            return builder.ToString().TrimEnd();
         }
 
         public static string FormatToolSnapshots(

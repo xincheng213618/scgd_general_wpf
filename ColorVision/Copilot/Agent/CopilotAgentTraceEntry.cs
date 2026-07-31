@@ -926,6 +926,7 @@ namespace ColorVision.Copilot
                 "InspectBackgroundShellCommands" => ("正在检查后台命令", "检查了后台命令"),
                 "ReadBackgroundShellCommandOutput" => ("正在读取后台输出", "读取了后台输出"),
                 "WaitForBackgroundShellCommand" => ("正在等待后台命令", "等待了后台命令"),
+                "WaitForBackgroundShellCommands" => ("正在等待多个后台命令", "等待了多个后台命令"),
                 "StopBackgroundShellCommand" => ("正在停止后台命令", "停止了后台命令"),
                 "ConvertBatchImages" => ("正在转换图像", "转换了图像"),
                 "PreviewWorkspacePatchEnvelope" => ("正在准备修改", "准备了修改"),
@@ -1019,6 +1020,7 @@ namespace ColorVision.Copilot
                 "InspectBackgroundShellCommands" => "后台命令状态检查完成。",
                 "ReadBackgroundShellCommandOutput" => "后台命令输出读取完成。",
                 "WaitForBackgroundShellCommand" => ResultSummary,
+                "WaitForBackgroundShellCommands" => ResultSummary,
                 "StopBackgroundShellCommand" => ResultSummary,
                 "PreviewWorkspacePatchEnvelope" => "文件修改预览已准备。",
                 "ApplyWorkspacePatchEnvelope" => WorkspaceChangeSetRolledBack

@@ -3,6 +3,7 @@ using ColorVision.Copilot.Mcp;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
+using System.Text.Json;
 
 namespace ColorVision.UI.Tests;
 
@@ -71,6 +72,9 @@ public sealed class CopilotBackgroundShellCommandTests
         var wait = Assert.Single(
             tools,
             tool => tool.Name == "WaitForBackgroundShellCommand");
+        var groupWait = Assert.Single(
+            tools,
+            tool => tool.Name == "WaitForBackgroundShellCommands");
         var stop = Assert.Single(
             tools,
             tool => tool.Name == "StopBackgroundShellCommand");
@@ -88,6 +92,11 @@ public sealed class CopilotBackgroundShellCommandTests
         Assert.Equal(
             CopilotToolEvidenceMode.RedactedExcerpt,
             wait.Capability.EvidenceMode);
+        Assert.Equal(CopilotToolAccess.ReadOnly, groupWait.Capability.Access);
+        Assert.False(groupWait.Capability.RequiresNativeApproval);
+        Assert.Equal(
+            CopilotToolEvidenceMode.RedactedExcerpt,
+            groupWait.Capability.EvidenceMode);
         Assert.True(stop.Capability.RequiresNativeApproval);
         Assert.Equal(CopilotToolAuditArgumentMode.NamesOnly, start.Capability.AuditArgumentMode);
         Assert.Equal(CopilotToolAuditArgumentMode.NamesOnly, stop.Capability.AuditArgumentMode);
@@ -802,6 +811,248 @@ public sealed class CopilotBackgroundShellCommandTests
     }
 
     [Fact]
+    public async Task GroupWaitAnyReturnsOnFirstCompletionWithoutPollingOtherCommands()
+    {
+        var launcher = new FakeBackgroundLauncher();
+        var registry = new CopilotBackgroundShellCommandRegistry(launcher);
+        var waitTool = new CopilotWaitForBackgroundShellCommandsTool(registry);
+        var progressTool = Assert.IsAssignableFrom<ICopilotProgressReportingTool>(
+            waitTool);
+        var progress = new CopilotToolProgressContext();
+        var request = CreateRequest("wait for any background command");
+        try
+        {
+            var first = await registry.StartAsync(
+                request,
+                CreateStartInput("Start-Sleep 30"),
+                CancellationToken.None);
+            var second = await registry.StartAsync(
+                request,
+                CreateStartInput("Start-Sleep 30"),
+                CancellationToken.None);
+            Assert.True(first.Success, first.ErrorMessage);
+            Assert.True(second.Success, second.ErrorMessage);
+
+            var waiting = progressTool.ExecuteWithProgressAsync(
+                request,
+                CreateGroupWaitInput(
+                    [first.Snapshot!.Id, second.Snapshot!.Id],
+                    mode: "any",
+                    timeoutSeconds: 2),
+                progress,
+                CancellationToken.None);
+            Assert.Equal(
+                CopilotToolProgressWaitResult.Updated,
+                await progress.WaitForUpdateAsync(
+                    TimeSpan.FromSeconds(1),
+                    CancellationToken.None));
+            Assert.Equal(
+                "正在等待 2 个后台命令（any）",
+                progress.LatestSnapshot!.Message);
+
+            launcher.Processes[0].SetOutput(
+                "first token=group-secret",
+                string.Empty);
+            launcher.Processes[0].Complete(exitCode: 0);
+            var observed = await waiting.WaitAsync(TimeSpan.FromSeconds(1));
+
+            Assert.True(observed.Success, observed.ErrorMessage);
+            Assert.False(observed.ObservationCanRepeat);
+            Assert.Matches(
+                "^[0-9a-f]{64}$",
+                observed.ObservationProgressSignature);
+            Assert.Contains(
+                "1 of 2 background commands reached a terminal state",
+                observed.Summary,
+                StringComparison.Ordinal);
+            Assert.Contains("mode: any", observed.Content, StringComparison.Ordinal);
+            Assert.Contains(
+                "observation: terminal",
+                observed.Content,
+                StringComparison.Ordinal);
+            Assert.Contains(
+                "terminal_count: 1",
+                observed.Content,
+                StringComparison.Ordinal);
+            Assert.Contains(first.Snapshot.Id, observed.Content, StringComparison.Ordinal);
+            Assert.Contains(second.Snapshot.Id, observed.Content, StringComparison.Ordinal);
+            Assert.DoesNotContain(
+                "group-secret",
+                observed.Content,
+                StringComparison.Ordinal);
+            Assert.DoesNotContain(
+                "first token",
+                observed.Content,
+                StringComparison.Ordinal);
+            Assert.True(
+                registry.GetSnapshots(request.ConversationId, second.Snapshot.Id)
+                    .Single()
+                    .IsActive);
+            Assert.All(
+                launcher.Processes,
+                process => Assert.Equal(
+                    0,
+                    process.WaitForObservationChangeCallCount));
+        }
+        finally
+        {
+            await registry.ShutdownAsync();
+        }
+    }
+
+    [Fact]
+    public async Task GroupWaitAllReportsPartialCompletionBeforeAllFinish()
+    {
+        var launcher = new FakeBackgroundLauncher();
+        var registry = new CopilotBackgroundShellCommandRegistry(launcher);
+        var waitTool = new CopilotWaitForBackgroundShellCommandsTool(registry);
+        var progressTool = Assert.IsAssignableFrom<ICopilotProgressReportingTool>(
+            waitTool);
+        var progress = new CopilotToolProgressContext();
+        var request = CreateRequest("wait for all background commands");
+        try
+        {
+            var first = await registry.StartAsync(
+                request,
+                CreateStartInput("Start-Sleep 30"),
+                CancellationToken.None);
+            var second = await registry.StartAsync(
+                request,
+                CreateStartInput("Start-Sleep 30"),
+                CancellationToken.None);
+            Assert.True(first.Success, first.ErrorMessage);
+            Assert.True(second.Success, second.ErrorMessage);
+
+            var waiting = progressTool.ExecuteWithProgressAsync(
+                request,
+                CreateGroupWaitInput(
+                    [first.Snapshot!.Id, second.Snapshot!.Id],
+                    mode: "all",
+                    timeoutSeconds: 2),
+                progress,
+                CancellationToken.None);
+            Assert.Equal(
+                CopilotToolProgressWaitResult.Updated,
+                await progress.WaitForUpdateAsync(
+                    TimeSpan.FromSeconds(1),
+                    CancellationToken.None));
+
+            launcher.Processes[0].Complete(exitCode: 0);
+            Assert.Equal(
+                CopilotToolProgressWaitResult.Updated,
+                await progress.WaitForUpdateAsync(
+                    TimeSpan.FromSeconds(1),
+                    CancellationToken.None));
+            Assert.Equal(
+                "后台命令已结束 1/2（all）",
+                progress.LatestSnapshot!.Message);
+            Assert.False(waiting.IsCompleted);
+
+            launcher.Processes[1].Complete(exitCode: 7);
+            var observed = await waiting.WaitAsync(TimeSpan.FromSeconds(1));
+
+            Assert.True(observed.Success, observed.ErrorMessage);
+            Assert.False(observed.ObservationCanRepeat);
+            Assert.Equal(
+                "All 2 background commands reached terminal states.",
+                observed.Summary);
+            Assert.Contains("mode: all", observed.Content, StringComparison.Ordinal);
+            Assert.Contains(
+                "terminal_count: 2",
+                observed.Content,
+                StringComparison.Ordinal);
+            Assert.Contains("state: completed", observed.Content, StringComparison.Ordinal);
+            Assert.Contains("state: failed", observed.Content, StringComparison.Ordinal);
+            Assert.Contains("exit_code: 7", observed.Content, StringComparison.Ordinal);
+        }
+        finally
+        {
+            await registry.ShutdownAsync();
+        }
+    }
+
+    [Fact]
+    public async Task GroupWaitTimeoutIsRepeatableAndRejectsInvalidOrForeignIds()
+    {
+        var launcher = new FakeBackgroundLauncher();
+        var registry = new CopilotBackgroundShellCommandRegistry(launcher);
+        var waitTool = new CopilotWaitForBackgroundShellCommandsTool(registry);
+        var request = CreateRequest("wait for all background commands");
+        try
+        {
+            var first = await registry.StartAsync(
+                request,
+                CreateStartInput("Start-Sleep 30"),
+                CancellationToken.None);
+            var second = await registry.StartAsync(
+                request,
+                CreateStartInput("Start-Sleep 30"),
+                CancellationToken.None);
+            var foreign = await registry.StartAsync(
+                CreateRequest(
+                    "run another background command",
+                    conversationId: "conversation-other"),
+                CreateStartInput("Start-Sleep 30"),
+                CancellationToken.None);
+            Assert.True(first.Success, first.ErrorMessage);
+            Assert.True(second.Success, second.ErrorMessage);
+            Assert.True(foreign.Success, foreign.ErrorMessage);
+
+            var timedOut = await waitTool.ExecuteAsync(
+                request,
+                CreateGroupWaitInput(
+                    [first.Snapshot!.Id, second.Snapshot!.Id],
+                    mode: "all",
+                    timeoutSeconds: 1),
+                CancellationToken.None);
+
+            Assert.True(timedOut.Success, timedOut.ErrorMessage);
+            Assert.True(timedOut.ObservationCanRepeat);
+            Assert.Contains(
+                "observation: timed_out",
+                timedOut.Content,
+                StringComparison.Ordinal);
+            Assert.Contains(
+                "terminal_count: 0",
+                timedOut.Content,
+                StringComparison.Ordinal);
+            Assert.All(
+                launcher.Processes,
+                process => Assert.Equal(
+                    0,
+                    process.WaitForObservationChangeCallCount));
+
+            var duplicate = await waitTool.ExecuteAsync(
+                request,
+                CreateGroupWaitInput(
+                    [first.Snapshot.Id, first.Snapshot.Id],
+                    mode: "all",
+                    timeoutSeconds: 1),
+                CancellationToken.None);
+            Assert.False(duplicate.Success);
+            Assert.Equal(CopilotToolFailureKind.Validation, duplicate.FailureKind);
+
+            var mixedScope = await waitTool.ExecuteAsync(
+                request,
+                CreateGroupWaitInput(
+                    [first.Snapshot.Id, foreign.Snapshot!.Id],
+                    mode: "any",
+                    timeoutSeconds: 1),
+                CancellationToken.None);
+            Assert.False(mixedScope.Success);
+            Assert.Equal(CopilotToolFailureKind.NotFound, mixedScope.FailureKind);
+            Assert.DoesNotContain(
+                foreign.Snapshot.Id,
+                mixedScope.ErrorMessage,
+                StringComparison.Ordinal);
+        }
+        finally
+        {
+            await registry.ShutdownAsync();
+        }
+    }
+
+    [Fact]
     public async Task RealPowerShellProcessCompletesAndArchivesRedactedOutput()
     {
         if (!OperatingSystem.IsWindows()
@@ -976,6 +1227,23 @@ public sealed class CopilotBackgroundShellCommandTests
         return new CopilotAgentToolInput
         {
             Arguments = arguments,
+        };
+    }
+
+    private static CopilotAgentToolInput CreateGroupWaitInput(
+        IReadOnlyList<string> backgroundIds,
+        string mode,
+        int timeoutSeconds)
+    {
+        return new CopilotAgentToolInput
+        {
+            Arguments = new Dictionary<string, object?>
+            {
+                ["backgroundIds"] =
+                    JsonSerializer.SerializeToElement(backgroundIds),
+                ["mode"] = mode,
+                ["timeoutSeconds"] = timeoutSeconds,
+            },
         };
     }
 

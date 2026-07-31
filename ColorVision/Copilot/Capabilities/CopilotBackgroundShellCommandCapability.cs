@@ -188,6 +188,12 @@ namespace ColorVision.Copilot
         Archive,
     }
 
+    internal enum CopilotBackgroundShellCommandGroupWaitMode
+    {
+        Any,
+        All,
+    }
+
     internal sealed record CopilotBackgroundShellCommandWaitResult(
         CopilotBackgroundShellCommandSnapshot? Snapshot,
         CopilotBackgroundShellCommandObservation Observation,
@@ -203,6 +209,20 @@ namespace ColorVision.Copilot
             get;
             init;
         }
+    }
+
+    internal sealed record CopilotBackgroundShellCommandGroupWaitResult(
+        IReadOnlyList<CopilotBackgroundShellCommandSnapshot> Snapshots,
+        CopilotBackgroundShellCommandGroupWaitMode Mode,
+        CopilotBackgroundShellCommandObservation Observation,
+        TimeSpan Elapsed,
+        CopilotToolFailureKind FailureKind,
+        string ErrorMessage)
+    {
+        public bool Success => Snapshots.Count > 0
+            && FailureKind == CopilotToolFailureKind.None;
+
+        public int TerminalCount => Snapshots.Count(snapshot => !snapshot.IsActive);
     }
 
     internal sealed record CopilotBackgroundShellCommandOutputReadResult(
@@ -242,6 +262,7 @@ namespace ColorVision.Copilot
         public const int MinimumObservationTimeoutSeconds = 1;
         public const int MaximumObservationTimeoutSeconds = 30;
         public const int MaximumOutputPatternCharacters = 256;
+        public const int MaximumGroupWaitCommands = MaximumActivePerConversation;
         public const int MaximumArchivedOutputCharacters =
             CopilotOutputArchiveLimits.MaximumArchivedCharacters;
         public const int DefaultArchiveReadCharacters =
@@ -655,6 +676,152 @@ namespace ColorVision.Copilot
             }
         }
 
+        public async Task<CopilotBackgroundShellCommandGroupWaitResult> WaitForTerminalGroupAsync(
+            string? conversationId,
+            IReadOnlyList<string>? backgroundIds,
+            CopilotBackgroundShellCommandGroupWaitMode mode,
+            int timeoutSeconds,
+            Action<IReadOnlyList<CopilotBackgroundShellCommandSnapshot>>? onSnapshots,
+            CancellationToken cancellationToken)
+        {
+            var normalizedConversationId = NormalizeScopeId(conversationId);
+            var normalizedBackgroundIds = (backgroundIds ?? Array.Empty<string>())
+                .Select(backgroundId => (backgroundId ?? string.Empty).Trim())
+                .ToArray();
+            if (normalizedConversationId.Length == 0)
+            {
+                return GroupWaitFailure(
+                    mode,
+                    CopilotToolFailureKind.Validation,
+                    "conversationId is required.");
+            }
+            if (normalizedBackgroundIds.Length is < 1 or > MaximumGroupWaitCommands
+                || normalizedBackgroundIds.Any(backgroundId => backgroundId.Length == 0))
+            {
+                return GroupWaitFailure(
+                    mode,
+                    CopilotToolFailureKind.Validation,
+                    $"backgroundIds must contain 1 through {MaximumGroupWaitCommands} non-empty ids.");
+            }
+            if (normalizedBackgroundIds.Distinct(StringComparer.Ordinal).Count()
+                != normalizedBackgroundIds.Length)
+            {
+                return GroupWaitFailure(
+                    mode,
+                    CopilotToolFailureKind.Validation,
+                    "backgroundIds must not contain duplicate ids.");
+            }
+            if (!Enum.IsDefined(mode))
+            {
+                return GroupWaitFailure(
+                    mode,
+                    CopilotToolFailureKind.Validation,
+                    "mode must be any or all.");
+            }
+            if (timeoutSeconds is < MinimumObservationTimeoutSeconds
+                or > MaximumObservationTimeoutSeconds)
+            {
+                return GroupWaitFailure(
+                    mode,
+                    CopilotToolFailureKind.Validation,
+                    $"timeoutSeconds must be an integer from {MinimumObservationTimeoutSeconds} through {MaximumObservationTimeoutSeconds}.");
+            }
+
+            var stopwatch = Stopwatch.StartNew();
+            var maximumWait = TimeSpan.FromSeconds(timeoutSeconds);
+            while (true)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                CopilotBackgroundShellCommandSnapshot[] snapshots;
+                Task<CopilotBackgroundShellProcessCompletion>[] pendingCompletions;
+                lock (_syncRoot)
+                {
+                    RefreshCompletedEntriesUnderLock();
+                    var entriesById = _entries
+                        .Where(entry => string.Equals(
+                            entry.ConversationId,
+                            normalizedConversationId,
+                            StringComparison.Ordinal))
+                        .ToDictionary(entry => entry.Id, StringComparer.Ordinal);
+                    if (normalizedBackgroundIds.Any(backgroundId =>
+                        !entriesById.ContainsKey(backgroundId)))
+                    {
+                        return GroupWaitFailure(
+                            mode,
+                            CopilotToolFailureKind.NotFound,
+                            "One or more background commands were not found in the current conversation.",
+                            stopwatch.Elapsed);
+                    }
+                    var entries = normalizedBackgroundIds
+                        .Select(backgroundId => entriesById[backgroundId])
+                        .ToArray();
+                    snapshots = entries
+                        .Select(entry => entry.GetSnapshot())
+                        .ToArray();
+                    pendingCompletions = entries
+                        .Where((entry, index) => snapshots[index].IsActive)
+                        .Select(entry => entry.Completion)
+                        .ToArray();
+                }
+                TryPublishObservations(onSnapshots, snapshots);
+
+                var terminalCount = snapshots.Count(snapshot => !snapshot.IsActive);
+                var terminalConditionMet = mode switch
+                {
+                    CopilotBackgroundShellCommandGroupWaitMode.Any =>
+                        terminalCount > 0,
+                    CopilotBackgroundShellCommandGroupWaitMode.All =>
+                        terminalCount == snapshots.Length,
+                    _ => false,
+                };
+                if (terminalConditionMet)
+                {
+                    return new CopilotBackgroundShellCommandGroupWaitResult(
+                        snapshots,
+                        mode,
+                        CopilotBackgroundShellCommandObservation.Terminal,
+                        stopwatch.Elapsed,
+                        CopilotToolFailureKind.None,
+                        string.Empty);
+                }
+                if (stopwatch.Elapsed >= maximumWait
+                    || pendingCompletions.Length == 0)
+                {
+                    return new CopilotBackgroundShellCommandGroupWaitResult(
+                        snapshots,
+                        mode,
+                        CopilotBackgroundShellCommandObservation.TimedOut,
+                        stopwatch.Elapsed,
+                        CopilotToolFailureKind.None,
+                        string.Empty);
+                }
+
+                var remaining = maximumWait - stopwatch.Elapsed;
+                if (remaining <= TimeSpan.Zero)
+                    continue;
+                try
+                {
+                    var completed = await Task.WhenAny(pendingCompletions)
+                        .WaitAsync(remaining, cancellationToken)
+                        .ConfigureAwait(false);
+                    await completed.WaitAsync(cancellationToken).ConfigureAwait(false);
+                }
+                catch (TimeoutException)
+                {
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException
+                    and not OutOfMemoryException)
+                {
+                    return GroupWaitFailure(
+                        mode,
+                        CopilotToolFailureKind.Internal,
+                        "A background command completion signal failed: "
+                        + CopilotMcpAuditLogger.RedactText(ex.Message),
+                        stopwatch.Elapsed);
+                }
+            }
+        }
+
         private async Task WaitForObservationChangeAsync(
             string conversationId,
             string backgroundId,
@@ -1042,6 +1209,19 @@ namespace ColorVision.Copilot
                 kind,
                 message);
 
+        private static CopilotBackgroundShellCommandGroupWaitResult GroupWaitFailure(
+            CopilotBackgroundShellCommandGroupWaitMode mode,
+            CopilotToolFailureKind kind,
+            string message,
+            TimeSpan? elapsed = null) =>
+            new(
+                Array.Empty<CopilotBackgroundShellCommandSnapshot>(),
+                mode,
+                CopilotBackgroundShellCommandObservation.TimedOut,
+                elapsed ?? TimeSpan.Zero,
+                kind,
+                message);
+
         private static void TryPublishObservation(
             Action<CopilotBackgroundShellCommandSnapshot>? onSnapshot,
             CopilotBackgroundShellCommandSnapshot snapshot)
@@ -1051,6 +1231,21 @@ namespace ColorVision.Copilot
             try
             {
                 onSnapshot(snapshot);
+            }
+            catch (Exception ex) when (ex is not OutOfMemoryException)
+            {
+            }
+        }
+
+        private static void TryPublishObservations(
+            Action<IReadOnlyList<CopilotBackgroundShellCommandSnapshot>>? onSnapshots,
+            IReadOnlyList<CopilotBackgroundShellCommandSnapshot> snapshots)
+        {
+            if (onSnapshots == null)
+                return;
+            try
+            {
+                onSnapshots(snapshots);
             }
             catch (Exception ex) when (ex is not OutOfMemoryException)
             {

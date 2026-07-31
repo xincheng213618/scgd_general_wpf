@@ -732,7 +732,8 @@ namespace ColorVision.Copilot
                         "StartBackgroundShellCommand",
                         "InspectBackgroundShellCommands",
                         "ReadBackgroundShellCommandOutput",
-                        "WaitForBackgroundShellCommand"));
+                        "WaitForBackgroundShellCommand",
+                        "WaitForBackgroundShellCommands"));
         }
 
         public static bool NeedsBackgroundShellStop(CopilotAgentRequest? request)
@@ -745,7 +746,8 @@ namespace ColorVision.Copilot
                     "StartBackgroundShellCommand",
                     "InspectBackgroundShellCommands",
                     "ReadBackgroundShellCommandOutput",
-                    "WaitForBackgroundShellCommand");
+                    "WaitForBackgroundShellCommand",
+                    "WaitForBackgroundShellCommands");
         }
 
         public static bool NeedsBatchImageProcessing(CopilotAgentRequest? request)
