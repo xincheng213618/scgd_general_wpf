@@ -41,6 +41,20 @@ public sealed class CopilotProviderRetryChatClientTests
     }
 
     [Fact]
+    public void RetryAfterPreservationKeepsTheExistingTwoMinuteSafetyCap()
+    {
+        using var response = new HttpResponseMessage(HttpStatusCode.TooManyRequests);
+        response.Headers.TryAddWithoutValidation("Retry-After", "600");
+        var exception = new HttpRequestException("rate limited");
+
+        CopilotProviderRetryChatClient.PreserveRetryAfter(response, exception);
+
+        Assert.Equal(
+            TimeSpan.FromMinutes(2),
+            CopilotProviderRetryChatClient.ResolveRetryDelay(exception, TimeSpan.Zero));
+    }
+
+    [Fact]
     public async Task StreamingFailureAfterFirstUpdateIsNotRetried()
     {
         using var provider = new PartialThenFailedStreamingChatClient();

@@ -5406,6 +5406,7 @@ namespace ColorVision.Copilot
                     SetPendingActionFeedback("工作区已变化，临时自动复核授权已撤销。");
                 }
             }
+            RefreshProviderRateLimitStatus();
             RefreshPendingActions();
         }
 

@@ -1,7 +1,6 @@
 using Microsoft.Extensions.AI;
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -303,30 +302,22 @@ namespace ColorVision.Copilot
 
         private static bool TryParseRetryAfter(string? value, DateTimeOffset now, out TimeSpan delay)
         {
-            var normalized = (value ?? string.Empty).Trim();
-            if (double.TryParse(normalized, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds)
-                && double.IsFinite(seconds)
-                && seconds >= 0)
+            if (!CopilotProviderRateLimitTimeParser.TryResolveRetryAfterDeadline(
+                    value,
+                    now,
+                    out var retryAt))
             {
-                delay = TimeSpan.FromMilliseconds(Math.Min(MaximumServerRetryDelay.TotalMilliseconds, seconds * 1000));
-                return true;
+                delay = TimeSpan.Zero;
+                return false;
             }
 
-            if (DateTimeOffset.TryParse(
-                normalized,
-                CultureInfo.InvariantCulture,
-                DateTimeStyles.AllowWhiteSpaces | DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
-                out var retryAt))
-            {
-                var requestedDelay = retryAt - now;
-                delay = requestedDelay <= TimeSpan.Zero
-                    ? TimeSpan.Zero
-                    : TimeSpan.FromMilliseconds(Math.Min(MaximumServerRetryDelay.TotalMilliseconds, requestedDelay.TotalMilliseconds));
-                return true;
-            }
-
-            delay = TimeSpan.Zero;
-            return false;
+            var requestedDelay = retryAt - now;
+            delay = requestedDelay <= TimeSpan.Zero
+                ? TimeSpan.Zero
+                : TimeSpan.FromMilliseconds(Math.Min(
+                    MaximumServerRetryDelay.TotalMilliseconds,
+                    requestedDelay.TotalMilliseconds));
+            return true;
         }
 
         internal static bool TryClassifyTransientFailure(

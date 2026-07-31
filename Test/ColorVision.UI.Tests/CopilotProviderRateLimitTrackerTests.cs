@@ -61,18 +61,115 @@ public sealed class CopilotProviderRateLimitTrackerTests
     [Fact]
     public void StatusPresentationMarksRetryAfterAsThrottled()
     {
+        var capturedAtUtc = new DateTimeOffset(2026, 7, 31, 8, 0, 0, TimeSpan.Zero);
         var presentation = CopilotProviderRateLimitStatusPresenter.Create(
             new CopilotProviderRateLimitSnapshot
             {
-                CapturedAtUtc = DateTimeOffset.UtcNow,
+                CapturedAtUtc = capturedAtUtc,
                 RequestLimit = 20,
                 RequestRemaining = 19,
                 RetryAfter = "4",
-            });
+            },
+            capturedAtUtc.AddSeconds(1));
 
         Assert.Equal("限流重试", presentation.Label);
         Assert.True(presentation.IsUnderPressure);
         Assert.Contains("Retry-After 4", presentation.ToolTip, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void StatusPresentationExpiresRetryAndResetPressure()
+    {
+        var capturedAtUtc = new DateTimeOffset(2026, 7, 31, 8, 0, 0, TimeSpan.Zero);
+        var presentation = CopilotProviderRateLimitStatusPresenter.Create(
+            new CopilotProviderRateLimitSnapshot
+            {
+                CapturedAtUtc = capturedAtUtc,
+                RequestLimit = 10,
+                RequestRemaining = 0,
+                RequestReset = "2s",
+                RetryAfter = "4",
+            },
+            capturedAtUtc.AddSeconds(5));
+
+        Assert.Equal("限额待刷新", presentation.Label);
+        Assert.False(presentation.IsUnderPressure);
+        Assert.Contains("旧的剩余值不再作为当前压力告警", presentation.ToolTip, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void StatusPresentationKeepsPressureUntilAbsoluteReset()
+    {
+        var capturedAtUtc = new DateTimeOffset(2026, 7, 31, 8, 0, 0, TimeSpan.Zero);
+        var presentation = CopilotProviderRateLimitStatusPresenter.Create(
+            new CopilotProviderRateLimitSnapshot
+            {
+                CapturedAtUtc = capturedAtUtc,
+                RequestLimit = 20,
+                RequestRemaining = 19,
+                TokenLimit = 10_000,
+                TokenRemaining = 900,
+                TokenReset = "2026-07-31T08:01:00Z",
+            },
+            capturedAtUtc.AddSeconds(30));
+
+        Assert.Equal("Token 900/10K", presentation.Label);
+        Assert.True(presentation.IsUnderPressure);
+    }
+
+    [Theory]
+    [InlineData("1m2.5s", 62_500)]
+    [InlineData("500ms", 500)]
+    [InlineData("2", 2_000)]
+    public void ResetParserSupportsProviderRelativeDurations(
+        string value,
+        int expectedMilliseconds)
+    {
+        var capturedAtUtc = new DateTimeOffset(2026, 7, 31, 8, 0, 0, TimeSpan.Zero);
+
+        Assert.True(CopilotProviderRateLimitTimeParser.TryResolveResetDeadline(
+            value,
+            capturedAtUtc,
+            out var deadlineUtc));
+        Assert.Equal(capturedAtUtc.AddMilliseconds(expectedMilliseconds), deadlineUtc);
+    }
+
+    [Fact]
+    public void ResetParserSupportsUnixTimestamp()
+    {
+        var capturedAtUtc = new DateTimeOffset(2026, 7, 31, 8, 0, 0, TimeSpan.Zero);
+        var expected = capturedAtUtc.AddMinutes(1);
+
+        Assert.True(CopilotProviderRateLimitTimeParser.TryResolveResetDeadline(
+            expected.ToUnixTimeSeconds().ToString(System.Globalization.CultureInfo.InvariantCulture),
+            capturedAtUtc,
+            out var deadlineUtc));
+        Assert.Equal(expected, deadlineUtc);
+    }
+
+    [Fact]
+    public void ResetParserSupportsUnixMillisecondTimestamp()
+    {
+        var capturedAtUtc = new DateTimeOffset(2026, 7, 31, 8, 0, 0, TimeSpan.Zero);
+        var expected = capturedAtUtc.AddMinutes(1);
+
+        Assert.True(CopilotProviderRateLimitTimeParser.TryResolveResetDeadline(
+            expected.ToUnixTimeMilliseconds().ToString(System.Globalization.CultureInfo.InvariantCulture),
+            capturedAtUtc,
+            out var deadlineUtc));
+        Assert.Equal(expected, deadlineUtc);
+    }
+
+    [Fact]
+    public void RetryAfterParserSupportsHttpDate()
+    {
+        var capturedAtUtc = new DateTimeOffset(2026, 7, 31, 8, 0, 0, TimeSpan.Zero);
+
+        Assert.True(CopilotProviderRateLimitTimeParser.TryResolveRetryAfterDeadline(
+            "Fri, 31 Jul 2026 08:00:30 GMT",
+            capturedAtUtc,
+            out var deadlineUtc));
+        Assert.Equal(capturedAtUtc.AddSeconds(30), deadlineUtc);
     }
 
     [Fact]
