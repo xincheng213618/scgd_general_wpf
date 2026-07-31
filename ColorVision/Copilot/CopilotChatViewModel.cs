@@ -47,7 +47,7 @@ namespace ColorVision.Copilot
         private readonly CopilotAgentTaskHost _taskHost;
         private readonly CopilotLocalGitDiffService _localGitDiffService;
         private readonly CopilotPromptHistoryNavigator _promptHistoryNavigator = new();
-        private readonly CopilotConversationFindNavigator _conversationFindNavigator = new();
+        private readonly CopilotConversationFindSession _conversationFindSession = new();
         private readonly CopilotConfig _config;
         private readonly ICopilotChatStateStore _stateStore;
         private readonly CopilotChatStateSaveScheduler _stateSaveScheduler;
@@ -90,12 +90,10 @@ namespace ColorVision.Copilot
         private CopilotComposerDraftSnapshot? _composerDraftBeforeMessageEdit;
         private CopilotComposerReferenceItem? _selectedComposerReference;
         private string _conversationSearchText = string.Empty;
-        private string _conversationFindText = string.Empty;
         private string _composerReferenceSessionKey = string.Empty;
         private string _promptHistorySearchConversationId = string.Empty;
         private string _promptHistorySearchDraft = string.Empty;
         private CopilotPromptHistorySearchScope _promptHistorySearchScope;
-        private bool _isConversationFindOpen;
         private bool _isComposerReferenceMentionActive;
         private bool _isComposerReferenceSearchPending;
         private bool _isPromptHistorySearchOpen;
@@ -703,53 +701,30 @@ namespace ColorVision.Copilot
 
         public bool HasNoConversationSearchResults => HasConversationSearchQuery && FilteredConversations.Count == 0;
 
-        public bool IsConversationFindOpen
-        {
-            get => _isConversationFindOpen;
-            private set
-            {
-                if (!SetProperty(ref _isConversationFindOpen, value))
-                    return;
-
-                OnPropertyChanged(nameof(CurrentConversationFindMatch));
-                CommandManager.InvalidateRequerySuggested();
-            }
-        }
+        public bool IsConversationFindOpen => _conversationFindSession.IsOpen;
 
         public string ConversationFindText
         {
-            get => _conversationFindText;
+            get => _conversationFindSession.Query;
             set
             {
-                var normalized = CopilotConversationFindNavigator.NormalizeQuery(value);
-                if (!SetProperty(ref _conversationFindText, normalized))
+                if (!_conversationFindSession.SetQuery(Messages, value))
                     return;
 
+                OnPropertyChanged(nameof(ConversationFindText));
                 OnPropertyChanged(nameof(HasConversationFindQuery));
-                RefreshConversationFind();
+                if (IsConversationFindOpen)
+                    NotifyConversationFindStateChanged();
             }
         }
 
-        public bool HasConversationFindQuery => ConversationFindText.Length > 0;
+        public bool HasConversationFindQuery => _conversationFindSession.HasQuery;
 
-        public bool HasConversationFindMatches =>
-            IsConversationFindOpen && _conversationFindNavigator.Matches.Count > 0;
+        public bool HasConversationFindMatches => _conversationFindSession.HasMatches;
 
-        public string ConversationFindStatusText
-        {
-            get
-            {
-                if (!HasConversationFindQuery)
-                    return "输入关键词";
-                if (_conversationFindNavigator.Matches.Count == 0)
-                    return "0 项";
+        public string ConversationFindStatusText => _conversationFindSession.StatusText;
 
-                return $"{_conversationFindNavigator.SelectedIndex + 1} / {_conversationFindNavigator.Matches.Count}";
-            }
-        }
-
-        public CopilotChatMessage? CurrentConversationFindMatch =>
-            IsConversationFindOpen ? _conversationFindNavigator.Current : null;
+        public CopilotChatMessage? CurrentConversationFindMatch => _conversationFindSession.Current;
 
         public bool HasAttachments => Attachments.Count > 0;
 

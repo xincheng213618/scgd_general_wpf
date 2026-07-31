@@ -158,12 +158,22 @@ namespace ColorVision.Copilot
         private void OpenConversationFind(string? query)
         {
             DismissLocalCommandResult();
-            IsConversationFindOpen = true;
-            var normalized = CopilotConversationFindNavigator.NormalizeQuery(query);
-            if (!string.Equals(ConversationFindText, normalized, StringComparison.Ordinal))
-                ConversationFindText = normalized;
-            else
-                RefreshConversationFind();
+            var previousQuery = ConversationFindText;
+            var opened = _conversationFindSession.Open(Messages, query);
+            if (opened)
+            {
+                OnPropertyChanged(nameof(IsConversationFindOpen));
+                OnPropertyChanged(nameof(CurrentConversationFindMatch));
+                CommandManager.InvalidateRequerySuggested();
+            }
+
+            if (!string.Equals(previousQuery, ConversationFindText, StringComparison.Ordinal))
+            {
+                OnPropertyChanged(nameof(ConversationFindText));
+                OnPropertyChanged(nameof(HasConversationFindQuery));
+            }
+
+            NotifyConversationFindStateChanged();
         }
 
         public void CloseConversationFind()
@@ -171,44 +181,28 @@ namespace ColorVision.Copilot
             if (!IsConversationFindOpen)
                 return;
 
-            ClearConversationFindState(Messages);
-            _conversationFindNavigator.Refresh([], string.Empty);
-            IsConversationFindOpen = false;
+            _conversationFindSession.Close(Messages);
+            OnPropertyChanged(nameof(IsConversationFindOpen));
+            OnPropertyChanged(nameof(CurrentConversationFindMatch));
+            CommandManager.InvalidateRequerySuggested();
             NotifyConversationFindStateChanged();
         }
 
         public bool MoveConversationFind(bool previous)
         {
-            if (!IsConversationFindOpen || !_conversationFindNavigator.Move(previous))
+            if (!_conversationFindSession.Move(Messages, previous))
                 return false;
 
-            ApplyConversationFindState();
             NotifyConversationFindStateChanged();
             return true;
         }
 
         internal void RefreshConversationFind()
         {
-            if (!IsConversationFindOpen)
+            if (!_conversationFindSession.Refresh(Messages))
                 return;
 
-            _conversationFindNavigator.Refresh(Messages, ConversationFindText);
-            ApplyConversationFindState();
             NotifyConversationFindStateChanged();
-        }
-
-        private void ApplyConversationFindState()
-        {
-            var matches = _conversationFindNavigator.Matches.ToHashSet();
-            var current = _conversationFindNavigator.Current;
-            foreach (var message in Messages)
-                message.SetConversationFindState(matches.Contains(message), ReferenceEquals(message, current));
-        }
-
-        private static void ClearConversationFindState(IEnumerable<CopilotChatMessage>? messages)
-        {
-            foreach (var message in messages ?? Array.Empty<CopilotChatMessage>())
-                message?.SetConversationFindState(isMatch: false, isCurrent: false);
         }
 
         private void NotifyConversationFindStateChanged()
@@ -299,7 +293,7 @@ namespace ColorVision.Copilot
             if (_selectedConversation != null)
                 _selectedConversation.Messages.CollectionChanged -= Messages_CollectionChanged;
 
-            ClearConversationFindState(_selectedConversation?.Messages);
+            CopilotConversationFindSession.ClearHighlights(_selectedConversation?.Messages);
             _selectedConversation = conversation;
             _pendingRequestModeOverride = conversation?.DraftRequestMode is { } restoredMode
                 && restoredMode != CopilotAgentMode.Auto
