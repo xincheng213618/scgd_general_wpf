@@ -152,6 +152,57 @@ public sealed class CopilotDelegateSubagentToolTests
     }
 
     [Fact]
+    public async Task RunningSubagentCanBeSteeredWithoutSteeringItsParent()
+    {
+        var request = Request();
+        var runner = new SteeringRunner();
+        var progressTool = Assert.IsAssignableFrom<ICopilotProgressReportingTool>(
+            new CopilotDelegateExploreTool(runner));
+        var progress = new CopilotToolProgressContext();
+        var execution = progressTool.ExecuteWithProgressAsync(
+            request,
+            Input(),
+            progress,
+            CancellationToken.None);
+
+        try
+        {
+            await runner.Started.Task.WaitAsync(TimeSpan.FromSeconds(1));
+            var runId = Assert.IsType<CopilotDelegatedRunProgress>(
+                progress.LatestSnapshot?.DelegatedRun).RunId;
+
+            Assert.Equal(
+                CopilotSteeringAdmissionReason.NoActiveTask,
+                CopilotSubagentCoordination.RequestSteerActiveRun(
+                    "another-conversation",
+                    runId,
+                    "secret steering").Reason);
+            var admission = CopilotSubagentCoordination.RequestSteerActiveRun(
+                request.ConversationId,
+                runId,
+                "inspect the exact failure branch");
+
+            Assert.True(admission.IsAccepted);
+            Assert.Equal(["inspect the exact failure branch"], runner.Messages);
+            Assert.False(execution.IsCompleted);
+            runner.Release.TrySetResult();
+            Assert.True((await execution.WaitAsync(TimeSpan.FromSeconds(1))).Success);
+            Assert.Equal(
+                CopilotSteeringAdmissionReason.NoActiveTask,
+                CopilotSubagentCoordination.RequestSteerActiveRun(
+                    request.ConversationId,
+                    runId,
+                    "late steering").Reason);
+        }
+        finally
+        {
+            runner.Release.TrySetResult();
+            if (!execution.IsCompleted)
+                await execution.WaitAsync(TimeSpan.FromSeconds(1));
+        }
+    }
+
+    [Fact]
     public async Task RunningSubagentCanBeStoppedWithoutCancellingItsParentRequest()
     {
         using var parentCancellation = new CancellationTokenSource();
@@ -210,6 +261,8 @@ public sealed class CopilotDelegateSubagentToolTests
             StopReason = CopilotAgentStopReason.Completed,
             HasSuccessfulEvidence = true,
             UsedPreselectedEvidence = true,
+            DeliveredSteeringCount = 2,
+            UndeliveredSteeringCount = 1,
             ToolNames = ["ReadLocalFile"],
             Budget = new CopilotAgentBudgetSnapshot
             {
@@ -245,6 +298,9 @@ public sealed class CopilotDelegateSubagentToolTests
         Assert.Equal(CopilotToolFailureKind.None, result.FailureKind);
         Assert.Contains("Verified finding.", result.Content, StringComparison.Ordinal);
         Assert.Contains("preselected_evidence: true", result.Content, StringComparison.Ordinal);
+        Assert.Contains("steering_delivered: 2", result.Content, StringComparison.Ordinal);
+        Assert.Contains("steering_undelivered: 1", result.Content, StringComparison.Ordinal);
+        Assert.Contains("do not claim they were applied", result.Content, StringComparison.Ordinal);
         Assert.Equal(CopilotAgentStopReason.Completed, result.DelegatedRunUsage?.StopReason);
         Assert.Equal(3, result.DelegatedRunUsage?.ProviderCalls);
         Assert.Equal(12_000, result.DelegatedRunUsage?.PeakEstimatedInputTokens);
@@ -667,6 +723,8 @@ public sealed class CopilotDelegateSubagentToolTests
                 UsedPreselectedEvidence = result.UsedPreselectedEvidence,
                 HasSuccessfulEvidence = result.HasSuccessfulEvidence,
                 SessionResumed = result.SessionResumed,
+                DeliveredSteeringCount = result.DeliveredSteeringCount,
+                UndeliveredSteeringCount = result.UndeliveredSteeringCount,
                 ResumeFailureReason = result.ResumeFailureReason,
                 SessionCheckpoint = result.SessionCheckpoint,
             });
@@ -727,6 +785,48 @@ public sealed class CopilotDelegateSubagentToolTests
                     ToolCalls = 3,
                 },
                 "ReadLocalFile");
+            Started.TrySetResult();
+            await Release.Task.WaitAsync(cancellationToken);
+            return new CopilotSubagentResult
+            {
+                RoleId = role.Id,
+                RunId = runRequest.RunId,
+                RequestTokenBudget = runRequest.RequestTokenBudget,
+                QueueDurationMs = runRequest.QueueDurationMs,
+                Answer = "Verified finding.",
+                StopReason = CopilotAgentStopReason.Completed,
+                HasSuccessfulEvidence = true,
+                ToolNames = ["ReadLocalFile"],
+            };
+        }
+    }
+
+    private sealed class SteeringRunner : ICopilotSubagentRunner
+    {
+        public TaskCompletionSource Started { get; } = new(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public TaskCompletionSource Release { get; } = new(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public List<string> Messages { get; } = new();
+
+        public async Task<CopilotSubagentResult> RunAsync(
+            CopilotAgentRequest parentRequest,
+            CopilotSubagentRoleDescriptor role,
+            CopilotSubagentRunRequest runRequest,
+            CancellationToken cancellationToken)
+        {
+            using var steeringTarget = CopilotSubagentCoordination.TryAttachSteeringTarget(
+                parentRequest.ConversationId,
+                runRequest.RunId,
+                message =>
+                {
+                    Messages.Add(message);
+                    return new CopilotSteeringAdmissionResult(
+                        CopilotSteeringAdmissionReason.Accepted,
+                        "subagent-steering-message");
+                });
             Started.TrySetResult();
             await Release.Task.WaitAsync(cancellationToken);
             return new CopilotSubagentResult

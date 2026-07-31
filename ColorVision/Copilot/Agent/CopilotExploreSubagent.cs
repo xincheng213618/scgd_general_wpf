@@ -112,6 +112,22 @@ namespace ColorVision.Copilot
         }
     }
 
+    internal sealed class CopilotSubagentSteeringMetrics
+    {
+        internal int DeliveredCount { get; private set; }
+
+        internal int UndeliveredCount { get; private set; }
+
+        internal void Observe(CopilotAgentEvent agentEvent)
+        {
+            ArgumentNullException.ThrowIfNull(agentEvent);
+            if (agentEvent.Type == CopilotAgentEventType.SteeringDelivered)
+                DeliveredCount += agentEvent.SteeringMessages.Count;
+            else if (agentEvent.Type == CopilotAgentEventType.SteeringRecovery)
+                UndeliveredCount += agentEvent.SteeringMessages.Count;
+        }
+    }
+
     public sealed class CopilotSubagentResult
     {
         public string RoleId { get; init; } = string.Empty;
@@ -141,6 +157,10 @@ namespace ColorVision.Copilot
         public bool HasSuccessfulEvidence { get; init; }
 
         public bool SessionResumed { get; init; }
+
+        public int DeliveredSteeringCount { get; init; }
+
+        public int UndeliveredSteeringCount { get; init; }
 
         public string ResumeFailureReason { get; init; } = string.Empty;
 
@@ -224,6 +244,7 @@ namespace ColorVision.Copilot
                 RequestTokenBudget = runRequest.RequestTokenBudget,
             };
             var explorationToolActivity = new CopilotSubagentToolActivityTracker();
+            var steeringMetrics = new CopilotSubagentSteeringMetrics();
             if (usedPreselectedEvidence)
             {
                 result = CreatePreselectedEvidenceRunResult(
@@ -240,10 +261,15 @@ namespace ColorVision.Copilot
                     _chatClientFactory,
                     EmptyExternalToolProvider.Instance,
                     catalog);
+                using var steeringTarget = CopilotSubagentCoordination.TryAttachSteeringTarget(
+                    parentRequest.ConversationId,
+                    runRequest.RunId,
+                    message => runtime.EnqueueSteeringMessage(childRequest.TaskId, message));
                 result = await runtime.RunAsync(
                     childRequest,
                     agentEvent =>
                     {
+                        steeringMetrics.Observe(agentEvent);
                         if (agentEvent.Type == CopilotAgentEventType.AnswerReset)
                         {
                             answer.Clear();
@@ -298,10 +324,15 @@ namespace ColorVision.Copilot
                         _chatClientFactory,
                         EmptyExternalToolProvider.Instance,
                         new CopilotCapabilityCatalog());
+                    using var steeringTarget = CopilotSubagentCoordination.TryAttachSteeringTarget(
+                        parentRequest.ConversationId,
+                        runRequest.RunId,
+                        message => finalizationRuntime.EnqueueSteeringMessage(finalizationRequest.TaskId, message));
                     finalizationResult = await finalizationRuntime.RunAsync(
                         finalizationRequest,
                         agentEvent =>
                         {
+                            steeringMetrics.Observe(agentEvent);
                             if (agentEvent.Type == CopilotAgentEventType.AnswerReset)
                             {
                                 answer.Clear();
@@ -410,6 +441,8 @@ namespace ColorVision.Copilot
                 UsedPreselectedEvidence = usedPreselectedEvidence,
                 HasSuccessfulEvidence = !resumeFailed && hasSuccessfulEvidence,
                 SessionResumed = sessionResumed,
+                DeliveredSteeringCount = steeringMetrics.DeliveredCount,
+                UndeliveredSteeringCount = steeringMetrics.UndeliveredCount,
                 ResumeFailureReason = resumeFailed
                     ? "Agent Framework did not deserialize the requested subagent checkpoint; the fresh fallback result was rejected."
                     : string.Empty,
@@ -1521,6 +1554,10 @@ namespace ColorVision.Copilot
             builder.Append("queue_ms: ").AppendLine(Math.Max(0, runRequest.QueueDurationMs).ToString());
             builder.Append("budget_finalization: ").AppendLine(result.UsedBudgetFinalization ? "true" : "false");
             builder.Append("preselected_evidence: ").AppendLine(result.UsedPreselectedEvidence ? "true" : "false");
+            builder.Append("steering_delivered: ").AppendLine(Math.Max(0, result.DeliveredSteeringCount).ToString());
+            builder.Append("steering_undelivered: ").AppendLine(Math.Max(0, result.UndeliveredSteeringCount).ToString());
+            if (result.UndeliveredSteeringCount > 0)
+                builder.AppendLine("steering_warning: one or more user steering instructions were not delivered; do not claim they were applied");
             builder.Append("successful_tool_evidence: ").AppendLine(result.HasSuccessfulEvidence ? "true" : "false");
             builder.Append("output_truncated: ").AppendLine(result.WasTruncated ? "true" : "false");
             builder.Append("tools_used: ").AppendLine(result.ToolNames.Count == 0 ? "none" : string.Join(", ", result.ToolNames));

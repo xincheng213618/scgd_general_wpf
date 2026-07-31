@@ -19,6 +19,7 @@ public sealed class CopilotSubagentDiagnosticsTests
         Assert.Equal(CopilotLocalCommandKind.Subagents, subagents.Command.Kind);
         Assert.Contains(suggestions, item => item.Name == "/agents roles");
         Assert.Contains(suggestions, item => item.Name == "/agents runs");
+        Assert.Contains(suggestions, item => item.Name == "/agents steer");
         Assert.Contains(suggestions, item => item.Name == "/agents stop");
     }
 
@@ -44,6 +45,7 @@ public sealed class CopilotSubagentDiagnosticsTests
         Assert.Equal((CopilotSubagentDiagnosticAction)expectedAction, request.Action);
         Assert.Equal(expectedLimit, request.Limit);
         Assert.Empty(request.RunId);
+        Assert.Empty(request.Message);
     }
 
     [Theory]
@@ -62,6 +64,44 @@ public sealed class CopilotSubagentDiagnosticsTests
                 : CopilotSubagentDiagnosticAction.Invalid,
             request.Action);
         Assert.Equal(expectedValid ? arguments.Split(' ')[1] : string.Empty, request.RunId);
+        Assert.Empty(request.Message);
+    }
+
+    [Theory]
+    [InlineData("steer explore-123abc inspect the exact failure branch", "explore-123abc", "inspect the exact failure branch")]
+    [InlineData("STEER scout-abc123   compare A  and B", "scout-abc123", "compare A  and B")]
+    public void SteerCommandPreservesTheBoundedMessage(
+        string arguments,
+        string expectedRunId,
+        string expectedMessage)
+    {
+        var request = CopilotSubagentDiagnostics.ParseCommand(arguments);
+
+        Assert.Equal(CopilotSubagentDiagnosticAction.Steer, request.Action);
+        Assert.Equal(expectedRunId, request.RunId);
+        Assert.Equal(expectedMessage, request.Message);
+    }
+
+    [Theory]
+    [InlineData("steer")]
+    [InlineData("steer explore-123")]
+    [InlineData("steer ../explore-123 inspect it")]
+    public void SteerCommandRejectsMissingOrInvalidTargets(string arguments)
+    {
+        Assert.Equal(
+            CopilotSubagentDiagnosticAction.Invalid,
+            CopilotSubagentDiagnostics.ParseCommand(arguments).Action);
+    }
+
+    [Fact]
+    public void SteerCommandRejectsMessagesBeyondTheRuntimeLimit()
+    {
+        var request = CopilotSubagentDiagnostics.ParseCommand(
+            "steer explore-123 "
+                + new string('x', CopilotSteeringMessagePolicy.MaximumMessageCharacters + 1));
+
+        Assert.Equal(CopilotSubagentDiagnosticAction.Invalid, request.Action);
+        Assert.Empty(request.Message);
     }
 
     [Theory]
@@ -80,6 +120,25 @@ public sealed class CopilotSubagentDiagnosticsTests
             StringComparison.Ordinal);
     }
 
+    [Theory]
+    [InlineData(CopilotSteeringAdmissionReason.Accepted, "已将新指令排入子代理 explore-live；父 Agent 将继续运行")]
+    [InlineData(CopilotSteeringAdmissionReason.NoActiveTask, "没有可接收指令的运行中子代理 explore-live")]
+    [InlineData(CopilotSteeringAdmissionReason.RuntimeUnavailable, "仍在启动或切换阶段")]
+    [InlineData(CopilotSteeringAdmissionReason.QueueFull, "运行中指令队列已满")]
+    public void SteeringResultExplainsAdmissionWithoutEchoingTheMessage(
+        CopilotSteeringAdmissionReason reason,
+        string expected)
+    {
+        var report = CopilotSubagentDiagnostics.FormatSteeringResult(
+            "explore-live",
+            new CopilotSteeringAdmissionResult(
+                reason,
+                reason == CopilotSteeringAdmissionReason.Accepted ? "message-id" : string.Empty));
+
+        Assert.Contains(expected, report, StringComparison.Ordinal);
+        Assert.DoesNotContain("secret steering", report, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void OverviewDescribesTheActualRequestScopedReadOnlyRoles()
     {
@@ -96,6 +155,7 @@ public sealed class CopilotSubagentDiagnosticsTests
         Assert.Contains("- explore · Explore · 工作区只读 · 子模式 Code", report);
         Assert.Contains("来源：ColorVision [builtin] v10 · tool DelegateExplore", report);
         Assert.Contains("SearchFiles, GrepText, ReadLocalFile, ListDirectory", report);
+        Assert.Contains("运行期间可按 run_id 排入新指令或单独停止，父 Agent 继续运行", report);
         Assert.Contains("- scout · Scout · 公共网页只读 · 子模式 Web", report);
         Assert.Contains("来源：ColorVision [builtin] v3 · tool DelegateScout", report);
         Assert.Contains("WebSearch, FetchUrl", report);

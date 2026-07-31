@@ -20,7 +20,7 @@ namespace ColorVision.Copilot
     internal static class CopilotSubagentCoordination
     {
         private static readonly ConditionalWeakTable<CopilotAgentRequest, CopilotSubagentCoordinator> Coordinators = new();
-        private static readonly ConcurrentDictionary<string, CopilotSubagentRunCancellation> ActiveRuns =
+        private static readonly ConcurrentDictionary<string, CopilotSubagentActiveRun> ActiveRuns =
             new(StringComparer.Ordinal);
 
         public static CopilotSubagentCoordinator GetCoordinator(CopilotAgentRequest parentRequest)
@@ -47,14 +47,59 @@ namespace ColorVision.Copilot
             return activeRun.RequestCancel();
         }
 
-        internal static CopilotSubagentRunCancellation RegisterActiveRun(
+        public static CopilotSteeringAdmissionResult RequestSteerActiveRun(
+            string? conversationId,
+            string? runId,
+            string? message)
+        {
+            var normalizedRunId = (runId ?? string.Empty).Trim();
+            var normalizedMessage = (message ?? string.Empty).Trim();
+            if (normalizedRunId.Length is 0 or > CopilotSteeringMessagePolicy.MaximumIdentifierCharacters
+                || normalizedMessage.Length is 0 or > CopilotSteeringMessagePolicy.MaximumMessageCharacters)
+            {
+                return new CopilotSteeringAdmissionResult(
+                    CopilotSteeringAdmissionReason.InvalidInput);
+            }
+            if (!ActiveRuns.TryGetValue(normalizedRunId, out var activeRun)
+                || !string.Equals(
+                    activeRun.ConversationId,
+                    (conversationId ?? string.Empty).Trim(),
+                    StringComparison.Ordinal))
+            {
+                return new CopilotSteeringAdmissionResult(
+                    CopilotSteeringAdmissionReason.NoActiveTask);
+            }
+
+            return activeRun.RequestSteer(normalizedMessage);
+        }
+
+        internal static IDisposable? TryAttachSteeringTarget(
+            string? conversationId,
+            string? runId,
+            Func<string, CopilotSteeringAdmissionResult> steeringTarget)
+        {
+            ArgumentNullException.ThrowIfNull(steeringTarget);
+            var normalizedRunId = (runId ?? string.Empty).Trim();
+            if (!ActiveRuns.TryGetValue(normalizedRunId, out var activeRun)
+                || !string.Equals(
+                    activeRun.ConversationId,
+                    (conversationId ?? string.Empty).Trim(),
+                    StringComparison.Ordinal))
+            {
+                return null;
+            }
+
+            return activeRun.TryAttachSteeringTarget(steeringTarget);
+        }
+
+        internal static CopilotSubagentActiveRun RegisterActiveRun(
             string conversationId,
             string roleId)
         {
             while (true)
             {
                 var runId = roleId + "-" + Guid.NewGuid().ToString("N")[..12];
-                var activeRun = new CopilotSubagentRunCancellation(
+                var activeRun = new CopilotSubagentActiveRun(
                     (conversationId ?? string.Empty).Trim(),
                     runId);
                 if (ActiveRuns.TryAdd(runId, activeRun))
@@ -64,7 +109,7 @@ namespace ColorVision.Copilot
             }
         }
 
-        internal static void UnregisterActiveRun(CopilotSubagentRunCancellation activeRun)
+        internal static void UnregisterActiveRun(CopilotSubagentActiveRun activeRun)
         {
             if (ActiveRuns.TryGetValue(activeRun.RunId, out var registered)
                 && ReferenceEquals(registered, activeRun))
@@ -74,14 +119,15 @@ namespace ColorVision.Copilot
         }
     }
 
-    internal sealed class CopilotSubagentRunCancellation : IDisposable
+    internal sealed class CopilotSubagentActiveRun : IDisposable
     {
         private readonly CopilotNonBlockingCancellationSource _cancellation = new();
         private readonly object _syncRoot = new();
+        private Func<string, CopilotSteeringAdmissionResult>? _steeringTarget;
         private int _cancelRequested;
         private int _disposed;
 
-        public CopilotSubagentRunCancellation(string conversationId, string runId)
+        public CopilotSubagentActiveRun(string conversationId, string runId)
         {
             ConversationId = conversationId;
             RunId = runId;
@@ -110,6 +156,52 @@ namespace ColorVision.Copilot
             }
         }
 
+        public CopilotSteeringAdmissionResult RequestSteer(string message)
+        {
+            Func<string, CopilotSteeringAdmissionResult>? steeringTarget;
+            lock (_syncRoot)
+            {
+                if (_disposed != 0 || _cancelRequested != 0)
+                {
+                    return new CopilotSteeringAdmissionResult(
+                        CopilotSteeringAdmissionReason.NoActiveTask);
+                }
+                steeringTarget = _steeringTarget;
+            }
+            if (steeringTarget == null)
+            {
+                return new CopilotSteeringAdmissionResult(
+                    CopilotSteeringAdmissionReason.RuntimeUnavailable);
+            }
+
+            try
+            {
+                return steeringTarget(message);
+            }
+            catch (ObjectDisposedException)
+            {
+                return new CopilotSteeringAdmissionResult(
+                    CopilotSteeringAdmissionReason.RuntimeUnavailable);
+            }
+            catch (InvalidOperationException)
+            {
+                return new CopilotSteeringAdmissionResult(
+                    CopilotSteeringAdmissionReason.RuntimeUnavailable);
+            }
+        }
+
+        internal IDisposable? TryAttachSteeringTarget(
+            Func<string, CopilotSteeringAdmissionResult> steeringTarget)
+        {
+            lock (_syncRoot)
+            {
+                if (_disposed != 0 || _cancelRequested != 0)
+                    return null;
+                _steeringTarget = steeringTarget;
+                return new SteeringTargetRegistration(this, steeringTarget);
+            }
+        }
+
         public void Dispose()
         {
             lock (_syncRoot)
@@ -117,6 +209,7 @@ namespace ColorVision.Copilot
                 if (_disposed != 0)
                     return;
                 _disposed = 1;
+                _steeringTarget = null;
             }
 
             CopilotSubagentCoordination.UnregisterActiveRun(this);
@@ -130,9 +223,32 @@ namespace ColorVision.Copilot
                 if (_disposed != 0)
                     return;
                 _disposed = 1;
+                _steeringTarget = null;
             }
 
             _cancellation.Dispose();
+        }
+
+        private void DetachSteeringTarget(
+            Func<string, CopilotSteeringAdmissionResult> steeringTarget)
+        {
+            lock (_syncRoot)
+            {
+                if (ReferenceEquals(_steeringTarget, steeringTarget))
+                    _steeringTarget = null;
+            }
+        }
+
+        private sealed class SteeringTargetRegistration(
+            CopilotSubagentActiveRun owner,
+            Func<string, CopilotSteeringAdmissionResult> steeringTarget) : IDisposable
+        {
+            private CopilotSubagentActiveRun? _owner = owner;
+
+            public void Dispose()
+            {
+                Interlocked.Exchange(ref _owner, null)?.DetachSteeringTarget(steeringTarget);
+            }
         }
     }
 
@@ -296,12 +412,12 @@ namespace ColorVision.Copilot
         internal sealed class CopilotSubagentLease : IDisposable
         {
             private CopilotSubagentCoordinator? _owner;
-            private readonly CopilotSubagentRunCancellation _activeRun;
+            private readonly CopilotSubagentActiveRun _activeRun;
             private long? _consumedTokens;
 
             public CopilotSubagentLease(
                 CopilotSubagentCoordinator owner,
-                CopilotSubagentRunCancellation activeRun,
+                CopilotSubagentActiveRun activeRun,
                 int requestTokenBudget,
                 long queueDurationMs)
             {

@@ -2440,6 +2440,17 @@ namespace ColorVision.Copilot
             string arguments)
         {
             var request = CopilotSubagentDiagnostics.ParseCommand(arguments);
+            if (request.Action == CopilotSubagentDiagnosticAction.Steer)
+            {
+                var steeringResult = CopilotSubagentCoordination.RequestSteerActiveRun(
+                    SelectedConversation?.Id,
+                    request.RunId,
+                    request.Message);
+                ShowLocalCommandResult(
+                    command,
+                    CopilotSubagentDiagnostics.FormatSteeringResult(request.RunId, steeringResult));
+                return;
+            }
             if (request.Action != CopilotSubagentDiagnosticAction.Stop)
             {
                 ShowLocalCommandResult(

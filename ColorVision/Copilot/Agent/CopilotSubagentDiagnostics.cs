@@ -13,12 +13,14 @@ namespace ColorVision.Copilot
         Runs,
         Invalid,
         Stop,
+        Steer,
     }
 
     internal readonly record struct CopilotSubagentDiagnosticRequest(
         CopilotSubagentDiagnosticAction Action,
         int Limit,
-        string RunId);
+        string RunId,
+        string Message);
 
     internal sealed record CopilotSubagentRunDiagnostic(
         string RunId,
@@ -41,8 +43,8 @@ namespace ColorVision.Copilot
     {
         internal const int DefaultDisplayedRuns = 8;
         internal const int MaximumDisplayedRuns = 20;
-        internal const string Usage = "用法：/agents [roles|runs [N]|stop <run_id>]"
-            + "\nN 可取 1–20；stop 只停止当前会话中仍在运行的指定子代理，父 Agent 继续运行；/subagents 为同义命令。";
+        internal const string Usage = "用法：/agents [roles|runs [N]|steer <run_id> <message>|stop <run_id>]"
+            + "\nN 可取 1–20；steer 向当前会话中仍在运行的指定子代理排入新指令；stop 只停止该子代理；父 Agent 均继续运行；/subagents 为同义命令。";
 
         public static CopilotSubagentDiagnosticRequest ParseCommand(string? arguments)
         {
@@ -54,6 +56,7 @@ namespace ColorVision.Copilot
                 return new CopilotSubagentDiagnosticRequest(
                     CopilotSubagentDiagnosticAction.Overview,
                     DefaultDisplayedRuns,
+                    string.Empty,
                     string.Empty);
             }
             if (tokens.Length == 1
@@ -62,6 +65,7 @@ namespace ColorVision.Copilot
                 return new CopilotSubagentDiagnosticRequest(
                     CopilotSubagentDiagnosticAction.Roles,
                     0,
+                    string.Empty,
                     string.Empty);
             }
             if (string.Equals(tokens[0], "runs", StringComparison.OrdinalIgnoreCase)
@@ -79,6 +83,7 @@ namespace ColorVision.Copilot
                     tokens.Length == 1
                         ? DefaultDisplayedRuns
                         : int.Parse(tokens[1], CultureInfo.InvariantCulture),
+                    string.Empty,
                     string.Empty);
             }
             if (tokens.Length == 2
@@ -88,13 +93,52 @@ namespace ColorVision.Copilot
                 return new CopilotSubagentDiagnosticRequest(
                     CopilotSubagentDiagnosticAction.Stop,
                     0,
-                    tokens[1]);
+                    tokens[1],
+                    string.Empty);
+            }
+            if (tokens.Length >= 3
+                && string.Equals(tokens[0], "steer", StringComparison.OrdinalIgnoreCase)
+                && IsValidRunId(tokens[1]))
+            {
+                var commandText = (arguments ?? string.Empty).Trim();
+                var afterCommand = commandText[tokens[0].Length..].TrimStart();
+                var message = afterCommand[tokens[1].Length..].Trim();
+                if (message.Length is > 0 and <= CopilotSteeringMessagePolicy.MaximumMessageCharacters)
+                {
+                    return new CopilotSubagentDiagnosticRequest(
+                        CopilotSubagentDiagnosticAction.Steer,
+                        0,
+                        tokens[1],
+                        message);
+                }
             }
 
             return new CopilotSubagentDiagnosticRequest(
                 CopilotSubagentDiagnosticAction.Invalid,
                 0,
+                string.Empty,
                 string.Empty);
+        }
+
+        public static string FormatSteeringResult(
+            string runId,
+            CopilotSteeringAdmissionResult result)
+        {
+            return result.Reason switch
+            {
+                CopilotSteeringAdmissionReason.Accepted when result.IsAccepted =>
+                    $"已将新指令排入子代理 {runId}；父 Agent 将继续运行。",
+                CopilotSteeringAdmissionReason.InvalidInput =>
+                    "子代理运行中指令无效或过长；请提供有效 run_id 与不超过 16,000 字符的非空指令。",
+                CopilotSteeringAdmissionReason.PendingUserQuestion =>
+                    $"子代理 {runId} 正在等待用户回答，暂不能接收普通运行中指令。",
+                CopilotSteeringAdmissionReason.QueueFull =>
+                    $"子代理 {runId} 的运行中指令队列已满；请等待已有指令送达后重试。",
+                CopilotSteeringAdmissionReason.RuntimeUnavailable =>
+                    $"子代理 {runId} 仍在启动或切换阶段，运行时暂未准备好接收指令。",
+                _ =>
+                    $"当前会话中没有可接收指令的运行中子代理 {runId}；它可能已结束、正在停止或 run_id 已失效。",
+            };
         }
 
         public static string FormatCancelResult(
@@ -164,7 +208,8 @@ namespace ColorVision.Copilot
         {
             var request = ParseCommand(arguments);
             if (request.Action is CopilotSubagentDiagnosticAction.Invalid
-                or CopilotSubagentDiagnosticAction.Stop)
+                or CopilotSubagentDiagnosticAction.Stop
+                or CopilotSubagentDiagnosticAction.Steer)
                 return Usage;
 
             catalog ??= CopilotSubagentRoleCatalog.Default;
@@ -200,7 +245,7 @@ namespace ColorVision.Copilot
             }
 
             builder.AppendLine()
-                .Append("边界：子代理由父 Agent 按请求创建并回传结果；同一父请求内，可用完成结果给出的 run_id 续跑同角色且具有有效 checkpoint 的子代理。")
+                .Append("边界：子代理由父 Agent 按请求创建并回传结果；运行期间可按 run_id 排入新指令或单独停止，父 Agent 继续运行；同一父请求内，可用完成结果给出的 run_id 续跑同角色且具有有效 checkpoint 的子代理。")
                 .Append("它仍不是可切换、跨请求或应用重启后可恢复的独立会话。")
                 .Append("列表仅来自当前会话保存的限长运行元数据，不显示任务提示、回答正文、隐藏推理或凭据。");
             return builder.ToString();

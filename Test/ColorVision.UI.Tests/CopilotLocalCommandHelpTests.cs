@@ -104,12 +104,13 @@ public sealed class CopilotLocalCommandHelpTests
     }
 
     [Fact]
-    public void AgentsHelpExposesTargetedSubagentStopWithoutStoppingTheParent()
+    public void AgentsHelpExposesTargetedSubagentSteeringAndStopWithoutStoppingTheParent()
     {
         var report = CopilotLocalCommandHelp.Format("agents");
 
-        Assert.StartsWith("/agents [roles|runs [N]|stop <run_id>]", report);
-        Assert.Contains("按 run_id 停止子代理", report);
+        Assert.StartsWith("/agents [roles|runs [N]|steer <run_id> <message>|stop <run_id>]", report);
+        Assert.Contains("按 run_id 引导", report);
+        Assert.Contains("引导、停止子代理", report);
         Assert.Contains("父 Agent 继续", report);
         Assert.Contains("Agent 运行中：可立即执行", report);
     }
