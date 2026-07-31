@@ -5,6 +5,18 @@ namespace ColorVision.UI.Tests;
 
 public sealed class CopilotContextDiagnosticsTests
 {
+    [Fact]
+    public void AutoCompactionPolicyIsInspectable()
+    {
+        var report = CopilotContextDiagnostics.Format(new CopilotContextDiagnosticSnapshot
+        {
+            AutoCompactConversationHistory = true,
+            AutoCompactThresholdPercent = 85,
+        });
+
+        Assert.Contains("自动压缩：已开启 · 活动历史达到 85% 时在发送前压缩；失败时保留原请求", report);
+    }
+
     [Theory]
     [InlineData(CopilotResponsePersonality.None, "回答风格：无（none）")]
     [InlineData(CopilotResponsePersonality.Friendly, "回答风格：友好（friendly）")]

@@ -27,6 +27,7 @@ namespace ColorVision.Copilot
     {
         private const int CompactHistoryLimit = 4;
         private const int CompactSummaryOutputTokens = 4096;
+        private const string AutomaticCompactionFocus = "保留当前任务目标、用户约束、已作决定、代码改动、验证结果、未完成事项以及安全恢复信息。";
         private const int MaximumGeneratedConversationTitleCharacters = 48;
         private const int MaximumComposerAttachments = 32;
         private const int MaximumConversationSearchCharacters = 256;
@@ -2701,6 +2702,57 @@ namespace ColorVision.Copilot
             }
         }
 
+        private async Task<CopilotAutomaticCompactionOutcome> TryAutoCompactConversationAsync(
+            CopilotConversationRecord conversation,
+            CopilotProfileConfig requestProfile,
+            string pendingPrompt)
+        {
+            if (IsBusy || _taskHost.IsActive || _isCompactingConversation || IsEditingMessage)
+                return CopilotAutomaticCompactionOutcome.NotNeeded;
+            if (CopilotAgentTaskContinuityPolicy.HasAvailableStructuredRecovery(
+                conversation,
+                requestProfile,
+                CopilotCapabilityCatalog.Shared.GetSnapshot()))
+            {
+                return CopilotAutomaticCompactionOutcome.NotNeeded;
+            }
+
+            var decision = CopilotConversationAutoCompactionPolicy.Evaluate(
+                conversation,
+                ResolveConversationHistoryLimits(requestProfile),
+                pendingPrompt,
+                _config.AgentDefaults.AutoCompactConversationHistory,
+                _config.AgentDefaults.AutoCompactThresholdPercent);
+            if (!decision.ShouldCompact)
+                return CopilotAutomaticCompactionOutcome.NotNeeded;
+
+            var command = CopilotLocalCommandCatalog.FindExact("/compact");
+            if (command == null)
+                return CopilotAutomaticCompactionOutcome.Failed;
+
+            var previousCompaction = conversation.Compaction;
+            await CompactConversationAsync(command, AutomaticCompactionFocus);
+            var applied = !ReferenceEquals(previousCompaction, conversation.Compaction)
+                && conversation.Compaction?.IsStructurallyValid() == true;
+            if (!applied)
+            {
+                LocalCommandResultTitle = "自动压缩未完成";
+                LocalCommandResultText = (LocalCommandResultText ?? string.Empty).Trim()
+                    + Environment.NewLine
+                    + "原请求尚未发送，输入和附件均已保留；请重试 /compact，或在设置中调整自动压缩策略。";
+                return CopilotAutomaticCompactionOutcome.Failed;
+            }
+
+            var triggerText = decision.Trigger == CopilotConversationAutoCompactionTrigger.MessageCount
+                ? $"消息数达到 {decision.UsagePercent:N0}%"
+                : $"估算上下文达到 {decision.UsagePercent:N0}%";
+            LocalCommandResultTitle = "/compact · 自动压缩";
+            LocalCommandResultText = $"{triggerText}，已在发送前自动压缩早期对话。"
+                + Environment.NewLine
+                + LocalCommandResultText;
+            return CopilotAutomaticCompactionOutcome.Applied;
+        }
+
         private void CompactConversationFromUi()
         {
             var command = CopilotLocalCommandCatalog.FindExact("/compact");
@@ -2882,6 +2934,8 @@ namespace ColorVision.Copilot
                 HistoryMaximumEstimatedTokens = CopilotTokenEstimator.WeightToTokenEstimate(historyLimits.MaximumCharacters),
                 HistoryMaximumContentEstimatedTokens = CopilotTokenEstimator.WeightToTokenEstimate(historyLimits.MaximumContentCharacters),
                 HistoryContextWindowTokens = agentDefaults.ContextWindowTokens,
+                AutoCompactConversationHistory = agentDefaults.AutoCompactConversationHistory,
+                AutoCompactThresholdPercent = agentDefaults.AutoCompactThresholdPercent,
                 CompactedSourceMessages = compaction?.SourceMessageCount ?? 0,
                 CompactionSummaryCharacters = compaction?.Summary.Length ?? 0,
                 ConversationGoalCharacters = conversation?.Goal?.Objective.Length ?? 0,
@@ -3085,6 +3139,13 @@ namespace ColorVision.Copilot
                 return;
 
             var conversation = EnsureConversation();
+            var automaticCompaction = await TryAutoCompactConversationAsync(
+                conversation,
+                requestProfile,
+                modelPrompt);
+            if (automaticCompaction == CopilotAutomaticCompactionOutcome.Failed)
+                return;
+
             conversation.ProfileId = requestProfile.Id;
             conversation.ProfileDisplayName = requestProfile.DisplayLabel;
             var replacedUserIndex = -1;
@@ -3166,7 +3227,8 @@ namespace ColorVision.Copilot
                 return;
             }
 
-            DismissLocalCommandResult();
+            if (automaticCompaction != CopilotAutomaticCompactionOutcome.Applied)
+                DismissLocalCommandResult();
             if (!isDirectSubmission && isReplacingTurn)
             {
                 _composerDraftBeforeMessageEdit = null;
@@ -9098,6 +9160,13 @@ namespace ColorVision.Copilot
 
         private static Task<CopilotFetchedWebPageContent> LoadWebPageContentAsync(string url, CancellationToken cancellationToken) =>
             CopilotWebPageToolSupport.LoadWebPageContentAsync(url, cancellationToken);
+
+        private enum CopilotAutomaticCompactionOutcome
+        {
+            NotNeeded,
+            Applied,
+            Failed,
+        }
 
         private sealed record CopilotComposerDraftSnapshot(
             string ConversationId,

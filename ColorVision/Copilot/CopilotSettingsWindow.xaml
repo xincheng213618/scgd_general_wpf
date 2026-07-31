@@ -403,6 +403,7 @@
                                     <RowDefinition Height="Auto" />
                                     <RowDefinition Height="Auto" />
                                     <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
                                 </Grid.RowDefinitions>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="180" />
@@ -418,20 +419,34 @@
                                 <TextBox Grid.Row="1" Grid.Column="1" Margin="0,0,12,10" Text="{Binding AgentRequestTokenBudget, UpdateSourceTrigger=PropertyChanged}" ToolTip="Cumulative provider-token budget across one Agent task." />
                                 <TextBlock Grid.Row="1" Grid.Column="2" Style="{StaticResource SettingsHintTextStyle}" Text="4,096–1,048,576; default 1,048,576" />
 
-                                <TextBlock Grid.Row="2" Style="{StaticResource SettingsFieldLabelStyle}" Text="Tool calls" />
-                                <TextBox Grid.Row="2" Grid.Column="1" Margin="0,0,12,10" Text="{Binding MaxAgentToolCalls, UpdateSourceTrigger=PropertyChanged}" ToolTip="Maximum business tool calls during one Agent task." />
-                                <TextBlock Grid.Row="2" Grid.Column="2" Style="{StaticResource SettingsHintTextStyle}" Text="1–512; default 128" />
+                                <TextBlock Grid.Row="2" Style="{StaticResource SettingsFieldLabelStyle}" Text="Auto compact" />
+                                <StackPanel Grid.Row="2" Grid.Column="1" Margin="0,0,12,10" Orientation="Horizontal">
+                                    <CheckBox VerticalAlignment="Center"
+                                              IsChecked="{Binding AutoCompactConversationHistory}"
+                                              ToolTip="Summarize older turns before the active history reaches its configured limit." />
+                                    <TextBox Width="52"
+                                             Margin="12,0,0,0"
+                                             IsEnabled="{Binding AutoCompactConversationHistory}"
+                                             Text="{Binding AutoCompactThresholdPercent, UpdateSourceTrigger=PropertyChanged}"
+                                             ToolTip="Active-history percentage that triggers automatic compaction." />
+                                    <TextBlock Margin="4,0,0,0" VerticalAlignment="Center" Text="%" />
+                                </StackPanel>
+                                <TextBlock Grid.Row="2" Grid.Column="2" Style="{StaticResource SettingsHintTextStyle}" Text="50–95%; default 85%. The pending request is sent only after compaction succeeds." TextWrapping="Wrap" />
 
-                                <TextBlock Grid.Row="3" Style="{StaticResource SettingsFieldLabelStyle}" Text="Agent passes" />
-                                <TextBox Grid.Row="3" Grid.Column="1" Margin="0,0,12,10" Text="{Binding MaxAgentPasses, UpdateSourceTrigger=PropertyChanged}" ToolTip="Maximum automatic continuation passes for an incomplete task." />
-                                <TextBlock Grid.Row="3" Grid.Column="2" Style="{StaticResource SettingsHintTextStyle}" Text="1–128; default 32" />
+                                <TextBlock Grid.Row="3" Style="{StaticResource SettingsFieldLabelStyle}" Text="Tool calls" />
+                                <TextBox Grid.Row="3" Grid.Column="1" Margin="0,0,12,10" Text="{Binding MaxAgentToolCalls, UpdateSourceTrigger=PropertyChanged}" ToolTip="Maximum business tool calls during one Agent task." />
+                                <TextBlock Grid.Row="3" Grid.Column="2" Style="{StaticResource SettingsHintTextStyle}" Text="1–512; default 128" />
 
-                                <TextBlock Grid.Row="4" Style="{StaticResource SettingsFieldLabelStyle}" Text="Timeout (seconds)" />
-                                <TextBox Grid.Row="4" Grid.Column="1" Margin="0,0,12,10" Text="{Binding AgentTimeoutSeconds, UpdateSourceTrigger=PropertyChanged}" ToolTip="Total wall-clock budget for one Agent task." />
-                                <TextBlock Grid.Row="4" Grid.Column="2" Style="{StaticResource SettingsHintTextStyle}" Text="1–86,400; default 7,200" />
+                                <TextBlock Grid.Row="4" Style="{StaticResource SettingsFieldLabelStyle}" Text="Agent passes" />
+                                <TextBox Grid.Row="4" Grid.Column="1" Margin="0,0,12,10" Text="{Binding MaxAgentPasses, UpdateSourceTrigger=PropertyChanged}" ToolTip="Maximum automatic continuation passes for an incomplete task." />
+                                <TextBlock Grid.Row="4" Grid.Column="2" Style="{StaticResource SettingsHintTextStyle}" Text="1–128; default 32" />
 
-                                <TextBlock Grid.Row="5" Style="{StaticResource SettingsFieldLabelStyle}" Text="Default shell" />
-                                <ComboBox Grid.Row="5"
+                                <TextBlock Grid.Row="5" Style="{StaticResource SettingsFieldLabelStyle}" Text="Timeout (seconds)" />
+                                <TextBox Grid.Row="5" Grid.Column="1" Margin="0,0,12,10" Text="{Binding AgentTimeoutSeconds, UpdateSourceTrigger=PropertyChanged}" ToolTip="Total wall-clock budget for one Agent task." />
+                                <TextBlock Grid.Row="5" Grid.Column="2" Style="{StaticResource SettingsHintTextStyle}" Text="1–86,400; default 7,200" />
+
+                                <TextBlock Grid.Row="6" Style="{StaticResource SettingsFieldLabelStyle}" Text="Default shell" />
+                                <ComboBox Grid.Row="6"
                                           Grid.Column="1"
                                           Grid.ColumnSpan="2"
                                           ItemsSource="{Binding ShellOptions}"

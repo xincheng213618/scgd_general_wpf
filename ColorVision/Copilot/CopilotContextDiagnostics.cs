@@ -39,6 +39,10 @@ namespace ColorVision.Copilot
 
         public int HistoryContextWindowTokens { get; init; }
 
+        public bool AutoCompactConversationHistory { get; init; }
+
+        public int AutoCompactThresholdPercent { get; init; }
+
         public int CompactedSourceMessages { get; init; }
 
         public int CompactionSummaryCharacters { get; init; }
@@ -150,6 +154,17 @@ namespace ColorVision.Copilot
                 .Append("%，窗口 ")
                 .Append(FormatCount(snapshot.HistoryContextWindowTokens))
                 .AppendLine(" Token）");
+            builder.Append("自动压缩：");
+            if (snapshot.AutoCompactConversationHistory)
+            {
+                builder.Append("已开启 · 活动历史达到 ")
+                    .Append(snapshot.AutoCompactThresholdPercent.ToString(CultureInfo.InvariantCulture))
+                    .AppendLine("% 时在发送前压缩；失败时保留原请求");
+            }
+            else
+            {
+                builder.AppendLine("已关闭");
+            }
             if (snapshot.CompactionSummaryCharacters > 0)
             {
                 builder.Append("主动压缩：")
