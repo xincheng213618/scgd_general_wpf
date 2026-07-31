@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -20,6 +21,12 @@ namespace ColorVision.Copilot
         Failed,
         Stopped,
         Expired,
+    }
+
+    internal enum CopilotBackgroundShellOutputStream
+    {
+        StandardOutput,
+        StandardError,
     }
 
     internal sealed record CopilotBackgroundShellCommandSnapshot(
@@ -50,6 +57,18 @@ namespace ColorVision.Copilot
         public bool StandardOutputTruncated { get; init; }
 
         public bool StandardErrorTruncated { get; init; }
+
+        public bool StandardOutputArchiveAvailable { get; init; }
+
+        public bool StandardErrorArchiveAvailable { get; init; }
+
+        public int ArchivedStandardOutputCharacters { get; init; }
+
+        public int ArchivedStandardErrorCharacters { get; init; }
+
+        public bool StandardOutputArchiveTruncated { get; init; }
+
+        public bool StandardErrorArchiveTruncated { get; init; }
     }
 
     internal sealed record CopilotBackgroundShellProcessCompletion(
@@ -68,6 +87,18 @@ namespace ColorVision.Copilot
         public bool StandardOutputTruncated { get; init; }
 
         public bool StandardErrorTruncated { get; init; }
+
+        public bool StandardOutputArchiveAvailable { get; init; }
+
+        public bool StandardErrorArchiveAvailable { get; init; }
+
+        public int ArchivedStandardOutputCharacters { get; init; }
+
+        public int ArchivedStandardErrorCharacters { get; init; }
+
+        public bool StandardOutputArchiveTruncated { get; init; }
+
+        public bool StandardErrorArchiveTruncated { get; init; }
     }
 
     internal readonly record struct CopilotBackgroundShellProcessOutput(
@@ -76,7 +107,24 @@ namespace ColorVision.Copilot
         long ObservedStandardOutputCharacters,
         long ObservedStandardErrorCharacters,
         bool StandardOutputTruncated,
-        bool StandardErrorTruncated);
+        bool StandardErrorTruncated,
+        bool StandardOutputArchiveAvailable,
+        bool StandardErrorArchiveAvailable,
+        int ArchivedStandardOutputCharacters,
+        int ArchivedStandardErrorCharacters,
+        bool StandardOutputArchiveTruncated,
+        bool StandardErrorArchiveTruncated);
+
+    internal sealed record CopilotBackgroundShellOutputArchivePage(
+        bool Available,
+        string Content,
+        int OffsetCharacters,
+        int ReturnedCharacters,
+        int NextOffsetCharacters,
+        int ArchivedCharacters,
+        bool EndOfAvailableOutput,
+        bool ArchiveTruncated,
+        string ErrorMessage);
 
     internal interface ICopilotBackgroundShellProcess : IDisposable
     {
@@ -87,6 +135,12 @@ namespace ColorVision.Copilot
         Task<CopilotBackgroundShellProcessCompletion> Completion { get; }
 
         CopilotBackgroundShellProcessOutput GetOutputSnapshot();
+
+        CopilotBackgroundShellOutputArchivePage ReadOutputArchive(
+            CopilotBackgroundShellOutputStream stream,
+            int offsetCharacters,
+            int maximumCharacters,
+            CancellationToken cancellationToken);
 
         Task<CopilotBackgroundShellProcessCompletion> StopAsync(CancellationToken cancellationToken);
     }
@@ -132,6 +186,18 @@ namespace ColorVision.Copilot
             && FailureKind == CopilotToolFailureKind.None;
     }
 
+    internal sealed record CopilotBackgroundShellCommandOutputReadResult(
+        CopilotBackgroundShellCommandSnapshot? Snapshot,
+        CopilotBackgroundShellOutputStream Stream,
+        CopilotBackgroundShellOutputArchivePage? Page,
+        CopilotToolFailureKind FailureKind,
+        string ErrorMessage)
+    {
+        public bool Success => Snapshot != null
+            && Page?.Available == true
+            && FailureKind == CopilotToolFailureKind.None;
+    }
+
     internal sealed class CopilotBackgroundShellCommandCompletedEventArgs : EventArgs
     {
         public CopilotBackgroundShellCommandCompletedEventArgs(
@@ -157,6 +223,9 @@ namespace ColorVision.Copilot
         public const int MinimumObservationTimeoutSeconds = 1;
         public const int MaximumObservationTimeoutSeconds = 30;
         public const int MaximumOutputPatternCharacters = 256;
+        public const int MaximumArchivedOutputCharacters = 8 * 1024 * 1024;
+        public const int DefaultArchiveReadCharacters = 8_192;
+        public const int MaximumArchiveReadCharacters = 16_384;
         private static readonly TimeSpan ObservationPollInterval =
             TimeSpan.FromMilliseconds(100);
 
@@ -356,6 +425,86 @@ namespace ColorVision.Copilot
                     .Select(entry => entry.GetSnapshot())
                     .ToArray();
             }
+        }
+
+        public CopilotBackgroundShellCommandOutputReadResult ReadOutputArchive(
+            string? conversationId,
+            string? backgroundId,
+            CopilotBackgroundShellOutputStream stream,
+            int offsetCharacters,
+            int maximumCharacters,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var normalizedConversationId = NormalizeScopeId(conversationId);
+            var normalizedBackgroundId = (backgroundId ?? string.Empty).Trim();
+            if (normalizedConversationId.Length == 0
+                || normalizedBackgroundId.Length == 0)
+            {
+                return OutputReadFailure(
+                    stream,
+                    CopilotToolFailureKind.Validation,
+                    "conversationId and backgroundId are required.");
+            }
+            if (offsetCharacters < 0)
+            {
+                return OutputReadFailure(
+                    stream,
+                    CopilotToolFailureKind.Validation,
+                    "offsetCharacters cannot be negative.");
+            }
+            if (maximumCharacters is < 1 or > MaximumArchiveReadCharacters)
+            {
+                return OutputReadFailure(
+                    stream,
+                    CopilotToolFailureKind.Validation,
+                    $"maximumCharacters must be an integer from 1 through {MaximumArchiveReadCharacters}.");
+            }
+
+            Entry? entry;
+            CopilotBackgroundShellCommandSnapshot? snapshot;
+            lock (_syncRoot)
+            {
+                RefreshCompletedEntriesUnderLock();
+                entry = _entries.SingleOrDefault(candidate =>
+                    string.Equals(
+                        candidate.ConversationId,
+                        normalizedConversationId,
+                        StringComparison.Ordinal)
+                    && string.Equals(
+                        candidate.Id,
+                        normalizedBackgroundId,
+                        StringComparison.Ordinal));
+                snapshot = entry?.GetSnapshot();
+            }
+            if (entry == null || snapshot == null)
+            {
+                return OutputReadFailure(
+                    stream,
+                    CopilotToolFailureKind.NotFound,
+                    "The background command was not found in the current conversation.");
+            }
+
+            var page = entry.ReadOutputArchive(
+                stream,
+                offsetCharacters,
+                maximumCharacters,
+                cancellationToken);
+            if (!page.Available)
+            {
+                return new CopilotBackgroundShellCommandOutputReadResult(
+                    snapshot,
+                    stream,
+                    page,
+                    CopilotToolFailureKind.Transient,
+                    page.ErrorMessage);
+            }
+            return new CopilotBackgroundShellCommandOutputReadResult(
+                snapshot,
+                stream,
+                page,
+                CopilotToolFailureKind.None,
+                string.Empty);
         }
 
         public async Task<CopilotBackgroundShellCommandWaitResult> WaitForObservationAsync(
@@ -759,6 +908,17 @@ namespace ColorVision.Copilot
                 kind,
                 message);
 
+        private static CopilotBackgroundShellCommandOutputReadResult OutputReadFailure(
+            CopilotBackgroundShellOutputStream stream,
+            CopilotToolFailureKind kind,
+            string message) =>
+            new(
+                null,
+                stream,
+                null,
+                kind,
+                message);
+
         private static void TryPublishObservation(
             Action<CopilotBackgroundShellCommandSnapshot>? onSnapshot,
             CopilotBackgroundShellCommandSnapshot snapshot)
@@ -845,7 +1005,13 @@ namespace ColorVision.Copilot
                         completion.ObservedStandardOutputCharacters,
                         completion.ObservedStandardErrorCharacters,
                         completion.StandardOutputTruncated,
-                        completion.StandardErrorTruncated);
+                        completion.StandardErrorTruncated,
+                        completion.StandardOutputArchiveAvailable,
+                        completion.StandardErrorArchiveAvailable,
+                        completion.ArchivedStandardOutputCharacters,
+                        completion.ArchivedStandardErrorCharacters,
+                        completion.StandardOutputArchiveTruncated,
+                        completion.StandardErrorArchiveTruncated);
                 var standardOutput = BoundAndRedactOutput(
                     output.StandardOutput,
                     out var standardOutputTruncated);
@@ -879,8 +1045,31 @@ namespace ColorVision.Copilot
                     StandardErrorTruncated =
                         output.StandardErrorTruncated
                         || standardErrorTruncated,
+                    StandardOutputArchiveAvailable =
+                        output.StandardOutputArchiveAvailable,
+                    StandardErrorArchiveAvailable =
+                        output.StandardErrorArchiveAvailable,
+                    ArchivedStandardOutputCharacters =
+                        output.ArchivedStandardOutputCharacters,
+                    ArchivedStandardErrorCharacters =
+                        output.ArchivedStandardErrorCharacters,
+                    StandardOutputArchiveTruncated =
+                        output.StandardOutputArchiveTruncated,
+                    StandardErrorArchiveTruncated =
+                        output.StandardErrorArchiveTruncated,
                 };
             }
+
+            public CopilotBackgroundShellOutputArchivePage ReadOutputArchive(
+                CopilotBackgroundShellOutputStream stream,
+                int offsetCharacters,
+                int maximumCharacters,
+                CancellationToken cancellationToken) =>
+                _process.ReadOutputArchive(
+                    stream,
+                    offsetCharacters,
+                    maximumCharacters,
+                    cancellationToken);
 
             public async Task<CopilotBackgroundShellProcessCompletion> StopAsync(
                 CancellationToken cancellationToken)
@@ -964,8 +1153,8 @@ namespace ColorVision.Copilot
             _processJob = processJob;
             ProcessId = process.Id;
             ProcessTreeContained = processJob != null;
-            _standardOutput = new BoundedOutput();
-            _standardError = new BoundedOutput();
+            _standardOutput = new BoundedOutput("stdout");
+            _standardError = new BoundedOutput("stderr");
             _standardOutputTask = CopilotProcessExecutionSupport.ReadBoundedAsync(
                 process.StandardOutput,
                 CopilotBackgroundShellCommandRegistry.MaximumOutputCharacters,
@@ -999,8 +1188,26 @@ namespace ColorVision.Copilot
                 standardOutput.ObservedCharacters,
                 standardError.ObservedCharacters,
                 standardOutput.WasTruncated,
-                standardError.WasTruncated);
+                standardError.WasTruncated,
+                standardOutput.ArchiveAvailable,
+                standardError.ArchiveAvailable,
+                standardOutput.ArchivedCharacters,
+                standardError.ArchivedCharacters,
+                standardOutput.ArchiveTruncated,
+                standardError.ArchiveTruncated);
         }
+
+        public CopilotBackgroundShellOutputArchivePage ReadOutputArchive(
+            CopilotBackgroundShellOutputStream stream,
+            int offsetCharacters,
+            int maximumCharacters,
+            CancellationToken cancellationToken) =>
+            (stream == CopilotBackgroundShellOutputStream.StandardError
+                ? _standardError
+                : _standardOutput).ReadArchive(
+                    offsetCharacters,
+                    maximumCharacters,
+                    cancellationToken);
 
         public async Task<CopilotBackgroundShellProcessCompletion> StopAsync(
             CancellationToken cancellationToken)
@@ -1065,6 +1272,18 @@ namespace ColorVision.Copilot
                         output.StandardOutputTruncated,
                     StandardErrorTruncated =
                         output.StandardErrorTruncated,
+                    StandardOutputArchiveAvailable =
+                        output.StandardOutputArchiveAvailable,
+                    StandardErrorArchiveAvailable =
+                        output.StandardErrorArchiveAvailable,
+                    ArchivedStandardOutputCharacters =
+                        output.ArchivedStandardOutputCharacters,
+                    ArchivedStandardErrorCharacters =
+                        output.ArchivedStandardErrorCharacters,
+                    StandardOutputArchiveTruncated =
+                        output.StandardOutputArchiveTruncated,
+                    StandardErrorArchiveTruncated =
+                        output.StandardErrorArchiveTruncated,
                 };
             }
             catch (Exception ex) when (ex is IOException or Win32Exception or InvalidOperationException or ObjectDisposedException)
@@ -1088,6 +1307,18 @@ namespace ColorVision.Copilot
                         output.StandardOutputTruncated,
                     StandardErrorTruncated =
                         output.StandardErrorTruncated,
+                    StandardOutputArchiveAvailable =
+                        output.StandardOutputArchiveAvailable,
+                    StandardErrorArchiveAvailable =
+                        output.StandardErrorArchiveAvailable,
+                    ArchivedStandardOutputCharacters =
+                        output.ArchivedStandardOutputCharacters,
+                    ArchivedStandardErrorCharacters =
+                        output.ArchivedStandardErrorCharacters,
+                    StandardOutputArchiveTruncated =
+                        output.StandardOutputArchiveTruncated,
+                    StandardErrorArchiveTruncated =
+                        output.StandardErrorArchiveTruncated,
                 };
             }
         }
@@ -1114,15 +1345,330 @@ namespace ColorVision.Copilot
             _processJob?.Dispose();
             _outputReadSource.Cancel();
             _outputReadSource.Dispose();
+            _standardOutput.Dispose();
+            _standardError.Dispose();
             _process.Dispose();
         }
 
-        private sealed class BoundedOutput
+        private sealed class TemporaryOutputArchive : IDisposable
+        {
+            private readonly object _syncRoot = new();
+            private readonly string _path;
+            private FileStream? _stream;
+            private int _archivedCharacters;
+            private bool _isTruncated;
+            private bool _available = true;
+            private bool _disposed;
+
+            private TemporaryOutputArchive(string path, FileStream stream)
+            {
+                _path = path;
+                _stream = stream;
+            }
+
+            public bool Available
+            {
+                get
+                {
+                    lock (_syncRoot)
+                        return _available && !_disposed;
+                }
+            }
+
+            public int ArchivedCharacters
+            {
+                get
+                {
+                    lock (_syncRoot)
+                        return _archivedCharacters;
+                }
+            }
+
+            public bool IsTruncated
+            {
+                get
+                {
+                    lock (_syncRoot)
+                        return _isTruncated;
+                }
+            }
+
+            public static TemporaryOutputArchive? TryCreate(string streamLabel)
+            {
+                try
+                {
+                    var directory = Path.Combine(
+                        Path.GetTempPath(),
+                        "ColorVision",
+                        "Copilot",
+                        "BackgroundOutput");
+                    Directory.CreateDirectory(directory);
+                    var safeStreamLabel =
+                        string.Equals(
+                            streamLabel,
+                            "stderr",
+                            StringComparison.OrdinalIgnoreCase)
+                            ? "stderr"
+                            : "stdout";
+                    var path = Path.Combine(
+                        directory,
+                        $"{Guid.NewGuid():N}-{safeStreamLabel}.log");
+                    var stream = new FileStream(
+                        path,
+                        FileMode.CreateNew,
+                        FileAccess.ReadWrite,
+                        FileShare.ReadWrite | FileShare.Delete,
+                        bufferSize: 4_096,
+                        FileOptions.DeleteOnClose | FileOptions.SequentialScan);
+                    return new TemporaryOutputArchive(path, stream);
+                }
+                catch (Exception ex) when (
+                    ex is IOException
+                        or UnauthorizedAccessException
+                        or NotSupportedException)
+                {
+                    Trace.TraceWarning(
+                        "Copilot background output archive could not be created: "
+                        + CopilotMcpAuditLogger.RedactText(ex.Message));
+                    return null;
+                }
+            }
+
+            public void Append(string value)
+            {
+                if (string.IsNullOrEmpty(value))
+                    return;
+
+                lock (_syncRoot)
+                {
+                    if (!_available || _disposed || _stream == null)
+                        return;
+
+                    var remaining =
+                        CopilotBackgroundShellCommandRegistry.MaximumArchivedOutputCharacters
+                        - _archivedCharacters;
+                    if (remaining <= 0)
+                    {
+                        _isTruncated = true;
+                        return;
+                    }
+
+                    var writeLength = Math.Min(value.Length, remaining);
+                    try
+                    {
+                        _stream.Write(MemoryMarshal.AsBytes(
+                            value.AsSpan(0, writeLength)));
+                        _stream.Flush();
+                        _archivedCharacters += writeLength;
+                        if (writeLength < value.Length)
+                            _isTruncated = true;
+                    }
+                    catch (Exception ex) when (
+                        ex is IOException
+                            or ObjectDisposedException
+                            or UnauthorizedAccessException
+                            or NotSupportedException)
+                    {
+                        MarkUnavailableUnderLock(ex);
+                    }
+                }
+            }
+
+            public CopilotBackgroundShellOutputArchivePage Read(
+                int offsetCharacters,
+                int maximumCharacters,
+                CancellationToken cancellationToken)
+            {
+                lock (_syncRoot)
+                {
+                    if (!_available || _disposed || _stream == null)
+                    {
+                        return UnavailablePage(
+                            offsetCharacters,
+                            "The temporary redacted output archive is unavailable.");
+                    }
+
+                    if (offsetCharacters < 0
+                        || maximumCharacters <= 0
+                        || maximumCharacters
+                            > CopilotBackgroundShellCommandRegistry.MaximumArchiveReadCharacters)
+                    {
+                        return UnavailablePage(
+                            offsetCharacters,
+                            "The output archive read range is invalid.");
+                    }
+
+                    if (offsetCharacters > _archivedCharacters)
+                    {
+                        return UnavailablePage(
+                            offsetCharacters,
+                            $"The output archive currently contains {_archivedCharacters} characters; "
+                            + $"offset {offsetCharacters} is beyond the available output.");
+                    }
+
+                    try
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        _stream.Flush();
+                        using var stream = new FileStream(
+                            _path,
+                            FileMode.Open,
+                            FileAccess.Read,
+                            FileShare.ReadWrite | FileShare.Delete,
+                            bufferSize: 4_096,
+                            FileOptions.SequentialScan);
+                        stream.Seek(
+                            checked((long)offsetCharacters * sizeof(char)),
+                            SeekOrigin.Begin);
+                        var requestedCharacters = Math.Min(
+                            maximumCharacters,
+                            _archivedCharacters - offsetCharacters);
+                        var content = ReadCharacters(
+                            stream,
+                            requestedCharacters,
+                            cancellationToken);
+                        var nextOffset = offsetCharacters + content.Length;
+                        return new CopilotBackgroundShellOutputArchivePage(
+                            Available: true,
+                            Content: content,
+                            OffsetCharacters: offsetCharacters,
+                            ReturnedCharacters: content.Length,
+                            NextOffsetCharacters: nextOffset,
+                            ArchivedCharacters: _archivedCharacters,
+                            EndOfAvailableOutput:
+                                nextOffset >= _archivedCharacters,
+                            ArchiveTruncated: _isTruncated,
+                            ErrorMessage: string.Empty);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        throw;
+                    }
+                    catch (Exception ex) when (
+                        ex is IOException
+                            or ObjectDisposedException
+                            or UnauthorizedAccessException
+                            or NotSupportedException)
+                    {
+                        MarkUnavailableUnderLock(ex);
+                        return UnavailablePage(
+                            offsetCharacters,
+                            "The temporary redacted output archive could not be read.");
+                    }
+                }
+            }
+
+            private static string ReadCharacters(
+                FileStream stream,
+                int count,
+                CancellationToken cancellationToken)
+            {
+                if (count == 0)
+                    return string.Empty;
+
+                var buffer = new byte[checked(count * sizeof(char))];
+                var totalRead = 0;
+                while (totalRead < buffer.Length)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    var read = stream.Read(
+                        buffer,
+                        totalRead,
+                        buffer.Length - totalRead);
+                    if (read == 0)
+                        break;
+
+                    totalRead += read;
+                }
+
+                if (totalRead % sizeof(char) != 0)
+                {
+                    throw new InvalidDataException(
+                        "The output archive contains an incomplete character.");
+                }
+
+                return new string(
+                    MemoryMarshal.Cast<byte, char>(
+                        buffer.AsSpan(0, totalRead)));
+            }
+
+            private CopilotBackgroundShellOutputArchivePage UnavailablePage(
+                int offsetCharacters,
+                string errorMessage) =>
+                new(
+                    Available: false,
+                    Content: string.Empty,
+                    OffsetCharacters: offsetCharacters,
+                    ReturnedCharacters: 0,
+                    NextOffsetCharacters: offsetCharacters,
+                    ArchivedCharacters: _archivedCharacters,
+                    EndOfAvailableOutput:
+                        offsetCharacters >= _archivedCharacters,
+                    ArchiveTruncated: _isTruncated,
+                    ErrorMessage: errorMessage);
+
+            private void MarkUnavailableUnderLock(Exception exception)
+            {
+                _available = false;
+                _isTruncated = true;
+                Trace.TraceWarning(
+                    "Copilot background output archive became unavailable: "
+                    + CopilotMcpAuditLogger.RedactText(exception.Message));
+                try
+                {
+                    _stream?.Dispose();
+                }
+                catch (Exception ex) when (
+                    ex is IOException
+                        or ObjectDisposedException)
+                {
+                    Trace.TraceWarning(
+                        "Copilot background output archive cleanup failed: "
+                        + CopilotMcpAuditLogger.RedactText(ex.Message));
+                }
+
+                _stream = null;
+            }
+
+            public void Dispose()
+            {
+                lock (_syncRoot)
+                {
+                    if (_disposed)
+                        return;
+
+                    _disposed = true;
+                    _available = false;
+                    try
+                    {
+                        _stream?.Dispose();
+                    }
+                    catch (Exception ex) when (
+                        ex is IOException
+                            or ObjectDisposedException)
+                    {
+                        Trace.TraceWarning(
+                            "Copilot background output archive cleanup failed: "
+                            + CopilotMcpAuditLogger.RedactText(ex.Message));
+                    }
+
+                    _stream = null;
+                }
+            }
+        }
+
+        private sealed class BoundedOutput : IDisposable
         {
             private readonly object _syncRoot = new();
             private readonly StringBuilder _buffer = new();
+            private readonly TemporaryOutputArchive? _archive;
             private long _observedCharacters;
             private bool _wasTruncated;
+
+            public BoundedOutput(string streamLabel)
+            {
+                _archive = TemporaryOutputArchive.TryCreate(streamLabel);
+            }
 
             public void Append(string? value)
             {
@@ -1137,7 +1683,10 @@ namespace ColorVision.Copilot
                         _observedCharacters,
                         observed.Length);
                     if (redacted.Length > 0)
+                    {
                         AppendPreviewUnderLock(redacted);
+                        _archive?.Append(redacted);
+                    }
                 }
             }
 
@@ -1158,9 +1707,32 @@ namespace ColorVision.Copilot
                     return new BoundedOutputSnapshot(
                         _buffer.ToString(),
                         _observedCharacters,
-                        _wasTruncated);
+                        _wasTruncated,
+                        _archive?.Available == true,
+                        _archive?.ArchivedCharacters ?? 0,
+                        _archive?.IsTruncated == true);
                 }
             }
+
+            public CopilotBackgroundShellOutputArchivePage ReadArchive(
+                int offsetCharacters,
+                int maximumCharacters,
+                CancellationToken cancellationToken) =>
+                _archive?.Read(
+                    offsetCharacters,
+                    maximumCharacters,
+                    cancellationToken)
+                ?? new CopilotBackgroundShellOutputArchivePage(
+                    Available: false,
+                    Content: string.Empty,
+                    OffsetCharacters: offsetCharacters,
+                    ReturnedCharacters: 0,
+                    NextOffsetCharacters: offsetCharacters,
+                    ArchivedCharacters: 0,
+                    EndOfAvailableOutput: true,
+                    ArchiveTruncated: false,
+                    ErrorMessage:
+                        "The temporary redacted output archive is unavailable.");
 
             private void AppendPreviewUnderLock(string value)
             {
@@ -1187,10 +1759,15 @@ namespace ColorVision.Copilot
                     ? long.MaxValue
                     : value + increment;
 
+            public void Dispose() => _archive?.Dispose();
+
             public readonly record struct BoundedOutputSnapshot(
                 string Text,
                 long ObservedCharacters,
-                bool WasTruncated);
+                bool WasTruncated,
+                bool ArchiveAvailable,
+                int ArchivedCharacters,
+                bool ArchiveTruncated);
         }
     }
 }

@@ -1,6 +1,8 @@
 using ColorVision.Copilot;
+using ColorVision.Copilot.Mcp;
 using System.Diagnostics;
 using System.IO;
+using System.Text;
 
 namespace ColorVision.UI.Tests;
 
@@ -54,7 +56,7 @@ public sealed class CopilotBackgroundShellCommandTests
     }
 
     [Fact]
-    public void DefaultToolCatalogContainsSeparateStartInspectAndStopSurfaces()
+    public void DefaultToolCatalogContainsSeparateBackgroundCommandSurfaces()
     {
         var tools = CopilotToolRegistry.CreateCoreDefaultTools();
         var start = Assert.Single(
@@ -63,6 +65,9 @@ public sealed class CopilotBackgroundShellCommandTests
         var inspect = Assert.Single(
             tools,
             tool => tool.Name == "InspectBackgroundShellCommands");
+        var read = Assert.Single(
+            tools,
+            tool => tool.Name == "ReadBackgroundShellCommandOutput");
         var wait = Assert.Single(
             tools,
             tool => tool.Name == "WaitForBackgroundShellCommand");
@@ -73,6 +78,11 @@ public sealed class CopilotBackgroundShellCommandTests
         Assert.True(start.Capability.RequiresNativeApproval);
         Assert.Equal(CopilotToolAccess.ReadOnly, inspect.Capability.Access);
         Assert.False(inspect.Capability.RequiresNativeApproval);
+        Assert.Equal(CopilotToolAccess.ReadOnly, read.Capability.Access);
+        Assert.False(read.Capability.RequiresNativeApproval);
+        Assert.Equal(
+            CopilotToolEvidenceMode.RedactedExcerpt,
+            read.Capability.EvidenceMode);
         Assert.Equal(CopilotToolAccess.ReadOnly, wait.Capability.Access);
         Assert.False(wait.Capability.RequiresNativeApproval);
         Assert.Equal(
@@ -90,6 +100,7 @@ public sealed class CopilotBackgroundShellCommandTests
         var registry = new CopilotBackgroundShellCommandRegistry(launcher);
         var startTool = new CopilotStartBackgroundShellCommandTool(registry);
         var inspectTool = new CopilotInspectBackgroundShellCommandsTool(registry);
+        var readTool = new CopilotReadBackgroundShellCommandOutputTool(registry);
         var stopTool = new CopilotStopBackgroundShellCommandTool(registry);
         var request = CreateRequest("run PowerShell in background");
         var input = CreateStartInput("Write-Output ready; Start-Sleep 30");
@@ -144,6 +155,13 @@ public sealed class CopilotBackgroundShellCommandTests
                 boundedSnapshot.ObservedStandardErrorCharacters);
             Assert.True(boundedSnapshot.StandardOutputTruncated);
             Assert.False(boundedSnapshot.StandardErrorTruncated);
+            var expectedArchive = CopilotMcpAuditLogger.RedactText(
+                fullStandardOutput);
+            Assert.True(boundedSnapshot.StandardOutputArchiveAvailable);
+            Assert.Equal(
+                expectedArchive.Length,
+                boundedSnapshot.ArchivedStandardOutputCharacters);
+            Assert.False(boundedSnapshot.StandardOutputArchiveTruncated);
             var inspectInput = new CopilotAgentToolInput
             {
                 Arguments = new Dictionary<string, object?>
@@ -167,6 +185,57 @@ public sealed class CopilotBackgroundShellCommandTests
                 "stdout_truncated: true",
                 inspected.Content,
                 StringComparison.Ordinal);
+            Assert.Contains(
+                "stdout_archive_available: true",
+                inspected.Content,
+                StringComparison.Ordinal);
+
+            var archivedOutput = ReadAllArchive(
+                registry,
+                request,
+                snapshot.Id,
+                CopilotBackgroundShellOutputStream.StandardOutput);
+            Assert.Equal(expectedArchive, archivedOutput);
+            Assert.DoesNotContain(
+                "background-secret",
+                archivedOutput,
+                StringComparison.Ordinal);
+            Assert.Contains(
+                "token=<redacted>",
+                archivedOutput,
+                StringComparison.Ordinal);
+
+            var readInput = new CopilotAgentToolInput
+            {
+                Arguments = new Dictionary<string, object?>
+                {
+                    ["backgroundId"] = snapshot.Id,
+                    ["stream"] = "stdout",
+                    ["offsetCharacters"] = Math.Max(
+                        0,
+                        expectedArchive.Length - 256),
+                    ["maximumCharacters"] = 256,
+                },
+            };
+            var read = await readTool.ExecuteAsync(
+                request,
+                readInput,
+                CancellationToken.None);
+            Assert.True(read.Success, read.ErrorMessage);
+            Assert.Contains(
+                "[Background Shell Output Archive]",
+                read.Content,
+                StringComparison.Ordinal);
+            Assert.Contains(
+                "end_of_available_output: true",
+                read.Content,
+                StringComparison.Ordinal);
+            Assert.Contains(
+                "command_active: true",
+                read.Content,
+                StringComparison.Ordinal);
+            Assert.Contains("token=<redacted>", read.Content);
+            Assert.DoesNotContain("background-secret", read.Content);
 
             var otherConversation = CreateRequest(
                 "check background output",
@@ -177,6 +246,14 @@ public sealed class CopilotBackgroundShellCommandTests
                 CancellationToken.None);
             Assert.False(crossConversation.Success);
             Assert.Equal(CopilotToolFailureKind.NotFound, crossConversation.FailureKind);
+            var crossConversationRead = await readTool.ExecuteAsync(
+                otherConversation,
+                readInput,
+                CancellationToken.None);
+            Assert.False(crossConversationRead.Success);
+            Assert.Equal(
+                CopilotToolFailureKind.NotFound,
+                crossConversationRead.FailureKind);
 
             var stopInput = new CopilotAgentToolInput
             {
@@ -613,7 +690,7 @@ public sealed class CopilotBackgroundShellCommandTests
     }
 
     [Fact]
-    public async Task RealPowerShellProcessCompletesAndPublishesBoundedOutput()
+    public async Task RealPowerShellProcessCompletesAndArchivesRedactedOutput()
     {
         if (!OperatingSystem.IsWindows()
             || string.IsNullOrWhiteSpace(
@@ -630,7 +707,7 @@ public sealed class CopilotBackgroundShellCommandTests
             var started = await registry.StartAsync(
                 request,
                 CreateStartInput(
-                    "[Console]::Out.Write(('x' * 20000)); Write-Output 'background-evidence'; Start-Sleep -Milliseconds 150"),
+                    "[Console]::Out.Write(('x' * 20000)); Write-Output 'background-evidence'; Write-Output 'token=background-secret'; Start-Sleep -Milliseconds 150"),
                 CancellationToken.None);
             Assert.True(started.Success, started.ErrorMessage);
 
@@ -647,6 +724,8 @@ public sealed class CopilotBackgroundShellCommandTests
             Assert.Equal(CopilotBackgroundShellCommandState.Completed, snapshot.State);
             Assert.Equal(0, snapshot.ExitCode);
             Assert.Contains("background-evidence", snapshot.StandardOutput, StringComparison.Ordinal);
+            Assert.Contains("token=<redacted>", snapshot.StandardOutput, StringComparison.Ordinal);
+            Assert.DoesNotContain("background-secret", snapshot.StandardOutput, StringComparison.Ordinal);
             Assert.True(
                 snapshot.ObservedStandardOutputCharacters
                 > CopilotBackgroundShellCommandRegistry.MaximumOutputCharacters);
@@ -654,6 +733,23 @@ public sealed class CopilotBackgroundShellCommandTests
             Assert.True(
                 snapshot.StandardOutput.Length
                 <= CopilotBackgroundShellCommandRegistry.MaximumOutputCharacters);
+            Assert.True(snapshot.StandardOutputArchiveAvailable);
+            Assert.False(snapshot.StandardOutputArchiveTruncated);
+            var archivedOutput = ReadAllArchive(
+                registry,
+                request,
+                snapshot.Id,
+                CopilotBackgroundShellOutputStream.StandardOutput);
+            Assert.True(
+                archivedOutput.Length
+                > CopilotBackgroundShellCommandRegistry.MaximumOutputCharacters);
+            Assert.StartsWith(new string('x', 256), archivedOutput);
+            Assert.Contains("background-evidence", archivedOutput, StringComparison.Ordinal);
+            Assert.Contains("token=<redacted>", archivedOutput, StringComparison.Ordinal);
+            Assert.DoesNotContain("background-secret", archivedOutput, StringComparison.Ordinal);
+            Assert.Equal(
+                archivedOutput.Length,
+                snapshot.ArchivedStandardOutputCharacters);
             Assert.True(snapshot.ProcessTreeContained);
         }
         finally
@@ -683,7 +779,12 @@ public sealed class CopilotBackgroundShellCommandTests
             CopilotBackgroundShellCommandState.Running,
             ExitCode: null,
             StandardOutput: "ready",
-            StandardError: string.Empty);
+            StandardError: string.Empty)
+        {
+            StandardOutputArchiveAvailable = true,
+            StandardErrorArchiveAvailable = true,
+            ArchivedStandardOutputCharacters = 5,
+        };
 
         var list = CopilotBackgroundShellCommandDiagnostics.FormatList(
             conversation,
@@ -706,6 +807,10 @@ public sealed class CopilotBackgroundShellCommandTests
             details,
             StringComparison.Ordinal);
         Assert.Contains("ready", details, StringComparison.Ordinal);
+        Assert.Contains(
+            "临时脱敏存档：stdout 5 字符（可读） · stderr 0 字符（可读）",
+            details,
+            StringComparison.Ordinal);
         Assert.Contains("启动成功不等于服务已就绪", details, StringComparison.Ordinal);
         Assert.Contains("停止后台命令 #1", confirmation, StringComparison.Ordinal);
         Assert.Contains("不会自动撤销", confirmation, StringComparison.Ordinal);
@@ -760,6 +865,39 @@ public sealed class CopilotBackgroundShellCommandTests
         {
             Arguments = arguments,
         };
+    }
+
+    private static string ReadAllArchive(
+        CopilotBackgroundShellCommandRegistry registry,
+        CopilotAgentRequest request,
+        string backgroundId,
+        CopilotBackgroundShellOutputStream stream)
+    {
+        var output = new StringBuilder();
+        var offset = 0;
+        while (true)
+        {
+            var result = registry.ReadOutputArchive(
+                request.ConversationId,
+                backgroundId,
+                stream,
+                offset,
+                CopilotBackgroundShellCommandRegistry.MaximumArchiveReadCharacters,
+                CancellationToken.None);
+            Assert.True(result.Success, result.ErrorMessage);
+            var page = Assert.IsType<CopilotBackgroundShellOutputArchivePage>(
+                result.Page);
+            Assert.Equal(offset, page.OffsetCharacters);
+            Assert.Equal(
+                page.OffsetCharacters + page.ReturnedCharacters,
+                page.NextOffsetCharacters);
+            output.Append(page.Content);
+            if (page.EndOfAvailableOutput)
+                return output.ToString();
+
+            Assert.True(page.NextOffsetCharacters > offset);
+            offset = page.NextOffsetCharacters;
+        }
     }
 
     private sealed class FakeBackgroundLauncher : ICopilotBackgroundShellProcessLauncher
@@ -853,13 +991,54 @@ public sealed class CopilotBackgroundShellCommandTests
         }
 
         public CopilotBackgroundShellProcessOutput GetOutputSnapshot() =>
-            new(
-                _standardOutput,
-                _standardError,
-                _standardOutput.Length,
-                _standardError.Length,
-                StandardOutputTruncated: false,
-                StandardErrorTruncated: false);
+            CreateOutputSnapshot();
+
+        public CopilotBackgroundShellOutputArchivePage ReadOutputArchive(
+            CopilotBackgroundShellOutputStream stream,
+            int offsetCharacters,
+            int maximumCharacters,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var archive = CopilotMcpAuditLogger.RedactText(
+                stream == CopilotBackgroundShellOutputStream.StandardError
+                    ? _standardError
+                    : _standardOutput);
+            var archivedCharacters = Math.Min(
+                archive.Length,
+                CopilotBackgroundShellCommandRegistry.MaximumArchivedOutputCharacters);
+            if (offsetCharacters > archivedCharacters)
+            {
+                return new CopilotBackgroundShellOutputArchivePage(
+                    Available: false,
+                    Content: string.Empty,
+                    OffsetCharacters: offsetCharacters,
+                    ReturnedCharacters: 0,
+                    NextOffsetCharacters: offsetCharacters,
+                    ArchivedCharacters: archivedCharacters,
+                    EndOfAvailableOutput: true,
+                    ArchiveTruncated: archive.Length > archivedCharacters,
+                    ErrorMessage: "The requested offset is beyond the fake archive.");
+            }
+
+            var returnedCharacters = Math.Min(
+                maximumCharacters,
+                archivedCharacters - offsetCharacters);
+            var content = archive.Substring(
+                offsetCharacters,
+                returnedCharacters);
+            var nextOffset = offsetCharacters + returnedCharacters;
+            return new CopilotBackgroundShellOutputArchivePage(
+                Available: true,
+                Content: content,
+                OffsetCharacters: offsetCharacters,
+                ReturnedCharacters: returnedCharacters,
+                NextOffsetCharacters: nextOffset,
+                ArchivedCharacters: archivedCharacters,
+                EndOfAvailableOutput: nextOffset >= archivedCharacters,
+                ArchiveTruncated: archive.Length > archivedCharacters,
+                ErrorMessage: string.Empty);
+        }
 
         public Task<CopilotBackgroundShellProcessCompletion> StopAsync(
             CancellationToken cancellationToken)
@@ -875,6 +1054,12 @@ public sealed class CopilotBackgroundShellCommandTests
             {
                 ObservedStandardOutputCharacters = _standardOutput.Length,
                 ObservedStandardErrorCharacters = _standardError.Length,
+                StandardOutputArchiveAvailable = true,
+                StandardErrorArchiveAvailable = true,
+                ArchivedStandardOutputCharacters =
+                    CreateOutputSnapshot().ArchivedStandardOutputCharacters,
+                ArchivedStandardErrorCharacters =
+                    CreateOutputSnapshot().ArchivedStandardErrorCharacters,
             });
             return _completion.Task;
         }
@@ -892,7 +1077,44 @@ public sealed class CopilotBackgroundShellCommandTests
             {
                 ObservedStandardOutputCharacters = _standardOutput.Length,
                 ObservedStandardErrorCharacters = _standardError.Length,
+                StandardOutputArchiveAvailable = true,
+                StandardErrorArchiveAvailable = true,
+                ArchivedStandardOutputCharacters =
+                    CreateOutputSnapshot().ArchivedStandardOutputCharacters,
+                ArchivedStandardErrorCharacters =
+                    CreateOutputSnapshot().ArchivedStandardErrorCharacters,
             });
+        }
+
+        private CopilotBackgroundShellProcessOutput CreateOutputSnapshot()
+        {
+            var standardOutputArchive =
+                CopilotMcpAuditLogger.RedactText(_standardOutput);
+            var standardErrorArchive =
+                CopilotMcpAuditLogger.RedactText(_standardError);
+            var archivedStandardOutputCharacters = Math.Min(
+                standardOutputArchive.Length,
+                CopilotBackgroundShellCommandRegistry.MaximumArchivedOutputCharacters);
+            var archivedStandardErrorCharacters = Math.Min(
+                standardErrorArchive.Length,
+                CopilotBackgroundShellCommandRegistry.MaximumArchivedOutputCharacters);
+            return new CopilotBackgroundShellProcessOutput(
+                _standardOutput,
+                _standardError,
+                _standardOutput.Length,
+                _standardError.Length,
+                StandardOutputTruncated: false,
+                StandardErrorTruncated: false,
+                StandardOutputArchiveAvailable: true,
+                StandardErrorArchiveAvailable: true,
+                archivedStandardOutputCharacters,
+                archivedStandardErrorCharacters,
+                StandardOutputArchiveTruncated:
+                    standardOutputArchive.Length
+                    > archivedStandardOutputCharacters,
+                StandardErrorArchiveTruncated:
+                    standardErrorArchive.Length
+                    > archivedStandardErrorCharacters);
         }
 
         public void Dispose()

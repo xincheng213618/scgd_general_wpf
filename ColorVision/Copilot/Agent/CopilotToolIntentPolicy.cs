@@ -731,6 +731,7 @@ namespace ColorVision.Copilot
                         BackgroundShellInspectionMarkers,
                         "StartBackgroundShellCommand",
                         "InspectBackgroundShellCommands",
+                        "ReadBackgroundShellCommandOutput",
                         "WaitForBackgroundShellCommand"));
         }
 
@@ -743,6 +744,7 @@ namespace ColorVision.Copilot
                     BackgroundShellStopMarkers,
                     "StartBackgroundShellCommand",
                     "InspectBackgroundShellCommands",
+                    "ReadBackgroundShellCommandOutput",
                     "WaitForBackgroundShellCommand");
         }
 

@@ -1,3 +1,4 @@
+using ColorVision.Copilot.Mcp;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -66,7 +67,7 @@ namespace ColorVision.Copilot
 
         public string Name => "StartBackgroundShellCommand";
 
-        public string Description => "Start one approved PowerShell or CMD command as an application-managed background process tree. The process is isolated to the current conversation, has bounded redacted output, expires automatically, and survives the Agent turn but never the ColorVision process. Starting confirms only that the process launched; use WaitForBackgroundShellCommand, InspectBackgroundShellCommands, or a specialized diagnostic before claiming readiness. Every start requires native approval.";
+        public string Description => "Start one approved PowerShell or CMD command as an application-managed background process tree. The process is isolated to the current conversation, keeps a bounded redacted preview plus a capped temporary redacted output archive, expires automatically, and survives the Agent turn but never the ColorVision process. Starting confirms only that the process launched; use WaitForBackgroundShellCommand, InspectBackgroundShellCommands, ReadBackgroundShellCommandOutput, or a specialized diagnostic before claiming readiness. Every start requires native approval.";
 
         public CopilotToolCapabilityDescriptor Capability { get; } =
             CopilotToolCapabilityDescriptor.ProtectedWrite(
@@ -170,7 +171,7 @@ namespace ColorVision.Copilot
             return new CopilotToolApprovalPresentation(
                 $"Start background {CopilotShellCommandService.GetShellLabel(execution.Shell)} command",
                 "Review the complete command, working directory, and maximum lifetime before approving.",
-                ImpactSummary: "命令会在 Agent 本轮结束后继续运行；ColorVision 会捕获限长输出，并在停止、到期或应用退出时终止其进程树。",
+                ImpactSummary: "命令会在 Agent 本轮结束后继续运行；ColorVision 会捕获限长脱敏预览和自动删除的临时脱敏输出存档，并在停止、到期或应用退出时终止其进程树。",
                 Reversibility: CopilotApprovalReversibility.ManualOnly,
                 ReversibilitySummary: "可通过 /ps stop N 或 StopBackgroundShellCommand 终止进程树；命令已经产生的文件、网络或系统状态不会自动撤销。")
             {
@@ -246,7 +247,7 @@ namespace ColorVision.Copilot
 
         public string Name => "InspectBackgroundShellCommands";
 
-        public string Description => "Inspect only the current conversation's application-managed background commands, including running/completed state, PID, exit code, and optional bounded redacted output. This does not reveal commands from another conversation and performs no process mutation.";
+        public string Description => "Inspect only the current conversation's application-managed background commands, including running/completed state, PID, exit code, optional bounded redacted preview, and temporary redacted archive availability. This does not reveal commands from another conversation and performs no process mutation.";
 
         public CopilotToolCapabilityDescriptor Capability { get; } =
             CopilotToolCapabilityDescriptor.ReadOnly(
@@ -326,6 +327,267 @@ namespace ColorVision.Copilot
         }
     }
 
+    public sealed class CopilotReadBackgroundShellCommandOutputTool :
+        ICopilotAgentDrivenTool
+    {
+        private static readonly CopilotToolInputSchema Schema =
+            CopilotToolInputSchema.FromJsonSchema(
+                JsonSerializer.SerializeToElement(new Dictionary<string, object?>
+                {
+                    ["type"] = "object",
+                    ["properties"] = new Dictionary<string, object?>
+                    {
+                        ["backgroundId"] = new
+                        {
+                            type = "string",
+                            minLength = 1,
+                            maxLength = 128,
+                            description = "Exact current-conversation background command id.",
+                        },
+                        ["stream"] = new
+                        {
+                            type = "string",
+                            @enum = new[] { "stdout", "stderr" },
+                            description = "Archived output stream to read. Defaults to stdout.",
+                        },
+                        ["offsetCharacters"] = new
+                        {
+                            type = "integer",
+                            minimum = 0,
+                            description = "Zero-based character offset in the selected redacted archive. Use next_offset_characters to continue. Defaults to 0.",
+                        },
+                        ["maximumCharacters"] = new
+                        {
+                            type = "integer",
+                            minimum = 1,
+                            maximum = CopilotBackgroundShellCommandRegistry.MaximumArchiveReadCharacters,
+                            description = "Maximum archived characters to return. Defaults to 8192.",
+                        },
+                    },
+                    ["required"] = new[] { "backgroundId" },
+                    ["additionalProperties"] = false,
+                }));
+
+        private readonly CopilotBackgroundShellCommandRegistry _registry;
+
+        public CopilotReadBackgroundShellCommandOutputTool()
+            : this(CopilotBackgroundShellCommandRegistry.Shared)
+        {
+        }
+
+        internal CopilotReadBackgroundShellCommandOutputTool(
+            CopilotBackgroundShellCommandRegistry registry)
+        {
+            _registry = registry ?? throw new ArgumentNullException(nameof(registry));
+        }
+
+        public string Name => "ReadBackgroundShellCommandOutput";
+
+        public string Description => "Read one page from a capped temporary redacted stdout or stderr archive for an exact current-conversation background command. Use this when its bounded preview was truncated or omitted evidence is required, and continue from next_offset_characters. Reaching the current archive end while command_active is true does not prove the command is finished. The archive exposes no file path, performs no process mutation, and is deleted when the retained command is cleared or ColorVision exits.";
+
+        public CopilotToolCapabilityDescriptor Capability { get; } =
+            CopilotToolCapabilityDescriptor.ReadOnly(
+                auditArgumentMode: CopilotToolAuditArgumentMode.NamesOnly,
+                evidenceMode: CopilotToolEvidenceMode.RedactedExcerpt);
+
+        public CopilotToolInputSchema InputSchema => Schema;
+
+        public bool CanHandle(CopilotAgentRequest request) => IsAvailable(request);
+
+        public bool IsAvailable(CopilotAgentRequest request)
+        {
+            return CopilotToolIntentPolicy.NeedsBackgroundShellInspection(request)
+                || _registry.GetSnapshots(request?.ConversationId).Count > 0;
+        }
+
+        public string GetConcurrencyKey(
+            CopilotAgentRequest request,
+            CopilotAgentToolInput toolInput) =>
+            "system:background-shell-status";
+
+        public Task<CopilotToolResult> ExecuteAsync(
+            CopilotAgentRequest request,
+            CopilotAgentToolInput toolInput,
+            CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(request);
+            cancellationToken.ThrowIfCancellationRequested();
+            toolInput ??= CopilotAgentToolInput.Empty;
+            if (!CopilotBackgroundShellCommandRegistry.TryReadBackgroundId(
+                    toolInput,
+                    out var backgroundId))
+            {
+                return Task.FromResult(
+                    ValidationFailure("backgroundId is required."));
+            }
+            if (!TryReadStream(toolInput, out var stream))
+            {
+                return Task.FromResult(
+                    ValidationFailure("stream must be stdout or stderr."));
+            }
+            if (!TryReadInt(
+                    toolInput,
+                    "offsetCharacters",
+                    defaultValue: 0,
+                    minimum: 0,
+                    maximum: int.MaxValue,
+                    out var offsetCharacters))
+            {
+                return Task.FromResult(
+                    ValidationFailure(
+                        "offsetCharacters must be a non-negative integer."));
+            }
+            if (!TryReadInt(
+                    toolInput,
+                    "maximumCharacters",
+                    CopilotBackgroundShellCommandRegistry.DefaultArchiveReadCharacters,
+                    minimum: 1,
+                    CopilotBackgroundShellCommandRegistry.MaximumArchiveReadCharacters,
+                    out var maximumCharacters))
+            {
+                return Task.FromResult(
+                    ValidationFailure(
+                        $"maximumCharacters must be an integer from 1 through {CopilotBackgroundShellCommandRegistry.MaximumArchiveReadCharacters}."));
+            }
+
+            var result = _registry.ReadOutputArchive(
+                request.ConversationId,
+                backgroundId,
+                stream,
+                offsetCharacters,
+                maximumCharacters,
+                cancellationToken);
+            if (!result.Success
+                || result.Snapshot == null
+                || result.Page == null)
+            {
+                return Task.FromResult(new CopilotToolResult
+                {
+                    ToolName = Name,
+                    Success = false,
+                    Summary = "The background output archive page was not read.",
+                    ErrorMessage = result.ErrorMessage,
+                    FailureKind = result.FailureKind,
+                });
+            }
+
+            var snapshot = result.Snapshot;
+            var page = result.Page;
+            var streamLabel =
+                stream == CopilotBackgroundShellOutputStream.StandardError
+                    ? "stderr"
+                    : "stdout";
+            var content = CopilotMcpAuditLogger.RedactText(page.Content);
+            var formatted = new StringBuilder()
+                .AppendLine("[Background Shell Output Archive]")
+                .Append("background_id: ").AppendLine(snapshot.Id)
+                .Append("stream: ").AppendLine(streamLabel)
+                .Append("state: ")
+                .AppendLine(snapshot.State.ToString().ToLowerInvariant())
+                .Append("offset_characters: ")
+                .AppendLine(page.OffsetCharacters.ToString(CultureInfo.InvariantCulture))
+                .Append("returned_characters: ")
+                .AppendLine(page.ReturnedCharacters.ToString(CultureInfo.InvariantCulture))
+                .Append("next_offset_characters: ")
+                .AppendLine(page.NextOffsetCharacters.ToString(CultureInfo.InvariantCulture))
+                .Append("archived_characters: ")
+                .AppendLine(page.ArchivedCharacters.ToString(CultureInfo.InvariantCulture))
+                .Append("end_of_available_output: ")
+                .AppendLine(page.EndOfAvailableOutput ? "true" : "false")
+                .Append("archive_truncated: ")
+                .AppendLine(page.ArchiveTruncated ? "true" : "false")
+                .Append("command_active: ")
+                .AppendLine(snapshot.IsActive ? "true" : "false")
+                .AppendLine("content:")
+                .Append(content.Length == 0 ? "<empty>" : content)
+                .ToString();
+            return Task.FromResult(new CopilotToolResult
+            {
+                ToolName = Name,
+                Success = true,
+                Summary =
+                    $"Read {page.ReturnedCharacters} archived {streamLabel} character(s) from background command {snapshot.Id}; "
+                    + (page.EndOfAvailableOutput
+                        ? snapshot.IsActive
+                            ? "reached the currently available end while the command remains active."
+                            : "reached the archive end."
+                        : "more archived output is available."),
+                Content = formatted,
+            });
+        }
+
+        private static bool TryReadStream(
+            CopilotAgentToolInput input,
+            out CopilotBackgroundShellOutputStream stream)
+        {
+            stream = CopilotBackgroundShellOutputStream.StandardOutput;
+            if (!input.Arguments.TryGetValue("stream", out var raw) || raw == null)
+                return true;
+
+            var value = raw switch
+            {
+                string text => text.Trim(),
+                JsonElement { ValueKind: JsonValueKind.String } element =>
+                    (element.GetString() ?? string.Empty).Trim(),
+                _ => string.Empty,
+            };
+            if (string.Equals(value, "stdout", StringComparison.OrdinalIgnoreCase))
+                return true;
+            if (string.Equals(value, "stderr", StringComparison.OrdinalIgnoreCase))
+            {
+                stream = CopilotBackgroundShellOutputStream.StandardError;
+                return true;
+            }
+            return false;
+        }
+
+        private static bool TryReadInt(
+            CopilotAgentToolInput input,
+            string name,
+            int defaultValue,
+            int minimum,
+            int maximum,
+            out int value)
+        {
+            if (!input.Arguments.TryGetValue(name, out var raw) || raw == null)
+            {
+                value = defaultValue;
+                return true;
+            }
+
+            if (raw is int intValue)
+                value = intValue;
+            else if (raw is long longValue
+                && longValue is >= int.MinValue and <= int.MaxValue)
+            {
+                value = (int)longValue;
+            }
+            else if (raw is JsonElement element
+                && element.ValueKind == JsonValueKind.Number
+                && element.TryGetInt32(out var elementValue))
+            {
+                value = elementValue;
+            }
+            else
+            {
+                value = 0;
+                return false;
+            }
+
+            return value >= minimum && value <= maximum;
+        }
+
+        private CopilotToolResult ValidationFailure(string error) =>
+            new()
+            {
+                ToolName = Name,
+                Success = false,
+                Summary = "The background output archive request is invalid.",
+                ErrorMessage = error,
+                FailureKind = CopilotToolFailureKind.Validation,
+            };
+    }
+
     public sealed class CopilotWaitForBackgroundShellCommandTool :
         ICopilotAgentDrivenTool,
         ICopilotProgressReportingTool,
@@ -378,7 +640,7 @@ namespace ColorVision.Copilot
 
         public string Name => "WaitForBackgroundShellCommand";
 
-        public string Description => "Wait for at most 30 seconds until one exact current-conversation background command reaches a terminal state or its bounded redacted stdout/stderr contains an optional literal marker. Bounded redacted output changes and pre-truncation character growth are reported through the live tool-progress stream while waiting. A timeout is an observed running state, not proof of readiness. This tool performs no process mutation and never exposes another conversation.";
+        public string Description => "Wait for at most 30 seconds until one exact current-conversation background command reaches a terminal state or its bounded redacted stdout/stderr preview contains an optional literal marker. Bounded redacted preview changes and pre-truncation character growth are reported through the live tool-progress stream while waiting. A timeout is an observed running state, not proof of readiness. Use ReadBackgroundShellCommandOutput for omitted archived evidence. This tool performs no process mutation and never exposes another conversation.";
 
         public int MaximumObservationAttempts => 4;
 
@@ -900,7 +1162,21 @@ namespace ColorVision.Copilot
                 .Append("stdout_truncated: ")
                 .AppendLine(snapshot.StandardOutputTruncated ? "true" : "false")
                 .Append("stderr_truncated: ")
-                .AppendLine(snapshot.StandardErrorTruncated ? "true" : "false");
+                .AppendLine(snapshot.StandardErrorTruncated ? "true" : "false")
+                .Append("stdout_archive_available: ")
+                .AppendLine(snapshot.StandardOutputArchiveAvailable ? "true" : "false")
+                .Append("stdout_archived_characters: ")
+                .AppendLine(snapshot.ArchivedStandardOutputCharacters.ToString(
+                    CultureInfo.InvariantCulture))
+                .Append("stdout_archive_truncated: ")
+                .AppendLine(snapshot.StandardOutputArchiveTruncated ? "true" : "false")
+                .Append("stderr_archive_available: ")
+                .AppendLine(snapshot.StandardErrorArchiveAvailable ? "true" : "false")
+                .Append("stderr_archived_characters: ")
+                .AppendLine(snapshot.ArchivedStandardErrorCharacters.ToString(
+                    CultureInfo.InvariantCulture))
+                .Append("stderr_archive_truncated: ")
+                .AppendLine(snapshot.StandardErrorArchiveTruncated ? "true" : "false");
             if (includeOutput)
             {
                 builder.AppendLine("stdout:")
