@@ -1,3 +1,4 @@
+#pragma warning disable CA1822
 using System;
 using System.Collections.Generic;
 using System.Linq;
