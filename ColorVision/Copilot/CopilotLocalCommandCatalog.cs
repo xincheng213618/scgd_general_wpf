@@ -137,7 +137,13 @@ namespace ColorVision.Copilot
                 new("cancel", "取消指定循环任务", AcceptsArguments: true),
             ]),
             new("/approve", "查看待确认操作，或打开指定操作的原生审查窗口", CopilotLocalCommandKind.Approve, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/approve [N]"),
-            new("/usage", "查看当前会话 Token、Agent 调用、时延与最新供应商限额", CopilotLocalCommandKind.Usage, AvailableWhileAgentRuns: true, Usage: "/usage"),
+            new("/usage", "查看当前会话或本地每日、每周与累计 Token 活动", CopilotLocalCommandKind.Usage, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: CopilotUsageCommand.Usage, Arguments:
+            [
+                new("session", "当前会话 Token、Agent 时延与最新供应商限额"),
+                new("daily", "最近 7 个本机日历日的逐日活动"),
+                new("weekly", "最近 30 个本机日历日的本地活动"),
+                new("cumulative", "全部本地会话历史累计"),
+            ]),
             new("/agents", "查看请求级子代理角色、预算边界与当前会话运行记录", CopilotLocalCommandKind.Subagents, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/agents [roles|runs [N]]", Arguments:
             [
                 new("roles", "只显示内置子代理角色及其只读能力"),

@@ -143,8 +143,9 @@ public sealed class CopilotLocalCommandHelpTests
     {
         var report = CopilotLocalCommandHelp.Format("usage");
 
-        Assert.StartsWith("/usage", report);
-        Assert.Contains("最新供应商限额", report);
+        Assert.StartsWith("/usage [session|daily|weekly|cumulative]", report);
+        Assert.Contains("本地每日、每周与累计 Token 活动", report);
+        Assert.Contains("参数：可选", report);
         Assert.Contains("Agent 运行中：可立即执行", report);
     }
 

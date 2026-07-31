@@ -13,6 +13,14 @@ namespace ColorVision.Copilot
         All,
     }
 
+    internal enum CopilotConversationStatisticsDetailMode
+    {
+        Default,
+        Daily,
+        Weekly,
+        Cumulative,
+    }
+
     internal sealed record CopilotConversationDailyStatistics(
         DateOnly Date,
         int ActiveConversations,
@@ -133,9 +141,22 @@ namespace ColorVision.Copilot
 
         public static string Format(CopilotConversationStatisticsSnapshot snapshot)
         {
+            return Format(
+                snapshot,
+                "/stats",
+                CopilotConversationStatisticsDetailMode.Default);
+        }
+
+        public static string Format(
+            CopilotConversationStatisticsSnapshot snapshot,
+            string commandLabel,
+            CopilotConversationStatisticsDetailMode detailMode)
+        {
             ArgumentNullException.ThrowIfNull(snapshot);
+            ArgumentException.ThrowIfNullOrWhiteSpace(commandLabel);
             var builder = new StringBuilder()
-                .AppendLine("/stats · 本地会话统计")
+                .Append(commandLabel.Trim())
+                .AppendLine(" · 本地会话统计")
                 .Append("范围：")
                 .Append(FormatWindow(snapshot))
                 .Append(" · ")
@@ -188,7 +209,7 @@ namespace ColorVision.Copilot
                 .Append(" 天 · 最长连续 ")
                 .Append(FormatCount(snapshot.LongestStreakDays))
                 .AppendLine(" 天");
-            AppendDailyActivity(builder, snapshot);
+            AppendActivity(builder, snapshot, detailMode);
             builder.Append("边界：只汇总本机已保存消息中由 Provider 返回的 Token；会话分支复制的历史前缀不会重复计数。"
                 + "统计不代表账户账单、信用额度、套餐余额、费用、速率限制或未返回用量的失败调用。");
             return builder.ToString().TrimEnd();
@@ -294,6 +315,20 @@ namespace ColorVision.Copilot
             return (current, longest);
         }
 
+        private static void AppendActivity(
+            StringBuilder builder,
+            CopilotConversationStatisticsSnapshot snapshot,
+            CopilotConversationStatisticsDetailMode detailMode)
+        {
+            if (detailMode == CopilotConversationStatisticsDetailMode.Weekly)
+            {
+                AppendWeeklyActivity(builder, snapshot);
+                return;
+            }
+
+            AppendDailyActivity(builder, snapshot);
+        }
+
         private static void AppendDailyActivity(
             StringBuilder builder,
             CopilotConversationStatisticsSnapshot snapshot)
@@ -352,6 +387,59 @@ namespace ColorVision.Copilot
                     .Append(" · Token ")
                     .AppendLine(FormatTokens(day.Usage.EffectiveTotalTokens));
             }
+        }
+
+        private static void AppendWeeklyActivity(
+            StringBuilder builder,
+            CopilotConversationStatisticsSnapshot snapshot)
+        {
+            var visibleWeeks = snapshot.DailyActivity
+                .GroupBy(day => StartOfWeek(day.Date))
+                .OrderBy(group => group.Key)
+                .Select(group => new
+                {
+                    StartDate = group.Key < snapshot.StartDate
+                        ? snapshot.StartDate
+                        : group.Key,
+                    EndDate = group.Key.AddDays(6) > snapshot.EndDate
+                        ? snapshot.EndDate
+                        : group.Key.AddDays(6),
+                    UserTurns = SaturatingSum(group.Select(day => day.UserTurns)),
+                    TerminalResponses = SaturatingSum(group.Select(day => day.TerminalResponses)),
+                    InterruptedResponses = SaturatingSum(group.Select(day => day.InterruptedResponses)),
+                    Usage = group.Aggregate(
+                        CopilotTokenUsage.Empty,
+                        (total, day) => total.Add(day.Usage)),
+                })
+                .ToArray();
+            if (visibleWeeks.Length == 0)
+            {
+                builder.AppendLine("周活动明细：本窗口尚无已保存消息。");
+                return;
+            }
+
+            builder.AppendLine("本窗口周活动（周一至周日，本机时间）：");
+            foreach (var week in visibleWeeks)
+            {
+                builder.Append("  ")
+                    .Append(week.StartDate.ToString("MM-dd", CultureInfo.InvariantCulture))
+                    .Append(" 至 ")
+                    .Append(week.EndDate.ToString("MM-dd", CultureInfo.InvariantCulture))
+                    .Append(" · 提问 ")
+                    .Append(FormatCount(week.UserTurns))
+                    .Append(" · 回答 ")
+                    .Append(FormatCount(week.TerminalResponses))
+                    .Append(" · 中断 ")
+                    .Append(FormatCount(week.InterruptedResponses))
+                    .Append(" · Token ")
+                    .AppendLine(FormatTokens(week.Usage.EffectiveTotalTokens));
+            }
+        }
+
+        private static DateOnly StartOfWeek(DateOnly date)
+        {
+            var daysSinceMonday = ((int)date.DayOfWeek + 6) % 7;
+            return date.AddDays(-daysSinceMonday);
         }
 
         private static string FormatWindow(CopilotConversationStatisticsSnapshot snapshot)

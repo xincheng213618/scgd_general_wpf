@@ -2151,8 +2151,11 @@ namespace ColorVision.Copilot
                 case CopilotLocalCommandKind.Usage:
                     ShowLocalCommandResult(
                         command,
-                        CopilotConversationUsageDiagnostics.Format(
+                        CopilotUsageCommand.Format(
                             SelectedConversation,
+                            Conversations,
+                            DateTimeOffset.Now,
+                            invocation.Arguments,
                             CopilotProviderRateLimitTracker.GetSnapshot(SelectedProfile?.Id)));
                     break;
                 case CopilotLocalCommandKind.Subagents:

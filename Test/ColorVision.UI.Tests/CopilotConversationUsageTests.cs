@@ -9,12 +9,126 @@ public sealed class CopilotConversationUsageTests
     public void UsageCommandIsReadOnlyAndAvailableDuringAnActiveRequest()
     {
         var invocation = CopilotLocalCommandCatalog.Parse("/usage");
+        var daily = CopilotLocalCommandCatalog.Parse("/usage daily");
 
         Assert.NotNull(invocation);
         Assert.Equal(CopilotLocalCommandKind.Usage, invocation.Command.Kind);
         Assert.Empty(invocation.Arguments);
         Assert.True(invocation.Command.AvailableWhileAgentRuns);
+        Assert.True(invocation.Command.AcceptsArguments);
+        Assert.NotNull(daily);
+        Assert.Same(invocation.Command, daily.Command);
+        Assert.Equal("daily", daily.Arguments);
         Assert.Contains(CopilotLocalCommandCatalog.Suggest("/"), command => command.Name == "/usage");
+    }
+
+    [Theory]
+    [InlineData("daily", "最近 7 天", "/usage daily", "最近 7 日")]
+    [InlineData("weekly", "最近 30 天", "/usage weekly", "本窗口周活动")]
+    [InlineData("cumulative", "全部本地历史", "/usage cumulative", "最近活跃日")]
+    [InlineData("7", "最近 7 天", "/usage daily", "最近 7 日")]
+    [InlineData("30", "最近 30 天", "/usage weekly", "本窗口周活动")]
+    [InlineData("all", "全部本地历史", "/usage cumulative", "最近活跃日")]
+    public void UsageTimeViewsReuseBoundedLocalConversationStatistics(
+        string arguments,
+        string expectedWindow,
+        string expectedHeading,
+        string expectedDetailHeading)
+    {
+        var now = new DateTimeOffset(2026, 7, 31, 12, 0, 0, TimeSpan.FromHours(8));
+        var conversation = new CopilotConversationRecord();
+        conversation.Messages.Add(new CopilotChatMessage(CopilotChatRole.User, "Question")
+        {
+            CreatedAt = new DateTime(2026, 7, 31, 10, 0, 0),
+        });
+        var assistant = new CopilotChatMessage(CopilotChatRole.Assistant, "Answer")
+        {
+            CreatedAt = new DateTime(2026, 7, 31, 10, 1, 0),
+        };
+        assistant.SetReportedUsage(new CopilotTokenUsage(80, 20, 100));
+        conversation.Messages.Add(assistant);
+
+        var report = CopilotUsageCommand.Format(
+            conversation,
+            [conversation],
+            now,
+            arguments,
+            CopilotProviderRateLimitSnapshot.Empty);
+
+        Assert.StartsWith(expectedHeading + " · 本地会话统计", report);
+        Assert.Contains("范围：" + expectedWindow, report, StringComparison.Ordinal);
+        Assert.Contains(expectedDetailHeading, report, StringComparison.Ordinal);
+        Assert.Contains("Provider Token：已记录轮次 1/1", report, StringComparison.Ordinal);
+        Assert.Contains("只汇总本机已保存消息", report, StringComparison.Ordinal);
+        Assert.Contains("不代表账户账单", report, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void UsageSessionViewKeepsProviderLimitsAndRejectsUnknownViews()
+    {
+        var conversation = CreateConversation();
+        var rateLimits = new CopilotProviderRateLimitSnapshot
+        {
+            CapturedAtUtc = new DateTimeOffset(2026, 7, 31, 9, 0, 0, TimeSpan.Zero),
+            RequestLimit = 10,
+            RequestRemaining = 3,
+        };
+
+        var report = CopilotUsageCommand.Format(
+            conversation,
+            [conversation],
+            DateTimeOffset.Now,
+            "session",
+            rateLimits);
+
+        Assert.StartsWith("使用量 · ", report);
+        Assert.Contains("供应商限额：请求：剩余 3/10", report, StringComparison.Ordinal);
+        Assert.Equal(
+            "/usage 参数无效。可用 /usage、/usage session、/usage daily、/usage weekly 或 /usage cumulative。",
+            CopilotUsageCommand.Format(
+                conversation,
+                [conversation],
+                DateTimeOffset.Now,
+                "account",
+                rateLimits));
+    }
+
+    [Fact]
+    public void UsageWeeklyViewAggregatesMondayThroughSundayBuckets()
+    {
+        var conversation = new CopilotConversationRecord();
+        AddCompletedTurn(
+            conversation,
+            new DateTime(2026, 7, 2, 9, 0, 0),
+            new CopilotTokenUsage(40, 10, 50));
+        AddCompletedTurn(
+            conversation,
+            new DateTime(2026, 7, 20, 9, 0, 0),
+            new CopilotTokenUsage(80, 20, 100));
+        AddCompletedTurn(
+            conversation,
+            new DateTime(2026, 7, 27, 9, 0, 0),
+            new CopilotTokenUsage(150, 50, 200));
+
+        var report = CopilotUsageCommand.Format(
+            conversation,
+            [conversation],
+            new DateTimeOffset(2026, 7, 31, 12, 0, 0, TimeSpan.FromHours(8)),
+            "weekly",
+            CopilotProviderRateLimitSnapshot.Empty);
+
+        Assert.Contains(
+            "07-02 至 07-05 · 提问 1 · 回答 1 · 中断 0 · Token 50",
+            report,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "07-20 至 07-26 · 提问 1 · 回答 1 · 中断 0 · Token 100",
+            report,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "07-27 至 07-31 · 提问 1 · 回答 1 · 中断 0 · Token 200",
+            report,
+            StringComparison.Ordinal);
     }
 
     [Fact]
@@ -265,5 +379,19 @@ public sealed class CopilotConversationUsageTests
         var message = new CopilotChatMessage(CopilotChatRole.Assistant, content);
         conversation.Messages.Add(message);
         return message;
+    }
+
+    private static void AddCompletedTurn(
+        CopilotConversationRecord conversation,
+        DateTime createdAt,
+        CopilotTokenUsage usage)
+    {
+        conversation.Messages.Add(new CopilotChatMessage(CopilotChatRole.User, "Question")
+        {
+            CreatedAt = createdAt,
+        });
+        var assistant = AddAssistant(conversation, "Answer");
+        assistant.CreatedAt = createdAt.AddMinutes(1);
+        assistant.SetReportedUsage(usage);
     }
 }
