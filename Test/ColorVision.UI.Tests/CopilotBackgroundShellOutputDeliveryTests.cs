@@ -1,11 +1,15 @@
 using ColorVision.Copilot;
+using ColorVision.Copilot.Mcp;
+using ColorVision.Solution;
 using Microsoft.Extensions.AI;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
 namespace ColorVision.UI.Tests;
 
+[Collection(CopilotApprovalReviewTestGroup.CollectionName)]
 public sealed class CopilotBackgroundShellOutputDeliveryTests
 {
     [Fact]
@@ -297,6 +301,146 @@ public sealed class CopilotBackgroundShellOutputDeliveryTests
                     .BackgroundCommandCompleted);
     }
 
+    [Fact]
+    public async Task ApprovedToolReceivesDeferredOutputAndTerminalAfterApprovalResponse()
+    {
+        using var solutionManagerScope = new SolutionManagerTestScope();
+        using var provider = new ApprovalThenAnswerChatClient();
+        var tool = new ApprovalSignalTool();
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry([tool]),
+            new CopilotAgentContextBuilder(),
+            new CopilotToolExecutor(),
+            _ => provider,
+            EmptyExternalToolProvider.Instance,
+            new CopilotCapabilityCatalog());
+        var approvalReady = new TaskCompletionSource<string>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var agentEvents = new List<CopilotAgentEvent>();
+        var request = CreateRequest(
+            "conversation",
+            "Run the approval signal tool, then finish.");
+        var runTask = runtime.RunAsync(
+            request,
+            agentEvent =>
+            {
+                agentEvents.Add(agentEvent);
+                var actionId = agentEvent.ToolResult?.Approval?.ActionId;
+                if (!string.IsNullOrWhiteSpace(actionId))
+                    approvalReady.TrySetResult(actionId);
+            },
+            CancellationToken.None);
+        var readySignal = await Task.WhenAny(
+            approvalReady.Task,
+            runTask,
+            Task.Delay(TimeSpan.FromSeconds(5)));
+        var prematureResult = ReferenceEquals(readySignal, runTask)
+            ? await runTask
+            : null;
+        Assert.True(
+            ReferenceEquals(readySignal, approvalReady.Task),
+            $"run={prematureResult?.StopReason}; provider_calls={provider.StreamingCalls.Count}; executions={tool.ExecutionCount}; events="
+                + string.Join(
+                    " | ",
+                    agentEvents.Select(agentEvent =>
+                        agentEvent.ToolResult?.Summary
+                        ?? agentEvent.Text
+                        ?? agentEvent.Type.ToString())));
+        var approvalActionId = await approvalReady.Task;
+
+        try
+        {
+            Assert.True(runtime.TryEnqueueBackgroundShellCommandOutput(
+                CreateOutputEvent(
+                    "conversation",
+                    "output while approval is pending")));
+            Assert.True(runtime.TryEnqueueBackgroundShellCommandCompletion(
+                CreateCompletedCommand("conversation")));
+            Assert.True(CopilotMcpConfirmationStore.Instance.Approve(
+                approvalActionId,
+                new CopilotConfirmationReviewContext(
+                    request.ConversationId,
+                    request.TaskId,
+                    request.WorkspacePath),
+                out var approvalMessage),
+                approvalMessage);
+
+            var result = await runTask.WaitAsync(TimeSpan.FromSeconds(5));
+
+            Assert.Equal(CopilotAgentStopReason.Completed, result.StopReason);
+            Assert.Equal(1, tool.ExecutionCount);
+            var resumedCall = Assert.Single(
+                provider.StreamingCalls,
+                call => call.Any(message => message.Text.Contains(
+                    "<background_command_event>",
+                    StringComparison.Ordinal)));
+            var functionResult = resumedCall
+                .SelectMany(message => message.Contents)
+                .OfType<FunctionResultContent>()
+                .Single();
+            Assert.Contains(
+                "protected test action completed",
+                Convert.ToString(functionResult.Result) ?? string.Empty,
+                StringComparison.OrdinalIgnoreCase);
+            var resumedText = string.Join(
+                Environment.NewLine,
+                resumedCall.Select(message => message.Text));
+            var outputEventIndex = resumedText.IndexOf(
+                "<background_command_output_event>",
+                StringComparison.Ordinal);
+            var terminalEventIndex = resumedText.IndexOf(
+                "<background_command_event>",
+                StringComparison.Ordinal);
+            Assert.True(outputEventIndex >= 0);
+            Assert.True(terminalEventIndex > outputEventIndex);
+            Assert.Contains(
+                "\"content\":\"output while approval is pending\"",
+                resumedText,
+                StringComparison.Ordinal);
+            Assert.Single(
+                result.TaskEventJournal.Events,
+                item => item.Type
+                    == CopilotAgentTaskEventType
+                        .BackgroundCommandOutputObserved);
+            Assert.Single(
+                result.TaskEventJournal.Events,
+                item => item.Type
+                    == CopilotAgentTaskEventType
+                        .BackgroundCommandCompleted);
+            Assert.Single(
+                result.TaskEventJournal.Events,
+                item => item.Type
+                    == CopilotAgentTaskEventType.ApprovalApproved);
+            var journalEvents = result.TaskEventJournal.Events
+                .Select((item, index) => new
+                {
+                    Item = item,
+                    Index = index,
+                })
+                .ToArray();
+            var approvalEventIndex = journalEvents.Single(item =>
+                item.Item.Type
+                    == CopilotAgentTaskEventType.ApprovalApproved).Index;
+            var outputJournalIndex = journalEvents.Single(item =>
+                item.Item.Type
+                    == CopilotAgentTaskEventType
+                        .BackgroundCommandOutputObserved).Index;
+            var completionJournalIndex = journalEvents.Single(item =>
+                item.Item.Type
+                    == CopilotAgentTaskEventType
+                        .BackgroundCommandCompleted).Index;
+            Assert.True(outputJournalIndex > approvalEventIndex);
+            Assert.True(completionJournalIndex > outputJournalIndex);
+        }
+        finally
+        {
+            CopilotMcpConfirmationStore.Instance.Cancel(
+                approvalActionId,
+                out _,
+                "Approval delivery test cleanup.");
+        }
+    }
+
     private static string ExtractDeliveryId(string prompt)
     {
         var match = Regex.Match(
@@ -309,13 +453,15 @@ public sealed class CopilotBackgroundShellOutputDeliveryTests
 
     private static CopilotAgentRequest CreateRequest(
         string conversationId,
-        string userText)
+        string userText,
+        string workspacePath = "")
     {
         return new CopilotAgentRequest
         {
             ConversationId = conversationId,
             TaskId = CopilotAgentTaskEventIds.CreateRunId(),
             UserText = userText,
+            WorkspacePath = workspacePath,
             Profile = new CopilotProfileConfig
             {
                 VendorType = CopilotVendorType.Custom,
@@ -373,6 +519,147 @@ public sealed class CopilotBackgroundShellOutputDeliveryTests
             ObservedStandardOutputCharacters =
                 "final output before completion".Length,
         };
+    }
+
+    private sealed class ApprovalSignalTool :
+        ICopilotAgentDrivenTool,
+        ICopilotFrameworkApprovedTool
+    {
+        private int _executionCount;
+
+        public string Name => "ApprovalSignalTool";
+
+        public string Description =>
+            "Executes one protected test action after approval.";
+
+        public CopilotToolAccess Access => CopilotToolAccess.Write;
+
+        public CopilotToolApprovalMode ApprovalMode =>
+            CopilotToolApprovalMode.Always;
+
+        public int ExecutionCount => Volatile.Read(ref _executionCount);
+
+        public bool CanHandle(CopilotAgentRequest request) => true;
+
+        public bool IsAvailable(CopilotAgentRequest request) => true;
+
+        public Task<CopilotToolResult> ExecuteAsync(
+            CopilotAgentRequest request,
+            CopilotAgentToolInput toolInput,
+            CancellationToken cancellationToken)
+        {
+            throw new InvalidOperationException(
+                "The protected test action requires Framework approval.");
+        }
+
+        public Task<CopilotToolResult> ExecuteApprovedAsync(
+            CopilotAgentRequest request,
+            CopilotAgentToolInput toolInput,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            Interlocked.Increment(ref _executionCount);
+            return Task.FromResult(new CopilotToolResult
+            {
+                ToolName = Name,
+                Success = true,
+                Summary = "The protected test action completed.",
+            });
+        }
+    }
+
+    private sealed class SolutionManagerTestScope : IDisposable
+    {
+        private readonly FieldInfo _instanceField;
+        private readonly object? _previousInstance;
+
+        public SolutionManagerTestScope()
+        {
+            _instanceField = typeof(SolutionManager).GetField(
+                    "_instance",
+                    BindingFlags.Static | BindingFlags.NonPublic)
+                ?? throw new InvalidOperationException(
+                    "SolutionManager singleton field was not found.");
+            _previousInstance = _instanceField.GetValue(null);
+            _instanceField.SetValue(
+                null,
+                new SolutionManager(
+                    restoreLastWorkspace: false,
+                    tryCloseWorkspaceDocuments: null));
+        }
+
+        public void Dispose()
+        {
+            _instanceField.SetValue(null, _previousInstance);
+        }
+    }
+
+    private sealed class ApprovalThenAnswerChatClient : IChatClient
+    {
+        private int _callCount;
+
+        public List<IReadOnlyList<ChatMessage>> StreamingCalls { get; } =
+            new();
+
+        public Task<ChatResponse> GetResponseAsync(
+            IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null,
+            CancellationToken cancellationToken = default)
+        {
+            throw new InvalidOperationException(
+                "The approval scenario must remain on the streaming path.");
+        }
+
+        public async IAsyncEnumerable<ChatResponseUpdate>
+            GetStreamingResponseAsync(
+                IEnumerable<ChatMessage> messages,
+                ChatOptions? options = null,
+                [EnumeratorCancellation]
+                CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            StreamingCalls.Add(messages.ToArray());
+            if (Interlocked.Increment(ref _callCount) == 1)
+            {
+                var approvalToolName = options?.Tools?
+                    .OfType<AIFunction>()
+                    .Select(tool => tool.Name)
+                    .First(name => name.Contains(
+                        "approval_signal_tool",
+                        StringComparison.OrdinalIgnoreCase))
+                    ?? throw new InvalidOperationException(
+                        "The protected approval tool was not registered.");
+                yield return new ChatResponseUpdate(
+                    ChatRole.Assistant,
+                    [
+                        new FunctionCallContent(
+                            "call-approval",
+                            approvalToolName,
+                            new Dictionary<string, object?>()),
+                    ])
+                {
+                    FinishReason = ChatFinishReason.ToolCalls,
+                };
+                yield break;
+            }
+
+            yield return new ChatResponseUpdate(
+                ChatRole.Assistant,
+                "done")
+            {
+                FinishReason = ChatFinishReason.Stop,
+            };
+            await Task.CompletedTask;
+        }
+
+        public object? GetService(
+            Type serviceType,
+            object? serviceKey = null) =>
+            serviceType.IsInstanceOfType(this) ? this : null;
+
+        public void Dispose()
+        {
+        }
     }
 
     private sealed class CapturingChatClient : IChatClient

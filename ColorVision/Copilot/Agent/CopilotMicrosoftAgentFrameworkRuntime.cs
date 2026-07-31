@@ -48,6 +48,7 @@ namespace ColorVision.Copilot
             _deferredBackgroundShellCompletionsByConversation =
                 new(StringComparer.Ordinal);
         private readonly object _backgroundOutputRoutingSyncRoot = new();
+        private bool _isFrameworkApprovalPending;
         private readonly object _steeringSyncRoot = new();
         private ActiveSteeringContext? _activeSteeringContext;
 
@@ -164,7 +165,7 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(snapshot);
             lock (_backgroundOutputRoutingSyncRoot)
             {
-                return _userQuestionCoordinator.HasPendingQuestion
+                return ShouldDeferBackgroundShellSignals()
                     ? TryDeferBackgroundShellCommandCompletion(snapshot)
                     : TryEnqueueBackgroundShellCommandCompletionCore(snapshot);
             }
@@ -265,7 +266,7 @@ namespace ColorVision.Copilot
         private bool TryEnqueueBackgroundShellCommandOutputCore(
             CopilotBackgroundShellOutputMonitorEventArgs eventArgs)
         {
-            if (_userQuestionCoordinator.HasPendingQuestion)
+            if (ShouldDeferBackgroundShellSignals())
                 return _backgroundShellOutputEventInbox.TryEnqueue(eventArgs);
 
             ActiveSteeringContext? activeContext;
@@ -331,7 +332,8 @@ namespace ColorVision.Copilot
                     return false;
                 }
 
-                TryTransferDeferredBackgroundShellSignalsToActiveSession();
+                if (!_isFrameworkApprovalPending)
+                    TryTransferDeferredBackgroundShellSignalsToActiveSession();
                 return true;
             }
         }
@@ -422,6 +424,34 @@ namespace ColorVision.Copilot
             {
                 return false;
             }
+        }
+
+        private bool ShouldDeferBackgroundShellSignals()
+        {
+            return _isFrameworkApprovalPending
+                || _userQuestionCoordinator.HasPendingQuestion;
+        }
+
+        private void BeginFrameworkApprovalRouting()
+        {
+            lock (_backgroundOutputRoutingSyncRoot)
+                _isFrameworkApprovalPending = true;
+        }
+
+        private void CompleteFrameworkApprovalRouting()
+        {
+            lock (_backgroundOutputRoutingSyncRoot)
+            {
+                _isFrameworkApprovalPending = false;
+                if (!_userQuestionCoordinator.HasPendingQuestion)
+                    TryTransferDeferredBackgroundShellSignalsToActiveSession();
+            }
+        }
+
+        private void CancelFrameworkApprovalRouting()
+        {
+            lock (_backgroundOutputRoutingSyncRoot)
+                _isFrameworkApprovalPending = false;
         }
 
         public async Task<CopilotAgentRunResult> RunAsync(
@@ -958,6 +988,7 @@ namespace ColorVision.Copilot
             var contextWindowExceeded = false;
             var toolBudgetForcedFinalization = false;
             var deferredBackgroundOutputAccepted = false;
+            var frameworkApprovalAwaitingProviderUpdate = false;
             AIChatFinishReason? providerFinishReason = null;
             try
             {
@@ -967,6 +998,11 @@ namespace ColorVision.Copilot
                     await foreach (var update in agent.RunStreamingAsync(messages, session, null, agentLoopCancellation.Token))
                     {
                         agentLoopCancellation.Token.ThrowIfCancellationRequested();
+                        if (frameworkApprovalAwaitingProviderUpdate)
+                        {
+                            CompleteFrameworkApprovalRouting();
+                            frameworkApprovalAwaitingProviderUpdate = false;
+                        }
                         if (!deferredBackgroundOutputAccepted
                             && deferredBackgroundOutputMessages.Length > 0)
                         {
@@ -993,142 +1029,166 @@ namespace ColorVision.Copilot
                     }
 
                     if (approvalRequests.Count == 0)
-                        break;
-
-                    var responses = new List<AIContent>();
-                    foreach (var approvalRequest in approvalRequests)
                     {
-                        if (!bridge.TryBeginApproval(approvalRequest, out var reservation, out var error))
+                        if (frameworkApprovalAwaitingProviderUpdate)
                         {
-                            var policyDecision = CopilotFrameworkApprovalDecision.PolicyDenied(error);
-                            emit(CopilotAgentEvent.Status(policyDecision.FormatStatus("The protected tool call")));
-                            responses.Add(approvalRequest.CreateResponse(false, policyDecision.Reason));
-                            continue;
+                            CancelFrameworkApprovalRouting();
+                            frameworkApprovalAwaitingProviderUpdate = false;
                         }
+                        break;
+                    }
 
-                        var currentWorkspacePath = GetCurrentWorkspacePath();
-                        CopilotFrameworkApprovalDecision decision;
-                        if (CopilotAgentAccessPolicy.CanAutoApprove(
-                            request,
-                            reservation.Tool,
-                            currentWorkspacePath))
+                    BeginFrameworkApprovalRouting();
+                    var approvalRoutingCompleted = false;
+                    try
+                    {
+                        var responses = new List<AIContent>();
+                        foreach (var approvalRequest in approvalRequests)
                         {
-                            decision = CopilotFrameworkApprovalDecision.ApprovedByFullAccess();
-                            reservation.ApprovedByFullAccess = true;
-                            bridge.Approve(reservation);
-                            emit(CopilotAgentEvent.Status($"{reservation.Tool.Name} was approved by the temporary structured-workspace grant for this ColorVision task."));
-                        }
-                        else
-                        {
-                            var permissionOutcome = await bridge.EvaluatePermissionRequestAsync(
-                                reservation,
-                                cancellationToken);
-                            if (permissionOutcome.WasCancelled)
+                            if (!bridge.TryBeginApproval(approvalRequest, out var reservation, out var error))
                             {
-                                decision = CopilotFrameworkApprovalDecision.Cancelled(
-                                    permissionOutcome.Decision.Reason);
-                                bridge.Reject(reservation, decision);
-                                cancellationToken.ThrowIfCancellationRequested();
-                                throw new OperationCanceledException(
-                                    permissionOutcome.Decision.Reason,
-                                    cancellationToken);
+                                var policyDecision = CopilotFrameworkApprovalDecision.PolicyDenied(error);
+                                emit(CopilotAgentEvent.Status(policyDecision.FormatStatus("The protected tool call")));
+                                responses.Add(approvalRequest.CreateResponse(false, policyDecision.Reason));
+                                continue;
                             }
-                            if (!permissionOutcome.Decision.ShouldPrompt)
+
+                            var currentWorkspacePath = GetCurrentWorkspacePath();
+                            CopilotFrameworkApprovalDecision decision;
+                            if (CopilotAgentAccessPolicy.CanAutoApprove(
+                                request,
+                                reservation.Tool,
+                                currentWorkspacePath))
                             {
-                                decision = CopilotFrameworkApprovalDecision.PolicyDenied(
-                                    permissionOutcome.Decision.Reason,
-                                    permissionOutcome.Decision.FailureCode);
-                                bridge.Reject(reservation, decision);
+                                decision = CopilotFrameworkApprovalDecision.ApprovedByFullAccess();
+                                reservation.ApprovedByFullAccess = true;
+                                bridge.Approve(reservation);
+                                emit(CopilotAgentEvent.Status($"{reservation.Tool.Name} was approved by the temporary structured-workspace grant for this ColorVision task."));
                             }
                             else
                             {
-                                var handle = _approvalCoordinator.RequestApproval(
-                                    reservation.Tool,
-                                    request,
-                                    reservation.ToolInput,
-                                    reservation.CallId,
-                                    cancellationToken,
-                                    reservation.ExecutionScope);
-                                bridge.PublishAwaitingApproval(reservation, handle.Action);
-                                try
+                                var permissionOutcome = await bridge.EvaluatePermissionRequestAsync(
+                                    reservation,
+                                    cancellationToken);
+                                if (permissionOutcome.WasCancelled)
                                 {
-                                    if (CopilotAgentAccessPolicy.CanAutoReview(
-                                        request,
+                                    decision = CopilotFrameworkApprovalDecision.Cancelled(
+                                        permissionOutcome.Decision.Reason);
+                                    bridge.Reject(reservation, decision);
+                                    cancellationToken.ThrowIfCancellationRequested();
+                                    throw new OperationCanceledException(
+                                        permissionOutcome.Decision.Reason,
+                                        cancellationToken);
+                                }
+                                if (!permissionOutcome.Decision.ShouldPrompt)
+                                {
+                                    decision = CopilotFrameworkApprovalDecision.PolicyDenied(
+                                        permissionOutcome.Decision.Reason,
+                                        permissionOutcome.Decision.FailureCode);
+                                    bridge.Reject(reservation, decision);
+                                }
+                                else
+                                {
+                                    var handle = _approvalCoordinator.RequestApproval(
                                         reservation.Tool,
-                                        currentWorkspacePath))
+                                        request,
+                                        reservation.ToolInput,
+                                        reservation.CallId,
+                                        cancellationToken,
+                                        reservation.ExecutionScope);
+                                    bridge.PublishAwaitingApproval(reservation, handle.Action);
+                                    try
                                     {
-                                        emit(CopilotAgentEvent.Status(
-                                            $"{reservation.Tool.Name} is being checked by the task-scoped automatic permission reviewer."));
-                                        var automaticReview = await _automaticApprovalReviewer.ReviewAsync(
-                                            contextRecoveryChatClient,
+                                        if (CopilotAgentAccessPolicy.CanAutoReview(
                                             request,
                                             reservation.Tool,
-                                            handle.Action,
-                                            cancellationToken);
-                                        usage = usage.Add(automaticReview.Usage);
-                                        var automaticReviewReason = CopilotAgentTraceEntry.Sanitize(
-                                            automaticReview.Reason);
-                                        if (automaticReview.Verdict == CopilotAutomaticApprovalReviewVerdict.Approve)
+                                            currentWorkspacePath))
                                         {
-                                            var approvalWorkspacePath = GetCurrentWorkspacePath();
-                                            var approved = _approvalCoordinator.ApproveAfterAutomaticReview(
-                                                handle,
+                                            emit(CopilotAgentEvent.Status(
+                                                $"{reservation.Tool.Name} is being checked by the task-scoped automatic permission reviewer."));
+                                            var automaticReview = await _automaticApprovalReviewer.ReviewAsync(
+                                                contextRecoveryChatClient,
                                                 request,
                                                 reservation.Tool,
-                                                approvalWorkspacePath,
-                                                automaticReview.Reason,
-                                                out var approvalMessage);
-                                            emit(CopilotAgentEvent.Status(approved
-                                                ? $"{reservation.Tool.Name} passed automatic permission review ({automaticReview.RiskLevel}): {automaticReviewReason}"
-                                                : $"{reservation.Tool.Name} automatic approval could not be applied ({CopilotAgentTraceEntry.Sanitize(approvalMessage)}); the action still requires explicit user approval."));
+                                                handle.Action,
+                                                cancellationToken);
+                                            usage = usage.Add(automaticReview.Usage);
+                                            var automaticReviewReason = CopilotAgentTraceEntry.Sanitize(
+                                                automaticReview.Reason);
+                                            if (automaticReview.Verdict == CopilotAutomaticApprovalReviewVerdict.Approve)
+                                            {
+                                                var approvalWorkspacePath = GetCurrentWorkspacePath();
+                                                var approved = _approvalCoordinator.ApproveAfterAutomaticReview(
+                                                    handle,
+                                                    request,
+                                                    reservation.Tool,
+                                                    approvalWorkspacePath,
+                                                    automaticReview.Reason,
+                                                    out var approvalMessage);
+                                                emit(CopilotAgentEvent.Status(approved
+                                                    ? $"{reservation.Tool.Name} passed automatic permission review ({automaticReview.RiskLevel}): {automaticReviewReason}"
+                                                    : $"{reservation.Tool.Name} automatic approval could not be applied ({CopilotAgentTraceEntry.Sanitize(approvalMessage)}); the action still requires explicit user approval."));
+                                            }
+                                            else
+                                            {
+                                                emit(CopilotAgentEvent.Status(
+                                                    $"{reservation.Tool.Name} still requires explicit user approval: {automaticReviewReason}"));
+                                            }
                                         }
                                         else
                                         {
                                             emit(CopilotAgentEvent.Status(
-                                                $"{reservation.Tool.Name} still requires explicit user approval: {automaticReviewReason}"));
+                                                $"{reservation.Tool.Name} is waiting for explicit approval in ColorVision."));
                                         }
+
+                                        decision = await handle.Decision;
+                                        cancellationToken.ThrowIfCancellationRequested();
+                                    }
+                                    catch (OperationCanceledException)
+                                    {
+                                        bridge.CancelApproval(
+                                            reservation,
+                                            "The approval request was cancelled with the Agent run.");
+                                        throw;
+                                    }
+                                    if (decision.IsApproved)
+                                    {
+                                        bridge.Approve(reservation);
                                     }
                                     else
                                     {
-                                        emit(CopilotAgentEvent.Status(
-                                            $"{reservation.Tool.Name} is waiting for explicit approval in ColorVision."));
+                                        bridge.Reject(reservation, decision);
                                     }
-
-                                    decision = await handle.Decision;
-                                    cancellationToken.ThrowIfCancellationRequested();
-                                }
-                                catch (OperationCanceledException)
-                                {
-                                    bridge.CancelApproval(
-                                        reservation,
-                                        "The approval request was cancelled with the Agent run.");
-                                    throw;
-                                }
-                                if (decision.IsApproved)
-                                {
-                                    bridge.Approve(reservation);
-                                }
-                                else
-                                {
-                                    bridge.Reject(reservation, decision);
                                 }
                             }
-                        }
-                        emit(CopilotAgentEvent.Status(decision.FormatStatus(reservation.Tool.Name)));
-                        if (decision.IsApproved)
-                        {
-                            taskEventJournalBuilder.RecordApprovalDecision(
-                                reservation.Tool.Name,
-                                reservation.CallId,
-                                reservation.ApprovalActionId,
-                                approved: true,
-                                decision.Source.ToString());
+                            emit(CopilotAgentEvent.Status(decision.FormatStatus(reservation.Tool.Name)));
+                            if (decision.IsApproved)
+                            {
+                                taskEventJournalBuilder.RecordApprovalDecision(
+                                    reservation.Tool.Name,
+                                    reservation.CallId,
+                                    reservation.ApprovalActionId,
+                                    approved: true,
+                                    decision.Source.ToString());
+                            }
+
+                            responses.Add(approvalRequest.CreateResponse(decision.IsApproved, decision.Reason));
                         }
 
-                        responses.Add(approvalRequest.CreateResponse(decision.IsApproved, decision.Reason));
+                        messages =
+                        [
+                            new Microsoft.Extensions.AI.ChatMessage(
+                                ChatRole.User,
+                                responses),
+                        ];
+                        frameworkApprovalAwaitingProviderUpdate = true;
+                        approvalRoutingCompleted = true;
                     }
-
-                    messages = new[] { new Microsoft.Extensions.AI.ChatMessage(ChatRole.User, responses) };
+                    finally
+                    {
+                        if (!approvalRoutingCompleted)
+                            CancelFrameworkApprovalRouting();
+                    }
                 }
             }
             catch (OperationCanceledException) when (toolBudgetCancellation.Token.IsCancellationRequested
@@ -1904,6 +1964,7 @@ namespace ColorVision.Copilot
                 }
                 if (cleared)
                 {
+                    _isFrameworkApprovalPending = false;
                     _deferredBackgroundShellCompletionsByConversation.Remove(
                         context.ConversationId);
                 }
