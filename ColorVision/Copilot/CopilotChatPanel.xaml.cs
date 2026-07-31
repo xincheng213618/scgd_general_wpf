@@ -22,7 +22,6 @@ namespace ColorVision.Copilot
         private const double CompactSidebarThreshold = 960;
         private const double CompactComposerThreshold = 560;
         private const double ExpandedSidebarWidth = 232;
-        private const double CollapsedSidebarWidth = 48;
         private const double ProfileSelectorPopupMainWidth = 230;
         private const double ProfileSelectorPopupSubmenuWidth = 284;
         private const double ProfileSelectorPopupShadowInset = 14;

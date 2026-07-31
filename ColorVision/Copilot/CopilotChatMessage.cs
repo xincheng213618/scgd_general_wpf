@@ -1991,20 +1991,6 @@ namespace ColorVision.Copilot
                 or CopilotToolExecutionState.Interrupted;
         }
 
-        private static string FormatTraceState(CopilotToolExecutionState state) => state switch
-        {
-            CopilotToolExecutionState.Pending => "Pending",
-            CopilotToolExecutionState.Running => "Running...",
-            CopilotToolExecutionState.Completed => "Completed",
-            CopilotToolExecutionState.Failed => "Failed",
-            CopilotToolExecutionState.TimedOut => "Timed out",
-            CopilotToolExecutionState.Denied => "Denied",
-            CopilotToolExecutionState.Cancelled => "Cancelled",
-            CopilotToolExecutionState.Interrupted => "Interrupted",
-            CopilotToolExecutionState.AwaitingApproval => "Awaiting approval",
-            _ => "Unknown",
-        };
-
         private static string FormatTraceDuration(long durationMs)
         {
             if (durationMs < 1000)

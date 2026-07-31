@@ -117,7 +117,7 @@ namespace ColorVision.Copilot
                 changed = true;
             }
 
-            changed |= CopilotTemporaryProfileSource.Sync(Profiles, DateTimeOffset.UtcNow);
+            changed |= CopilotTemporaryProfileSource.Sync(Profiles);
 
             if (Profiles.Count == 0)
             {

@@ -542,13 +542,6 @@ namespace ColorVision.Copilot
             return string.Empty;
         }
 
-        private static string IndentText(string text, string prefix)
-        {
-            return string.Join(Environment.NewLine, (text ?? string.Empty)
-                .Split(new[] { "\r\n", "\n" }, StringSplitOptions.None)
-                .Select(line => prefix + line));
-        }
-
         private static string[] BuildObservationContentExcerpts(
             IReadOnlyList<CopilotAgentStepRecord> steps,
             bool includeContent,
