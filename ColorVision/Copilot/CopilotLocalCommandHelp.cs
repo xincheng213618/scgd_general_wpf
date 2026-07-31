@@ -17,6 +17,7 @@ namespace ColorVision.Copilot
                 CopilotLocalCommandKind.EffectiveConfig,
                 CopilotLocalCommandKind.Doctor,
                 CopilotLocalCommandKind.Tasks,
+                CopilotLocalCommandKind.BackgroundCommands,
                 CopilotLocalCommandKind.TaskLog,
                 CopilotLocalCommandKind.Queue,
                 CopilotLocalCommandKind.StopTask,

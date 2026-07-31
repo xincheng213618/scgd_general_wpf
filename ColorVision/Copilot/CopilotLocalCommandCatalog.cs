@@ -14,6 +14,7 @@ namespace ColorVision.Copilot
         Doctor,
         Feedback,
         Tasks,
+        BackgroundCommands,
         TaskLog,
         Queue,
         StopTask,
@@ -111,11 +112,10 @@ namespace ColorVision.Copilot
                 new("resume", "恢复“需要处理”中的第 N 项", AcceptsArguments: true),
                 new("dismiss", "经原生确认放弃“需要处理”中的第 N 项", AcceptsArguments: true),
             ]),
-            new("/ps", "同 /tasks；查看、停止、恢复或放弃指定任务恢复项", CopilotLocalCommandKind.Tasks, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/ps [stop N|resume N|dismiss N]", Arguments:
+            new("/ps", "查看当前会话由 Copilot 启动的后台命令、限长输出或停止进程树", CopilotLocalCommandKind.BackgroundCommands, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/ps [N|stop N|clear]", Arguments:
             [
-                new("stop", "经原生确认停止任务列表中的第 N 项", AcceptsArguments: true),
-                new("resume", "恢复“需要处理”中的第 N 项", AcceptsArguments: true),
-                new("dismiss", "经原生确认放弃“需要处理”中的第 N 项", AcceptsArguments: true),
+                new("stop", "经原生确认停止后台命令第 N 项的进程树", AcceptsArguments: true),
+                new("clear", "清除当前会话已经结束的后台命令记录"),
             ]),
             new("/task-log", "查看当前会话最近或失败的 Agent 工具、审批与停止事件", CopilotLocalCommandKind.TaskLog, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/task-log [N|errors]", Arguments:
             [

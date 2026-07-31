@@ -62,6 +62,7 @@ public sealed class CopilotLocalCommandHelpTests
     [InlineData("rewind", "/rewind [N]", "仅会话回溯分支")]
     [InlineData("rollback", "/rollback [N]", "精确文件修改")]
     [InlineData("add-dir", "/add-dir [绝对目录|list|remove N|clear]", "后续 Agent 请求")]
+    [InlineData("ps", "/ps [N|stop N|clear]", "后台命令")]
     [InlineData("personality", "/personality [friendly|pragmatic|none]", "默认沟通风格")]
     [InlineData("EFFORT", "/effort [auto|off|on|high|max]", "同 /reasoning")]
     public void DetailAcceptsNamesWithOrWithoutSlashAndPreservesAliases(

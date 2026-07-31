@@ -247,7 +247,7 @@ namespace ColorVision.Copilot
             }
         }
 
-        private static IReadOnlyList<string> BuildArguments(CopilotShellKind shell, string commandText)
+        internal static IReadOnlyList<string> BuildArguments(CopilotShellKind shell, string commandText)
         {
             return shell == CopilotShellKind.CommandPrompt
                 ? ["/d", "/s", "/c", commandText]
@@ -290,7 +290,7 @@ namespace ColorVision.Copilot
             return true;
         }
 
-        private static bool TryResolveExecution(
+        internal static bool TryResolveExecution(
             CopilotAgentRequest request,
             CopilotAgentToolInput input,
             out CopilotShellExecution execution,
@@ -341,7 +341,7 @@ namespace ColorVision.Copilot
             return true;
         }
 
-        private static string? FindTrustedShellExecutable(CopilotShellKind shell)
+        internal static string? FindTrustedShellExecutable(CopilotShellKind shell)
         {
             var windows = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
             var programFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
@@ -450,7 +450,7 @@ namespace ColorVision.Copilot
             };
         }
 
-        private readonly record struct CopilotShellExecution(
+        internal readonly record struct CopilotShellExecution(
             string CommandText,
             CopilotShellKind Shell,
             string WorkingDirectory,
@@ -550,7 +550,7 @@ namespace ColorVision.Copilot
             };
         }
 
-        private static Encoding GetStreamEncoding(CopilotShellKind shell)
+        internal static Encoding GetStreamEncoding(CopilotShellKind shell)
         {
             if (shell != CopilotShellKind.CommandPrompt)
                 return Encoding.UTF8;

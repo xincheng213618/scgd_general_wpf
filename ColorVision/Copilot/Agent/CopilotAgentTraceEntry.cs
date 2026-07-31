@@ -921,6 +921,9 @@ namespace ColorVision.Copilot
                 "InspectGitWorkingTree" => ("正在检查工作树", "检查了工作树"),
                 "InspectGitDiff" => ("正在读取 Git 差异", "读取了 Git 差异"),
                 "RunShellCommand" => ("正在运行命令", "运行了命令"),
+                "StartBackgroundShellCommand" => ("正在启动后台命令", "启动了后台命令"),
+                "InspectBackgroundShellCommands" => ("正在检查后台命令", "检查了后台命令"),
+                "StopBackgroundShellCommand" => ("正在停止后台命令", "停止了后台命令"),
                 "ConvertBatchImages" => ("正在转换图像", "转换了图像"),
                 "PreviewWorkspacePatchEnvelope" => ("正在准备修改", "准备了修改"),
                 "ApplyWorkspacePatchEnvelope" => ("正在修改文件", "修改了文件"),
@@ -1008,6 +1011,9 @@ namespace ColorVision.Copilot
                 "InspectGitWorkingTree" => "Git 工作树检查完成。",
                 "InspectGitDiff" => "Git 差异读取完成。",
                 "RunShellCommand" => "命令已执行。",
+                "StartBackgroundShellCommand" => ResultSummary,
+                "InspectBackgroundShellCommands" => "后台命令状态检查完成。",
+                "StopBackgroundShellCommand" => ResultSummary,
                 "PreviewWorkspacePatchEnvelope" => "文件修改预览已准备。",
                 "ApplyWorkspacePatchEnvelope" => WorkspaceChangeSetRolledBack
                     ? "这组文件修改已撤销。"

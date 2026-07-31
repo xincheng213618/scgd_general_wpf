@@ -33,16 +33,16 @@ public sealed class CopilotTaskDiagnosticsTests
     }
 
     [Fact]
-    public void PsCommandUsesTheSameTaskControlContract()
+    public void PsCommandUsesTheBackgroundProcessContractInsteadOfAgentTaskRecovery()
     {
         var invocation = CopilotLocalCommandCatalog.Parse("/ps");
         var stopInvocation = CopilotLocalCommandCatalog.Parse("/ps stop 3");
 
         Assert.NotNull(invocation);
-        Assert.Equal(CopilotLocalCommandKind.Tasks, invocation.Command.Kind);
+        Assert.Equal(CopilotLocalCommandKind.BackgroundCommands, invocation.Command.Kind);
         Assert.Empty(invocation.Arguments);
         Assert.True(invocation.Command.AvailableWhileAgentRuns);
-        Assert.Equal("/ps [stop N|resume N|dismiss N]", invocation.Command.Usage);
+        Assert.Equal("/ps [N|stop N|clear]", invocation.Command.Usage);
         Assert.Contains(CopilotLocalCommandCatalog.Suggest("/p"), command => command.Name == "/ps");
         Assert.NotNull(stopInvocation);
         Assert.Equal("stop 3", stopInvocation.Arguments);

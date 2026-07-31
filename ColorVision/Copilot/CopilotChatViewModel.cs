@@ -1988,6 +1988,9 @@ namespace ColorVision.Copilot
                 case CopilotLocalCommandKind.Tasks:
                     HandleTaskCommand(command, invocation.Arguments);
                     break;
+                case CopilotLocalCommandKind.BackgroundCommands:
+                    HandleBackgroundShellCommand(command, invocation.Arguments);
+                    break;
                 case CopilotLocalCommandKind.TaskLog:
                     ShowLocalCommandResult(
                         command,
@@ -2686,6 +2689,8 @@ namespace ColorVision.Copilot
             var skillUsage = CopilotAgentSkillUsageStore.Shared.GetSnapshot();
             var activeRun = ActiveHostedRun;
             var conversation = SelectedConversation;
+            var backgroundCommands =
+                CopilotBackgroundShellCommandRegistry.Shared.GetSnapshots(conversation?.Id);
             var conversationMessages = conversation?.Messages
                 ?.Where(message => message != null)
                 .ToArray() ?? [];
@@ -2741,6 +2746,8 @@ namespace ColorVision.Copilot
                 ActiveDocumentPath = turnSnapshot.ActiveDocumentPath,
                 AdditionalReadRootCount = CopilotAdditionalDirectoryCommand.NormalizeStoredPaths(
                     conversation?.AdditionalReadRootPaths).Length,
+                BackgroundCommandCount = backgroundCommands.Count,
+                ActiveBackgroundCommandCount = backgroundCommands.Count(item => item.IsActive),
                 PreferredShell = defaults.PreferredShell,
                 ContextWindowTokens = defaults.ContextWindowTokens,
                 RequestTokenBudget = defaults.RequestTokenBudget,
@@ -2923,6 +2930,135 @@ namespace ColorVision.Copilot
             if (pausedGoal)
                 report += " 对应的活动持续目标也已暂停。";
             ShowLocalCommandResult(command, report);
+        }
+
+        private void HandleBackgroundShellCommand(
+            CopilotLocalCommand command,
+            string arguments)
+        {
+            var request = CopilotBackgroundShellCommandDiagnostics.ParseCommand(arguments);
+            if (request.Action == CopilotBackgroundShellCommandAction.Invalid)
+            {
+                ShowLocalCommandResult(
+                    command,
+                    CopilotBackgroundShellCommandDiagnostics.Usage);
+                return;
+            }
+
+            var conversation = SelectedConversation;
+            var snapshots = CopilotBackgroundShellCommandRegistry.Shared.GetSnapshots(
+                conversation?.Id);
+            if (request.Action == CopilotBackgroundShellCommandAction.List)
+            {
+                ShowLocalCommandResult(
+                    command,
+                    CopilotBackgroundShellCommandDiagnostics.FormatList(
+                        conversation,
+                        snapshots,
+                        DateTimeOffset.UtcNow));
+                return;
+            }
+            if (request.Action == CopilotBackgroundShellCommandAction.Clear)
+            {
+                var cleared = CopilotBackgroundShellCommandRegistry.Shared.ClearCompleted(
+                    conversation?.Id);
+                ShowLocalCommandResult(
+                    command,
+                    cleared == 0
+                        ? "当前会话没有可清理的已结束后台命令；运行中的命令未改变。"
+                        : $"已清理当前会话 {cleared:N0} 条结束记录；运行中的后台命令未改变。");
+                return;
+            }
+
+            var snapshot = CopilotBackgroundShellCommandDiagnostics.Find(
+                snapshots,
+                request.Position);
+            if (snapshot == null)
+            {
+                ShowLocalCommandResult(
+                    command,
+                    $"当前会话没有后台命令 #{request.Position:N0}。输入 /ps 刷新列表；编号可能已随完成记录清理而变化。");
+                return;
+            }
+            if (request.Action == CopilotBackgroundShellCommandAction.Inspect)
+            {
+                ShowLocalCommandResult(
+                    command,
+                    CopilotBackgroundShellCommandDiagnostics.FormatDetails(
+                        snapshot,
+                        request.Position,
+                        DateTimeOffset.UtcNow));
+                return;
+            }
+            if (!snapshot.IsActive)
+            {
+                ShowLocalCommandResult(
+                    command,
+                    $"后台命令 #{request.Position:N0} 已经是“{snapshot.State}”，没有重复发送停止请求。"
+                    + Environment.NewLine
+                    + Environment.NewLine
+                    + CopilotBackgroundShellCommandDiagnostics.FormatDetails(
+                        snapshot,
+                        request.Position,
+                        DateTimeOffset.UtcNow));
+                return;
+            }
+
+            var confirmation = MessageBox.Show(
+                Application.Current.GetActiveWindow(),
+                CopilotBackgroundShellCommandDiagnostics.FormatStopConfirmation(
+                    snapshot,
+                    request.Position),
+                "ColorVision",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+            if (confirmation != MessageBoxResult.Yes)
+            {
+                ShowLocalCommandResult(
+                    command,
+                    $"停止后台命令 #{request.Position:N0} 已取消；进程树继续运行。");
+                return;
+            }
+
+            RunUiOperation(
+                () => StopBackgroundShellCommandAsync(
+                    command,
+                    conversation?.Id ?? string.Empty,
+                    snapshot.Id,
+                    request.Position),
+                "停止后台命令");
+        }
+
+        private async Task StopBackgroundShellCommandAsync(
+            CopilotLocalCommand command,
+            string conversationId,
+            string backgroundId,
+            int position)
+        {
+            var result = await CopilotBackgroundShellCommandRegistry.Shared.StopAsync(
+                conversationId,
+                backgroundId,
+                CancellationToken.None);
+            if (!result.Success || result.Snapshot == null)
+            {
+                ShowLocalCommandResult(
+                    command,
+                    "后台命令未停止："
+                    + (string.IsNullOrWhiteSpace(result.ErrorMessage)
+                        ? "命令已经离开当前会话或状态刚刚变化。"
+                        : result.ErrorMessage));
+                return;
+            }
+
+            ShowLocalCommandResult(
+                command,
+                $"已停止后台命令 #{position:N0} 的进程树。"
+                + Environment.NewLine
+                + Environment.NewLine
+                + CopilotBackgroundShellCommandDiagnostics.FormatDetails(
+                    result.Snapshot,
+                    position,
+                    DateTimeOffset.UtcNow));
         }
 
         private void ResumeTaskFromCommand(
@@ -8280,6 +8416,20 @@ namespace ColorVision.Copilot
                 return false;
 
             var target = conversation!;
+            var activeBackgroundCommands =
+                CopilotBackgroundShellCommandRegistry.Shared.GetSnapshots(target.Id)
+                    .Count(snapshot => snapshot.IsActive);
+            if (activeBackgroundCommands > 0)
+            {
+                MessageBox.Show(
+                    Application.Current.GetActiveWindow(),
+                    $"无法永久删除“{target.Title}”：当前会话还有 {activeBackgroundCommands:N0} 条后台命令在运行。"
+                    + $"{Environment.NewLine}{Environment.NewLine}请先切换到该会话，使用 /ps 查看并停止后台命令；进程树未改变。",
+                    "ColorVision",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                return false;
+            }
             var retentionBlocker = GetConversationRetentionBlocker(target);
             if (retentionBlocker != CopilotConversationRetentionBlocker.None)
             {
@@ -8321,6 +8471,7 @@ namespace ColorVision.Copilot
             }
 
             RemoveQueuedFollowUpRecoveryRecords(target.Id);
+            CopilotBackgroundShellCommandRegistry.Shared.ClearCompleted(target.Id);
             RemoveManagedAttachmentFiles(managedAttachments);
 
             if (wasSelected)
@@ -9917,6 +10068,17 @@ namespace ColorVision.Copilot
             RestoreQueuedFollowUpsToDrafts();
             var scheduledRuns = _taskHost.ScheduledRuns;
             _taskHost.Shutdown();
+            try
+            {
+                CopilotBackgroundShellCommandRegistry.Shared.ShutdownAsync()
+                    .GetAwaiter()
+                    .GetResult();
+            }
+            catch (Exception exception)
+            {
+                System.Diagnostics.Trace.TraceError(
+                    $"Copilot background process shutdown failed: {exception}");
+            }
             FinalizeUnstartedRunsForShutdown(scheduledRuns);
             _stateSaveScheduler.Dispose();
             PublishSelectedTaskEventJournal();

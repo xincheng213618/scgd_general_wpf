@@ -63,6 +63,8 @@ public sealed class CopilotStatusDiagnosticsTests
             ConversationParentId = "conversation-parent",
             ConversationRootId = "conversation-root",
             AdditionalReadRootCount = 2,
+            BackgroundCommandCount = 3,
+            ActiveBackgroundCommandCount = 1,
         });
 
         Assert.Contains("会话：Camera recovery", report, StringComparison.Ordinal);
@@ -77,6 +79,7 @@ public sealed class CopilotStatusDiagnosticsTests
             report,
             StringComparison.Ordinal);
         Assert.Contains("附加只读目录：2", report, StringComparison.Ordinal);
+        Assert.Contains("后台命令：1 运行中 / 3 保留", report, StringComparison.Ordinal);
     }
 
     [Fact]

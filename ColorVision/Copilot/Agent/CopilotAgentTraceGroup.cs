@@ -143,7 +143,7 @@ namespace ColorVision.Copilot
                 _ when toolName.StartsWith("Delegate", StringComparison.Ordinal) => "delegation",
                 "QueryFlowExecutionStats" or "QueryDatabaseSql" => "database-query",
                 "ExecuteDatabaseSql" => "database-write",
-                "InspectWindowsSystem" or "InspectWindowsProcesses" or "InspectWindowsServices" or "InspectTcpPort" or "InspectGitWorkingTree" or "InspectGitDiff" or "RunShellCommand" => "command",
+                "InspectWindowsSystem" or "InspectWindowsProcesses" or "InspectWindowsServices" or "InspectTcpPort" or "InspectGitWorkingTree" or "InspectGitDiff" or "RunShellCommand" or "StartBackgroundShellCommand" or "InspectBackgroundShellCommands" or "StopBackgroundShellCommand" => "command",
                 "PreviewWorkspacePatchEnvelope" or "ApplyWorkspacePatchEnvelope" or "RollbackWorkspacePatchEnvelope" => "workspace",
                 "CreateFlow" or "ApplyTemplatePatch" or "TemplatePatch" or "ExecuteMenu" or "SetLanguage" or "SetTheme" => "application",
                 _ => "tool:" + toolName,
