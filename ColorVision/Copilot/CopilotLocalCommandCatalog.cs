@@ -19,6 +19,7 @@ namespace ColorVision.Copilot
         RecurringPrompt,
         Approve,
         Usage,
+        Subagents,
         Statistics,
         Context,
         ProjectInstructions,
@@ -134,6 +135,16 @@ namespace ColorVision.Copilot
             ]),
             new("/approve", "查看待确认操作，或打开指定操作的原生审查窗口", CopilotLocalCommandKind.Approve, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/approve [N]"),
             new("/usage", "查看当前会话 Token、Agent 调用、工具与时延统计", CopilotLocalCommandKind.Usage, AvailableWhileAgentRuns: true, Usage: "/usage"),
+            new("/agents", "查看请求级子代理角色、预算边界与当前会话运行记录", CopilotLocalCommandKind.Subagents, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/agents [roles|runs [N]]", Arguments:
+            [
+                new("roles", "只显示内置子代理角色及其只读能力"),
+                new("runs", "显示当前会话最近 N 次子代理运行", AcceptsArguments: true),
+            ]),
+            new("/subagents", "同 /agents；查看请求级子代理角色与运行记录", CopilotLocalCommandKind.Subagents, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/subagents [roles|runs [N]]", Arguments:
+            [
+                new("roles", "只显示内置子代理角色及其只读能力"),
+                new("runs", "显示当前会话最近 N 次子代理运行", AcceptsArguments: true),
+            ]),
             new("/stats", "汇总最近 7 天、30 天或全部本地会话活动", CopilotLocalCommandKind.Statistics, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/stats [7|30|all]", Arguments:
             [
                 new("7", "最近 7 个本机日历日"),

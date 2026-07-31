@@ -22,6 +22,7 @@ namespace ColorVision.Copilot
                 CopilotLocalCommandKind.RecurringPrompt,
                 CopilotLocalCommandKind.Approve,
                 CopilotLocalCommandKind.Usage,
+                CopilotLocalCommandKind.Subagents,
                 CopilotLocalCommandKind.Statistics,
                 CopilotLocalCommandKind.Context,
                 CopilotLocalCommandKind.ProjectInstructions,

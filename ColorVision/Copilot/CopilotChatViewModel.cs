@@ -2005,6 +2005,11 @@ namespace ColorVision.Copilot
                 case CopilotLocalCommandKind.Usage:
                     ShowLocalCommandResult(command, CopilotConversationUsageDiagnostics.Format(SelectedConversation));
                     break;
+                case CopilotLocalCommandKind.Subagents:
+                    ShowLocalCommandResult(
+                        command,
+                        CopilotSubagentDiagnostics.Format(SelectedConversation, invocation.Arguments));
+                    break;
                 case CopilotLocalCommandKind.Statistics:
                     ShowLocalCommandResult(command, CopilotConversationStatistics.Format(
                         Conversations,
