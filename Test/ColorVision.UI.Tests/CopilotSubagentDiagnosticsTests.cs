@@ -21,6 +21,7 @@ public sealed class CopilotSubagentDiagnosticsTests
         Assert.Contains(suggestions, item => item.Name == "/agents roles");
         Assert.Contains(suggestions, item => item.Name == "/agents runs");
         Assert.Contains(suggestions, item => item.Name == "/agents show");
+        Assert.Contains(suggestions, item => item.Name == "/agents close");
         Assert.Contains(suggestions, item => item.Name == "/agents steer");
         Assert.Contains(suggestions, item => item.Name == "/agents stop");
     }
@@ -82,6 +83,25 @@ public sealed class CopilotSubagentDiagnosticsTests
         Assert.Equal(
             expectedValid
                 ? CopilotSubagentDiagnosticAction.Show
+                : CopilotSubagentDiagnosticAction.Invalid,
+            request.Action);
+        Assert.Equal(expectedValid ? arguments.Split(' ')[1] : string.Empty, request.RunId);
+        Assert.Empty(request.Message);
+    }
+
+    [Theory]
+    [InlineData("close explore-123abc", true)]
+    [InlineData("CLOSE scout-abc123", true)]
+    [InlineData("close", false)]
+    [InlineData("close explore-123 extra", false)]
+    [InlineData("close ../explore-123", false)]
+    public void CloseCommandRequiresOneBoundedRunId(string arguments, bool expectedValid)
+    {
+        var request = CopilotSubagentDiagnostics.ParseCommand(arguments);
+
+        Assert.Equal(
+            expectedValid
+                ? CopilotSubagentDiagnosticAction.Close
                 : CopilotSubagentDiagnosticAction.Invalid,
             request.Action);
         Assert.Equal(expectedValid ? arguments.Split(' ')[1] : string.Empty, request.RunId);
@@ -316,6 +336,74 @@ public sealed class CopilotSubagentDiagnosticsTests
     }
 
     [Fact]
+    public void CloseHidesOnlyCompletedRunsWhileRetainingDirectDetails()
+    {
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        var assistant = new CopilotChatMessage(CopilotChatRole.Assistant, "Parent answer");
+        var completed = new CopilotAgentTraceEntry
+        {
+            ToolName = "DelegateScout",
+            State = CopilotToolExecutionState.Completed,
+            DelegatedRoleId = "scout",
+            DelegatedRunId = "scout-done",
+            DelegatedAnswerText = "Retained result.",
+            DelegatedAnswerHasSuccessfulEvidence = true,
+        };
+        var running = new CopilotAgentTraceEntry
+        {
+            ToolName = "DelegateExplore",
+            State = CopilotToolExecutionState.Running,
+            DelegatedRoleId = "explore",
+            DelegatedRunId = "explore-live",
+        };
+        assistant.AgentTraceEntries.Add(completed);
+        assistant.AgentTraceEntries.Add(running);
+        conversation.Messages.Add(assistant);
+
+        var closed = CopilotSubagentDiagnostics.CloseRun(conversation, "scout-done");
+        var visibleRuns = CopilotSubagentDiagnostics.CaptureRuns(conversation);
+        var runsReport = CopilotSubagentDiagnostics.Format(conversation, "runs");
+        var directReport = CopilotSubagentDiagnostics.Format(conversation, "show scout-done");
+
+        Assert.Equal(CopilotSubagentCloseResult.Closed, closed);
+        Assert.True(completed.DelegatedRunClosed);
+        Assert.Equal("Retained result.", completed.DelegatedAnswerText);
+        Assert.Contains("closed", completed.DiagnosticDetails, StringComparison.Ordinal);
+        Assert.Single(visibleRuns);
+        Assert.Equal("explore-live", visibleRuns[0].RunId);
+        Assert.DoesNotContain("scout-done", runsReport);
+        Assert.Contains("scout · scout-done · state=Completed · closed=true", directReport);
+        Assert.Contains("Retained result.", directReport);
+        Assert.Equal(
+            CopilotSubagentCloseResult.AlreadyClosed,
+            CopilotSubagentDiagnostics.CloseRun(conversation, "scout-done"));
+        Assert.Equal(
+            CopilotSubagentCloseResult.Active,
+            CopilotSubagentDiagnostics.CloseRun(conversation, "explore-live"));
+        Assert.False(running.DelegatedRunClosed);
+        Assert.Equal(
+            CopilotSubagentCloseResult.NotFound,
+            CopilotSubagentDiagnostics.CloseRun(conversation, "scout-missing"));
+    }
+
+    [Theory]
+    [InlineData(0, "回答和审计指标仍保留")]
+    [InlineData(1, "已关闭")]
+    [InlineData(2, "仍在运行，不能关闭")]
+    [InlineData(3, "没有可关闭的子代理")]
+    public void CloseResultExplainsTheNonDestructiveLifecycle(
+        int result,
+        string expected)
+    {
+        Assert.Contains(
+            expected,
+            CopilotSubagentDiagnostics.FormatCloseResult(
+                "scout-run",
+                (CopilotSubagentCloseResult)result),
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void DelegatedAnswerPreviewAndSteeringAuditAreBoundedAndPersisted()
     {
         var answer = new string('x', 20_050);
@@ -362,6 +450,13 @@ public sealed class CopilotSubagentDiagnosticsTests
         Assert.StartsWith(new string('x', 100), restored.DelegatedAnswerText);
         Assert.EndsWith("...<子代理结果预览已截断>", restored.DelegatedAnswerText);
         Assert.True(restored.DelegatedAnswerText.Length < answer.Length);
+
+        trace.DelegatedRunClosed = true;
+        restored = JsonConvert.DeserializeObject<CopilotAgentTraceEntry>(
+            JsonConvert.SerializeObject(trace));
+        Assert.NotNull(restored);
+        Assert.True(restored.DelegatedRunClosed);
+        Assert.NotEmpty(restored.DelegatedAnswerText);
     }
 
     [Fact]

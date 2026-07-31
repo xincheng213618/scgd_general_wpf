@@ -11,7 +11,7 @@ namespace ColorVision.Copilot
 {
     public sealed class CopilotAgentTraceEntry : ViewModelBase
     {
-        public const int CurrentSchemaVersion = 12;
+        public const int CurrentSchemaVersion = 13;
         private const int MaxSummaryLength = 800;
         private const int MaxDelegatedAnswerLength = 20_000;
         private const int MaxPersistedHookRuns = 64;
@@ -114,6 +114,8 @@ namespace ColorVision.Copilot
         public bool DelegatedAnswerHasSuccessfulEvidence { get; set; }
 
         public bool DelegatedAnswerWasTruncated { get; set; }
+
+        public bool DelegatedRunClosed { get; set; }
 
         [JsonProperty]
         public string WorkspaceChangeSetId { get; private set; } = string.Empty;
@@ -225,6 +227,8 @@ namespace ColorVision.Copilot
 
         public bool ShouldSerializeDelegatedAnswerWasTruncated() => DelegatedAnswerWasTruncated;
 
+        public bool ShouldSerializeDelegatedRunClosed() => DelegatedRunClosed;
+
         [JsonIgnore]
         public bool HasWorkspaceChangedFiles => WorkspaceChangedFiles?.Count > 0;
 
@@ -335,6 +339,8 @@ namespace ColorVision.Copilot
                         builder.Append(" · role: ").Append(DelegatedRoleId);
                     if (!string.IsNullOrWhiteSpace(DelegatedResumeFromRunId))
                         builder.Append(" · resumed from: ").Append(DelegatedResumeFromRunId);
+                    if (DelegatedRunClosed)
+                        builder.Append(" · closed");
                     builder.Append(" · stop: ").Append(DelegatedStopReason)
                         .Append(" · provider calls: ").Append(DelegatedProviderCalls)
                         .Append(" · tool calls: ").Append(DelegatedToolCalls);

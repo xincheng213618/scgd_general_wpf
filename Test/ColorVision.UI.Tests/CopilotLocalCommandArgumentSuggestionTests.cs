@@ -96,6 +96,9 @@ public sealed class CopilotLocalCommandArgumentSuggestionTests
         var stop = CopilotLocalCommandCatalog.Suggest(
             "/agents stop ",
             conversation: conversation);
+        var close = CopilotLocalCommandCatalog.Suggest(
+            "/agents close ",
+            conversation: conversation);
         var steer = CopilotLocalCommandCatalog.Suggest(
             "/agents steer ",
             conversation: conversation);
@@ -104,7 +107,7 @@ public sealed class CopilotLocalCommandArgumentSuggestionTests
             conversation: conversation);
 
         Assert.Equal(
-            ["/agents roles", "/agents runs", "/agents show", "/agents steer", "/agents stop"],
+            ["/agents roles", "/agents runs", "/agents show", "/agents close", "/agents steer", "/agents stop"],
             root.Select(item => item.Name));
         Assert.Equal(
             ["/agents show explore-live", "/agents show scout-done"],
@@ -113,6 +116,7 @@ public sealed class CopilotLocalCommandArgumentSuggestionTests
         Assert.Contains("正在执行 ReadLocalFile", show[0].Description);
         Assert.Contains("scout · 已完成 · 有结果", show[1].Description);
         Assert.Equal(["/agents stop explore-live"], stop.Select(item => item.Name));
+        Assert.Equal(["/agents close scout-done"], close.Select(item => item.Name));
         var steerRun = Assert.Single(steer);
         Assert.Equal("/agents steer explore-live", steerRun.Name);
         Assert.True(steerRun.AcceptsArguments);

@@ -2452,6 +2452,21 @@ namespace ColorVision.Copilot
                     CopilotSubagentDiagnostics.FormatSteeringResult(request.RunId, steeringResult));
                 return;
             }
+            if (request.Action == CopilotSubagentDiagnosticAction.Close)
+            {
+                var closeResult = CopilotSubagentDiagnostics.CloseRun(
+                    SelectedConversation,
+                    request.RunId);
+                if (closeResult == CopilotSubagentCloseResult.Closed)
+                {
+                    PersistState(immediate: true);
+                    RefreshLocalCommandSuggestions();
+                }
+                ShowLocalCommandResult(
+                    command,
+                    CopilotSubagentDiagnostics.FormatCloseResult(request.RunId, closeResult));
+                return;
+            }
             if (request.Action != CopilotSubagentDiagnosticAction.Stop)
             {
                 ShowLocalCommandResult(

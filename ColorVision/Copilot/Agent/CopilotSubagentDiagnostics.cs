@@ -15,6 +15,7 @@ namespace ColorVision.Copilot
         Stop,
         Steer,
         Show,
+        Close,
     }
 
     internal readonly record struct CopilotSubagentDiagnosticRequest(
@@ -23,10 +24,19 @@ namespace ColorVision.Copilot
         string RunId,
         string Message);
 
+    internal enum CopilotSubagentCloseResult
+    {
+        Closed,
+        AlreadyClosed,
+        Active,
+        NotFound,
+    }
+
     internal sealed record CopilotSubagentRunDiagnostic(
         string RunId,
         string ResumeFromRunId,
         string RoleId,
+        bool Closed,
         CopilotToolExecutionState State,
         string Activity,
         CopilotAgentStopReason StopReason,
@@ -56,8 +66,8 @@ namespace ColorVision.Copilot
         internal const int DefaultDisplayedRuns = 8;
         internal const int MaximumDisplayedRuns = 20;
         private const int MaximumRunSuggestionCharacters = 160;
-        internal const string Usage = "用法：/agents [roles|runs [N]|show <run_id>|steer <run_id> <message>|stop <run_id>]"
-            + "\nN 可取 1–20；show 查看当前会话中单个子运行的限长结果与审计详情；steer 向仍在运行的指定子代理排入新指令；stop 只停止该子代理；父 Agent 均继续运行；/subagents 为同义命令。";
+        internal const string Usage = "用法：/agents [roles|runs [N]|show <run_id>|close <run_id>|steer <run_id> <message>|stop <run_id>]"
+            + "\nN 可取 1–20；show 查看单个子运行；close 从默认列表关闭已完成运行但保留结果与审计；steer 向运行中子代理排入新指令；stop 只停止该子代理；父 Agent 均继续运行；/subagents 为同义命令。";
 
         public static CopilotSubagentDiagnosticRequest ParseCommand(string? arguments)
         {
@@ -105,6 +115,16 @@ namespace ColorVision.Copilot
             {
                 return new CopilotSubagentDiagnosticRequest(
                     CopilotSubagentDiagnosticAction.Show,
+                    0,
+                    tokens[1],
+                    string.Empty);
+            }
+            if (tokens.Length == 2
+                && string.Equals(tokens[0], "close", StringComparison.OrdinalIgnoreCase)
+                && IsValidRunId(tokens[1]))
+            {
+                return new CopilotSubagentDiagnosticRequest(
+                    CopilotSubagentDiagnosticAction.Close,
                     0,
                     tokens[1],
                     string.Empty);
@@ -179,9 +199,53 @@ namespace ColorVision.Copilot
             };
         }
 
+        public static CopilotSubagentCloseResult CloseRun(
+            CopilotConversationRecord? conversation,
+            string runId)
+        {
+            if (conversation == null || !IsValidRunId(runId))
+                return CopilotSubagentCloseResult.NotFound;
+
+            var matches = conversation.Messages
+                .SelectMany(message =>
+                    message?.AgentTraceEntries.AsEnumerable()
+                        ?? Enumerable.Empty<CopilotAgentTraceEntry>())
+                .Where(trace => trace != null
+                    && string.Equals(trace.DelegatedRunId, runId, StringComparison.Ordinal))
+                .ToArray();
+            if (matches.Length == 0)
+                return CopilotSubagentCloseResult.NotFound;
+            if (matches.Any(trace => IsActive(trace.State)))
+                return CopilotSubagentCloseResult.Active;
+            if (matches.All(trace => trace.DelegatedRunClosed))
+                return CopilotSubagentCloseResult.AlreadyClosed;
+
+            foreach (var trace in matches)
+                trace.DelegatedRunClosed = true;
+            return CopilotSubagentCloseResult.Closed;
+        }
+
+        public static string FormatCloseResult(
+            string runId,
+            CopilotSubagentCloseResult result)
+        {
+            return result switch
+            {
+                CopilotSubagentCloseResult.Closed =>
+                    $"已关闭子代理 {runId}；它将从默认运行列表与补全中隐藏，回答和审计指标仍保留，可继续用 /agents show {runId} 查看。",
+                CopilotSubagentCloseResult.AlreadyClosed =>
+                    $"子代理 {runId} 已关闭；可继续用 /agents show {runId} 查看保留详情。",
+                CopilotSubagentCloseResult.Active =>
+                    $"子代理 {runId} 仍在运行，不能关闭；可先等待完成或用 /agents stop {runId} 单独停止。",
+                _ =>
+                    $"当前会话没有可关闭的子代理 {runId}；请先用 /agents runs 查找有效 run_id。",
+            };
+        }
+
         public static IReadOnlyList<CopilotSubagentRunDiagnostic> CaptureRuns(
             CopilotConversationRecord? conversation,
-            CopilotSubagentRoleCatalog? catalog = null)
+            CopilotSubagentRoleCatalog? catalog = null,
+            bool includeClosed = false)
         {
             if (conversation == null)
                 return Array.Empty<CopilotSubagentRunDiagnostic>();
@@ -197,13 +261,16 @@ namespace ColorVision.Copilot
                 for (var traceIndex = message.AgentTraceEntries.Count - 1; traceIndex >= 0; traceIndex--)
                 {
                     var trace = message.AgentTraceEntries[traceIndex];
-                    if (trace == null || !TryResolveRoleId(trace, catalog, out var roleId))
+                    if (trace == null
+                        || trace.DelegatedRunClosed && !includeClosed
+                        || !TryResolveRoleId(trace, catalog, out var roleId))
                         continue;
 
                     runs.Add(new CopilotSubagentRunDiagnostic(
                         trace.DelegatedRunId,
                         trace.DelegatedResumeFromRunId,
                         roleId,
+                        trace.DelegatedRunClosed,
                         trace.State,
                         trace.ProgressMessage,
                         trace.DelegatedStopReason,
@@ -240,13 +307,15 @@ namespace ColorVision.Copilot
             string? action)
         {
             var normalizedAction = (action ?? string.Empty).Trim().ToLowerInvariant();
-            if (normalizedAction is not ("show" or "stop" or "steer"))
+            if (normalizedAction is not ("show" or "close" or "stop" or "steer"))
                 return Array.Empty<CopilotLocalCommandArgument>();
 
             var requiresActiveRun = normalizedAction is "stop" or "steer";
+            var requiresCompletedRun = normalizedAction == "close";
             return CaptureRuns(conversation)
                 .Where(run => IsValidRunId(run.RunId))
                 .Where(run => !requiresActiveRun || IsActive(run.State))
+                .Where(run => !requiresCompletedRun || !IsActive(run.State))
                 .DistinctBy(run => run.RunId, StringComparer.Ordinal)
                 .Take(MaximumDisplayedRuns)
                 .Select(run => new CopilotLocalCommandArgument(
@@ -264,7 +333,8 @@ namespace ColorVision.Copilot
             var request = ParseCommand(arguments);
             if (request.Action is CopilotSubagentDiagnosticAction.Invalid
                 or CopilotSubagentDiagnosticAction.Stop
-                or CopilotSubagentDiagnosticAction.Steer)
+                or CopilotSubagentDiagnosticAction.Steer
+                or CopilotSubagentDiagnosticAction.Close)
                 return Usage;
 
             catalog ??= CopilotSubagentRoleCatalog.Default;
@@ -300,11 +370,15 @@ namespace ColorVision.Copilot
             }
             else if (request.Action == CopilotSubagentDiagnosticAction.Show)
             {
-                AppendRunDetails(builder, CaptureRuns(conversation, catalog), request.RunId);
+                AppendRunDetails(
+                    builder,
+                    CaptureRuns(conversation, catalog, includeClosed: true),
+                    request.RunId);
             }
 
             builder.AppendLine()
                 .Append("边界：子代理由父 Agent 按请求创建并回传结果；运行期间可按 run_id 排入新指令或单独停止，父 Agent 继续运行；同一父请求内，可用完成结果给出的 run_id 续跑同角色且具有有效 checkpoint 的子代理。")
+                .Append("已完成运行可从默认列表关闭，但回答与审计仍保留，并可按已知 run_id 直接查看。")
                 .Append("它仍不是可切换、跨请求或应用重启后可恢复的独立会话。")
                 .Append("runs 列表仅显示限长运行元数据；show 只显示当前会话保存的、已脱敏且限长的子代理回答，不显示任务提示、工具参数、原始工具结果或隐藏推理。");
             return builder.ToString();
@@ -527,6 +601,8 @@ namespace ColorVision.Copilot
                 .Append(run.RunId)
                 .Append(" · state=")
                 .Append(run.State);
+            if (run.Closed)
+                builder.Append(" · closed=true");
             if (!string.IsNullOrWhiteSpace(run.ResumeFromRunId))
                 builder.Append(" · resumed_from=").Append(run.ResumeFromRunId);
             if (run.StopReason != CopilotAgentStopReason.None)
