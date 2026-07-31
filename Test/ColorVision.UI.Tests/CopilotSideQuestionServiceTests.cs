@@ -73,15 +73,29 @@ public sealed class CopilotSideQuestionServiceTests
         Assert.Equal(0, handler.RequestCount);
     }
 
-    [Fact]
-    public void BtwCommandAcceptsQuestionAndIsAvailableDuringAgentRuns()
+    [Theory]
+    [InlineData("/side what changed?", "/side")]
+    [InlineData("/btw what changed?", "/btw")]
+    public void SideQuestionAliasesAcceptQuestionsAndRemainAvailableDuringAgentRuns(
+        string input,
+        string expectedName)
     {
-        var invocation = CopilotLocalCommandCatalog.Parse("/btw what changed?");
+        var invocation = CopilotLocalCommandCatalog.Parse(input);
 
         Assert.NotNull(invocation);
+        Assert.Equal(expectedName, invocation.Command.Name);
         Assert.Equal(CopilotLocalCommandKind.SideQuestion, invocation.Command.Kind);
         Assert.True(invocation.Command.AvailableWhileAgentRuns);
         Assert.Equal("what changed?", invocation.Arguments);
+    }
+
+    [Fact]
+    public void SideAliasAppearsInComposerSuggestions()
+    {
+        var suggestion = Assert.Single(CopilotLocalCommandCatalog.Suggest("/sid"));
+
+        Assert.Equal("/side", suggestion.Name);
+        Assert.Equal("/side [问题]", suggestion.Usage);
     }
 
     private static CopilotProfileConfig CreateProfile()

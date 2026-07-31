@@ -297,6 +297,7 @@ namespace ColorVision.Copilot
             new("/clear", "清空当前上下文并开始新会话；可先命名旧会话", CopilotLocalCommandKind.ClearConversation, AcceptsArguments: true, Usage: "/clear [旧会话名称]"),
             new("/fork", "复制当前会话到新会话分支；Agent 运行时创建可见快照", CopilotLocalCommandKind.ForkConversation, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/fork [新会话名称]"),
             new("/branch", "同 /fork；只分叉会话，不创建 Git 分支", CopilotLocalCommandKind.ForkConversation, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/branch [新会话名称]"),
+            new("/side", "从当前会话上下文回答一次临时旁路问题，不切换或改写主会话", CopilotLocalCommandKind.SideQuestion, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/side [问题]"),
             new("/btw", "从当前会话上下文回答一次旁路问题，不影响主任务", CopilotLocalCommandKind.SideQuestion, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/btw [问题]"),
         ];
 

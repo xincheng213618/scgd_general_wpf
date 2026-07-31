@@ -22,7 +22,7 @@ public sealed class CopilotLocalCommandHelpTests
     [Fact]
     public void EveryFixedCommandDeclaresUsageBeginningWithItsName()
     {
-        Assert.Equal(72, CopilotLocalCommandCatalog.All.Count);
+        Assert.Equal(73, CopilotLocalCommandCatalog.All.Count);
         foreach (var command in CopilotLocalCommandCatalog.All)
         {
             Assert.False(string.IsNullOrWhiteSpace(command.Usage));
@@ -38,7 +38,7 @@ public sealed class CopilotLocalCommandHelpTests
         var report = CopilotLocalCommandHelp.Format(null);
         var lines = report.Split(Environment.NewLine);
 
-        Assert.Contains("Copilot 命令 · 72", report);
+        Assert.Contains("Copilot 命令 · 73", report);
         Assert.Contains("状态与诊断", report);
         Assert.Contains("工作区与 Agent", report);
         Assert.Contains("会话与输出", report);
@@ -65,6 +65,7 @@ public sealed class CopilotLocalCommandHelpTests
     [InlineData("ps", "/ps [N|stop N|clear]", "后台命令")]
     [InlineData("personality", "/personality [friendly|pragmatic|none]", "默认沟通风格")]
     [InlineData("EFFORT", "/effort [auto|off|on|high|max]", "同 /reasoning")]
+    [InlineData("side", "/side [问题]", "临时旁路问题")]
     public void DetailAcceptsNamesWithOrWithoutSlashAndPreservesAliases(
         string query,
         string expectedUsage,

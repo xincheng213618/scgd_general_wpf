@@ -4002,7 +4002,7 @@ namespace ColorVision.Copilot
             var normalizedQuestion = (question ?? string.Empty).Trim();
             if (normalizedQuestion.Length == 0)
             {
-                ShowLocalCommandResult(command, "用法：/btw <问题>。侧问只读取当前会话上下文，不使用工具，也不会写入主会话。");
+                ShowLocalCommandResult(command, $"用法：{command.Name} <问题>。侧问只读取当前会话上下文，不使用工具，也不会写入主会话。");
                 return;
             }
             if (IsSideQuestionRunning)
