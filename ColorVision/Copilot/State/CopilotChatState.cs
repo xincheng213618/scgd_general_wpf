@@ -6,7 +6,7 @@ namespace ColorVision.Copilot
 {
     public sealed class CopilotChatState
     {
-        public const int CurrentSchemaVersion = 27;
+        public const int CurrentSchemaVersion = 28;
 
         public int SchemaVersion { get; set; } = CurrentSchemaVersion;
 
@@ -35,6 +35,11 @@ namespace ColorVision.Copilot
         public bool UseMultilineComposer { get; set; }
 
         public bool ShouldSerializeUseMultilineComposer() => UseMultilineComposer;
+
+        public CopilotFollowUpBehavior DefaultFollowUpBehavior { get; set; } = CopilotFollowUpBehavior.Steer;
+
+        public bool ShouldSerializeDefaultFollowUpBehavior() =>
+            DefaultFollowUpBehavior != CopilotFollowUpBehavior.Steer;
 
         public ObservableCollection<CopilotQueuedFollowUpRecoveryRecord> QueuedFollowUpRecoveries { get; set; } = new();
 
@@ -84,11 +89,27 @@ namespace ColorVision.Copilot
             return true;
         }
 
+        internal bool SetDefaultFollowUpBehavior(CopilotFollowUpBehavior behavior)
+        {
+            var normalized = CopilotFollowUpPreference.Normalize(behavior);
+            if (DefaultFollowUpBehavior == normalized)
+                return false;
+
+            DefaultFollowUpBehavior = normalized;
+            return true;
+        }
+
         public bool EnsureInitialized(CopilotConfig config)
         {
             ArgumentNullException.ThrowIfNull(config);
 
             var changed = false;
+            var normalizedFollowUpBehavior = CopilotFollowUpPreference.Normalize(DefaultFollowUpBehavior);
+            if (DefaultFollowUpBehavior != normalizedFollowUpBehavior)
+            {
+                DefaultFollowUpBehavior = normalizedFollowUpBehavior;
+                changed = true;
+            }
             if (Conversations == null)
             {
                 Conversations = new ObservableCollection<CopilotConversationRecord>();

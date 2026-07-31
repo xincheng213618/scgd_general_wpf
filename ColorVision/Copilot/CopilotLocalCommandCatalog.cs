@@ -45,6 +45,7 @@ namespace ColorVision.Copilot
         Timestamps,
         CompactMode,
         MultilineComposer,
+        FollowUpBehavior,
         RetryResponse,
         CopyResponse,
         ExportConversation,
@@ -209,6 +210,11 @@ namespace ColorVision.Copilot
             [
                 new("on", "Enter 换行，Shift+Enter 或 Ctrl+Enter 发送"),
                 new("off", "Enter 发送，Shift+Enter 换行"),
+            ]),
+            new("/follow-up", "设置运行期间 Enter 默认调整当前任务或排到下一轮", CopilotLocalCommandKind.FollowUpBehavior, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/follow-up [steer|queue]", Arguments:
+            [
+                new("steer", "Enter 调整当前运行，Tab 排到下一轮"),
+                new("queue", "Enter 排到下一轮，Tab 调整当前运行"),
             ]),
             new("/retry", "重新生成当前会话最后一轮；refresh 会重新读取附件与网页上下文", CopilotLocalCommandKind.RetryResponse, AcceptsArguments: true, Usage: "/retry [refresh]", Arguments:
             [

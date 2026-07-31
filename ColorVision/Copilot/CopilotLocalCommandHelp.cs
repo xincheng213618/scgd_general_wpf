@@ -56,6 +56,7 @@ namespace ColorVision.Copilot
                 CopilotLocalCommandKind.Timestamps,
                 CopilotLocalCommandKind.CompactMode,
                 CopilotLocalCommandKind.MultilineComposer,
+                CopilotLocalCommandKind.FollowUpBehavior,
                 CopilotLocalCommandKind.RetryResponse,
                 CopilotLocalCommandKind.CopyResponse,
                 CopilotLocalCommandKind.ExportConversation,

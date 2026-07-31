@@ -342,6 +342,15 @@ namespace ColorVision.Copilot
 
         public bool UseMultilineComposer => _state.UseMultilineComposer;
 
+        public CopilotFollowUpBehavior DefaultFollowUpBehavior =>
+            CopilotFollowUpPreference.Normalize(_state.DefaultFollowUpBehavior);
+
+        public string SteerActionToolTip =>
+            $"把输入作为新指令加入当前 Agent 运行（{ResolveFollowUpShortcut(CopilotFollowUpBehavior.Steer)}）";
+
+        public string QueueFollowUpToolTip =>
+            $"排到当前 Agent 任务结束后再执行（{ResolveFollowUpShortcut(CopilotFollowUpBehavior.Queue)}）";
+
         public string ComposerInputToolTip => UseMultilineComposer
             ? "多行模式：Enter 换行，Shift+Enter 或 Ctrl+Enter 发送；↑/↓ 浏览请求历史；补全列表中可用 → 接受；Ctrl+R 搜索历史；Ctrl+S 暂存或恢复草稿；Ctrl+E 展开编辑"
             : "标准模式：Enter 发送，Shift+Enter 换行；↑/↓ 浏览请求历史；补全列表中可用 → 接受；Ctrl+R 搜索历史；Ctrl+S 暂存或恢复草稿；Ctrl+E 展开编辑";
@@ -1388,7 +1397,7 @@ namespace ColorVision.Copilot
                     {
                         CopilotHostedRunState.PauseRequested => "任务正在暂停 · 当前输入会保留到任务结束",
                         CopilotHostedRunState.CancelRequested => "任务正在取消 · 当前输入会保留到任务结束",
-                        _ when IsAgentRequestActive => $"{ComposerSubmitShortcutLabel} 调整 · Tab 排队 · @ 关联 · /btw 旁路 · /fork 分支",
+                        _ when IsAgentRequestActive => $"{ComposerSubmitShortcutLabel} {DefaultFollowUpActionLabel} · Tab {AlternateFollowUpActionLabel} · @ 关联 · /btw 旁路 · /fork 分支",
                         _ => "正在生成回复 · 可使用 /status 或 /btw",
                     }
                 : ResolveComposerRequestMode() == CopilotAgentMode.Plan
@@ -1396,6 +1405,15 @@ namespace ColorVision.Copilot
                 : IsConversationEmpty ? "随心输入 · @ 关联 · / 或 $ 命令" : "要求后续变更 · @ 关联 · / 或 $ 命令";
 
         private string ComposerSubmitShortcutLabel => UseMultilineComposer ? "Shift+Enter" : "Enter";
+
+        private string DefaultFollowUpActionLabel =>
+            DefaultFollowUpBehavior == CopilotFollowUpBehavior.Queue ? "排队" : "调整";
+
+        private string AlternateFollowUpActionLabel =>
+            DefaultFollowUpBehavior == CopilotFollowUpBehavior.Queue ? "调整" : "排队";
+
+        private string ResolveFollowUpShortcut(CopilotFollowUpBehavior behavior) =>
+            behavior == DefaultFollowUpBehavior ? ComposerSubmitShortcutLabel : "Tab";
 
         public bool IsEditingMessage => !string.IsNullOrWhiteSpace(_editingConversationId)
             && !string.IsNullOrWhiteSpace(_editingUserMessageId);
@@ -1826,8 +1844,9 @@ namespace ColorVision.Copilot
             && !IsInputEmpty;
 
         public bool CanQueueCurrentRunFollowUp => CanSteerCurrentRun
-            && ResolveComposerRequestMode() != CopilotAgentMode.Chat
-            && _taskHost.QueuedCount < _taskHost.MaxQueuedRuns;
+            && ActiveHostedRun is { } activeRun
+            && SelectedConversation is { } conversation
+            && _taskHost.EvaluateFollowUpAdmission(conversation.Id, activeRun.Mode).IsAllowed;
 
         public bool IsBusy
         {
@@ -2038,6 +2057,9 @@ namespace ColorVision.Copilot
                     break;
                 case CopilotLocalCommandKind.MultilineComposer:
                     ChangeMultilineComposerPreference(command, invocation.Arguments);
+                    break;
+                case CopilotLocalCommandKind.FollowUpBehavior:
+                    ChangeFollowUpBehavior(command, invocation.Arguments);
                     break;
                 case CopilotLocalCommandKind.RetryResponse:
                     RetryLatestResponse(command, invocation.Arguments);
@@ -4934,7 +4956,10 @@ namespace ColorVision.Copilot
                     return;
                 }
 
-                TrySteerCurrentRun();
+                if (DefaultFollowUpBehavior == CopilotFollowUpBehavior.Queue)
+                    TryQueueCurrentRunFollowUp();
+                else
+                    TrySteerCurrentRun();
                 return;
             }
             if (IsViewingQueuedRun)
@@ -4982,20 +5007,24 @@ namespace ColorVision.Copilot
             return true;
         }
 
-        private void TrySteerCurrentRun()
+        private bool TrySteerCurrentRun()
         {
             var steeringMessage = (InputText ?? string.Empty).Trim();
             var activeRun = ActiveHostedRun;
             if (!CanSteerCurrentRun || activeRun == null || string.IsNullOrWhiteSpace(steeringMessage))
-                return;
+                return false;
+            if (TryHandleComposerLocalCommandDuringRun(steeringMessage, out var recognizedLocalCommand))
+                return true;
+            if (recognizedLocalCommand)
+                return false;
             if (SelectedProfile == null
                 || !TryValidateComposerCharacterLimit(steeringMessage)
                 || !TryValidatePromptBudget(steeringMessage, activeRun.Mode, SelectedProfile))
             {
-                return;
+                return false;
             }
             if (!_turnRuntime.TryEnqueueSteeringMessage(steeringMessage))
-                return;
+                return false;
 
             var activeConversation = Conversations.FirstOrDefault(conversation => string.Equals(conversation.Id, activeRun.ConversationId, StringComparison.Ordinal));
             var activeAssistant = activeConversation?.Messages.LastOrDefault(message => !message.IsUser && message.IsThinkingInProgress);
@@ -5004,6 +5033,16 @@ namespace ColorVision.Copilot
 
             InputText = string.Empty;
             PersistState();
+            return true;
+        }
+
+        public bool TrySubmitAlternateCurrentRunFollowUp()
+        {
+            return CopilotFollowUpPreference.Alternate(DefaultFollowUpBehavior) switch
+            {
+                CopilotFollowUpBehavior.Steer => TrySteerCurrentRun(),
+                _ => TryQueueCurrentRunFollowUp(),
+            };
         }
 
         public bool TryQueueCurrentRunFollowUp()
@@ -5012,7 +5051,7 @@ namespace ColorVision.Copilot
             var activeRun = ActiveHostedRun;
             var conversation = SelectedConversation;
             var profile = SelectedProfile;
-            if (!CanQueueCurrentRunFollowUp
+            if (!CanSteerCurrentRun
                 || activeRun == null
                 || conversation == null
                 || profile == null
@@ -5020,14 +5059,16 @@ namespace ColorVision.Copilot
             {
                 return false;
             }
-            var localCommand = CopilotLocalCommandCatalog.Parse(prompt);
-            if (localCommand != null)
+            if (TryHandleComposerLocalCommandDuringRun(prompt, out var recognizedLocalCommand))
+                return true;
+            if (recognizedLocalCommand)
+                return false;
+            var preflightAdmission = _taskHost.EvaluateFollowUpAdmission(
+                conversation.Id,
+                activeRun.Mode);
+            if (!preflightAdmission.IsAllowed)
             {
-                if (CopilotLocalCommandAvailabilityPolicy.CanExecute(
-                    localCommand.Command,
-                    ResolveLocalCommandComposerContext()))
-                    return TryExecuteLocalCommand(prompt);
-                ReportUnavailableLocalCommandDuringRun(localCommand.Command);
+                ReportRequestAdmissionFailure(preflightAdmission);
                 return false;
             }
             if (!TryValidateComposerCharacterLimit(prompt)
@@ -5078,6 +5119,25 @@ namespace ColorVision.Copilot
             ClearPendingRequestModeOverride();
             PersistState(immediate: true);
             return true;
+        }
+
+        private bool TryHandleComposerLocalCommandDuringRun(
+            string prompt,
+            out bool recognized)
+        {
+            var invocation = CopilotLocalCommandCatalog.Parse(prompt);
+            recognized = invocation != null;
+            if (invocation == null)
+                return false;
+            if (CopilotLocalCommandAvailabilityPolicy.CanExecute(
+                invocation.Command,
+                ResolveLocalCommandComposerContext()))
+            {
+                return TryExecuteLocalCommand(prompt);
+            }
+
+            ReportUnavailableLocalCommandDuringRun(invocation.Command);
+            return false;
         }
 
         private void ReportUnavailableLocalCommandDuringRun(CopilotLocalCommand command)
@@ -5668,6 +5728,8 @@ namespace ColorVision.Copilot
                 OnPropertyChanged(nameof(UseMultilineComposer));
                 OnPropertyChanged(nameof(ComposerInputToolTip));
                 OnPropertyChanged(nameof(InputPlaceholder));
+                OnPropertyChanged(nameof(SteerActionToolTip));
+                OnPropertyChanged(nameof(QueueFollowUpToolTip));
                 PersistState(immediate: true);
             }
 
@@ -5676,6 +5738,38 @@ namespace ColorVision.Copilot
                 enabled
                     ? "多行输入模式已开启：Enter 插入换行，Shift+Enter 或 Ctrl+Enter 发送。\n\n该偏好只改变当前设备的输入按键，不修改消息、模型或权限。"
                     : "多行输入模式已关闭：Enter 发送，Shift+Enter 插入换行；Ctrl+Enter 仍可发送。\n\n该偏好只改变当前设备的输入按键，不修改消息、模型或权限。");
+        }
+
+        private void ChangeFollowUpBehavior(CopilotLocalCommand command, string arguments)
+        {
+            if (!CopilotFollowUpPreference.TryResolve(
+                    arguments,
+                    DefaultFollowUpBehavior,
+                    out var behavior))
+            {
+                ShowLocalCommandResult(command, CopilotFollowUpPreference.Usage);
+                return;
+            }
+
+            if (_state.SetDefaultFollowUpBehavior(behavior))
+            {
+                OnPropertyChanged(nameof(DefaultFollowUpBehavior));
+                OnPropertyChanged(nameof(InputPlaceholder));
+                OnPropertyChanged(nameof(SteerActionToolTip));
+                OnPropertyChanged(nameof(QueueFollowUpToolTip));
+                PersistState(immediate: true);
+            }
+
+            var primaryAction = behavior == CopilotFollowUpBehavior.Queue
+                ? "排到当前任务完成后的下一轮"
+                : "加入当前 Agent 运行并调整方向";
+            var alternateAction = behavior == CopilotFollowUpBehavior.Queue
+                ? "调整当前 Agent 运行"
+                : "排到当前任务完成后的下一轮";
+            ShowLocalCommandResult(
+                command,
+                $"运行期间的默认后续行为已设为：{ComposerSubmitShortcutLabel} {primaryAction}；Tab {alternateAction}。\n\n"
+                + "该偏好只影响普通后续消息；澄清问题答案和本地 / 命令仍按各自语义执行。");
         }
 
         private bool CanResumeAgentTask(CopilotAgentTaskSummary? task)
@@ -5778,6 +5872,7 @@ namespace ColorVision.Copilot
             CopilotRequestAdmissionReason.ActiveChatIsExclusive => "另一个普通对话正在生成；完成后才能发送新请求",
             CopilotRequestAdmissionReason.ChatCannotQueue => "普通对话不能排队；请等待当前 Agent 任务结束",
             CopilotRequestAdmissionReason.ConversationAlreadyScheduled => "此会话已有任务正在运行或排队",
+            CopilotRequestAdmissionReason.MissingConversation => "当前没有可接收请求的会话",
             CopilotRequestAdmissionReason.HostShutdown => "Copilot 正在关闭，不能再发送请求",
             CopilotRequestAdmissionReason.QueueFull => $"Agent 队列已满（{_taskHost.QueuedCount}/{_taskHost.MaxQueuedRuns}）",
             CopilotRequestAdmissionReason.NoActiveRun => "当前 Agent 已经结束；请直接发送这条请求",

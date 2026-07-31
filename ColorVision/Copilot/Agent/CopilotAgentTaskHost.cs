@@ -436,50 +436,50 @@ namespace ColorVision.Copilot
             var normalizedConversationId = conversationId.Trim();
             lock (_gate)
             {
-                if (_isShutdown)
+                admission = EvaluateFollowUpAdmissionNoLock(normalizedConversationId, mode);
+                if (!admission.IsAllowed)
                 {
                     run = null;
-                    admission = new CopilotRequestAdmissionResult(CopilotRequestAdmissionReason.HostShutdown);
-                    return false;
-                }
-                if (_activeWorkItem == null)
-                {
-                    run = null;
-                    admission = new CopilotRequestAdmissionResult(CopilotRequestAdmissionReason.NoActiveRun);
-                    return false;
-                }
-                if (!_activeWorkItem.Run.IsAgent)
-                {
-                    run = null;
-                    admission = new CopilotRequestAdmissionResult(CopilotRequestAdmissionReason.ActiveChatIsExclusive);
-                    return false;
-                }
-                if (!string.Equals(_activeWorkItem.Run.ConversationId, normalizedConversationId, StringComparison.Ordinal))
-                {
-                    run = null;
-                    admission = new CopilotRequestAdmissionResult(CopilotRequestAdmissionReason.FollowUpConversationMismatch);
-                    return false;
-                }
-                if (mode == CopilotAgentMode.Chat)
-                {
-                    run = null;
-                    admission = new CopilotRequestAdmissionResult(CopilotRequestAdmissionReason.ChatCannotQueue);
-                    return false;
-                }
-                if (_queuedWorkItems.Count >= MaxQueuedRuns)
-                {
-                    run = null;
-                    admission = new CopilotRequestAdmissionResult(CopilotRequestAdmissionReason.QueueFull);
                     return false;
                 }
 
                 run = new CopilotHostedAgentRun(normalizedConversationId, mode);
                 _queuedWorkItems.AddLast(new HostedRunWorkItem(run, operation));
-                admission = new CopilotRequestAdmissionResult(CopilotRequestAdmissionReason.Allowed);
             }
 
             Publish(CopilotAgentTaskHostChangeKind.Queued, run);
             return true;
+        }
+
+        internal CopilotRequestAdmissionResult EvaluateFollowUpAdmission(
+            string? conversationId,
+            CopilotAgentMode mode)
+        {
+            var normalizedConversationId = (conversationId ?? string.Empty).Trim();
+            if (normalizedConversationId.Length == 0)
+                return new CopilotRequestAdmissionResult(CopilotRequestAdmissionReason.MissingConversation);
+
+            lock (_gate)
+                return EvaluateFollowUpAdmissionNoLock(normalizedConversationId, mode);
+        }
+
+        private CopilotRequestAdmissionResult EvaluateFollowUpAdmissionNoLock(
+            string normalizedConversationId,
+            CopilotAgentMode mode)
+        {
+            if (_isShutdown)
+                return new CopilotRequestAdmissionResult(CopilotRequestAdmissionReason.HostShutdown);
+            if (_activeWorkItem == null)
+                return new CopilotRequestAdmissionResult(CopilotRequestAdmissionReason.NoActiveRun);
+            if (!_activeWorkItem.Run.IsAgent)
+                return new CopilotRequestAdmissionResult(CopilotRequestAdmissionReason.ActiveChatIsExclusive);
+            if (!string.Equals(_activeWorkItem.Run.ConversationId, normalizedConversationId, StringComparison.Ordinal))
+                return new CopilotRequestAdmissionResult(CopilotRequestAdmissionReason.FollowUpConversationMismatch);
+            if (mode == CopilotAgentMode.Chat)
+                return new CopilotRequestAdmissionResult(CopilotRequestAdmissionReason.ChatCannotQueue);
+            if (_queuedWorkItems.Count >= MaxQueuedRuns)
+                return new CopilotRequestAdmissionResult(CopilotRequestAdmissionReason.QueueFull);
+            return new CopilotRequestAdmissionResult(CopilotRequestAdmissionReason.Allowed);
         }
 
         private CopilotRequestAdmissionResult EvaluateRequestAdmissionNoLock(string normalizedConversationId, CopilotAgentMode mode)

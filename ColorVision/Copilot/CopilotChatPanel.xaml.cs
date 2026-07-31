@@ -898,7 +898,7 @@ namespace ColorVision.Copilot
             if (DataContext is CopilotChatViewModel queueViewModel
                 && e.Key == Key.Tab
                 && Keyboard.Modifiers == ModifierKeys.None
-                && queueViewModel.TryQueueCurrentRunFollowUp())
+                && queueViewModel.TrySubmitAlternateCurrentRunFollowUp())
             {
                 e.Handled = true;
                 return;

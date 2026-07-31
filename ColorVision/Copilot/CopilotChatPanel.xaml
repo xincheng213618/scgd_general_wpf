@@ -2883,7 +2883,7 @@
                                     FontSize="15"
                                     Style="{StaticResource CopilotIconButtonStyle}"
                                     Visibility="{Binding CanSteerCurrentRun, Converter={StaticResource bool2VisibilityConverter}}"
-                                    ToolTip="把输入作为新指令加入当前 Agent 运行（Enter）" />
+                                    ToolTip="{Binding SteerActionToolTip}" />
                             <Button Width="28"
                                     Height="28"
                                     Margin="0,0,6,0"
@@ -2892,7 +2892,7 @@
                                     FontSize="15"
                                     Style="{StaticResource CopilotIconButtonStyle}"
                                     Visibility="{Binding CanQueueCurrentRunFollowUp, Converter={StaticResource bool2VisibilityConverter}}"
-                                    ToolTip="排到当前 Agent 任务结束后再执行（Tab）" />
+                                    ToolTip="{Binding QueueFollowUpToolTip}" />
 
                             <Button x:Name="VoiceInputButton"
                                     Width="28"

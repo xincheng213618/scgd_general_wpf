@@ -155,6 +155,9 @@ public sealed class CopilotAgentFollowUpQueueTests
         });
         await activeStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
 
+        Assert.Equal(
+            expectedReason,
+            host.EvaluateFollowUpAdmission(conversationId, mode).Reason.ToString());
         Assert.False(host.TryScheduleFollowUp(
             conversationId,
             mode,
@@ -166,5 +169,50 @@ public sealed class CopilotAgentFollowUpQueueTests
 
         releaseActive.SetResult();
         await activeRun.Completion.WaitAsync(TimeSpan.FromSeconds(5));
+    }
+
+    [Fact]
+    public async Task FollowUpPreflightReportsQueueCapacityBeforeScheduling()
+    {
+        var host = new CopilotAgentTaskHost(maxQueuedRuns: 1);
+        var activeStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseActive = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var activeRun = host.Start("conversation", CopilotAgentMode.Auto, async _ =>
+        {
+            activeStarted.SetResult();
+            await releaseActive.Task;
+        });
+        await activeStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.Equal(
+            CopilotRequestAdmissionReason.Allowed,
+            host.EvaluateFollowUpAdmission("conversation", CopilotAgentMode.Auto).Reason);
+        Assert.True(host.TryScheduleFollowUp(
+            "conversation",
+            CopilotAgentMode.Auto,
+            _ => Task.CompletedTask,
+            out var queued,
+            out _));
+        Assert.NotNull(queued);
+        Assert.Equal(
+            CopilotRequestAdmissionReason.QueueFull,
+            host.EvaluateFollowUpAdmission("conversation", CopilotAgentMode.Auto).Reason);
+
+        releaseActive.SetResult();
+        await Task.WhenAll(activeRun.Completion, queued.Completion)
+            .WaitAsync(TimeSpan.FromSeconds(5));
+    }
+
+    [Fact]
+    public void FollowUpPreflightRejectsMissingConversationWithoutAnActiveRun()
+    {
+        var host = new CopilotAgentTaskHost();
+
+        Assert.Equal(
+            CopilotRequestAdmissionReason.MissingConversation,
+            host.EvaluateFollowUpAdmission(string.Empty, CopilotAgentMode.Auto).Reason);
+        Assert.Equal(
+            CopilotRequestAdmissionReason.NoActiveRun,
+            host.EvaluateFollowUpAdmission("conversation", CopilotAgentMode.Auto).Reason);
     }
 }
