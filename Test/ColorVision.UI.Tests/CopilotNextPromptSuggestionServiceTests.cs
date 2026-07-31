@@ -69,6 +69,20 @@ public sealed class CopilotNextPromptSuggestionServiceTests
     }
 
     [Fact]
+    public void RequestProfileDisablesReasoningWithoutMutatingConfiguredProfile()
+    {
+        var profile = CreateProfile();
+        profile.VendorType = CopilotVendorType.DeepSeek;
+        profile.ReasoningMode = CopilotReasoningMode.Max;
+
+        var requestProfile = CopilotNextPromptSuggestionService.CreateRequestProfile(profile);
+
+        Assert.Equal(CopilotReasoningMode.Max, profile.ReasoningMode);
+        Assert.Equal(CopilotReasoningMode.Disabled, requestProfile.ReasoningMode);
+        Assert.Equal(CopilotNextPromptSuggestionService.MaximumOutputTokens, requestProfile.MaxTokens);
+    }
+
+    [Fact]
     public void PredictionPolicyRejectsInterruptedAndCancelledAgentTurns()
     {
         var completedRun = new CopilotHostedAgentRun("conversation", CopilotAgentMode.Auto);

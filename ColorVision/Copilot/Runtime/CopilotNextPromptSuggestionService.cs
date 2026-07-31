@@ -67,6 +67,7 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(source);
             var profile = source.Clone();
             profile.MaxTokens = Math.Min(profile.MaxTokens, MaximumOutputTokens);
+            profile.ReasoningMode = CopilotReasoningMode.Disabled;
             var basePrompt = profile.EffectiveSystemPrompt.Trim();
             profile.UseSystemPromptOverride(string.IsNullOrWhiteSpace(basePrompt)
                 ? SystemInstruction

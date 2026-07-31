@@ -16,7 +16,7 @@ public sealed class CopilotPromptSuggestionPreferenceTests
         Assert.Equal(CopilotLocalCommandKind.PromptSuggestions, invocation.Command.Kind);
         Assert.True(invocation.Command.AvailableWhileAgentRuns);
         Assert.Equal(
-            ["on", "off", "predict-on", "predict-off"],
+            ["on", "off", "predict-on", "predict-off", "predict-model"],
             invocation.Command.Arguments!.Select(item => item.Value));
         Assert.Equal("off", invocation.Arguments);
     }
@@ -46,7 +46,7 @@ public sealed class CopilotPromptSuggestionPreferenceTests
             currentlyEnabled: true,
             out var enabled));
         Assert.True(enabled);
-        Assert.Contains("/suggestions [on|off|predict-on|predict-off]", CopilotPromptSuggestionPreference.Usage);
+        Assert.Contains("predict-model [current|Profile", CopilotPromptSuggestionPreference.Usage);
     }
 
     [Theory]
@@ -74,14 +74,42 @@ public sealed class CopilotPromptSuggestionPreferenceTests
         Assert.False(enabled);
     }
 
+    [Theory]
+    [InlineData("predict-model", "")]
+    [InlineData("PREDICT-MODEL current", "current")]
+    [InlineData("predict-model   Fast Profile  ", "Fast Profile")]
+    public void PredictedProfileCommandParsesOptionalTarget(
+        string arguments,
+        string expectedQuery)
+    {
+        Assert.True(CopilotPromptSuggestionPreference.TryParsePredictedProfileCommand(
+            arguments,
+            out var query));
+        Assert.Equal(expectedQuery, query);
+    }
+
+    [Theory]
+    [InlineData("predict-on")]
+    [InlineData("on")]
+    [InlineData("predict-modelish current")]
+    public void PredictedProfileCommandDoesNotConsumeOtherArguments(string arguments)
+    {
+        Assert.False(CopilotPromptSuggestionPreference.TryParsePredictedProfileCommand(
+            arguments,
+            out var query));
+        Assert.Empty(query);
+    }
+
     [Fact]
     public void DisabledPreferenceSurvivesRestartWhileDefaultIsOmitted()
     {
         var defaultState = CreateState();
         Assert.True(defaultState.EnablePromptHistoryCompletions);
         Assert.False(defaultState.EnablePredictedPromptSuggestions);
+        Assert.Empty(defaultState.PredictedPromptProfileId);
         Assert.Null(JObject.FromObject(defaultState)[nameof(CopilotChatState.EnablePromptHistoryCompletions)]);
         Assert.Null(JObject.FromObject(defaultState)[nameof(CopilotChatState.EnablePredictedPromptSuggestions)]);
+        Assert.Null(JObject.FromObject(defaultState)[nameof(CopilotChatState.PredictedPromptProfileId)]);
 
         var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
         try
@@ -113,6 +141,8 @@ public sealed class CopilotPromptSuggestionPreferenceTests
         {
             var state = CreateState();
             Assert.True(state.SetEnablePredictedPromptSuggestions(true));
+            Assert.True(state.SetPredictedPromptProfileId(
+                CopilotPromptSuggestionProfileSelection.CurrentProfileId));
             var store = new CopilotChatStateStore(root);
 
             store.Save(state);
@@ -120,7 +150,13 @@ public sealed class CopilotPromptSuggestionPreferenceTests
             var restored = new CopilotChatStateStore(root).Load();
 
             Assert.True(document[nameof(CopilotChatState.EnablePredictedPromptSuggestions)]!.Value<bool>());
+            Assert.Equal(
+                CopilotPromptSuggestionProfileSelection.CurrentProfileId,
+                document[nameof(CopilotChatState.PredictedPromptProfileId)]!.Value<string>());
             Assert.True(restored.EnablePredictedPromptSuggestions);
+            Assert.Equal(
+                CopilotPromptSuggestionProfileSelection.CurrentProfileId,
+                restored.PredictedPromptProfileId);
             Assert.Equal(CopilotChatState.CurrentSchemaVersion, restored.SchemaVersion);
         }
         finally

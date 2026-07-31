@@ -36,6 +36,10 @@ namespace ColorVision.Copilot
 
         public bool ShouldSerializeEnablePredictedPromptSuggestions() => EnablePredictedPromptSuggestions;
 
+        public string PredictedPromptProfileId { get; set; } = string.Empty;
+
+        public bool ShouldSerializePredictedPromptProfileId() => !string.IsNullOrWhiteSpace(PredictedPromptProfileId);
+
         public bool UseMultilineComposer { get; set; }
 
         public bool ShouldSerializeUseMultilineComposer() => UseMultilineComposer;
@@ -92,6 +96,16 @@ namespace ColorVision.Copilot
                 return false;
 
             EnablePredictedPromptSuggestions = enabled;
+            return true;
+        }
+
+        internal bool SetPredictedPromptProfileId(string? profileId)
+        {
+            var normalized = (profileId ?? string.Empty).Trim();
+            if (string.Equals(PredictedPromptProfileId, normalized, StringComparison.Ordinal))
+                return false;
+
+            PredictedPromptProfileId = normalized;
             return true;
         }
 

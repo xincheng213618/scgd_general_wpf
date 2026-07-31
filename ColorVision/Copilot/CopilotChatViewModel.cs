@@ -98,6 +98,8 @@ namespace ColorVision.Copilot
         private string _sideQuestionAnswer = string.Empty;
         private string _sideQuestionStatusText = string.Empty;
         private string _predictedNextPrompt = string.Empty;
+        private string _predictedNextPromptMetadata = string.Empty;
+        private string _lastPredictedPromptUsageText = string.Empty;
         private string _predictedNextPromptConversationId = string.Empty;
         private string _editingConversationId = string.Empty;
         private string _editingUserMessageId = string.Empty;
@@ -1198,6 +1200,18 @@ namespace ColorVision.Copilot
             TryResolvePredictedNextPromptCompletion(out var remainingText)
                 ? remainingText
                 : string.Empty;
+
+        public string PredictedNextPromptMetadata
+        {
+            get => _predictedNextPromptMetadata;
+            private set => SetProperty(ref _predictedNextPromptMetadata, value ?? string.Empty);
+        }
+
+        public string LastPredictedPromptUsageText
+        {
+            get => _lastPredictedPromptUsageText;
+            private set => SetProperty(ref _lastPredictedPromptUsageText, value ?? string.Empty);
+        }
 
         public bool TryAcceptPredictedNextPrompt()
         {
@@ -7444,6 +7458,14 @@ namespace ColorVision.Copilot
 
         private void ChangePromptSuggestionPreference(CopilotLocalCommand command, string arguments)
         {
+            if (CopilotPromptSuggestionPreference.TryParsePredictedProfileCommand(
+                    arguments,
+                    out var profileQuery))
+            {
+                ChangePredictedPromptProfile(command, profileQuery);
+                return;
+            }
+
             if (CopilotPromptSuggestionPreference.TryResolvePredicted(
                     arguments,
                     PredictedPromptSuggestionsEnabled,
@@ -7458,12 +7480,22 @@ namespace ColorVision.Copilot
                     PersistState(immediate: true);
                 }
 
+                var predictionDetails = "正在生成的预测已取消，现有预测已隐藏；本地历史前缀补全状态不变。";
+                if (predictionEnabled)
+                {
+                    var predictionProfile = CopilotPromptSuggestionProfileSelection.Resolve(
+                        Profiles,
+                        SelectedProfile,
+                        _state.PredictedPromptProfileId);
+                    predictionDetails = predictionProfile != null
+                        ? $"预测路由：{CopilotPromptSuggestionProfileSelection.FormatUsage(predictionProfile, CopilotTokenUsage.Empty)}。从下一次完整结束且没有排队后续的轮次开始，Copilot 会执行一次工具禁用、上下文有界的辅助模型调用；目标不可用时跳过，不回退到会话主模型。"
+                        : $"预测路由：{CopilotPromptSuggestionProfileSelection.Describe(Profiles, SelectedProfile, _state.PredictedPromptProfileId)}。当前不会产生后台模型请求；请使用 /suggestions predict-model current 或指定已配置 Profile。";
+                }
+
                 ShowLocalCommandResult(
                     command,
                     $"轮次结束后的下一请求预测已{(predictionEnabled ? "开启" : "关闭")}。\n\n"
-                    + (predictionEnabled
-                        ? "从下一次完整结束且没有排队后续的轮次开始，Copilot 会执行一次工具禁用、上下文有界的辅助模型调用。建议只显示在输入区，不会保存到会话，也不会自动发送。"
-                        : "正在生成的预测已取消，现有预测已隐藏；本地历史前缀补全状态不变。"));
+                    + predictionDetails);
                 return;
             }
 
@@ -7489,9 +7521,91 @@ namespace ColorVision.Copilot
                 + "该偏好只控制当前设备上的输入提示；不会调用模型，不会修改或删除历史消息。");
         }
 
+        private void ChangePredictedPromptProfile(
+            CopilotLocalCommand command,
+            string query)
+        {
+            var normalizedQuery = query.Trim();
+            if (normalizedQuery.Length == 0)
+            {
+                ShowLocalCommandResult(
+                    command,
+                    $"下一请求预测：{(PredictedPromptSuggestionsEnabled ? "开启" : "关闭")}"
+                    + Environment.NewLine
+                    + $"预测路由：{CopilotPromptSuggestionProfileSelection.Describe(Profiles, SelectedProfile, _state.PredictedPromptProfileId)}"
+                    + Environment.NewLine
+                    + $"最近预测调用：{(string.IsNullOrWhiteSpace(LastPredictedPromptUsageText) ? "无" : LastPredictedPromptUsageText)}"
+                    + Environment.NewLine
+                    + BuildConfiguredPredictionProfileSummary()
+                    + Environment.NewLine
+                    + "设置：/suggestions predict-model current，或 /suggestions predict-model <Profile 名或模型 ID>。未选择或目标不可用时不会调用模型，也不会回退。");
+                return;
+            }
+
+            string storedProfileId;
+            if (string.Equals(normalizedQuery, "current", StringComparison.OrdinalIgnoreCase))
+            {
+                storedProfileId = CopilotPromptSuggestionProfileSelection.CurrentProfileId;
+            }
+            else
+            {
+                var profile = CopilotConversationService.FindUniqueProfileTarget(
+                    Profiles,
+                    normalizedQuery);
+                if (profile == null)
+                {
+                    ShowLocalCommandResult(
+                        command,
+                        $"未找到唯一匹配“{normalizedQuery}”的 Profile 名或模型 ID。"
+                        + Environment.NewLine
+                        + BuildConfiguredPredictionProfileSummary());
+                    return;
+                }
+                if (!profile.IsConfigured)
+                {
+                    ShowLocalCommandResult(
+                        command,
+                        $"{profile.DisplayLabel} 配置不完整，不能用于后台预测；请先在 /settings models 中完成配置。不会回退到其他模型。");
+                    return;
+                }
+
+                storedProfileId = profile.Id;
+            }
+
+            if (_state.SetPredictedPromptProfileId(storedProfileId))
+            {
+                ClearPredictedNextPrompt(cancelPending: true);
+                PersistState(immediate: true);
+            }
+
+            ShowLocalCommandResult(
+                command,
+                "下一请求预测模型已设置。"
+                + Environment.NewLine
+                + $"预测路由：{CopilotPromptSuggestionProfileSelection.Describe(Profiles, SelectedProfile, _state.PredictedPromptProfileId)}"
+                + Environment.NewLine
+                + "该路由只用于工具禁用的下一请求预测；不会改变当前会话模型。目标不可用时预测受控暂停，不会自动回退。");
+        }
+
+        private string BuildConfiguredPredictionProfileSummary()
+        {
+            var profiles = Profiles
+                .Where(profile => profile?.IsConfigured == true)
+                .Select(profile => CopilotPromptSuggestionProfileSelection.FormatUsage(
+                    profile,
+                    CopilotTokenUsage.Empty))
+                .ToArray();
+            return profiles.Length == 0
+                ? "可用预测 Profile：无"
+                : "可用预测 Profile：" + string.Join("；", profiles);
+        }
+
         private void QueuePredictedNextPromptSuggestion(CopilotHostedAgentRun run)
         {
-            var profile = SelectedProfile;
+            var profile = CopilotPromptSuggestionProfileSelection.Resolve(
+                Profiles,
+                SelectedProfile,
+                _state.PredictedPromptProfileId);
             if (!PredictedPromptSuggestionsEnabled
                 || IsBusy
                 || IsSideQuestionRunning
@@ -7512,7 +7626,7 @@ namespace ColorVision.Copilot
                 return;
 
             ClearPredictedNextPrompt(cancelPending: true);
-            var requestProfile = CreateConversationRequestProfile(profile, conversation);
+            var requestProfile = profile.Clone();
             var history = CopilotConversationRequestBuilder.CaptureHistorySnapshot(conversation);
             var historyLimits = ResolveConversationHistoryLimits(requestProfile);
             var cancellation = BeginAuxiliaryOperation();
@@ -7529,6 +7643,10 @@ namespace ColorVision.Copilot
                             history,
                             historyLimits,
                             cancellation.Token);
+                        var usageText = CopilotPromptSuggestionProfileSelection.FormatUsage(
+                            requestProfile,
+                            result.Usage);
+                        LastPredictedPromptUsageText = usageText;
                         if (version != _nextPromptSuggestionVersion
                             || cancellation.IsCancellationRequested
                             || !string.Equals(SelectedConversation?.Id, conversationId, StringComparison.Ordinal)
@@ -7540,7 +7658,11 @@ namespace ColorVision.Copilot
                             return;
                         }
 
+                        if (string.IsNullOrWhiteSpace(result.Suggestion))
+                            return;
+
                         _predictedNextPromptConversationId = conversationId;
+                        PredictedNextPromptMetadata = usageText;
                         PredictedNextPrompt = result.Suggestion;
                         OnPropertyChanged(nameof(HasPredictedNextPrompt));
                     }
@@ -7587,6 +7709,7 @@ namespace ColorVision.Copilot
             if (cancelPending)
                 _nextPromptSuggestionCts?.RequestCancellation();
             _predictedNextPromptConversationId = string.Empty;
+            PredictedNextPromptMetadata = string.Empty;
             PredictedNextPrompt = string.Empty;
             NotifyPredictedNextPromptCompletionChanged();
         }

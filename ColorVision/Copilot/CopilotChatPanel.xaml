@@ -2177,13 +2177,19 @@
                                            FontWeight="SemiBold"
                                            Foreground="{DynamicResource PrimaryBrush}"
                                            Text="下一步" />
-                                <TextBlock Grid.Column="1"
-                                           Margin="10,0,0,0"
-                                           VerticalAlignment="Center"
-                                           FontSize="11"
-                                           Text="{Binding PredictedNextPromptCompletionText}"
-                                           TextTrimming="CharacterEllipsis"
-                                           ToolTip="{Binding PredictedNextPrompt}" />
+                                <StackPanel Grid.Column="1"
+                                            Margin="10,0,0,0"
+                                            VerticalAlignment="Center">
+                                    <TextBlock FontSize="11"
+                                               Text="{Binding PredictedNextPromptCompletionText}"
+                                               TextTrimming="CharacterEllipsis"
+                                               ToolTip="{Binding PredictedNextPrompt}" />
+                                    <TextBlock Margin="0,2,0,0"
+                                               FontSize="9"
+                                               Opacity="0.52"
+                                               Text="{Binding PredictedNextPromptMetadata}"
+                                               TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
                                 <TextBlock Grid.Column="2"
                                            Margin="12,0,0,0"
                                            VerticalAlignment="Center"
