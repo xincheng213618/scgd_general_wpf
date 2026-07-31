@@ -181,6 +181,14 @@ public sealed class CopilotBackgroundShellCommandTests
             "Use the exact background_id",
             instructions,
             StringComparison.Ordinal);
+        Assert.Contains(
+            "<background_command_event>",
+            instructions,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "never command output",
+            instructions,
+            StringComparison.Ordinal);
         Assert.DoesNotContain(
             "prompt-secret",
             instructions,
@@ -215,6 +223,10 @@ public sealed class CopilotBackgroundShellCommandTests
                 backgroundShellCommandSnapshots: [active]);
         Assert.DoesNotContain(
             "<active_background_commands>",
+            isolatedToolInstructions,
+            StringComparison.Ordinal);
+        Assert.DoesNotContain(
+            "<background_command_event>",
             isolatedToolInstructions,
             StringComparison.Ordinal);
         Assert.DoesNotContain(

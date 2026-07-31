@@ -29,6 +29,7 @@ namespace ColorVision.Copilot
         CancelRequested,
         UserQuestionRequested,
         UserQuestionResolved,
+        BackgroundCommandCompleted,
     }
 
     public sealed class CopilotAgentTaskEvent
@@ -158,6 +159,11 @@ namespace ColorVision.Copilot
         public static string ForUserQuestion(string? requestId)
         {
             return CreateHashedKey("question", requestId);
+        }
+
+        public static string ForBackgroundCommand(string? backgroundId)
+        {
+            return CreateHashedKey("background", backgroundId);
         }
 
         internal static string CreateEventId(long sequence, string runId, CopilotAgentTaskEventType type, DateTimeOffset occurredAtUtc)
@@ -374,6 +380,28 @@ namespace ColorVision.Copilot
                 CopilotAgentTaskEventIds.ForSteering(message),
                 "queued",
                 "A user steering instruction was queued for the active Agent session.");
+        }
+
+        internal void RecordBackgroundShellCommandCompletion(
+            CopilotBackgroundShellCommandSnapshot snapshot)
+        {
+            ArgumentNullException.ThrowIfNull(snapshot);
+            if (snapshot.State is CopilotBackgroundShellCommandState.Running
+                    or CopilotBackgroundShellCommandState.Stopped
+                || string.IsNullOrWhiteSpace(snapshot.Id))
+            {
+                throw new ArgumentException(
+                    "A terminal background command snapshot is required.",
+                    nameof(snapshot));
+            }
+
+            Append(
+                CopilotAgentTaskEventType.BackgroundCommandCompleted,
+                CopilotAgentTaskEventIds.ForBackgroundCommand(snapshot.Id),
+                snapshot.State.ToString().ToLowerInvariant(),
+                snapshot.ExitCode.HasValue
+                    ? $"An application-managed background command reached a terminal state with exit code {snapshot.ExitCode.Value}."
+                    : "An application-managed background command reached a terminal state.");
         }
 
         public void RecordEvidence(CopilotAgentEvidenceArtifact artifact)

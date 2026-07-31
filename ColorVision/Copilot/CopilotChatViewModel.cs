@@ -4853,14 +4853,29 @@ namespace ColorVision.Copilot
             object? sender,
             CopilotBackgroundShellCommandCompletedEventArgs e)
         {
+            HandleBackgroundShellCommandCompletion(e, offerToActiveAgent: true);
+        }
+
+        private void HandleBackgroundShellCommandCompletion(
+            CopilotBackgroundShellCommandCompletedEventArgs e,
+            bool offerToActiveAgent)
+        {
             if (Volatile.Read(ref _disposeState) == 1)
                 return;
+
+            if (offerToActiveAgent)
+            {
+                _turnRuntime.TryEnqueueBackgroundShellCommandCompletion(
+                    e.Snapshot);
+            }
 
             var dispatcher = Application.Current?.Dispatcher;
             if (dispatcher != null && !dispatcher.CheckAccess())
             {
                 dispatcher.BeginInvoke(new Action(() =>
-                    BackgroundShellCommandRegistry_CommandCompleted(sender, e)));
+                    HandleBackgroundShellCommandCompletion(
+                        e,
+                        offerToActiveAgent: false)));
                 return;
             }
 

@@ -58,6 +58,10 @@ namespace ColorVision.Copilot
 
         public bool TryEnqueueSteeringMessage(string message) => _agentRuntime.TryEnqueueSteeringMessage(message);
 
+        public bool TryEnqueueBackgroundShellCommandCompletion(
+            CopilotBackgroundShellCommandSnapshot snapshot) =>
+            _agentRuntime.TryEnqueueBackgroundShellCommandCompletion(snapshot);
+
         public bool TryAnswerUserQuestion(string taskId, string requestId, string answer) =>
             _agentRuntime.TryAnswerUserQuestion(taskId, requestId, answer);
 
