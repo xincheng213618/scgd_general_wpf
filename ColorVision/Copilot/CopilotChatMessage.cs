@@ -2790,11 +2790,29 @@ namespace ColorVision.Copilot
         public bool HasComposerStash => ComposerStash?.HasContent == true;
 
         [JsonIgnore]
-        public string ConversationListPreviewText => HasDraft
-            ? $"草稿：{BuildPreview(DraftText, 42)}"
-            : HasComposerStash
-                ? BuildComposerStashPreview(ComposerStash!)
-                : PreviewText;
+        public string ConversationListPreviewText =>
+            !string.IsNullOrWhiteSpace(SearchMatchPreviewText)
+                ? SearchMatchPreviewText
+                : HasDraft
+                    ? $"草稿：{BuildPreview(DraftText, 42)}"
+                    : HasComposerStash
+                        ? BuildComposerStashPreview(ComposerStash!)
+                        : PreviewText;
+
+        [JsonIgnore]
+        public string SearchMatchPreviewText
+        {
+            get => _searchMatchPreviewText;
+            private set
+            {
+                if (SetProperty(ref _searchMatchPreviewText, value ?? string.Empty))
+                    OnPropertyChanged(nameof(ConversationListPreviewText));
+            }
+        }
+        private string _searchMatchPreviewText = string.Empty;
+
+        internal void SetSearchMatchPreview(string? preview) =>
+            SearchMatchPreviewText = preview;
 
         [JsonIgnore]
         public string PinLabel => IsPinned ? CopilotUiText.PinnedLabel : string.Empty;

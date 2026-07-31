@@ -6007,9 +6007,33 @@ namespace ColorVision.Copilot
                 .Take(MaximumConversationSearchTerms)
                 .ToArray();
             var activeConversations = CopilotConversationArchiveService.GetActive(Conversations);
-            var matches = terms.Length == 0
-                ? activeConversations
-                : activeConversations.Where(conversation => MatchesConversationSearch(conversation, terms)).ToArray();
+            CopilotConversationRecord[] matches;
+            if (terms.Length == 0)
+            {
+                foreach (var conversation in Conversations)
+                    conversation.SetSearchMatchPreview(string.Empty);
+                matches = activeConversations.ToArray();
+            }
+            else
+            {
+                var matchedConversations = new List<CopilotConversationRecord>();
+                foreach (var conversation in Conversations)
+                {
+                    if (conversation.IsArchived
+                        || !CopilotConversationSearchPreview.TryBuild(
+                            conversation,
+                            terms,
+                            out var preview))
+                    {
+                        conversation.SetSearchMatchPreview(string.Empty);
+                        continue;
+                    }
+
+                    conversation.SetSearchMatchPreview(preview);
+                    matchedConversations.Add(conversation);
+                }
+                matches = matchedConversations.ToArray();
+            }
 
             FilteredConversations.Clear();
             foreach (var conversation in matches)
@@ -6052,37 +6076,6 @@ namespace ColorVision.Copilot
         }
 
         private void ConversationSearchDebounceTimer_Tick(object? sender, EventArgs e) => RefreshFilteredConversations();
-
-        private static bool MatchesConversationSearch(CopilotConversationRecord conversation, IReadOnlyList<string> terms)
-        {
-            return terms.All(term =>
-                ContainsSearchTerm(conversation.Title, term)
-                || ContainsSearchTerm(conversation.PreviewText, term)
-                || ContainsSearchTerm(conversation.DraftText, term)
-                || ContainsSearchTerm(conversation.ComposerStash?.Text, term)
-                || ContainsSearchTerm(conversation.Goal?.Objective, term)
-                || ContainsSearchTerm(conversation.ProfileDisplayName, term)
-                || conversation.Attachments.Any(attachment => MatchesAttachmentSearch(attachment, term))
-                || (conversation.ComposerStash?.Attachments.Any(attachment => MatchesAttachmentSearch(attachment, term)) ?? false)
-                || conversation.Messages.Any(message => ContainsSearchTerm(message.Content, term)
-                    || message.Attachments.Any(attachment => MatchesAttachmentSearch(attachment, term))));
-        }
-
-        private static bool MatchesAttachmentSearch(CopilotAttachmentItem? attachment, string term)
-        {
-            return attachment != null
-                && (ContainsSearchTerm(attachment.Title, term)
-                    || ContainsSearchTerm(attachment.DisplayLabel, term)
-                    || ContainsSearchTerm(attachment.Source, term)
-                    || ((attachment.Type is CopilotAttachmentType.File or CopilotAttachmentType.Image)
-                        && ContainsSearchTerm(attachment.Value, term)));
-        }
-
-        private static bool ContainsSearchTerm(string? text, string term)
-        {
-            return !string.IsNullOrWhiteSpace(text)
-                && text.Contains(term, StringComparison.OrdinalIgnoreCase);
-        }
 
         public void OpenConversationFind()
         {
@@ -6196,6 +6189,8 @@ namespace ColorVision.Copilot
             InvalidateChatAttachmentTokenEstimate();
             RefreshComposerTokenEstimate();
             RefreshCompactHistoryConversations();
+            if (HasConversationSearchQuery)
+                RefreshFilteredConversations();
             OnCurrentLiveContextStateChanged();
             OnActiveDocumentStateChanged();
         }
