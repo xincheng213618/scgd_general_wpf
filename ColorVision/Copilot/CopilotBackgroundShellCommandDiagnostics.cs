@@ -154,12 +154,22 @@ namespace ColorVision.Copilot
             }
 
             builder.AppendLine()
-                .AppendLine("stdout（限长、脱敏）：")
+                .Append("stdout（限长、脱敏，已观察 ")
+                .Append(snapshot.ObservedStandardOutputCharacters.ToString(
+                    "N0",
+                    CultureInfo.CurrentCulture))
+                .Append(snapshot.StandardOutputTruncated ? " 字符，已截断）：" : " 字符）：")
+                .AppendLine()
                 .AppendLine(string.IsNullOrWhiteSpace(snapshot.StandardOutput)
                     ? "<empty>"
                     : snapshot.StandardOutput.TrimEnd())
                 .AppendLine()
-                .AppendLine("stderr（限长、脱敏）：")
+                .Append("stderr（限长、脱敏，已观察 ")
+                .Append(snapshot.ObservedStandardErrorCharacters.ToString(
+                    "N0",
+                    CultureInfo.CurrentCulture))
+                .Append(snapshot.StandardErrorTruncated ? " 字符，已截断）：" : " 字符）：")
+                .AppendLine()
                 .AppendLine(string.IsNullOrWhiteSpace(snapshot.StandardError)
                     ? "<empty>"
                     : snapshot.StandardError.TrimEnd())

@@ -378,7 +378,7 @@ namespace ColorVision.Copilot
 
         public string Name => "WaitForBackgroundShellCommand";
 
-        public string Description => "Wait for at most 30 seconds until one exact current-conversation background command reaches a terminal state or its bounded redacted stdout/stderr contains an optional literal marker. Bounded redacted output changes are reported through the live tool-progress stream while waiting. A timeout is an observed running state, not proof of readiness. This tool performs no process mutation and never exposes another conversation.";
+        public string Description => "Wait for at most 30 seconds until one exact current-conversation background command reaches a terminal state or its bounded redacted stdout/stderr contains an optional literal marker. Bounded redacted output changes and pre-truncation character growth are reported through the live tool-progress stream while waiting. A timeout is an observed running state, not proof of readiness. This tool performs no process mutation and never exposes another conversation.";
 
         public int MaximumObservationAttempts => 4;
 
@@ -460,15 +460,18 @@ namespace ColorVision.Copilot
 
             var lastStandardOutput = string.Empty;
             var lastStandardError = string.Empty;
+            long lastObservedStandardOutputCharacters = 0;
+            long lastObservedStandardErrorCharacters = 0;
             progress?.Report($"正在观察后台命令 {backgroundId}");
             void ReportSnapshot(CopilotBackgroundShellCommandSnapshot snapshot)
             {
                 if (progress == null)
                     return;
-                if (!string.Equals(
+                var standardOutputChanged = !string.Equals(
                         lastStandardOutput,
                         snapshot.StandardOutput,
-                        StringComparison.Ordinal))
+                        StringComparison.Ordinal);
+                if (standardOutputChanged)
                 {
                     lastStandardOutput = snapshot.StandardOutput;
                     CopilotProcessExecutionSupport.ReportLatestOutput(
@@ -477,10 +480,23 @@ namespace ColorVision.Copilot
                         snapshot.StandardOutput,
                         isError: false);
                 }
-                if (!string.Equals(
+                else if (snapshot.ObservedStandardOutputCharacters
+                    != lastObservedStandardOutputCharacters)
+                {
+                    progress.Report(
+                        "后台命令 stdout 已观察 "
+                        + snapshot.ObservedStandardOutputCharacters.ToString(
+                            CultureInfo.InvariantCulture)
+                        + " 个字符（限长预览未变化）");
+                }
+                lastObservedStandardOutputCharacters =
+                    snapshot.ObservedStandardOutputCharacters;
+
+                var standardErrorChanged = !string.Equals(
                         lastStandardError,
                         snapshot.StandardError,
-                        StringComparison.Ordinal))
+                        StringComparison.Ordinal);
+                if (standardErrorChanged)
                 {
                     lastStandardError = snapshot.StandardError;
                     CopilotProcessExecutionSupport.ReportLatestOutput(
@@ -489,6 +505,17 @@ namespace ColorVision.Copilot
                         snapshot.StandardError,
                         isError: true);
                 }
+                else if (snapshot.ObservedStandardErrorCharacters
+                    != lastObservedStandardErrorCharacters)
+                {
+                    progress.Report(
+                        "后台命令 stderr 已观察 "
+                        + snapshot.ObservedStandardErrorCharacters.ToString(
+                            CultureInfo.InvariantCulture)
+                        + " 个字符（限长预览未变化）");
+                }
+                lastObservedStandardErrorCharacters =
+                    snapshot.ObservedStandardErrorCharacters;
             }
 
             var result = await _registry.WaitForObservationAsync(
@@ -535,7 +562,7 @@ namespace ColorVision.Copilot
             };
         }
 
-        private static string CreateObservationProgressSignature(
+        internal static string CreateObservationProgressSignature(
             CopilotBackgroundShellCommandSnapshot snapshot)
         {
             var content = string.Join(
@@ -543,6 +570,12 @@ namespace ColorVision.Copilot
                 snapshot.State.ToString(),
                 snapshot.ExitCode?.ToString(CultureInfo.InvariantCulture)
                     ?? string.Empty,
+                snapshot.ObservedStandardOutputCharacters.ToString(
+                    CultureInfo.InvariantCulture),
+                snapshot.ObservedStandardErrorCharacters.ToString(
+                    CultureInfo.InvariantCulture),
+                snapshot.StandardOutputTruncated ? "1" : "0",
+                snapshot.StandardErrorTruncated ? "1" : "0",
                 snapshot.StandardOutput,
                 snapshot.StandardError);
             return Convert.ToHexString(
@@ -858,6 +891,16 @@ namespace ColorVision.Copilot
                 builder.Append("exit_code: ")
                     .AppendLine(snapshot.ExitCode.Value.ToString(CultureInfo.InvariantCulture));
             }
+            builder.Append("stdout_observed_characters: ")
+                .AppendLine(snapshot.ObservedStandardOutputCharacters.ToString(
+                    CultureInfo.InvariantCulture))
+                .Append("stderr_observed_characters: ")
+                .AppendLine(snapshot.ObservedStandardErrorCharacters.ToString(
+                    CultureInfo.InvariantCulture))
+                .Append("stdout_truncated: ")
+                .AppendLine(snapshot.StandardOutputTruncated ? "true" : "false")
+                .Append("stderr_truncated: ")
+                .AppendLine(snapshot.StandardErrorTruncated ? "true" : "false");
             if (includeOutput)
             {
                 builder.AppendLine("stdout:")

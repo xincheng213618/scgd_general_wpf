@@ -40,6 +40,16 @@ namespace ColorVision.Copilot
         string StandardError)
     {
         public bool IsActive => State == CopilotBackgroundShellCommandState.Running;
+
+        public long ObservedStandardOutputCharacters { get; init; } =
+            StandardOutput.Length;
+
+        public long ObservedStandardErrorCharacters { get; init; } =
+            StandardError.Length;
+
+        public bool StandardOutputTruncated { get; init; }
+
+        public bool StandardErrorTruncated { get; init; }
     }
 
     internal sealed record CopilotBackgroundShellProcessCompletion(
@@ -47,7 +57,26 @@ namespace ColorVision.Copilot
         int? ExitCode,
         DateTimeOffset CompletedAtUtc,
         string StandardOutput,
-        string StandardError);
+        string StandardError)
+    {
+        public long ObservedStandardOutputCharacters { get; init; } =
+            StandardOutput.Length;
+
+        public long ObservedStandardErrorCharacters { get; init; } =
+            StandardError.Length;
+
+        public bool StandardOutputTruncated { get; init; }
+
+        public bool StandardErrorTruncated { get; init; }
+    }
+
+    internal readonly record struct CopilotBackgroundShellProcessOutput(
+        string StandardOutput,
+        string StandardError,
+        long ObservedStandardOutputCharacters,
+        long ObservedStandardErrorCharacters,
+        bool StandardOutputTruncated,
+        bool StandardErrorTruncated);
 
     internal interface ICopilotBackgroundShellProcess : IDisposable
     {
@@ -57,7 +86,7 @@ namespace ColorVision.Copilot
 
         Task<CopilotBackgroundShellProcessCompletion> Completion { get; }
 
-        (string StandardOutput, string StandardError) GetOutputSnapshot();
+        CopilotBackgroundShellProcessOutput GetOutputSnapshot();
 
         Task<CopilotBackgroundShellProcessCompletion> StopAsync(CancellationToken cancellationToken);
     }
@@ -689,17 +718,23 @@ namespace ColorVision.Copilot
                 .ToLowerInvariant();
         }
 
-        private static string BoundAndRedactOutput(string? value)
+        private static string BoundAndRedactOutput(
+            string? value,
+            out bool truncated)
         {
             const string truncationMarker =
                 "...<earlier background output truncated>...\n";
             var redacted = CopilotMcpAuditLogger.RedactText(value ?? string.Empty)
                 .Replace("\0", string.Empty, StringComparison.Ordinal);
             if (redacted.Length <= MaximumOutputCharacters)
+            {
+                truncated = false;
                 return redacted;
+            }
 
             var retainedCharacters =
                 MaximumOutputCharacters - truncationMarker.Length;
+            truncated = true;
             return truncationMarker + redacted[^retainedCharacters..];
         }
 
@@ -804,7 +839,19 @@ namespace ColorVision.Copilot
                 var completion = Volatile.Read(ref _completion);
                 var output = completion == null
                     ? _process.GetOutputSnapshot()
-                    : (completion.StandardOutput, completion.StandardError);
+                    : new CopilotBackgroundShellProcessOutput(
+                        completion.StandardOutput,
+                        completion.StandardError,
+                        completion.ObservedStandardOutputCharacters,
+                        completion.ObservedStandardErrorCharacters,
+                        completion.StandardOutputTruncated,
+                        completion.StandardErrorTruncated);
+                var standardOutput = BoundAndRedactOutput(
+                    output.StandardOutput,
+                    out var standardOutputTruncated);
+                var standardError = BoundAndRedactOutput(
+                    output.StandardError,
+                    out var standardErrorTruncated);
                 return new CopilotBackgroundShellCommandSnapshot(
                     Id,
                     ConversationId,
@@ -819,8 +866,20 @@ namespace ColorVision.Copilot
                     _process.ProcessTreeContained,
                     completion?.State ?? CopilotBackgroundShellCommandState.Running,
                     completion?.ExitCode,
-                    BoundAndRedactOutput(output.Item1),
-                    BoundAndRedactOutput(output.Item2));
+                    standardOutput,
+                    standardError)
+                {
+                    ObservedStandardOutputCharacters =
+                        output.ObservedStandardOutputCharacters,
+                    ObservedStandardErrorCharacters =
+                        output.ObservedStandardErrorCharacters,
+                    StandardOutputTruncated =
+                        output.StandardOutputTruncated
+                        || standardOutputTruncated,
+                    StandardErrorTruncated =
+                        output.StandardErrorTruncated
+                        || standardErrorTruncated,
+                };
             }
 
             public async Task<CopilotBackgroundShellProcessCompletion> StopAsync(
@@ -888,8 +947,8 @@ namespace ColorVision.Copilot
         private readonly Process _process;
         private readonly CopilotWindowsProcessJob? _processJob;
         private readonly CancellationTokenSource _outputReadSource = new();
-        private readonly BoundedOutput _standardOutput = new();
-        private readonly BoundedOutput _standardError = new();
+        private readonly BoundedOutput _standardOutput;
+        private readonly BoundedOutput _standardError;
         private readonly Task<string> _standardOutputTask;
         private readonly Task<string> _standardErrorTask;
         private readonly Task<CopilotBackgroundShellProcessCompletion> _completion;
@@ -905,6 +964,8 @@ namespace ColorVision.Copilot
             _processJob = processJob;
             ProcessId = process.Id;
             ProcessTreeContained = processJob != null;
+            _standardOutput = new BoundedOutput();
+            _standardError = new BoundedOutput();
             _standardOutputTask = CopilotProcessExecutionSupport.ReadBoundedAsync(
                 process.StandardOutput,
                 CopilotBackgroundShellCommandRegistry.MaximumOutputCharacters,
@@ -928,8 +989,18 @@ namespace ColorVision.Copilot
 
         public Task<CopilotBackgroundShellProcessCompletion> Completion => _completion;
 
-        public (string StandardOutput, string StandardError) GetOutputSnapshot() =>
-            (_standardOutput.Snapshot(), _standardError.Snapshot());
+        public CopilotBackgroundShellProcessOutput GetOutputSnapshot()
+        {
+            var standardOutput = _standardOutput.Snapshot();
+            var standardError = _standardError.Snapshot();
+            return new CopilotBackgroundShellProcessOutput(
+                standardOutput.Text,
+                standardError.Text,
+                standardOutput.ObservedCharacters,
+                standardError.ObservedCharacters,
+                standardOutput.WasTruncated,
+                standardError.WasTruncated);
+        }
 
         public async Task<CopilotBackgroundShellProcessCompletion> StopAsync(
             CancellationToken cancellationToken)
@@ -967,8 +1038,8 @@ namespace ColorVision.Copilot
                         _outputReadSource,
                         _process.StandardOutput,
                         _process.StandardError).ConfigureAwait(false);
-                _standardOutput.Replace(standardOutput);
-                _standardError.Replace(standardError);
+                _standardOutput.ReplacePreview(standardOutput);
+                _standardError.ReplacePreview(standardError);
                 var exitCode = TryGetExitCode(_process);
                 var reason = Volatile.Read(ref _terminationReason);
                 var state = reason switch
@@ -978,24 +1049,46 @@ namespace ColorVision.Copilot
                     _ when exitCode == 0 => CopilotBackgroundShellCommandState.Completed,
                     _ => CopilotBackgroundShellCommandState.Failed,
                 };
+                var output = GetOutputSnapshot();
                 return new CopilotBackgroundShellProcessCompletion(
                     state,
                     exitCode,
                     DateTimeOffset.UtcNow,
-                    _standardOutput.Snapshot(),
-                    _standardError.Snapshot());
+                    output.StandardOutput,
+                    output.StandardError)
+                {
+                    ObservedStandardOutputCharacters =
+                        output.ObservedStandardOutputCharacters,
+                    ObservedStandardErrorCharacters =
+                        output.ObservedStandardErrorCharacters,
+                    StandardOutputTruncated =
+                        output.StandardOutputTruncated,
+                    StandardErrorTruncated =
+                        output.StandardErrorTruncated,
+                };
             }
             catch (Exception ex) when (ex is IOException or Win32Exception or InvalidOperationException or ObjectDisposedException)
             {
                 _standardError.Append(CopilotMcpAuditLogger.RedactText(ex.Message));
+                var output = GetOutputSnapshot();
                 return new CopilotBackgroundShellProcessCompletion(
                     Volatile.Read(ref _terminationReason) == 1
                         ? CopilotBackgroundShellCommandState.Stopped
                         : CopilotBackgroundShellCommandState.Failed,
                     TryGetExitCode(_process),
                     DateTimeOffset.UtcNow,
-                    _standardOutput.Snapshot(),
-                    _standardError.Snapshot());
+                    output.StandardOutput,
+                    output.StandardError)
+                {
+                    ObservedStandardOutputCharacters =
+                        output.ObservedStandardOutputCharacters,
+                    ObservedStandardErrorCharacters =
+                        output.ObservedStandardErrorCharacters,
+                    StandardOutputTruncated =
+                        output.StandardOutputTruncated,
+                    StandardErrorTruncated =
+                        output.StandardErrorTruncated,
+                };
             }
         }
 
@@ -1028,40 +1121,76 @@ namespace ColorVision.Copilot
         {
             private readonly object _syncRoot = new();
             private readonly StringBuilder _buffer = new();
+            private long _observedCharacters;
+            private bool _wasTruncated;
 
             public void Append(string? value)
             {
-                var redacted = CopilotMcpAuditLogger.RedactText(
-                    (value ?? string.Empty).Replace("\0", string.Empty, StringComparison.Ordinal));
-                if (redacted.Length == 0)
+                var observed = value ?? string.Empty;
+                if (observed.Length == 0)
                     return;
+                var redacted = RedactPreview(observed);
 
                 lock (_syncRoot)
                 {
-                    _buffer.Append(redacted);
-                    if (_buffer.Length > CopilotBackgroundShellCommandRegistry.MaximumOutputCharacters)
-                    {
-                        _buffer.Remove(
-                            0,
-                            _buffer.Length - CopilotBackgroundShellCommandRegistry.MaximumOutputCharacters);
-                    }
+                    _observedCharacters = SaturatingAdd(
+                        _observedCharacters,
+                        observed.Length);
+                    if (redacted.Length > 0)
+                        AppendPreviewUnderLock(redacted);
                 }
             }
 
-            public void Replace(string? value)
+            public void ReplacePreview(string? value)
             {
+                var redacted = RedactPreview(value ?? string.Empty);
                 lock (_syncRoot)
                 {
                     _buffer.Clear();
-                    Append(value);
+                    AppendPreviewUnderLock(redacted);
                 }
             }
 
-            public string Snapshot()
+            public BoundedOutputSnapshot Snapshot()
             {
                 lock (_syncRoot)
-                    return _buffer.ToString();
+                {
+                    return new BoundedOutputSnapshot(
+                        _buffer.ToString(),
+                        _observedCharacters,
+                        _wasTruncated);
+                }
             }
+
+            private void AppendPreviewUnderLock(string value)
+            {
+                _buffer.Append(value);
+                if (_buffer.Length
+                    <= CopilotBackgroundShellCommandRegistry.MaximumOutputCharacters)
+                {
+                    return;
+                }
+
+                _buffer.Remove(
+                    0,
+                    _buffer.Length
+                    - CopilotBackgroundShellCommandRegistry.MaximumOutputCharacters);
+                _wasTruncated = true;
+            }
+
+            private static string RedactPreview(string value) =>
+                CopilotMcpAuditLogger.RedactText(
+                    value.Replace("\0", string.Empty, StringComparison.Ordinal));
+
+            private static long SaturatingAdd(long value, int increment) =>
+                value > long.MaxValue - increment
+                    ? long.MaxValue
+                    : value + increment;
+
+            public readonly record struct BoundedOutputSnapshot(
+                string Text,
+                long ObservedCharacters,
+                bool WasTruncated);
         }
     }
 }

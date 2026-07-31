@@ -117,11 +117,13 @@ public sealed class CopilotBackgroundShellCommandTests
             Assert.Equal(request.TaskId, snapshot.TaskId);
             Assert.DoesNotContain("Start-Sleep 30", snapshot.StandardOutput);
 
-            launcher.LastProcess!.SetOutput(
+            var fullStandardOutput =
                 new string(
                     'x',
                     CopilotBackgroundShellCommandRegistry.MaximumOutputCharacters + 1_000)
-                + "ready token=background-secret\n",
+                + "ready token=background-secret\n";
+            launcher.LastProcess!.SetOutput(
+                fullStandardOutput,
                 "warning\n");
             var boundedSnapshot = Assert.Single(
                 registry.GetSnapshots(request.ConversationId));
@@ -134,6 +136,14 @@ public sealed class CopilotBackgroundShellCommandTests
                 StringComparison.Ordinal);
             Assert.Contains("token=<redacted>", boundedSnapshot.StandardOutput);
             Assert.DoesNotContain("background-secret", boundedSnapshot.StandardOutput);
+            Assert.Equal(
+                fullStandardOutput.Length,
+                boundedSnapshot.ObservedStandardOutputCharacters);
+            Assert.Equal(
+                "warning\n".Length,
+                boundedSnapshot.ObservedStandardErrorCharacters);
+            Assert.True(boundedSnapshot.StandardOutputTruncated);
+            Assert.False(boundedSnapshot.StandardErrorTruncated);
             var inspectInput = new CopilotAgentToolInput
             {
                 Arguments = new Dictionary<string, object?>
@@ -149,6 +159,14 @@ public sealed class CopilotBackgroundShellCommandTests
             Assert.Contains("state: running", inspected.Content, StringComparison.Ordinal);
             Assert.Contains("ready", inspected.Content, StringComparison.Ordinal);
             Assert.Contains("warning", inspected.Content, StringComparison.Ordinal);
+            Assert.Contains(
+                $"stdout_observed_characters: {fullStandardOutput.Length}",
+                inspected.Content,
+                StringComparison.Ordinal);
+            Assert.Contains(
+                "stdout_truncated: true",
+                inspected.Content,
+                StringComparison.Ordinal);
 
             var otherConversation = CreateRequest(
                 "check background output",
@@ -409,6 +427,104 @@ public sealed class CopilotBackgroundShellCommandTests
     }
 
     [Fact]
+    public async Task BoundedWaitReportsGrowthWhenTheTruncatedPreviewIsStable()
+    {
+        var launcher = new FakeBackgroundLauncher();
+        var registry = new CopilotBackgroundShellCommandRegistry(launcher);
+        var waitTool = new CopilotWaitForBackgroundShellCommandTool(registry);
+        var progressTool = Assert.IsAssignableFrom<ICopilotProgressReportingTool>(
+            waitTool);
+        var progress = new CopilotToolProgressContext();
+        var request = CreateRequest("watch a verbose background command");
+        try
+        {
+            var started = await registry.StartAsync(
+                request,
+                CreateStartInput("Write-Output verbose; Start-Sleep 30"),
+                CancellationToken.None);
+            Assert.True(started.Success, started.ErrorMessage);
+            var waiting = progressTool.ExecuteWithProgressAsync(
+                request,
+                CreateWaitInput(
+                    started.Snapshot!.Id,
+                    outputContains: "never-produced-marker",
+                    timeoutSeconds: 2),
+                progress,
+                CancellationToken.None);
+            Assert.Equal(
+                CopilotToolProgressWaitResult.Updated,
+                await progress.WaitForUpdateAsync(
+                    TimeSpan.FromSeconds(1),
+                    CancellationToken.None));
+
+            var stableTail = "\nsteady-tail\n";
+            var firstOutput = new string(
+                    'x',
+                    CopilotBackgroundShellCommandRegistry.MaximumOutputCharacters
+                    + 1_000)
+                + stableTail;
+            launcher.LastProcess!.SetOutput(firstOutput, string.Empty);
+            Assert.Equal(
+                CopilotToolProgressWaitResult.Updated,
+                await progress.WaitForUpdateAsync(
+                    TimeSpan.FromSeconds(1),
+                    CancellationToken.None));
+            Assert.Equal(
+                "后台命令 输出: steady-tail",
+                progress.LatestSnapshot!.Message);
+            var firstSnapshot = Assert.Single(
+                registry.GetSnapshots(request.ConversationId));
+
+            var secondOutput = new string(
+                    'x',
+                    CopilotBackgroundShellCommandRegistry.MaximumOutputCharacters
+                    + 2_000)
+                + stableTail;
+            launcher.LastProcess.SetOutput(secondOutput, string.Empty);
+            Assert.Equal(
+                CopilotToolProgressWaitResult.Updated,
+                await progress.WaitForUpdateAsync(
+                    TimeSpan.FromSeconds(1),
+                    CancellationToken.None));
+            Assert.Equal(
+                $"后台命令 stdout 已观察 {secondOutput.Length} 个字符（限长预览未变化）",
+                progress.LatestSnapshot!.Message);
+            var secondSnapshot = Assert.Single(
+                registry.GetSnapshots(request.ConversationId));
+
+            Assert.Equal(
+                firstSnapshot.StandardOutput,
+                secondSnapshot.StandardOutput);
+            Assert.NotEqual(
+                firstSnapshot.ObservedStandardOutputCharacters,
+                secondSnapshot.ObservedStandardOutputCharacters);
+            Assert.NotEqual(
+                CopilotWaitForBackgroundShellCommandTool
+                    .CreateObservationProgressSignature(firstSnapshot),
+                CopilotWaitForBackgroundShellCommandTool
+                    .CreateObservationProgressSignature(secondSnapshot));
+            Assert.True(secondSnapshot.StandardOutputTruncated);
+
+            var observed = await waiting;
+
+            Assert.True(observed.Success, observed.ErrorMessage);
+            Assert.True(observed.ObservationCanRepeat);
+            Assert.Contains(
+                $"stdout_observed_characters: {secondOutput.Length}",
+                observed.Content,
+                StringComparison.Ordinal);
+            Assert.Contains(
+                "stdout_truncated: true",
+                observed.Content,
+                StringComparison.Ordinal);
+        }
+        finally
+        {
+            await registry.ShutdownAsync();
+        }
+    }
+
+    [Fact]
     public async Task BoundedWaitDistinguishesTerminalStateFromTimeout()
     {
         var launcher = new FakeBackgroundLauncher();
@@ -514,7 +630,7 @@ public sealed class CopilotBackgroundShellCommandTests
             var started = await registry.StartAsync(
                 request,
                 CreateStartInput(
-                    "Write-Output 'background-evidence'; Start-Sleep -Milliseconds 150"),
+                    "[Console]::Out.Write(('x' * 20000)); Write-Output 'background-evidence'; Start-Sleep -Milliseconds 150"),
                 CancellationToken.None);
             Assert.True(started.Success, started.ErrorMessage);
 
@@ -531,6 +647,13 @@ public sealed class CopilotBackgroundShellCommandTests
             Assert.Equal(CopilotBackgroundShellCommandState.Completed, snapshot.State);
             Assert.Equal(0, snapshot.ExitCode);
             Assert.Contains("background-evidence", snapshot.StandardOutput, StringComparison.Ordinal);
+            Assert.True(
+                snapshot.ObservedStandardOutputCharacters
+                > CopilotBackgroundShellCommandRegistry.MaximumOutputCharacters);
+            Assert.True(snapshot.StandardOutputTruncated);
+            Assert.True(
+                snapshot.StandardOutput.Length
+                <= CopilotBackgroundShellCommandRegistry.MaximumOutputCharacters);
             Assert.True(snapshot.ProcessTreeContained);
         }
         finally
@@ -578,7 +701,10 @@ public sealed class CopilotBackgroundShellCommandTests
         Assert.Contains("#1 · 运行中 · PID 7654", list, StringComparison.Ordinal);
         Assert.Contains("npm run dev", list, StringComparison.Ordinal);
         Assert.DoesNotContain(snapshot.TaskId, list, StringComparison.Ordinal);
-        Assert.Contains("stdout（限长、脱敏）", details, StringComparison.Ordinal);
+        Assert.Contains(
+            "stdout（限长、脱敏，已观察 5 字符）",
+            details,
+            StringComparison.Ordinal);
         Assert.Contains("ready", details, StringComparison.Ordinal);
         Assert.Contains("启动成功不等于服务已就绪", details, StringComparison.Ordinal);
         Assert.Contains("停止后台命令 #1", confirmation, StringComparison.Ordinal);
@@ -726,8 +852,14 @@ public sealed class CopilotBackgroundShellCommandTests
             _standardError = standardError;
         }
 
-        public (string StandardOutput, string StandardError) GetOutputSnapshot() =>
-            (_standardOutput, _standardError);
+        public CopilotBackgroundShellProcessOutput GetOutputSnapshot() =>
+            new(
+                _standardOutput,
+                _standardError,
+                _standardOutput.Length,
+                _standardError.Length,
+                StandardOutputTruncated: false,
+                StandardErrorTruncated: false);
 
         public Task<CopilotBackgroundShellProcessCompletion> StopAsync(
             CancellationToken cancellationToken)
@@ -739,7 +871,11 @@ public sealed class CopilotBackgroundShellCommandTests
                 ExitCode: 1,
                 DateTimeOffset.UtcNow,
                 _standardOutput,
-                _standardError));
+                _standardError)
+            {
+                ObservedStandardOutputCharacters = _standardOutput.Length,
+                ObservedStandardErrorCharacters = _standardError.Length,
+            });
             return _completion.Task;
         }
 
@@ -752,7 +888,11 @@ public sealed class CopilotBackgroundShellCommandTests
                 exitCode,
                 DateTimeOffset.UtcNow,
                 _standardOutput,
-                _standardError));
+                _standardError)
+            {
+                ObservedStandardOutputCharacters = _standardOutput.Length,
+                ObservedStandardErrorCharacters = _standardError.Length,
+            });
         }
 
         public void Dispose()
