@@ -44,7 +44,6 @@ namespace ColorVision.Copilot
         private readonly CopilotChatService _chatService;
         private readonly ICopilotGoalCompletionEvaluator _goalCompletionEvaluator;
         private readonly ICopilotTurnRuntime _turnRuntime;
-        private readonly CopilotSideQuestionService _sideQuestionService;
         private readonly CopilotAgentTaskHost _taskHost;
         private readonly CopilotLocalGitDiffService _localGitDiffService;
         private readonly CopilotPromptHistoryNavigator _promptHistoryNavigator = new();
@@ -68,9 +67,7 @@ namespace ColorVision.Copilot
         private CopilotNonBlockingCancellationSource? _compactConversationCts;
         private CopilotNonBlockingCancellationSource? _fileAttachmentCts;
         private CopilotNonBlockingCancellationSource? _webPageAttachmentCts;
-        private CopilotNonBlockingCancellationSource? _sideQuestionCts;
         private CopilotNonBlockingCancellationSource? _composerReferenceRefreshCts;
-        private CopilotSideConversationSession? _sideConversationSession;
         private CopilotLiveContext? _currentLiveContext;
         private CopilotChatState _state = new();
         private CopilotConversationRecord? _selectedConversation;
@@ -91,10 +88,6 @@ namespace ColorVision.Copilot
         private string _statePersistenceNoticeToolTip = string.Empty;
         private string _localCommandResultTitle = string.Empty;
         private string _localCommandResultText = string.Empty;
-        private string _sideQuestionTitle = string.Empty;
-        private string _sideQuestionPrompt = string.Empty;
-        private string _sideQuestionAnswer = string.Empty;
-        private string _sideQuestionStatusText = string.Empty;
         private string _editingConversationId = string.Empty;
         private string _editingUserMessageId = string.Empty;
         private CopilotComposerDraftSnapshot? _composerDraftBeforeMessageEdit;
@@ -115,9 +108,7 @@ namespace ColorVision.Copilot
         private bool _isExportingConversation;
         private bool _isInspectingGitDiff;
         private bool _isCompactingConversation;
-        private bool _isSideQuestionRunning;
         private bool _isRetryingStatePersistence;
-        private long _sideQuestionVersion;
         private long _composerReferenceRefreshVersion;
         private int _selectedLocalCommandSuggestionIndex = -1;
         private CopilotPromptHistorySearchItem? _selectedPromptHistorySearchResult;
@@ -138,7 +129,6 @@ namespace ColorVision.Copilot
             _chatService = chatService ?? throw new ArgumentNullException(nameof(chatService));
             _goalCompletionEvaluator = new CopilotGoalCompletionEvaluator(_chatService);
             _turnRuntime = new CopilotTurnRuntime(_chatService);
-            _sideQuestionService = new CopilotSideQuestionService(_chatService);
             _taskHost = CopilotAgentTaskHost.Shared;
             _localGitDiffService = new CopilotLocalGitDiffService();
             _config = CopilotConfig.Instance;
@@ -284,8 +274,6 @@ namespace ColorVision.Copilot
                 message => SetPendingActionFeedback("执行失败：" + message)), CanReviewPendingAction);
             RejectPendingActionCommand = new RelayCommand<ConfirmableAction>(RejectPendingAction, CanReviewPendingAction);
             DismissLocalCommandResultCommand = new RelayCommand(_ => DismissLocalCommandResult(), _ => HasLocalCommandResult);
-            CancelSideQuestionCommand = new RelayCommand(_ => CancelSideQuestion(), _ => IsSideQuestionRunning);
-            DismissSideQuestionCommand = new RelayCommand(_ => DismissSideQuestion(), _ => CanDismissSideQuestion);
             CompleteLocalCommandCommand = new RelayCommand(command => TryCompleteLocalCommand(command as CopilotLocalCommand), _ => HasLocalCommandSuggestions);
             SelectComposerReferenceCommand = new RelayCommand<CopilotComposerReferenceItem>(
                 reference => TryCompleteComposerReference(reference),
@@ -702,10 +690,6 @@ namespace ColorVision.Copilot
 
         public ICommand DismissLocalCommandResultCommand { get; }
 
-        public ICommand CancelSideQuestionCommand { get; }
-
-        public ICommand DismissSideQuestionCommand { get; }
-
         public ICommand CompleteLocalCommandCommand { get; }
 
         public ICommand SelectComposerReferenceCommand { get; }
@@ -834,61 +818,6 @@ namespace ColorVision.Copilot
         }
 
         public bool HasLocalCommandResult => !string.IsNullOrWhiteSpace(LocalCommandResultText);
-
-        public string SideQuestionTitle
-        {
-            get => _sideQuestionTitle;
-            private set => SetProperty(ref _sideQuestionTitle, value ?? string.Empty);
-        }
-
-        public string SideQuestionPrompt
-        {
-            get => _sideQuestionPrompt;
-            private set
-            {
-                if (!SetProperty(ref _sideQuestionPrompt, value ?? string.Empty))
-                    return;
-
-                OnPropertyChanged(nameof(HasSideQuestion));
-                OnPropertyChanged(nameof(CanDismissSideQuestion));
-                CommandManager.InvalidateRequerySuggested();
-            }
-        }
-
-        public string SideQuestionAnswer
-        {
-            get => _sideQuestionAnswer;
-            private set
-            {
-                if (SetProperty(ref _sideQuestionAnswer, value ?? string.Empty))
-                    OnPropertyChanged(nameof(HasSideQuestionAnswer));
-            }
-        }
-
-        public string SideQuestionStatusText
-        {
-            get => _sideQuestionStatusText;
-            private set => SetProperty(ref _sideQuestionStatusText, value ?? string.Empty);
-        }
-
-        public bool HasSideQuestion => !string.IsNullOrWhiteSpace(SideQuestionPrompt);
-
-        public bool HasSideQuestionAnswer => !string.IsNullOrWhiteSpace(SideQuestionAnswer);
-
-        public bool CanDismissSideQuestion => HasSideQuestion && !IsSideQuestionRunning;
-
-        public bool IsSideQuestionRunning
-        {
-            get => _isSideQuestionRunning;
-            private set
-            {
-                if (!SetProperty(ref _isSideQuestionRunning, value))
-                    return;
-
-                OnPropertyChanged(nameof(CanDismissSideQuestion));
-                CommandManager.InvalidateRequerySuggested();
-            }
-        }
 
         public bool HasCurrentLiveContext => _currentLiveContext != null;
 
@@ -1520,8 +1449,8 @@ namespace ColorVision.Copilot
                     {
                         CopilotHostedRunState.PauseRequested => "任务正在暂停 · 当前输入会保留到任务结束",
                         CopilotHostedRunState.CancelRequested => "任务正在取消 · 当前输入会保留到任务结束",
-                        _ when IsAgentRequestActive => $"{ComposerSubmitShortcutLabel} {DefaultFollowUpActionLabel} · Tab {AlternateFollowUpActionLabel} · Ctrl+Enter 立即接管 · @ 关联 · /btw 旁路",
-                        _ => "正在生成回复 · 可使用 /status 或 /btw",
+                        _ when IsAgentRequestActive => $"{ComposerSubmitShortcutLabel} {DefaultFollowUpActionLabel} · Tab {AlternateFollowUpActionLabel} · Ctrl+Enter 立即接管 · @ 关联",
+                        _ => "正在生成回复 · 可使用 /status",
                     }
                 : ResolveComposerRequestMode() == CopilotAgentMode.Plan
                     ? "计划模式 · 输入任务；只读分析，不执行修改"
@@ -2231,12 +2160,6 @@ namespace ColorVision.Copilot
                     break;
                 case CopilotLocalCommandKind.ForkConversation:
                     ForkCurrentConversation(command, invocation.Arguments);
-                    break;
-                case CopilotLocalCommandKind.SideQuestion:
-                    RunUiOperation(
-                        () => AskSideQuestionAsync(command, invocation.Arguments),
-                        "旁路提问",
-                        ReportSideQuestionFailure);
                     break;
                 default:
                     return false;
@@ -3872,175 +3795,6 @@ namespace ColorVision.Copilot
         {
             LocalCommandResultTitle = string.Empty;
             LocalCommandResultText = string.Empty;
-        }
-
-        private async Task AskSideQuestionAsync(CopilotLocalCommand command, string question)
-        {
-            var normalizedQuestion = (question ?? string.Empty).Trim();
-            if (normalizedQuestion.Length == 0)
-            {
-                ShowLocalCommandResult(command, $"用法：{command.Name} <问题>。侧问只读取当前会话上下文，不使用工具，也不会写入主会话。");
-                return;
-            }
-            if (IsSideQuestionRunning)
-            {
-                ShowLocalCommandResult(command, "已有一个旁路问题正在回答。请先等待或取消它。");
-                return;
-            }
-            if (!TryValidateComposerCharacterLimit(normalizedQuestion))
-                return;
-
-            var conversation = SelectedConversation;
-            var profile = SelectedProfile;
-            if (conversation == null || profile?.IsConfigured != true)
-            {
-                ShowLocalCommandResult(command, "当前会话没有可用的模型配置，无法回答旁路问题。");
-                return;
-            }
-
-            DismissLocalCommandResult();
-            var requestProfile = CreateConversationRequestProfile(profile, conversation);
-            var isSideConversation = string.Equals(command.Name, "/side", StringComparison.OrdinalIgnoreCase);
-            CopilotSideConversationSession? sideSession = null;
-            CopilotConversationHistorySnapshot conversationHistory;
-            IReadOnlyList<CopilotRequestMessage> sideTranscript;
-            if (isSideConversation)
-            {
-                if (_sideConversationSession?.MatchesParent(conversation.Id) != true)
-                {
-                    ResetSideQuestion();
-                    _sideConversationSession = new CopilotSideConversationSession(
-                        conversation.Id,
-                        CopilotConversationRequestBuilder.CaptureHistorySnapshot(conversation));
-                }
-
-                sideSession = _sideConversationSession;
-                conversationHistory = sideSession.ParentHistory;
-                sideTranscript = sideSession.CaptureTranscript();
-            }
-            else
-            {
-                ResetSideQuestion();
-                conversationHistory = CopilotConversationRequestBuilder.CaptureHistorySnapshot(conversation);
-                sideTranscript = Array.Empty<CopilotRequestMessage>();
-            }
-
-            var historyLimits = ResolveConversationHistoryLimits(requestProfile);
-            var cancellation = BeginAuxiliaryOperation();
-            _sideQuestionCts = cancellation;
-            var version = ++_sideQuestionVersion;
-            SideQuestionTitle = isSideConversation ? "/side · 临时旁路会话" : "/btw · 单次旁路提问";
-            SideQuestionPrompt = normalizedQuestion;
-            SideQuestionAnswer = sideSession?.TurnCount > 0
-                ? BuildSideConversationTranscript(sideSession)
-                : string.Empty;
-            SideQuestionStatusText = sideSession?.TurnCount > 0
-                ? $"正在继续旁路会话第 {sideSession.TurnCount + 1:N0} 轮 · 无工具 · 未写入主会话"
-                : isSideConversation
-                    ? "正在从当前会话快照开启旁路会话 · 无工具 · 未写入主会话"
-                    : "正在从当前会话上下文回答一次 · 无工具 · 未写入主会话";
-            IsSideQuestionRunning = true;
-
-            try
-            {
-                var result = await _sideQuestionService.AskAsync(
-                    requestProfile,
-                    conversationHistory,
-                    historyLimits,
-                    sideTranscript,
-                    normalizedQuestion,
-                    cancellation.Token);
-                if (version != _sideQuestionVersion)
-                    return;
-
-                if (sideSession != null && ReferenceEquals(_sideConversationSession, sideSession))
-                {
-                    sideSession.AppendTurn(normalizedQuestion, result.Answer);
-                    SideQuestionAnswer = BuildSideConversationTranscript(sideSession);
-                }
-                else
-                {
-                    SideQuestionAnswer = result.Answer;
-                }
-                var completion = result.IsIncomplete ? "回答不完整" : "已完成";
-                var turnLabel = sideSession == null ? string.Empty : $" · 旁路会话 {sideSession.TurnCount:N0} 轮";
-                SideQuestionStatusText = result.Usage.HasAny
-                    ? $"{completion}{turnLabel} · 未写入主会话 · 输入 {CopilotTokenUsage.FormatCount(result.Usage.InputTokens)} / 输出 {CopilotTokenUsage.FormatCount(result.Usage.OutputTokens)}"
-                    : $"{completion}{turnLabel} · 未写入主会话";
-            }
-            catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
-            {
-                if (version == _sideQuestionVersion)
-                    SideQuestionStatusText = "已取消 · 未写入主会话";
-            }
-            finally
-            {
-                if (ReferenceEquals(_sideQuestionCts, cancellation))
-                    _sideQuestionCts = null;
-                if (version == _sideQuestionVersion)
-                    IsSideQuestionRunning = false;
-                CompleteAuxiliaryOperation(cancellation);
-            }
-        }
-
-        private void CancelSideQuestion()
-        {
-            var cancellation = _sideQuestionCts;
-            if (!IsSideQuestionRunning || cancellation == null)
-                return;
-
-            SideQuestionStatusText = "正在取消旁路提问…";
-            cancellation.RequestCancellation();
-        }
-
-        private void DismissSideQuestion()
-        {
-            if (IsSideQuestionRunning)
-                return;
-
-            ResetSideQuestion();
-        }
-
-        private void ResetSideQuestion()
-        {
-            _sideQuestionVersion++;
-            _sideQuestionCts?.RequestCancellation();
-            _sideConversationSession = null;
-            SideQuestionTitle = string.Empty;
-            SideQuestionPrompt = string.Empty;
-            SideQuestionAnswer = string.Empty;
-            SideQuestionStatusText = string.Empty;
-            IsSideQuestionRunning = false;
-        }
-
-        private static string BuildSideConversationTranscript(CopilotSideConversationSession session)
-        {
-            var builder = new StringBuilder();
-            var turns = session.Turns;
-            for (var index = 0; index < turns.Count; index++)
-            {
-                if (index > 0)
-                    builder.AppendLine().AppendLine("---").AppendLine();
-                builder.Append("**第 ").Append(index + 1).AppendLine(" 轮 · 问**").AppendLine();
-                builder.AppendLine(turns[index].Question).AppendLine();
-                builder.AppendLine("**答**").AppendLine();
-                builder.Append(turns[index].Answer);
-            }
-
-            return builder.ToString().Trim();
-        }
-
-        private void ReportSideQuestionFailure(string message)
-        {
-            if (!HasSideQuestion)
-                return;
-
-            var safeMessage = CopilotUserFacingErrorFormatter.Sanitize(message);
-            SideQuestionAnswer = _sideConversationSession?.TurnCount > 0
-                ? BuildSideConversationTranscript(_sideConversationSession) + Environment.NewLine + Environment.NewLine + $"> 当前问题回答失败：{safeMessage}"
-                : safeMessage;
-            SideQuestionStatusText = "回答失败 · 未写入主会话";
-            IsSideQuestionRunning = false;
         }
 
         private void RunUiOperation(Func<Task> operation, string operationName, Action<string>? onError = null)
@@ -6017,9 +5771,9 @@ namespace ColorVision.Copilot
                 ShowLocalCommandResult(command, "当前没有可归档的活动会话。");
                 return;
             }
-            if (IsBusy || !CanSwitchConversation || IsSideQuestionRunning || HasExclusiveLocalOperation)
+            if (IsBusy || !CanSwitchConversation || HasExclusiveLocalOperation)
             {
-                ShowLocalCommandResult(command, "当前会话仍有请求、旁路问题或本地操作正在执行，请完成或停止后再归档。");
+                ShowLocalCommandResult(command, "当前会话仍有请求或本地操作正在执行，请完成或停止后再归档。");
                 return;
             }
             var activeBackgroundCommands =
@@ -8182,7 +7936,6 @@ namespace ColorVision.Copilot
                 return;
             }
 
-            ResetSideQuestion();
             if (IsEditingMessage)
                 CancelMessageEdit();
 
@@ -8844,7 +8597,6 @@ namespace ColorVision.Copilot
             && conversation != null
             && Conversations.Contains(conversation)
             && !IsBusy
-            && !IsSideQuestionRunning
             && !HasExclusiveLocalOperation
             && !_isExportingConversation;
 
@@ -10423,9 +10175,6 @@ namespace ColorVision.Copilot
 
         private void Application_Exit(object? sender, ExitEventArgs e)
         {
-            _sideConversationSession = null;
-            if (_sideQuestionCts != null)
-                _sideQuestionCts.RequestCancellation();
             RestoreQueuedFollowUpsToDrafts();
             CopilotSteeringRecovery.RestorePendingToDrafts(_state);
             var scheduledRuns = _taskHost.ScheduledRuns;

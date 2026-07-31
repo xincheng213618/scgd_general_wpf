@@ -1755,11 +1755,10 @@
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
 
                     <Border x:Name="FileDropOverlay"
-                            Grid.RowSpan="7"
+                            Grid.RowSpan="6"
                             Panel.ZIndex="20"
                             Background="{DynamicResource GlobalBackground}"
                             BorderBrush="{DynamicResource PrimaryBrush}"
@@ -1860,83 +1859,6 @@
                     </Border>
 
                     <Border Grid.Row="1"
-                            MaxHeight="300"
-                            Margin="0,0,0,8"
-                            Padding="11,9"
-                            Style="{StaticResource CopilotInsetBorderStyle}"
-                            BorderBrush="{DynamicResource PrimaryBrush}"
-                            BorderThickness="1"
-                            CornerRadius="10"
-                            Visibility="{Binding HasSideQuestion, Converter={StaticResource bool2VisibilityConverter}}">
-                        <Grid>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto" />
-                                <RowDefinition Height="Auto" />
-                                <RowDefinition Height="Auto" />
-                                <RowDefinition Height="Auto" />
-                            </Grid.RowDefinitions>
-                            <DockPanel>
-                                <StackPanel DockPanel.Dock="Right"
-                                            Margin="10,0,0,0"
-                                            Orientation="Horizontal">
-                                    <Button Width="24"
-                                            Height="24"
-                                            Padding="0"
-                                            Command="{Binding CancelSideQuestionCommand}"
-                                            Content="■"
-                                            FontSize="9"
-                                            Style="{StaticResource AttachmentCloseButtonStyle}"
-                                            Visibility="{Binding IsSideQuestionRunning, Converter={StaticResource bool2VisibilityConverter}}"
-                                            ToolTip="取消旁路提问；主 Agent 任务不会停止" />
-                                    <Button Width="24"
-                                            Height="24"
-                                            Padding="0"
-                                            Command="{Binding DismissSideQuestionCommand}"
-                                            Content="×"
-                                            Style="{StaticResource AttachmentCloseButtonStyle}"
-                                            Visibility="{Binding CanDismissSideQuestion, Converter={StaticResource bool2VisibilityConverter}}"
-                                            ToolTip="关闭旁路回答" />
-                                </StackPanel>
-                                <StackPanel>
-                                    <TextBlock FontSize="11"
-                                               FontWeight="SemiBold"
-                                               Foreground="{DynamicResource PrimaryBrush}"
-                                               Text="{Binding SideQuestionTitle}" />
-                                    <TextBlock Margin="0,2,0,0"
-                                               FontSize="9"
-                                               Opacity="0.58"
-                                               Text="{Binding SideQuestionStatusText}"
-                                               TextWrapping="Wrap" />
-                                </StackPanel>
-                            </DockPanel>
-                            <Border Grid.Row="1"
-                                    Margin="0,7,0,0"
-                                    Padding="8,5"
-                                    Background="{DynamicResource GlobalBorderBrush1}"
-                                    CornerRadius="6">
-                                <TextBlock FontSize="11"
-                                           FontStyle="Italic"
-                                           Opacity="0.76"
-                                           Text="{Binding SideQuestionPrompt}"
-                                           TextTrimming="CharacterEllipsis"
-                                           ToolTip="{Binding SideQuestionPrompt}" />
-                            </Border>
-                            <ProgressBar Grid.Row="2"
-                                         Height="2"
-                                         Margin="0,7,0,0"
-                                         IsIndeterminate="True"
-                                         Visibility="{Binding IsSideQuestionRunning, Converter={StaticResource bool2VisibilityConverter}}" />
-                            <ScrollViewer Grid.Row="3"
-                                          MaxHeight="190"
-                                          Margin="0,8,0,0"
-                                          VerticalScrollBarVisibility="Auto"
-                                          Visibility="{Binding HasSideQuestionAnswer, Converter={StaticResource bool2VisibilityConverter}}">
-                                <local:CopilotMarkdownView Markdown="{Binding SideQuestionAnswer, Mode=OneWay}" />
-                            </ScrollViewer>
-                        </Grid>
-                    </Border>
-
-                    <Border Grid.Row="2"
                             MaxHeight="150"
                             Margin="0,0,0,6"
                             Padding="9,7"
@@ -2062,7 +1984,7 @@
                         </Grid>
                     </Border>
 
-                    <StackPanel Grid.Row="3" Margin="0,0,0,6"
+                    <StackPanel Grid.Row="2" Margin="0,0,0,6"
                                 Visibility="{Binding HasComposerAttachmentItems, Converter={StaticResource bool2VisibilityConverter}}">
                         <ScrollViewer x:Name="AttachmentScrollViewer"
                                       HorizontalScrollBarVisibility="Auto"
@@ -2166,7 +2088,7 @@
                         </ScrollViewer>
                     </StackPanel>
 
-                    <Border Grid.Row="4"
+                    <Border Grid.Row="3"
                             Margin="0,0,0,6"
                             Style="{StaticResource CopilotInsetBorderStyle}"
                             BorderThickness="1"
@@ -2205,7 +2127,7 @@
                         </Button>
                     </Border>
 
-                    <Border Grid.Row="4"
+                    <Border Grid.Row="3"
                             MaxHeight="260"
                             Margin="0,0,0,6"
                             Style="{StaticResource CopilotInsetBorderStyle}"
@@ -2268,7 +2190,7 @@
                         </DockPanel>
                     </Border>
 
-                    <Border Grid.Row="4"
+                    <Border Grid.Row="3"
                             MaxHeight="260"
                             Margin="0,0,0,6"
                             Style="{StaticResource CopilotInsetBorderStyle}"
@@ -2350,7 +2272,7 @@
                         </DockPanel>
                     </Border>
 
-                    <Border Grid.Row="4"
+                    <Border Grid.Row="3"
                             MaxHeight="190"
                             Margin="0,0,0,6"
                             Style="{StaticResource CopilotInsetBorderStyle}"
@@ -2411,7 +2333,7 @@
                         </DockPanel>
                     </Border>
 
-                    <Grid Grid.Row="5"
+                    <Grid Grid.Row="4"
                           MinHeight="24">
                         <TextBlock Padding="0,2"
                                    Foreground="{DynamicResource GlobalTextBrush}"
@@ -2453,7 +2375,7 @@
                                  VerticalScrollBarVisibility="Auto" />
                     </Grid>
 
-                    <Grid x:Name="ComposerFooterGrid" Grid.Row="6" Margin="0,2,0,0">
+                    <Grid x:Name="ComposerFooterGrid" Grid.Row="5" Margin="0,2,0,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />

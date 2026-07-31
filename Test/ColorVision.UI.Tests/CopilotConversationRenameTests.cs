@@ -26,7 +26,7 @@ public sealed class CopilotConversationRenameTests
 
         Assert.Equal(CopilotLocalCommandCatalog.All.Count, suggestions.Count);
         Assert.Contains(suggestions, command => command.Name == "/rename");
-        Assert.Contains(suggestions, command => command.Name == "/btw");
+        Assert.Contains(suggestions, command => command.Name == "/fork");
     }
 
     [Fact]

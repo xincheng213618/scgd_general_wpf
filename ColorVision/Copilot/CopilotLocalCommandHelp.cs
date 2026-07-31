@@ -71,7 +71,6 @@ namespace ColorVision.Copilot
                 CopilotLocalCommandKind.NewConversation,
                 CopilotLocalCommandKind.ClearConversation,
                 CopilotLocalCommandKind.ForkConversation,
-                CopilotLocalCommandKind.SideQuestion,
                 CopilotLocalCommandKind.Feedback,
             ]),
             ("模型与推理",
