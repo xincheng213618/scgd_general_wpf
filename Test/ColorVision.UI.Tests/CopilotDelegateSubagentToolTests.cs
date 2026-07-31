@@ -7,15 +7,17 @@ public sealed class CopilotDelegateSubagentToolTests
     [Fact]
     public async Task RunningSubagentReportsIdentityAndBudgetBeforeCompletion()
     {
+        var parentRequest = Request();
         var runner = new BlockingRunner();
         var tool = new CopilotDelegateExploreTool(runner);
         var progressTool = Assert.IsAssignableFrom<ICopilotProgressReportingTool>(tool);
         var progress = new CopilotToolProgressContext();
         var execution = progressTool.ExecuteWithProgressAsync(
-            Request(),
+            parentRequest,
             Input(),
             progress,
             CancellationToken.None);
+        var runId = string.Empty;
 
         try
         {
@@ -30,6 +32,7 @@ public sealed class CopilotDelegateSubagentToolTests
             Assert.Equal(request.RequestTokenBudget, delegatedRun.RequestTokenBudget);
             Assert.Equal(request.QueueDurationMs, delegatedRun.QueueDurationMs);
             Assert.False(execution.IsCompleted);
+            runId = delegatedRun.RunId;
         }
         finally
         {
@@ -38,6 +41,59 @@ public sealed class CopilotDelegateSubagentToolTests
 
         var result = await execution.WaitAsync(TimeSpan.FromSeconds(1));
         Assert.True(result.Success);
+        Assert.Equal(
+            CopilotSubagentCancelResult.NotFound,
+            CopilotSubagentCoordination.RequestCancelActiveRun(parentRequest.ConversationId, runId));
+    }
+
+    [Fact]
+    public async Task RunningSubagentCanBeStoppedWithoutCancellingItsParentRequest()
+    {
+        using var parentCancellation = new CancellationTokenSource();
+        var request = Request();
+        var runner = new BlockingRunner();
+        var progressTool = Assert.IsAssignableFrom<ICopilotProgressReportingTool>(
+            new CopilotDelegateExploreTool(runner));
+        var progress = new CopilotToolProgressContext();
+        var execution = progressTool.ExecuteWithProgressAsync(
+            request,
+            Input(),
+            progress,
+            parentCancellation.Token);
+
+        try
+        {
+            await runner.Started.Task.WaitAsync(TimeSpan.FromSeconds(1));
+            var runId = Assert.IsType<CopilotDelegatedRunProgress>(
+                progress.LatestSnapshot?.DelegatedRun).RunId;
+
+            Assert.Equal(
+                CopilotSubagentCancelResult.NotFound,
+                CopilotSubagentCoordination.RequestCancelActiveRun("another-conversation", runId));
+            Assert.False(execution.IsCompleted);
+            Assert.Equal(
+                CopilotSubagentCancelResult.Requested,
+                CopilotSubagentCoordination.RequestCancelActiveRun(request.ConversationId, runId));
+
+            var result = await execution.WaitAsync(TimeSpan.FromSeconds(1));
+
+            Assert.False(result.Success);
+            Assert.Equal(CopilotToolFailureKind.Cancelled, result.FailureKind);
+            Assert.Equal(CopilotAgentStopReason.Cancelled, result.DelegatedRunUsage?.StopReason);
+            Assert.Equal(runId, result.DelegatedRunUsage?.RunId);
+            Assert.Contains("父 Agent", result.Summary, StringComparison.Ordinal);
+            Assert.Contains("without retrying", result.ErrorMessage, StringComparison.Ordinal);
+            Assert.False(parentCancellation.IsCancellationRequested);
+            Assert.Equal(
+                CopilotSubagentCancelResult.NotFound,
+                CopilotSubagentCoordination.RequestCancelActiveRun(request.ConversationId, runId));
+        }
+        finally
+        {
+            runner.Release.TrySetResult();
+            if (!execution.IsCompleted)
+                await execution.WaitAsync(TimeSpan.FromSeconds(1));
+        }
     }
 
     [Fact]
@@ -430,6 +486,7 @@ public sealed class CopilotDelegateSubagentToolTests
     {
         return new CopilotAgentRequest
         {
+            ConversationId = "conversation-subagent-tests",
             Mode = CopilotAgentMode.Auto,
             Profile = new CopilotProfileConfig(),
             UserText = @"只读审计 C:\workspace，列出 1 条可验证的问题；不要修改文件。",

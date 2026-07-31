@@ -2190,9 +2190,7 @@ namespace ColorVision.Copilot
                             CopilotProviderRateLimitTracker.GetSnapshot(SelectedProfile?.Id)));
                     break;
                 case CopilotLocalCommandKind.Subagents:
-                    ShowLocalCommandResult(
-                        command,
-                        CopilotSubagentDiagnostics.Format(SelectedConversation, invocation.Arguments));
+                    HandleSubagentCommand(command, invocation.Arguments);
                     break;
                 case CopilotLocalCommandKind.Statistics:
                     ShowLocalCommandResult(command, CopilotConversationStatistics.Format(
@@ -2435,6 +2433,27 @@ namespace ColorVision.Copilot
             RunUiOperation(
                 () => ApprovePendingActionAsync(result.Action),
                 "审核待确认操作");
+        }
+
+        private void HandleSubagentCommand(
+            CopilotLocalCommand command,
+            string arguments)
+        {
+            var request = CopilotSubagentDiagnostics.ParseCommand(arguments);
+            if (request.Action != CopilotSubagentDiagnosticAction.Stop)
+            {
+                ShowLocalCommandResult(
+                    command,
+                    CopilotSubagentDiagnostics.Format(SelectedConversation, arguments));
+                return;
+            }
+
+            var result = CopilotSubagentCoordination.RequestCancelActiveRun(
+                SelectedConversation?.Id,
+                request.RunId);
+            ShowLocalCommandResult(
+                command,
+                CopilotSubagentDiagnostics.FormatCancelResult(request.RunId, result));
         }
 
         private void HandleQueuedFollowUpCommand(

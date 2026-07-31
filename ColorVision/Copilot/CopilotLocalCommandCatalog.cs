@@ -144,15 +144,17 @@ namespace ColorVision.Copilot
                 new("weekly", "最近 30 个本机日历日的本地活动"),
                 new("cumulative", "全部本地会话历史累计"),
             ]),
-            new("/agents", "查看请求级子代理角色、预算边界与当前会话运行记录", CopilotLocalCommandKind.Subagents, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/agents [roles|runs [N]]", Arguments:
+            new("/agents", "查看请求级子代理与预算，或按 run_id 停止子代理；父 Agent 继续运行", CopilotLocalCommandKind.Subagents, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/agents [roles|runs [N]|stop <run_id>]", Arguments:
             [
                 new("roles", "只显示内置子代理角色及其只读能力"),
                 new("runs", "显示当前会话最近 N 次子代理运行", AcceptsArguments: true),
+                new("stop", "按 run_id 停止当前会话中的运行中子代理；父 Agent 继续", AcceptsArguments: true),
             ]),
-            new("/subagents", "同 /agents；查看请求级子代理角色与运行记录", CopilotLocalCommandKind.Subagents, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/subagents [roles|runs [N]]", Arguments:
+            new("/subagents", "同 /agents；查看请求级子代理，或按 run_id 停止并让父 Agent 继续", CopilotLocalCommandKind.Subagents, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/subagents [roles|runs [N]|stop <run_id>]", Arguments:
             [
                 new("roles", "只显示内置子代理角色及其只读能力"),
                 new("runs", "显示当前会话最近 N 次子代理运行", AcceptsArguments: true),
+                new("stop", "按 run_id 停止当前会话中的运行中子代理；父 Agent 继续", AcceptsArguments: true),
             ]),
             new("/stats", "汇总最近 7 天、30 天或全部本地会话活动", CopilotLocalCommandKind.Statistics, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/stats [7|30|all]", Arguments:
             [

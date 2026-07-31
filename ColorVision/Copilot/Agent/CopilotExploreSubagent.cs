@@ -1208,12 +1208,25 @@ namespace ColorVision.Copilot
                 },
             });
             CopilotSubagentResult result;
+            using var runCancellation = CancellationTokenSource.CreateLinkedTokenSource(
+                cancellationToken,
+                lease.CancellationToken);
             try
             {
-                result = await _runner.RunAsync(request, _role, childRun, cancellationToken);
+                result = await _runner.RunAsync(request, _role, childRun, runCancellation.Token);
+                lease.CompleteCancellationWindow();
                 lease.Commit(Math.Max(result.Budget.ConsumedTokens, result.Usage.EffectiveTotalTokens));
+                if (lease.WasCancellationRequested && !cancellationToken.IsCancellationRequested)
+                    return Cancelled(childRun);
                 if (childRun.ResumeCheckpoint == null || result.SessionResumed)
                     coordinator.RecordCompleted(_role.Id, childRun.RunId, result.SessionCheckpoint);
+            }
+            catch (OperationCanceledException) when (lease.WasCancellationRequested
+                && !cancellationToken.IsCancellationRequested)
+            {
+                lease.CompleteCancellationWindow();
+                lease.Commit(lease.RequestTokenBudget);
+                return Cancelled(childRun);
             }
             catch
             {
@@ -1296,6 +1309,31 @@ namespace ColorVision.Copilot
                     StopReason = result.StopReason,
                     HasSuccessfulEvidence = result.HasSuccessfulEvidence,
                     WasTruncated = result.WasTruncated,
+                },
+            };
+        }
+
+        private CopilotToolResult Cancelled(CopilotSubagentRunRequest runRequest)
+        {
+            return new CopilotToolResult
+            {
+                ToolName = Name,
+                Success = false,
+                Summary = $"{_role.DisplayName} 子 Agent 已按用户请求停止；父 Agent 将继续运行。",
+                ErrorMessage = "The delegated subagent was stopped by the user. Continue the parent task without retrying it unless the user explicitly asks.",
+                FailureKind = CopilotToolFailureKind.Cancelled,
+                DelegatedRunUsage = new CopilotDelegatedRunUsage
+                {
+                    RoleId = _role.Id,
+                    RunId = runRequest.RunId,
+                    ResumeFromRunId = runRequest.ResumeFromRunId,
+                    RequestTokenBudget = runRequest.RequestTokenBudget,
+                    QueueDurationMs = runRequest.QueueDurationMs,
+                    StopReason = CopilotAgentStopReason.Cancelled,
+                },
+                DelegatedAnswer = new CopilotDelegatedAnswer
+                {
+                    StopReason = CopilotAgentStopReason.Cancelled,
                 },
             };
         }

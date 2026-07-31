@@ -12,11 +12,13 @@ namespace ColorVision.Copilot
         Roles,
         Runs,
         Invalid,
+        Stop,
     }
 
     internal readonly record struct CopilotSubagentDiagnosticRequest(
         CopilotSubagentDiagnosticAction Action,
-        int Limit);
+        int Limit,
+        string RunId);
 
     internal sealed record CopilotSubagentRunDiagnostic(
         string RunId,
@@ -38,8 +40,8 @@ namespace ColorVision.Copilot
     {
         internal const int DefaultDisplayedRuns = 8;
         internal const int MaximumDisplayedRuns = 20;
-        internal const string Usage = "用法：/agents [roles|runs [N]]"
-            + "\nN 可取 1–20；/subagents 为同义命令。";
+        internal const string Usage = "用法：/agents [roles|runs [N]|stop <run_id>]"
+            + "\nN 可取 1–20；stop 只停止当前会话中仍在运行的指定子代理，父 Agent 继续运行；/subagents 为同义命令。";
 
         public static CopilotSubagentDiagnosticRequest ParseCommand(string? arguments)
         {
@@ -50,14 +52,16 @@ namespace ColorVision.Copilot
             {
                 return new CopilotSubagentDiagnosticRequest(
                     CopilotSubagentDiagnosticAction.Overview,
-                    DefaultDisplayedRuns);
+                    DefaultDisplayedRuns,
+                    string.Empty);
             }
             if (tokens.Length == 1
                 && string.Equals(tokens[0], "roles", StringComparison.OrdinalIgnoreCase))
             {
                 return new CopilotSubagentDiagnosticRequest(
                     CopilotSubagentDiagnosticAction.Roles,
-                    0);
+                    0,
+                    string.Empty);
             }
             if (string.Equals(tokens[0], "runs", StringComparison.OrdinalIgnoreCase)
                 && (tokens.Length == 1
@@ -73,12 +77,38 @@ namespace ColorVision.Copilot
                     CopilotSubagentDiagnosticAction.Runs,
                     tokens.Length == 1
                         ? DefaultDisplayedRuns
-                        : int.Parse(tokens[1], CultureInfo.InvariantCulture));
+                        : int.Parse(tokens[1], CultureInfo.InvariantCulture),
+                    string.Empty);
+            }
+            if (tokens.Length == 2
+                && string.Equals(tokens[0], "stop", StringComparison.OrdinalIgnoreCase)
+                && IsValidRunId(tokens[1]))
+            {
+                return new CopilotSubagentDiagnosticRequest(
+                    CopilotSubagentDiagnosticAction.Stop,
+                    0,
+                    tokens[1]);
             }
 
             return new CopilotSubagentDiagnosticRequest(
                 CopilotSubagentDiagnosticAction.Invalid,
-                0);
+                0,
+                string.Empty);
+        }
+
+        public static string FormatCancelResult(
+            string runId,
+            CopilotSubagentCancelResult result)
+        {
+            return result switch
+            {
+                CopilotSubagentCancelResult.Requested =>
+                    $"已请求停止子代理 {runId}；父 Agent 将继续运行。",
+                CopilotSubagentCancelResult.AlreadyRequested =>
+                    $"子代理 {runId} 已在停止中；父 Agent 保持运行。",
+                _ =>
+                    $"当前会话中没有正在运行的子代理 {runId}；它可能已结束或 run_id 已失效。",
+            };
         }
 
         public static IReadOnlyList<CopilotSubagentRunDiagnostic> CaptureRuns(
@@ -131,7 +161,8 @@ namespace ColorVision.Copilot
             CopilotSubagentRoleCatalog? catalog = null)
         {
             var request = ParseCommand(arguments);
-            if (request.Action == CopilotSubagentDiagnosticAction.Invalid)
+            if (request.Action is CopilotSubagentDiagnosticAction.Invalid
+                or CopilotSubagentDiagnosticAction.Stop)
                 return Usage;
 
             catalog ??= CopilotSubagentRoleCatalog.Default;
@@ -171,6 +202,12 @@ namespace ColorVision.Copilot
                 .Append("它仍不是可切换、跨请求或应用重启后可恢复的独立会话。")
                 .Append("列表仅来自当前会话保存的限长运行元数据，不显示任务提示、回答正文、隐藏推理或凭据。");
             return builder.ToString();
+        }
+
+        private static bool IsValidRunId(string value)
+        {
+            return value.Length is >= 1 and <= 120
+                && value.All(character => char.IsAsciiLetterOrDigit(character) || character == '-');
         }
 
         private static bool TryResolveRoleId(

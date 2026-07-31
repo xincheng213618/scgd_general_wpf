@@ -1,5 +1,6 @@
 #pragma warning disable CA1001
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -9,14 +10,129 @@ using System.Threading.Tasks;
 
 namespace ColorVision.Copilot
 {
+    internal enum CopilotSubagentCancelResult
+    {
+        Requested,
+        AlreadyRequested,
+        NotFound,
+    }
+
     internal static class CopilotSubagentCoordination
     {
         private static readonly ConditionalWeakTable<CopilotAgentRequest, CopilotSubagentCoordinator> Coordinators = new();
+        private static readonly ConcurrentDictionary<string, CopilotSubagentRunCancellation> ActiveRuns =
+            new(StringComparer.Ordinal);
 
         public static CopilotSubagentCoordinator GetCoordinator(CopilotAgentRequest parentRequest)
         {
             ArgumentNullException.ThrowIfNull(parentRequest);
             return Coordinators.GetValue(parentRequest, static request => new CopilotSubagentCoordinator(request));
+        }
+
+        public static CopilotSubagentCancelResult RequestCancelActiveRun(
+            string? conversationId,
+            string? runId)
+        {
+            var normalizedRunId = (runId ?? string.Empty).Trim();
+            if (normalizedRunId.Length == 0
+                || !ActiveRuns.TryGetValue(normalizedRunId, out var activeRun)
+                || !string.Equals(
+                    activeRun.ConversationId,
+                    (conversationId ?? string.Empty).Trim(),
+                    StringComparison.Ordinal))
+            {
+                return CopilotSubagentCancelResult.NotFound;
+            }
+
+            return activeRun.RequestCancel();
+        }
+
+        internal static CopilotSubagentRunCancellation RegisterActiveRun(
+            string conversationId,
+            string roleId)
+        {
+            while (true)
+            {
+                var runId = roleId + "-" + Guid.NewGuid().ToString("N")[..12];
+                var activeRun = new CopilotSubagentRunCancellation(
+                    (conversationId ?? string.Empty).Trim(),
+                    runId);
+                if (ActiveRuns.TryAdd(runId, activeRun))
+                    return activeRun;
+
+                activeRun.DisposeUnregistered();
+            }
+        }
+
+        internal static void UnregisterActiveRun(CopilotSubagentRunCancellation activeRun)
+        {
+            if (ActiveRuns.TryGetValue(activeRun.RunId, out var registered)
+                && ReferenceEquals(registered, activeRun))
+            {
+                ActiveRuns.TryRemove(activeRun.RunId, out _);
+            }
+        }
+    }
+
+    internal sealed class CopilotSubagentRunCancellation : IDisposable
+    {
+        private readonly CopilotNonBlockingCancellationSource _cancellation = new();
+        private readonly object _syncRoot = new();
+        private int _cancelRequested;
+        private int _disposed;
+
+        public CopilotSubagentRunCancellation(string conversationId, string runId)
+        {
+            ConversationId = conversationId;
+            RunId = runId;
+        }
+
+        public string ConversationId { get; }
+
+        public string RunId { get; }
+
+        public CancellationToken Token => _cancellation.Token;
+
+        public bool WasCancellationRequested => Volatile.Read(ref _cancelRequested) != 0;
+
+        public CopilotSubagentCancelResult RequestCancel()
+        {
+            lock (_syncRoot)
+            {
+                if (_disposed != 0)
+                    return CopilotSubagentCancelResult.NotFound;
+                if (_cancelRequested != 0)
+                    return CopilotSubagentCancelResult.AlreadyRequested;
+
+                _cancelRequested = 1;
+                _cancellation.RequestCancellation();
+                return CopilotSubagentCancelResult.Requested;
+            }
+        }
+
+        public void Dispose()
+        {
+            lock (_syncRoot)
+            {
+                if (_disposed != 0)
+                    return;
+                _disposed = 1;
+            }
+
+            CopilotSubagentCoordination.UnregisterActiveRun(this);
+            _cancellation.Dispose();
+        }
+
+        internal void DisposeUnregistered()
+        {
+            lock (_syncRoot)
+            {
+                if (_disposed != 0)
+                    return;
+                _disposed = 1;
+            }
+
+            _cancellation.Dispose();
         }
     }
 
@@ -34,12 +150,14 @@ namespace ColorVision.Copilot
         private readonly Queue<string> _completedRunOrder = new();
         private readonly int _totalTokenBudget;
         private readonly int _perRunTokenBudget;
+        private readonly string _conversationId;
         private long _committedTokens;
         private int _reservedTokens;
 
         public CopilotSubagentCoordinator(CopilotAgentRequest parentRequest)
         {
             ArgumentNullException.ThrowIfNull(parentRequest);
+            _conversationId = (parentRequest.ConversationId ?? string.Empty).Trim();
             var parentTokenBudget = CopilotAgentRunBudget.Resolve(parentRequest).RequestTokenBudget;
             _totalTokenBudget = Math.Max(
                 CopilotAgentRunBudget.MinimumRequestTokenBudget,
@@ -70,12 +188,14 @@ namespace ColorVision.Copilot
             }
 
             stopwatch.Stop();
-            var runId = normalizedRoleId + "-" + Guid.NewGuid().ToString("N")[..12];
+            var activeRun = CopilotSubagentCoordination.RegisterActiveRun(
+                _conversationId,
+                normalizedRoleId);
             lock (_syncRoot)
-                _activeRunIds.Add(runId);
+                _activeRunIds.Add(activeRun.RunId);
             return new CopilotSubagentLease(
                 this,
-                runId,
+                activeRun,
                 tokenBudget,
                 stopwatch.ElapsedMilliseconds);
         }
@@ -176,16 +296,18 @@ namespace ColorVision.Copilot
         internal sealed class CopilotSubagentLease : IDisposable
         {
             private CopilotSubagentCoordinator? _owner;
+            private readonly CopilotSubagentRunCancellation _activeRun;
             private long? _consumedTokens;
 
             public CopilotSubagentLease(
                 CopilotSubagentCoordinator owner,
-                string runId,
+                CopilotSubagentRunCancellation activeRun,
                 int requestTokenBudget,
                 long queueDurationMs)
             {
                 _owner = owner;
-                RunId = runId;
+                _activeRun = activeRun;
+                RunId = activeRun.RunId;
                 RequestTokenBudget = requestTokenBudget;
                 QueueDurationMs = Math.Max(0, queueDurationMs);
             }
@@ -196,6 +318,12 @@ namespace ColorVision.Copilot
 
             public long QueueDurationMs { get; }
 
+            public CancellationToken CancellationToken => _activeRun.Token;
+
+            public bool WasCancellationRequested => _activeRun.WasCancellationRequested;
+
+            public void CompleteCancellationWindow() => _activeRun.Dispose();
+
             public void Commit(long consumedTokens)
             {
                 _consumedTokens = Math.Max(0, consumedTokens);
@@ -204,6 +332,7 @@ namespace ColorVision.Copilot
             public void Dispose()
             {
                 Interlocked.Exchange(ref _owner, null)?.Release(this, _consumedTokens);
+                _activeRun.Dispose();
             }
         }
     }

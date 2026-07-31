@@ -19,6 +19,7 @@ public sealed class CopilotSubagentDiagnosticsTests
         Assert.Equal(CopilotLocalCommandKind.Subagents, subagents.Command.Kind);
         Assert.Contains(suggestions, item => item.Name == "/agents roles");
         Assert.Contains(suggestions, item => item.Name == "/agents runs");
+        Assert.Contains(suggestions, item => item.Name == "/agents stop");
     }
 
     [Theory]
@@ -42,6 +43,41 @@ public sealed class CopilotSubagentDiagnosticsTests
 
         Assert.Equal((CopilotSubagentDiagnosticAction)expectedAction, request.Action);
         Assert.Equal(expectedLimit, request.Limit);
+        Assert.Empty(request.RunId);
+    }
+
+    [Theory]
+    [InlineData("stop explore-123abc", true)]
+    [InlineData("STOP scout-abc123", true)]
+    [InlineData("stop", false)]
+    [InlineData("stop explore-123 extra", false)]
+    [InlineData("stop ../explore-123", false)]
+    public void StopCommandRequiresOneBoundedRunId(string arguments, bool expectedValid)
+    {
+        var request = CopilotSubagentDiagnostics.ParseCommand(arguments);
+
+        Assert.Equal(
+            expectedValid
+                ? CopilotSubagentDiagnosticAction.Stop
+                : CopilotSubagentDiagnosticAction.Invalid,
+            request.Action);
+        Assert.Equal(expectedValid ? arguments.Split(' ')[1] : string.Empty, request.RunId);
+    }
+
+    [Theory]
+    [InlineData(0, "已请求停止子代理 explore-live；父 Agent 将继续运行")]
+    [InlineData(1, "子代理 explore-live 已在停止中；父 Agent 保持运行")]
+    [InlineData(2, "当前会话中没有正在运行的子代理 explore-live")]
+    public void StopResultKeepsParentContinuationExplicit(
+        int result,
+        string expected)
+    {
+        Assert.Contains(
+            expected,
+            CopilotSubagentDiagnostics.FormatCancelResult(
+                "explore-live",
+                (CopilotSubagentCancelResult)result),
+            StringComparison.Ordinal);
     }
 
     [Fact]
