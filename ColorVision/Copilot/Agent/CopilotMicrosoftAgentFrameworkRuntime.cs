@@ -1014,6 +1014,7 @@ namespace ColorVision.Copilot
             var toolBudgetForcedFinalization = false;
             var deferredBackgroundSignalsAccepted = false;
             var frameworkApprovalAwaitingProviderUpdate = false;
+            var steeringInputSealed = false;
             AIChatFinishReason? providerFinishReason = null;
             try
             {
@@ -1066,6 +1067,25 @@ namespace ColorVision.Copilot
                         {
                             CancelFrameworkApprovalRouting();
                             frameworkApprovalAwaitingProviderUpdate = false;
+                        }
+
+                        if (!steeringInputSealed)
+                        {
+                            emit(CopilotAgentEvent.RuntimeDiagnostic(
+                                "Agent provider loop completed; live steering input is now sealed."));
+                            steeringRegistration.StopAcceptingInput();
+                            steeringInputSealed = true;
+                        }
+                        var pendingInjectedMessages = await messageInjector
+                            .GetPendingMessagesAsync(
+                                session,
+                                agentLoopCancellation.Token);
+                        if (pendingInjectedMessages.Count > 0)
+                        {
+                            emit(CopilotAgentEvent.RuntimeDiagnostic(
+                                $"Agent sealed live steering input with {pendingInjectedMessages.Count} injected message(s) still pending; running the final Agent Framework drain before finalization."));
+                            messages = Array.Empty<Microsoft.Extensions.AI.ChatMessage>();
+                            continue;
                         }
                         break;
                     }

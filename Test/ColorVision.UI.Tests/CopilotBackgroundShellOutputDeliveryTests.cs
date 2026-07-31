@@ -257,6 +257,78 @@ public sealed class CopilotBackgroundShellOutputDeliveryTests
     }
 
     [Fact]
+    public async Task SteeringAcceptedAtLoopBoundaryIsDrainedBeforeFinalization()
+    {
+        using var provider = new CapturingChatClient();
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry([]),
+            new CopilotAgentContextBuilder(),
+            new CopilotToolExecutor(),
+            _ => provider,
+            EmptyExternalToolProvider.Instance,
+            new CopilotCapabilityCatalog());
+        var request = CreateRequest(
+            "conversation",
+            "Complete only after the final steering drain.");
+        var sealingStarted = new TaskCompletionSource(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseSealing = new TaskCompletionSource(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var runTask = Task.Run(() => runtime.RunAsync(
+                request,
+                agentEvent =>
+                {
+                    if (agentEvent.Type != CopilotAgentEventType.RuntimeDiagnostic
+                        || !agentEvent.Text.Contains(
+                            "live steering input is now sealed",
+                            StringComparison.Ordinal))
+                    {
+                        return;
+                    }
+
+                    sealingStarted.TrySetResult();
+                    releaseSealing.Task.GetAwaiter().GetResult();
+                },
+                timeout.Token),
+            timeout.Token);
+
+        CopilotSteeringAdmissionResult boundaryAdmission;
+        try
+        {
+            await sealingStarted.Task.WaitAsync(
+                TimeSpan.FromSeconds(5));
+            boundaryAdmission = runtime.EnqueueSteeringMessage(
+                request.TaskId,
+                "boundary steering");
+        }
+        finally
+        {
+            releaseSealing.TrySetResult();
+        }
+
+        var result = await runTask.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.True(boundaryAdmission.IsAccepted);
+        Assert.Equal(CopilotAgentStopReason.Completed, result.StopReason);
+        Assert.Equal(2, provider.StreamingCalls.Count);
+        Assert.DoesNotContain(
+            provider.StreamingCalls[0],
+            message => message.Text.Contains(
+                "boundary steering",
+                StringComparison.Ordinal));
+        Assert.Contains(
+            provider.StreamingCalls[1],
+            message => message.Text.Contains(
+                "boundary steering",
+                StringComparison.Ordinal));
+        Assert.Single(
+            result.TaskEventJournal.Events,
+            item => item.Type
+                == CopilotAgentTaskEventType.SteeringQueued);
+    }
+
+    [Fact]
     public async Task NextAgentRunReceivesDelayedOutputBeforeCurrentUserRequest()
     {
         using var provider = new CapturingChatClient();
