@@ -41,31 +41,113 @@ public sealed class CopilotNextPromptSuggestionServiceTests
         var messages = root.GetProperty("messages");
         Assert.Equal(4, messages.GetArrayLength());
         Assert.Contains("Original instruction.", messages[0].GetProperty("content").GetString());
-        Assert.Contains("predict one optional next user request", messages[0].GetProperty("content").GetString());
+        Assert.Contains("predict one optional next user message", messages[0].GetProperty("content").GetString());
+        Assert.Contains("what the user would actually type", messages[0].GetProperty("content").GetString());
         Assert.Equal("检查 Copilot 模块", messages[1].GetProperty("content").GetString());
         Assert.Equal("已完成第一轮检查。", messages[2].GetProperty("content").GetString());
-        Assert.Contains("Predict the single most useful", messages[3].GetProperty("content").GetString());
+        Assert.Contains("Predict what the user is most likely", messages[3].GetProperty("content").GetString());
         Assert.DoesNotContain("hidden model", handler.LastPayload, StringComparison.Ordinal);
     }
 
     [Theory]
     [InlineData("NONE", "")]
     [InlineData(" suggestion: 继续运行测试 ", "继续运行测试")]
-    [InlineData("- 检查最终差异", "检查最终差异")]
     [InlineData("“先提交当前改动”", "先提交当前改动")]
-    [InlineData("第一行\n第二行", "第一行 第二行")]
+    [InlineData("继续", "继续")]
+    [InlineData("/review", "/review")]
     public void NormalizationProducesOneComposerSafePrompt(string value, string expected)
     {
         Assert.Equal(expected, CopilotNextPromptSuggestionService.NormalizeSuggestion(value));
     }
 
     [Fact]
-    public void NormalizationBoundsOversizedSuggestions()
+    public void NormalizationRejectsUnsafeOrLowQualitySuggestions()
     {
-        var normalized = CopilotNextPromptSuggestionService.NormalizeSuggestion(
-            new string('x', CopilotNextPromptSuggestionService.MaximumSuggestionCharacters + 20));
+        string[] rejected =
+        [
+            "- 检查最终差异",
+            "第一行\n第二行",
+            "Run the tests. Then commit the changes.",
+            "I'll run the tests",
+            "我来运行测试",
+            "looks good",
+            "谢谢",
+            "what should we do next?",
+            "refactor",
+            "NONE.",
+            "User: run the tests",
+            "建议：继续运行测试",
+            new string('x', CopilotNextPromptSuggestionService.MaximumSuggestionCharacters + 1),
+            string.Join(' ', Enumerable.Repeat("word", CopilotNextPromptSuggestionService.MaximumSuggestionWords + 1)),
+        ];
 
-        Assert.Equal(CopilotNextPromptSuggestionService.MaximumSuggestionCharacters, normalized.Length);
+        foreach (string value in rejected)
+            Assert.Empty(CopilotNextPromptSuggestionService.NormalizeSuggestion(value));
+    }
+
+    [Fact]
+    public void NormalizationRejectsRepeatedLongUserRequestsButAllowsShortCommands()
+    {
+        CopilotRequestMessage[] history =
+        [
+            new("user", "Fix  the flaky\nauth test."),
+            new("assistant", "Fixed it."),
+            new("user", "继续检查剩余改动"),
+            new("assistant", "检查完成。"),
+        ];
+
+        Assert.Empty(CopilotNextPromptSuggestionService.NormalizeSuggestion("fix the flaky auth test!", history));
+        Assert.Empty(CopilotNextPromptSuggestionService.NormalizeSuggestion("继续检查剩余改动。", history));
+        Assert.Equal("run the tests", CopilotNextPromptSuggestionService.NormalizeSuggestion("run the tests", history));
+        Assert.Equal("继续", CopilotNextPromptSuggestionService.NormalizeSuggestion("继续", history));
+    }
+
+    [Fact]
+    public async Task SuggestRejectsRepeatedUserRequestAndRetainsUsage()
+    {
+        var handler = new CapturingHandler("fix the flaky auth test");
+        using var httpClient = new HttpClient(handler);
+        var service = new CopilotNextPromptSuggestionService(new CopilotChatService(httpClient));
+        var history = new CopilotConversationHistorySnapshot(
+            [],
+            [
+                new CopilotRequestMessage("user", "Fix the flaky auth test."),
+                new CopilotRequestMessage("assistant", "Fixed it."),
+            ]);
+
+        var result = await service.SuggestAsync(
+            CreateProfile(),
+            history,
+            new CopilotConversationHistoryLimits(64, 128_000, 32_000),
+            CancellationToken.None);
+
+        Assert.Empty(result.Suggestion);
+        Assert.Equal(new CopilotTokenUsage(10, 3, 13), result.Usage);
+    }
+
+    [Fact]
+    public async Task SuggestCapsEachVisibleMessageForLowNoisePrediction()
+    {
+        var handler = new CapturingHandler("continue");
+        using var httpClient = new HttpClient(handler);
+        var service = new CopilotNextPromptSuggestionService(new CopilotChatService(httpClient));
+        var history = new CopilotConversationHistorySnapshot(
+            [],
+            [
+                new CopilotRequestMessage("user", new string('x', 4_000)),
+                new CopilotRequestMessage("assistant", "done"),
+            ]);
+
+        var result = await service.SuggestAsync(
+            CreateProfile(),
+            history,
+            new CopilotConversationHistoryLimits(64, 128_000, 32_000),
+            CancellationToken.None);
+
+        Assert.Equal("continue", result.Suggestion);
+        using var payload = JsonDocument.Parse(handler.LastPayload);
+        string userContent = payload.RootElement.GetProperty("messages")[1].GetProperty("content").GetString()!;
+        Assert.Equal(CopilotNextPromptSuggestionService.MaximumMessageCharacters, userContent.Length);
     }
 
     [Fact]
