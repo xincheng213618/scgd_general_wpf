@@ -788,6 +788,18 @@
                                 Content="{Binding AgentRunNoticeText}"
                                 ToolTip="打开或查看 Agent 任务状态"
                                 Visibility="{Binding HasAgentRunNotice, Converter={StaticResource bool2VisibilityConverter}}" />
+                        <Button Margin="0,3,0,0"
+                                Padding="0"
+                                HorizontalAlignment="Left"
+                                Background="Transparent"
+                                BorderBrush="Transparent"
+                                Command="{Binding OpenBackgroundCommandNoticeCommand}"
+                                Foreground="{StaticResource CopilotControlBrush}"
+                                FontSize="10"
+                                Opacity="0.72"
+                                Content="{Binding BackgroundCommandNoticeText}"
+                                ToolTip="打开后台命令的限长脱敏输出"
+                                Visibility="{Binding HasBackgroundCommandNotice, Converter={StaticResource bool2VisibilityConverter}}" />
                         <TextBlock Margin="0,3,0,0"
                                    FontSize="10"
                                    Foreground="{StaticResource CopilotControlWarningBrush}"

@@ -255,6 +255,58 @@ public sealed class CopilotBackgroundShellCommandTests
     }
 
     [Fact]
+    public async Task RegistryPublishesOneTypedTerminalNotification()
+    {
+        var launcher = new FakeBackgroundLauncher();
+        var registry = new CopilotBackgroundShellCommandRegistry(launcher);
+        var request = CreateRequest("run PowerShell in background");
+        var notification = new TaskCompletionSource<
+            CopilotBackgroundShellCommandSnapshot>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var notificationCount = 0;
+        registry.CommandCompleted += (_, _) =>
+            throw new InvalidOperationException("subscriber failure");
+        registry.CommandCompleted += (_, e) =>
+        {
+            Interlocked.Increment(ref notificationCount);
+            notification.TrySetResult(e.Snapshot);
+        };
+        try
+        {
+            var started = await registry.StartAsync(
+                request,
+                CreateStartInput("Write-Output complete"),
+                CancellationToken.None);
+            Assert.True(started.Success, started.ErrorMessage);
+
+            launcher.LastProcess!.SetOutput(
+                "complete token=background-secret",
+                string.Empty);
+            launcher.LastProcess.Complete(exitCode: 0);
+            var completed = await notification.Task.WaitAsync(
+                TimeSpan.FromSeconds(5));
+
+            Assert.Equal(started.Snapshot!.Id, completed.Id);
+            Assert.Equal(
+                CopilotBackgroundShellCommandState.Completed,
+                completed.State);
+            Assert.Equal(0, completed.ExitCode);
+            Assert.Contains("token=<redacted>", completed.StandardOutput);
+            Assert.DoesNotContain(
+                "background-secret",
+                completed.StandardOutput,
+                StringComparison.Ordinal);
+            registry.GetSnapshots(request.ConversationId);
+            registry.GetSnapshots(request.ConversationId);
+            Assert.Equal(1, Volatile.Read(ref notificationCount));
+        }
+        finally
+        {
+            await registry.ShutdownAsync();
+        }
+    }
+
+    [Fact]
     public async Task RealPowerShellProcessCompletesAndPublishesBoundedOutput()
     {
         if (!OperatingSystem.IsWindows()
@@ -481,6 +533,18 @@ public sealed class CopilotBackgroundShellCommandTests
                 _standardOutput,
                 _standardError));
             return _completion.Task;
+        }
+
+        public void Complete(int exitCode)
+        {
+            _completion.TrySetResult(new CopilotBackgroundShellProcessCompletion(
+                exitCode == 0
+                    ? CopilotBackgroundShellCommandState.Completed
+                    : CopilotBackgroundShellCommandState.Failed,
+                exitCode,
+                DateTimeOffset.UtcNow,
+                _standardOutput,
+                _standardError));
         }
 
         public void Dispose()

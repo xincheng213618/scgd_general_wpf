@@ -85,6 +85,17 @@ namespace ColorVision.Copilot
         public bool Success => Snapshot != null && FailureKind == CopilotToolFailureKind.None;
     }
 
+    internal sealed class CopilotBackgroundShellCommandCompletedEventArgs : EventArgs
+    {
+        public CopilotBackgroundShellCommandCompletedEventArgs(
+            CopilotBackgroundShellCommandSnapshot snapshot)
+        {
+            Snapshot = snapshot ?? throw new ArgumentNullException(nameof(snapshot));
+        }
+
+        public CopilotBackgroundShellCommandSnapshot Snapshot { get; }
+    }
+
     internal sealed class CopilotBackgroundShellCommandRegistry
     {
         public const int DefaultLifetimeSeconds = 3_600;
@@ -115,6 +126,8 @@ namespace ColorVision.Copilot
         }
 
         public static CopilotBackgroundShellCommandRegistry Shared { get; } = new();
+
+        public event EventHandler<CopilotBackgroundShellCommandCompletedEventArgs>? CommandCompleted;
 
         public async Task<CopilotBackgroundShellCommandStartResult> StartAsync(
             CopilotAgentRequest request,
@@ -217,6 +230,7 @@ namespace ColorVision.Copilot
                     DateTimeOffset.UtcNow,
                     process);
 
+                CopilotBackgroundShellCommandStartResult? startResult = null;
                 lock (_syncRoot)
                 {
                     ReleaseStartReservationUnderLock(conversationId);
@@ -229,11 +243,16 @@ namespace ColorVision.Copilot
                         _entries.Add(entry);
                         TrimRetainedEntriesUnderLock();
                         process = null;
-                        return new CopilotBackgroundShellCommandStartResult(
+                        startResult = new CopilotBackgroundShellCommandStartResult(
                             entry.GetSnapshot(),
                             CopilotToolFailureKind.None,
                             string.Empty);
                     }
+                }
+                if (startResult != null)
+                {
+                    _ = ObserveCompletionAsync(entry);
+                    return startResult;
                 }
 
                 await entry.StopAsync(CancellationToken.None).ConfigureAwait(false);
@@ -421,6 +440,47 @@ namespace ColorVision.Copilot
                 entry.RefreshCompletion();
         }
 
+        private async Task ObserveCompletionAsync(Entry entry)
+        {
+            try
+            {
+                await entry.Completion.ConfigureAwait(false);
+                CopilotBackgroundShellCommandSnapshot? snapshot;
+                lock (_syncRoot)
+                {
+                    if (_isShuttingDown || !_entries.Contains(entry))
+                        return;
+                    snapshot = entry.GetSnapshot();
+                }
+
+                var handlers = CommandCompleted;
+                if (handlers == null)
+                    return;
+                var eventArgs = new CopilotBackgroundShellCommandCompletedEventArgs(
+                    snapshot);
+                foreach (EventHandler<CopilotBackgroundShellCommandCompletedEventArgs> handler
+                    in handlers.GetInvocationList())
+                {
+                    try
+                    {
+                        handler(this, eventArgs);
+                    }
+                    catch (Exception ex)
+                    {
+                        Trace.TraceError(
+                            "Copilot background command completion handler failed: "
+                            + CopilotMcpAuditLogger.RedactText(ex.Message));
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Trace.TraceError(
+                    "Copilot background command completion observation failed: "
+                    + CopilotMcpAuditLogger.RedactText(ex.Message));
+            }
+        }
+
         private void ReleaseStartReservationUnderLock(string conversationId)
         {
             _startReservations = Math.Max(0, _startReservations - 1);
@@ -576,6 +636,9 @@ namespace ColorVision.Copilot
             public string CommandSha256 { get; }
 
             public DateTimeOffset StartedAtUtc { get; }
+
+            public Task<CopilotBackgroundShellProcessCompletion> Completion =>
+                _process.Completion;
 
             public void RefreshCompletion()
             {
