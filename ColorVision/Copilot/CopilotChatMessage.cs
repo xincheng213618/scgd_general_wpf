@@ -2569,6 +2569,18 @@ namespace ColorVision.Copilot
 
         public bool ShouldSerializeDraftText() => HasDraft;
 
+        public CopilotAgentMode DraftRequestMode
+        {
+            get => _draftRequestMode;
+            set => SetProperty(
+                ref _draftRequestMode,
+                Enum.IsDefined(value) ? value : CopilotAgentMode.Auto);
+        }
+        private CopilotAgentMode _draftRequestMode = CopilotAgentMode.Auto;
+
+        public bool ShouldSerializeDraftRequestMode() =>
+            DraftRequestMode != CopilotAgentMode.Auto;
+
         public CopilotComposerStash? ComposerStash
         {
             get => _composerStash;
@@ -2905,6 +2917,11 @@ namespace ColorVision.Copilot
             if (_draftText == null)
             {
                 DraftText = string.Empty;
+                changed = true;
+            }
+            if (!Enum.IsDefined(DraftRequestMode))
+            {
+                DraftRequestMode = CopilotAgentMode.Auto;
                 changed = true;
             }
             if (ComposerStash != null)

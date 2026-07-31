@@ -3100,7 +3100,7 @@ namespace ColorVision.Copilot
                 if (!isDirectSubmission)
                 {
                     _pendingAgentRecoveryRequest = recoveryRequest;
-                    _pendingRequestModeOverride = requestMode == CopilotAgentMode.Auto ? null : requestMode;
+                    SetPendingRequestModeOverride(requestMode);
                 }
                 UpdateConversationMetadata(conversation, touch: true);
                 PersistState();
@@ -5073,7 +5073,9 @@ namespace ColorVision.Copilot
             RefreshQueuedFollowUpPositions();
 
             DismissLocalCommandResult();
+            ConsumeComposerAttachments(conversation);
             InputText = string.Empty;
+            ClearPendingRequestModeOverride();
             PersistState(immediate: true);
             return true;
         }
@@ -5147,21 +5149,62 @@ namespace ColorVision.Copilot
 
         private bool CanEditQueuedFollowUp(CopilotQueuedFollowUp? queuedFollowUp)
         {
-            return queuedFollowUp != null && !IsEditingMessage && IsInputEmpty;
+            if (queuedFollowUp?.IsAutomaticGoalContinuation != false
+                || IsEditingMessage
+                || !IsInputEmpty)
+            {
+                return false;
+            }
+
+            var conversation = Conversations.FirstOrDefault(candidate =>
+                string.Equals(candidate.Id, queuedFollowUp.ConversationId, StringComparison.Ordinal));
+            return conversation != null
+                && !conversation.HasDraft
+                && conversation.Attachments.Count == 0
+                && (ReferenceEquals(conversation, SelectedConversation) || CanSwitchConversation);
         }
 
         private void EditQueuedFollowUp(CopilotQueuedFollowUp? queuedFollowUp)
         {
             if (!CanEditQueuedFollowUp(queuedFollowUp) || queuedFollowUp == null)
                 return;
-            if (!_taskHost.RequestCancel(queuedFollowUp.RunId))
+
+            var previousConversation = SelectedConversation;
+            var conversation = Conversations.First(candidate =>
+                string.Equals(candidate.Id, queuedFollowUp.ConversationId, StringComparison.Ordinal));
+            if (!ReferenceEquals(conversation, SelectedConversation))
+                SelectConversation(conversation, persist: true, preferredProfileId: conversation.ProfileId);
+            if (!ReferenceEquals(conversation, SelectedConversation))
                 return;
 
-            var conversation = Conversations.FirstOrDefault(candidate =>
-                string.Equals(candidate.Id, queuedFollowUp.ConversationId, StringComparison.Ordinal));
-            if (conversation != null && CanSwitchConversation)
-                SelectConversation(conversation, persist: true, preferredProfileId: conversation.ProfileId);
-            InputText = queuedFollowUp.Prompt;
+            var composerState = CopilotComposerStash.Capture(
+                queuedFollowUp.Prompt,
+                queuedFollowUp.Prompt.Length,
+                queuedFollowUp.Mode,
+                queuedFollowUp.SubmissionContext.Attachments);
+            var previousMode = ResolveComposerRequestMode();
+            foreach (var attachment in composerState.CreateAttachmentSnapshots())
+                conversation.Attachments.Add(attachment);
+            SetPendingRequestModeOverride(composerState.RequestMode);
+            InputText = composerState.Text;
+            UpdateAttachmentsState(conversation);
+            if (!_taskHost.RequestCancel(queuedFollowUp.RunId))
+            {
+                conversation.Attachments.Clear();
+                SetPendingRequestModeOverride(previousMode);
+                InputText = string.Empty;
+                UpdateAttachmentsState(conversation);
+                if (previousConversation != null
+                    && !ReferenceEquals(previousConversation, conversation)
+                    && CanSwitchConversation)
+                {
+                    SelectConversation(
+                        previousConversation,
+                        persist: true,
+                        preferredProfileId: previousConversation.ProfileId);
+                }
+                return;
+            }
         }
 
         private void MoveQueuedFollowUp(CopilotQueuedFollowUp? queuedFollowUp, int offset)
@@ -5218,6 +5261,11 @@ namespace ColorVision.Copilot
                 RunId = queuedFollowUp.RunId,
                 ConversationId = queuedFollowUp.ConversationId,
                 Prompt = queuedFollowUp.Prompt,
+                ComposerState = CopilotComposerStash.Capture(
+                    queuedFollowUp.Prompt,
+                    queuedFollowUp.Prompt.Length,
+                    queuedFollowUp.Mode,
+                    queuedFollowUp.SubmissionContext.Attachments),
             });
         }
 
@@ -5747,21 +5795,38 @@ namespace ColorVision.Copilot
         {
             var mode = ResolveComposerRequestMode();
             _pendingRequestModeOverride = null;
+            if (SelectedConversation != null)
+                SelectedConversation.DraftRequestMode = CopilotAgentMode.Auto;
+            OnComposerRequestModeChanged();
             return mode;
         }
 
         private void SetPendingRequestModeOverride(CopilotAgentMode mode)
         {
-            _pendingRequestModeOverride = mode == CopilotAgentMode.Auto ? null : mode;
+            var normalized = Enum.IsDefined(mode) ? mode : CopilotAgentMode.Auto;
+            _pendingRequestModeOverride = normalized == CopilotAgentMode.Auto ? null : normalized;
+            if (SelectedConversation != null
+                && SelectedConversation.DraftRequestMode != normalized)
+            {
+                SelectedConversation.DraftRequestMode = normalized;
+                _stateSaveScheduler.RequestSave();
+            }
             OnComposerRequestModeChanged();
         }
 
         private void ClearPendingRequestModeOverride()
         {
-            if (_pendingRequestModeOverride == null)
+            var changed = _pendingRequestModeOverride != null;
+            _pendingRequestModeOverride = null;
+            if (SelectedConversation?.DraftRequestMode != CopilotAgentMode.Auto)
+            {
+                SelectedConversation!.DraftRequestMode = CopilotAgentMode.Auto;
+                _stateSaveScheduler.RequestSave();
+                changed = true;
+            }
+            if (!changed)
                 return;
 
-            _pendingRequestModeOverride = null;
             OnComposerRequestModeChanged();
         }
 
@@ -6321,6 +6386,10 @@ namespace ColorVision.Copilot
 
             ClearConversationFindState(_selectedConversation?.Messages);
             _selectedConversation = conversation;
+            _pendingRequestModeOverride = conversation?.DraftRequestMode is { } restoredMode
+                && restoredMode != CopilotAgentMode.Auto
+                    ? restoredMode
+                    : null;
             _promptHistoryNavigator.Reset();
             DismissLocalCommandResult();
             if (_selectedConversation != null)
@@ -6355,6 +6424,7 @@ namespace ColorVision.Copilot
                 ?? _config.GetPreferredDefaultProfile();
 
             SelectProfile(profile, syncConversation: false, persist: false);
+            OnComposerRequestModeChanged();
 
             var shouldPersist = persist;
 
@@ -7714,6 +7784,7 @@ namespace ColorVision.Copilot
             _composerDraftBeforeMessageEdit = new CopilotComposerDraftSnapshot(
                 conversation.Id,
                 InputText,
+                ResolveComposerRequestMode(),
                 conversation.Attachments.Select(attachment => attachment.CreateSnapshot()).ToArray());
             var messageAttachments = (userMessage.AttachmentSnapshotCaptured
                     ? userMessage.Attachments
@@ -7742,10 +7813,10 @@ namespace ColorVision.Copilot
             _composerDraftBeforeMessageEdit = null;
             SetMessageEditState(string.Empty, string.Empty);
             _pendingAgentRecoveryRequest = null;
-            ClearPendingRequestModeOverride();
 
             if (conversation == null || !ReferenceEquals(conversation, SelectedConversation))
             {
+                ClearPendingRequestModeOverride();
                 InputText = string.Empty;
                 return;
             }
@@ -7755,10 +7826,12 @@ namespace ColorVision.Copilot
             {
                 foreach (var attachment in draftSnapshot.Attachments)
                     conversation.Attachments.Add(attachment.CreateSnapshot());
+                SetPendingRequestModeOverride(draftSnapshot.RequestMode);
                 InputText = draftSnapshot.Text;
             }
             else
             {
+                ClearPendingRequestModeOverride();
                 InputText = string.Empty;
             }
             UpdateAttachmentsState(conversation);
@@ -8785,6 +8858,13 @@ namespace ColorVision.Copilot
 
             if (Conversations
                 .SelectMany(conversation => conversation.EnumerateReferencedAttachments())
+                .Concat((_state.QueuedFollowUpRecoveries
+                        ?? new ObservableCollection<CopilotQueuedFollowUpRecoveryRecord>())
+                    .Where(recovery => recovery != null)
+                    .SelectMany(recovery => recovery.EnumerateReferencedAttachments()))
+                .Concat(QueuedFollowUps
+                    .Where(followUp => followUp != null)
+                    .SelectMany(followUp => followUp.SubmissionContext.Attachments))
                 .Any(candidate => candidate.IsStoredImageFile
                     && string.Equals(candidate.Value, attachment.Value, StringComparison.OrdinalIgnoreCase)))
             {
@@ -8802,6 +8882,7 @@ namespace ColorVision.Copilot
         private sealed record CopilotComposerDraftSnapshot(
             string ConversationId,
             string Text,
+            CopilotAgentMode RequestMode,
             IReadOnlyList<CopilotAttachmentItem> Attachments);
 
         private sealed record CopilotPreparedQueuedFollowUpTurn(
