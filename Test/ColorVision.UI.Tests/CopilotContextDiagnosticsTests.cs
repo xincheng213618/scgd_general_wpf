@@ -12,9 +12,11 @@ public sealed class CopilotContextDiagnosticsTests
         {
             AutoCompactConversationHistory = true,
             AutoCompactThresholdPercent = 85,
+            AutoCompactInstructionsCharacters = 128,
         });
 
         Assert.Contains("自动压缩：已开启 · 活动历史达到 85% 时在发送前压缩；失败时保留原请求", report);
+        Assert.Contains("压缩重点：已配置 128 字符长期要求", report);
     }
 
     [Theory]

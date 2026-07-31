@@ -27,7 +27,6 @@ namespace ColorVision.Copilot
     {
         private const int CompactHistoryLimit = 4;
         private const int CompactSummaryOutputTokens = 4096;
-        private const string AutomaticCompactionFocus = "保留当前任务目标、用户约束、已作决定、代码改动、验证结果、未完成事项以及安全恢复信息。";
         private const int MaximumGeneratedConversationTitleCharacters = 48;
         private const int MaximumComposerAttachments = 32;
         private const int MaximumConversationSearchCharacters = 256;
@@ -2605,7 +2604,10 @@ namespace ColorVision.Copilot
             }
         }
 
-        private async Task CompactConversationAsync(CopilotLocalCommand command, string focusInstructions)
+        private async Task CompactConversationAsync(
+            CopilotLocalCommand command,
+            string focusInstructions,
+            bool includeFocusInResult = true)
         {
             var conversation = SelectedConversation;
             var profile = SelectedProfile;
@@ -2708,7 +2710,9 @@ namespace ColorVision.Copilot
                     command,
                     $"已将最早 {compactionPlan.NewSourceMessageCount:N0} 条完整上下文、{compactionPlan.NewSourceCharacters:N0} 个字符合并进延续摘要。\n"
                     + $"后续请求将使用 {summary.Length:N0} 字符摘要，并保留边界后的 {retainedAfterBoundary:N0} 条新消息；界面中的完整对话未删除。"
-                    + (string.IsNullOrWhiteSpace(focusInstructions) ? string.Empty : "\n聚焦要求：" + focusInstructions.Trim()));
+                    + (!includeFocusInResult || string.IsNullOrWhiteSpace(focusInstructions)
+                        ? string.Empty
+                        : "\n聚焦要求：" + focusInstructions.Trim()));
                 RefreshComposerTokenEstimate();
             }
             catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
@@ -2757,7 +2761,11 @@ namespace ColorVision.Copilot
                 return CopilotAutomaticCompactionOutcome.Failed;
 
             var previousCompaction = conversation.Compaction;
-            await CompactConversationAsync(command, AutomaticCompactionFocus);
+            await CompactConversationAsync(
+                command,
+                CopilotConversationCompactionPrompt.BuildAutomaticFocus(
+                    _config.AgentDefaults.AutoCompactInstructions),
+                includeFocusInResult: false);
             var applied = !ReferenceEquals(previousCompaction, conversation.Compaction)
                 && conversation.Compaction?.IsStructurallyValid() == true;
             if (!applied)
@@ -2772,8 +2780,13 @@ namespace ColorVision.Copilot
             var triggerText = decision.Trigger == CopilotConversationAutoCompactionTrigger.MessageCount
                 ? $"消息数达到 {decision.UsagePercent:N0}%"
                 : $"估算上下文达到 {decision.UsagePercent:N0}%";
+            var customFocusText = _config.AgentDefaults.AutoCompactInstructions.Length > 0
+                ? $"已应用 {_config.AgentDefaults.AutoCompactInstructions.Length:N0} 字符的自定义长期重点。"
+                : "已应用内置默认保留重点。";
             LocalCommandResultTitle = "/compact · 自动压缩";
             LocalCommandResultText = $"{triggerText}，已在发送前自动压缩早期对话。"
+                + Environment.NewLine
+                + customFocusText
                 + Environment.NewLine
                 + LocalCommandResultText;
             return CopilotAutomaticCompactionOutcome.Applied;
@@ -2969,6 +2982,7 @@ namespace ColorVision.Copilot
                 HistoryContextWindowTokens = agentDefaults.ContextWindowTokens,
                 AutoCompactConversationHistory = agentDefaults.AutoCompactConversationHistory,
                 AutoCompactThresholdPercent = agentDefaults.AutoCompactThresholdPercent,
+                AutoCompactInstructionsCharacters = agentDefaults.AutoCompactInstructions.Length,
                 CompactedSourceMessages = compaction?.SourceMessageCount ?? 0,
                 CompactionSummaryCharacters = compaction?.Summary.Length ?? 0,
                 ConversationGoalCharacters = conversation?.Goal?.Objective.Length ?? 0,
@@ -8570,7 +8584,8 @@ namespace ColorVision.Copilot
             var presentation = CopilotConversationContextUsagePresenter.Create(
                 usage,
                 _config.AgentDefaults.AutoCompactConversationHistory,
-                _config.AgentDefaults.AutoCompactThresholdPercent);
+                _config.AgentDefaults.AutoCompactThresholdPercent,
+                _config.AgentDefaults.AutoCompactInstructions.Length);
             ConversationContextUsageLabel = presentation.Label;
             ConversationContextUsageToolTip = presentation.ToolTip;
             IsConversationContextUnderPressure = presentation.IsUnderPressure;

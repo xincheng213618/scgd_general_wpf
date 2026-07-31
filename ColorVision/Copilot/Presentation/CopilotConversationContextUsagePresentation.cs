@@ -15,7 +15,8 @@ namespace ColorVision.Copilot
         public static CopilotConversationContextUsagePresentation Create(
             CopilotConversationContextUsage usage,
             bool autoCompactionEnabled,
-            int autoCompactThresholdPercent)
+            int autoCompactThresholdPercent,
+            int customInstructionsCharacters = 0)
         {
             var threshold = Math.Clamp(
                 autoCompactThresholdPercent,
@@ -28,6 +29,10 @@ namespace ColorVision.Copilot
                 + $"{usage.ActiveMessageCount:N0}/{usage.MaximumMessages:N0} 条消息。"
                 + Environment.NewLine
                 + BuildAutoCompactionStatus(usage.UsagePercent, autoCompactionEnabled, threshold)
+                + Environment.NewLine
+                + (customInstructionsCharacters > 0
+                    ? $"自动压缩会额外保留 {customInstructionsCharacters:N0} 字符的自定义长期重点。"
+                    : "自动压缩使用内置默认保留重点。")
                 + Environment.NewLine
                 + "点击查看完整上下文、附件、项目指令与 Agent 预算诊断。";
             var warningThreshold = autoCompactionEnabled

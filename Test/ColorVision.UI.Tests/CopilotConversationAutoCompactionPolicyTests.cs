@@ -11,13 +11,38 @@ public sealed class CopilotConversationAutoCompactionPolicyTests
 
         Assert.True(config.AutoCompactConversationHistory);
         Assert.Equal(85, config.AutoCompactThresholdPercent);
+        Assert.Empty(config.AutoCompactInstructions);
 
         config.AutoCompactConversationHistory = false;
         config.AutoCompactThresholdPercent = 73;
+        config.AutoCompactInstructions = "  Preserve exact device identifiers.  ";
         var clone = config.Clone();
 
         Assert.False(clone.AutoCompactConversationHistory);
         Assert.Equal(73, clone.AutoCompactThresholdPercent);
+        Assert.Equal("Preserve exact device identifiers.", clone.AutoCompactInstructions);
+    }
+
+    [Fact]
+    public void AutomaticCompactionInstructionsAreBounded()
+    {
+        var config = new CopilotAgentDefaultsConfig
+        {
+            AutoCompactInstructions = new string('x', CopilotAgentDefaultsConfig.MaximumAutoCompactInstructionsCharacters + 10),
+        };
+
+        Assert.Equal(
+            CopilotAgentDefaultsConfig.MaximumAutoCompactInstructionsCharacters,
+            config.AutoCompactInstructions.Length);
+
+        config.AutoCompactInstructions =
+            new string('x', CopilotAgentDefaultsConfig.MaximumAutoCompactInstructionsCharacters - 1)
+            + "😀";
+
+        Assert.Equal(
+            CopilotAgentDefaultsConfig.MaximumAutoCompactInstructionsCharacters - 1,
+            config.AutoCompactInstructions.Length);
+        Assert.False(char.IsSurrogate(config.AutoCompactInstructions[^1]));
     }
 
     [Fact]

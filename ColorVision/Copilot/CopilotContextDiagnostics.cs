@@ -43,6 +43,8 @@ namespace ColorVision.Copilot
 
         public int AutoCompactThresholdPercent { get; init; }
 
+        public int AutoCompactInstructionsCharacters { get; init; }
+
         public int CompactedSourceMessages { get; init; }
 
         public int CompactionSummaryCharacters { get; init; }
@@ -165,6 +167,10 @@ namespace ColorVision.Copilot
             {
                 builder.AppendLine("已关闭");
             }
+            builder.Append("压缩重点：")
+                .AppendLine(snapshot.AutoCompactInstructionsCharacters > 0
+                    ? $"已配置 {FormatCount(snapshot.AutoCompactInstructionsCharacters)} 字符长期要求"
+                    : "使用内置默认要求");
             if (snapshot.CompactionSummaryCharacters > 0)
             {
                 builder.Append("主动压缩：")

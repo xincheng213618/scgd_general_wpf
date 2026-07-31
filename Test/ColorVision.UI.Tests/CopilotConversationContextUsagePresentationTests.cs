@@ -19,13 +19,15 @@ public sealed class CopilotConversationContextUsagePresentationTests
         var presentation = CopilotConversationContextUsagePresenter.Create(
             usage,
             autoCompactionEnabled: true,
-            autoCompactThresholdPercent: 85);
+            autoCompactThresholdPercent: 85,
+            customInstructionsCharacters: 128);
 
         Assert.Equal("历史 74%", presentation.Label);
         Assert.False(presentation.IsUnderPressure);
         Assert.Contains("700/1,000 Token", presentation.ToolTip);
         Assert.Contains("74/100 条消息", presentation.ToolTip);
         Assert.Contains("当前还剩 11 个百分点", presentation.ToolTip);
+        Assert.Contains("128 字符的自定义长期重点", presentation.ToolTip);
     }
 
     [Fact]

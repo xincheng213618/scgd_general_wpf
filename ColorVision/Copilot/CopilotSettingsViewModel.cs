@@ -321,6 +321,7 @@ namespace ColorVision.Copilot
             AgentContextWindowTokens = config.AgentDefaults.ContextWindowTokens;
             AutoCompactConversationHistory = config.AgentDefaults.AutoCompactConversationHistory;
             AutoCompactThresholdPercent = config.AgentDefaults.AutoCompactThresholdPercent;
+            AutoCompactInstructions = config.AgentDefaults.AutoCompactInstructions;
             AgentRequestTokenBudget = config.AgentDefaults.RequestTokenBudget;
             MaxAgentToolCalls = config.AgentDefaults.MaxToolCalls;
             MaxAgentPasses = config.AgentDefaults.MaxAgentPasses;
@@ -460,6 +461,25 @@ namespace ColorVision.Copilot
             }
         }
         private int _autoCompactThresholdPercent = CopilotAgentDefaultsConfig.DefaultAutoCompactThresholdPercent;
+
+        public string AutoCompactInstructions
+        {
+            get => _autoCompactInstructions;
+            set
+            {
+                var normalized = value ?? string.Empty;
+                if (normalized.Length > CopilotAgentDefaultsConfig.MaximumAutoCompactInstructionsCharacters)
+                {
+                    var length = CopilotAgentDefaultsConfig.MaximumAutoCompactInstructionsCharacters;
+                    if (char.IsHighSurrogate(normalized[length - 1]))
+                        length--;
+                    normalized = normalized[..length];
+                }
+                if (SetProperty(ref _autoCompactInstructions, normalized) && _isReadyForUserChanges)
+                    MarkSettingsPending("Automatic compaction focus changed. Click Apply or Save to use it.");
+            }
+        }
+        private string _autoCompactInstructions = string.Empty;
 
         public int AgentRequestTokenBudget
         {
@@ -1253,6 +1273,7 @@ namespace ColorVision.Copilot
                 config.AgentDefaults.ContextWindowTokens = AgentContextWindowTokens;
                 config.AgentDefaults.AutoCompactConversationHistory = AutoCompactConversationHistory;
                 config.AgentDefaults.AutoCompactThresholdPercent = AutoCompactThresholdPercent;
+                config.AgentDefaults.AutoCompactInstructions = AutoCompactInstructions;
                 config.AgentDefaults.RequestTokenBudget = AgentRequestTokenBudget;
                 config.AgentDefaults.MaxToolCalls = MaxAgentToolCalls;
                 config.AgentDefaults.MaxAgentPasses = MaxAgentPasses;

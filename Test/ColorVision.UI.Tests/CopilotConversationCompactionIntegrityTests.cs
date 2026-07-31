@@ -163,4 +163,20 @@ public sealed class CopilotConversationCompactionIntegrityTests
             > request.IndexOf("Focus on the renderer changes.", StringComparison.Ordinal));
         Assert.Contains("<assistant_response_interrupted>", CopilotConversationCompactionPrompt.SystemPrompt, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void AutomaticFocusCombinesMandatoryAndConfiguredPriorities()
+    {
+        var focus = CopilotConversationCompactionPrompt.BuildAutomaticFocus(
+            "Preserve exact device identifiers and unresolved hardware verification.");
+        var request = CopilotConversationCompactionPrompt.BuildRequest(focus);
+
+        Assert.Contains("任务目标", focus, StringComparison.Ordinal);
+        Assert.Contains("用户配置的长期压缩重点", focus, StringComparison.Ordinal);
+        Assert.Contains("exact device identifiers", focus, StringComparison.Ordinal);
+        Assert.Contains("Terminal-state integrity:", request, StringComparison.Ordinal);
+        Assert.True(
+            request.IndexOf("Terminal-state integrity:", StringComparison.Ordinal)
+            > request.IndexOf("exact device identifiers", StringComparison.Ordinal));
+    }
 }

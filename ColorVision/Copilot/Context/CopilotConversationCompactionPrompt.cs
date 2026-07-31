@@ -7,6 +7,9 @@ namespace ColorVision.Copilot
 {
     internal static class CopilotConversationCompactionPrompt
     {
+        private const string DefaultAutomaticFocus =
+            "保留当前任务目标、用户约束、已作决定、代码改动、验证结果、未完成事项以及安全恢复信息。";
+
         internal const string SystemPrompt =
             "You compact an existing conversation for seamless continuation. "
             + "Preserve the user's active goal, constraints, decisions, verified facts, relevant files, commands and results, unfinished work, blockers, and safe next steps. "
@@ -24,6 +27,19 @@ namespace ColorVision.Copilot
             builder.Append("Terminal-state integrity: include every distinct <assistant_response_interrupted> and <agent_turn_incomplete stop_reason=\"...\"> opening marker from the source exactly at least once. ")
                 .Append("State which retained work was partial or unresolved; later completion may be recorded, but it must not erase the historical boundary or imply that unfinished tool calls, file changes, or verification succeeded.");
             return builder.ToString().Trim();
+        }
+
+        public static string BuildAutomaticFocus(string? customInstructions)
+        {
+            var normalized = CopilotAgentDefaultsConfig.NormalizeAutoCompactInstructions(customInstructions);
+            if (normalized.Length == 0)
+                return DefaultAutomaticFocus;
+
+            return DefaultAutomaticFocus
+                + Environment.NewLine
+                + "用户配置的长期压缩重点："
+                + Environment.NewLine
+                + normalized;
         }
     }
 
