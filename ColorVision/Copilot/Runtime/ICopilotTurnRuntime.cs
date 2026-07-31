@@ -12,7 +12,9 @@ namespace ColorVision.Copilot
             CopilotTurnRequest request,
             CancellationToken cancellationToken);
 
-        bool TryEnqueueSteeringMessage(string taskId, string message);
+        CopilotSteeringAdmissionResult EnqueueSteeringMessage(
+            string taskId,
+            string message);
 
         bool TryEnqueueBackgroundShellCommandCompletion(
             CopilotBackgroundShellCommandSnapshot snapshot);

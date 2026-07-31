@@ -125,7 +125,9 @@ namespace ColorVision.Copilot
                 ?? throw new ArgumentNullException(nameof(automaticApprovalReviewer));
         }
 
-        public bool TryEnqueueSteeringMessage(string taskId, string message)
+        public CopilotSteeringAdmissionResult EnqueueSteeringMessage(
+            string taskId,
+            string message)
         {
             var normalizedTaskId = (taskId ?? string.Empty).Trim();
             var normalized = (message ?? string.Empty).Trim();
@@ -133,7 +135,8 @@ namespace ColorVision.Copilot
                 || string.IsNullOrWhiteSpace(normalized)
                 || normalized.Length > MaxSteeringMessageLength)
             {
-                return false;
+                return new CopilotSteeringAdmissionResult(
+                    CopilotSteeringAdmissionReason.InvalidInput);
             }
 
             try
@@ -141,7 +144,10 @@ namespace ColorVision.Copilot
                 lock (_backgroundOutputRoutingSyncRoot)
                 {
                     if (_userQuestionCoordinator.HasPendingQuestion)
-                        return false;
+                    {
+                        return new CopilotSteeringAdmissionResult(
+                            CopilotSteeringAdmissionReason.PendingUserQuestion);
+                    }
 
                     lock (_steeringSyncRoot)
                     {
@@ -152,7 +158,8 @@ namespace ColorVision.Copilot
                                 normalizedTaskId,
                                 StringComparison.Ordinal))
                         {
-                            return false;
+                            return new CopilotSteeringAdmissionResult(
+                                CopilotSteeringAdmissionReason.NoActiveTask);
                         }
 
                         var pendingMessages = activeContext.MessageInjector
@@ -179,7 +186,8 @@ namespace ColorVision.Copilot
                             || pendingSteeringCharacters + normalized.Length
                                 > MaxPendingSteeringCharacters)
                         {
-                            return false;
+                            return new CopilotSteeringAdmissionResult(
+                                CopilotSteeringAdmissionReason.QueueFull);
                         }
 
                         var steeringMessage = new Microsoft.Extensions.AI.ChatMessage(
@@ -194,17 +202,20 @@ namespace ColorVision.Copilot
                             steeringMessage,
                         ], CancellationToken.None).GetAwaiter().GetResult();
                         activeContext.TaskEventJournal.RecordSteering(normalized);
-                        return true;
+                        return new CopilotSteeringAdmissionResult(
+                            CopilotSteeringAdmissionReason.Accepted);
                     }
                 }
             }
             catch (ObjectDisposedException)
             {
-                return false;
+                return new CopilotSteeringAdmissionResult(
+                    CopilotSteeringAdmissionReason.RuntimeUnavailable);
             }
             catch (InvalidOperationException)
             {
-                return false;
+                return new CopilotSteeringAdmissionResult(
+                    CopilotSteeringAdmissionReason.RuntimeUnavailable);
             }
         }
 

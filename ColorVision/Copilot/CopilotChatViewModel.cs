@@ -6401,17 +6401,47 @@ namespace ColorVision.Copilot
             {
                 return false;
             }
-            if (!_turnRuntime.TryEnqueueSteeringMessage(activeRun.Id, steeringMessage))
+            var admission = _turnRuntime.EnqueueSteeringMessage(
+                activeRun.Id,
+                steeringMessage);
+            if (!admission.IsAccepted)
+            {
+                ReportSteeringAdmissionFailure(admission);
                 return false;
+            }
 
             var activeConversation = Conversations.FirstOrDefault(conversation => string.Equals(conversation.Id, activeRun.ConversationId, StringComparison.Ordinal));
             var activeAssistant = activeConversation?.Messages.LastOrDefault(message => !message.IsUser && message.IsThinkingInProgress);
             if (activeAssistant != null)
                 CopilotAssistantMessagePresenter.AppendExecutionTrace(activeAssistant, "User steering queued · " + CopilotAgentTraceEntry.Sanitize(steeringMessage));
 
+            DismissLocalCommandResult();
             InputText = string.Empty;
             PersistState();
             return true;
+        }
+
+        internal static string GetSteeringAdmissionFailureText(
+            CopilotSteeringAdmissionResult admission) => admission.Reason switch
+        {
+            CopilotSteeringAdmissionReason.InvalidInput =>
+                "这条运行中指令为空、过长，或缺少有效的任务标识。输入已保留，请修改后重试。",
+            CopilotSteeringAdmissionReason.PendingUserQuestion =>
+                "Agent 正在等待问题回答。输入已保留，请先回答问题，再发送运行中指令。",
+            CopilotSteeringAdmissionReason.NoActiveTask =>
+                "当前 Agent 已结束或已切换任务。输入已保留，请直接发送，或重新排到下一轮。",
+            CopilotSteeringAdmissionReason.QueueFull =>
+                "运行中指令缓冲区已满。输入已保留，请等待 Agent 消费已有指令后重试，或改为排到下一轮。",
+            CopilotSteeringAdmissionReason.RuntimeUnavailable =>
+                "运行中指令未能送达。输入已保留，请重试，或改为排到下一轮。",
+            _ => "运行中指令未发送。输入已保留，请重试。",
+        };
+
+        private void ReportSteeringAdmissionFailure(
+            CopilotSteeringAdmissionResult admission)
+        {
+            LocalCommandResultTitle = "运行中指令未发送";
+            LocalCommandResultText = GetSteeringAdmissionFailureText(admission);
         }
 
         public bool TrySubmitAlternateCurrentRunFollowUp()

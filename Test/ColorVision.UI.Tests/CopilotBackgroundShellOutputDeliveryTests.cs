@@ -13,6 +13,33 @@ namespace ColorVision.UI.Tests;
 public sealed class CopilotBackgroundShellOutputDeliveryTests
 {
     [Fact]
+    public void SteeringRejectsInvalidInputBeforeLookingForActiveTask()
+    {
+        using var provider = new CapturingChatClient();
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry([]),
+            new CopilotAgentContextBuilder(),
+            new CopilotToolExecutor(),
+            _ => provider,
+            EmptyExternalToolProvider.Instance,
+            new CopilotCapabilityCatalog());
+
+        var emptyAdmission = runtime.EnqueueSteeringMessage(
+            string.Empty,
+            string.Empty);
+        var oversizedAdmission = runtime.EnqueueSteeringMessage(
+            CopilotAgentTaskEventIds.CreateRunId(),
+            new string('x', 16_001));
+
+        Assert.Equal(
+            CopilotSteeringAdmissionReason.InvalidInput,
+            emptyAdmission.Reason);
+        Assert.Equal(
+            CopilotSteeringAdmissionReason.InvalidInput,
+            oversizedAdmission.Reason);
+    }
+
+    [Fact]
     public async Task SteeringRequiresExactActiveTask()
     {
         using var provider = new BlockingSteeringChatClient();
@@ -34,17 +61,19 @@ public sealed class CopilotBackgroundShellOutputDeliveryTests
         await provider.StreamStarted.Task.WaitAsync(
             TimeSpan.FromSeconds(5));
 
-        var staleTaskAccepted = runtime.TryEnqueueSteeringMessage(
+        var staleTaskAdmission = runtime.EnqueueSteeringMessage(
             CopilotAgentTaskEventIds.CreateRunId(),
             "stale steering");
-        var activeTaskAccepted = runtime.TryEnqueueSteeringMessage(
+        var activeTaskAdmission = runtime.EnqueueSteeringMessage(
             request.TaskId,
             "active steering");
         provider.ReleaseStream.TrySetResult();
         var result = await runTask.WaitAsync(TimeSpan.FromSeconds(5));
 
-        Assert.False(staleTaskAccepted);
-        Assert.True(activeTaskAccepted);
+        Assert.Equal(
+            CopilotSteeringAdmissionReason.NoActiveTask,
+            staleTaskAdmission.Reason);
+        Assert.True(activeTaskAdmission.IsAccepted);
         Assert.Equal(CopilotAgentStopReason.Completed, result.StopReason);
         Assert.DoesNotContain(
             provider.StreamingCalls.SelectMany(call => call),
@@ -85,15 +114,17 @@ public sealed class CopilotBackgroundShellOutputDeliveryTests
             TimeSpan.FromSeconds(5));
 
         var accepted = Enumerable.Range(1, 9)
-            .Select(index => runtime.TryEnqueueSteeringMessage(
+            .Select(index => runtime.EnqueueSteeringMessage(
                 request.TaskId,
                 $"steering {index}"))
             .ToArray();
         provider.ReleaseStream.TrySetResult();
         var result = await runTask.WaitAsync(TimeSpan.FromSeconds(5));
 
-        Assert.All(accepted[..8], Assert.True);
-        Assert.False(accepted[8]);
+        Assert.All(accepted[..8], item => Assert.True(item.IsAccepted));
+        Assert.Equal(
+            CopilotSteeringAdmissionReason.QueueFull,
+            accepted[8].Reason);
         Assert.Equal(
             8,
             result.TaskEventJournal.Events.Count(
@@ -128,21 +159,23 @@ public sealed class CopilotBackgroundShellOutputDeliveryTests
         await provider.StreamStarted.Task.WaitAsync(
             TimeSpan.FromSeconds(5));
 
-        var firstAccepted = runtime.TryEnqueueSteeringMessage(
+        var firstAdmission = runtime.EnqueueSteeringMessage(
             request.TaskId,
             new string('a', 16_000));
-        var secondAccepted = runtime.TryEnqueueSteeringMessage(
+        var secondAdmission = runtime.EnqueueSteeringMessage(
             request.TaskId,
             new string('b', 16_000));
-        var overflowAccepted = runtime.TryEnqueueSteeringMessage(
+        var overflowAdmission = runtime.EnqueueSteeringMessage(
             request.TaskId,
             "overflow");
         provider.ReleaseStream.TrySetResult();
         var result = await runTask.WaitAsync(TimeSpan.FromSeconds(5));
 
-        Assert.True(firstAccepted);
-        Assert.True(secondAccepted);
-        Assert.False(overflowAccepted);
+        Assert.True(firstAdmission.IsAccepted);
+        Assert.True(secondAdmission.IsAccepted);
+        Assert.Equal(
+            CopilotSteeringAdmissionReason.QueueFull,
+            overflowAdmission.Reason);
         Assert.Equal(
             2,
             result.TaskEventJournal.Events.Count(
@@ -192,12 +225,12 @@ public sealed class CopilotBackgroundShellOutputDeliveryTests
                 timeout.Token),
             timeout.Token);
 
-        bool lateSteeringAccepted;
+        CopilotSteeringAdmissionResult lateSteeringAdmission;
         try
         {
             await finalizationStarted.Task.WaitAsync(
                 TimeSpan.FromSeconds(5));
-            lateSteeringAccepted = runtime.TryEnqueueSteeringMessage(
+            lateSteeringAdmission = runtime.EnqueueSteeringMessage(
                 request.TaskId,
                 "late steering");
         }
@@ -208,7 +241,9 @@ public sealed class CopilotBackgroundShellOutputDeliveryTests
 
         var result = await runTask.WaitAsync(TimeSpan.FromSeconds(5));
 
-        Assert.False(lateSteeringAccepted);
+        Assert.Equal(
+            CopilotSteeringAdmissionReason.NoActiveTask,
+            lateSteeringAdmission.Reason);
         Assert.Equal(CopilotAgentStopReason.Completed, result.StopReason);
         Assert.DoesNotContain(
             result.TaskEventJournal.Events,
@@ -453,6 +488,9 @@ public sealed class CopilotBackgroundShellOutputDeliveryTests
         var question = await questionReady.Task.WaitAsync(
             TimeSpan.FromSeconds(5));
 
+        var steeringAdmission = runtime.EnqueueSteeringMessage(
+            request.TaskId,
+            "steering must wait for the answer");
         Assert.True(runtime.TryEnqueueBackgroundShellCommandOutput(
             CreateOutputEvent(
                 "conversation",
@@ -465,6 +503,14 @@ public sealed class CopilotBackgroundShellOutputDeliveryTests
         var result = await runTask.WaitAsync(TimeSpan.FromSeconds(5));
 
         Assert.Equal(CopilotAgentStopReason.Completed, result.StopReason);
+        Assert.Equal(
+            CopilotSteeringAdmissionReason.PendingUserQuestion,
+            steeringAdmission.Reason);
+        Assert.DoesNotContain(
+            provider.StreamingCalls.SelectMany(call => call),
+            message => message.Text.Contains(
+                "steering must wait for the answer",
+                StringComparison.Ordinal));
         var resumedCall = Assert.Single(
             provider.StreamingCalls,
             call => call.Any(message => message.Text.Contains(
