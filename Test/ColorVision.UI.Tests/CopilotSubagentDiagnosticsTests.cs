@@ -126,21 +126,37 @@ public sealed class CopilotSubagentDiagnosticsTests
     }
 
     [Fact]
-    public void RunningDelegateIsVisibleBeforeItsRunUsageReturns()
+    public void RunningDelegateShowsItsIdentityAndBudgetBeforeTerminalUsageReturns()
     {
         var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
         var assistant = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty);
-        assistant.AgentTraceEntries.Add(new CopilotAgentTraceEntry
-        {
-            ToolName = "DelegateExplore",
-            State = CopilotToolExecutionState.Running,
-        });
+        assistant.AgentTraceEntries.Add(CopilotAgentTraceEntry.FromProgress(
+            new CopilotToolExecutionInfo
+            {
+                ToolName = "DelegateExplore",
+                State = CopilotToolExecutionState.Running,
+            },
+            "Explore 子 Agent 已启动",
+            new CopilotToolProgressUpdate
+            {
+                Message = "Explore 子 Agent 已启动",
+                DelegatedRun = new CopilotDelegatedRunProgress
+                {
+                    RoleId = "explore",
+                    RunId = "explore-live",
+                    ResumeFromRunId = "explore-source",
+                    RequestTokenBudget = 8_192,
+                    QueueDurationMs = 25,
+                },
+            }));
         conversation.Messages.Add(assistant);
 
         var report = CopilotSubagentDiagnostics.Format(conversation, "runs");
 
-        Assert.Contains("#1 · explore · ID 待回传 · state=Running", report);
-        Assert.Contains("等待子运行回传用量", report);
+        Assert.Contains("#1 · explore · explore-live · state=Running · resumed_from=explore-source", report);
+        Assert.Contains("排队 25ms · tokens 0/8,192", report);
+        Assert.DoesNotContain("ID 待回传", report);
+        Assert.DoesNotContain("等待子运行回传用量", report);
     }
 
     [Fact]

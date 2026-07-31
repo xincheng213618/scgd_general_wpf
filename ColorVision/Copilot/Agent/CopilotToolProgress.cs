@@ -26,6 +26,21 @@ namespace ColorVision.Copilot
         public long? Total { get; init; }
 
         public string Unit { get; init; } = string.Empty;
+
+        public CopilotDelegatedRunProgress? DelegatedRun { get; init; }
+    }
+
+    public sealed class CopilotDelegatedRunProgress
+    {
+        public string RoleId { get; init; } = string.Empty;
+
+        public string RunId { get; init; } = string.Empty;
+
+        public string ResumeFromRunId { get; init; } = string.Empty;
+
+        public int RequestTokenBudget { get; init; }
+
+        public long QueueDurationMs { get; init; }
     }
 
     public sealed class CopilotToolProgressContext
@@ -67,7 +82,8 @@ namespace ColorVision.Copilot
             var normalized = Normalize(update);
             if (string.IsNullOrWhiteSpace(normalized.Message)
                 && !normalized.Completed.HasValue
-                && !normalized.Total.HasValue)
+                && !normalized.Total.HasValue
+                && normalized.DelegatedRun == null)
             {
                 return;
             }
@@ -151,12 +167,32 @@ namespace ColorVision.Copilot
             if (completed.HasValue && total.HasValue)
                 completed = Math.Min(completed.Value, total.Value);
 
+            CopilotDelegatedRunProgress? delegatedRun = null;
+            if (update.DelegatedRun != null)
+            {
+                delegatedRun = new CopilotDelegatedRunProgress
+                {
+                    RoleId = NormalizeIdentifier(update.DelegatedRun.RoleId),
+                    RunId = NormalizeIdentifier(update.DelegatedRun.RunId),
+                    ResumeFromRunId = NormalizeIdentifier(update.DelegatedRun.ResumeFromRunId),
+                    RequestTokenBudget = Math.Clamp(
+                        update.DelegatedRun.RequestTokenBudget,
+                        0,
+                        (int)MaximumCount),
+                    QueueDurationMs = Math.Clamp(
+                        update.DelegatedRun.QueueDurationMs,
+                        0,
+                        MaximumCount),
+                };
+            }
+
             return new CopilotToolProgressUpdate
             {
                 Message = message,
                 Completed = completed,
                 Total = total,
                 Unit = unit,
+                DelegatedRun = delegatedRun,
             };
         }
 
@@ -175,7 +211,28 @@ namespace ColorVision.Copilot
                 && string.Equals(left.Message, right.Message, StringComparison.Ordinal)
                 && left.Completed == right.Completed
                 && left.Total == right.Total
-                && string.Equals(left.Unit, right.Unit, StringComparison.Ordinal);
+                && string.Equals(left.Unit, right.Unit, StringComparison.Ordinal)
+                && AreEquivalent(left.DelegatedRun, right.DelegatedRun);
+        }
+
+        private static bool AreEquivalent(
+            CopilotDelegatedRunProgress? left,
+            CopilotDelegatedRunProgress? right)
+        {
+            if (left == null || right == null)
+                return left == right;
+
+            return string.Equals(left.RoleId, right.RoleId, StringComparison.Ordinal)
+                && string.Equals(left.RunId, right.RunId, StringComparison.Ordinal)
+                && string.Equals(left.ResumeFromRunId, right.ResumeFromRunId, StringComparison.Ordinal)
+                && left.RequestTokenBudget == right.RequestTokenBudget
+                && left.QueueDurationMs == right.QueueDurationMs;
+        }
+
+        private static string NormalizeIdentifier(string? value)
+        {
+            var identifier = CollapseWhitespace(CopilotMcpAuditLogger.RedactText(value));
+            return identifier.Length <= 120 ? identifier : identifier[..120];
         }
 
         private static string CollapseWhitespace(string? value)

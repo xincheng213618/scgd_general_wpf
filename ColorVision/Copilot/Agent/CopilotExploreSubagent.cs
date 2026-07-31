@@ -1095,7 +1095,7 @@ namespace ColorVision.Copilot
         }
     }
 
-    public class CopilotDelegateSubagentTool : ICopilotAgentDrivenTool, ICopilotCapabilityCatalogIdentity, ICopilotCapabilityCatalogVersionIdentity
+    public class CopilotDelegateSubagentTool : ICopilotAgentDrivenTool, ICopilotCapabilityCatalogIdentity, ICopilotCapabilityCatalogVersionIdentity, ICopilotProgressReportingTool
     {
         private readonly CopilotSubagentRoleDescriptor _role;
         private readonly ICopilotSubagentRunner _runner;
@@ -1142,9 +1142,28 @@ namespace ColorVision.Copilot
             return $"subagent:{_role.Id}:" + (toolInput?.GetStableArgumentsJson() ?? string.Empty);
         }
 
-        public async Task<CopilotToolResult> ExecuteAsync(
+        public Task<CopilotToolResult> ExecuteAsync(
             CopilotAgentRequest request,
             CopilotAgentToolInput toolInput,
+            CancellationToken cancellationToken)
+        {
+            return ExecuteCoreAsync(request, toolInput, progress: null, cancellationToken);
+        }
+
+        public Task<CopilotToolResult> ExecuteWithProgressAsync(
+            CopilotAgentRequest request,
+            CopilotAgentToolInput toolInput,
+            CopilotToolProgressContext progress,
+            CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(progress);
+            return ExecuteCoreAsync(request, toolInput, progress, cancellationToken);
+        }
+
+        private async Task<CopilotToolResult> ExecuteCoreAsync(
+            CopilotAgentRequest request,
+            CopilotAgentToolInput toolInput,
+            CopilotToolProgressContext? progress,
             CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(request);
@@ -1176,6 +1195,18 @@ namespace ColorVision.Copilot
                 RequestTokenBudget = lease.RequestTokenBudget,
                 QueueDurationMs = lease.QueueDurationMs,
             };
+            progress?.Report(new CopilotToolProgressUpdate
+            {
+                Message = $"{_role.DisplayName} 子 Agent 已启动",
+                DelegatedRun = new CopilotDelegatedRunProgress
+                {
+                    RoleId = _role.Id,
+                    RunId = childRun.RunId,
+                    ResumeFromRunId = childRun.ResumeFromRunId,
+                    RequestTokenBudget = childRun.RequestTokenBudget,
+                    QueueDurationMs = childRun.QueueDurationMs,
+                },
+            });
             CopilotSubagentResult result;
             try
             {

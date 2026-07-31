@@ -5,6 +5,42 @@ namespace ColorVision.UI.Tests;
 public sealed class CopilotDelegateSubagentToolTests
 {
     [Fact]
+    public async Task RunningSubagentReportsIdentityAndBudgetBeforeCompletion()
+    {
+        var runner = new BlockingRunner();
+        var tool = new CopilotDelegateExploreTool(runner);
+        var progressTool = Assert.IsAssignableFrom<ICopilotProgressReportingTool>(tool);
+        var progress = new CopilotToolProgressContext();
+        var execution = progressTool.ExecuteWithProgressAsync(
+            Request(),
+            Input(),
+            progress,
+            CancellationToken.None);
+
+        try
+        {
+            var request = await runner.Started.Task.WaitAsync(TimeSpan.FromSeconds(1));
+            var snapshot = Assert.IsType<CopilotToolProgressUpdate>(progress.LatestSnapshot);
+            var delegatedRun = Assert.IsType<CopilotDelegatedRunProgress>(snapshot.DelegatedRun);
+
+            Assert.Equal("Explore 子 Agent 已启动", snapshot.Message);
+            Assert.Equal(CopilotSubagentRoleCatalog.ExploreRoleId, delegatedRun.RoleId);
+            Assert.Equal(request.RunId, delegatedRun.RunId);
+            Assert.Equal(request.ResumeFromRunId, delegatedRun.ResumeFromRunId);
+            Assert.Equal(request.RequestTokenBudget, delegatedRun.RequestTokenBudget);
+            Assert.Equal(request.QueueDurationMs, delegatedRun.QueueDurationMs);
+            Assert.False(execution.IsCompleted);
+        }
+        finally
+        {
+            runner.Release.TrySetResult();
+        }
+
+        var result = await execution.WaitAsync(TimeSpan.FromSeconds(1));
+        Assert.True(result.Success);
+    }
+
+    [Fact]
     public async Task CompletedAnswerIsReportedAsSuccessful()
     {
         var tool = new CopilotDelegateExploreTool(new StubRunner(new CopilotSubagentResult
@@ -472,6 +508,36 @@ public sealed class CopilotDelegateSubagentToolTests
                 ResumeFailureReason = result.ResumeFailureReason,
                 SessionCheckpoint = result.SessionCheckpoint,
             });
+        }
+    }
+
+    private sealed class BlockingRunner : ICopilotSubagentRunner
+    {
+        public TaskCompletionSource<CopilotSubagentRunRequest> Started { get; } = new(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public TaskCompletionSource Release { get; } = new(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public async Task<CopilotSubagentResult> RunAsync(
+            CopilotAgentRequest parentRequest,
+            CopilotSubagentRoleDescriptor role,
+            CopilotSubagentRunRequest runRequest,
+            CancellationToken cancellationToken)
+        {
+            Started.TrySetResult(runRequest);
+            await Release.Task.WaitAsync(cancellationToken);
+            return new CopilotSubagentResult
+            {
+                RoleId = role.Id,
+                RunId = runRequest.RunId,
+                RequestTokenBudget = runRequest.RequestTokenBudget,
+                QueueDurationMs = runRequest.QueueDurationMs,
+                Answer = "Verified finding.",
+                StopReason = CopilotAgentStopReason.Completed,
+                HasSuccessfulEvidence = true,
+                ToolNames = ["ReadLocalFile"],
+            };
         }
     }
 }

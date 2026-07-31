@@ -397,6 +397,14 @@ namespace ColorVision.Copilot
             if (entry.ProgressCompleted.HasValue && entry.ProgressTotal.HasValue)
                 entry.ProgressCompleted = Math.Min(entry.ProgressCompleted.Value, entry.ProgressTotal.Value);
             entry.ProgressUnit = SanitizeProgressUnit(reportedProgress?.Unit);
+            if (reportedProgress?.DelegatedRun != null)
+            {
+                entry.DelegatedRoleId = SanitizeIdentifier(reportedProgress.DelegatedRun.RoleId);
+                entry.DelegatedRunId = SanitizeIdentifier(reportedProgress.DelegatedRun.RunId);
+                entry.DelegatedResumeFromRunId = SanitizeIdentifier(reportedProgress.DelegatedRun.ResumeFromRunId);
+                entry.DelegatedRequestTokenBudget = Math.Max(0, reportedProgress.DelegatedRun.RequestTokenBudget);
+                entry.DelegatedQueueDurationMs = Math.Max(0, reportedProgress.DelegatedRun.QueueDurationMs);
+            }
             entry.ResultSummary = !string.IsNullOrWhiteSpace(entry.ProgressMessage)
                 ? entry.ProgressMessage
                 : Sanitize(progress);
