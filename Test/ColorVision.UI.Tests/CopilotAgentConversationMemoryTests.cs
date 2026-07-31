@@ -5,6 +5,61 @@ namespace ColorVision.UI.Tests;
 public sealed class CopilotAgentConversationMemoryTests
 {
     [Fact]
+    public void MergePreservesRepeatedVisibleTurnsOnTheFirstCheckpoint()
+    {
+        var visibleHistory = new[]
+        {
+            new CopilotRequestMessage("user", "continue"),
+            new CopilotRequestMessage("assistant", "done"),
+            new CopilotRequestMessage("user", "continue"),
+            new CopilotRequestMessage("assistant", "done"),
+        };
+
+        var memory = CopilotAgentConversationMemory.Merge(
+            null,
+            visibleHistory,
+            string.Empty,
+            string.Empty);
+
+        Assert.Collection(
+            memory,
+            item => AssertMessage(item, "user", "continue"),
+            item => AssertMessage(item, "assistant", "done"),
+            item => AssertMessage(item, "user", "continue"),
+            item => AssertMessage(item, "assistant", "done"));
+    }
+
+    [Fact]
+    public void MergeSkipsOnlyRepeatedTurnsAlreadyRepresentedByTheCheckpoint()
+    {
+        var previousMemory = new[]
+        {
+            new CopilotRequestMessage("user", "continue"),
+            new CopilotRequestMessage("assistant", "done"),
+        };
+        var visibleHistory = new[]
+        {
+            new CopilotRequestMessage("user", "continue"),
+            new CopilotRequestMessage("assistant", "done"),
+            new CopilotRequestMessage("user", "continue"),
+            new CopilotRequestMessage("assistant", "done"),
+        };
+
+        var memory = CopilotAgentConversationMemory.Merge(
+            previousMemory,
+            visibleHistory,
+            string.Empty,
+            string.Empty);
+
+        Assert.Collection(
+            memory,
+            item => AssertMessage(item, "user", "continue"),
+            item => AssertMessage(item, "assistant", "done"),
+            item => AssertMessage(item, "user", "continue"),
+            item => AssertMessage(item, "assistant", "done"));
+    }
+
+    [Fact]
     public void MergePlacesRepeatedUserFollowUpsBeforeAssistantInOrder()
     {
         var memory = CopilotAgentConversationMemory.Merge(

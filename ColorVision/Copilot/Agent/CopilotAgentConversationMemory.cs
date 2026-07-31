@@ -14,14 +14,24 @@ namespace ColorVision.Copilot
             IEnumerable<string>? currentUserFollowUps = null)
         {
             var merged = Normalize(previousMemory).ToList();
-            var seenHistory = merged
-                .Select(CreateKey)
-                .ToHashSet(StringComparer.Ordinal);
+            var unmatchedPreviousOccurrences = merged
+                .GroupBy(CreateKey, StringComparer.Ordinal)
+                .ToDictionary(
+                    group => group.Key,
+                    group => group.Count(),
+                    StringComparer.Ordinal);
 
             foreach (var message in Normalize(visibleHistory))
             {
-                if (seenHistory.Add(CreateKey(message)))
-                    merged.Add(message);
+                var key = CreateKey(message);
+                if (unmatchedPreviousOccurrences.TryGetValue(key, out var remaining)
+                    && remaining > 0)
+                {
+                    unmatchedPreviousOccurrences[key] = remaining - 1;
+                    continue;
+                }
+
+                merged.Add(message);
             }
 
             AppendCurrent(merged, "user", currentUserText);
