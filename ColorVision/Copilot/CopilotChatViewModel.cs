@@ -191,6 +191,9 @@ namespace ColorVision.Copilot
             CompactConversationCommand = new RelayCommand(
                 _ => CompactConversationFromUi(),
                 _ => IsConversationContextReduced && !IsBusy && !_isCompactingConversation && SelectedConversation != null);
+            ShowContextDiagnosticsCommand = new RelayCommand(
+                _ => ShowContextDiagnosticsFromUi(),
+                _ => SelectedConversation != null);
             ClearConversationSearchCommand = new RelayCommand(_ => ConversationSearchText = string.Empty, _ => HasConversationSearchQuery);
             OpenConversationFindCommand = new RelayCommand(_ => OpenConversationFind(), _ => SelectedConversation != null);
             CloseConversationFindCommand = new RelayCommand(_ => CloseConversationFind(), _ => IsConversationFindOpen);
@@ -532,6 +535,8 @@ namespace ColorVision.Copilot
         public ICommand NewChatCommand { get; }
 
         public ICommand CompactConversationCommand { get; }
+
+        public ICommand ShowContextDiagnosticsCommand { get; }
 
         public ICommand ClearConversationSearchCommand { get; }
 
@@ -1005,6 +1010,27 @@ namespace ColorVision.Copilot
             private set => SetProperty(ref _conversationContextCompactionToolTip, value ?? string.Empty);
         }
         private string _conversationContextCompactionToolTip = string.Empty;
+
+        public string ConversationContextUsageLabel
+        {
+            get => _conversationContextUsageLabel;
+            private set => SetProperty(ref _conversationContextUsageLabel, value ?? string.Empty);
+        }
+        private string _conversationContextUsageLabel = "历史 0%";
+
+        public string ConversationContextUsageToolTip
+        {
+            get => _conversationContextUsageToolTip;
+            private set => SetProperty(ref _conversationContextUsageToolTip, value ?? string.Empty);
+        }
+        private string _conversationContextUsageToolTip = string.Empty;
+
+        public bool IsConversationContextUnderPressure
+        {
+            get => _isConversationContextUnderPressure;
+            private set => SetProperty(ref _isConversationContextUnderPressure, value);
+        }
+        private bool _isConversationContextUnderPressure;
 
         public string InputText
         {
@@ -2879,6 +2905,13 @@ namespace ColorVision.Copilot
             var command = CopilotLocalCommandCatalog.FindExact("/shortcuts");
             if (command != null)
                 ShowLocalCommandResult(command, CopilotKeyboardShortcutHelp.Format());
+        }
+
+        private void ShowContextDiagnosticsFromUi()
+        {
+            var command = CopilotLocalCommandCatalog.FindExact("/context");
+            if (command != null)
+                ShowLocalCommandResult(command, BuildContextDiagnosticsReport());
         }
 
         private string BuildContextDiagnosticsReport()
@@ -8520,14 +8553,27 @@ namespace ColorVision.Copilot
 
         private void RefreshConversationContextState()
         {
+            var limits = ResolveConversationHistoryLimits(SelectedProfile);
             var selection = CopilotConversationRequestBuilder.CaptureHistorySelection(
                 SelectedConversation,
-                ResolveConversationHistoryLimits(SelectedProfile));
+                limits);
             IsConversationContextReduced = selection.WasReduced;
             ConversationContextCompactionToolTip = selection.WasReduced
                 ? $"当前模型窗口只会发送 {selection.Messages.Length:N0}/{selection.SourceMessageCount:N0} 条历史消息、"
                     + $"{selection.RetainedCharacters:N0}/{selection.SourceCharacters:N0} 个字符。点击生成延续摘要；完整聊天记录不会删除。"
                 : string.Empty;
+
+            var usage = CopilotConversationAutoCompactionPolicy.Measure(
+                SelectedConversation,
+                limits,
+                InputText);
+            var presentation = CopilotConversationContextUsagePresenter.Create(
+                usage,
+                _config.AgentDefaults.AutoCompactConversationHistory,
+                _config.AgentDefaults.AutoCompactThresholdPercent);
+            ConversationContextUsageLabel = presentation.Label;
+            ConversationContextUsageToolTip = presentation.ToolTip;
+            IsConversationContextUnderPressure = presentation.IsUnderPressure;
         }
 
         private void InvalidateChatAttachmentTokenEstimate()

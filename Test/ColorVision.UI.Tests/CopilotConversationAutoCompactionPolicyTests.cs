@@ -59,6 +59,30 @@ public sealed class CopilotConversationAutoCompactionPolicyTests
     }
 
     [Fact]
+    public void MeasuresPressureBeforeACompleteTurnCanBeCompacted()
+    {
+        var conversation = CreateConversation(new string('a', 900));
+        var limits = new CopilotConversationHistoryLimits(10, 1_000, 1_000);
+
+        var usage = CopilotConversationAutoCompactionPolicy.Measure(
+            conversation,
+            limits,
+            pendingPrompt: string.Empty);
+        var decision = CopilotConversationAutoCompactionPolicy.Evaluate(
+            conversation,
+            limits,
+            pendingPrompt: string.Empty,
+            enabled: true,
+            thresholdPercent: 85);
+
+        Assert.Equal(90, usage.UsagePercent);
+        Assert.Equal(90, usage.WeightUsagePercent);
+        Assert.Equal(10, usage.MessageUsagePercent);
+        Assert.False(decision.ShouldCompact);
+        Assert.Equal(90, decision.UsagePercent);
+    }
+
+    [Fact]
     public void MessageCountCanTriggerBeforeTheWeightLimit()
     {
         var conversation = CreateConversation(

@@ -2565,6 +2565,24 @@
                                     Margin="4,0"
                                     HorizontalAlignment="Right"
                                     Orientation="Horizontal">
+                            <Button Width="60"
+                                    Height="28"
+                                    Margin="0,0,4,0"
+                                    AutomationProperties.Name="查看 Copilot 会话历史上下文占用"
+                                    Command="{Binding ShowContextDiagnosticsCommand}"
+                                    Content="{Binding ConversationContextUsageLabel}"
+                                    FontSize="10"
+                                    ToolTip="{Binding ConversationContextUsageToolTip}">
+                                <Button.Style>
+                                    <Style BasedOn="{StaticResource CopilotIconButtonStyle}" TargetType="Button">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsConversationContextUnderPressure}" Value="True">
+                                                <Setter Property="Foreground" Value="{StaticResource CopilotControlWarningBrush}" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
                             <Button Width="28"
                                     Height="28"
                                     Margin="0,0,4,0"
