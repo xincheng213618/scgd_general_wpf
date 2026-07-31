@@ -27,6 +27,14 @@ namespace ColorVision.Copilot
         bool ArchiveTruncated,
         string ErrorMessage);
 
+    internal sealed record CopilotRedactedOutputArchiveSearchResult(
+        bool Available,
+        bool Matched,
+        int NextOffsetCharacters,
+        int ArchivedCharacters,
+        bool ArchiveTruncated,
+        string ErrorMessage);
+
     internal sealed class CopilotTemporaryRedactedOutputArchive : IDisposable
     {
         private static readonly string[] SensitiveMarkers =
@@ -287,6 +295,116 @@ namespace ColorVision.Copilot
                     return UnavailablePage(
                         offsetCharacters,
                         "The temporary redacted output archive could not be read.");
+                }
+            }
+        }
+
+        public CopilotRedactedOutputArchiveSearchResult Search(
+            string? literal,
+            int offsetCharacters,
+            CancellationToken cancellationToken)
+        {
+            var pattern = literal ?? string.Empty;
+            lock (_syncRoot)
+            {
+                if (!_available || _disposed || _stream == null)
+                {
+                    return UnavailableSearch(
+                        offsetCharacters,
+                        "The temporary redacted output archive is unavailable.");
+                }
+
+                if (pattern.Length == 0
+                    || offsetCharacters < 0
+                    || offsetCharacters > _archivedCharacters)
+                {
+                    return UnavailableSearch(
+                        offsetCharacters,
+                        "The output archive search range or literal is invalid.");
+                }
+
+                try
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    _stream.Flush();
+                    var archivedCharacters = _archivedCharacters;
+                    using var stream = new FileStream(
+                        _path,
+                        FileMode.Open,
+                        FileAccess.Read,
+                        FileShare.ReadWrite | FileShare.Delete,
+                        bufferSize: 4_096,
+                        FileOptions.SequentialScan);
+                    stream.Seek(
+                        checked((long)offsetCharacters * sizeof(char)),
+                        SeekOrigin.Begin);
+                    var position = offsetCharacters;
+                    var overlapCharacters = Math.Max(0, pattern.Length - 1);
+                    var carry = string.Empty;
+                    while (position < archivedCharacters)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        var requestedCharacters = Math.Min(
+                            CopilotOutputArchiveLimits.MaximumReadCharacters,
+                            archivedCharacters - position);
+                        var content = ReadCharacters(
+                            stream,
+                            requestedCharacters,
+                            cancellationToken);
+                        if (content.Length == 0)
+                            break;
+
+                        var candidate = carry + content;
+                        if (candidate.Contains(
+                                pattern,
+                                StringComparison.OrdinalIgnoreCase))
+                        {
+                            return new CopilotRedactedOutputArchiveSearchResult(
+                                Available: true,
+                                Matched: true,
+                                NextOffsetCharacters: GetNextSearchOffset(
+                                    archivedCharacters,
+                                    overlapCharacters,
+                                    offsetCharacters),
+                                ArchivedCharacters: archivedCharacters,
+                                ArchiveTruncated: _isTruncated,
+                                ErrorMessage: string.Empty);
+                        }
+
+                        carry = overlapCharacters == 0
+                            ? string.Empty
+                            : candidate[
+                                Math.Max(
+                                    0,
+                                    candidate.Length - overlapCharacters)..];
+                        position += content.Length;
+                    }
+
+                    return new CopilotRedactedOutputArchiveSearchResult(
+                        Available: true,
+                        Matched: false,
+                        NextOffsetCharacters: GetNextSearchOffset(
+                            archivedCharacters,
+                            overlapCharacters,
+                            offsetCharacters),
+                        ArchivedCharacters: archivedCharacters,
+                        ArchiveTruncated: _isTruncated,
+                        ErrorMessage: string.Empty);
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+                catch (Exception ex) when (
+                    ex is IOException
+                        or ObjectDisposedException
+                        or UnauthorizedAccessException
+                        or NotSupportedException)
+                {
+                    MarkUnavailableUnderLock(ex);
+                    return UnavailableSearch(
+                        offsetCharacters,
+                        "The temporary redacted output archive could not be searched.");
                 }
             }
         }
@@ -585,6 +703,26 @@ namespace ColorVision.Copilot
                     offsetCharacters >= _archivedCharacters,
                 ArchiveTruncated: _isTruncated,
                 ErrorMessage: errorMessage);
+
+        private CopilotRedactedOutputArchiveSearchResult UnavailableSearch(
+            int offsetCharacters,
+            string errorMessage) =>
+            new(
+                Available: false,
+                Matched: false,
+                NextOffsetCharacters: offsetCharacters,
+                ArchivedCharacters: _archivedCharacters,
+                ArchiveTruncated: _isTruncated,
+                ErrorMessage: errorMessage);
+
+        private static int GetNextSearchOffset(
+            int archivedCharacters,
+            int overlapCharacters,
+            int minimumOffset) =>
+            Math.Max(
+                minimumOffset,
+                archivedCharacters
+                - Math.Min(archivedCharacters, overlapCharacters));
 
         private void MarkUnavailableUnderLock(Exception exception)
         {

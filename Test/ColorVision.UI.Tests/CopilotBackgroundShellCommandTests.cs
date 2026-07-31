@@ -476,6 +476,10 @@ public sealed class CopilotBackgroundShellCommandTests
                 "observation: output_matched",
                 observed.Content,
                 StringComparison.Ordinal);
+            Assert.Contains(
+                "output_match_source: redacted_preview",
+                observed.Content,
+                StringComparison.Ordinal);
             Assert.Contains("token=<redacted>", observed.Content);
             Assert.DoesNotContain(
                 "background-secret",
@@ -496,6 +500,64 @@ public sealed class CopilotBackgroundShellCommandTests
             Assert.Equal(
                 CopilotToolFailureKind.NotFound,
                 crossConversation.FailureKind);
+        }
+        finally
+        {
+            await registry.ShutdownAsync();
+        }
+    }
+
+    [Fact]
+    public async Task BoundedWaitFindsMarkerOmittedFromPreviewInArchive()
+    {
+        var launcher = new FakeBackgroundLauncher();
+        var registry = new CopilotBackgroundShellCommandRegistry(launcher);
+        var waitTool = new CopilotWaitForBackgroundShellCommandTool(registry);
+        var request = CreateRequest("wait for an early readiness marker");
+        try
+        {
+            var started = await registry.StartAsync(
+                request,
+                CreateStartInput("Write-Output ready; Start-Sleep 30"),
+                CancellationToken.None);
+            Assert.True(started.Success, started.ErrorMessage);
+            var fullOutput =
+                "SERVER READY\n"
+                + new string(
+                    'x',
+                    CopilotBackgroundShellCommandRegistry.MaximumOutputCharacters
+                    + 1_000);
+            launcher.LastProcess!.SetOutput(fullOutput, string.Empty);
+            var preview = Assert.Single(
+                registry.GetSnapshots(request.ConversationId));
+            Assert.True(preview.StandardOutputTruncated);
+            Assert.DoesNotContain(
+                "SERVER READY",
+                preview.StandardOutput,
+                StringComparison.OrdinalIgnoreCase);
+
+            var observed = await waitTool.ExecuteAsync(
+                request,
+                CreateWaitInput(
+                    started.Snapshot!.Id,
+                    outputContains: "server ready",
+                    timeoutSeconds: 1),
+                CancellationToken.None);
+
+            Assert.True(observed.Success, observed.ErrorMessage);
+            Assert.False(observed.ObservationCanRepeat);
+            Assert.Contains(
+                "observation: output_matched",
+                observed.Content,
+                StringComparison.Ordinal);
+            Assert.Contains(
+                "output_match_source: redacted_archive",
+                observed.Content,
+                StringComparison.Ordinal);
+            Assert.DoesNotContain(
+                "SERVER READY",
+                observed.Content,
+                StringComparison.OrdinalIgnoreCase);
         }
         finally
         {
@@ -1036,6 +1098,54 @@ public sealed class CopilotBackgroundShellCommandTests
                 NextOffsetCharacters: nextOffset,
                 ArchivedCharacters: archivedCharacters,
                 EndOfAvailableOutput: nextOffset >= archivedCharacters,
+                ArchiveTruncated: archive.Length > archivedCharacters,
+                ErrorMessage: string.Empty);
+        }
+
+        public CopilotRedactedOutputArchiveSearchResult SearchOutputArchive(
+            CopilotBackgroundShellOutputStream stream,
+            string literal,
+            int offsetCharacters,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var archive = CopilotMcpAuditLogger.RedactText(
+                stream == CopilotBackgroundShellOutputStream.StandardError
+                    ? _standardError
+                    : _standardOutput);
+            var archivedCharacters = Math.Min(
+                archive.Length,
+                CopilotBackgroundShellCommandRegistry.MaximumArchivedOutputCharacters);
+            if (literal.Length == 0
+                || offsetCharacters < 0
+                || offsetCharacters > archivedCharacters)
+            {
+                return new CopilotRedactedOutputArchiveSearchResult(
+                    Available: false,
+                    Matched: false,
+                    NextOffsetCharacters: offsetCharacters,
+                    ArchivedCharacters: archivedCharacters,
+                    ArchiveTruncated: archive.Length > archivedCharacters,
+                    ErrorMessage:
+                        "The requested fake archive search range is invalid.");
+            }
+
+            var matched = archive.IndexOf(
+                    literal,
+                    offsetCharacters,
+                    archivedCharacters - offsetCharacters,
+                    StringComparison.OrdinalIgnoreCase)
+                >= 0;
+            var overlapCharacters = Math.Max(0, literal.Length - 1);
+            var nextOffset = Math.Max(
+                offsetCharacters,
+                archivedCharacters
+                - Math.Min(archivedCharacters, overlapCharacters));
+            return new CopilotRedactedOutputArchiveSearchResult(
+                Available: true,
+                Matched: matched,
+                NextOffsetCharacters: nextOffset,
+                ArchivedCharacters: archivedCharacters,
                 ArchiveTruncated: archive.Length > archivedCharacters,
                 ErrorMessage: string.Empty);
         }

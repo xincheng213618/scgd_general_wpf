@@ -130,6 +130,12 @@ namespace ColorVision.Copilot
             int maximumCharacters,
             CancellationToken cancellationToken);
 
+        CopilotRedactedOutputArchiveSearchResult SearchOutputArchive(
+            CopilotBackgroundShellOutputStream stream,
+            string literal,
+            int offsetCharacters,
+            CancellationToken cancellationToken);
+
         Task<CopilotBackgroundShellProcessCompletion> StopAsync(CancellationToken cancellationToken);
     }
 
@@ -163,6 +169,13 @@ namespace ColorVision.Copilot
         TimedOut,
     }
 
+    internal enum CopilotBackgroundShellCommandOutputMatchSource
+    {
+        None,
+        Preview,
+        Archive,
+    }
+
     internal sealed record CopilotBackgroundShellCommandWaitResult(
         CopilotBackgroundShellCommandSnapshot? Snapshot,
         CopilotBackgroundShellCommandObservation Observation,
@@ -172,6 +185,12 @@ namespace ColorVision.Copilot
     {
         public bool Success => Snapshot != null
             && FailureKind == CopilotToolFailureKind.None;
+
+        public CopilotBackgroundShellCommandOutputMatchSource OutputMatchSource
+        {
+            get;
+            init;
+        }
     }
 
     internal sealed record CopilotBackgroundShellCommandOutputReadResult(
@@ -531,6 +550,8 @@ namespace ColorVision.Copilot
                     $"timeoutSeconds must be an integer from {MinimumObservationTimeoutSeconds} through {MaximumObservationTimeoutSeconds}.");
             }
 
+            var standardOutputSearchOffset = 0;
+            var standardErrorSearchOffset = 0;
             var stopwatch = Stopwatch.StartNew();
             while (true)
             {
@@ -556,20 +577,51 @@ namespace ColorVision.Copilot
                         CopilotToolFailureKind.None,
                         string.Empty);
                 }
-                if (outputPattern.Length > 0
-                    && (snapshot.StandardOutput.Contains(
+                var outputMatchSource =
+                    CopilotBackgroundShellCommandOutputMatchSource.None;
+                if (outputPattern.Length > 0)
+                {
+                    if (snapshot.StandardOutput.Contains(
                             outputPattern,
                             StringComparison.OrdinalIgnoreCase)
                         || snapshot.StandardError.Contains(
                             outputPattern,
-                            StringComparison.OrdinalIgnoreCase)))
+                            StringComparison.OrdinalIgnoreCase))
+                    {
+                        outputMatchSource =
+                            CopilotBackgroundShellCommandOutputMatchSource.Preview;
+                    }
+                    else if (SearchArchivedOutput(
+                            normalizedConversationId,
+                            normalizedBackgroundId,
+                            CopilotBackgroundShellOutputStream.StandardOutput,
+                            outputPattern,
+                            ref standardOutputSearchOffset,
+                            cancellationToken)
+                        || SearchArchivedOutput(
+                            normalizedConversationId,
+                            normalizedBackgroundId,
+                            CopilotBackgroundShellOutputStream.StandardError,
+                            outputPattern,
+                            ref standardErrorSearchOffset,
+                            cancellationToken))
+                    {
+                        outputMatchSource =
+                            CopilotBackgroundShellCommandOutputMatchSource.Archive;
+                    }
+                }
+                if (outputMatchSource
+                    != CopilotBackgroundShellCommandOutputMatchSource.None)
                 {
                     return new CopilotBackgroundShellCommandWaitResult(
                         snapshot,
                         CopilotBackgroundShellCommandObservation.OutputMatched,
                         stopwatch.Elapsed,
                         CopilotToolFailureKind.None,
-                        string.Empty);
+                        string.Empty)
+                    {
+                        OutputMatchSource = outputMatchSource,
+                    };
                 }
                 if (stopwatch.Elapsed >= TimeSpan.FromSeconds(timeoutSeconds))
                 {
@@ -592,6 +644,43 @@ namespace ColorVision.Copilot
                         cancellationToken)
                     .ConfigureAwait(false);
             }
+        }
+
+        private bool SearchArchivedOutput(
+            string conversationId,
+            string backgroundId,
+            CopilotBackgroundShellOutputStream stream,
+            string literal,
+            ref int offsetCharacters,
+            CancellationToken cancellationToken)
+        {
+            Entry? entry;
+            lock (_syncRoot)
+            {
+                RefreshCompletedEntriesUnderLock();
+                entry = _entries.SingleOrDefault(candidate =>
+                    string.Equals(
+                        candidate.ConversationId,
+                        conversationId,
+                        StringComparison.Ordinal)
+                    && string.Equals(
+                        candidate.Id,
+                        backgroundId,
+                        StringComparison.Ordinal));
+            }
+            if (entry == null)
+                return false;
+
+            var search = entry.SearchOutputArchive(
+                stream,
+                literal,
+                offsetCharacters,
+                cancellationToken);
+            if (!search.Available)
+                return false;
+
+            offsetCharacters = search.NextOffsetCharacters;
+            return search.Matched;
         }
 
         public async Task<CopilotBackgroundShellCommandStopResult> StopAsync(
@@ -1062,6 +1151,17 @@ namespace ColorVision.Copilot
                     maximumCharacters,
                     cancellationToken);
 
+            public CopilotRedactedOutputArchiveSearchResult SearchOutputArchive(
+                CopilotBackgroundShellOutputStream stream,
+                string literal,
+                int offsetCharacters,
+                CancellationToken cancellationToken) =>
+                _process.SearchOutputArchive(
+                    stream,
+                    literal,
+                    offsetCharacters,
+                    cancellationToken);
+
             public async Task<CopilotBackgroundShellProcessCompletion> StopAsync(
                 CancellationToken cancellationToken)
             {
@@ -1198,6 +1298,18 @@ namespace ColorVision.Copilot
                 : _standardOutput).ReadArchive(
                     offsetCharacters,
                     maximumCharacters,
+                    cancellationToken);
+
+        public CopilotRedactedOutputArchiveSearchResult SearchOutputArchive(
+            CopilotBackgroundShellOutputStream stream,
+            string literal,
+            int offsetCharacters,
+            CancellationToken cancellationToken) =>
+            (stream == CopilotBackgroundShellOutputStream.StandardError
+                ? _standardError
+                : _standardOutput).SearchArchive(
+                    literal,
+                    offsetCharacters,
                     cancellationToken);
 
         public async Task<CopilotBackgroundShellProcessCompletion> StopAsync(
@@ -1418,6 +1530,23 @@ namespace ColorVision.Copilot
                     NextOffsetCharacters: offsetCharacters,
                     ArchivedCharacters: 0,
                     EndOfAvailableOutput: true,
+                    ArchiveTruncated: false,
+                    ErrorMessage:
+                        "The temporary redacted output archive is unavailable.");
+
+            public CopilotRedactedOutputArchiveSearchResult SearchArchive(
+                string literal,
+                int offsetCharacters,
+                CancellationToken cancellationToken) =>
+                _archive?.Search(
+                    literal,
+                    offsetCharacters,
+                    cancellationToken)
+                ?? new CopilotRedactedOutputArchiveSearchResult(
+                    Available: false,
+                    Matched: false,
+                    NextOffsetCharacters: offsetCharacters,
+                    ArchivedCharacters: 0,
                     ArchiveTruncated: false,
                     ErrorMessage:
                         "The temporary redacted output archive is unavailable.");

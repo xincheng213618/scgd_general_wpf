@@ -611,7 +611,7 @@ namespace ColorVision.Copilot
                             type = "string",
                             minLength = 1,
                             maxLength = CopilotBackgroundShellCommandRegistry.MaximumOutputPatternCharacters,
-                            description = "Optional literal text to find case-insensitively in bounded redacted stdout or stderr. Omit to wait only for a terminal state.",
+                            description = "Optional literal text to find case-insensitively in the bounded redacted preview or capped temporary redacted stdout/stderr archive. Omit to wait only for a terminal state.",
                         },
                         ["timeoutSeconds"] = new
                         {
@@ -640,7 +640,7 @@ namespace ColorVision.Copilot
 
         public string Name => "WaitForBackgroundShellCommand";
 
-        public string Description => "Wait for at most 30 seconds until one exact current-conversation background command reaches a terminal state or its bounded redacted stdout/stderr preview contains an optional literal marker. Bounded redacted preview changes and pre-truncation character growth are reported through the live tool-progress stream while waiting. A timeout is an observed running state, not proof of readiness. Use ReadBackgroundShellCommandOutput for omitted archived evidence. This tool performs no process mutation and never exposes another conversation.";
+        public string Description => "Wait for at most 30 seconds until one exact current-conversation background command reaches a terminal state or its bounded redacted preview or capped temporary redacted stdout/stderr archive contains an optional literal marker. Archive matching is incremental and can find earlier output omitted from the rolling preview; bounded preview changes and pre-truncation character growth are reported through the live tool-progress stream while waiting. A timeout is an observed running state, not proof of readiness. Use ReadBackgroundShellCommandOutput for omitted archived evidence. This tool performs no process mutation, exposes no archive path, and never exposes another conversation.";
 
         public int MaximumObservationAttempts => 4;
 
@@ -1100,9 +1100,23 @@ namespace ColorVision.Copilot
                     "terminal",
                 _ => "timed_out",
             };
-            return new StringBuilder()
+            var builder = new StringBuilder()
                 .AppendLine("[Background Shell Observation]")
-                .Append("observation: ").AppendLine(observation)
+                .Append("observation: ").AppendLine(observation);
+            if (result.Observation
+                == CopilotBackgroundShellCommandObservation.OutputMatched)
+            {
+                builder.Append("output_match_source: ")
+                    .AppendLine(result.OutputMatchSource switch
+                    {
+                        CopilotBackgroundShellCommandOutputMatchSource.Archive =>
+                            "redacted_archive",
+                        CopilotBackgroundShellCommandOutputMatchSource.Preview =>
+                            "redacted_preview",
+                        _ => "unknown",
+                    });
+            }
+            return builder
                 .Append("elapsed_ms: ")
                 .AppendLine(Math.Max(
                     0,

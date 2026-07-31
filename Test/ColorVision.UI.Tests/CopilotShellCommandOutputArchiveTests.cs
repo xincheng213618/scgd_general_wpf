@@ -55,6 +55,22 @@ public sealed class CopilotShellCommandOutputArchiveTests
             Assert.True(page.ArchiveTruncated);
             Assert.Contains("token=<redacted>", page.Content);
             Assert.DoesNotContain("top-secret", page.Content);
+            var rawSecretSearch = archive.Search(
+                "top-secret",
+                offsetCharacters: 0,
+                CancellationToken.None);
+            var redactedSearch = archive.Search(
+                "TOKEN=<REDACTED>",
+                offsetCharacters: 0,
+                CancellationToken.None);
+            Assert.True(
+                rawSecretSearch.Available,
+                rawSecretSearch.ErrorMessage);
+            Assert.False(rawSecretSearch.Matched);
+            Assert.True(
+                redactedSearch.Available,
+                redactedSearch.ErrorMessage);
+            Assert.True(redactedSearch.Matched);
 
             using var file = new FileStream(
                 path,
@@ -102,6 +118,47 @@ public sealed class CopilotShellCommandOutputArchiveTests
         Assert.EndsWith("safe", page.Content);
         Assert.DoesNotContain("split-secret", page.Content);
         Assert.DoesNotContain("split-bearer", page.Content);
+    }
+
+    [Fact]
+    public void TemporaryArchiveSearchResumesAcrossStorageChunks()
+    {
+        using var archive =
+            CopilotTemporaryRedactedOutputArchive.TryCreate(
+                "ShellOutput",
+                "stdout",
+                maximumCharacters: 64 * 1024);
+        Assert.NotNull(archive);
+
+        archive!.Append(
+            new string(
+                'x',
+                CopilotOutputArchiveLimits.MaximumReadCharacters - 4)
+            + "serv");
+        var first = archive.Search(
+            "SERVER READY",
+            offsetCharacters: 0,
+            CancellationToken.None);
+
+        Assert.True(first.Available, first.ErrorMessage);
+        Assert.False(first.Matched);
+        Assert.True(first.NextOffsetCharacters > 0);
+
+        archive.Append("er ready\n");
+        archive.Complete();
+        var second = archive.Search(
+            "SERVER READY",
+            first.NextOffsetCharacters,
+            CancellationToken.None);
+
+        Assert.True(second.Available, second.ErrorMessage);
+        Assert.True(second.Matched);
+        Assert.True(
+            second.NextOffsetCharacters >= first.NextOffsetCharacters);
+        Assert.Equal(
+            archive.ArchivedCharacters,
+            second.ArchivedCharacters);
+        Assert.False(second.ArchiveTruncated);
     }
 
     [Fact]
