@@ -1,6 +1,7 @@
 using ColorVision.Copilot;
 using Microsoft.Extensions.AI;
 using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
 
 namespace ColorVision.UI.Tests;
 
@@ -48,6 +49,69 @@ public sealed class CopilotBackgroundShellOutputDeliveryTests
             item => item.Type
                 == CopilotAgentTaskEventType
                     .BackgroundCommandOutputObserved);
+    }
+
+    [Fact]
+    public async Task FailureBeforeFirstProviderUpdateReturnsDeliveryForRetry()
+    {
+        using var failingProvider =
+            new FailBeforeFirstUpdateChatClient();
+        using var recoveredProvider = new CapturingChatClient();
+        var providerNumber = 0;
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry([]),
+            new CopilotAgentContextBuilder(),
+            new CopilotToolExecutor(),
+            _ => Interlocked.Increment(ref providerNumber) == 1
+                ? failingProvider
+                : recoveredProvider,
+            EmptyExternalToolProvider.Instance,
+            new CopilotCapabilityCatalog());
+        Assert.True(runtime.TryEnqueueBackgroundShellCommandOutput(
+            CreateOutputEvent("conversation", "retry me")));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            runtime.RunAsync(
+                CreateRequest("conversation", "First attempt."),
+                _ => { },
+                CancellationToken.None));
+        var failedPrompt = Assert.Single(
+            Assert.Single(failingProvider.StreamingCalls),
+            message => message.Role == ChatRole.User);
+
+        var recoveredResult = await runtime.RunAsync(
+            CreateRequest("conversation", "Retry attempt."),
+            _ => { },
+            CancellationToken.None);
+
+        Assert.Equal(
+            CopilotAgentStopReason.Completed,
+            recoveredResult.StopReason);
+        var retriedPrompt = Assert.Single(
+            Assert.Single(recoveredProvider.StreamingCalls),
+            message => message.Role == ChatRole.User);
+        Assert.Contains(
+            "\"content\":\"retry me\"",
+            retriedPrompt.Text,
+            StringComparison.Ordinal);
+        Assert.Equal(
+            ExtractDeliveryId(failedPrompt.Text),
+            ExtractDeliveryId(retriedPrompt.Text));
+        Assert.Single(
+            recoveredResult.TaskEventJournal.Events,
+            item => item.Type
+                == CopilotAgentTaskEventType
+                    .BackgroundCommandOutputObserved);
+    }
+
+    private static string ExtractDeliveryId(string prompt)
+    {
+        var match = Regex.Match(
+            prompt,
+            "\"delivery_id\":\"(?<id>[^\"]+)\"",
+            RegexOptions.CultureInvariant);
+        Assert.True(match.Success);
+        return match.Groups["id"].Value;
     }
 
     private static CopilotAgentRequest CreateRequest(
@@ -125,6 +189,48 @@ public sealed class CopilotBackgroundShellOutputDeliveryTests
                 FinishReason = ChatFinishReason.Stop,
             };
             await Task.CompletedTask;
+        }
+
+        public object? GetService(
+            Type serviceType,
+            object? serviceKey = null) =>
+            serviceType.IsInstanceOfType(this) ? this : null;
+
+        public void Dispose()
+        {
+        }
+    }
+
+    private sealed class FailBeforeFirstUpdateChatClient : IChatClient
+    {
+        public List<IReadOnlyList<ChatMessage>> StreamingCalls { get; } =
+            new();
+
+        public Task<ChatResponse> GetResponseAsync(
+            IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null,
+            CancellationToken cancellationToken = default)
+        {
+            throw new InvalidOperationException(
+                "The failed initial stream must not enter finalization.");
+        }
+
+        public async IAsyncEnumerable<ChatResponseUpdate>
+            GetStreamingResponseAsync(
+                IEnumerable<ChatMessage> messages,
+                ChatOptions? options = null,
+                [EnumeratorCancellation]
+                CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            StreamingCalls.Add(messages.ToArray());
+            await Task.CompletedTask;
+            if (!cancellationToken.IsCancellationRequested)
+            {
+                throw new InvalidOperationException(
+                    "Provider failed before its first update.");
+            }
+            yield break;
         }
 
         public object? GetService(

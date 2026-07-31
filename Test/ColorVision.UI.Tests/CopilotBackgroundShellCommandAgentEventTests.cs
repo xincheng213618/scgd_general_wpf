@@ -203,6 +203,7 @@ public sealed class CopilotBackgroundShellCommandAgentEventTests
         var deferredEvent =
             new CopilotDeferredBackgroundShellOutputEvent(
                 eventArgs,
+                "delivery:test",
                 DateTimeOffset.Parse("2026-07-31T00:01:00Z"),
                 DateTimeOffset.Parse("2026-07-31T00:02:00Z"),
                 EventBatches: 2,
@@ -217,6 +218,10 @@ public sealed class CopilotBackgroundShellCommandAgentEventTests
 
         Assert.Contains(
             "\"delivery\":\"delayed\"",
+            message,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "\"delivery_id\":\"delivery:test\"",
             message,
             StringComparison.Ordinal);
         Assert.Contains(

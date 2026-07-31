@@ -750,9 +750,11 @@ namespace ColorVision.Copilot
                 promptMessages = InsertEvidenceMessageBeforeCurrentUser(promptMessages, recoveryEvidencePrompt);
                 emit(CopilotAgentEvent.RuntimeDiagnostic($"Agent recovery checkpoint contained {previousEvidenceArtifacts.Count} evidence artifact(s); bounded untrusted historical context was supplied."));
             }
-            var deferredBackgroundOutputEvents =
-                _backgroundShellOutputEventInbox.Drain(
+            using var deferredBackgroundOutputDelivery =
+                _backgroundShellOutputEventInbox.BeginDelivery(
                     request.ConversationId);
+            var deferredBackgroundOutputEvents =
+                deferredBackgroundOutputDelivery.Events;
             var deferredBackgroundOutputMessages =
                 deferredBackgroundOutputEvents
                     .Select(deferredEvent =>
@@ -772,14 +774,14 @@ namespace ColorVision.Copilot
                     string.Join(
                         Environment.NewLine + Environment.NewLine,
                         deferredBackgroundOutputMessages));
-                foreach (var deferredEvent in deferredBackgroundOutputEvents)
-                {
-                    taskEventJournalBuilder
-                        .RecordBackgroundShellCommandOutput(
-                            deferredEvent.EventArgs);
-                }
                 emit(CopilotAgentEvent.RuntimeDiagnostic(
-                    $"Agent received {deferredBackgroundOutputMessages.Length} bounded delayed background-output signal(s) from this conversation. The current user request remains the final prompt segment."));
+                    $"Agent queued {deferredBackgroundOutputMessages.Length} bounded delayed background-output signal(s) from this conversation with the current request. Delivery remains pending until the provider returns its first update."));
+            }
+            else if (deferredBackgroundOutputEvents.Count > 0)
+            {
+                deferredBackgroundOutputDelivery.Commit();
+                emit(CopilotAgentEvent.RuntimeDiagnostic(
+                    "Invalid delayed background-output signals were discarded before provider delivery."));
             }
             IReadOnlyList<Microsoft.Extensions.AI.ChatMessage> messages = CopilotRequestMessageSequence
                 .Normalize(promptMessages)
@@ -794,6 +796,7 @@ namespace ColorVision.Copilot
             var providerInterrupted = false;
             var contextWindowExceeded = false;
             var toolBudgetForcedFinalization = false;
+            var deferredBackgroundOutputAccepted = false;
             AIChatFinishReason? providerFinishReason = null;
             try
             {
@@ -803,6 +806,20 @@ namespace ColorVision.Copilot
                     await foreach (var update in agent.RunStreamingAsync(messages, session, null, agentLoopCancellation.Token))
                     {
                         agentLoopCancellation.Token.ThrowIfCancellationRequested();
+                        if (!deferredBackgroundOutputAccepted
+                            && deferredBackgroundOutputMessages.Length > 0)
+                        {
+                            deferredBackgroundOutputDelivery.Commit();
+                            deferredBackgroundOutputAccepted = true;
+                            foreach (var deferredEvent in deferredBackgroundOutputEvents)
+                            {
+                                taskEventJournalBuilder
+                                    .RecordBackgroundShellCommandOutput(
+                                        deferredEvent.EventArgs);
+                            }
+                            emit(CopilotAgentEvent.RuntimeDiagnostic(
+                                $"The provider produced its first update; {deferredBackgroundOutputMessages.Length} delayed background-output signal(s) are now marked delivered and their delivery IDs will not be replayed."));
+                        }
 
                         foreach (var usageContent in update.Contents.OfType<UsageContent>())
                             usage = usage.Add(ToCopilotUsage(usageContent.Details));

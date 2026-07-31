@@ -22,7 +22,9 @@ public sealed class CopilotBackgroundShellOutputEventInboxTests
             "new output",
             suppressedEvents: 3)));
 
-        var deferredEvent = Assert.Single(inbox.Drain("conversation"));
+        using var delivery = inbox.BeginDelivery("conversation");
+        var deferredEvent = Assert.Single(delivery.Events);
+        delivery.Commit();
         Assert.Equal("new output", deferredEvent.EventArgs.Content);
         Assert.Equal(5, deferredEvent.EventArgs.SuppressedEvents);
         Assert.Equal(2, deferredEvent.EventBatches);
@@ -47,14 +49,18 @@ public sealed class CopilotBackgroundShellOutputEventInboxTests
             "monitor:two",
             "two")));
 
-        var firstConversation = Assert.Single(
-            inbox.Drain("conversation:one"));
+        using var firstDelivery = inbox.BeginDelivery("conversation:one");
+        var firstConversation = Assert.Single(firstDelivery.Events);
+        firstDelivery.Commit();
 
         Assert.Equal(
             "conversation:one",
             firstConversation.EventArgs.Monitor.ConversationId);
-        Assert.Empty(inbox.Drain("conversation:one"));
-        Assert.Single(inbox.Drain("conversation:two"));
+        using var emptyDelivery = inbox.BeginDelivery("conversation:one");
+        Assert.Empty(emptyDelivery.Events);
+        using var secondDelivery = inbox.BeginDelivery("conversation:two");
+        Assert.Single(secondDelivery.Events);
+        secondDelivery.Commit();
     }
 
     [Fact]
@@ -70,7 +76,9 @@ public sealed class CopilotBackgroundShellOutputEventInboxTests
                 "monitor:one",
                 $"output {index}")));
 
-        var deferredEvent = Assert.Single(inbox.Drain("conversation"));
+        using var delivery = inbox.BeginDelivery("conversation");
+        var deferredEvent = Assert.Single(delivery.Events);
+        delivery.Commit();
         Assert.Equal(100, deferredEvent.EventBatches);
         Assert.StartsWith(
             "output ",
@@ -93,7 +101,9 @@ public sealed class CopilotBackgroundShellOutputEventInboxTests
                 $"output {index}")));
         }
 
-        var deferredEvents = inbox.Drain("conversation");
+        using var delivery = inbox.BeginDelivery("conversation");
+        var deferredEvents = delivery.Events;
+        delivery.Commit();
 
         Assert.Equal(
             CopilotBackgroundShellOutputEventInbox
@@ -118,8 +128,66 @@ public sealed class CopilotBackgroundShellOutputEventInboxTests
         now += CopilotBackgroundShellOutputEventInbox.Retention
             + TimeSpan.FromTicks(1);
 
-        Assert.Empty(inbox.Drain("conversation"));
+        using var delivery = inbox.BeginDelivery("conversation");
+        Assert.Empty(delivery.Events);
         Assert.Equal(0, inbox.PendingEventCount);
+    }
+
+    [Fact]
+    public void UncommittedDeliveryReturnsTheSameStableDeliveryId()
+    {
+        var inbox = new CopilotBackgroundShellOutputEventInbox();
+        Assert.True(inbox.TryEnqueue(CreateEvent(
+            "conversation",
+            "monitor:one",
+            "retry output")));
+
+        string deliveryId;
+        using (var firstDelivery = inbox.BeginDelivery("conversation"))
+        {
+            deliveryId = Assert.Single(firstDelivery.Events).DeliveryId;
+        }
+
+        using var retriedDelivery = inbox.BeginDelivery("conversation");
+        Assert.Equal(
+            deliveryId,
+            Assert.Single(retriedDelivery.Events).DeliveryId);
+        retriedDelivery.Commit();
+    }
+
+    [Fact]
+    public void ReturnedDeliveryMergesWithoutOverwritingNewerOutput()
+    {
+        var now = DateTimeOffset.Parse("2026-07-31T01:00:00Z");
+        var inbox = new CopilotBackgroundShellOutputEventInbox(() => now);
+        Assert.True(inbox.TryEnqueue(CreateEvent(
+            "conversation",
+            "monitor:one",
+            "old output",
+            suppressedEvents: 2)));
+        var olderDelivery = inbox.BeginDelivery("conversation");
+        var olderDeliveryId =
+            Assert.Single(olderDelivery.Events).DeliveryId;
+
+        now = now.AddSeconds(5);
+        Assert.True(inbox.TryEnqueue(CreateEvent(
+            "conversation",
+            "monitor:one",
+            "new output",
+            suppressedEvents: 3)));
+        olderDelivery.Dispose();
+
+        using var mergedDelivery = inbox.BeginDelivery("conversation");
+        var mergedEvent = Assert.Single(mergedDelivery.Events);
+        mergedDelivery.Commit();
+        Assert.Equal("new output", mergedEvent.EventArgs.Content);
+        Assert.Equal(5, mergedEvent.EventArgs.SuppressedEvents);
+        Assert.Equal(2, mergedEvent.EventBatches);
+        Assert.NotEqual(olderDeliveryId, mergedEvent.DeliveryId);
+        Assert.Equal(
+            DateTimeOffset.Parse("2026-07-31T01:00:00Z"),
+            mergedEvent.FirstCapturedAtUtc);
+        Assert.Equal(now, mergedEvent.LastCapturedAtUtc);
     }
 
     [Fact]

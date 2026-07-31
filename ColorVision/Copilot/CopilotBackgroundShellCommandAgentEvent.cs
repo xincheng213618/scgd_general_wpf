@@ -126,6 +126,7 @@ namespace ColorVision.Copilot
             if (deferredEvent != null)
             {
                 fields["delivery"] = "delayed";
+                fields["delivery_id"] = deferredEvent.DeliveryId;
                 fields["captured_from_utc"] =
                     deferredEvent.FirstCapturedAtUtc.ToString("O");
                 fields["captured_through_utc"] =
