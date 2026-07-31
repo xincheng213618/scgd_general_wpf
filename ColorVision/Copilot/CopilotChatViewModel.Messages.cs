@@ -60,8 +60,8 @@ namespace ColorVision.Copilot
             if (IsBusy || filePaths == null)
                 return 0;
 
-            var normalizedPaths = NormalizeFilePaths(filePaths);
-            return AddResolvedFileAttachments(FilterExistingFilePaths(normalizedPaths, CancellationToken.None));
+            var normalizedPaths = CopilotComposerAttachmentService.NormalizeFilePaths(filePaths);
+            return AddResolvedFileAttachments(CopilotComposerAttachmentService.FilterExistingFilePaths(normalizedPaths, CancellationToken.None));
         }
 
         internal async Task<int> AddFileAttachmentsAsync(IEnumerable<string>? filePaths)
@@ -69,7 +69,7 @@ namespace ColorVision.Copilot
             if (IsBusy || filePaths == null)
                 return 0;
 
-            var normalizedPaths = NormalizeFilePaths(filePaths);
+            var normalizedPaths = CopilotComposerAttachmentService.NormalizeFilePaths(filePaths);
             if (normalizedPaths.Length == 0)
                 return 0;
 
@@ -81,7 +81,7 @@ namespace ColorVision.Copilot
             {
                 Mouse.OverrideCursor = Cursors.Wait;
                 var resolveTask = Task.Run(
-                    () => FilterExistingFilePaths(normalizedPaths, cancellation.Token),
+                    () => CopilotComposerAttachmentService.FilterExistingFilePaths(normalizedPaths, cancellation.Token),
                     CancellationToken.None);
                 var existingPaths = await resolveTask.WaitAsync(cancellation.Token);
                 cancellation.Token.ThrowIfCancellationRequested();
@@ -110,31 +110,6 @@ namespace ColorVision.Copilot
             }
         }
 
-        private static string[] NormalizeFilePaths(IEnumerable<string> filePaths)
-        {
-            return filePaths
-                .Where(filePath => !string.IsNullOrWhiteSpace(filePath))
-                .Select(TryNormalizeFilePath)
-                .Where(filePath => filePath != null)
-                .Cast<string>()
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToArray();
-        }
-
-        private static string[] FilterExistingFilePaths(
-            IEnumerable<string> normalizedPaths,
-            CancellationToken cancellationToken)
-        {
-            var existingPaths = new List<string>();
-            foreach (var filePath in normalizedPaths)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                if (File.Exists(filePath))
-                    existingPaths.Add(filePath);
-            }
-            return existingPaths.ToArray();
-        }
-
         private int AddResolvedFileAttachments(
             IReadOnlyList<string> filePaths,
             CopilotConversationRecord? conversation = null)
@@ -151,7 +126,7 @@ namespace ColorVision.Copilot
                 if (conversation.Attachments.Any(item => (item.Type is CopilotAttachmentType.File or CopilotAttachmentType.Image)
                     && string.Equals(item.Value, filePath, StringComparison.OrdinalIgnoreCase)))
                     continue;
-                if (conversation.Attachments.Count >= MaximumComposerAttachments)
+                if (conversation.Attachments.Count >= CopilotComposerAttachmentService.MaximumAttachmentCount)
                 {
                     attachmentLimitReached = true;
                     break;
@@ -173,18 +148,6 @@ namespace ColorVision.Copilot
                 UpdateAttachmentsState(conversation);
             ReportFileAttachmentLimits(conversation, addedCount, attachmentLimitReached, imageLimitReached);
             return addedCount;
-        }
-
-        private static string? TryNormalizeFilePath(string filePath)
-        {
-            try
-            {
-                return Path.GetFullPath(filePath.Trim());
-            }
-            catch (Exception ex) when (ex is ArgumentException or IOException or NotSupportedException or System.Security.SecurityException)
-            {
-                return null;
-            }
         }
 
         private void AddContextAttachment()
@@ -649,8 +612,8 @@ namespace ColorVision.Copilot
                 var restoredAttachments = point.UserMessage.AttachmentSnapshotCaptured
                     ? point.UserMessage.Attachments.Select(attachment => attachment.CreateSnapshot()).ToArray()
                     : Array.Empty<CopilotAttachmentItem>();
-                if (restoredAttachments.Length > MaximumComposerAttachments)
-                    throw new InvalidOperationException($"历史请求包含超过 {MaximumComposerAttachments:N0} 个附件，不能安全恢复到输入框。");
+                if (restoredAttachments.Length > CopilotComposerAttachmentService.MaximumAttachmentCount)
+                    throw new InvalidOperationException($"历史请求包含超过 {CopilotComposerAttachmentService.MaximumAttachmentCount:N0} 个附件，不能安全恢复到输入框。");
 
                 var branch = CopilotConversationBranchService.CreateRewindBranch(
                     source,
@@ -1054,11 +1017,11 @@ namespace ColorVision.Copilot
 
         private static void OpenFileAttachment(CopilotAttachmentItem attachment)
         {
-            var filePath = TryNormalizeFilePath(attachment.Value);
+            var filePath = CopilotComposerAttachmentService.NormalizeFilePaths([attachment.Value]).FirstOrDefault();
             if (filePath == null || !File.Exists(filePath))
                 throw new FileNotFoundException("附件文件不存在或已被移动。", attachment.Value);
 
-            if (UnsafeAttachmentExtensions.Contains(Path.GetExtension(filePath)))
+            if (CopilotComposerAttachmentService.IsUnsafeFilePath(filePath))
             {
                 var revealStartInfo = new ProcessStartInfo("explorer.exe")
                 {

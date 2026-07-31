@@ -28,17 +28,10 @@ namespace ColorVision.Copilot
     {
         private const int CompactHistoryLimit = 4;
         private const int CompactSummaryOutputTokens = 4096;
-        private const int MaximumComposerAttachments = 32;
         private const int MaximumConversationSearchCharacters = 256;
         private const int MaximumConversationSearchTerms = 8;
         private static readonly TimeSpan ConversationSearchDebounceDelay = TimeSpan.FromMilliseconds(180);
         private static readonly TimeSpan RecentMcpFailureWindow = TimeSpan.FromMinutes(15);
-        private static readonly HashSet<string> UnsafeAttachmentExtensions = new(StringComparer.OrdinalIgnoreCase)
-        {
-            ".application", ".bat", ".cmd", ".com", ".cpl", ".exe", ".gadget", ".hta", ".inf", ".ins", ".isp",
-            ".jar", ".js", ".jse", ".lnk", ".msi", ".msp", ".pif", ".ps1", ".py", ".pyw", ".reg", ".scr",
-            ".sct", ".sh", ".shb", ".shs", ".url", ".vb", ".vbe", ".vbs", ".ws", ".wsc", ".wsf", ".wsh",
-        };
         private readonly CopilotChatService _chatService;
         private readonly CopilotConversationTitleCoordinator _conversationTitleCoordinator;
         private readonly ICopilotGoalCompletionEvaluator _goalCompletionEvaluator;
@@ -3940,19 +3933,18 @@ namespace ColorVision.Copilot
 
         private bool TryValidateComposerAttachments(IEnumerable<CopilotAttachmentItem> attachments)
         {
-            var attachmentSnapshot = attachments.Where(attachment => attachment != null).ToArray();
-            if (attachmentSnapshot.Length > MaximumComposerAttachments)
+            var validation = CopilotComposerAttachmentService.Validate(attachments);
+            if (validation.Failure == CopilotAttachmentValidationFailure.AttachmentLimit)
             {
                 LocalCommandResultTitle = "附件过多";
-                LocalCommandResultText = $"当前请求包含 {attachmentSnapshot.Length:N0} 个附件，最多支持 {MaximumComposerAttachments:N0} 个。请移除多余附件后重试。";
+                LocalCommandResultText = $"当前请求包含 {validation.AttachmentCount:N0} 个附件，最多支持 {CopilotComposerAttachmentService.MaximumAttachmentCount:N0} 个。请移除多余附件后重试。";
                 return false;
             }
 
-            var imageCount = attachmentSnapshot.Count(attachment => attachment.Type == CopilotAttachmentType.Image);
-            if (imageCount > CopilotImagePayloadLoader.MaximumImages)
+            if (validation.Failure == CopilotAttachmentValidationFailure.ImageLimit)
             {
                 LocalCommandResultTitle = "图片过多";
-                LocalCommandResultText = $"当前请求包含 {imageCount:N0} 张图片，模型输入一次最多支持 {CopilotImagePayloadLoader.MaximumImages:N0} 张。请移除多余图片后重试。";
+                LocalCommandResultText = $"当前请求包含 {validation.ImageCount:N0} 张图片，模型输入一次最多支持 {CopilotImagePayloadLoader.MaximumImages:N0} 张。请移除多余图片后重试。";
                 return false;
             }
 
@@ -3961,18 +3953,18 @@ namespace ColorVision.Copilot
 
         private bool TryEnsureAttachmentCapacity(CopilotConversationRecord conversation, CopilotAttachmentType attachmentType)
         {
-            if (attachmentType == CopilotAttachmentType.Image
-                && conversation.Attachments.Count(attachment => attachment.Type == CopilotAttachmentType.Image) >= CopilotImagePayloadLoader.MaximumImages)
+            var capacity = CopilotComposerAttachmentService.EvaluateCapacity(conversation, attachmentType);
+            if (capacity == CopilotAttachmentCapacityResult.ImageLimit)
             {
                 LocalCommandResultTitle = "图片已达到上限";
                 LocalCommandResultText = $"每条请求最多附加 {CopilotImagePayloadLoader.MaximumImages:N0} 张图片。请先移除一张图片再继续添加。";
                 return false;
             }
 
-            if (conversation.Attachments.Count >= MaximumComposerAttachments)
+            if (capacity == CopilotAttachmentCapacityResult.AttachmentLimit)
             {
                 LocalCommandResultTitle = "附件已达到上限";
-                LocalCommandResultText = $"每条请求最多附加 {MaximumComposerAttachments:N0} 个文件、图片、网页或上下文。请先移除一个附件再继续添加。";
+                LocalCommandResultText = $"每条请求最多附加 {CopilotComposerAttachmentService.MaximumAttachmentCount:N0} 个文件、图片、网页或上下文。请先移除一个附件再继续添加。";
                 return false;
             }
 
@@ -3989,7 +3981,7 @@ namespace ColorVision.Copilot
                 return;
 
             LocalCommandResultTitle = addedCount > 0 ? "部分文件未添加" : "附件已达到上限";
-            LocalCommandResultText = $"本次已添加 {addedCount:N0} 个文件。每条请求最多支持 {MaximumComposerAttachments:N0} 个附件，其中图片最多 {CopilotImagePayloadLoader.MaximumImages:N0} 张；超出上限的文件未添加。当前共有 {conversation.Attachments.Count:N0} 个附件。";
+            LocalCommandResultText = $"本次已添加 {addedCount:N0} 个文件。每条请求最多支持 {CopilotComposerAttachmentService.MaximumAttachmentCount:N0} 个附件，其中图片最多 {CopilotImagePayloadLoader.MaximumImages:N0} 张；超出上限的文件未添加。当前共有 {conversation.Attachments.Count:N0} 个附件。";
         }
 
         public CopilotPromptQueueResult QueueExternalPrompt(
