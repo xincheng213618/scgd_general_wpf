@@ -73,6 +73,75 @@ public sealed class CopilotConversationUsageTests
     }
 
     [Fact]
+    public void UsageAggregatesAgentHierarchyRecoveryAndLatencyWithoutEstimatingCost()
+    {
+        var conversation = CreateConversation();
+        var first = AddAssistant(conversation, "First Agent answer");
+        first.AgentRunBudget = new CopilotAgentBudgetSnapshot
+        {
+            ProviderCalls = 3,
+            ToolCalls = 2,
+            ProviderRetryCount = 2,
+            ProviderRateLimitRetryCount = 1,
+            ProviderFirstContentTimeoutCount = 1,
+            ProviderStreamInactivityTimeoutCount = 1,
+            ProviderResponseCount = 2,
+            ProviderFirstResponseLatencyTotalMs = 1_200,
+            ProviderFirstResponseLatencyMaxMs = 800,
+            ProviderCallDurationTotalMs = 4_200,
+            ContextRecoveryCount = 1,
+            ElapsedMs = 5_000,
+            UsedEstimatedUsage = true,
+        };
+        first.AgentTraceEntries.Add(new CopilotAgentTraceEntry
+        {
+            CallId = "delegate-1",
+            ToolName = "DelegateExplore",
+            State = CopilotToolExecutionState.Completed,
+            DelegatedRunId = "delegated-run-1",
+            DelegatedProviderCalls = 1,
+            DelegatedToolCalls = 4,
+        });
+        var second = AddAssistant(conversation, "Second Agent answer");
+        second.AgentRunBudget = new CopilotAgentBudgetSnapshot
+        {
+            ProviderCalls = 2,
+            ToolCalls = 1,
+            ProviderResponseCount = 1,
+            ProviderFirstResponseLatencyTotalMs = 900,
+            ProviderFirstResponseLatencyMaxMs = 900,
+            ProviderCallDurationTotalMs = 1_800,
+            ElapsedMs = 3_000,
+        };
+        second.IsResponsePending = true;
+
+        var snapshot = CopilotConversationUsageDiagnostics.Capture(conversation);
+        var report = CopilotConversationUsageDiagnostics.Format(conversation);
+
+        Assert.Equal(2, snapshot.AgentUsage.Runs);
+        Assert.Equal(1, snapshot.AgentUsage.ActiveRuns);
+        Assert.Equal(5, snapshot.AgentUsage.ProviderCalls);
+        Assert.Equal(7, snapshot.AgentUsage.ToolCalls);
+        Assert.Equal(1, snapshot.AgentUsage.DelegatedRuns);
+        Assert.Equal(2, snapshot.AgentUsage.ProviderRetries);
+        Assert.Equal(1, snapshot.AgentUsage.ProviderRateLimitRetries);
+        Assert.Equal(2, snapshot.AgentUsage.ProviderStallTerminations);
+        Assert.Equal(1, snapshot.AgentUsage.ContextRecoveries);
+        Assert.Equal(3, snapshot.AgentUsage.ProviderResponses);
+        Assert.Equal(2_100, snapshot.AgentUsage.ProviderFirstResponseLatencyTotalMs);
+        Assert.Equal(900, snapshot.AgentUsage.ProviderFirstResponseLatencyMaxMs);
+        Assert.Equal(6_000, snapshot.AgentUsage.ProviderCallDurationTotalMs);
+        Assert.Equal(8_000, snapshot.AgentUsage.ElapsedMs);
+        Assert.Equal(1, snapshot.AgentUsage.EstimatedUsageRuns);
+        Assert.Contains("Agent 运行：2 轮（进行中 1） · 模型调用 5 · 工具调用 7 · 委派 1", report, StringComparison.Ordinal);
+        Assert.Contains("时延：Agent 累计 8s · 首响应平均 700ms · 最慢 900ms · 模型调用累计 6s", report, StringComparison.Ordinal);
+        Assert.Contains("恢复与估算：Provider 重试 2（限流 1） · 停顿中止 2 · 窗口恢复 1 · 预算计数含估算 1 轮", report, StringComparison.Ordinal);
+        Assert.Contains("Agent 指标来自本地保存的任务快照", report, StringComparison.Ordinal);
+        Assert.Contains("不代表账户账单", report, StringComparison.Ordinal);
+        Assert.DoesNotContain("$", report, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void ReportedUsageRoundTripsAndLegacyLastUsageMigratesOnlyToTheLatestAnswer()
     {
         var conversation = CreateConversation();

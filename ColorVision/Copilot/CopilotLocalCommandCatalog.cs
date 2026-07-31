@@ -112,7 +112,7 @@ namespace ColorVision.Copilot
             ]),
             new("/stop", "停止当前任务；有安全 checkpoint 时优先暂停，否则取消当前轮次", CopilotLocalCommandKind.StopTask, AvailableWhileAgentRuns: true, Usage: "/stop"),
             new("/approve", "查看待确认操作，或打开指定操作的原生审查窗口", CopilotLocalCommandKind.Approve, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/approve [N]"),
-            new("/usage", "查看当前会话已记录的输入、输出与缓存 Token", CopilotLocalCommandKind.Usage, AvailableWhileAgentRuns: true, Usage: "/usage"),
+            new("/usage", "查看当前会话 Token、Agent 调用、工具与时延统计", CopilotLocalCommandKind.Usage, AvailableWhileAgentRuns: true, Usage: "/usage"),
             new("/stats", "汇总最近 7 天、30 天或全部本地会话活动", CopilotLocalCommandKind.Statistics, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/stats [7|30|all]", Arguments:
             [
                 new("7", "最近 7 个本机日历日"),
