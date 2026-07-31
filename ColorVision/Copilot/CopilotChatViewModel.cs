@@ -1097,8 +1097,13 @@ namespace ColorVision.Copilot
                 var normalizedValue = value ?? string.Empty;
                 if (SetProperty(ref _inputText, normalizedValue))
                 {
-                    if (normalizedValue.Length > 0)
+                    if (CopilotPredictedPromptCompletion.ShouldClear(
+                            PredictedNextPrompt,
+                            normalizedValue,
+                            _nextPromptSuggestionCts != null))
+                    {
                         ClearPredictedNextPrompt(cancelPending: true);
+                    }
                     if (!_isApplyingPromptHistory)
                         _promptHistoryNavigator.Reset();
                     if (IsPromptHistorySearchOpen)
@@ -1113,7 +1118,7 @@ namespace ColorVision.Copilot
                     RefreshComposerReferenceSuggestions();
                     RefreshComposerTokenEstimate();
                     NotifyPromptHistoryPrefixCompletionChanged();
-                    OnPropertyChanged(nameof(HasPredictedNextPrompt));
+                    NotifyPredictedNextPromptCompletionChanged();
                     CommandManager.InvalidateRequerySuggested();
                 }
             }
@@ -1182,24 +1187,17 @@ namespace ColorVision.Copilot
                 if (!SetProperty(ref _predictedNextPrompt, value ?? string.Empty))
                     return;
 
-                OnPropertyChanged(nameof(HasPredictedNextPrompt));
+                NotifyPredictedNextPromptCompletionChanged();
                 CommandManager.InvalidateRequerySuggested();
             }
         }
 
-        public bool HasPredictedNextPrompt => PredictedPromptSuggestionsEnabled
-            && !string.IsNullOrWhiteSpace(PredictedNextPrompt)
-            && string.Equals(
-                _predictedNextPromptConversationId,
-                SelectedConversation?.Id,
-                StringComparison.Ordinal)
-            && IsInputEmpty
-            && !IsBusy
-            && !HasAttachments
-            && !HasQueuedFollowUps
-            && !IsPromptHistorySearchOpen
-            && !IsComposerReferenceMentionActive
-            && !HasLocalCommandSuggestions;
+        public bool HasPredictedNextPrompt => TryResolvePredictedNextPromptCompletion(out _);
+
+        public string PredictedNextPromptCompletionText =>
+            TryResolvePredictedNextPromptCompletion(out var remainingText)
+                ? remainingText
+                : string.Empty;
 
         public bool TryAcceptPredictedNextPrompt()
         {
@@ -1210,6 +1208,43 @@ namespace ColorVision.Copilot
             ClearPredictedNextPrompt(cancelPending: true);
             InputText = suggestion;
             return true;
+        }
+
+        public bool TryDismissPredictedNextPrompt()
+        {
+            if (!IsInputEmpty || !HasPredictedNextPrompt)
+                return false;
+
+            ClearPredictedNextPrompt(cancelPending: true);
+            return true;
+        }
+
+        private bool TryResolvePredictedNextPromptCompletion(out string remainingText)
+        {
+            remainingText = string.Empty;
+            return PredictedPromptSuggestionsEnabled
+                && !IsEditingMessage
+                && !IsNavigatingPromptHistory
+                && string.Equals(
+                    _predictedNextPromptConversationId,
+                    SelectedConversation?.Id,
+                    StringComparison.Ordinal)
+                && !IsBusy
+                && !HasAttachments
+                && !HasQueuedFollowUps
+                && !IsPromptHistorySearchOpen
+                && !IsComposerReferenceMentionActive
+                && !HasLocalCommandSuggestions
+                && CopilotPredictedPromptCompletion.TryResolve(
+                    PredictedNextPrompt,
+                    InputText,
+                    out remainingText);
+        }
+
+        private void NotifyPredictedNextPromptCompletionChanged()
+        {
+            OnPropertyChanged(nameof(HasPredictedNextPrompt));
+            OnPropertyChanged(nameof(PredictedNextPromptCompletionText));
         }
 
         public bool TryAcceptPromptHistoryPrefixCompletion()
@@ -1230,6 +1265,7 @@ namespace ColorVision.Copilot
                 && !IsPromptHistorySearchOpen
                 && !IsComposerReferenceMentionActive
                 && !HasLocalCommandSuggestions
+                && !HasPredictedNextPrompt
                 && CopilotPromptHistoryPrefixCompletionResolver.TryResolve(
                     SelectedConversation?.Messages,
                     InputText,
@@ -7552,7 +7588,7 @@ namespace ColorVision.Copilot
                 _nextPromptSuggestionCts?.RequestCancellation();
             _predictedNextPromptConversationId = string.Empty;
             PredictedNextPrompt = string.Empty;
-            OnPropertyChanged(nameof(HasPredictedNextPrompt));
+            NotifyPredictedNextPromptCompletionChanged();
         }
 
         private void ChangeCompactMessageLayout(CopilotLocalCommand command, string arguments)

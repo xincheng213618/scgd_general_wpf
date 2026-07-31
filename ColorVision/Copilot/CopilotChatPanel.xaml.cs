@@ -244,6 +244,16 @@ namespace ColorVision.Copilot
                 return;
             }
 
+            if (PromptTextBox.IsKeyboardFocusWithin
+                && isPlainEscape
+                && DataContext is CopilotChatViewModel predictedPromptViewModel
+                && predictedPromptViewModel.TryDismissPredictedNextPrompt())
+            {
+                _rewindEscapeGesture.Reset();
+                e.Handled = true;
+                return;
+            }
+
             if (isPlainEscape
                 && DataContext is CopilotChatViewModel escapeViewModel)
             {
@@ -877,9 +887,9 @@ namespace ColorVision.Copilot
                 }
             }
 
-            if (DataContext is CopilotChatViewModel predictedPromptViewModel
-                && (e.Key == Key.Tab || IsRightArrowCompletionGesture(e))
-                && predictedPromptViewModel.TryAcceptPredictedNextPrompt())
+            if (DataContext is CopilotChatViewModel predictedPromptCompletionViewModel
+                && IsPredictedPromptCompletionGesture(e)
+                && predictedPromptCompletionViewModel.TryAcceptPredictedNextPrompt())
             {
                 MovePromptCaretToEnd();
                 e.Handled = true;
@@ -949,6 +959,16 @@ namespace ColorVision.Copilot
         private bool IsRightArrowCompletionGesture(KeyEventArgs e)
         {
             return e.Key == Key.Right
+                && Keyboard.Modifiers == ModifierKeys.None
+                && CopilotComposerCompletionKeys.CanAcceptRightArrow(
+                    PromptTextBox.CaretIndex,
+                    PromptTextBox.SelectionLength,
+                    PromptTextBox.Text.Length);
+        }
+
+        private bool IsPredictedPromptCompletionGesture(KeyEventArgs e)
+        {
+            return e.Key is Key.Tab or Key.Right
                 && Keyboard.Modifiers == ModifierKeys.None
                 && CopilotComposerCompletionKeys.CanAcceptRightArrow(
                     PromptTextBox.CaretIndex,

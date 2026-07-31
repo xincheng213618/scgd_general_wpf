@@ -2165,7 +2165,7 @@
                                 Command="{Binding AcceptPredictedNextPromptCommand}"
                                 Click="PredictedNextPromptButton_Click"
                                 Style="{StaticResource ComposerPopoverButtonStyle}"
-                                ToolTip="由完整可见会话通过一次工具禁用的有界模型调用生成；只恢复到输入框，不会自动发送">
+                                ToolTip="由完整可见会话通过一次工具禁用的有界模型调用生成；键入匹配前缀可继续补全，输入为空时按 Esc 忽略；不会自动发送">
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto" />
@@ -2181,7 +2181,7 @@
                                            Margin="10,0,0,0"
                                            VerticalAlignment="Center"
                                            FontSize="11"
-                                           Text="{Binding PredictedNextPrompt}"
+                                           Text="{Binding PredictedNextPromptCompletionText}"
                                            TextTrimming="CharacterEllipsis"
                                            ToolTip="{Binding PredictedNextPrompt}" />
                                 <TextBlock Grid.Column="2"
@@ -2189,7 +2189,7 @@
                                            VerticalAlignment="Center"
                                            FontSize="9"
                                            Opacity="0.52"
-                                           Text="Tab / → 接受" />
+                                           Text="Tab / → 补全" />
                             </Grid>
                         </Button>
                     </Border>
