@@ -197,11 +197,9 @@ namespace ColorVision.Copilot
                             MessageId = SteeringMessageIdPrefix
                                 + Guid.NewGuid().ToString("N"),
                         };
-                        activeContext.MessageInjector.EnqueueMessagesAsync(activeContext.Session,
-                        [
+                        activeContext.EnqueueSteeringMessage(
                             steeringMessage,
-                        ], CancellationToken.None).GetAwaiter().GetResult();
-                        activeContext.TaskEventJournal.RecordSteering(normalized);
+                            normalized);
                         return new CopilotSteeringAdmissionResult(
                             CopilotSteeringAdmissionReason.Accepted);
                     }
@@ -1059,6 +1057,15 @@ namespace ColorVision.Copilot
                         approvalRequests.AddRange(update.Contents.OfType<ToolApprovalRequestContent>());
                         if (!string.IsNullOrEmpty(update.Text))
                             emit(CopilotAgentEvent.AnswerDelta(update.Text));
+                    }
+
+                    var deliveredSteeringCount = await steeringRegistration
+                        .RecordDeliveredSteeringMessagesAsync(
+                            agentLoopCancellation.Token);
+                    if (deliveredSteeringCount > 0)
+                    {
+                        emit(CopilotAgentEvent.RuntimeDiagnostic(
+                            $"Agent provider received {deliveredSteeringCount} queued user steering instruction(s)."));
                     }
 
                     if (approvalRequests.Count == 0)
@@ -4087,12 +4094,83 @@ namespace ColorVision.Copilot
             return SolutionManager.GetInstance().CurrentSolutionExplorer?.DirectoryInfo?.FullName ?? string.Empty;
         }
 
-        private sealed record ActiveSteeringContext(
-            string ConversationId,
-            string TaskId,
-            MessageInjectingChatClient MessageInjector,
-            AgentSession Session,
-            CopilotAgentTaskEventJournalBuilder TaskEventJournal);
+        private sealed class ActiveSteeringContext(
+            string conversationId,
+            string taskId,
+            MessageInjectingChatClient messageInjector,
+            AgentSession session,
+            CopilotAgentTaskEventJournalBuilder taskEventJournal)
+        {
+            private readonly object _syncRoot = new();
+            private readonly Dictionary<string, string> _undeliveredSteeringMessages = new(StringComparer.Ordinal);
+
+            public string ConversationId { get; } = conversationId;
+
+            public string TaskId { get; } = taskId;
+
+            public MessageInjectingChatClient MessageInjector { get; } = messageInjector;
+
+            public AgentSession Session { get; } = session;
+
+            public CopilotAgentTaskEventJournalBuilder TaskEventJournal { get; } = taskEventJournal;
+
+            public void EnqueueSteeringMessage(
+                Microsoft.Extensions.AI.ChatMessage message,
+                string normalizedText)
+            {
+                var messageId = message.MessageId
+                    ?? throw new ArgumentException(
+                        "Tracked steering messages require an identifier.",
+                        nameof(message));
+                lock (_syncRoot)
+                {
+                    MessageInjector.EnqueueMessagesAsync(
+                        Session,
+                        [message],
+                        CancellationToken.None).GetAwaiter().GetResult();
+                    TaskEventJournal.RecordSteering(normalizedText);
+                    _undeliveredSteeringMessages.Add(
+                        messageId,
+                        normalizedText);
+                }
+            }
+
+            public async Task<int> RecordDeliveredSteeringMessagesAsync(
+                CancellationToken cancellationToken)
+            {
+                string[] trackedMessageIds;
+                lock (_syncRoot)
+                {
+                    if (_undeliveredSteeringMessages.Count == 0)
+                        return 0;
+                    trackedMessageIds = _undeliveredSteeringMessages.Keys.ToArray();
+                }
+
+                var pendingMessageIds = (await MessageInjector
+                        .GetPendingMessagesAsync(Session, cancellationToken))
+                    .Select(message => message.MessageId)
+                    .Where(messageId => !string.IsNullOrWhiteSpace(messageId))
+                    .ToHashSet(StringComparer.Ordinal);
+                var deliveredCount = 0;
+                lock (_syncRoot)
+                {
+                    foreach (var messageId in trackedMessageIds)
+                    {
+                        if (pendingMessageIds.Contains(messageId)
+                            || !_undeliveredSteeringMessages.Remove(
+                                messageId,
+                                out var message))
+                        {
+                            continue;
+                        }
+
+                        TaskEventJournal.RecordSteeringDelivered(message);
+                        deliveredCount++;
+                    }
+                }
+                return deliveredCount;
+            }
+        }
 
         private sealed class SteeringRegistration(CopilotMicrosoftAgentFrameworkRuntime owner, ActiveSteeringContext context) : IDisposable
         {
@@ -4102,6 +4180,10 @@ namespace ColorVision.Copilot
             {
                 Interlocked.Exchange(ref _owner, null)?.ClearSteeringContext(context);
             }
+
+            public Task<int> RecordDeliveredSteeringMessagesAsync(
+                CancellationToken cancellationToken) =>
+                context.RecordDeliveredSteeringMessagesAsync(cancellationToken);
 
             public void Dispose() => StopAcceptingInput();
         }

@@ -31,6 +31,7 @@ namespace ColorVision.Copilot
         UserQuestionResolved,
         BackgroundCommandCompleted,
         BackgroundCommandOutputObserved,
+        SteeringDelivered,
     }
 
     public sealed class CopilotAgentTaskEvent
@@ -386,6 +387,17 @@ namespace ColorVision.Copilot
                 CopilotAgentTaskEventIds.ForSteering(message),
                 "queued",
                 "A user steering instruction was queued for the active Agent session.");
+        }
+
+        public void RecordSteeringDelivered(string message)
+        {
+            if (string.IsNullOrWhiteSpace(message))
+                throw new ArgumentException("Steering message cannot be empty.", nameof(message));
+            Append(
+                CopilotAgentTaskEventType.SteeringDelivered,
+                CopilotAgentTaskEventIds.ForSteering(message),
+                "delivered",
+                "A queued user steering instruction was delivered to the Agent provider.");
         }
 
         internal void RecordBackgroundShellCommandCompletion(

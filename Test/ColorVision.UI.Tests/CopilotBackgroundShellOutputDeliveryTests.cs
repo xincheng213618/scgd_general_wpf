@@ -89,6 +89,10 @@ public sealed class CopilotBackgroundShellOutputDeliveryTests
             result.TaskEventJournal.Events,
             item => item.Type
                 == CopilotAgentTaskEventType.SteeringQueued);
+        Assert.Single(
+            result.TaskEventJournal.Events,
+            item => item.Type
+                == CopilotAgentTaskEventType.SteeringDelivered);
     }
 
     [Fact]
@@ -130,6 +134,11 @@ public sealed class CopilotBackgroundShellOutputDeliveryTests
             result.TaskEventJournal.Events.Count(
                 item => item.Type
                     == CopilotAgentTaskEventType.SteeringQueued));
+        Assert.Equal(
+            8,
+            result.TaskEventJournal.Events.Count(
+                item => item.Type
+                    == CopilotAgentTaskEventType.SteeringDelivered));
         Assert.DoesNotContain(
             provider.StreamingCalls.SelectMany(call => call),
             message => message.Text.Contains(
@@ -181,6 +190,11 @@ public sealed class CopilotBackgroundShellOutputDeliveryTests
             result.TaskEventJournal.Events.Count(
                 item => item.Type
                     == CopilotAgentTaskEventType.SteeringQueued));
+        Assert.Equal(
+            2,
+            result.TaskEventJournal.Events.Count(
+                item => item.Type
+                    == CopilotAgentTaskEventType.SteeringDelivered));
         Assert.DoesNotContain(
             provider.StreamingCalls.SelectMany(call => call),
             message => message.Text.Contains(
@@ -249,6 +263,10 @@ public sealed class CopilotBackgroundShellOutputDeliveryTests
             result.TaskEventJournal.Events,
             item => item.Type
                 == CopilotAgentTaskEventType.SteeringQueued);
+        Assert.DoesNotContain(
+            result.TaskEventJournal.Events,
+            item => item.Type
+                == CopilotAgentTaskEventType.SteeringDelivered);
         Assert.DoesNotContain(
             provider.StreamingCalls.SelectMany(call => call),
             message => message.Text.Contains(
@@ -326,6 +344,21 @@ public sealed class CopilotBackgroundShellOutputDeliveryTests
             result.TaskEventJournal.Events,
             item => item.Type
                 == CopilotAgentTaskEventType.SteeringQueued);
+        var steeringEvents = result.TaskEventJournal.Events
+            .Where(item => item.Type is CopilotAgentTaskEventType.SteeringQueued
+                or CopilotAgentTaskEventType.SteeringDelivered)
+            .ToArray();
+        Assert.Collection(
+            steeringEvents,
+            item => Assert.Equal(
+                CopilotAgentTaskEventType.SteeringQueued,
+                item.Type),
+            item => Assert.Equal(
+                CopilotAgentTaskEventType.SteeringDelivered,
+                item.Type));
+        Assert.Equal(
+            steeringEvents[0].SubjectId,
+            steeringEvents[1].SubjectId);
     }
 
     [Fact]

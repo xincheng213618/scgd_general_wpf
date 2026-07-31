@@ -95,6 +95,32 @@ public sealed class CopilotAgentTaskEventDiagnosticsTests
     }
 
     [Fact]
+    public void SteeringDeliveryPairsWithTheQueuedInstructionWithoutPersistingText()
+    {
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordSteering("do not persist this steering text");
+        journal.RecordSteeringDelivered("do not persist this steering text");
+
+        var events = journal.Snapshot().Events;
+
+        Assert.Collection(
+            events,
+            item => Assert.Equal(
+                CopilotAgentTaskEventType.SteeringQueued,
+                item.Type),
+            item => Assert.Equal(
+                CopilotAgentTaskEventType.SteeringDelivered,
+                item.Type));
+        Assert.Equal(events[0].SubjectId, events[1].SubjectId);
+        Assert.Equal("queued", events[0].State);
+        Assert.Equal("delivered", events[1].State);
+        Assert.DoesNotContain(
+            "do not persist this steering text",
+            string.Join(Environment.NewLine, events.Select(item => item.Summary)),
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void ErrorsFilterShowsOnlyFailureEvidenceAndKeepsItRedacted()
     {
         var journal = new CopilotAgentTaskEventJournalBuilder();
