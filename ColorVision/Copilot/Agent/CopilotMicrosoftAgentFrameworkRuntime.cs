@@ -41,6 +41,8 @@ namespace ColorVision.Copilot
         private readonly CopilotFrameworkApprovalCoordinator _approvalCoordinator;
         private readonly ICopilotAutomaticApprovalReviewer _automaticApprovalReviewer;
         private readonly CopilotUserQuestionCoordinator _userQuestionCoordinator = new();
+        private readonly CopilotBackgroundShellOutputEventInbox
+            _backgroundShellOutputEventInbox = new();
         private readonly object _steeringSyncRoot = new();
         private ActiveSteeringContext? _activeSteeringContext;
 
@@ -200,14 +202,24 @@ namespace ColorVision.Copilot
         {
             ArgumentNullException.ThrowIfNull(eventArgs);
             if (_userQuestionCoordinator.HasPendingQuestion)
-                return false;
+                return _backgroundShellOutputEventInbox.TryEnqueue(eventArgs);
 
             ActiveSteeringContext? activeContext;
             lock (_steeringSyncRoot)
+            {
                 activeContext = _activeSteeringContext;
+                if (activeContext == null
+                    || !string.Equals(
+                        activeContext.ConversationId,
+                        eventArgs.Monitor.ConversationId,
+                        StringComparison.Ordinal))
+                {
+                    return _backgroundShellOutputEventInbox.TryEnqueue(
+                        eventArgs);
+                }
+            }
 
-            if (activeContext == null
-                || !CopilotBackgroundShellCommandAgentEvent
+            if (!CopilotBackgroundShellCommandAgentEvent
                     .TryCreateOutputMessage(
                         eventArgs,
                         activeContext.ConversationId,
@@ -232,11 +244,11 @@ namespace ColorVision.Copilot
             }
             catch (ObjectDisposedException)
             {
-                return false;
+                return _backgroundShellOutputEventInbox.TryEnqueue(eventArgs);
             }
             catch (InvalidOperationException)
             {
-                return false;
+                return _backgroundShellOutputEventInbox.TryEnqueue(eventArgs);
             }
         }
 
@@ -737,6 +749,37 @@ namespace ColorVision.Copilot
             {
                 promptMessages = InsertEvidenceMessageBeforeCurrentUser(promptMessages, recoveryEvidencePrompt);
                 emit(CopilotAgentEvent.RuntimeDiagnostic($"Agent recovery checkpoint contained {previousEvidenceArtifacts.Count} evidence artifact(s); bounded untrusted historical context was supplied."));
+            }
+            var deferredBackgroundOutputEvents =
+                _backgroundShellOutputEventInbox.Drain(
+                    request.ConversationId);
+            var deferredBackgroundOutputMessages =
+                deferredBackgroundOutputEvents
+                    .Select(deferredEvent =>
+                        CopilotBackgroundShellCommandAgentEvent
+                            .TryCreateDeferredOutputMessage(
+                                deferredEvent,
+                                request.ConversationId,
+                                out var message)
+                            ? message
+                            : string.Empty)
+                    .Where(message => !string.IsNullOrWhiteSpace(message))
+                    .ToArray();
+            if (deferredBackgroundOutputMessages.Length > 0)
+            {
+                promptMessages = InsertEvidenceMessageBeforeCurrentUser(
+                    promptMessages,
+                    string.Join(
+                        Environment.NewLine + Environment.NewLine,
+                        deferredBackgroundOutputMessages));
+                foreach (var deferredEvent in deferredBackgroundOutputEvents)
+                {
+                    taskEventJournalBuilder
+                        .RecordBackgroundShellCommandOutput(
+                            deferredEvent.EventArgs);
+                }
+                emit(CopilotAgentEvent.RuntimeDiagnostic(
+                    $"Agent received {deferredBackgroundOutputMessages.Length} bounded delayed background-output signal(s) from this conversation. The current user request remains the final prompt segment."));
             }
             IReadOnlyList<Microsoft.Extensions.AI.ChatMessage> messages = CopilotRequestMessageSequence
                 .Normalize(promptMessages)
