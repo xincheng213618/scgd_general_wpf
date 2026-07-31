@@ -45,6 +45,9 @@ namespace ColorVision.Copilot
 
         public string ConcurrencyKey { get; internal init; } = string.Empty;
 
+        internal string PreviousObservationProgressSignature { get; init; } =
+            string.Empty;
+
         internal IReadOnlyList<CopilotToolExecutionHookRun> InitialHookRuns { get; init; } =
             Array.Empty<CopilotToolExecutionHookRun>();
 
@@ -1360,6 +1363,8 @@ namespace ColorVision.Copilot
                 ApprovalActionId = invocation.ApprovalActionId?.Trim() ?? string.Empty,
                 ConcurrencyMode = ResolveConcurrencyMode(invocation.Tool),
                 ConcurrencyKey = ResolveConcurrencyKey(invocation.Tool, invocation.AgentRequest, toolInput),
+                PreviousObservationProgressSignature =
+                    invocation.PreviousObservationProgressSignature,
                 InitialHookRuns = invocation.InitialHookRuns
                     .Where(run => run?.IsStructurallyValid() == true)
                     .Take(MaxRecordedHookRuns)
@@ -1530,13 +1535,54 @@ namespace ColorVision.Copilot
     internal static class CopilotToolRetryPolicy
     {
         public const int MaximumAttemptsPerCall = 2;
+        public const int MaximumRepeatableObservationAttempts = 8;
 
         public static bool IsRetryEligible(CopilotToolInvocation invocation, CopilotToolResult result, CopilotToolExecutionState state)
         {
-            return invocation.Tool.Capability.Idempotency == CopilotToolIdempotency.Idempotent
+            return IsRepeatableObservationEligible(invocation, result, state)
+                || invocation.Tool.Capability.Idempotency == CopilotToolIdempotency.Idempotent
                 && invocation.Attempt < invocation.MaxAttempts
                 && result.FailureKind == CopilotToolFailureKind.Transient
                 && state is CopilotToolExecutionState.Failed or CopilotToolExecutionState.TimedOut;
+        }
+
+        private static bool IsRepeatableObservationEligible(
+            CopilotToolInvocation invocation,
+            CopilotToolResult result,
+            CopilotToolExecutionState state)
+        {
+            if (invocation.Tool is not ICopilotRepeatableObservationTool
+                || invocation.Tool.Capability.Access != CopilotToolAccess.ReadOnly
+                || invocation.Attempt >= invocation.MaxAttempts
+                || state != CopilotToolExecutionState.Completed
+                || !result.Success
+                || !result.ObservationCanRepeat)
+            {
+                return false;
+            }
+
+            var currentSignature = NormalizeObservationProgressSignature(
+                result.ObservationProgressSignature);
+            if (currentSignature.Length == 0)
+                return false;
+
+            var previousSignature = NormalizeObservationProgressSignature(
+                invocation.PreviousObservationProgressSignature);
+            return previousSignature.Length == 0
+                || !string.Equals(
+                    previousSignature,
+                    currentSignature,
+                    StringComparison.OrdinalIgnoreCase);
+        }
+
+        internal static string NormalizeObservationProgressSignature(
+            string? signature)
+        {
+            var normalized = (signature ?? string.Empty).Trim();
+            return normalized.Length == 64
+                && normalized.All(Uri.IsHexDigit)
+                    ? normalized.ToLowerInvariant()
+                    : string.Empty;
         }
     }
 

@@ -369,6 +369,10 @@ public sealed class CopilotBackgroundShellCommandTests
             var observed = await waiting;
 
             Assert.True(observed.Success, observed.ErrorMessage);
+            Assert.False(observed.ObservationCanRepeat);
+            Assert.Matches(
+                "^[0-9a-f]{64}$",
+                observed.ObservationProgressSignature);
             Assert.Contains(
                 "requested output marker",
                 observed.Summary,
@@ -432,6 +436,10 @@ public sealed class CopilotBackgroundShellCommandTests
             var terminal = await terminalWait;
 
             Assert.True(terminal.Success, terminal.ErrorMessage);
+            Assert.False(terminal.ObservationCanRepeat);
+            Assert.Matches(
+                "^[0-9a-f]{64}$",
+                terminal.ObservationProgressSignature);
             Assert.Contains(
                 "reached failed",
                 terminal.Summary,
@@ -467,6 +475,10 @@ public sealed class CopilotBackgroundShellCommandTests
                 CancellationToken.None);
 
             Assert.True(timedOut.Success, timedOut.ErrorMessage);
+            Assert.True(timedOut.ObservationCanRepeat);
+            Assert.Matches(
+                "^[0-9a-f]{64}$",
+                timedOut.ObservationProgressSignature);
             Assert.Contains(
                 "still running",
                 timedOut.Summary,

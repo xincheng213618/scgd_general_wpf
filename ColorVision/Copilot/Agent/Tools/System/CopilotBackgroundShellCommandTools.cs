@@ -328,7 +328,8 @@ namespace ColorVision.Copilot
 
     public sealed class CopilotWaitForBackgroundShellCommandTool :
         ICopilotAgentDrivenTool,
-        ICopilotProgressReportingTool
+        ICopilotProgressReportingTool,
+        ICopilotRepeatableObservationTool
     {
         private static readonly CopilotToolInputSchema Schema =
             CopilotToolInputSchema.FromJsonSchema(
@@ -378,6 +379,8 @@ namespace ColorVision.Copilot
         public string Name => "WaitForBackgroundShellCommand";
 
         public string Description => "Wait for at most 30 seconds until one exact current-conversation background command reaches a terminal state or its bounded redacted stdout/stderr contains an optional literal marker. Bounded redacted output changes are reported through the live tool-progress stream while waiting. A timeout is an observed running state, not proof of readiness. This tool performs no process mutation and never exposes another conversation.";
+
+        public int MaximumObservationAttempts => 4;
 
         public CopilotToolCapabilityDescriptor Capability { get; } =
             CopilotToolCapabilityDescriptor.ReadOnly(
@@ -523,7 +526,28 @@ namespace ColorVision.Copilot
                 },
                 Content = CopilotBackgroundShellCommandFormatter.FormatWaitResult(
                     result),
+                ObservationCanRepeat =
+                    result.Observation
+                        == CopilotBackgroundShellCommandObservation.TimedOut
+                    && result.Snapshot.IsActive,
+                ObservationProgressSignature =
+                    CreateObservationProgressSignature(result.Snapshot),
             };
+        }
+
+        private static string CreateObservationProgressSignature(
+            CopilotBackgroundShellCommandSnapshot snapshot)
+        {
+            var content = string.Join(
+                "\0",
+                snapshot.State.ToString(),
+                snapshot.ExitCode?.ToString(CultureInfo.InvariantCulture)
+                    ?? string.Empty,
+                snapshot.StandardOutput,
+                snapshot.StandardError);
+            return Convert.ToHexString(
+                    SHA256.HashData(Encoding.UTF8.GetBytes(content)))
+                .ToLowerInvariant();
         }
 
         private static bool TryReadOptionalString(

@@ -600,6 +600,10 @@ namespace ColorVision.Copilot
         public CopilotDelegatedRunUsage? DelegatedRunUsage { get; init; }
 
         public CopilotDelegatedAnswer? DelegatedAnswer { get; init; }
+
+        public bool ObservationCanRepeat { get; init; }
+
+        public string ObservationProgressSignature { get; init; } = string.Empty;
     }
 
     public sealed class CopilotLocalFileReadScope
