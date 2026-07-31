@@ -283,7 +283,8 @@ namespace ColorVision.Copilot
                     || string.IsNullOrWhiteSpace(message.Content)
                     || !string.Equals(message.Content, message.Content.Trim(), StringComparison.Ordinal)
                     || message.Content.Length > MaxConversationMemoryContentLength
-                    || message.Content.Contains('\0'))
+                    || message.Content.Contains('\0')
+                    || (message.IsSteering && message.Role != "user"))
                 || TaskIntentText == null
                 || TaskIntentText.Length > MaxTaskIntentTextLength
                 || TaskIntentText.Contains('\0')

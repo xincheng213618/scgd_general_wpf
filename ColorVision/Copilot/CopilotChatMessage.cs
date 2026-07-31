@@ -3624,7 +3624,12 @@ namespace ColorVision.Copilot
         private static string NormalizeText(string? value) => value?.Trim() ?? string.Empty;
     }
 
-    public readonly record struct CopilotRequestMessage(string Role, string Content);
+    public readonly record struct CopilotRequestMessage(string Role, string Content)
+    {
+        [Newtonsoft.Json.JsonProperty(DefaultValueHandling = Newtonsoft.Json.DefaultValueHandling.Ignore)]
+        [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingDefault)]
+        public bool IsSteering { get; init; }
+    }
 
     public sealed class CopilotProviderOption
     {

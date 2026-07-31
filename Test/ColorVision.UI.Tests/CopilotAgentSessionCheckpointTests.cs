@@ -44,6 +44,21 @@ public sealed class CopilotAgentSessionCheckpointTests
     }
 
     [Fact]
+    public void StructurallyValidCheckpointRejectsAssistantSteeringProvenance()
+    {
+        var checkpoint = CreateCheckpoint(
+            new CopilotAgentTaskEventJournalSnapshot(),
+            [
+                new CopilotRequestMessage("assistant", "invalid provenance")
+                {
+                    IsSteering = true,
+                },
+            ]);
+
+        Assert.False(checkpoint.IsStructurallyValid());
+    }
+
+    [Fact]
     public void CopyWithTaskEventJournalRejectsInvalidJournal()
     {
         var checkpoint = CreateCheckpoint(new CopilotAgentTaskEventJournalSnapshot());
@@ -169,6 +184,33 @@ public sealed class CopilotAgentSessionCheckpointTests
     }
 
     [Fact]
+    public void NewtonsoftPersistenceRoundTripsSteeringProvenanceWithoutChangingLegacyMessages()
+    {
+        var checkpoint = new CopilotAgentSessionCheckpoint
+        {
+            ProfileKey = "test-profile",
+            SerializedSessionJson = "{}",
+            ConversationMemory =
+            [
+                new CopilotRequestMessage("user", "ordinary request"),
+                new CopilotRequestMessage("user", "mid-turn direction")
+                {
+                    IsSteering = true,
+                },
+            ],
+        };
+
+        var serialized = JsonConvert.SerializeObject(checkpoint);
+        var restored = JsonConvert.DeserializeObject<CopilotAgentSessionCheckpoint>(serialized);
+
+        Assert.DoesNotContain("\"IsSteering\":false", serialized, StringComparison.Ordinal);
+        Assert.Contains("\"IsSteering\":true", serialized, StringComparison.Ordinal);
+        Assert.NotNull(restored);
+        Assert.False(restored.ConversationMemory[0].IsSteering);
+        Assert.True(restored.ConversationMemory[1].IsSteering);
+    }
+
+    [Fact]
     public void NewtonsoftPersistenceLoadsLegacyUncompressedSession()
     {
         const string sessionJson = "{\"legacy\":true}";
@@ -266,13 +308,15 @@ public sealed class CopilotAgentSessionCheckpointTests
     }
 
     private static CopilotAgentSessionCheckpoint CreateCheckpoint(
-        CopilotAgentTaskEventJournalSnapshot taskEventJournal)
+        CopilotAgentTaskEventJournalSnapshot taskEventJournal,
+        IReadOnlyList<CopilotRequestMessage>? conversationMemory = null)
     {
         return new CopilotAgentSessionCheckpoint
         {
             ProfileKey = "test-profile",
             SerializedSessionJson = "{}",
             TaskEventJournal = taskEventJournal,
+            ConversationMemory = conversationMemory ?? [],
         };
     }
 

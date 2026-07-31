@@ -103,13 +103,19 @@ public sealed class CopilotBackgroundShellOutputDeliveryTests
             {
                 Assert.Equal("user", item.Role);
                 Assert.Equal(request.UserText, item.Content);
+                Assert.False(item.IsSteering);
             },
             item =>
             {
                 Assert.Equal("user", item.Role);
                 Assert.Equal("active steering", item.Content);
+                Assert.True(item.IsSteering);
             },
-            item => Assert.Equal("assistant", item.Role));
+            item =>
+            {
+                Assert.Equal("assistant", item.Role);
+                Assert.False(item.IsSteering);
+            });
         Assert.DoesNotContain(
             checkpoint.ConversationMemory,
             item => item.Content.Contains(
@@ -402,13 +408,19 @@ public sealed class CopilotBackgroundShellOutputDeliveryTests
             {
                 Assert.Equal("user", item.Role);
                 Assert.Equal(request.UserText, item.Content);
+                Assert.False(item.IsSteering);
             },
             item =>
             {
                 Assert.Equal("user", item.Role);
                 Assert.Equal("boundary steering", item.Content);
+                Assert.True(item.IsSteering);
             },
-            item => Assert.Equal("assistant", item.Role));
+            item =>
+            {
+                Assert.Equal("assistant", item.Role);
+                Assert.False(item.IsSteering);
+            });
     }
 
     [Fact]

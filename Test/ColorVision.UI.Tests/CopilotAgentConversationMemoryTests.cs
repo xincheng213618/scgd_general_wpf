@@ -5,6 +5,44 @@ namespace ColorVision.UI.Tests;
 public sealed class CopilotAgentConversationMemoryTests
 {
     [Fact]
+    public void MergeDoesNotConflateSteeringWithAnIdenticalVisibleTurn()
+    {
+        var previousMemory = new[]
+        {
+            new CopilotRequestMessage("user", "continue"),
+            new CopilotRequestMessage("user", "continue")
+            {
+                IsSteering = true,
+            },
+            new CopilotRequestMessage("assistant", "done"),
+        };
+        var visibleHistory = new[]
+        {
+            new CopilotRequestMessage("user", "continue"),
+            new CopilotRequestMessage("assistant", "done"),
+            new CopilotRequestMessage("user", "continue"),
+            new CopilotRequestMessage("assistant", "done"),
+        };
+
+        var memory = CopilotAgentConversationMemory.Merge(
+            previousMemory,
+            visibleHistory,
+            string.Empty,
+            string.Empty);
+
+        AssertTranscript(
+            memory,
+            "user:continue",
+            "user:continue",
+            "assistant:done",
+            "user:continue",
+            "assistant:done");
+        Assert.Equal(
+            [false, true, false, false, false],
+            memory.Select(message => message.IsSteering));
+    }
+
+    [Fact]
     public void MergePlacesVisibleMessagesMissingFromABoundedCheckpointChronologically()
     {
         var previousMemory = new[]

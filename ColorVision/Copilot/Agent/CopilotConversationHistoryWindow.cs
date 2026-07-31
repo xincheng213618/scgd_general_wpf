@@ -104,7 +104,12 @@ namespace ColorVision.Copilot
 
             var perMessageLimit = Math.Min(maximumCharacters, maximumContentCharacters);
             var selected = SelectByMessageCount(source, maximumMessages)
-                .Select(message => new CopilotRequestMessage(message.Role, TruncateContent(message.Content, perMessageLimit)))
+                .Select(message => new CopilotRequestMessage(
+                    message.Role,
+                    TruncateContent(message.Content, perMessageLimit))
+                {
+                    IsSteering = message.IsSteering,
+                })
                 .ToList();
             ReduceToWeightBudget(selected, maximumCharacters);
 
@@ -157,7 +162,10 @@ namespace ColorVision.Copilot
                 var budget = perMessageBudget + (index >= messages.Count - remainder ? 1 : 0);
                 messages[index] = new CopilotRequestMessage(
                     messages[index].Role,
-                    TruncateContent(messages[index].Content, budget));
+                    TruncateContent(messages[index].Content, budget))
+                {
+                    IsSteering = messages[index].IsSteering,
+                };
             }
         }
 
@@ -204,7 +212,10 @@ namespace ColorVision.Copilot
             };
             return role.Length == 0
                 ? default
-                : new CopilotRequestMessage(role, (message.Content ?? string.Empty).Trim());
+                : new CopilotRequestMessage(role, (message.Content ?? string.Empty).Trim())
+                {
+                    IsSteering = message.IsSteering && role == "user",
+                };
         }
 
         private static CopilotRequestMessage[] SelectRecentTurnWindow(

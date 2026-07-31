@@ -103,7 +103,10 @@ namespace ColorVision.Copilot
                 const string suffix = "\n...<conversation memory truncated>";
                 content = content[..(CopilotAgentSessionCheckpoint.MaxConversationMemoryContentLength - suffix.Length)] + suffix;
             }
-            return new CopilotRequestMessage(role, content);
+            return new CopilotRequestMessage(role, content)
+            {
+                IsSteering = message.IsSteering && role == "user",
+            };
         }
 
         private static CopilotRequestMessage[] MergeChronologically(
@@ -184,7 +187,10 @@ namespace ColorVision.Copilot
         {
             foreach (var followUp in followUps ?? Array.Empty<string>())
             {
-                var normalized = Normalize(new CopilotRequestMessage("user", followUp));
+                var normalized = Normalize(new CopilotRequestMessage("user", followUp)
+                {
+                    IsSteering = true,
+                });
                 if (!string.IsNullOrEmpty(normalized.Content))
                     messages.Add(normalized);
             }
@@ -200,12 +206,18 @@ namespace ColorVision.Copilot
                 .ToArray();
         }
 
-        private static string CreateKey(CopilotRequestMessage message) => message.Role + "\n" + message.Content;
+        private static string CreateKey(CopilotRequestMessage message) =>
+            (message.IsSteering ? "steering" : "message")
+            + "\n"
+            + message.Role
+            + "\n"
+            + message.Content;
 
         private static bool AreEqual(CopilotRequestMessage left, CopilotRequestMessage right)
         {
             return string.Equals(left.Role, right.Role, StringComparison.Ordinal)
-                && string.Equals(left.Content, right.Content, StringComparison.Ordinal);
+                && string.Equals(left.Content, right.Content, StringComparison.Ordinal)
+                && left.IsSteering == right.IsSteering;
         }
 
         private sealed class CopilotRequestMessageComparer : IEqualityComparer<CopilotRequestMessage>
@@ -214,7 +226,8 @@ namespace ColorVision.Copilot
 
             public bool Equals(CopilotRequestMessage left, CopilotRequestMessage right) => AreEqual(left, right);
 
-            public int GetHashCode(CopilotRequestMessage message) => HashCode.Combine(message.Role, message.Content);
+            public int GetHashCode(CopilotRequestMessage message) =>
+                HashCode.Combine(message.Role, message.Content, message.IsSteering);
         }
     }
 }
