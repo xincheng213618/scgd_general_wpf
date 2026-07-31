@@ -1659,7 +1659,8 @@ namespace ColorVision.Copilot
                     DiscoverComposerSkills(),
                     Profiles,
                     SelectedProfile,
-                    composerContext);
+                    composerContext,
+                    SelectedConversation);
             }
         }
 

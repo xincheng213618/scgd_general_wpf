@@ -348,7 +348,8 @@ namespace ColorVision.Copilot
             IReadOnlyList<CopilotAgentSkillCatalogItem>? skills = null,
             IReadOnlyList<CopilotProfileConfig>? profiles = null,
             CopilotProfileConfig? selectedProfile = null,
-            CopilotLocalCommandComposerContext composerContext = CopilotLocalCommandComposerContext.Idle)
+            CopilotLocalCommandComposerContext composerContext = CopilotLocalCommandComposerContext.Idle,
+            CopilotConversationRecord? conversation = null)
         {
             var normalized = (input ?? string.Empty).TrimStart();
             if (!CopilotLocalCommandAvailabilityPolicy.CanShowSuggestions(composerContext)
@@ -360,7 +361,13 @@ namespace ColorVision.Copilot
 
             var separatorIndex = normalized.IndexOfAny([' ', '\t', '\r', '\n']);
             if (separatorIndex >= 0)
-                return SuggestArguments(normalized, separatorIndex, profiles, selectedProfile, composerContext);
+                return SuggestArguments(
+                    normalized,
+                    separatorIndex,
+                    profiles,
+                    selectedProfile,
+                    composerContext,
+                    conversation);
             if (normalized.StartsWith('/') && FindExact(normalized) != null)
                 return Array.Empty<CopilotLocalCommand>();
 
@@ -390,7 +397,8 @@ namespace ColorVision.Copilot
             int separatorIndex,
             IReadOnlyList<CopilotProfileConfig>? profiles,
             CopilotProfileConfig? selectedProfile,
-            CopilotLocalCommandComposerContext composerContext)
+            CopilotLocalCommandComposerContext composerContext,
+            CopilotConversationRecord? conversation)
         {
             if (input[0] != '/')
                 return Array.Empty<CopilotLocalCommand>();
@@ -405,7 +413,12 @@ namespace ColorVision.Copilot
             var query = input[(separatorIndex + 1)..].TrimStart();
             if (command.Kind == CopilotLocalCommandKind.Help)
                 query = query.TrimStart('/');
-            var arguments = ResolveArguments(command, profiles, selectedProfile);
+            var arguments = ResolveArguments(
+                command,
+                profiles,
+                selectedProfile,
+                conversation,
+                query);
             return arguments
                 .Where(argument => argument.Value.StartsWith(query, StringComparison.OrdinalIgnoreCase))
                 .Where(argument => argument.AcceptsArguments
@@ -425,7 +438,9 @@ namespace ColorVision.Copilot
         private static IReadOnlyList<CopilotLocalCommandArgument> ResolveArguments(
             CopilotLocalCommand command,
             IReadOnlyList<CopilotProfileConfig>? profiles,
-            CopilotProfileConfig? selectedProfile)
+            CopilotProfileConfig? selectedProfile,
+            CopilotConversationRecord? conversation,
+            string query)
         {
             if (command.Kind == CopilotLocalCommandKind.Help)
             {
@@ -439,6 +454,15 @@ namespace ColorVision.Copilot
                 return BuildProfileArguments(profiles, selectedProfile);
             if (command.Kind == CopilotLocalCommandKind.SelectReasoning)
                 return BuildReasoningArguments(selectedProfile);
+            if (command.Kind == CopilotLocalCommandKind.Subagents)
+            {
+                var separatorIndex = query.IndexOfAny([' ', '\t', '\r', '\n']);
+                if (separatorIndex >= 0)
+                {
+                    var action = query[..separatorIndex];
+                    return CopilotSubagentDiagnostics.BuildRunArguments(conversation, action);
+                }
+            }
             return command.Arguments ?? Array.Empty<CopilotLocalCommandArgument>();
         }
 

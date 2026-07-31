@@ -55,6 +55,7 @@ namespace ColorVision.Copilot
     {
         internal const int DefaultDisplayedRuns = 8;
         internal const int MaximumDisplayedRuns = 20;
+        private const int MaximumRunSuggestionCharacters = 160;
         internal const string Usage = "用法：/agents [roles|runs [N]|show <run_id>|steer <run_id> <message>|stop <run_id>]"
             + "\nN 可取 1–20；show 查看当前会话中单个子运行的限长结果与审计详情；steer 向仍在运行的指定子代理排入新指令；stop 只停止该子代理；父 Agent 均继续运行；/subagents 为同义命令。";
 
@@ -234,6 +235,27 @@ namespace ColorVision.Copilot
             return runs;
         }
 
+        internal static IReadOnlyList<CopilotLocalCommandArgument> BuildRunArguments(
+            CopilotConversationRecord? conversation,
+            string? action)
+        {
+            var normalizedAction = (action ?? string.Empty).Trim().ToLowerInvariant();
+            if (normalizedAction is not ("show" or "stop" or "steer"))
+                return Array.Empty<CopilotLocalCommandArgument>();
+
+            var requiresActiveRun = normalizedAction is "stop" or "steer";
+            return CaptureRuns(conversation)
+                .Where(run => IsValidRunId(run.RunId))
+                .Where(run => !requiresActiveRun || IsActive(run.State))
+                .DistinctBy(run => run.RunId, StringComparer.Ordinal)
+                .Take(MaximumDisplayedRuns)
+                .Select(run => new CopilotLocalCommandArgument(
+                    normalizedAction + " " + run.RunId,
+                    FormatRunSuggestion(run),
+                    AcceptsArguments: normalizedAction == "steer"))
+                .ToArray();
+        }
+
         public static string Format(
             CopilotConversationRecord? conversation,
             string? arguments,
@@ -292,6 +314,37 @@ namespace ColorVision.Copilot
         {
             return value.Length is >= 1 and <= 120
                 && value.All(character => char.IsAsciiLetterOrDigit(character) || character == '-');
+        }
+
+        private static bool IsActive(CopilotToolExecutionState state) =>
+            state is CopilotToolExecutionState.Pending
+                or CopilotToolExecutionState.Running
+                or CopilotToolExecutionState.AwaitingApproval;
+
+        private static string FormatRunSuggestion(CopilotSubagentRunDiagnostic run)
+        {
+            var state = run.State switch
+            {
+                CopilotToolExecutionState.Pending => "正在启动",
+                CopilotToolExecutionState.Running => "运行中",
+                CopilotToolExecutionState.AwaitingApproval => "等待确认",
+                CopilotToolExecutionState.Completed => "已完成",
+                CopilotToolExecutionState.Cancelled => "已停止",
+                CopilotToolExecutionState.TimedOut => "已超时",
+                CopilotToolExecutionState.Interrupted => "已中断",
+                CopilotToolExecutionState.Denied => "已拒绝",
+                _ => "失败",
+            };
+            var result = string.IsNullOrWhiteSpace(run.AnswerText)
+                ? string.Empty
+                : " · 有结果";
+            var activity = IsActive(run.State) && !string.IsNullOrWhiteSpace(run.Activity)
+                ? " · " + run.Activity.Trim()
+                : string.Empty;
+            var description = run.RoleId + " · " + state + result + activity;
+            return description.Length <= MaximumRunSuggestionCharacters
+                ? description
+                : description[..(MaximumRunSuggestionCharacters - 3)].TrimEnd() + "...";
         }
 
         private static bool TryResolveRoleId(
