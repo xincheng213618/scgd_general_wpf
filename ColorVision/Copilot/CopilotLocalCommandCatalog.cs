@@ -21,6 +21,7 @@ namespace ColorVision.Copilot
         Usage,
         Statistics,
         Context,
+        ProjectInstructions,
         Permissions,
         Settings,
         InitializeProject,
@@ -140,6 +141,14 @@ namespace ColorVision.Copilot
                 new("all", "全部本地会话历史"),
             ]),
             new("/context", "查看本地上下文、预算与注入统计", CopilotLocalCommandKind.Context, AvailableWhileAgentRuns: true, Usage: "/context"),
+            new("/memory", "预览工作区型 Agent 请求会加载的项目指令，或按编号打开源文件", CopilotLocalCommandKind.ProjectInstructions, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/memory [open N]", Arguments:
+            [
+                new("open", "在内置编辑器中打开第 N 个生效指令文件", AcceptsArguments: true),
+            ]),
+            new("/instructions", "同 /memory；预览并打开当前目标的项目指令", CopilotLocalCommandKind.ProjectInstructions, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/instructions [open N]", Arguments:
+            [
+                new("open", "在内置编辑器中打开第 N 个生效指令文件", AcceptsArguments: true),
+            ]),
             new("/permissions", "选择按需确认/临时自动复核，或查看权限状态", CopilotLocalCommandKind.Permissions, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/permissions [status|ask|auto]", Arguments:
             [
                 new("status", "显示当前文件范围、能力与审批策略"),

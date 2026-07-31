@@ -2014,6 +2014,9 @@ namespace ColorVision.Copilot
                 case CopilotLocalCommandKind.Context:
                     ShowLocalCommandResult(command, BuildContextDiagnosticsReport());
                     break;
+                case CopilotLocalCommandKind.ProjectInstructions:
+                    HandleProjectInstructionCommand(command, invocation.Arguments);
+                    break;
                 case CopilotLocalCommandKind.Permissions:
                     HandlePermissionsCommand(command, invocation.Arguments);
                     break;
@@ -3610,6 +3613,77 @@ namespace ColorVision.Copilot
                 AgentExtensions = agentExtensionSnapshot.Sources,
                 AgentExtensionIssues = agentExtensionSnapshot.Issues,
             });
+        }
+
+        private void HandleProjectInstructionCommand(
+            CopilotLocalCommand command,
+            string arguments)
+        {
+            var request = CopilotProjectInstructionDiagnostics.ParseCommand(arguments);
+            var snapshot = CaptureProjectInstructionSnapshot();
+            if (request.Action == CopilotProjectInstructionCommandAction.List)
+            {
+                ShowLocalCommandResult(
+                    command,
+                    CopilotProjectInstructionDiagnostics.Format(
+                        snapshot,
+                        ActiveHostedRun?.IsAgent == true));
+                return;
+            }
+            if (request.Action == CopilotProjectInstructionCommandAction.Invalid)
+            {
+                ShowLocalCommandResult(command, CopilotProjectInstructionDiagnostics.Usage);
+                return;
+            }
+
+            var document = CopilotProjectInstructionDiagnostics.FindByPosition(
+                snapshot.Documents,
+                request.Position);
+            if (document == null)
+            {
+                ShowLocalCommandResult(
+                    command,
+                    $"当前生效项目指令中没有 #{request.Position:N0}。输入 /memory 查看实时顺序；目标文件或规则可能已变化。");
+                return;
+            }
+
+            var errorMessage = string.Empty;
+            if (!CopilotLocalFileLinkNavigator.TryResolve(document.Path, out var target)
+                || !CopilotLocalFileLinkNavigator.TryOpen(target, out errorMessage))
+            {
+                ShowLocalCommandResult(
+                    command,
+                    string.IsNullOrWhiteSpace(errorMessage)
+                        ? "该指令文件已不存在、不在当前工作区内，或当前没有可用编辑器。"
+                        : CopilotUserFacingErrorFormatter.Sanitize(errorMessage));
+                return;
+            }
+
+            ShowLocalCommandResult(
+                command,
+                $"已在内置编辑器中打开 #{request.Position:N0} · {Path.GetFileName(document.Path)}。"
+                + Environment.NewLine
+                + (ActiveHostedRun?.IsAgent == true
+                    ? "当前运行中的任务仍使用请求启动时捕获的指令快照；保存后的内容从后续请求开始生效。"
+                    : "保存后的内容会在下一次需要工作区证据的 Agent 请求启动时重新发现并加载。"));
+        }
+
+        private CopilotProjectInstructionSnapshot CaptureProjectInstructionSnapshot()
+        {
+            var turnSnapshot = CaptureHostedTurnSnapshot(Attachments);
+            var trustedProjectRoots = CopilotAgentRequestFactory.BuildTrustedProjectRootPaths(turnSnapshot);
+            var documents = CopilotAgentProjectInstructions.Discover(
+                trustedProjectRoots,
+                turnSnapshot.ActiveDocumentPath,
+                turnSnapshot.Attachments
+                    .Where(attachment => attachment.Type == CopilotAttachmentType.File)
+                    .Select(attachment => attachment.Value));
+            return new CopilotProjectInstructionSnapshot(
+                trustedProjectRoots.Count > 0
+                    ? trustedProjectRoots[0]
+                    : turnSnapshot.SolutionDirectoryPath,
+                turnSnapshot.ActiveDocumentPath,
+                documents);
         }
 
         private void DismissLocalCommandResult()

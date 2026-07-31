@@ -22,7 +22,7 @@ public sealed class CopilotLocalCommandHelpTests
     [Fact]
     public void EveryFixedCommandDeclaresUsageBeginningWithItsName()
     {
-        Assert.Equal(66, CopilotLocalCommandCatalog.All.Count);
+        Assert.Equal(68, CopilotLocalCommandCatalog.All.Count);
         foreach (var command in CopilotLocalCommandCatalog.All)
         {
             Assert.False(string.IsNullOrWhiteSpace(command.Usage));
@@ -38,7 +38,7 @@ public sealed class CopilotLocalCommandHelpTests
         var report = CopilotLocalCommandHelp.Format(null);
         var lines = report.Split(Environment.NewLine);
 
-        Assert.Contains("Copilot 命令 · 66", report);
+        Assert.Contains("Copilot 命令 · 68", report);
         Assert.Contains("状态与诊断", report);
         Assert.Contains("工作区与 Agent", report);
         Assert.Contains("会话与输出", report);
@@ -112,6 +112,16 @@ public sealed class CopilotLocalCommandHelpTests
         Assert.True(invocation.Command.AvailableWhileAgentRuns);
         Assert.StartsWith("/loop <间隔> <请求> | list | cancel <任务 ID>", report);
         Assert.Contains("当前应用会话", report);
+    }
+
+    [Fact]
+    public void MemoryHelpDescribesEffectiveProjectInstructionPreview()
+    {
+        var report = CopilotLocalCommandHelp.Format("memory");
+
+        Assert.StartsWith("/memory [open N]", report);
+        Assert.Contains("工作区型 Agent 请求", report);
+        Assert.Contains("Agent 运行中：可立即执行", report);
     }
 
     [Fact]

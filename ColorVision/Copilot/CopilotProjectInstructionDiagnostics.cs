@@ -1,0 +1,185 @@
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Text;
+
+namespace ColorVision.Copilot
+{
+    internal enum CopilotProjectInstructionCommandAction
+    {
+        List,
+        Open,
+        Invalid,
+    }
+
+    internal sealed record CopilotProjectInstructionCommandRequest(
+        CopilotProjectInstructionCommandAction Action,
+        int Position);
+
+    internal sealed record CopilotProjectInstructionSnapshot(
+        string WorkspacePath,
+        string ActiveDocumentPath,
+        IReadOnlyList<CopilotProjectInstructionDocument> Documents);
+
+    internal static class CopilotProjectInstructionDiagnostics
+    {
+        internal const string Usage =
+            "用法：/memory [open N]。不带参数时预览基于当前目标、会被工作区型 Agent 请求加载的项目指令；open N 在内置编辑器中打开第 N 个文件。";
+
+        public static CopilotProjectInstructionCommandRequest ParseCommand(string? arguments)
+        {
+            var parts = (arguments ?? string.Empty).Split(
+                (char[]?)null,
+                StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            if (parts.Length == 0
+                || (parts.Length == 1
+                    && string.Equals(parts[0], "list", StringComparison.OrdinalIgnoreCase)))
+            {
+                return new CopilotProjectInstructionCommandRequest(
+                    CopilotProjectInstructionCommandAction.List,
+                    0);
+            }
+
+            if (parts.Length == 2
+                && string.Equals(parts[0], "open", StringComparison.OrdinalIgnoreCase)
+                && int.TryParse(parts[1], NumberStyles.None, CultureInfo.InvariantCulture, out var position)
+                && position > 0)
+            {
+                return new CopilotProjectInstructionCommandRequest(
+                    CopilotProjectInstructionCommandAction.Open,
+                    position);
+            }
+
+            return new CopilotProjectInstructionCommandRequest(
+                CopilotProjectInstructionCommandAction.Invalid,
+                0);
+        }
+
+        public static IReadOnlyList<CopilotProjectInstructionDocument> GetEffectiveDocuments(
+            IEnumerable<CopilotProjectInstructionDocument>? documents)
+        {
+            return (documents ?? Array.Empty<CopilotProjectInstructionDocument>())
+                .Where(document => document?.IsStructurallyValid() == true)
+                .Take(CopilotAgentProjectInstructions.MaxDocuments)
+                .ToArray();
+        }
+
+        public static CopilotProjectInstructionDocument? FindByPosition(
+            IEnumerable<CopilotProjectInstructionDocument>? documents,
+            int position)
+        {
+            if (position <= 0)
+                return null;
+
+            return GetEffectiveDocuments(documents).ElementAtOrDefault(position - 1);
+        }
+
+        public static string Format(
+            CopilotProjectInstructionSnapshot? snapshot,
+            bool hasActiveAgentRun)
+        {
+            var documents = GetEffectiveDocuments(snapshot?.Documents);
+            var builder = new StringBuilder()
+                .Append("Copilot 项目指令 · ")
+                .AppendLine(documents.Count.ToString("N0", CultureInfo.CurrentCulture));
+            if (documents.Count == 0)
+            {
+                builder.AppendLine()
+                    .AppendLine("当前受信项目根和目标文件没有发现会被工作区型 Agent 请求加载的项目指令。")
+                    .AppendLine("使用 /init 可在项目根创建 AGENTS.md；现有文件不会被覆盖。")
+                    .Append("这里展示的是工作区指令，不是自动生成的跨会话记忆；/memory 不会写入文件。");
+                return builder.ToString();
+            }
+
+            builder.AppendLine()
+                .AppendLine("以下是基于当前活动文档与文件附件的注入预览：由宽到窄，后列的局部规则只在自身作用域内覆盖前列规则。")
+                .AppendLine("只有需要本地工作区证据的 Agent 请求才注入这些文件；下一条提示词中的显式本地路径也可能改变路径规则匹配。");
+            AppendTarget(builder, snapshot);
+            foreach (var document in documents.Select((value, index) => (Document: value, Position: index + 1)))
+            {
+                builder.Append('#')
+                    .Append(document.Position.ToString("N0", CultureInfo.CurrentCulture))
+                    .Append(" · ")
+                    .Append(Path.GetFileName(document.Document.Path))
+                    .Append(" · ")
+                    .Append(GetSourceLabel(document.Document.Path))
+                    .Append(" · ")
+                    .Append(document.Document.Content.Length.ToString("N0", CultureInfo.CurrentCulture))
+                    .Append(" 字符");
+                if (document.Document.IsTruncated)
+                    builder.Append(" · 已截断");
+                builder.AppendLine()
+                    .Append("  ")
+                    .AppendLine(FormatPath(document.Document.Path, snapshot?.WorkspacePath));
+            }
+
+            builder.AppendLine()
+                .AppendLine("选择规则：同目录优先 AGENTS.override.md、AGENTS.md，再以 CLAUDE.md 兼容回退；.claude/rules 为附加规则，CLAUDE.local.md 为私有局部覆盖。")
+                .AppendLine("使用 /memory open N 打开文件。报告不包含指令正文，也不会自动修改任何指令。");
+            if (hasActiveAgentRun)
+                builder.AppendLine("当前运行中的任务已固定请求启动时的指令快照；现在编辑只影响后续请求。");
+            builder.Append("这里展示的是工作区指令，不是自动生成的跨会话记忆。");
+            return builder.ToString();
+        }
+
+        private static void AppendTarget(
+            StringBuilder builder,
+            CopilotProjectInstructionSnapshot? snapshot)
+        {
+            var workspacePath = (snapshot?.WorkspacePath ?? string.Empty).Trim();
+            if (workspacePath.Length > 0)
+                builder.Append("项目根：").AppendLine(workspacePath);
+
+            var activeDocumentPath = (snapshot?.ActiveDocumentPath ?? string.Empty).Trim();
+            if (activeDocumentPath.Length > 0)
+            {
+                builder.Append("活动目标：")
+                    .AppendLine(FormatPath(activeDocumentPath, workspacePath));
+            }
+        }
+
+        private static string GetSourceLabel(string? path)
+        {
+            var normalized = (path ?? string.Empty).Replace('/', '\\');
+            var fileName = Path.GetFileName(normalized);
+            if (string.Equals(fileName, "AGENTS.override.md", StringComparison.OrdinalIgnoreCase))
+                return "共享覆盖";
+            if (string.Equals(fileName, "AGENTS.md", StringComparison.OrdinalIgnoreCase))
+                return "共享指令";
+            if (string.Equals(fileName, "CLAUDE.local.md", StringComparison.OrdinalIgnoreCase))
+                return "私有局部覆盖";
+            if (normalized.Contains(@"\.claude\rules\", StringComparison.OrdinalIgnoreCase))
+                return "Claude 路径规则";
+            if (string.Equals(fileName, "CLAUDE.md", StringComparison.OrdinalIgnoreCase))
+                return "Claude 兼容指令";
+            return "项目指令";
+        }
+
+        private static string FormatPath(string? path, string? workspacePath)
+        {
+            var normalizedPath = (path ?? string.Empty).Trim();
+            if (normalizedPath.Length == 0)
+                return "（路径不可用）";
+
+            try
+            {
+                var fullPath = Path.GetFullPath(normalizedPath);
+                var normalizedWorkspace = string.IsNullOrWhiteSpace(workspacePath)
+                    ? string.Empty
+                    : Path.GetFullPath(workspacePath);
+                if (normalizedWorkspace.Length > 0
+                    && CopilotWorkspaceSearchSupport.IsPathWithinRoots(fullPath, [normalizedWorkspace]))
+                {
+                    return Path.GetRelativePath(normalizedWorkspace, fullPath);
+                }
+                return fullPath;
+            }
+            catch
+            {
+                return normalizedPath;
+            }
+        }
+    }
+}
