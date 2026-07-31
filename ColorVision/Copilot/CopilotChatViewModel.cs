@@ -8646,6 +8646,8 @@ namespace ColorVision.Copilot
 
             RemoveQueuedFollowUpRecoveryRecords(target.Id);
             CopilotBackgroundShellCommandRegistry.Shared.ClearCompleted(target.Id);
+            CopilotShellCommandOutputArchiveRegistry.Shared.ClearConversation(
+                target.Id);
             RemoveManagedAttachmentFiles(managedAttachments);
 
             if (wasSelected)
@@ -10254,6 +10256,7 @@ namespace ColorVision.Copilot
                 System.Diagnostics.Trace.TraceError(
                     $"Copilot background process shutdown failed: {exception}");
             }
+            CopilotShellCommandOutputArchiveRegistry.Shared.Dispose();
             FinalizeUnstartedRunsForShutdown(scheduledRuns);
             _stateSaveScheduler.Dispose();
             PublishSelectedTaskEventJournal();

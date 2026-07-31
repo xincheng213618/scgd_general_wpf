@@ -885,7 +885,7 @@ public sealed class CopilotBackgroundShellCommandTests
                 CopilotBackgroundShellCommandRegistry.MaximumArchiveReadCharacters,
                 CancellationToken.None);
             Assert.True(result.Success, result.ErrorMessage);
-            var page = Assert.IsType<CopilotBackgroundShellOutputArchivePage>(
+            var page = Assert.IsType<CopilotRedactedOutputArchivePage>(
                 result.Page);
             Assert.Equal(offset, page.OffsetCharacters);
             Assert.Equal(
@@ -993,7 +993,7 @@ public sealed class CopilotBackgroundShellCommandTests
         public CopilotBackgroundShellProcessOutput GetOutputSnapshot() =>
             CreateOutputSnapshot();
 
-        public CopilotBackgroundShellOutputArchivePage ReadOutputArchive(
+        public CopilotRedactedOutputArchivePage ReadOutputArchive(
             CopilotBackgroundShellOutputStream stream,
             int offsetCharacters,
             int maximumCharacters,
@@ -1009,7 +1009,7 @@ public sealed class CopilotBackgroundShellCommandTests
                 CopilotBackgroundShellCommandRegistry.MaximumArchivedOutputCharacters);
             if (offsetCharacters > archivedCharacters)
             {
-                return new CopilotBackgroundShellOutputArchivePage(
+                return new CopilotRedactedOutputArchivePage(
                     Available: false,
                     Content: string.Empty,
                     OffsetCharacters: offsetCharacters,
@@ -1028,7 +1028,7 @@ public sealed class CopilotBackgroundShellCommandTests
                 offsetCharacters,
                 returnedCharacters);
             var nextOffset = offsetCharacters + returnedCharacters;
-            return new CopilotBackgroundShellOutputArchivePage(
+            return new CopilotRedactedOutputArchivePage(
                 Available: true,
                 Content: content,
                 OffsetCharacters: offsetCharacters,

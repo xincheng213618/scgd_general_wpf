@@ -5,7 +5,6 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -115,17 +114,6 @@ namespace ColorVision.Copilot
         bool StandardOutputArchiveTruncated,
         bool StandardErrorArchiveTruncated);
 
-    internal sealed record CopilotBackgroundShellOutputArchivePage(
-        bool Available,
-        string Content,
-        int OffsetCharacters,
-        int ReturnedCharacters,
-        int NextOffsetCharacters,
-        int ArchivedCharacters,
-        bool EndOfAvailableOutput,
-        bool ArchiveTruncated,
-        string ErrorMessage);
-
     internal interface ICopilotBackgroundShellProcess : IDisposable
     {
         int ProcessId { get; }
@@ -136,7 +124,7 @@ namespace ColorVision.Copilot
 
         CopilotBackgroundShellProcessOutput GetOutputSnapshot();
 
-        CopilotBackgroundShellOutputArchivePage ReadOutputArchive(
+        CopilotRedactedOutputArchivePage ReadOutputArchive(
             CopilotBackgroundShellOutputStream stream,
             int offsetCharacters,
             int maximumCharacters,
@@ -189,7 +177,7 @@ namespace ColorVision.Copilot
     internal sealed record CopilotBackgroundShellCommandOutputReadResult(
         CopilotBackgroundShellCommandSnapshot? Snapshot,
         CopilotBackgroundShellOutputStream Stream,
-        CopilotBackgroundShellOutputArchivePage? Page,
+        CopilotRedactedOutputArchivePage? Page,
         CopilotToolFailureKind FailureKind,
         string ErrorMessage)
     {
@@ -223,9 +211,12 @@ namespace ColorVision.Copilot
         public const int MinimumObservationTimeoutSeconds = 1;
         public const int MaximumObservationTimeoutSeconds = 30;
         public const int MaximumOutputPatternCharacters = 256;
-        public const int MaximumArchivedOutputCharacters = 8 * 1024 * 1024;
-        public const int DefaultArchiveReadCharacters = 8_192;
-        public const int MaximumArchiveReadCharacters = 16_384;
+        public const int MaximumArchivedOutputCharacters =
+            CopilotOutputArchiveLimits.MaximumArchivedCharacters;
+        public const int DefaultArchiveReadCharacters =
+            CopilotOutputArchiveLimits.DefaultReadCharacters;
+        public const int MaximumArchiveReadCharacters =
+            CopilotOutputArchiveLimits.MaximumReadCharacters;
         private static readonly TimeSpan ObservationPollInterval =
             TimeSpan.FromMilliseconds(100);
 
@@ -1060,7 +1051,7 @@ namespace ColorVision.Copilot
                 };
             }
 
-            public CopilotBackgroundShellOutputArchivePage ReadOutputArchive(
+            public CopilotRedactedOutputArchivePage ReadOutputArchive(
                 CopilotBackgroundShellOutputStream stream,
                 int offsetCharacters,
                 int maximumCharacters,
@@ -1197,7 +1188,7 @@ namespace ColorVision.Copilot
                 standardError.ArchiveTruncated);
         }
 
-        public CopilotBackgroundShellOutputArchivePage ReadOutputArchive(
+        public CopilotRedactedOutputArchivePage ReadOutputArchive(
             CopilotBackgroundShellOutputStream stream,
             int offsetCharacters,
             int maximumCharacters,
@@ -1350,324 +1341,19 @@ namespace ColorVision.Copilot
             _process.Dispose();
         }
 
-        private sealed class TemporaryOutputArchive : IDisposable
-        {
-            private readonly object _syncRoot = new();
-            private readonly string _path;
-            private FileStream? _stream;
-            private int _archivedCharacters;
-            private bool _isTruncated;
-            private bool _available = true;
-            private bool _disposed;
-
-            private TemporaryOutputArchive(string path, FileStream stream)
-            {
-                _path = path;
-                _stream = stream;
-            }
-
-            public bool Available
-            {
-                get
-                {
-                    lock (_syncRoot)
-                        return _available && !_disposed;
-                }
-            }
-
-            public int ArchivedCharacters
-            {
-                get
-                {
-                    lock (_syncRoot)
-                        return _archivedCharacters;
-                }
-            }
-
-            public bool IsTruncated
-            {
-                get
-                {
-                    lock (_syncRoot)
-                        return _isTruncated;
-                }
-            }
-
-            public static TemporaryOutputArchive? TryCreate(string streamLabel)
-            {
-                try
-                {
-                    var directory = Path.Combine(
-                        Path.GetTempPath(),
-                        "ColorVision",
-                        "Copilot",
-                        "BackgroundOutput");
-                    Directory.CreateDirectory(directory);
-                    var safeStreamLabel =
-                        string.Equals(
-                            streamLabel,
-                            "stderr",
-                            StringComparison.OrdinalIgnoreCase)
-                            ? "stderr"
-                            : "stdout";
-                    var path = Path.Combine(
-                        directory,
-                        $"{Guid.NewGuid():N}-{safeStreamLabel}.log");
-                    var stream = new FileStream(
-                        path,
-                        FileMode.CreateNew,
-                        FileAccess.ReadWrite,
-                        FileShare.ReadWrite | FileShare.Delete,
-                        bufferSize: 4_096,
-                        FileOptions.DeleteOnClose | FileOptions.SequentialScan);
-                    return new TemporaryOutputArchive(path, stream);
-                }
-                catch (Exception ex) when (
-                    ex is IOException
-                        or UnauthorizedAccessException
-                        or NotSupportedException)
-                {
-                    Trace.TraceWarning(
-                        "Copilot background output archive could not be created: "
-                        + CopilotMcpAuditLogger.RedactText(ex.Message));
-                    return null;
-                }
-            }
-
-            public void Append(string value)
-            {
-                if (string.IsNullOrEmpty(value))
-                    return;
-
-                lock (_syncRoot)
-                {
-                    if (!_available || _disposed || _stream == null)
-                        return;
-
-                    var remaining =
-                        CopilotBackgroundShellCommandRegistry.MaximumArchivedOutputCharacters
-                        - _archivedCharacters;
-                    if (remaining <= 0)
-                    {
-                        _isTruncated = true;
-                        return;
-                    }
-
-                    var writeLength = Math.Min(value.Length, remaining);
-                    try
-                    {
-                        _stream.Write(MemoryMarshal.AsBytes(
-                            value.AsSpan(0, writeLength)));
-                        _stream.Flush();
-                        _archivedCharacters += writeLength;
-                        if (writeLength < value.Length)
-                            _isTruncated = true;
-                    }
-                    catch (Exception ex) when (
-                        ex is IOException
-                            or ObjectDisposedException
-                            or UnauthorizedAccessException
-                            or NotSupportedException)
-                    {
-                        MarkUnavailableUnderLock(ex);
-                    }
-                }
-            }
-
-            public CopilotBackgroundShellOutputArchivePage Read(
-                int offsetCharacters,
-                int maximumCharacters,
-                CancellationToken cancellationToken)
-            {
-                lock (_syncRoot)
-                {
-                    if (!_available || _disposed || _stream == null)
-                    {
-                        return UnavailablePage(
-                            offsetCharacters,
-                            "The temporary redacted output archive is unavailable.");
-                    }
-
-                    if (offsetCharacters < 0
-                        || maximumCharacters <= 0
-                        || maximumCharacters
-                            > CopilotBackgroundShellCommandRegistry.MaximumArchiveReadCharacters)
-                    {
-                        return UnavailablePage(
-                            offsetCharacters,
-                            "The output archive read range is invalid.");
-                    }
-
-                    if (offsetCharacters > _archivedCharacters)
-                    {
-                        return UnavailablePage(
-                            offsetCharacters,
-                            $"The output archive currently contains {_archivedCharacters} characters; "
-                            + $"offset {offsetCharacters} is beyond the available output.");
-                    }
-
-                    try
-                    {
-                        cancellationToken.ThrowIfCancellationRequested();
-                        _stream.Flush();
-                        using var stream = new FileStream(
-                            _path,
-                            FileMode.Open,
-                            FileAccess.Read,
-                            FileShare.ReadWrite | FileShare.Delete,
-                            bufferSize: 4_096,
-                            FileOptions.SequentialScan);
-                        stream.Seek(
-                            checked((long)offsetCharacters * sizeof(char)),
-                            SeekOrigin.Begin);
-                        var requestedCharacters = Math.Min(
-                            maximumCharacters,
-                            _archivedCharacters - offsetCharacters);
-                        var content = ReadCharacters(
-                            stream,
-                            requestedCharacters,
-                            cancellationToken);
-                        var nextOffset = offsetCharacters + content.Length;
-                        return new CopilotBackgroundShellOutputArchivePage(
-                            Available: true,
-                            Content: content,
-                            OffsetCharacters: offsetCharacters,
-                            ReturnedCharacters: content.Length,
-                            NextOffsetCharacters: nextOffset,
-                            ArchivedCharacters: _archivedCharacters,
-                            EndOfAvailableOutput:
-                                nextOffset >= _archivedCharacters,
-                            ArchiveTruncated: _isTruncated,
-                            ErrorMessage: string.Empty);
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        throw;
-                    }
-                    catch (Exception ex) when (
-                        ex is IOException
-                            or ObjectDisposedException
-                            or UnauthorizedAccessException
-                            or NotSupportedException)
-                    {
-                        MarkUnavailableUnderLock(ex);
-                        return UnavailablePage(
-                            offsetCharacters,
-                            "The temporary redacted output archive could not be read.");
-                    }
-                }
-            }
-
-            private static string ReadCharacters(
-                FileStream stream,
-                int count,
-                CancellationToken cancellationToken)
-            {
-                if (count == 0)
-                    return string.Empty;
-
-                var buffer = new byte[checked(count * sizeof(char))];
-                var totalRead = 0;
-                while (totalRead < buffer.Length)
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    var read = stream.Read(
-                        buffer,
-                        totalRead,
-                        buffer.Length - totalRead);
-                    if (read == 0)
-                        break;
-
-                    totalRead += read;
-                }
-
-                if (totalRead % sizeof(char) != 0)
-                {
-                    throw new InvalidDataException(
-                        "The output archive contains an incomplete character.");
-                }
-
-                return new string(
-                    MemoryMarshal.Cast<byte, char>(
-                        buffer.AsSpan(0, totalRead)));
-            }
-
-            private CopilotBackgroundShellOutputArchivePage UnavailablePage(
-                int offsetCharacters,
-                string errorMessage) =>
-                new(
-                    Available: false,
-                    Content: string.Empty,
-                    OffsetCharacters: offsetCharacters,
-                    ReturnedCharacters: 0,
-                    NextOffsetCharacters: offsetCharacters,
-                    ArchivedCharacters: _archivedCharacters,
-                    EndOfAvailableOutput:
-                        offsetCharacters >= _archivedCharacters,
-                    ArchiveTruncated: _isTruncated,
-                    ErrorMessage: errorMessage);
-
-            private void MarkUnavailableUnderLock(Exception exception)
-            {
-                _available = false;
-                _isTruncated = true;
-                Trace.TraceWarning(
-                    "Copilot background output archive became unavailable: "
-                    + CopilotMcpAuditLogger.RedactText(exception.Message));
-                try
-                {
-                    _stream?.Dispose();
-                }
-                catch (Exception ex) when (
-                    ex is IOException
-                        or ObjectDisposedException)
-                {
-                    Trace.TraceWarning(
-                        "Copilot background output archive cleanup failed: "
-                        + CopilotMcpAuditLogger.RedactText(ex.Message));
-                }
-
-                _stream = null;
-            }
-
-            public void Dispose()
-            {
-                lock (_syncRoot)
-                {
-                    if (_disposed)
-                        return;
-
-                    _disposed = true;
-                    _available = false;
-                    try
-                    {
-                        _stream?.Dispose();
-                    }
-                    catch (Exception ex) when (
-                        ex is IOException
-                            or ObjectDisposedException)
-                    {
-                        Trace.TraceWarning(
-                            "Copilot background output archive cleanup failed: "
-                            + CopilotMcpAuditLogger.RedactText(ex.Message));
-                    }
-
-                    _stream = null;
-                }
-            }
-        }
-
         private sealed class BoundedOutput : IDisposable
         {
             private readonly object _syncRoot = new();
             private readonly StringBuilder _buffer = new();
-            private readonly TemporaryOutputArchive? _archive;
+            private readonly CopilotTemporaryRedactedOutputArchive? _archive;
             private long _observedCharacters;
             private bool _wasTruncated;
 
             public BoundedOutput(string streamLabel)
             {
-                _archive = TemporaryOutputArchive.TryCreate(streamLabel);
+                _archive = CopilotTemporaryRedactedOutputArchive.TryCreate(
+                    "BackgroundOutput",
+                    streamLabel);
             }
 
             public void Append(string? value)
@@ -1683,10 +1369,8 @@ namespace ColorVision.Copilot
                         _observedCharacters,
                         observed.Length);
                     if (redacted.Length > 0)
-                    {
                         AppendPreviewUnderLock(redacted);
-                        _archive?.Append(redacted);
-                    }
+                    _archive?.Append(observed);
                 }
             }
 
@@ -1714,7 +1398,7 @@ namespace ColorVision.Copilot
                 }
             }
 
-            public CopilotBackgroundShellOutputArchivePage ReadArchive(
+            public CopilotRedactedOutputArchivePage ReadArchive(
                 int offsetCharacters,
                 int maximumCharacters,
                 CancellationToken cancellationToken) =>
@@ -1722,7 +1406,7 @@ namespace ColorVision.Copilot
                     offsetCharacters,
                     maximumCharacters,
                     cancellationToken)
-                ?? new CopilotBackgroundShellOutputArchivePage(
+                ?? new CopilotRedactedOutputArchivePage(
                     Available: false,
                     Content: string.Empty,
                     OffsetCharacters: offsetCharacters,
