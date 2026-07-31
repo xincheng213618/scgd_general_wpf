@@ -231,6 +231,135 @@ public sealed class CopilotBackgroundShellOutputDeliveryTests
     }
 
     [Fact]
+    public async Task SteeringBudgetIncludesMessagesConsumedButNotYetConfirmed()
+    {
+        using var provider = new BlockingSteeringChatClient(blockSecondStream: true);
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry([]),
+            new CopilotAgentContextBuilder(),
+            new CopilotToolExecutor(),
+            _ => provider,
+            EmptyExternalToolProvider.Instance,
+            new CopilotCapabilityCatalog());
+        var runControl = new CopilotAgentRunControl();
+        var request = CreateRequest(
+            "conversation",
+            "Keep unconfirmed steering inside the recovery budget.",
+            runControl: runControl);
+        var events = new List<CopilotAgentEvent>();
+        using var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var runTask = runtime.RunAsync(request, events.Add, cancellation.Token);
+        await provider.StreamStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+        var firstAdmission = runtime.EnqueueSteeringMessage(
+            request.TaskId,
+            "steering 1");
+        provider.ReleaseStream.TrySetResult();
+        await provider.SecondStreamStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        var laterAdmissions = Enumerable.Range(2, 8)
+            .Select(index => runtime.EnqueueSteeringMessage(
+                request.TaskId,
+                $"steering {index}"))
+            .ToArray();
+        Assert.True(runControl.RequestCancel());
+        cancellation.Cancel();
+
+        var result = await runTask.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.True(firstAdmission.IsAccepted);
+        Assert.All(laterAdmissions[..7], admission => Assert.True(admission.IsAccepted));
+        Assert.Equal(
+            CopilotSteeringAdmissionReason.QueueFull,
+            laterAdmissions[7].Reason);
+        Assert.Equal(CopilotAgentStopReason.Cancelled, result.StopReason);
+        var recovery = Assert.Single(events, agentEvent =>
+            agentEvent.Type == CopilotAgentEventType.SteeringRecovery);
+        Assert.Equal(
+            Enumerable.Range(1, 8).Select(index => $"steering {index}"),
+            recovery.SteeringMessages);
+    }
+
+    [Fact]
+    public async Task CancelledRunReturnsUndeliveredSteeringForDraftRecovery()
+    {
+        using var provider = new BlockingSteeringChatClient();
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry([]),
+            new CopilotAgentContextBuilder(),
+            new CopilotToolExecutor(),
+            _ => provider,
+            EmptyExternalToolProvider.Instance,
+            new CopilotCapabilityCatalog());
+        var runControl = new CopilotAgentRunControl();
+        var request = CreateRequest(
+            "conversation",
+            "Wait while the active run is cancelled.",
+            runControl: runControl);
+        var events = new List<CopilotAgentEvent>();
+        using var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var runTask = runtime.RunAsync(request, events.Add, cancellation.Token);
+        await provider.StreamStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+        var admission = runtime.EnqueueSteeringMessage(
+            request.TaskId,
+            "preserve this steering");
+        Assert.True(runControl.RequestCancel());
+        cancellation.Cancel();
+
+        var result = await runTask.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.True(admission.IsAccepted);
+        Assert.Equal(CopilotAgentStopReason.Cancelled, result.StopReason);
+        var recovery = Assert.Single(events, agentEvent =>
+            agentEvent.Type == CopilotAgentEventType.SteeringRecovery);
+        Assert.Equal(["preserve this steering"], recovery.SteeringMessages);
+        Assert.True(
+            events.IndexOf(recovery)
+                < events.FindIndex(agentEvent =>
+                    agentEvent.Type == CopilotAgentEventType.Completed));
+        Assert.Single(result.TaskEventJournal.Events, item =>
+            item.Type == CopilotAgentTaskEventType.SteeringQueued);
+        Assert.DoesNotContain(result.TaskEventJournal.Events, item =>
+            item.Type == CopilotAgentTaskEventType.SteeringDelivered);
+        Assert.DoesNotContain(result.TaskEventJournal.Events, item =>
+            item.Summary.Contains("preserve this steering", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task ProviderFailureReturnsUndeliveredSteeringBeforePropagatingError()
+    {
+        using var provider = new BlockingSteeringChatClient(failAfterRelease: true);
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry([]),
+            new CopilotAgentContextBuilder(),
+            new CopilotToolExecutor(),
+            _ => provider,
+            EmptyExternalToolProvider.Instance,
+            new CopilotCapabilityCatalog());
+        var request = CreateRequest(
+            "conversation",
+            "Wait while the provider fails.");
+        var events = new List<CopilotAgentEvent>();
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var runTask = runtime.RunAsync(request, events.Add, timeout.Token);
+        await provider.StreamStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+        var admission = runtime.EnqueueSteeringMessage(
+            request.TaskId,
+            "recover after provider failure");
+        provider.ReleaseStream.TrySetResult();
+
+        await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            await runTask.WaitAsync(TimeSpan.FromSeconds(5)));
+        Assert.True(admission.IsAccepted);
+        var recovery = Assert.Single(events, agentEvent =>
+            agentEvent.Type == CopilotAgentEventType.SteeringRecovery);
+        Assert.Equal(["recover after provider failure"], recovery.SteeringMessages);
+        Assert.DoesNotContain(events, agentEvent =>
+            agentEvent.Type == CopilotAgentEventType.Completed);
+    }
+
+    [Fact]
     public async Task SteeringIsRejectedAfterAgentLoopEntersFinalization()
     {
         using var provider = new CapturingChatClient();
@@ -979,7 +1108,8 @@ public sealed class CopilotBackgroundShellOutputDeliveryTests
     private static CopilotAgentRequest CreateRequest(
         string conversationId,
         string userText,
-        string workspacePath = "")
+        string workspacePath = "",
+        CopilotAgentRunControl? runControl = null)
     {
         return new CopilotAgentRequest
         {
@@ -997,6 +1127,7 @@ public sealed class CopilotBackgroundShellOutputDeliveryTests
                 MaxTokens = 4_096,
             },
             Mode = CopilotAgentMode.Code,
+            RunControl = runControl,
         };
     }
 
@@ -1231,7 +1362,9 @@ public sealed class CopilotBackgroundShellOutputDeliveryTests
         }
     }
 
-    private sealed class BlockingSteeringChatClient : IChatClient
+    private sealed class BlockingSteeringChatClient(
+        bool failAfterRelease = false,
+        bool blockSecondStream = false) : IChatClient
     {
         private int _callCount;
 
@@ -1239,6 +1372,12 @@ public sealed class CopilotBackgroundShellOutputDeliveryTests
             TaskCreationOptions.RunContinuationsAsynchronously);
 
         public TaskCompletionSource ReleaseStream { get; } = new(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public TaskCompletionSource SecondStreamStarted { get; } = new(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public TaskCompletionSource ReleaseSecondStream { get; } = new(
             TaskCreationOptions.RunContinuationsAsynchronously);
 
         public List<IReadOnlyList<ChatMessage>> StreamingCalls { get; } =
@@ -1262,10 +1401,18 @@ public sealed class CopilotBackgroundShellOutputDeliveryTests
         {
             cancellationToken.ThrowIfCancellationRequested();
             StreamingCalls.Add(messages.ToArray());
-            if (Interlocked.Increment(ref _callCount) == 1)
+            var callCount = Interlocked.Increment(ref _callCount);
+            if (callCount == 1)
             {
                 StreamStarted.TrySetResult();
                 await ReleaseStream.Task.WaitAsync(cancellationToken);
+                if (failAfterRelease)
+                    throw new InvalidOperationException("The test provider failed before returning its first update.");
+            }
+            else if (callCount == 2 && blockSecondStream)
+            {
+                SecondStreamStarted.TrySetResult();
+                await ReleaseSecondStream.Task.WaitAsync(cancellationToken);
             }
 
             yield return new ChatResponseUpdate(ChatRole.Assistant, "done")
@@ -1282,6 +1429,7 @@ public sealed class CopilotBackgroundShellOutputDeliveryTests
         public void Dispose()
         {
             ReleaseStream.TrySetResult();
+            ReleaseSecondStream.TrySetResult();
         }
     }
 

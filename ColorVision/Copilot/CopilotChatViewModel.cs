@@ -5619,6 +5619,13 @@ namespace ColorVision.Copilot
             {
                 foreach (var agentEvent in agentEvents)
                 {
+                    if (agentEvent.Type == CopilotAgentEventType.SteeringRecovery
+                        && RestoreUndeliveredSteering(conversation, agentEvent.SteeringMessages))
+                    {
+                        persistState = true;
+                        persistImmediately = true;
+                    }
+
                     if (agentEvent.Type == CopilotAgentEventType.CheckpointReady)
                     {
                         _taskHost.MarkCheckpointReady(hostedRun.Id);
@@ -5674,6 +5681,22 @@ namespace ColorVision.Copilot
                 if (refreshUserQuestionState)
                     NotifyUserQuestionStateChanged();
             }
+        }
+
+        private bool RestoreUndeliveredSteering(
+            CopilotConversationRecord conversation,
+            IReadOnlyList<string> messages)
+        {
+            var isSelectedConversation = ReferenceEquals(conversation, SelectedConversation);
+            if (!CopilotSteeringRecovery.RestoreToDraft(conversation, messages))
+                return false;
+
+            if (isSelectedConversation)
+                InputText = conversation.DraftText;
+            RefreshCompactHistoryConversations();
+            if (HasConversationSearchQuery)
+                RefreshFilteredConversations();
+            return true;
         }
 
         private async Task<CopilotGoalPostTurnResult> ProcessGoalAfterTurnAsync(

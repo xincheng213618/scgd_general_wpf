@@ -26,9 +26,6 @@ namespace ColorVision.Copilot
         // functions (todo/mode/approval) and the final answer still need iterations.
         private const int HarnessFunctionIterationOverhead = 8;
 
-        private const int MaxSteeringMessageLength = 16_000;
-        private const int MaxPendingSteeringMessages = 8;
-        private const int MaxPendingSteeringCharacters = 32_000;
         private const string SteeringMessageIdPrefix = "colorvision-steering-";
 
         private const string CodeFindingEvidenceInstruction =
@@ -133,7 +130,7 @@ namespace ColorVision.Copilot
             var normalized = (message ?? string.Empty).Trim();
             if (string.IsNullOrWhiteSpace(normalizedTaskId)
                 || string.IsNullOrWhiteSpace(normalized)
-                || normalized.Length > MaxSteeringMessageLength)
+                || normalized.Length > CopilotSteeringMessagePolicy.MaximumMessageCharacters)
             {
                 return new CopilotSteeringAdmissionResult(
                     CopilotSteeringAdmissionReason.InvalidInput);
@@ -162,34 +159,6 @@ namespace ColorVision.Copilot
                                 CopilotSteeringAdmissionReason.NoActiveTask);
                         }
 
-                        var pendingMessages = activeContext.MessageInjector
-                            .GetPendingMessagesAsync(
-                                activeContext.Session,
-                                CancellationToken.None)
-                            .GetAwaiter()
-                            .GetResult();
-                        var pendingSteeringCount = 0;
-                        long pendingSteeringCharacters = 0;
-                        foreach (var pendingMessage in pendingMessages)
-                        {
-                            if (pendingMessage.MessageId?.StartsWith(
-                                SteeringMessageIdPrefix,
-                                StringComparison.Ordinal) != true)
-                            {
-                                continue;
-                            }
-
-                            pendingSteeringCount++;
-                            pendingSteeringCharacters += pendingMessage.Text.Length;
-                        }
-                        if (pendingSteeringCount >= MaxPendingSteeringMessages
-                            || pendingSteeringCharacters + normalized.Length
-                                > MaxPendingSteeringCharacters)
-                        {
-                            return new CopilotSteeringAdmissionResult(
-                                CopilotSteeringAdmissionReason.QueueFull);
-                        }
-
                         var steeringMessage = new Microsoft.Extensions.AI.ChatMessage(
                             ChatRole.User,
                             normalized)
@@ -197,9 +166,13 @@ namespace ColorVision.Copilot
                             MessageId = SteeringMessageIdPrefix
                                 + Guid.NewGuid().ToString("N"),
                         };
-                        activeContext.EnqueueSteeringMessage(
-                            steeringMessage,
-                            normalized);
+                        if (!activeContext.TryEnqueueSteeringMessage(
+                                steeringMessage,
+                                normalized))
+                        {
+                            return new CopilotSteeringAdmissionResult(
+                                CopilotSteeringAdmissionReason.QueueFull);
+                        }
                         return new CopilotSteeringAdmissionResult(
                             CopilotSteeringAdmissionReason.Accepted);
                     }
@@ -1339,6 +1312,9 @@ namespace ColorVision.Copilot
             finally
             {
                 steeringRegistration.StopAcceptingInput();
+                var undeliveredSteeringMessages = steeringRegistration.GetUndeliveredSteeringMessages();
+                if (undeliveredSteeringMessages.Count > 0)
+                    emit(CopilotAgentEvent.SteeringRecovery(undeliveredSteeringMessages));
             }
 
             bridge.CancelOutstandingApprovals();
@@ -4125,7 +4101,7 @@ namespace ColorVision.Copilot
 
             public CopilotAgentTaskEventJournalBuilder TaskEventJournal { get; } = taskEventJournal;
 
-            public void EnqueueSteeringMessage(
+            public bool TryEnqueueSteeringMessage(
                 Microsoft.Extensions.AI.ChatMessage message,
                 string normalizedText)
             {
@@ -4135,6 +4111,15 @@ namespace ColorVision.Copilot
                         nameof(message));
                 lock (_syncRoot)
                 {
+                    if (_undeliveredSteeringMessages.Count
+                            >= CopilotSteeringMessagePolicy.MaximumPendingMessages
+                        || _undeliveredSteeringMessages.Sum(item => item.Text.Length)
+                            + normalizedText.Length
+                            > CopilotSteeringMessagePolicy.MaximumPendingCharacters)
+                    {
+                        return false;
+                    }
+
                     MessageInjector.EnqueueMessagesAsync(
                         Session,
                         [message],
@@ -4143,6 +4128,7 @@ namespace ColorVision.Copilot
                     _undeliveredSteeringMessages.Add(new TrackedSteeringMessage(
                         messageId,
                         normalizedText));
+                    return true;
                 }
             }
 
@@ -4198,6 +4184,16 @@ namespace ColorVision.Copilot
                 }
             }
 
+            public IReadOnlyList<string> GetUndeliveredSteeringMessages()
+            {
+                lock (_syncRoot)
+                {
+                    return _undeliveredSteeringMessages
+                        .Select(message => message.Text)
+                        .ToArray();
+                }
+            }
+
             private sealed class TrackedSteeringMessage(
                 string messageId,
                 string text)
@@ -4223,6 +4219,9 @@ namespace ColorVision.Copilot
 
             public IReadOnlyList<string> GetDeliveredSteeringMessages() =>
                 context.GetDeliveredSteeringMessages();
+
+            public IReadOnlyList<string> GetUndeliveredSteeringMessages() =>
+                context.GetUndeliveredSteeringMessages();
 
             public void Dispose() => StopAcceptingInput();
         }

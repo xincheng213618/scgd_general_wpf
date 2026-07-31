@@ -59,6 +59,9 @@ namespace ColorVision.Copilot
                 case CopilotAgentEventType.AnswerReset:
                     assistantMessage.ResetResponseTimelineText();
                     return CopilotAgentEventPresentationResult.Handled(CopilotAgentEventPersistenceMode.Deferred);
+                case CopilotAgentEventType.SteeringRecovery:
+                    AppendExecutionTrace(assistantMessage, CopilotAgentTraceEntry.Sanitize(agentEvent.Text));
+                    return CopilotAgentEventPresentationResult.Handled(CopilotAgentEventPersistenceMode.Immediate);
                 case CopilotAgentEventType.UserQuestionRequested:
                     assistantMessage.MarkThinkingStarted();
                     assistantMessage.UserQuestion = agentEvent.UserQuestion;

@@ -792,6 +792,7 @@ namespace ColorVision.Copilot
         ReasoningDelta,
         AnswerDelta,
         AnswerReset,
+        SteeringRecovery,
         Error,
         Completed,
         CheckpointReady,
@@ -820,6 +821,8 @@ namespace ColorVision.Copilot
         public CopilotAgentTaskLedgerSnapshot? TaskLedger { get; init; }
 
         public CopilotUserQuestionSnapshot? UserQuestion { get; init; }
+
+        public IReadOnlyList<string> SteeringMessages { get; init; } = Array.Empty<string>();
 
         internal CopilotProviderRetryInfo? ProviderRetry { get; init; }
 
@@ -957,6 +960,21 @@ namespace ColorVision.Copilot
             };
         }
 
+        public static CopilotAgentEvent SteeringRecovery(IEnumerable<string> messages)
+        {
+            ArgumentNullException.ThrowIfNull(messages);
+            var recoveryMessages = CopilotSteeringMessagePolicy.SelectForRecovery(messages);
+            if (recoveryMessages.Count == 0)
+                throw new ArgumentException("Steering recovery requires at least one bounded message.", nameof(messages));
+
+            return new CopilotAgentEvent
+            {
+                Type = CopilotAgentEventType.SteeringRecovery,
+                Text = $"Agent stopped before delivering {recoveryMessages.Count} queued user steering instruction(s); the input was returned to the conversation draft.",
+                SteeringMessages = recoveryMessages,
+            };
+        }
+
         public static CopilotAgentEvent UserQuestionRequested(CopilotUserQuestionSnapshot question)
         {
             ArgumentNullException.ThrowIfNull(question);
@@ -979,6 +997,34 @@ namespace ColorVision.Copilot
                 Type = CopilotAgentEventType.UserQuestionResolved,
                 UserQuestion = question,
             };
+        }
+    }
+
+    internal static class CopilotSteeringMessagePolicy
+    {
+        internal const int MaximumMessageCharacters = 16_000;
+        internal const int MaximumPendingMessages = 8;
+        internal const int MaximumPendingCharacters = 32_000;
+
+        internal static IReadOnlyList<string> SelectForRecovery(IEnumerable<string>? messages)
+        {
+            var selected = new List<string>(MaximumPendingMessages);
+            var characterCount = 0;
+            foreach (var message in messages ?? Array.Empty<string>())
+            {
+                var normalized = (message ?? string.Empty).Trim();
+                if (normalized.Length == 0 || normalized.Length > MaximumMessageCharacters)
+                    continue;
+                if (selected.Count >= MaximumPendingMessages
+                    || characterCount + normalized.Length > MaximumPendingCharacters)
+                {
+                    break;
+                }
+
+                selected.Add(normalized);
+                characterCount += normalized.Length;
+            }
+            return selected.ToArray();
         }
     }
 

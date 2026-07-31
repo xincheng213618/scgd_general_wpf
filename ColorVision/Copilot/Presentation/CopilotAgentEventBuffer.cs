@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -48,7 +49,10 @@ namespace ColorVision.Copilot
 
             public void Add(CopilotAgentEvent agentEvent)
             {
-                Size += Math.Max(1, agentEvent.Text?.Length ?? 0);
+                Size += Math.Max(
+                    1,
+                    (agentEvent.Text?.Length ?? 0)
+                    + agentEvent.SteeringMessages.Sum(message => message?.Length ?? 0));
                 if (_events.Count > 0 && _events[^1].CanAppend(agentEvent))
                 {
                     _events[^1].Append(agentEvent.Text);
