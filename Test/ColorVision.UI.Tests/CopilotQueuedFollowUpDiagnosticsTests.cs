@@ -114,21 +114,6 @@ public sealed class CopilotQueuedFollowUpDiagnosticsTests
             [second, foreign, first],
             "conversation-1",
             2));
-
-        var recurring = new CopilotQueuedFollowUp(
-            "run-loop",
-            "conversation-1",
-            "Conversation",
-            "Recurring",
-            CopilotAgentMode.Auto,
-            new CopilotProfileConfig(),
-            new CopilotAgentHostContextSnapshot(string.Empty, string.Empty, []),
-            recurringJobId: "loop:1a2b3c4d",
-            useConversationAccessContext: false);
-        Assert.Contains(
-            "这里只跳过当前触发，循环计划仍会继续",
-            CopilotQueuedFollowUpDiagnostics.FormatClearConfirmation("Conversation", [recurring]),
-            StringComparison.Ordinal);
     }
 
     [Fact]
@@ -141,35 +126,6 @@ public sealed class CopilotQueuedFollowUpDiagnosticsTests
         Assert.Contains(
             "没有排队",
             CopilotQueuedFollowUpDiagnostics.Format([], "conversation-1"),
-            StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void RecurringFollowUpDoesNotReuseConversationAccessContext()
-    {
-        var followUp = new CopilotQueuedFollowUp(
-            "run-loop",
-            "conversation-1",
-            "Conversation",
-            "check deployment",
-            CopilotAgentMode.Auto,
-            new CopilotProfileConfig(),
-            new CopilotAgentHostContextSnapshot(
-                string.Empty,
-                @"C:\workspace",
-                Array.Empty<CopilotAttachmentItem>()),
-            recurringJobId: "loop:1a2b3c4d",
-            useConversationAccessContext: false);
-
-        Assert.True(followUp.IsRecurringPrompt);
-        Assert.Equal("loop:1a2b3c4d", followUp.RecurringJobId);
-        Assert.False(followUp.UseConversationAccessContext);
-        Assert.Empty(followUp.SubmissionContext.ActiveDocumentPath);
-        Assert.Empty(followUp.SubmissionContext.Attachments);
-        Assert.Null(followUp.SubmissionContext.LiveContext);
-        Assert.Contains(
-            "循环任务",
-            CopilotQueuedFollowUpDiagnostics.Format([followUp], "conversation-1"),
             StringComparison.Ordinal);
     }
 

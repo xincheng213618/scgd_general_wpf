@@ -46,7 +46,6 @@ namespace ColorVision.Copilot
         private readonly ICopilotTurnRuntime _turnRuntime;
         private readonly CopilotSideQuestionService _sideQuestionService;
         private readonly CopilotAgentTaskHost _taskHost;
-        private readonly CopilotRecurringPromptScheduler _recurringPromptScheduler = new();
         private readonly CopilotLocalGitDiffService _localGitDiffService;
         private readonly CopilotPromptHistoryNavigator _promptHistoryNavigator = new();
         private readonly CopilotConversationFindNavigator _conversationFindNavigator = new();
@@ -59,14 +58,12 @@ namespace ColorVision.Copilot
         private readonly ObservableCollection<CopilotComposerReferenceItem> _composerReferenceSuggestions = new();
         private readonly ObservableCollection<CopilotPromptHistorySearchItem> _promptHistorySearchResults = new();
         private readonly Dictionary<string, CopilotQueuedFollowUp> _queuedFollowUpsByRunId = new(StringComparer.Ordinal);
-        private readonly Dictionary<string, string> _recurringPromptJobIdsByRunId = new(StringComparer.Ordinal);
         private readonly Dictionary<string, CopilotNonBlockingCancellationSource> _conversationTitleGenerations = new(StringComparer.Ordinal);
         private readonly CopilotBackgroundShellCommandCompletionNoticeTracker _backgroundCommandNoticeTracker = new();
         private readonly CopilotSubagentCompletionNoticeTracker _subagentCompletionNoticeTracker = new();
         private readonly HashSet<CopilotNonBlockingCancellationSource> _auxiliaryOperationCancellations = new();
         private readonly DispatcherTimer _conversationSearchDebounceTimer;
         private readonly DispatcherTimer _pendingActionExpiryTimer;
-        private readonly DispatcherTimer _recurringPromptTimer;
         private CopilotNonBlockingCancellationSource? _pendingActionFeedbackCts;
         private CopilotNonBlockingCancellationSource? _compactConversationCts;
         private CopilotNonBlockingCancellationSource? _fileAttachmentCts;
@@ -155,11 +152,6 @@ namespace ColorVision.Copilot
                 Interval = ConversationSearchDebounceDelay,
             };
             _conversationSearchDebounceTimer.Tick += ConversationSearchDebounceTimer_Tick;
-            _recurringPromptTimer = new DispatcherTimer
-            {
-                Interval = TimeSpan.FromSeconds(1),
-            };
-            _recurringPromptTimer.Tick += RecurringPromptTimer_Tick;
             _currentLiveContext = CopilotLiveContextRegistry.Current;
             _activeDocumentPath = TryGetActiveDocumentPath();
 
@@ -2089,9 +2081,6 @@ namespace ColorVision.Copilot
                 case CopilotLocalCommandKind.StopTask:
                     StopTaskFromCommand(command);
                     break;
-                case CopilotLocalCommandKind.RecurringPrompt:
-                    HandleRecurringPromptCommand(command, invocation.Arguments);
-                    break;
                 case CopilotLocalCommandKind.Approve:
                     HandlePendingApprovalCommand(command, invocation.Arguments);
                     break;
@@ -2470,8 +2459,6 @@ namespace ColorVision.Copilot
                     {
                         var reason = queuedFollowUp.IsAutomaticGoalContinuation
                             ? "自动持续目标续作不能转成手动草稿；可用 delete 取消并暂停目标。"
-                            : queuedFollowUp.IsRecurringPrompt
-                                ? "循环任务触发不能转成手动草稿；可用 delete 跳过本次，或用 /loop cancel <任务 ID> 停止计划。"
                             : "请先退出消息编辑，并清空当前草稿、附件及目标会话草稿。";
                         ShowLocalCommandResult(command, $"无法编辑 #{originalPosition:N0}。{reason}");
                         return;
@@ -2502,271 +2489,9 @@ namespace ColorVision.Copilot
                     ShowLocalCommandResult(
                         command,
                         $"已取消原 #{originalPosition:N0}，其请求不会执行。"
-                        + (pausedGoal ? " 对应持续目标也已暂停。" : string.Empty)
-                        + (queuedFollowUp.IsRecurringPrompt
-                            ? " 这只跳过当前触发；循环计划仍会继续。"
-                            : string.Empty));
+                        + (pausedGoal ? " 对应持续目标也已暂停。" : string.Empty));
                     break;
             }
-        }
-
-        private void HandleRecurringPromptCommand(
-            CopilotLocalCommand command,
-            string arguments)
-        {
-            var request = CopilotLoopCommand.Parse(arguments);
-            switch (request.Action)
-            {
-                case CopilotLoopCommandAction.Usage:
-                    ShowLocalCommandResult(command, CopilotLoopCommand.Usage);
-                    return;
-                case CopilotLoopCommandAction.List:
-                    ShowLocalCommandResult(
-                        command,
-                        CopilotRecurringPromptDiagnostics.Format(
-                            _recurringPromptScheduler.GetJobs(DateTimeOffset.UtcNow),
-                            DateTimeOffset.UtcNow));
-                    return;
-                case CopilotLoopCommandAction.Cancel:
-                    CancelRecurringPromptFromCommand(command, request.JobId);
-                    return;
-                case CopilotLoopCommandAction.Invalid:
-                    ShowLocalCommandResult(
-                        command,
-                        request.ErrorMessage + Environment.NewLine + CopilotLoopCommand.Usage);
-                    return;
-            }
-
-            var conversation = SelectedConversation;
-            var profile = SelectedProfile;
-            if (conversation == null || conversation.IsArchived)
-            {
-                ShowLocalCommandResult(command, "当前没有可接收循环请求的活动会话。");
-                return;
-            }
-            if (profile?.IsConfigured != true)
-            {
-                ShowLocalCommandResult(command, "当前模型 Profile 尚未配置完成，无法创建循环任务。");
-                return;
-            }
-            if (!TryValidateComposerCharacterLimit(request.Prompt))
-                return;
-
-            var requestProfile = CreateConversationRequestProfile(profile, conversation);
-            if (!TryValidatePromptBudget(request.Prompt, CopilotAgentMode.Auto, requestProfile))
-                return;
-
-            var workspacePath = CaptureHostedTurnSnapshot(
-                Array.Empty<CopilotAttachmentItem>()).SolutionDirectoryPath;
-            var now = DateTimeOffset.UtcNow;
-            if (!_recurringPromptScheduler.TryCreate(
-                    conversation.Id,
-                    conversation.Title,
-                    profile.Id,
-                    workspacePath,
-                    request.Prompt,
-                    request.Interval,
-                    now,
-                    out var job,
-                    out var errorMessage)
-                || job == null)
-            {
-                ShowLocalCommandResult(command, errorMessage);
-                return;
-            }
-
-            _recurringPromptTimer.Start();
-            ProcessRecurringPromptJobs(now);
-            var currentJob = _recurringPromptScheduler.GetJobs(DateTimeOffset.UtcNow)
-                .FirstOrDefault(candidate => string.Equals(candidate.Id, job.Id, StringComparison.Ordinal));
-            var status = currentJob?.LastStatus ?? "正在等待首次调度";
-            var clampNotice = request.IntervalWasClamped
-                ? " 输入间隔低于安全下限，已调整为 60 秒。"
-                : string.Empty;
-            ShowLocalCommandResult(
-                command,
-                $"已创建循环任务 {job.Id}：每 {CopilotLoopCommand.FormatInterval(job.Interval)}执行一次，首次立即触发。"
-                + clampNotice
-                + Environment.NewLine
-                + $"当前状态：{status}。任务创建 7 天后自动过期，仅在当前应用会话内有效。"
-                + Environment.NewLine
-                + "触发时不携带活动文档、附件或 Live Context，也不会复用一次性临时自动复核授权。");
-        }
-
-        private void CancelRecurringPromptFromCommand(
-            CopilotLocalCommand command,
-            string jobId)
-        {
-            if (!_recurringPromptScheduler.Cancel(jobId, out var cancelled) || cancelled == null)
-            {
-                ShowLocalCommandResult(
-                    command,
-                    $"没有找到循环任务 {jobId}；它可能已取消、过期或属于之前的应用会话。输入 /loop list 查看当前任务。");
-                return;
-            }
-
-            var cancelledQueuedRuns = 0;
-            foreach (var queuedFollowUp in QueuedFollowUps
-                .Where(item => string.Equals(item.RecurringJobId, jobId, StringComparison.OrdinalIgnoreCase))
-                .ToArray())
-            {
-                if (TryDeleteQueuedFollowUp(queuedFollowUp, out _))
-                    cancelledQueuedRuns++;
-            }
-            StopRecurringPromptTimerIfIdle();
-
-            ShowLocalCommandResult(
-                command,
-                $"已取消循环任务 {cancelled.Id}；后续触发已停止。"
-                + (cancelledQueuedRuns > 0
-                    ? $" 同时取消了 {cancelledQueuedRuns:N0} 条尚未开始的触发请求。"
-                    : " 已经开始执行的触发请求不会被强制中断。"));
-        }
-
-        private void RecurringPromptTimer_Tick(object? sender, EventArgs e)
-        {
-            ProcessRecurringPromptJobs(DateTimeOffset.UtcNow);
-        }
-
-        private void ProcessRecurringPromptJobs(DateTimeOffset now)
-        {
-            if (Volatile.Read(ref _disposeState) == 1)
-                return;
-
-            var processed = 0;
-            while (processed < 4
-                && _recurringPromptScheduler.TryClaimDue(now, out var dispatch)
-                && dispatch != null)
-            {
-                processed++;
-                try
-                {
-                    TryScheduleRecurringPrompt(dispatch.Job, now);
-                }
-                catch (Exception ex)
-                {
-                    _recurringPromptScheduler.CompleteDispatch(
-                        dispatch.Job.Id,
-                        scheduled: false,
-                        "调度异常，等待重试：" + CopilotAgentTraceEntry.Sanitize(ex.Message),
-                        now);
-                }
-            }
-
-            StopRecurringPromptTimerIfIdle();
-        }
-
-        private void TryScheduleRecurringPrompt(
-            CopilotRecurringPromptJobSnapshot job,
-            DateTimeOffset now)
-        {
-            if (_recurringPromptJobIdsByRunId.Values.Contains(job.Id, StringComparer.OrdinalIgnoreCase))
-            {
-                _recurringPromptScheduler.CompleteDispatch(
-                    job.Id,
-                    scheduled: false,
-                    "上一次触发仍在排队或执行，等待完成后重试",
-                    now);
-                return;
-            }
-
-            var conversation = Conversations.FirstOrDefault(candidate =>
-                string.Equals(candidate.Id, job.ConversationId, StringComparison.Ordinal));
-            if (conversation == null || conversation.IsArchived)
-            {
-                _recurringPromptScheduler.CompleteDispatch(
-                    job.Id,
-                    scheduled: false,
-                    "目标会话已不存在或已归档",
-                    now,
-                    terminal: true);
-                return;
-            }
-
-            var profile = ResolveProfile(job.ProfileId);
-            if (profile?.IsConfigured != true)
-            {
-                _recurringPromptScheduler.CompleteDispatch(
-                    job.Id,
-                    scheduled: false,
-                    "创建时使用的模型 Profile 当前不可用，等待重试",
-                    now);
-                return;
-            }
-
-            var requestProfile = CreateConversationRequestProfile(profile, conversation);
-            var submissionContext = new CopilotAgentHostContextSnapshot(
-                activeDocumentPath: string.Empty,
-                job.WorkspacePath,
-                Array.Empty<CopilotAttachmentItem>(),
-                liveContext: null,
-                CopilotConversationRequestBuilder.CaptureHistorySnapshot(conversation),
-                conversation.AdditionalReadRootPaths);
-            var itemReady = new TaskCompletionSource<CopilotQueuedFollowUp>(
-                TaskCreationOptions.RunContinuationsAsynchronously);
-            async Task ExecuteRecurringPromptAsync(CopilotHostedAgentRun run)
-            {
-                var queuedItem = await itemReady.Task.ConfigureAwait(false);
-                await ExecuteQueuedFollowUpAsync(run, queuedItem).ConfigureAwait(false);
-            }
-
-            var activeRun = ActiveHostedRun;
-            CopilotHostedAgentRun? queuedRun;
-            CopilotRequestAdmissionResult admission;
-            var scheduled = activeRun?.IsAgent == true
-                && string.Equals(activeRun.ConversationId, conversation.Id, StringComparison.Ordinal)
-                    ? _taskHost.TryScheduleFollowUp(
-                        conversation.Id,
-                        CopilotAgentMode.Auto,
-                        ExecuteRecurringPromptAsync,
-                        out queuedRun,
-                        out admission)
-                    : _taskHost.TrySchedule(
-                        conversation.Id,
-                        CopilotAgentMode.Auto,
-                        ExecuteRecurringPromptAsync,
-                        out queuedRun,
-                        out admission);
-            if (!scheduled || queuedRun == null)
-            {
-                _recurringPromptScheduler.CompleteDispatch(
-                    job.Id,
-                    scheduled: false,
-                    GetRequestAdmissionText(admission),
-                    now);
-                return;
-            }
-
-            var queuedFollowUp = new CopilotQueuedFollowUp(
-                queuedRun.Id,
-                conversation.Id,
-                conversation.Title,
-                job.Prompt,
-                CopilotAgentMode.Auto,
-                requestProfile,
-                submissionContext,
-                recurringJobId: job.Id,
-                useConversationAccessContext: false);
-            _queuedFollowUpsByRunId.Add(queuedRun.Id, queuedFollowUp);
-            _recurringPromptJobIdsByRunId.Add(queuedRun.Id, job.Id);
-            QueuedFollowUps.Add(queuedFollowUp);
-            AddQueuedFollowUpRecovery(queuedFollowUp);
-            itemReady.SetResult(queuedFollowUp);
-            if (queuedRun.HasStarted)
-                RemoveQueuedFollowUp(queuedRun.Id, removeRecoveryRecord: true);
-            RefreshQueuedFollowUpPositions();
-            PersistState(immediate: true);
-            _recurringPromptScheduler.CompleteDispatch(
-                job.Id,
-                scheduled: true,
-                queuedRun.HasStarted ? "已开始执行" : "已排入 Agent 宿主",
-                now);
-        }
-
-        private void StopRecurringPromptTimerIfIdle()
-        {
-            if (!_recurringPromptScheduler.HasJobs)
-                _recurringPromptTimer.Stop();
         }
 
         private void ClearQueuedFollowUpsFromCommand(CopilotLocalCommand command)
@@ -2797,7 +2522,6 @@ namespace ColorVision.Copilot
 
             var cancelled = 0;
             var pausedGoals = 0;
-            var recurringPrompts = 0;
             foreach (var queuedFollowUp in queuedFollowUps)
             {
                 if (!TryDeleteQueuedFollowUp(queuedFollowUp, out var pausedGoal))
@@ -2806,8 +2530,6 @@ namespace ColorVision.Copilot
                 cancelled++;
                 if (pausedGoal)
                     pausedGoals++;
-                if (queuedFollowUp.IsRecurringPrompt)
-                    recurringPrompts++;
             }
 
             var failed = queuedFollowUps.Count - cancelled;
@@ -2822,12 +2544,6 @@ namespace ColorVision.Copilot
                 builder.Append("已暂停 ")
                     .Append(pausedGoals.ToString("N0", CultureInfo.CurrentCulture))
                     .AppendLine(" 个仍活动的对应持续目标。");
-            }
-            if (recurringPrompts > 0)
-            {
-                builder.Append("其中 ")
-                    .Append(recurringPrompts.ToString("N0", CultureInfo.CurrentCulture))
-                    .AppendLine(" 条来自循环任务；这里只跳过当前触发，循环计划仍会继续。");
             }
             if (failed > 0)
             {
@@ -4537,8 +4253,7 @@ namespace ColorVision.Copilot
             CopilotChatMessage userMessage,
             CopilotChatMessage assistantMessage,
             CopilotAgentHostContextSnapshot turnSnapshot,
-            bool refreshExternalContext,
-            bool useConversationAccessContext = true)
+            bool refreshExternalContext)
         {
             var boundGoalId = CopilotUiDispatcher.Invoke(
                 () => conversation.Goal?.IsActive == true ? conversation.Goal.Id : string.Empty,
@@ -4553,8 +4268,7 @@ namespace ColorVision.Copilot
                     userMessage,
                     assistantMessage,
                     turnSnapshot,
-                    refreshExternalContext,
-                    useConversationAccessContext);
+                    refreshExternalContext);
                 CopilotHostedTurnCompletion.PrepareTerminalEvidence(assistantMessage);
                 var goalResult = await ProcessGoalAfterTurnAsync(
                     hostedRun,
@@ -4615,8 +4329,7 @@ namespace ColorVision.Copilot
             {
                 CopilotUiDispatcher.Invoke(() =>
                 {
-                    if (useConversationAccessContext
-                        && conversation.RevokeFullAccessGrant(hostedRun.Id)
+                    if (conversation.RevokeFullAccessGrant(hostedRun.Id)
                         && ReferenceEquals(SelectedConversation, conversation))
                     {
                         OnComposerAccessModeChanged();
@@ -4665,11 +4378,10 @@ namespace ColorVision.Copilot
             CopilotChatMessage userMessage,
             CopilotChatMessage assistantMessage,
             CopilotAgentHostContextSnapshot turnSnapshot,
-            bool refreshExternalContext,
-            bool useConversationAccessContext)
+            bool refreshExternalContext)
         {
             var cancellationToken = hostedRun.CancellationToken;
-            if (hostedRun.IsAgent && useConversationAccessContext)
+            if (hostedRun.IsAgent)
             {
                 CopilotUiDispatcher.Invoke(() =>
                 {
@@ -4712,9 +4424,7 @@ namespace ColorVision.Copilot
             }
 
             var sessionCheckpoint = conversation.AgentSessionCheckpoint;
-            var accessContext = useConversationAccessContext
-                ? conversation.AccessContext
-                : new CopilotAgentAccessContext();
+            var accessContext = conversation.AccessContext;
             var turnRequest = new CopilotTurnRequest(
                 requestProfile,
                 userMessage.RequestMode,
@@ -4952,7 +4662,6 @@ namespace ColorVision.Copilot
             }
             if (e.Kind == CopilotAgentTaskHostChangeKind.Completed)
             {
-                _recurringPromptJobIdsByRunId.Remove(e.Run.Id);
                 CaptureCompletedAgentRunNotice(e.Run);
                 RefreshAgentTasks();
             }
@@ -6334,10 +6043,8 @@ namespace ColorVision.Copilot
             }
 
             var archivedTitle = conversation.Title;
-            var cancelledRecurringPrompts = _recurringPromptScheduler.CancelConversation(conversation.Id);
             AcknowledgeBackgroundCommandNotices(conversation.Id);
             AcknowledgeSubagentCompletionNotices(conversation.Id);
-            StopRecurringPromptTimerIfIdle();
             conversation.IsArchived = true;
             conversation.Touch();
             conversation.RefreshSummary();
@@ -6353,10 +6060,7 @@ namespace ColorVision.Copilot
             ShowLocalCommandResult(
                 command,
                 $"已归档“{archivedTitle}”。内容仍保留，但已从常用会话列表和 /resume 中隐藏。\n\n"
-                + "使用 /archived 查看，或 /unarchive <会话 ID 或唯一完整标题> 恢复。"
-                + (cancelledRecurringPrompts > 0
-                    ? $"\n\n同时停止了该会话的 {cancelledRecurringPrompts:N0} 个循环任务。"
-                    : string.Empty));
+                + "使用 /archived 查看，或 /unarchive <会话 ID 或唯一完整标题> 恢复。");
         }
 
         private void UnarchiveConversation(CopilotLocalCommand command, string query)
@@ -7031,8 +6735,7 @@ namespace ColorVision.Copilot
                 preparedTurn.UserMessage,
                 preparedTurn.AssistantMessage,
                 preparedTurn.TurnSnapshot,
-                refreshExternalContext: true,
-                useConversationAccessContext: queuedFollowUp.UseConversationAccessContext).ConfigureAwait(false);
+                refreshExternalContext: true).ConfigureAwait(false);
         }
 
         private CopilotPreparedQueuedFollowUpTurn? PrepareQueuedFollowUpTurn(CopilotQueuedFollowUp queuedFollowUp)
@@ -7109,7 +6812,6 @@ namespace ColorVision.Copilot
         {
             if (queuedFollowUp == null
                 || queuedFollowUp.IsAutomaticGoalContinuation
-                || queuedFollowUp.IsRecurringPrompt
                 || IsEditingMessage
                 || !IsInputEmpty)
             {
@@ -9110,8 +8812,6 @@ namespace ColorVision.Copilot
             ClearAgentRunNoticeForConversation(target.Id);
             AcknowledgeBackgroundCommandNotices(target.Id);
             AcknowledgeSubagentCompletionNotices(target.Id);
-            _recurringPromptScheduler.CancelConversation(target.Id);
-            StopRecurringPromptTimerIfIdle();
 
             var currentIndex = Conversations.IndexOf(target);
             if (!Conversations.Remove(target))
@@ -10726,9 +10426,6 @@ namespace ColorVision.Copilot
             _sideConversationSession = null;
             if (_sideQuestionCts != null)
                 _sideQuestionCts.RequestCancellation();
-            _recurringPromptTimer.Stop();
-            _recurringPromptScheduler.Clear();
-            _recurringPromptJobIdsByRunId.Clear();
             RestoreQueuedFollowUpsToDrafts();
             CopilotSteeringRecovery.RestorePendingToDrafts(_state);
             var scheduledRuns = _taskHost.ScheduledRuns;
@@ -10826,10 +10523,6 @@ namespace ColorVision.Copilot
             _conversationSearchDebounceTimer.Stop();
             _conversationSearchDebounceTimer.Tick -= ConversationSearchDebounceTimer_Tick;
             _pendingActionExpiryTimer.Stop();
-            _recurringPromptTimer.Stop();
-            _recurringPromptTimer.Tick -= RecurringPromptTimer_Tick;
-            _recurringPromptScheduler.Clear();
-            _recurringPromptJobIdsByRunId.Clear();
             _pendingActionFeedbackCts?.RequestCancellation();
             _pendingActionFeedbackCts = null;
             _compactConversationCts?.RequestCancellation();
