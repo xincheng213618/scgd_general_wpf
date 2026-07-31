@@ -194,6 +194,109 @@ public sealed class CopilotBackgroundShellOutputDeliveryTests
                     .BackgroundCommandOutputObserved);
     }
 
+    [Fact]
+    public async Task CompletionDuringQuestionTransfersOutputBeforeTerminalIntoSameAgentRun()
+    {
+        using var provider = new QuestionThenAnswerChatClient();
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry([]),
+            new CopilotAgentContextBuilder(),
+            new CopilotToolExecutor(),
+            _ => provider,
+            EmptyExternalToolProvider.Instance,
+            new CopilotCapabilityCatalog());
+        var questionReady =
+            new TaskCompletionSource<CopilotUserQuestionSnapshot>(
+                TaskCreationOptions.RunContinuationsAsynchronously);
+        var request = CreateRequest(
+            "conversation",
+            "Ask one question, then finish after the answer.");
+        var runTask = runtime.RunAsync(
+            request,
+            agentEvent =>
+            {
+                if (agentEvent.Type
+                        == CopilotAgentEventType.UserQuestionRequested
+                    && agentEvent.UserQuestion != null)
+                {
+                    questionReady.TrySetResult(agentEvent.UserQuestion);
+                }
+            },
+            CancellationToken.None);
+        var question = await questionReady.Task.WaitAsync(
+            TimeSpan.FromSeconds(5));
+
+        Assert.True(runtime.TryEnqueueBackgroundShellCommandOutput(
+            CreateOutputEvent(
+                "conversation",
+                "final output before completion")));
+        Assert.True(runtime.TryEnqueueBackgroundShellCommandCompletion(
+            CreateCompletedCommand("conversation")));
+        Assert.True(runtime.TryAnswerUserQuestion(
+            request.TaskId,
+            question.RequestId,
+            "typed answer"));
+
+        var result = await runTask.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.Equal(CopilotAgentStopReason.Completed, result.StopReason);
+        var resumedCall = Assert.Single(
+            provider.StreamingCalls,
+            call => call.Any(message => message.Text.Contains(
+                "<background_command_event>",
+                StringComparison.Ordinal)));
+        var functionResultIndex = resumedCall
+            .Select((message, index) => new
+            {
+                Message = message,
+                Index = index,
+            })
+            .First(item => item.Message.Contents
+                .OfType<FunctionResultContent>()
+                .Any())
+            .Index;
+        var injectedMessage = resumedCall
+            .Select((message, index) => new
+            {
+                Message = message,
+                Index = index,
+            })
+            .Single(item => item.Message.Text.Contains(
+                "<background_command_event>",
+                StringComparison.Ordinal));
+        var outputEventIndex = injectedMessage.Message.Text.IndexOf(
+            "<background_command_output_event>",
+            StringComparison.Ordinal);
+        var terminalEventIndex = injectedMessage.Message.Text.IndexOf(
+            "<background_command_event>",
+            StringComparison.Ordinal);
+        Assert.True(injectedMessage.Index > functionResultIndex);
+        Assert.True(outputEventIndex >= 0);
+        Assert.True(terminalEventIndex > outputEventIndex);
+        Assert.Contains(
+            "\"content\":\"final output before completion\"",
+            injectedMessage.Message.Text,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "\"background_id\":\"background:deferred\"",
+            injectedMessage.Message.Text,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "\"state\":\"completed\"",
+            injectedMessage.Message.Text,
+            StringComparison.Ordinal);
+        Assert.Single(
+            result.TaskEventJournal.Events,
+            item => item.Type
+                == CopilotAgentTaskEventType
+                    .BackgroundCommandOutputObserved);
+        Assert.Single(
+            result.TaskEventJournal.Events,
+            item => item.Type
+                == CopilotAgentTaskEventType
+                    .BackgroundCommandCompleted);
+    }
+
     private static string ExtractDeliveryId(string prompt)
     {
         var match = Regex.Match(
@@ -245,6 +348,31 @@ public sealed class CopilotBackgroundShellOutputDeliveryTests
                 SuppressedEvents: 0),
             content,
             suppressedEvents: 0);
+    }
+
+    private static CopilotBackgroundShellCommandSnapshot
+        CreateCompletedCommand(string conversationId)
+    {
+        return new CopilotBackgroundShellCommandSnapshot(
+            "background:deferred",
+            conversationId,
+            "task:deferred",
+            CopilotShellKind.PowerShell,
+            @"C:\workspace",
+            "background command",
+            new string('a', 64),
+            DateTimeOffset.Parse("2026-07-31T00:00:00Z"),
+            DateTimeOffset.Parse("2026-07-31T00:00:01Z"),
+            42,
+            true,
+            CopilotBackgroundShellCommandState.Completed,
+            0,
+            "final output before completion",
+            string.Empty)
+        {
+            ObservedStandardOutputCharacters =
+                "final output before completion".Length,
+        };
     }
 
     private sealed class CapturingChatClient : IChatClient

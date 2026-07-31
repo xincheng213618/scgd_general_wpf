@@ -43,6 +43,10 @@ namespace ColorVision.Copilot
         private readonly CopilotUserQuestionCoordinator _userQuestionCoordinator = new();
         private readonly CopilotBackgroundShellOutputEventInbox
             _backgroundShellOutputEventInbox = new();
+        private readonly Dictionary<string,
+            List<CopilotBackgroundShellCommandSnapshot>>
+            _deferredBackgroundShellCompletionsByConversation =
+                new(StringComparer.Ordinal);
         private readonly object _backgroundOutputRoutingSyncRoot = new();
         private readonly object _steeringSyncRoot = new();
         private ActiveSteeringContext? _activeSteeringContext;
@@ -158,9 +162,61 @@ namespace ColorVision.Copilot
             CopilotBackgroundShellCommandSnapshot snapshot)
         {
             ArgumentNullException.ThrowIfNull(snapshot);
-            if (_userQuestionCoordinator.HasPendingQuestion)
-                return false;
+            lock (_backgroundOutputRoutingSyncRoot)
+            {
+                return _userQuestionCoordinator.HasPendingQuestion
+                    ? TryDeferBackgroundShellCommandCompletion(snapshot)
+                    : TryEnqueueBackgroundShellCommandCompletionCore(snapshot);
+            }
+        }
 
+        private bool TryDeferBackgroundShellCommandCompletion(
+            CopilotBackgroundShellCommandSnapshot snapshot)
+        {
+            ActiveSteeringContext? activeContext;
+            lock (_steeringSyncRoot)
+                activeContext = _activeSteeringContext;
+
+            if (activeContext == null
+                || !CopilotBackgroundShellCommandAgentEvent.TryCreateMessage(
+                    snapshot,
+                    activeContext.ConversationId,
+                    out _))
+            {
+                return false;
+            }
+
+            if (!_deferredBackgroundShellCompletionsByConversation.TryGetValue(
+                    activeContext.ConversationId,
+                    out var completions))
+            {
+                completions = [];
+                _deferredBackgroundShellCompletionsByConversation[
+                    activeContext.ConversationId] = completions;
+            }
+
+            var existingIndex = completions.FindIndex(item =>
+                string.Equals(item.Id, snapshot.Id, StringComparison.Ordinal));
+            if (existingIndex >= 0)
+            {
+                completions[existingIndex] = snapshot;
+                return true;
+            }
+
+            if (completions.Count
+                >= CopilotBackgroundShellCommandRegistry
+                    .MaximumActivePerConversation)
+            {
+                return false;
+            }
+
+            completions.Add(snapshot);
+            return true;
+        }
+
+        private bool TryEnqueueBackgroundShellCommandCompletionCore(
+            CopilotBackgroundShellCommandSnapshot snapshot)
+        {
             ActiveSteeringContext? activeContext;
             lock (_steeringSyncRoot)
                 activeContext = _activeSteeringContext;
@@ -275,13 +331,13 @@ namespace ColorVision.Copilot
                     return false;
                 }
 
-                TryTransferDeferredBackgroundShellOutputToActiveSession();
+                TryTransferDeferredBackgroundShellSignalsToActiveSession();
                 return true;
             }
         }
 
         private bool
-            TryTransferDeferredBackgroundShellOutputToActiveSession()
+            TryTransferDeferredBackgroundShellSignalsToActiveSession()
         {
             ActiveSteeringContext? activeContext;
             lock (_steeringSyncRoot)
@@ -292,13 +348,37 @@ namespace ColorVision.Copilot
             using var delivery =
                 _backgroundShellOutputEventInbox.BeginDelivery(
                     activeContext.ConversationId);
-            var messages = CreateDeferredBackgroundOutputMessages(
+            var outputMessages = CreateDeferredBackgroundOutputMessages(
                 delivery.Events,
                 activeContext.ConversationId);
+            var completions =
+                _deferredBackgroundShellCompletionsByConversation.TryGetValue(
+                    activeContext.ConversationId,
+                    out var deferredCompletions)
+                    ? deferredCompletions
+                    : [];
+            var completionMessages = completions
+                .Select(snapshot =>
+                    CopilotBackgroundShellCommandAgentEvent.TryCreateMessage(
+                        snapshot,
+                        activeContext.ConversationId,
+                        out var message)
+                        ? message
+                        : string.Empty)
+                .Where(message => !string.IsNullOrWhiteSpace(message))
+                .ToArray();
+            var messages = outputMessages
+                .Concat(completionMessages)
+                .ToArray();
             if (messages.Length == 0)
             {
                 if (delivery.Events.Count > 0)
                     delivery.Commit();
+                if (completions.Count > 0)
+                {
+                    _deferredBackgroundShellCompletionsByConversation.Remove(
+                        activeContext.ConversationId);
+                }
                 return false;
             }
 
@@ -321,6 +401,16 @@ namespace ColorVision.Copilot
                     activeContext.TaskEventJournal
                         .RecordBackgroundShellCommandOutput(
                             deferredEvent.EventArgs);
+                }
+                foreach (var completion in completions)
+                {
+                    activeContext.TaskEventJournal
+                        .RecordBackgroundShellCommandCompletion(completion);
+                }
+                if (completions.Count > 0)
+                {
+                    _deferredBackgroundShellCompletionsByConversation.Remove(
+                        activeContext.ConversationId);
                 }
                 return true;
             }
@@ -1801,10 +1891,22 @@ namespace ColorVision.Copilot
 
         private void ClearSteeringContext(ActiveSteeringContext context)
         {
-            lock (_steeringSyncRoot)
+            lock (_backgroundOutputRoutingSyncRoot)
             {
-                if (ReferenceEquals(_activeSteeringContext, context))
-                    _activeSteeringContext = null;
+                var cleared = false;
+                lock (_steeringSyncRoot)
+                {
+                    if (ReferenceEquals(_activeSteeringContext, context))
+                    {
+                        _activeSteeringContext = null;
+                        cleared = true;
+                    }
+                }
+                if (cleared)
+                {
+                    _deferredBackgroundShellCompletionsByConversation.Remove(
+                        context.ConversationId);
+                }
             }
         }
 
