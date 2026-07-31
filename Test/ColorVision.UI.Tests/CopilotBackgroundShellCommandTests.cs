@@ -320,6 +320,9 @@ public sealed class CopilotBackgroundShellCommandTests
         var launcher = new FakeBackgroundLauncher();
         var registry = new CopilotBackgroundShellCommandRegistry(launcher);
         var waitTool = new CopilotWaitForBackgroundShellCommandTool(registry);
+        var progressTool = Assert.IsAssignableFrom<ICopilotProgressReportingTool>(
+            waitTool);
+        var progress = new CopilotToolProgressContext();
         var request = CreateRequest("run PowerShell in background");
         try
         {
@@ -332,14 +335,36 @@ public sealed class CopilotBackgroundShellCommandTests
                 started.Snapshot!.Id,
                 outputContains: "SERVER READY",
                 timeoutSeconds: 2);
-            var waiting = waitTool.ExecuteAsync(
+            var waiting = progressTool.ExecuteWithProgressAsync(
                 request,
                 input,
+                progress,
                 CancellationToken.None);
+            Assert.Equal(
+                CopilotToolProgressWaitResult.Updated,
+                await progress.WaitForUpdateAsync(
+                    TimeSpan.FromSeconds(1),
+                    CancellationToken.None));
+            Assert.Contains(
+                "正在观察后台命令",
+                progress.LatestSnapshot!.Message,
+                StringComparison.Ordinal);
             await Task.Delay(75);
             launcher.LastProcess!.SetOutput(
                 "server ready token=background-secret",
                 string.Empty);
+            Assert.Equal(
+                CopilotToolProgressWaitResult.Updated,
+                await progress.WaitForUpdateAsync(
+                    TimeSpan.FromSeconds(1),
+                    CancellationToken.None));
+            Assert.Equal(
+                "后台命令 输出: server ready token=<redacted>",
+                progress.LatestSnapshot!.Message);
+            Assert.DoesNotContain(
+                "background-secret",
+                progress.LatestSnapshot.Message,
+                StringComparison.Ordinal);
 
             var observed = await waiting;
 

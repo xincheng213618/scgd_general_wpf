@@ -327,7 +327,8 @@ namespace ColorVision.Copilot
     }
 
     public sealed class CopilotWaitForBackgroundShellCommandTool :
-        ICopilotAgentDrivenTool
+        ICopilotAgentDrivenTool,
+        ICopilotProgressReportingTool
     {
         private static readonly CopilotToolInputSchema Schema =
             CopilotToolInputSchema.FromJsonSchema(
@@ -376,7 +377,7 @@ namespace ColorVision.Copilot
 
         public string Name => "WaitForBackgroundShellCommand";
 
-        public string Description => "Wait for at most 30 seconds until one exact current-conversation background command reaches a terminal state or its bounded redacted stdout/stderr contains an optional literal marker. A timeout is an observed running state, not proof of readiness. This tool performs no process mutation and never exposes another conversation.";
+        public string Description => "Wait for at most 30 seconds until one exact current-conversation background command reaches a terminal state or its bounded redacted stdout/stderr contains an optional literal marker. Bounded redacted output changes are reported through the live tool-progress stream while waiting. A timeout is an observed running state, not proof of readiness. This tool performs no process mutation and never exposes another conversation.";
 
         public CopilotToolCapabilityDescriptor Capability { get; } =
             CopilotToolCapabilityDescriptor.ReadOnly(
@@ -398,9 +399,34 @@ namespace ColorVision.Copilot
             CopilotAgentToolInput toolInput) =>
             "system:background-shell-status";
 
-        public async Task<CopilotToolResult> ExecuteAsync(
+        public Task<CopilotToolResult> ExecuteAsync(
             CopilotAgentRequest request,
             CopilotAgentToolInput toolInput,
+            CancellationToken cancellationToken) =>
+            ExecuteCoreAsync(
+                request,
+                toolInput,
+                progress: null,
+                cancellationToken);
+
+        public Task<CopilotToolResult> ExecuteWithProgressAsync(
+            CopilotAgentRequest request,
+            CopilotAgentToolInput toolInput,
+            CopilotToolProgressContext progress,
+            CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(progress);
+            return ExecuteCoreAsync(
+                request,
+                toolInput,
+                progress,
+                cancellationToken);
+        }
+
+        private async Task<CopilotToolResult> ExecuteCoreAsync(
+            CopilotAgentRequest request,
+            CopilotAgentToolInput toolInput,
+            CopilotToolProgressContext? progress,
             CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(request);
@@ -429,11 +455,45 @@ namespace ColorVision.Copilot
                     $"timeoutSeconds must be an integer from {CopilotBackgroundShellCommandRegistry.MinimumObservationTimeoutSeconds} through {CopilotBackgroundShellCommandRegistry.MaximumObservationTimeoutSeconds}.");
             }
 
+            var lastStandardOutput = string.Empty;
+            var lastStandardError = string.Empty;
+            progress?.Report($"正在观察后台命令 {backgroundId}");
+            void ReportSnapshot(CopilotBackgroundShellCommandSnapshot snapshot)
+            {
+                if (progress == null)
+                    return;
+                if (!string.Equals(
+                        lastStandardOutput,
+                        snapshot.StandardOutput,
+                        StringComparison.Ordinal))
+                {
+                    lastStandardOutput = snapshot.StandardOutput;
+                    CopilotProcessExecutionSupport.ReportLatestOutput(
+                        progress,
+                        "后台命令",
+                        snapshot.StandardOutput,
+                        isError: false);
+                }
+                if (!string.Equals(
+                        lastStandardError,
+                        snapshot.StandardError,
+                        StringComparison.Ordinal))
+                {
+                    lastStandardError = snapshot.StandardError;
+                    CopilotProcessExecutionSupport.ReportLatestOutput(
+                        progress,
+                        "后台命令",
+                        snapshot.StandardError,
+                        isError: true);
+                }
+            }
+
             var result = await _registry.WaitForObservationAsync(
                     request.ConversationId,
                     backgroundId,
                     outputContains,
                     timeoutSeconds,
+                    progress == null ? null : ReportSnapshot,
                     cancellationToken)
                 .ConfigureAwait(false);
             if (!result.Success || result.Snapshot == null)

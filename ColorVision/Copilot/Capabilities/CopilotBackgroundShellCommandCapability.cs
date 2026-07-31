@@ -334,6 +334,7 @@ namespace ColorVision.Copilot
             string? backgroundId,
             string? outputContains,
             int timeoutSeconds,
+            Action<CopilotBackgroundShellCommandSnapshot>? onSnapshot,
             CancellationToken cancellationToken)
         {
             var normalizedConversationId = NormalizeScopeId(conversationId);
@@ -376,6 +377,7 @@ namespace ColorVision.Copilot
                         "The background command was not found in the current conversation.",
                         stopwatch.Elapsed);
                 }
+                TryPublishObservation(onSnapshot, snapshot);
                 if (!snapshot.IsActive)
                 {
                     return new CopilotBackgroundShellCommandWaitResult(
@@ -721,6 +723,21 @@ namespace ColorVision.Copilot
                 elapsed ?? TimeSpan.Zero,
                 kind,
                 message);
+
+        private static void TryPublishObservation(
+            Action<CopilotBackgroundShellCommandSnapshot>? onSnapshot,
+            CopilotBackgroundShellCommandSnapshot snapshot)
+        {
+            if (onSnapshot == null)
+                return;
+            try
+            {
+                onSnapshot(snapshot);
+            }
+            catch (Exception ex) when (ex is not OutOfMemoryException)
+            {
+            }
+        }
 
         private sealed class Entry : IDisposable
         {
