@@ -1974,6 +1974,9 @@ namespace ColorVision.Copilot
                 case CopilotLocalCommandKind.Status:
                     ShowLocalCommandResult(command, BuildStatusDiagnosticsReport());
                     break;
+                case CopilotLocalCommandKind.EffectiveConfig:
+                    ShowLocalCommandResult(command, BuildEffectiveConfigDiagnosticsReport());
+                    break;
                 case CopilotLocalCommandKind.Doctor:
                     ShowLocalCommandResult(command, BuildDoctorDiagnosticsReport());
                     break;
@@ -2746,6 +2749,25 @@ namespace ColorVision.Copilot
                 McpListenerRunning = CopilotMcpServer.Instance.IsRunning,
                 EnabledExternalMcpServers = _config.ExternalMcpServers.Count(server => server?.Enabled == true),
                 PendingApprovals = CopilotMcpConfirmationStore.Instance.PendingCount,
+            });
+        }
+
+        private string BuildEffectiveConfigDiagnosticsReport()
+        {
+            var stateStore = _stateStore as CopilotChatStateStore;
+            return CopilotEffectiveConfigDiagnostics.Format(new CopilotEffectiveConfigDiagnosticContext
+            {
+                Config = _config,
+                State = _state,
+                Conversation = SelectedConversation,
+                SelectedProfile = SelectedProfile,
+                ComposerMode = ResolveComposerRequestMode(),
+                ConfigFilePath = ConfigHandler.GetInstance().ConfigFilePath,
+                StateFilePath = stateStore?.StateFilePath ?? string.Empty,
+                StateLoadStatus = stateStore?.LastLoadStatus
+                    ?? new CopilotChatStateLoadStatus(CopilotChatStateLoadSource.NotAttempted),
+                ConversationRunState = SelectedHostedRun?.State,
+                McpListenerRunning = CopilotMcpServer.Instance.IsRunning,
             });
         }
 
