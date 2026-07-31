@@ -32,6 +32,10 @@ namespace ColorVision.Copilot
 
         public bool ShouldSerializeEnablePromptHistoryCompletions() => !EnablePromptHistoryCompletions;
 
+        public bool EnablePredictedPromptSuggestions { get; set; }
+
+        public bool ShouldSerializeEnablePredictedPromptSuggestions() => EnablePredictedPromptSuggestions;
+
         public bool UseMultilineComposer { get; set; }
 
         public bool ShouldSerializeUseMultilineComposer() => UseMultilineComposer;
@@ -79,6 +83,15 @@ namespace ColorVision.Copilot
                 return false;
 
             EnablePromptHistoryCompletions = enabled;
+            return true;
+        }
+
+        internal bool SetEnablePredictedPromptSuggestions(bool enabled)
+        {
+            if (EnablePredictedPromptSuggestions == enabled)
+                return false;
+
+            EnablePredictedPromptSuggestions = enabled;
             return true;
         }
 

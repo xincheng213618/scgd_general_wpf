@@ -877,6 +877,15 @@ namespace ColorVision.Copilot
                 }
             }
 
+            if (DataContext is CopilotChatViewModel predictedPromptViewModel
+                && (e.Key == Key.Tab || IsRightArrowCompletionGesture(e))
+                && predictedPromptViewModel.TryAcceptPredictedNextPrompt())
+            {
+                MovePromptCaretToEnd();
+                e.Handled = true;
+                return;
+            }
+
             if (DataContext is CopilotChatViewModel promptCompletionViewModel
                 && IsRightArrowCompletionGesture(e)
                 && promptCompletionViewModel.TryAcceptPromptHistoryPrefixCompletion())
@@ -964,6 +973,12 @@ namespace ColorVision.Copilot
         }
 
         private void PromptHistoryPrefixCompletionButton_Click(object sender, RoutedEventArgs e)
+        {
+            FocusPromptInput();
+            MovePromptCaretToEnd();
+        }
+
+        private void PredictedNextPromptButton_Click(object sender, RoutedEventArgs e)
         {
             FocusPromptInput();
             MovePromptCaretToEnd();

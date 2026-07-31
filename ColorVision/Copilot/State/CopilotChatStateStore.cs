@@ -113,6 +113,8 @@ namespace ColorVision.Copilot
                 _document[nameof(CopilotChatState.UseCompactMessageLayout)] = true;
             if (!state.EnablePromptHistoryCompletions)
                 _document[nameof(CopilotChatState.EnablePromptHistoryCompletions)] = false;
+            if (state.EnablePredictedPromptSuggestions)
+                _document[nameof(CopilotChatState.EnablePredictedPromptSuggestions)] = true;
             if (state.UseMultilineComposer)
                 _document[nameof(CopilotChatState.UseMultilineComposer)] = true;
             var followUpBehavior = CopilotFollowUpPreference.Normalize(state.DefaultFollowUpBehavior);
@@ -807,6 +809,7 @@ namespace ColorVision.Copilot
                 || !IsOptionalBoolean(document.GetValue(nameof(CopilotChatState.ShowMessageTimestamps), StringComparison.OrdinalIgnoreCase))
                 || !IsOptionalBoolean(document.GetValue(nameof(CopilotChatState.UseCompactMessageLayout), StringComparison.OrdinalIgnoreCase))
                 || !IsOptionalBoolean(document.GetValue(nameof(CopilotChatState.EnablePromptHistoryCompletions), StringComparison.OrdinalIgnoreCase))
+                || !IsOptionalBoolean(document.GetValue(nameof(CopilotChatState.EnablePredictedPromptSuggestions), StringComparison.OrdinalIgnoreCase))
                 || !IsOptionalBoolean(document.GetValue(nameof(CopilotChatState.UseMultilineComposer), StringComparison.OrdinalIgnoreCase))
                 || !IsOptionalInteger(document.GetValue(nameof(CopilotChatState.DefaultFollowUpBehavior), StringComparison.OrdinalIgnoreCase))
                 || document.GetValue(nameof(CopilotChatState.Conversations), StringComparison.OrdinalIgnoreCase) is not JArray conversations)

@@ -5,7 +5,7 @@ namespace ColorVision.Copilot
     internal static class CopilotPromptSuggestionPreference
     {
         internal const string Usage =
-            "用法：/suggestions [on|off]。省略参数时切换当前本地历史补全状态。";
+            "用法：/suggestions [on|off|predict-on|predict-off]。on/off 管理本地历史补全；predict-on/predict-off 管理轮次结束后的工具禁用模型预测。";
 
         internal static bool TryResolve(
             string? arguments,
@@ -26,6 +26,28 @@ namespace ColorVision.Copilot
             }
 
             if (string.Equals(normalized, "off", StringComparison.OrdinalIgnoreCase))
+            {
+                enabled = false;
+                return true;
+            }
+
+            enabled = currentlyEnabled;
+            return false;
+        }
+
+        internal static bool TryResolvePredicted(
+            string? arguments,
+            bool currentlyEnabled,
+            out bool enabled)
+        {
+            var normalized = (arguments ?? string.Empty).Trim();
+            if (string.Equals(normalized, "predict-on", StringComparison.OrdinalIgnoreCase))
+            {
+                enabled = true;
+                return true;
+            }
+
+            if (string.Equals(normalized, "predict-off", StringComparison.OrdinalIgnoreCase))
             {
                 enabled = false;
                 return true;
