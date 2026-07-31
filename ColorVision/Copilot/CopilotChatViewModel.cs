@@ -2006,6 +2006,9 @@ namespace ColorVision.Copilot
                 case CopilotLocalCommandKind.ArchiveConversation:
                     ArchiveCurrentConversation(command);
                     break;
+                case CopilotLocalCommandKind.DeleteConversation:
+                    DeleteCurrentConversation(command);
+                    break;
                 case CopilotLocalCommandKind.UnarchiveConversation:
                     UnarchiveConversation(command, invocation.Arguments);
                     break;
@@ -6786,10 +6789,35 @@ namespace ColorVision.Copilot
             }
         }
 
-        private void DeleteConversation(CopilotConversationRecord? conversation)
+        private void DeleteCurrentConversation(CopilotLocalCommand command)
         {
-            if (!CanDeleteConversation(conversation))
+            var target = SelectedConversation;
+            if (!CanDeleteConversation(target))
+            {
+                ShowLocalCommandResult(
+                    command,
+                    "当前状态不能永久删除会话；请先结束运行、导出或其他独占操作。");
                 return;
+            }
+
+            if (TryDeleteConversation(target, out var deletedTitle))
+            {
+                ShowLocalCommandResult(
+                    command,
+                    $"已永久删除“{deletedTitle}”。本地消息、草稿和托管附件已移除，不能通过 /unarchive 恢复。");
+            }
+        }
+
+        private void DeleteConversation(CopilotConversationRecord? conversation) =>
+            TryDeleteConversation(conversation, out _);
+
+        private bool TryDeleteConversation(
+            CopilotConversationRecord? conversation,
+            out string deletedTitle)
+        {
+            deletedTitle = string.Empty;
+            if (!CanDeleteConversation(conversation))
+                return false;
 
             var target = conversation!;
             var retentionBlocker = GetConversationRetentionBlocker(target);
@@ -6802,7 +6830,7 @@ namespace ColorVision.Copilot
                     "ColorVision",
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
-                return;
+                return false;
             }
 
             if (MessageBox.Show(
@@ -6814,9 +6842,10 @@ namespace ColorVision.Copilot
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Warning) != MessageBoxResult.Yes)
             {
-                return;
+                return false;
             }
 
+            deletedTitle = target.Title;
             var wasSelected = ReferenceEquals(target, SelectedConversation);
             CancelConversationTitleGeneration(target.Id);
             var managedAttachments = target.EnumerateReferencedAttachments().ToArray();
@@ -6825,7 +6854,10 @@ namespace ColorVision.Copilot
 
             var currentIndex = Conversations.IndexOf(target);
             if (!Conversations.Remove(target))
-                return;
+            {
+                deletedTitle = string.Empty;
+                return false;
+            }
 
             RemoveQueuedFollowUpRecoveryRecords(target.Id);
             RemoveManagedAttachmentFiles(managedAttachments);
@@ -6840,6 +6872,7 @@ namespace ColorVision.Copilot
             }
 
             PersistState(immediate: true);
+            return true;
         }
 
         private bool CanDeleteConversation(CopilotConversationRecord? conversation) =>

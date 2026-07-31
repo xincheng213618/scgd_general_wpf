@@ -45,6 +45,7 @@ namespace ColorVision.Copilot
                 CopilotLocalCommandKind.Recap,
                 CopilotLocalCommandKind.ResumeConversation,
                 CopilotLocalCommandKind.ArchiveConversation,
+                CopilotLocalCommandKind.DeleteConversation,
                 CopilotLocalCommandKind.UnarchiveConversation,
                 CopilotLocalCommandKind.RenameConversation,
                 CopilotLocalCommandKind.RewindConversation,

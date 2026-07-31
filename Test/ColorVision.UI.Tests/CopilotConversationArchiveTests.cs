@@ -9,6 +9,7 @@ public sealed class CopilotConversationArchiveTests
 {
     [Theory]
     [InlineData("/archive", CopilotLocalCommandKind.ArchiveConversation)]
+    [InlineData("/delete", CopilotLocalCommandKind.DeleteConversation)]
     [InlineData("/unarchive session", CopilotLocalCommandKind.UnarchiveConversation)]
     [InlineData("/archived", CopilotLocalCommandKind.UnarchiveConversation)]
     public void ArchiveCommandsUseRecoverableConversationWorkflow(
@@ -20,6 +21,19 @@ public sealed class CopilotConversationArchiveTests
         Assert.NotNull(invocation);
         Assert.Equal(expectedKind, invocation.Command.Kind);
         Assert.False(invocation.Command.AvailableWhileAgentRuns);
+    }
+
+    [Fact]
+    public void DeleteCommandRejectsArgumentsAndDocumentsPermanentConfirmation()
+    {
+        Assert.Null(CopilotLocalCommandCatalog.Parse("/delete current"));
+
+        var help = CopilotLocalCommandHelp.Format("delete");
+
+        Assert.StartsWith("/delete", help, StringComparison.Ordinal);
+        Assert.Contains("永久删除当前会话", help, StringComparison.Ordinal);
+        Assert.Contains("保留状态检查与原生二次确认", help, StringComparison.Ordinal);
+        Assert.Contains("Agent 运行中：当前任务结束后执行", help, StringComparison.Ordinal);
     }
 
     [Fact]
