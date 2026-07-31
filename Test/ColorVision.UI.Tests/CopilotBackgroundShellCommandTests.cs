@@ -63,6 +63,9 @@ public sealed class CopilotBackgroundShellCommandTests
         var inspect = Assert.Single(
             tools,
             tool => tool.Name == "InspectBackgroundShellCommands");
+        var wait = Assert.Single(
+            tools,
+            tool => tool.Name == "WaitForBackgroundShellCommand");
         var stop = Assert.Single(
             tools,
             tool => tool.Name == "StopBackgroundShellCommand");
@@ -70,6 +73,11 @@ public sealed class CopilotBackgroundShellCommandTests
         Assert.True(start.Capability.RequiresNativeApproval);
         Assert.Equal(CopilotToolAccess.ReadOnly, inspect.Capability.Access);
         Assert.False(inspect.Capability.RequiresNativeApproval);
+        Assert.Equal(CopilotToolAccess.ReadOnly, wait.Capability.Access);
+        Assert.False(wait.Capability.RequiresNativeApproval);
+        Assert.Equal(
+            CopilotToolEvidenceMode.RedactedExcerpt,
+            wait.Capability.EvidenceMode);
         Assert.True(stop.Capability.RequiresNativeApproval);
         Assert.Equal(CopilotToolAuditArgumentMode.NamesOnly, start.Capability.AuditArgumentMode);
         Assert.Equal(CopilotToolAuditArgumentMode.NamesOnly, stop.Capability.AuditArgumentMode);
@@ -307,6 +315,151 @@ public sealed class CopilotBackgroundShellCommandTests
     }
 
     [Fact]
+    public async Task BoundedWaitMatchesRedactedOutputAndRejectsAnotherConversation()
+    {
+        var launcher = new FakeBackgroundLauncher();
+        var registry = new CopilotBackgroundShellCommandRegistry(launcher);
+        var waitTool = new CopilotWaitForBackgroundShellCommandTool(registry);
+        var request = CreateRequest("run PowerShell in background");
+        try
+        {
+            var started = await registry.StartAsync(
+                request,
+                CreateStartInput("Write-Output ready; Start-Sleep 30"),
+                CancellationToken.None);
+            Assert.True(started.Success, started.ErrorMessage);
+            var input = CreateWaitInput(
+                started.Snapshot!.Id,
+                outputContains: "SERVER READY",
+                timeoutSeconds: 2);
+            var waiting = waitTool.ExecuteAsync(
+                request,
+                input,
+                CancellationToken.None);
+            await Task.Delay(75);
+            launcher.LastProcess!.SetOutput(
+                "server ready token=background-secret",
+                string.Empty);
+
+            var observed = await waiting;
+
+            Assert.True(observed.Success, observed.ErrorMessage);
+            Assert.Contains(
+                "requested output marker",
+                observed.Summary,
+                StringComparison.Ordinal);
+            Assert.Contains(
+                "observation: output_matched",
+                observed.Content,
+                StringComparison.Ordinal);
+            Assert.Contains("token=<redacted>", observed.Content);
+            Assert.DoesNotContain(
+                "background-secret",
+                observed.Content,
+                StringComparison.Ordinal);
+            Assert.DoesNotContain(
+                "SERVER READY",
+                observed.Content,
+                StringComparison.Ordinal);
+
+            var crossConversation = await waitTool.ExecuteAsync(
+                CreateRequest(
+                    "wait for background output",
+                    conversationId: "conversation-other"),
+                input,
+                CancellationToken.None);
+            Assert.False(crossConversation.Success);
+            Assert.Equal(
+                CopilotToolFailureKind.NotFound,
+                crossConversation.FailureKind);
+        }
+        finally
+        {
+            await registry.ShutdownAsync();
+        }
+    }
+
+    [Fact]
+    public async Task BoundedWaitDistinguishesTerminalStateFromTimeout()
+    {
+        var launcher = new FakeBackgroundLauncher();
+        var registry = new CopilotBackgroundShellCommandRegistry(launcher);
+        var waitTool = new CopilotWaitForBackgroundShellCommandTool(registry);
+        var request = CreateRequest("run PowerShell in background");
+        try
+        {
+            var terminalStart = await registry.StartAsync(
+                request,
+                CreateStartInput("Write-Error failed"),
+                CancellationToken.None);
+            Assert.True(terminalStart.Success, terminalStart.ErrorMessage);
+            var terminalWait = waitTool.ExecuteAsync(
+                request,
+                CreateWaitInput(
+                    terminalStart.Snapshot!.Id,
+                    outputContains: null,
+                    timeoutSeconds: 2),
+                CancellationToken.None);
+            await Task.Delay(75);
+            launcher.LastProcess!.SetOutput(string.Empty, "failed");
+            launcher.LastProcess.Complete(exitCode: 7);
+
+            var terminal = await terminalWait;
+
+            Assert.True(terminal.Success, terminal.ErrorMessage);
+            Assert.Contains(
+                "reached failed",
+                terminal.Summary,
+                StringComparison.Ordinal);
+            Assert.Contains(
+                "observation: terminal",
+                terminal.Content,
+                StringComparison.Ordinal);
+            Assert.Contains("exit_code: 7", terminal.Content);
+            var terminalWithMatchingOutput = await waitTool.ExecuteAsync(
+                request,
+                CreateWaitInput(
+                    terminalStart.Snapshot.Id,
+                    outputContains: "failed",
+                    timeoutSeconds: 1),
+                CancellationToken.None);
+            Assert.Contains(
+                "observation: terminal",
+                terminalWithMatchingOutput.Content,
+                StringComparison.Ordinal);
+
+            var timeoutStart = await registry.StartAsync(
+                request,
+                CreateStartInput("Start-Sleep 30"),
+                CancellationToken.None);
+            Assert.True(timeoutStart.Success, timeoutStart.ErrorMessage);
+            var timedOut = await waitTool.ExecuteAsync(
+                request,
+                CreateWaitInput(
+                    timeoutStart.Snapshot!.Id,
+                    outputContains: "never-produced",
+                    timeoutSeconds: 1),
+                CancellationToken.None);
+
+            Assert.True(timedOut.Success, timedOut.ErrorMessage);
+            Assert.Contains(
+                "still running",
+                timedOut.Summary,
+                StringComparison.Ordinal);
+            Assert.Contains(
+                "observation: timed_out",
+                timedOut.Content,
+                StringComparison.Ordinal);
+            Assert.Contains("state: running", timedOut.Content);
+            Assert.DoesNotContain("ready", timedOut.Summary, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            await registry.ShutdownAsync();
+        }
+    }
+
+    [Fact]
     public async Task RealPowerShellProcessCompletesAndPublishesBoundedOutput()
     {
         if (!OperatingSystem.IsWindows()
@@ -425,6 +578,24 @@ public sealed class CopilotBackgroundShellCommandTests
                 ["workingDirectory"] = Path.GetFullPath(Path.GetTempPath()),
                 ["lifetimeSeconds"] = 600,
             },
+        };
+    }
+
+    private static CopilotAgentToolInput CreateWaitInput(
+        string backgroundId,
+        string? outputContains,
+        int timeoutSeconds)
+    {
+        var arguments = new Dictionary<string, object?>
+        {
+            ["backgroundId"] = backgroundId,
+            ["timeoutSeconds"] = timeoutSeconds,
+        };
+        if (outputContains != null)
+            arguments["outputContains"] = outputContains;
+        return new CopilotAgentToolInput
+        {
+            Arguments = arguments,
         };
     }
 

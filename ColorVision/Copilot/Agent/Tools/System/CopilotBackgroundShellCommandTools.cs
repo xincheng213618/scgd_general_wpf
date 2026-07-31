@@ -66,7 +66,7 @@ namespace ColorVision.Copilot
 
         public string Name => "StartBackgroundShellCommand";
 
-        public string Description => "Start one approved PowerShell or CMD command as an application-managed background process tree. The process is isolated to the current conversation, has bounded redacted output, expires automatically, and survives the Agent turn but never the ColorVision process. Starting confirms only that the process launched; use InspectBackgroundShellCommands or a specialized diagnostic before claiming readiness. Every start requires native approval.";
+        public string Description => "Start one approved PowerShell or CMD command as an application-managed background process tree. The process is isolated to the current conversation, has bounded redacted output, expires automatically, and survives the Agent turn but never the ColorVision process. Starting confirms only that the process launched; use WaitForBackgroundShellCommand, InspectBackgroundShellCommands, or a specialized diagnostic before claiming readiness. Every start requires native approval.";
 
         public CopilotToolCapabilityDescriptor Capability { get; } =
             CopilotToolCapabilityDescriptor.ProtectedWrite(
@@ -326,6 +326,214 @@ namespace ColorVision.Copilot
         }
     }
 
+    public sealed class CopilotWaitForBackgroundShellCommandTool :
+        ICopilotAgentDrivenTool
+    {
+        private static readonly CopilotToolInputSchema Schema =
+            CopilotToolInputSchema.FromJsonSchema(
+                JsonSerializer.SerializeToElement(new Dictionary<string, object?>
+                {
+                    ["type"] = "object",
+                    ["properties"] = new Dictionary<string, object?>
+                    {
+                        ["backgroundId"] = new
+                        {
+                            type = "string",
+                            minLength = 1,
+                            description = "Exact current-conversation background command id.",
+                        },
+                        ["outputContains"] = new
+                        {
+                            type = "string",
+                            minLength = 1,
+                            maxLength = CopilotBackgroundShellCommandRegistry.MaximumOutputPatternCharacters,
+                            description = "Optional literal text to find case-insensitively in bounded redacted stdout or stderr. Omit to wait only for a terminal state.",
+                        },
+                        ["timeoutSeconds"] = new
+                        {
+                            type = "integer",
+                            minimum = CopilotBackgroundShellCommandRegistry.MinimumObservationTimeoutSeconds,
+                            maximum = CopilotBackgroundShellCommandRegistry.MaximumObservationTimeoutSeconds,
+                            description = "Maximum observation interval. Defaults to 10 seconds.",
+                        },
+                    },
+                    ["required"] = new[] { "backgroundId" },
+                    ["additionalProperties"] = false,
+                }));
+
+        private readonly CopilotBackgroundShellCommandRegistry _registry;
+
+        public CopilotWaitForBackgroundShellCommandTool()
+            : this(CopilotBackgroundShellCommandRegistry.Shared)
+        {
+        }
+
+        internal CopilotWaitForBackgroundShellCommandTool(
+            CopilotBackgroundShellCommandRegistry registry)
+        {
+            _registry = registry ?? throw new ArgumentNullException(nameof(registry));
+        }
+
+        public string Name => "WaitForBackgroundShellCommand";
+
+        public string Description => "Wait for at most 30 seconds until one exact current-conversation background command reaches a terminal state or its bounded redacted stdout/stderr contains an optional literal marker. A timeout is an observed running state, not proof of readiness. This tool performs no process mutation and never exposes another conversation.";
+
+        public CopilotToolCapabilityDescriptor Capability { get; } =
+            CopilotToolCapabilityDescriptor.ReadOnly(
+                auditArgumentMode: CopilotToolAuditArgumentMode.NamesOnly,
+                evidenceMode: CopilotToolEvidenceMode.RedactedExcerpt);
+
+        public CopilotToolInputSchema InputSchema => Schema;
+
+        public bool CanHandle(CopilotAgentRequest request) => IsAvailable(request);
+
+        public bool IsAvailable(CopilotAgentRequest request)
+        {
+            return CopilotToolIntentPolicy.NeedsBackgroundShellInspection(request)
+                || _registry.GetSnapshots(request?.ConversationId).Count > 0;
+        }
+
+        public string GetConcurrencyKey(
+            CopilotAgentRequest request,
+            CopilotAgentToolInput toolInput) =>
+            "system:background-shell-status";
+
+        public async Task<CopilotToolResult> ExecuteAsync(
+            CopilotAgentRequest request,
+            CopilotAgentToolInput toolInput,
+            CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(request);
+            toolInput ??= CopilotAgentToolInput.Empty;
+            if (!CopilotBackgroundShellCommandRegistry.TryReadBackgroundId(
+                    toolInput,
+                    out var backgroundId))
+            {
+                return ValidationFailure("backgroundId is required.");
+            }
+            if (!TryReadOptionalString(
+                    toolInput,
+                    "outputContains",
+                    out var outputContains))
+            {
+                return ValidationFailure(
+                    $"outputContains must be a non-empty string no longer than {CopilotBackgroundShellCommandRegistry.MaximumOutputPatternCharacters} characters.");
+            }
+            if (!TryReadOptionalInt(
+                    toolInput,
+                    "timeoutSeconds",
+                    CopilotBackgroundShellCommandRegistry.DefaultObservationTimeoutSeconds,
+                    out var timeoutSeconds))
+            {
+                return ValidationFailure(
+                    $"timeoutSeconds must be an integer from {CopilotBackgroundShellCommandRegistry.MinimumObservationTimeoutSeconds} through {CopilotBackgroundShellCommandRegistry.MaximumObservationTimeoutSeconds}.");
+            }
+
+            var result = await _registry.WaitForObservationAsync(
+                    request.ConversationId,
+                    backgroundId,
+                    outputContains,
+                    timeoutSeconds,
+                    cancellationToken)
+                .ConfigureAwait(false);
+            if (!result.Success || result.Snapshot == null)
+            {
+                return new CopilotToolResult
+                {
+                    ToolName = Name,
+                    Success = false,
+                    Summary = "The background command could not be observed.",
+                    ErrorMessage = result.ErrorMessage,
+                    FailureKind = result.FailureKind,
+                };
+            }
+
+            return new CopilotToolResult
+            {
+                ToolName = Name,
+                Success = true,
+                Summary = result.Observation switch
+                {
+                    CopilotBackgroundShellCommandObservation.OutputMatched =>
+                        $"Background command {result.Snapshot.Id} produced the requested output marker.",
+                    CopilotBackgroundShellCommandObservation.Terminal =>
+                        $"Background command {result.Snapshot.Id} reached {result.Snapshot.State.ToString().ToLowerInvariant()}.",
+                    _ =>
+                        $"Background command {result.Snapshot.Id} was still running when the bounded observation timed out.",
+                },
+                Content = CopilotBackgroundShellCommandFormatter.FormatWaitResult(
+                    result),
+            };
+        }
+
+        private static bool TryReadOptionalString(
+            CopilotAgentToolInput input,
+            string name,
+            out string value)
+        {
+            value = string.Empty;
+            if (!input.Arguments.TryGetValue(name, out var raw) || raw == null)
+                return true;
+            if (raw is string text)
+                value = text.Replace("\0", string.Empty, StringComparison.Ordinal);
+            else if (raw is JsonElement element
+                && element.ValueKind == JsonValueKind.String)
+            {
+                value = (element.GetString() ?? string.Empty)
+                    .Replace("\0", string.Empty, StringComparison.Ordinal);
+            }
+            else
+            {
+                return false;
+            }
+            return value.Length is > 0
+                and <= CopilotBackgroundShellCommandRegistry.MaximumOutputPatternCharacters;
+        }
+
+        private static bool TryReadOptionalInt(
+            CopilotAgentToolInput input,
+            string name,
+            int defaultValue,
+            out int value)
+        {
+            if (!input.Arguments.TryGetValue(name, out var raw) || raw == null)
+            {
+                value = defaultValue;
+                return true;
+            }
+            if (raw is int intValue)
+                value = intValue;
+            else if (raw is long longValue
+                && longValue is >= int.MinValue and <= int.MaxValue)
+            {
+                value = (int)longValue;
+            }
+            else if (raw is JsonElement element
+                && element.ValueKind == JsonValueKind.Number
+                && element.TryGetInt32(out var elementValue))
+            {
+                value = elementValue;
+            }
+            else
+            {
+                value = 0;
+                return false;
+            }
+            return value is >= CopilotBackgroundShellCommandRegistry.MinimumObservationTimeoutSeconds
+                and <= CopilotBackgroundShellCommandRegistry.MaximumObservationTimeoutSeconds;
+        }
+
+        private CopilotToolResult ValidationFailure(string error) =>
+            new()
+            {
+                ToolName = Name,
+                Success = false,
+                Summary = "The background command observation request is invalid.",
+                ErrorMessage = error,
+                FailureKind = CopilotToolFailureKind.Validation,
+            };
+    }
+
     public sealed class CopilotStopBackgroundShellCommandTool :
         ICopilotFrameworkApprovedTool,
         ICopilotFrameworkContextualApprovalPresentation,
@@ -498,6 +706,35 @@ namespace ColorVision.Copilot
 
     internal static class CopilotBackgroundShellCommandFormatter
     {
+        public static string FormatWaitResult(
+            CopilotBackgroundShellCommandWaitResult result)
+        {
+            ArgumentNullException.ThrowIfNull(result);
+            if (result.Snapshot == null)
+                return "[Background Shell Observation]\nobservation: unavailable";
+
+            var observation = result.Observation switch
+            {
+                CopilotBackgroundShellCommandObservation.OutputMatched =>
+                    "output_matched",
+                CopilotBackgroundShellCommandObservation.Terminal =>
+                    "terminal",
+                _ => "timed_out",
+            };
+            return new StringBuilder()
+                .AppendLine("[Background Shell Observation]")
+                .Append("observation: ").AppendLine(observation)
+                .Append("elapsed_ms: ")
+                .AppendLine(Math.Max(
+                    0,
+                    (long)result.Elapsed.TotalMilliseconds).ToString(
+                        CultureInfo.InvariantCulture))
+                .AppendLine()
+                .Append(FormatToolSnapshot(result.Snapshot, includeOutput: true))
+                .ToString()
+                .TrimEnd();
+        }
+
         public static string FormatToolSnapshots(
             IReadOnlyList<CopilotBackgroundShellCommandSnapshot> snapshots,
             bool includeOutput)

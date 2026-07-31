@@ -368,8 +368,10 @@ namespace ColorVision.Copilot
         private static readonly string[] BackgroundShellInspectionMarkers =
         {
             "查看后台", "后台状态", "后台输出", "后台日志", "后台进程", "运行状态", "看看输出", "查看输出",
+            "等待后台", "等后台", "等待输出", "等它就绪", "等服务就绪",
             "check background", "background status", "background output", "background log",
             "background process", "is it running", "check its output", "show its output",
+            "wait for background", "wait for output", "wait until ready", "wait for it",
         };
 
         private static readonly string[] BackgroundShellStopMarkers =
@@ -728,7 +730,8 @@ namespace ColorVision.Copilot
                         request!,
                         BackgroundShellInspectionMarkers,
                         "StartBackgroundShellCommand",
-                        "InspectBackgroundShellCommands"));
+                        "InspectBackgroundShellCommands",
+                        "WaitForBackgroundShellCommand"));
         }
 
         public static bool NeedsBackgroundShellStop(CopilotAgentRequest? request)
@@ -739,7 +742,8 @@ namespace ColorVision.Copilot
                     request!,
                     BackgroundShellStopMarkers,
                     "StartBackgroundShellCommand",
-                    "InspectBackgroundShellCommands");
+                    "InspectBackgroundShellCommands",
+                    "WaitForBackgroundShellCommand");
         }
 
         public static bool NeedsBatchImageProcessing(CopilotAgentRequest? request)

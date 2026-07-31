@@ -85,6 +85,24 @@ namespace ColorVision.Copilot
         public bool Success => Snapshot != null && FailureKind == CopilotToolFailureKind.None;
     }
 
+    internal enum CopilotBackgroundShellCommandObservation
+    {
+        OutputMatched,
+        Terminal,
+        TimedOut,
+    }
+
+    internal sealed record CopilotBackgroundShellCommandWaitResult(
+        CopilotBackgroundShellCommandSnapshot? Snapshot,
+        CopilotBackgroundShellCommandObservation Observation,
+        TimeSpan Elapsed,
+        CopilotToolFailureKind FailureKind,
+        string ErrorMessage)
+    {
+        public bool Success => Snapshot != null
+            && FailureKind == CopilotToolFailureKind.None;
+    }
+
     internal sealed class CopilotBackgroundShellCommandCompletedEventArgs : EventArgs
     {
         public CopilotBackgroundShellCommandCompletedEventArgs(
@@ -106,6 +124,12 @@ namespace ColorVision.Copilot
         public const int MaximumRetainedCommands = 24;
         public const int MaximumOutputCharacters = 16_384;
         public const int MaximumCommandPreviewCharacters = 180;
+        public const int DefaultObservationTimeoutSeconds = 10;
+        public const int MinimumObservationTimeoutSeconds = 1;
+        public const int MaximumObservationTimeoutSeconds = 30;
+        public const int MaximumOutputPatternCharacters = 256;
+        private static readonly TimeSpan ObservationPollInterval =
+            TimeSpan.FromMilliseconds(100);
 
         private readonly object _syncRoot = new();
         private readonly List<Entry> _entries = new();
@@ -302,6 +326,100 @@ namespace ColorVision.Copilot
                     .OrderByDescending(entry => entry.StartedAtUtc)
                     .Select(entry => entry.GetSnapshot())
                     .ToArray();
+            }
+        }
+
+        public async Task<CopilotBackgroundShellCommandWaitResult> WaitForObservationAsync(
+            string? conversationId,
+            string? backgroundId,
+            string? outputContains,
+            int timeoutSeconds,
+            CancellationToken cancellationToken)
+        {
+            var normalizedConversationId = NormalizeScopeId(conversationId);
+            var normalizedBackgroundId = (backgroundId ?? string.Empty).Trim();
+            var outputPattern = (outputContains ?? string.Empty)
+                .Replace("\0", string.Empty, StringComparison.Ordinal);
+            if (normalizedConversationId.Length == 0
+                || normalizedBackgroundId.Length == 0)
+            {
+                return WaitFailure(
+                    CopilotToolFailureKind.Validation,
+                    "conversationId and backgroundId are required.");
+            }
+            if (outputPattern.Length > MaximumOutputPatternCharacters)
+            {
+                return WaitFailure(
+                    CopilotToolFailureKind.Validation,
+                    $"outputContains cannot exceed {MaximumOutputPatternCharacters} characters.");
+            }
+            if (timeoutSeconds is < MinimumObservationTimeoutSeconds
+                or > MaximumObservationTimeoutSeconds)
+            {
+                return WaitFailure(
+                    CopilotToolFailureKind.Validation,
+                    $"timeoutSeconds must be an integer from {MinimumObservationTimeoutSeconds} through {MaximumObservationTimeoutSeconds}.");
+            }
+
+            var stopwatch = Stopwatch.StartNew();
+            while (true)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var snapshot = GetSnapshots(
+                        normalizedConversationId,
+                        normalizedBackgroundId)
+                    .SingleOrDefault();
+                if (snapshot == null)
+                {
+                    return WaitFailure(
+                        CopilotToolFailureKind.NotFound,
+                        "The background command was not found in the current conversation.",
+                        stopwatch.Elapsed);
+                }
+                if (!snapshot.IsActive)
+                {
+                    return new CopilotBackgroundShellCommandWaitResult(
+                        snapshot,
+                        CopilotBackgroundShellCommandObservation.Terminal,
+                        stopwatch.Elapsed,
+                        CopilotToolFailureKind.None,
+                        string.Empty);
+                }
+                if (outputPattern.Length > 0
+                    && (snapshot.StandardOutput.Contains(
+                            outputPattern,
+                            StringComparison.OrdinalIgnoreCase)
+                        || snapshot.StandardError.Contains(
+                            outputPattern,
+                            StringComparison.OrdinalIgnoreCase)))
+                {
+                    return new CopilotBackgroundShellCommandWaitResult(
+                        snapshot,
+                        CopilotBackgroundShellCommandObservation.OutputMatched,
+                        stopwatch.Elapsed,
+                        CopilotToolFailureKind.None,
+                        string.Empty);
+                }
+                if (stopwatch.Elapsed >= TimeSpan.FromSeconds(timeoutSeconds))
+                {
+                    return new CopilotBackgroundShellCommandWaitResult(
+                        snapshot,
+                        CopilotBackgroundShellCommandObservation.TimedOut,
+                        stopwatch.Elapsed,
+                        CopilotToolFailureKind.None,
+                        string.Empty);
+                }
+
+                var remaining = TimeSpan.FromSeconds(timeoutSeconds)
+                    - stopwatch.Elapsed;
+                await Task.Delay(
+                        remaining <= TimeSpan.Zero
+                            ? TimeSpan.Zero
+                            : remaining < ObservationPollInterval
+                                ? remaining
+                                : ObservationPollInterval,
+                        cancellationToken)
+                    .ConfigureAwait(false);
             }
         }
 
@@ -592,6 +710,17 @@ namespace ColorVision.Copilot
             CopilotToolFailureKind kind,
             string message) =>
             new(null, kind, message);
+
+        private static CopilotBackgroundShellCommandWaitResult WaitFailure(
+            CopilotToolFailureKind kind,
+            string message,
+            TimeSpan? elapsed = null) =>
+            new(
+                null,
+                CopilotBackgroundShellCommandObservation.TimedOut,
+                elapsed ?? TimeSpan.Zero,
+                kind,
+                message);
 
         private sealed class Entry : IDisposable
         {
