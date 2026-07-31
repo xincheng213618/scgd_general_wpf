@@ -16,6 +16,8 @@ namespace ColorVision.Copilot
         Steer,
         Show,
         Close,
+        Active,
+        Done,
     }
 
     internal readonly record struct CopilotSubagentDiagnosticRequest(
@@ -66,8 +68,8 @@ namespace ColorVision.Copilot
         internal const int DefaultDisplayedRuns = 8;
         internal const int MaximumDisplayedRuns = 20;
         private const int MaximumRunSuggestionCharacters = 160;
-        internal const string Usage = "用法：/agents [roles|runs [N]|show <run_id>|close <run_id>|steer <run_id> <message>|stop <run_id>]"
-            + "\nN 可取 1–20；show 查看单个子运行；close 从默认列表关闭已完成运行但保留结果与审计；steer 向运行中子代理排入新指令；stop 只停止该子代理；父 Agent 均继续运行；/subagents 为同义命令。";
+        internal const string Usage = "用法：/agents [roles|runs [N]|active [N]|done [N]|show <run_id>|close <run_id>|steer <run_id> <message>|stop <run_id>]"
+            + "\nN 可取 1–20；active 与 done 分别查看活动和已结束运行；show 查看单个子运行；close 从默认列表关闭已结束运行但保留结果与审计；steer 向运行中子代理排入新指令；stop 只停止该子代理；父 Agent 均继续运行；/subagents 为同义命令。";
 
         public static CopilotSubagentDiagnosticRequest ParseCommand(string? arguments)
         {
@@ -91,7 +93,14 @@ namespace ColorVision.Copilot
                     string.Empty,
                     string.Empty);
             }
-            if (string.Equals(tokens[0], "runs", StringComparison.OrdinalIgnoreCase)
+            CopilotSubagentDiagnosticAction? listAction = tokens[0].ToLowerInvariant() switch
+            {
+                "runs" => CopilotSubagentDiagnosticAction.Runs,
+                "active" => CopilotSubagentDiagnosticAction.Active,
+                "done" => CopilotSubagentDiagnosticAction.Done,
+                _ => null,
+            };
+            if (listAction.HasValue
                 && (tokens.Length == 1
                     || tokens.Length == 2
                     && int.TryParse(
@@ -102,7 +111,7 @@ namespace ColorVision.Copilot
                     && limit is >= 1 and <= MaximumDisplayedRuns))
             {
                 return new CopilotSubagentDiagnosticRequest(
-                    CopilotSubagentDiagnosticAction.Runs,
+                    listAction.Value,
                     tokens.Length == 1
                         ? DefaultDisplayedRuns
                         : int.Parse(tokens[1], CultureInfo.InvariantCulture),
@@ -299,7 +308,9 @@ namespace ColorVision.Copilot
                         trace.DelegatedAnswerWasTruncated));
                 }
             }
-            return runs;
+            return runs
+                .OrderByDescending(run => IsActive(run.State))
+                .ToArray();
         }
 
         internal static IReadOnlyList<CopilotLocalCommandArgument> BuildRunArguments(
@@ -366,7 +377,36 @@ namespace ColorVision.Copilot
             if (request.Action is CopilotSubagentDiagnosticAction.Overview
                 or CopilotSubagentDiagnosticAction.Runs)
             {
-                AppendRuns(builder, CaptureRuns(conversation, catalog), request.Limit);
+                AppendRuns(
+                    builder,
+                    CaptureRuns(conversation, catalog),
+                    request.Limit,
+                    "运行概览",
+                    "当前会话没有可见的子代理运行轨迹。",
+                    "运行中优先，同状态新到旧",
+                    "较低优先级或较早");
+            }
+            else if (request.Action == CopilotSubagentDiagnosticAction.Active)
+            {
+                AppendRuns(
+                    builder,
+                    CaptureRuns(conversation, catalog).Where(run => IsActive(run.State)).ToArray(),
+                    request.Limit,
+                    "活动运行",
+                    "当前会话没有活动的子代理运行。",
+                    "新到旧",
+                    "较早");
+            }
+            else if (request.Action == CopilotSubagentDiagnosticAction.Done)
+            {
+                AppendRuns(
+                    builder,
+                    CaptureRuns(conversation, catalog).Where(run => !IsActive(run.State)).ToArray(),
+                    request.Limit,
+                    "已结束运行",
+                    "当前会话没有可见的已结束子代理运行。",
+                    "新到旧",
+                    "较早");
             }
             else if (request.Action == CopilotSubagentDiagnosticAction.Show)
             {
@@ -378,9 +418,9 @@ namespace ColorVision.Copilot
 
             builder.AppendLine()
                 .Append("边界：子代理由父 Agent 按请求创建并回传结果；运行期间可按 run_id 排入新指令或单独停止，父 Agent 继续运行；同一父请求内，可用完成结果给出的 run_id 续跑同角色且具有有效 checkpoint 的子代理。")
-                .Append("已完成运行可从默认列表关闭，但回答与审计仍保留，并可按已知 run_id 直接查看。")
+                .Append("已结束运行可从默认列表关闭，但回答与审计仍保留，并可按已知 run_id 直接查看。")
                 .Append("它仍不是可切换、跨请求或应用重启后可恢复的独立会话。")
-                .Append("runs 列表仅显示限长运行元数据；show 只显示当前会话保存的、已脱敏且限长的子代理回答，不显示任务提示、工具参数、原始工具结果或隐藏推理。");
+                .Append("runs、active、done 列表仅显示限长运行元数据；show 只显示当前会话保存的、已脱敏且限长的子代理回答，不显示任务提示、工具参数、原始工具结果或隐藏推理。");
             return builder.ToString();
         }
 
@@ -487,13 +527,17 @@ namespace ColorVision.Copilot
         private static void AppendRuns(
             StringBuilder builder,
             IReadOnlyList<CopilotSubagentRunDiagnostic> runs,
-            int limit)
+            int limit,
+            string heading,
+            string emptyMessage,
+            string orderingDescription,
+            string hiddenRunDescription)
         {
             builder.AppendLine()
-                .AppendLine("最近运行");
+                .AppendLine(heading);
             if (runs.Count == 0)
             {
-                builder.AppendLine("当前会话没有可见的子代理运行轨迹。");
+                builder.AppendLine(emptyMessage);
                 return;
             }
 
@@ -502,7 +546,9 @@ namespace ColorVision.Copilot
                 .Append(visibleRuns.Length.ToString("N0", CultureInfo.CurrentCulture))
                 .Append(" / ")
                 .Append(runs.Count.ToString("N0", CultureInfo.CurrentCulture))
-                .AppendLine(" 次（新到旧）");
+                .Append(" 次（")
+                .Append(orderingDescription)
+                .AppendLine("）");
             for (var index = 0; index < visibleRuns.Length; index++)
             {
                 var run = visibleRuns[index];
@@ -575,7 +621,9 @@ namespace ColorVision.Copilot
             {
                 builder.Append("另有 ")
                     .Append((runs.Count - visibleRuns.Length).ToString("N0", CultureInfo.CurrentCulture))
-                    .AppendLine(" 次较早运行未显示。");
+                    .Append(" 次")
+                    .Append(hiddenRunDescription)
+                    .AppendLine("运行未显示。");
             }
         }
 

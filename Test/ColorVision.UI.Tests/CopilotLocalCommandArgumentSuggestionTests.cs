@@ -107,7 +107,7 @@ public sealed class CopilotLocalCommandArgumentSuggestionTests
             conversation: conversation);
 
         Assert.Equal(
-            ["/agents roles", "/agents runs", "/agents show", "/agents close", "/agents steer", "/agents stop"],
+            ["/agents roles", "/agents runs", "/agents active", "/agents done", "/agents show", "/agents close", "/agents steer", "/agents stop"],
             root.Select(item => item.Name));
         Assert.Equal(
             ["/agents show explore-live", "/agents show scout-done"],

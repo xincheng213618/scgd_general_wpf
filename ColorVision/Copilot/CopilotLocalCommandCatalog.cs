@@ -144,21 +144,25 @@ namespace ColorVision.Copilot
                 new("weekly", "最近 30 个本机日历日的本地活动"),
                 new("cumulative", "全部本地会话历史累计"),
             ]),
-            new("/agents", "查看、关闭请求级子代理，或按 run_id 引导、停止子代理；父 Agent 继续运行", CopilotLocalCommandKind.Subagents, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/agents [roles|runs [N]|show <run_id>|close <run_id>|steer <run_id> <message>|stop <run_id>]", Arguments:
+            new("/agents", "按活动或结束状态查看、关闭请求级子代理，或按 run_id 引导、停止子代理；父 Agent 继续运行", CopilotLocalCommandKind.Subagents, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/agents [roles|runs [N]|active [N]|done [N]|show <run_id>|close <run_id>|steer <run_id> <message>|stop <run_id>]", Arguments:
             [
                 new("roles", "只显示内置子代理角色及其只读能力"),
-                new("runs", "显示当前会话最近 N 次子代理运行", AcceptsArguments: true),
+                new("runs", "显示当前会话 N 次可见子运行；运行中优先，同状态新到旧", AcceptsArguments: true),
+                new("active", "只显示当前会话最近 N 次活动子运行", AcceptsArguments: true),
+                new("done", "只显示当前会话最近 N 次已结束子运行", AcceptsArguments: true),
                 new("show", "按 run_id 显示单次子运行的限长结果与审计详情", AcceptsArguments: true),
-                new("close", "按 run_id 从默认列表关闭已完成子运行；结果与审计保留", AcceptsArguments: true),
+                new("close", "按 run_id 从默认列表关闭已结束子运行；结果与审计保留", AcceptsArguments: true),
                 new("steer", "按 run_id 向当前会话中的运行中子代理排入新指令", AcceptsArguments: true),
                 new("stop", "按 run_id 停止当前会话中的运行中子代理；父 Agent 继续", AcceptsArguments: true),
             ]),
-            new("/subagents", "同 /agents；查看、关闭请求级子代理，或按 run_id 引导、停止并让父 Agent 继续", CopilotLocalCommandKind.Subagents, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/subagents [roles|runs [N]|show <run_id>|close <run_id>|steer <run_id> <message>|stop <run_id>]", Arguments:
+            new("/subagents", "同 /agents；按活动或结束状态查看、关闭请求级子代理，或按 run_id 引导、停止并让父 Agent 继续", CopilotLocalCommandKind.Subagents, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/subagents [roles|runs [N]|active [N]|done [N]|show <run_id>|close <run_id>|steer <run_id> <message>|stop <run_id>]", Arguments:
             [
                 new("roles", "只显示内置子代理角色及其只读能力"),
-                new("runs", "显示当前会话最近 N 次子代理运行", AcceptsArguments: true),
+                new("runs", "显示当前会话 N 次可见子运行；运行中优先，同状态新到旧", AcceptsArguments: true),
+                new("active", "只显示当前会话最近 N 次活动子运行", AcceptsArguments: true),
+                new("done", "只显示当前会话最近 N 次已结束子运行", AcceptsArguments: true),
                 new("show", "按 run_id 显示单次子运行的限长结果与审计详情", AcceptsArguments: true),
-                new("close", "按 run_id 从默认列表关闭已完成子运行；结果与审计保留", AcceptsArguments: true),
+                new("close", "按 run_id 从默认列表关闭已结束子运行；结果与审计保留", AcceptsArguments: true),
                 new("steer", "按 run_id 向当前会话中的运行中子代理排入新指令", AcceptsArguments: true),
                 new("stop", "按 run_id 停止当前会话中的运行中子代理；父 Agent 继续", AcceptsArguments: true),
             ]),

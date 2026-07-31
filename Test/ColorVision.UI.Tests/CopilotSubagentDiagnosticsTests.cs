@@ -20,6 +20,8 @@ public sealed class CopilotSubagentDiagnosticsTests
         Assert.Equal(CopilotLocalCommandKind.Subagents, subagents.Command.Kind);
         Assert.Contains(suggestions, item => item.Name == "/agents roles");
         Assert.Contains(suggestions, item => item.Name == "/agents runs");
+        Assert.Contains(suggestions, item => item.Name == "/agents active");
+        Assert.Contains(suggestions, item => item.Name == "/agents done");
         Assert.Contains(suggestions, item => item.Name == "/agents show");
         Assert.Contains(suggestions, item => item.Name == "/agents close");
         Assert.Contains(suggestions, item => item.Name == "/agents steer");
@@ -34,9 +36,15 @@ public sealed class CopilotSubagentDiagnosticsTests
     [InlineData("runs", 2, 8)]
     [InlineData("runs 1", 2, 1)]
     [InlineData("runs 20", 2, 20)]
+    [InlineData("active", 8, 8)]
+    [InlineData("ACTIVE 4", 8, 4)]
+    [InlineData("done", 9, 8)]
+    [InlineData("DONE 20", 9, 20)]
     [InlineData("runs 0", 3, 0)]
     [InlineData("runs 21", 3, 0)]
     [InlineData("runs all", 3, 0)]
+    [InlineData("active 0", 3, 0)]
+    [InlineData("done all", 3, 0)]
     [InlineData("roles 2", 3, 0)]
     public void CommandArgumentsAreBounded(
         string? arguments,
@@ -254,14 +262,54 @@ public sealed class CopilotSubagentDiagnosticsTests
         Assert.Equal("explore-new", runs[0].RunId);
         Assert.Equal("explore-source", runs[0].ResumeFromRunId);
         Assert.Equal("explore", runs[0].RoleId);
-        Assert.Contains("显示 1 / 2 次（新到旧）", report);
+        Assert.Contains("显示 1 / 2 次（运行中优先，同状态新到旧）", report);
         Assert.Contains("#1 · explore · explore-new · state=Completed · resumed_from=explore-source · stop=Completed", report);
         Assert.Contains("耗时 1.5s · 排队 125ms · tokens 2,048/8,192 · 模型 2 · 工具 5 · 工具面 3/4", report);
-        Assert.Contains("另有 1 次较早运行未显示", report);
+        Assert.Contains("另有 1 次较低优先级或较早运行未显示", report);
         Assert.DoesNotContain("scout-old", report);
         Assert.DoesNotContain("secret prompt", report);
         Assert.DoesNotContain("secret answer", report);
         Assert.DoesNotContain("secret delegated answer", report);
+    }
+
+    [Fact]
+    public void StateViewsSeparateActiveAndDoneWhileMixedRunsPreferActiveWork()
+    {
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        var older = new CopilotChatMessage(CopilotChatRole.Assistant, "Older answer");
+        older.AgentTraceEntries.Add(new CopilotAgentTraceEntry
+        {
+            ToolName = "DelegateExplore",
+            State = CopilotToolExecutionState.Running,
+            DelegatedRoleId = "explore",
+            DelegatedRunId = "explore-live",
+            ProgressMessage = "Inspecting active work",
+        });
+        var newer = new CopilotChatMessage(CopilotChatRole.Assistant, "Newer answer");
+        newer.AgentTraceEntries.Add(new CopilotAgentTraceEntry
+        {
+            ToolName = "DelegateScout",
+            State = CopilotToolExecutionState.Completed,
+            DelegatedRoleId = "scout",
+            DelegatedRunId = "scout-done",
+            DelegatedStopReason = CopilotAgentStopReason.Completed,
+        });
+        conversation.Messages.Add(older);
+        conversation.Messages.Add(newer);
+
+        var runs = CopilotSubagentDiagnostics.CaptureRuns(conversation);
+        var activeReport = CopilotSubagentDiagnostics.Format(conversation, "active");
+        var doneReport = CopilotSubagentDiagnostics.Format(conversation, "done");
+
+        Assert.Equal(["explore-live", "scout-done"], runs.Select(run => run.RunId));
+        Assert.Contains("活动运行", activeReport);
+        Assert.Contains("显示 1 / 1 次（新到旧）", activeReport);
+        Assert.Contains("explore-live", activeReport);
+        Assert.DoesNotContain("scout-done", activeReport);
+        Assert.Contains("已结束运行", doneReport);
+        Assert.Contains("显示 1 / 1 次（新到旧）", doneReport);
+        Assert.Contains("scout-done", doneReport);
+        Assert.DoesNotContain("explore-live", doneReport);
     }
 
     [Fact]
@@ -363,6 +411,7 @@ public sealed class CopilotSubagentDiagnosticsTests
         var closed = CopilotSubagentDiagnostics.CloseRun(conversation, "scout-done");
         var visibleRuns = CopilotSubagentDiagnostics.CaptureRuns(conversation);
         var runsReport = CopilotSubagentDiagnostics.Format(conversation, "runs");
+        var doneReport = CopilotSubagentDiagnostics.Format(conversation, "done");
         var directReport = CopilotSubagentDiagnostics.Format(conversation, "show scout-done");
 
         Assert.Equal(CopilotSubagentCloseResult.Closed, closed);
@@ -372,6 +421,8 @@ public sealed class CopilotSubagentDiagnosticsTests
         Assert.Single(visibleRuns);
         Assert.Equal("explore-live", visibleRuns[0].RunId);
         Assert.DoesNotContain("scout-done", runsReport);
+        Assert.DoesNotContain("scout-done", doneReport);
+        Assert.Contains("当前会话没有可见的已结束子代理运行", doneReport);
         Assert.Contains("scout · scout-done · state=Completed · closed=true", directReport);
         Assert.Contains("Retained result.", directReport);
         Assert.Equal(

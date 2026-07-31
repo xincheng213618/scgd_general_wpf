@@ -108,8 +108,8 @@ public sealed class CopilotLocalCommandHelpTests
     {
         var report = CopilotLocalCommandHelp.Format("agents");
 
-        Assert.StartsWith("/agents [roles|runs [N]|show <run_id>|close <run_id>|steer <run_id> <message>|stop <run_id>]", report);
-        Assert.Contains("关闭请求级子代理", report);
+        Assert.StartsWith("/agents [roles|runs [N]|active [N]|done [N]|show <run_id>|close <run_id>|steer <run_id> <message>|stop <run_id>]", report);
+        Assert.Contains("按活动或结束状态查看、关闭请求级子代理", report);
         Assert.Contains("按 run_id 引导", report);
         Assert.Contains("引导、停止子代理", report);
         Assert.Contains("父 Agent 继续", report);
