@@ -1256,6 +1256,10 @@ namespace ColorVision.Copilot
                 bridge.CancelOutstandingApprovals();
                 throw;
             }
+            finally
+            {
+                steeringRegistration.StopAcceptingInput();
+            }
 
             bridge.CancelOutstandingApprovals();
 
@@ -1917,7 +1921,7 @@ namespace ColorVision.Copilot
             return copy.IsStructurallyValid() ? copy : null;
         }
 
-        private IDisposable RegisterSteeringContext(
+        private SteeringRegistration RegisterSteeringContext(
             string conversationId,
             string taskId,
             MessageInjectingChatClient messageInjector,
@@ -4026,10 +4030,12 @@ namespace ColorVision.Copilot
         {
             private CopilotMicrosoftAgentFrameworkRuntime? _owner = owner;
 
-            public void Dispose()
+            public void StopAcceptingInput()
             {
                 Interlocked.Exchange(ref _owner, null)?.ClearSteeringContext(context);
             }
+
+            public void Dispose() => StopAcceptingInput();
         }
     }
 }

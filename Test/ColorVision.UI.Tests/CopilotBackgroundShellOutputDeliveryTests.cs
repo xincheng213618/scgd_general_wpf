@@ -63,6 +63,72 @@ public sealed class CopilotBackgroundShellOutputDeliveryTests
     }
 
     [Fact]
+    public async Task SteeringIsRejectedAfterAgentLoopEntersFinalization()
+    {
+        using var provider = new CapturingChatClient();
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry([]),
+            new CopilotAgentContextBuilder(),
+            new CopilotToolExecutor(),
+            _ => provider,
+            EmptyExternalToolProvider.Instance,
+            new CopilotCapabilityCatalog());
+        var request = CreateRequest(
+            "conversation",
+            "Complete this run before finalization is released.");
+        var finalizationStarted = new TaskCompletionSource(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseFinalization = new TaskCompletionSource(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var runTask = Task.Run(() => runtime.RunAsync(
+                request,
+                agentEvent =>
+                {
+                    if (agentEvent.Type != CopilotAgentEventType.RuntimeDiagnostic
+                        || !agentEvent.Text.Contains(
+                            "Agent stop reason",
+                            StringComparison.Ordinal))
+                    {
+                        return;
+                    }
+
+                    finalizationStarted.TrySetResult();
+                    releaseFinalization.Task.GetAwaiter().GetResult();
+                },
+                timeout.Token),
+            timeout.Token);
+
+        bool lateSteeringAccepted;
+        try
+        {
+            await finalizationStarted.Task.WaitAsync(
+                TimeSpan.FromSeconds(5));
+            lateSteeringAccepted = runtime.TryEnqueueSteeringMessage(
+                request.TaskId,
+                "late steering");
+        }
+        finally
+        {
+            releaseFinalization.TrySetResult();
+        }
+
+        var result = await runTask.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.False(lateSteeringAccepted);
+        Assert.Equal(CopilotAgentStopReason.Completed, result.StopReason);
+        Assert.DoesNotContain(
+            result.TaskEventJournal.Events,
+            item => item.Type
+                == CopilotAgentTaskEventType.SteeringQueued);
+        Assert.DoesNotContain(
+            provider.StreamingCalls.SelectMany(call => call),
+            message => message.Text.Contains(
+                "late steering",
+                StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task NextAgentRunReceivesDelayedOutputBeforeCurrentUserRequest()
     {
         using var provider = new CapturingChatClient();
