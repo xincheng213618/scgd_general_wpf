@@ -72,6 +72,7 @@ namespace ColorVision.Copilot
         private CopilotNonBlockingCancellationSource? _webPageAttachmentCts;
         private CopilotNonBlockingCancellationSource? _sideQuestionCts;
         private CopilotNonBlockingCancellationSource? _composerReferenceRefreshCts;
+        private CopilotSideConversationSession? _sideConversationSession;
         private CopilotLiveContext? _currentLiveContext;
         private CopilotChatState _state = new();
         private CopilotConversationRecord? _selectedConversation;
@@ -90,6 +91,7 @@ namespace ColorVision.Copilot
         private string _statePersistenceNoticeToolTip = string.Empty;
         private string _localCommandResultTitle = string.Empty;
         private string _localCommandResultText = string.Empty;
+        private string _sideQuestionTitle = string.Empty;
         private string _sideQuestionPrompt = string.Empty;
         private string _sideQuestionAnswer = string.Empty;
         private string _sideQuestionStatusText = string.Empty;
@@ -816,6 +818,12 @@ namespace ColorVision.Copilot
         }
 
         public bool HasLocalCommandResult => !string.IsNullOrWhiteSpace(LocalCommandResultText);
+
+        public string SideQuestionTitle
+        {
+            get => _sideQuestionTitle;
+            private set => SetProperty(ref _sideQuestionTitle, value ?? string.Empty);
+        }
 
         public string SideQuestionPrompt
         {
@@ -4022,18 +4030,46 @@ namespace ColorVision.Copilot
             }
 
             DismissLocalCommandResult();
-            if (HasSideQuestion)
-                DismissSideQuestion();
-
             var requestProfile = CreateConversationRequestProfile(profile, conversation);
-            var conversationHistory = CopilotConversationRequestBuilder.CaptureHistorySnapshot(conversation);
+            var isSideConversation = string.Equals(command.Name, "/side", StringComparison.OrdinalIgnoreCase);
+            CopilotSideConversationSession? sideSession = null;
+            CopilotConversationHistorySnapshot conversationHistory;
+            IReadOnlyList<CopilotRequestMessage> sideTranscript;
+            if (isSideConversation)
+            {
+                if (_sideConversationSession?.MatchesParent(conversation.Id) != true)
+                {
+                    ResetSideQuestion();
+                    _sideConversationSession = new CopilotSideConversationSession(
+                        conversation.Id,
+                        CopilotConversationRequestBuilder.CaptureHistorySnapshot(conversation));
+                }
+
+                sideSession = _sideConversationSession;
+                conversationHistory = sideSession.ParentHistory;
+                sideTranscript = sideSession.CaptureTranscript();
+            }
+            else
+            {
+                ResetSideQuestion();
+                conversationHistory = CopilotConversationRequestBuilder.CaptureHistorySnapshot(conversation);
+                sideTranscript = Array.Empty<CopilotRequestMessage>();
+            }
+
             var historyLimits = ResolveConversationHistoryLimits(requestProfile);
             var cancellation = BeginAuxiliaryOperation();
             _sideQuestionCts = cancellation;
             var version = ++_sideQuestionVersion;
+            SideQuestionTitle = isSideConversation ? "/side · 临时旁路会话" : "/btw · 单次旁路提问";
             SideQuestionPrompt = normalizedQuestion;
-            SideQuestionAnswer = string.Empty;
-            SideQuestionStatusText = "正在从当前会话上下文回答 · 无工具 · 不影响主任务";
+            SideQuestionAnswer = sideSession?.TurnCount > 0
+                ? BuildSideConversationTranscript(sideSession)
+                : string.Empty;
+            SideQuestionStatusText = sideSession?.TurnCount > 0
+                ? $"正在继续旁路会话第 {sideSession.TurnCount + 1:N0} 轮 · 无工具 · 未写入主会话"
+                : isSideConversation
+                    ? "正在从当前会话快照开启旁路会话 · 无工具 · 未写入主会话"
+                    : "正在从当前会话上下文回答一次 · 无工具 · 未写入主会话";
             IsSideQuestionRunning = true;
 
             try
@@ -4042,16 +4078,26 @@ namespace ColorVision.Copilot
                     requestProfile,
                     conversationHistory,
                     historyLimits,
+                    sideTranscript,
                     normalizedQuestion,
                     cancellation.Token);
                 if (version != _sideQuestionVersion)
                     return;
 
-                SideQuestionAnswer = result.Answer;
+                if (sideSession != null && ReferenceEquals(_sideConversationSession, sideSession))
+                {
+                    sideSession.AppendTurn(normalizedQuestion, result.Answer);
+                    SideQuestionAnswer = BuildSideConversationTranscript(sideSession);
+                }
+                else
+                {
+                    SideQuestionAnswer = result.Answer;
+                }
                 var completion = result.IsIncomplete ? "回答不完整" : "已完成";
+                var turnLabel = sideSession == null ? string.Empty : $" · 旁路会话 {sideSession.TurnCount:N0} 轮";
                 SideQuestionStatusText = result.Usage.HasAny
-                    ? $"{completion} · 未写入主会话 · 输入 {CopilotTokenUsage.FormatCount(result.Usage.InputTokens)} / 输出 {CopilotTokenUsage.FormatCount(result.Usage.OutputTokens)}"
-                    : $"{completion} · 未写入主会话";
+                    ? $"{completion}{turnLabel} · 未写入主会话 · 输入 {CopilotTokenUsage.FormatCount(result.Usage.InputTokens)} / 输出 {CopilotTokenUsage.FormatCount(result.Usage.OutputTokens)}"
+                    : $"{completion}{turnLabel} · 未写入主会话";
             }
             catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
             {
@@ -4083,10 +4129,36 @@ namespace ColorVision.Copilot
             if (IsSideQuestionRunning)
                 return;
 
+            ResetSideQuestion();
+        }
+
+        private void ResetSideQuestion()
+        {
             _sideQuestionVersion++;
+            _sideQuestionCts?.RequestCancellation();
+            _sideConversationSession = null;
+            SideQuestionTitle = string.Empty;
             SideQuestionPrompt = string.Empty;
             SideQuestionAnswer = string.Empty;
             SideQuestionStatusText = string.Empty;
+            IsSideQuestionRunning = false;
+        }
+
+        private static string BuildSideConversationTranscript(CopilotSideConversationSession session)
+        {
+            var builder = new StringBuilder();
+            var turns = session.Turns;
+            for (var index = 0; index < turns.Count; index++)
+            {
+                if (index > 0)
+                    builder.AppendLine().AppendLine("---").AppendLine();
+                builder.Append("**第 ").Append(index + 1).AppendLine(" 轮 · 问**").AppendLine();
+                builder.AppendLine(turns[index].Question).AppendLine();
+                builder.AppendLine("**答**").AppendLine();
+                builder.Append(turns[index].Answer);
+            }
+
+            return builder.ToString().Trim();
         }
 
         private void ReportSideQuestionFailure(string message)
@@ -4094,7 +4166,10 @@ namespace ColorVision.Copilot
             if (!HasSideQuestion)
                 return;
 
-            SideQuestionAnswer = CopilotUserFacingErrorFormatter.Sanitize(message);
+            var safeMessage = CopilotUserFacingErrorFormatter.Sanitize(message);
+            SideQuestionAnswer = _sideConversationSession?.TurnCount > 0
+                ? BuildSideConversationTranscript(_sideConversationSession) + Environment.NewLine + Environment.NewLine + $"> 当前问题回答失败：{safeMessage}"
+                : safeMessage;
             SideQuestionStatusText = "回答失败 · 未写入主会话";
             IsSideQuestionRunning = false;
         }
@@ -8122,6 +8197,7 @@ namespace ColorVision.Copilot
                 return;
             }
 
+            ResetSideQuestion();
             if (IsEditingMessage)
                 CancelMessageEdit();
 
@@ -10351,6 +10427,7 @@ namespace ColorVision.Copilot
 
         private void Application_Exit(object? sender, ExitEventArgs e)
         {
+            _sideConversationSession = null;
             if (_sideQuestionCts != null)
                 _sideQuestionCts.RequestCancellation();
             _recurringPromptTimer.Stop();

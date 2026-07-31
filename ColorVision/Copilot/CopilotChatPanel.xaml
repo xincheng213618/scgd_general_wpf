@@ -1889,7 +1889,7 @@
                                     <TextBlock FontSize="11"
                                                FontWeight="SemiBold"
                                                Foreground="{DynamicResource PrimaryBrush}"
-                                               Text="/btw · 旁路提问" />
+                                               Text="{Binding SideQuestionTitle}" />
                                     <TextBlock Margin="0,2,0,0"
                                                FontSize="9"
                                                Opacity="0.58"

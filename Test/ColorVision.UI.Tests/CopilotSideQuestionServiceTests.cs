@@ -30,6 +30,7 @@ public sealed class CopilotSideQuestionServiceTests
             profile,
             history,
             new CopilotConversationHistoryLimits(16, 64_000, 16_000),
+            Array.Empty<CopilotRequestMessage>(),
             "What was the configuration file called?",
             CancellationToken.None);
 
@@ -49,7 +50,7 @@ public sealed class CopilotSideQuestionServiceTests
         Assert.Equal(4, messages.GetArrayLength());
         var systemPrompt = messages[0].GetProperty("content").GetString();
         Assert.Contains("Original profile instruction.", systemPrompt);
-        Assert.Contains("ephemeral side question", systemPrompt);
+        Assert.Contains("ephemeral side conversation", systemPrompt);
         Assert.Contains("Do not use or claim to use tools", systemPrompt);
         Assert.Equal("Inspect the current module.", messages[1].GetProperty("content").GetString());
         Assert.Equal("The configuration file is CopilotConfig.cs.", messages[2].GetProperty("content").GetString());
@@ -67,10 +68,82 @@ public sealed class CopilotSideQuestionServiceTests
             CreateProfile(),
             CopilotConversationHistorySnapshot.Empty,
             new CopilotConversationHistoryLimits(8, 32_000, 8_000),
+            Array.Empty<CopilotRequestMessage>(),
             "   ",
             CancellationToken.None));
 
         Assert.Equal(0, handler.RequestCount);
+    }
+
+    [Fact]
+    public async Task FollowUpUsesFrozenParentSnapshotAndPriorSideTurns()
+    {
+        var handler = new CapturingHandler();
+        using var httpClient = new HttpClient(handler);
+        var service = new CopilotSideQuestionService(new CopilotChatService(httpClient));
+        var parentHistory = new CopilotConversationHistorySnapshot(
+            [
+                new CopilotRequestMessage("user", "Inspect the current module."),
+                new CopilotRequestMessage("assistant", "The configuration file is CopilotConfig.cs."),
+            ],
+            []);
+        var session = new CopilotSideConversationSession("conversation-1", parentHistory);
+        session.AppendTurn("Which file?", "CopilotConfig.cs.");
+
+        await service.AskAsync(
+            CreateProfile(),
+            session.ParentHistory,
+            new CopilotConversationHistoryLimits(16, 64_000, 16_000),
+            session.CaptureTranscript(),
+            "What namespace contains it?",
+            CancellationToken.None);
+
+        Assert.Equal(2, parentHistory.ModelMessages.Count);
+        Assert.Equal(1, session.TurnCount);
+        using var payload = JsonDocument.Parse(handler.LastPayload);
+        var messages = payload.RootElement.GetProperty("messages");
+        Assert.Equal(6, messages.GetArrayLength());
+        Assert.Equal("Inspect the current module.", messages[1].GetProperty("content").GetString());
+        Assert.Equal("The configuration file is CopilotConfig.cs.", messages[2].GetProperty("content").GetString());
+        Assert.Equal("Which file?", messages[3].GetProperty("content").GetString());
+        Assert.Equal("CopilotConfig.cs.", messages[4].GetProperty("content").GetString());
+        Assert.Equal("What namespace contains it?", messages[5].GetProperty("content").GetString());
+    }
+
+    [Fact]
+    public void SideConversationKeepsOnlyBoundedCompleteTurns()
+    {
+        var session = new CopilotSideConversationSession(
+            "conversation-1",
+            CopilotConversationHistorySnapshot.Empty);
+
+        for (var index = 0; index < CopilotSideConversationSession.MaximumTurns + 2; index++)
+            session.AppendTurn($"question-{index}", $"answer-{index}");
+
+        Assert.True(session.MatchesParent("conversation-1"));
+        Assert.False(session.MatchesParent("conversation-2"));
+        Assert.Equal(CopilotSideConversationSession.MaximumTurns, session.TurnCount);
+        Assert.Equal("question-2", session.Turns[0].Question);
+        var transcript = session.CaptureTranscript();
+        Assert.Equal(CopilotSideConversationSession.MaximumTurns * 2, transcript.Count);
+        Assert.All(transcript.Where((_, index) => index % 2 == 0), message => Assert.Equal("user", message.Role));
+        Assert.All(transcript.Where((_, index) => index % 2 == 1), message => Assert.Equal("assistant", message.Role));
+    }
+
+    [Fact]
+    public void SideConversationDropsOldTurnsWhenTranscriptCharacterBudgetIsExceeded()
+    {
+        var session = new CopilotSideConversationSession(
+            "conversation-1",
+            CopilotConversationHistorySnapshot.Empty);
+        var longQuestion = new string('q', CopilotSideConversationSession.MaximumTranscriptCharacters / 2 + 1);
+
+        session.AppendTurn(longQuestion + "-old", "old-answer");
+        session.AppendTurn(longQuestion + "-new", "new-answer");
+
+        var turn = Assert.Single(session.Turns);
+        Assert.EndsWith("-new", turn.Question);
+        Assert.Equal("new-answer", turn.Answer);
     }
 
     [Theory]
