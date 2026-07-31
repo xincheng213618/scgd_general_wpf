@@ -185,7 +185,7 @@ namespace ColorVision.UI.Tests
             const string executableName = "reopen.cmd";
             File.WriteAllText(
                 Path.Combine(targetDirectory, executableName),
-                $"@echo off{Environment.NewLine}>\"{openedMarkerPath}\" echo opened",
+                $"@echo off{Environment.NewLine}>\"{openedMarkerPath}\" echo opened{Environment.NewLine}exit",
                 new UTF8Encoding(false));
             File.WriteAllText(Path.Combine(handoffDirectory, "update.pending"), "pending");
             File.WriteAllText(Path.Combine(handoffDirectory, "reopen.requested"), "requested");
