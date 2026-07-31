@@ -6,7 +6,26 @@ using System.Text;
 
 namespace ColorVision.Copilot
 {
+    internal enum CopilotTaskCommandAction
+    {
+        List,
+        Stop,
+        Invalid,
+    }
+
+    internal readonly record struct CopilotTaskCommandRequest(
+        CopilotTaskCommandAction Action,
+        int Position);
+
+    internal enum CopilotTaskStopRequestOutcome
+    {
+        NotFound,
+        PauseRequested,
+        CancelRequested,
+    }
+
     internal sealed record CopilotTaskRunDiagnosticSnapshot(
+        string RunId,
         string ConversationId,
         string Title,
         CopilotAgentMode Mode,
@@ -34,6 +53,28 @@ namespace ColorVision.Copilot
     internal static class CopilotTaskDiagnostics
     {
         internal const int MaximumAttentionTasks = 20;
+        internal const string Usage = "用法：/tasks [stop N]"
+            + "\n输入 /tasks 查看实时任务位置；stop N 会经原生确认停止“活动与队列”中的第 N 项。";
+
+        public static CopilotTaskCommandRequest ParseCommand(string? arguments)
+        {
+            var normalized = (arguments ?? string.Empty).Trim();
+            if (normalized.Length == 0)
+                return new CopilotTaskCommandRequest(CopilotTaskCommandAction.List, 0);
+
+            var parts = normalized.Split(
+                (char[]?)null,
+                StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            if (parts.Length == 2
+                && string.Equals(parts[0], "stop", StringComparison.OrdinalIgnoreCase)
+                && int.TryParse(parts[1], NumberStyles.None, CultureInfo.InvariantCulture, out var position)
+                && position > 0)
+            {
+                return new CopilotTaskCommandRequest(CopilotTaskCommandAction.Stop, position);
+            }
+
+            return new CopilotTaskCommandRequest(CopilotTaskCommandAction.Invalid, 0);
+        }
 
         public static CopilotTaskDiagnosticSnapshot Capture(
             CopilotAgentTaskHost host,
@@ -65,6 +106,7 @@ namespace ColorVision.Copilot
                     ? ++queuePosition
                     : 0;
                 runs.Add(new CopilotTaskRunDiagnosticSnapshot(
+                    run.Id,
                     run.ConversationId,
                     titles.TryGetValue(run.ConversationId, out var title) ? title : "未命名会话",
                     run.Mode,
@@ -97,6 +139,77 @@ namespace ColorVision.Copilot
                 attentionTasks.Take(MaximumAttentionTasks).ToArray());
         }
 
+        public static CopilotTaskRunDiagnosticSnapshot? FindRun(
+            CopilotTaskDiagnosticSnapshot snapshot,
+            int position)
+        {
+            ArgumentNullException.ThrowIfNull(snapshot);
+            if (position <= 0 || position > snapshot.Runs.Count)
+                return null;
+
+            return snapshot.Runs[position - 1];
+        }
+
+        public static string FormatStopConfirmation(
+            CopilotTaskRunDiagnosticSnapshot run,
+            int position)
+        {
+            ArgumentNullException.ThrowIfNull(run);
+
+            var action = run.State switch
+            {
+                CopilotHostedRunState.Queued => "将取消尚未开始的排队任务，并移除其持久化恢复项。",
+                CopilotHostedRunState.PauseRequested => "该任务已在等待安全暂停；继续会升级为取消。",
+                CopilotHostedRunState.CancelRequested => "该任务已在等待取消完成，不会重复发出停止请求。",
+                _ when run.Mode != CopilotAgentMode.Chat && run.IsCheckpointReady =>
+                    "将优先请求安全暂停并保留可恢复 checkpoint；若状态刚刚变化，则取消当前轮次。",
+                _ => "将请求取消当前轮次；已完成的消息与审计证据仍会保留。",
+            };
+
+            return new StringBuilder()
+                .Append("停止任务 #")
+                .Append(FormatCount(position))
+                .Append('？')
+                .AppendLine()
+                .Append("会话：")
+                .AppendLine(NormalizeLabel(run.Title, "未命名会话", 120))
+                .Append("状态：")
+                .Append(FormatRunState(run))
+                .Append(" · ")
+                .AppendLine(FormatMode(run.Mode))
+                .AppendLine(action)
+                .Append("其他任务不会改变；确认窗口不会显示提示词、附件、内部运行 ID 或授权内容。")
+                .ToString();
+        }
+
+        public static CopilotTaskStopRequestOutcome RequestStop(
+            CopilotAgentTaskHost host,
+            string? runId)
+        {
+            ArgumentNullException.ThrowIfNull(host);
+            if (string.IsNullOrWhiteSpace(runId))
+                return CopilotTaskStopRequestOutcome.NotFound;
+
+            var run = host.ScheduledRuns.FirstOrDefault(candidate =>
+                string.Equals(candidate.Id, runId, StringComparison.Ordinal));
+            if (run == null || run.State is CopilotHostedRunState.CancelRequested or CopilotHostedRunState.Completed)
+                return CopilotTaskStopRequestOutcome.NotFound;
+
+            if (run.State == CopilotHostedRunState.PauseRequested)
+            {
+                return host.RequestCancel(run.Id)
+                    ? CopilotTaskStopRequestOutcome.CancelRequested
+                    : CopilotTaskStopRequestOutcome.NotFound;
+            }
+
+            if (run.IsAgent && host.RequestPause(run.Id))
+                return CopilotTaskStopRequestOutcome.PauseRequested;
+
+            return host.RequestCancel(run.Id)
+                ? CopilotTaskStopRequestOutcome.CancelRequested
+                : CopilotTaskStopRequestOutcome.NotFound;
+        }
+
         public static string Format(CopilotTaskDiagnosticSnapshot snapshot)
         {
             ArgumentNullException.ThrowIfNull(snapshot);
@@ -126,6 +239,7 @@ namespace ColorVision.Copilot
             {
                 for (var index = 0; index < runs.Count; index++)
                     AppendRun(builder, runs[index], index + 1, snapshot.CapturedAtUtc);
+                builder.AppendLine("控制：/tasks stop N（仅对应上方“活动与队列”的编号；执行前会原生确认）");
             }
 
             builder.AppendLine();

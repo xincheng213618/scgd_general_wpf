@@ -1973,7 +1973,7 @@ namespace ColorVision.Copilot
                         "打开反馈");
                     break;
                 case CopilotLocalCommandKind.Tasks:
-                    ShowLocalCommandResult(command, BuildTaskDiagnosticsReport());
+                    HandleTaskCommand(command, invocation.Arguments);
                     break;
                 case CopilotLocalCommandKind.TaskLog:
                     ShowLocalCommandResult(command, CopilotAgentTaskEventDiagnostics.Format(SelectedConversation));
@@ -2525,12 +2525,83 @@ namespace ColorVision.Copilot
             });
         }
 
-        private string BuildTaskDiagnosticsReport()
+        private void HandleTaskCommand(
+            CopilotLocalCommand command,
+            string arguments)
         {
-            return CopilotTaskDiagnostics.Format(CopilotTaskDiagnostics.Capture(
+            var request = CopilotTaskDiagnostics.ParseCommand(arguments);
+            if (request.Action == CopilotTaskCommandAction.List)
+            {
+                ShowLocalCommandResult(command, BuildTaskDiagnosticsReport());
+                return;
+            }
+            if (request.Action == CopilotTaskCommandAction.Invalid)
+            {
+                ShowLocalCommandResult(command, CopilotTaskDiagnostics.Usage);
+                return;
+            }
+
+            var snapshot = CaptureTaskDiagnostics();
+            var run = CopilotTaskDiagnostics.FindRun(snapshot, request.Position);
+            if (run == null)
+            {
+                ShowLocalCommandResult(
+                    command,
+                    $"“活动与队列”中没有任务 #{request.Position:N0}。输入 /tasks 查看实时位置；任务可能已在后台变化。");
+                return;
+            }
+
+            var confirmation = MessageBox.Show(
+                Application.Current.GetActiveWindow(),
+                CopilotTaskDiagnostics.FormatStopConfirmation(run, request.Position),
+                "ColorVision",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+            if (confirmation != MessageBoxResult.Yes)
+            {
+                ShowLocalCommandResult(command, $"停止任务 #{request.Position:N0} 已取消；所有任务保持不变。");
+                return;
+            }
+
+            var pausedGoal = false;
+            var outcome = CopilotTaskStopRequestOutcome.NotFound;
+            if (run.State == CopilotHostedRunState.Queued
+                && _queuedFollowUpsByRunId.TryGetValue(run.RunId, out var queuedFollowUp)
+                && TryDeleteQueuedFollowUp(queuedFollowUp, out pausedGoal))
+            {
+                outcome = CopilotTaskStopRequestOutcome.CancelRequested;
+            }
+            else
+            {
+                outcome = CopilotTaskDiagnostics.RequestStop(_taskHost, run.RunId);
+            }
+
+            var report = outcome switch
+            {
+                CopilotTaskStopRequestOutcome.PauseRequested =>
+                    $"已请求安全暂停任务 #{request.Position:N0}；可恢复 checkpoint 和既有审计证据会保留。",
+                CopilotTaskStopRequestOutcome.CancelRequested when run.State == CopilotHostedRunState.Queued =>
+                    $"已取消排队任务 #{request.Position:N0}；该请求不会执行，其他任务未改变。",
+                CopilotTaskStopRequestOutcome.CancelRequested =>
+                    $"已请求取消任务 #{request.Position:N0}；已完成消息与既有审计证据会保留。",
+                _ => $"任务 #{request.Position:N0} 已完成、已在取消，或已离开原位置；未重复发出停止请求。",
+            };
+            if (pausedGoal)
+                report += " 对应的活动持续目标也已暂停。";
+            ShowLocalCommandResult(command, report);
+        }
+
+        private CopilotTaskDiagnosticSnapshot CaptureTaskDiagnostics()
+        {
+            return CopilotTaskDiagnostics.Capture(
                 _taskHost,
                 Conversations,
-                DateTimeOffset.UtcNow));
+                DateTimeOffset.UtcNow);
+        }
+
+        private string BuildTaskDiagnosticsReport()
+        {
+            return CopilotTaskDiagnostics.Format(CaptureTaskDiagnostics());
         }
 
         private void HandleMcpCommand(CopilotLocalCommand command, string arguments)

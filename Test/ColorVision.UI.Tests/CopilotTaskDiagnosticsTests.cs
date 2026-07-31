@@ -5,29 +5,60 @@ namespace ColorVision.UI.Tests;
 public sealed class CopilotTaskDiagnosticsTests
 {
     [Fact]
-    public void TasksCommandIsReadOnlyAndAvailableDuringAnActiveRun()
+    public void TasksCommandSupportsConfirmedStopDuringAnActiveRun()
     {
         var invocation = CopilotLocalCommandCatalog.Parse("/tasks");
+        var stopInvocation = CopilotLocalCommandCatalog.Parse("/tasks stop 2");
+        var stopSuggestion = Assert.Single(CopilotLocalCommandCatalog.Suggest("/tasks "));
 
         Assert.NotNull(invocation);
         Assert.Equal(CopilotLocalCommandKind.Tasks, invocation.Command.Kind);
         Assert.Empty(invocation.Arguments);
         Assert.True(invocation.Command.AvailableWhileAgentRuns);
+        Assert.Equal("/tasks [stop N]", invocation.Command.Usage);
         Assert.Contains(CopilotLocalCommandCatalog.Suggest("/"), command => command.Name == "/tasks");
-        Assert.Null(CopilotLocalCommandCatalog.Parse("/tasks all"));
+        Assert.NotNull(stopInvocation);
+        Assert.Equal("stop 2", stopInvocation.Arguments);
+        Assert.Equal("/tasks stop", stopSuggestion.Name);
+        Assert.True(stopSuggestion.AcceptsArguments);
+        Assert.Equal("/tasks stop ", stopSuggestion.CompletionText);
     }
 
     [Fact]
-    public void PsCommandUsesTheSameReadOnlyTaskDiagnostics()
+    public void PsCommandUsesTheSameTaskControlContract()
     {
         var invocation = CopilotLocalCommandCatalog.Parse("/ps");
+        var stopInvocation = CopilotLocalCommandCatalog.Parse("/ps stop 3");
 
         Assert.NotNull(invocation);
         Assert.Equal(CopilotLocalCommandKind.Tasks, invocation.Command.Kind);
         Assert.Empty(invocation.Arguments);
         Assert.True(invocation.Command.AvailableWhileAgentRuns);
+        Assert.Equal("/ps [stop N]", invocation.Command.Usage);
         Assert.Contains(CopilotLocalCommandCatalog.Suggest("/p"), command => command.Name == "/ps");
-        Assert.Null(CopilotLocalCommandCatalog.Parse("/ps all"));
+        Assert.NotNull(stopInvocation);
+        Assert.Equal("stop 3", stopInvocation.Arguments);
+    }
+
+    [Theory]
+    [InlineData(null, 0, 0)]
+    [InlineData("", 0, 0)]
+    [InlineData("stop 1", 1, 1)]
+    [InlineData("STOP 12", 1, 12)]
+    [InlineData("stop", 2, 0)]
+    [InlineData("stop 0", 2, 0)]
+    [InlineData("stop -1", 2, 0)]
+    [InlineData("stop 1 extra", 2, 0)]
+    [InlineData("all", 2, 0)]
+    public void TaskCommandParserRequiresAnExactPositivePosition(
+        string? arguments,
+        int expectedAction,
+        int expectedPosition)
+    {
+        var request = CopilotTaskDiagnostics.ParseCommand(arguments);
+
+        Assert.Equal((CopilotTaskCommandAction)expectedAction, request.Action);
+        Assert.Equal(expectedPosition, request.Position);
     }
 
     [Fact]
@@ -41,6 +72,7 @@ public sealed class CopilotTaskDiagnosticsTests
             Runs:
             [
                 new CopilotTaskRunDiagnosticSnapshot(
+                    "run:active-secret",
                     "active",
                     "Active task",
                     CopilotAgentMode.Auto,
@@ -50,6 +82,7 @@ public sealed class CopilotTaskDiagnosticsTests
                     IsCheckpointReady: true,
                     QueuePosition: 0),
                 new CopilotTaskRunDiagnosticSnapshot(
+                    "run:queued-secret",
                     "queued",
                     "Queued task",
                     CopilotAgentMode.Code,
@@ -74,6 +107,9 @@ public sealed class CopilotTaskDiagnosticsTests
         Assert.Contains("[运行中] Active task · 自动 · 已运行 1 分 05 秒 · 恢复点已就绪", report, StringComparison.Ordinal);
         Assert.Contains("[排队 1] Queued task · 代码 · 已等待 10 秒", report, StringComparison.Ordinal);
         Assert.Contains("[已暂停] Paused task · 剩余 2 项 · 可继续", report, StringComparison.Ordinal);
+        Assert.Contains("/tasks stop N", report, StringComparison.Ordinal);
+        Assert.DoesNotContain("run:active-secret", report, StringComparison.Ordinal);
+        Assert.DoesNotContain("run:queued-secret", report, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -106,8 +142,10 @@ public sealed class CopilotTaskDiagnosticsTests
                 DateTimeOffset.UtcNow);
 
             Assert.Equal(2, snapshot.Runs.Count);
+            Assert.Equal(activeRun.Id, snapshot.Runs[0].RunId);
             Assert.Equal("Active task", snapshot.Runs[0].Title);
             Assert.Equal(CopilotHostedRunState.Running, snapshot.Runs[0].State);
+            Assert.Equal(queuedRun.Id, snapshot.Runs[1].RunId);
             Assert.Equal("Queued task", snapshot.Runs[1].Title);
             Assert.Equal(CopilotHostedRunState.Queued, snapshot.Runs[1].State);
             Assert.Equal(1, snapshot.Runs[1].QueuePosition);
@@ -139,6 +177,106 @@ public sealed class CopilotTaskDiagnosticsTests
         Assert.Equal(CopilotTaskDiagnostics.MaximumAttentionTasks + 5, snapshot.TotalAttentionTasks);
         Assert.Equal(CopilotTaskDiagnostics.MaximumAttentionTasks, snapshot.AttentionTasks.Count);
         Assert.Contains("另有 5 条未显示", report, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void StopSelectionAndConfirmationUseTheExactSnapshotWithoutLeakingTaskContent()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var first = new CopilotTaskRunDiagnosticSnapshot(
+            "run:secret-first",
+            "conversation-1",
+            "Build package",
+            CopilotAgentMode.Code,
+            CopilotHostedRunState.Running,
+            now.AddMinutes(-1),
+            now.AddSeconds(-30),
+            IsCheckpointReady: true,
+            QueuePosition: 0);
+        var second = new CopilotTaskRunDiagnosticSnapshot(
+            "run:secret-second",
+            "conversation-2",
+            "Deploy package",
+            CopilotAgentMode.Auto,
+            CopilotHostedRunState.Queued,
+            now.AddSeconds(-10),
+            StartedAtUtc: null,
+            IsCheckpointReady: false,
+            QueuePosition: 1);
+        var snapshot = new CopilotTaskDiagnosticSnapshot(
+            now,
+            HostShutdown: false,
+            MaximumQueuedRuns: 3,
+            Runs: [first, second],
+            TotalAttentionTasks: 0,
+            AttentionTasks: []);
+
+        Assert.Same(first, CopilotTaskDiagnostics.FindRun(snapshot, 1));
+        Assert.Same(second, CopilotTaskDiagnostics.FindRun(snapshot, 2));
+        Assert.Null(CopilotTaskDiagnostics.FindRun(snapshot, 0));
+        Assert.Null(CopilotTaskDiagnostics.FindRun(snapshot, 3));
+
+        var confirmation = CopilotTaskDiagnostics.FormatStopConfirmation(first, 1);
+
+        Assert.Contains("停止任务 #1", confirmation, StringComparison.Ordinal);
+        Assert.Contains("Build package", confirmation, StringComparison.Ordinal);
+        Assert.Contains("安全暂停", confirmation, StringComparison.Ordinal);
+        Assert.Contains("其他任务不会改变", confirmation, StringComparison.Ordinal);
+        Assert.DoesNotContain(first.RunId, confirmation, StringComparison.Ordinal);
+        Assert.DoesNotContain(first.ConversationId, confirmation, StringComparison.Ordinal);
+        Assert.DoesNotContain("prompt secret", confirmation, StringComparison.Ordinal);
+        Assert.DoesNotContain(@"C:\private\attachment.txt", confirmation, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task StopRequestPrefersCheckpointPauseForAnActiveAgent()
+    {
+        var host = new CopilotAgentTaskHost();
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var run = host.Start("conversation-active", CopilotAgentMode.Code, async hostedRun =>
+        {
+            started.SetResult();
+            await Task.Delay(Timeout.InfiniteTimeSpan, hostedRun.CancellationToken);
+        });
+        await started.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.True(host.MarkCheckpointReady(run.Id));
+
+        var outcome = CopilotTaskDiagnostics.RequestStop(host, run.Id);
+
+        Assert.Equal(CopilotTaskStopRequestOutcome.PauseRequested, outcome);
+        Assert.Equal(CopilotHostedRunState.PauseRequested, run.State);
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(
+            () => run.Completion.WaitAsync(TimeSpan.FromSeconds(5)));
+    }
+
+    [Fact]
+    public async Task StopRequestCancelsOnlyTheExactQueuedRun()
+    {
+        var host = new CopilotAgentTaskHost();
+        var activeStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseActive = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var activeRun = host.Start("conversation-active", CopilotAgentMode.Auto, async _ =>
+        {
+            activeStarted.SetResult();
+            await releaseActive.Task;
+        });
+        await activeStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.True(host.TrySchedule(
+            "conversation-queued",
+            CopilotAgentMode.Code,
+            _ => Task.CompletedTask,
+            out var queuedRun));
+        Assert.NotNull(queuedRun);
+
+        var outcome = CopilotTaskDiagnostics.RequestStop(host, queuedRun.Id);
+
+        Assert.Equal(CopilotTaskStopRequestOutcome.CancelRequested, outcome);
+        Assert.Equal(CopilotHostedRunState.Running, activeRun.State);
+        Assert.Equal(CopilotHostedRunState.Completed, queuedRun.State);
+        Assert.Equal(CopilotTaskStopRequestOutcome.NotFound, CopilotTaskDiagnostics.RequestStop(host, queuedRun.Id));
+
+        releaseActive.SetResult();
+        await activeRun.Completion.WaitAsync(TimeSpan.FromSeconds(5));
     }
 
     private static CopilotConversationRecord CreateConversation(string id, string title)

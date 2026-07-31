@@ -99,8 +99,14 @@ namespace ColorVision.Copilot
             new("/session-info", "同 /status；查看当前会话身份、恢复与运行状态", CopilotLocalCommandKind.Status, AvailableWhileAgentRuns: true, Usage: "/session-info"),
             new("/doctor", "检查模型、会话保存、任务、MCP、Hook 与 Skill 健康度", CopilotLocalCommandKind.Doctor, AvailableWhileAgentRuns: true, Usage: "/doctor"),
             new("/feedback", "反馈当前 Copilot 会话问题，可补充问题说明", CopilotLocalCommandKind.Feedback, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/feedback [问题说明]"),
-            new("/tasks", "查看正在运行、排队及等待恢复的 Agent 任务", CopilotLocalCommandKind.Tasks, AvailableWhileAgentRuns: true, Usage: "/tasks"),
-            new("/ps", "同 /tasks；查看正在运行、排队及等待恢复的 Agent 任务", CopilotLocalCommandKind.Tasks, AvailableWhileAgentRuns: true, Usage: "/ps"),
+            new("/tasks", "查看任务，或经原生确认停止活动与队列中的指定项", CopilotLocalCommandKind.Tasks, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/tasks [stop N]", Arguments:
+            [
+                new("stop", "经原生确认停止任务列表中的第 N 项", AcceptsArguments: true),
+            ]),
+            new("/ps", "同 /tasks；查看任务或停止活动与队列中的指定项", CopilotLocalCommandKind.Tasks, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/ps [stop N]", Arguments:
+            [
+                new("stop", "经原生确认停止任务列表中的第 N 项", AcceptsArguments: true),
+            ]),
             new("/task-log", "查看当前会话最近的 Agent 工具、审批与停止事件", CopilotLocalCommandKind.TaskLog, AvailableWhileAgentRuns: true, Usage: "/task-log"),
             new("/queue", "查看或控制当前会话等待执行的后续请求", CopilotLocalCommandKind.Queue, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/queue [clear|send N|edit N|up N|down N|delete N]", Arguments:
             [
