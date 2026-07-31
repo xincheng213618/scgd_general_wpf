@@ -13,26 +13,10 @@ namespace ColorVision.Copilot
             string currentAssistantText,
             IEnumerable<string>? currentUserFollowUps = null)
         {
-            var merged = Normalize(previousMemory).ToList();
-            var unmatchedPreviousOccurrences = merged
-                .GroupBy(CreateKey, StringComparer.Ordinal)
-                .ToDictionary(
-                    group => group.Key,
-                    group => group.Count(),
-                    StringComparer.Ordinal);
-
-            foreach (var message in Normalize(visibleHistory))
-            {
-                var key = CreateKey(message);
-                if (unmatchedPreviousOccurrences.TryGetValue(key, out var remaining)
-                    && remaining > 0)
-                {
-                    unmatchedPreviousOccurrences[key] = remaining - 1;
-                    continue;
-                }
-
-                merged.Add(message);
-            }
+            var merged = MergeChronologically(
+                    Normalize(previousMemory),
+                    Normalize(visibleHistory))
+                .ToList();
 
             AppendCurrent(merged, "user", currentUserText);
             AppendUserFollowUps(merged, currentUserFollowUps);
@@ -120,6 +104,69 @@ namespace ColorVision.Copilot
                 content = content[..(CopilotAgentSessionCheckpoint.MaxConversationMemoryContentLength - suffix.Length)] + suffix;
             }
             return new CopilotRequestMessage(role, content);
+        }
+
+        private static CopilotRequestMessage[] MergeChronologically(
+            CopilotRequestMessage[] previousMemory,
+            CopilotRequestMessage[] visibleHistory)
+        {
+            if (previousMemory.Length == 0)
+                return visibleHistory.ToArray();
+            if (visibleHistory.Length == 0)
+                return previousMemory.ToArray();
+
+            // The suffix LCS table lets the merge preserve both input orders while
+            // interleaving checkpoint-only injected messages with visible-only history.
+            var commonSuffixLengths = new int[
+                previousMemory.Length + 1,
+                visibleHistory.Length + 1];
+            for (var previousIndex = previousMemory.Length - 1; previousIndex >= 0; previousIndex--)
+            {
+                for (var visibleIndex = visibleHistory.Length - 1; visibleIndex >= 0; visibleIndex--)
+                {
+                    commonSuffixLengths[previousIndex, visibleIndex] =
+                        AreEqual(previousMemory[previousIndex], visibleHistory[visibleIndex])
+                            ? commonSuffixLengths[previousIndex + 1, visibleIndex + 1] + 1
+                            : Math.Max(
+                                commonSuffixLengths[previousIndex + 1, visibleIndex],
+                                commonSuffixLengths[previousIndex, visibleIndex + 1]);
+                }
+            }
+
+            var merged = new List<CopilotRequestMessage>(
+                previousMemory.Length + visibleHistory.Length);
+            var previousCursor = 0;
+            var visibleCursor = 0;
+            while (previousCursor < previousMemory.Length
+                && visibleCursor < visibleHistory.Length)
+            {
+                if (AreEqual(
+                    previousMemory[previousCursor],
+                    visibleHistory[visibleCursor]))
+                {
+                    merged.Add(previousMemory[previousCursor]);
+                    previousCursor++;
+                    visibleCursor++;
+                    continue;
+                }
+
+                if (commonSuffixLengths[previousCursor + 1, visibleCursor]
+                    >= commonSuffixLengths[previousCursor, visibleCursor + 1])
+                {
+                    // Keep checkpoint-only input before the next shared visible message.
+                    merged.Add(previousMemory[previousCursor++]);
+                }
+                else
+                {
+                    merged.Add(visibleHistory[visibleCursor++]);
+                }
+            }
+
+            while (previousCursor < previousMemory.Length)
+                merged.Add(previousMemory[previousCursor++]);
+            while (visibleCursor < visibleHistory.Length)
+                merged.Add(visibleHistory[visibleCursor++]);
+            return merged.ToArray();
         }
 
         private static void AppendCurrent(List<CopilotRequestMessage> messages, string role, string content)

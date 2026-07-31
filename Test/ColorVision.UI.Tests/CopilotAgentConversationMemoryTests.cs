@@ -5,6 +5,74 @@ namespace ColorVision.UI.Tests;
 public sealed class CopilotAgentConversationMemoryTests
 {
     [Fact]
+    public void MergePlacesVisibleMessagesMissingFromABoundedCheckpointChronologically()
+    {
+        var previousMemory = new[]
+        {
+            new CopilotRequestMessage("user", "initial goal"),
+            new CopilotRequestMessage("assistant", "second answer"),
+            new CopilotRequestMessage("user", "third request"),
+            new CopilotRequestMessage("assistant", "third answer"),
+        };
+        var visibleHistory = new[]
+        {
+            new CopilotRequestMessage("user", "initial goal"),
+            new CopilotRequestMessage("assistant", "first answer"),
+            new CopilotRequestMessage("user", "second request"),
+            new CopilotRequestMessage("assistant", "second answer"),
+            new CopilotRequestMessage("user", "third request"),
+            new CopilotRequestMessage("assistant", "third answer"),
+        };
+
+        var memory = CopilotAgentConversationMemory.Merge(
+            previousMemory,
+            visibleHistory,
+            string.Empty,
+            string.Empty);
+
+        AssertTranscript(
+            memory,
+            "user:initial goal",
+            "assistant:first answer",
+            "user:second request",
+            "assistant:second answer",
+            "user:third request",
+            "assistant:third answer");
+    }
+
+    [Fact]
+    public void MergeKeepsCheckpointOnlySteeringAtItsChronologicalBoundary()
+    {
+        var previousMemory = new[]
+        {
+            new CopilotRequestMessage("user", "initial goal"),
+            new CopilotRequestMessage("user", "delivered steering"),
+            new CopilotRequestMessage("assistant", "first answer"),
+        };
+        var visibleHistory = new[]
+        {
+            new CopilotRequestMessage("user", "initial goal"),
+            new CopilotRequestMessage("assistant", "first answer"),
+            new CopilotRequestMessage("user", "second request"),
+            new CopilotRequestMessage("assistant", "second answer"),
+        };
+
+        var memory = CopilotAgentConversationMemory.Merge(
+            previousMemory,
+            visibleHistory,
+            string.Empty,
+            string.Empty);
+
+        AssertTranscript(
+            memory,
+            "user:initial goal",
+            "user:delivered steering",
+            "assistant:first answer",
+            "user:second request",
+            "assistant:second answer");
+    }
+
+    [Fact]
     public void MergePreservesRepeatedVisibleTurnsOnTheFirstCheckpoint()
     {
         var visibleHistory = new[]
@@ -170,5 +238,14 @@ public sealed class CopilotAgentConversationMemoryTests
     {
         Assert.Equal(role, message.Role);
         Assert.Equal(content, message.Content);
+    }
+
+    private static void AssertTranscript(
+        IReadOnlyList<CopilotRequestMessage> messages,
+        params string[] expected)
+    {
+        Assert.Equal(
+            expected,
+            messages.Select(message => $"{message.Role}:{message.Content}"));
     }
 }
