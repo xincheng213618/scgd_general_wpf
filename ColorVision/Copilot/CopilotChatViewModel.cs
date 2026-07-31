@@ -28,7 +28,6 @@ namespace ColorVision.Copilot
     {
         private const int CompactHistoryLimit = 4;
         private const int CompactSummaryOutputTokens = 4096;
-        private const int MaximumGeneratedConversationTitleCharacters = 48;
         private const int MaximumComposerAttachments = 32;
         private const int MaximumConversationSearchCharacters = 256;
         private const int MaximumConversationSearchTerms = 8;
@@ -42,6 +41,7 @@ namespace ColorVision.Copilot
             ".sct", ".sh", ".shb", ".shs", ".url", ".vb", ".vbe", ".vbs", ".ws", ".wsc", ".wsf", ".wsh",
         };
         private readonly CopilotChatService _chatService;
+        private readonly CopilotConversationTitleGenerator _conversationTitleGenerator;
         private readonly ICopilotGoalCompletionEvaluator _goalCompletionEvaluator;
         private readonly ICopilotTurnRuntime _turnRuntime;
         private readonly CopilotAgentTaskHost _taskHost;
@@ -124,6 +124,7 @@ namespace ColorVision.Copilot
         public CopilotChatViewModel(CopilotChatService chatService, ICopilotChatStateStore stateStore)
         {
             _chatService = chatService ?? throw new ArgumentNullException(nameof(chatService));
+            _conversationTitleGenerator = new CopilotConversationTitleGenerator(_chatService);
             _goalCompletionEvaluator = new CopilotGoalCompletionEvaluator(_chatService);
             _turnRuntime = new CopilotTurnRuntime(_chatService);
             _taskHost = CopilotAgentTaskHost.Shared;
@@ -4441,56 +4442,6 @@ namespace ColorVision.Copilot
                 return SelectedProfile.DisplayLabel;
 
             return "Unnamed model";
-        }
-
-        private static string BuildConversationTitlePrompt(CopilotConversationRecord conversation)
-        {
-            var firstUserMessage = conversation.Messages.FirstOrDefault(message => message.Role == CopilotChatRole.User && !string.IsNullOrWhiteSpace(message.Content));
-            var firstAssistantMessage = conversation.Messages.FirstOrDefault(message => message.Role == CopilotChatRole.Assistant && !string.IsNullOrWhiteSpace(message.ModelContent));
-            if (firstUserMessage == null || firstAssistantMessage == null)
-                return string.Empty;
-
-            return string.Join(Environment.NewLine, new[]
-            {
-                "Generate a concise title in the same primary language as the user's request below.",
-                "Requirements: use 4 to 14 characters for CJK languages or 3 to 8 words otherwise; return only the title, with no quotes or trailing period.",
-                $"User: {TruncateForTitlePrompt(firstUserMessage.Content, 180)}",
-                $"Assistant: {TruncateForTitlePrompt(firstAssistantMessage.ModelContent, 260)}",
-            });
-        }
-
-        private static string NormalizeGeneratedTitle(string rawTitle)
-        {
-            var title = (rawTitle ?? string.Empty).Replace("\r", " ").Replace("\n", " ").Trim();
-            title = title.Trim('"', '\'', '“', '”', '‘', '’', '《', '》', '【', '】', '「', '」');
-
-            if (title.StartsWith("标题", StringComparison.Ordinal)
-                || title.StartsWith("Title", StringComparison.OrdinalIgnoreCase))
-            {
-                var separatorIndex = title.IndexOfAny(new[] { ':', '：', '-', ' ' });
-                if (separatorIndex >= 0 && separatorIndex < title.Length - 1)
-                    title = title[(separatorIndex + 1)..].Trim();
-            }
-
-            title = title.TrimEnd('.', '。');
-            if (title.Length > MaximumGeneratedConversationTitleCharacters)
-            {
-                var retainedLength = MaximumGeneratedConversationTitleCharacters;
-                if (char.IsHighSurrogate(title[retainedLength - 1]) && char.IsLowSurrogate(title[retainedLength]))
-                    retainedLength--;
-                title = title[..retainedLength].TrimEnd();
-            }
-
-            return title;
-        }
-
-        private static string TruncateForTitlePrompt(string content, int maxLength)
-        {
-            var normalized = (content ?? string.Empty).Replace("\r", " ").Replace("\n", " ").Trim();
-            if (normalized.Length <= maxLength)
-                return normalized;
-
-            return normalized[..maxLength] + "...";
         }
 
         private CopilotProfileConfig? ResolveProfile(string? profileId)
