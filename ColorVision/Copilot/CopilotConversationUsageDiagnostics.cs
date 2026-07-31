@@ -79,10 +79,19 @@ namespace ColorVision.Copilot
                 CaptureAgentUsage(assistantMessages));
         }
 
-        public static string Format(CopilotConversationRecord? conversation)
+        public static string Format(
+            CopilotConversationRecord? conversation,
+            CopilotProviderRateLimitSnapshot? providerRateLimits = null)
         {
             if (conversation == null)
-                return "使用量" + Environment.NewLine + "当前没有可统计的 Copilot 会话。";
+            {
+                return new StringBuilder("使用量")
+                    .AppendLine()
+                    .AppendLine("当前没有可统计的 Copilot 会话。")
+                    .AppendLine(CopilotProviderRateLimitDiagnostics.Format(providerRateLimits))
+                    .Append("范围：供应商限额仅为当前模型 Profile 最近一次可识别的响应头快照，可能随时间过期，不代表账户套餐余额。")
+                    .ToString();
+            }
 
             var snapshot = Capture(conversation);
             var title = string.IsNullOrWhiteSpace(conversation.Title)
@@ -147,8 +156,9 @@ namespace ColorVision.Copilot
                     .AppendLine(" 条回答将在结束并收到 Token 元数据后计入。");
             }
             AppendAgentUsage(builder, snapshot.AgentUsage);
+            builder.AppendLine(CopilotProviderRateLimitDiagnostics.Format(providerRateLimits));
 
-            builder.Append("范围：Token 仅统计当前会话消息中由 Provider 返回并由应用保存的元数据；Agent 指标来自本地保存的任务快照。两者均不代表账户账单、套餐余额、费用或速率限制。");
+            builder.Append("范围：Token 仅统计当前会话消息中由 Provider 返回并由应用保存的元数据；Agent 指标来自本地保存的任务快照。这些会话统计不代表账户账单或费用。供应商限额仅为当前模型 Profile 最近一次可识别的响应头快照，可能随时间过期，不代表账户套餐余额。");
             return builder.ToString();
         }
 

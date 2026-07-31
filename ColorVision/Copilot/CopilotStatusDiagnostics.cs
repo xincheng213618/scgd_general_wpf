@@ -290,96 +290,22 @@ namespace ColorVision.Copilot
             StringBuilder builder,
             CopilotStatusDiagnosticSnapshot snapshot)
         {
-            if (snapshot.ProviderRateLimitCapturedAtUtc == default)
-            {
-                builder.AppendLine("供应商限额：尚未收到可识别的限额响应头");
-                return;
-            }
-
-            builder.Append("供应商限额：");
-            var hasValue = false;
-            AppendRateLimitBucket(
-                builder,
-                "请求",
-                snapshot.ProviderRequestRemaining,
-                snapshot.ProviderRequestLimit,
-                snapshot.ProviderRequestReset,
-                ref hasValue);
-            AppendRateLimitBucket(
-                builder,
-                "Token",
-                snapshot.ProviderTokenRemaining,
-                snapshot.ProviderTokenLimit,
-                snapshot.ProviderTokenReset,
-                ref hasValue);
-            AppendRateLimitBucket(
-                builder,
-                "项目 Token",
-                snapshot.ProviderProjectTokenRemaining,
-                snapshot.ProviderProjectTokenLimit,
-                snapshot.ProviderProjectTokenReset,
-                ref hasValue);
-            AppendRateLimitDetail(
-                builder,
-                "Retry-After ",
-                snapshot.ProviderRateLimitRetryAfter,
-                ref hasValue);
-            var requestId = CopilotProviderRequestId.Normalize(
-                snapshot.ProviderRateLimitRequestId);
-            AppendRateLimitDetail(builder, "请求 ", requestId, ref hasValue);
-            if (!hasValue)
-                builder.Append("已捕获响应头");
-            builder.Append(" · 快照 ")
-                .Append(snapshot.ProviderRateLimitCapturedAtUtc
-                    .ToUniversalTime()
-                    .ToString("yyyy-MM-dd HH:mm:ss 'UTC'", CultureInfo.InvariantCulture))
-                .AppendLine();
-        }
-
-        private static void AppendRateLimitBucket(
-            StringBuilder builder,
-            string label,
-            long? remaining,
-            long? limit,
-            string? reset,
-            ref bool hasValue)
-        {
-            if (!remaining.HasValue
-                && !limit.HasValue
-                && string.IsNullOrWhiteSpace(reset))
-            {
-                return;
-            }
-
-            if (hasValue)
-                builder.Append(" · ");
-            builder.Append(label);
-            if (remaining.HasValue || limit.HasValue)
-            {
-                builder.Append("：剩余 ")
-                    .Append(remaining.HasValue ? FormatCount(remaining.Value) : "unknown")
-                    .Append('/')
-                    .Append(limit.HasValue ? FormatCount(limit.Value) : "unknown");
-            }
-            var normalizedReset = FormatInline(reset, string.Empty, 128);
-            if (normalizedReset.Length > 0)
-                builder.Append("（重置 ").Append(normalizedReset).Append('）');
-            hasValue = true;
-        }
-
-        private static void AppendRateLimitDetail(
-            StringBuilder builder,
-            string label,
-            string? value,
-            ref bool hasValue)
-        {
-            var normalized = FormatInline(value, string.Empty, 128);
-            if (normalized.Length == 0)
-                return;
-            if (hasValue)
-                builder.Append(" · ");
-            builder.Append(label).Append(normalized);
-            hasValue = true;
+            builder.AppendLine(CopilotProviderRateLimitDiagnostics.Format(
+                new CopilotProviderRateLimitSnapshot
+                {
+                    CapturedAtUtc = snapshot.ProviderRateLimitCapturedAtUtc,
+                    RequestLimit = snapshot.ProviderRequestLimit,
+                    RequestRemaining = snapshot.ProviderRequestRemaining,
+                    RequestReset = snapshot.ProviderRequestReset,
+                    TokenLimit = snapshot.ProviderTokenLimit,
+                    TokenRemaining = snapshot.ProviderTokenRemaining,
+                    TokenReset = snapshot.ProviderTokenReset,
+                    ProjectTokenLimit = snapshot.ProviderProjectTokenLimit,
+                    ProjectTokenRemaining = snapshot.ProviderProjectTokenRemaining,
+                    ProjectTokenReset = snapshot.ProviderProjectTokenReset,
+                    RetryAfter = snapshot.ProviderRateLimitRetryAfter,
+                    RequestId = snapshot.ProviderRateLimitRequestId,
+                }));
         }
 
         private static string FormatShell(CopilotShellKind shell)

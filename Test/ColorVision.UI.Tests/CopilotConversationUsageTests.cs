@@ -50,6 +50,49 @@ public sealed class CopilotConversationUsageTests
     }
 
     [Fact]
+    public void UsageIncludesLatestProviderLimitsWithoutClaimingAccountBalance()
+    {
+        var conversation = CreateConversation();
+        var report = CopilotConversationUsageDiagnostics.Format(
+            conversation,
+            new CopilotProviderRateLimitSnapshot
+            {
+                CapturedAtUtc = new DateTimeOffset(2026, 7, 31, 8, 30, 0, TimeSpan.Zero),
+                RequestLimit = 20,
+                RequestRemaining = 4,
+                RequestReset = "2s",
+                TokenLimit = 1000,
+                TokenRemaining = 250,
+                TokenReset = "1s",
+                RequestId = "req_usage_limit",
+            });
+
+        Assert.Contains(
+            "供应商限额：请求：剩余 4/20（重置 2s） · Token：剩余 250/1,000（重置 1s） · 请求 req_usage_limit · 快照 2026-07-31 08:30:00 UTC",
+            report,
+            StringComparison.Ordinal);
+        Assert.Contains("可能随时间过期", report, StringComparison.Ordinal);
+        Assert.Contains("不代表账户套餐余额", report, StringComparison.Ordinal);
+        Assert.DoesNotContain("账户剩余", report, StringComparison.Ordinal);
+        Assert.DoesNotContain("费用：", report, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void UsageWithoutConversationStillShowsProviderLimitAvailability()
+    {
+        var report = CopilotConversationUsageDiagnostics.Format(
+            conversation: null,
+            CopilotProviderRateLimitSnapshot.Empty);
+
+        Assert.Contains("当前没有可统计的 Copilot 会话", report, StringComparison.Ordinal);
+        Assert.Contains(
+            "供应商限额：尚未收到可识别的限额响应头",
+            report,
+            StringComparison.Ordinal);
+        Assert.Contains("不代表账户套餐余额", report, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void InterruptedResponsesKeepActualUsageWithoutMasqueradingAsComplete()
     {
         var conversation = CreateConversation();

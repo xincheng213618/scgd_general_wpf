@@ -2149,7 +2149,11 @@ namespace ColorVision.Copilot
                     HandlePendingApprovalCommand(command, invocation.Arguments);
                     break;
                 case CopilotLocalCommandKind.Usage:
-                    ShowLocalCommandResult(command, CopilotConversationUsageDiagnostics.Format(SelectedConversation));
+                    ShowLocalCommandResult(
+                        command,
+                        CopilotConversationUsageDiagnostics.Format(
+                            SelectedConversation,
+                            CopilotProviderRateLimitTracker.GetSnapshot(SelectedProfile?.Id)));
                     break;
                 case CopilotLocalCommandKind.Subagents:
                     ShowLocalCommandResult(

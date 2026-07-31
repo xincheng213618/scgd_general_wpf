@@ -139,6 +139,16 @@ public sealed class CopilotLocalCommandHelpTests
     }
 
     [Fact]
+    public void UsageHelpIncludesLatestProviderLimits()
+    {
+        var report = CopilotLocalCommandHelp.Format("usage");
+
+        Assert.StartsWith("/usage", report);
+        Assert.Contains("最新供应商限额", report);
+        Assert.Contains("Agent 运行中：可立即执行", report);
+    }
+
+    [Fact]
     public void HistoryHelpDescribesIdleComposerRecovery()
     {
         var report = CopilotLocalCommandHelp.Format("history");
