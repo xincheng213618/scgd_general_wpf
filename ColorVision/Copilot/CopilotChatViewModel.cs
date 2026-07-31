@@ -2024,6 +2024,9 @@ namespace ColorVision.Copilot
                 case CopilotLocalCommandKind.Diff:
                     RunUiOperation(() => ShowGitDiffAsync(command, invocation.Arguments), "读取 Git 变更");
                     break;
+                case CopilotLocalCommandKind.RollbackWorkspace:
+                    RollbackWorkspaceFromCommand(command, invocation.Arguments);
+                    break;
                 case CopilotLocalCommandKind.Compact:
                     RunUiOperation(() => CompactConversationAsync(command, invocation.Arguments), "压缩上下文");
                     break;
@@ -5712,6 +5715,43 @@ namespace ColorVision.Copilot
             RunUiOperation(
                 () => RequestWorkspaceRollbackAsync(trace),
                 "撤销文件修改");
+        }
+
+        private void RollbackWorkspaceFromCommand(
+            CopilotLocalCommand command,
+            string requestedOrdinal)
+        {
+            var conversation = SelectedConversation;
+            if (conversation == null || IsBusy || IsEditingMessage)
+            {
+                ShowLocalCommandResult(command, "当前状态不能撤销文件修改；请先结束正在运行的请求或消息编辑。");
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(requestedOrdinal))
+            {
+                ShowLocalCommandResult(command, CopilotWorkspaceRollbackPointService.Format(conversation));
+                return;
+            }
+            if (!CopilotWorkspaceRollbackPointService.TryResolve(
+                    conversation,
+                    requestedOrdinal,
+                    out var point))
+            {
+                ShowLocalCommandResult(
+                    command,
+                    "回滚序号必须对应一组仍有效的精确文件修改，例如 /rollback 1。输入 /rollback 可查看可用回滚点。");
+                return;
+            }
+            if (!CanRequestWorkspaceRollback(point.Trace))
+            {
+                ShowLocalCommandResult(
+                    command,
+                    "这组文件修改正在回滚，或其安全回滚记录刚刚失效；未创建重复请求。");
+                return;
+            }
+
+            RequestWorkspaceRollback(point.Trace);
         }
 
         private async Task RequestWorkspaceRollbackAsync(CopilotAgentTraceEntry trace)

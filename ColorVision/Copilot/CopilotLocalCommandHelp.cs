@@ -34,6 +34,7 @@ namespace ColorVision.Copilot
                 CopilotLocalCommandKind.InitializeProject,
                 CopilotLocalCommandKind.Mention,
                 CopilotLocalCommandKind.Diff,
+                CopilotLocalCommandKind.RollbackWorkspace,
                 CopilotLocalCommandKind.Compact,
                 CopilotLocalCommandKind.Review,
                 CopilotLocalCommandKind.Verify,
