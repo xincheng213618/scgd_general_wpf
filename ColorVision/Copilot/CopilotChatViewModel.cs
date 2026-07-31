@@ -63,6 +63,7 @@ namespace ColorVision.Copilot
         private readonly Dictionary<string, string> _recurringPromptJobIdsByRunId = new(StringComparer.Ordinal);
         private readonly Dictionary<string, CopilotNonBlockingCancellationSource> _conversationTitleGenerations = new(StringComparer.Ordinal);
         private readonly CopilotBackgroundShellCommandCompletionNoticeTracker _backgroundCommandNoticeTracker = new();
+        private readonly CopilotSubagentCompletionNoticeTracker _subagentCompletionNoticeTracker = new();
         private readonly HashSet<CopilotNonBlockingCancellationSource> _auxiliaryOperationCancellations = new();
         private readonly DispatcherTimer _conversationSearchDebounceTimer;
         private readonly DispatcherTimer _pendingActionExpiryTimer;
@@ -89,6 +90,8 @@ namespace ColorVision.Copilot
         private string _completedAgentRunNoticeText = string.Empty;
         private CopilotBackgroundShellCommandCompletionNotice? _backgroundCommandCompletionNotice;
         private string _backgroundCommandNoticeText = string.Empty;
+        private CopilotSubagentCompletionNotice? _subagentCompletionNotice;
+        private string _subagentCompletionNoticeText = string.Empty;
         private string _statePersistenceNoticeText = string.Empty;
         private string _statePersistenceNoticeToolTip = string.Empty;
         private string _localCommandResultTitle = string.Empty;
@@ -258,6 +261,9 @@ namespace ColorVision.Copilot
             OpenBackgroundCommandNoticeCommand = new RelayCommand(
                 _ => OpenBackgroundCommandNotice(),
                 _ => CanOpenBackgroundCommandNotice());
+            OpenSubagentCompletionNoticeCommand = new RelayCommand(
+                _ => OpenSubagentCompletionNotice(),
+                _ => CanOpenSubagentCompletionNotice());
             SteerCommand = new RelayCommand(_ => TrySteerCurrentRun(), _ => CanSteerCurrentRun);
             SubmitUserQuestionAnswerCommand = new RelayCommand(
                 _ => TryAnswerCurrentUserQuestion(InputText),
@@ -444,6 +450,19 @@ namespace ColorVision.Copilot
 
         public bool HasBackgroundCommandNotice =>
             !string.IsNullOrWhiteSpace(BackgroundCommandNoticeText);
+
+        public string SubagentCompletionNoticeText
+        {
+            get => _subagentCompletionNoticeText;
+            private set
+            {
+                if (SetProperty(ref _subagentCompletionNoticeText, value ?? string.Empty))
+                    OnPropertyChanged(nameof(HasSubagentCompletionNotice));
+            }
+        }
+
+        public bool HasSubagentCompletionNotice =>
+            !string.IsNullOrWhiteSpace(SubagentCompletionNoticeText);
 
         public string StateRecoveryNoticeText { get; private set; } = string.Empty;
 
@@ -659,6 +678,8 @@ namespace ColorVision.Copilot
         public ICommand OpenAgentRunNoticeCommand { get; }
 
         public ICommand OpenBackgroundCommandNoticeCommand { get; }
+
+        public ICommand OpenSubagentCompletionNoticeCommand { get; }
 
         public ICommand SteerCommand { get; }
 
@@ -2462,6 +2483,13 @@ namespace ColorVision.Copilot
                     PersistState(immediate: true);
                     RefreshLocalCommandSuggestions();
                 }
+                if (closeResult is CopilotSubagentCloseResult.Closed
+                    or CopilotSubagentCloseResult.AlreadyClosed)
+                {
+                    AcknowledgeSubagentCompletionNotice(
+                        SelectedConversation?.Id,
+                        request.RunId);
+                }
                 ShowLocalCommandResult(
                     command,
                     CopilotSubagentDiagnostics.FormatCloseResult(request.RunId, closeResult));
@@ -2469,6 +2497,18 @@ namespace ColorVision.Copilot
             }
             if (request.Action != CopilotSubagentDiagnosticAction.Stop)
             {
+                if (request.Action is CopilotSubagentDiagnosticAction.Overview
+                    or CopilotSubagentDiagnosticAction.Runs
+                    or CopilotSubagentDiagnosticAction.Done)
+                {
+                    AcknowledgeSubagentCompletionNotices(SelectedConversation?.Id);
+                }
+                else if (request.Action == CopilotSubagentDiagnosticAction.Show)
+                {
+                    AcknowledgeSubagentCompletionNotice(
+                        SelectedConversation?.Id,
+                        request.RunId);
+                }
                 ShowLocalCommandResult(
                     command,
                     CopilotSubagentDiagnostics.Format(SelectedConversation, arguments));
@@ -5152,6 +5192,125 @@ namespace ColorVision.Copilot
             _completedAgentRunNoticeText = notice.Text;
         }
 
+        private void CaptureSubagentCompletionNotice(
+            CopilotConversationRecord conversation,
+            CopilotToolResult result)
+        {
+            var snapshot = CopilotSubagentCompletionNoticePolicy.CreateSnapshot(
+                result,
+                conversation.Id);
+            if (snapshot == null)
+                return;
+            if (!_subagentCompletionNoticeTracker.Capture(
+                    snapshot,
+                    conversation,
+                    SelectedConversation?.Id))
+            {
+                return;
+            }
+
+            RefreshSubagentCompletionNotice();
+        }
+
+        private void RefreshSubagentCompletionNotice()
+        {
+            var notice = _subagentCompletionNoticeTracker.GetCurrent(
+                Conversations,
+                SelectedConversation?.Id);
+            if (notice == null)
+            {
+                ClearSubagentCompletionNotice();
+                return;
+            }
+
+            _subagentCompletionNotice = notice;
+            SubagentCompletionNoticeText = notice.Text;
+            CommandManager.InvalidateRequerySuggested();
+        }
+
+        private void OpenSubagentCompletionNotice()
+        {
+            var notice = _subagentCompletionNotice;
+            if (notice == null)
+                return;
+
+            var conversation = Conversations.FirstOrDefault(item => string.Equals(
+                item.Id,
+                notice.ConversationId,
+                StringComparison.Ordinal));
+            if (conversation == null)
+            {
+                _subagentCompletionNoticeTracker.AcknowledgeRun(
+                    notice.ConversationId,
+                    notice.RunId);
+                RefreshSubagentCompletionNotice();
+                return;
+            }
+            if (!ReferenceEquals(conversation, SelectedConversation)
+                && !CanSwitchConversation)
+            {
+                return;
+            }
+            if (!ReferenceEquals(conversation, SelectedConversation))
+            {
+                SelectConversation(
+                    conversation,
+                    persist: true,
+                    preferredProfileId: conversation.ProfileId);
+            }
+
+            var command = CopilotLocalCommandCatalog.FindExact("/agents");
+            if (command != null)
+            {
+                ShowLocalCommandResult(
+                    command,
+                    CopilotSubagentDiagnostics.Format(
+                        conversation,
+                        "show " + notice.RunId));
+            }
+
+            _subagentCompletionNoticeTracker.AcknowledgeRun(
+                notice.ConversationId,
+                notice.RunId);
+            RefreshSubagentCompletionNotice();
+        }
+
+        private bool CanOpenSubagentCompletionNotice()
+        {
+            var notice = _subagentCompletionNotice;
+            return notice != null
+                && (string.Equals(
+                        notice.ConversationId,
+                        SelectedConversation?.Id,
+                        StringComparison.Ordinal)
+                    || CanSwitchConversation);
+        }
+
+        private void AcknowledgeSubagentCompletionNotice(
+            string? conversationId,
+            string? runId)
+        {
+            if (_subagentCompletionNoticeTracker.AcknowledgeRun(
+                    conversationId,
+                    runId))
+            {
+                RefreshSubagentCompletionNotice();
+            }
+        }
+
+        private void AcknowledgeSubagentCompletionNotices(string? conversationId)
+        {
+            if (_subagentCompletionNoticeTracker.AcknowledgeConversation(conversationId))
+                RefreshSubagentCompletionNotice();
+        }
+
+        private void ClearSubagentCompletionNotice()
+        {
+            _subagentCompletionNotice = null;
+            SubagentCompletionNoticeText = string.Empty;
+            CommandManager.InvalidateRequerySuggested();
+        }
+
         private void BackgroundShellCommandRegistry_CommandCompleted(
             object? sender,
             CopilotBackgroundShellCommandCompletedEventArgs e)
@@ -5985,6 +6144,13 @@ namespace ColorVision.Copilot
 
                     persistState = true;
                     persistImmediately |= presentationResult.PersistenceMode == CopilotAgentEventPersistenceMode.Immediate;
+                    if (agentEvent.Type == CopilotAgentEventType.ToolResult
+                        && agentEvent.ToolResult?.DelegatedRunUsage != null)
+                    {
+                        CaptureSubagentCompletionNotice(
+                            conversation,
+                            agentEvent.ToolResult);
+                    }
                 }
             }
             finally
@@ -6280,6 +6446,7 @@ namespace ColorVision.Copilot
             var archivedTitle = conversation.Title;
             var cancelledRecurringPrompts = _recurringPromptScheduler.CancelConversation(conversation.Id);
             AcknowledgeBackgroundCommandNotices(conversation.Id);
+            AcknowledgeSubagentCompletionNotices(conversation.Id);
             StopRecurringPromptTimerIfIdle();
             conversation.IsArchived = true;
             conversation.Touch();
@@ -8702,6 +8869,7 @@ namespace ColorVision.Copilot
             RefreshCompactHistoryConversations();
             NotifyHostedRunStateChanged();
             RefreshBackgroundCommandNotice();
+            RefreshSubagentCompletionNotice();
             PublishSelectedTaskEventJournal();
 
             _state.ActiveConversationId = conversation?.Id ?? string.Empty;
@@ -9289,6 +9457,7 @@ namespace ColorVision.Copilot
             var managedAttachments = target.EnumerateReferencedAttachments().ToArray();
             ClearAgentRunNoticeForConversation(target.Id);
             AcknowledgeBackgroundCommandNotices(target.Id);
+            AcknowledgeSubagentCompletionNotices(target.Id);
             _recurringPromptScheduler.CancelConversation(target.Id);
             StopRecurringPromptTimerIfIdle();
 
