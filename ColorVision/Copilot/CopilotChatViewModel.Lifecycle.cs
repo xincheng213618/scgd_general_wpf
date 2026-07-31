@@ -32,7 +32,7 @@ namespace ColorVision.Copilot
                 return;
 
             PublishSelectedTaskEventJournal();
-            _stateSaveScheduler.RequestSave(immediate);
+            _statePersistenceCoordinator.RequestSave(immediate);
             OnPropertyChanged(nameof(HasAttachments));
         }
 
@@ -41,7 +41,7 @@ namespace ColorVision.Copilot
             PersistState(immediate: true);
             try
             {
-                await _stateSaveScheduler.FlushAsync();
+                await _statePersistenceCoordinator.FlushAsync();
             }
             catch (Exception)
             {
@@ -64,7 +64,7 @@ namespace ColorVision.Copilot
             try
             {
                 PersistState(immediate: true);
-                await _stateSaveScheduler.FlushAsync();
+                await _statePersistenceCoordinator.FlushAsync();
                 if (Volatile.Read(ref _disposeState) == 1)
                     return;
 
@@ -77,49 +77,6 @@ namespace ColorVision.Copilot
                 _isRetryingStatePersistence = false;
                 CommandManager.InvalidateRequerySuggested();
             }
-        }
-
-        private async Task SaveStateSnapshotAsync(CancellationToken cancellationToken)
-        {
-            var dispatcher = Application.Current?.Dispatcher;
-            CopilotChatStateSnapshot snapshot;
-            if (dispatcher == null
-                || dispatcher.CheckAccess()
-                || _stateStore is not IIncrementalCopilotChatStateStore incrementalStateStore)
-            {
-                snapshot = _stateStore.CaptureSnapshot(_state);
-            }
-            else
-            {
-                var beginCaptureOperation = dispatcher.InvokeAsync(
-                    () => incrementalStateStore.BeginSnapshot(_state),
-                    DispatcherPriority.Background,
-                    cancellationToken);
-                var capture = await beginCaptureOperation.Task.ConfigureAwait(false);
-                while (!capture.IsComplete)
-                {
-                    var captureSliceOperation = dispatcher.InvokeAsync(
-                        () => CaptureStateSnapshotSlice(capture),
-                        DispatcherPriority.Background,
-                        cancellationToken);
-                    await captureSliceOperation.Task.ConfigureAwait(false);
-                }
-
-                snapshot = capture.Complete();
-            }
-
-            var serializedState = await Task.Run(() => _stateStore.Serialize(snapshot), cancellationToken).ConfigureAwait(false);
-            await _stateStore.SaveSerializedAsync(serializedState, cancellationToken).ConfigureAwait(false);
-        }
-
-        private static void CaptureStateSnapshotSlice(CopilotChatStateSnapshotCapture capture)
-        {
-            var startedAt = Stopwatch.GetTimestamp();
-            do
-            {
-                capture.CaptureNextChunk();
-            }
-            while (!capture.IsComplete && Stopwatch.GetElapsedTime(startedAt) < StateSnapshotUiSliceBudget);
         }
 
         private void Application_Exit(object? sender, ExitEventArgs e)
@@ -143,16 +100,10 @@ namespace ColorVision.Copilot
             }
             CopilotShellCommandOutputArchiveRegistry.Shared.Dispose();
             FinalizeUnstartedRunsForShutdown(scheduledRuns);
-            _stateSaveScheduler.Dispose();
-            PublishSelectedTaskEventJournal();
             try
             {
-                if (_stateStore is not CopilotChatStateStore stateStore || !stateStore.IsStatePersistenceBlocked)
-                    _stateStore.Save(_state);
-            }
-            catch (Exception exception)
-            {
-                ReportStatePersistenceError(exception);
+                PublishSelectedTaskEventJournal();
+                _statePersistenceCoordinator.SaveSynchronouslyAndStop();
             }
             finally
             {
@@ -225,7 +176,7 @@ namespace ColorVision.Copilot
             _pendingActionFeedbackCts = null;
             _compactConversationCts?.RequestCancellation();
             CancelComposerReferenceRefresh(resetSession: true);
-            _stateSaveScheduler.Dispose();
+            _statePersistenceCoordinator.Dispose();
             GC.SuppressFinalize(this);
         }
 

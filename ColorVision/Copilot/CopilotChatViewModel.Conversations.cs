@@ -371,7 +371,7 @@ namespace ColorVision.Copilot
             if (HasConversationSearchQuery)
                 RefreshFilteredConversations();
 
-            _stateSaveScheduler.RequestSave();
+            _statePersistenceCoordinator.RequestSave();
         }
 
         private void SelectProfile(CopilotProfileConfig? profile, bool syncConversation, bool persist)

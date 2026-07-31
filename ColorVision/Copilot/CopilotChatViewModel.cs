@@ -33,7 +33,6 @@ namespace ColorVision.Copilot
         private const int MaximumConversationSearchTerms = 8;
         private static readonly TimeSpan ConversationSearchDebounceDelay = TimeSpan.FromMilliseconds(180);
         private static readonly TimeSpan RecentMcpFailureWindow = TimeSpan.FromMinutes(15);
-        private static readonly TimeSpan StateSnapshotUiSliceBudget = TimeSpan.FromMilliseconds(4);
         private static readonly HashSet<string> UnsafeAttachmentExtensions = new(StringComparer.OrdinalIgnoreCase)
         {
             ".application", ".bat", ".cmd", ".com", ".cpl", ".exe", ".gadget", ".hta", ".inf", ".ins", ".isp",
@@ -50,7 +49,7 @@ namespace ColorVision.Copilot
         private readonly CopilotConversationFindSession _conversationFindSession = new();
         private readonly CopilotConfig _config;
         private readonly ICopilotChatStateStore _stateStore;
-        private readonly CopilotChatStateSaveScheduler _stateSaveScheduler;
+        private readonly CopilotChatStatePersistenceCoordinator _statePersistenceCoordinator;
         private readonly ObservableCollection<CopilotChatMessage> _emptyMessages = new();
         private readonly ObservableCollection<CopilotAttachmentItem> _emptyAttachments = new();
         private readonly ObservableCollection<ConfirmableAction> _pendingActions = new();
@@ -130,10 +129,12 @@ namespace ColorVision.Copilot
             _localGitDiffService = new CopilotLocalGitDiffService();
             _config = CopilotConfig.Instance;
             _stateStore = stateStore ?? throw new ArgumentNullException(nameof(stateStore));
-            _stateSaveScheduler = new CopilotChatStateSaveScheduler(
-                SaveStateSnapshotAsync,
-                onError: ReportStatePersistenceError,
-                onSaved: ReportStatePersistenceSuccess);
+            _statePersistenceCoordinator = new CopilotChatStatePersistenceCoordinator(
+                _stateStore,
+                () => _state,
+                () => Application.Current?.Dispatcher,
+                ReportStatePersistenceError,
+                ReportStatePersistenceSuccess);
             _conversationSearchDebounceTimer = new DispatcherTimer
             {
                 Interval = ConversationSearchDebounceDelay,
@@ -3854,7 +3855,7 @@ namespace ColorVision.Copilot
                 && SelectedConversation.DraftRequestMode != normalized)
             {
                 SelectedConversation.DraftRequestMode = normalized;
-                _stateSaveScheduler.RequestSave();
+                _statePersistenceCoordinator.RequestSave();
             }
             OnComposerRequestModeChanged();
         }
@@ -3866,7 +3867,7 @@ namespace ColorVision.Copilot
             if (SelectedConversation?.DraftRequestMode != CopilotAgentMode.Auto)
             {
                 SelectedConversation!.DraftRequestMode = CopilotAgentMode.Auto;
-                _stateSaveScheduler.RequestSave();
+                _statePersistenceCoordinator.RequestSave();
                 changed = true;
             }
             if (!changed)
