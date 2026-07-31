@@ -11,8 +11,9 @@ namespace ColorVision.Copilot
 {
     public sealed class CopilotAgentTraceEntry : ViewModelBase
     {
-        public const int CurrentSchemaVersion = 11;
+        public const int CurrentSchemaVersion = 12;
         private const int MaxSummaryLength = 800;
+        private const int MaxDelegatedAnswerLength = 20_000;
         private const int MaxPersistedHookRuns = 64;
         private static readonly TimeSpan MaximumWorkspaceRollbackLifetime = TimeSpan.FromMinutes(31);
 
@@ -94,6 +95,10 @@ namespace ColorVision.Copilot
 
         public int DelegatedToolCalls { get; set; }
 
+        public int DelegatedDeliveredSteeringCount { get; set; }
+
+        public int DelegatedUndeliveredSteeringCount { get; set; }
+
         public int DelegatedRegisteredToolCount { get; set; }
 
         public int DelegatedAvailableToolCount { get; set; }
@@ -103,6 +108,12 @@ namespace ColorVision.Copilot
         public int DelegatedHarnessInstructionCharacters { get; set; }
 
         public long DelegatedQueueDurationMs { get; set; }
+
+        public string DelegatedAnswerText { get; set; } = string.Empty;
+
+        public bool DelegatedAnswerHasSuccessfulEvidence { get; set; }
+
+        public bool DelegatedAnswerWasTruncated { get; set; }
 
         [JsonProperty]
         public string WorkspaceChangeSetId { get; private set; } = string.Empty;
@@ -194,6 +205,10 @@ namespace ColorVision.Copilot
 
         public bool ShouldSerializeDelegatedToolCalls() => DelegatedToolCalls != 0;
 
+        public bool ShouldSerializeDelegatedDeliveredSteeringCount() => DelegatedDeliveredSteeringCount != 0;
+
+        public bool ShouldSerializeDelegatedUndeliveredSteeringCount() => DelegatedUndeliveredSteeringCount != 0;
+
         public bool ShouldSerializeDelegatedRegisteredToolCount() => DelegatedRegisteredToolCount != 0;
 
         public bool ShouldSerializeDelegatedAvailableToolCount() => DelegatedAvailableToolCount != 0;
@@ -203,6 +218,12 @@ namespace ColorVision.Copilot
         public bool ShouldSerializeDelegatedHarnessInstructionCharacters() => DelegatedHarnessInstructionCharacters != 0;
 
         public bool ShouldSerializeDelegatedQueueDurationMs() => DelegatedQueueDurationMs != 0;
+
+        public bool ShouldSerializeDelegatedAnswerText() => !string.IsNullOrWhiteSpace(DelegatedAnswerText);
+
+        public bool ShouldSerializeDelegatedAnswerHasSuccessfulEvidence() => DelegatedAnswerHasSuccessfulEvidence;
+
+        public bool ShouldSerializeDelegatedAnswerWasTruncated() => DelegatedAnswerWasTruncated;
 
         [JsonIgnore]
         public bool HasWorkspaceChangedFiles => WorkspaceChangedFiles?.Count > 0;
@@ -447,6 +468,8 @@ namespace ColorVision.Copilot
                     entry.DelegatedConsumedTokens = Math.Max(0, result.DelegatedRunUsage.ConsumedTokens);
                     entry.DelegatedProviderCalls = Math.Max(0, result.DelegatedRunUsage.ProviderCalls);
                     entry.DelegatedToolCalls = Math.Max(0, result.DelegatedRunUsage.ToolCalls);
+                    entry.DelegatedDeliveredSteeringCount = Math.Max(0, result.DelegatedRunUsage.DeliveredSteeringCount);
+                    entry.DelegatedUndeliveredSteeringCount = Math.Max(0, result.DelegatedRunUsage.UndeliveredSteeringCount);
                     entry.DelegatedRegisteredToolCount = Math.Max(0, result.DelegatedRunUsage.RegisteredToolCount);
                     entry.DelegatedAvailableToolCount = Math.Clamp(
                         result.DelegatedRunUsage.AvailableToolCount,
@@ -459,6 +482,18 @@ namespace ColorVision.Copilot
                         0,
                         result.DelegatedRunUsage.HarnessInstructionCharacters);
                     entry.DelegatedQueueDurationMs = Math.Max(0, result.DelegatedRunUsage.QueueDurationMs);
+                }
+                if (result.DelegatedAnswer != null)
+                {
+                    entry.DelegatedAnswerText = SanitizeDelegatedAnswer(
+                        result.DelegatedAnswer.Text,
+                        out var answerWasTruncated);
+                    entry.DelegatedAnswerHasSuccessfulEvidence =
+                        entry.DelegatedAnswerText.Length > 0
+                        && result.DelegatedAnswer.HasSuccessfulEvidence;
+                    entry.DelegatedAnswerWasTruncated =
+                        entry.DelegatedAnswerText.Length > 0
+                        && (result.DelegatedAnswer.WasTruncated || answerWasTruncated);
                 }
                 entry.CaptureWorkspaceChangeSetMetadata(result.Content);
             }
@@ -674,11 +709,16 @@ namespace ColorVision.Copilot
             var originalDelegatedConsumedTokens = DelegatedConsumedTokens;
             var originalDelegatedProviderCalls = DelegatedProviderCalls;
             var originalDelegatedToolCalls = DelegatedToolCalls;
+            var originalDelegatedDeliveredSteeringCount = DelegatedDeliveredSteeringCount;
+            var originalDelegatedUndeliveredSteeringCount = DelegatedUndeliveredSteeringCount;
             var originalDelegatedRegisteredToolCount = DelegatedRegisteredToolCount;
             var originalDelegatedAvailableToolCount = DelegatedAvailableToolCount;
             var originalDelegatedAvailableToolDefinitionCharacters = DelegatedAvailableToolDefinitionCharacters;
             var originalDelegatedHarnessInstructionCharacters = DelegatedHarnessInstructionCharacters;
             var originalDelegatedQueueDurationMs = DelegatedQueueDurationMs;
+            var originalDelegatedAnswerText = DelegatedAnswerText;
+            var originalDelegatedAnswerHasSuccessfulEvidence = DelegatedAnswerHasSuccessfulEvidence;
+            var originalDelegatedAnswerWasTruncated = DelegatedAnswerWasTruncated;
             var originalRound = Round;
             var originalAttempt = Attempt;
             var originalMaxAttempts = MaxAttempts;
@@ -708,6 +748,8 @@ namespace ColorVision.Copilot
             DelegatedConsumedTokens = Math.Max(0, DelegatedConsumedTokens);
             DelegatedProviderCalls = Math.Max(0, DelegatedProviderCalls);
             DelegatedToolCalls = Math.Max(0, DelegatedToolCalls);
+            DelegatedDeliveredSteeringCount = Math.Max(0, DelegatedDeliveredSteeringCount);
+            DelegatedUndeliveredSteeringCount = Math.Max(0, DelegatedUndeliveredSteeringCount);
             DelegatedRegisteredToolCount = Math.Max(0, DelegatedRegisteredToolCount);
             DelegatedAvailableToolCount = Math.Clamp(
                 DelegatedAvailableToolCount,
@@ -716,6 +758,15 @@ namespace ColorVision.Copilot
             DelegatedAvailableToolDefinitionCharacters = Math.Max(0, DelegatedAvailableToolDefinitionCharacters);
             DelegatedHarnessInstructionCharacters = Math.Max(0, DelegatedHarnessInstructionCharacters);
             DelegatedQueueDurationMs = Math.Max(0, DelegatedQueueDurationMs);
+            DelegatedAnswerText = SanitizeDelegatedAnswer(
+                DelegatedAnswerText,
+                out var delegatedAnswerWasTruncatedByPersistence);
+            DelegatedAnswerHasSuccessfulEvidence =
+                DelegatedAnswerText.Length > 0
+                && DelegatedAnswerHasSuccessfulEvidence;
+            DelegatedAnswerWasTruncated =
+                DelegatedAnswerText.Length > 0
+                && (DelegatedAnswerWasTruncated || delegatedAnswerWasTruncatedByPersistence);
             Round = Math.Max(1, Round);
             Attempt = Math.Max(1, Attempt);
             MaxAttempts = Math.Max(Attempt, MaxAttempts);
@@ -754,11 +805,16 @@ namespace ColorVision.Copilot
                 || originalDelegatedConsumedTokens != DelegatedConsumedTokens
                 || originalDelegatedProviderCalls != DelegatedProviderCalls
                 || originalDelegatedToolCalls != DelegatedToolCalls
+                || originalDelegatedDeliveredSteeringCount != DelegatedDeliveredSteeringCount
+                || originalDelegatedUndeliveredSteeringCount != DelegatedUndeliveredSteeringCount
                 || originalDelegatedRegisteredToolCount != DelegatedRegisteredToolCount
                 || originalDelegatedAvailableToolCount != DelegatedAvailableToolCount
                 || originalDelegatedAvailableToolDefinitionCharacters != DelegatedAvailableToolDefinitionCharacters
                 || originalDelegatedHarnessInstructionCharacters != DelegatedHarnessInstructionCharacters
                 || originalDelegatedQueueDurationMs != DelegatedQueueDurationMs
+                || !string.Equals(originalDelegatedAnswerText, DelegatedAnswerText, StringComparison.Ordinal)
+                || originalDelegatedAnswerHasSuccessfulEvidence != DelegatedAnswerHasSuccessfulEvidence
+                || originalDelegatedAnswerWasTruncated != DelegatedAnswerWasTruncated
                 || originalRound != Round
                 || originalAttempt != Attempt
                 || originalMaxAttempts != MaxAttempts
@@ -891,6 +947,15 @@ namespace ColorVision.Copilot
         {
             var redacted = CopilotMcpAuditLogger.RedactText(value ?? string.Empty).Trim();
             return redacted.Length <= MaxSummaryLength ? redacted : redacted[..MaxSummaryLength] + "...";
+        }
+
+        private static string SanitizeDelegatedAnswer(string? value, out bool wasTruncated)
+        {
+            var redacted = CopilotMcpAuditLogger.RedactText(value ?? string.Empty).Trim();
+            wasTruncated = redacted.Length > MaxDelegatedAnswerLength;
+            return wasTruncated
+                ? redacted[..MaxDelegatedAnswerLength].TrimEnd() + "\n...<子代理结果预览已截断>"
+                : redacted;
         }
 
         private static string SanitizeIdentifier(string? value)

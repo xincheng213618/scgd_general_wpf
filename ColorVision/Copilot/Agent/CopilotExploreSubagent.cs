@@ -1413,6 +1413,8 @@ namespace ColorVision.Copilot
                     QueueDurationMs = childRun.QueueDurationMs,
                     StopReason = result.StopReason,
                     ToolCalls = result.Budget.ToolCalls,
+                    DeliveredSteeringCount = Math.Max(0, result.DeliveredSteeringCount),
+                    UndeliveredSteeringCount = Math.Max(0, result.UndeliveredSteeringCount),
                     PeakEstimatedInputTokens = result.Budget.PeakEstimatedInputTokens,
                     ProviderRetryCount = result.Budget.ProviderRetryCount,
                     ProviderRateLimitRetryCount = result.Budget.ProviderRateLimitRetryCount,

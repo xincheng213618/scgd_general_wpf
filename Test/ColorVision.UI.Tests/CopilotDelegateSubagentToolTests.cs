@@ -302,6 +302,8 @@ public sealed class CopilotDelegateSubagentToolTests
         Assert.Contains("steering_undelivered: 1", result.Content, StringComparison.Ordinal);
         Assert.Contains("do not claim they were applied", result.Content, StringComparison.Ordinal);
         Assert.Equal(CopilotAgentStopReason.Completed, result.DelegatedRunUsage?.StopReason);
+        Assert.Equal(2, result.DelegatedRunUsage?.DeliveredSteeringCount);
+        Assert.Equal(1, result.DelegatedRunUsage?.UndeliveredSteeringCount);
         Assert.Equal(3, result.DelegatedRunUsage?.ProviderCalls);
         Assert.Equal(12_000, result.DelegatedRunUsage?.PeakEstimatedInputTokens);
         Assert.Equal(2, result.DelegatedRunUsage?.ProviderRetryCount);

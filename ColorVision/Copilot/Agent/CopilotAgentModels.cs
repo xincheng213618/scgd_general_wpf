@@ -511,6 +511,10 @@ namespace ColorVision.Copilot
 
         public int ToolCalls { get; init; }
 
+        public int DeliveredSteeringCount { get; init; }
+
+        public int UndeliveredSteeringCount { get; init; }
+
         public int PeakEstimatedInputTokens { get; init; }
 
         public int ProviderRetryCount { get; init; }

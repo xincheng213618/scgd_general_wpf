@@ -1,4 +1,5 @@
 using ColorVision.Copilot;
+using Newtonsoft.Json;
 
 namespace ColorVision.UI.Tests;
 
@@ -19,6 +20,7 @@ public sealed class CopilotSubagentDiagnosticsTests
         Assert.Equal(CopilotLocalCommandKind.Subagents, subagents.Command.Kind);
         Assert.Contains(suggestions, item => item.Name == "/agents roles");
         Assert.Contains(suggestions, item => item.Name == "/agents runs");
+        Assert.Contains(suggestions, item => item.Name == "/agents show");
         Assert.Contains(suggestions, item => item.Name == "/agents steer");
         Assert.Contains(suggestions, item => item.Name == "/agents stop");
     }
@@ -61,6 +63,25 @@ public sealed class CopilotSubagentDiagnosticsTests
         Assert.Equal(
             expectedValid
                 ? CopilotSubagentDiagnosticAction.Stop
+                : CopilotSubagentDiagnosticAction.Invalid,
+            request.Action);
+        Assert.Equal(expectedValid ? arguments.Split(' ')[1] : string.Empty, request.RunId);
+        Assert.Empty(request.Message);
+    }
+
+    [Theory]
+    [InlineData("show explore-123abc", true)]
+    [InlineData("SHOW scout-abc123", true)]
+    [InlineData("show", false)]
+    [InlineData("show explore-123 extra", false)]
+    [InlineData("show ../explore-123", false)]
+    public void ShowCommandRequiresOneBoundedRunId(string arguments, bool expectedValid)
+    {
+        var request = CopilotSubagentDiagnostics.ParseCommand(arguments);
+
+        Assert.Equal(
+            expectedValid
+                ? CopilotSubagentDiagnosticAction.Show
                 : CopilotSubagentDiagnosticAction.Invalid,
             request.Action);
         Assert.Equal(expectedValid ? arguments.Split(' ')[1] : string.Empty, request.RunId);
@@ -183,6 +204,7 @@ public sealed class CopilotSubagentDiagnosticsTests
             DelegatedToolCalls = 2,
             ArgumentSummary = "secret prompt",
             ResultSummary = "secret answer",
+            DelegatedAnswerText = "secret delegated answer",
         });
         var newer = new CopilotChatMessage(CopilotChatRole.Assistant, "Newer answer");
         newer.AgentTraceEntries.Add(new CopilotAgentTraceEntry
@@ -219,6 +241,127 @@ public sealed class CopilotSubagentDiagnosticsTests
         Assert.DoesNotContain("scout-old", report);
         Assert.DoesNotContain("secret prompt", report);
         Assert.DoesNotContain("secret answer", report);
+        Assert.DoesNotContain("secret delegated answer", report);
+    }
+
+    [Fact]
+    public void ShowDisplaysOnlyTheSelectedRunResultAndSteeringAudit()
+    {
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        conversation.Title = "Delegation";
+        var assistant = new CopilotChatMessage(CopilotChatRole.Assistant, "Parent answer");
+        assistant.AgentTraceEntries.Add(new CopilotAgentTraceEntry
+        {
+            ToolName = "DelegateScout",
+            State = CopilotToolExecutionState.Completed,
+            DelegatedRoleId = "scout",
+            DelegatedRunId = "scout-other",
+            DelegatedAnswerText = "other run result",
+        });
+        assistant.AgentTraceEntries.Add(new CopilotAgentTraceEntry
+        {
+            ToolName = "DelegateExplore",
+            State = CopilotToolExecutionState.Completed,
+            FailureKind = CopilotToolFailureKind.None,
+            DelegatedRoleId = "explore",
+            DelegatedRunId = "explore-selected",
+            DelegatedResumeFromRunId = "explore-source",
+            DelegatedStopReason = CopilotAgentStopReason.Completed,
+            DelegatedRequestTokenBudget = 8_192,
+            DelegatedConsumedTokens = 2_048,
+            DelegatedProviderCalls = 2,
+            DelegatedToolCalls = 5,
+            DelegatedDeliveredSteeringCount = 2,
+            DelegatedUndeliveredSteeringCount = 1,
+            DelegatedRegisteredToolCount = 48,
+            DelegatedAvailableToolCount = 4,
+            DelegatedAvailableToolDefinitionCharacters = 4_396,
+            DelegatedHarnessInstructionCharacters = 7_228,
+            DelegatedQueueDurationMs = 125,
+            StartedAtUtc = new DateTimeOffset(2026, 7, 31, 4, 0, 0, TimeSpan.Zero),
+            CompletedAtUtc = new DateTimeOffset(2026, 7, 31, 4, 0, 2, TimeSpan.Zero),
+            DurationMs = 2_000,
+            ArgumentSummary = "secret task prompt",
+            ResultSummary = "generic tool summary",
+            DelegatedAnswerText = "Selected finding.\n- exact evidence",
+            DelegatedAnswerHasSuccessfulEvidence = true,
+            DelegatedAnswerWasTruncated = false,
+        });
+        conversation.Messages.Add(assistant);
+
+        var report = CopilotSubagentDiagnostics.Format(conversation, "show explore-selected");
+
+        Assert.Contains("运行详情", report);
+        Assert.Contains("explore · explore-selected · state=Completed · resumed_from=explore-source · stop=Completed", report);
+        Assert.Contains("用量：tokens 2,048/8,192 · 模型 2 · 工具 5", report);
+        Assert.Contains("工具面：4/48 · 定义 4,396 字符 · harness 7,228 字符", report);
+        Assert.Contains("运行中指令：已送达 2 · 未送达 1", report);
+        Assert.Contains("Selected finding.\n- exact evidence", report);
+        Assert.Contains("结果证明：已取得成功工具证据 · 输出截断：否", report);
+        Assert.DoesNotContain("secret task prompt", report);
+        Assert.DoesNotContain("generic tool summary", report);
+        Assert.DoesNotContain("other run result", report);
+        Assert.DoesNotContain("Parent answer", report);
+    }
+
+    [Fact]
+    public void ShowReportsUnknownRunWithoutFallingBackToAnotherResult()
+    {
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+
+        var report = CopilotSubagentDiagnostics.Format(conversation, "show explore-missing");
+
+        Assert.Contains("当前会话没有可查看的子代理运行 explore-missing", report);
+        Assert.DoesNotContain("结果：", report);
+    }
+
+    [Fact]
+    public void DelegatedAnswerPreviewAndSteeringAuditAreBoundedAndPersisted()
+    {
+        var answer = new string('x', 20_050);
+        var trace = CopilotAgentTraceEntry.FromResult(
+            new CopilotToolExecutionInfo
+            {
+                CallId = "delegate-call",
+                Round = 1,
+                ToolName = "DelegateExplore",
+                State = CopilotToolExecutionState.Completed,
+                StartedAtUtc = DateTimeOffset.UtcNow,
+                CompletedAtUtc = DateTimeOffset.UtcNow,
+            },
+            new CopilotToolResult
+            {
+                ToolName = "DelegateExplore",
+                Success = true,
+                Summary = "Explore completed.",
+                DelegatedRunUsage = new CopilotDelegatedRunUsage
+                {
+                    RoleId = "explore",
+                    RunId = "explore-persisted",
+                    DeliveredSteeringCount = 3,
+                    UndeliveredSteeringCount = 2,
+                },
+                DelegatedAnswer = new CopilotDelegatedAnswer
+                {
+                    Text = answer,
+                    StopReason = CopilotAgentStopReason.Completed,
+                    HasSuccessfulEvidence = true,
+                },
+            });
+
+        var restored = JsonConvert.DeserializeObject<CopilotAgentTraceEntry>(
+            JsonConvert.SerializeObject(trace));
+
+        Assert.NotNull(restored);
+        Assert.False(restored.EnsureValid(DateTimeOffset.UtcNow));
+        Assert.Equal(CopilotAgentTraceEntry.CurrentSchemaVersion, restored.SchemaVersion);
+        Assert.Equal(3, restored.DelegatedDeliveredSteeringCount);
+        Assert.Equal(2, restored.DelegatedUndeliveredSteeringCount);
+        Assert.True(restored.DelegatedAnswerHasSuccessfulEvidence);
+        Assert.True(restored.DelegatedAnswerWasTruncated);
+        Assert.StartsWith(new string('x', 100), restored.DelegatedAnswerText);
+        Assert.EndsWith("...<子代理结果预览已截断>", restored.DelegatedAnswerText);
+        Assert.True(restored.DelegatedAnswerText.Length < answer.Length);
     }
 
     [Fact]

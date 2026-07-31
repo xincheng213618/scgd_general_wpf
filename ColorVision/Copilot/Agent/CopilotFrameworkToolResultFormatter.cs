@@ -152,6 +152,8 @@ namespace ColorVision.Copilot
                     ["request_token_budget"] = Math.Max(0, delegated.RequestTokenBudget),
                     ["provider_calls"] = Math.Max(0, delegated.ProviderCalls),
                     ["tool_calls"] = Math.Max(0, delegated.ToolCalls),
+                    ["steering_delivered"] = Math.Max(0, delegated.DeliveredSteeringCount),
+                    ["steering_undelivered"] = Math.Max(0, delegated.UndeliveredSteeringCount),
                     ["queue_ms"] = Math.Max(0, delegated.QueueDurationMs),
                     ["consumed_tokens"] = Math.Max(0, delegated.ConsumedTokens),
                     ["input_tokens"] = Math.Max(0, delegated.Usage.InputTokens),

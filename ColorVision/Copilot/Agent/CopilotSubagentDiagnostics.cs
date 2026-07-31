@@ -14,6 +14,7 @@ namespace ColorVision.Copilot
         Invalid,
         Stop,
         Steer,
+        Show,
     }
 
     internal readonly record struct CopilotSubagentDiagnosticRequest(
@@ -30,21 +31,32 @@ namespace ColorVision.Copilot
         string Activity,
         CopilotAgentStopReason StopReason,
         DateTimeOffset StartedAtUtc,
+        DateTimeOffset? CompletedAtUtc,
         long DurationMs,
         long QueueDurationMs,
         int RequestTokenBudget,
         long ConsumedTokens,
         int ProviderCalls,
         int ToolCalls,
+        int DeliveredSteeringCount,
+        int UndeliveredSteeringCount,
         int RegisteredToolCount,
-        int AvailableToolCount);
+        int AvailableToolCount,
+        int AvailableToolDefinitionCharacters,
+        int HarnessInstructionCharacters,
+        CopilotToolFailureKind FailureKind,
+        string FailureCode,
+        bool RetryEligible,
+        string AnswerText,
+        bool AnswerHasSuccessfulEvidence,
+        bool AnswerWasTruncated);
 
     internal static class CopilotSubagentDiagnostics
     {
         internal const int DefaultDisplayedRuns = 8;
         internal const int MaximumDisplayedRuns = 20;
-        internal const string Usage = "用法：/agents [roles|runs [N]|steer <run_id> <message>|stop <run_id>]"
-            + "\nN 可取 1–20；steer 向当前会话中仍在运行的指定子代理排入新指令；stop 只停止该子代理；父 Agent 均继续运行；/subagents 为同义命令。";
+        internal const string Usage = "用法：/agents [roles|runs [N]|show <run_id>|steer <run_id> <message>|stop <run_id>]"
+            + "\nN 可取 1–20；show 查看当前会话中单个子运行的限长结果与审计详情；steer 向仍在运行的指定子代理排入新指令；stop 只停止该子代理；父 Agent 均继续运行；/subagents 为同义命令。";
 
         public static CopilotSubagentDiagnosticRequest ParseCommand(string? arguments)
         {
@@ -84,6 +96,16 @@ namespace ColorVision.Copilot
                         ? DefaultDisplayedRuns
                         : int.Parse(tokens[1], CultureInfo.InvariantCulture),
                     string.Empty,
+                    string.Empty);
+            }
+            if (tokens.Length == 2
+                && string.Equals(tokens[0], "show", StringComparison.OrdinalIgnoreCase)
+                && IsValidRunId(tokens[1]))
+            {
+                return new CopilotSubagentDiagnosticRequest(
+                    CopilotSubagentDiagnosticAction.Show,
+                    0,
+                    tokens[1],
                     string.Empty);
             }
             if (tokens.Length == 2
@@ -185,17 +207,28 @@ namespace ColorVision.Copilot
                         trace.ProgressMessage,
                         trace.DelegatedStopReason,
                         trace.StartedAtUtc,
+                        trace.CompletedAtUtc,
                         Math.Max(0, trace.DurationMs),
                         Math.Max(0, trace.DelegatedQueueDurationMs),
                         Math.Max(0, trace.DelegatedRequestTokenBudget),
                         Math.Max(0, trace.DelegatedConsumedTokens),
                         Math.Max(0, trace.DelegatedProviderCalls),
                         Math.Max(0, trace.DelegatedToolCalls),
+                        Math.Max(0, trace.DelegatedDeliveredSteeringCount),
+                        Math.Max(0, trace.DelegatedUndeliveredSteeringCount),
                         Math.Max(0, trace.DelegatedRegisteredToolCount),
                         Math.Clamp(
                             trace.DelegatedAvailableToolCount,
                             0,
-                            Math.Max(0, trace.DelegatedRegisteredToolCount))));
+                            Math.Max(0, trace.DelegatedRegisteredToolCount)),
+                        Math.Max(0, trace.DelegatedAvailableToolDefinitionCharacters),
+                        Math.Max(0, trace.DelegatedHarnessInstructionCharacters),
+                        trace.FailureKind,
+                        trace.FailureCode,
+                        trace.RetryEligible,
+                        trace.DelegatedAnswerText,
+                        trace.DelegatedAnswerHasSuccessfulEvidence,
+                        trace.DelegatedAnswerWasTruncated));
                 }
             }
             return runs;
@@ -243,11 +276,15 @@ namespace ColorVision.Copilot
             {
                 AppendRuns(builder, CaptureRuns(conversation, catalog), request.Limit);
             }
+            else if (request.Action == CopilotSubagentDiagnosticAction.Show)
+            {
+                AppendRunDetails(builder, CaptureRuns(conversation, catalog), request.RunId);
+            }
 
             builder.AppendLine()
                 .Append("边界：子代理由父 Agent 按请求创建并回传结果；运行期间可按 run_id 排入新指令或单独停止，父 Agent 继续运行；同一父请求内，可用完成结果给出的 run_id 续跑同角色且具有有效 checkpoint 的子代理。")
                 .Append("它仍不是可切换、跨请求或应用重启后可恢复的独立会话。")
-                .Append("列表仅来自当前会话保存的限长运行元数据，不显示任务提示、回答正文、隐藏推理或凭据。");
+                .Append("runs 列表仅显示限长运行元数据；show 只显示当前会话保存的、已脱敏且限长的子代理回答，不显示任务提示、工具参数、原始工具结果或隐藏推理。");
             return builder.ToString();
         }
 
@@ -413,6 +450,110 @@ namespace ColorVision.Copilot
                     .Append((runs.Count - visibleRuns.Length).ToString("N0", CultureInfo.CurrentCulture))
                     .AppendLine(" 次较早运行未显示。");
             }
+        }
+
+        private static void AppendRunDetails(
+            StringBuilder builder,
+            IReadOnlyList<CopilotSubagentRunDiagnostic> runs,
+            string runId)
+        {
+            builder.AppendLine()
+                .AppendLine("运行详情");
+            var run = runs.FirstOrDefault(candidate =>
+                string.Equals(candidate.RunId, runId, StringComparison.Ordinal));
+            if (run == null)
+            {
+                builder.Append("当前会话没有可查看的子代理运行 ")
+                    .Append(runId)
+                    .AppendLine("；请先用 /agents runs 查找有效 run_id。");
+                return;
+            }
+
+            builder.Append(run.RoleId)
+                .Append(" · ")
+                .Append(run.RunId)
+                .Append(" · state=")
+                .Append(run.State);
+            if (!string.IsNullOrWhiteSpace(run.ResumeFromRunId))
+                builder.Append(" · resumed_from=").Append(run.ResumeFromRunId);
+            if (run.StopReason != CopilotAgentStopReason.None)
+                builder.Append(" · stop=").Append(run.StopReason);
+            builder.AppendLine();
+
+            var hasTiming = false;
+            if (run.StartedAtUtc != default)
+            {
+                builder.Append("开始 ")
+                    .Append(run.StartedAtUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.CurrentCulture));
+                hasTiming = true;
+            }
+            if (run.CompletedAtUtc.HasValue)
+            {
+                AppendSeparator(builder, ref hasTiming);
+                builder.Append("完成 ")
+                    .Append(run.CompletedAtUtc.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.CurrentCulture));
+            }
+            if (run.DurationMs > 0)
+            {
+                AppendSeparator(builder, ref hasTiming);
+                builder.Append("耗时 ").Append(FormatDuration(run.DurationMs));
+            }
+            if (run.QueueDurationMs > 0)
+            {
+                AppendSeparator(builder, ref hasTiming);
+                builder.Append("排队 ").Append(FormatDuration(run.QueueDurationMs));
+            }
+            if (hasTiming)
+                builder.AppendLine();
+
+            builder.Append("用量：tokens ")
+                .Append(FormatTokens(run.ConsumedTokens))
+                .Append('/')
+                .Append(FormatTokens(run.RequestTokenBudget))
+                .Append(" · 模型 ")
+                .Append(run.ProviderCalls.ToString("N0", CultureInfo.CurrentCulture))
+                .Append(" · 工具 ")
+                .Append(run.ToolCalls.ToString("N0", CultureInfo.CurrentCulture))
+                .AppendLine();
+            builder.Append("工具面：")
+                .Append(run.AvailableToolCount.ToString("N0", CultureInfo.CurrentCulture))
+                .Append('/')
+                .Append(run.RegisteredToolCount.ToString("N0", CultureInfo.CurrentCulture))
+                .Append(" · 定义 ")
+                .Append(run.AvailableToolDefinitionCharacters.ToString("N0", CultureInfo.CurrentCulture))
+                .Append(" 字符 · harness ")
+                .Append(run.HarnessInstructionCharacters.ToString("N0", CultureInfo.CurrentCulture))
+                .AppendLine(" 字符");
+            builder.Append("运行中指令：已送达 ")
+                .Append(run.DeliveredSteeringCount.ToString("N0", CultureInfo.CurrentCulture))
+                .Append(" · 未送达 ")
+                .Append(run.UndeliveredSteeringCount.ToString("N0", CultureInfo.CurrentCulture))
+                .AppendLine();
+            if (run.FailureKind != CopilotToolFailureKind.None)
+            {
+                builder.Append("失败：")
+                    .Append(run.FailureKind);
+                if (!string.IsNullOrWhiteSpace(run.FailureCode))
+                    builder.Append(" · code=").Append(run.FailureCode);
+                builder.Append(" · retry=")
+                    .AppendLine(run.RetryEligible ? "yes" : "no");
+            }
+
+            builder.Append("结果：");
+            if (string.IsNullOrWhiteSpace(run.AnswerText))
+            {
+                builder.AppendLine(run.State is CopilotToolExecutionState.Pending or CopilotToolExecutionState.Running
+                    ? "子代理仍在运行，尚未回传可展示回答。"
+                    : "该运行没有保存可展示回答。");
+                return;
+            }
+
+            builder.AppendLine()
+                .AppendLine(run.AnswerText)
+                .Append("结果证明：")
+                .Append(run.AnswerHasSuccessfulEvidence ? "已取得成功工具证据" : "未取得成功工具证据")
+                .Append(" · 输出截断：")
+                .AppendLine(run.AnswerWasTruncated ? "是" : "否");
         }
 
         private static void AppendSeparator(StringBuilder builder, ref bool hasValue)
