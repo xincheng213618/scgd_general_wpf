@@ -179,6 +179,11 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                         FlowNodeRecordDataBaseHelper.GetByRun(batchId, serialNumber);
                     List<FlowNodeMessage> messages =
                         FlowNodeRecordDataBaseHelper.GetMessagesByRun(batchId, serialNumber);
+                    FlowRunRecord? run =
+                        FlowNodeRecordDataBaseHelper.GetFlowRun(batchId, serialNumber);
+                    List<FlowExecutionEvent> events = run == null
+                        ? new List<FlowExecutionEvent>()
+                        : FlowNodeRecordDataBaseHelper.GetExecutionEvents(run.Id);
                     if (string.IsNullOrWhiteSpace(serialNumber))
                     {
                         records = records
@@ -188,7 +193,12 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                             .Where(item => string.IsNullOrWhiteSpace(item.SerialNumber))
                             .ToList();
                     }
-                    return (Flushed: flushed, Records: records, Messages: messages);
+                    return (
+                        Flushed: flushed,
+                        Records: records,
+                        Messages: messages,
+                        Run: run,
+                        Events: events);
                 });
 
                 if (loadVersion != _loadVersion)
@@ -208,8 +218,10 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                     batchId,
                     effectiveSerial,
                     batch,
+                    result.Run,
                     result.Records,
                     result.Messages,
+                    result.Events,
                     DateTime.Now,
                     SlowNodeThresholdMs);
 

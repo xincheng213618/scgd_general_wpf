@@ -1283,12 +1283,42 @@ namespace ColorVision.Engine.FlowProcessing
                     "PreProcessStarted",
                     message: "流程前处理已开始。");
 
-                bool preresult = await PreProcessing(flowName, sn);
+                Stopwatch preProcessStopwatch = Stopwatch.StartNew();
+                bool preresult;
+                try
+                {
+                    preresult = await PreProcessing(flowName, sn);
+                }
+                catch (Exception ex)
+                {
+                    preProcessStopwatch.Stop();
+                    long elapsedMs = preProcessStopwatch.ElapsedMilliseconds;
+                    journalScope?.TryAppendEvent(
+                        "pre-process-completed",
+                        "PreProcessCompleted",
+                        code: "ThrewException",
+                        message: $"流程前处理异常，耗时 {elapsedMs}ms。",
+                        dataJson: System.Text.Json.JsonSerializer.Serialize(
+                            new { elapsedMs }));
+                    log.Error($"流程前处理异常，耗时 {elapsedMs}ms。", ex);
+                    throw;
+                }
+                preProcessStopwatch.Stop();
+                long preProcessElapsedMs =
+                    preProcessStopwatch.ElapsedMilliseconds;
                 journalScope?.TryAppendEvent(
                     "pre-process-completed",
                     "PreProcessCompleted",
                     code: preresult ? "Succeeded" : "Failed",
-                    message: preresult ? "流程前处理已完成。" : "流程前处理失败。");
+                    message: preresult
+                        ? $"流程前处理已完成，耗时 {preProcessElapsedMs}ms。"
+                        : $"流程前处理失败，耗时 {preProcessElapsedMs}ms。",
+                    dataJson: System.Text.Json.JsonSerializer.Serialize(
+                        new { elapsedMs = preProcessElapsedMs }));
+                if (preresult)
+                    log.Info($"流程前处理已完成，耗时 {preProcessElapsedMs}ms。");
+                else
+                    log.Warn($"流程前处理失败，耗时 {preProcessElapsedMs}ms。");
                 if (!CanContinueFlowStart(sn))
                 {
                     unstartedBatchStatus = FlowStatus.Canceled;

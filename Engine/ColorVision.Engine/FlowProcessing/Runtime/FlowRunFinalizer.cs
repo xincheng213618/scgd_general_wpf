@@ -6,7 +6,9 @@ using log4net;
 using SqlSugar;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows;
 
@@ -86,6 +88,7 @@ namespace ColorVision.Engine.FlowProcessing
                     "post-process-started",
                     "PostProcessStarted",
                     message: "流程后处理已开始。");
+                Stopwatch postProcessStopwatch = Stopwatch.StartNew();
                 try
                 {
                     postProcessResults =
@@ -110,17 +113,27 @@ namespace ColorVision.Engine.FlowProcessing
                             ex)
                     };
                 }
-            }
+                postProcessStopwatch.Stop();
+                long postProcessElapsedMs =
+                    postProcessStopwatch.ElapsedMilliseconds;
 
-            journalScope?.TryAppendEvent(
-                "post-process-completed",
-                "PostProcessCompleted",
-                code: postProcessResults.All(result => result.Succeeded)
-                    ? "Succeeded"
-                    : "CompletedWithFailures",
-                message:
-                    $"后处理共 {postProcessResults.Count} 项，失败 "
-                    + $"{postProcessResults.Count(result => !result.Succeeded)} 项。");
+                journalScope?.TryAppendEvent(
+                    "post-process-completed",
+                    "PostProcessCompleted",
+                    code: postProcessResults.All(result => result.Succeeded)
+                        ? "Succeeded"
+                        : "CompletedWithFailures",
+                    message:
+                        $"后处理共 {postProcessResults.Count} 项，失败 "
+                        + $"{postProcessResults.Count(result => !result.Succeeded)} 项，"
+                        + $"耗时 {postProcessElapsedMs}ms。",
+                    dataJson: JsonSerializer.Serialize(
+                        new { elapsedMs = postProcessElapsedMs }));
+                log.Info(
+                    $"流程后处理已完成，共 {postProcessResults.Count} 项，"
+                    + $"失败 {postProcessResults.Count(result => !result.Succeeded)} 项，"
+                    + $"耗时 {postProcessElapsedMs}ms。");
+            }
             RecordPostProcessIncidents(
                 postProcessResults,
                 journalScope);

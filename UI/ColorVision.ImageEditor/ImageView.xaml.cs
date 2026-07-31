@@ -22,6 +22,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -41,6 +42,7 @@ namespace ColorVision.ImageEditor
     public partial class ImageView : UserControl, IDisposable, IActiveDocumentStatusProvider, INotifyPropertyChanged
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ImageView));
+        private static readonly SemaphoreSlim SnapshotSaveGate = new(1, 1);
         private readonly DefaultImageViewDisplayConfig _defaultDisplayConfig = DefaultImageViewDisplayConfig.Current;
         private readonly List<Func<IEnumerable<ImageViewSettingsEntry>>> _settingsEntries = new();
 
@@ -703,40 +705,96 @@ namespace ColorVision.ImageEditor
                 return;
             }
 
+            BitmapSource? snapshot = CaptureSnapshot();
+            if (snapshot == null)
+                return;
+
+            SaveSnapshot(snapshot, fileName);
+        }
+
+        /// <summary>
+        /// Captures the current image and its result visuals on the UI thread.
+        /// The returned bitmap is frozen and can be encoded on a worker thread.
+        /// </summary>
+        public BitmapSource? CaptureSnapshot()
+        {
+            Dispatcher.VerifyAccess();
             ImageShow.UpdateLayout();
             int pixelWidth = GetRenderPixelLength(ImageShow.ActualWidth, ImageShow.RenderSize.Width);
             int pixelHeight = GetRenderPixelLength(ImageShow.ActualHeight, ImageShow.RenderSize.Height);
             if (pixelWidth <= 0 || pixelHeight <= 0)
             {
                 log.WarnFormat(
-                    "Skip saving ImageView because render size is invalid. File={0}, Actual={1}x{2}, RenderSize={3}x{4}, Source={5}",
-                    fileName,
+                    "Skip capturing ImageView because render size is invalid. Actual={0}x{1}, RenderSize={2}x{3}, Source={4}",
                     ImageShow.ActualWidth,
                     ImageShow.ActualHeight,
                     ImageShow.RenderSize.Width,
                     ImageShow.RenderSize.Height,
                     ImageShow.Source?.GetType().FullName ?? "<null>");
-                return;
+                return null;
             }
 
             double dpiX = GetPositiveDpi(Config.GetProperties<double>("DpiX"));
             double dpiY = GetPositiveDpi(Config.GetProperties<double>("DpiY"));
 
-            string? directory = Path.GetDirectoryName(fileName);
-            if (!string.IsNullOrWhiteSpace(directory) && !Directory.Exists(directory))
-            {
-                Directory.CreateDirectory(directory);
-            }
-
             RenderTargetBitmap renderTargetBitmap = new(pixelWidth, pixelHeight, dpiX, dpiY, PixelFormats.Pbgra32);
             renderTargetBitmap.Render(ImageShow);
+            renderTargetBitmap.Freeze();
+            return renderTargetBitmap;
+        }
 
-            // 创建一个PngBitmapEncoder对象来保存位图为PNG文件
+        /// <summary>
+        /// Encodes and writes a frozen snapshot without occupying the UI thread.
+        /// PNG encoding is serialized to avoid competing large bitmap encoders.
+        /// </summary>
+        public static async Task SaveSnapshotAsync(
+            BitmapSource snapshot,
+            string fileName,
+            CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(snapshot);
+            if (string.IsNullOrWhiteSpace(fileName))
+            {
+                log.Warn("Skip saving ImageView snapshot because file name is empty.");
+                return;
+            }
+            if (!snapshot.IsFrozen)
+            {
+                throw new InvalidOperationException(
+                    "ImageView snapshots must be frozen before background saving.");
+            }
+
+            await SnapshotSaveGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+            try
+            {
+                await Task.Run(
+                    () => SaveSnapshot(snapshot, fileName, cancellationToken),
+                    cancellationToken).ConfigureAwait(false);
+            }
+            finally
+            {
+                SnapshotSaveGate.Release();
+            }
+        }
+
+        private static void SaveSnapshot(
+            BitmapSource snapshot,
+            string fileName,
+            CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            string? directory = Path.GetDirectoryName(fileName);
+            if (!string.IsNullOrWhiteSpace(directory) && !Directory.Exists(directory))
+                Directory.CreateDirectory(directory);
+
             PngBitmapEncoder pngEncoder = new();
-            pngEncoder.Frames.Add(BitmapFrame.Create(renderTargetBitmap));
+            pngEncoder.Frames.Add(BitmapFrame.Create(snapshot));
 
-            // 将PNG内容保存到文件
-            using FileStream fileStream = new(fileName, FileMode.Create);
+            using FileStream fileStream = new(
+                fileName,
+                FileMode.Create,
+                FileAccess.Write,
+                FileShare.None);
             pngEncoder.Save(fileStream);
         }
 

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 
 namespace ColorVision.Engine.FlowProcessing.Diagnostics
 {
@@ -135,7 +136,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
     internal readonly record struct FlowExecutionAnalysisSummary(
         long WallClockMs,
         long ActiveMs,
-        long IdleMs,
+        long NodeInactiveMs,
         long OverlapMs,
         long NodeWorkMs,
         int NodeCount,
@@ -143,6 +144,10 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
         int WarningCount,
         string SlowestNodeName,
         long SlowestNodeElapsedMs);
+
+    internal readonly record struct FlowExecutionPhaseSummary(
+        long? PreProcessMs,
+        long? PostProcessMs);
 
     internal static class FlowExecutionAnalysisPresentation
     {
@@ -265,6 +270,24 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 CalculateP95(failedElapsed));
         }
 
+        internal static FlowExecutionPhaseSummary BuildPhaseSummary(
+            IEnumerable<FlowExecutionEvent>? source)
+        {
+            List<FlowExecutionEvent> events = source?
+                .OrderBy(item => item.OccurredTimeUtc)
+                .ThenBy(item => item.SequenceNo)
+                .ToList() ?? new List<FlowExecutionEvent>();
+            return new FlowExecutionPhaseSummary(
+                GetPhaseDurationMs(
+                    events,
+                    "PreProcessStarted",
+                    "PreProcessCompleted"),
+                GetPhaseDurationMs(
+                    events,
+                    "PostProcessStarted",
+                    "PostProcessCompleted"));
+        }
+
         internal static FlowNodeExecutionOutcome GetNodeExecutionOutcome(
             FlowNodeRecord record,
             IEnumerable<FlowNodeMessage> messages)
@@ -342,6 +365,70 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 durationItems.Count(item => item.IsWarning),
                 slowest?.NodeName ?? "—",
                 slowest?.ElapsedMs ?? 0);
+        }
+
+        private static long? GetPhaseDurationMs(
+            IReadOnlyList<FlowExecutionEvent> events,
+            string startedEventType,
+            string completedEventType)
+        {
+            FlowExecutionEvent? completed = events
+                .LastOrDefault(item => string.Equals(
+                    item.EventType,
+                    completedEventType,
+                    StringComparison.Ordinal));
+            if (completed == null)
+                return null;
+            if (TryGetElapsedMilliseconds(completed.DataJson, out long elapsedMs))
+                return elapsedMs;
+
+            FlowExecutionEvent? started = events
+                .LastOrDefault(item =>
+                    item.OccurredTimeUtc <= completed.OccurredTimeUtc
+                    && string.Equals(
+                        item.EventType,
+                        startedEventType,
+                        StringComparison.Ordinal));
+            return started == null
+                ? null
+                : Math.Max(
+                    0,
+                    (long)(completed.OccurredTimeUtc - started.OccurredTimeUtc)
+                        .TotalMilliseconds);
+        }
+
+        private static bool TryGetElapsedMilliseconds(
+            string? dataJson,
+            out long elapsedMs)
+        {
+            elapsedMs = 0;
+            if (string.IsNullOrWhiteSpace(dataJson))
+                return false;
+
+            try
+            {
+                using JsonDocument document = JsonDocument.Parse(dataJson);
+                if (document.RootElement.ValueKind != JsonValueKind.Object)
+                    return false;
+
+                foreach (JsonProperty property in document.RootElement
+                    .EnumerateObject())
+                {
+                    if (string.Equals(
+                            property.Name,
+                            "elapsedMs",
+                            StringComparison.OrdinalIgnoreCase)
+                        && property.Value.TryGetInt64(out long value))
+                    {
+                        elapsedMs = Math.Max(0, value);
+                        return true;
+                    }
+                }
+            }
+            catch (JsonException)
+            {
+            }
+            return false;
         }
 
         internal static IReadOnlyList<FlowNodeMessage> GetMessagesForNodeExecution(

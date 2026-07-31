@@ -397,6 +397,58 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             }
         }
 
+        internal static FlowRunRecord? GetFlowRun(
+            int batchId,
+            string? serialNumber)
+        {
+            EnsureInitialized();
+            try
+            {
+                using var db = CreateReadDb();
+                if (!string.IsNullOrWhiteSpace(serialNumber))
+                {
+                    FlowRunRecord? exact = db.Queryable<FlowRunRecord>()
+                        .Where(item => item.BatchId == batchId)
+                        .Where(item => item.SerialNumber == serialNumber)
+                        .OrderByDescending(item => item.StartedTimeUtc)
+                        .First();
+                    if (exact != null)
+                        return exact;
+                }
+
+                return db.Queryable<FlowRunRecord>()
+                    .Where(item => item.BatchId == batchId)
+                    .OrderByDescending(item => item.StartedTimeUtc)
+                    .First();
+            }
+            catch (Exception ex)
+            {
+                log.Error("查询流程运行 journal 失败", ex);
+                return null;
+            }
+        }
+
+        internal static List<FlowExecutionEvent> GetExecutionEvents(
+            int runRecordId)
+        {
+            if (runRecordId <= 0 || !EnsureInitialized())
+                return new List<FlowExecutionEvent>();
+
+            try
+            {
+                using var db = CreateReadDb();
+                return db.Queryable<FlowExecutionEvent>()
+                    .Where(item => item.RunRecordId == runRecordId)
+                    .OrderBy(item => item.SequenceNo)
+                    .ToList();
+            }
+            catch (Exception ex)
+            {
+                log.Error("查询流程阶段事件失败", ex);
+                return new List<FlowExecutionEvent>();
+            }
+        }
+
         public static int RecordFlowRun(
             int templateId,
             string? flowName,
