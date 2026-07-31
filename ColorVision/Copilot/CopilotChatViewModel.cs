@@ -2151,6 +2151,15 @@ namespace ColorVision.Copilot
             var capabilitySnapshot = CopilotCapabilityCatalog.Shared.GetSnapshot();
             var skillUsage = CopilotAgentSkillUsageStore.Shared.GetSnapshot();
             var activeRun = ActiveHostedRun;
+            var conversation = SelectedConversation;
+            var conversationMessages = conversation?.Messages
+                ?.Where(message => message != null)
+                .ToArray() ?? [];
+            var latestAssistant = conversationMessages.LastOrDefault(message => !message.IsUser);
+            var conversationRun = SelectedHostedRun;
+            var branchOrigin = conversation?.BranchOrigin?.IsStructurallyValid(conversation.Id) == true
+                ? conversation.BranchOrigin
+                : null;
             var providerRetrySnapshot = activeRun?.ProviderRetrySnapshot
                 ?? CopilotHostedProviderRetrySnapshot.Empty;
             var latestProviderRetry = providerRetrySnapshot.Latest;
@@ -2179,6 +2188,21 @@ namespace ColorVision.Copilot
                 AgentState = activeRun?.State.ToString() ?? "Idle",
                 QueuedAgentRuns = _taskHost.QueuedCount,
                 MaximumQueuedAgentRuns = _taskHost.MaxQueuedRuns,
+                HasConversation = conversation != null,
+                ConversationTitle = conversation?.Title ?? string.Empty,
+                ConversationId = conversation?.Id ?? string.Empty,
+                ConversationVisibleTurns = conversationMessages.Count(message => message.IsUser),
+                ConversationMessageCount = conversationMessages.Length,
+                ConversationRunState = conversationRun?.State,
+                ConversationQueuedFollowUps = QueuedFollowUps.Count(item => string.Equals(
+                    item.ConversationId,
+                    conversation?.Id,
+                    StringComparison.Ordinal)),
+                ConversationHasCheckpoint = conversation?.AgentSessionCheckpoint != null,
+                ConversationHasRecoverableAgentTasks = latestAssistant?.HasRecoverableAgentTasks == true,
+                ConversationIsBranch = branchOrigin != null,
+                ConversationParentId = branchOrigin?.ParentConversationId ?? string.Empty,
+                ConversationRootId = branchOrigin?.RootConversationId ?? string.Empty,
                 WorkspacePath = turnSnapshot.SolutionDirectoryPath,
                 ActiveDocumentPath = turnSnapshot.ActiveDocumentPath,
                 PreferredShell = defaults.PreferredShell,

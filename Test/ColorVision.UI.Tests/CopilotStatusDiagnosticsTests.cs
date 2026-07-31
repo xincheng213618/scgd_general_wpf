@@ -47,6 +47,63 @@ public sealed class CopilotStatusDiagnosticsTests
     }
 
     [Fact]
+    public void StatusIncludesCopyableConversationIdentityAndRecoveryState()
+    {
+        var report = CopilotStatusDiagnostics.Format(new CopilotStatusDiagnosticSnapshot
+        {
+            HasConversation = true,
+            ConversationTitle = "Camera recovery",
+            ConversationId = "conversation-123",
+            ConversationVisibleTurns = 4,
+            ConversationMessageCount = 9,
+            ConversationQueuedFollowUps = 2,
+            ConversationHasCheckpoint = true,
+            ConversationHasRecoverableAgentTasks = true,
+            ConversationIsBranch = true,
+            ConversationParentId = "conversation-parent",
+            ConversationRootId = "conversation-root",
+        });
+
+        Assert.Contains("会话：Camera recovery", report, StringComparison.Ordinal);
+        Assert.Contains("会话 ID：conversation-123", report, StringComparison.Ordinal);
+        Assert.Contains("可见历史：4 轮请求 · 9 条消息", report, StringComparison.Ordinal);
+        Assert.Contains(
+            "恢复：有可安全继续的 Agent 任务 · 2 条排队后续",
+            report,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "分支：父会话 conversation-parent · 根会话 conversation-root",
+            report,
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void StatusReportsLiveConversationRunAheadOfSavedCheckpoint()
+    {
+        var report = CopilotStatusDiagnostics.Format(new CopilotStatusDiagnosticSnapshot
+        {
+            HasConversation = true,
+            ConversationRunState = CopilotHostedRunState.Running,
+            ConversationHasCheckpoint = true,
+            ConversationHasRecoverableAgentTasks = true,
+        });
+
+        Assert.Contains("恢复：Agent 运行中", report, StringComparison.Ordinal);
+        Assert.DoesNotContain("有可安全继续的 Agent 任务", report, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void SessionInfoAliasUsesStatusCommandWithoutArguments()
+    {
+        var invocation = CopilotLocalCommandCatalog.Parse("/session-info");
+
+        Assert.NotNull(invocation);
+        Assert.Equal(CopilotLocalCommandKind.Status, invocation.Command.Kind);
+        Assert.True(invocation.Command.AvailableWhileAgentRuns);
+        Assert.Null(CopilotLocalCommandCatalog.Parse("/session-info now"));
+    }
+
+    [Fact]
     public void HostedRunRetainsRetryCountAndLatestDetails()
     {
         using var run = new CopilotHostedAgentRun("conversation", CopilotAgentMode.Auto);

@@ -91,6 +91,7 @@ namespace ColorVision.Copilot
             new("/shortcuts", "查看按焦点作用域整理的键盘快捷键", CopilotLocalCommandKind.Shortcuts, AvailableWhileAgentRuns: true, Usage: "/shortcuts"),
             new("/recap", "回顾当前会话的目标、最近一轮与待执行状态", CopilotLocalCommandKind.Recap, AvailableWhileAgentRuns: true, Usage: "/recap"),
             new("/status", "查看模型、Agent、工作区与连接状态", CopilotLocalCommandKind.Status, AvailableWhileAgentRuns: true, Usage: "/status"),
+            new("/session-info", "同 /status；查看当前会话身份、恢复与运行状态", CopilotLocalCommandKind.Status, AvailableWhileAgentRuns: true, Usage: "/session-info"),
             new("/doctor", "检查模型、会话保存、任务、MCP、Hook 与 Skill 健康度", CopilotLocalCommandKind.Doctor, AvailableWhileAgentRuns: true, Usage: "/doctor"),
             new("/feedback", "反馈当前 Copilot 会话问题，可补充问题说明", CopilotLocalCommandKind.Feedback, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/feedback [问题说明]"),
             new("/tasks", "查看正在运行、排队及等待恢复的 Agent 任务", CopilotLocalCommandKind.Tasks, AvailableWhileAgentRuns: true, Usage: "/tasks"),
