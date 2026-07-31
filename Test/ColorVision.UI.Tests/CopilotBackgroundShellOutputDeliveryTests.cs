@@ -13,6 +13,56 @@ namespace ColorVision.UI.Tests;
 public sealed class CopilotBackgroundShellOutputDeliveryTests
 {
     [Fact]
+    public async Task SteeringRequiresExactActiveTask()
+    {
+        using var provider = new BlockingSteeringChatClient();
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry([]),
+            new CopilotAgentContextBuilder(),
+            new CopilotToolExecutor(),
+            _ => provider,
+            EmptyExternalToolProvider.Instance,
+            new CopilotCapabilityCatalog());
+        var request = CreateRequest(
+            "conversation",
+            "Wait for steering before completing.");
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var runTask = runtime.RunAsync(
+            request,
+            _ => { },
+            timeout.Token);
+        await provider.StreamStarted.Task.WaitAsync(
+            TimeSpan.FromSeconds(5));
+
+        var staleTaskAccepted = runtime.TryEnqueueSteeringMessage(
+            CopilotAgentTaskEventIds.CreateRunId(),
+            "stale steering");
+        var activeTaskAccepted = runtime.TryEnqueueSteeringMessage(
+            request.TaskId,
+            "active steering");
+        provider.ReleaseStream.TrySetResult();
+        var result = await runTask.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.False(staleTaskAccepted);
+        Assert.True(activeTaskAccepted);
+        Assert.Equal(CopilotAgentStopReason.Completed, result.StopReason);
+        Assert.DoesNotContain(
+            provider.StreamingCalls.SelectMany(call => call),
+            message => message.Text.Contains(
+                "stale steering",
+                StringComparison.Ordinal));
+        Assert.Contains(
+            provider.StreamingCalls.SelectMany(call => call),
+            message => message.Text.Contains(
+                "active steering",
+                StringComparison.Ordinal));
+        Assert.Single(
+            result.TaskEventJournal.Events,
+            item => item.Type
+                == CopilotAgentTaskEventType.SteeringQueued);
+    }
+
+    [Fact]
     public async Task NextAgentRunReceivesDelayedOutputBeforeCurrentUserRequest()
     {
         using var provider = new CapturingChatClient();
@@ -806,6 +856,60 @@ public sealed class CopilotBackgroundShellOutputDeliveryTests
 
         public void Dispose()
         {
+        }
+    }
+
+    private sealed class BlockingSteeringChatClient : IChatClient
+    {
+        private int _callCount;
+
+        public TaskCompletionSource StreamStarted { get; } = new(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public TaskCompletionSource ReleaseStream { get; } = new(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public List<IReadOnlyList<ChatMessage>> StreamingCalls { get; } =
+            new();
+
+        public Task<ChatResponse> GetResponseAsync(
+            IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null,
+            CancellationToken cancellationToken = default)
+        {
+            throw new InvalidOperationException(
+                "The steering scenario must remain on the streaming path.");
+        }
+
+        public async IAsyncEnumerable<ChatResponseUpdate>
+            GetStreamingResponseAsync(
+                IEnumerable<ChatMessage> messages,
+                ChatOptions? options = null,
+                [EnumeratorCancellation]
+                CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            StreamingCalls.Add(messages.ToArray());
+            if (Interlocked.Increment(ref _callCount) == 1)
+            {
+                StreamStarted.TrySetResult();
+                await ReleaseStream.Task.WaitAsync(cancellationToken);
+            }
+
+            yield return new ChatResponseUpdate(ChatRole.Assistant, "done")
+            {
+                FinishReason = ChatFinishReason.Stop,
+            };
+        }
+
+        public object? GetService(
+            Type serviceType,
+            object? serviceKey = null) =>
+            serviceType.IsInstanceOfType(this) ? this : null;
+
+        public void Dispose()
+        {
+            ReleaseStream.TrySetResult();
         }
     }
 

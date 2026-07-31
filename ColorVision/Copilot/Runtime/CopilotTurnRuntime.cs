@@ -56,7 +56,8 @@ namespace ColorVision.Copilot
                 : RunAgentAsync(request, eventSink, cancellationToken);
         }
 
-        public bool TryEnqueueSteeringMessage(string message) => _agentRuntime.TryEnqueueSteeringMessage(message);
+        public bool TryEnqueueSteeringMessage(string taskId, string message) =>
+            _agentRuntime.TryEnqueueSteeringMessage(taskId, message);
 
         public bool TryEnqueueBackgroundShellCommandCompletion(
             CopilotBackgroundShellCommandSnapshot snapshot) =>

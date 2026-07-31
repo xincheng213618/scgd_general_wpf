@@ -6401,7 +6401,7 @@ namespace ColorVision.Copilot
             {
                 return false;
             }
-            if (!_turnRuntime.TryEnqueueSteeringMessage(steeringMessage))
+            if (!_turnRuntime.TryEnqueueSteeringMessage(activeRun.Id, steeringMessage))
                 return false;
 
             var activeConversation = Conversations.FirstOrDefault(conversation => string.Equals(conversation.Id, activeRun.ConversationId, StringComparison.Ordinal));

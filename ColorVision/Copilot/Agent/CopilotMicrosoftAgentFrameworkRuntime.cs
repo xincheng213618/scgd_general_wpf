@@ -122,30 +122,44 @@ namespace ColorVision.Copilot
                 ?? throw new ArgumentNullException(nameof(automaticApprovalReviewer));
         }
 
-        public bool TryEnqueueSteeringMessage(string message)
+        public bool TryEnqueueSteeringMessage(string taskId, string message)
         {
-            if (_userQuestionCoordinator.HasPendingQuestion)
-                return false;
-
+            var normalizedTaskId = (taskId ?? string.Empty).Trim();
             var normalized = (message ?? string.Empty).Trim();
-            if (string.IsNullOrWhiteSpace(normalized) || normalized.Length > MaxSteeringMessageLength)
+            if (string.IsNullOrWhiteSpace(normalizedTaskId)
+                || string.IsNullOrWhiteSpace(normalized)
+                || normalized.Length > MaxSteeringMessageLength)
+            {
                 return false;
-
-            ActiveSteeringContext? activeContext;
-            lock (_steeringSyncRoot)
-                activeContext = _activeSteeringContext;
-
-            if (activeContext == null)
-                return false;
+            }
 
             try
             {
-                activeContext.MessageInjector.EnqueueMessagesAsync(activeContext.Session,
-                [
-                    new Microsoft.Extensions.AI.ChatMessage(ChatRole.User, normalized),
-                ], CancellationToken.None).GetAwaiter().GetResult();
-                activeContext.TaskEventJournal.RecordSteering(normalized);
-                return true;
+                lock (_backgroundOutputRoutingSyncRoot)
+                {
+                    if (_userQuestionCoordinator.HasPendingQuestion)
+                        return false;
+
+                    lock (_steeringSyncRoot)
+                    {
+                        var activeContext = _activeSteeringContext;
+                        if (activeContext == null
+                            || !string.Equals(
+                                activeContext.TaskId,
+                                normalizedTaskId,
+                                StringComparison.Ordinal))
+                        {
+                            return false;
+                        }
+
+                        activeContext.MessageInjector.EnqueueMessagesAsync(activeContext.Session,
+                        [
+                            new Microsoft.Extensions.AI.ChatMessage(ChatRole.User, normalized),
+                        ], CancellationToken.None).GetAwaiter().GetResult();
+                        activeContext.TaskEventJournal.RecordSteering(normalized);
+                        return true;
+                    }
+                }
             }
             catch (ObjectDisposedException)
             {
@@ -837,6 +851,7 @@ namespace ColorVision.Copilot
             }
             using var steeringRegistration = RegisterSteeringContext(
                 request.ConversationId,
+                request.TaskId,
                 messageInjector,
                 session,
                 taskEventJournalBuilder);
@@ -1904,12 +1919,14 @@ namespace ColorVision.Copilot
 
         private IDisposable RegisterSteeringContext(
             string conversationId,
+            string taskId,
             MessageInjectingChatClient messageInjector,
             AgentSession session,
             CopilotAgentTaskEventJournalBuilder taskEventJournal)
         {
             var context = new ActiveSteeringContext(
                 (conversationId ?? string.Empty).Trim(),
+                (taskId ?? string.Empty).Trim(),
                 messageInjector,
                 session,
                 taskEventJournal);
@@ -4000,6 +4017,7 @@ namespace ColorVision.Copilot
 
         private sealed record ActiveSteeringContext(
             string ConversationId,
+            string TaskId,
             MessageInjectingChatClient MessageInjector,
             AgentSession Session,
             CopilotAgentTaskEventJournalBuilder TaskEventJournal);
