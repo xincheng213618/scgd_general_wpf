@@ -9,7 +9,7 @@ public sealed class CopilotDelegateSubagentToolTests
     {
         var request = new CopilotSubagentRunRequest
         {
-            ProgressUpdated = (_, _) => throw new InvalidOperationException("observer failed"),
+            ProgressUpdated = (_, _, _) => throw new InvalidOperationException("observer failed"),
         };
 
         var exception = Record.Exception(() => request.ReportProgress(
@@ -17,6 +17,63 @@ public sealed class CopilotDelegateSubagentToolTests
             new CopilotAgentBudgetSnapshot { ConsumedTokens = 128 }));
 
         Assert.Null(exception);
+    }
+
+    [Fact]
+    public void SubagentToolActivityOnlyExposesTheCurrentToolName()
+    {
+        const string secret = "C:\\sensitive\\prompt.txt bearer-secret result-body";
+        var tracker = new CopilotSubagentToolActivityTracker();
+        var readExecution = new CopilotToolExecutionInfo
+        {
+            CallId = "read-1",
+            ToolName = "ReadLocalFile\r\n",
+            ArgumentSummary = secret,
+        };
+        var grepExecution = new CopilotToolExecutionInfo
+        {
+            CallId = "grep-1",
+            ToolName = "GrepText",
+            ArgumentSummary = secret,
+        };
+
+        Assert.True(tracker.Observe(new CopilotAgentEvent
+        {
+            Type = CopilotAgentEventType.ToolStarted,
+            Text = secret,
+            ToolExecution = readExecution,
+        }));
+        Assert.True(tracker.Observe(new CopilotAgentEvent
+        {
+            Type = CopilotAgentEventType.ToolProgress,
+            Text = secret,
+            ToolExecution = readExecution,
+            Progress = new CopilotToolProgressUpdate { Message = secret },
+        }));
+        Assert.Equal("ReadLocalFile", tracker.ActiveToolName);
+        Assert.DoesNotContain("sensitive", tracker.ActiveToolName, StringComparison.OrdinalIgnoreCase);
+
+        Assert.True(tracker.Observe(CopilotAgentEvent.ToolStarted(grepExecution)));
+        Assert.Equal("GrepText", tracker.ActiveToolName);
+        Assert.True(tracker.Observe(CopilotAgentEvent.FromToolResult(
+            new CopilotToolResult
+            {
+                ToolName = "GrepText",
+                Summary = secret,
+                Content = secret,
+            },
+            grepExecution)));
+        Assert.Equal("ReadLocalFile", tracker.ActiveToolName);
+
+        Assert.True(tracker.Observe(CopilotAgentEvent.FromToolResult(
+            new CopilotToolResult
+            {
+                ToolName = "ReadLocalFile",
+                Summary = secret,
+                Content = secret,
+            },
+            readExecution)));
+        Assert.Empty(tracker.ActiveToolName);
     }
 
     [Fact]
@@ -80,7 +137,7 @@ public sealed class CopilotDelegateSubagentToolTests
             var snapshot = Assert.IsType<CopilotToolProgressUpdate>(progress.LatestSnapshot);
             var delegatedRun = Assert.IsType<CopilotDelegatedRunProgress>(snapshot.DelegatedRun);
 
-            Assert.Equal("Explore 子 Agent 正在调查", snapshot.Message);
+            Assert.Equal("Explore 子 Agent 正在执行 ReadLocalFile", snapshot.Message);
             Assert.Equal(2_048, delegatedRun.ConsumedTokens);
             Assert.Equal(2, delegatedRun.ProviderCalls);
             Assert.Equal(3, delegatedRun.ToolCalls);
@@ -668,7 +725,8 @@ public sealed class CopilotDelegateSubagentToolTests
                     ConsumedTokens = 2_048,
                     ProviderCalls = 2,
                     ToolCalls = 3,
-                });
+                },
+                "ReadLocalFile");
             Started.TrySetResult();
             await Release.Task.WaitAsync(cancellationToken);
             return new CopilotSubagentResult

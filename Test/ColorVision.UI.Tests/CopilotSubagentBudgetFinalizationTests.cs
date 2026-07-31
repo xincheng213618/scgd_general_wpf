@@ -230,7 +230,7 @@ public sealed class CopilotSubagentBudgetFinalizationTests
                 RunId = "explore-preloaded-evidence-test",
                 Task = $"Inspect budget evidence in {string.Join(", ", fileNames)} under {root}.",
                 RequestTokenBudget = 16_384,
-                ProgressUpdated = (phase, budget) => progressUpdates.Add((phase, budget)),
+                ProgressUpdated = (phase, budget, _) => progressUpdates.Add((phase, budget)),
             };
 
             var result = await runner.RunAsync(

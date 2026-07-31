@@ -42,16 +42,17 @@ namespace ColorVision.Copilot
 
         public long QueueDurationMs { get; init; }
 
-        internal Action<CopilotSubagentRunPhase, CopilotAgentBudgetSnapshot>? ProgressUpdated { get; set; }
+        internal Action<CopilotSubagentRunPhase, CopilotAgentBudgetSnapshot, string?>? ProgressUpdated { get; set; }
 
         internal void ReportProgress(
             CopilotSubagentRunPhase phase,
-            CopilotAgentBudgetSnapshot budget)
+            CopilotAgentBudgetSnapshot budget,
+            string? activeToolName = null)
         {
             ArgumentNullException.ThrowIfNull(budget);
             try
             {
-                ProgressUpdated?.Invoke(phase, budget);
+                ProgressUpdated?.Invoke(phase, budget, activeToolName);
             }
             catch (Exception ex)
             {
@@ -59,6 +60,55 @@ namespace ColorVision.Copilot
                     "Copilot subagent progress observer failed: {0}",
                     CopilotUserFacingErrorFormatter.Sanitize(ex.Message));
             }
+        }
+    }
+
+    internal sealed class CopilotSubagentToolActivityTracker
+    {
+        private const int MaximumToolNameLength = 120;
+        private readonly List<(string Key, string ToolName)> _activeTools = [];
+
+        internal string ActiveToolName => _activeTools.Count == 0
+            ? string.Empty
+            : _activeTools[^1].ToolName;
+
+        internal bool Observe(CopilotAgentEvent agentEvent)
+        {
+            ArgumentNullException.ThrowIfNull(agentEvent);
+            if (agentEvent.Type is not (CopilotAgentEventType.ToolStarted
+                or CopilotAgentEventType.ToolProgress
+                or CopilotAgentEventType.ToolResult))
+            {
+                return false;
+            }
+
+            var execution = agentEvent.ToolExecution;
+            var toolName = NormalizeToolName(execution?.ToolName);
+            if (toolName.Length == 0)
+                return false;
+
+            var key = string.IsNullOrWhiteSpace(execution?.CallId)
+                ? toolName
+                : execution.CallId.Trim();
+            var existingIndex = _activeTools.FindIndex(item =>
+                string.Equals(item.Key, key, StringComparison.Ordinal));
+            if (existingIndex >= 0)
+                _activeTools.RemoveAt(existingIndex);
+
+            if (agentEvent.Type is CopilotAgentEventType.ToolStarted or CopilotAgentEventType.ToolProgress)
+                _activeTools.Add((key, toolName));
+            return true;
+        }
+
+        private static string NormalizeToolName(string? value)
+        {
+            var sanitized = CopilotAgentTraceEntry.Sanitize(value);
+            var toolName = string.Join(" ", sanitized.Split(
+                (char[]?)null,
+                StringSplitOptions.RemoveEmptyEntries));
+            return toolName.Length <= MaximumToolNameLength
+                ? toolName
+                : toolName[..MaximumToolNameLength];
         }
     }
 
@@ -169,6 +219,11 @@ namespace ColorVision.Copilot
             var usedPreselectedEvidence = preselectedOutcome != null
                 && HasSuccessfulPreselectedEvidence(childRequest, [preselectedOutcome.StepRecord]);
             CopilotAgentRunResult result;
+            var explorationProgressBudget = new CopilotAgentBudgetSnapshot
+            {
+                RequestTokenBudget = runRequest.RequestTokenBudget,
+            };
+            var explorationToolActivity = new CopilotSubagentToolActivityTracker();
             if (usedPreselectedEvidence)
             {
                 result = CreatePreselectedEvidenceRunResult(
@@ -197,12 +252,16 @@ namespace ColorVision.Copilot
                         {
                             answer.Append(agentEvent.Text);
                         }
-                        else if (agentEvent.Type == CopilotAgentEventType.BudgetUpdated
-                            && agentEvent.Budget != null)
+                        var budgetUpdated = agentEvent.Type == CopilotAgentEventType.BudgetUpdated
+                            && agentEvent.Budget != null;
+                        if (budgetUpdated)
+                            explorationProgressBudget = agentEvent.Budget!;
+                        if (budgetUpdated || explorationToolActivity.Observe(agentEvent))
                         {
                             runRequest.ReportProgress(
                                 CopilotSubagentRunPhase.Exploration,
-                                agentEvent.Budget);
+                                explorationProgressBudget,
+                                explorationToolActivity.ActiveToolName);
                         }
                     },
                     cancellationToken);
@@ -228,6 +287,8 @@ namespace ColorVision.Copilot
             if (finalizationRequest != null)
             {
                 answer.Clear();
+                var finalizationProgressBudget = result.Budget;
+                var finalizationToolActivity = new CopilotSubagentToolActivityTracker();
                 try
                 {
                     var finalizationRuntime = new CopilotMicrosoftAgentFrameworkRuntime(
@@ -249,17 +310,23 @@ namespace ColorVision.Copilot
                             {
                                 answer.Append(agentEvent.Text);
                             }
-                            else if (agentEvent.Type == CopilotAgentEventType.BudgetUpdated
-                                && agentEvent.Budget != null)
+                            var budgetUpdated = agentEvent.Type == CopilotAgentEventType.BudgetUpdated
+                                && agentEvent.Budget != null;
+                            if (budgetUpdated)
+                            {
+                                finalizationProgressBudget = CombineBudgets(
+                                    result.Budget,
+                                    agentEvent.Budget,
+                                    runRequest.RequestTokenBudget,
+                                    stopwatch.Elapsed,
+                                    finalizationCompleted: false);
+                            }
+                            if (budgetUpdated || finalizationToolActivity.Observe(agentEvent))
                             {
                                 runRequest.ReportProgress(
                                     CopilotSubagentRunPhase.Finalization,
-                                    CombineBudgets(
-                                        result.Budget,
-                                        agentEvent.Budget,
-                                        runRequest.RequestTokenBudget,
-                                        stopwatch.Elapsed,
-                                        finalizationCompleted: false));
+                                    finalizationProgressBudget,
+                                    finalizationToolActivity.ActiveToolName);
                             }
                         },
                         cancellationToken);
@@ -1241,9 +1308,9 @@ namespace ColorVision.Copilot
             };
             if (progress != null)
             {
-                childRun.ProgressUpdated = (phase, budget) =>
-                    ReportSubagentProgress(progress, childRun, phase, budget);
-                ReportSubagentProgress(progress, childRun, phase: null, budget: null);
+                childRun.ProgressUpdated = (phase, budget, activeToolName) =>
+                    ReportSubagentProgress(progress, childRun, phase, budget, activeToolName);
+                ReportSubagentProgress(progress, childRun, phase: null, budget: null, activeToolName: null);
             }
             CopilotSubagentResult result;
             using var runCancellation = CancellationTokenSource.CreateLinkedTokenSource(
@@ -1355,16 +1422,19 @@ namespace ColorVision.Copilot
             CopilotToolProgressContext progress,
             CopilotSubagentRunRequest runRequest,
             CopilotSubagentRunPhase? phase,
-            CopilotAgentBudgetSnapshot? budget)
+            CopilotAgentBudgetSnapshot? budget,
+            string? activeToolName)
         {
             progress.Report(new CopilotToolProgressUpdate
             {
-                Message = phase switch
-                {
-                    CopilotSubagentRunPhase.Exploration => $"{_role.DisplayName} 子 Agent 正在调查",
-                    CopilotSubagentRunPhase.Finalization => $"{_role.DisplayName} 子 Agent 正在整理结果",
-                    _ => $"{_role.DisplayName} 子 Agent 已启动",
-                },
+                Message = !string.IsNullOrWhiteSpace(activeToolName)
+                    ? $"{_role.DisplayName} 子 Agent 正在执行 {activeToolName}"
+                    : phase switch
+                    {
+                        CopilotSubagentRunPhase.Exploration => $"{_role.DisplayName} 子 Agent 正在调查",
+                        CopilotSubagentRunPhase.Finalization => $"{_role.DisplayName} 子 Agent 正在整理结果",
+                        _ => $"{_role.DisplayName} 子 Agent 已启动",
+                    },
                 DelegatedRun = new CopilotDelegatedRunProgress
                 {
                     RoleId = _role.Id,
