@@ -506,7 +506,7 @@ public sealed class CopilotBackgroundShellCommandTests
         var registry = new CopilotBackgroundShellCommandRegistry(launcher);
         var request = CreateRequest("run PowerShell in background");
         var notification = new TaskCompletionSource<
-            CopilotBackgroundShellCommandSnapshot>(
+            CopilotBackgroundShellCommandCompletedEventArgs>(
             TaskCreationOptions.RunContinuationsAsynchronously);
         var notificationCount = 0;
         registry.CommandCompleted += (_, _) =>
@@ -514,7 +514,7 @@ public sealed class CopilotBackgroundShellCommandTests
         registry.CommandCompleted += (_, e) =>
         {
             Interlocked.Increment(ref notificationCount);
-            notification.TrySetResult(e.Snapshot);
+            notification.TrySetResult(e);
         };
         try
         {
@@ -528,8 +528,9 @@ public sealed class CopilotBackgroundShellCommandTests
                 "complete token=background-secret",
                 string.Empty);
             launcher.LastProcess.Complete(exitCode: 0);
-            var completed = await notification.Task.WaitAsync(
+            var completedEvent = await notification.Task.WaitAsync(
                 TimeSpan.FromSeconds(5));
+            var completed = completedEvent.Snapshot;
 
             Assert.Equal(started.Snapshot!.Id, completed.Id);
             Assert.Equal(
@@ -541,9 +542,132 @@ public sealed class CopilotBackgroundShellCommandTests
                 "background-secret",
                 completed.StandardOutput,
                 StringComparison.Ordinal);
+            Assert.False(
+                completedEvent.TerminalObservationWasPendingAtCompletion);
             registry.GetSnapshots(request.ConversationId);
             registry.GetSnapshots(request.ConversationId);
             Assert.Equal(1, Volatile.Read(ref notificationCount));
+        }
+        finally
+        {
+            await registry.ShutdownAsync();
+        }
+    }
+
+    [Fact]
+    public async Task ExplicitWaitOwnsTheTerminalAgentNotification()
+    {
+        var launcher = new FakeBackgroundLauncher();
+        var registry = new CopilotBackgroundShellCommandRegistry(launcher);
+        var request = CreateRequest("wait for the background command");
+        var notification = new TaskCompletionSource<
+            CopilotBackgroundShellCommandCompletedEventArgs>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        registry.CommandCompleted += (_, e) =>
+            notification.TrySetResult(e);
+        try
+        {
+            var started = await registry.StartAsync(
+                request,
+                CreateStartInput("Start-Sleep 30"),
+                CancellationToken.None);
+            Assert.True(started.Success, started.ErrorMessage);
+
+            var waiting = registry.WaitForObservationAsync(
+                request.ConversationId,
+                started.Snapshot!.Id,
+                outputContains: null,
+                timeoutSeconds: 2,
+                onSnapshot: null,
+                CancellationToken.None);
+            var stopwatch = Stopwatch.StartNew();
+            while (launcher.LastProcess!.WaitForObservationChangeCallCount == 0
+                && stopwatch.Elapsed < TimeSpan.FromSeconds(1))
+            {
+                await Task.Delay(10);
+            }
+            Assert.Equal(
+                1,
+                launcher.LastProcess!.WaitForObservationChangeCallCount);
+
+            launcher.LastProcess.Complete(exitCode: 0);
+            var result = await waiting.WaitAsync(TimeSpan.FromSeconds(1));
+            var completedEvent = await notification.Task.WaitAsync(
+                TimeSpan.FromSeconds(1));
+
+            Assert.Equal(
+                CopilotBackgroundShellCommandObservation.Terminal,
+                result.Observation);
+            Assert.True(
+                completedEvent.TerminalObservationWasPendingAtCompletion);
+        }
+        finally
+        {
+            await registry.ShutdownAsync();
+        }
+    }
+
+    [Fact]
+    public async Task GroupWaitReleasesUnfinishedCommandsAfterAnyCompletes()
+    {
+        var launcher = new FakeBackgroundLauncher();
+        var registry = new CopilotBackgroundShellCommandRegistry(launcher);
+        var request = CreateRequest("wait for any background command");
+        var notifications = new Dictionary<
+            string,
+            TaskCompletionSource<
+                CopilotBackgroundShellCommandCompletedEventArgs>>(
+                StringComparer.Ordinal);
+        registry.CommandCompleted += (_, e) =>
+        {
+            if (notifications.TryGetValue(
+                    e.Snapshot.Id,
+                    out var completion))
+            {
+                completion.TrySetResult(e);
+            }
+        };
+        try
+        {
+            var first = await registry.StartAsync(
+                request,
+                CreateStartInput("Start-Sleep 30"),
+                CancellationToken.None);
+            var second = await registry.StartAsync(
+                request,
+                CreateStartInput("Start-Sleep 30"),
+                CancellationToken.None);
+            Assert.True(first.Success, first.ErrorMessage);
+            Assert.True(second.Success, second.ErrorMessage);
+            notifications[first.Snapshot!.Id] = new(
+                TaskCreationOptions.RunContinuationsAsynchronously);
+            notifications[second.Snapshot!.Id] = new(
+                TaskCreationOptions.RunContinuationsAsynchronously);
+
+            var waiting = registry.WaitForTerminalGroupAsync(
+                request.ConversationId,
+                [first.Snapshot.Id, second.Snapshot.Id],
+                CopilotBackgroundShellCommandGroupWaitMode.Any,
+                timeoutSeconds: 2,
+                onSnapshots: null,
+                CancellationToken.None);
+            launcher.Processes[0].Complete(exitCode: 0);
+            var result = await waiting.WaitAsync(TimeSpan.FromSeconds(1));
+            var firstEvent = await notifications[first.Snapshot.Id]
+                .Task.WaitAsync(TimeSpan.FromSeconds(1));
+
+            Assert.Equal(
+                CopilotBackgroundShellCommandObservation.Terminal,
+                result.Observation);
+            Assert.True(
+                firstEvent.TerminalObservationWasPendingAtCompletion);
+
+            launcher.Processes[1].Complete(exitCode: 0);
+            var secondEvent = await notifications[second.Snapshot.Id]
+                .Task.WaitAsync(TimeSpan.FromSeconds(1));
+
+            Assert.False(
+                secondEvent.TerminalObservationWasPendingAtCompletion);
         }
         finally
         {
@@ -1111,6 +1235,9 @@ public sealed class CopilotBackgroundShellCommandTests
         var registry = new CopilotBackgroundShellCommandRegistry(launcher);
         var waitTool = new CopilotWaitForBackgroundShellCommandsTool(registry);
         var request = CreateRequest("wait for all background commands");
+        var firstNotification = new TaskCompletionSource<
+            CopilotBackgroundShellCommandCompletedEventArgs>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
         try
         {
             var first = await registry.StartAsync(
@@ -1130,6 +1257,16 @@ public sealed class CopilotBackgroundShellCommandTests
             Assert.True(first.Success, first.ErrorMessage);
             Assert.True(second.Success, second.ErrorMessage);
             Assert.True(foreign.Success, foreign.ErrorMessage);
+            registry.CommandCompleted += (_, e) =>
+            {
+                if (string.Equals(
+                        e.Snapshot.Id,
+                        first.Snapshot!.Id,
+                        StringComparison.Ordinal))
+                {
+                    firstNotification.TrySetResult(e);
+                }
+            };
 
             var timedOut = await waitTool.ExecuteAsync(
                 request,
@@ -1154,6 +1291,12 @@ public sealed class CopilotBackgroundShellCommandTests
                 process => Assert.Equal(
                     0,
                     process.WaitForObservationChangeCallCount));
+            launcher.Processes[0].Complete(exitCode: 0);
+            var completedAfterTimeout = await firstNotification.Task.WaitAsync(
+                TimeSpan.FromSeconds(1));
+            Assert.False(
+                completedAfterTimeout
+                    .TerminalObservationWasPendingAtCompletion);
 
             var duplicate = await waitTool.ExecuteAsync(
                 request,

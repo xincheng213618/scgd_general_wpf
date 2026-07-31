@@ -240,12 +240,17 @@ namespace ColorVision.Copilot
     internal sealed class CopilotBackgroundShellCommandCompletedEventArgs : EventArgs
     {
         public CopilotBackgroundShellCommandCompletedEventArgs(
-            CopilotBackgroundShellCommandSnapshot snapshot)
+            CopilotBackgroundShellCommandSnapshot snapshot,
+            bool terminalObservationWasPendingAtCompletion = false)
         {
             Snapshot = snapshot ?? throw new ArgumentNullException(nameof(snapshot));
+            TerminalObservationWasPendingAtCompletion =
+                terminalObservationWasPendingAtCompletion;
         }
 
         public CopilotBackgroundShellCommandSnapshot Snapshot { get; }
+
+        public bool TerminalObservationWasPendingAtCompletion { get; }
     }
 
     internal sealed class CopilotBackgroundShellCommandRegistry
@@ -581,6 +586,29 @@ namespace ColorVision.Copilot
                     $"timeoutSeconds must be an integer from {MinimumObservationTimeoutSeconds} through {MaximumObservationTimeoutSeconds}.");
             }
 
+            Entry? observedEntry;
+            lock (_syncRoot)
+            {
+                RefreshCompletedEntriesUnderLock();
+                observedEntry = _entries.SingleOrDefault(candidate =>
+                    string.Equals(
+                        candidate.ConversationId,
+                        normalizedConversationId,
+                        StringComparison.Ordinal)
+                    && string.Equals(
+                        candidate.Id,
+                        normalizedBackgroundId,
+                        StringComparison.Ordinal));
+            }
+            if (observedEntry == null)
+            {
+                return WaitFailure(
+                    CopilotToolFailureKind.NotFound,
+                    "The background command was not found in the current conversation.");
+            }
+
+            using var terminalObservation =
+                new TerminalObservationScope([observedEntry]);
             var standardOutputSearchOffset = 0;
             var standardErrorSearchOffset = 0;
             var stopwatch = Stopwatch.StartNew();
@@ -727,6 +755,31 @@ namespace ColorVision.Copilot
                     $"timeoutSeconds must be an integer from {MinimumObservationTimeoutSeconds} through {MaximumObservationTimeoutSeconds}.");
             }
 
+            Entry[] observedEntries;
+            lock (_syncRoot)
+            {
+                RefreshCompletedEntriesUnderLock();
+                var entriesById = _entries
+                    .Where(entry => string.Equals(
+                        entry.ConversationId,
+                        normalizedConversationId,
+                        StringComparison.Ordinal))
+                    .ToDictionary(entry => entry.Id, StringComparer.Ordinal);
+                if (normalizedBackgroundIds.Any(backgroundId =>
+                    !entriesById.ContainsKey(backgroundId)))
+                {
+                    return GroupWaitFailure(
+                        mode,
+                        CopilotToolFailureKind.NotFound,
+                        "One or more background commands were not found in the current conversation.");
+                }
+                observedEntries = normalizedBackgroundIds
+                    .Select(backgroundId => entriesById[backgroundId])
+                    .ToArray();
+            }
+
+            using var terminalObservation =
+                new TerminalObservationScope(observedEntries);
             var stopwatch = Stopwatch.StartNew();
             var maximumWait = TimeSpan.FromSeconds(timeoutSeconds);
             while (true)
@@ -1045,7 +1098,8 @@ namespace ColorVision.Copilot
                 if (handlers == null)
                     return;
                 var eventArgs = new CopilotBackgroundShellCommandCompletedEventArgs(
-                    snapshot);
+                    snapshot,
+                    entry.TerminalObservationWasPendingAtCompletion);
                 foreach (EventHandler<CopilotBackgroundShellCommandCompletedEventArgs> handler
                     in handlers.GetInvocationList())
                 {
@@ -1252,10 +1306,35 @@ namespace ColorVision.Copilot
             }
         }
 
+        private sealed class TerminalObservationScope : IDisposable
+        {
+            private IDisposable[]? _registrations;
+
+            public TerminalObservationScope(IEnumerable<Entry> entries)
+            {
+                _registrations = (entries ?? Array.Empty<Entry>())
+                    .Select(entry => entry.BeginTerminalObservation())
+                    .ToArray();
+            }
+
+            public void Dispose()
+            {
+                var registrations = Interlocked.Exchange(
+                    ref _registrations,
+                    null);
+                if (registrations == null)
+                    return;
+                foreach (var registration in registrations)
+                    registration.Dispose();
+            }
+        }
+
         private sealed class Entry : IDisposable
         {
             private readonly ICopilotBackgroundShellProcess _process;
             private CopilotBackgroundShellProcessCompletion? _completion;
+            private int _activeTerminalObservationCount;
+            private int _terminalObservationWasPendingAtCompletion;
             private int _disposed;
 
             public Entry(
@@ -1278,6 +1357,14 @@ namespace ColorVision.Copilot
                 CommandSha256 = commandSha256;
                 StartedAtUtc = startedAtUtc;
                 _process = process;
+                _ = _process.Completion.ContinueWith(
+                    static (_, state) =>
+                        ((Entry)state!)
+                            .CaptureTerminalObservationOwnership(),
+                    this,
+                    CancellationToken.None,
+                    TaskContinuationOptions.ExecuteSynchronously,
+                    TaskScheduler.Default);
             }
 
             public string Id { get; }
@@ -1298,6 +1385,35 @@ namespace ColorVision.Copilot
 
             public Task<CopilotBackgroundShellProcessCompletion> Completion =>
                 _process.Completion;
+
+            public bool TerminalObservationWasPendingAtCompletion =>
+                Volatile.Read(
+                    ref _terminalObservationWasPendingAtCompletion) == 1;
+
+            public IDisposable BeginTerminalObservation()
+            {
+                Interlocked.Increment(
+                    ref _activeTerminalObservationCount);
+                if (_process.Completion.IsCompleted)
+                    CaptureTerminalObservationOwnership();
+                return new TerminalObservationRegistration(this);
+            }
+
+            private void CaptureTerminalObservationOwnership()
+            {
+                if (Volatile.Read(ref _activeTerminalObservationCount) > 0)
+                {
+                    Interlocked.Exchange(
+                        ref _terminalObservationWasPendingAtCompletion,
+                        1);
+                }
+            }
+
+            private void EndTerminalObservation()
+            {
+                Interlocked.Decrement(
+                    ref _activeTerminalObservationCount);
+            }
 
             public void RefreshCompletion()
             {
@@ -1426,6 +1542,18 @@ namespace ColorVision.Copilot
             {
                 if (Interlocked.Exchange(ref _disposed, 1) == 0)
                     _process.Dispose();
+            }
+
+            private sealed class TerminalObservationRegistration(
+                Entry owner) : IDisposable
+            {
+                private Entry? _owner = owner;
+
+                public void Dispose()
+                {
+                    Interlocked.Exchange(ref _owner, null)
+                        ?.EndTerminalObservation();
+                }
             }
         }
     }

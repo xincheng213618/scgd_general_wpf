@@ -4863,7 +4863,8 @@ namespace ColorVision.Copilot
             if (Volatile.Read(ref _disposeState) == 1)
                 return;
 
-            if (offerToActiveAgent)
+            if (offerToActiveAgent
+                && !e.TerminalObservationWasPendingAtCompletion)
             {
                 _turnRuntime.TryEnqueueBackgroundShellCommandCompletion(
                     e.Snapshot);
