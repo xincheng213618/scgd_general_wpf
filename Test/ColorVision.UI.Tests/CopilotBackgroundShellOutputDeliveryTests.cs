@@ -1,6 +1,7 @@
 using ColorVision.Copilot;
 using Microsoft.Extensions.AI;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 
 namespace ColorVision.UI.Tests;
@@ -104,6 +105,95 @@ public sealed class CopilotBackgroundShellOutputDeliveryTests
                     .BackgroundCommandOutputObserved);
     }
 
+    [Fact]
+    public async Task AnsweredQuestionTransfersQueuedOutputIntoSameAgentRun()
+    {
+        using var provider = new QuestionThenAnswerChatClient();
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry([]),
+            new CopilotAgentContextBuilder(),
+            new CopilotToolExecutor(),
+            _ => provider,
+            EmptyExternalToolProvider.Instance,
+            new CopilotCapabilityCatalog());
+        var questionReady =
+            new TaskCompletionSource<CopilotUserQuestionSnapshot>(
+                TaskCreationOptions.RunContinuationsAsynchronously);
+        var request = CreateRequest(
+            "conversation",
+            "Ask one question, then finish after the answer.");
+        var runTask = runtime.RunAsync(
+            request,
+            agentEvent =>
+            {
+                if (agentEvent.Type
+                        == CopilotAgentEventType.UserQuestionRequested
+                    && agentEvent.UserQuestion != null)
+                {
+                    questionReady.TrySetResult(agentEvent.UserQuestion);
+                }
+            },
+            CancellationToken.None);
+        var question = await questionReady.Task.WaitAsync(
+            TimeSpan.FromSeconds(5));
+
+        Assert.True(runtime.TryEnqueueBackgroundShellCommandOutput(
+            CreateOutputEvent(
+                "conversation",
+                "arrived while waiting")));
+        Assert.True(runtime.TryAnswerUserQuestion(
+            request.TaskId,
+            question.RequestId,
+            "typed answer"));
+
+        var result = await runTask.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.Equal(CopilotAgentStopReason.Completed, result.StopReason);
+        var resumedCall = Assert.Single(
+            provider.StreamingCalls,
+            call => call.Any(message => message.Text.Contains(
+                "<background_command_output_event>",
+                StringComparison.Ordinal)));
+        var functionResultIndex = resumedCall
+            .Select((message, index) => new
+            {
+                Message = message,
+                Index = index,
+            })
+            .First(item => item.Message.Contents
+                .OfType<FunctionResultContent>()
+                .Any())
+            .Index;
+        var outputEventIndex = resumedCall
+            .Select((message, index) => new
+            {
+                Message = message,
+                Index = index,
+            })
+            .First(item => item.Message.Text.Contains(
+                "<background_command_output_event>",
+                StringComparison.Ordinal))
+            .Index;
+        var functionResult = resumedCall
+            .SelectMany(message => message.Contents)
+            .OfType<FunctionResultContent>()
+            .Single();
+        Assert.Contains(
+            "typed answer",
+            Convert.ToString(functionResult.Result) ?? string.Empty,
+            StringComparison.Ordinal);
+        Assert.True(outputEventIndex > functionResultIndex);
+        Assert.Contains(
+            "\"content\":\"arrived while waiting\"",
+            resumedCall[outputEventIndex].Text,
+            StringComparison.Ordinal);
+        Assert.Single(
+            result.TaskEventJournal.Events,
+            item => item.Type
+                == CopilotAgentTaskEventType
+                    .BackgroundCommandOutputObserved);
+    }
+
     private static string ExtractDeliveryId(string prompt)
     {
         var match = Regex.Match(
@@ -121,7 +211,7 @@ public sealed class CopilotBackgroundShellOutputDeliveryTests
         return new CopilotAgentRequest
         {
             ConversationId = conversationId,
-            TaskId = "task",
+            TaskId = CopilotAgentTaskEventIds.CreateRunId(),
             UserText = userText,
             Profile = new CopilotProfileConfig
             {
@@ -231,6 +321,98 @@ public sealed class CopilotBackgroundShellOutputDeliveryTests
                     "Provider failed before its first update.");
             }
             yield break;
+        }
+
+        public object? GetService(
+            Type serviceType,
+            object? serviceKey = null) =>
+            serviceType.IsInstanceOfType(this) ? this : null;
+
+        public void Dispose()
+        {
+        }
+    }
+
+    private sealed class QuestionThenAnswerChatClient : IChatClient
+    {
+        private int _callCount;
+
+        public List<IReadOnlyList<ChatMessage>> StreamingCalls { get; } =
+            new();
+
+        public Task<ChatResponse> GetResponseAsync(
+            IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null,
+            CancellationToken cancellationToken = default)
+        {
+            throw new InvalidOperationException(
+                "The question scenario must remain on the streaming path.");
+        }
+
+        public async IAsyncEnumerable<ChatResponseUpdate>
+            GetStreamingResponseAsync(
+                IEnumerable<ChatMessage> messages,
+                ChatOptions? options = null,
+                [EnumeratorCancellation]
+                CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            StreamingCalls.Add(messages.ToArray());
+            if (Interlocked.Increment(ref _callCount) == 1)
+            {
+                var observedToolNames = options?.Tools?
+                    .OfType<AIFunction>()
+                    .Select(tool => tool.Name)
+                    .ToArray()
+                    ?? Array.Empty<string>();
+                var questionToolName = observedToolNames
+                    .First(name => name.Contains(
+                        "Question",
+                        StringComparison.OrdinalIgnoreCase));
+                yield return new ChatResponseUpdate(
+                    ChatRole.Assistant,
+                    [
+                        new FunctionCallContent(
+                            "call-question",
+                            questionToolName,
+                            new Dictionary<string, object?>
+                            {
+                                ["header"] = "Target",
+                                ["question"] =
+                                    "Which target should be used?",
+                                ["options"] =
+                                    JsonSerializer.SerializeToElement(
+                                    new[]
+                                    {
+                                        new
+                                        {
+                                            label =
+                                                "Option A (Recommended)",
+                                            description =
+                                                "Use the first target.",
+                                        },
+                                        new
+                                        {
+                                            label = "Option B",
+                                            description =
+                                                "Use the second target.",
+                                        },
+                                    }),
+                            }),
+                    ])
+                {
+                    FinishReason = ChatFinishReason.ToolCalls,
+                };
+                yield break;
+            }
+
+            yield return new ChatResponseUpdate(
+                ChatRole.Assistant,
+                "done")
+            {
+                FinishReason = ChatFinishReason.Stop,
+            };
+            await Task.CompletedTask;
         }
 
         public object? GetService(

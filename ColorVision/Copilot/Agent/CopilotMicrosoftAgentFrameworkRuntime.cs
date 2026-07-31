@@ -43,6 +43,7 @@ namespace ColorVision.Copilot
         private readonly CopilotUserQuestionCoordinator _userQuestionCoordinator = new();
         private readonly CopilotBackgroundShellOutputEventInbox
             _backgroundShellOutputEventInbox = new();
+        private readonly object _backgroundOutputRoutingSyncRoot = new();
         private readonly object _steeringSyncRoot = new();
         private ActiveSteeringContext? _activeSteeringContext;
 
@@ -201,6 +202,13 @@ namespace ColorVision.Copilot
             CopilotBackgroundShellOutputMonitorEventArgs eventArgs)
         {
             ArgumentNullException.ThrowIfNull(eventArgs);
+            lock (_backgroundOutputRoutingSyncRoot)
+                return TryEnqueueBackgroundShellCommandOutputCore(eventArgs);
+        }
+
+        private bool TryEnqueueBackgroundShellCommandOutputCore(
+            CopilotBackgroundShellOutputMonitorEventArgs eventArgs)
+        {
             if (_userQuestionCoordinator.HasPendingQuestion)
                 return _backgroundShellOutputEventInbox.TryEnqueue(eventArgs);
 
@@ -252,8 +260,79 @@ namespace ColorVision.Copilot
             }
         }
 
-        public bool TryAnswerUserQuestion(string taskId, string requestId, string answer) =>
-            _userQuestionCoordinator.TryAnswer(taskId, requestId, answer);
+        public bool TryAnswerUserQuestion(
+            string taskId,
+            string requestId,
+            string answer)
+        {
+            lock (_backgroundOutputRoutingSyncRoot)
+            {
+                if (!_userQuestionCoordinator.TryAnswer(
+                        taskId,
+                        requestId,
+                        answer))
+                {
+                    return false;
+                }
+
+                TryTransferDeferredBackgroundShellOutputToActiveSession();
+                return true;
+            }
+        }
+
+        private bool
+            TryTransferDeferredBackgroundShellOutputToActiveSession()
+        {
+            ActiveSteeringContext? activeContext;
+            lock (_steeringSyncRoot)
+                activeContext = _activeSteeringContext;
+            if (activeContext == null)
+                return false;
+
+            using var delivery =
+                _backgroundShellOutputEventInbox.BeginDelivery(
+                    activeContext.ConversationId);
+            var messages = CreateDeferredBackgroundOutputMessages(
+                delivery.Events,
+                activeContext.ConversationId);
+            if (messages.Length == 0)
+            {
+                if (delivery.Events.Count > 0)
+                    delivery.Commit();
+                return false;
+            }
+
+            try
+            {
+                activeContext.MessageInjector.EnqueueMessagesAsync(
+                    activeContext.Session,
+                    [
+                        new Microsoft.Extensions.AI.ChatMessage(
+                            ChatRole.User,
+                            string.Join(
+                                Environment.NewLine
+                                    + Environment.NewLine,
+                                messages)),
+                    ],
+                    CancellationToken.None).GetAwaiter().GetResult();
+                delivery.Commit();
+                foreach (var deferredEvent in delivery.Events)
+                {
+                    activeContext.TaskEventJournal
+                        .RecordBackgroundShellCommandOutput(
+                            deferredEvent.EventArgs);
+                }
+                return true;
+            }
+            catch (ObjectDisposedException)
+            {
+                return false;
+            }
+            catch (InvalidOperationException)
+            {
+                return false;
+            }
+        }
 
         public async Task<CopilotAgentRunResult> RunAsync(
             CopilotAgentRequest request,
@@ -756,17 +835,9 @@ namespace ColorVision.Copilot
             var deferredBackgroundOutputEvents =
                 deferredBackgroundOutputDelivery.Events;
             var deferredBackgroundOutputMessages =
-                deferredBackgroundOutputEvents
-                    .Select(deferredEvent =>
-                        CopilotBackgroundShellCommandAgentEvent
-                            .TryCreateDeferredOutputMessage(
-                                deferredEvent,
-                                request.ConversationId,
-                                out var message)
-                            ? message
-                            : string.Empty)
-                    .Where(message => !string.IsNullOrWhiteSpace(message))
-                    .ToArray();
+                CreateDeferredBackgroundOutputMessages(
+                    deferredBackgroundOutputEvents,
+                    request.ConversationId);
             if (deferredBackgroundOutputMessages.Length > 0)
             {
                 promptMessages = InsertEvidenceMessageBeforeCurrentUser(
@@ -1855,6 +1926,23 @@ namespace ColorVision.Copilot
             return messages.Take(messages.Count - 1)
                 .Append(recoveryMessage)
                 .Append(messages[^1])
+                .ToArray();
+        }
+
+        private static string[] CreateDeferredBackgroundOutputMessages(
+            IReadOnlyList<CopilotDeferredBackgroundShellOutputEvent> events,
+            string conversationId)
+        {
+            return events
+                .Select(deferredEvent =>
+                    CopilotBackgroundShellCommandAgentEvent
+                        .TryCreateDeferredOutputMessage(
+                            deferredEvent,
+                            conversationId,
+                            out var message)
+                        ? message
+                        : string.Empty)
+                .Where(message => !string.IsNullOrWhiteSpace(message))
                 .ToArray();
         }
 
