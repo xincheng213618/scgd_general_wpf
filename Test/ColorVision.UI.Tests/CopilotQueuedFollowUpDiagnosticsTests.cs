@@ -5,14 +5,41 @@ namespace ColorVision.UI.Tests;
 public sealed class CopilotQueuedFollowUpDiagnosticsTests
 {
     [Fact]
-    public void QueueCommandIsReadOnlyAndAvailableDuringAgentRuns()
+    public void QueueCommandAcceptsExplicitActionsDuringAgentRuns()
     {
         var invocation = CopilotLocalCommandCatalog.Parse("/queue");
+        var send = CopilotLocalCommandCatalog.Parse("/queue send 3");
 
         Assert.NotNull(invocation);
         Assert.Equal(CopilotLocalCommandKind.Queue, invocation.Command.Kind);
         Assert.True(invocation.Command.AvailableWhileAgentRuns);
-        Assert.False(invocation.Command.AcceptsArguments);
+        Assert.True(invocation.Command.AcceptsArguments);
+        Assert.NotNull(send);
+        Assert.Same(invocation.Command, send.Command);
+        Assert.Equal("send 3", send.Arguments);
+    }
+
+    [Theory]
+    [InlineData("", (int)CopilotQueuedFollowUpCommandAction.List, 0)]
+    [InlineData("send 3", (int)CopilotQueuedFollowUpCommandAction.SendNow, 3)]
+    [InlineData("now 2", (int)CopilotQueuedFollowUpCommandAction.SendNow, 2)]
+    [InlineData("edit 4", (int)CopilotQueuedFollowUpCommandAction.Edit, 4)]
+    [InlineData("up 5", (int)CopilotQueuedFollowUpCommandAction.MoveUp, 5)]
+    [InlineData("down 6", (int)CopilotQueuedFollowUpCommandAction.MoveDown, 6)]
+    [InlineData("delete 7", (int)CopilotQueuedFollowUpCommandAction.Delete, 7)]
+    [InlineData("cancel 8", (int)CopilotQueuedFollowUpCommandAction.Delete, 8)]
+    [InlineData("delete", (int)CopilotQueuedFollowUpCommandAction.Invalid, 0)]
+    [InlineData("send zero", (int)CopilotQueuedFollowUpCommandAction.Invalid, 0)]
+    [InlineData("unknown 1", (int)CopilotQueuedFollowUpCommandAction.Invalid, 1)]
+    public void CommandParserRequiresAnExplicitPositiveGlobalPosition(
+        string arguments,
+        int expectedAction,
+        int expectedPosition)
+    {
+        var request = CopilotQueuedFollowUpDiagnostics.ParseCommand(arguments);
+
+        Assert.Equal((CopilotQueuedFollowUpCommandAction)expectedAction, request.Action);
+        Assert.Equal(expectedPosition, request.QueuePosition);
     }
 
     [Fact]
@@ -51,7 +78,18 @@ public sealed class CopilotQueuedFollowUpDiagnosticsTests
         Assert.DoesNotContain("private attachment body", report, StringComparison.Ordinal);
         Assert.DoesNotContain("run-private", report, StringComparison.Ordinal);
         Assert.DoesNotContain("goal-private", report, StringComparison.Ordinal);
-        Assert.Contains("报告只读", report, StringComparison.Ordinal);
+        Assert.Contains("列表本身只读", report, StringComparison.Ordinal);
+        Assert.Contains("send、edit、up、down、delete", report, StringComparison.Ordinal);
+        Assert.Same(
+            second,
+            CopilotQueuedFollowUpDiagnostics.FindByPosition(
+                [second, foreign, first],
+                "conversation-1",
+                3));
+        Assert.Null(CopilotQueuedFollowUpDiagnostics.FindByPosition(
+            [second, foreign, first],
+            "conversation-1",
+            2));
     }
 
     [Fact]

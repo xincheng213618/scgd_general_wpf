@@ -1978,9 +1978,7 @@ namespace ColorVision.Copilot
                     ShowLocalCommandResult(command, CopilotAgentTaskEventDiagnostics.Format(SelectedConversation));
                     break;
                 case CopilotLocalCommandKind.Queue:
-                    ShowLocalCommandResult(command, CopilotQueuedFollowUpDiagnostics.Format(
-                        QueuedFollowUps,
-                        SelectedConversation?.Id));
+                    HandleQueuedFollowUpCommand(command, invocation.Arguments);
                     break;
                 case CopilotLocalCommandKind.StopTask:
                     StopTaskFromCommand(command);
@@ -2226,6 +2224,89 @@ namespace ColorVision.Copilot
             RunUiOperation(
                 () => ApprovePendingActionAsync(result.Action),
                 "审核待确认操作");
+        }
+
+        private void HandleQueuedFollowUpCommand(
+            CopilotLocalCommand command,
+            string arguments)
+        {
+            var request = CopilotQueuedFollowUpDiagnostics.ParseCommand(arguments);
+            if (request.Action == CopilotQueuedFollowUpCommandAction.List)
+            {
+                ShowLocalCommandResult(command, CopilotQueuedFollowUpDiagnostics.Format(
+                    QueuedFollowUps,
+                    SelectedConversation?.Id));
+                return;
+            }
+            if (request.Action == CopilotQueuedFollowUpCommandAction.Invalid)
+            {
+                ShowLocalCommandResult(command, CopilotQueuedFollowUpDiagnostics.Usage);
+                return;
+            }
+
+            var queuedFollowUp = CopilotQueuedFollowUpDiagnostics.FindByPosition(
+                QueuedFollowUps,
+                SelectedConversation?.Id,
+                request.QueuePosition);
+            if (queuedFollowUp == null)
+            {
+                ShowLocalCommandResult(
+                    command,
+                    $"当前会话没有全局队列位置 #{request.QueuePosition:N0}。输入 /queue 查看实时位置；队列可能已在后台变化。");
+                return;
+            }
+
+            var originalPosition = queuedFollowUp.QueuePosition;
+            switch (request.Action)
+            {
+                case CopilotQueuedFollowUpCommandAction.SendNow:
+                    if (!TrySendQueuedFollowUpNow(queuedFollowUp))
+                    {
+                        ShowLocalCommandResult(command, $"当前没有可安全停止的前序任务，#{originalPosition:N0} 未提升。");
+                        return;
+                    }
+                    ShowLocalCommandResult(
+                        command,
+                        $"已把原 #{originalPosition:N0} 提升为下一项，并请求停止当前任务；该请求会在当前任务收尾后开始。");
+                    break;
+                case CopilotQueuedFollowUpCommandAction.Edit:
+                    if (!TryEditQueuedFollowUp(queuedFollowUp))
+                    {
+                        var reason = queuedFollowUp.IsAutomaticGoalContinuation
+                            ? "自动持续目标续作不能转成手动草稿；可用 delete 取消并暂停目标。"
+                            : "请先退出消息编辑，并清空当前草稿、附件及目标会话草稿。";
+                        ShowLocalCommandResult(command, $"无法编辑 #{originalPosition:N0}。{reason}");
+                        return;
+                    }
+                    ShowLocalCommandResult(
+                        command,
+                        $"已取消原 #{originalPosition:N0}，并把请求模式、正文和附件快照恢复到输入框；不会自动发送。");
+                    break;
+                case CopilotQueuedFollowUpCommandAction.MoveUp:
+                case CopilotQueuedFollowUpCommandAction.MoveDown:
+                    var offset = request.Action == CopilotQueuedFollowUpCommandAction.MoveUp ? -1 : 1;
+                    if (!TryMoveQueuedFollowUp(queuedFollowUp, offset))
+                    {
+                        var boundary = offset < 0 ? "最前" : "最后";
+                        ShowLocalCommandResult(command, $"#{originalPosition:N0} 已在队列{boundary}，或位置刚刚变化；队列未修改。");
+                        return;
+                    }
+                    ShowLocalCommandResult(
+                        command,
+                        $"已把原 #{originalPosition:N0} 移动到 #{queuedFollowUp.QueuePosition:N0}；持久化恢复顺序已同步。");
+                    break;
+                case CopilotQueuedFollowUpCommandAction.Delete:
+                    if (!TryDeleteQueuedFollowUp(queuedFollowUp, out var pausedGoal))
+                    {
+                        ShowLocalCommandResult(command, $"#{originalPosition:N0} 已开始执行或已离开队列，未重复取消。");
+                        return;
+                    }
+                    ShowLocalCommandResult(
+                        command,
+                        $"已取消原 #{originalPosition:N0}，其请求不会执行。"
+                        + (pausedGoal ? " 对应持续目标也已暂停。" : string.Empty));
+                    break;
+            }
         }
 
         private string BuildStatusDiagnosticsReport()
@@ -5398,19 +5479,25 @@ namespace ColorVision.Copilot
 
         private void SendQueuedFollowUpNow(CopilotQueuedFollowUp? queuedFollowUp)
         {
+            TrySendQueuedFollowUpNow(queuedFollowUp);
+        }
+
+        private bool TrySendQueuedFollowUpNow(CopilotQueuedFollowUp? queuedFollowUp)
+        {
             var activeRun = ActiveHostedRun;
             if (!CanSendQueuedFollowUpNow(queuedFollowUp)
                 || queuedFollowUp == null
                 || activeRun == null
                 || !_taskHost.PromoteQueuedRun(queuedFollowUp.RunId))
             {
-                return;
+                return false;
             }
 
             RefreshQueuedFollowUpPositions();
             SynchronizeQueuedFollowUpRecoveryOrder();
             PersistState(immediate: true);
             _taskHost.RequestCancel(activeRun.Id);
+            return true;
         }
 
         private bool CanEditQueuedFollowUp(CopilotQueuedFollowUp? queuedFollowUp)
@@ -5432,8 +5519,13 @@ namespace ColorVision.Copilot
 
         private void EditQueuedFollowUp(CopilotQueuedFollowUp? queuedFollowUp)
         {
+            TryEditQueuedFollowUp(queuedFollowUp);
+        }
+
+        private bool TryEditQueuedFollowUp(CopilotQueuedFollowUp? queuedFollowUp)
+        {
             if (!CanEditQueuedFollowUp(queuedFollowUp) || queuedFollowUp == null)
-                return;
+                return false;
 
             var previousConversation = SelectedConversation;
             var conversation = Conversations.First(candidate =>
@@ -5441,7 +5533,7 @@ namespace ColorVision.Copilot
             if (!ReferenceEquals(conversation, SelectedConversation))
                 SelectConversation(conversation, persist: true, preferredProfileId: conversation.ProfileId);
             if (!ReferenceEquals(conversation, SelectedConversation))
-                return;
+                return false;
 
             var composerState = CopilotComposerStash.Capture(
                 queuedFollowUp.Prompt,
@@ -5469,26 +5561,41 @@ namespace ColorVision.Copilot
                         persist: true,
                         preferredProfileId: previousConversation.ProfileId);
                 }
-                return;
+                return false;
             }
+            return true;
         }
 
         private void MoveQueuedFollowUp(CopilotQueuedFollowUp? queuedFollowUp, int offset)
         {
+            TryMoveQueuedFollowUp(queuedFollowUp, offset);
+        }
+
+        private bool TryMoveQueuedFollowUp(CopilotQueuedFollowUp? queuedFollowUp, int offset)
+        {
             if (queuedFollowUp == null || !_taskHost.MoveQueuedRun(queuedFollowUp.RunId, offset))
-                return;
+                return false;
             RefreshQueuedFollowUpPositions();
             SynchronizeQueuedFollowUpRecoveryOrder();
             PersistState(immediate: true);
+            return true;
         }
 
         private void DeleteQueuedFollowUp(CopilotQueuedFollowUp? queuedFollowUp)
         {
+            TryDeleteQueuedFollowUp(queuedFollowUp, out _);
+        }
+
+        private bool TryDeleteQueuedFollowUp(
+            CopilotQueuedFollowUp? queuedFollowUp,
+            out bool pausedGoal)
+        {
+            pausedGoal = false;
             if (queuedFollowUp == null || !_taskHost.RequestCancel(queuedFollowUp.RunId))
-                return;
+                return false;
 
             if (!queuedFollowUp.IsAutomaticGoalContinuation)
-                return;
+                return true;
 
             var conversation = Conversations.FirstOrDefault(item =>
                 string.Equals(item.Id, queuedFollowUp.ConversationId, StringComparison.Ordinal));
@@ -5499,9 +5606,11 @@ namespace ColorVision.Copilot
                     CopilotConversationGoalState.Paused,
                     DateTimeOffset.UtcNow,
                     "用户取消了已排队的自动续作，持续目标已暂停。");
+                pausedGoal = true;
                 UpdateConversationMetadata(conversation, touch: true);
                 PersistState(immediate: true);
             }
+            return true;
         }
 
         private void RemoveQueuedFollowUp(string runId, bool removeRecoveryRecord = true)

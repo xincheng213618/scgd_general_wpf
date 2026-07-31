@@ -6,10 +6,66 @@ using System.Text;
 
 namespace ColorVision.Copilot
 {
+    internal enum CopilotQueuedFollowUpCommandAction
+    {
+        List,
+        SendNow,
+        Edit,
+        MoveUp,
+        MoveDown,
+        Delete,
+        Invalid,
+    }
+
+    internal sealed record CopilotQueuedFollowUpCommandRequest(
+        CopilotQueuedFollowUpCommandAction Action,
+        int QueuePosition);
+
     internal static class CopilotQueuedFollowUpDiagnostics
     {
         private const int MaximumListedItems = CopilotAgentTaskHost.MaximumQueuedRuns;
         private const int MaximumPreviewCharacters = 120;
+        public const string Usage = "用法：/queue [send|edit|up|down|delete] N。N 是 /queue 列表显示的全局 #N；省略参数时只查看当前会话队列。";
+
+        public static CopilotQueuedFollowUpCommandRequest ParseCommand(string? arguments)
+        {
+            var parts = (arguments ?? string.Empty).Split(
+                (char[]?)null,
+                StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            if (parts.Length == 0)
+                return new CopilotQueuedFollowUpCommandRequest(CopilotQueuedFollowUpCommandAction.List, 0);
+            if (parts.Length != 2
+                || !int.TryParse(parts[1], NumberStyles.None, CultureInfo.InvariantCulture, out var queuePosition)
+                || queuePosition <= 0)
+            {
+                return new CopilotQueuedFollowUpCommandRequest(CopilotQueuedFollowUpCommandAction.Invalid, 0);
+            }
+
+            var action = parts[0].ToLowerInvariant() switch
+            {
+                "send" or "now" => CopilotQueuedFollowUpCommandAction.SendNow,
+                "edit" => CopilotQueuedFollowUpCommandAction.Edit,
+                "up" => CopilotQueuedFollowUpCommandAction.MoveUp,
+                "down" => CopilotQueuedFollowUpCommandAction.MoveDown,
+                "delete" or "remove" or "cancel" => CopilotQueuedFollowUpCommandAction.Delete,
+                _ => CopilotQueuedFollowUpCommandAction.Invalid,
+            };
+            return new CopilotQueuedFollowUpCommandRequest(action, queuePosition);
+        }
+
+        public static CopilotQueuedFollowUp? FindByPosition(
+            IEnumerable<CopilotQueuedFollowUp>? queuedFollowUps,
+            string? conversationId,
+            int queuePosition)
+        {
+            if (string.IsNullOrWhiteSpace(conversationId) || queuePosition <= 0)
+                return null;
+
+            return (queuedFollowUps ?? Array.Empty<CopilotQueuedFollowUp>())
+                .FirstOrDefault(item => item != null
+                    && item.QueuePosition == queuePosition
+                    && string.Equals(item.ConversationId, conversationId, StringComparison.Ordinal));
+        }
 
         public static string Format(
             IEnumerable<CopilotQueuedFollowUp>? queuedFollowUps,
@@ -32,7 +88,7 @@ namespace ColorVision.Copilot
                 .Append(items.Length.ToString("N0", CultureInfo.CurrentCulture))
                 .AppendLine();
             builder.AppendLine();
-            builder.AppendLine("这些请求会在前序任务结束后按全局队列顺序开始；此报告只读，不会执行或改写队列。");
+            builder.AppendLine("这些请求会在前序任务结束后按全局队列顺序开始；列表本身只读，使用 /queue 动作 N 显式调整。");
             foreach (var item in items.Take(MaximumListedItems))
             {
                 builder.Append(item.PositionLabel)
@@ -57,7 +113,7 @@ namespace ColorVision.Copilot
             }
 
             builder.AppendLine();
-            builder.Append("报告不包含内部任务 ID、附件正文、活动文档或工作区路径；可在排队卡片中编辑、移动或取消。");
+            builder.Append("可用动作：send、edit、up、down、delete。报告不包含内部任务 ID、附件正文、活动文档或工作区路径。");
             return builder.ToString();
         }
 

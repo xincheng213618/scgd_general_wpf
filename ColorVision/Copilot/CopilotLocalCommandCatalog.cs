@@ -102,7 +102,14 @@ namespace ColorVision.Copilot
             new("/tasks", "查看正在运行、排队及等待恢复的 Agent 任务", CopilotLocalCommandKind.Tasks, AvailableWhileAgentRuns: true, Usage: "/tasks"),
             new("/ps", "同 /tasks；查看正在运行、排队及等待恢复的 Agent 任务", CopilotLocalCommandKind.Tasks, AvailableWhileAgentRuns: true, Usage: "/ps"),
             new("/task-log", "查看当前会话最近的 Agent 工具、审批与停止事件", CopilotLocalCommandKind.TaskLog, AvailableWhileAgentRuns: true, Usage: "/task-log"),
-            new("/queue", "查看当前会话等待执行的后续请求", CopilotLocalCommandKind.Queue, AvailableWhileAgentRuns: true, Usage: "/queue"),
+            new("/queue", "查看或控制当前会话等待执行的后续请求", CopilotLocalCommandKind.Queue, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/queue [send N|edit N|up N|down N|delete N]", Arguments:
+            [
+                new("send", "把 #N 提升到下一项并停止当前任务", AcceptsArguments: true),
+                new("edit", "取消 #N 并把请求及附件恢复到输入框", AcceptsArguments: true),
+                new("up", "把 #N 向前移动一位", AcceptsArguments: true),
+                new("down", "把 #N 向后移动一位", AcceptsArguments: true),
+                new("delete", "取消 #N；若为自动续作，同时暂停对应持续目标", AcceptsArguments: true),
+            ]),
             new("/stop", "停止当前任务；有安全 checkpoint 时优先暂停，否则取消当前轮次", CopilotLocalCommandKind.StopTask, AvailableWhileAgentRuns: true, Usage: "/stop"),
             new("/approve", "查看待确认操作，或打开指定操作的原生审查窗口", CopilotLocalCommandKind.Approve, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/approve [N]"),
             new("/usage", "查看当前会话已记录的输入、输出与缓存 Token", CopilotLocalCommandKind.Usage, AvailableWhileAgentRuns: true, Usage: "/usage"),
