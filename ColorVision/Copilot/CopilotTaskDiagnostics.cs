@@ -11,6 +11,7 @@ namespace ColorVision.Copilot
         List,
         Stop,
         Resume,
+        Dismiss,
         Invalid,
     }
 
@@ -54,8 +55,8 @@ namespace ColorVision.Copilot
     internal static class CopilotTaskDiagnostics
     {
         internal const int MaximumAttentionTasks = 20;
-        internal const string Usage = "用法：/tasks [stop N|resume N]"
-            + "\n输入 /tasks 查看实时位置；stop N 对应“活动与队列”，resume N 对应“需要处理”。";
+        internal const string Usage = "用法：/tasks [stop N|resume N|dismiss N]"
+            + "\n输入 /tasks 查看实时位置；stop N 对应“活动与队列”，resume/dismiss N 对应“需要处理”。";
 
         public static CopilotTaskCommandRequest ParseCommand(string? arguments)
         {
@@ -74,6 +75,8 @@ namespace ColorVision.Copilot
                     return new CopilotTaskCommandRequest(CopilotTaskCommandAction.Stop, position);
                 if (string.Equals(parts[0], "resume", StringComparison.OrdinalIgnoreCase))
                     return new CopilotTaskCommandRequest(CopilotTaskCommandAction.Resume, position);
+                if (string.Equals(parts[0], "dismiss", StringComparison.OrdinalIgnoreCase))
+                    return new CopilotTaskCommandRequest(CopilotTaskCommandAction.Dismiss, position);
             }
 
             return new CopilotTaskCommandRequest(CopilotTaskCommandAction.Invalid, 0);
@@ -266,7 +269,7 @@ namespace ColorVision.Copilot
             {
                 for (var index = 0; index < attentionTasks.Count; index++)
                     AppendAttentionTask(builder, attentionTasks[index], index + 1);
-                builder.AppendLine("恢复：/tasks resume N（仅对应上方“需要处理”的编号；恢复前会重新检查 checkpoint 与运行环境）");
+                builder.AppendLine("控制：/tasks resume N 或 /tasks dismiss N（仅对应上方“需要处理”的编号；放弃恢复项会原生确认）");
                 var omittedCount = Math.Max(0, snapshot.TotalAttentionTasks - attentionTasks.Count);
                 if (omittedCount > 0)
                     builder.Append("另有 ").Append(FormatCount(omittedCount)).AppendLine(" 条未显示，请使用 Agent 任务列表查看。");

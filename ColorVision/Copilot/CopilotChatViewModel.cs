@@ -2547,6 +2547,11 @@ namespace ColorVision.Copilot
                 ResumeTaskFromCommand(command, snapshot, request.Position);
                 return;
             }
+            if (request.Action == CopilotTaskCommandAction.Dismiss)
+            {
+                DismissTaskFromCommand(command, snapshot, request.Position);
+                return;
+            }
 
             var run = CopilotTaskDiagnostics.FindRun(snapshot, request.Position);
             if (run == null)
@@ -2633,6 +2638,44 @@ namespace ColorVision.Copilot
             ShowLocalCommandResult(
                 command,
                 $"已切换到“{attentionTask.Title}”并请求恢复任务 #{position:N0}；checkpoint 已重新验证，后续工具仍遵循现有审批策略。");
+        }
+
+        private void DismissTaskFromCommand(
+            CopilotLocalCommand command,
+            CopilotTaskDiagnosticSnapshot snapshot,
+            int position)
+        {
+            var attentionTask = CopilotTaskDiagnostics.FindAttentionTask(snapshot, position);
+            if (attentionTask == null)
+            {
+                ShowLocalCommandResult(
+                    command,
+                    $"“需要处理”中没有任务 #{position:N0}。输入 /tasks 查看实时位置；任务可能已恢复或离开列表。");
+                return;
+            }
+            if (IsBusy)
+            {
+                ShowLocalCommandResult(
+                    command,
+                    $"当前仍有任务运行，不能放弃恢复项 #{position:N0}。请先停止或等待活动任务完成；恢复项未改变。");
+                return;
+            }
+
+            var task = CopilotAgentTaskIndex.Build(
+                    CopilotConversationArchiveService.GetActive(Conversations))
+                .FirstOrDefault(candidate =>
+                    string.Equals(candidate.ConversationId, attentionTask.ConversationId, StringComparison.Ordinal));
+            if (task == null || !TryDismissAgentTask(task))
+            {
+                ShowLocalCommandResult(
+                    command,
+                    $"未放弃恢复项 #{position:N0}；用户已取消确认，或任务状态刚刚变化。原任务终态和审计证据未改变。");
+                return;
+            }
+
+            ShowLocalCommandResult(
+                command,
+                $"已放弃“{attentionTask.Title}”的恢复项 #{position:N0}；checkpoint 已清除，原任务终态、可见内容和审计证据仍保留。");
         }
 
         private CopilotTaskDiagnosticSnapshot CaptureTaskDiagnostics()
@@ -6348,8 +6391,13 @@ namespace ColorVision.Copilot
 
         private void DismissAgentTask(CopilotAgentTaskSummary? task)
         {
+            TryDismissAgentTask(task);
+        }
+
+        private bool TryDismissAgentTask(CopilotAgentTaskSummary? task)
+        {
             if (task == null || IsBusy || !Conversations.Contains(task.Conversation))
-                return;
+                return false;
 
             if (MessageBox.Show(
                 Application.Current.GetActiveWindow(),
@@ -6358,15 +6406,16 @@ namespace ColorVision.Copilot
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Question) != MessageBoxResult.Yes)
             {
-                return;
+                return false;
             }
 
             if (!CopilotAgentTaskIndex.Dismiss(task))
-                return;
+                return false;
             if (ReferenceEquals(task.Conversation, SelectedConversation))
                 PublishSelectedTaskEventJournal();
             PersistState();
             RefreshAgentTasks();
+            return true;
         }
 
         private CopilotAgentRecoveryRequest? ConsumePendingAgentRecoveryRequest()
