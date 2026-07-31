@@ -1439,23 +1439,9 @@ namespace ColorVision.Copilot
                 var input = (InputText ?? string.Empty).TrimStart();
                 if (input.Length == 0 || input[0] is not '/' and not '$')
                     return Array.Empty<CopilotLocalCommand>();
-                if (ResolveComposerRequestMode() == CopilotAgentMode.Chat)
-                {
-                    return CopilotLocalCommandCatalog.Suggest(
-                        input,
-                        profiles: Profiles,
-                        selectedProfile: SelectedProfile,
-                        composerContext: composerContext);
-                }
-
-                var turnSnapshot = CaptureHostedTurnSnapshot(Attachments);
-                var trustedProjectRoots = CopilotAgentRequestFactory.BuildTrustedProjectRootPaths(turnSnapshot);
-                var skills = CopilotAgentSkillCatalog.DiscoverCached(
-                    trustedProjectRoots,
-                    _config.AgentDefaults.CreateSkillOverrideSnapshot());
                 return CopilotLocalCommandCatalog.Suggest(
                     input,
-                    skills,
+                    DiscoverComposerSkills(),
                     Profiles,
                     SelectedProfile,
                     composerContext);
@@ -2103,6 +2089,37 @@ namespace ColorVision.Copilot
                 default:
                     return false;
             }
+            return true;
+        }
+
+        private IReadOnlyList<CopilotAgentSkillCatalogItem> DiscoverComposerSkills()
+        {
+            if (ResolveComposerRequestMode() == CopilotAgentMode.Chat)
+                return Array.Empty<CopilotAgentSkillCatalogItem>();
+
+            var turnSnapshot = CaptureHostedTurnSnapshot(Attachments);
+            var trustedProjectRoots = CopilotAgentRequestFactory.BuildTrustedProjectRootPaths(turnSnapshot);
+            return CopilotAgentSkillCatalog.DiscoverCached(
+                trustedProjectRoots,
+                _config.AgentDefaults.CreateSkillOverrideSnapshot());
+        }
+
+        private bool TryReportCommandInputRecovery(string prompt)
+        {
+            var normalized = (prompt ?? string.Empty).TrimStart();
+            if (normalized.Length == 0 || normalized[0] is not '/' and not '$')
+                return false;
+
+            if (!CopilotCommandInputRecoveryResolver.TryResolve(
+                prompt,
+                DiscoverComposerSkills(),
+                out var recovery))
+            {
+                return false;
+            }
+
+            LocalCommandResultTitle = recovery.Title;
+            LocalCommandResultText = recovery.Message;
             return true;
         }
 
@@ -3028,8 +3045,14 @@ namespace ColorVision.Copilot
                 return;
             if (!TryValidateComposerCharacterLimit(modelPrompt))
                 return;
-            if (!isDirectSubmission && !IsEditingMessage && TryExecuteLocalCommand(prompt))
-                return;
+            if (!isDirectSubmission && !IsEditingMessage)
+            {
+                if (TryExecuteLocalCommand(prompt)
+                    || TryReportCommandInputRecovery(prompt))
+                {
+                    return;
+                }
+            }
 
             var requestMode = directMode ?? ResolveComposerRequestMode();
             if (!CanScheduleComposerRequest(requestMode))
@@ -4944,15 +4967,9 @@ namespace ColorVision.Copilot
                     return;
                 }
 
-                var invocation = CopilotLocalCommandCatalog.Parse(InputText);
-                if (invocation != null)
+                if (TryHandleComposerLocalCommandDuringRun(InputText, out var recognized)
+                    || recognized)
                 {
-                    if (CopilotLocalCommandAvailabilityPolicy.CanExecute(
-                        invocation.Command,
-                        ResolveLocalCommandComposerContext()))
-                        TryExecuteLocalCommand(InputText);
-                    else
-                        ReportUnavailableLocalCommandDuringRun(invocation.Command);
                     return;
                 }
 
@@ -5126,9 +5143,13 @@ namespace ColorVision.Copilot
             out bool recognized)
         {
             var invocation = CopilotLocalCommandCatalog.Parse(prompt);
-            recognized = invocation != null;
             if (invocation == null)
-                return false;
+            {
+                recognized = TryReportCommandInputRecovery(prompt);
+                return recognized;
+            }
+
+            recognized = true;
             if (CopilotLocalCommandAvailabilityPolicy.CanExecute(
                 invocation.Command,
                 ResolveLocalCommandComposerContext()))
