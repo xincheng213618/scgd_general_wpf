@@ -6,6 +6,42 @@ namespace ColorVision.UI.Tests;
 public sealed class CopilotAgentTaskEventDiagnosticsTests
 {
     [Fact]
+    public void TaskLogCommandExposesLimitAndErrorsArgumentsDuringAnActiveRun()
+    {
+        var invocation = Assert.IsType<CopilotLocalCommandInvocation>(
+            CopilotLocalCommandCatalog.Parse("/task-log errors"));
+        var suggestion = Assert.Single(CopilotLocalCommandCatalog.Suggest("/task-log "));
+
+        Assert.Equal(CopilotLocalCommandKind.TaskLog, invocation.Command.Kind);
+        Assert.Equal("errors", invocation.Arguments);
+        Assert.Equal("/task-log [N|errors]", invocation.Command.Usage);
+        Assert.True(invocation.Command.AvailableWhileAgentRuns);
+        Assert.Equal("/task-log errors", suggestion.Name);
+    }
+
+    [Theory]
+    [InlineData(null, 0, 20)]
+    [InlineData("", 0, 20)]
+    [InlineData("1", 0, 1)]
+    [InlineData("100", 0, 100)]
+    [InlineData("errors", 1, 20)]
+    [InlineData("ERRORS", 1, 20)]
+    [InlineData("0", 2, 0)]
+    [InlineData("101", 2, 0)]
+    [InlineData("errors 5", 2, 0)]
+    [InlineData("all", 2, 0)]
+    public void TaskLogCommandAcceptsABoundedLimitOrFailureFilter(
+        string? arguments,
+        int expectedAction,
+        int expectedLimit)
+    {
+        var request = CopilotAgentTaskEventDiagnostics.ParseCommand(arguments);
+
+        Assert.Equal((CopilotAgentTaskEventDiagnosticAction)expectedAction, request.Action);
+        Assert.Equal(expectedLimit, request.Limit);
+    }
+
+    [Fact]
     public void FormatShowsLatestEventsWithoutRawIdentifiersOrSecrets()
     {
         var journal = new CopilotAgentTaskEventJournalBuilder();
@@ -39,6 +75,89 @@ public sealed class CopilotAgentTaskEventDiagnosticsTests
         Assert.DoesNotContain("super-secret", report, StringComparison.Ordinal);
         Assert.Contains("<redacted>", report, StringComparison.Ordinal);
         Assert.Contains("不包含工具参数、模型隐藏推理或授权凭据", report);
+    }
+
+    [Fact]
+    public void FormatHonorsAnExplicitRecentEventLimit()
+    {
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordRunStarted();
+        for (var index = 0; index < 10; index++)
+            journal.RecordSteering($"steering-{index}");
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        conversation.LatestAgentTaskEventJournal = journal.Snapshot();
+
+        var report = CopilotAgentTaskEventDiagnostics.Format(conversation, "5");
+
+        Assert.Contains("最近 5 / 11 条（新到旧）", report, StringComparison.Ordinal);
+        Assert.Contains("另有 6 条较早事件未显示", report, StringComparison.Ordinal);
+        Assert.Equal(5, report.Split(Environment.NewLine).Count(line => line.StartsWith('#')));
+    }
+
+    [Fact]
+    public void ErrorsFilterShowsOnlyFailureEvidenceAndKeepsItRedacted()
+    {
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordRunStarted();
+        journal.RecordSteering("keep going");
+        journal.Observe(CopilotAgentEvent.Error("Provider failed with api_key=runtime-secret."));
+        journal.RecordApprovalDecision(
+            "WriteWorkspace",
+            "raw-call-id",
+            "raw-approval-id",
+            approved: false);
+        journal.RecordBlocker(new CopilotAgentBlockerSnapshot
+        {
+            Code = "provider_error",
+            Summary = "Blocked with token=blocker-secret.",
+            ToolName = "InspectWorkspace",
+        });
+        journal.RecordStop(CopilotAgentStopReason.ProviderFailure);
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        conversation.Title = "Failures";
+        conversation.LatestAgentTaskEventJournal = journal.Snapshot();
+
+        var report = CopilotAgentTaskEventDiagnostics.Format(conversation, "errors");
+
+        Assert.Contains("失败 4 / 4 条（新到旧）", report, StringComparison.Ordinal);
+        Assert.Contains("RuntimeError", report, StringComparison.Ordinal);
+        Assert.Contains("ApprovalDenied · WriteWorkspace", report, StringComparison.Ordinal);
+        Assert.Contains("BlockerDetected · InspectWorkspace · provider_error", report, StringComparison.Ordinal);
+        Assert.Contains("RunStopped · ProviderFailure", report, StringComparison.Ordinal);
+        Assert.DoesNotContain("RunStarted", report, StringComparison.Ordinal);
+        Assert.DoesNotContain("SteeringQueued", report, StringComparison.Ordinal);
+        Assert.DoesNotContain("runtime-secret", report, StringComparison.Ordinal);
+        Assert.DoesNotContain("blocker-secret", report, StringComparison.Ordinal);
+        Assert.DoesNotContain("raw-call-id", report, StringComparison.Ordinal);
+        Assert.DoesNotContain("raw-approval-id", report, StringComparison.Ordinal);
+        Assert.Contains("<redacted>", report, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void InvalidTaskLogArgumentsReturnUsageWithoutReadingTheConversation()
+    {
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        conversation.Title = "Sensitive title";
+
+        var report = CopilotAgentTaskEventDiagnostics.Format(conversation, "101");
+
+        Assert.Equal(CopilotAgentTaskEventDiagnostics.Usage, report);
+        Assert.DoesNotContain("Sensitive title", report, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ErrorsFilterExplainsWhenNoFailuresWerePersisted()
+    {
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordRunStarted();
+        journal.RecordStop(CopilotAgentStopReason.Completed);
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        conversation.LatestAgentTaskEventJournal = journal.Snapshot();
+
+        var report = CopilotAgentTaskEventDiagnostics.Format(conversation, "errors");
+
+        Assert.Contains("没有已保存的失败事件", report, StringComparison.Ordinal);
+        Assert.Contains("不包含工具参数、模型隐藏推理或授权凭据", report, StringComparison.Ordinal);
     }
 
     [Fact]

@@ -1976,7 +1976,9 @@ namespace ColorVision.Copilot
                     HandleTaskCommand(command, invocation.Arguments);
                     break;
                 case CopilotLocalCommandKind.TaskLog:
-                    ShowLocalCommandResult(command, CopilotAgentTaskEventDiagnostics.Format(SelectedConversation));
+                    ShowLocalCommandResult(
+                        command,
+                        CopilotAgentTaskEventDiagnostics.Format(SelectedConversation, invocation.Arguments));
                     break;
                 case CopilotLocalCommandKind.Queue:
                     HandleQueuedFollowUpCommand(command, invocation.Arguments);

@@ -111,7 +111,10 @@ namespace ColorVision.Copilot
                 new("resume", "恢复“需要处理”中的第 N 项", AcceptsArguments: true),
                 new("dismiss", "经原生确认放弃“需要处理”中的第 N 项", AcceptsArguments: true),
             ]),
-            new("/task-log", "查看当前会话最近的 Agent 工具、审批与停止事件", CopilotLocalCommandKind.TaskLog, AvailableWhileAgentRuns: true, Usage: "/task-log"),
+            new("/task-log", "查看当前会话最近或失败的 Agent 工具、审批与停止事件", CopilotLocalCommandKind.TaskLog, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/task-log [N|errors]", Arguments:
+            [
+                new("errors", "只显示错误、阻塞、审批拒绝、异常停止及带失败码的事件"),
+            ]),
             new("/queue", "查看或控制当前会话等待执行的后续请求", CopilotLocalCommandKind.Queue, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/queue [clear|send N|edit N|up N|down N|delete N]", Arguments:
             [
                 new("clear", "经原生确认取消当前会话全部排队请求"),
