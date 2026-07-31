@@ -45,6 +45,7 @@ namespace ColorVision.Copilot
         Timestamps,
         CompactMode,
         MultilineComposer,
+        RetryResponse,
         CopyResponse,
         ExportConversation,
         FindInConversation,
@@ -208,6 +209,10 @@ namespace ColorVision.Copilot
             [
                 new("on", "Enter 换行，Shift+Enter 或 Ctrl+Enter 发送"),
                 new("off", "Enter 发送，Shift+Enter 换行"),
+            ]),
+            new("/retry", "重新生成当前会话最后一轮；refresh 会重新读取附件与网页上下文", CopilotLocalCommandKind.RetryResponse, AcceptsArguments: true, Usage: "/retry [refresh]", Arguments:
+            [
+                new("refresh", "重新读取本轮文件、图片与网页上下文后重试"),
             ]),
             new("/copy", "复制最近已完成的回答；可用 /copy 2 选择倒数第二条", CopilotLocalCommandKind.CopyResponse, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/copy [N]"),
             new("/export", "复制当前会话的可见 Markdown；可补充文件名并打开保存窗口", CopilotLocalCommandKind.ExportConversation, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/export [文件名.md|文件名.txt]"),

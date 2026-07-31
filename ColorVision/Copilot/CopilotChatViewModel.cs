@@ -2039,6 +2039,9 @@ namespace ColorVision.Copilot
                 case CopilotLocalCommandKind.MultilineComposer:
                     ChangeMultilineComposerPreference(command, invocation.Arguments);
                     break;
+                case CopilotLocalCommandKind.RetryResponse:
+                    RetryLatestResponse(command, invocation.Arguments);
+                    break;
                 case CopilotLocalCommandKind.CopyResponse:
                     CopyAssistantResponse(command, invocation.Arguments);
                     break;
@@ -4660,6 +4663,69 @@ namespace ColorVision.Copilot
                 ordinal == 1
                     ? $"已复制最近一条已完成回答（{text.Length:N0} 个字符）。"
                     : $"已复制倒数第 {ordinal:N0} 条已完成回答（{text.Length:N0} 个字符）。");
+        }
+
+        private void RetryLatestResponse(
+            CopilotLocalCommand command,
+            string arguments)
+        {
+            if (!CopilotResponseRetryCommand.TryParse(
+                    arguments,
+                    out var refreshExternalContext))
+            {
+                ShowLocalCommandResult(
+                    command,
+                    "参数只支持 refresh，例如 /retry 或 /retry refresh。");
+                return;
+            }
+
+            var message = SelectedConversation?.Messages.LastOrDefault();
+            if (message == null)
+            {
+                ShowLocalCommandResult(command, "当前会话还没有可重试的请求。");
+                return;
+            }
+            if (SelectedProfile?.IsConfigured != true)
+            {
+                ShowLocalCommandResult(
+                    command,
+                    "当前模型 Profile 尚未完成配置；请先使用 /settings models。");
+                return;
+            }
+            if (!CanRegenerateMessage(message))
+            {
+                if (TryResolveLatestTurn(
+                        message,
+                        out var conversation,
+                        out _,
+                        out var assistantMessage)
+                    && assistantMessage != null
+                    && CopilotAgentTaskContinuityPolicy.HasAvailableStructuredRecovery(
+                        conversation,
+                        assistantMessage,
+                        CreateConversationRequestProfile(SelectedProfile, conversation),
+                        CopilotCapabilityCatalog.Shared.GetSnapshot()))
+                {
+                    ShowLocalCommandResult(
+                        command,
+                        "最后一轮保留了可安全继续的 Agent checkpoint；请优先使用 /tasks 继续或明确放弃恢复项，避免重新执行已完成的工具操作。");
+                    return;
+                }
+
+                ShowLocalCommandResult(
+                    command,
+                    "最后一轮当前不能重试；请先结束运行或消息编辑，并确认它仍是当前会话的最后一轮。");
+                return;
+            }
+
+            DismissLocalCommandResult();
+            RunUiOperation(
+                () => RetryMessageAsync(message, refreshExternalContext),
+                refreshExternalContext
+                    ? "刷新附件与网页后重新生成"
+                    : message.RequestMode == CopilotAgentMode.Chat
+                        ? "重新生成回复"
+                        : "重新运行 Agent");
         }
 
         private void SelectModelProfile(CopilotLocalCommand command, string query)
