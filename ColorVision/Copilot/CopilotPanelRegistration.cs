@@ -7,7 +7,6 @@ using System.Text;
 
 namespace ColorVision.Copilot
 {
-    public readonly record struct CopilotPromptDispatchResult(bool IsAvailable, bool WasSent, string StatusMessage);
     public readonly record struct CopilotPromptQueueResult(bool Accepted, bool WasSent);
 
     public sealed class CopilotPanelService : ICopilotService
@@ -44,8 +43,6 @@ namespace ColorVision.Copilot
                 }
             }
         }
-
-        public bool CanAskFromException => CanShowPanel && IsConfigured;
 
         public CopilotChatViewModel GetOrCreateViewModel()
         {
@@ -114,43 +111,6 @@ namespace ColorVision.Copilot
                 attachContextSnapshot ? request.ContextAttachmentSourceId : null,
                 attachContextSnapshot ? contextItems : null);
             return queueResult.Accepted;
-        }
-
-        public CopilotPromptDispatchResult DispatchExceptionPrompt(string prompt)
-        {
-            return CopilotUiDispatcher.Invoke(
-                () => DispatchExceptionPromptOnUiThread(prompt),
-                new CopilotPromptDispatchResult(false, false, "The main AI panel is shutting down."));
-        }
-
-        private CopilotPromptDispatchResult DispatchExceptionPromptOnUiThread(string prompt)
-        {
-            if (string.IsNullOrWhiteSpace(prompt))
-                return new CopilotPromptDispatchResult(false, false, "No exception content is available to send.");
-
-            if (!CanShowPanel)
-                return new CopilotPromptDispatchResult(false, false, "The main AI panel is not ready yet.");
-
-            if (!IsConfigured)
-                return new CopilotPromptDispatchResult(false, false, "AI is not configured, so the exception diagnosis request cannot be sent.");
-
-            var viewModel = GetOrCreateViewModel();
-            ShowPanel();
-
-            var queueResult = viewModel.QueueExternalPrompt(prompt, startNewConversation: true, sendNow: true, mode: CopilotAgentMode.Diagnose);
-            if (queueResult.WasSent)
-                return new CopilotPromptDispatchResult(true, true, "Sent to the main AI panel.");
-            if (!queueResult.Accepted)
-            {
-                var rejectionMessage = string.IsNullOrWhiteSpace(viewModel.LocalCommandResultText)
-                    ? "The exception diagnosis request was rejected."
-                    : viewModel.LocalCommandResultText;
-                return new CopilotPromptDispatchResult(false, false, rejectionMessage);
-            }
-
-            return new CopilotPromptDispatchResult(queueResult.Accepted, false, viewModel.IsBusy
-                ? "AI is busy. The exception context was placed in the input box."
-                : "The exception context was placed in the AI input box.");
         }
 
         private static CopilotAgentMode MapPromptMode(CopilotPromptMode mode)
