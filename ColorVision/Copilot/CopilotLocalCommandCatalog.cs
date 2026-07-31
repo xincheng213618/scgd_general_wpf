@@ -16,6 +16,7 @@ namespace ColorVision.Copilot
         TaskLog,
         Queue,
         StopTask,
+        RecurringPrompt,
         Approve,
         Usage,
         Statistics,
@@ -125,6 +126,11 @@ namespace ColorVision.Copilot
                 new("delete", "取消 #N；若为自动续作，同时暂停对应持续目标", AcceptsArguments: true),
             ]),
             new("/stop", "停止当前任务；有安全 checkpoint 时优先暂停，否则取消当前轮次", CopilotLocalCommandKind.StopTask, AvailableWhileAgentRuns: true, Usage: "/stop"),
+            new("/loop", "创建、查看或取消当前应用会话内的循环 Agent 请求", CopilotLocalCommandKind.RecurringPrompt, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/loop <间隔> <请求> | list | cancel <任务 ID>", Arguments:
+            [
+                new("list", "查看当前应用会话内的循环任务"),
+                new("cancel", "取消指定循环任务", AcceptsArguments: true),
+            ]),
             new("/approve", "查看待确认操作，或打开指定操作的原生审查窗口", CopilotLocalCommandKind.Approve, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/approve [N]"),
             new("/usage", "查看当前会话 Token、Agent 调用、工具与时延统计", CopilotLocalCommandKind.Usage, AvailableWhileAgentRuns: true, Usage: "/usage"),
             new("/stats", "汇总最近 7 天、30 天或全部本地会话活动", CopilotLocalCommandKind.Statistics, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/stats [7|30|all]", Arguments:

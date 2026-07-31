@@ -95,11 +95,15 @@ namespace ColorVision.Copilot
                 : conversationTitle.Trim();
             var count = items?.Count ?? 0;
             var automaticGoalCount = items?.Count(item => item?.IsAutomaticGoalContinuation == true) ?? 0;
+            var recurringPromptCount = items?.Count(item => item?.IsRecurringPrompt == true) ?? 0;
             return $"取消当前会话“{title}”的 {count:N0} 条排队后续？"
                 + Environment.NewLine
                 + "请求正文、模式和附件快照将从队列及恢复记录移除，且不会执行；其他会话不受影响。"
                 + (automaticGoalCount > 0
                     ? Environment.NewLine + $"其中 {automaticGoalCount:N0} 条是自动续作；命中仍活动的对应持续目标时会同时暂停目标。"
+                    : string.Empty)
+                + (recurringPromptCount > 0
+                    ? Environment.NewLine + $"其中 {recurringPromptCount:N0} 条来自循环任务；这里只跳过当前触发，循环计划仍会继续。"
                     : string.Empty);
         }
 
@@ -134,6 +138,8 @@ namespace ColorVision.Copilot
                 }
                 if (item.IsAutomaticGoalContinuation)
                     builder.Append(" · 持续目标");
+                if (item.IsRecurringPrompt)
+                    builder.Append(" · 循环任务");
                 builder.AppendLine();
             }
             if (items.Count > MaximumListedItems)
