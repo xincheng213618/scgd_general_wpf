@@ -78,6 +78,8 @@ namespace ColorVision.Copilot
         private string _pendingActionFeedbackText = string.Empty;
         private string _agentRunNoticeConversationId = string.Empty;
         private string _agentRunNoticeText = string.Empty;
+        private string _completedAgentRunNoticeConversationId = string.Empty;
+        private string _completedAgentRunNoticeText = string.Empty;
         private string _statePersistenceNoticeText = string.Empty;
         private string _statePersistenceNoticeToolTip = string.Empty;
         private string _localCommandResultTitle = string.Empty;
@@ -4045,7 +4047,10 @@ namespace ColorVision.Copilot
                 }
             }
             if (e.Kind == CopilotAgentTaskHostChangeKind.Completed)
+            {
+                CaptureCompletedAgentRunNotice(e.Run);
                 RefreshAgentTasks();
+            }
             if (e.Kind == CopilotAgentTaskHostChangeKind.Started)
                 RemoveQueuedFollowUp(e.Run.Id, removeRecoveryRecord: false);
             else if (e.Kind == CopilotAgentTaskHostChangeKind.Completed)
@@ -4107,27 +4112,88 @@ namespace ColorVision.Copilot
             }
 
             var run = ActiveHostedRun;
-            if (run?.IsAgent != true || string.Equals(run.ConversationId, SelectedConversation?.Id, StringComparison.Ordinal))
+            if (run?.IsAgent == true
+                && !string.Equals(run.ConversationId, SelectedConversation?.Id, StringComparison.Ordinal))
             {
-                ClearAgentRunNotice();
+                var conversation = Conversations.FirstOrDefault(item => string.Equals(item.Id, run.ConversationId, StringComparison.Ordinal));
+                if (conversation == null)
+                {
+                    ClearAgentRunNotice();
+                    return;
+                }
+
+                _agentRunNoticeConversationId = conversation.Id;
+                var status = run.State switch
+                {
+                    CopilotHostedRunState.Queued => "已排队",
+                    CopilotHostedRunState.PauseRequested => "正在暂停",
+                    CopilotHostedRunState.CancelRequested => "正在取消",
+                    _ => "正在运行",
+                };
+                AgentRunNoticeText = $"{conversation.Title} · {status}";
                 return;
             }
 
-            var conversation = Conversations.FirstOrDefault(item => string.Equals(item.Id, run.ConversationId, StringComparison.Ordinal));
-            if (conversation == null)
+            if (string.Equals(
+                    _completedAgentRunNoticeConversationId,
+                    SelectedConversation?.Id,
+                    StringComparison.Ordinal))
             {
-                ClearAgentRunNotice();
-                return;
+                ClearCompletedAgentRunNotice();
+            }
+            if (!string.IsNullOrWhiteSpace(_completedAgentRunNoticeConversationId))
+            {
+                var completedConversation = Conversations.FirstOrDefault(item => string.Equals(
+                    item.Id,
+                    _completedAgentRunNoticeConversationId,
+                    StringComparison.Ordinal));
+                if (completedConversation != null)
+                {
+                    _agentRunNoticeConversationId = completedConversation.Id;
+                    AgentRunNoticeText = _completedAgentRunNoticeText;
+                    return;
+                }
+
+                ClearCompletedAgentRunNotice();
             }
 
-            _agentRunNoticeConversationId = conversation.Id;
-            var status = run.State switch
+            ClearAgentRunNotice();
+        }
+
+        private void CaptureCompletedAgentRunNotice(CopilotHostedAgentRun run)
+        {
+            var conversation = Conversations.FirstOrDefault(item =>
+                string.Equals(item.Id, run.ConversationId, StringComparison.Ordinal));
+            var notice = CopilotAgentRunCompletionNoticePolicy.Create(
+                run,
+                conversation,
+                SelectedConversation?.Id);
+            if (notice == null)
+                return;
+
+            _completedAgentRunNoticeConversationId = notice.ConversationId;
+            _completedAgentRunNoticeText = notice.Text;
+        }
+
+        private void ClearCompletedAgentRunNotice()
+        {
+            _completedAgentRunNoticeConversationId = string.Empty;
+            _completedAgentRunNoticeText = string.Empty;
+        }
+
+        private void ClearAgentRunNoticeForConversation(string conversationId)
+        {
+            if (string.Equals(
+                    _completedAgentRunNoticeConversationId,
+                    conversationId,
+                    StringComparison.Ordinal))
             {
-                CopilotHostedRunState.PauseRequested => "正在暂停",
-                CopilotHostedRunState.CancelRequested => "正在取消",
-                _ => "正在运行",
-            };
-            AgentRunNoticeText = $"{conversation.Title} · {status}";
+                ClearCompletedAgentRunNotice();
+            }
+            if (!string.Equals(_agentRunNoticeConversationId, conversationId, StringComparison.Ordinal))
+                return;
+
+            ClearAgentRunNotice();
         }
 
         private void OpenAgentRunNotice()
@@ -4136,6 +4202,14 @@ namespace ColorVision.Copilot
             if (conversation != null && CanSwitchConversation)
                 SelectConversation(conversation, persist: true, preferredProfileId: conversation.ProfileId);
 
+            if (conversation != null
+                && string.Equals(
+                    conversation.Id,
+                    _completedAgentRunNoticeConversationId,
+                    StringComparison.Ordinal))
+            {
+                ClearCompletedAgentRunNotice();
+            }
             RefreshAgentRunNotice();
         }
 
@@ -7709,8 +7783,7 @@ namespace ColorVision.Copilot
             var wasSelected = ReferenceEquals(target, SelectedConversation);
             CancelConversationTitleGeneration(target.Id);
             var managedAttachments = target.EnumerateReferencedAttachments().ToArray();
-            if (string.Equals(target.Id, _agentRunNoticeConversationId, StringComparison.Ordinal))
-                ClearAgentRunNotice();
+            ClearAgentRunNoticeForConversation(target.Id);
 
             var currentIndex = Conversations.IndexOf(target);
             if (!Conversations.Remove(target))
