@@ -20,6 +20,7 @@ namespace ColorVision.Copilot
 
     internal sealed record CopilotSubagentRunDiagnostic(
         string RunId,
+        string ResumeFromRunId,
         string RoleId,
         CopilotToolExecutionState State,
         CopilotAgentStopReason StopReason,
@@ -103,6 +104,7 @@ namespace ColorVision.Copilot
 
                     runs.Add(new CopilotSubagentRunDiagnostic(
                         trace.DelegatedRunId,
+                        trace.DelegatedResumeFromRunId,
                         roleId,
                         trace.State,
                         trace.DelegatedStopReason,
@@ -165,7 +167,8 @@ namespace ColorVision.Copilot
             }
 
             builder.AppendLine()
-                .Append("边界：子代理由父 Agent 按请求创建并回传结果，不是可切换或可恢复的独立会话。")
+                .Append("边界：子代理由父 Agent 按请求创建并回传结果；同一父请求内，可用完成结果给出的 run_id 续跑同角色且具有有效 checkpoint 的子代理。")
+                .Append("它仍不是可切换、跨请求或应用重启后可恢复的独立会话。")
                 .Append("列表仅来自当前会话保存的限长运行元数据，不显示任务提示、回答正文、隐藏推理或凭据。");
             return builder.ToString();
         }
@@ -263,6 +266,8 @@ namespace ColorVision.Copilot
                     .Append(string.IsNullOrWhiteSpace(run.RunId) ? "ID 待回传" : run.RunId)
                     .Append(" · state=")
                     .Append(run.State);
+                if (!string.IsNullOrWhiteSpace(run.ResumeFromRunId))
+                    builder.Append(" · resumed_from=").Append(run.ResumeFromRunId);
                 if (run.StopReason != CopilotAgentStopReason.None)
                     builder.Append(" · stop=").Append(run.StopReason);
                 builder.AppendLine();

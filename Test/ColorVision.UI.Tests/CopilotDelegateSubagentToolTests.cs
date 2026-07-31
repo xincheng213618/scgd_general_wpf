@@ -130,35 +130,329 @@ public sealed class CopilotDelegateSubagentToolTests
         Assert.Equal(CopilotToolFailureKind.Cancelled, result.FailureKind);
     }
 
+    [Fact]
+    public async Task CompletedRunCanResumeItsSerializedSessionWithinTheSameParentRequest()
+    {
+        var firstCheckpoint = CreateCheckpoint("first");
+        var secondCheckpoint = CreateCheckpoint("second");
+        var runner = new StubRunner(
+            CompletedResult("Initial evidence.", firstCheckpoint),
+            CompletedResult("Follow-up evidence.", secondCheckpoint, sessionResumed: true));
+        var tool = new CopilotDelegateExploreTool(runner);
+        var request = Request();
+
+        var first = await tool.ExecuteAsync(request, Input(), CancellationToken.None);
+        var firstRunId = Assert.IsType<CopilotDelegatedRunUsage>(first.DelegatedRunUsage).RunId;
+        var second = await tool.ExecuteAsync(request, Input(firstRunId), CancellationToken.None);
+
+        Assert.True(first.Success);
+        Assert.True(second.Success);
+        Assert.NotEqual(firstRunId, second.DelegatedRunUsage?.RunId);
+        Assert.Equal(firstRunId, second.DelegatedRunUsage?.ResumeFromRunId);
+        Assert.Contains($"resumed_from: {firstRunId}", second.Content, StringComparison.Ordinal);
+        Assert.Contains(
+            $"\"resumed_from\":\"{firstRunId}\"",
+            CopilotFrameworkToolResultFormatter.Format(new CopilotToolExecutionOutcome
+            {
+                Result = second,
+                Execution = new CopilotToolExecutionInfo { ToolName = "DelegateExplore" },
+            }),
+            StringComparison.Ordinal);
+        Assert.Equal(2, runner.Requests.Count);
+        Assert.Equal(firstRunId, runner.Requests[1].ResumeFromRunId);
+        Assert.Same(firstCheckpoint, runner.Requests[1].ResumeCheckpoint);
+        Assert.Contains("resume_succeeded: true", second.Content, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ResumeHandleCannotCrossParentRequests()
+    {
+        var runner = new StubRunner(CompletedResult("Initial evidence.", CreateCheckpoint("first")));
+        var tool = new CopilotDelegateExploreTool(runner);
+        var first = await tool.ExecuteAsync(Request(), Input(), CancellationToken.None);
+        var firstRunId = Assert.IsType<CopilotDelegatedRunUsage>(first.DelegatedRunUsage).RunId;
+
+        var rejected = await tool.ExecuteAsync(Request(), Input(firstRunId), CancellationToken.None);
+
+        Assert.False(rejected.Success);
+        Assert.Equal(CopilotToolFailureKind.Validation, rejected.FailureKind);
+        Assert.Contains("not a completed run from this parent request", rejected.ErrorMessage, StringComparison.Ordinal);
+        Assert.Single(runner.Requests);
+    }
+
+    [Fact]
+    public async Task CompletedRunWithoutCheckpointFailsClosedOnResume()
+    {
+        var runner = new StubRunner(CompletedResult("Initial evidence.", checkpoint: null));
+        var tool = new CopilotDelegateExploreTool(runner);
+        var request = Request();
+        var first = await tool.ExecuteAsync(request, Input(), CancellationToken.None);
+        var firstRunId = Assert.IsType<CopilotDelegatedRunUsage>(first.DelegatedRunUsage).RunId;
+
+        var rejected = await tool.ExecuteAsync(request, Input(firstRunId), CancellationToken.None);
+
+        Assert.False(rejected.Success);
+        Assert.Equal(CopilotToolFailureKind.Validation, rejected.FailureKind);
+        Assert.Contains("did not produce a structurally valid resumable checkpoint", rejected.ErrorMessage, StringComparison.Ordinal);
+        Assert.Single(runner.Requests);
+    }
+
+    [Fact]
+    public async Task ActiveRunAndDifferentRoleHandlesFailClosed()
+    {
+        var request = Request();
+        var coordinator = new CopilotSubagentCoordinator(request);
+        var lease = await coordinator.TryAcquireAsync(
+            CopilotSubagentRoleCatalog.ExploreRoleId,
+            CancellationToken.None);
+        Assert.NotNull(lease);
+        var checkpoint = CreateCheckpoint("active");
+        try
+        {
+            Assert.False(coordinator.TryResolveCompletedRun(
+                CopilotSubagentRoleCatalog.ExploreRoleId,
+                lease.RunId,
+                out _,
+                out var activeFailureKind,
+                out var activeError));
+            Assert.Equal(CopilotToolFailureKind.Conflict, activeFailureKind);
+            Assert.Contains("still active", activeError, StringComparison.Ordinal);
+            coordinator.RecordCompleted(
+                CopilotSubagentRoleCatalog.ExploreRoleId,
+                lease.RunId,
+                checkpoint);
+        }
+        finally
+        {
+            lease.Dispose();
+        }
+
+        Assert.False(coordinator.TryResolveCompletedRun(
+            CopilotSubagentRoleCatalog.ScoutRoleId,
+            lease.RunId,
+            out _,
+            out var roleFailureKind,
+            out var roleError));
+        Assert.Equal(CopilotToolFailureKind.Validation, roleFailureKind);
+        Assert.Contains("belongs to role 'explore'", roleError, StringComparison.Ordinal);
+        Assert.True(coordinator.TryResolveCompletedRun(
+            CopilotSubagentRoleCatalog.ExploreRoleId,
+            lease.RunId,
+            out var resolvedCheckpoint,
+            out _,
+            out _));
+        Assert.Same(checkpoint, resolvedCheckpoint);
+    }
+
+    [Fact]
+    public async Task FreshFallbackAfterRequestedResumeIsRejectedAndCannotBeChained()
+    {
+        var runner = new StubRunner(
+            CompletedResult("Initial evidence.", CreateCheckpoint("first")),
+            CompletedResult("Fresh fallback evidence.", CreateCheckpoint("fallback")));
+        var tool = new CopilotDelegateExploreTool(runner);
+        var request = Request();
+        var first = await tool.ExecuteAsync(request, Input(), CancellationToken.None);
+        var firstRunId = Assert.IsType<CopilotDelegatedRunUsage>(first.DelegatedRunUsage).RunId;
+
+        var rejected = await tool.ExecuteAsync(request, Input(firstRunId), CancellationToken.None);
+
+        Assert.False(rejected.Success);
+        Assert.Equal(CopilotToolFailureKind.Internal, rejected.FailureKind);
+        Assert.Contains("did not resume", rejected.ErrorMessage, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("resume_succeeded: false", rejected.Content, StringComparison.Ordinal);
+        var rejectedRunId = Assert.IsType<CopilotDelegatedRunUsage>(rejected.DelegatedRunUsage).RunId;
+        var chained = await tool.ExecuteAsync(request, Input(rejectedRunId), CancellationToken.None);
+        Assert.False(chained.Success);
+        Assert.Equal(CopilotToolFailureKind.Validation, chained.FailureKind);
+        Assert.Contains("not a completed run", chained.ErrorMessage, StringComparison.Ordinal);
+        Assert.Equal(2, runner.Requests.Count);
+    }
+
+    [Fact]
+    public void ChildRequestInjectsTheResolvedCheckpointWithoutVisibleHistoryReplay()
+    {
+        var checkpoint = CreateCheckpoint("source");
+        var role = CopilotSubagentRoleCatalog.Default.GetRequired(CopilotSubagentRoleCatalog.ExploreRoleId);
+        var parent = Request();
+        var child = CopilotSubagentRunner.CreateChildRequest(
+            parent,
+            role,
+            new CopilotSubagentRunRequest
+            {
+                RunId = "explore-child",
+                ResumeFromRunId = "explore-source",
+                ResumeCheckpoint = checkpoint,
+                Task = "Continue the bounded investigation.",
+                RequestTokenBudget = CopilotAgentRunBudget.MinimumRequestTokenBudget,
+            });
+
+        Assert.Same(checkpoint, child.SessionCheckpoint);
+        Assert.Empty(child.History);
+    }
+
+    [Fact]
+    public void SameRoleFollowUpKeepsCheckpointRuntimeSurfacesCompatible()
+    {
+        var role = CopilotSubagentRoleCatalog.Default.GetRequired(CopilotSubagentRoleCatalog.ExploreRoleId);
+        var parent = Request();
+        var firstChild = CopilotSubagentRunner.CreateChildRequest(
+            parent,
+            role,
+            new CopilotSubagentRunRequest
+            {
+                RunId = "explore-first",
+                Task = "Inspect the workspace and return one verified finding.",
+                RequestTokenBudget = CopilotAgentRunBudget.MinimumRequestTokenBudget,
+            });
+        var tools = role.CreateTools();
+        var toolNames = tools.Select(tool => tool.Name).ToArray();
+        var catalog = new CopilotCapabilityCatalog();
+        var capabilitySnapshot = catalog.PublishSource(
+            CopilotCapabilitySourceKind.BuiltIn,
+            role.Id,
+            "ColorVision " + role.DisplayName,
+            tools);
+        var toolExecutor = new CopilotToolExecutor();
+        var checkpoint = CopilotAgentSessionCheckpoint.Create(
+            firstChild.Profile,
+            "{}",
+            capabilitySnapshot,
+            availableToolNames: toolNames,
+            environmentContext: CopilotAgentEnvironmentContext.Capture(firstChild),
+            taskIntentText: firstChild.TaskIntentText,
+            hookSurfaceSnapshot: toolExecutor.GetHookSurfaceSnapshot());
+        Assert.NotNull(checkpoint);
+        var resumedChild = CopilotSubagentRunner.CreateChildRequest(
+            parent,
+            role,
+            new CopilotSubagentRunRequest
+            {
+                RunId = "explore-follow-up",
+                ResumeFromRunId = "explore-first",
+                ResumeCheckpoint = checkpoint,
+                Task = "Continue from the prior evidence and verify the remaining call path.",
+                RequestTokenBudget = CopilotAgentRunBudget.MinimumRequestTokenBudget,
+            });
+
+        var compatibility = checkpoint.EvaluateFor(
+            resumedChild.Profile,
+            capabilitySnapshot,
+            toolNames,
+            CopilotAgentEnvironmentContext.Capture(resumedChild),
+            toolExecutor.GetHookSurfaceSnapshot());
+
+        Assert.True(compatibility.CanResume);
+        Assert.Equal(CopilotAgentCheckpointCompatibilityKind.Compatible, compatibility.Kind);
+        Assert.Empty(resumedChild.History);
+    }
+
+    [Fact]
+    public void ResumedChildCannotUseThePreselectedEvidenceShortcut()
+    {
+        var role = CopilotSubagentRoleCatalog.Default.GetRequired(CopilotSubagentRoleCatalog.ExploreRoleId);
+        var request = new CopilotAgentRequest
+        {
+            Mode = CopilotAgentMode.Code,
+            Profile = new CopilotProfileConfig(),
+            UserText = "Read Coordinator.cs and Explore.cs.",
+            TaskIntentText = "Review the two named files.",
+            ReadableLocalFilePaths = [@"C:\workspace\Coordinator.cs", @"C:\workspace\Explore.cs"],
+            PreferBatchReadLocalFiles = true,
+            SessionCheckpoint = CreateCheckpoint("resume"),
+        };
+
+        Assert.False(CopilotSubagentRunner.CanUsePreselectedEvidence(request, role));
+    }
+
+    [Fact]
+    public async Task IncompatibleCheckpointFailsBeforeCreatingAProviderClient()
+    {
+        var role = CopilotSubagentRoleCatalog.Default.GetRequired(CopilotSubagentRoleCatalog.ExploreRoleId);
+        var runner = new CopilotSubagentRunner(_ => throw new InvalidOperationException("provider must not be created"));
+
+        var result = await runner.RunAsync(
+            Request(),
+            role,
+            new CopilotSubagentRunRequest
+            {
+                RunId = "explore-incompatible",
+                ResumeFromRunId = "explore-source",
+                ResumeCheckpoint = CreateCheckpoint("wrong-profile"),
+                Task = "Continue the bounded investigation.",
+                RequestTokenBudget = CopilotAgentRunBudget.MinimumRequestTokenBudget,
+            },
+            CancellationToken.None);
+
+        Assert.Equal(CopilotAgentStopReason.Interrupted, result.StopReason);
+        Assert.False(result.SessionResumed);
+        Assert.Contains("ProfileChanged", result.ResumeFailureReason, StringComparison.Ordinal);
+        Assert.Null(result.SessionCheckpoint);
+    }
+
     private static CopilotAgentRequest Request()
     {
         return new CopilotAgentRequest
         {
             Mode = CopilotAgentMode.Auto,
+            Profile = new CopilotProfileConfig(),
             UserText = @"只读审计 C:\workspace，列出 1 条可验证的问题；不要修改文件。",
             SearchRootPaths = [@"C:\workspace"],
         };
     }
 
-    private static CopilotAgentToolInput Input()
+    private static CopilotAgentToolInput Input(string? resumeFromRunId = null)
     {
+        var arguments = new Dictionary<string, object?>
+        {
+            ["task"] = "Inspect the workspace and return one verified finding.",
+        };
+        if (!string.IsNullOrWhiteSpace(resumeFromRunId))
+            arguments["resume_from"] = resumeFromRunId;
         return new CopilotAgentToolInput
         {
-            Arguments = new Dictionary<string, object?>
-            {
-                ["task"] = "Inspect the workspace and return one verified finding.",
-            },
+            Arguments = arguments,
         };
     }
 
-    private sealed class StubRunner(CopilotSubagentResult result) : ICopilotSubagentRunner
+    private static CopilotSubagentResult CompletedResult(
+        string answer,
+        CopilotAgentSessionCheckpoint? checkpoint,
+        bool sessionResumed = false) => new()
     {
+        Answer = answer,
+        StopReason = CopilotAgentStopReason.Completed,
+        HasSuccessfulEvidence = true,
+        ToolNames = ["ReadLocalFile"],
+        SessionResumed = sessionResumed,
+        SessionCheckpoint = checkpoint,
+    };
+
+    private static CopilotAgentSessionCheckpoint CreateCheckpoint(string marker)
+    {
+        var checkpoint = new CopilotAgentSessionCheckpoint
+        {
+            ProfileKey = "profile-" + marker,
+            SerializedSessionJson = "{\"marker\":\"" + marker + "\"}",
+        };
+        Assert.True(checkpoint.IsStructurallyValid());
+        return checkpoint;
+    }
+
+    private sealed class StubRunner(params CopilotSubagentResult[] results) : ICopilotSubagentRunner
+    {
+        private int _index;
+
+        public List<CopilotSubagentRunRequest> Requests { get; } = new();
+
         public Task<CopilotSubagentResult> RunAsync(
             CopilotAgentRequest parentRequest,
             CopilotSubagentRoleDescriptor role,
             CopilotSubagentRunRequest runRequest,
             CancellationToken cancellationToken)
         {
+            Requests.Add(runRequest);
+            var result = results[_index++];
             return Task.FromResult(new CopilotSubagentResult
             {
                 RoleId = role.Id,
@@ -174,6 +468,9 @@ public sealed class CopilotDelegateSubagentToolTests
                 UsedBudgetFinalization = result.UsedBudgetFinalization,
                 UsedPreselectedEvidence = result.UsedPreselectedEvidence,
                 HasSuccessfulEvidence = result.HasSuccessfulEvidence,
+                SessionResumed = result.SessionResumed,
+                ResumeFailureReason = result.ResumeFailureReason,
+                SessionCheckpoint = result.SessionCheckpoint,
             });
         }
     }

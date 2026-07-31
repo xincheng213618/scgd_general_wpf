@@ -80,6 +80,8 @@ namespace ColorVision.Copilot
 
         public string DelegatedRunId { get; set; } = string.Empty;
 
+        public string DelegatedResumeFromRunId { get; set; } = string.Empty;
+
         public string DelegatedRoleId { get; set; } = string.Empty;
 
         public CopilotAgentStopReason DelegatedStopReason { get; set; }
@@ -177,6 +179,8 @@ namespace ColorVision.Copilot
         public bool ShouldSerializeErrorMessage() => !string.IsNullOrEmpty(ErrorMessage);
 
         public bool ShouldSerializeDelegatedRunId() => !string.IsNullOrEmpty(DelegatedRunId);
+
+        public bool ShouldSerializeDelegatedResumeFromRunId() => !string.IsNullOrEmpty(DelegatedResumeFromRunId);
 
         public bool ShouldSerializeDelegatedRoleId() => !string.IsNullOrEmpty(DelegatedRoleId);
 
@@ -308,6 +312,8 @@ namespace ColorVision.Copilot
                     builder.AppendLine().Append("Child run: ").Append(DelegatedRunId);
                     if (!string.IsNullOrWhiteSpace(DelegatedRoleId))
                         builder.Append(" · role: ").Append(DelegatedRoleId);
+                    if (!string.IsNullOrWhiteSpace(DelegatedResumeFromRunId))
+                        builder.Append(" · resumed from: ").Append(DelegatedResumeFromRunId);
                     builder.Append(" · stop: ").Append(DelegatedStopReason)
                         .Append(" · provider calls: ").Append(DelegatedProviderCalls)
                         .Append(" · tool calls: ").Append(DelegatedToolCalls);
@@ -424,6 +430,7 @@ namespace ColorVision.Copilot
                 {
                     entry.DelegatedRoleId = SanitizeIdentifier(result.DelegatedRunUsage.RoleId);
                     entry.DelegatedRunId = SanitizeIdentifier(result.DelegatedRunUsage.RunId);
+                    entry.DelegatedResumeFromRunId = SanitizeIdentifier(result.DelegatedRunUsage.ResumeFromRunId);
                     entry.DelegatedStopReason = result.DelegatedRunUsage.StopReason;
                     entry.DelegatedRequestTokenBudget = Math.Max(0, result.DelegatedRunUsage.RequestTokenBudget);
                     entry.DelegatedConsumedTokens = Math.Max(0, result.DelegatedRunUsage.ConsumedTokens);
@@ -650,6 +657,7 @@ namespace ColorVision.Copilot
             var originalFailureCode = FailureCode;
             var originalDelegatedRoleId = DelegatedRoleId;
             var originalDelegatedRunId = DelegatedRunId;
+            var originalDelegatedResumeFromRunId = DelegatedResumeFromRunId;
             var originalDelegatedStopReason = DelegatedStopReason;
             var originalDelegatedRequestTokenBudget = DelegatedRequestTokenBudget;
             var originalDelegatedConsumedTokens = DelegatedConsumedTokens;
@@ -684,6 +692,7 @@ namespace ColorVision.Copilot
                 : CopilotToolFailureCode.Normalize(FailureCode);
             DelegatedRoleId = SanitizeIdentifier(DelegatedRoleId);
             DelegatedRunId = SanitizeIdentifier(DelegatedRunId);
+            DelegatedResumeFromRunId = SanitizeIdentifier(DelegatedResumeFromRunId);
             DelegatedRequestTokenBudget = Math.Max(0, DelegatedRequestTokenBudget);
             DelegatedConsumedTokens = Math.Max(0, DelegatedConsumedTokens);
             DelegatedProviderCalls = Math.Max(0, DelegatedProviderCalls);
@@ -728,6 +737,7 @@ namespace ColorVision.Copilot
                 || !string.Equals(originalFailureCode, FailureCode, StringComparison.Ordinal)
                 || !string.Equals(originalDelegatedRoleId, DelegatedRoleId, StringComparison.Ordinal)
                 || !string.Equals(originalDelegatedRunId, DelegatedRunId, StringComparison.Ordinal)
+                || !string.Equals(originalDelegatedResumeFromRunId, DelegatedResumeFromRunId, StringComparison.Ordinal)
                 || originalDelegatedStopReason != DelegatedStopReason
                 || originalDelegatedRequestTokenBudget != DelegatedRequestTokenBudget
                 || originalDelegatedConsumedTokens != DelegatedConsumedTokens

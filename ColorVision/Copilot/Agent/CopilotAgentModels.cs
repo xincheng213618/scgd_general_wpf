@@ -501,6 +501,8 @@ namespace ColorVision.Copilot
 
         public string RunId { get; init; } = string.Empty;
 
+        public string ResumeFromRunId { get; init; } = string.Empty;
+
         public int RequestTokenBudget { get; init; }
 
         public long QueueDurationMs { get; init; }

@@ -1,5 +1,6 @@
 #pragma warning disable CA1001
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -24,9 +25,13 @@ namespace ColorVision.Copilot
         public const int MaximumConcurrentRuns = 2;
         public const int MaximumRunTokenBudget = 16_384;
         public const int MaximumTotalTokenBudget = MaximumConcurrentRuns * MaximumRunTokenBudget;
+        public const int MaximumTrackedCompletedRuns = 8;
 
         private readonly object _syncRoot = new();
         private readonly SemaphoreSlim _slots = new(MaximumConcurrentRuns, MaximumConcurrentRuns);
+        private readonly HashSet<string> _activeRunIds = new(StringComparer.Ordinal);
+        private readonly Dictionary<string, CompletedSubagentRun> _completedRuns = new(StringComparer.Ordinal);
+        private readonly Queue<string> _completedRunOrder = new();
         private readonly int _totalTokenBudget;
         private readonly int _perRunTokenBudget;
         private long _committedTokens;
@@ -65,11 +70,83 @@ namespace ColorVision.Copilot
             }
 
             stopwatch.Stop();
+            var runId = normalizedRoleId + "-" + Guid.NewGuid().ToString("N")[..12];
+            lock (_syncRoot)
+                _activeRunIds.Add(runId);
             return new CopilotSubagentLease(
                 this,
-                normalizedRoleId + "-" + Guid.NewGuid().ToString("N")[..12],
+                runId,
                 tokenBudget,
                 stopwatch.ElapsedMilliseconds);
+        }
+
+        public bool TryResolveCompletedRun(
+            string roleId,
+            string runId,
+            out CopilotAgentSessionCheckpoint? checkpoint,
+            out CopilotToolFailureKind failureKind,
+            out string errorMessage)
+        {
+            var normalizedRoleId = NormalizeRoleId(roleId);
+            var normalizedRunId = (runId ?? string.Empty).Trim();
+            checkpoint = null;
+            failureKind = CopilotToolFailureKind.Validation;
+            errorMessage = string.Empty;
+            lock (_syncRoot)
+            {
+                if (_activeRunIds.Contains(normalizedRunId))
+                {
+                    failureKind = CopilotToolFailureKind.Conflict;
+                    errorMessage = $"Subagent run '{normalizedRunId}' is still active and cannot be resumed.";
+                    return false;
+                }
+                if (!_completedRuns.TryGetValue(normalizedRunId, out var completed))
+                {
+                    errorMessage = $"Subagent run '{normalizedRunId}' is not a completed run from this parent request.";
+                    return false;
+                }
+                if (!string.Equals(completed.RoleId, normalizedRoleId, StringComparison.Ordinal))
+                {
+                    errorMessage = $"Subagent run '{normalizedRunId}' belongs to role '{completed.RoleId}', not '{normalizedRoleId}'.";
+                    return false;
+                }
+                if (completed.Checkpoint?.IsStructurallyValid() != true)
+                {
+                    errorMessage = $"Subagent run '{normalizedRunId}' did not produce a structurally valid resumable checkpoint.";
+                    return false;
+                }
+
+                checkpoint = completed.Checkpoint;
+                failureKind = CopilotToolFailureKind.None;
+                return true;
+            }
+        }
+
+        public void RecordCompleted(
+            string roleId,
+            string runId,
+            CopilotAgentSessionCheckpoint? checkpoint)
+        {
+            var normalizedRoleId = NormalizeRoleId(roleId);
+            var normalizedRunId = (runId ?? string.Empty).Trim();
+            lock (_syncRoot)
+            {
+                if (!_activeRunIds.Contains(normalizedRunId)
+                    || _completedRuns.ContainsKey(normalizedRunId))
+                {
+                    return;
+                }
+
+                _completedRuns.Add(
+                    normalizedRunId,
+                    new CompletedSubagentRun(normalizedRoleId, checkpoint));
+                _completedRunOrder.Enqueue(normalizedRunId);
+                while (_completedRunOrder.Count > MaximumTrackedCompletedRuns)
+                {
+                    var expiredRunId = _completedRunOrder.Dequeue();
+                    _completedRuns.Remove(expiredRunId);
+                }
+            }
         }
 
         private static string NormalizeRoleId(string roleId)
@@ -84,12 +161,17 @@ namespace ColorVision.Copilot
         {
             lock (_syncRoot)
             {
+                _activeRunIds.Remove(lease.RunId);
                 _reservedTokens = Math.Max(0, _reservedTokens - lease.RequestTokenBudget);
                 if (consumedTokens.HasValue)
                     _committedTokens += Math.Max(0, consumedTokens.Value);
             }
             _slots.Release();
         }
+
+        private sealed record CompletedSubagentRun(
+            string RoleId,
+            CopilotAgentSessionCheckpoint? Checkpoint);
 
         internal sealed class CopilotSubagentLease : IDisposable
         {

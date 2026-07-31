@@ -58,12 +58,13 @@ public sealed class CopilotSubagentDiagnosticsTests
         Assert.Contains("单次硬上限 16,384 tokens", report);
         Assert.Contains("请求合计硬上限 32,768 tokens", report);
         Assert.Contains("- explore · Explore · 工作区只读 · 子模式 Code", report);
-        Assert.Contains("来源：ColorVision [builtin] v9 · tool DelegateExplore", report);
+        Assert.Contains("来源：ColorVision [builtin] v10 · tool DelegateExplore", report);
         Assert.Contains("SearchFiles, GrepText, ReadLocalFile, ListDirectory", report);
         Assert.Contains("- scout · Scout · 公共网页只读 · 子模式 Web", report);
-        Assert.Contains("来源：ColorVision [builtin] v2 · tool DelegateScout", report);
+        Assert.Contains("来源：ColorVision [builtin] v3 · tool DelegateScout", report);
         Assert.Contains("WebSearch, FetchUrl", report);
-        Assert.Contains("不是可切换或可恢复的独立会话", report);
+        Assert.Contains("同一父请求内，可用完成结果给出的 run_id 续跑同角色", report);
+        Assert.Contains("不是可切换、跨请求或应用重启后可恢复的独立会话", report);
         Assert.Contains("当前会话没有可见的子代理运行轨迹", report);
     }
 
@@ -93,6 +94,7 @@ public sealed class CopilotSubagentDiagnosticsTests
             ToolName = "DelegateExplore",
             State = CopilotToolExecutionState.Completed,
             DelegatedRunId = "explore-new",
+            DelegatedResumeFromRunId = "explore-source",
             DelegatedStopReason = CopilotAgentStopReason.Completed,
             DelegatedRequestTokenBudget = 8_192,
             DelegatedConsumedTokens = 2_048,
@@ -112,9 +114,10 @@ public sealed class CopilotSubagentDiagnosticsTests
 
         Assert.Equal(2, runs.Count);
         Assert.Equal("explore-new", runs[0].RunId);
+        Assert.Equal("explore-source", runs[0].ResumeFromRunId);
         Assert.Equal("explore", runs[0].RoleId);
         Assert.Contains("显示 1 / 2 次（新到旧）", report);
-        Assert.Contains("#1 · explore · explore-new · state=Completed · stop=Completed", report);
+        Assert.Contains("#1 · explore · explore-new · state=Completed · resumed_from=explore-source · stop=Completed", report);
         Assert.Contains("耗时 1.5s · 排队 125ms · tokens 2,048/8,192 · 模型 2 · 工具 5 · 工具面 3/4", report);
         Assert.Contains("另有 1 次较早运行未显示", report);
         Assert.DoesNotContain("scout-old", report);
