@@ -63,6 +63,99 @@ public sealed class CopilotBackgroundShellOutputDeliveryTests
     }
 
     [Fact]
+    public async Task SteeringRejectsMessagesBeyondPendingCountBudget()
+    {
+        using var provider = new BlockingSteeringChatClient();
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry([]),
+            new CopilotAgentContextBuilder(),
+            new CopilotToolExecutor(),
+            _ => provider,
+            EmptyExternalToolProvider.Instance,
+            new CopilotCapabilityCatalog());
+        var request = CreateRequest(
+            "conversation",
+            "Wait while the steering queue fills.");
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var runTask = runtime.RunAsync(
+            request,
+            _ => { },
+            timeout.Token);
+        await provider.StreamStarted.Task.WaitAsync(
+            TimeSpan.FromSeconds(5));
+
+        var accepted = Enumerable.Range(1, 9)
+            .Select(index => runtime.TryEnqueueSteeringMessage(
+                request.TaskId,
+                $"steering {index}"))
+            .ToArray();
+        provider.ReleaseStream.TrySetResult();
+        var result = await runTask.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.All(accepted[..8], Assert.True);
+        Assert.False(accepted[8]);
+        Assert.Equal(
+            8,
+            result.TaskEventJournal.Events.Count(
+                item => item.Type
+                    == CopilotAgentTaskEventType.SteeringQueued));
+        Assert.DoesNotContain(
+            provider.StreamingCalls.SelectMany(call => call),
+            message => message.Text.Contains(
+                "steering 9",
+                StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task SteeringRejectsMessagesBeyondPendingCharacterBudget()
+    {
+        using var provider = new BlockingSteeringChatClient();
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry([]),
+            new CopilotAgentContextBuilder(),
+            new CopilotToolExecutor(),
+            _ => provider,
+            EmptyExternalToolProvider.Instance,
+            new CopilotCapabilityCatalog());
+        var request = CreateRequest(
+            "conversation",
+            "Wait while the steering character budget fills.");
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var runTask = runtime.RunAsync(
+            request,
+            _ => { },
+            timeout.Token);
+        await provider.StreamStarted.Task.WaitAsync(
+            TimeSpan.FromSeconds(5));
+
+        var firstAccepted = runtime.TryEnqueueSteeringMessage(
+            request.TaskId,
+            new string('a', 16_000));
+        var secondAccepted = runtime.TryEnqueueSteeringMessage(
+            request.TaskId,
+            new string('b', 16_000));
+        var overflowAccepted = runtime.TryEnqueueSteeringMessage(
+            request.TaskId,
+            "overflow");
+        provider.ReleaseStream.TrySetResult();
+        var result = await runTask.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.True(firstAccepted);
+        Assert.True(secondAccepted);
+        Assert.False(overflowAccepted);
+        Assert.Equal(
+            2,
+            result.TaskEventJournal.Events.Count(
+                item => item.Type
+                    == CopilotAgentTaskEventType.SteeringQueued));
+        Assert.DoesNotContain(
+            provider.StreamingCalls.SelectMany(call => call),
+            message => message.Text.Contains(
+                "overflow",
+                StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task SteeringIsRejectedAfterAgentLoopEntersFinalization()
     {
         using var provider = new CapturingChatClient();

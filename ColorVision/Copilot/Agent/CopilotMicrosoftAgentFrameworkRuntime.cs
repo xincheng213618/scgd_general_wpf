@@ -27,6 +27,9 @@ namespace ColorVision.Copilot
         private const int HarnessFunctionIterationOverhead = 8;
 
         private const int MaxSteeringMessageLength = 16_000;
+        private const int MaxPendingSteeringMessages = 8;
+        private const int MaxPendingSteeringCharacters = 32_000;
+        private const string SteeringMessageIdPrefix = "colorvision-steering-";
 
         private const string CodeFindingEvidenceInstruction =
             "When reporting a code audit or review finding, require evidence for a specific incorrect behavior, violated contract, security or reliability risk, or reproducible failure, and explain the causal code path. A constant or limit, style preference, missing optional feature, hypothetical scenario, or words such as 'may', 'might', 'could', or '可能' are not evidence by themselves. Never label a claim verified while saying required implementation was not observed or asking the user to inspect it later. If the observations do not prove a defect, say that no verified finding was established instead of manufacturing one.";
@@ -152,9 +155,43 @@ namespace ColorVision.Copilot
                             return false;
                         }
 
+                        var pendingMessages = activeContext.MessageInjector
+                            .GetPendingMessagesAsync(
+                                activeContext.Session,
+                                CancellationToken.None)
+                            .GetAwaiter()
+                            .GetResult();
+                        var pendingSteeringCount = 0;
+                        long pendingSteeringCharacters = 0;
+                        foreach (var pendingMessage in pendingMessages)
+                        {
+                            if (pendingMessage.MessageId?.StartsWith(
+                                SteeringMessageIdPrefix,
+                                StringComparison.Ordinal) != true)
+                            {
+                                continue;
+                            }
+
+                            pendingSteeringCount++;
+                            pendingSteeringCharacters += pendingMessage.Text.Length;
+                        }
+                        if (pendingSteeringCount >= MaxPendingSteeringMessages
+                            || pendingSteeringCharacters + normalized.Length
+                                > MaxPendingSteeringCharacters)
+                        {
+                            return false;
+                        }
+
+                        var steeringMessage = new Microsoft.Extensions.AI.ChatMessage(
+                            ChatRole.User,
+                            normalized)
+                        {
+                            MessageId = SteeringMessageIdPrefix
+                                + Guid.NewGuid().ToString("N"),
+                        };
                         activeContext.MessageInjector.EnqueueMessagesAsync(activeContext.Session,
                         [
-                            new Microsoft.Extensions.AI.ChatMessage(ChatRole.User, normalized),
+                            steeringMessage,
                         ], CancellationToken.None).GetAwaiter().GetResult();
                         activeContext.TaskEventJournal.RecordSteering(normalized);
                         return true;
