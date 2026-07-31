@@ -915,7 +915,8 @@ namespace ColorVision.Copilot
                 taskEventJournalBuilder,
                 emit,
                 sessionResumed,
-                () => answerText.ToString());
+                () => answerText.ToString(),
+                steeringRegistration.GetDeliveredSteeringMessages);
 
             var recoveredTaskLedger = await CaptureTaskLedgerAsync(todoProvider, modeProvider, session, sessionResumed, cancellationToken);
             taskEventJournalBuilder.RecordTaskLedger(recoveredTaskLedger, sessionResumed ? "recovered" : "initial");
@@ -1066,6 +1067,10 @@ namespace ColorVision.Copilot
                     {
                         emit(CopilotAgentEvent.RuntimeDiagnostic(
                             $"Agent provider received {deliveredSteeringCount} queued user steering instruction(s)."));
+                        await liveCheckpointPublisher.TryPublishAsync(
+                            agent,
+                            session,
+                            agentLoopCancellation.Token);
                     }
 
                     if (approvalRequests.Count == 0)
@@ -1663,7 +1668,8 @@ namespace ColorVision.Copilot
                         requestedCheckpoint?.ConversationMemory,
                         request.History,
                         request.UserText,
-                        answerText.ToString());
+                        answerText.ToString(),
+                        steeringRegistration.GetDeliveredSteeringMessages());
                     sessionCheckpoint = CopilotAgentSessionCheckpoint.Create(
                         request.Profile,
                         serializedSession.GetRawText(),
@@ -2795,6 +2801,7 @@ namespace ColorVision.Copilot
             private readonly Action<CopilotAgentEvent> _emit;
             private readonly bool _sessionResumed;
             private readonly Func<string> _answerText;
+            private readonly Func<IReadOnlyList<string>> _deliveredSteeringMessages;
             private CopilotAgentSessionCheckpoint? _latestCheckpoint;
             private CopilotAgentTaskLedgerSnapshot? _latestTaskLedger;
             private int _publishing;
@@ -2813,7 +2820,8 @@ namespace ColorVision.Copilot
                 CopilotAgentTaskEventJournalBuilder taskEventJournalBuilder,
                 Action<CopilotAgentEvent> emit,
                 bool sessionResumed,
-                Func<string> answerText)
+                Func<string> answerText,
+                Func<IReadOnlyList<string>> deliveredSteeringMessages)
             {
                 _request = request;
                 _requestedCheckpoint = requestedCheckpoint;
@@ -2829,6 +2837,7 @@ namespace ColorVision.Copilot
                 _emit = emit;
                 _sessionResumed = sessionResumed;
                 _answerText = answerText;
+                _deliveredSteeringMessages = deliveredSteeringMessages;
             }
 
             public CopilotAgentSessionCheckpoint? LatestCheckpoint => Volatile.Read(ref _latestCheckpoint);
@@ -2862,7 +2871,8 @@ namespace ColorVision.Copilot
                         _requestedCheckpoint?.ConversationMemory,
                         _request.History,
                         _request.UserText,
-                        _answerText());
+                        _answerText(),
+                        _deliveredSteeringMessages());
                     var checkpoint = CopilotAgentSessionCheckpoint.Create(
                         _request.Profile,
                         serializedSession.GetRawText(),
@@ -4102,7 +4112,8 @@ namespace ColorVision.Copilot
             CopilotAgentTaskEventJournalBuilder taskEventJournal)
         {
             private readonly object _syncRoot = new();
-            private readonly Dictionary<string, string> _undeliveredSteeringMessages = new(StringComparer.Ordinal);
+            private readonly List<TrackedSteeringMessage> _undeliveredSteeringMessages = new();
+            private readonly List<string> _deliveredSteeringMessages = new();
 
             public string ConversationId { get; } = conversationId;
 
@@ -4129,21 +4140,21 @@ namespace ColorVision.Copilot
                         [message],
                         CancellationToken.None).GetAwaiter().GetResult();
                     TaskEventJournal.RecordSteering(normalizedText);
-                    _undeliveredSteeringMessages.Add(
+                    _undeliveredSteeringMessages.Add(new TrackedSteeringMessage(
                         messageId,
-                        normalizedText);
+                        normalizedText));
                 }
             }
 
             public async Task<int> RecordDeliveredSteeringMessagesAsync(
                 CancellationToken cancellationToken)
             {
-                string[] trackedMessageIds;
+                TrackedSteeringMessage[] trackedMessages;
                 lock (_syncRoot)
                 {
-                    if (_undeliveredSteeringMessages.Count == 0)
+                    trackedMessages = _undeliveredSteeringMessages.ToArray();
+                    if (trackedMessages.Length == 0)
                         return 0;
-                    trackedMessageIds = _undeliveredSteeringMessages.Keys.ToArray();
                 }
 
                 var pendingMessageIds = (await MessageInjector
@@ -4152,23 +4163,48 @@ namespace ColorVision.Copilot
                     .Where(messageId => !string.IsNullOrWhiteSpace(messageId))
                     .ToHashSet(StringComparer.Ordinal);
                 var deliveredCount = 0;
+                var deliveredMessages = new List<string>();
                 lock (_syncRoot)
                 {
-                    foreach (var messageId in trackedMessageIds)
+                    foreach (var message in trackedMessages)
                     {
-                        if (pendingMessageIds.Contains(messageId)
-                            || !_undeliveredSteeringMessages.Remove(
-                                messageId,
-                                out var message))
+                        if (pendingMessageIds.Contains(message.MessageId)
+                            || !_undeliveredSteeringMessages.Remove(message))
                         {
                             continue;
                         }
 
-                        TaskEventJournal.RecordSteeringDelivered(message);
+                        TaskEventJournal.RecordSteeringDelivered(message.Text);
+                        deliveredMessages.Add(message.Text);
                         deliveredCount++;
+                    }
+                    if (deliveredMessages.Count > 0)
+                    {
+                        var boundedMessages = CopilotAgentConversationMemory
+                            .SelectBoundedUserFollowUps(
+                                _deliveredSteeringMessages.Concat(deliveredMessages));
+                        _deliveredSteeringMessages.Clear();
+                        _deliveredSteeringMessages.AddRange(boundedMessages);
                     }
                 }
                 return deliveredCount;
+            }
+
+            public IReadOnlyList<string> GetDeliveredSteeringMessages()
+            {
+                lock (_syncRoot)
+                {
+                    return _deliveredSteeringMessages.ToArray();
+                }
+            }
+
+            private sealed class TrackedSteeringMessage(
+                string messageId,
+                string text)
+            {
+                public string MessageId { get; } = messageId;
+
+                public string Text { get; } = text;
             }
         }
 
@@ -4184,6 +4220,9 @@ namespace ColorVision.Copilot
             public Task<int> RecordDeliveredSteeringMessagesAsync(
                 CancellationToken cancellationToken) =>
                 context.RecordDeliveredSteeringMessagesAsync(cancellationToken);
+
+            public IReadOnlyList<string> GetDeliveredSteeringMessages() =>
+                context.GetDeliveredSteeringMessages();
 
             public void Dispose() => StopAcceptingInput();
         }

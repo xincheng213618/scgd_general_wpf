@@ -10,7 +10,8 @@ namespace ColorVision.Copilot
             IReadOnlyList<CopilotRequestMessage>? previousMemory,
             IEnumerable<CopilotRequestMessage>? visibleHistory,
             string currentUserText,
-            string currentAssistantText)
+            string currentAssistantText,
+            IEnumerable<string>? currentUserFollowUps = null)
         {
             var merged = Normalize(previousMemory).ToList();
             var seenHistory = merged
@@ -24,6 +25,7 @@ namespace ColorVision.Copilot
             }
 
             AppendCurrent(merged, "user", currentUserText);
+            AppendUserFollowUps(merged, currentUserFollowUps);
             AppendCurrent(merged, "assistant", currentAssistantText);
             return SelectBounded(merged);
         }
@@ -72,6 +74,17 @@ namespace ColorVision.Copilot
             return visibleTail.ToArray();
         }
 
+        internal static IReadOnlyList<string> SelectBoundedUserFollowUps(
+            IEnumerable<string>? followUps)
+        {
+            return SelectBounded((followUps ?? Array.Empty<string>())
+                    .Select(content => Normalize(new CopilotRequestMessage("user", content)))
+                    .Where(message => !string.IsNullOrEmpty(message.Content))
+                    .ToArray())
+                .Select(message => message.Content)
+                .ToArray();
+        }
+
         private static CopilotRequestMessage[] Normalize(IEnumerable<CopilotRequestMessage>? messages)
         {
             return (messages ?? Array.Empty<CopilotRequestMessage>())
@@ -106,6 +119,18 @@ namespace ColorVision.Copilot
                 return;
             if (messages.Count == 0 || !string.Equals(CreateKey(messages[^1]), CreateKey(normalized), StringComparison.Ordinal))
                 messages.Add(normalized);
+        }
+
+        private static void AppendUserFollowUps(
+            List<CopilotRequestMessage> messages,
+            IEnumerable<string>? followUps)
+        {
+            foreach (var followUp in followUps ?? Array.Empty<string>())
+            {
+                var normalized = Normalize(new CopilotRequestMessage("user", followUp));
+                if (!string.IsNullOrEmpty(normalized.Content))
+                    messages.Add(normalized);
+            }
         }
 
         private static CopilotRequestMessage[] SelectBounded(IReadOnlyList<CopilotRequestMessage> messages)

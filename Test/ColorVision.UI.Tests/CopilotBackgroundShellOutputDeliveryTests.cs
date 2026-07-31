@@ -49,14 +49,15 @@ public sealed class CopilotBackgroundShellOutputDeliveryTests
             new CopilotToolExecutor(),
             _ => provider,
             EmptyExternalToolProvider.Instance,
-            new CopilotCapabilityCatalog());
+            CopilotCapabilityCatalog.Shared);
         var request = CreateRequest(
             "conversation",
             "Wait for steering before completing.");
+        var events = new List<CopilotAgentEvent>();
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
         var runTask = runtime.RunAsync(
             request,
-            _ => { },
+            events.Add,
             timeout.Token);
         await provider.StreamStarted.Task.WaitAsync(
             TimeSpan.FromSeconds(5));
@@ -93,6 +94,27 @@ public sealed class CopilotBackgroundShellOutputDeliveryTests
             result.TaskEventJournal.Events,
             item => item.Type
                 == CopilotAgentTaskEventType.SteeringDelivered);
+        var checkpoint = Assert.IsType<CopilotAgentSessionCheckpoint>(
+            events.Last(item => item.Type == CopilotAgentEventType.CheckpointUpdated)
+                .SessionCheckpoint);
+        Assert.Collection(
+            checkpoint.ConversationMemory,
+            item =>
+            {
+                Assert.Equal("user", item.Role);
+                Assert.Equal(request.UserText, item.Content);
+            },
+            item =>
+            {
+                Assert.Equal("user", item.Role);
+                Assert.Equal("active steering", item.Content);
+            },
+            item => Assert.Equal("assistant", item.Role));
+        Assert.DoesNotContain(
+            checkpoint.ConversationMemory,
+            item => item.Content.Contains(
+                "stale steering",
+                StringComparison.Ordinal));
     }
 
     [Fact]
@@ -212,7 +234,7 @@ public sealed class CopilotBackgroundShellOutputDeliveryTests
             new CopilotToolExecutor(),
             _ => provider,
             EmptyExternalToolProvider.Instance,
-            new CopilotCapabilityCatalog());
+            CopilotCapabilityCatalog.Shared);
         var request = CreateRequest(
             "conversation",
             "Complete this run before finalization is released.");
@@ -220,11 +242,13 @@ public sealed class CopilotBackgroundShellOutputDeliveryTests
             TaskCreationOptions.RunContinuationsAsynchronously);
         var releaseFinalization = new TaskCompletionSource(
             TaskCreationOptions.RunContinuationsAsynchronously);
+        var events = new List<CopilotAgentEvent>();
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
         var runTask = Task.Run(() => runtime.RunAsync(
                 request,
                 agentEvent =>
                 {
+                    events.Add(agentEvent);
                     if (agentEvent.Type != CopilotAgentEventType.RuntimeDiagnostic
                         || !agentEvent.Text.Contains(
                             "Agent stop reason",
@@ -272,6 +296,14 @@ public sealed class CopilotBackgroundShellOutputDeliveryTests
             message => message.Text.Contains(
                 "late steering",
                 StringComparison.Ordinal));
+        var checkpoint = Assert.IsType<CopilotAgentSessionCheckpoint>(
+            events.Last(item => item.Type == CopilotAgentEventType.CheckpointUpdated)
+                .SessionCheckpoint);
+        Assert.DoesNotContain(
+            checkpoint.ConversationMemory,
+            item => item.Content.Contains(
+                "late steering",
+                StringComparison.Ordinal));
     }
 
     [Fact]
@@ -284,7 +316,7 @@ public sealed class CopilotBackgroundShellOutputDeliveryTests
             new CopilotToolExecutor(),
             _ => provider,
             EmptyExternalToolProvider.Instance,
-            new CopilotCapabilityCatalog());
+            CopilotCapabilityCatalog.Shared);
         var request = CreateRequest(
             "conversation",
             "Complete only after the final steering drain.");
@@ -292,11 +324,13 @@ public sealed class CopilotBackgroundShellOutputDeliveryTests
             TaskCreationOptions.RunContinuationsAsynchronously);
         var releaseSealing = new TaskCompletionSource(
             TaskCreationOptions.RunContinuationsAsynchronously);
+        var events = new List<CopilotAgentEvent>();
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
         var runTask = Task.Run(() => runtime.RunAsync(
                 request,
                 agentEvent =>
                 {
+                    events.Add(agentEvent);
                     if (agentEvent.Type != CopilotAgentEventType.RuntimeDiagnostic
                         || !agentEvent.Text.Contains(
                             "live steering input is now sealed",
@@ -359,6 +393,22 @@ public sealed class CopilotBackgroundShellOutputDeliveryTests
         Assert.Equal(
             steeringEvents[0].SubjectId,
             steeringEvents[1].SubjectId);
+        var checkpoint = Assert.IsType<CopilotAgentSessionCheckpoint>(
+            events.Last(item => item.Type == CopilotAgentEventType.CheckpointUpdated)
+                .SessionCheckpoint);
+        Assert.Collection(
+            checkpoint.ConversationMemory,
+            item =>
+            {
+                Assert.Equal("user", item.Role);
+                Assert.Equal(request.UserText, item.Content);
+            },
+            item =>
+            {
+                Assert.Equal("user", item.Role);
+                Assert.Equal("boundary steering", item.Content);
+            },
+            item => Assert.Equal("assistant", item.Role));
     }
 
     [Fact]
