@@ -249,7 +249,7 @@ namespace ColorVision.Copilot
                 conversation => RunUiOperation(() => ExportConversationAsync(conversation), "导出会话"),
                 CanExportConversation);
             RetryStatePersistenceCommand = new RelayCommand(_ => RunUiOperation(RetryStatePersistenceAsync, "重试保存会话"), _ => CanRetryStatePersistence());
-            DeleteConversationCommand = new RelayCommand<CopilotConversationRecord>(DeleteConversation, conversation => !IsBusy && conversation != null);
+            DeleteConversationCommand = new RelayCommand<CopilotConversationRecord>(DeleteConversation, CanDeleteConversation);
             TogglePinConversationCommand = new RelayCommand<CopilotConversationRecord>(TogglePinConversation, conversation => !IsBusy && conversation != null);
             CopyPendingActionIdCommand = new RelayCommand<ConfirmableAction>(CopyPendingActionId, action => action != null);
             CopyPendingActionPayloadCommand = new RelayCommand<ConfirmableAction>(CopyPendingActionPayload, action => action != null);
@@ -4494,24 +4494,12 @@ namespace ColorVision.Copilot
                 ShowLocalCommandResult(command, "当前会话仍有请求、旁路问题或本地操作正在执行，请完成或停止后再归档。");
                 return;
             }
-            if (HasPendingActions
-                || QueuedFollowUps.Any(item => string.Equals(
-                    item.ConversationId,
-                    conversation.Id,
-                    StringComparison.Ordinal)))
+            var retentionBlocker = GetConversationRetentionBlocker(conversation);
+            if (retentionBlocker != CopilotConversationRetentionBlocker.None)
             {
-                ShowLocalCommandResult(command, "当前会话仍有待审批操作或后续队列；请先处理这些状态，避免把待办隐藏。");
-                return;
-            }
-            if (conversation.Goal?.IsActive == true)
-            {
-                ShowLocalCommandResult(command, "当前会话的持续目标仍在运行；请先暂停或清除目标再归档。");
-                return;
-            }
-            if (conversation.AgentSessionCheckpoint != null
-                || CopilotAgentTaskIndex.Build([conversation]).Count > 0)
-            {
-                ShowLocalCommandResult(command, "当前会话仍有可恢复 Agent 任务；请先继续或明确放弃恢复项再归档。");
+                ShowLocalCommandResult(
+                    command,
+                    $"当前会话{CopilotConversationRetentionPolicy.Describe(retentionBlocker)}；请先处理该状态，避免把待办隐藏。");
                 return;
             }
 
@@ -4563,6 +4551,26 @@ namespace ColorVision.Copilot
             SelectConversation(conversation, persist: false, preferredProfileId: conversation.ProfileId);
             PersistState(immediate: true);
             ShowLocalCommandResult(command, $"已恢复“{conversation.Title}”，会话内容和草稿均保持不变。");
+        }
+
+        private CopilotConversationRetentionBlocker GetConversationRetentionBlocker(
+            CopilotConversationRecord conversation)
+        {
+            var conversationId = conversation.Id;
+            return CopilotConversationRetentionPolicy.Evaluate(
+                conversation,
+                hasScheduledRun: _taskHost.FindRunByConversationId(conversationId) != null,
+                hasPendingApproval: CopilotMcpConfirmationStore.Instance
+                    .GetPendingActionsForConversation(conversationId)
+                    .Count > 0,
+                hasQueuedFollowUp: QueuedFollowUps.Any(item => string.Equals(
+                    item.ConversationId,
+                    conversationId,
+                    StringComparison.Ordinal)),
+                isEditingMessage: string.Equals(
+                    _editingConversationId,
+                    conversationId,
+                    StringComparison.Ordinal));
         }
 
         private void RenameCurrentConversation(CopilotLocalCommand command, string requestedTitle)
@@ -6761,42 +6769,84 @@ namespace ColorVision.Copilot
 
         private void DeleteConversation(CopilotConversationRecord? conversation)
         {
-            if (conversation == null || IsBusy)
+            if (!CanDeleteConversation(conversation))
                 return;
+
+            var target = conversation!;
+            var retentionBlocker = GetConversationRetentionBlocker(target);
+            if (retentionBlocker != CopilotConversationRetentionBlocker.None)
+            {
+                MessageBox.Show(
+                    Application.Current.GetActiveWindow(),
+                    $"无法永久删除“{target.Title}”：{CopilotConversationRetentionPolicy.Describe(retentionBlocker)}。"
+                    + $"{Environment.NewLine}{Environment.NewLine}请先处理或明确放弃该状态；若只想隐藏安全会话，请使用 /archive。",
+                    "ColorVision",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                return;
+            }
 
             if (MessageBox.Show(
                 Application.Current.GetActiveWindow(),
-                $"Delete chat \"{conversation.Title}\"?",
+                $"永久删除“{target.Title}”？"
+                + $"{Environment.NewLine}{Environment.NewLine}本地消息、草稿和托管附件会被移除，且不能通过 /unarchive 恢复。"
+                + $"{Environment.NewLine}若只想隐藏，请选择“否”并使用 /archive。",
                 "ColorVision",
                 MessageBoxButton.YesNo,
-                MessageBoxImage.Question) != MessageBoxResult.Yes)
+                MessageBoxImage.Warning) != MessageBoxResult.Yes)
             {
                 return;
             }
 
-            CancelConversationTitleGeneration(conversation.Id);
-            var managedAttachments = conversation.EnumerateReferencedAttachments().ToArray();
-            if (string.Equals(conversation.Id, _agentRunNoticeConversationId, StringComparison.Ordinal))
+            var wasSelected = ReferenceEquals(target, SelectedConversation);
+            CancelConversationTitleGeneration(target.Id);
+            var managedAttachments = target.EnumerateReferencedAttachments().ToArray();
+            if (string.Equals(target.Id, _agentRunNoticeConversationId, StringComparison.Ordinal))
                 ClearAgentRunNotice();
 
-            var currentIndex = Conversations.IndexOf(conversation);
-            if (!Conversations.Remove(conversation))
+            var currentIndex = Conversations.IndexOf(target);
+            if (!Conversations.Remove(target))
                 return;
 
+            RemoveQueuedFollowUpRecoveryRecords(target.Id);
             RemoveManagedAttachmentFiles(managedAttachments);
 
-            if (Conversations.Count == 0)
+            if (wasSelected)
             {
-                var replacement = CreateConversation();
+                var replacement = CopilotConversationRetentionPolicy.FindNearestActive(
+                    Conversations,
+                    currentIndex)
+                    ?? CreateConversation();
                 SelectConversation(replacement, persist: false);
             }
-            else
-            {
-                var nextIndex = Math.Clamp(currentIndex, 0, Conversations.Count - 1);
-                SelectConversation(Conversations[nextIndex], persist: false);
-            }
 
-            PersistState();
+            PersistState(immediate: true);
+        }
+
+        private bool CanDeleteConversation(CopilotConversationRecord? conversation) =>
+            Volatile.Read(ref _disposeState) == 0
+            && conversation != null
+            && Conversations.Contains(conversation)
+            && !IsBusy
+            && !IsSideQuestionRunning
+            && !HasExclusiveLocalOperation
+            && !_isExportingConversation;
+
+        private void RemoveQueuedFollowUpRecoveryRecords(string conversationId)
+        {
+            if (_state.QueuedFollowUpRecoveries == null)
+                return;
+
+            for (var index = _state.QueuedFollowUpRecoveries.Count - 1; index >= 0; index--)
+            {
+                if (string.Equals(
+                    _state.QueuedFollowUpRecoveries[index]?.ConversationId,
+                    conversationId,
+                    StringComparison.Ordinal))
+                {
+                    _state.QueuedFollowUpRecoveries.RemoveAt(index);
+                }
+            }
         }
 
         private void TogglePinConversation(CopilotConversationRecord? conversation)
