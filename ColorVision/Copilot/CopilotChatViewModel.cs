@@ -180,6 +180,7 @@ namespace ColorVision.Copilot
 
             _state = _stateStore.Load();
             var stateChanged = _state.EnsureInitialized(_config);
+            stateChanged |= CopilotSteeringRecovery.RestorePendingToDrafts(_state);
             stateChanged |= CopilotConversationGoalRecovery.PauseActiveGoalsAfterProcessRestart(
                 _state,
                 DateTimeOffset.UtcNow);
@@ -5077,9 +5078,12 @@ namespace ColorVision.Copilot
             var queuedFollowUpNotice = _state.RecoveredQueuedFollowUpCount > 0
                 ? $"已将 {_state.RecoveredQueuedFollowUpCount} 条未执行的排队后续恢复到对应会话草稿。"
                 : string.Empty;
+            var steeringNotice = _state.RecoveredSteeringCount > 0
+                ? $"已将 {_state.RecoveredSteeringCount} 条进程退出前尚未确认送达的运行中指令恢复到对应会话草稿。"
+                : string.Empty;
             StateRecoveryNoticeText = string.Join(
                 Environment.NewLine,
-                new[] { loadNotice, queuedFollowUpNotice }.Where(text => !string.IsNullOrWhiteSpace(text)));
+                new[] { loadNotice, queuedFollowUpNotice, steeringNotice }.Where(text => !string.IsNullOrWhiteSpace(text)));
             StateRecoveryNoticeToolTip = string.IsNullOrWhiteSpace(StateRecoveryNoticeText)
                 ? string.Empty
                 : $"{StateRecoveryNoticeText}{Environment.NewLine}{Environment.NewLine}状态目录：{stateStore.StateDirectoryPath}";
@@ -5619,6 +5623,16 @@ namespace ColorVision.Copilot
             {
                 foreach (var agentEvent in agentEvents)
                 {
+                    if (agentEvent.Type == CopilotAgentEventType.SteeringDelivered)
+                    {
+                        if (CopilotSteeringRecovery.RemovePending(conversation, agentEvent.SteeringMessages))
+                        {
+                            persistState = true;
+                            persistImmediately = true;
+                        }
+                        continue;
+                    }
+
                     if (agentEvent.Type == CopilotAgentEventType.SteeringRecovery
                         && RestoreUndeliveredSteering(conversation, agentEvent.SteeringMessages))
                     {
@@ -5685,17 +5699,23 @@ namespace ColorVision.Copilot
 
         private bool RestoreUndeliveredSteering(
             CopilotConversationRecord conversation,
-            IReadOnlyList<string> messages)
+            IReadOnlyList<CopilotSteeringMessageSnapshot> messages)
         {
             var isSelectedConversation = ReferenceEquals(conversation, SelectedConversation);
-            if (!CopilotSteeringRecovery.RestoreToDraft(conversation, messages))
+            var restored = CopilotSteeringRecovery.RestoreMessagesToDraft(conversation, messages);
+            var changed = restored;
+            changed |= CopilotSteeringRecovery.RemovePending(conversation, messages);
+            if (!changed)
                 return false;
 
-            if (isSelectedConversation)
+            if (restored && isSelectedConversation)
                 InputText = conversation.DraftText;
-            RefreshCompactHistoryConversations();
-            if (HasConversationSearchQuery)
-                RefreshFilteredConversations();
+            if (restored)
+            {
+                RefreshCompactHistoryConversations();
+                if (HasConversationSearchQuery)
+                    RefreshFilteredConversations();
+            }
             return true;
         }
 
@@ -6434,13 +6454,28 @@ namespace ColorVision.Copilot
             }
 
             var activeConversation = Conversations.FirstOrDefault(conversation => string.Equals(conversation.Id, activeRun.ConversationId, StringComparison.Ordinal));
+            var steeringSnapshot = new CopilotSteeringMessageSnapshot(
+                admission.MessageId,
+                steeringMessage);
+            if (activeConversation == null
+                || !CopilotSteeringRecovery.TrackPending(
+                    activeConversation,
+                    activeRun.Id,
+                    steeringSnapshot,
+                    DateTimeOffset.UtcNow))
+            {
+                LocalCommandResultTitle = "运行中指令已发送，输入已保留";
+                LocalCommandResultText = "运行时已接受这条指令，但无法建立可靠的恢复记录；输入未清空，请确认 Agent 响应后再处理。";
+                PersistState(immediate: true);
+                return true;
+            }
             var activeAssistant = activeConversation?.Messages.LastOrDefault(message => !message.IsUser && message.IsThinkingInProgress);
             if (activeAssistant != null)
                 CopilotAssistantMessagePresenter.AppendExecutionTrace(activeAssistant, "User steering queued · " + CopilotAgentTraceEntry.Sanitize(steeringMessage));
 
             DismissLocalCommandResult();
             InputText = string.Empty;
-            PersistState();
+            PersistState(immediate: true);
             return true;
         }
 
@@ -10322,6 +10357,7 @@ namespace ColorVision.Copilot
             _recurringPromptScheduler.Clear();
             _recurringPromptJobIdsByRunId.Clear();
             RestoreQueuedFollowUpsToDrafts();
+            CopilotSteeringRecovery.RestorePendingToDrafts(_state);
             var scheduledRuns = _taskHost.ScheduledRuns;
             _taskHost.Shutdown();
             CopilotBackgroundShellCommandRegistry.Shared.CommandCompleted -= BackgroundShellCommandRegistry_CommandCompleted;

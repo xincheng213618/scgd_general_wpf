@@ -75,7 +75,13 @@ public sealed class CopilotBackgroundShellOutputDeliveryTests
             CopilotSteeringAdmissionReason.NoActiveTask,
             staleTaskAdmission.Reason);
         Assert.True(activeTaskAdmission.IsAccepted);
+        Assert.False(string.IsNullOrWhiteSpace(activeTaskAdmission.MessageId));
         Assert.Equal(CopilotAgentStopReason.Completed, result.StopReason);
+        var deliveredEvent = Assert.Single(events, agentEvent =>
+            agentEvent.Type == CopilotAgentEventType.SteeringDelivered);
+        var deliveredSteering = Assert.Single(deliveredEvent.SteeringMessages);
+        Assert.Equal(activeTaskAdmission.MessageId, deliveredSteering.MessageId);
+        Assert.Equal("active steering", deliveredSteering.Text);
         Assert.DoesNotContain(
             provider.StreamingCalls.SelectMany(call => call),
             message => message.Text.Contains(
@@ -276,7 +282,7 @@ public sealed class CopilotBackgroundShellOutputDeliveryTests
             agentEvent.Type == CopilotAgentEventType.SteeringRecovery);
         Assert.Equal(
             Enumerable.Range(1, 8).Select(index => $"steering {index}"),
-            recovery.SteeringMessages);
+            recovery.SteeringMessages.Select(message => message.Text));
     }
 
     [Fact]
@@ -312,7 +318,8 @@ public sealed class CopilotBackgroundShellOutputDeliveryTests
         Assert.Equal(CopilotAgentStopReason.Cancelled, result.StopReason);
         var recovery = Assert.Single(events, agentEvent =>
             agentEvent.Type == CopilotAgentEventType.SteeringRecovery);
-        Assert.Equal(["preserve this steering"], recovery.SteeringMessages);
+        Assert.Equal(["preserve this steering"], recovery.SteeringMessages.Select(message => message.Text));
+        Assert.Equal(admission.MessageId, Assert.Single(recovery.SteeringMessages).MessageId);
         Assert.True(
             events.IndexOf(recovery)
                 < events.FindIndex(agentEvent =>
@@ -354,7 +361,8 @@ public sealed class CopilotBackgroundShellOutputDeliveryTests
         Assert.True(admission.IsAccepted);
         var recovery = Assert.Single(events, agentEvent =>
             agentEvent.Type == CopilotAgentEventType.SteeringRecovery);
-        Assert.Equal(["recover after provider failure"], recovery.SteeringMessages);
+        Assert.Equal(["recover after provider failure"], recovery.SteeringMessages.Select(message => message.Text));
+        Assert.Equal(admission.MessageId, Assert.Single(recovery.SteeringMessages).MessageId);
         Assert.DoesNotContain(events, agentEvent =>
             agentEvent.Type == CopilotAgentEventType.Completed);
     }

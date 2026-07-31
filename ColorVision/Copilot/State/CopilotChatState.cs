@@ -6,7 +6,7 @@ namespace ColorVision.Copilot
 {
     public sealed class CopilotChatState
     {
-        public const int CurrentSchemaVersion = 29;
+        public const int CurrentSchemaVersion = 30;
 
         public int SchemaVersion { get; set; } = CurrentSchemaVersion;
 
@@ -46,6 +46,8 @@ namespace ColorVision.Copilot
         public bool ShouldSerializeQueuedFollowUpRecoveries() => QueuedFollowUpRecoveries?.Count > 0;
 
         internal int RecoveredQueuedFollowUpCount { get; set; }
+
+        internal int RecoveredSteeringCount { get; set; }
 
         internal bool ToggleAgentTaskPanelExpanded()
         {

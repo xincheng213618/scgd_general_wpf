@@ -174,7 +174,8 @@ namespace ColorVision.Copilot
                                 CopilotSteeringAdmissionReason.QueueFull);
                         }
                         return new CopilotSteeringAdmissionResult(
-                            CopilotSteeringAdmissionReason.Accepted);
+                            CopilotSteeringAdmissionReason.Accepted,
+                            steeringMessage.MessageId);
                     }
                 }
             }
@@ -1033,13 +1034,14 @@ namespace ColorVision.Copilot
                             emit(CopilotAgentEvent.AnswerDelta(update.Text));
                     }
 
-                    var deliveredSteeringCount = await steeringRegistration
+                    var deliveredSteeringMessages = await steeringRegistration
                         .RecordDeliveredSteeringMessagesAsync(
                             agentLoopCancellation.Token);
-                    if (deliveredSteeringCount > 0)
+                    if (deliveredSteeringMessages.Count > 0)
                     {
+                        emit(CopilotAgentEvent.SteeringDelivered(deliveredSteeringMessages));
                         emit(CopilotAgentEvent.RuntimeDiagnostic(
-                            $"Agent provider received {deliveredSteeringCount} queued user steering instruction(s)."));
+                            $"Agent provider received {deliveredSteeringMessages.Count} queued user steering instruction(s)."));
                         await liveCheckpointPublisher.TryPublishAsync(
                             agent,
                             session,
@@ -4132,7 +4134,7 @@ namespace ColorVision.Copilot
                 }
             }
 
-            public async Task<int> RecordDeliveredSteeringMessagesAsync(
+            public async Task<IReadOnlyList<CopilotSteeringMessageSnapshot>> RecordDeliveredSteeringMessagesAsync(
                 CancellationToken cancellationToken)
             {
                 TrackedSteeringMessage[] trackedMessages;
@@ -4140,7 +4142,7 @@ namespace ColorVision.Copilot
                 {
                     trackedMessages = _undeliveredSteeringMessages.ToArray();
                     if (trackedMessages.Length == 0)
-                        return 0;
+                        return Array.Empty<CopilotSteeringMessageSnapshot>();
                 }
 
                 var pendingMessageIds = (await MessageInjector
@@ -4148,8 +4150,8 @@ namespace ColorVision.Copilot
                     .Select(message => message.MessageId)
                     .Where(messageId => !string.IsNullOrWhiteSpace(messageId))
                     .ToHashSet(StringComparer.Ordinal);
-                var deliveredCount = 0;
                 var deliveredMessages = new List<string>();
+                var deliveredSnapshots = new List<CopilotSteeringMessageSnapshot>();
                 lock (_syncRoot)
                 {
                     foreach (var message in trackedMessages)
@@ -4162,7 +4164,9 @@ namespace ColorVision.Copilot
 
                         TaskEventJournal.RecordSteeringDelivered(message.Text);
                         deliveredMessages.Add(message.Text);
-                        deliveredCount++;
+                        deliveredSnapshots.Add(new CopilotSteeringMessageSnapshot(
+                            message.MessageId,
+                            message.Text));
                     }
                     if (deliveredMessages.Count > 0)
                     {
@@ -4173,7 +4177,7 @@ namespace ColorVision.Copilot
                         _deliveredSteeringMessages.AddRange(boundedMessages);
                     }
                 }
-                return deliveredCount;
+                return deliveredSnapshots;
             }
 
             public IReadOnlyList<string> GetDeliveredSteeringMessages()
@@ -4184,12 +4188,14 @@ namespace ColorVision.Copilot
                 }
             }
 
-            public IReadOnlyList<string> GetUndeliveredSteeringMessages()
+            public IReadOnlyList<CopilotSteeringMessageSnapshot> GetUndeliveredSteeringMessages()
             {
                 lock (_syncRoot)
                 {
                     return _undeliveredSteeringMessages
-                        .Select(message => message.Text)
+                        .Select(message => new CopilotSteeringMessageSnapshot(
+                            message.MessageId,
+                            message.Text))
                         .ToArray();
                 }
             }
@@ -4213,14 +4219,14 @@ namespace ColorVision.Copilot
                 Interlocked.Exchange(ref _owner, null)?.ClearSteeringContext(context);
             }
 
-            public Task<int> RecordDeliveredSteeringMessagesAsync(
+            public Task<IReadOnlyList<CopilotSteeringMessageSnapshot>> RecordDeliveredSteeringMessagesAsync(
                 CancellationToken cancellationToken) =>
                 context.RecordDeliveredSteeringMessagesAsync(cancellationToken);
 
             public IReadOnlyList<string> GetDeliveredSteeringMessages() =>
                 context.GetDeliveredSteeringMessages();
 
-            public IReadOnlyList<string> GetUndeliveredSteeringMessages() =>
+            public IReadOnlyList<CopilotSteeringMessageSnapshot> GetUndeliveredSteeringMessages() =>
                 context.GetUndeliveredSteeringMessages();
 
             public void Dispose() => StopAcceptingInput();

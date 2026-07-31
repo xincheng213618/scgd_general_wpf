@@ -4,6 +4,16 @@ namespace ColorVision.UI.Tests;
 
 public sealed class CopilotSteeringAdmissionTests
 {
+    [Fact]
+    public void AcceptedAdmissionRequiresAStableMessageId()
+    {
+        Assert.False(new CopilotSteeringAdmissionResult(
+            CopilotSteeringAdmissionReason.Accepted).IsAccepted);
+        Assert.True(new CopilotSteeringAdmissionResult(
+            CopilotSteeringAdmissionReason.Accepted,
+            "steering-message-1").IsAccepted);
+    }
+
     [Theory]
     [InlineData(
         CopilotSteeringAdmissionReason.InvalidInput,

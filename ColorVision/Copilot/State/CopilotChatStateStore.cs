@@ -822,6 +822,7 @@ namespace ColorVision.Copilot
                     || !IsOptionalString(conversation.GetValue(nameof(CopilotConversationRecord.DraftText), StringComparison.OrdinalIgnoreCase))
                     || !IsOptionalInteger(conversation.GetValue(nameof(CopilotConversationRecord.DraftRequestMode), StringComparison.OrdinalIgnoreCase))
                     || !IsOptionalComposerStash(conversation.GetValue(nameof(CopilotConversationRecord.ComposerStash), StringComparison.OrdinalIgnoreCase))
+                    || !IsOptionalPendingSteeringRecoveries(conversation.GetValue(nameof(CopilotConversationRecord.PendingSteeringRecoveries), StringComparison.OrdinalIgnoreCase))
                     || !IsOptionalObject(conversation.GetValue(nameof(CopilotConversationRecord.BranchOrigin), StringComparison.OrdinalIgnoreCase))
                     || !IsOptionalBoolean(conversation.GetValue(nameof(CopilotConversationRecord.IsArchived), StringComparison.OrdinalIgnoreCase))
                     || messages.Any(item => item is not JObject)
@@ -885,6 +886,23 @@ namespace ColorVision.Copilot
                     || attachments is JArray attachmentArray
                         && attachmentArray.All(item => item is JObject));
         }
+
+        private static bool IsOptionalPendingSteeringRecoveries(JToken? token)
+        {
+            if (token == null || token.Type == JTokenType.Null)
+                return true;
+            if (token is not JArray records)
+                return false;
+
+            return records.All(item => item is JObject record
+                && IsOptionalString(record.GetValue(nameof(CopilotPendingSteeringRecoveryRecord.MessageId), StringComparison.OrdinalIgnoreCase))
+                && IsOptionalString(record.GetValue(nameof(CopilotPendingSteeringRecoveryRecord.TaskId), StringComparison.OrdinalIgnoreCase))
+                && IsOptionalString(record.GetValue(nameof(CopilotPendingSteeringRecoveryRecord.Text), StringComparison.OrdinalIgnoreCase))
+                && IsOptionalDate(record.GetValue(nameof(CopilotPendingSteeringRecoveryRecord.AcceptedAtUtc), StringComparison.OrdinalIgnoreCase)));
+        }
+
+        private static bool IsOptionalDate(JToken? token) =>
+            token == null || token.Type is JTokenType.Date or JTokenType.String or JTokenType.Null;
 
         private static bool IsPathUnderRoot(string path, string root)
         {

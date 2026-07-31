@@ -52,7 +52,9 @@ namespace ColorVision.Copilot
                 Size += Math.Max(
                     1,
                     (agentEvent.Text?.Length ?? 0)
-                    + agentEvent.SteeringMessages.Sum(message => message?.Length ?? 0));
+                    + agentEvent.SteeringMessages.Sum(message =>
+                        (message?.MessageId?.Length ?? 0)
+                        + (message?.Text?.Length ?? 0)));
                 if (_events.Count > 0 && _events[^1].CanAppend(agentEvent))
                 {
                     _events[^1].Append(agentEvent.Text);

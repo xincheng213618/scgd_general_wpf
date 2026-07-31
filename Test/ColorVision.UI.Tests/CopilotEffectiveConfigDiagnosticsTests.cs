@@ -166,7 +166,9 @@ public sealed class CopilotEffectiveConfigDiagnosticsTests
             Assert.Contains("生效来源（基础 → 当前任务）", report);
             Assert.Contains("file schema 5 → runtime 6", report);
             Assert.Contains(Path.GetFullPath(configPath), report);
-            Assert.Contains("主状态文件 · file schema 29 · runtime schema 29", report);
+            Assert.Contains(
+                $"主状态文件 · file schema {CopilotChatState.CurrentSchemaVersion} · runtime schema {CopilotChatState.CurrentSchemaVersion}",
+                report);
             Assert.Contains("Diagnostic profile · gpt-test · 来源 会话 ProfileId", report);
             Assert.Contains("定义：应用配置 CopilotConfig.Profiles", report);
             Assert.Contains("端点：https://example.com:8443 · 凭据 已配置", report);
@@ -243,7 +245,7 @@ public sealed class CopilotEffectiveConfigDiagnosticsTests
             });
 
         Assert.Contains("当前文件不存在 · 继续使用已加载运行时值", report);
-        Assert.Contains("新建内存状态 · runtime schema 29", report);
+        Assert.Contains($"新建内存状态 · runtime schema {CopilotChatState.CurrentSchemaVersion}", report);
         Assert.Contains("当前没有可用 Profile", report);
         Assert.Contains("按需确认 · 内置安全默认", report);
         Assert.Contains("下一次请求会从上述当前值创建独立请求快照", report);

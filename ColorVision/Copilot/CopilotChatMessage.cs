@@ -2749,6 +2749,10 @@ namespace ColorVision.Copilot
 
         public ObservableCollection<CopilotAttachmentItem> Attachments { get; set; } = new();
 
+        public ObservableCollection<CopilotPendingSteeringRecoveryRecord> PendingSteeringRecoveries { get; set; } = new();
+
+        public bool ShouldSerializePendingSteeringRecoveries() => PendingSteeringRecoveries?.Count > 0;
+
         public ObservableCollection<string> AdditionalReadRootPaths { get; set; } = new();
 
         public bool ShouldSerializeAdditionalReadRootPaths() => HasAdditionalReadRoots;
@@ -2962,6 +2966,7 @@ namespace ColorVision.Copilot
                 Attachments = new ObservableCollection<CopilotAttachmentItem>();
                 changed = true;
             }
+            changed |= CopilotSteeringRecovery.NormalizePendingRecords(this);
             if (AdditionalReadRootPaths == null)
             {
                 AdditionalReadRootPaths = new ObservableCollection<string>();

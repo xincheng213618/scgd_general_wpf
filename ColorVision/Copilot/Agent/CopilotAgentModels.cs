@@ -792,6 +792,7 @@ namespace ColorVision.Copilot
         ReasoningDelta,
         AnswerDelta,
         AnswerReset,
+        SteeringDelivered,
         SteeringRecovery,
         Error,
         Completed,
@@ -822,7 +823,8 @@ namespace ColorVision.Copilot
 
         public CopilotUserQuestionSnapshot? UserQuestion { get; init; }
 
-        public IReadOnlyList<string> SteeringMessages { get; init; } = Array.Empty<string>();
+        public IReadOnlyList<CopilotSteeringMessageSnapshot> SteeringMessages { get; init; } =
+            Array.Empty<CopilotSteeringMessageSnapshot>();
 
         internal CopilotProviderRetryInfo? ProviderRetry { get; init; }
 
@@ -960,12 +962,20 @@ namespace ColorVision.Copilot
             };
         }
 
-        public static CopilotAgentEvent SteeringRecovery(IEnumerable<string> messages)
+        public static CopilotAgentEvent SteeringDelivered(IEnumerable<CopilotSteeringMessageSnapshot> messages)
         {
-            ArgumentNullException.ThrowIfNull(messages);
-            var recoveryMessages = CopilotSteeringMessagePolicy.SelectForRecovery(messages);
-            if (recoveryMessages.Count == 0)
-                throw new ArgumentException("Steering recovery requires at least one bounded message.", nameof(messages));
+            var deliveredMessages = CreateSteeringMessages(messages, nameof(messages));
+            return new CopilotAgentEvent
+            {
+                Type = CopilotAgentEventType.SteeringDelivered,
+                Text = $"Agent provider acknowledged {deliveredMessages.Count} queued user steering instruction(s).",
+                SteeringMessages = deliveredMessages,
+            };
+        }
+
+        public static CopilotAgentEvent SteeringRecovery(IEnumerable<CopilotSteeringMessageSnapshot> messages)
+        {
+            var recoveryMessages = CreateSteeringMessages(messages, nameof(messages));
 
             return new CopilotAgentEvent
             {
@@ -973,6 +983,17 @@ namespace ColorVision.Copilot
                 Text = $"Agent stopped before delivering {recoveryMessages.Count} queued user steering instruction(s); the input was returned to the conversation draft.",
                 SteeringMessages = recoveryMessages,
             };
+        }
+
+        private static IReadOnlyList<CopilotSteeringMessageSnapshot> CreateSteeringMessages(
+            IEnumerable<CopilotSteeringMessageSnapshot> messages,
+            string parameterName)
+        {
+            ArgumentNullException.ThrowIfNull(messages);
+            var recoveryMessages = CopilotSteeringMessagePolicy.SelectForRecovery(messages);
+            if (recoveryMessages.Count == 0)
+                throw new ArgumentException("Steering events require at least one bounded message.", parameterName);
+            return recoveryMessages;
         }
 
         public static CopilotAgentEvent UserQuestionRequested(CopilotUserQuestionSnapshot question)
@@ -1003,6 +1024,7 @@ namespace ColorVision.Copilot
     internal static class CopilotSteeringMessagePolicy
     {
         internal const int MaximumMessageCharacters = 16_000;
+        internal const int MaximumIdentifierCharacters = 128;
         internal const int MaximumPendingMessages = 8;
         internal const int MaximumPendingCharacters = 32_000;
 
@@ -1023,6 +1045,34 @@ namespace ColorVision.Copilot
 
                 selected.Add(normalized);
                 characterCount += normalized.Length;
+            }
+            return selected.ToArray();
+        }
+
+        internal static IReadOnlyList<CopilotSteeringMessageSnapshot> SelectForRecovery(
+            IEnumerable<CopilotSteeringMessageSnapshot>? messages)
+        {
+            var selected = new List<CopilotSteeringMessageSnapshot>(MaximumPendingMessages);
+            var seenMessageIds = new HashSet<string>(StringComparer.Ordinal);
+            var characterCount = 0;
+            foreach (var message in messages ?? Array.Empty<CopilotSteeringMessageSnapshot>())
+            {
+                var messageId = (message?.MessageId ?? string.Empty).Trim();
+                var text = (message?.Text ?? string.Empty).Trim();
+                if (messageId.Length is 0 or > MaximumIdentifierCharacters
+                    || text.Length is 0 or > MaximumMessageCharacters
+                    || !seenMessageIds.Add(messageId))
+                {
+                    continue;
+                }
+                if (selected.Count >= MaximumPendingMessages
+                    || characterCount + text.Length > MaximumPendingCharacters)
+                {
+                    break;
+                }
+
+                selected.Add(new CopilotSteeringMessageSnapshot(messageId, text));
+                characterCount += text.Length;
             }
             return selected.ToArray();
         }
