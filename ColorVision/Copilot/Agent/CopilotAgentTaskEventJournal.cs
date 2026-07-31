@@ -30,6 +30,7 @@ namespace ColorVision.Copilot
         UserQuestionRequested,
         UserQuestionResolved,
         BackgroundCommandCompleted,
+        BackgroundCommandOutputObserved,
     }
 
     public sealed class CopilotAgentTaskEvent
@@ -164,6 +165,11 @@ namespace ColorVision.Copilot
         public static string ForBackgroundCommand(string? backgroundId)
         {
             return CreateHashedKey("background", backgroundId);
+        }
+
+        public static string ForBackgroundOutputMonitor(string? monitorId)
+        {
+            return CreateHashedKey("background-monitor", monitorId);
         }
 
         internal static string CreateEventId(long sequence, string runId, CopilotAgentTaskEventType type, DateTimeOffset occurredAtUtc)
@@ -402,6 +408,41 @@ namespace ColorVision.Copilot
                 snapshot.ExitCode.HasValue
                     ? $"An application-managed background command reached a terminal state with exit code {snapshot.ExitCode.Value}."
                     : "An application-managed background command reached a terminal state.");
+        }
+
+        internal void RecordBackgroundShellCommandOutput(
+            CopilotBackgroundShellOutputMonitorEventArgs eventArgs)
+        {
+            ArgumentNullException.ThrowIfNull(eventArgs);
+            var monitor = eventArgs.Monitor;
+            if (!monitor.IsActive
+                || string.IsNullOrWhiteSpace(monitor.Id)
+                || string.IsNullOrWhiteSpace(monitor.BackgroundId)
+                || string.IsNullOrWhiteSpace(eventArgs.Content))
+            {
+                throw new ArgumentException(
+                    "An active background output monitor event is required.",
+                    nameof(eventArgs));
+            }
+
+            var stream =
+                monitor.Stream
+                    == CopilotBackgroundShellOutputStream.StandardError
+                    ? "stderr"
+                    : "stdout";
+            Append(
+                CopilotAgentTaskEventType.BackgroundCommandOutputObserved,
+                CopilotAgentTaskEventIds.ForBackgroundOutputMonitor(
+                    monitor.Id),
+                stream,
+                eventArgs.SuppressedEvents > 0
+                    ? $"A bounded redacted background {stream} monitor event was queued after suppressing {eventArgs.SuppressedEvents} earlier event(s)."
+                    : $"A bounded redacted background {stream} monitor event was queued.",
+                relatedIds:
+                [
+                    CopilotAgentTaskEventIds.ForBackgroundCommand(
+                        monitor.BackgroundId),
+                ]);
         }
 
         public void RecordEvidence(CopilotAgentEvidenceArtifact artifact)

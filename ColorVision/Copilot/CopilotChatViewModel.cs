@@ -318,6 +318,8 @@ namespace ColorVision.Copilot
             NotifyHostedRunStateChanged();
             CopilotBackgroundShellCommandRegistry.Shared.CommandCompleted -= BackgroundShellCommandRegistry_CommandCompleted;
             CopilotBackgroundShellCommandRegistry.Shared.CommandCompleted += BackgroundShellCommandRegistry_CommandCompleted;
+            CopilotBackgroundShellCommandRegistry.Shared.OutputMonitorEvent -= BackgroundShellCommandRegistry_OutputMonitorEvent;
+            CopilotBackgroundShellCommandRegistry.Shared.OutputMonitorEvent += BackgroundShellCommandRegistry_OutputMonitorEvent;
         }
 
         public ObservableCollection<CopilotConversationRecord> Conversations => _state.Conversations;
@@ -4894,6 +4896,15 @@ namespace ColorVision.Copilot
             }
 
             RefreshBackgroundCommandNotice();
+        }
+
+        private void BackgroundShellCommandRegistry_OutputMonitorEvent(
+            object? sender,
+            CopilotBackgroundShellOutputMonitorEventArgs e)
+        {
+            if (Volatile.Read(ref _disposeState) == 1)
+                return;
+            _turnRuntime.TryEnqueueBackgroundShellCommandOutput(e);
         }
 
         private void RefreshBackgroundCommandNotice()
@@ -10261,6 +10272,7 @@ namespace ColorVision.Copilot
             var scheduledRuns = _taskHost.ScheduledRuns;
             _taskHost.Shutdown();
             CopilotBackgroundShellCommandRegistry.Shared.CommandCompleted -= BackgroundShellCommandRegistry_CommandCompleted;
+            CopilotBackgroundShellCommandRegistry.Shared.OutputMonitorEvent -= BackgroundShellCommandRegistry_OutputMonitorEvent;
             try
             {
                 CopilotBackgroundShellCommandRegistry.Shared.ShutdownAsync()
@@ -10338,6 +10350,7 @@ namespace ColorVision.Copilot
             CopilotMcpConfirmationStore.Instance.ActionStatusChanged -= ConfirmationStore_ActionStatusChanged;
             WeakEventManager<CopilotAgentTaskHost, CopilotAgentTaskHostChangedEventArgs>.RemoveHandler(_taskHost, nameof(CopilotAgentTaskHost.Changed), TaskHost_Changed);
             CopilotBackgroundShellCommandRegistry.Shared.CommandCompleted -= BackgroundShellCommandRegistry_CommandCompleted;
+            CopilotBackgroundShellCommandRegistry.Shared.OutputMonitorEvent -= BackgroundShellCommandRegistry_OutputMonitorEvent;
 
             Conversations.CollectionChanged -= Conversations_CollectionChanged;
             if (_selectedConversation != null)

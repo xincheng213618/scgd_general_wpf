@@ -155,6 +155,8 @@ namespace ColorVision.Copilot
                 new CopilotStartBackgroundShellCommandTool(),
                 new CopilotInspectBackgroundShellCommandsTool(),
                 new CopilotReadBackgroundShellCommandOutputTool(),
+                new CopilotMonitorBackgroundShellCommandOutputTool(),
+                new CopilotStopBackgroundShellCommandOutputMonitorTool(),
                 new CopilotWaitForBackgroundShellCommandTool(),
                 new CopilotWaitForBackgroundShellCommandsTool(),
                 new CopilotStopBackgroundShellCommandTool(),

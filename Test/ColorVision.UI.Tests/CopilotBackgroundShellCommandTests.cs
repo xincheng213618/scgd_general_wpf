@@ -40,6 +40,10 @@ public sealed class CopilotBackgroundShellCommandTests
         var request = CreateRequest("run npm run dev in background");
         var foreground = new CopilotShellCommandTool();
         var background = new CopilotStartBackgroundShellCommandTool();
+        var monitor =
+            new CopilotMonitorBackgroundShellCommandOutputTool();
+        var stopMonitor =
+            new CopilotStopBackgroundShellCommandOutputMonitorTool();
         var contract = CopilotAgentExecutionContract.Create(
             request,
             [foreground, background]);
@@ -48,6 +52,8 @@ public sealed class CopilotBackgroundShellCommandTests
         Assert.True(CopilotToolIntentPolicy.NeedsBackgroundShellExecution(request));
         Assert.False(foreground.IsAvailable(request));
         Assert.True(background.IsAvailable(request));
+        Assert.True(monitor.IsAvailable(request));
+        Assert.True(stopMonitor.IsAvailable(request));
         Assert.Equal(CopilotAgentExecutionRequirement.ShellExecution, contract.Requirement);
         Assert.Equal(["StartBackgroundShellCommand"], contract.AcceptedToolNames);
         Assert.Contains(
@@ -69,6 +75,13 @@ public sealed class CopilotBackgroundShellCommandTests
         var read = Assert.Single(
             tools,
             tool => tool.Name == "ReadBackgroundShellCommandOutput");
+        var monitor = Assert.Single(
+            tools,
+            tool => tool.Name == "MonitorBackgroundShellCommandOutput");
+        var stopMonitor = Assert.Single(
+            tools,
+            tool => tool.Name
+                == "StopBackgroundShellCommandOutputMonitor");
         var wait = Assert.Single(
             tools,
             tool => tool.Name == "WaitForBackgroundShellCommand");
@@ -87,6 +100,15 @@ public sealed class CopilotBackgroundShellCommandTests
         Assert.Equal(
             CopilotToolEvidenceMode.RedactedExcerpt,
             read.Capability.EvidenceMode);
+        Assert.Equal(CopilotToolAccess.ReadOnly, monitor.Capability.Access);
+        Assert.False(monitor.Capability.RequiresNativeApproval);
+        Assert.Equal(
+            CopilotToolAuditArgumentMode.NamesOnly,
+            monitor.Capability.AuditArgumentMode);
+        Assert.Equal(
+            CopilotToolAccess.ReadOnly,
+            stopMonitor.Capability.Access);
+        Assert.False(stopMonitor.Capability.RequiresNativeApproval);
         Assert.Equal(CopilotToolAccess.ReadOnly, wait.Capability.Access);
         Assert.False(wait.Capability.RequiresNativeApproval);
         Assert.Equal(
@@ -1453,6 +1475,291 @@ public sealed class CopilotBackgroundShellCommandTests
         Assert.Contains("启动成功不等于服务已就绪", details, StringComparison.Ordinal);
         Assert.Contains("停止后台命令 #1", confirmation, StringComparison.Ordinal);
         Assert.Contains("不会自动撤销", confirmation, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task OutputMonitorStartsAtCurrentArchiveEndAndStaysConversationScoped()
+    {
+        var launcher = new FakeBackgroundLauncher();
+        var registry = new CopilotBackgroundShellCommandRegistry(launcher);
+        var request = CreateRequest("monitor the background output");
+        var foreignRequest = CreateRequest(
+            "monitor the background output",
+            conversationId: "foreign-conversation");
+        try
+        {
+            var started = await registry.StartAsync(
+                request,
+                CreateStartInput("Write-Output lines; Start-Sleep 30"),
+                CancellationToken.None);
+            var backgroundId = Assert.IsType<
+                CopilotBackgroundShellCommandSnapshot>(started.Snapshot).Id;
+            launcher.LastProcess!.SetOutput(
+                "before\n",
+                string.Empty);
+
+            var foreignMonitor = registry.StartOutputMonitor(
+                foreignRequest.ConversationId,
+                backgroundId,
+                CopilotBackgroundShellOutputStream.StandardOutput,
+                "foreign",
+                lifetimeSeconds: 60);
+            Assert.False(foreignMonitor.Success);
+            Assert.Equal(
+                CopilotToolFailureKind.NotFound,
+                foreignMonitor.FailureKind);
+
+            var monitor = registry.StartOutputMonitor(
+                request.ConversationId,
+                backgroundId,
+                CopilotBackgroundShellOutputStream.StandardOutput,
+                "watch readiness",
+                lifetimeSeconds: 60);
+            Assert.True(monitor.Success, monitor.ErrorMessage);
+            Assert.False(monitor.AlreadyRunning);
+            Assert.NotNull(monitor.Snapshot);
+            var monitorTool =
+                new CopilotMonitorBackgroundShellCommandOutputTool(
+                    registry);
+            Assert.True(monitorTool.IsAvailable(request));
+            Assert.False(monitorTool.IsAvailable(new CopilotAgentRequest
+            {
+                ConversationId = request.ConversationId,
+                TaskId = request.TaskId,
+                WorkspacePath = request.WorkspacePath,
+                UserText = request.UserText,
+                TaskIntentText = request.TaskIntentText,
+                Mode = CopilotAgentMode.Plan,
+                SearchRootPaths = request.SearchRootPaths,
+                WritableLocalRootPaths = request.WritableLocalRootPaths,
+                PreferredShell = request.PreferredShell,
+            }));
+
+            var delivered =
+                new TaskCompletionSource<
+                    CopilotBackgroundShellOutputMonitorEventArgs>(
+                    TaskCreationOptions.RunContinuationsAsynchronously);
+            registry.OutputMonitorEvent += (_, eventArgs) =>
+                delivered.TrySetResult(eventArgs);
+            launcher.LastProcess.SetOutput(
+                "before\nafter token=monitor-secret\n",
+                string.Empty);
+
+            var eventArgs = await delivered.Task.WaitAsync(
+                TimeSpan.FromSeconds(3));
+            Assert.Equal(
+                monitor.Snapshot!.Id,
+                eventArgs.Monitor.Id);
+            Assert.Equal(backgroundId, eventArgs.Monitor.BackgroundId);
+            Assert.Contains("after", eventArgs.Content, StringComparison.Ordinal);
+            Assert.Contains(
+                "<redacted>",
+                eventArgs.Content,
+                StringComparison.Ordinal);
+            Assert.DoesNotContain(
+                "before",
+                eventArgs.Content,
+                StringComparison.Ordinal);
+            Assert.DoesNotContain(
+                "monitor-secret",
+                eventArgs.Content,
+                StringComparison.Ordinal);
+
+            var stopped = registry.StopOutputMonitor(
+                request.ConversationId,
+                monitor.Snapshot.Id);
+            Assert.True(stopped.Success, stopped.ErrorMessage);
+            Assert.Equal(
+                CopilotBackgroundShellOutputMonitorState.Stopped,
+                stopped.Snapshot!.State);
+            Assert.Equal(0, launcher.LastProcess.StopCount);
+            Assert.True(Assert.Single(
+                registry.GetSnapshots(request.ConversationId)).IsActive);
+        }
+        finally
+        {
+            await registry.ShutdownAsync();
+        }
+    }
+
+    [Fact]
+    public async Task OutputMonitorDeduplicatesOneCommandStreamAndEndsAtTerminalState()
+    {
+        var launcher = new FakeBackgroundLauncher();
+        var registry = new CopilotBackgroundShellCommandRegistry(launcher);
+        var request = CreateRequest("monitor the background output");
+        try
+        {
+            var started = await registry.StartAsync(
+                request,
+                CreateStartInput("Start-Sleep 30"),
+                CancellationToken.None);
+            var backgroundId = started.Snapshot!.Id;
+            var first = registry.StartOutputMonitor(
+                request.ConversationId,
+                backgroundId,
+                CopilotBackgroundShellOutputStream.StandardOutput,
+                "first",
+                lifetimeSeconds: 60);
+            var duplicate = registry.StartOutputMonitor(
+                request.ConversationId,
+                backgroundId,
+                CopilotBackgroundShellOutputStream.StandardOutput,
+                "duplicate",
+                lifetimeSeconds: 60);
+
+            Assert.True(first.Success, first.ErrorMessage);
+            Assert.True(duplicate.Success, duplicate.ErrorMessage);
+            Assert.True(duplicate.AlreadyRunning);
+            Assert.Equal(first.Snapshot!.Id, duplicate.Snapshot!.Id);
+
+            launcher.LastProcess!.SetOutput("final partial", string.Empty);
+            launcher.LastProcess.Complete(exitCode: 0);
+            await launcher.LastProcess.Completion;
+            CopilotBackgroundShellOutputMonitorSnapshot retained;
+            var deadline = DateTimeOffset.UtcNow.AddSeconds(3);
+            do
+            {
+                retained = Assert.Single(
+                    registry.GetOutputMonitorSnapshots(
+                        request.ConversationId));
+                if (!retained.IsActive)
+                    break;
+                await Task.Delay(20);
+            }
+            while (DateTimeOffset.UtcNow < deadline);
+            Assert.Equal(
+                CopilotBackgroundShellOutputMonitorState.Completed,
+                retained.State);
+            Assert.Equal(
+                1,
+                registry.ClearCompleted(request.ConversationId));
+            Assert.Empty(
+                registry.GetOutputMonitorSnapshots(
+                    request.ConversationId));
+        }
+        finally
+        {
+            await registry.ShutdownAsync();
+        }
+    }
+
+    [Fact]
+    public void OutputMonitorLineAssemblerBoundsLinesAndBatches()
+    {
+        var assembler =
+            new CopilotBackgroundShellOutputLineAssembler();
+        Assert.Empty(assembler.Append(
+            new string('x', 300),
+            flushPartialLine: false));
+
+        var batches = assembler.Append(
+            new string('y', 300)
+                + "\n\n"
+                + string.Join(
+                    "\n",
+                    Enumerable.Range(0, 12)
+                        .Select(index =>
+                            index.ToString()
+                            + ":"
+                            + new string('z', 400)))
+                + "\n",
+            flushPartialLine: false);
+
+        Assert.NotEmpty(batches);
+        Assert.All(
+            batches,
+            batch => Assert.InRange(
+                batch.Length,
+                1,
+                CopilotBackgroundShellOutputLineAssembler
+                    .MaximumBatchCharacters));
+        var lines = string.Join("\n", batches).Split('\n');
+        Assert.All(
+            lines,
+            line => Assert.InRange(
+                line.Length,
+                1,
+                CopilotBackgroundShellOutputLineAssembler
+                    .MaximumLineCharacters));
+        Assert.Contains(
+            lines,
+            line => line.EndsWith(
+                "...<line truncated>",
+                StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void OutputMonitorRateLimiterReportsSuppressionOnRefill()
+    {
+        var startedAtUtc =
+            DateTimeOffset.Parse("2026-07-31T00:00:00Z");
+        var limiter =
+            new CopilotBackgroundShellOutputMonitorRateLimiter(
+                startedAtUtc);
+        for (var index = 0;
+             index
+                < CopilotBackgroundShellOutputMonitorRateLimiter.Capacity;
+             index++)
+        {
+            Assert.True(limiter.TryAcquire(
+                startedAtUtc,
+                out var suppressed,
+                out var overloaded));
+            Assert.Equal(0, suppressed);
+            Assert.False(overloaded);
+        }
+
+        Assert.False(limiter.TryAcquire(
+            startedAtUtc,
+            out _,
+            out var initiallyOverloaded));
+        Assert.False(initiallyOverloaded);
+        Assert.True(limiter.TryAcquire(
+            startedAtUtc
+                + CopilotBackgroundShellOutputMonitorRateLimiter
+                    .RefillInterval,
+            out var suppressedAfterRefill,
+            out var overloadedAfterRefill));
+        Assert.Equal(1, suppressedAfterRefill);
+        Assert.False(overloadedAfterRefill);
+        Assert.Equal(1, limiter.TotalSuppressedEvents);
+    }
+
+    [Fact]
+    public void OutputMonitorRateLimiterStopsSustainedOverload()
+    {
+        var startedAtUtc =
+            DateTimeOffset.Parse("2026-07-31T00:00:00Z");
+        var limiter =
+            new CopilotBackgroundShellOutputMonitorRateLimiter(
+                startedAtUtc);
+        for (var index = 0;
+             index
+                < CopilotBackgroundShellOutputMonitorRateLimiter.Capacity;
+             index++)
+        {
+            Assert.True(limiter.TryAcquire(
+                startedAtUtc,
+                out _,
+                out _));
+        }
+        Assert.False(limiter.TryAcquire(
+            startedAtUtc,
+            out _,
+            out _));
+
+        var overloaded = false;
+        for (var second = 1; second <= 31 && !overloaded; second++)
+        {
+            limiter.TryAcquire(
+                startedAtUtc + TimeSpan.FromSeconds(second),
+                out _,
+                out overloaded);
+        }
+
+        Assert.True(overloaded);
+        Assert.True(limiter.TotalSuppressedEvents > 1);
     }
 
     private static CopilotAgentRequest CreateRequest(

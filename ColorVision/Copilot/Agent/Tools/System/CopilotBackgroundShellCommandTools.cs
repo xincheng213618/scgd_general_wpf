@@ -68,7 +68,7 @@ namespace ColorVision.Copilot
 
         public string Name => "StartBackgroundShellCommand";
 
-        public string Description => "Start one approved PowerShell or CMD command as an application-managed background process tree. The process is isolated to the current conversation, keeps a bounded redacted preview plus a capped temporary redacted output archive, expires automatically, and survives the Agent turn but never the ColorVision process. Starting confirms only that the process launched; use WaitForBackgroundShellCommand for one command, WaitForBackgroundShellCommands for a terminal-state group, InspectBackgroundShellCommands, ReadBackgroundShellCommandOutput, or a specialized diagnostic before claiming readiness. Every start requires native approval.";
+        public string Description => "Start one approved PowerShell or CMD command as an application-managed background process tree. The process is isolated to the current conversation, keeps a bounded redacted preview plus a capped temporary redacted output archive, expires automatically, and survives the Agent turn but never the ColorVision process. Starting confirms only that the process launched; use WaitForBackgroundShellCommand for one command, WaitForBackgroundShellCommands for a terminal-state group, MonitorBackgroundShellCommandOutput for later live lines during an active Agent run, InspectBackgroundShellCommands, ReadBackgroundShellCommandOutput, or a specialized diagnostic before claiming readiness. Every start requires native approval.";
 
         public CopilotToolCapabilityDescriptor Capability { get; } =
             CopilotToolCapabilityDescriptor.ProtectedWrite(

@@ -17,6 +17,9 @@ namespace ColorVision.Copilot
         bool TryEnqueueBackgroundShellCommandCompletion(
             CopilotBackgroundShellCommandSnapshot snapshot);
 
+        bool TryEnqueueBackgroundShellCommandOutput(
+            CopilotBackgroundShellOutputMonitorEventArgs eventArgs);
+
         bool TryAnswerUserQuestion(string taskId, string requestId, string answer);
 
         Task<CopilotWorkspaceRollbackActionResult> RequestWorkspaceRollbackAsync(

@@ -253,7 +253,7 @@ namespace ColorVision.Copilot
         public bool TerminalObservationWasPendingAtCompletion { get; }
     }
 
-    internal sealed class CopilotBackgroundShellCommandRegistry
+    internal sealed partial class CopilotBackgroundShellCommandRegistry
     {
         public const int DefaultLifetimeSeconds = 3_600;
         public const int MinimumLifetimeSeconds = 60;
@@ -1023,7 +1023,12 @@ namespace ColorVision.Copilot
                         && !entry.GetSnapshot().IsActive)
                     .ToArray();
                 foreach (var entry in removed)
+                {
                     _entries.Remove(entry);
+                    RemoveOutputMonitorsForCommandUnderLock(
+                        entry.ConversationId,
+                        entry.Id);
+                }
             }
             foreach (var entry in removed)
                 entry.Dispose();
@@ -1033,11 +1038,16 @@ namespace ColorVision.Copilot
         public async Task ShutdownAsync()
         {
             Entry[] entries;
+            OutputMonitorEntry[] outputMonitors;
             lock (_syncRoot)
             {
                 if (_isShuttingDown)
                     return;
                 _isShuttingDown = true;
+                StopAllOutputMonitorsUnderLock(
+                    CopilotBackgroundShellOutputMonitorState.Stopped);
+                outputMonitors = _outputMonitors.ToArray();
+                _outputMonitors.Clear();
                 entries = _entries.ToArray();
                 _entries.Clear();
             }
@@ -1052,6 +1062,8 @@ namespace ColorVision.Copilot
             {
                 foreach (var entry in entries)
                     entry.Dispose();
+                foreach (var monitor in outputMonitors)
+                    monitor.Dispose();
             }
         }
 
@@ -1152,6 +1164,9 @@ namespace ColorVision.Copilot
                 var entry = removable[0];
                 removable.RemoveAt(0);
                 _entries.Remove(entry);
+                RemoveOutputMonitorsForCommandUnderLock(
+                    entry.ConversationId,
+                    entry.Id);
                 entry.Dispose();
             }
         }
