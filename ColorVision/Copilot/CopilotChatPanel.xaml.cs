@@ -866,6 +866,13 @@ namespace ColorVision.Copilot
                 return;
             }
 
+            if (e.Key is Key.PageUp or Key.PageDown
+                && TryPageConversationFromPrompt(e.Key, Keyboard.Modifiers))
+            {
+                e.Handled = true;
+                return;
+            }
+
             if (e.Key == Key.V && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
             {
                 if (DataContext is CopilotChatViewModel pasteViewModel
@@ -935,6 +942,66 @@ namespace ColorVision.Copilot
             viewModel.SendCommand.Execute(null);
 
             e.Handled = true;
+        }
+
+        private bool TryPageConversationFromPrompt(Key key, ModifierKeys modifiers)
+        {
+            if (DataContext is not CopilotChatViewModel viewModel)
+                return false;
+
+            var messagesScrollViewer = GetMessagesScrollViewer();
+            if (messagesScrollViewer == null)
+                return false;
+
+            var promptScrollViewer = FindVisualChild<ScrollViewer>(PromptTextBox);
+            var hasComposerOverlay = viewModel.IsPromptHistorySearchOpen
+                || viewModel.IsComposerReferenceMentionActive
+                || viewModel.HasLocalCommandSuggestions;
+            if (!ShouldPageConversation(
+                key,
+                modifiers,
+                hasComposerOverlay,
+                promptScrollViewer?.VerticalOffset ?? 0,
+                promptScrollViewer?.ScrollableHeight ?? 0,
+                messagesScrollViewer.VerticalOffset,
+                messagesScrollViewer.ScrollableHeight))
+            {
+                return false;
+            }
+
+            if (key == Key.PageUp)
+                messagesScrollViewer.PageUp();
+            else
+                messagesScrollViewer.PageDown();
+            return true;
+        }
+
+        internal static bool ShouldPageConversation(
+            Key key,
+            ModifierKeys modifiers,
+            bool hasComposerOverlay,
+            double promptVerticalOffset,
+            double promptScrollableHeight,
+            double conversationVerticalOffset,
+            double conversationScrollableHeight)
+        {
+            const double boundaryTolerance = 0.5;
+            if (key is not (Key.PageUp or Key.PageDown)
+                || modifiers != ModifierKeys.None
+                || hasComposerOverlay)
+            {
+                return false;
+            }
+
+            var promptCanScroll = key == Key.PageUp
+                ? promptVerticalOffset > boundaryTolerance
+                : promptScrollableHeight - promptVerticalOffset > boundaryTolerance;
+            if (promptCanScroll)
+                return false;
+
+            return key == Key.PageUp
+                ? conversationVerticalOffset > boundaryTolerance
+                : conversationScrollableHeight - conversationVerticalOffset > boundaryTolerance;
         }
 
         private bool IsRightArrowCompletionGesture(KeyEventArgs e)
@@ -1154,6 +1221,8 @@ namespace ColorVision.Copilot
 
             if (IsNearBottom())
                 HideScrollToLatestButton();
+            else
+                ShowScrollToLatestButton();
         }
 
         private ScrollViewer? GetMessagesScrollViewer()
