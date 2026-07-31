@@ -9,19 +9,22 @@ public sealed class CopilotTaskDiagnosticsTests
     {
         var invocation = CopilotLocalCommandCatalog.Parse("/tasks");
         var stopInvocation = CopilotLocalCommandCatalog.Parse("/tasks stop 2");
-        var stopSuggestion = Assert.Single(CopilotLocalCommandCatalog.Suggest("/tasks "));
+        var resumeInvocation = CopilotLocalCommandCatalog.Parse("/tasks resume 1");
+        var taskSuggestions = CopilotLocalCommandCatalog.Suggest("/tasks ");
 
         Assert.NotNull(invocation);
         Assert.Equal(CopilotLocalCommandKind.Tasks, invocation.Command.Kind);
         Assert.Empty(invocation.Arguments);
         Assert.True(invocation.Command.AvailableWhileAgentRuns);
-        Assert.Equal("/tasks [stop N]", invocation.Command.Usage);
+        Assert.Equal("/tasks [stop N|resume N]", invocation.Command.Usage);
         Assert.Contains(CopilotLocalCommandCatalog.Suggest("/"), command => command.Name == "/tasks");
         Assert.NotNull(stopInvocation);
         Assert.Equal("stop 2", stopInvocation.Arguments);
-        Assert.Equal("/tasks stop", stopSuggestion.Name);
-        Assert.True(stopSuggestion.AcceptsArguments);
-        Assert.Equal("/tasks stop ", stopSuggestion.CompletionText);
+        Assert.NotNull(resumeInvocation);
+        Assert.Equal("resume 1", resumeInvocation.Arguments);
+        Assert.Equal(["/tasks stop", "/tasks resume"], taskSuggestions.Select(item => item.Name));
+        Assert.All(taskSuggestions, item => Assert.True(item.AcceptsArguments));
+        Assert.Equal(["/tasks stop ", "/tasks resume "], taskSuggestions.Select(item => item.CompletionText));
     }
 
     [Fact]
@@ -34,7 +37,7 @@ public sealed class CopilotTaskDiagnosticsTests
         Assert.Equal(CopilotLocalCommandKind.Tasks, invocation.Command.Kind);
         Assert.Empty(invocation.Arguments);
         Assert.True(invocation.Command.AvailableWhileAgentRuns);
-        Assert.Equal("/ps [stop N]", invocation.Command.Usage);
+        Assert.Equal("/ps [stop N|resume N]", invocation.Command.Usage);
         Assert.Contains(CopilotLocalCommandCatalog.Suggest("/p"), command => command.Name == "/ps");
         Assert.NotNull(stopInvocation);
         Assert.Equal("stop 3", stopInvocation.Arguments);
@@ -45,11 +48,14 @@ public sealed class CopilotTaskDiagnosticsTests
     [InlineData("", 0, 0)]
     [InlineData("stop 1", 1, 1)]
     [InlineData("STOP 12", 1, 12)]
-    [InlineData("stop", 2, 0)]
-    [InlineData("stop 0", 2, 0)]
-    [InlineData("stop -1", 2, 0)]
-    [InlineData("stop 1 extra", 2, 0)]
-    [InlineData("all", 2, 0)]
+    [InlineData("resume 2", 2, 2)]
+    [InlineData("RESUME 9", 2, 9)]
+    [InlineData("stop", 3, 0)]
+    [InlineData("resume", 3, 0)]
+    [InlineData("stop 0", 3, 0)]
+    [InlineData("resume -1", 3, 0)]
+    [InlineData("stop 1 extra", 3, 0)]
+    [InlineData("all", 3, 0)]
     public void TaskCommandParserRequiresAnExactPositivePosition(
         string? arguments,
         int expectedAction,
@@ -108,6 +114,7 @@ public sealed class CopilotTaskDiagnosticsTests
         Assert.Contains("[排队 1] Queued task · 代码 · 已等待 10 秒", report, StringComparison.Ordinal);
         Assert.Contains("[已暂停] Paused task · 剩余 2 项 · 可继续", report, StringComparison.Ordinal);
         Assert.Contains("/tasks stop N", report, StringComparison.Ordinal);
+        Assert.Contains("/tasks resume N", report, StringComparison.Ordinal);
         Assert.DoesNotContain("run:active-secret", report, StringComparison.Ordinal);
         Assert.DoesNotContain("run:queued-secret", report, StringComparison.Ordinal);
     }
@@ -215,6 +222,7 @@ public sealed class CopilotTaskDiagnosticsTests
         Assert.Same(second, CopilotTaskDiagnostics.FindRun(snapshot, 2));
         Assert.Null(CopilotTaskDiagnostics.FindRun(snapshot, 0));
         Assert.Null(CopilotTaskDiagnostics.FindRun(snapshot, 3));
+        Assert.Null(CopilotTaskDiagnostics.FindAttentionTask(snapshot, 1));
 
         var confirmation = CopilotTaskDiagnostics.FormatStopConfirmation(first, 1);
 
@@ -226,6 +234,49 @@ public sealed class CopilotTaskDiagnosticsTests
         Assert.DoesNotContain(first.ConversationId, confirmation, StringComparison.Ordinal);
         Assert.DoesNotContain("prompt secret", confirmation, StringComparison.Ordinal);
         Assert.DoesNotContain(@"C:\private\attachment.txt", confirmation, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ResumeSelectionUsesOnlyTheNeedsAttentionNumbering()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var first = new CopilotTaskAttentionDiagnosticSnapshot(
+            "conversation-paused",
+            "Paused task",
+            "已暂停",
+            RemainingCount: 2,
+            CanResume: true);
+        var second = new CopilotTaskAttentionDiagnosticSnapshot(
+            "conversation-blocked",
+            "Blocked task",
+            "任务受阻",
+            RemainingCount: 1,
+            CanResume: false);
+        var snapshot = new CopilotTaskDiagnosticSnapshot(
+            now,
+            HostShutdown: false,
+            MaximumQueuedRuns: 3,
+            Runs:
+            [
+                new CopilotTaskRunDiagnosticSnapshot(
+                    "run:active",
+                    "conversation-active",
+                    "Active task",
+                    CopilotAgentMode.Auto,
+                    CopilotHostedRunState.Running,
+                    now,
+                    now,
+                    IsCheckpointReady: false,
+                    QueuePosition: 0),
+            ],
+            TotalAttentionTasks: 2,
+            AttentionTasks: [first, second]);
+
+        Assert.Same(first, CopilotTaskDiagnostics.FindAttentionTask(snapshot, 1));
+        Assert.Same(second, CopilotTaskDiagnostics.FindAttentionTask(snapshot, 2));
+        Assert.Null(CopilotTaskDiagnostics.FindAttentionTask(snapshot, 0));
+        Assert.Null(CopilotTaskDiagnostics.FindAttentionTask(snapshot, 3));
+        Assert.Equal("conversation-paused", CopilotTaskDiagnostics.FindAttentionTask(snapshot, 1)?.ConversationId);
     }
 
     [Fact]

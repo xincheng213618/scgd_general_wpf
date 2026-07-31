@@ -2542,6 +2542,12 @@ namespace ColorVision.Copilot
             }
 
             var snapshot = CaptureTaskDiagnostics();
+            if (request.Action == CopilotTaskCommandAction.Resume)
+            {
+                ResumeTaskFromCommand(command, snapshot, request.Position);
+                return;
+            }
+
             var run = CopilotTaskDiagnostics.FindRun(snapshot, request.Position);
             if (run == null)
             {
@@ -2591,11 +2597,49 @@ namespace ColorVision.Copilot
             ShowLocalCommandResult(command, report);
         }
 
+        private void ResumeTaskFromCommand(
+            CopilotLocalCommand command,
+            CopilotTaskDiagnosticSnapshot snapshot,
+            int position)
+        {
+            var attentionTask = CopilotTaskDiagnostics.FindAttentionTask(snapshot, position);
+            if (attentionTask == null)
+            {
+                ShowLocalCommandResult(
+                    command,
+                    $"“需要处理”中没有任务 #{position:N0}。输入 /tasks 查看实时位置；任务可能已恢复或离开列表。");
+                return;
+            }
+            if (!attentionTask.CanResume)
+            {
+                ShowLocalCommandResult(
+                    command,
+                    $"任务 #{position:N0} 当前没有可用 checkpoint，不能直接恢复；原任务状态和审计证据未改变。");
+                return;
+            }
+
+            var task = CopilotAgentTaskIndex.Build(
+                    CopilotConversationArchiveService.GetActive(Conversations))
+                .FirstOrDefault(candidate =>
+                    string.Equals(candidate.ConversationId, attentionTask.ConversationId, StringComparison.Ordinal));
+            if (task == null || !TryResumeAgentTask(task))
+            {
+                ShowLocalCommandResult(
+                    command,
+                    $"任务 #{position:N0} 的 checkpoint、模型配置或运行环境刚刚变化，未启动恢复。请重新输入 /tasks 查看状态。");
+                return;
+            }
+
+            ShowLocalCommandResult(
+                command,
+                $"已切换到“{attentionTask.Title}”并请求恢复任务 #{position:N0}；checkpoint 已重新验证，后续工具仍遵循现有审批策略。");
+        }
+
         private CopilotTaskDiagnosticSnapshot CaptureTaskDiagnostics()
         {
             return CopilotTaskDiagnostics.Capture(
                 _taskHost,
-                Conversations,
+                CopilotConversationArchiveService.GetActive(Conversations),
                 DateTimeOffset.UtcNow);
         }
 
@@ -5871,8 +5915,13 @@ namespace ColorVision.Copilot
 
         private void ContinueAgentTasks(CopilotChatMessage? message)
         {
+            TryContinueAgentTasks(message);
+        }
+
+        private bool TryContinueAgentTasks(CopilotChatMessage? message)
+        {
             if (!CanContinueAgentTasks(message))
-                return;
+                return false;
 
             var conversation = SelectedConversation!;
             var profile = SelectedProfile!;
@@ -5883,12 +5932,13 @@ namespace ColorVision.Copilot
                 CopilotCapabilityCatalog.Shared.GetSnapshot(),
                 CopilotToolExecutor.GetSharedHookSurfaceSnapshot());
             if (!decision.IsAvailable)
-                return;
+                return false;
 
             _pendingAgentRecoveryRequest = decision.Request;
             SetPendingRequestModeOverride(CopilotAgentMode.Auto);
             InputText = decision.UserMessage;
             RunUiOperation(SendAsync, "继续 Agent 任务");
+            return true;
         }
 
         private bool CanExecuteApprovedPlan(CopilotChatMessage? message)
@@ -6281,11 +6331,19 @@ namespace ColorVision.Copilot
 
         private void ResumeAgentTask(CopilotAgentTaskSummary? task)
         {
+            TryResumeAgentTask(task);
+        }
+
+        private bool TryResumeAgentTask(CopilotAgentTaskSummary? task)
+        {
             if (!CanResumeAgentTask(task) || task == null)
-                return;
+                return false;
 
             SelectConversation(task.Conversation, persist: true, preferredProfileId: task.Conversation.ProfileId);
-            ContinueAgentTasks(task.Message);
+            if (!ReferenceEquals(SelectedConversation, task.Conversation))
+                return false;
+
+            return TryContinueAgentTasks(task.Message);
         }
 
         private void DismissAgentTask(CopilotAgentTaskSummary? task)
