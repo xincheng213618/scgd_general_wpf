@@ -25,6 +25,7 @@ namespace ColorVision.Copilot
         Context,
         ProjectInstructions,
         Permissions,
+        AdditionalDirectories,
         Settings,
         InitializeProject,
         Skills,
@@ -167,6 +168,13 @@ namespace ColorVision.Copilot
                 new("status", "显示当前文件范围、能力与审批策略"),
                 new("ask", "恢复受保护操作逐次确认"),
                 new("auto", "为下一任务或当前任务临时启用自动复核"),
+            ]),
+            new("/add-dir", "管理当前会话后续 Agent 请求可读取的附加目录", CopilotLocalCommandKind.AdditionalDirectories, AcceptsArguments: true, Usage: CopilotAdditionalDirectoryCommand.Usage, Arguments:
+            [
+                new("list", "列出当前会话的附加只读目录"),
+                new("add", "添加一个现有绝对目录", AcceptsArguments: true),
+                new("remove", "按编号移除附加目录", AcceptsArguments: true),
+                new("clear", "清空全部附加目录"),
             ]),
             new("/settings", "打开模型、Agent、MCP 或后端同步设置", CopilotLocalCommandKind.Settings, AcceptsArguments: true, Usage: "/settings [models|agent|mcp|sync]", Arguments:
             [

@@ -73,6 +73,8 @@ namespace ColorVision.Copilot
 
         public string ActiveDocumentPath { get; init; } = string.Empty;
 
+        public int AdditionalReadRootCount { get; init; }
+
         public CopilotShellKind PreferredShell { get; init; }
 
         public int ContextWindowTokens { get; init; }
@@ -139,6 +141,7 @@ namespace ColorVision.Copilot
             builder.AppendLine();
             builder.Append("工作区：").AppendLine(ValueOrFallback(snapshot.WorkspacePath, "未打开解决方案"));
             builder.Append("活动文档：").AppendLine(ValueOrFallback(snapshot.ActiveDocumentPath, "无"));
+            builder.Append("附加只读目录：").AppendLine(FormatCount(snapshot.AdditionalReadRootCount));
             builder.Append("Shell：").AppendLine(FormatShell(snapshot.PreferredShell));
             builder.Append("Agent 预算：上下文 ").Append(FormatCount(snapshot.ContextWindowTokens))
                 .Append(" Token / 累计请求 ").Append(FormatCount(snapshot.RequestTokenBudget))

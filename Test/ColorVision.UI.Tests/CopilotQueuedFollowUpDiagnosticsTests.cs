@@ -1,4 +1,5 @@
 using ColorVision.Copilot;
+using System.IO;
 
 namespace ColorVision.UI.Tests;
 
@@ -55,7 +56,8 @@ public sealed class CopilotQueuedFollowUpDiagnosticsTests
             "conversation-1",
             "First queued request",
             CopilotAgentMode.Code,
-            [CopilotAttachmentItem.CreateContext("private attachment body", "Context")]);
+            [CopilotAttachmentItem.CreateContext("private attachment body", "Context")],
+            additionalReadRootPaths: [Path.GetTempPath()]);
         var second = CreateFollowUp(
             "run-private-2",
             "conversation-1",
@@ -77,7 +79,7 @@ public sealed class CopilotQueuedFollowUpDiagnosticsTests
 
         Assert.Contains("当前会话排队 · 2", report, StringComparison.Ordinal);
         Assert.True(
-            report.IndexOf("#1 · Code · First queued request · 附件 1", StringComparison.Ordinal)
+            report.IndexOf("#1 · Code · First queued request · 附件 1 · 附加只读目录 1", StringComparison.Ordinal)
             < report.IndexOf("#3 · Plan · Second queued request · 持续目标", StringComparison.Ordinal));
         Assert.DoesNotContain("Foreign conversation prompt", report, StringComparison.Ordinal);
         Assert.DoesNotContain("private attachment body", report, StringComparison.Ordinal);
@@ -177,7 +179,8 @@ public sealed class CopilotQueuedFollowUpDiagnosticsTests
         string prompt,
         CopilotAgentMode mode,
         IReadOnlyList<CopilotAttachmentItem>? attachments = null,
-        string? goalId = null)
+        string? goalId = null,
+        IReadOnlyList<string>? additionalReadRootPaths = null)
     {
         return new CopilotQueuedFollowUp(
             runId,
@@ -189,7 +192,8 @@ public sealed class CopilotQueuedFollowUpDiagnosticsTests
             new CopilotAgentHostContextSnapshot(
                 @"C:\private\active.cs",
                 @"C:\private\workspace",
-                attachments),
+                attachments,
+                additionalReadRootPaths: additionalReadRootPaths),
             goalId);
     }
 }

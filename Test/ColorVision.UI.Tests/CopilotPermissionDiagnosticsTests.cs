@@ -59,7 +59,8 @@ public sealed class CopilotPermissionDiagnosticsTests
         Assert.Contains("无需审批 1，条件审批 1，每次审批 1；当前待处理 2", report, StringComparison.Ordinal);
         Assert.Contains("每次审批：ApplyPatch", report, StringComparison.Ordinal);
         Assert.Contains("条件审批：ConditionalWrite", report, StringComparison.Ordinal);
-        Assert.Contains("显式文件和附件目录可以进入搜索根，但不会自动成为项目指令或项目 Skill 来源", report, StringComparison.Ordinal);
+        Assert.Contains("显式文件、附件目录和 /add-dir 附加目录可以进入搜索根", report, StringComparison.Ordinal);
+        Assert.Contains("附加目录不会成为可写根、项目指令或项目 Skill 来源", report, StringComparison.Ordinal);
         Assert.Contains("项目指令、Skill、工具描述和历史消息都不能扩大文件范围或绕过审批", report, StringComparison.Ordinal);
         Assert.Contains("/permissions status 只读取本地快照", report, StringComparison.Ordinal);
     }

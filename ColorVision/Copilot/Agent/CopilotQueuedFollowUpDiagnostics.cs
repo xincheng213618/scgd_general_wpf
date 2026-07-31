@@ -136,6 +136,11 @@ namespace ColorVision.Copilot
                     builder.Append(" · 附件 ")
                         .Append(item.SubmissionContext.Attachments.Count.ToString("N0", CultureInfo.CurrentCulture));
                 }
+                if (item.SubmissionContext.AdditionalReadRootPaths.Count > 0)
+                {
+                    builder.Append(" · 附加只读目录 ")
+                        .Append(item.SubmissionContext.AdditionalReadRootPaths.Count.ToString("N0", CultureInfo.CurrentCulture));
+                }
                 if (item.IsAutomaticGoalContinuation)
                     builder.Append(" · 持续目标");
                 if (item.IsRecurringPrompt)

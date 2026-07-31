@@ -318,6 +318,10 @@ namespace ColorVision.Copilot
                 .AppendLine(personalitySource)
                 .Append("- 权限：")
                 .AppendLine(FormatAccessMode(conversation))
+                .Append("- 附加只读目录：")
+                .Append(CopilotAdditionalDirectoryCommand.NormalizeStoredPaths(
+                    conversation?.AdditionalReadRootPaths).Length)
+                .AppendLine(" 个 · 来源 会话状态")
                 .Append("- 运行中 Enter：")
                 .Append(followUp == CopilotFollowUpBehavior.Queue ? "排队" : "调整当前任务")
                 .Append(" · 来源 ")

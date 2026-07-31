@@ -139,6 +139,7 @@ public sealed class CopilotEffectiveConfigDiagnosticsTests
             var conversation = CopilotConversationRecord.CreateEmpty(profile.Id, profile.DisplayLabel);
             conversation.Title = "Config diagnostics";
             conversation.ResponsePersonality = CopilotResponsePersonality.Pragmatic;
+            conversation.AdditionalReadRootPaths.Add(root);
             conversation.PrepareFullAccessGrant(
                 root,
                 "task-1",
@@ -165,7 +166,7 @@ public sealed class CopilotEffectiveConfigDiagnosticsTests
             Assert.Contains("生效来源（基础 → 当前任务）", report);
             Assert.Contains("file schema 5 → runtime 6", report);
             Assert.Contains(Path.GetFullPath(configPath), report);
-            Assert.Contains("主状态文件 · file schema 28 · runtime schema 28", report);
+            Assert.Contains("主状态文件 · file schema 29 · runtime schema 29", report);
             Assert.Contains("Diagnostic profile · gpt-test · 来源 会话 ProfileId", report);
             Assert.Contains("定义：应用配置 CopilotConfig.Profiles", report);
             Assert.Contains("端点：https://example.com:8443 · 凭据 已配置", report);
@@ -174,6 +175,7 @@ public sealed class CopilotEffectiveConfigDiagnosticsTests
             Assert.Contains("Shell：PowerShell · 自动压缩 开启 @ 80%", report);
             Assert.Contains("回答风格：务实 · 来源 会话覆盖", report);
             Assert.Contains("权限：自动复核 · 当前任务", report);
+            Assert.Contains("附加只读目录：1 个 · 来源 会话状态", report);
             Assert.Contains("运行中 Enter：排队 · 来源 ChatState 保存值", report);
             Assert.Contains("本机 MCP：启用 · listener 运行中 · port 38473 · Bearer 已配置", report);
             Assert.Contains("外部 MCP：1 / 2 个已启用", report);
@@ -241,7 +243,7 @@ public sealed class CopilotEffectiveConfigDiagnosticsTests
             });
 
         Assert.Contains("当前文件不存在 · 继续使用已加载运行时值", report);
-        Assert.Contains("新建内存状态 · runtime schema 28", report);
+        Assert.Contains("新建内存状态 · runtime schema 29", report);
         Assert.Contains("当前没有可用 Profile", report);
         Assert.Contains("按需确认 · 内置安全默认", report);
         Assert.Contains("下一次请求会从上述当前值创建独立请求快照", report);

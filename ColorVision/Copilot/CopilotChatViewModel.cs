@@ -2028,6 +2028,9 @@ namespace ColorVision.Copilot
                 case CopilotLocalCommandKind.Permissions:
                     HandlePermissionsCommand(command, invocation.Arguments);
                     break;
+                case CopilotLocalCommandKind.AdditionalDirectories:
+                    HandleAdditionalDirectoryCommand(command, invocation.Arguments);
+                    break;
                 case CopilotLocalCommandKind.Settings:
                     OpenSettingsFromCommand(command, invocation.Arguments);
                     break;
@@ -2536,7 +2539,8 @@ namespace ColorVision.Copilot
                 job.WorkspacePath,
                 Array.Empty<CopilotAttachmentItem>(),
                 liveContext: null,
-                CopilotConversationRequestBuilder.CaptureHistorySnapshot(conversation));
+                CopilotConversationRequestBuilder.CaptureHistorySnapshot(conversation),
+                conversation.AdditionalReadRootPaths);
             var itemReady = new TaskCompletionSource<CopilotQueuedFollowUp>(
                 TaskCreationOptions.RunContinuationsAsynchronously);
             async Task ExecuteRecurringPromptAsync(CopilotHostedAgentRun run)
@@ -2735,6 +2739,8 @@ namespace ColorVision.Copilot
                 ConversationRootId = branchOrigin?.RootConversationId ?? string.Empty,
                 WorkspacePath = turnSnapshot.SolutionDirectoryPath,
                 ActiveDocumentPath = turnSnapshot.ActiveDocumentPath,
+                AdditionalReadRootCount = CopilotAdditionalDirectoryCommand.NormalizeStoredPaths(
+                    conversation?.AdditionalReadRootPaths).Length,
                 PreferredShell = defaults.PreferredShell,
                 ContextWindowTokens = defaults.ContextWindowTokens,
                 RequestTokenBudget = defaults.RequestTokenBudget,
@@ -3477,7 +3483,11 @@ namespace ColorVision.Copilot
         private string BuildPermissionDiagnosticsReport()
         {
             var mode = ResolveComposerRequestMode();
-            var turnSnapshot = CaptureHostedTurnSnapshot(Attachments);
+            var turnSnapshot = SelectedConversation == null
+                ? CaptureHostedTurnSnapshot(Attachments)
+                : CaptureHostedTurnSnapshot(
+                    SelectedConversation,
+                    attachmentOverride: Attachments);
             var requestPlan = CopilotAgentRequestFactory.Prepare(string.Empty, mode, turnSnapshot);
             var capabilitySnapshot = CopilotCapabilityCatalog.Shared.GetSnapshot();
             return CopilotPermissionDiagnostics.Format(new CopilotPermissionDiagnosticSnapshot
@@ -3517,6 +3527,111 @@ namespace ColorVision.Copilot
                 default:
                     ShowLocalCommandResult(command, CopilotPermissionCommand.Usage);
                     break;
+            }
+        }
+
+        private void HandleAdditionalDirectoryCommand(
+            CopilotLocalCommand command,
+            string arguments)
+        {
+            var request = CopilotAdditionalDirectoryCommand.Parse(arguments);
+            var conversation = SelectedConversation ?? EnsureConversation();
+            var currentPaths = CopilotAdditionalDirectoryCommand.NormalizeStoredPaths(
+                conversation.AdditionalReadRootPaths);
+            switch (request.Action)
+            {
+                case CopilotAdditionalDirectoryCommandAction.List:
+                    ShowLocalCommandResult(
+                        command,
+                        CopilotAdditionalDirectoryCommand.Format(currentPaths));
+                    return;
+                case CopilotAdditionalDirectoryCommandAction.Clear:
+                    if (!conversation.ReplaceAdditionalReadRootPaths(Array.Empty<string>()))
+                    {
+                        ShowLocalCommandResult(command, "当前会话没有附加只读目录。");
+                        return;
+                    }
+
+                    UpdateConversationMetadata(conversation, touch: true);
+                    PersistState(immediate: true);
+                    ShowLocalCommandResult(
+                        command,
+                        "已清空当前会话的附加只读目录；后续 Agent 请求只使用工作区、活动文档、附件和请求中显式写出的路径。");
+                    return;
+                case CopilotAdditionalDirectoryCommandAction.Remove:
+                    if (request.Ordinal > currentPaths.Length)
+                    {
+                        ShowLocalCommandResult(
+                            command,
+                            $"没有编号 {request.Ordinal:N0} 的附加目录。{Environment.NewLine}{Environment.NewLine}"
+                            + CopilotAdditionalDirectoryCommand.Format(currentPaths));
+                        return;
+                    }
+
+                    var removedPath = currentPaths[request.Ordinal - 1];
+                    conversation.ReplaceAdditionalReadRootPaths(
+                        currentPaths.Where((_, index) => index != request.Ordinal - 1));
+                    UpdateConversationMetadata(conversation, touch: true);
+                    PersistState(immediate: true);
+                    ShowLocalCommandResult(
+                        command,
+                        $"已移除附加只读目录：{removedPath}{Environment.NewLine}{Environment.NewLine}"
+                        + CopilotAdditionalDirectoryCommand.Format(conversation.AdditionalReadRootPaths));
+                    return;
+                case CopilotAdditionalDirectoryCommandAction.Add:
+                    if (!CopilotAdditionalDirectoryCommand.TryNormalizeExistingDirectory(
+                            request.Path,
+                            out var addedPath,
+                            out var errorMessage))
+                    {
+                        ShowLocalCommandResult(command, errorMessage);
+                        return;
+                    }
+
+                    var workspaceRoot = CaptureHostedTurnSnapshot(
+                        conversation.Attachments).SolutionDirectoryPath;
+                    var workspaceRoots = CopilotWorkspaceSearchSupport.NormalizeSearchRoots([workspaceRoot]);
+                    if (CopilotWorkspaceSearchSupport.IsPathWithinRoots(addedPath, workspaceRoots))
+                    {
+                        ShowLocalCommandResult(
+                            command,
+                            "该目录已经位于当前工作区读取范围内，无需重复添加：" + addedPath);
+                        return;
+                    }
+                    if (CopilotWorkspaceSearchSupport.IsPathWithinRoots(addedPath, currentPaths))
+                    {
+                        ShowLocalCommandResult(
+                            command,
+                            "该目录已经被现有附加目录覆盖：" + addedPath);
+                        return;
+                    }
+
+                    var mergedPaths = CopilotAdditionalDirectoryCommand.NormalizeStoredPaths(
+                        currentPaths.Append(addedPath));
+                    if (!mergedPaths.Contains(addedPath, StringComparer.OrdinalIgnoreCase))
+                    {
+                        ShowLocalCommandResult(
+                            command,
+                            $"当前会话最多保留 {CopilotAdditionalDirectoryCommand.MaximumDirectories:N0} 个附加目录；请先使用 /add-dir remove N 移除一个。");
+                        return;
+                    }
+
+                    conversation.ReplaceAdditionalReadRootPaths(mergedPaths);
+                    UpdateConversationMetadata(conversation, touch: true);
+                    PersistState(immediate: true);
+                    ShowLocalCommandResult(
+                        command,
+                        $"已添加附加只读目录：{addedPath}{Environment.NewLine}"
+                        + "它只对后续新 Agent 请求生效，不会扩大写入范围或加载其中的配置。"
+                        + Environment.NewLine
+                        + Environment.NewLine
+                        + CopilotAdditionalDirectoryCommand.Format(conversation.AdditionalReadRootPaths));
+                    return;
+                default:
+                    ShowLocalCommandResult(
+                        command,
+                        $"用法：{CopilotAdditionalDirectoryCommand.Usage}");
+                    return;
             }
         }
 
@@ -5110,19 +5225,22 @@ namespace ColorVision.Copilot
                 : conversation.Attachments);
             return CaptureHostedTurnSnapshot(
                 attachments,
-                CopilotConversationRequestBuilder.CaptureHistorySnapshot(conversation, stopBeforeMessage));
+                CopilotConversationRequestBuilder.CaptureHistorySnapshot(conversation, stopBeforeMessage),
+                conversation.AdditionalReadRootPaths);
         }
 
         private CopilotAgentHostContextSnapshot CaptureHostedTurnSnapshot(
             IEnumerable<CopilotAttachmentItem> attachments,
-            CopilotConversationHistorySnapshot? conversationHistory = null)
+            CopilotConversationHistorySnapshot? conversationHistory = null,
+            IEnumerable<string>? additionalReadRootPaths = null)
         {
             return new CopilotAgentHostContextSnapshot(
                 _activeDocumentPath,
                 SolutionManager.GetInstance().CurrentSolutionExplorer?.DirectoryInfo?.FullName ?? string.Empty,
                 attachments,
                 _currentLiveContext,
-                conversationHistory);
+                conversationHistory,
+                additionalReadRootPaths);
         }
 
         private void ApplyChatDeltas(CopilotChatMessage assistantMessage, IReadOnlyList<CopilotStreamDelta> deltas)
@@ -6156,7 +6274,8 @@ namespace ColorVision.Copilot
                 submittedContext.SolutionDirectoryPath,
                 submittedContext.Attachments,
                 submittedContext.LiveContext,
-                CopilotConversationRequestBuilder.CaptureHistorySnapshot(conversation));
+                CopilotConversationRequestBuilder.CaptureHistorySnapshot(conversation),
+                submittedContext.AdditionalReadRootPaths);
             var userMessage = new CopilotChatMessage(CopilotChatRole.User, queuedFollowUp.Prompt)
             {
                 RequestMode = queuedFollowUp.Mode,

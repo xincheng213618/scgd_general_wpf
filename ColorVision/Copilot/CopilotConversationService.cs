@@ -12,6 +12,7 @@ namespace ColorVision.Copilot
             return conversation != null
                 && conversation.Messages.Count == 0
                 && conversation.Attachments.Count == 0
+                && !conversation.HasAdditionalReadRoots
                 && !conversation.HasDraft
                 && !conversation.HasComposerStash
                 && !conversation.HasCustomTitle
@@ -36,6 +37,7 @@ namespace ColorVision.Copilot
                 && (conversation.HasDraft
                     || conversation.HasComposerStash
                     || conversation.Attachments.Count > 0
+                    || conversation.HasAdditionalReadRoots
                     || conversation.Messages.Any(message => !string.IsNullOrWhiteSpace(message.Content)));
         }
 

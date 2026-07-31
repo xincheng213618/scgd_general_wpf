@@ -1,6 +1,7 @@
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 
 namespace ColorVision.Copilot
@@ -150,6 +151,8 @@ namespace ColorVision.Copilot
                 ProfileDisplayName = source.ProfileDisplayName,
                 ProfileId = source.ProfileId,
                 ResponsePersonality = source.ResponsePersonality,
+                AdditionalReadRootPaths = new ObservableCollection<string>(
+                    CopilotAdditionalDirectoryCommand.NormalizeStoredPaths(source.AdditionalReadRootPaths)),
                 Title = BuildBranchTitle(source.Title, requestedTitle),
                 UpdatedAt = DateTime.Now,
                 BranchOrigin = new CopilotConversationBranchOrigin

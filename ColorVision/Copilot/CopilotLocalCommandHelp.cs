@@ -36,6 +36,7 @@ namespace ColorVision.Copilot
             ("工作区与 Agent",
             [
                 CopilotLocalCommandKind.InitializeProject,
+                CopilotLocalCommandKind.AdditionalDirectories,
                 CopilotLocalCommandKind.Mention,
                 CopilotLocalCommandKind.Diff,
                 CopilotLocalCommandKind.RollbackWorkspace,

@@ -2749,6 +2749,13 @@ namespace ColorVision.Copilot
 
         public ObservableCollection<CopilotAttachmentItem> Attachments { get; set; } = new();
 
+        public ObservableCollection<string> AdditionalReadRootPaths { get; set; } = new();
+
+        public bool ShouldSerializeAdditionalReadRootPaths() => HasAdditionalReadRoots;
+
+        [JsonIgnore]
+        public bool HasAdditionalReadRoots => AdditionalReadRootPaths?.Count > 0;
+
         public CopilotAgentSessionCheckpoint? AgentSessionCheckpoint { get; set; }
 
         public CopilotAgentTaskEventJournalSnapshot? LatestAgentTaskEventJournal { get; set; }
@@ -2955,6 +2962,22 @@ namespace ColorVision.Copilot
                 Attachments = new ObservableCollection<CopilotAttachmentItem>();
                 changed = true;
             }
+            if (AdditionalReadRootPaths == null)
+            {
+                AdditionalReadRootPaths = new ObservableCollection<string>();
+                changed = true;
+            }
+            var normalizedReadRoots = CopilotAdditionalDirectoryCommand.NormalizeStoredPaths(
+                AdditionalReadRootPaths);
+            if (!AdditionalReadRootPaths.SequenceEqual(
+                    normalizedReadRoots,
+                    StringComparer.OrdinalIgnoreCase))
+            {
+                AdditionalReadRootPaths.Clear();
+                foreach (var path in normalizedReadRoots)
+                    AdditionalReadRootPaths.Add(path);
+                changed = true;
+            }
             for (var index = Messages.Count - 1; index >= 0; index--)
             {
                 if (Messages[index] != null)
@@ -3034,6 +3057,21 @@ namespace ColorVision.Copilot
             }
 
             return changed;
+        }
+
+        internal bool ReplaceAdditionalReadRootPaths(IEnumerable<string>? paths)
+        {
+            var normalized = CopilotAdditionalDirectoryCommand.NormalizeStoredPaths(paths);
+            AdditionalReadRootPaths ??= new ObservableCollection<string>();
+            if (AdditionalReadRootPaths.SequenceEqual(normalized, StringComparer.OrdinalIgnoreCase))
+                return false;
+
+            AdditionalReadRootPaths.Clear();
+            foreach (var path in normalized)
+                AdditionalReadRootPaths.Add(path);
+            OnPropertyChanged(nameof(AdditionalReadRootPaths));
+            OnPropertyChanged(nameof(HasAdditionalReadRoots));
+            return true;
         }
 
         internal bool UpdateLatestAgentTaskEventJournal(CopilotAgentTaskEventJournalSnapshot? journal)
