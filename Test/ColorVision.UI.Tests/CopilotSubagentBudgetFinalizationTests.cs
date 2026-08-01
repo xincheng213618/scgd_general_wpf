@@ -619,6 +619,24 @@ public sealed class CopilotSubagentBudgetFinalizationTests
     }
 
     [Fact]
+    public void FinalizationNormalizesNegativeExplorationUsageBeforeAllocatingRemainingBudget()
+    {
+        var role = CopilotSubagentRoleCatalog.Default.GetRequired(CopilotSubagentRoleCatalog.ExploreRoleId);
+        var childRequest = CreateChildRequest(role);
+        var explorationResult = CreateExplorationResult(consumedTokens: -1);
+
+        var finalization = CopilotSubagentRunner.CreateBudgetFinalizationRequest(
+            childRequest,
+            role,
+            explorationResult,
+            totalTokenBudget: 16_384,
+            elapsed: TimeSpan.FromSeconds(5));
+
+        Assert.NotNull(finalization);
+        Assert.Equal(16_384, finalization.RunBudgetOverride?.RequestTokenBudget);
+    }
+
+    [Fact]
     public void DelegatedFinalizationMarkerCannotMinimizeARuntimeWithTools()
     {
         var role = CopilotSubagentRoleCatalog.Default.GetRequired(CopilotSubagentRoleCatalog.ExploreRoleId);

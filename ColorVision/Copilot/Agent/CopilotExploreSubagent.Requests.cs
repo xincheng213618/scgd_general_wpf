@@ -33,10 +33,17 @@ namespace ColorVision.Copilot
                 return null;
             }
 
-            var remainingTokens = (int)Math.Clamp(
-                (long)totalTokenBudget - explorationResult.Budget.ConsumedTokens,
+            var normalizedTotalTokenBudget = Math.Clamp(
+                totalTokenBudget,
                 0,
                 CopilotAgentRunBudget.MaximumRequestTokenBudget);
+            if (normalizedTotalTokenBudget < CopilotAgentRunBudget.MinimumRequestTokenBudget)
+                return null;
+            var normalizedConsumedTokens = Math.Clamp(
+                explorationResult.Budget.ConsumedTokens,
+                0L,
+                (long)normalizedTotalTokenBudget);
+            var remainingTokens = normalizedTotalTokenBudget - (int)normalizedConsumedTokens;
             if (remainingTokens < CopilotAgentRunBudget.MinimumRequestTokenBudget)
                 return null;
 
