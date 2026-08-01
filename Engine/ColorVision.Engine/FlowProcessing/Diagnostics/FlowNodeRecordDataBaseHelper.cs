@@ -423,20 +423,18 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             return result;
         }
 
-        public static long GetLastCompletedFlowElapsed(int templateId, string? flowName)
+        internal static long GetLastCompletedFlowElapsed(
+            FlowIdentity identity)
         {
+            if (identity.IsEmpty)
+                return 0;
             EnsureInitialized();
             try
             {
                 using var db = CreateReadDb();
                 var query = db.Queryable<FlowRunRecord>()
                     .Where(item => item.Status == FlowStatus.Completed && item.ElapsedMs > 0);
-                if (templateId > 0)
-                    query = query.Where(item => item.TemplateId == templateId);
-                else if (!string.IsNullOrWhiteSpace(flowName))
-                    query = query.Where(item => item.FlowName == flowName);
-                else
-                    return 0;
+                query = ApplyFlowIdentityFilter(query, identity);
 
                 FlowRunRecord? record = query
                     .OrderByDescending(item => item.CompletedTime)
@@ -482,22 +480,10 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
         }
 
         internal static FlowRunRecord? GetLatestFlowRun(
-            int templateId,
-            string? flowKey,
-            string? flowName)
+            FlowIdentity identity)
         {
-            string? normalizedFlowKey = string.IsNullOrWhiteSpace(flowKey)
-                ? null
-                : flowKey.Trim();
-            string? normalizedFlowName = string.IsNullOrWhiteSpace(flowName)
-                ? null
-                : flowName.Trim();
-            if (templateId <= 0
-                && normalizedFlowKey == null
-                && normalizedFlowName == null)
-            {
+            if (identity.IsEmpty)
                 return null;
-            }
 
             if (!EnsureInitialized())
                 return null;
@@ -507,28 +493,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 using var db = CreateReadDb();
                 var query = db.Queryable<FlowRunRecord>()
                     .Where(item => item.BatchId != null && item.BatchId > 0);
-                if (templateId > 0 && normalizedFlowKey != null)
-                {
-                    query = query.Where(item =>
-                        item.TemplateId == templateId
-                        || item.FlowKey == normalizedFlowKey);
-                }
-                else if (normalizedFlowKey != null)
-                {
-                    query = query.Where(item =>
-                        item.FlowKey == normalizedFlowKey);
-                }
-                else if (templateId > 0)
-                {
-                    query = query.Where(item =>
-                        item.TemplateId == templateId);
-                }
-                else
-                {
-                    query = query.Where(item =>
-                        item.TemplateId <= 0
-                        && item.FlowName == normalizedFlowName);
-                }
+                query = ApplyFlowIdentityFilter(query, identity);
 
                 return query
                     .OrderByDescending(item => item.Id)
@@ -633,13 +598,15 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 if (currentRun == null)
                     return new List<FlowRunRecord>();
 
-                var query = db.Queryable<FlowRunRecord>();
-                if (currentRun.TemplateId > 0)
-                    query = query.Where(item => item.TemplateId == currentRun.TemplateId);
-                else if (!string.IsNullOrWhiteSpace(currentRun.FlowName))
-                    query = query.Where(item => item.TemplateId <= 0 && item.FlowName == currentRun.FlowName);
-                else
+                var identity = new FlowIdentity(
+                    currentRun.TemplateId,
+                    currentRun.FlowKey,
+                    currentRun.FlowName);
+                if (identity.IsEmpty)
                     return new List<FlowRunRecord>();
+                var query = ApplyFlowIdentityFilter(
+                    db.Queryable<FlowRunRecord>(),
+                    identity);
 
                 return query
                     .OrderByDescending(item => item.CompletedTime)
@@ -651,6 +618,41 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 log.Error("查询相同流程历史执行记录失败", ex);
                 return new List<FlowRunRecord>();
             }
+        }
+
+        private static ISugarQueryable<FlowRunRecord>
+            ApplyFlowIdentityFilter(
+                ISugarQueryable<FlowRunRecord> query,
+                FlowIdentity identity)
+        {
+            if (identity.FlowKey is string flowKey)
+            {
+                if (identity.TemplateId > 0)
+                {
+                    int templateId = identity.TemplateId;
+                    return query.Where(item =>
+                        item.FlowKey == flowKey
+                        || ((item.FlowKey == null
+                                || item.FlowKey == string.Empty)
+                            && item.TemplateId == templateId));
+                }
+
+                return query.Where(item => item.FlowKey == flowKey);
+            }
+
+            if (identity.TemplateId > 0)
+            {
+                int templateId = identity.TemplateId;
+                return query.Where(item =>
+                    item.TemplateId == templateId);
+            }
+
+            string? flowName = identity.FlowName;
+            return query.Where(item =>
+                item.TemplateId <= 0
+                && (item.FlowKey == null
+                    || item.FlowKey == string.Empty)
+                && item.FlowName == flowName);
         }
 
         public static bool UpdateFlowRun(

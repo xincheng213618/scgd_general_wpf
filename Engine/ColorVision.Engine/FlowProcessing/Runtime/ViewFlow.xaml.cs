@@ -1203,20 +1203,15 @@ namespace ColorVision.Engine.FlowProcessing
                 return _executionNavigator.TryFocusExecutionNode(record.NodeId, record.NodeName);
             }
 
-            FlowParam? selectedFlow = GetActiveFlowParam();
-            if (!_isStandalone && _executionSession.RequestedTemplateId is int requestedTemplateId)
-            {
-                selectedFlow = TemplateFlow.Params
-                    .FirstOrDefault(item => item.Id == requestedTemplateId)
-                    ?.Value
-                    ?? selectedFlow;
-            }
+            FlowParam? selectedFlow = _isStandalone
+                ? GetActiveFlowParam()
+                : _executionSession.RequestedFlowParam;
 
             FlowExecutionAnalysisWindow window;
             if (selectedFlow != null)
             {
                 window = new FlowExecutionAnalysisWindow(
-                    new FlowExecutionAnalysisScope(
+                    new FlowIdentity(
                         selectedFlow.Id,
                         selectedFlow.FlowKey,
                         selectedFlow.Name),

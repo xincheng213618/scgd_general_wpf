@@ -746,15 +746,7 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 
 	public void LoadFromFile(string strFileName, List<MQTTServiceInfo> services)
 	{
-		IFlowGraphHost host = GetGraphHost();
-		try
-		{
-			ReplaceCanvas(host, System.IO.File.ReadAllBytes(strFileName));
-		}
-		finally
-		{
-			host.ClearHistory();
-		}
+		LoadFromFile(strFileName);
 		NodeManager.UpdateDevice(services);
 	}
 
@@ -825,12 +817,18 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 		{
 			string text = BitConverter.ToString(MD5.HashData(rawData));
 			logger.DebugFormat("Load flow data={0}", text);
+			bool alreadyLoaded;
 			lock (stateLock)
 			{
-				if (loadedCanvas.ContainsKey(text))
+				alreadyLoaded = loadedCanvas.ContainsKey(text);
+			}
+			if (alreadyLoaded)
+			{
+				if (waitReady)
 				{
-					return;
+					WaitUntilReady();
 				}
+				return;
 			}
 			try
 			{
@@ -848,19 +846,20 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 			{
 				return;
 			}
-			for (int i = 0; i < 10; i++)
-			{
-				if (IsReady)
-				{
-					break;
-				}
-				Thread.Sleep(200);
-			}
+			WaitUntilReady();
 		}
 		else
 		{
 			clear();
 			host.ClearHistory();
+		}
+	}
+
+	private void WaitUntilReady()
+	{
+		for (int i = 0; i < 10 && !IsReady; i++)
+		{
+			Thread.Sleep(200);
 		}
 	}
 
@@ -1010,7 +1009,8 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 
 	public void LoadFromFile(string strFileName)
 	{
-		throw new NotImplementedException();
+		ArgumentException.ThrowIfNullOrWhiteSpace(strFileName);
+		Load(System.IO.File.ReadAllBytes(strFileName), waitReady: false);
 	}
 
 	public void Dispose()

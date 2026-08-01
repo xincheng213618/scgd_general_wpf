@@ -4,6 +4,7 @@ using FlowEngineLib.End;
 using FlowEngineLib.Start;
 using ST.Library.UI.NodeContainer;
 using ST.Library.UI.NodeEditor;
+using System.IO;
 using System.Runtime.ExceptionServices;
 
 namespace ColorVision.UI.Tests;
@@ -57,6 +58,35 @@ public sealed class FlowHeadlessHostTests
             Assert.Equal(new[] { "HeadlessStart" }, control.GetStartNodeNames());
             Assert.Equal(2, container.Nodes.Count);
             Assert.True(control.TryStartNode("HeadlessStart", "SN-AFTER-FAILURE"));
+        });
+    }
+
+    [Fact]
+    public void HeadlessControlLoadsExistingStnFileThroughPublicApi()
+    {
+        RunInSta(() =>
+        {
+            string filePath = Path.Combine(
+                Path.GetTempPath(),
+                $"flow-{Guid.NewGuid():N}.stn");
+            try
+            {
+                File.WriteAllBytes(filePath, CreateCanvas());
+                using var container = new CVNodeContainer();
+                using var control = new FlowEngineControl(
+                    container,
+                    isAutoStartName: false,
+                    new FlowNodeManager());
+
+                control.LoadFromFile(filePath);
+
+                Assert.Equal(new[] { "HeadlessStart" }, control.GetStartNodeNames());
+                Assert.Equal(2, container.Nodes.Count);
+            }
+            finally
+            {
+                File.Delete(filePath);
+            }
         });
     }
 

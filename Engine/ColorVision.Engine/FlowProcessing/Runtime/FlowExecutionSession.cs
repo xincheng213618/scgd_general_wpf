@@ -30,6 +30,9 @@ namespace ColorVision.Engine.FlowProcessing
 {
     internal sealed class FlowExecutionSession : IDisposable
     {
+        private static readonly TimeSpan NodeEndDrainTimeout =
+            TimeSpan.FromSeconds(1);
+
         private static readonly ILog log = LogManager.GetLogger(typeof(FlowExecutionSession));
         private readonly ViewFlow View;
         private readonly FlowEngineManager FlowEngineManager;
@@ -216,6 +219,9 @@ namespace ColorVision.Engine.FlowProcessing
 
         public FlowParam? ActiveFlowParam =>
             _templateWorkspace.ActiveFlowParam;
+
+        public FlowParam? RequestedFlowParam =>
+            _templateWorkspace.RequestedFlowParam;
 
         public bool IsRunActive => _runLifecycle.IsActive;
 
@@ -519,6 +525,7 @@ namespace ColorVision.Engine.FlowProcessing
         private readonly ConcurrentDictionary<string, Task> _nodeWriteTasks = new ConcurrentDictionary<string, Task>();
         private readonly object _nodeWriteSync = new object();
         private readonly object _executionStateSync = new object();
+        private readonly AsyncOperationDrain _pendingNodeExecutionDrain = new();
         private CVCommonNode? _lastFailedNode;
         private string? _completedErrorNodeKey;
         private string? _completedSummaryMessage;
@@ -604,7 +611,11 @@ namespace ColorVision.Engine.FlowProcessing
         {
             if (string.IsNullOrWhiteSpace(errorNodeKey))
             {
-                await Task.Delay(100);
+                bool drained = await _pendingNodeExecutionDrain.WaitAsync(
+                    NodeEndDrainTimeout,
+                    generation);
+                if (!drained)
+                    log.Warn("等待流程节点结束事件完成超时。");
                 return;
             }
 
@@ -622,7 +633,17 @@ namespace ColorVision.Engine.FlowProcessing
                 _terminalNodeEndCompletion = completion;
             }
 
-            await Task.WhenAny(completion.Task, Task.Delay(1000));
+            Task<bool> drainTask = _pendingNodeExecutionDrain.WaitAsync(
+                NodeEndDrainTimeout,
+                generation);
+            Task completedTask = await Task.WhenAny(
+                completion.Task,
+                drainTask);
+            if (ReferenceEquals(completedTask, drainTask)
+                && !await drainTask)
+            {
+                log.Warn("等待失败节点结束事件完成超时。");
+            }
             lock (_executionStateSync)
             {
                 if (ReferenceEquals(_terminalNodeEndCompletion, completion))
@@ -632,7 +653,9 @@ namespace ColorVision.Engine.FlowProcessing
 
         private void InvalidateExecutionPresentation()
         {
-            Interlocked.Increment(ref _executionGeneration);
+            long generation = Interlocked.Increment(
+                ref _executionGeneration);
+            _pendingNodeExecutionDrain.Reset(generation);
             lock (_executionStateSync)
             {
                 _lastFailedNode = null;
@@ -924,6 +947,7 @@ namespace ColorVision.Engine.FlowProcessing
                         }
                     }
                 }
+                _pendingNodeExecutionDrain.Complete(generation);
             }
         }
 
@@ -985,6 +1009,7 @@ namespace ColorVision.Engine.FlowProcessing
                     msg,
                     _activeJournalScope,
                     generation);
+                _pendingNodeExecutionDrain.Begin(generation);
                 _pendingNodeExecutions
                     .GetOrAdd(writeKey, _ => new ConcurrentQueue<PendingNodeExecution>())
                     .Enqueue(execution);
@@ -1227,7 +1252,11 @@ namespace ColorVision.Engine.FlowProcessing
             {
                 _flowName = flowName;
                 _lastFlowTime = await Task.Run(
-                    () => FlowNodeRecordDataBaseHelper.GetLastCompletedFlowElapsed(selectedFlowParam.Id, flowName));
+                    () => FlowNodeRecordDataBaseHelper.GetLastCompletedFlowElapsed(
+                        new FlowIdentity(
+                            selectedFlowParam.Id,
+                            selectedFlowParam.FlowKey,
+                            flowName)));
                 ResetNodeTitleProgress();
                 await LoadNodeExpectedDurationsAsync();
                 if (!CanContinueFlowStart(sn))

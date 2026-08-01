@@ -255,7 +255,7 @@ public sealed class FlowHeadlessExecutionObserver
 {
     private readonly FlowEngineNodeRunEvent? nodeRun;
     private readonly FlowEngineNodeEndEvent? nodeEnd;
-    private int pendingNodeAttempts;
+    private readonly AsyncOperationDrain pendingNodeAttempts = new();
 
     public FlowHeadlessExecutionObserver(
         FlowEngineNodeRunEvent? nodeRun = null,
@@ -269,7 +269,7 @@ public sealed class FlowHeadlessExecutionObserver
         object sender,
         FlowEngineNodeRunEventArgs e)
     {
-        Interlocked.Increment(ref pendingNodeAttempts);
+        pendingNodeAttempts.Begin();
         nodeRun?.Invoke(sender, e);
     }
 
@@ -283,27 +283,15 @@ public sealed class FlowHeadlessExecutionObserver
         }
         finally
         {
-            int remaining =
-                Interlocked.Decrement(
-                    ref pendingNodeAttempts);
-            if (remaining < 0)
-            {
-                Interlocked.Exchange(
-                    ref pendingNodeAttempts,
-                    0);
-            }
+            pendingNodeAttempts.Complete();
         }
     }
 
     internal async Task WaitForPendingNodeEndsAsync(
         TimeSpan timeout)
     {
-        Stopwatch stopwatch = Stopwatch.StartNew();
-        while (Volatile.Read(ref pendingNodeAttempts) > 0
-            && stopwatch.Elapsed < timeout)
-        {
-            await Task.Delay(20).ConfigureAwait(false);
-        }
+        await pendingNodeAttempts.WaitAsync(timeout)
+            .ConfigureAwait(false);
     }
 }
 

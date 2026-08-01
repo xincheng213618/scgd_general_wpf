@@ -173,4 +173,53 @@ public class FlowExecutionAnalysisWindowTests
                 "same-sn",
                 1));
     }
+
+    [Fact]
+    public void FlowIdentityNeverMatchesDifferentStableKeyByTemplateId()
+    {
+        var identity = new FlowIdentity(42, "flow-a", "Flow A");
+        var conflictingRun = new FlowRunRecord
+        {
+            TemplateId = 42,
+            FlowKey = "flow-b",
+            FlowName = "Flow A"
+        };
+
+        Assert.False(identity.Matches(conflictingRun));
+    }
+
+    [Fact]
+    public void FlowIdentityIncludesLegacyRowsWithoutStableKey()
+    {
+        var identity = new FlowIdentity(42, " flow-a ", "Flow A");
+        var canonicalRun = new FlowRunRecord
+        {
+            TemplateId = 99,
+            FlowKey = "flow-a"
+        };
+        var legacyRun = new FlowRunRecord
+        {
+            TemplateId = 42,
+            FlowKey = null
+        };
+
+        Assert.True(identity.Matches(canonicalRun));
+        Assert.True(identity.Matches(legacyRun));
+    }
+
+    [Fact]
+    public void FlowNameFallbackOnlyMatchesUnidentifiedLegacyRows()
+    {
+        var identity = new FlowIdentity(0, null, "Legacy Flow");
+
+        Assert.True(identity.Matches(new FlowRunRecord
+        {
+            FlowName = "Legacy Flow"
+        }));
+        Assert.False(identity.Matches(new FlowRunRecord
+        {
+            FlowKey = "stable-key",
+            FlowName = "Legacy Flow"
+        }));
+    }
 }

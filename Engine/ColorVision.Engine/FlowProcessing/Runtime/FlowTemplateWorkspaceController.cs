@@ -344,6 +344,22 @@ internal sealed class FlowTemplateWorkspaceController : IDisposable
         }
     }
 
+    /// <summary>
+    /// Flow selected by the user, even while its canvas is still loading.
+    /// Commands that operate on the current canvas must use ActiveFlowParam;
+    /// history queries use this value so selection and analysis stay aligned.
+    /// </summary>
+    public FlowParam? RequestedFlowParam
+    {
+        get
+        {
+            if (_view.IsStandalone)
+                return _view.GetStandaloneExecutionTemplate()?.Value;
+            return GetRequestedFlowTemplate()?.Value
+                ?? ActiveFlowParam;
+        }
+    }
+
     public int? RequestedTemplateId
     {
         get
