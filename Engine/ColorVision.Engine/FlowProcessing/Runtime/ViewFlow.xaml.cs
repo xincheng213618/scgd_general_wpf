@@ -1203,16 +1203,33 @@ namespace ColorVision.Engine.FlowProcessing
                 return _executionNavigator.TryFocusExecutionNode(record.NodeId, record.NodeName);
             }
 
-            if (FlowEngineManager.Batch != null)
+            FlowParam? selectedFlow = GetActiveFlowParam();
+            if (!_isStandalone && _executionSession.RequestedTemplateId is int requestedTemplateId)
             {
-                var window = new FlowExecutionAnalysisWindow(FlowEngineManager.Batch, FocusFlowNode) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
-                window.Show();
+                selectedFlow = TemplateFlow.Params
+                    .FirstOrDefault(item => item.Id == requestedTemplateId)
+                    ?.Value
+                    ?? selectedFlow;
             }
+
+            FlowExecutionAnalysisWindow window;
+            if (selectedFlow != null)
+            {
+                window = new FlowExecutionAnalysisWindow(
+                    new FlowExecutionAnalysisScope(
+                        selectedFlow.Id,
+                        selectedFlow.FlowKey,
+                        selectedFlow.Name),
+                    FocusFlowNode);
+            }
+            else if (FlowEngineManager.Batch != null)
+                window = new FlowExecutionAnalysisWindow(FlowEngineManager.Batch, FocusFlowNode);
             else
-            {
-                var window = new FlowExecutionAnalysisWindow(FocusFlowNode) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
-                window.Show();
-            }
+                window = new FlowExecutionAnalysisWindow(FocusFlowNode);
+
+            window.Owner = Application.Current.GetActiveWindow();
+            window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+            window.Show();
         }
 
     }

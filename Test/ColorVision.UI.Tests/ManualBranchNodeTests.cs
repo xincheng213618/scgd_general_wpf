@@ -134,6 +134,25 @@ public class ManualBranchNodeTests
         Assert.Equal(new[] { "OUT_A", "OUT_B [ON]" }, restored.GetAllOutputOptions().Select(option => option.Text));
     }
 
+    [Fact]
+    public void LoadingNodeStateRepositionsPortsWithRestoredNode()
+    {
+        ManualBranchNode original = new();
+        original.Create();
+        original.Location = new System.Drawing.Point(420, 260);
+        Dictionary<string, byte[]> state = ParseState(original.GetSaveData());
+
+        ManualBranchNode restored = new();
+        restored.Create();
+        restored.OnLoadNode(state);
+
+        STNodeOption input = restored.GetAllInputOptions()[0];
+        STNodeOption outputA = restored.GetAllOutputOptions()[0];
+        Assert.Equal(original.Location, restored.Location);
+        Assert.Equal(restored.Left - input.DotSize / 2, input.DotLeft);
+        Assert.Equal(restored.Right - outputA.DotSize / 2, outputA.DotLeft);
+    }
+
     private static void Create(params STNode[] nodes)
     {
         foreach (STNode node in nodes) node.Create();

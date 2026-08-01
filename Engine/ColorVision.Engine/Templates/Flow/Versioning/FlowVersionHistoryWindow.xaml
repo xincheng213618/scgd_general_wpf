@@ -30,7 +30,7 @@
             <DataGrid.Columns>
                 <DataGridTextColumn Header="版本" Binding="{Binding Revision}" Width="70"/>
                 <DataGridTextColumn Header="来源" Binding="{Binding Source}" Width="90"/>
-                <DataGridCheckBoxColumn Header="已发布" Binding="{Binding IsPublished}" Width="70"/>
+                <DataGridCheckBoxColumn Header="已发布" Binding="{Binding IsPublished, Mode=OneWay}" Width="70"/>
                 <DataGridTextColumn Header="时间 (UTC)" Binding="{Binding CreatedTimeUtc}" Width="155"/>
                 <DataGridTextColumn Header="作者" Binding="{Binding Author}" Width="110"/>
                 <DataGridTextColumn Header="内容哈希" Binding="{Binding ShortBinaryHash}" Width="120"/>

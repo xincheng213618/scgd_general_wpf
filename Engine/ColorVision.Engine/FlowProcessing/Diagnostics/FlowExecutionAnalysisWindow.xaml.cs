@@ -16,6 +16,11 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
         string SerialNumber,
         DateTime ExecutedTime);
 
+    internal readonly record struct FlowExecutionAnalysisScope(
+        int TemplateId,
+        string? FlowKey,
+        string? FlowName);
+
     public partial class FlowExecutionAnalysisWindow : Window
     {
         private const long SlowNodeThresholdMs = 30000;
@@ -24,6 +29,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
         private readonly string? _initialSerialNumber;
         private readonly string? _initialNodeId;
         private readonly string? _initialNodeName;
+        private readonly FlowExecutionAnalysisScope? _initialFlowScope;
         private readonly Func<FlowNodeRecord, bool>? _focusFlowNode;
         private IReadOnlyList<FlowRunNavigationItem> _allRuns = Array.Empty<FlowRunNavigationItem>();
         private IReadOnlyList<FlowRunNavigationItem> _sameFlowRuns = Array.Empty<FlowRunNavigationItem>();
@@ -36,22 +42,29 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
         private bool _isLoading;
 
         public FlowExecutionAnalysisWindow()
-            : this(null, null, null, null, null, null)
+            : this(null, null, null, null, null, null, null)
         {
         }
 
         public FlowExecutionAnalysisWindow(MeasureBatchModel batch)
-            : this(batch, null, null, null, null, null)
+            : this(batch, null, null, null, null, null, null)
         {
         }
 
         internal FlowExecutionAnalysisWindow(Func<FlowNodeRecord, bool> focusFlowNode)
-            : this(null, null, null, null, null, focusFlowNode)
+            : this(null, null, null, null, null, null, focusFlowNode)
         {
         }
 
         internal FlowExecutionAnalysisWindow(MeasureBatchModel batch, Func<FlowNodeRecord, bool> focusFlowNode)
-            : this(batch, null, null, null, null, focusFlowNode)
+            : this(batch, null, null, null, null, null, focusFlowNode)
+        {
+        }
+
+        internal FlowExecutionAnalysisWindow(
+            FlowExecutionAnalysisScope flowScope,
+            Func<FlowNodeRecord, bool> focusFlowNode)
+            : this(null, null, null, null, null, flowScope, focusFlowNode)
         {
         }
 
@@ -59,7 +72,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             string nodeId,
             string? nodeName,
             Func<FlowNodeRecord, bool>? focusFlowNode)
-            : this(null, null, null, nodeId, nodeName, focusFlowNode)
+            : this(null, null, null, nodeId, nodeName, null, focusFlowNode)
         {
         }
 
@@ -73,6 +86,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 serialNumber,
                 nodeId,
                 null,
+                null,
                 null)
         {
         }
@@ -83,6 +97,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             string? serialNumber,
             string? initialNodeId,
             string? initialNodeName,
+            FlowExecutionAnalysisScope? initialFlowScope,
             Func<FlowNodeRecord, bool>? focusFlowNode)
         {
             _initialBatch = batch;
@@ -90,6 +105,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             _initialSerialNumber = serialNumber;
             _initialNodeId = initialNodeId;
             _initialNodeName = initialNodeName;
+            _initialFlowScope = initialFlowScope;
             _focusFlowNode = focusFlowNode;
             InitializeComponent();
             this.ApplyCaption();
@@ -153,6 +169,21 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                     requestedNodeRecord?.BatchId == _initialBatchId
                         ? requestedNodeRecord.Id
                         : null);
+            }
+
+            if (_initialFlowScope is FlowExecutionAnalysisScope flowScope)
+            {
+                FlowRunRecord? flowRun =
+                    FlowNodeRecordDataBaseHelper.GetLatestFlowRun(
+                        flowScope.TemplateId,
+                        flowScope.FlowKey,
+                        flowScope.FlowName);
+                return flowRun?.BatchId is > 0
+                    ? new InitialRunSelection(
+                        flowRun.BatchId,
+                        flowRun.SerialNumber ?? string.Empty,
+                        null)
+                    : new InitialRunSelection(null, string.Empty, null);
             }
 
             FlowNodeRecord? runRecord =
