@@ -1,0 +1,274 @@
+using System;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace ColorVision.Copilot
+{
+    public sealed class CopilotToolInvocation
+    {
+        public string CallId { get; init; } = string.Empty;
+
+        public int Round { get; init; }
+
+        public int Attempt { get; init; } = 1;
+
+        public int MaxAttempts { get; init; } = 1;
+
+        public string RuntimeName { get; init; } = string.Empty;
+
+        public ICopilotTool Tool { get; init; } = null!;
+
+        public CopilotAgentRequest AgentRequest { get; init; } = null!;
+
+        internal CopilotExecutionScope ExecutionScope { get; init; } = CopilotExecutionScope.Empty;
+
+        public CopilotAgentToolInput ToolInput { get; init; } = CopilotAgentToolInput.Empty;
+
+        public CopilotToolCall ToolCall { get; init; } = new();
+
+        public bool FrameworkApprovalGranted { get; internal init; }
+
+        public string ApprovalActionId { get; internal init; } = string.Empty;
+
+        public CopilotToolConcurrencyMode ConcurrencyMode { get; internal init; }
+
+        public string ConcurrencyKey { get; internal init; } = string.Empty;
+
+        internal string PreviousObservationProgressSignature { get; init; } =
+            string.Empty;
+
+        internal IReadOnlyList<CopilotToolExecutionHookRun> InitialHookRuns { get; init; } =
+            Array.Empty<CopilotToolExecutionHookRun>();
+
+        internal IReadOnlyList<CopilotToolExecutionHookBinding> InitialHookBindings { get; init; } =
+            Array.Empty<CopilotToolExecutionHookBinding>();
+    }
+
+    internal static class CopilotToolInvocationContext
+    {
+        private static readonly AsyncLocal<CopilotToolInvocation?> CurrentInvocation = new();
+
+        public static CopilotToolInvocation? Current => CurrentInvocation.Value;
+
+        public static IDisposable Enter(CopilotToolInvocation invocation)
+        {
+            ArgumentNullException.ThrowIfNull(invocation);
+            var previous = CurrentInvocation.Value;
+            CurrentInvocation.Value = invocation;
+            return new Scope(previous);
+        }
+
+        private sealed class Scope(CopilotToolInvocation? previous) : IDisposable
+        {
+            private CopilotToolInvocation? _previous = previous;
+            private int _disposed;
+
+            public void Dispose()
+            {
+                if (Interlocked.Exchange(ref _disposed, 1) != 0)
+                    return;
+
+                CurrentInvocation.Value = _previous;
+                _previous = null;
+            }
+        }
+    }
+
+    public sealed class CopilotToolExecutionOutcome
+    {
+        public CopilotToolInvocation Invocation { get; init; } = null!;
+
+        public CopilotToolResult Result { get; init; } = new();
+
+        public CopilotToolExecutionInfo Execution { get; init; } = new();
+
+        public IReadOnlyList<CopilotToolExecutionHookRun> HookRuns { get; internal set; } =
+            Array.Empty<CopilotToolExecutionHookRun>();
+
+        public CopilotAgentStepRecord StepRecord => new()
+        {
+            Round = Invocation.Round,
+            ToolCall = Invocation.ToolCall,
+            Observation = CopilotToolObservation.FromResult(Result),
+            Execution = Execution,
+        };
+    }
+
+    public sealed class CopilotToolExecutionHookContext
+    {
+        public CopilotToolInvocation Invocation { get; init; } = null!;
+
+        public DateTimeOffset StartedAtUtc { get; init; }
+
+        public TimeSpan Timeout { get; init; }
+    }
+
+    public sealed class CopilotToolExecutionHookDecision
+    {
+        public static CopilotToolExecutionHookDecision Proceed { get; } = new() { ShouldProceed = true };
+
+        public bool ShouldProceed { get; init; }
+
+        public string Reason { get; init; } = string.Empty;
+
+        public CopilotToolFailureKind FailureKind { get; init; }
+
+        public string FailureCode { get; init; } = string.Empty;
+
+        public static CopilotToolExecutionHookDecision Deny(
+            string reason,
+            string failureCode = "tool_hook_denied",
+            CopilotToolFailureKind failureKind = CopilotToolFailureKind.Authorization)
+        {
+            var normalizedFailureCode = CopilotToolFailureCode.Normalize(failureCode);
+            return new CopilotToolExecutionHookDecision
+            {
+                ShouldProceed = false,
+                Reason = reason ?? string.Empty,
+                FailureKind = failureKind != CopilotToolFailureKind.None && Enum.IsDefined(failureKind)
+                    ? failureKind
+                    : CopilotToolFailureKind.Authorization,
+                FailureCode = string.IsNullOrWhiteSpace(normalizedFailureCode)
+                    ? "tool_hook_denied"
+                    : normalizedFailureCode,
+            };
+        }
+    }
+
+    public sealed class CopilotToolPermissionRequestContext
+    {
+        public CopilotToolInvocation Invocation { get; init; } = null!;
+
+        public DateTimeOffset RequestedAtUtc { get; init; }
+    }
+
+    public sealed class CopilotToolPermissionRequestDecision
+    {
+        public static CopilotToolPermissionRequestDecision Prompt { get; } = new()
+        {
+            ShouldPrompt = true,
+        };
+
+        public bool ShouldPrompt { get; init; }
+
+        public string Reason { get; init; } = string.Empty;
+
+        public string FailureCode { get; init; } = string.Empty;
+
+        public static CopilotToolPermissionRequestDecision Deny(
+            string reason,
+            string failureCode = "permission_hook_denied")
+        {
+            var normalizedFailureCode = CopilotToolFailureCode.Normalize(failureCode);
+            return new CopilotToolPermissionRequestDecision
+            {
+                ShouldPrompt = false,
+                Reason = reason ?? string.Empty,
+                FailureCode = string.IsNullOrWhiteSpace(normalizedFailureCode)
+                    ? "permission_hook_denied"
+                    : normalizedFailureCode,
+            };
+        }
+    }
+
+    public interface ICopilotToolExecutionHook
+    {
+        Task<CopilotToolExecutionHookDecision> BeforeExecuteAsync(CopilotToolExecutionHookContext context, CancellationToken cancellationToken);
+
+        Task AfterExecuteAsync(CopilotToolExecutionOutcome outcome, CancellationToken cancellationToken);
+    }
+
+    /// <summary>
+    /// Inspects a protected call before ColorVision creates a native approval
+    /// request. The hook can keep the prompt or deny the call; it cannot grant
+    /// framework approval.
+    /// </summary>
+    public interface ICopilotToolPermissionRequestHook : ICopilotToolExecutionHook
+    {
+        Task<CopilotToolPermissionRequestDecision> OnPermissionRequestAsync(
+            CopilotToolPermissionRequestContext context,
+            CancellationToken cancellationToken);
+    }
+
+    internal sealed class CopilotToolPermissionRequestOutcome
+    {
+        public CopilotToolPermissionRequestDecision Decision { get; init; } =
+            CopilotToolPermissionRequestDecision.Prompt;
+
+        public IReadOnlyList<CopilotToolExecutionHookRun> HookRuns { get; init; } =
+            Array.Empty<CopilotToolExecutionHookRun>();
+
+        public IReadOnlyList<CopilotToolExecutionHookBinding> HookBindings { get; init; } =
+            Array.Empty<CopilotToolExecutionHookBinding>();
+
+        public bool WasCancelled { get; init; }
+    }
+
+    public sealed class CopilotWriteToolPolicyHook : ICopilotToolExecutionHook
+    {
+        public Task<CopilotToolExecutionHookDecision> BeforeExecuteAsync(CopilotToolExecutionHookContext context, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var invocation = context.Invocation;
+            var capability = invocation.Tool.Capability;
+            if (capability.Access == CopilotToolAccess.ReadOnly)
+                return Task.FromResult(CopilotToolExecutionHookDecision.Proceed);
+
+            if (invocation.AgentRequest.Mode == CopilotAgentMode.Plan)
+            {
+                return Task.FromResult(CopilotToolExecutionHookDecision.Deny(
+                    "Plan mode permits read-only tools only.",
+                    "plan_mode_write_denied"));
+            }
+
+            if (invocation.AgentRequest.Mode == CopilotAgentMode.Review)
+            {
+                if (invocation.Tool is not CopilotWorkspaceValidationTool
+                    || !CopilotToolIntentPolicy.NeedsWorkspaceValidation(invocation.AgentRequest))
+                {
+                    return Task.FromResult(CopilotToolExecutionHookDecision.Deny(
+                        "Review mode permits read-only tools and explicitly requested bounded workspace validation only.",
+                        "review_mode_write_denied"));
+                }
+            }
+
+            if (capability.RiskLevel == CopilotToolRiskLevel.High
+                && capability.ApprovalMode == CopilotToolApprovalMode.Never)
+            {
+                return Task.FromResult(CopilotToolExecutionHookDecision.Deny(
+                    "High-risk write tools must declare an approval policy.",
+                    "tool_approval_policy_required"));
+            }
+
+            if (invocation.AgentRequest.Mode == CopilotAgentMode.Chat || string.IsNullOrWhiteSpace(invocation.AgentRequest.UserText))
+            {
+                return Task.FromResult(CopilotToolExecutionHookDecision.Deny(
+                    "Write-capable tools require a non-empty explicit user request outside Chat mode.",
+                    "explicit_user_request_required"));
+            }
+
+            try
+            {
+                if (!CopilotToolRegistry.IsAvailableForAgent(invocation.Tool, invocation.AgentRequest))
+                {
+                    return Task.FromResult(CopilotToolExecutionHookDecision.Deny(
+                        "The tool is not available in the current Agent runtime.",
+                        "tool_not_available"));
+                }
+            }
+            catch (Exception)
+            {
+                return Task.FromResult(CopilotToolExecutionHookDecision.Deny(
+                    "The write-tool authorization check failed.",
+                    "tool_authorization_check_failed",
+                    CopilotToolFailureKind.Internal));
+            }
+
+            return Task.FromResult(CopilotToolExecutionHookDecision.Proceed);
+        }
+
+        public Task AfterExecuteAsync(CopilotToolExecutionOutcome outcome, CancellationToken cancellationToken) => Task.CompletedTask;
+    }
+
+}
