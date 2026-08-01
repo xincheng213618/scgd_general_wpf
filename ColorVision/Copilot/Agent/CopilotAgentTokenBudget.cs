@@ -234,6 +234,7 @@ namespace ColorVision.Copilot
         internal void RecordProviderRetry(CopilotProviderRetryInfo retry)
         {
             ArgumentNullException.ThrowIfNull(retry);
+            CopilotAgentBudgetSnapshot snapshot;
             lock (_syncRoot)
             {
                 _providerRetryCount = AddClamped(_providerRetryCount, 1);
@@ -242,7 +243,9 @@ namespace ColorVision.Copilot
                 _providerRetryDelayMs = AddClamped(
                     _providerRetryDelayMs,
                     ToMilliseconds(retry.Delay));
+                snapshot = CreateSnapshot();
             }
+            PublishBudgetChanged(snapshot);
         }
 
         private void RecordProviderInactivity(Exception exception)
@@ -274,6 +277,7 @@ namespace ColorVision.Copilot
         internal void RecordContextRecovery(CopilotContextWindowRecoveryInfo recovery)
         {
             ArgumentNullException.ThrowIfNull(recovery);
+            CopilotAgentBudgetSnapshot snapshot;
             lock (_syncRoot)
             {
                 var estimatedInputTokensBefore = Math.Max(0, recovery.EstimatedInputTokensBefore);
@@ -288,7 +292,9 @@ namespace ColorVision.Copilot
                 _contextRecoveryEstimatedInputTokensAfter = AddClamped(
                     _contextRecoveryEstimatedInputTokensAfter,
                     estimatedInputTokensAfter);
+                snapshot = CreateSnapshot();
             }
+            PublishBudgetChanged(snapshot);
         }
 
         public override async Task<ChatResponse> GetResponseAsync(
