@@ -89,6 +89,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         protected LocalCalibrationNodeBase(string title, string nodeType, string operatorName, int timeoutMs, params string[] inputNames)
             : base(title, nodeType, operatorName, timeoutMs, inputNames)
         {
+            SelectFirstAvailableDevice<DeviceCamera>();
         }
 
         private protected LocalCalibrationExecution ExecuteCalibration(CVStartCFC action)

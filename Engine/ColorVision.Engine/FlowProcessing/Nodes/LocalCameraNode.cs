@@ -63,6 +63,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
         public LocalCameraNode() : base("本地相机取图", "Camera", "GetData", 60000)
         {
+            SelectFirstAvailableDevice<DeviceCamera>();
         }
 
         protected override LocalNodeExecutionResult ExecuteLocal(CVStartCFC action)

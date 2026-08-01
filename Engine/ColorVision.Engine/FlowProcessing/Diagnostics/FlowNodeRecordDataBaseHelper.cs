@@ -481,6 +481,66 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             }
         }
 
+        internal static FlowRunRecord? GetLatestFlowRun(
+            int templateId,
+            string? flowKey,
+            string? flowName)
+        {
+            string? normalizedFlowKey = string.IsNullOrWhiteSpace(flowKey)
+                ? null
+                : flowKey.Trim();
+            string? normalizedFlowName = string.IsNullOrWhiteSpace(flowName)
+                ? null
+                : flowName.Trim();
+            if (templateId <= 0
+                && normalizedFlowKey == null
+                && normalizedFlowName == null)
+            {
+                return null;
+            }
+
+            if (!EnsureInitialized())
+                return null;
+
+            try
+            {
+                using var db = CreateReadDb();
+                var query = db.Queryable<FlowRunRecord>()
+                    .Where(item => item.BatchId != null && item.BatchId > 0);
+                if (templateId > 0 && normalizedFlowKey != null)
+                {
+                    query = query.Where(item =>
+                        item.TemplateId == templateId
+                        || item.FlowKey == normalizedFlowKey);
+                }
+                else if (normalizedFlowKey != null)
+                {
+                    query = query.Where(item =>
+                        item.FlowKey == normalizedFlowKey);
+                }
+                else if (templateId > 0)
+                {
+                    query = query.Where(item =>
+                        item.TemplateId == templateId);
+                }
+                else
+                {
+                    query = query.Where(item =>
+                        item.TemplateId <= 0
+                        && item.FlowName == normalizedFlowName);
+                }
+
+                return query
+                    .OrderByDescending(item => item.Id)
+                    .First();
+            }
+            catch (Exception ex)
+            {
+                log.Error("查询当前流程最近执行记录失败", ex);
+                return null;
+            }
+        }
+
         internal static List<FlowExecutionEvent> GetExecutionEvents(
             int runRecordId)
         {

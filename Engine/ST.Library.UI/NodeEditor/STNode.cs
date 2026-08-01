@@ -1220,6 +1220,7 @@ public abstract class STNode : INotifyPropertyChanged
 				}
 			}
 		}
+		SetOptionsLocation();
 	}
 
 	protected internal virtual void OnEditorLoadCompleted()

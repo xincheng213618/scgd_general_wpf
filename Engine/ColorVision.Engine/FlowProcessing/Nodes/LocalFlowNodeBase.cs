@@ -1,3 +1,5 @@
+using ColorVision.Engine.Services;
+using ColorVision.Engine.Services.Devices;
 using FlowEngineLib;
 using FlowEngineLib.Algorithm;
 using FlowEngineLib.Base;
@@ -90,6 +92,11 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 input.DataTransfer += m_in_start_DataTransfer;
                 flowInputOptions[index] = input;
             }
+        }
+
+        protected void SelectFirstAvailableDevice<TDevice>() where TDevice : DeviceService
+        {
+            DeviceCode = ServiceManager.Current?.DeviceServices.OfType<TDevice>().FirstOrDefault()?.Code ?? string.Empty;
         }
 
         protected override void m_in_start_DataTransfer(object sender, STNodeOptionEventArgs e)
