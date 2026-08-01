@@ -547,4 +547,3 @@ namespace ColorVision.Copilot
         }
     }
 }
-
