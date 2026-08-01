@@ -379,103 +379,33 @@ namespace ColorVision.Copilot
                     : "Agent control tools disabled by the isolated runtime tool surface."));
 
             var usage = CopilotTokenUsage.Empty;
-            var sessionResumed = false;
-            var sessionResumeFailed = false;
-            AgentSession session;
-            if (checkpointCompatibility?.CanResume == true && requestedCheckpoint != null)
-            {
-                try
-                {
-                    using var checkpointDocument = JsonDocument.Parse(requestedCheckpoint.SerializedSessionJson);
-                    session = await agent.DeserializeSessionAsync(checkpointDocument.RootElement.Clone(), null, cancellationToken);
-                    sessionResumed = true;
-                    taskEventJournalBuilder.RecordSessionResumed();
-                    emit(CopilotAgentEvent.RuntimeDiagnostic("Agent Framework session resumed from the persisted conversation checkpoint."));
-                }
-                catch (OperationCanceledException)
-                {
-                    throw;
-                }
-                catch (Exception ex)
-                {
-                    sessionResumeFailed = true;
-                    taskEventJournalBuilder.RecordReplanRequired(CopilotAgentCheckpointCompatibilityKind.Invalid);
-                    emit(CopilotAgentEvent.RuntimeDiagnostic($"Agent session checkpoint could not be resumed; starting a fresh session ({CopilotUserFacingErrorFormatter.Sanitize(ex.Message)})."));
-                    session = await agent.CreateSessionAsync(cancellationToken);
-                }
-            }
-            else
-            {
-                if (requiresCheckpointReplan)
-                {
-                    taskEventJournalBuilder.RecordReplanRequired(checkpointCompatibility!.Kind);
-                    emit(CopilotAgentEvent.RuntimeDiagnostic(FormatCapabilityReplanDiagnostic(checkpointCompatibility!)));
-                }
-                session = await agent.CreateSessionAsync(cancellationToken);
-            }
-            using var steeringRegistration = RegisterSteeringContext(
-                request.ConversationId,
-                request.TaskId,
-                messageInjector,
-                session,
-                taskEventJournalBuilder);
-            liveCheckpointPublisher = new LiveCheckpointPublisher(
+            var sessionPreparation = await PrepareAgentSessionAsync(
                 request,
                 requestedCheckpoint,
+                checkpointCompatibility,
+                requiresCheckpointReplan,
                 capabilitySnapshot,
                 availableToolNames,
                 environmentContext,
                 hookSurfaceSnapshot,
                 previousEvidenceArtifacts,
+                agent,
                 bridge,
                 todoProvider,
                 modeProvider,
+                messageInjector,
                 taskEventJournalBuilder,
                 emit,
-                sessionResumed,
-                () => answerText.ToString(),
-                steeringRegistration.GetDeliveredSteeringMessages);
-
-            var recoveredTaskLedger = await CaptureTaskLedgerAsync(todoProvider, modeProvider, session, sessionResumed, cancellationToken);
-            taskEventJournalBuilder.RecordTaskLedger(recoveredTaskLedger, sessionResumed ? "recovered" : "initial");
-            if (await liveCheckpointPublisher.TryPublishAsync(agent, session, cancellationToken, recoveredTaskLedger))
-                emit(CopilotAgentEvent.CheckpointReady());
-            if (sessionResumed)
-            {
-                emit(CopilotAgentEvent.RuntimeDiagnostic(
-                    FormatTaskLedgerDiagnostic("Agent task ledger recovered", recoveredTaskLedger)
-                    + " Persisted tasks are planning state, not authorization; protected tools require a fresh exact-call approval."));
-            }
-
-            IReadOnlyList<CopilotRequestMessage> unseenVisibleHistory = sessionResumed && requestedCheckpoint != null
-                ? CopilotAgentConversationMemory.SelectUnseenVisibleTail(requestedCheckpoint.ConversationMemory, request.History)
-                : Array.Empty<CopilotRequestMessage>();
-            var promptMessages = sessionResumed
-                ? unseenVisibleHistory.Concat(preparedPrompt.Messages.TakeLast(1)).ToArray()
-                : preparedPrompt.Messages;
-            if (unseenVisibleHistory.Count > 0)
-            {
-                emit(CopilotAgentEvent.RuntimeDiagnostic(
-                    $"Agent session reconciled {unseenVisibleHistory.Count} visible conversation message(s) newer than the persisted checkpoint."));
-            }
-            if (!sessionResumed
-                && (requiresCheckpointReplan || sessionResumeFailed)
-                && requestedCheckpoint?.ConversationMemory.Count > 0)
-            {
-                promptMessages = CopilotAgentConversationMemory.MergeIntoPreparedPrompt(
-                    requestedCheckpoint.ConversationMemory,
-                    preparedPrompt.Messages);
-                emit(CopilotAgentEvent.RuntimeDiagnostic(
-                    $"Agent task session was reset, but {requestedCheckpoint.ConversationMemory.Count} bounded conversation memory message(s) were restored for continuity."));
-            }
-            var recoveryEvidencePrompt = !sessionResumed && (requiresCheckpointReplan || sessionResumeFailed)
-                ? CopilotAgentEvidenceArtifacts.BuildRecoveryPrompt(previousEvidenceArtifacts, capabilitySnapshot)
-                : string.Empty;
-            if (!string.IsNullOrWhiteSpace(recoveryEvidencePrompt))
-            {
-                promptMessages = InsertEvidenceMessageBeforeCurrentUser(promptMessages, recoveryEvidencePrompt);
-                emit(CopilotAgentEvent.RuntimeDiagnostic($"Agent recovery checkpoint contained {previousEvidenceArtifacts.Count} evidence artifact(s); bounded untrusted historical context was supplied."));
-            }
+                answerText,
+                preparedPrompt.Messages,
+                cancellationToken);
+            using var sessionPreparationLifetime = sessionPreparation;
+            var session = sessionPreparation.Session;
+            var sessionResumed = sessionPreparation.SessionResumed;
+            var steeringRegistration = sessionPreparation.SteeringRegistration;
+            liveCheckpointPublisher = sessionPreparation.LiveCheckpointPublisher;
+            var recoveredTaskLedger = sessionPreparation.RecoveredTaskLedger;
+            var promptMessages = sessionPreparation.PromptMessages;
             using var deferredBackgroundOutputDelivery =
                 _backgroundShellOutputEventInbox.BeginDelivery(
                     request.ConversationId);
