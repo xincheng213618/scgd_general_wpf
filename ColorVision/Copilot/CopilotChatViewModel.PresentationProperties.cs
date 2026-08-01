@@ -400,4 +400,3 @@ namespace ColorVision.Copilot
 
     }
 }
-
