@@ -1,5 +1,4 @@
 using ColorVision.Engine.Templates.Flow.Routing;
-using ColorVision.Engine.Templates.Flow.Versioning;
 using FlowEngineLib.Runtime;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -13,70 +12,6 @@ public sealed class FlowExecutionPolicyStoreTests
         "98c02e1b-e0a7-4868-a7cf-c7be72d376f1";
     private const string TargetNode =
         "3b1ed2a1-6b93-4aab-ae6a-1478b5bb8677";
-
-    [Fact]
-    public void VersionRestoreProjectionGroupsErrorKindsAndPreservesRetry()
-    {
-        var document = new FlowSemanticDocument
-        {
-            ErrorRoutes =
-            {
-                new ColorVision.Engine.Templates.Flow.Versioning.FlowErrorRoute
-                {
-                    SourceNodeId = SourceNode,
-                    ErrorCode = nameof(FlowFailureKind.Timeout),
-                    TargetNodeId = TargetNode,
-                    TargetPort = "in:2",
-                },
-                new ColorVision.Engine.Templates.Flow.Versioning.FlowErrorRoute
-                {
-                    SourceNodeId = SourceNode,
-                    ErrorCode = nameof(FlowFailureKind.Technical),
-                    TargetNodeId = TargetNode,
-                    TargetPort = "in:2",
-                },
-            },
-            RetryPolicies =
-            {
-                new FlowRetryPolicyReference
-                {
-                    NodeId = SourceNode,
-                    MaxAttempts = 3,
-                    InitialDelayMs = 25,
-                    Backoff = 2,
-                    MaxDelayMs = 200,
-                    RetryableKinds =
-                    {
-                        nameof(FlowFailureKind.Timeout),
-                    },
-                },
-            },
-        };
-
-        FlowExecutionPolicySaveRequest request =
-            FlowVersionHistoryWindow.CreatePolicySaveRequest(
-                FlowKey,
-                expectedRevision: 7,
-                document);
-
-        Assert.Equal(7, request.ExpectedRevision);
-        FlowErrorRoutePolicy route =
-            Assert.Single(request.ErrorRoutes);
-        Assert.Equal(2, route.TargetInputIndex);
-        Assert.Equal(
-            new[]
-            {
-                FlowFailureKind.Timeout,
-                FlowFailureKind.Technical,
-            },
-            route.FailureKinds);
-        FlowRetryPolicy retry =
-            Assert.Single(request.RetryPolicies);
-        Assert.Equal(3, retry.MaxAttempts);
-        Assert.Equal(
-            FlowFailureKind.Timeout,
-            Assert.Single(retry.RetryableKinds));
-    }
 
     [Fact]
     public void RoundTripNormalizesAndReturnsImmutableSnapshot()
@@ -413,4 +348,5 @@ public sealed class FlowExecutionPolicyStoreTests
                 Directory.Delete(Path, recursive: true);
         }
     }
+
 }

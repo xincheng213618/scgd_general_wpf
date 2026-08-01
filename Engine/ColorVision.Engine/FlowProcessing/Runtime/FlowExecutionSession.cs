@@ -330,7 +330,9 @@ namespace ColorVision.Engine.FlowProcessing
                 log.Info(msg);
 
                 await WaitForTerminalNodeEndAsync(completedErrorNodeKey, completedGeneration);
-                await WaitForNodeWritesAsync();
+                bool telemetryFlushed = await FlushNodeTelemetryAsync();
+                if (!telemetryFlushed)
+                    log.Warn("等待流程节点诊断记录落库超时。");
             }
             catch (Exception ex)
             {
@@ -486,22 +488,18 @@ namespace ColorVision.Engine.FlowProcessing
         private sealed class PendingNodeExecution
         {
             public PendingNodeExecution(
-                string writeKey,
                 string invocationId,
                 FlowNodeRecord record,
                 FlowNodeMessage? message,
                 FlowExecutionJournalScope? journalScope,
                 long generation)
             {
-                WriteKey = writeKey;
                 InvocationId = invocationId;
                 Record = record;
                 Message = message;
                 JournalScope = journalScope;
                 Generation = generation;
             }
-
-            public string WriteKey { get; }
 
             public string InvocationId { get; }
 
@@ -513,6 +511,9 @@ namespace ColorVision.Engine.FlowProcessing
 
             public FlowNodeAttempt? Attempt { get; set; }
 
+            public Task StartWriteTask { get; set; } =
+                Task.CompletedTask;
+
             public long Generation { get; }
         }
 
@@ -522,8 +523,6 @@ namespace ColorVision.Engine.FlowProcessing
         private readonly ConcurrentDictionary<string, long> _nodeExpectedDurations = new ConcurrentDictionary<string, long>();
         private readonly ConcurrentDictionary<string, long> _nodeStartedAt = new ConcurrentDictionary<string, long>();
         private readonly ConcurrentDictionary<string, CVCommonNode> _runningNodes = new ConcurrentDictionary<string, CVCommonNode>();
-        private readonly ConcurrentDictionary<string, Task> _nodeWriteTasks = new ConcurrentDictionary<string, Task>();
-        private readonly object _nodeWriteSync = new object();
         private readonly object _executionStateSync = new object();
         private readonly AsyncOperationDrain _pendingNodeExecutionDrain = new();
         private CVCommonNode? _lastFailedNode;
@@ -532,46 +531,14 @@ namespace ColorVision.Engine.FlowProcessing
         private TaskCompletionSource<bool>? _terminalNodeEndCompletion;
         private long _executionGeneration;
 
-        private void QueueNodeWrite(string writeKey, Action write)
-        {
-            lock (_nodeWriteSync)
-            {
-                Task nextWrite = _nodeWriteTasks.TryGetValue(writeKey, out Task? previous)
-                    ? previous.ContinueWith(
-                    _ => write(),
-                    CancellationToken.None,
-                    TaskContinuationOptions.None,
-                    TaskScheduler.Default)
-                    : Task.Run(write);
-                _nodeWriteTasks[writeKey] = nextWrite;
-                FlowNodeRecordDataBaseHelper.TrackPendingWrite(nextWrite);
-                _ = nextWrite.ContinueWith(
-                    completedTask =>
-                    {
-                        lock (_nodeWriteSync)
-                        {
-                            if (_nodeWriteTasks.TryGetValue(writeKey, out Task? current)
-                                && ReferenceEquals(current, nextWrite))
-                            {
-                                _nodeWriteTasks.TryRemove(writeKey, out _);
-                            }
-                        }
-                    },
-                    CancellationToken.None,
-                    TaskContinuationOptions.ExecuteSynchronously,
-                    TaskScheduler.Default);
-            }
-        }
-
         private async Task ShowExecutionSummaryAfterNodeWritesAsync(
             CVCommonNode node,
-            string? writeKey,
+            Task? pendingWrite,
             string? completedErrorNodeKey,
             string? completedSummaryMessage,
             long generation)
         {
-            if (!string.IsNullOrWhiteSpace(writeKey)
-                && _nodeWriteTasks.TryGetValue(writeKey, out Task? pendingWrite))
+            if (pendingWrite != null)
             {
                 try
                 {
@@ -583,7 +550,7 @@ namespace ColorVision.Engine.FlowProcessing
                 }
             }
 
-            bool flushed = await Task.Run(() => FlowNodeRecordDataBaseHelper.FlushPendingWrites());
+            bool flushed = await FlushNodeTelemetryAsync();
             if (!flushed)
                 log.Warn("等待流程节点记录落库超时，详情窗口可手动刷新。");
 
@@ -605,6 +572,13 @@ namespace ColorVision.Engine.FlowProcessing
                         node);
                 }
             });
+        }
+
+        private static Task<bool> FlushNodeTelemetryAsync()
+        {
+            return Task.Run(() =>
+                FlowNodeRecordDataBaseHelper.FlushPendingWrites(
+                    TimeSpan.FromSeconds(5)));
         }
 
         private async Task WaitForTerminalNodeEndAsync(string? errorNodeKey, long generation)
@@ -760,7 +734,6 @@ namespace ColorVision.Engine.FlowProcessing
                     _nodeExpectedDurations[algorithmNode.NodeID] = record.ElapsedMs;
                 else if (elapsedFromClock > 0)
                     _nodeExpectedDurations[algorithmNode.NodeID] = elapsedFromClock;
-                QueueNodeWrite(execution.WriteKey, () => FlowNodeRecordDataBaseHelper.Update(record));
 
                 // Update the existing message with received MQTT response
                 if (execution.Message is FlowNodeMessage nodeMsg)
@@ -785,7 +758,6 @@ namespace ColorVision.Engine.FlowProcessing
                     {
                         nodeMsg.State = FlowMessageState.Timeout;
                     }
-                    QueueNodeWrite(execution.WriteKey, () => FlowNodeRecordDataBaseHelper.UpdateMessage(nodeMsg));
                 }
 
                 string attemptOutcome;
@@ -832,76 +804,15 @@ namespace ColorVision.Engine.FlowProcessing
                     attemptErrorMessage = e.RecvStatusMessage;
                 }
 
-                QueueNodeWrite(execution.WriteKey, () =>
-                {
-                    execution.JournalScope?.TryCompleteAttempt(
-                        execution.Attempt,
-                        attemptOutcome,
-                        attemptErrorCode,
-                        attemptErrorMessage);
-                    if (string.Equals(
-                        attemptOutcome,
-                        "Retrying",
-                        StringComparison.Ordinal))
-                    {
-                        execution.JournalScope?.TryAppendEvent(
-                            $"node-retry-scheduled:{execution.InvocationId}",
-                            "NodeRetryScheduled",
-                            algorithmNode.NodeID,
-                            execution.Attempt?.Id,
-                            attemptErrorCode,
-                            attemptErrorMessage,
-                            System.Text.Json.JsonSerializer.Serialize(
-                                new
-                                {
-                                    AttemptNumber =
-                                        e?.AttemptNumber,
-                                    MaxAttempts =
-                                        e?.MaxAttempts,
-                                    RetryDelayMs =
-                                        e?.RetryDelayMs
-                                }));
-                    }
-                    else if (string.Equals(
-                        attemptOutcome,
-                        "HandledFailure",
-                        StringComparison.Ordinal))
-                    {
-                        execution.JournalScope?.TryAppendEvent(
-                            $"node-failure-handled:{execution.InvocationId}",
-                            "NodeFailureHandled",
-                            algorithmNode.NodeID,
-                            execution.Attempt?.Id,
-                            attemptErrorCode,
-                            attemptErrorMessage,
-                            System.Text.Json.JsonSerializer.Serialize(
-                                new
-                                {
-                                    TargetNodeId =
-                                        e?.FailureRouteTargetNodeId
-                                }));
-                    }
-                    else if (!string.Equals(
-                        attemptOutcome,
-                        "Succeeded",
-                        StringComparison.Ordinal)
-                        && !string.Equals(
-                            attemptOutcome,
-                            "Canceled",
-                            StringComparison.Ordinal))
-                    {
-                        execution.JournalScope?.TryCreateIncident(
-                            $"node-failure:{execution.InvocationId}",
-                            attemptOutcome == "TimedOut"
-                                ? "NodeTimeout"
-                                : "NodeExecutionFailed",
-                            "Error",
-                            $"{algorithmNode.OnGetDrawTitle()} {attemptOutcome}",
-                            algorithmNode.NodeID,
-                            execution.Attempt?.Id,
-                            attemptErrorMessage);
-                    }
-                });
+                Task completionWrite = PersistNodeCompletionAsync(
+                    execution,
+                    algorithmNode,
+                    e,
+                    attemptOutcome,
+                    attemptErrorCode,
+                    attemptErrorMessage);
+                FlowNodeRecordDataBaseHelper.TrackPendingWrite(
+                    completionWrite);
 
                 if (e?.RecvStatusCode != 0
                     && e?.FailureHandled != true
@@ -927,10 +838,10 @@ namespace ColorVision.Engine.FlowProcessing
                     {
                         _ = ShowExecutionSummaryAfterNodeWritesAsync(
                             algorithmNode,
-                            execution.WriteKey,
+                            completionWrite,
                             completedErrorNodeKey,
                             completedSummaryMessage,
-                        generation);
+                            generation);
                     }
                 }
                 else if (e?.FailureKind == FlowFailureKind.Canceled)
@@ -948,6 +859,117 @@ namespace ColorVision.Engine.FlowProcessing
                     }
                 }
                 _pendingNodeExecutionDrain.Complete(generation);
+            }
+        }
+
+        private static async Task PersistNodeStartAsync(
+            PendingNodeExecution execution,
+            string nodeId)
+        {
+            int insertId = await FlowNodeRecordDataBaseHelper
+                .InsertNodeExecutionAsync(
+                    execution.Record,
+                    execution.Message)
+                .ConfigureAwait(false);
+            execution.Attempt = execution.JournalScope?.TryBeginAttempt(
+                nodeId,
+                execution.InvocationId,
+                insertId > 0 ? insertId : null);
+        }
+
+        private static async Task PersistNodeCompletionAsync(
+            PendingNodeExecution execution,
+            CVCommonNode node,
+            FlowEngineNodeEndEventArgs? e,
+            string attemptOutcome,
+            string? attemptErrorCode,
+            string? attemptErrorMessage)
+        {
+            await execution.StartWriteTask.ConfigureAwait(false);
+            await FlowNodeRecordDataBaseHelper.UpdateNodeExecutionAsync(
+                    execution.Record,
+                    execution.Message)
+                .ConfigureAwait(false);
+            WriteNodeCompletionJournal(
+                execution,
+                node,
+                e,
+                attemptOutcome,
+                attemptErrorCode,
+                attemptErrorMessage);
+        }
+
+        private static void WriteNodeCompletionJournal(
+            PendingNodeExecution execution,
+            CVCommonNode node,
+            FlowEngineNodeEndEventArgs? e,
+            string attemptOutcome,
+            string? attemptErrorCode,
+            string? attemptErrorMessage)
+        {
+            execution.JournalScope?.TryCompleteAttempt(
+                execution.Attempt,
+                attemptOutcome,
+                attemptErrorCode,
+                attemptErrorMessage);
+            if (string.Equals(
+                attemptOutcome,
+                "Retrying",
+                StringComparison.Ordinal))
+            {
+                execution.JournalScope?.TryAppendEvent(
+                    $"node-retry-scheduled:{execution.InvocationId}",
+                    "NodeRetryScheduled",
+                    node.NodeID,
+                    execution.Attempt?.Id,
+                    attemptErrorCode,
+                    attemptErrorMessage,
+                    System.Text.Json.JsonSerializer.Serialize(
+                        new
+                        {
+                            AttemptNumber = e?.AttemptNumber,
+                            MaxAttempts = e?.MaxAttempts,
+                            RetryDelayMs = e?.RetryDelayMs
+                        }));
+            }
+            else if (string.Equals(
+                attemptOutcome,
+                "HandledFailure",
+                StringComparison.Ordinal))
+            {
+                execution.JournalScope?.TryAppendEvent(
+                    $"node-failure-handled:{execution.InvocationId}",
+                    "NodeFailureHandled",
+                    node.NodeID,
+                    execution.Attempt?.Id,
+                    attemptErrorCode,
+                    attemptErrorMessage,
+                    System.Text.Json.JsonSerializer.Serialize(
+                        new
+                        {
+                            TargetNodeId =
+                                e?.FailureRouteTargetNodeId
+                        }));
+            }
+            else if (!string.Equals(
+                attemptOutcome,
+                "Succeeded",
+                StringComparison.Ordinal)
+                && !string.Equals(
+                    attemptOutcome,
+                    "Canceled",
+                    StringComparison.Ordinal))
+            {
+                execution.JournalScope?.TryCreateIncident(
+                    $"node-failure:{execution.InvocationId}",
+                    attemptOutcome == "TimedOut"
+                        ? "NodeTimeout"
+                        : "NodeExecutionFailed",
+                    "Error",
+                    $"{node.OnGetDrawTitle()} {attemptOutcome}",
+                    node.NodeID,
+                    execution.Attempt?.Id,
+                    attemptErrorMessage);
             }
         }
 
@@ -1003,55 +1025,20 @@ namespace ColorVision.Engine.FlowProcessing
                 }
 
                 var execution = new PendingNodeExecution(
-                    writeKey,
                     invocationId,
                     record,
                     msg,
                     _activeJournalScope,
                     generation);
+                execution.StartWriteTask = PersistNodeStartAsync(
+                    execution,
+                    algorithmNode.NodeID);
+                FlowNodeRecordDataBaseHelper.TrackPendingWrite(
+                    execution.StartWriteTask);
                 _pendingNodeExecutionDrain.Begin(generation);
                 _pendingNodeExecutions
                     .GetOrAdd(writeKey, _ => new ConcurrentQueue<PendingNodeExecution>())
                     .Enqueue(execution);
-                QueueNodeWrite(writeKey, () =>
-                {
-                    int insertId = FlowNodeRecordDataBaseHelper.Insert(record);
-                    if (insertId > 0 && msg != null)
-                    {
-                        msg.NodeRecordId = record.Id;
-                        FlowNodeRecordDataBaseHelper.InsertMessage(msg);
-                    }
-
-                    execution.Attempt = execution.JournalScope?.TryBeginAttempt(
-                        algorithmNode.NodeID,
-                        execution.InvocationId,
-                        insertId > 0 ? insertId : null);
-                });
-            }
-        }
-
-        private async Task WaitForNodeWritesAsync()
-        {
-            Task[] pendingWrites;
-            lock (_nodeWriteSync)
-            {
-                pendingWrites = _nodeWriteTasks.Values
-                    .Where(task => !task.IsCompleted)
-                    .ToArray();
-            }
-            if (pendingWrites.Length == 0)
-                return;
-
-            try
-            {
-                await Task.WhenAll(pendingWrites);
-            }
-            catch (Exception ex)
-            {
-                // Legacy and journal writes are fail-open and already log their
-                // individual failures. Do not let a diagnostic task alter the
-                // flow result.
-                log.Warn("等待流程节点诊断记录完成时发生异常。", ex);
             }
         }
 
@@ -1284,8 +1271,6 @@ namespace ColorVision.Engine.FlowProcessing
                 _pendingNodeExecutions.Clear();
                 _runningNodeNames.Clear();
                 _runningNodeCounts.Clear();
-                lock (_nodeWriteSync)
-                    _nodeWriteTasks.Clear();
                 if (publishedExecutable == null)
                     AttachExecutionNodeEvents();
 

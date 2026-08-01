@@ -204,6 +204,137 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 TaskScheduler.Default);
         }
 
+        /// <summary>
+        /// Queues one complete node-start write. The returned task completes
+        /// after both legacy rows have been persisted by the single database
+        /// writer, so callers do not need a second Task.Run queue.
+        /// </summary>
+        internal static Task<int> InsertNodeExecutionAsync(
+            FlowNodeRecord record,
+            FlowNodeMessage? message)
+        {
+            ArgumentNullException.ThrowIfNull(record);
+            if (!EnsureInitialized())
+                return Task.FromResult(-1);
+
+            FlowNodeRecord startRecord = CloneNodeStartRecord(record);
+            FlowNodeMessage? startMessage = message == null
+                ? null
+                : CloneNodeStartMessage(message);
+            var completion = new TaskCompletionSource<int>(
+                TaskCreationOptions.RunContinuationsAsynchronously);
+            _writeQueue.Add(db =>
+            {
+                int recordId;
+                try
+                {
+                    recordId = db.Insertable(startRecord)
+                        .ExecuteReturnIdentity();
+                    record.Id = recordId;
+                }
+                catch (Exception ex)
+                {
+                    log.Error("插入FlowNodeRecord失败", ex);
+                    completion.TrySetResult(-1);
+                    return;
+                }
+
+                if (message != null && startMessage != null)
+                {
+                    try
+                    {
+                        startMessage.NodeRecordId = recordId;
+                        int messageId = db.Insertable(startMessage)
+                            .ExecuteReturnIdentity();
+                        message.Id = messageId;
+                        message.NodeRecordId = recordId;
+                    }
+                    catch (Exception ex)
+                    {
+                        log.Error("插入FlowNodeMessage失败", ex);
+                    }
+                }
+
+                completion.TrySetResult(recordId);
+            });
+            return completion.Task;
+        }
+
+        /// <summary>
+        /// Queues the final legacy node record and message update as one
+        /// ordered database command.
+        /// </summary>
+        internal static Task UpdateNodeExecutionAsync(
+            FlowNodeRecord record,
+            FlowNodeMessage? message)
+        {
+            ArgumentNullException.ThrowIfNull(record);
+            if (!EnsureInitialized())
+                return Task.CompletedTask;
+
+            var completion = new TaskCompletionSource<bool>(
+                TaskCreationOptions.RunContinuationsAsynchronously);
+            _writeQueue.Add(db =>
+            {
+                try
+                {
+                    db.Updateable(record).ExecuteCommand();
+                }
+                catch (Exception ex)
+                {
+                    log.Error("更新FlowNodeRecord失败", ex);
+                }
+
+                if (message != null)
+                {
+                    try
+                    {
+                        db.Updateable(message).ExecuteCommand();
+                    }
+                    catch (Exception ex)
+                    {
+                        log.Error("更新FlowNodeMessage失败", ex);
+                    }
+                }
+                completion.TrySetResult(true);
+            });
+            return completion.Task;
+        }
+
+        internal static FlowNodeRecord CloneNodeStartRecord(
+            FlowNodeRecord source)
+        {
+            return new FlowNodeRecord
+            {
+                BatchId = source.BatchId,
+                SerialNumber = source.SerialNumber,
+                NodeId = source.NodeId,
+                NodeName = source.NodeName,
+                NodeType = source.NodeType,
+                StartTime = source.StartTime,
+                EndTime = null,
+                ElapsedMs = 0,
+            };
+        }
+
+        internal static FlowNodeMessage CloneNodeStartMessage(
+            FlowNodeMessage source)
+        {
+            return new FlowNodeMessage
+            {
+                BatchId = source.BatchId,
+                SerialNumber = source.SerialNumber,
+                NodeId = source.NodeId,
+                NodeName = source.NodeName,
+                MsgId = source.MsgId,
+                EventName = source.EventName,
+                SendTopic = source.SendTopic,
+                SendPayload = source.SendPayload,
+                SendTime = source.SendTime,
+                State = FlowMessageState.Sent,
+            };
+        }
+
         public static int Insert(FlowNodeRecord item)
         {
             if (item == null || !EnsureInitialized())
@@ -211,8 +342,8 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
 
             try
             {
-                // Use a temporary connection for synchronous insert (needs return value)
-                // but enqueue for hot path when called from Task.Run
+                // The identity is returned synchronously, but the write still
+                // goes through the single database writer.
                 var tcs = new TaskCompletionSource<int>(
                     TaskCreationOptions.RunContinuationsAsynchronously);
                 _writeQueue.Add(db =>

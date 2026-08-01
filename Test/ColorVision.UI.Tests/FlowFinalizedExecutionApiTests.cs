@@ -1,4 +1,5 @@
 using ColorVision.Engine.FlowProcessing;
+using ColorVision.Engine.FlowProcessing.Diagnostics;
 using ColorVision.Engine.FlowProcessing.PostProcess;
 using ColorVision.Engine.FlowProcessing.Scheduling;
 using ColorVision.Engine.Templates;
@@ -79,6 +80,30 @@ public class FlowFinalizedExecutionApiTests
         Assert.Equal(
             typeof(Task<FlowRunFinalizedData>),
             finalizedSessionMethod.ReturnType);
+    }
+
+    [Fact]
+    public void SessionUsesTheDatabaseWriterAsItsOnlyTelemetryQueue()
+    {
+        Type sessionType = typeof(ViewFlow).Assembly.GetType(
+            "ColorVision.Engine.FlowProcessing.FlowExecutionSession",
+            throwOnError: true)!;
+
+        Assert.Null(sessionType.GetField(
+            "_nodeWriteTasks",
+            BindingFlags.Instance | BindingFlags.NonPublic));
+        Assert.Null(sessionType.GetMethod(
+            "QueueNodeWrite",
+            BindingFlags.Instance | BindingFlags.NonPublic));
+        Assert.NotNull(typeof(FlowNodeRecordDataBaseHelper).GetField(
+            "_writeQueue",
+            BindingFlags.Static | BindingFlags.NonPublic));
+        Assert.NotNull(typeof(FlowNodeRecordDataBaseHelper).GetMethod(
+            "InsertNodeExecutionAsync",
+            BindingFlags.Static | BindingFlags.NonPublic));
+        Assert.NotNull(typeof(FlowNodeRecordDataBaseHelper).GetMethod(
+            "UpdateNodeExecutionAsync",
+            BindingFlags.Static | BindingFlags.NonPublic));
     }
 
     [Theory]

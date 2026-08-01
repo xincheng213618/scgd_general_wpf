@@ -1,4 +1,7 @@
 using ColorVision.Engine.MQTT;
+using ColorVision.Engine.FlowProcessing.Nodes;
+using ColorVision.Engine.Services;
+using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates.Flow;
 using FlowEngineLib.Base;
@@ -122,6 +125,24 @@ namespace ColorVision.Engine.FlowProcessing.Editor
                 var historyItem = new MenuItem { Header = Properties.Resources.Flow_NodeExecutionDetails };
                 historyItem.Click += (_, _) => _executionNavigator.OpenNodeExecutionDetails(commonNode);
                 items.Add(historyItem);
+            }
+
+            if (node is LocalCalibrationNodeBase calibrationNode)
+            {
+                var releaseCalibrationCacheItem = new MenuItem { Header = "释放本地校正缓存" };
+                releaseCalibrationCacheItem.Click += async (_, _) =>
+                {
+                    DeviceCamera? device = ServiceManager.GetInstance().DeviceServices
+                        .OfType<DeviceCamera>()
+                        .FirstOrDefault(camera => string.Equals(camera.Code, calibrationNode.DeviceCode, StringComparison.Ordinal));
+                    if (device == null)
+                    {
+                        MessageBox.Show($"找不到本地相机设备：{calibrationNode.DeviceCode}", "ColorVision");
+                        return;
+                    }
+                    await device.ReleaseLocalCalibrationCacheAsync();
+                };
+                items.Add(releaseCalibrationCacheItem);
             }
 
             items.Add(new Separator());

@@ -2,38 +2,44 @@ using cvColorVision;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
+using System.Runtime.InteropServices;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Local
 {
     /// <summary>
-    /// Applies a camera calibration template directly to a process-local unmanaged RAW buffer.
-    /// Normal corrections are in-place; the generated CIE data is written to a new unmanaged buffer.
+    /// Applies a camera calibration template to a process-local RAW buffer.
+    /// Basic correction-only templates return corrected RAW; templates containing one
+    /// luminance/color item return CIE without mutating the upstream frame.
     /// </summary>
     internal static class LocalFrameCalibrationService
     {
-        private static readonly SemaphoreSlim CalibrationLock = new(1, 1);
-
         public static LocalFlowFrame Calibrate(
             LocalFlowFrameLease source,
+            LocalCalibrationCacheManager cacheManager,
             IReadOnlyList<DeviceCameraCalibrationFile> calibrationFiles,
             string calibrationTemplate)
         {
             ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(cacheManager);
             ArgumentNullException.ThrowIfNull(calibrationFiles);
             ValidateSource(source);
+            if (calibrationFiles.Count == 0)
+            {
+                throw new InvalidOperationException($"校正模板“{calibrationTemplate}”没有选择任何校正文件。");
+            }
 
             DeviceCameraCalibrationFile[] colorFiles = calibrationFiles.Where(file => IsColorCalibration(file.CalibrationType)).ToArray();
-            if (colorFiles.Length == 0)
-            {
-                throw new InvalidOperationException($"校正模板“{calibrationTemplate}”没有选择亮度/颜色校正文件，无法生成 CIE 内存。");
-            }
             if (colorFiles.Length > 1)
             {
                 throw new InvalidOperationException($"校正模板“{calibrationTemplate}”同时选择了多个亮度/颜色校正文件，本地校正只能使用一个。");
             }
 
-            int cieLength = checked(4 * source.Metadata.Width * source.Metadata.Height * source.Metadata.Channels);
+            bool generatesCie = colorFiles.Length == 1;
+            bool hasBasicCorrection = calibrationFiles.Any(file => !IsColorCalibration(file.CalibrationType));
+            int rawLength = GetExpectedRawLength(source);
+            int cieLength = generatesCie
+                ? checked(4 * source.Metadata.Width * source.Metadata.Height * source.Metadata.Channels)
+                : 0;
             LocalFrameMetadata metadata = new()
             {
                 Width = source.Metadata.Width,
@@ -47,21 +53,36 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 SourceFilePath = source.Metadata.SourceFilePath,
                 CalibrationTemplate = calibrationTemplate,
                 CaptureTime = source.Metadata.CaptureTime,
-                PrimaryBufferKind = LocalFrameBufferKind.CvCie
+                PrimaryBufferKind = generatesCie ? LocalFrameBufferKind.CvCie : LocalFrameBufferKind.CvRaw
             };
-            LocalFlowFrame result = LocalFlowFrame.Allocate(metadata, 0, cieLength);
+            LocalFlowFrame result = LocalFlowFrame.Allocate(metadata, generatesCie ? 0 : rawLength, cieLength);
+            IntPtr temporaryRaw = IntPtr.Zero;
             try
             {
-                CalibrationLock.Wait();
-                try
+                using LocalFlowFrameLease destination = result.Acquire();
+                IntPtr workingRaw = source.RawPointer;
+                if (hasBasicCorrection)
                 {
-                    using LocalFlowFrameLease destination = result.Acquire();
-                    CalibrateCore(source, destination.CiePointer, calibrationFiles, colorFiles[0]);
+                    if (generatesCie)
+                    {
+                        temporaryRaw = Marshal.AllocHGlobal(rawLength);
+                        if (temporaryRaw == IntPtr.Zero) throw new OutOfMemoryException("分配本地校正 RAW 临时缓冲区失败。");
+                        workingRaw = temporaryRaw;
+                    }
+                    else
+                    {
+                        workingRaw = destination.RawPointer;
+                    }
+                    CopyMemory(source.RawPointer, workingRaw, rawLength);
                 }
-                finally
-                {
-                    CalibrationLock.Release();
-                }
+
+                float[] exposure = generatesCie ? NormalizeExposure(source.Metadata.Exposure) : Array.Empty<float>();
+                cacheManager.Execute(
+                    new LocalCalibrationLayout(source.Metadata.Width, source.Metadata.Height, source.Metadata.SourceBpp, source.Metadata.Channels),
+                    calibrationFiles,
+                    workingRaw,
+                    destination.CiePointer,
+                    exposure);
                 return result;
             }
             catch
@@ -69,69 +90,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 result.Dispose();
                 throw;
             }
-        }
-
-        private static void CalibrateCore(
-            LocalFlowFrameLease source,
-            IntPtr destination,
-            IReadOnlyList<DeviceCameraCalibrationFile> calibrationFiles,
-            DeviceCameraCalibrationFile colorFile)
-        {
-            IntPtr handle = cvCameraCSLib.CreatCalibrationManage();
-            if (handle == IntPtr.Zero) throw new InvalidOperationException("创建本地校正上下文失败。");
-            try
-            {
-                foreach (DeviceCameraCalibrationFile file in calibrationFiles)
-                {
-                    if (!IsSupported(file.CalibrationType))
-                    {
-                        throw new NotSupportedException($"本地指针校正暂不支持校正项：{file.DisplayName}（{file.CalibrationType}）。");
-                    }
-                    if (cvCameraCSLib.CM_SetCalibParam(handle, file.CalibrationType, true, file.FullPath) != 1)
-                    {
-                        throw new InvalidOperationException($"加载校正文件失败：{file.DisplayName}（{file.FullPath}）。");
-                    }
-                }
-
-                int width = source.Metadata.Width;
-                int height = source.Metadata.Height;
-                int bpp = source.Metadata.SourceBpp;
-                uint channels = checked((uint)source.Metadata.Channels);
-                foreach (DeviceCameraCalibrationFile file in calibrationFiles)
-                {
-                    if (IsColorCalibration(file.CalibrationType)) continue;
-                    bool success = file.CalibrationType switch
-                    {
-                        CalibrationType.DarkNoise => cvCameraCSLib.CM_SCGD_SDP_DarkNoise(handle, width, height, bpp, channels, source.RawPointer),
-                        CalibrationType.DefectWPoint => cvCameraCSLib.CM_SCGD_SDP_DefectWPoint(handle, width, height, bpp, channels, source.RawPointer),
-                        CalibrationType.DefectBPoint => cvCameraCSLib.CM_SCGD_SDP_DefectBPoint(handle, width, height, bpp, channels, source.RawPointer),
-                        CalibrationType.DefectPoint => cvCameraCSLib.CM_SCGD_SDP_DefectPoint(handle, width, height, bpp, channels, source.RawPointer),
-                        CalibrationType.DSNU => cvCameraCSLib.CM_SCGD_SDP_DSNU(handle, width, height, bpp, channels, source.RawPointer),
-                        CalibrationType.Uniformity => cvCameraCSLib.CM_SCGD_SDP_Uniformity(handle, width, height, bpp, channels, source.RawPointer),
-                        CalibrationType.Distortion => cvCameraCSLib.CM_SCGD_SDP_Distortion(handle, width, height, bpp, channels, source.RawPointer),
-                        CalibrationType.ColorShift => cvCameraCSLib.CM_SCGD_SDP_ColorShift(handle, width, height, bpp, channels, source.RawPointer),
-                        CalibrationType.LineArity => cvCameraCSLib.CM_SCGD_SDP_LineArity(handle, width, height, bpp, channels, source.RawPointer),
-                        CalibrationType.ColorDiff => cvCameraCSLib.CM_SCGD_SDP_ColorDiff(handle, width, height, bpp, channels, source.RawPointer),
-                        CalibrationType.AngleShift => cvCameraCSLib.CM_SCGD_SDP_AngleShift(handle, width, height, bpp, channels, source.RawPointer),
-                        _ => false
-                    };
-                    if (!success) throw new InvalidOperationException($"执行本地校正失败：{file.DisplayName}（{file.CalibrationType}）。");
-                }
-
-                float[] exposure = NormalizeExposure(source.Metadata.Exposure);
-                bool colorSuccess = colorFile.CalibrationType switch
-                {
-                    CalibrationType.Luminance => cvCameraCSLib.CM_SCGD_SDP_Luminance(handle, checked((uint)width), checked((uint)height), bpp, channels, source.RawPointer, destination, exposure),
-                    CalibrationType.LumOneColor => cvCameraCSLib.CM_SCGD_SDP_ColorOne(handle, checked((uint)width), checked((uint)height), bpp, channels, source.RawPointer, destination, exposure),
-                    CalibrationType.LumFourColor => cvCameraCSLib.CM_SCGD_SDP_ColorFour(handle, checked((uint)width), checked((uint)height), bpp, channels, source.RawPointer, destination, exposure),
-                    CalibrationType.LumMultiColor => cvCameraCSLib.CM_SCGD_SDP_ColorMulti(handle, checked((uint)width), checked((uint)height), bpp, channels, source.RawPointer, destination, exposure),
-                    _ => false
-                };
-                if (!colorSuccess) throw new InvalidOperationException($"生成本地 CIE 内存失败：{colorFile.DisplayName}（{colorFile.CalibrationType}）。");
-            }
             finally
             {
-                _ = cvCameraCSLib.ReleaseCalibrationManage(handle);
+                if (temporaryRaw != IntPtr.Zero) Marshal.FreeHGlobal(temporaryRaw);
             }
         }
 
@@ -142,9 +103,12 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             if (source.Metadata.Width <= 0 || source.Metadata.Height <= 0) throw new InvalidOperationException("当前本地帧的图像尺寸无效。");
             if (source.Metadata.SourceBpp <= 0 || source.Metadata.SourceBpp % 8 != 0) throw new InvalidOperationException("当前本地帧的位深无效。");
             if (source.Metadata.Channels is not (1 or 3)) throw new NotSupportedException($"本地校正仅支持单通道或三通道 RAW，当前通道数：{source.Metadata.Channels}。");
-            long expectedLength = (long)(source.Metadata.SourceBpp / 8) * source.Metadata.Width * source.Metadata.Height * source.Metadata.Channels;
+            int expectedLength = GetExpectedRawLength(source);
             if (expectedLength > source.RawLength) throw new InvalidOperationException($"RAW 内存长度不足：需要 {expectedLength} 字节，实际 {source.RawLength} 字节。");
         }
+
+        private static int GetExpectedRawLength(LocalFlowFrameLease source)
+            => checked((source.Metadata.SourceBpp / 8) * source.Metadata.Width * source.Metadata.Height * source.Metadata.Channels);
 
         private static float[] NormalizeExposure(float[] exposure)
         {
@@ -157,24 +121,12 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             return normalized;
         }
 
+        private static unsafe void CopyMemory(IntPtr source, IntPtr destination, int length)
+        {
+            Buffer.MemoryCopy(source.ToPointer(), destination.ToPointer(), length, length);
+        }
+
         private static bool IsColorCalibration(CalibrationType type)
             => type is CalibrationType.Luminance or CalibrationType.LumOneColor or CalibrationType.LumFourColor or CalibrationType.LumMultiColor;
-
-        private static bool IsSupported(CalibrationType type)
-            => type is CalibrationType.DarkNoise
-                or CalibrationType.DefectWPoint
-                or CalibrationType.DefectBPoint
-                or CalibrationType.DefectPoint
-                or CalibrationType.DSNU
-                or CalibrationType.Uniformity
-                or CalibrationType.Distortion
-                or CalibrationType.ColorShift
-                or CalibrationType.LineArity
-                or CalibrationType.ColorDiff
-                or CalibrationType.AngleShift
-                or CalibrationType.Luminance
-                or CalibrationType.LumOneColor
-                or CalibrationType.LumFourColor
-                or CalibrationType.LumMultiColor;
     }
 }

@@ -24,6 +24,9 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         public int MasterResultType { get; init; } = (int)ViewResultAlgType.Calibration;
         public int TotalTime { get; init; }
         public bool Calibrated { get; init; }
+        public bool HasRaw { get; init; }
+        public bool HasCie { get; init; }
+        public string? CvRawFilePath { get; init; }
         public bool HasCieFile { get; init; }
         public string? CvCieFilePath { get; init; }
     }
@@ -83,7 +86,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         public string CalibTempName { get => calibTempName; set { calibTempName = value ?? string.Empty; OnPropertyChanged(); } }
 
         [Category("本地校正")]
-        [STNodeProperty("保存 CVCIE", "默认关闭；关闭时校正结果只保留在流程内存中", true)]
+        [STNodeProperty("保存校正文件", "默认关闭；基础校正保存 CVRAW，包含亮度/颜色校正时保存 CVCIE", true)]
         public bool SaveFiles { get => saveFiles; set { saveFiles = value; OnPropertyChanged(); } }
 
         protected LocalCalibrationNodeBase(string title, string nodeType, string operatorName, int timeoutMs, params string[] inputNames)
@@ -137,7 +140,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                         {
                             throw new InvalidOperationException(errorMessage ?? "校正模板无效。");
                         }
-                        outputFrame = LocalFrameCalibrationService.Calibrate(source, calibrationFiles, calibration.Name);
+                        outputFrame = LocalFrameCalibrationService.Calibrate(source, device.LocalCalibrationCacheManager, calibrationFiles, calibration.Name);
                         ownsOutputFrame = true;
                         calibrated = true;
                         if (SaveFiles)
@@ -190,10 +193,15 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             LocalFlowFrame frame = execution.Frame;
             MeasureBatchModel batch = BatchResultMasterDao.Instance.GetByNameOrCode(action.SerialNumber)
                 ?? throw new InvalidOperationException($"找不到流程批次：{action.SerialNumber}");
+            string? rawFilePath = NullIfEmpty(frame.CvRawFilePath);
             string? cieFilePath = NullIfEmpty(frame.CvCieFilePath);
-            if (SaveFiles && cieFilePath == null)
+            string? outputFilePath = cieFilePath ?? rawFilePath;
+            CameraFileType? outputFileType = cieFilePath != null
+                ? CameraFileType.CIEFile
+                : rawFilePath != null ? CameraFileType.RawFile : null;
+            if (SaveFiles && outputFilePath == null)
             {
-                throw new InvalidOperationException("已启用“保存 CVCIE”，但本地校正没有生成 CVCIE 文件。");
+                throw new InvalidOperationException("已启用“保存校正文件”，但本地校正没有生成输出文件。");
             }
 
             MeasureResultImgModel model = new()
@@ -207,7 +215,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                     SourceFile = NullIfEmpty(frame.Metadata.SourceFilePath),
                     execution.LoadedFromFile,
                     execution.Calibrated,
-                    MemoryOnly = string.IsNullOrWhiteSpace(frame.CvCieFilePath),
+                    MemoryOnly = outputFilePath == null,
+                    OutputBuffer = frame.HasCie ? "CIE" : "RAW",
                     frame.Metadata.Width,
                     frame.Metadata.Height,
                     frame.Metadata.SourceBpp,
@@ -217,12 +226,12 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                     Exposure = frame.Metadata.Exposure,
                     Calibration = new { ID = execution.Calibration?.Id ?? -1, Name = execution.Calibration?.Name ?? frame.Metadata.CalibrationTemplate }
                 }),
-                RawFile = cieFilePath == null ? null : Path.GetFileName(cieFilePath),
-                FileUrl = cieFilePath,
-                FileType = cieFilePath == null ? null : (sbyte)CameraFileType.CIEFile,
+                RawFile = outputFilePath == null ? null : Path.GetFileName(outputFilePath),
+                FileUrl = outputFilePath,
+                FileType = outputFileType.HasValue ? (sbyte)outputFileType.Value : null,
                 ImgFrameInfo = JsonConvert.SerializeObject(new
                 {
-                    bpp = frame.Metadata.CieBpp,
+                    bpp = frame.HasCie ? frame.Metadata.CieBpp : frame.Metadata.SourceBpp,
                     width = frame.Metadata.Width,
                     height = frame.Metadata.Height,
                     channels = frame.Metadata.Channels
@@ -330,6 +339,9 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                     MasterId = masterId,
                     TotalTime = execution.TotalTime,
                     Calibrated = execution.Calibrated,
+                    HasRaw = execution.Frame.HasRaw,
+                    HasCie = execution.Frame.HasCie,
+                    CvRawFilePath = NullIfEmpty(execution.Frame.CvRawFilePath),
                     HasCieFile = !string.IsNullOrWhiteSpace(execution.Frame.CvCieFilePath),
                     CvCieFilePath = NullIfEmpty(execution.Frame.CvCieFilePath)
                 }

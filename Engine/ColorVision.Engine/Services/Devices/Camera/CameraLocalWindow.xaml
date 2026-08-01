@@ -31,6 +31,8 @@
                 <MenuItem Click="Channels_MenuItem_Click" Header="{x:Static properties:Resources.ChannelParamSettings}" />
                 <MenuItem Click="Calibration_MenuItem_Click" Header="{x:Static properties:Resources.CaliberationParamSet}" />
                 <MenuItem Click="ExpTime_MenuItem_Click" Header="{x:Static properties:Resources.AutoExposureParamSettings}" />
+                <Separator />
+                <MenuItem Header="释放本地校正缓存" Command="{Binding ReleaseLocalCalibrationCacheCommand}" />
             </MenuItem>
         </Menu>
 
