@@ -11,6 +11,11 @@ using System.Windows.Input;
 
 namespace ColorVision.Engine.FlowProcessing.Diagnostics
 {
+    internal readonly record struct FlowRunNavigationItem(
+        int BatchId,
+        string SerialNumber,
+        DateTime ExecutedTime);
+
     public partial class FlowExecutionAnalysisWindow : Window
     {
         private const long SlowNodeThresholdMs = 30000;
@@ -20,12 +25,15 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
         private readonly string? _initialNodeId;
         private readonly string? _initialNodeName;
         private readonly Func<FlowNodeRecord, bool>? _focusFlowNode;
-        private readonly Stack<FlowAnalysisNavigationState> _backStack = new Stack<FlowAnalysisNavigationState>();
-        private readonly Stack<FlowAnalysisNavigationState> _forwardStack = new Stack<FlowAnalysisNavigationState>();
+        private IReadOnlyList<FlowRunNavigationItem> _allRuns = Array.Empty<FlowRunNavigationItem>();
+        private IReadOnlyList<FlowRunNavigationItem> _sameFlowRuns = Array.Empty<FlowRunNavigationItem>();
         private FlowExecutionAnalysisSession? _session;
         private FlowAnalysisNavigationState? _currentState;
+        private int _currentAllRunIndex = -1;
+        private int _currentSameFlowRunIndex = -1;
         private int _loadVersion;
         private bool _isClearingAnalysisRecords;
+        private bool _isLoading;
 
         public FlowExecutionAnalysisWindow()
             : this(null, null, null, null, null, null)
@@ -108,7 +116,8 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 await LoadRunAsync(
                     selection.BatchId.Value,
                     selection.SerialNumber,
-                    selection.InitialRecordId);
+                    selection.InitialRecordId,
+                    useInitialNodeFallback: true);
             }
             finally
             {
@@ -166,7 +175,11 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 ?? string.Empty;
         }
 
-        private async Task LoadRunAsync(int batchId, string? serialNumber, int? preferredRecordId)
+        private async Task LoadRunAsync(
+            int batchId,
+            string? serialNumber,
+            int? preferredRecordId,
+            bool useInitialNodeFallback = false)
         {
             int loadVersion = ++_loadVersion;
             SetLoading(true);
@@ -179,6 +192,10 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                         FlowNodeRecordDataBaseHelper.GetByRun(batchId, serialNumber);
                     List<FlowNodeMessage> messages =
                         FlowNodeRecordDataBaseHelper.GetMessagesByRun(batchId, serialNumber);
+                    List<int> recentBatchIds =
+                        FlowNodeRecordDataBaseHelper.GetDistinctBatchIds(500);
+                    List<FlowNodeRecord> recentRecords =
+                        FlowNodeRecordDataBaseHelper.GetByBatchIds(recentBatchIds);
                     FlowRunRecord? run =
                         FlowNodeRecordDataBaseHelper.GetFlowRun(batchId, serialNumber);
                     List<FlowExecutionEvent> events = run == null
@@ -193,10 +210,24 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                             .Where(item => string.IsNullOrWhiteSpace(item.SerialNumber))
                             .ToList();
                     }
+                    string effectiveSerialNumber = NormalizeRunSerialNumber(
+                        !string.IsNullOrWhiteSpace(serialNumber)
+                            ? serialNumber
+                            : records.FirstOrDefault()?.SerialNumber);
+                    IReadOnlyList<FlowRunNavigationItem> sameFlowRuns =
+                        LoadSameFlowRunOrder(effectiveSerialNumber, records);
+                    IReadOnlyList<FlowRunNavigationItem> allRuns = BuildFlowRunOrder(
+                        recentRecords
+                            .Concat(records)
+                            .GroupBy(record => record.Id)
+                            .Select(group => group.First()));
                     return (
                         Flushed: flushed,
                         Records: records,
                         Messages: messages,
+                        AllRuns: allRuns,
+                        SameFlowRuns: sameFlowRuns,
+                        EffectiveSerialNumber: effectiveSerialNumber,
                         Run: run,
                         Events: events);
                 });
@@ -204,9 +235,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 if (loadVersion != _loadVersion)
                     return;
 
-                string effectiveSerial = !string.IsNullOrWhiteSpace(serialNumber)
-                    ? serialNumber
-                    : result.Records.FirstOrDefault()?.SerialNumber ?? string.Empty;
+                string effectiveSerial = result.EffectiveSerialNumber;
                 MeasureBatchModel? batch = _initialBatch?.Id == batchId
                     && (string.IsNullOrWhiteSpace(effectiveSerial)
                         || string.Equals(_initialBatch.Name, effectiveSerial, StringComparison.Ordinal)
@@ -225,9 +254,18 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                     DateTime.Now,
                     SlowNodeThresholdMs);
 
-                _backStack.Clear();
-                _forwardStack.Clear();
+                _allRuns = result.AllRuns;
+                _currentAllRunIndex = FindCurrentRunIndex(
+                    _allRuns,
+                    batchId,
+                    effectiveSerial);
+                _sameFlowRuns = result.SameFlowRuns;
+                _currentSameFlowRunIndex = FindCurrentRunIndex(
+                    _sameFlowRuns,
+                    batchId,
+                    effectiveSerial);
                 _currentState = null;
+                UpdateNavigationButtons();
 
                 if (_session.Records.Count == 0)
                 {
@@ -243,15 +281,13 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                     FlowAnalysisPageKind.Overview,
                     _session.BatchId,
                     _session.SerialNumber);
-                NavigateTo(overviewState, addHistory: false);
+                NavigateTo(overviewState);
 
                 FlowNodeRecord? preferredRecord = _session.FindRecord(preferredRecordId)
-                    ?? FindInitialNodeRecord();
+                    ?? (useInitialNodeFallback ? FindInitialNodeRecord() : null);
                 if (preferredRecord != null)
                 {
-                    NavigateTo(
-                        CreateNodeState(preferredRecord),
-                        addHistory: true);
+                    NavigateTo(CreateNodeState(preferredRecord));
                 }
             }
             finally
@@ -285,21 +321,13 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                     string.Equals(item.NodeName, _initialNodeName, StringComparison.Ordinal));
         }
 
-        private void NavigateTo(FlowAnalysisNavigationState target, bool addHistory = true)
+        private void NavigateTo(FlowAnalysisNavigationState target)
         {
             if (_session == null
                 || target.BatchId != _session.BatchId
                 || !string.Equals(target.SerialNumber, _session.SerialNumber, StringComparison.Ordinal))
             {
                 return;
-            }
-
-            if (addHistory
-                && _currentState.HasValue
-                && _currentState.Value != target)
-            {
-                _backStack.Push(_currentState.Value);
-                _forwardStack.Clear();
             }
 
             _currentState = target;
@@ -334,8 +362,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                             new FlowAnalysisNavigationState(
                                 FlowAnalysisPageKind.Overview,
                                 _session.BatchId,
-                                _session.SerialNumber),
-                            addHistory: false);
+                                _session.SerialNumber));
                         return;
                     }
 
@@ -460,26 +487,82 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             }
         }
 
-        private void BackButton_Click(object sender, RoutedEventArgs e)
+        private async void PreviousSameFlowRunButton_Click(object sender, RoutedEventArgs e)
         {
-            if (_backStack.Count == 0 || !_currentState.HasValue)
-                return;
-
-            _forwardStack.Push(_currentState.Value);
-            _currentState = _backStack.Pop();
-            RenderCurrentPage();
-            UpdateNavigationButtons();
+            await SwitchSameFlowRunAsync(-1);
         }
 
-        private void ForwardButton_Click(object sender, RoutedEventArgs e)
+        private async void NextSameFlowRunButton_Click(object sender, RoutedEventArgs e)
         {
-            if (_forwardStack.Count == 0 || !_currentState.HasValue)
+            await SwitchSameFlowRunAsync(1);
+        }
+
+        private async Task SwitchSameFlowRunAsync(int direction)
+        {
+            if (_session == null || _isLoading)
                 return;
 
-            _backStack.Push(_currentState.Value);
-            _currentState = _forwardStack.Pop();
-            RenderCurrentPage();
-            UpdateNavigationButtons();
+            int targetIndex = FindAdjacentRunIndex(
+                _sameFlowRuns,
+                _session.BatchId,
+                _session.SerialNumber,
+                direction);
+            if (targetIndex < 0)
+                return;
+
+            FlowRunNavigationItem targetRun = _sameFlowRuns[targetIndex];
+            try
+            {
+                await LoadRunAsync(targetRun.BatchId, targetRun.SerialNumber, null);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    this,
+                    $"切换相同流程执行记录失败：{ex.Message}",
+                    "ColorVision",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
+        }
+
+        private async void PreviousRunButton_Click(object sender, RoutedEventArgs e)
+        {
+            await SwitchFlowRunAsync(-1);
+        }
+
+        private async void NextRunButton_Click(object sender, RoutedEventArgs e)
+        {
+            await SwitchFlowRunAsync(1);
+        }
+
+        private async Task SwitchFlowRunAsync(int direction)
+        {
+            if (_session == null || _isLoading)
+                return;
+
+            int targetIndex = FindAdjacentRunIndex(
+                _allRuns,
+                _session.BatchId,
+                _session.SerialNumber,
+                direction);
+            if (targetIndex < 0)
+                return;
+
+            FlowRunNavigationItem targetRun = _allRuns[targetIndex];
+            try
+            {
+                await LoadRunAsync(targetRun.BatchId, targetRun.SerialNumber, null);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    this,
+                    $"切换流程执行记录失败：{ex.Message}",
+                    "ColorVision",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
         }
 
         private async void RefreshButton_Click(object sender, RoutedEventArgs e)
@@ -503,8 +586,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             {
                 FlowNodeRecord? scope = _session.FindRecord(previousState.Value.RecordId);
                 NavigateTo(
-                    CreateMessageState(scope, previousState.Value.MessageId),
-                    addHistory: false);
+                    CreateMessageState(scope, previousState.Value.MessageId));
             }
         }
 
@@ -731,8 +813,10 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
         {
             _session = null;
             _currentState = null;
-            _backStack.Clear();
-            _forwardStack.Clear();
+            _allRuns = Array.Empty<FlowRunNavigationItem>();
+            _sameFlowRuns = Array.Empty<FlowRunNavigationItem>();
+            _currentAllRunIndex = -1;
+            _currentSameFlowRunIndex = -1;
             UpdateNavigationButtons();
             UpdateHeader("流程执行分析", "空状态", description);
 
@@ -773,14 +857,182 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
 
         private void SetLoading(bool isLoading)
         {
+            _isLoading = isLoading;
             LoadingOverlay.Visibility = isLoading ? Visibility.Visible : Visibility.Collapsed;
             Mouse.OverrideCursor = isLoading ? Cursors.Wait : null;
+            UpdateNavigationButtons();
         }
 
         private void UpdateNavigationButtons()
         {
-            BackButton.IsEnabled = _backStack.Count > 0;
-            ForwardButton.IsEnabled = _forwardStack.Count > 0;
+            bool canNavigateAllRuns = !_isLoading && _session != null && _currentAllRunIndex >= 0;
+            PreviousRunButton.IsEnabled = canNavigateAllRuns && _currentAllRunIndex > 0;
+            NextRunButton.IsEnabled = canNavigateAllRuns && _currentAllRunIndex + 1 < _allRuns.Count;
+            PreviousRunButton.ToolTip = PreviousRunButton.IsEnabled
+                ? $"上一次流程执行：{FormatRunLabel(_allRuns[_currentAllRunIndex - 1])}"
+                : "没有上一次流程执行";
+            NextRunButton.ToolTip = NextRunButton.IsEnabled
+                ? $"下一次流程执行：{FormatRunLabel(_allRuns[_currentAllRunIndex + 1])}"
+                : "没有下一次流程执行";
+
+            bool canNavigateSameFlow =
+                !_isLoading && _session != null && _currentSameFlowRunIndex >= 0;
+            PreviousSameFlowRunButton.IsEnabled =
+                canNavigateSameFlow && _currentSameFlowRunIndex > 0;
+            NextSameFlowRunButton.IsEnabled =
+                canNavigateSameFlow && _currentSameFlowRunIndex + 1 < _sameFlowRuns.Count;
+            PreviousSameFlowRunButton.ToolTip = PreviousSameFlowRunButton.IsEnabled
+                ? $"上次相同流程执行：{FormatRunLabel(_sameFlowRuns[_currentSameFlowRunIndex - 1])}"
+                : "没有上次相同流程执行";
+            NextSameFlowRunButton.ToolTip = NextSameFlowRunButton.IsEnabled
+                ? $"下次相同流程执行：{FormatRunLabel(_sameFlowRuns[_currentSameFlowRunIndex + 1])}"
+                : "没有下次相同流程执行";
+        }
+
+        private static IReadOnlyList<FlowRunNavigationItem> LoadSameFlowRunOrder(
+            string serialNumber,
+            List<FlowNodeRecord> currentRecords)
+        {
+            List<FlowRunRecord> flowRuns =
+                FlowNodeRecordDataBaseHelper.GetSameFlowRuns(serialNumber);
+            if (flowRuns.Count > 0)
+            {
+                List<FlowNodeRecord> nodeRecords =
+                    FlowNodeRecordDataBaseHelper.GetBySerialNumbers(
+                        flowRuns.Select(run => run.SerialNumber ?? string.Empty));
+                IReadOnlyList<FlowRunNavigationItem> exactRuns =
+                    BuildSameFlowRunOrder(flowRuns, nodeRecords);
+                int currentBatchId = currentRecords.Count > 0
+                    ? currentRecords[0].BatchId
+                    : 0;
+                if (FindCurrentRunIndex(
+                        exactRuns,
+                        currentBatchId,
+                        serialNumber) >= 0)
+                {
+                    return exactRuns;
+                }
+            }
+
+            string[] nodeIds = currentRecords
+                .Select(record => record.NodeId)
+                .Where(nodeId => !string.IsNullOrWhiteSpace(nodeId))
+                .Distinct(StringComparer.Ordinal)
+                .ToArray();
+            return BuildFlowRunOrder(
+                FlowNodeRecordDataBaseHelper.GetRecentByNodeIds(nodeIds));
+        }
+
+        internal static IReadOnlyList<FlowRunNavigationItem> BuildSameFlowRunOrder(
+            IEnumerable<FlowRunRecord> flowRuns,
+            IEnumerable<FlowNodeRecord> nodeRecords)
+        {
+            if (flowRuns == null || nodeRecords == null)
+                return Array.Empty<FlowRunNavigationItem>();
+
+            Dictionary<string, FlowRunNavigationItem> nodeRunsBySerial =
+                BuildFlowRunOrder(nodeRecords)
+                    .GroupBy(run => run.SerialNumber, StringComparer.Ordinal)
+                    .ToDictionary(
+                        group => group.Key,
+                        group => group.OrderByDescending(run => run.ExecutedTime).First(),
+                        StringComparer.Ordinal);
+
+            return flowRuns
+                .Where(run => !string.IsNullOrWhiteSpace(run.SerialNumber))
+                .GroupBy(run => NormalizeRunSerialNumber(run.SerialNumber), StringComparer.Ordinal)
+                .Select(group => group.OrderByDescending(run => run.CompletedTime).First())
+                .Where(run => nodeRunsBySerial.ContainsKey(run.SerialNumber!))
+                .Select(run =>
+                {
+                    FlowRunNavigationItem nodeRun = nodeRunsBySerial[run.SerialNumber!];
+                    return nodeRun with { ExecutedTime = run.CompletedTime };
+                })
+                .OrderBy(run => run.ExecutedTime)
+                .ThenBy(run => run.BatchId)
+                .ThenBy(run => run.SerialNumber, StringComparer.Ordinal)
+                .ToArray();
+        }
+
+        internal static IReadOnlyList<FlowRunNavigationItem> BuildFlowRunOrder(
+            IEnumerable<FlowNodeRecord> records)
+        {
+            if (records == null)
+                return Array.Empty<FlowRunNavigationItem>();
+
+            return records
+                .GroupBy(record => new
+                {
+                    record.BatchId,
+                    SerialNumber = NormalizeRunSerialNumber(record.SerialNumber)
+                })
+                .Select(group => new
+                {
+                    group.Key.BatchId,
+                    group.Key.SerialNumber,
+                    FirstStartTime = group.Min(record => record.StartTime),
+                    FirstRecordId = group.Min(record => record.Id)
+                })
+                .OrderBy(run => run.FirstStartTime)
+                .ThenBy(run => run.FirstRecordId)
+                .ThenBy(run => run.BatchId)
+                .ThenBy(run => run.SerialNumber, StringComparer.Ordinal)
+                .Select(run => new FlowRunNavigationItem(
+                    run.BatchId,
+                    run.SerialNumber,
+                    run.FirstStartTime))
+                .ToArray();
+        }
+
+        internal static int FindAdjacentRunIndex(
+            IReadOnlyList<FlowRunNavigationItem> orderedRuns,
+            int currentBatchId,
+            string? currentSerialNumber,
+            int direction)
+        {
+            if (orderedRuns == null || (direction != -1 && direction != 1))
+                return -1;
+
+            int currentIndex = FindCurrentRunIndex(
+                orderedRuns,
+                currentBatchId,
+                NormalizeRunSerialNumber(currentSerialNumber));
+            int targetIndex = currentIndex + direction;
+            return currentIndex >= 0 && targetIndex >= 0 && targetIndex < orderedRuns.Count
+                ? targetIndex
+                : -1;
+        }
+
+        private static int FindCurrentRunIndex(
+            IReadOnlyList<FlowRunNavigationItem> orderedRuns,
+            int currentBatchId,
+            string currentSerialNumber)
+        {
+            for (int index = 0; index < orderedRuns.Count; index++)
+            {
+                FlowRunNavigationItem run = orderedRuns[index];
+                if (run.BatchId == currentBatchId
+                    && string.Equals(run.SerialNumber, currentSerialNumber, StringComparison.Ordinal))
+                {
+                    return index;
+                }
+            }
+            return -1;
+        }
+
+        private static string FormatRunLabel(string serialNumber)
+        {
+            return string.IsNullOrWhiteSpace(serialNumber) ? "无 SN 流程" : serialNumber;
+        }
+
+        private static string FormatRunLabel(FlowRunNavigationItem run)
+        {
+            return $"Batch {run.BatchId} · {FormatRunLabel(run.SerialNumber)}";
+        }
+
+        private static string NormalizeRunSerialNumber(string? serialNumber)
+        {
+            return string.IsNullOrWhiteSpace(serialNumber) ? string.Empty : serialNumber;
         }
 
         private void UpdateHeader(string title, string breadcrumb, string subtitle)
