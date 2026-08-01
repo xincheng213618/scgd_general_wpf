@@ -60,7 +60,12 @@ namespace ColorVision.Engine.PropertyEditor
                 return;
 
             FlowPropertyEditorRegistry.Register<FlowDeviceNameEditor>((property, obj) => new DeviceNameEditor().GenProperties(property, obj));
-            FlowPropertyEditorRegistry.Register<FlowCalibrationTemplateEditor>((property, obj) => CreateTemplateEditor(property, obj, CreateCalibrationTemplate(obj)));
+            FlowPropertyEditorRegistry.Register<FlowCalibrationTemplateEditor>((property, obj) => CreateTemplateEditor(
+                property,
+                obj,
+                () => CreateCalibrationTemplate(obj),
+                nameof(CVCommonNode.DeviceCode),
+                hasDirectTemplateEditor: true));
             FlowPropertyEditorRegistry.Register<FlowAutoExposureTemplateEditor>((property, obj) => CreateMultiTemplateEditor(property, obj, new TemplateAutoExpTimeV2(), new TemplateAutoExpTime()));
             FlowPropertyEditorRegistry.Register<FlowCameraRunTemplateEditor>((property, obj) => CreateTemplateEditor(property, obj, new TemplateCameraRunParam()));
             FlowPropertyEditorRegistry.Register<FlowAutoFocusTemplateEditor>((property, obj) => CreateTemplateEditor(property, obj, new TemplateAutoFocus()));
@@ -162,13 +167,24 @@ namespace ColorVision.Engine.PropertyEditor
             if (template == null)
                 return new TextboxPropertiesEditor().GenProperties(property, obj);
 
+            return CreateTemplateEditor(property, obj, () => template, null, HasDirectTemplateEditor(template));
+        }
+
+        private static DockPanel CreateTemplateEditor(
+            PropertyInfo property,
+            object obj,
+            Func<ITemplate?> templateFactory,
+            string? refreshPropertyName,
+            bool hasDirectTemplateEditor)
+        {
+
             var rm = PropertyEditorHelper.GetResourceManager(obj);
             var dockPanel = new DockPanel();
             var textBlock = PropertyEditorHelper.CreateLabel(property, rm);
             var grid = new Grid();
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            if (HasDirectTemplateEditor(template))
+            if (hasDirectTemplateEditor)
                 grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
@@ -185,16 +201,63 @@ namespace ColorVision.Engine.PropertyEditor
             HandyControl.Controls.InfoElement.SetShowClearButton(combo, true);
 
             bool isRefreshing = false;
-            void RefreshItems()
+            ITemplate? template = null;
+            Button? openButton = null;
+            var editButton = CreateEditButton();
+            int buttonColumn = 2;
+            if (hasDirectTemplateEditor)
             {
-                isRefreshing = true;
-                combo.ItemsSource = null;
-                combo.ItemsSource = template.ItemsSource;
-                SelectTemplate(combo, template.ItemsSource, property.GetValue(obj)?.ToString());
-                isRefreshing = false;
+                openButton = CreateOpenTemplateButton();
+                openButton.Click += (_, _) =>
+                {
+                    ITemplate? currentTemplate = template;
+                    if (currentTemplate == null)
+                        return;
+
+                    int selectedIndex = GetSelectedTemplateIndex(currentTemplate, property.GetValue(obj)?.ToString(), combo.SelectedIndex);
+                    if (selectedIndex >= 0)
+                    {
+                        currentTemplate.PreviewMouseDoubleClick(selectedIndex);
+                        RefreshItems();
+                    }
+                };
+                Grid.SetColumn(openButton, buttonColumn++);
+                grid.Children.Add(openButton);
             }
 
-            RefreshItems();
+            editButton.Click += (_, _) =>
+            {
+                ITemplate? currentTemplate = template;
+                if (currentTemplate == null)
+                    return;
+
+                int defaultIndex = GetTemplateIndex(currentTemplate, property.GetValue(obj)?.ToString(), combo.SelectedIndex);
+                new TemplateEditorWindow(currentTemplate, defaultIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+                RefreshItems();
+            };
+
+            void RefreshItems(bool clearUnavailableSelection = false)
+            {
+                isRefreshing = true;
+                try
+                {
+                    template = templateFactory();
+                    IEnumerable items = template?.ItemsSource ?? Array.Empty<object>();
+                    string? templateName = property.GetValue(obj)?.ToString();
+                    combo.ItemsSource = null;
+                    combo.ItemsSource = items;
+                    SelectTemplate(combo, items, templateName);
+                    openButton?.SetCurrentValue(UIElement.IsEnabledProperty, template != null);
+                    editButton.SetCurrentValue(UIElement.IsEnabledProperty, template != null);
+
+                    if (clearUnavailableSelection && combo.SelectedItem == null && !string.IsNullOrWhiteSpace(templateName))
+                        SetValueAndNotify(property, obj, string.Empty);
+                }
+                finally
+                {
+                    isRefreshing = false;
+                }
+            }
 
             combo.SelectionChanged += (_, _) =>
             {
@@ -205,30 +268,45 @@ namespace ColorVision.Engine.PropertyEditor
                 SetValueAndNotify(property, obj, selectedName);
             };
 
-            int buttonColumn = 2;
-            if (HasDirectTemplateEditor(template))
-            {
-                var openButton = CreateOpenTemplateButton();
-                openButton.Click += (_, _) =>
-                {
-                    int selectedIndex = GetSelectedTemplateIndex(template, property.GetValue(obj)?.ToString(), combo.SelectedIndex);
-                    if (selectedIndex >= 0)
-                    {
-                        template.PreviewMouseDoubleClick(selectedIndex);
-                        RefreshItems();
-                    }
-                };
-                Grid.SetColumn(openButton, buttonColumn++);
-                grid.Children.Add(openButton);
-            }
+            RefreshItems(clearUnavailableSelection: refreshPropertyName != null);
 
-            var editButton = CreateEditButton();
-            editButton.Click += (_, _) =>
+            if (refreshPropertyName != null && obj is INotifyPropertyChanged notifyPropertyChanged)
             {
-                int defaultIndex = GetTemplateIndex(template, property.GetValue(obj)?.ToString(), combo.SelectedIndex);
-                new TemplateEditorWindow(template, defaultIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-                RefreshItems();
-            };
+                bool isSubscribed = true;
+                string dependencyValue = GetStringProperty(obj, refreshPropertyName);
+                PropertyChangedEventHandler dependencyChanged = (_, args) =>
+                {
+                    if (!string.IsNullOrEmpty(args.PropertyName) && !string.Equals(args.PropertyName, refreshPropertyName, StringComparison.Ordinal))
+                        return;
+
+                    string newDependencyValue = GetStringProperty(obj, refreshPropertyName);
+                    if (string.Equals(dependencyValue, newDependencyValue, StringComparison.Ordinal))
+                        return;
+
+                    dependencyValue = newDependencyValue;
+                    RefreshItems(clearUnavailableSelection: true);
+                };
+
+                notifyPropertyChanged.PropertyChanged += dependencyChanged;
+                dockPanel.Unloaded += (_, _) =>
+                {
+                    if (!isSubscribed)
+                        return;
+
+                    notifyPropertyChanged.PropertyChanged -= dependencyChanged;
+                    isSubscribed = false;
+                };
+                dockPanel.Loaded += (_, _) =>
+                {
+                    if (isSubscribed)
+                        return;
+
+                    notifyPropertyChanged.PropertyChanged += dependencyChanged;
+                    isSubscribed = true;
+                    dependencyValue = GetStringProperty(obj, refreshPropertyName);
+                    RefreshItems(clearUnavailableSelection: true);
+                };
+            }
 
             Grid.SetColumn(textBlock, 0);
             Grid.SetColumn(combo, 1);
