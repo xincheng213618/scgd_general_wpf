@@ -763,81 +763,27 @@ namespace ColorVision.Copilot
                 && !outputContentFiltered
                 && (!hasModelFinalAnswer || toolBudgetForcedFinalization))
             {
-                emit(CopilotAgentEvent.RuntimeDiagnostic(toolBudgetForcedFinalization
-                    ? "The tool-enabled Agent loop reached its hard limit; starting one bounded finalization call with business tools disabled."
-                    : "Agent Framework returned no displayable final answer; starting one bounded finalization call with business tools disabled."));
-                var repairLedger = await CaptureTaskLedgerAsync(todoProvider, modeProvider, session, sessionResumed, cancellationToken);
-                var repairPrompt = _contextBuilder.BuildAnswerMessages(request, bridge.StepRecords);
-                var repairInstruction = "# Final answer recovery\n"
-                    + (toolBudgetForcedFinalization
-                        ? "The tool-enabled Agent loop reached its hard tool-call limit. Provide the final answer now using only the supplied request, context, and collected tool observations. Do not request or call tools. Do not claim unfinished work is complete; state remaining work or a concrete blocker when applicable.\n"
-                        : "The Agent loop ended without displayable final text. Provide the final answer now using only the supplied request, context, and tool observations. Do not request or call tools. Do not claim unfinished work is complete; state remaining work or a concrete blocker when applicable.\n")
-                    + CodeFindingEvidenceInstruction + "\n"
-                    + FormatTaskLedgerDiagnostic("Current task ledger", repairLedger);
-                var repairMessages = CopilotRequestMessageSequence
-                    .Normalize(repairPrompt.Messages.Append(new CopilotRequestMessage("user", repairInstruction)))
-                    .Select(ToFrameworkMessage)
-                    .ToArray();
-                hasModelFinalAnswer = false;
-                try
-                {
-                    var repairResponse = await contextRecoveryChatClient.GetResponseAsync(
-                        repairMessages,
-                        BuildFinalAnswerOptions(request.Profile),
-                        cancellationToken);
-                    foreach (var usageContent in repairResponse.Messages.SelectMany(message => message.Contents).OfType<UsageContent>())
-                        usage = usage.Add(ToCopilotUsage(usageContent.Details));
-                    var repairLengthLimited = IsLengthLimitedOutput(repairResponse.FinishReason);
-                    var repairContentFiltered = IsContentFilteredOutput(repairResponse.FinishReason);
-                    var repairFinishReasonIncomplete = IsUnexpectedIncompleteOutput(repairResponse.FinishReason);
-                    var repairedText = ExtractFinalAnswerText(repairResponse);
-                    outputLengthLimitReached = repairLengthLimited;
-                    outputContentFiltered = repairContentFiltered;
-                    outputFinishReasonIncomplete = repairFinishReasonIncomplete;
-                    if (repairLengthLimited)
-                    {
-                        emit(CopilotAgentEvent.RuntimeDiagnostic(
-                            "The bounded no-tools finalization call also reached its maximum output length; allowed partial text was retained without replacing earlier output."));
-                    }
-                    else if (repairContentFiltered)
-                    {
-                        emit(CopilotAgentEvent.RuntimeDiagnostic(
-                            "The bounded no-tools finalization call was stopped by the provider content filter; filtered replacement text was not accepted as complete and earlier partial output was retained."));
-                    }
-                    else if (repairFinishReasonIncomplete)
-                    {
-                        emit(CopilotAgentEvent.RuntimeDiagnostic(
-                            "The bounded no-tools finalization call ended with an explicit non-success finish reason; replacement text was not accepted as complete and earlier partial output was retained."));
-                    }
-                    if (!repairLengthLimited
-                        && !repairContentFiltered
-                        && !repairFinishReasonIncomplete
-                        && !string.IsNullOrWhiteSpace(repairedText))
-                    {
-                        if (answerText.Length > 0)
-                            emit(CopilotAgentEvent.AnswerReset());
-                        emit(CopilotAgentEvent.AnswerDelta(repairedText));
-                        hasModelFinalAnswer = true;
-                        emit(CopilotAgentEvent.RuntimeDiagnostic("The bounded no-tools finalization call produced the final answer."));
-                    }
-                    else if (!string.IsNullOrWhiteSpace(repairedText))
-                    {
-                        if (answerText.Length == 0)
-                            emit(CopilotAgentEvent.AnswerDelta(repairedText));
-                    }
-                    else
-                    {
-                        emit(CopilotAgentEvent.RuntimeDiagnostic("The bounded no-tools finalization call also returned no displayable text."));
-                    }
-                }
-                catch (OperationCanceledException)
-                {
-                    throw;
-                }
-                catch (Exception ex)
-                {
-                    emit(CopilotAgentEvent.RuntimeDiagnostic($"The bounded no-tools finalization call failed ({CopilotAgentTraceEntry.Sanitize(ex.Message)})."));
-                }
+                var recoveredFinalAnswer = await RecoverFinalAnswerAsync(
+                    request,
+                    emit,
+                    bridge,
+                    todoProvider,
+                    modeProvider,
+                    session,
+                    sessionResumed,
+                    contextRecoveryChatClient,
+                    cancellationToken,
+                    toolBudgetForcedFinalization,
+                    answerText.Length > 0,
+                    usage,
+                    outputLengthLimitReached,
+                    outputContentFiltered,
+                    outputFinishReasonIncomplete);
+                usage = recoveredFinalAnswer.Usage;
+                outputLengthLimitReached = recoveredFinalAnswer.OutputLengthLimitReached;
+                outputContentFiltered = recoveredFinalAnswer.OutputContentFiltered;
+                outputFinishReasonIncomplete = recoveredFinalAnswer.OutputFinishReasonIncomplete;
+                hasModelFinalAnswer = recoveredFinalAnswer.HasModelFinalAnswer;
             }
             if (controlIntent == CopilotAgentControlIntent.None
                 && !timeBudgetExhausted
