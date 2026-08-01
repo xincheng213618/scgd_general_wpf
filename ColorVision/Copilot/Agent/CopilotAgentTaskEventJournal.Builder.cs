@@ -1,0 +1,428 @@
+using ColorVision.Copilot.Mcp;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+
+namespace ColorVision.Copilot
+{
+    public sealed class CopilotAgentTaskEventJournalBuilder
+    {
+        private readonly object _syncRoot = new();
+        private readonly List<CopilotAgentTaskEvent> _events = new();
+        private long _nextSequence;
+
+        public CopilotAgentTaskEventJournalBuilder(CopilotAgentTaskEventJournalSnapshot? previous = null, string? runId = null)
+        {
+            if (previous?.IsStructurallyValid() == true)
+                _events.AddRange(previous.Events.TakeLast(CopilotAgentTaskEventJournal.MaxEvents));
+            _nextSequence = _events.Count == 0 ? 1 : _events.Max(item => item.Sequence) + 1;
+            RunId = CopilotAgentTaskEventIds.IsKey(runId, "run", 32) ? runId! : CopilotAgentTaskEventIds.CreateRunId();
+        }
+
+        public string RunId { get; }
+
+        public void RecordRunStarted()
+        {
+            Append(CopilotAgentTaskEventType.RunStarted, RunId, "running", "Agent run started.");
+        }
+
+        public void RecordRecovery(CopilotAgentRecoveryRequest recovery)
+        {
+            ArgumentNullException.ThrowIfNull(recovery);
+            if (!recovery.IsStructurallyValid())
+                throw new ArgumentException("Agent recovery request is not structurally valid.", nameof(recovery));
+
+            var subjectId = recovery.Mode == CopilotAgentRecoveryMode.RetryRead ? recovery.SourceCallKey : RunId;
+            Append(
+                CopilotAgentTaskEventType.RecoveryRequested,
+                subjectId,
+                recovery.Mode.ToString(),
+                recovery.Mode switch
+                {
+                    CopilotAgentRecoveryMode.Finalize => "Recovery retries only the final answer with every tool disabled.",
+                    CopilotAgentRecoveryMode.RetryRead => "Recovery may re-evaluate one retry-eligible read failure without replaying stored arguments.",
+                    CopilotAgentRecoveryMode.Replan => "Recovery requires a fresh plan against current capabilities.",
+                    _ => "Recovery resumes the incomplete task ledger from its checkpoint.",
+                },
+                recovery.ToolName);
+        }
+
+        public void RecordSessionResumed()
+        {
+            Append(CopilotAgentTaskEventType.SessionResumed, RunId, "resumed", "Agent session and task state resumed from checkpoint.");
+        }
+
+        public void RecordReplanRequired(CopilotAgentCheckpointCompatibilityKind reason)
+        {
+            Append(CopilotAgentTaskEventType.ReplanRequired, RunId, reason.ToString(), "Persisted task state was discarded and must be replanned.");
+        }
+
+        public void RecordTaskLedger(CopilotAgentTaskLedgerSnapshot ledger, string phase)
+        {
+            ArgumentNullException.ThrowIfNull(ledger);
+            var items = ledger.Items ?? Array.Empty<CopilotAgentTaskItem>();
+            var completedCount = items.Count(item => item?.IsComplete == true);
+            var relatedIds = items.Where(item => item != null).Select(item => $"task:{Math.Max(0, item.Id)}");
+            Append(
+                CopilotAgentTaskEventType.TaskLedgerCaptured,
+                RunId,
+                phase,
+                $"Task ledger {completedCount}/{items.Count} complete in {ledger.Mode} mode.",
+                relatedIds: relatedIds);
+        }
+
+        public void RecordApprovalDecision(CopilotToolExecutionInfo execution, bool approved)
+        {
+            ArgumentNullException.ThrowIfNull(execution);
+            RecordApprovalDecision(execution.ToolName, execution.CallId, execution.ApprovalActionId, approved);
+        }
+
+        public void RecordApprovalDecision(
+            string toolName,
+            string callId,
+            string approvalActionId,
+            bool approved,
+            string decisionSource = "")
+        {
+            var approvalId = CopilotAgentTaskEventIds.ForApproval(approvalActionId);
+            var source = (decisionSource ?? string.Empty).Trim();
+            Append(
+                approved ? CopilotAgentTaskEventType.ApprovalApproved : CopilotAgentTaskEventType.ApprovalDenied,
+                approvalId,
+                approved
+                    ? string.IsNullOrWhiteSpace(source) ? "approved" : "approved:" + source
+                    : "denied",
+                approved
+                    ? string.Equals(source, nameof(CopilotFrameworkApprovalDecisionSource.AutomaticReview), StringComparison.Ordinal)
+                        ? "Protected tool call was approved by automatic permission review."
+                        : string.Equals(source, nameof(CopilotFrameworkApprovalDecisionSource.TemporaryGrant), StringComparison.Ordinal)
+                            ? "Protected tool call was approved by the temporary task grant."
+                            : "Protected tool call was approved by the user."
+                    : "Protected tool call was denied or expired.",
+                toolName,
+                [CopilotAgentTaskEventIds.ForCall(callId)]);
+        }
+
+        public void RecordSteering(string message)
+        {
+            if (string.IsNullOrWhiteSpace(message))
+                throw new ArgumentException("Steering message cannot be empty.", nameof(message));
+            Append(
+                CopilotAgentTaskEventType.SteeringQueued,
+                CopilotAgentTaskEventIds.ForSteering(message),
+                "queued",
+                "A user steering instruction was queued for the active Agent session.");
+        }
+
+        public void RecordSteeringDelivered(string message)
+        {
+            if (string.IsNullOrWhiteSpace(message))
+                throw new ArgumentException("Steering message cannot be empty.", nameof(message));
+            Append(
+                CopilotAgentTaskEventType.SteeringDelivered,
+                CopilotAgentTaskEventIds.ForSteering(message),
+                "delivered",
+                "A queued user steering instruction was delivered to the Agent provider.");
+        }
+
+        internal void RecordBackgroundShellCommandCompletion(
+            CopilotBackgroundShellCommandSnapshot snapshot)
+        {
+            ArgumentNullException.ThrowIfNull(snapshot);
+            if (snapshot.State is CopilotBackgroundShellCommandState.Running
+                    or CopilotBackgroundShellCommandState.Stopped
+                || string.IsNullOrWhiteSpace(snapshot.Id))
+            {
+                throw new ArgumentException(
+                    "A terminal background command snapshot is required.",
+                    nameof(snapshot));
+            }
+
+            Append(
+                CopilotAgentTaskEventType.BackgroundCommandCompleted,
+                CopilotAgentTaskEventIds.ForBackgroundCommand(snapshot.Id),
+                snapshot.State.ToString().ToLowerInvariant(),
+                snapshot.ExitCode.HasValue
+                    ? $"An application-managed background command reached a terminal state with exit code {snapshot.ExitCode.Value}."
+                    : "An application-managed background command reached a terminal state.");
+        }
+
+        internal void RecordBackgroundShellCommandOutput(
+            CopilotBackgroundShellOutputMonitorEventArgs eventArgs)
+        {
+            ArgumentNullException.ThrowIfNull(eventArgs);
+            var monitor = eventArgs.Monitor;
+            if (!monitor.IsActive
+                || string.IsNullOrWhiteSpace(monitor.Id)
+                || string.IsNullOrWhiteSpace(monitor.BackgroundId)
+                || string.IsNullOrWhiteSpace(eventArgs.Content))
+            {
+                throw new ArgumentException(
+                    "An active background output monitor event is required.",
+                    nameof(eventArgs));
+            }
+
+            var stream =
+                monitor.Stream
+                    == CopilotBackgroundShellOutputStream.StandardError
+                    ? "stderr"
+                    : "stdout";
+            Append(
+                CopilotAgentTaskEventType.BackgroundCommandOutputObserved,
+                CopilotAgentTaskEventIds.ForBackgroundOutputMonitor(
+                    monitor.Id),
+                stream,
+                eventArgs.SuppressedEvents > 0
+                    ? $"A bounded redacted background {stream} monitor event was queued after suppressing {eventArgs.SuppressedEvents} earlier event(s)."
+                    : $"A bounded redacted background {stream} monitor event was queued.",
+                relatedIds:
+                [
+                    CopilotAgentTaskEventIds.ForBackgroundCommand(
+                        monitor.BackgroundId),
+                ]);
+        }
+
+        public void RecordEvidence(CopilotAgentEvidenceArtifact artifact)
+        {
+            ArgumentNullException.ThrowIfNull(artifact);
+            if (!artifact.IsStructurallyValid())
+                throw new ArgumentException("Evidence artifact is not structurally valid.", nameof(artifact));
+            var related = new[] { artifact.SourceCallKey, artifact.ResourceKey }
+                .Where(value => !string.IsNullOrWhiteSpace(value));
+            Append(
+                CopilotAgentTaskEventType.EvidenceCaptured,
+                artifact.Id,
+                "captured",
+                artifact.Summary,
+                artifact.ToolName,
+                related,
+                artifact.CapturedAtUtc);
+        }
+
+        public void RecordStop(CopilotAgentStopReason reason)
+        {
+            lock (_syncRoot)
+            {
+                CloseDanglingToolExecutions(reason);
+                Append(CopilotAgentTaskEventType.RunStopped, RunId, reason.ToString(), $"Agent run stopped with reason {reason}.");
+            }
+        }
+
+        public void RecordBlocker(CopilotAgentBlockerSnapshot blocker)
+        {
+            ArgumentNullException.ThrowIfNull(blocker);
+            if (!blocker.IsStructurallyValid())
+                throw new ArgumentException("Agent blocker is not structurally valid.", nameof(blocker));
+
+            Append(
+                CopilotAgentTaskEventType.BlockerDetected,
+                string.IsNullOrWhiteSpace(blocker.SourceCallKey) ? RunId : blocker.SourceCallKey,
+                blocker.Code,
+                blocker.Summary,
+                blocker.ToolName);
+        }
+
+        public void RecordControl(CopilotAgentControlIntent intent)
+        {
+            if (intent is not (CopilotAgentControlIntent.Pause or CopilotAgentControlIntent.Cancel))
+                throw new ArgumentOutOfRangeException(nameof(intent));
+            Append(
+                intent == CopilotAgentControlIntent.Pause ? CopilotAgentTaskEventType.PauseRequested : CopilotAgentTaskEventType.CancelRequested,
+                RunId,
+                intent.ToString(),
+                intent == CopilotAgentControlIntent.Pause
+                    ? "The user paused the active Agent run at a cancellation boundary."
+                    : "The user cancelled the active Agent run and discarded its new checkpoint.");
+        }
+
+        public void Observe(CopilotAgentEvent agentEvent)
+        {
+            if (agentEvent == null)
+                return;
+
+            var execution = agentEvent.ToolExecution;
+            if (agentEvent.Type == CopilotAgentEventType.ToolStarted && execution != null)
+            {
+                Append(
+                    CopilotAgentTaskEventType.ToolStarted,
+                    CopilotAgentTaskEventIds.ForCall(execution.CallId),
+                    execution.State.ToString(),
+                    "Tool execution started.",
+                    execution.ToolName,
+                    occurredAtUtc: execution.StartedAtUtc == default ? null : execution.StartedAtUtc);
+                return;
+            }
+
+            if (agentEvent.Type == CopilotAgentEventType.ToolResult && execution != null)
+            {
+                var type = execution.State switch
+                {
+                    CopilotToolExecutionState.AwaitingApproval => CopilotAgentTaskEventType.ApprovalRequested,
+                    CopilotToolExecutionState.Denied => CopilotAgentTaskEventType.ApprovalDenied,
+                    _ => CopilotAgentTaskEventType.ToolCompleted,
+                };
+                var callId = CopilotAgentTaskEventIds.ForCall(execution.CallId);
+                var subjectId = type is CopilotAgentTaskEventType.ApprovalRequested or CopilotAgentTaskEventType.ApprovalDenied
+                    ? CopilotAgentTaskEventIds.ForApproval(execution.ApprovalActionId)
+                    : callId;
+                var related = subjectId == callId ? Array.Empty<string>() : [callId];
+                Append(
+                    type,
+                    subjectId,
+                    execution.State.ToString(),
+                    agentEvent.ToolResult?.Summary ?? agentEvent.Text,
+                    execution.ToolName,
+                    related,
+                    execution.CompletedAtUtc ?? (execution.StartedAtUtc == default ? null : execution.StartedAtUtc),
+                    agentEvent.ToolResult?.Success == false ? agentEvent.ToolResult.FailureCode : string.Empty);
+                return;
+            }
+
+            if (agentEvent.Type == CopilotAgentEventType.Error)
+            {
+                Append(CopilotAgentTaskEventType.RuntimeError, RunId, "error", agentEvent.Text);
+                return;
+            }
+
+            if ((agentEvent.Type is CopilotAgentEventType.UserQuestionRequested
+                    or CopilotAgentEventType.UserQuestionResolved)
+                && agentEvent.UserQuestion?.IsStructurallyValid() == true)
+            {
+                var question = agentEvent.UserQuestion;
+                var requested = agentEvent.Type == CopilotAgentEventType.UserQuestionRequested;
+                Append(
+                    requested
+                        ? CopilotAgentTaskEventType.UserQuestionRequested
+                        : CopilotAgentTaskEventType.UserQuestionResolved,
+                    CopilotAgentTaskEventIds.ForUserQuestion(question.RequestId),
+                    requested ? "pending" : question.Resolution.ToString(),
+                    requested
+                        ? "The Agent requested one structured user clarification."
+                        : question.Resolution == CopilotUserQuestionResolution.Answered
+                            ? "The structured user clarification was answered."
+                            : "The structured user clarification was cancelled.");
+            }
+        }
+
+        public CopilotAgentTaskEventJournalSnapshot Snapshot()
+        {
+            lock (_syncRoot)
+            {
+                return new CopilotAgentTaskEventJournalSnapshot
+                {
+                    Events = _events.ToArray(),
+                };
+            }
+        }
+
+        private void CloseDanglingToolExecutions(CopilotAgentStopReason stopReason)
+        {
+            var latestStarts = _events
+                .Where(item => item.Type == CopilotAgentTaskEventType.ToolStarted
+                    && string.Equals(item.RunId, RunId, StringComparison.Ordinal))
+                .GroupBy(item => item.SubjectId, StringComparer.Ordinal)
+                .Select(group => group.OrderByDescending(item => item.Sequence).First())
+                .Where(start => !_events.Any(item =>
+                    string.Equals(item.RunId, RunId, StringComparison.Ordinal)
+                    && item.Sequence > start.Sequence
+                    && IsTerminalToolEvent(item, start.SubjectId)))
+                .OrderBy(item => item.Sequence)
+                .ToArray();
+            if (latestStarts.Length == 0)
+                return;
+
+            var cancelled = stopReason == CopilotAgentStopReason.Cancelled;
+            var state = cancelled
+                ? CopilotToolExecutionState.Cancelled.ToString()
+                : CopilotToolExecutionState.Interrupted.ToString();
+            var failureCode = cancelled
+                ? "tool_execution_cancelled"
+                : "tool_terminal_event_missing";
+            var summary = cancelled
+                ? "Tool execution was cancelled before a terminal result was recorded."
+                : "Tool execution was interrupted before a terminal result was recorded.";
+            foreach (var start in latestStarts)
+            {
+                Append(
+                    CopilotAgentTaskEventType.ToolCompleted,
+                    start.SubjectId,
+                    state,
+                    summary,
+                    start.ToolName,
+                    failureCode: failureCode);
+            }
+        }
+
+        private static bool IsTerminalToolEvent(CopilotAgentTaskEvent item, string callSubjectId)
+        {
+            return (item.Type == CopilotAgentTaskEventType.ToolCompleted
+                    && string.Equals(item.SubjectId, callSubjectId, StringComparison.Ordinal))
+                || (item.Type == CopilotAgentTaskEventType.ApprovalDenied
+                    && (string.Equals(item.SubjectId, callSubjectId, StringComparison.Ordinal)
+                        || item.RelatedIds.Contains(callSubjectId, StringComparer.Ordinal)));
+        }
+
+        private void Append(
+            CopilotAgentTaskEventType type,
+            string subjectId,
+            string state,
+            string summary,
+            string toolName = "",
+            IEnumerable<string>? relatedIds = null,
+            DateTimeOffset? occurredAtUtc = null,
+            string failureCode = "")
+        {
+            lock (_syncRoot)
+            {
+                var timestamp = occurredAtUtc ?? DateTimeOffset.UtcNow;
+                var sequence = _nextSequence++;
+                var item = new CopilotAgentTaskEvent
+                {
+                    Sequence = sequence,
+                    Id = CopilotAgentTaskEventIds.CreateEventId(sequence, RunId, type, timestamp),
+                    Type = type,
+                    OccurredAtUtc = timestamp,
+                    RunId = RunId,
+                    SubjectId = NormalizeIdentifier(subjectId, RunId),
+                    RelatedIds = (relatedIds ?? Array.Empty<string>())
+                        .Select(value => NormalizeIdentifier(value, string.Empty))
+                        .Where(value => value.Length > 0)
+                        .Distinct(StringComparer.Ordinal)
+                        .Take(CopilotAgentTaskEventJournal.MaxRelatedIds)
+                        .ToArray(),
+                    ToolName = SanitizeText(toolName, CopilotAgentTaskEventJournal.MaxToolNameLength, collapseWhitespace: true),
+                    State = SanitizeText(state, CopilotAgentTaskEventJournal.MaxStateLength, collapseWhitespace: true),
+                    FailureCode = CopilotToolFailureCode.Normalize(failureCode),
+                    Summary = SanitizeText(summary, CopilotAgentTaskEventJournal.MaxSummaryLength, collapseWhitespace: true),
+                };
+                if (!item.IsStructurallyValid())
+                    throw new InvalidOperationException("Agent task event could not be normalized into a valid journal entry.");
+                _events.Add(item);
+                if (_events.Count > CopilotAgentTaskEventJournal.MaxEvents)
+                    _events.RemoveRange(0, _events.Count - CopilotAgentTaskEventJournal.MaxEvents);
+            }
+        }
+
+        private static string NormalizeIdentifier(string? value, string fallback)
+        {
+            var normalized = new string((value ?? string.Empty)
+                .Where(character => char.IsLetterOrDigit(character) || character is ':' or '-' or '_' or '.')
+                .Take(CopilotAgentTaskEventJournal.MaxIdentifierLength)
+                .ToArray());
+            return string.IsNullOrWhiteSpace(normalized) ? fallback : normalized;
+        }
+
+        private static string SanitizeText(string? value, int maximumLength, bool collapseWhitespace)
+        {
+            var sanitized = CopilotMcpAuditLogger.RedactText(value ?? string.Empty).Replace("\0", string.Empty, StringComparison.Ordinal);
+            if (collapseWhitespace)
+                sanitized = string.Join(" ", sanitized.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+            if (sanitized.Length <= maximumLength)
+                return sanitized;
+            return maximumLength <= 3 ? sanitized[..maximumLength] : sanitized[..(maximumLength - 3)] + "...";
+        }
+    }
+}
