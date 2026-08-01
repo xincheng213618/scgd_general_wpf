@@ -164,6 +164,19 @@ namespace ColorVision.Copilot
                 error = "File access and server-delay SQL functions are not available to Copilot.";
                 return false;
             }
+            if (root == "SELECT" && normalizedTokens.Contains("INTO", StringComparer.OrdinalIgnoreCase))
+            {
+                error = "SELECT INTO variable and file targets are not available to the read-only database tool.";
+                return false;
+            }
+            if (root == "SELECT"
+                && (ContainsSequence(normalizedTokens, "FOR", "UPDATE")
+                    || ContainsSequence(normalizedTokens, "FOR", "SHARE")
+                    || ContainsSequence(normalizedTokens, "LOCK", "IN", "SHARE", "MODE")))
+            {
+                error = "Row-locking SELECT statements are not available to the read-only database tool.";
+                return false;
+            }
             if (root is "CREATE" or "ALTER" or "DROP" or "RENAME")
             {
                 var objectToken = tokens.Skip(1).FirstOrDefault(token => token.Depth == 0
@@ -380,6 +393,30 @@ namespace ColorVision.Copilot
                     return true;
                 }
             }
+            return false;
+        }
+
+        private static bool ContainsSequence(string[] values, params string[] sequence)
+        {
+            if (sequence.Length == 0 || values.Length < sequence.Length)
+                return false;
+
+            for (var index = 0; index <= values.Length - sequence.Length; index++)
+            {
+                var matches = true;
+                for (var offset = 0; offset < sequence.Length; offset++)
+                {
+                    if (!values[index + offset].Equals(sequence[offset], StringComparison.OrdinalIgnoreCase))
+                    {
+                        matches = false;
+                        break;
+                    }
+                }
+
+                if (matches)
+                    return true;
+            }
+
             return false;
         }
 
