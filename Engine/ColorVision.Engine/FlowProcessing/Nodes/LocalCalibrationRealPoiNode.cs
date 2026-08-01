@@ -118,6 +118,10 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 POIWidth,
                 POIHeight);
             using LocalCalibrationExecution execution = ExecuteCalibration(action);
+            if (!execution.Frame.HasCie)
+            {
+                throw new InvalidOperationException("实时 POI 需要 CIE 数据，请在校正模板中选择一个亮度或颜色校正文件。");
+            }
             int calibrationMasterId = -1;
             int poiMasterId = -1;
             try

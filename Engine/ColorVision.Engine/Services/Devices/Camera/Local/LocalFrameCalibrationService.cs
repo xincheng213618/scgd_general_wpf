@@ -35,10 +35,13 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             }
 
             bool generatesCie = colorFiles.Length == 1;
+            int cieChannels = generatesCie
+                ? GetCieChannelCount(colorFiles[0], source.Metadata.Channels)
+                : 0;
             bool hasBasicCorrection = calibrationFiles.Any(file => !IsColorCalibration(file.CalibrationType));
             int rawLength = GetExpectedRawLength(source);
             int cieLength = generatesCie
-                ? checked(4 * source.Metadata.Width * source.Metadata.Height * source.Metadata.Channels)
+                ? checked(4 * source.Metadata.Width * source.Metadata.Height * cieChannels)
                 : 0;
             LocalFrameMetadata metadata = new()
             {
@@ -128,5 +131,16 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
 
         private static bool IsColorCalibration(CalibrationType type)
             => type is CalibrationType.Luminance or CalibrationType.LumOneColor or CalibrationType.LumFourColor or CalibrationType.LumMultiColor;
+
+        private static int GetCieChannelCount(DeviceCameraCalibrationFile colorFile, int sourceChannels)
+        {
+            int requiredChannels = colorFile.CalibrationType == CalibrationType.Luminance ? 1 : 3;
+            if (sourceChannels != requiredChannels)
+            {
+                string calibrationName = colorFile.CalibrationType == CalibrationType.Luminance ? "亮度校正" : "单色/四色/多色校正";
+                throw new InvalidOperationException($"{calibrationName}“{colorFile.DisplayName}”要求 {requiredChannels} 通道 RAW，当前为 {sourceChannels} 通道。");
+            }
+            return requiredChannels;
+        }
     }
 }
