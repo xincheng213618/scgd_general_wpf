@@ -463,42 +463,6 @@
   <data name="Save" xml:space="preserve">
     <value>儲存</value>
   </data>
-  <data name="CopilotExceptionDiagnosis" xml:space="preserve">
-    <value>異常診斷</value>
-  </data>
-  <data name="CopilotUnhandledException" xml:space="preserve">
-    <value>ColorVision 捕獲到未處理異常</value>
-  </data>
-  <data name="CopilotExceptionDetails" xml:space="preserve">
-    <value>異常詳情</value>
-  </data>
-  <data name="CopilotRecentLogs" xml:space="preserve">
-    <value>最近日誌</value>
-  </data>
-  <data name="CopilotRecentNLines" xml:space="preserve">
-    <value>最近 N 行</value>
-  </data>
-  <data name="CopilotLines" xml:space="preserve">
-    <value>行</value>
-  </data>
-  <data name="CopilotTodayLog" xml:space="preserve">
-    <value>當日日誌</value>
-  </data>
-  <data name="CopilotRefreshLog" xml:space="preserve">
-    <value>重新整理日誌</value>
-  </data>
-  <data name="CopilotAiRequest" xml:space="preserve">
-    <value>AI 請求</value>
-  </data>
-  <data name="CopilotCopyDetails" xml:space="preserve">
-    <value>複製詳情</value>
-  </data>
-  <data name="CopilotAskAi" xml:space="preserve">
-    <value>詢問 AI</value>
-  </data>
-  <data name="CopilotGoogleSearch" xml:space="preserve">
-    <value>Google 搜尋</value>
-  </data>
   <data name="Close" xml:space="preserve">
     <value>關閉</value>
   </data>

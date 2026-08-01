@@ -1,7 +1,10 @@
 using ColorVision.UI;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -43,6 +46,26 @@ namespace ColorVision.Copilot
         public int DeclaredToolCount { get; init; }
 
         public int ActiveToolCount { get; init; }
+
+        public int DeclaredHookCount { get; init; }
+
+        public int ActiveHookCount { get; init; }
+
+        public IReadOnlyList<CopilotAgentExtensionHookSnapshot> Hooks { get; init; } =
+            Array.Empty<CopilotAgentExtensionHookSnapshot>();
+    }
+
+    public sealed class CopilotAgentExtensionHookSnapshot
+    {
+        public string SourceId { get; init; } = string.Empty;
+
+        public string Name { get; init; } = string.Empty;
+
+        public string ToolNamePattern { get; init; } = "*";
+
+        public int Order { get; init; }
+
+        public bool IsActive { get; init; }
     }
 
     /// <summary>
@@ -55,12 +78,15 @@ namespace ColorVision.Copilot
             () => new CopilotAgentExtensionBridge(
                 CopilotAgentExtensionRegistry.Shared,
                 CopilotCapabilityCatalog.Shared,
-                CopilotToolRegistry.CreateCoreDefaultTools().Select(tool => tool.Name)),
+                CopilotToolRegistry.CreateCoreDefaultTools().Select(tool => tool.Name),
+                CopilotToolExecutionHookRegistry.Shared),
             LazyThreadSafetyMode.ExecutionAndPublication);
         private readonly CopilotAgentExtensionRegistry _registry;
         private readonly CopilotCapabilityCatalog _capabilityCatalog;
+        private readonly CopilotToolExecutionHookRegistry _hookRegistry;
         private readonly HashSet<string> _reservedToolNames;
         private readonly HashSet<string> _publishedCatalogSourceIds = new(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, IDisposable> _publishedHookRegistrations = new(StringComparer.OrdinalIgnoreCase);
         private readonly object _syncRoot = new();
         private CopilotAgentExtensionBridgeSnapshot _snapshot = new();
         private bool _disposed;
@@ -68,10 +94,12 @@ namespace ColorVision.Copilot
         public CopilotAgentExtensionBridge(
             CopilotAgentExtensionRegistry registry,
             CopilotCapabilityCatalog capabilityCatalog,
-            IEnumerable<string>? reservedToolNames = null)
+            IEnumerable<string>? reservedToolNames = null,
+            CopilotToolExecutionHookRegistry? hookRegistry = null)
         {
             _registry = registry ?? throw new ArgumentNullException(nameof(registry));
             _capabilityCatalog = capabilityCatalog ?? throw new ArgumentNullException(nameof(capabilityCatalog));
+            _hookRegistry = hookRegistry ?? CopilotToolExecutionHookRegistry.Shared;
             _reservedToolNames = new HashSet<string>(
                 (reservedToolNames ?? Array.Empty<string>()).Where(name => !string.IsNullOrWhiteSpace(name)).Select(name => name.Trim()),
                 StringComparer.OrdinalIgnoreCase);
@@ -90,6 +118,7 @@ namespace ColorVision.Copilot
         public void Dispose()
         {
             string[] sourceIds;
+            IDisposable[] hookRegistrations;
             lock (_syncRoot)
             {
                 if (_disposed)
@@ -97,10 +126,14 @@ namespace ColorVision.Copilot
                 _disposed = true;
                 sourceIds = _publishedCatalogSourceIds.ToArray();
                 _publishedCatalogSourceIds.Clear();
+                hookRegistrations = _publishedHookRegistrations.Values.ToArray();
+                _publishedHookRegistrations.Clear();
                 _snapshot = new CopilotAgentExtensionBridgeSnapshot { Revision = _snapshot.Revision };
             }
 
             _registry.Changed -= Registry_Changed;
+            foreach (var registration in hookRegistrations)
+                registration.Dispose();
             foreach (var sourceId in sourceIds)
                 _capabilityCatalog.PublishSource(CopilotCapabilitySourceKind.Plugin, sourceId, sourceId, Array.Empty<ICopilotTool>());
         }
@@ -186,6 +219,49 @@ namespace ColorVision.Copilot
                     }
                 }
 
+                var activeHookExtensionIds = registrySnapshot.Extensions
+                    .Where(extension => extension.ToolExecutionHooks.Count > 0)
+                    .Select(extension => extension.SourceId)
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+                foreach (var staleSourceId in _publishedHookRegistrations.Keys
+                    .Where(sourceId => !activeHookExtensionIds.Contains(sourceId))
+                    .ToArray())
+                {
+                    _publishedHookRegistrations.Remove(staleSourceId, out var staleRegistration);
+                    staleRegistration?.Dispose();
+                }
+
+                var activeHookCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+                foreach (var extension in registrySnapshot.Extensions.Where(extension => extension.ToolExecutionHooks.Count > 0))
+                {
+                    if (_publishedHookRegistrations.ContainsKey(extension.SourceId))
+                    {
+                        activeHookCounts[extension.SourceId] = extension.ToolExecutionHooks.Count;
+                        continue;
+                    }
+
+                    try
+                    {
+                        var definitions = extension.ToolExecutionHooks.Select(hook =>
+                            CreateHookRegistrationDefinition(
+                                extension,
+                                hook,
+                                () => _registry.IsRegistered(extension)));
+                        _publishedHookRegistrations.Add(
+                            extension.SourceId,
+                            _hookRegistry.RegisterBatch(definitions));
+                        activeHookCounts[extension.SourceId] = extension.ToolExecutionHooks.Count;
+                    }
+                    catch (Exception ex)
+                    {
+                        issues.Add(new CopilotAgentExtensionIssue
+                        {
+                            SourceId = extension.SourceId,
+                            Message = $"Module tool execution hooks were not activated: {ex.Message}",
+                        });
+                    }
+                }
+
                 _snapshot = new CopilotAgentExtensionBridgeSnapshot
                 {
                     Revision = registrySnapshot.Revision,
@@ -197,6 +273,16 @@ namespace ColorVision.Copilot
                         ContextProviderCount = extension.ContextProviders.Count,
                         DeclaredToolCount = extension.Tools.Count,
                         ActiveToolCount = activeToolCounts.GetValueOrDefault(extension.SourceId),
+                        DeclaredHookCount = extension.ToolExecutionHooks.Count,
+                        ActiveHookCount = activeHookCounts.GetValueOrDefault(extension.SourceId),
+                        Hooks = extension.ToolExecutionHooks.Select(hook => new CopilotAgentExtensionHookSnapshot
+                        {
+                            SourceId = BuildHookSourceId(extension.SourceId, hook.Name),
+                            Name = hook.Name.Trim(),
+                            ToolNamePattern = NormalizeHookPattern(hook.ToolNamePattern),
+                            Order = hook.Order,
+                            IsActive = activeHookCounts.ContainsKey(extension.SourceId),
+                        }).ToArray(),
                     }).ToArray(),
                     ContextProviders = contextProviders,
                     Tools = activeTools,
@@ -206,6 +292,52 @@ namespace ColorVision.Copilot
         }
 
         private static string BuildCatalogSourceId(string extensionSourceId) => "extension:" + extensionSourceId;
+
+        private static CopilotToolExecutionHookRegistrationDefinition CreateHookRegistrationDefinition(
+            CopilotAgentExtensionDescriptor extension,
+            ICopilotModuleToolExecutionHook hook,
+            Func<bool> isRegistrationActive)
+        {
+            var adapter = hook is ICopilotModuleToolPermissionRequestHook permissionRequestHook
+                ? new CopilotModuleToolPermissionRequestHookAdapter(
+                    hook,
+                    permissionRequestHook,
+                    isRegistrationActive)
+                : new CopilotModuleToolExecutionHookAdapter(hook, isRegistrationActive);
+            return new CopilotToolExecutionHookRegistrationDefinition(
+                BuildHookSourceId(extension.SourceId, hook.Name),
+                adapter,
+                NormalizeHookPattern(hook.ToolNamePattern),
+                hook.Order,
+                ComputeHookConfigurationFingerprint(extension, hook));
+        }
+
+        private static string BuildHookSourceId(string extensionSourceId, string hookName) =>
+            $"extension:{extensionSourceId}:hook:{hookName.Trim().ToLowerInvariant()}";
+
+        private static string NormalizeHookPattern(string? pattern) =>
+            string.IsNullOrWhiteSpace(pattern) ? "*" : pattern.Trim();
+
+        private static string ComputeHookConfigurationFingerprint(
+            CopilotAgentExtensionDescriptor extension,
+            ICopilotModuleToolExecutionHook hook)
+        {
+            var hookType = hook.GetType();
+            var assemblyName = hookType.Assembly.GetName();
+            var identity = string.Join("|", new[]
+            {
+                extension.SourceVersion,
+                assemblyName.Name ?? string.Empty,
+                assemblyName.Version?.ToString() ?? string.Empty,
+                hookType.Module.ModuleVersionId.ToString("N"),
+                hookType.FullName ?? hookType.Name,
+                hook.Name.Trim(),
+                NormalizeHookPattern(hook.ToolNamePattern),
+                hook.Order.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            });
+            return Convert.ToHexString(
+                SHA256.HashData(Encoding.UTF8.GetBytes(identity))).ToLowerInvariant();
+        }
     }
 
     internal sealed class CopilotModuleContextProviderAdapter : ICopilotContextProvider
@@ -234,6 +366,159 @@ namespace ColorVision.Copilot
                 return null;
             var item = await _provider.CaptureAsync(request, cancellationToken);
             return _isRegistrationActive() ? item : null;
+        }
+    }
+
+    internal class CopilotModuleToolExecutionHookAdapter : ICopilotToolExecutionHook
+    {
+        private readonly ICopilotModuleToolExecutionHook _hook;
+        private readonly Func<bool> _isRegistrationActive;
+
+        public CopilotModuleToolExecutionHookAdapter(
+            ICopilotModuleToolExecutionHook hook,
+            Func<bool> isRegistrationActive)
+        {
+            _hook = hook ?? throw new ArgumentNullException(nameof(hook));
+            _isRegistrationActive = isRegistrationActive ?? throw new ArgumentNullException(nameof(isRegistrationActive));
+        }
+
+        public async Task<CopilotToolExecutionHookDecision> BeforeExecuteAsync(
+            CopilotToolExecutionHookContext context,
+            CancellationToken cancellationToken)
+        {
+            if (!IsRegistrationActive)
+            {
+                return CopilotToolExecutionHookDecision.Deny(
+                    "The business-module hook was unloaded before it could inspect this tool call.",
+                    "extension_hook_unloaded",
+                    CopilotToolFailureKind.Conflict);
+            }
+
+            var decision = await _hook.BeforeExecuteAsync(
+                CreateContext(context.Invocation),
+                cancellationToken);
+            if (decision?.ShouldProceed != false)
+                return CopilotToolExecutionHookDecision.Proceed;
+
+            return CopilotToolExecutionHookDecision.Deny(
+                string.IsNullOrWhiteSpace(decision.Reason)
+                    ? "A business-module hook denied this tool call."
+                    : decision.Reason,
+                string.IsNullOrWhiteSpace(decision.FailureCode)
+                    ? "extension_hook_denied"
+                    : decision.FailureCode);
+        }
+
+        public async Task AfterExecuteAsync(
+            CopilotToolExecutionOutcome outcome,
+            CancellationToken cancellationToken)
+        {
+            if (!IsRegistrationActive)
+            {
+                throw new CopilotToolExecutionHookSkippedException(
+                    "extension_hook_unloaded",
+                    "The business-module hook was unloaded before its post-execution callback.");
+            }
+
+            await _hook.AfterExecuteAsync(
+                new CopilotModuleToolExecutionHookOutcome
+                {
+                    Context = CreateContext(outcome.Invocation),
+                    State = MapState(outcome.Execution.State),
+                    Success = outcome.Result.Success,
+                    Summary = outcome.Result.Summary,
+                    ErrorMessage = outcome.Result.Success ? string.Empty : outcome.Result.ErrorMessage,
+                    FailureCode = outcome.Result.Success
+                        ? string.Empty
+                        : CopilotToolFailureCode.Normalize(outcome.Result.FailureCode),
+                    DurationMs = Math.Max(0, outcome.Execution.DurationMs),
+                },
+                cancellationToken);
+        }
+
+        protected bool IsRegistrationActive => _isRegistrationActive();
+
+        protected static CopilotModuleToolExecutionHookContext CreateContext(
+            CopilotToolInvocation invocation)
+        {
+            var arguments = new Dictionary<string, object?>(
+                invocation.ToolInput.Arguments ?? new Dictionary<string, object?>(),
+                StringComparer.OrdinalIgnoreCase);
+            return new CopilotModuleToolExecutionHookContext
+            {
+                CallId = invocation.CallId,
+                ToolName = invocation.Tool.Name,
+                Access = invocation.Tool.Capability.Access == CopilotToolAccess.Write
+                    ? CopilotModuleToolAccess.Write
+                    : CopilotModuleToolAccess.ReadOnly,
+                Mode = invocation.AgentRequest.Mode switch
+                {
+                    CopilotAgentMode.Chat => CopilotModuleAgentMode.Chat,
+                    CopilotAgentMode.Explain => CopilotModuleAgentMode.Explain,
+                    CopilotAgentMode.Web => CopilotModuleAgentMode.Web,
+                    CopilotAgentMode.Code => CopilotModuleAgentMode.Code,
+                    CopilotAgentMode.Review => CopilotModuleAgentMode.Review,
+                    CopilotAgentMode.Diagnose => CopilotModuleAgentMode.Diagnose,
+                    CopilotAgentMode.Plan => CopilotModuleAgentMode.Plan,
+                    _ => CopilotModuleAgentMode.Auto,
+                },
+                Arguments = new ReadOnlyDictionary<string, object?>(arguments),
+                FrameworkApprovalGranted = invocation.FrameworkApprovalGranted,
+            };
+        }
+
+        private static CopilotModuleToolExecutionState MapState(
+            CopilotToolExecutionState state) => state switch
+        {
+            CopilotToolExecutionState.Completed => CopilotModuleToolExecutionState.Completed,
+            CopilotToolExecutionState.TimedOut => CopilotModuleToolExecutionState.TimedOut,
+            CopilotToolExecutionState.Denied => CopilotModuleToolExecutionState.Denied,
+            CopilotToolExecutionState.Cancelled or CopilotToolExecutionState.Interrupted =>
+                CopilotModuleToolExecutionState.Cancelled,
+            CopilotToolExecutionState.AwaitingApproval => CopilotModuleToolExecutionState.AwaitingApproval,
+            _ => CopilotModuleToolExecutionState.Failed,
+        };
+    }
+
+    internal sealed class CopilotModuleToolPermissionRequestHookAdapter
+        : CopilotModuleToolExecutionHookAdapter, ICopilotToolPermissionRequestHook
+    {
+        private readonly ICopilotModuleToolPermissionRequestHook _permissionRequestHook;
+
+        public CopilotModuleToolPermissionRequestHookAdapter(
+            ICopilotModuleToolExecutionHook hook,
+            ICopilotModuleToolPermissionRequestHook permissionRequestHook,
+            Func<bool> isRegistrationActive)
+            : base(hook, isRegistrationActive)
+        {
+            _permissionRequestHook = permissionRequestHook
+                ?? throw new ArgumentNullException(nameof(permissionRequestHook));
+        }
+
+        public async Task<CopilotToolPermissionRequestDecision> OnPermissionRequestAsync(
+            CopilotToolPermissionRequestContext context,
+            CancellationToken cancellationToken)
+        {
+            if (!IsRegistrationActive)
+            {
+                return CopilotToolPermissionRequestDecision.Deny(
+                    "The business-module hook was unloaded before it could inspect this permission request.",
+                    "extension_hook_unloaded");
+            }
+
+            var decision = await _permissionRequestHook.OnPermissionRequestAsync(
+                CreateContext(context.Invocation),
+                cancellationToken);
+            if (decision?.ShouldPrompt != false)
+                return CopilotToolPermissionRequestDecision.Prompt;
+
+            return CopilotToolPermissionRequestDecision.Deny(
+                string.IsNullOrWhiteSpace(decision.Reason)
+                    ? "A business-module hook denied this permission request."
+                    : decision.Reason,
+                string.IsNullOrWhiteSpace(decision.FailureCode)
+                    ? "extension_permission_hook_denied"
+                    : decision.FailureCode);
         }
     }
 
@@ -370,6 +655,7 @@ namespace ColorVision.Copilot
                     CopilotAgentMode.Code => CopilotModuleAgentMode.Code,
                     CopilotAgentMode.Review => CopilotModuleAgentMode.Review,
                     CopilotAgentMode.Diagnose => CopilotModuleAgentMode.Diagnose,
+                    CopilotAgentMode.Plan => CopilotModuleAgentMode.Plan,
                     _ => CopilotModuleAgentMode.Auto,
                 },
                 Arguments = new Dictionary<string, object?>(toolInput.Arguments, StringComparer.OrdinalIgnoreCase),

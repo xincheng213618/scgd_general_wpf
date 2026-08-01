@@ -105,6 +105,17 @@ namespace ColorVision.Copilot
     }
 
     /// <summary>
+    /// Marks a read-only observation whose identical arguments may be invoked again
+    /// while the observed operation is still active. The runtime permits another
+    /// attempt only when the prior result advertised a valid progress signature and
+    /// that signature changed from the preceding observation.
+    /// </summary>
+    public interface ICopilotRepeatableObservationTool : ICopilotTool
+    {
+        int MaximumObservationAttempts { get; }
+    }
+
+    /// <summary>
     /// Implemented by tools whose side effect can run after Microsoft Agent Framework has
     /// already collected an explicit approval for the exact function call.
     /// </summary>

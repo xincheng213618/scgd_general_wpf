@@ -319,6 +319,9 @@ namespace ColorVision.Copilot
 
             McpEnabled = config.McpEnabled;
             AgentContextWindowTokens = config.AgentDefaults.ContextWindowTokens;
+            AutoCompactConversationHistory = config.AgentDefaults.AutoCompactConversationHistory;
+            AutoCompactThresholdPercent = config.AgentDefaults.AutoCompactThresholdPercent;
+            AutoCompactInstructions = config.AgentDefaults.AutoCompactInstructions;
             AgentRequestTokenBudget = config.AgentDefaults.RequestTokenBudget;
             MaxAgentToolCalls = config.AgentDefaults.MaxToolCalls;
             MaxAgentPasses = config.AgentDefaults.MaxAgentPasses;
@@ -432,6 +435,51 @@ namespace ColorVision.Copilot
             }
         }
         private int _agentContextWindowTokens = CopilotAgentDefaultsConfig.DefaultContextWindowTokens;
+
+        public bool AutoCompactConversationHistory
+        {
+            get => _autoCompactConversationHistory;
+            set
+            {
+                if (SetProperty(ref _autoCompactConversationHistory, value) && _isReadyForUserChanges)
+                    MarkSettingsPending("Conversation auto-compaction changed. Click Apply or Save to use it.");
+            }
+        }
+        private bool _autoCompactConversationHistory = true;
+
+        public int AutoCompactThresholdPercent
+        {
+            get => _autoCompactThresholdPercent;
+            set
+            {
+                var normalized = Math.Clamp(
+                    value,
+                    CopilotAgentDefaultsConfig.MinimumAutoCompactThresholdPercent,
+                    CopilotAgentDefaultsConfig.MaximumAutoCompactThresholdPercent);
+                if (SetProperty(ref _autoCompactThresholdPercent, normalized) && _isReadyForUserChanges)
+                    MarkSettingsPending("Conversation auto-compaction threshold changed. Click Apply or Save to use it.");
+            }
+        }
+        private int _autoCompactThresholdPercent = CopilotAgentDefaultsConfig.DefaultAutoCompactThresholdPercent;
+
+        public string AutoCompactInstructions
+        {
+            get => _autoCompactInstructions;
+            set
+            {
+                var normalized = value ?? string.Empty;
+                if (normalized.Length > CopilotAgentDefaultsConfig.MaximumAutoCompactInstructionsCharacters)
+                {
+                    var length = CopilotAgentDefaultsConfig.MaximumAutoCompactInstructionsCharacters;
+                    if (char.IsHighSurrogate(normalized[length - 1]))
+                        length--;
+                    normalized = normalized[..length];
+                }
+                if (SetProperty(ref _autoCompactInstructions, normalized) && _isReadyForUserChanges)
+                    MarkSettingsPending("Automatic compaction focus changed. Click Apply or Save to use it.");
+            }
+        }
+        private string _autoCompactInstructions = string.Empty;
 
         public int AgentRequestTokenBudget
         {
@@ -1223,6 +1271,9 @@ namespace ColorVision.Copilot
 
                 config.McpEnabled = McpEnabled;
                 config.AgentDefaults.ContextWindowTokens = AgentContextWindowTokens;
+                config.AgentDefaults.AutoCompactConversationHistory = AutoCompactConversationHistory;
+                config.AgentDefaults.AutoCompactThresholdPercent = AutoCompactThresholdPercent;
+                config.AgentDefaults.AutoCompactInstructions = AutoCompactInstructions;
                 config.AgentDefaults.RequestTokenBudget = AgentRequestTokenBudget;
                 config.AgentDefaults.MaxToolCalls = MaxAgentToolCalls;
                 config.AgentDefaults.MaxAgentPasses = MaxAgentPasses;

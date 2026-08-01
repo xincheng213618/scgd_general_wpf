@@ -1,7 +1,13 @@
 ﻿#pragma warning disable CA1822,CA1863
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
+using ColorVision.Engine.FlowProcessing.Artifacts;
+using ColorVision.Engine.FlowProcessing.Artifacts.Persistence;
+using ColorVision.Engine.FlowProcessing.Compilation;
 using ColorVision.Engine.FlowProcessing.Editor;
+using ColorVision.Engine.Templates.Flow.Routing;
+using ColorVision.Engine.Templates.Flow.Search;
+using ColorVision.Engine.Templates.Flow.Versioning;
 using ColorVision.Engine.Templates.Menus;
 using ColorVision.UI.Extension;
 using ColorVision.UI.Menus;
@@ -18,6 +24,11 @@ using System.Windows;
 
 namespace ColorVision.Engine.Templates.Flow
 {
+    public sealed record FlowSubflowConfigurationSaveResult(
+        FlowRevision FlowRevision,
+        FlowArtifactRevision? ArtifactRevision,
+        Exception? ArtifactFailure);
+
     public class MenuTemplateFlow : MenuItemBase
     {
         public override string OwnerGuid => nameof(MenuTemplate);
@@ -81,6 +92,8 @@ namespace ColorVision.Engine.Templates.Flow
 
 
                     var param = new FlowParam(dbModel, details);
+                    AssignRuntimeIdentity(Db, param, details);
+                    TryAttachCatalogRevision(param);
 
                     if (backup.TryGetValue(param.Id, out var model))
                     {
@@ -147,68 +160,124 @@ namespace ColorVision.Engine.Templates.Flow
             }
         }
 
-        public static void Save2DB(FlowParam flowParam)
+        public static void Save2DB(
+            FlowParam flowParam,
+            FlowTemplateSaveCondition? condition = null)
         {
+            ArgumentNullException.ThrowIfNull(flowParam);
+            string? expectedContentHash =
+                ResolveExpectedContentHash(flowParam, condition);
             log.Info($"Save2DB: 开始保存, FlowParam.Id={flowParam.Id}, Name={flowParam.Name}, DataBase64长度={flowParam.DataBase64?.Length ?? 0}");
             try
             {
                 using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-
-                flowParam.ModMaster.Name = flowParam.Name;
-                int masterResult = Db.Updateable(flowParam.ModMaster).ExecuteCommand();
-                log.Debug($"Save2DB: 更新ModMaster结果={masterResult}");
-
-                List<ModDetailModel> details = new();
-                flowParam.GetDetail(details);
-                log.Debug($"Save2DB: details数量={details.Count}");
-                if (details.Count > 0)
+                SysResourceModel? savedResource = null;
+                Db.Ado.BeginTran();
+                try
                 {
-                    var model = details[0];
-                    SysResourceModel res = null;
-                    int id = 0;
-                    bool hasId = int.TryParse(model.ValueA, out id);
+                    flowParam.ModMaster.Name = flowParam.Name;
+                    int masterResult = Db.Updateable(flowParam.ModMaster).ExecuteCommand();
+                    log.Debug($"Save2DB: 更新ModMaster结果={masterResult}");
 
-                    log.Debug($"Save2DB: model.ValueA={model.ValueA}, hasId={hasId}, id={id}");
-                    if (hasId)
+                    List<ModDetailModel> details = new();
+                    flowParam.GetDetail(details);
+                    log.Debug($"Save2DB: details数量={details.Count}");
+                    if (details.Count > 0)
                     {
-                        res = Db.Queryable<SysResourceModel>().InSingle(id);
-                    }
+                        var model = details[0];
+                        SysResourceModel? res = null;
+                        int id = 0;
+                        bool hasId = int.TryParse(model.ValueA, out id);
 
-                    if (res != null)
-                    {
-                        // 资源已存在，更新
-                        res.Name = flowParam.Name;
-                        res.Value = flowParam.DataBase64;
-                        int updateResult = Db.Updateable(res).ExecuteCommand();
-                        model.ValueA = res.Id.ToString();
-                        log.Info($"Save2DB: 更新资源成功, ResId={res.Id}, updateResult={updateResult}");
+                        log.Debug($"Save2DB: model.ValueA={model.ValueA}, hasId={hasId}, id={id}");
+                        if (hasId)
+                        {
+                            // Lock the compatibility resource until commit so
+                            // two editors cannot both pass the hash check and
+                            // silently overwrite one another.
+                            Db.Ado.SqlQuery<int>(
+                                """
+                                SELECT id
+                                FROM t_scgd_sys_resource
+                                WHERE id = @id
+                                FOR UPDATE
+                                """,
+                                new { id });
+                            res = Db.Queryable<SysResourceModel>().InSingle(id);
+                        }
+
+                        if (res != null)
+                        {
+                            string actualHash = ComputeCanvasHash(
+                                res.Value ?? string.Empty);
+                            if (!string.IsNullOrWhiteSpace(
+                                    expectedContentHash)
+                                && !string.Equals(
+                                    expectedContentHash,
+                                    actualHash,
+                                    StringComparison.Ordinal))
+                            {
+                                throw new FlowTemplateConcurrencyException(
+                                    flowParam.Name,
+                                    expectedContentHash,
+                                    actualHash);
+                            }
+
+                            // 资源已存在，更新
+                            res.Name = flowParam.Name;
+                            res.Value = flowParam.DataBase64;
+                            if (string.IsNullOrWhiteSpace(res.Code))
+                                res.Code = Guid.NewGuid().ToString("N");
+                            int updateResult = Db.Updateable(res).ExecuteCommand();
+                            model.ValueA = res.Id.ToString();
+                            log.Info($"Save2DB: 更新资源成功, ResId={res.Id}, updateResult={updateResult}");
+                        }
+                        else
+                        {
+                            // 新建资源
+                            res = new SysResourceModel
+                            {
+                                Name = flowParam.Name,
+                                Type = 101,
+                                Value = flowParam.DataBase64,
+                                Code = Guid.NewGuid().ToString("N")
+                            };
+                            res.Id = Db.Insertable(res).ExecuteReturnIdentity();
+                            model.ValueA = res.Id.ToString();
+                            log.Info($"Save2DB: 新建资源成功, ResId={res.Id}");
+                        }
+
+                        // 3. 更新明细表
+                        int detailResult = Db.Updateable(details)
+                            .Where(md => md.Pid == flowParam.Id)
+                            .ExecuteCommand();
+                        log.Debug($"Save2DB: 更新明细表结果={detailResult}");
+                        savedResource = res;
                     }
                     else
                     {
-                        // 新建资源
-                        res = new SysResourceModel
-                        {
-                            Name = flowParam.Name,
-                            Type = 101,
-                            Value = flowParam.DataBase64,
-                                Code = Guid.NewGuid().ToString("N")
-                        };
-                        Db.Insertable(res).ExecuteCommand();
-                        // 获取新资源id（SqlSugar自动回写Id）
-                        model.ValueA = res.Id.ToString();
-                        log.Info($"Save2DB: 新建资源成功, ResId={res.Id}");
+                        log.Warn("Save2DB: details为空, 没有明细数据需要保存");
                     }
 
-                    // 3. 更新明细表
-                    int detailResult = Db.Updateable(details)
-                        .Where(md => md.Pid == flowParam.Id)
-                        .ExecuteCommand();
-                    log.Debug($"Save2DB: 更新明细表结果={detailResult}");
+                    Db.Ado.CommitTran();
                 }
-                else
+                catch
                 {
-                    log.Warn("Save2DB: details为空, 没有明细数据需要保存");
+                    try
+                    {
+                        Db.Ado.RollbackTran();
+                    }
+                    catch (Exception rollbackException)
+                    {
+                        log.Error("Save2DB: 回滚数据库事务失败", rollbackException);
+                    }
+                    throw;
                 }
+
+                if (savedResource != null)
+                    AssignRuntimeIdentity(flowParam, savedResource);
+                UpdateLoadedContentHash(flowParam);
+                TryRecordCatalogRevision(flowParam);
                 log.Info("Save2DB: 保存完成");
             }
             catch (Exception ex)
@@ -394,6 +463,16 @@ namespace ColorVision.Engine.Templates.Flow
             }
         }
 
+        internal static string? ResolveExpectedContentHash(
+            FlowParam flowParam,
+            FlowTemplateSaveCondition? condition)
+        {
+            ArgumentNullException.ThrowIfNull(flowParam);
+            return condition == null
+                ? flowParam.LoadedContentHash
+                : condition.ExpectedContentHash;
+        }
+
 
 
         public override bool CopyTo(int index)
@@ -433,45 +512,441 @@ namespace ColorVision.Engine.Templates.Flow
         public FlowParam? AddFlowParam(string templateName)
         {
             using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-            var flowMaster = new ModMasterModel() { Pid = 11, Name = templateName, TenantId = 0};
-            int id = Db.Insertable(flowMaster).ExecuteReturnIdentity(); // 自增id自动回写
-            flowMaster.Id = id;
-
-            List<ModDetailModel> list = new List<ModDetailModel>();
-            foreach (var item in SysDictionaryModDetailDao.Instance.GetAllByPid(flowMaster.Pid))
-                list.Add(new ModDetailModel() { SysPid = item.Id, Pid = flowMaster.Id, ValueA = item.DefaultValue });
-
-            Db.Deleteable<ModDetailModel>().Where(x => x.Pid == flowMaster.Id).ExecuteCommand();
-            Db.Insertable(list).ExecuteCommand();
-
-            int pkId = flowMaster.Id;
-            if (pkId > 0)
+            FlowParam? created = null;
+            Db.Ado.BeginTran();
+            try
             {
-                var flowDetail = Db.Queryable<ModDetailModel>().Where(it => it.Pid == pkId).ToList();
-
-                if (flowDetail.Count > 0 && int.TryParse(flowDetail[0].ValueA, out int sid))
+                var flowMaster = new ModMasterModel()
                 {
-                    var sysResourceModeldefault = Db.Queryable<SysResourceModel>().InSingle(sid);
-                    if (sysResourceModeldefault != null)
+                    Pid = 11,
+                    Name = templateName,
+                    TenantId = 0
+                };
+                flowMaster.Id =
+                    Db.Insertable(flowMaster).ExecuteReturnIdentity();
+                if (flowMaster.Id <= 0)
+                    throw new InvalidOperationException("创建流程主记录失败。");
+
+                List<ModDetailModel> list = new();
+                foreach (var item in
+                    SysDictionaryModDetailDao.Instance.GetAllByPid(
+                        flowMaster.Pid))
+                {
+                    list.Add(new ModDetailModel
                     {
-                        flowDetail[0].Value = sysResourceModeldefault.Value;
-                        var sysResourceModel = new SysResourceModel
+                        SysPid = item.Id,
+                        Pid = flowMaster.Id,
+                        ValueA = item.DefaultValue
+                    });
+                }
+                Db.Insertable(list).ExecuteCommand();
+
+                var flowDetail = Db.Queryable<ModDetailModel>()
+                    .Where(item => item.Pid == flowMaster.Id)
+                    .ToList();
+                if (flowDetail.Count > 0
+                    && int.TryParse(
+                        flowDetail[0].ValueA,
+                        out int defaultResourceId))
+                {
+                    var defaultResource =
+                        Db.Queryable<SysResourceModel>()
+                            .InSingle(defaultResourceId);
+                    if (defaultResource != null)
+                    {
+                        flowDetail[0].Value = defaultResource.Value;
+                        var resource = new SysResourceModel
                         {
                             Name = flowMaster.Name,
-                                Code = Guid.NewGuid().ToString("N"),
-                            Type = sysResourceModeldefault.Type,
-                            Value = sysResourceModeldefault.Value
+                            Code = Guid.NewGuid().ToString("N"),
+                            Type = defaultResource.Type,
+                            Value = defaultResource.Value
                         };
-                        id = Db.Insertable(sysResourceModel).ExecuteReturnIdentity();
-
-                        flowDetail[0].ValueA = id.ToString();
-                        Db.Updateable(flowDetail[0]).ExecuteCommand();
-
+                        resource.Id = Db.Insertable(resource)
+                            .ExecuteReturnIdentity();
+                        flowDetail[0].ValueA =
+                            resource.Id.ToString();
+                        Db.Updateable(flowDetail[0])
+                            .ExecuteCommand();
                     }
                 }
-                return new FlowParam(flowMaster, flowDetail);
+
+                created = new FlowParam(flowMaster, flowDetail);
+                AssignRuntimeIdentity(Db, created, flowDetail);
+                Db.Ado.CommitTran();
             }
-            return null;
+            catch
+            {
+                try
+                {
+                    Db.Ado.RollbackTran();
+                }
+                catch (Exception rollbackException)
+                {
+                    log.Error(
+                        "AddFlowParam: 回滚数据库事务失败",
+                        rollbackException);
+                }
+                throw;
+            }
+
+            TryRecordCatalogRevision(created);
+            return created;
+        }
+
+        private static void TryRecordCatalogRevision(FlowParam flowParam)
+        {
+            if (string.IsNullOrWhiteSpace(flowParam.FlowKey)
+                || string.IsNullOrWhiteSpace(flowParam.DataBase64))
+            {
+                flowParam.TemplateRevision = null;
+                flowParam.TemplateContentHash = null;
+                return;
+            }
+
+            try
+            {
+                byte[] canvasData =
+                    Convert.FromBase64String(flowParam.DataBase64);
+                flowParam.LoadedContentHash =
+                    FlowSemanticHash.ComputeBinaryHash(canvasData);
+                FlowCatalogService catalog =
+                    FlowCatalogProvider.Shared;
+                FlowRevision? requestedRevision =
+                    flowParam.TemplateRevision is int revisionNumber
+                        && revisionNumber > 0
+                        ? catalog.GetRevision(
+                            flowParam.FlowKey,
+                            revisionNumber)
+                        : null;
+                if (requestedRevision != null
+                    && !string.Equals(
+                        requestedRevision.BinaryHash,
+                        flowParam.LoadedContentHash,
+                        StringComparison.Ordinal))
+                {
+                    requestedRevision = null;
+                }
+                FlowRevision? matching =
+                    catalog.FindRevision(flowParam.FlowKey, canvasData);
+                FlowRevision? inheritanceRevision =
+                    requestedRevision
+                    ?? matching
+                    ?? catalog.GetHead(flowParam.FlowKey);
+                FlowSubflowSidecar subflows =
+                    inheritanceRevision == null
+                        ? FlowSubflowSidecar.Empty
+                        : FlowSubflowDefinitionStoreProvider.Shared
+                            .GetRevision(
+                                flowParam.FlowKey,
+                                inheritanceRevision.Revision)
+                            ?.Sidecar
+                            ?? FlowSubflowSidecar.Empty;
+
+                if (!FlowExecutionPolicyStoreProvider.Shared.TryLoad(
+                        flowParam.FlowKey,
+                        out FlowExecutionPolicySnapshot executionPolicy,
+                        out string? policyFailure))
+                {
+                    log.Error(
+                        $"流程 {flowParam.Name} 的执行策略无法读取，"
+                        + $"跳过版本目录更新：{policyFailure}");
+                    return;
+                }
+
+                FlowCanvasCatalogBuildResult projection =
+                    new FlowCanvasCatalogBuilder().Build(
+                        canvasData,
+                        subflows,
+                        executionPolicy);
+                FlowNodeSearchDocument[] searchDocuments =
+                    projection.SearchDocuments
+                        .Select(document =>
+                            WithFlowTemplateName(
+                                document,
+                                flowParam.Name))
+                        .ToArray();
+                FlowRevision revision = catalog.RecordEditorSave(
+                    flowParam.FlowKey,
+                    canvasData,
+                    projection.SemanticDocument,
+                    searchDocuments,
+                    message: $"Save template {flowParam.Name}");
+                FlowSubflowDefinitionStoreProvider.Shared.Append(
+                    flowParam.FlowKey,
+                    revision.Revision,
+                    subflows);
+                flowParam.TemplateRevision = revision.Revision;
+                flowParam.TemplateContentHash = revision.BinaryHash;
+                TrySaveArtifact(
+                    flowParam,
+                    subflows,
+                    publish: false,
+                    out _);
+            }
+            catch (Exception ex)
+            {
+                // The MySQL/STN save is the compatibility contract. A local
+                // sidecar failure must be visible, but must not turn a valid
+                // legacy save into a false failure.
+                flowParam.TemplateRevision = null;
+                flowParam.TemplateContentHash = null;
+                log.Error(
+                    $"流程 {flowParam.Name} 已保存，但版本/搜索侧车更新失败。",
+                    ex);
+            }
+        }
+
+        internal static void RefreshCatalogProjection(
+            FlowParam flowParam)
+        {
+            ArgumentNullException.ThrowIfNull(flowParam);
+            TryRecordCatalogRevision(flowParam);
+        }
+
+        public static FlowSubflowConfigurationSaveResult
+            SaveSubflowConfiguration(
+                FlowParam flowParam,
+                FlowSubflowSidecar sidecar,
+                bool publishArtifact = false)
+        {
+            ArgumentNullException.ThrowIfNull(flowParam);
+            ArgumentNullException.ThrowIfNull(sidecar);
+            if (string.IsNullOrWhiteSpace(flowParam.FlowKey)
+                || string.IsNullOrWhiteSpace(flowParam.DataBase64))
+            {
+                throw new InvalidOperationException(
+                    "当前流程没有稳定 FlowKey 或 STN 数据。");
+            }
+
+            byte[] canvasData =
+                Convert.FromBase64String(flowParam.DataBase64);
+            FlowSubflowSidecar normalized =
+                FlowSubflowSidecarPersistence.Normalize(sidecar);
+            if (!FlowExecutionPolicyStoreProvider.Shared.TryLoad(
+                    flowParam.FlowKey,
+                    out FlowExecutionPolicySnapshot executionPolicy,
+                    out string? policyFailure))
+            {
+                throw new InvalidOperationException(
+                    $"流程执行策略无法读取：{policyFailure}");
+            }
+
+            FlowCanvasCatalogBuildResult projection =
+                new FlowCanvasCatalogBuilder().Build(
+                    canvasData,
+                    normalized,
+                    executionPolicy);
+            FlowNodeSearchDocument[] searchDocuments =
+                projection.SearchDocuments
+                    .Select(document =>
+                        WithFlowTemplateName(
+                            document,
+                            flowParam.Name))
+                    .ToArray();
+            FlowRevision revision =
+                FlowCatalogProvider.Shared.RecordEditorSave(
+                    flowParam.FlowKey,
+                    canvasData,
+                    projection.SemanticDocument,
+                    searchDocuments,
+                    message: $"Configure subflows for {flowParam.Name}");
+            FlowSubflowDefinitionStoreProvider.Shared.Append(
+                flowParam.FlowKey,
+                revision.Revision,
+                normalized);
+            flowParam.TemplateRevision = revision.Revision;
+            flowParam.TemplateContentHash = revision.BinaryHash;
+            flowParam.LoadedContentHash = revision.BinaryHash;
+
+            TrySaveArtifact(
+                flowParam,
+                normalized,
+                publishArtifact,
+                out FlowArtifactRevision? artifact,
+                out Exception? failure);
+            return new FlowSubflowConfigurationSaveResult(
+                revision,
+                artifact,
+                failure);
+        }
+
+        private static bool TrySaveArtifact(
+            FlowParam flowParam,
+            FlowSubflowSidecar sidecar,
+            bool publish,
+            out FlowArtifactRevision? revision)
+        {
+            return TrySaveArtifact(
+                flowParam,
+                sidecar,
+                publish,
+                out revision,
+                out _);
+        }
+
+        private static bool TrySaveArtifact(
+            FlowParam flowParam,
+            FlowSubflowSidecar sidecar,
+            bool publish,
+            out FlowArtifactRevision? revision,
+            out Exception? failure)
+        {
+            revision = null;
+            failure = null;
+            try
+            {
+                using FlowArtifactApplicationService service =
+                    FlowArtifactServiceProvider.Create();
+                revision = publish
+                    ? service.SavePublished(
+                        flowParam,
+                        sidecar,
+                        message:
+                            $"Publish subflows for {flowParam.Name}")
+                    : service.SaveDraft(
+                        flowParam,
+                        sidecar,
+                        message:
+                            $"Save artifact for {flowParam.Name}");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                failure = ex;
+                log.Error(
+                    $"流程 {flowParam.Name} 的 legacy STN/版本侧车已保存，"
+                    + "但 artifact 未保存或发布。",
+                    ex);
+                return false;
+            }
+        }
+
+        private static void UpdateLoadedContentHash(
+            FlowParam flowParam)
+        {
+            try
+            {
+                flowParam.LoadedContentHash =
+                    ComputeCanvasHash(
+                        flowParam.DataBase64
+                            ?? string.Empty);
+            }
+            catch (FormatException)
+            {
+                flowParam.LoadedContentHash = null;
+            }
+        }
+
+        private static string ComputeCanvasHash(
+            string dataBase64)
+        {
+            return FlowSemanticHash.ComputeBinaryHash(
+                Convert.FromBase64String(
+                    dataBase64 ?? string.Empty));
+        }
+
+        private static void TryAttachCatalogRevision(FlowParam flowParam)
+        {
+            flowParam.TemplateRevision = null;
+            flowParam.TemplateContentHash = null;
+            UpdateLoadedContentHash(flowParam);
+            if (string.IsNullOrWhiteSpace(flowParam.FlowKey)
+                || string.IsNullOrWhiteSpace(flowParam.DataBase64))
+            {
+                return;
+            }
+
+            try
+            {
+                FlowRevision? revision =
+                    FlowCatalogProvider.Shared.FindRevision(
+                        flowParam.FlowKey,
+                        Convert.FromBase64String(
+                            flowParam.DataBase64));
+                if (revision == null)
+                    return;
+
+                flowParam.TemplateRevision = revision.Revision;
+                flowParam.TemplateContentHash = revision.BinaryHash;
+            }
+            catch (Exception ex)
+            {
+                log.Error(
+                    $"读取流程 {flowParam.Name} 的版本目录失败。",
+                    ex);
+            }
+        }
+
+        private static FlowNodeSearchDocument WithFlowTemplateName(
+            FlowNodeSearchDocument source,
+            string? flowName)
+        {
+            return new FlowNodeSearchDocument
+            {
+                SourceNodeGuid = source.SourceNodeGuid,
+                NodePath = source.NodePath,
+                NodeTypeKey = source.NodeTypeKey,
+                DisplayName = source.DisplayName,
+                Title = source.Title,
+                TemplateName = string.IsNullOrWhiteSpace(
+                        source.TemplateName)
+                    ? flowName
+                    : source.TemplateName,
+                DeviceCode = source.DeviceCode,
+                ServiceCode = source.ServiceCode,
+                Tags = source.Tags,
+            };
+        }
+
+        private static void AssignRuntimeIdentity(
+            SqlSugarClient db,
+            FlowParam flowParam,
+            List<ModDetailModel> details)
+        {
+            if (details.Count == 0
+                || !int.TryParse(details[0].ValueA, out int resourceId)
+                || resourceId <= 0)
+            {
+                flowParam.FlowKey = FlowTemplateIdentity.Create(
+                    flowParam.Id,
+                    null,
+                    null);
+                return;
+            }
+
+            SysResourceModel? resource = db.Queryable<SysResourceModel>()
+                .Where(item => item.Id == resourceId)
+                .Select(item => new SysResourceModel
+                {
+                    Id = item.Id,
+                    Code = item.Code
+                })
+                .First();
+            if (resource != null)
+            {
+                AssignRuntimeIdentity(flowParam, resource);
+            }
+            else
+            {
+                flowParam.ResourceId = resourceId;
+                flowParam.FlowKey = FlowTemplateIdentity.Create(
+                    flowParam.Id,
+                    resourceId,
+                    null);
+            }
+        }
+
+        private static void AssignRuntimeIdentity(
+            FlowParam flowParam,
+            SysResourceModel resource)
+        {
+            flowParam.ResourceId = resource.Id;
+            flowParam.ResourceCode = resource.Code;
+            flowParam.FlowKey = FlowTemplateIdentity.Create(
+                flowParam.Id,
+                resource.Id,
+                resource.Code);
         }
     }
 }

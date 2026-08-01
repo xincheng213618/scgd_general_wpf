@@ -63,6 +63,63 @@ namespace ColorVision.Copilot
             return $"{title}-{conversation.UpdatedAt:yyyyMMdd-HHmm}.md";
         }
 
+        public static bool TryNormalizeFileNameHint(
+            string? requestedFileName,
+            out string fileName,
+            out string errorMessage)
+        {
+            fileName = (requestedFileName ?? string.Empty).Trim();
+            errorMessage = string.Empty;
+            if (fileName.Length >= 2 && fileName[0] == '"' && fileName[^1] == '"')
+                fileName = fileName[1..^1].Trim();
+
+            if (fileName.Length == 0)
+            {
+                errorMessage = "文件名不能为空，例如 /export inspection-report.md。";
+                return false;
+            }
+            if (Path.IsPathRooted(fileName)
+                || fileName.IndexOf(Path.DirectorySeparatorChar) >= 0
+                || fileName.IndexOf(Path.AltDirectorySeparatorChar) >= 0)
+            {
+                errorMessage = "命令参数只能是文件名，保存目录请在随后打开的窗口中选择。";
+                return false;
+            }
+            if (fileName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+            {
+                errorMessage = "文件名包含 Windows 不支持的字符。";
+                return false;
+            }
+            if (fileName.EndsWith(' ') || fileName.EndsWith('.'))
+            {
+                errorMessage = "文件名不能以空格或句点结尾。";
+                return false;
+            }
+
+            var extension = Path.GetExtension(fileName);
+            if (extension.Length == 0)
+                fileName += ".md";
+            else if (!extension.Equals(".md", StringComparison.OrdinalIgnoreCase)
+                && !extension.Equals(".txt", StringComparison.OrdinalIgnoreCase))
+            {
+                errorMessage = "会话导出只支持 .md 或 .txt 文件名。";
+                return false;
+            }
+
+            if (fileName.Length > 128)
+            {
+                errorMessage = "文件名不能超过 128 个字符。";
+                return false;
+            }
+            if (ReservedFileNames.Contains(Path.GetFileNameWithoutExtension(fileName)))
+            {
+                errorMessage = "该名称是 Windows 保留文件名，请换一个名称。";
+                return false;
+            }
+
+            return true;
+        }
+
         public static string BuildMarkdown(CopilotConversationRecord conversation)
         {
             return BuildMarkdown(Capture(conversation), CancellationToken.None);
@@ -152,7 +209,9 @@ namespace ColorVision.Copilot
 
         private static bool IsExportableMessage(CopilotChatMessage message)
         {
-            return !message.IsResponsePending
+            return !message.IsThinkingInProgress
+                && !message.IsExecutionInProgress
+                && !message.IsResponsePending
                 && (!string.IsNullOrWhiteSpace(message.Content) || message.HasAttachments);
         }
 

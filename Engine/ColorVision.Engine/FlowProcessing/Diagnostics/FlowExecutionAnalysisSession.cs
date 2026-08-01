@@ -24,14 +24,17 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             int batchId,
             string? serialNumber,
             MeasureBatchModel? batch,
+            FlowRunRecord? run,
             IReadOnlyList<FlowNodeRecord> records,
             IReadOnlyList<FlowNodeMessage> messages,
+            IReadOnlyList<FlowExecutionEvent> events,
             DateTime capturedAt,
             long slowNodeThresholdMs)
         {
             BatchId = batchId;
             SerialNumber = serialNumber ?? string.Empty;
             Batch = batch;
+            Run = run;
             Records = records
                 .OrderBy(item => item.StartTime)
                 .ThenBy(item => item.Id)
@@ -39,6 +42,10 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             Messages = messages
                 .OrderBy(item => item.SendTime)
                 .ThenBy(item => item.Id)
+                .ToList();
+            Events = events
+                .OrderBy(item => item.OccurredTimeUtc)
+                .ThenBy(item => item.SequenceNo)
                 .ToList();
             CapturedAt = capturedAt;
             DurationItems = FlowExecutionAnalysisPresentation.BuildDurationItems(
@@ -50,6 +57,8 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 Records,
                 DurationItems,
                 capturedAt);
+            PhaseSummary =
+                FlowExecutionAnalysisPresentation.BuildPhaseSummary(Events);
         }
 
         public int BatchId { get; }
@@ -58,17 +67,33 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
 
         public MeasureBatchModel? Batch { get; }
 
+        public FlowRunRecord? Run { get; }
+
         public IReadOnlyList<FlowNodeRecord> Records { get; }
 
         public IReadOnlyList<FlowNodeMessage> Messages { get; }
+
+        public IReadOnlyList<FlowExecutionEvent> Events { get; }
 
         public IReadOnlyList<FlowNodeDurationAnalysis> DurationItems { get; }
 
         public FlowExecutionAnalysisSummary Summary { get; }
 
+        public FlowExecutionPhaseSummary PhaseSummary { get; }
+
         public DateTime CapturedAt { get; }
 
-        public long WallClockMs => Batch?.TotalTime > 0 ? Batch.TotalTime : Summary.WallClockMs;
+        public long WallClockMs => Batch?.TotalTime > 0
+            ? Batch.TotalTime
+            : Run?.ElapsedMs > 0
+                ? Run.ElapsedMs
+                : Summary.WallClockMs;
+
+        public long NodeInactiveMs => Math.Max(0, WallClockMs - Summary.ActiveMs);
+
+        public long OtherExecutionMs => Math.Max(
+            0,
+            NodeInactiveMs - (PhaseSummary.PreProcessMs ?? 0));
 
         public FlowNodeRecord? FindRecord(int? recordId)
         {

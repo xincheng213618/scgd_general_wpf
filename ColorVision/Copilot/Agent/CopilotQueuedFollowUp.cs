@@ -12,7 +12,8 @@ namespace ColorVision.Copilot
             string prompt,
             CopilotAgentMode mode,
             CopilotProfileConfig profile,
-            CopilotAgentHostContextSnapshot submissionContext)
+            CopilotAgentHostContextSnapshot submissionContext,
+            string? goalId = null)
         {
             RunId = runId ?? throw new ArgumentNullException(nameof(runId));
             ConversationId = conversationId ?? throw new ArgumentNullException(nameof(conversationId));
@@ -21,6 +22,7 @@ namespace ColorVision.Copilot
             Mode = mode;
             Profile = profile ?? throw new ArgumentNullException(nameof(profile));
             SubmissionContext = submissionContext ?? throw new ArgumentNullException(nameof(submissionContext));
+            GoalId = (goalId ?? string.Empty).Trim();
             QueuedAtUtc = DateTimeOffset.UtcNow;
         }
 
@@ -44,6 +46,10 @@ namespace ColorVision.Copilot
         public CopilotAgentMode Mode { get; }
 
         public DateTimeOffset QueuedAtUtc { get; }
+
+        public string GoalId { get; }
+
+        public bool IsAutomaticGoalContinuation => GoalId.Length > 0;
 
         public int QueuePosition
         {

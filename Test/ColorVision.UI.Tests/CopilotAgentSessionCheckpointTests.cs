@@ -44,6 +44,21 @@ public sealed class CopilotAgentSessionCheckpointTests
     }
 
     [Fact]
+    public void StructurallyValidCheckpointRejectsAssistantSteeringProvenance()
+    {
+        var checkpoint = CreateCheckpoint(
+            new CopilotAgentTaskEventJournalSnapshot(),
+            [
+                new CopilotRequestMessage("assistant", "invalid provenance")
+                {
+                    IsSteering = true,
+                },
+            ]);
+
+        Assert.False(checkpoint.IsStructurallyValid());
+    }
+
+    [Fact]
     public void CopyWithTaskEventJournalRejectsInvalidJournal()
     {
         var checkpoint = CreateCheckpoint(new CopilotAgentTaskEventJournalSnapshot());
@@ -65,6 +80,8 @@ public sealed class CopilotAgentSessionCheckpointTests
             TaskIntentText = "Inspect the current workspace",
             EnvironmentVersion = CopilotAgentSessionCheckpoint.CurrentEnvironmentVersion,
             EnvironmentFingerprint = new string('a', 64),
+            HookSurfaceVersion = CopilotAgentSessionCheckpoint.CurrentHookSurfaceVersion,
+            HookSurfaceFingerprint = new string('b', 64),
             TaskEventJournal = new CopilotAgentTaskEventJournalSnapshot(),
         };
 
@@ -74,6 +91,58 @@ public sealed class CopilotAgentSessionCheckpointTests
         Assert.Equal(checkpoint.TaskIntentText, copy.TaskIntentText);
         Assert.Equal(checkpoint.EnvironmentVersion, copy.EnvironmentVersion);
         Assert.Equal(checkpoint.EnvironmentFingerprint, copy.EnvironmentFingerprint);
+        Assert.Equal(checkpoint.HookSurfaceVersion, copy.HookSurfaceVersion);
+        Assert.Equal(checkpoint.HookSurfaceFingerprint, copy.HookSurfaceFingerprint);
+    }
+
+    [Fact]
+    public void HookSurfaceDriftRequiresAReplan()
+    {
+        var profile = CreateOpenAiProfile(
+            CopilotVendorType.OpenAI,
+            "https://example.test/v1");
+        var capabilitySnapshot = CopilotCapabilityCatalog.Shared.GetSnapshot();
+        var registry = new CopilotToolExecutionHookRegistry();
+        var executor = new CopilotToolExecutor(registry);
+        var checkpoint = CopilotAgentSessionCheckpoint.Create(
+            profile,
+            "{}",
+            capabilitySnapshot,
+            hookSurfaceSnapshot: executor.GetHookSurfaceSnapshot());
+        using var registration = registry.Register(
+            "test:checkpoint-drift",
+            new NoOpHook(),
+            "^CheckpointProbe$");
+
+        var compatibility = checkpoint!.EvaluateFor(
+            profile,
+            capabilitySnapshot,
+            hookSurfaceSnapshot: executor.GetHookSurfaceSnapshot());
+
+        Assert.Equal(CopilotAgentCheckpointCompatibilityKind.HookSurfaceDrift, compatibility.Kind);
+        Assert.True(compatibility.RequiresReplan);
+        Assert.False(compatibility.CanResume);
+    }
+
+    [Fact]
+    public void LegacyCheckpointWithoutHookSurfaceRequiresAReplan()
+    {
+        var profile = CreateOpenAiProfile(
+            CopilotVendorType.OpenAI,
+            "https://example.test/v1");
+        var capabilitySnapshot = CopilotCapabilityCatalog.Shared.GetSnapshot();
+        var checkpoint = CopilotAgentSessionCheckpoint.Create(
+            profile,
+            "{}",
+            capabilitySnapshot);
+
+        var compatibility = checkpoint!.EvaluateFor(
+            profile,
+            capabilitySnapshot,
+            hookSurfaceSnapshot: CopilotToolExecutor.GetSharedHookSurfaceSnapshot());
+
+        Assert.Equal(CopilotAgentCheckpointCompatibilityKind.HookSurfaceSnapshotMissing, compatibility.Kind);
+        Assert.True(compatibility.RequiresReplan);
     }
 
     [Fact]
@@ -99,6 +168,8 @@ public sealed class CopilotAgentSessionCheckpointTests
         {
             ProfileKey = "test-profile",
             SerializedSessionJson = sessionJson,
+            HookSurfaceVersion = CopilotAgentSessionCheckpoint.CurrentHookSurfaceVersion,
+            HookSurfaceFingerprint = new string('c', 64),
         };
 
         var serialized = JsonConvert.SerializeObject(checkpoint);
@@ -108,6 +179,35 @@ public sealed class CopilotAgentSessionCheckpointTests
         Assert.True(serialized.Length < sessionJson.Length / 2);
         Assert.NotNull(restored);
         Assert.Equal(sessionJson, restored.SerializedSessionJson);
+        Assert.Equal(checkpoint.HookSurfaceVersion, restored.HookSurfaceVersion);
+        Assert.Equal(checkpoint.HookSurfaceFingerprint, restored.HookSurfaceFingerprint);
+    }
+
+    [Fact]
+    public void NewtonsoftPersistenceRoundTripsSteeringProvenanceWithoutChangingLegacyMessages()
+    {
+        var checkpoint = new CopilotAgentSessionCheckpoint
+        {
+            ProfileKey = "test-profile",
+            SerializedSessionJson = "{}",
+            ConversationMemory =
+            [
+                new CopilotRequestMessage("user", "ordinary request"),
+                new CopilotRequestMessage("user", "mid-turn direction")
+                {
+                    IsSteering = true,
+                },
+            ],
+        };
+
+        var serialized = JsonConvert.SerializeObject(checkpoint);
+        var restored = JsonConvert.DeserializeObject<CopilotAgentSessionCheckpoint>(serialized);
+
+        Assert.DoesNotContain("\"IsSteering\":false", serialized, StringComparison.Ordinal);
+        Assert.Contains("\"IsSteering\":true", serialized, StringComparison.Ordinal);
+        Assert.NotNull(restored);
+        Assert.False(restored.ConversationMemory[0].IsSteering);
+        Assert.True(restored.ConversationMemory[1].IsSteering);
     }
 
     [Fact]
@@ -208,13 +308,15 @@ public sealed class CopilotAgentSessionCheckpointTests
     }
 
     private static CopilotAgentSessionCheckpoint CreateCheckpoint(
-        CopilotAgentTaskEventJournalSnapshot taskEventJournal)
+        CopilotAgentTaskEventJournalSnapshot taskEventJournal,
+        IReadOnlyList<CopilotRequestMessage>? conversationMemory = null)
     {
         return new CopilotAgentSessionCheckpoint
         {
             ProfileKey = "test-profile",
             SerializedSessionJson = "{}",
             TaskEventJournal = taskEventJournal,
+            ConversationMemory = conversationMemory ?? [],
         };
     }
 
@@ -264,5 +366,22 @@ public sealed class CopilotAgentSessionCheckpointTests
         });
         var hash = SHA256.HashData(Encoding.UTF8.GetBytes(value));
         return Convert.ToHexString(hash.AsSpan(0, 16)).ToLowerInvariant();
+    }
+
+    private sealed class NoOpHook : ICopilotToolExecutionHook
+    {
+        public Task<CopilotToolExecutionHookDecision> BeforeExecuteAsync(
+            CopilotToolExecutionHookContext context,
+            CancellationToken cancellationToken)
+        {
+            return Task.FromResult(CopilotToolExecutionHookDecision.Proceed);
+        }
+
+        public Task AfterExecuteAsync(
+            CopilotToolExecutionOutcome outcome,
+            CancellationToken cancellationToken)
+        {
+            return Task.CompletedTask;
+        }
     }
 }

@@ -16,6 +16,17 @@ public sealed class CopilotToolExecutionProgressTests
             Completed = 20,
             Total = 10,
             Unit = new string('u', 40),
+            DelegatedRun = new CopilotDelegatedRunProgress
+            {
+                RoleId = " explore\r\n ",
+                RunId = " explore-live\r\n ",
+                ResumeFromRunId = " explore-source\r\n ",
+                RequestTokenBudget = 10,
+                QueueDurationMs = -1,
+                ConsumedTokens = 20,
+                ProviderCalls = -1,
+                ToolCalls = int.MaxValue,
+            },
         });
 
         var accepted = Assert.IsType<CopilotToolProgressUpdate>(progress.LatestSnapshot);
@@ -25,6 +36,15 @@ public sealed class CopilotToolExecutionProgressTests
         Assert.Equal(10, accepted.Completed);
         Assert.Equal(10, accepted.Total);
         Assert.Equal(24, accepted.Unit.Length);
+        var delegatedRun = Assert.IsType<CopilotDelegatedRunProgress>(accepted.DelegatedRun);
+        Assert.Equal("explore", delegatedRun.RoleId);
+        Assert.Equal("explore-live", delegatedRun.RunId);
+        Assert.Equal("explore-source", delegatedRun.ResumeFromRunId);
+        Assert.Equal(10, delegatedRun.RequestTokenBudget);
+        Assert.Equal(0, delegatedRun.QueueDurationMs);
+        Assert.Equal(10, delegatedRun.ConsumedTokens);
+        Assert.Equal(0, delegatedRun.ProviderCalls);
+        Assert.Equal(1_000_000_000, delegatedRun.ToolCalls);
 
         progress.Complete();
         progress.Report("late update", completed: 1, total: 1);

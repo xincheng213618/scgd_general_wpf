@@ -1,8 +1,10 @@
 ﻿#pragma warning disable CS8602,CS8603,CS8601
 using ColorVision.Engine.FlowProcessing;
+using ColorVision.Engine.FlowProcessing.PostProcess;
 using log4net;
 using Quartz;
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 
 
@@ -35,11 +37,12 @@ namespace ColorVision.Engine.FlowProcessing.Scheduling
         {
             log.Info($"FlowJob 开始执行: {context.JobDetail.Key.Name}");
 
-            FlowControlData? result = null;
+            FlowRunFinalizedData? result = null;
 
             try
             {
-                result = await FlowExecutionCoordinator.Instance.RunSelectedFlowAsync();
+                result = await FlowExecutionCoordinator.Instance
+                    .RunSelectedFlowAndWaitForFinalizationAsync();
             }
             catch (Exception ex)
             {
@@ -65,16 +68,44 @@ namespace ColorVision.Engine.FlowProcessing.Scheduling
                 return;
             }
 
-            bool success = result.FlowStatus == FlowStatus.Completed;
-            context.Result = new FlowJobResult
+            FlowJobResult jobResult = CreateJobResult(result);
+            context.Result = jobResult;
+
+            log.Info(
+                $"FlowJob 流程最终完成: {result.FinalOutcome}, 耗时: {result.EngineResult.TotalTime}ms, 成功: {jobResult.Success}");
+        }
+
+        internal static FlowJobResult CreateJobResult(FlowRunFinalizedData result)
+        {
+            ArgumentNullException.ThrowIfNull(result);
+
+            bool success = result.FinalOutcome is
+                FlowFinalOutcome.Succeeded or
+                FlowFinalOutcome.SucceededWithWarnings;
+            string message = result.EngineResult.Params ?? string.Empty;
+            string postProcessFailures = string.Join(
+                "; ",
+                result.PostProcessResults
+                    .Where(postProcessResult => !postProcessResult.Succeeded)
+                    .Select(postProcessResult =>
+                        string.IsNullOrWhiteSpace(postProcessResult.Message)
+                            ? postProcessResult.Name
+                            : $"{postProcessResult.Name}: {postProcessResult.Message}"));
+            if (!string.IsNullOrWhiteSpace(postProcessFailures))
+            {
+                string postProcessMessage = $"后处理: {postProcessFailures}";
+                message = string.IsNullOrWhiteSpace(message)
+                    ? postProcessMessage
+                    : $"{message} | {postProcessMessage}";
+            }
+
+            return new FlowJobResult
             {
                 Success = success,
-                Status = result.EventName,
-                Message = result.Params,
-                TotalTimeMs = result.TotalTime
+                Status = result.FinalOutcome.ToString(),
+                Message = message,
+                TotalTimeMs = result.EngineResult.TotalTime
             };
-
-            log.Info($"FlowJob 流程完成: {result.EventName}, 耗时: {result.TotalTime}ms, 成功: {success}");
         }
     }
 }

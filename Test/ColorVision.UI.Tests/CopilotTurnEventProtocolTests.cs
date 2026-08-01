@@ -80,9 +80,39 @@ public sealed class CopilotTurnEventProtocolTests
             new CopilotAgentRunResult());
 
         protocol.Observe(new CopilotTurnAgentEvent(CopilotAgentEvent.AnswerDelta("partial")));
+        protocol.Observe(new CopilotTurnAgentEvent(CopilotAgentEvent.Completed()));
         protocol.Observe(new CopilotTurnCompletedEvent(result));
 
         Assert.Same(result, protocol.RequireCompletion());
+    }
+
+    [Fact]
+    public void RejectsAgentTurnCompletionBeforeAgentCompletedItem()
+    {
+        var protocol = new CopilotTurnEventProtocol(CopilotAgentMode.Auto);
+        var result = CopilotTurnResult.FromAgent(
+            CopilotAgentMode.Auto,
+            CopilotTokenUsage.Empty,
+            new CopilotAgentRunResult());
+        protocol.Observe(new CopilotTurnAgentEvent(CopilotAgentEvent.AnswerDelta("partial")));
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            protocol.Observe(new CopilotTurnCompletedEvent(result)));
+
+        Assert.Contains("before its completed item", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RejectsAgentEventAfterAgentCompletedItem()
+    {
+        var protocol = new CopilotTurnEventProtocol(CopilotAgentMode.Auto);
+        protocol.Observe(new CopilotTurnAgentEvent(CopilotAgentEvent.Completed()));
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            protocol.Observe(new CopilotTurnAgentEvent(
+                CopilotAgentEvent.RuntimeDiagnostic("late"))));
+
+        Assert.Contains("after its completed item", exception.Message, StringComparison.Ordinal);
     }
 
     [Fact]

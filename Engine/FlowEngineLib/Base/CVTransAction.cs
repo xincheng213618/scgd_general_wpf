@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
 
 namespace FlowEngineLib.Base;
 
@@ -11,11 +13,19 @@ public class CVTransAction
 
 	public Dictionary<string, CVBaseEventCmd> m_sever_actionEvent;
 
+	private readonly object actionEventsLock = new object();
+
+	private int canceled;
+
+	public bool IsCanceled => Volatile.Read(ref canceled) != 0;
+
 	public CVTransAction(CVStartCFC trans_action)
 	{
 		this.trans_action = trans_action;
 		startTime = DateTime.Now;
-		m_sever_actionEvent = new Dictionary<string, CVBaseEventCmd>();
+		m_sever_actionEvent =
+			new Dictionary<string, CVBaseEventCmd>(
+				StringComparer.Ordinal);
 	}
 
 	public void AddTTL()
@@ -67,14 +77,156 @@ public class CVTransAction
 
 	public void Cancel()
 	{
-		foreach (KeyValuePair<string, CVBaseEventCmd> item in m_sever_actionEvent)
+		CVBaseEventCmd[] commands;
+		lock (actionEventsLock)
 		{
-			item.Value.waiter.SignalMessageReceived();
+			Interlocked.Exchange(ref canceled, 1);
+			commands = m_sever_actionEvent.Values.ToArray();
+		}
+		foreach (CVBaseEventCmd command in commands)
+		{
+			command.waiter.SignalMessageReceived();
 		}
 	}
 
 	public void ResetStartTime()
 	{
 		startTime = DateTime.Now;
+	}
+
+	internal CVBaseEventCmd GetOrAddActionCommand(
+		CVMQTTRequest request)
+	{
+		return GetOrAddActionCommand(request, 1);
+	}
+
+	internal CVBaseEventCmd GetOrAddActionCommand(
+		CVMQTTRequest request,
+		int attemptNumber)
+	{
+		lock (actionEventsLock)
+		{
+			if (m_sever_actionEvent.TryGetValue(
+					request.MsgID,
+					out CVBaseEventCmd existing))
+			{
+				return existing;
+			}
+
+			var command = new CVBaseEventCmd(
+				request,
+				null,
+				attemptNumber);
+			m_sever_actionEvent.Add(request.MsgID, command);
+			return command;
+		}
+	}
+
+	internal bool TryStartActionCommand(
+		CVMQTTRequest request,
+		int attemptNumber,
+		out CVBaseEventCmd command)
+	{
+		lock (actionEventsLock)
+		{
+			if (IsCanceled || !trans_action.IsRunning)
+			{
+				command = null;
+				return false;
+			}
+
+			if (m_sever_actionEvent.TryGetValue(
+					request.MsgID,
+					out command))
+			{
+				return true;
+			}
+
+			command = new CVBaseEventCmd(
+				request,
+				null,
+				attemptNumber);
+			m_sever_actionEvent.Add(request.MsgID, command);
+			return true;
+		}
+	}
+
+	internal bool TryAddActionCommand(
+		string messageId,
+		CVBaseEventCmd command)
+	{
+		lock (actionEventsLock)
+		{
+			if (IsCanceled)
+			{
+				return false;
+			}
+			return m_sever_actionEvent.TryAdd(
+				messageId,
+				command);
+		}
+	}
+
+	internal bool TryGetActionCommand(
+		string messageId,
+		out CVBaseEventCmd command)
+	{
+		lock (actionEventsLock)
+		{
+			return m_sever_actionEvent.TryGetValue(
+				messageId,
+				out command);
+		}
+	}
+
+	internal bool TryTakeActionCommand(
+		string messageId,
+		out CVBaseEventCmd command)
+	{
+		lock (actionEventsLock)
+		{
+			if (!m_sever_actionEvent.TryGetValue(
+					messageId,
+					out command))
+			{
+				return false;
+			}
+
+			m_sever_actionEvent.Remove(messageId);
+			return true;
+		}
+	}
+
+	internal CVBaseEventCmd[] GetActionCommandsSnapshot()
+	{
+		lock (actionEventsLock)
+		{
+			return m_sever_actionEvent.Values.ToArray();
+		}
+	}
+
+	internal KeyValuePair<string, CVBaseEventCmd>[]
+		GetActionCommandPairsSnapshot()
+	{
+		lock (actionEventsLock)
+		{
+			return m_sever_actionEvent.ToArray();
+		}
+	}
+
+	internal bool TryGetFirstActionCommandKey(
+		out string messageId)
+	{
+		lock (actionEventsLock)
+		{
+			if (m_sever_actionEvent.Count == 0)
+			{
+				messageId = string.Empty;
+				return false;
+			}
+
+			messageId = m_sever_actionEvent.First().Key;
+			return true;
+		}
 	}
 }

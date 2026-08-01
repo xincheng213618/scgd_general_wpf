@@ -7,6 +7,7 @@ namespace ColorVision.Copilot
     internal sealed record CopilotConversationCompactionPlan(
         CopilotRequestMessage[] SourceMessages,
         CopilotChatMessage BoundaryMessage,
+        CopilotConversationCompactionTerminalEvidence TerminalEvidence,
         int NewSourceMessageCount,
         int NewSourceCharacters,
         int TotalSourceMessageCount,
@@ -93,9 +94,16 @@ namespace ColorVision.Copilot
 
             var previousMessageCount = Math.Max(0, existingCompaction?.SourceMessageCount ?? 0);
             var previousCharacters = Math.Max(0, existingCompaction?.SourceCharacters ?? 0);
+            var boundaryMessage = pendingMessages[lastCompleteTurnCount - 1];
+            var boundaryIndex = conversation.Messages.IndexOf(boundaryMessage);
+            if (boundaryIndex < 0)
+                throw new InvalidOperationException("压缩边界已不在当前会话中，原有摘要和聊天记录均未改变。");
+
             return new CopilotConversationCompactionPlan(
                 sourceMessages.ToArray(),
-                pendingMessages[lastCompleteTurnCount - 1],
+                boundaryMessage,
+                CopilotConversationCompactionTerminalEvidence.Capture(
+                    conversation.Messages.Take(boundaryIndex + 1)),
                 lastCompleteTurnCount,
                 lastCompleteTurnCharacters,
                 SaturatingAdd(previousMessageCount, lastCompleteTurnCount),

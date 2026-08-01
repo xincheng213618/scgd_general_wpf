@@ -41,6 +41,20 @@ public sealed class CopilotProviderRetryChatClientTests
     }
 
     [Fact]
+    public void RetryAfterPreservationKeepsTheExistingTwoMinuteSafetyCap()
+    {
+        using var response = new HttpResponseMessage(HttpStatusCode.TooManyRequests);
+        response.Headers.TryAddWithoutValidation("Retry-After", "600");
+        var exception = new HttpRequestException("rate limited");
+
+        CopilotProviderRetryChatClient.PreserveRetryAfter(response, exception);
+
+        Assert.Equal(
+            TimeSpan.FromMinutes(2),
+            CopilotProviderRetryChatClient.ResolveRetryDelay(exception, TimeSpan.Zero));
+    }
+
+    [Fact]
     public async Task StreamingFailureAfterFirstUpdateIsNotRetried()
     {
         using var provider = new PartialThenFailedStreamingChatClient();
@@ -107,6 +121,46 @@ public sealed class CopilotProviderRetryChatClientTests
         Assert.NotNull(retryEvent.ProviderRetry);
         Assert.Equal(2, retryEvent.ProviderRetry.NextAttempt);
         Assert.Equal(429, retryEvent.ProviderRetry.StatusCode);
+    }
+
+    [Fact]
+    public async Task AgentRuntimeCapturesCapabilityRevisionAfterExternalDiscovery()
+    {
+        using var provider = new TransientThenSuccessChatClient(HttpStatusCode.ServiceUnavailable);
+        var catalog = new CopilotCapabilityCatalog();
+        var request = new CopilotAgentRequest
+        {
+            ConversationId = "conversation-1",
+            TaskId = "task-1",
+            UserText = "Answer this request.",
+            Profile = new CopilotProfileConfig
+            {
+                ProviderType = CopilotProviderType.OpenAICompatible,
+                BaseUrl = "https://example.com/v1",
+                ApiKey = "test",
+                Model = "test-model",
+                MaxTokens = 4_096,
+            },
+            Mode = CopilotAgentMode.Code,
+        };
+        var toolExecutor = new CopilotToolExecutor(new CopilotToolExecutionHookRegistry());
+        var expectedHookSurface = toolExecutor.GetHookSurfaceSnapshot();
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry([]),
+            new CopilotAgentContextBuilder(),
+            toolExecutor,
+            _ => provider,
+            new PublishingExternalToolProvider(catalog),
+            catalog);
+
+        var result = await runtime.RunAsync(request, _ => { }, CancellationToken.None);
+
+        Assert.Equal(CopilotAgentStopReason.Completed, result.StopReason);
+        Assert.Equal(1, catalog.GetSnapshot().Revision);
+        Assert.Equal(catalog.GetSnapshot().Revision, request.RuntimeExecutionScope.CapabilityRevision);
+        var checkpoint = Assert.IsType<CopilotAgentSessionCheckpoint>(result.SessionCheckpoint);
+        Assert.Equal(CopilotAgentSessionCheckpoint.CurrentHookSurfaceVersion, checkpoint.HookSurfaceVersion);
+        Assert.Equal(expectedHookSurface.Fingerprint, checkpoint.HookSurfaceFingerprint);
     }
 
     private static async Task DrainAsync(IAsyncEnumerable<ChatResponseUpdate> updates)
@@ -202,6 +256,41 @@ public sealed class CopilotProviderRetryChatClientTests
             CopilotAgentRequest request,
             CancellationToken cancellationToken) =>
             Task.FromResult(new CopilotExternalToolLease());
+    }
+
+    private sealed class PublishingExternalToolProvider(CopilotCapabilityCatalog catalog) : ICopilotExternalToolProvider
+    {
+        public Task<CopilotExternalToolLease> DiscoverAsync(
+            CopilotAgentRequest request,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            catalog.PublishSource(
+                CopilotCapabilitySourceKind.Plugin,
+                "test-external",
+                "Test external source",
+                [new CatalogMarkerTool()]);
+            return Task.FromResult(new CopilotExternalToolLease());
+        }
+    }
+
+    private sealed class CatalogMarkerTool : ICopilotTool
+    {
+        public string Name => "CatalogMarker";
+
+        public string Description => "Marks a capability catalog revision during test discovery.";
+
+        public bool CanHandle(CopilotAgentRequest request) => true;
+
+        public Task<CopilotToolResult> ExecuteAsync(
+            CopilotAgentRequest request,
+            CopilotAgentToolInput toolInput,
+            CancellationToken cancellationToken) =>
+            Task.FromResult(new CopilotToolResult
+            {
+                ToolName = Name,
+                Success = true,
+            });
     }
 
     private static HttpRequestException CreateTransientException(HttpStatusCode statusCode)

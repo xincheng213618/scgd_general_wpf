@@ -258,6 +258,24 @@ public class CopilotChatStateSnapshotTests
             CompletedAtUtc = DateTimeOffset.Parse("2026-07-26T01:02:04+00:00"),
             TimeoutMs = 30_000,
             ResultSummary = "Read the requested file.",
+            HookRuns =
+            [
+                new CopilotToolExecutionHookRun
+                {
+                    SourceId = "test:policy",
+                    Phase = CopilotToolExecutionHookPhase.BeforeExecute,
+                    State = CopilotToolExecutionHookState.Completed,
+                    DurationMs = 2,
+                },
+                new CopilotToolExecutionHookRun
+                {
+                    SourceId = "test:audit",
+                    Phase = CopilotToolExecutionHookPhase.AfterExecute,
+                    State = CopilotToolExecutionHookState.Failed,
+                    DurationMs = 3,
+                    FailureCode = "tool_hook_failed",
+                },
+            ],
         });
         assistant.RecordResponseTimelineTool("call-1");
         assistant.AppendResponseTimelineText("The file was inspected.");
@@ -291,6 +309,9 @@ public class CopilotChatStateSnapshotTests
         Assert.NotNull(traceDocument[nameof(CopilotAgentTraceEntry.CompletedAtUtc)]);
         Assert.NotNull(traceDocument[nameof(CopilotAgentTraceEntry.TimeoutMs)]);
         Assert.NotNull(traceDocument[nameof(CopilotAgentTraceEntry.ResultSummary)]);
+        Assert.Equal(
+            2,
+            Assert.IsType<JArray>(traceDocument[nameof(CopilotAgentTraceEntry.HookRuns)]).Count);
         Assert.Null(traceDocument[nameof(CopilotAgentTraceEntry.Attempt)]);
         Assert.Null(traceDocument[nameof(CopilotAgentTraceEntry.MaxAttempts)]);
         Assert.Null(traceDocument[nameof(CopilotAgentTraceEntry.Access)]);
@@ -334,12 +355,87 @@ public class CopilotChatStateSnapshotTests
         Assert.Equal(CopilotToolExecutionState.Completed, restoredTrace.State);
         Assert.Equal(30_000, restoredTrace.TimeoutMs);
         Assert.Equal("Read the requested file.", restoredTrace.ResultSummary);
+        Assert.Collection(
+            restoredTrace.HookRuns,
+            hookRun =>
+            {
+                Assert.Equal("test:policy", hookRun.SourceId);
+                Assert.Equal(CopilotToolExecutionHookState.Completed, hookRun.State);
+            },
+            hookRun =>
+            {
+                Assert.Equal("test:audit", hookRun.SourceId);
+                Assert.Equal(CopilotToolExecutionHookState.Failed, hookRun.State);
+                Assert.Equal("tool_hook_failed", hookRun.FailureCode);
+            });
         Assert.Equal(2, restoredMessage.ResponseTimelineEvents.Count);
         Assert.Equal(CopilotResponseTimelineEventKind.ToolCall, restoredMessage.ResponseTimelineEvents[0].Kind);
         Assert.Equal("call-1", restoredMessage.ResponseTimelineEvents[0].CallId);
         Assert.Equal(CopilotResponseTimelineEventKind.Markdown, restoredMessage.ResponseTimelineEvents[1].Kind);
         Assert.Equal(0, restoredMessage.ResponseTimelineEvents[1].ContentStart);
         Assert.Equal("The file was inspected.".Length, restoredMessage.ResponseTimelineEvents[1].ContentLength);
+    }
+
+    [Fact]
+    public void SaveAndLoadPreservesActiveWorkspaceRollbackAuthority()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        try
+        {
+            var now = DateTimeOffset.UtcNow;
+            var assistant = new CopilotChatMessage(CopilotChatRole.Assistant, "Applied the requested change.");
+            assistant.UpsertAgentTrace(CreateWorkspaceApplyTrace(now));
+            var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+            conversation.Messages.Add(assistant);
+            var state = new CopilotChatState
+            {
+                ActiveConversationId = conversation.Id,
+                ActiveProfileId = "profile",
+                Conversations = new ObservableCollection<CopilotConversationRecord> { conversation },
+            };
+            var store = new CopilotChatStateStore(root);
+
+            store.Save(state);
+
+            var persistedDocument = JObject.Parse(File.ReadAllText(store.StateFilePath));
+            var persistedTrace = persistedDocument[nameof(CopilotChatState.Conversations)]![0]!
+                [nameof(CopilotConversationRecord.Messages)]![0]!
+                [nameof(CopilotChatMessage.AgentTraceEntries)]![0]!;
+            Assert.Equal(
+                "workspace-change-set:11111111111111111111111111111111",
+                persistedTrace[nameof(CopilotAgentTraceEntry.WorkspaceChangeSetId)]!.Value<string>());
+            Assert.NotNull(persistedTrace[nameof(CopilotAgentTraceEntry.WorkspaceChangeSetExpiresAtUtc)]);
+
+            var restored = new CopilotChatStateStore(root).Load();
+            var restoredTrace = Assert.Single(
+                Assert.Single(Assert.Single(restored.Conversations).Messages).AgentTraceEntries);
+            Assert.Equal(
+                "workspace-change-set:11111111111111111111111111111111",
+                restoredTrace.WorkspaceChangeSetId);
+            Assert.Equal(now.AddMinutes(20), restoredTrace.WorkspaceChangeSetExpiresAtUtc);
+            Assert.True(restoredTrace.CanRequestWorkspaceRollback);
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+                Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void TraceValidationDropsOverlongWorkspaceRollbackAuthority()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var traceDocument = JObject.Parse(JsonConvert.SerializeObject(CreateWorkspaceApplyTrace(now)));
+        traceDocument[nameof(CopilotAgentTraceEntry.WorkspaceChangeSetExpiresAtUtc)] = now.AddHours(1);
+
+        var restoredTrace = traceDocument.ToObject<CopilotAgentTraceEntry>();
+
+        Assert.NotNull(restoredTrace);
+        Assert.True(restoredTrace.EnsureValid(now));
+        Assert.Empty(restoredTrace.WorkspaceChangeSetId);
+        Assert.Null(restoredTrace.WorkspaceChangeSetExpiresAtUtc);
+        Assert.False(restoredTrace.CanRequestWorkspaceRollback);
     }
 
     [Fact]
@@ -545,6 +641,37 @@ public class CopilotChatStateSnapshotTests
             ActiveProfileId = "profile",
             Conversations = new ObservableCollection<CopilotConversationRecord> { conversation },
         };
+    }
+
+    private static CopilotAgentTraceEntry CreateWorkspaceApplyTrace(DateTimeOffset now)
+    {
+        return CopilotAgentTraceEntry.FromResult(
+            new CopilotToolExecutionInfo
+            {
+                CallId = "workspace-apply",
+                Round = 1,
+                ToolName = "ApplyWorkspacePatchEnvelope",
+                State = CopilotToolExecutionState.Completed,
+                StartedAtUtc = now.AddSeconds(-1),
+                CompletedAtUtc = now,
+            },
+            new CopilotToolResult
+            {
+                ToolName = "ApplyWorkspacePatchEnvelope",
+                Success = true,
+                Summary = "Applied one workspace change set.",
+                Content = string.Join(
+                    Environment.NewLine,
+                    "[Workspace Change Set Result]",
+                    "change_set_id: workspace-change-set:11111111111111111111111111111111",
+                    "file_count: 1",
+                    "state: Applied",
+                    $"expires_at_utc: {now.AddMinutes(20):O}",
+                    "file_1_operation: Update",
+                    @"file_1_path: C:\workspace\target.txt",
+                    "file_1_before_sha256: before",
+                    "file_1_after_sha256: after"),
+            });
     }
 
     private static JObject CreateStateDocument(int schemaVersion, string title)

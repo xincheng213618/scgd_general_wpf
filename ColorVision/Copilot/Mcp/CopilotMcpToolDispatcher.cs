@@ -564,9 +564,11 @@ namespace ColorVision.Copilot.Mcp
             string capabilityName,
             IReadOnlyDictionary<string, JsonElement>? arguments,
             CopilotAgentRequest request,
+            CopilotExecutionScope executionScope,
             CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(request);
+            ArgumentNullException.ThrowIfNull(executionScope);
             var currentWorkspacePath = GetWorkspaceSnapshot().SolutionDirectoryPath;
             if (string.IsNullOrWhiteSpace(request.ConversationId)
                 || string.IsNullOrWhiteSpace(request.TaskId)
@@ -581,10 +583,36 @@ namespace ColorVision.Copilot.Mcp
                 };
             }
 
-            var executionScope = CopilotExecutionScope.ForAgentRequest(request)
+            if (!executionScope.HasToolCallBinding
+                || !executionScope.MatchesAuthorizationScope(request.RuntimeExecutionScope))
+            {
+                return new CopilotApplicationCapabilityCallResult
+                {
+                    Success = false,
+                    ErrorCode = "approved_capability_binding_mismatch",
+                    FailureKind = CopilotToolFailureKind.Authorization,
+                    Content = "The approved application capability is not bound to the active provider tool call and execution scope.",
+                };
+            }
+
+            if (!CopilotCapabilityRevisionAuthorization.TryValidate(
+                executionScope,
+                _environment.CapabilityRevisionProvider,
+                out var rejectionReason))
+            {
+                return new CopilotApplicationCapabilityCallResult
+                {
+                    Success = false,
+                    ErrorCode = "approved_capability_revision_changed",
+                    FailureKind = CopilotToolFailureKind.Authorization,
+                    Content = rejectionReason,
+                };
+            }
+
+            var approvedExecutionScope = executionScope
                 .WithWorkspace(currentWorkspacePath)
                 .WithAuthorizationChannel(CopilotExecutionAuthorizationChannel.AgentFrameworkApproved);
-            var result = await CallCoreAsync(capabilityName, arguments, executionScope, cancellationToken);
+            var result = await CallCoreAsync(capabilityName, arguments, approvedExecutionScope, cancellationToken);
             return ToApplicationCapabilityResult(result);
         }
 
@@ -592,13 +620,15 @@ namespace ColorVision.Copilot.Mcp
             string capabilityName,
             IReadOnlyDictionary<string, JsonElement>? arguments,
             CopilotAgentRequest request,
+            CopilotExecutionScope executionScope,
             CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(request);
-            var executionScope = CopilotExecutionScope.ForAgentRequest(request)
+            ArgumentNullException.ThrowIfNull(executionScope);
+            var scopedExecutionScope = executionScope
                 .WithWorkspace(GetWorkspaceSnapshot().SolutionDirectoryPath)
                 .WithAuthorizationChannel(CopilotExecutionAuthorizationChannel.Standard);
-            var result = await CallCoreAsync(capabilityName, arguments, executionScope, cancellationToken);
+            var result = await CallCoreAsync(capabilityName, arguments, scopedExecutionScope, cancellationToken);
             return ToApplicationCapabilityResult(result);
         }
 

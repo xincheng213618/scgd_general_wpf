@@ -34,6 +34,30 @@
                     <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets"
                                Foreground="{DynamicResource GlobalTextBrush}" FontSize="16"/>
                 </Button>
+                <Button Command="{Binding VersionHistoryCommand}" Width="34" Height="32"
+                        Margin="2,0" Padding="3"
+                        ToolTip="流程版本历史">
+                    <TextBlock Text="&#xE81C;" FontFamily="Segoe MDL2 Assets"
+                               Foreground="{DynamicResource GlobalTextBrush}" FontSize="16"/>
+                </Button>
+                <Button Command="{Binding ExecutionPolicyCommand}" Width="34" Height="32"
+                        Margin="2,0" Padding="3"
+                        ToolTip="错误路由与重试策略">
+                    <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets"
+                               Foreground="{DynamicResource GlobalTextBrush}" FontSize="16"/>
+                </Button>
+                <Button Command="{Binding SubflowCommand}" Width="34" Height="32"
+                        Margin="2,0" Padding="3"
+                        ToolTip="可复用子流程">
+                    <TextBlock Text="&#xE8F1;" FontFamily="Segoe MDL2 Assets"
+                               Foreground="{DynamicResource GlobalTextBrush}" FontSize="16"/>
+                </Button>
+                <Button Command="{Binding IncidentManagementCommand}" Width="34" Height="32"
+                        Margin="2,0" Padding="3"
+                        ToolTip="流程 Incident 管理">
+                    <TextBlock Text="&#xEA39;" FontFamily="Segoe MDL2 Assets"
+                               Foreground="{DynamicResource GlobalTextBrush}" FontSize="16"/>
+                </Button>
                 <Button Command="{Binding AutoAlignmentCommand}" Width="34" Height="32"
                         Margin="2,0" Padding="3"
                         ToolTip="{x:Static properties:Resources.AutoAlign}">

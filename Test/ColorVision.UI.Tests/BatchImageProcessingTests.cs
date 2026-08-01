@@ -466,6 +466,54 @@ public class BatchImageProcessingTests
         }
     }
 
+    [Fact]
+    public async Task CopilotBatchConversionCannotWriteBesideAReadOnlyAddedDirectory()
+    {
+        string directory = Path.Combine(Path.GetTempPath(), $"colorvision-copilot-read-only-{Guid.NewGuid():N}");
+        string sourcePath = Path.Combine(directory, "sample.png");
+        string outputPath = Path.Combine(directory, "sample.tiff");
+        Directory.CreateDirectory(directory);
+        try
+        {
+            using (Mat source = new(2, 2, MatType.CV_8UC1, Scalar.All(42)))
+            {
+                Assert.True(Cv2.ImWrite(sourcePath, source));
+            }
+
+            CopilotConvertBatchImagesTool tool = new();
+            CopilotAgentRequest request = new()
+            {
+                UserText = "把参考目录中的图片转换为 TIFF",
+                Mode = CopilotAgentMode.Auto,
+                SearchRootPaths = [directory],
+                ReadableLocalDirectoryPaths = [directory],
+                WritableLocalRootPaths = [],
+            };
+            Assert.True(tool.InputSchema.TryBind(
+                new Dictionary<string, object?>
+                {
+                    ["sources"] = new[] { sourcePath },
+                    ["format"] = "tiff",
+                },
+                out CopilotAgentToolInput input,
+                out string bindError), bindError);
+
+            CopilotToolResult result = await ((ICopilotFrameworkApprovedTool)tool).ExecuteApprovedAsync(
+                request,
+                input,
+                CancellationToken.None);
+
+            Assert.False(result.Success);
+            Assert.Equal(CopilotToolFailureKind.Authorization, result.FailureKind);
+            Assert.Contains("read-only", result.ErrorMessage, StringComparison.OrdinalIgnoreCase);
+            Assert.False(File.Exists(outputPath));
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
     private static BatchImageAlgorithmDefinition CreateBasicAdjustmentAlgorithm(
         double exposure = 0,
         double brightness = 0,

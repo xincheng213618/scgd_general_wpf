@@ -92,6 +92,19 @@ namespace ColorVision.Engine.FlowProcessing.Editor
             return true;
         }
 
+        public bool TryFocusNode(Guid nodeGuid)
+        {
+            STNode? node = _nodeEditor.Nodes
+                .Cast<STNode>()
+                .FirstOrDefault(candidate =>
+                    candidate.Guid == nodeGuid);
+            if (node == null)
+                return false;
+
+            FocusNode(node);
+            return true;
+        }
+
         private void FocusNode(STNode node)
         {
             foreach (STNode selectedNode in _nodeEditor.GetSelectedNode())

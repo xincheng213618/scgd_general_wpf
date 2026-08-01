@@ -92,11 +92,16 @@ namespace ColorVision.Copilot.Mcp
 
         internal bool CanReviewFromConversation(string? conversationId)
         {
-            if (SourceKind != CopilotApprovalSourceKind.InAppAgent)
+            if (SourceKind is not (CopilotApprovalSourceKind.InAppAgent or CopilotApprovalSourceKind.ColorVisionUi)
+                || string.IsNullOrWhiteSpace(ConversationId))
+            {
                 return true;
+            }
 
-            return !string.IsNullOrWhiteSpace(ConversationId)
-                && string.Equals(ConversationId, (conversationId ?? string.Empty).Trim(), StringComparison.Ordinal);
+            return string.Equals(
+                ConversationId,
+                (conversationId ?? string.Empty).Trim(),
+                StringComparison.Ordinal);
         }
 
         internal static CopilotConfirmationRequestContext ForAgent(
@@ -252,6 +257,10 @@ namespace ColorVision.Copilot.Mcp
         public bool? ExecutionSucceeded { get; internal set; }
 
         public string ExecutionResultText { get; internal set; } = string.Empty;
+
+        public string ApprovalDecisionSource { get; internal set; } = string.Empty;
+
+        public string ApprovalDecisionReason { get; internal set; } = string.Empty;
 
         public DateTimeOffset? CompletedAt { get; internal set; }
 
@@ -439,7 +448,8 @@ namespace ColorVision.Copilot.Mcp
             bool resumesAgentOnApproval = false,
             CopilotConfirmationRequestContext? requestContext = null,
             string? exactArgumentsBinding = null,
-            string? reviewDetails = null)
+            string? reviewDetails = null,
+            string? agentCallId = null)
         {
             return CreateCore(
                 title,
@@ -450,7 +460,7 @@ namespace ColorVision.Copilot.Mcp
                 executor,
                 executeOnApproval,
                 resumesAgentOnApproval,
-                string.Empty,
+                agentCallId ?? string.Empty,
                 requestContext,
                 exactArgumentsBinding,
                 null,
@@ -616,6 +626,31 @@ namespace ColorVision.Copilot.Mcp
         public bool Approve(
             string actionId,
             CopilotConfirmationReviewContext reviewContext,
+            out string message) =>
+            ApproveCore(
+                actionId,
+                reviewContext,
+                decisionSource: "user",
+                decisionReason: string.Empty,
+                out message);
+
+        internal bool ApproveAutomatically(
+            string actionId,
+            CopilotConfirmationReviewContext reviewContext,
+            string decisionReason,
+            out string message) =>
+            ApproveCore(
+                actionId,
+                reviewContext,
+                decisionSource: "automatic-review",
+                decisionReason,
+                out message);
+
+        private bool ApproveCore(
+            string actionId,
+            CopilotConfirmationReviewContext reviewContext,
+            string decisionSource,
+            string decisionReason,
             out string message)
         {
             var action = Find(actionId);
@@ -642,13 +677,20 @@ namespace ColorVision.Copilot.Mcp
                     return false;
                 }
 
+                action.ApprovalDecisionSource = Sanitize(decisionSource);
+                action.ApprovalDecisionReason = Sanitize(decisionReason);
                 action.Status = ConfirmableActionStatus.Approved;
             }
 
             CopilotMcpAuditLogger.ActionApproved(action);
             RaiseActionStatusChanged(action);
             RaiseActionsChanged();
-            message = "The action was approved.";
+            message = string.Equals(
+                action.ApprovalDecisionSource,
+                "automatic-review",
+                StringComparison.Ordinal)
+                ? "The action was approved by the automatic permission reviewer."
+                : "The action was approved.";
             return true;
         }
 
@@ -1193,7 +1235,17 @@ namespace ColorVision.Copilot.Mcp
                 return false;
             }
 
-            if (requestContext.SourceKind is CopilotApprovalSourceKind.InAppAgent or CopilotApprovalSourceKind.ExternalMcp
+            if (requestContext.SourceKind == CopilotApprovalSourceKind.ColorVisionUi
+                && !string.IsNullOrWhiteSpace(requestContext.ConversationId)
+                && !string.Equals(requestContext.ConversationId, reviewConversationId, StringComparison.Ordinal))
+            {
+                message = "This approval belongs to a different Copilot conversation.";
+                return false;
+            }
+
+            if (requestContext.SourceKind is CopilotApprovalSourceKind.InAppAgent
+                    or CopilotApprovalSourceKind.ExternalMcp
+                    or CopilotApprovalSourceKind.ColorVisionUi
                 && !string.Equals(actionWorkspacePath, reviewWorkspacePath, StringComparison.OrdinalIgnoreCase))
             {
                 message = "The active workspace changed after this approval request was created.";

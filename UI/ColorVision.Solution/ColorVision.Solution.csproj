@@ -15,10 +15,10 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3967.48" />
+		<PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4078.44" />
 		<PackageReference Include="AvalonEdit" Version="6.3.1.120" />
 		<PackageReference Include="Dirkster.AvalonDock.Themes.VS2013" Version="4.74.1" />
-		<PackageReference Include="WPFHexaEditor" Version="3.4.0" />
+		<PackageReference Include="WPFHexaEditor" Version="3.4.5" />
 	</ItemGroup>
 
 	<ItemGroup>

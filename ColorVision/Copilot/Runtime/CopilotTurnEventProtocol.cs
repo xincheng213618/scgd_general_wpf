@@ -6,6 +6,7 @@ namespace ColorVision.Copilot
     {
         private readonly CopilotAgentMode _mode;
         private bool _chatRequestPrepared;
+        private bool _agentCompleted;
         private CopilotTurnResult? _completion;
 
         public CopilotTurnEventProtocol(CopilotAgentMode mode)
@@ -39,8 +40,12 @@ namespace ColorVision.Copilot
                     break;
                 case CopilotTurnAgentEvent agent:
                     RequireAgentMode(turnEvent);
+                    if (_agentCompleted)
+                        throw new InvalidOperationException("Copilot Agent emitted an event after its completed item.");
                     if (agent.Event == null)
                         throw new InvalidOperationException("Copilot Agent event has no payload.");
+                    if (agent.Event.Type == CopilotAgentEventType.Completed)
+                        _agentCompleted = true;
                     break;
                 case CopilotTurnCompletedEvent completed:
                     if (completed.Result == null)
@@ -52,6 +57,8 @@ namespace ColorVision.Copilot
                     }
                     if (_mode == CopilotAgentMode.Chat && !_chatRequestPrepared)
                         throw new InvalidOperationException("Copilot chat turn completed before its request was prepared.");
+                    if (_mode != CopilotAgentMode.Chat && !_agentCompleted)
+                        throw new InvalidOperationException("Copilot Agent turn completed before its completed item was emitted.");
                     _completion = completed.Result;
                     break;
                 default:

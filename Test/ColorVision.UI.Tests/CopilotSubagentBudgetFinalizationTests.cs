@@ -8,6 +8,92 @@ namespace ColorVision.UI.Tests;
 public sealed class CopilotSubagentBudgetFinalizationTests
 {
     [Fact]
+    public async Task ActiveSubagentSteeringUsesTheChildRuntimeAndReportsDelivery()
+    {
+        const string conversationId = "subagent-steering-conversation";
+        const string taskId = "parent-task";
+        const string steeringMessage = "focus on the exact failure branch";
+        var root = Path.Combine(
+            Path.GetTempPath(),
+            $"copilot-child-steering-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(root);
+        var evidencePath = Path.Combine(root, "Evidence.cs");
+        await File.WriteAllTextAsync(evidencePath, "// verified steering evidence");
+        try
+        {
+            using var provider = new BlockingSubagentSteeringChatClient(evidencePath);
+            using var activeRun = CopilotSubagentCoordination.RegisterActiveRun(
+                conversationId,
+                CopilotSubagentRoleCatalog.ExploreRoleId);
+            var runner = new CopilotSubagentRunner(_ => provider);
+            var role = CopilotSubagentRoleCatalog.Default.GetRequired(
+                CopilotSubagentRoleCatalog.ExploreRoleId);
+            var parentRequest = new CopilotAgentRequest
+            {
+                ConversationId = conversationId,
+                TaskId = taskId,
+                UserText = "Inspect the workspace without modifying files.",
+                Profile = CreateProfile(),
+                SearchRootPaths = [root],
+                TrustedProjectRootPaths = [root],
+                Mode = CopilotAgentMode.Code,
+            };
+            var runRequest = new CopilotSubagentRunRequest
+            {
+                RunId = activeRun.RunId,
+                Task = "Inspect the workspace and return one verified finding.",
+                RequestTokenBudget = 16_384,
+            };
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            var runTask = runner.RunAsync(
+                parentRequest,
+                role,
+                runRequest,
+                timeout.Token);
+
+            await provider.StreamStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            var admission = CopilotSubagentCoordination.RequestSteerActiveRun(
+                conversationId,
+                activeRun.RunId,
+                steeringMessage);
+            provider.ReleaseStream.TrySetResult();
+            var result = await runTask.WaitAsync(TimeSpan.FromSeconds(5));
+
+            Assert.True(admission.IsAccepted);
+            Assert.True(
+                result.DeliveredSteeringCount == 1,
+                $"Expected one delivered instruction, got delivered={result.DeliveredSteeringCount}, undelivered={result.UndeliveredSteeringCount}, provider_calls={provider.StreamingCalls.Count}, used={string.Join(',', result.ToolNames)}, stop={result.StopReason}, tools={string.Join(',', provider.FirstCallToolNames)}.");
+            Assert.Equal(0, result.UndeliveredSteeringCount);
+            Assert.Contains(
+                provider.StreamingCalls.SelectMany(call => call),
+                message => message.Text.Contains(steeringMessage, StringComparison.Ordinal));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void SubagentSteeringMetricsKeepOnlyDeliveryCounts()
+    {
+        var metrics = new CopilotSubagentSteeringMetrics();
+
+        metrics.Observe(CopilotAgentEvent.SteeringDelivered(
+        [
+            new CopilotSteeringMessageSnapshot("delivered", "secret delivered text"),
+        ]));
+        metrics.Observe(CopilotAgentEvent.SteeringRecovery(
+        [
+            new CopilotSteeringMessageSnapshot("pending-1", "secret pending text 1"),
+            new CopilotSteeringMessageSnapshot("pending-2", "secret pending text 2"),
+        ]));
+
+        Assert.Equal(1, metrics.DeliveredCount);
+        Assert.Equal(2, metrics.UndeliveredCount);
+    }
+
+    [Fact]
     public void FullSubagentBudgetReservesASeparateFinalizationPhase()
     {
         var role = CopilotSubagentRoleCatalog.Default.GetRequired(CopilotSubagentRoleCatalog.ExploreRoleId);
@@ -222,16 +308,21 @@ public sealed class CopilotSubagentBudgetFinalizationTests
                 TrustedProjectRootPaths = [root],
                 Mode = CopilotAgentMode.Code,
             };
+            var progressUpdates = new List<(
+                CopilotSubagentRunPhase Phase,
+                CopilotAgentBudgetSnapshot Budget)>();
+            var runRequest = new CopilotSubagentRunRequest
+            {
+                RunId = "explore-preloaded-evidence-test",
+                Task = $"Inspect budget evidence in {string.Join(", ", fileNames)} under {root}.",
+                RequestTokenBudget = 16_384,
+                ProgressUpdated = (phase, budget, _) => progressUpdates.Add((phase, budget)),
+            };
 
             var result = await runner.RunAsync(
                 parentRequest,
                 role,
-                new CopilotSubagentRunRequest
-                {
-                    RunId = "explore-preloaded-evidence-test",
-                    Task = $"Inspect budget evidence in {string.Join(", ", fileNames)} under {root}.",
-                    RequestTokenBudget = 16_384,
-                },
+                runRequest,
                 CancellationToken.None);
 
             Assert.Equal(expectedStopReason, result.StopReason);
@@ -241,6 +332,12 @@ public sealed class CopilotSubagentBudgetFinalizationTests
             Assert.Equal(["ReadLocalFile"], result.ToolNames);
             Assert.Equal(1, result.Budget.ToolCalls);
             Assert.Equal(1, result.Budget.ProviderCalls);
+            Assert.Contains(
+                progressUpdates,
+                update => update.Phase == CopilotSubagentRunPhase.Finalization
+                    && update.Budget.ProviderCalls == 1
+                    && update.Budget.ToolCalls == 1
+                    && update.Budget.ConsumedTokens > 0);
             Assert.True(
                 result.Budget.ConsumedTokens < 4_000,
                 $"Minimal finalization consumed an estimated {result.Budget.ConsumedTokens} tokens.");
@@ -878,6 +975,85 @@ public sealed class CopilotSubagentBudgetFinalizationTests
                     .SelectMany(message => message.Contents)
                     .OfType<TextContent>()
                     .Select(content => content.Text));
+        }
+    }
+
+    private sealed class BlockingSubagentSteeringChatClient(string evidencePath) : IChatClient
+    {
+        private int _callCount;
+
+        public TaskCompletionSource StreamStarted { get; } = new(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public TaskCompletionSource ReleaseStream { get; } = new(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public List<IReadOnlyList<ChatMessage>> StreamingCalls { get; } = new();
+
+        public IReadOnlyList<string> FirstCallToolNames { get; private set; } = Array.Empty<string>();
+
+        public Task<ChatResponse> GetResponseAsync(
+            IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null,
+            CancellationToken cancellationToken = default)
+        {
+            throw new InvalidOperationException(
+                "The subagent steering scenario must remain on the streaming path.");
+        }
+
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(
+            IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null,
+            [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            StreamingCalls.Add(messages.ToArray());
+            if (Interlocked.Increment(ref _callCount) == 1)
+            {
+                StreamStarted.TrySetResult();
+                await ReleaseStream.Task.WaitAsync(cancellationToken);
+                var registeredToolNames = options?.Tools?
+                    .OfType<AIFunction>()
+                    .Select(tool => tool.Name)
+                    .ToArray()
+                    ?? Array.Empty<string>();
+                FirstCallToolNames = registeredToolNames;
+                var readToolName = registeredToolNames.FirstOrDefault(name =>
+                    name.Contains("read", StringComparison.OrdinalIgnoreCase))
+                    ?? throw new InvalidOperationException(
+                        "The child read tool was not registered: "
+                            + string.Join(", ", registeredToolNames));
+                yield return new ChatResponseUpdate(
+                    ChatRole.Assistant,
+                    [
+                        new FunctionCallContent(
+                            "call-read-steering-evidence",
+                            readToolName,
+                            new Dictionary<string, object?>
+                            {
+                                ["path"] = evidencePath,
+                            }),
+                    ])
+                {
+                    FinishReason = ChatFinishReason.ToolCalls,
+                };
+                yield break;
+            }
+
+            yield return new ChatResponseUpdate(
+                ChatRole.Assistant,
+                $"- {evidencePath}:1 — verified steering evidence.\ncomplete: yes — the requested evidence was verified.")
+            {
+                FinishReason = ChatFinishReason.Stop,
+            };
+        }
+
+        public object? GetService(Type serviceType, object? serviceKey = null) =>
+            serviceType.IsInstanceOfType(this) ? this : null;
+
+        public void Dispose()
+        {
+            ReleaseStream.TrySetResult();
         }
     }
 }

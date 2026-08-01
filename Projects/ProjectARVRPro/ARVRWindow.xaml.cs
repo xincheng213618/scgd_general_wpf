@@ -38,6 +38,7 @@ using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 
 namespace ProjectARVRPro
 {
@@ -1639,55 +1640,79 @@ namespace ProjectARVRPro
             log.Info($"IsSaveImageReuslt:{IsSaveImageReuslt}");
             IsSaveImageReuslt = false;
             string sourceFileName = result.FileName;
-            _ = Task.Run(async () =>
+            Stopwatch snapshotStopwatch = Stopwatch.StartNew();
+            BitmapSource? snapshot = ImageView.CaptureSnapshot();
+            snapshotStopwatch.Stop();
+            if (snapshot == null)
             {
-                try
+                log.Warn("保存结果截图失败：当前结果画布无法生成快照。");
+                return;
+            }
+            log.Info(
+                $"结果截图 UI 快照完成，耗时 {snapshotStopwatch.ElapsedMilliseconds}ms。");
+
+            string linkPath = ViewResultManager.Config.CsvSavePath;
+            bool saveByDate = ViewResultManager.Config.SaveByDate;
+            int saveDelay = ViewResultManager.Config.SaveImageReusltDelay;
+            string sn = result.SN;
+            string model = result.Model;
+            DateTime requestedAt = DateTime.Now;
+            _ = SaveImageResultSnapshotAsync(
+                snapshot,
+                sourceFileName,
+                linkPath,
+                saveByDate,
+                saveDelay,
+                sn,
+                model,
+                requestedAt);
+        }
+
+        private async Task SaveImageResultSnapshotAsync(
+            BitmapSource snapshot,
+            string sourceFileName,
+            string linkPath,
+            bool saveByDate,
+            int saveDelay,
+            string sn,
+            string model,
+            DateTime requestedAt)
+        {
+            try
+            {
+                if (saveDelay > 0)
+                    await Task.Delay(saveDelay).ConfigureAwait(false);
+                if (_isDisposed)
+                    return;
+
+                if (saveByDate)
+                    linkPath = Path.Combine(linkPath, requestedAt.ToString("yyyy-MM-dd"));
+
+                if (!string.IsNullOrWhiteSpace(sn))
                 {
-                    await Task.Delay(ViewResultManager.Config.SaveImageReusltDelay);
-                    if (_isDisposed)
-                        return;
-
-                    string linkPath = ViewResultManager.Config.CsvSavePath;
-                    string sn = result.SN;
-
-                    if (ViewResultManager.Config.SaveByDate)
-                    {
-                        string dateFolder = DateTime.Now.ToString("yyyy-MM-dd");
-                        linkPath = Path.Combine(linkPath, dateFolder);
-                    }
+                    foreach (char c in Path.GetInvalidFileNameChars())
+                        sn = sn.Replace(c.ToString(), "");
 
                     if (!string.IsNullOrWhiteSpace(sn))
-                    {
-                        foreach (char c in Path.GetInvalidFileNameChars())
-                        {
-                            sn = sn.Replace(c.ToString(), "");
-                        }
-
-                        if (!string.IsNullOrWhiteSpace(sn))
-                        {
-                            linkPath = Path.Combine(linkPath, sn);
-                        }
-                    }
-
-                    if (!Directory.Exists(linkPath))
-                        Directory.CreateDirectory(linkPath);
-
-                    string fileName = Path.GetFileNameWithoutExtension(sourceFileName);
-                    string filePath = Path.Combine(linkPath, $"{fileName}_{result.Model}result.png");
-                    log.Info(filePath);
-                    Application.Current?.Dispatcher.Invoke(() =>
-                    {
-                        if (_isDisposed)
-                            return;
-
-                        ImageView.Save(filePath);
-                    });
+                        linkPath = Path.Combine(linkPath, sn);
                 }
-                catch (Exception ex)
-                {
-                    log.Error("保存结果截图失败", ex);
-                }
-            });
+
+                string fileName = Path.GetFileNameWithoutExtension(sourceFileName);
+                string filePath = Path.Combine(linkPath, $"{fileName}_{model}result.png");
+                log.Info($"后台保存结果快照: {filePath}");
+                Stopwatch saveStopwatch = Stopwatch.StartNew();
+                await ColorVision.ImageEditor.ImageView.SaveSnapshotAsync(
+                    snapshot,
+                    filePath).ConfigureAwait(false);
+                saveStopwatch.Stop();
+                log.Info(
+                    $"结果快照后台排队及编码写盘完成，耗时 "
+                    + $"{saveStopwatch.ElapsedMilliseconds}ms。");
+            }
+            catch (Exception ex)
+            {
+                log.Error("保存结果截图失败", ex);
+            }
         }
 
         private void ApplyResultOverlayConfig()

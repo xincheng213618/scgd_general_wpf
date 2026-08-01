@@ -138,9 +138,60 @@ namespace ColorVision.UI.Desktop.Feedback
         private bool _placeholderActive = true;
 
         public FeedbackWindow()
+            : this(null, null)
+        {
+        }
+
+        public FeedbackWindow(
+            string? initialMessage,
+            IEnumerable<string>? initialAttachmentPaths)
         {
             InitializeComponent();
             this.ApplyCaption();
+            ApplyInitialDraft(initialMessage, initialAttachmentPaths);
+        }
+
+        private void ApplyInitialDraft(
+            string? initialMessage,
+            IEnumerable<string>? initialAttachmentPaths)
+        {
+            var message = (initialMessage ?? string.Empty).Trim();
+            if (message.Length > 0)
+            {
+                _placeholderActive = false;
+                MessageTextBox.Text = message;
+                MessageTextBox.SetResourceReference(Control.ForegroundProperty, "GlobalTextBrush");
+            }
+
+            foreach (var attachmentPath in initialAttachmentPaths ?? [])
+            {
+                if (_attachments.Count >= 16)
+                    break;
+                if (string.IsNullOrWhiteSpace(attachmentPath))
+                    continue;
+
+                string fullPath;
+                try
+                {
+                    fullPath = Path.GetFullPath(attachmentPath);
+                }
+                catch
+                {
+                    continue;
+                }
+
+                if (!File.Exists(fullPath)
+                    || _attachments.Any(
+                        attachment => string.Equals(
+                            attachment.FilePath,
+                            fullPath,
+                            StringComparison.OrdinalIgnoreCase)))
+                {
+                    continue;
+                }
+
+                _attachments.Add(new AttachmentItem { FilePath = fullPath });
+            }
         }
 
         private void Window_Initialized(object sender, EventArgs e)

@@ -370,8 +370,19 @@ namespace ColorVision.Copilot
         {
             outputDirectory = null;
             error = string.Empty;
+            var writableRoots = CopilotWorkspaceSearchSupport.NormalizeSearchRoots(
+                request.WritableLocalRootPaths);
             if (string.IsNullOrWhiteSpace(requestedOutputDirectory))
             {
+                foreach (var item in items)
+                {
+                    var sourceDirectory = Path.GetDirectoryName(item.FilePath) ?? string.Empty;
+                    if (IsPotentialOutputPathWithinRoots(sourceDirectory, writableRoots))
+                        continue;
+
+                    error = $"The source directory is read-only for this request: {sourceDirectory}";
+                    return false;
+                }
                 return true;
             }
 
@@ -385,13 +396,9 @@ namespace ColorVision.Copilot
                 return false;
             }
 
-            var allowedRoots = request.WritableLocalRootPaths
-                .Concat(request.ReadableLocalDirectoryPaths)
-                .Concat(request.SearchRootPaths)
-                .Concat(items.Select(item => Path.GetDirectoryName(item.FilePath)).Where(path => !string.IsNullOrWhiteSpace(path))!);
-            if (!IsPotentialOutputPathWithinRoots(outputDirectory, allowedRoots))
+            if (!IsPotentialOutputPathWithinRoots(outputDirectory, writableRoots))
             {
-                error = $"The output directory is outside the approved roots: {outputDirectory}";
+                error = $"The output directory is outside the writable roots: {outputDirectory}";
                 outputDirectory = null;
                 return false;
             }

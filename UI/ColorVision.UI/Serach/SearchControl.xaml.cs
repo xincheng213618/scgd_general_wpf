@@ -74,6 +74,9 @@ namespace ColorVision.UI.Serach
                 ))
                 .ToList();
 
+            FilteredResults.AddRange(
+                SearchManager.GetInstance().SearchDynamic(searchtext));
+
             var config = SearchConfig.Instance;
 
             if (config.EnableEverythingSearch && File.Exists(config.EverythingPath))

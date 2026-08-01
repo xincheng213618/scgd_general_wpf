@@ -340,29 +340,11 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 AI 请求 的本地化字符串。
-        /// </summary>
-        public static string CopilotAiRequest {
-            get {
-                return ResourceManager.GetString("CopilotAiRequest", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 API Key 的本地化字符串。
         /// </summary>
         public static string CopilotApiKey {
             get {
                 return ResourceManager.GetString("CopilotApiKey", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 询问 AI 的本地化字符串。
-        /// </summary>
-        public static string CopilotAskAi {
-            get {
-                return ResourceManager.GetString("CopilotAskAi", resourceCulture);
             }
         }
         
@@ -412,15 +394,6 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 复制详情 的本地化字符串。
-        /// </summary>
-        public static string CopilotCopyDetails {
-            get {
-                return ResourceManager.GetString("CopilotCopyDetails", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 复制当前消息 的本地化字符串。
         /// </summary>
         public static string CopilotCopyMessage {
@@ -435,24 +408,6 @@ namespace ColorVision.Properties {
         public static string CopilotCurrentWindowContext {
             get {
                 return ResourceManager.GetString("CopilotCurrentWindowContext", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 异常详情 的本地化字符串。
-        /// </summary>
-        public static string CopilotExceptionDetails {
-            get {
-                return ResourceManager.GetString("CopilotExceptionDetails", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 异常诊断 的本地化字符串。
-        /// </summary>
-        public static string CopilotExceptionDiagnosis {
-            get {
-                return ResourceManager.GetString("CopilotExceptionDiagnosis", resourceCulture);
             }
         }
         
@@ -475,29 +430,11 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 Google 搜索 的本地化字符串。
-        /// </summary>
-        public static string CopilotGoogleSearch {
-            get {
-                return ResourceManager.GetString("CopilotGoogleSearch", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 语言模型 的本地化字符串。
         /// </summary>
         public static string CopilotLanguageModel {
             get {
                 return ResourceManager.GetString("CopilotLanguageModel", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 行 的本地化字符串。
-        /// </summary>
-        public static string CopilotLines {
-            get {
-                return ResourceManager.GetString("CopilotLines", resourceCulture);
             }
         }
         
@@ -552,33 +489,6 @@ namespace ColorVision.Properties {
         public static string CopilotProtocol {
             get {
                 return ResourceManager.GetString("CopilotProtocol", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 最近日志 的本地化字符串。
-        /// </summary>
-        public static string CopilotRecentLogs {
-            get {
-                return ResourceManager.GetString("CopilotRecentLogs", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 最近 N 行 的本地化字符串。
-        /// </summary>
-        public static string CopilotRecentNLines {
-            get {
-                return ResourceManager.GetString("CopilotRecentNLines", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 刷新日志 的本地化字符串。
-        /// </summary>
-        public static string CopilotRefreshLog {
-            get {
-                return ResourceManager.GetString("CopilotRefreshLog", resourceCulture);
             }
         }
         
@@ -664,29 +574,11 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 当日日志 的本地化字符串。
-        /// </summary>
-        public static string CopilotTodayLog {
-            get {
-                return ResourceManager.GetString("CopilotTodayLog", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 工具轮次 的本地化字符串。
         /// </summary>
         public static string CopilotToolRounds {
             get {
                 return ResourceManager.GetString("CopilotToolRounds", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 ColorVision 捕获到未处理异常 的本地化字符串。
-        /// </summary>
-        public static string CopilotUnhandledException {
-            get {
-                return ResourceManager.GetString("CopilotUnhandledException", resourceCulture);
             }
         }
         

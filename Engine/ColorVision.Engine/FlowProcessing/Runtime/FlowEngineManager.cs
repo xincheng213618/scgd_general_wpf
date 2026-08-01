@@ -3,6 +3,7 @@ using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.FlowProcessing.Editor;
 using ColorVision.Engine.FlowProcessing.Integration;
+using ColorVision.Engine.FlowProcessing.PostProcess;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services.Logging;
 using ColorVision.Engine.Services.RC;
@@ -118,6 +119,12 @@ public sealed class FlowEngineManager : ViewModelBase
     public Task<FlowControlData?> RunFlowAsync(TemplateModel<FlowParam>? flowTemplate = null)
     {
         return View.RunFlowAndWaitAsync(flowTemplate);
+    }
+
+    public Task<FlowRunFinalizedData?> RunFlowAndWaitForFinalizationAsync(
+        TemplateModel<FlowParam>? flowTemplate = null)
+    {
+        return View.RunFlowAndWaitForFinalizationAsync(flowTemplate);
     }
 
     public Task RefreshFlowAsync()

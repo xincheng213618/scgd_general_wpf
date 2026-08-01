@@ -321,6 +321,33 @@ namespace ColorVision.UI.Tests
         }
 
         [Fact]
+        public void PropertyEditorPanel_LongContentDoesNotExceedMaximumWidth()
+        {
+            RunInSta(() =>
+            {
+                using var canvas = new FlowEditorCanvas();
+                canvas.NodePropertyPanel.Children.Add(new System.Windows.Controls.TextBox
+                {
+                    Text = new string('W', 200),
+                    Width = 2000
+                });
+                canvas.NodePropertyPanelContainer.Visibility = System.Windows.Visibility.Visible;
+
+                canvas.Measure(new System.Windows.Size(1200, 800));
+                canvas.Arrange(new System.Windows.Rect(0, 0, 1200, 800));
+                canvas.UpdateLayout();
+
+                Assert.Equal(
+                    FlowEditorCanvas.PropertyPanelMaxWidth,
+                    canvas.NodePropertyPanelContainer.MaxWidth);
+                Assert.InRange(
+                    canvas.NodePropertyPanelContainer.ActualWidth,
+                    0,
+                    FlowEditorCanvas.PropertyPanelMaxWidth);
+            });
+        }
+
+        [Fact]
         public void NodeMovement_HidesEmbeddedPropertyEditor()
         {
             RunInSta(() =>
@@ -495,6 +522,67 @@ namespace ColorVision.UI.Tests
                 editor.FitCanvasToNodes(0.85f);
 
                 Assert.Equal(0.85f, editor.CanvasScale);
+            });
+        }
+
+        [Fact]
+        public void FlowEditorResize_PreservesFittedCanvasCenterAndScale()
+        {
+            RunInSta(() =>
+            {
+                using var canvas = new FlowEditorCanvas();
+                canvas.Measure(new System.Windows.Size(1600, 900));
+                canvas.Arrange(new System.Windows.Rect(0, 0, 1600, 900));
+                canvas.UpdateLayout();
+
+                STNodeEditor editor = canvas.NodeEditor;
+                var node = new STNodeHub();
+                node.Create();
+                node.Left = 100;
+                node.Top = 100;
+                editor.Nodes.Add(node);
+                editor.FitCanvasToNodes(0.85f);
+                float fittedScale = editor.CanvasScale;
+
+                canvas.Measure(new System.Windows.Size(800, 450));
+                canvas.Arrange(new System.Windows.Rect(0, 0, 800, 450));
+                canvas.UpdateLayout();
+
+                float contentCenterX = editor.CanvasValidBounds.Left + editor.CanvasValidBounds.Width / 2f;
+                float contentCenterY = editor.CanvasValidBounds.Top + editor.CanvasValidBounds.Height / 2f;
+                Assert.Equal(fittedScale, editor.CanvasScale);
+                Assert.Equal(400f, contentCenterX * editor.CanvasScale + editor.CanvasOffsetX, 3);
+                Assert.Equal(225f, contentCenterY * editor.CanvasScale + editor.CanvasOffsetY, 3);
+            });
+        }
+
+        [Fact]
+        public void FlowEditorInitialLoad_FitsCanvasAfterFirstLayout()
+        {
+            RunInSta(() =>
+            {
+                using var canvas = new FlowEditorCanvas();
+                STNodeEditor editor = canvas.NodeEditor;
+                var node = new STNodeHub();
+                node.Create();
+                node.Left = 100;
+                node.Top = 100;
+                editor.Nodes.Add(node);
+                editor.MoveCanvas(5000f, -5000f, bAnimation: false, CanvasMoveArgs.All);
+
+                canvas.FitCanvasToNodesAfterLayout();
+                canvas.Measure(new System.Windows.Size(800, 450));
+                canvas.Arrange(new System.Windows.Rect(0, 0, 800, 450));
+                canvas.UpdateLayout();
+                Dispatcher.CurrentDispatcher.Invoke(
+                    DispatcherPriority.Background,
+                    new Action(() => { }));
+
+                float contentCenterX = editor.CanvasValidBounds.Left + editor.CanvasValidBounds.Width / 2f;
+                float contentCenterY = editor.CanvasValidBounds.Top + editor.CanvasValidBounds.Height / 2f;
+                Assert.Equal(400f, contentCenterX * editor.CanvasScale + editor.CanvasOffsetX, 3);
+                Assert.Equal(225f, contentCenterY * editor.CanvasScale + editor.CanvasOffsetY, 3);
+                Assert.InRange(editor.CanvasScale, 0.2f, 0.85f);
             });
         }
 

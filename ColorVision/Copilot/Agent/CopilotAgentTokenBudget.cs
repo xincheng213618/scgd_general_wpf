@@ -64,6 +64,7 @@ namespace ColorVision.Copilot
     {
         private readonly CopilotAgentTokenBudget _budget;
         private readonly Action<CopilotAgentBudgetSnapshot>? _onBudgetExhausted;
+        private readonly Action<CopilotAgentBudgetSnapshot>? _onBudgetChanged;
         private readonly object _syncRoot = new();
         private CopilotTokenUsage _usage;
         private int _providerCalls;
@@ -92,11 +93,13 @@ namespace ColorVision.Copilot
         public CopilotTokenBudgetChatClient(
             IChatClient innerClient,
             CopilotAgentTokenBudget budget,
-            Action<CopilotAgentBudgetSnapshot>? onBudgetExhausted = null)
+            Action<CopilotAgentBudgetSnapshot>? onBudgetExhausted = null,
+            Action<CopilotAgentBudgetSnapshot>? onBudgetChanged = null)
             : base(innerClient)
         {
             _budget = budget ?? throw new ArgumentNullException(nameof(budget));
             _onBudgetExhausted = onBudgetExhausted;
+            _onBudgetChanged = onBudgetChanged;
         }
 
         public CopilotAgentBudgetSnapshot Snapshot
@@ -111,6 +114,7 @@ namespace ColorVision.Copilot
         internal void RecordDelegatedRunUsage(CopilotDelegatedRunUsage delegatedRun)
         {
             ArgumentNullException.ThrowIfNull(delegatedRun);
+            CopilotAgentBudgetSnapshot snapshot;
             lock (_syncRoot)
             {
                 var delegatedProviderCalls = Math.Max(0, delegatedRun.ProviderCalls);
@@ -222,7 +226,9 @@ namespace ColorVision.Copilot
                 _usedEstimatedUsage |= delegatedRun.UsedEstimatedUsage;
                 if (_consumedTokens >= _budget.RequestTokenBudget)
                     _budgetExhausted = true;
+                snapshot = CreateSnapshot();
             }
+            PublishBudgetChanged(snapshot);
         }
 
         internal void RecordProviderRetry(CopilotProviderRetryInfo retry)
@@ -503,6 +509,7 @@ namespace ColorVision.Copilot
 
         private void CommitUsage(CopilotTokenUsage actualUsage, int estimatedTokens, bool requireEstimatedFloor = false)
         {
+            CopilotAgentBudgetSnapshot snapshot;
             lock (_syncRoot)
             {
                 var consumedTokens = Math.Max(1, estimatedTokens);
@@ -523,6 +530,20 @@ namespace ColorVision.Copilot
 
                 if (_consumedTokens >= _budget.RequestTokenBudget)
                     _budgetExhausted = true;
+                snapshot = CreateSnapshot();
+            }
+            PublishBudgetChanged(snapshot);
+        }
+
+        private void PublishBudgetChanged(CopilotAgentBudgetSnapshot snapshot)
+        {
+            try
+            {
+                _onBudgetChanged?.Invoke(snapshot);
+            }
+            catch (Exception ex)
+            {
+                Trace.TraceWarning($"Copilot budget observer failed: {ex.Message}");
             }
         }
 

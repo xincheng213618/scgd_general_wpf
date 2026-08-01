@@ -66,8 +66,14 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(request);
             if (tool.Capability.Access == CopilotToolAccess.ReadOnly)
                 return true;
+            if (request.Mode == CopilotAgentMode.Review
+                && tool is CopilotWorkspaceValidationTool
+                && CopilotToolIntentPolicy.NeedsWorkspaceValidation(request))
+            {
+                return true;
+            }
 
-            return request.Mode is not (CopilotAgentMode.Review or CopilotAgentMode.Diagnose)
+            return !CopilotToolIntentPolicy.IsReadOnlyMode(request.Mode)
                 && !CopilotToolIntentPolicy.ExplicitlyDisallowsWriteAccess(request);
         }
 
@@ -107,7 +113,8 @@ namespace ColorVision.Copilot
 
         internal static ICopilotTool[] CreateCoreDefaultTools()
         {
-            var workspacePatchStore = new CopilotWorkspacePatchStore();
+            var workspacePatchStore = new CopilotWorkspacePatchStore(
+                CopilotWorkspaceChangeSetCheckpointStore.CreateDefault());
             var applicationCapabilities = CopilotApplicationCapabilityInvokerFactory.CreateDefault();
             return new ICopilotTool[]
             {
@@ -144,6 +151,15 @@ namespace ColorVision.Copilot
                 new CopilotInspectGitWorkingTreeTool(),
                 new CopilotInspectGitDiffTool(),
                 new CopilotShellCommandTool(),
+                new CopilotReadShellCommandOutputTool(),
+                new CopilotStartBackgroundShellCommandTool(),
+                new CopilotInspectBackgroundShellCommandsTool(),
+                new CopilotReadBackgroundShellCommandOutputTool(),
+                new CopilotMonitorBackgroundShellCommandOutputTool(),
+                new CopilotStopBackgroundShellCommandOutputMonitorTool(),
+                new CopilotWaitForBackgroundShellCommandTool(),
+                new CopilotWaitForBackgroundShellCommandsTool(),
+                new CopilotStopBackgroundShellCommandTool(),
                 new CopilotPreviewWorkspacePatchEnvelopeTool(workspacePatchStore),
                 new CopilotApplyWorkspacePatchEnvelopeTool(workspacePatchStore),
                 new CopilotRollbackWorkspacePatchEnvelopeTool(workspacePatchStore),

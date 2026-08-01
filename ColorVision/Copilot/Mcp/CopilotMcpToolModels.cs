@@ -214,6 +214,8 @@ namespace ColorVision.Copilot.Mcp
 
         public Func<CopilotAgentTaskEventJournalContext?> TaskEventJournalProvider { get; init; } = () => CopilotAgentTaskEventJournalRegistry.Current;
 
+        public Func<long> CapabilityRevisionProvider { get; init; } = () => CopilotCapabilityCatalog.Shared.GetSnapshot().Revision;
+
         public Func<CancellationToken, Task<CopilotFlowContextSnapshot?>> FlowSnapshotProvider { get; init; } = CreateDefaultFlowSnapshotAsync;
 
         public Func<string?, int, CancellationToken, Task<CopilotFlowNodeCatalogSnapshot?>> FlowNodeCatalogProvider { get; init; } = CreateDefaultFlowNodeCatalogAsync;

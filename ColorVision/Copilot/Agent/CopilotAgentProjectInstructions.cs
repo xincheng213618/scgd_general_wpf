@@ -144,6 +144,31 @@ namespace ColorVision.Copilot
             return builder.ToString().TrimEnd();
         }
 
+        internal static string? FindExistingSharedInstructionPath(string? rootPath)
+        {
+            if (string.IsNullOrWhiteSpace(rootPath))
+                return null;
+
+            try
+            {
+                var normalizedRoot = Path.GetFullPath(rootPath);
+                if (!Directory.Exists(normalizedRoot))
+                    return null;
+
+                foreach (var fallbackPath in SharedInstructionFileFallbackPaths)
+                {
+                    var candidatePath = Path.GetFullPath(Path.Combine(normalizedRoot, fallbackPath));
+                    if (File.Exists(candidatePath) || Directory.Exists(candidatePath))
+                        return candidatePath;
+                }
+            }
+            catch
+            {
+            }
+
+            return null;
+        }
+
         private static List<InstructionCandidate> BuildCandidatePaths(
             IEnumerable<string>? searchRootPaths,
             string? activeDocumentPath,

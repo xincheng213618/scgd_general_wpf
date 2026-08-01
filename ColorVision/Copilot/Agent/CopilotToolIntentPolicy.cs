@@ -354,6 +354,34 @@ namespace ColorVision.Copilot
             "batch convert", "batch process", "convert all", "process all files",
         };
 
+        private static readonly string[] BackgroundShellExecutionMarkers =
+        {
+            "后台运行", "后台启动", "后台执行", "放到后台", "在后台运行", "在后台启动", "后台命令",
+            "到后台",
+            "开发服务器", "监听服务", "持续监听", "长时间运行",
+            "run in background", "start in background", "execute in background", "background command",
+            "in background", "in the background",
+            "background process", "background server", "dev server", "development server",
+            "long-running command", "long running command",
+        };
+
+        private static readonly string[] BackgroundShellInspectionMarkers =
+        {
+            "查看后台", "后台状态", "后台输出", "后台日志", "后台进程", "运行状态", "看看输出", "查看输出",
+            "等待后台", "等后台", "等待输出", "等它就绪", "等服务就绪",
+            "check background", "background status", "background output", "background log",
+            "background process", "is it running", "check its output", "show its output",
+            "wait for background", "wait for output", "wait until ready", "wait for it",
+        };
+
+        private static readonly string[] BackgroundShellStopMarkers =
+        {
+            "停止后台", "终止后台", "关闭后台", "结束后台", "停掉后台", "杀掉后台",
+            "stop background", "terminate background", "kill background", "stop the background",
+            "stop bg:", "terminate bg:", "kill bg:",
+            "stop it", "terminate it", "kill it",
+        };
+
         private static readonly string[] BatchImageMarkers =
         {
             "CVRAW", "CVCIE", "图像", "图片", "批量执行算法",
@@ -499,15 +527,17 @@ namespace ColorVision.Copilot
         {
             if (request == null
                 || request.Mode == CopilotAgentMode.Chat
-                || request.Mode == CopilotAgentMode.Review
-                || ExplicitlyDisallowsWriteAccess(request)
                 || request.WritableLocalRootPaths.Count == 0
                 || ContainsAny(request.UserText, WorkspaceValidationExplanationMarkers))
             {
                 return false;
             }
 
-            return ContainsAny(request.UserText, WorkspaceValidationMarkers);
+            var explicitlyRequestsValidation = ContainsAny(request.UserText, WorkspaceValidationMarkers);
+            if (request.Mode == CopilotAgentMode.Review)
+                return explicitlyRequestsValidation;
+
+            return explicitlyRequestsValidation && !ExplicitlyDisallowsWriteAccess(request);
         }
 
         public static bool NeedsPublicWebSearch(CopilotAgentRequest? request)
@@ -683,6 +713,43 @@ namespace ColorVision.Copilot
                     && !NeedsBatchImageProcessing(request);
         }
 
+        public static bool NeedsBackgroundShellExecution(CopilotAgentRequest? request)
+        {
+            return NeedsShellExecution(request)
+                && MatchesCurrentOrContinuation(
+                    request!,
+                    BackgroundShellExecutionMarkers,
+                    "StartBackgroundShellCommand");
+        }
+
+        public static bool NeedsBackgroundShellInspection(CopilotAgentRequest? request)
+        {
+            return IsAgentRequest(request)
+                && (NeedsBackgroundShellExecution(request)
+                    || MatchesCurrentOrContinuation(
+                        request!,
+                        BackgroundShellInspectionMarkers,
+                        "StartBackgroundShellCommand",
+                        "InspectBackgroundShellCommands",
+                        "ReadBackgroundShellCommandOutput",
+                        "WaitForBackgroundShellCommand",
+                        "WaitForBackgroundShellCommands"));
+        }
+
+        public static bool NeedsBackgroundShellStop(CopilotAgentRequest? request)
+        {
+            return IsAgentRequest(request)
+                && !ExplicitlyDisallowsWriteAccess(request)
+                && MatchesCurrentOrContinuation(
+                    request!,
+                    BackgroundShellStopMarkers,
+                    "StartBackgroundShellCommand",
+                    "InspectBackgroundShellCommands",
+                    "ReadBackgroundShellCommandOutput",
+                    "WaitForBackgroundShellCommand",
+                    "WaitForBackgroundShellCommands");
+        }
+
         public static bool NeedsBatchImageProcessing(CopilotAgentRequest? request)
         {
             return IsAgentRequest(request)
@@ -708,6 +775,9 @@ namespace ColorVision.Copilot
             {
                 return false;
             }
+
+            if (request.Mode == CopilotAgentMode.Plan)
+                return true;
 
             if (request.Recovery != null || ContainsAny(request.UserText, ExplicitPlanningMarkers))
                 return true;
@@ -761,7 +831,14 @@ namespace ColorVision.Copilot
 
         internal static bool ExplicitlyDisallowsWriteAccess(CopilotAgentRequest? request)
         {
-            return request != null && ContainsAny(request.UserText, ExplicitReadOnlyRequestMarkers);
+            return request != null
+                && (IsReadOnlyMode(request.Mode)
+                    || ContainsAny(request.UserText, ExplicitReadOnlyRequestMarkers));
+        }
+
+        internal static bool IsReadOnlyMode(CopilotAgentMode mode)
+        {
+            return mode is CopilotAgentMode.Plan or CopilotAgentMode.Review or CopilotAgentMode.Diagnose;
         }
 
         internal static bool ExplicitlyRequiresDelegatedWorkspaceEvidence(CopilotAgentRequest? request)
@@ -827,6 +904,14 @@ namespace ColorVision.Copilot
         internal static bool IsShellExecutionTool(ICopilotTool? tool)
         {
             return string.Equals(tool?.Name, "RunShellCommand", StringComparison.OrdinalIgnoreCase);
+        }
+
+        internal static bool IsBackgroundShellExecutionTool(ICopilotTool? tool)
+        {
+            return string.Equals(
+                tool?.Name,
+                "StartBackgroundShellCommand",
+                StringComparison.OrdinalIgnoreCase);
         }
 
         internal static bool IsBatchImageProcessingTool(ICopilotTool? tool)

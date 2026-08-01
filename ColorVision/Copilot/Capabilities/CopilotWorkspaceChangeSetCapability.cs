@@ -14,8 +14,13 @@ namespace ColorVision.Copilot
         private const int MaxChangeSets = 8;
         private readonly Dictionary<string, WorkspaceChangeSetRecord> _changeSets = new(StringComparer.Ordinal);
 
-        private CopilotToolResult CreateChangeSetPreview(string[] previewIds, string toolName, int minimumFiles)
+        private CopilotToolResult CreateChangeSetPreview(
+            CopilotAgentRequest request,
+            string[] previewIds,
+            string toolName,
+            int minimumFiles)
         {
+            EnsureCheckpointRecordsLoaded();
             if (previewIds.Length < minimumFiles || previewIds.Length > MaxChangeSetFiles)
             {
                 return Failure(toolName, CopilotToolFailureKind.Validation,
@@ -63,6 +68,10 @@ namespace ColorVision.Copilot
                 {
                     ChangeSetId = "workspace-change-set:" + Guid.NewGuid().ToString("N"),
                     PreviewIds = previewIds,
+                    ConversationId = request.ConversationId?.Trim() ?? string.Empty,
+                    WorkspacePath = TryNormalizeWorkspaceIdentity(request.WorkspacePath, out var workspacePath)
+                        ? workspacePath
+                        : string.Empty,
                     CreatedAtUtc = now,
                     ExpiresAtUtc = records.Min(record => record.ExpiresAtUtc),
                     State = WorkspaceChangeSetState.Previewed,
@@ -108,6 +117,7 @@ namespace ColorVision.Copilot
             CopilotAgentToolInput input,
             bool rollback)
         {
+            EnsureCheckpointRecordsLoaded();
             if (!TryGetChangeSetId(input, out var changeSetId))
             {
                 return new CopilotToolApprovalPresentation(
@@ -179,6 +189,7 @@ namespace ColorVision.Copilot
                     "The workspace change-set identifier is missing.", "changeSetId is required.");
             }
 
+            EnsureCheckpointRecordsLoaded();
             WorkspaceChangeSetRecord changeSet;
             WorkspacePatchRecord[] records;
             lock (_syncRoot)
@@ -190,6 +201,12 @@ namespace ColorVision.Copilot
                     return Failure(toolName, CopilotToolFailureKind.NotFound,
                         "The workspace change set is unavailable or expired.",
                         "Prepare a fresh multi-file change-set preview before trying again.");
+                }
+                if (!MatchesCheckpointBinding(request, changeSet))
+                {
+                    return Failure(toolName, CopilotToolFailureKind.Authorization,
+                        "The workspace change set belongs to a different conversation or workspace.",
+                        "Use the original Copilot conversation and exact workspace that created this change set.");
                 }
 
                 var expectedChangeSetState = rollback ? WorkspaceChangeSetState.Applied : WorkspaceChangeSetState.Previewed;
@@ -468,15 +485,20 @@ namespace ColorVision.Copilot
             bool releaseReservations,
             IEnumerable<WorkspacePatchRecord> records)
         {
+            var recordArray = records.ToArray();
             lock (_syncRoot)
             {
                 changeSet.State = state;
                 if (releaseReservations)
                 {
-                    foreach (var record in records.Where(record => string.Equals(record.ChangeSetId, changeSet.ChangeSetId, StringComparison.Ordinal)))
+                    foreach (var record in recordArray.Where(record => string.Equals(record.ChangeSetId, changeSet.ChangeSetId, StringComparison.Ordinal)))
                         record.ChangeSetId = string.Empty;
                 }
             }
+            if (state == WorkspaceChangeSetState.Applied)
+                PersistCheckpoint(changeSet, recordArray);
+            else if (state is WorkspaceChangeSetState.RolledBack or WorkspaceChangeSetState.Invalidated)
+                DeleteCheckpoint(changeSet.ChangeSetId);
         }
 
         private bool AreAllChildrenInState(IEnumerable<WorkspacePatchRecord> records, WorkspacePatchState state)
@@ -498,6 +520,7 @@ namespace ColorVision.Copilot
                 {
                     ReleaseReservations(oldest);
                     _changeSets.Remove(oldest.ChangeSetId);
+                    DeleteCheckpoint(oldest.ChangeSetId);
                 }
             }
             _changeSets[changeSet.ChangeSetId] = changeSet;
@@ -509,6 +532,7 @@ namespace ColorVision.Copilot
             {
                 ReleaseReservations(changeSet);
                 _changeSets.Remove(changeSet.ChangeSetId);
+                DeleteCheckpoint(changeSet.ChangeSetId);
             }
         }
 
@@ -559,6 +583,8 @@ namespace ColorVision.Copilot
         {
             public string ChangeSetId { get; init; } = string.Empty;
             public string[] PreviewIds { get; init; } = Array.Empty<string>();
+            public string ConversationId { get; init; } = string.Empty;
+            public string WorkspacePath { get; init; } = string.Empty;
             public DateTimeOffset CreatedAtUtc { get; init; }
             public DateTimeOffset ExpiresAtUtc { get; init; }
             public WorkspaceChangeSetState State { get; set; }

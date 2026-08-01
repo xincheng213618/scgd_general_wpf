@@ -57,6 +57,87 @@ public sealed class CopilotAgentRecoveryPolicyTests
     }
 
     [Fact]
+    public void TruncatedCompletedRunOffersFinalAnswerOnlyRecovery()
+    {
+        var profile = CreateProfile();
+        var capabilitySnapshot = CopilotCapabilityCatalog.Shared.GetSnapshot();
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordRunStarted();
+        journal.RecordStop(CopilotAgentStopReason.Completed);
+        var checkpoint = CopilotAgentSessionCheckpoint.Create(
+            profile,
+            "{}",
+            capabilitySnapshot,
+            taskEventJournal: journal.Snapshot());
+        var message = new CopilotChatMessage(CopilotChatRole.Assistant, "Partial final answer")
+        {
+            AgentStopReason = CopilotAgentStopReason.Completed,
+            WasResponseInterrupted = true,
+        };
+
+        var decision = CopilotAgentRecoveryPolicy.Evaluate(
+            message,
+            checkpoint,
+            profile,
+            capabilitySnapshot);
+
+        Assert.NotNull(checkpoint);
+        Assert.True(message.HasRecoverableFinalAnswer);
+        Assert.True(message.HasRecoverableAgentTasks);
+        Assert.True(decision.IsAvailable);
+        Assert.Equal(CopilotAgentRecoveryMode.Finalize, decision.Request!.Mode);
+        Assert.Equal(CopilotAgentStopReason.Completed, decision.Request.PreviousStopReason);
+        Assert.True(decision.Request.PreviousResponseWasInterrupted);
+        Assert.Equal("重试最终回答", decision.ActionLabel);
+
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        conversation.AgentSessionCheckpoint = checkpoint;
+        conversation.Messages.Add(message);
+        var task = Assert.Single(CopilotAgentTaskIndex.Build([conversation]));
+        Assert.Equal(CopilotAgentTaskAttentionKind.IncompleteOutput, task.AttentionKind);
+        Assert.True(task.CanResume);
+        Assert.Equal("重试最终回答", task.RecoveryActionLabel);
+        Assert.Equal(message.AgentRecoveryToolTip, task.RecoveryToolTip);
+        Assert.Contains("最终回答恢复项", task.DismissConfirmationText, StringComparison.Ordinal);
+        Assert.Contains("原任务终态和审计证据仍保留", task.DismissToolTip, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void CompletedFinalizeRequestRequiresInterruptedResponseProof()
+    {
+        Assert.False(new CopilotAgentRecoveryRequest
+        {
+            Mode = CopilotAgentRecoveryMode.Finalize,
+            PreviousStopReason = CopilotAgentStopReason.Completed,
+        }.IsStructurallyValid());
+        Assert.True(new CopilotAgentRecoveryRequest
+        {
+            Mode = CopilotAgentRecoveryMode.Finalize,
+            PreviousStopReason = CopilotAgentStopReason.Completed,
+            PreviousResponseWasInterrupted = true,
+        }.IsStructurallyValid());
+    }
+
+    [Fact]
+    public void InterruptedStateRefreshesFinalAnswerRecoveryBindings()
+    {
+        var message = new CopilotChatMessage(CopilotChatRole.Assistant, "Partial final answer")
+        {
+            AgentStopReason = CopilotAgentStopReason.Completed,
+        };
+        var changedProperties = new List<string>();
+        message.PropertyChanged += (_, args) => changedProperties.Add(args.PropertyName ?? string.Empty);
+
+        message.WasResponseInterrupted = true;
+
+        Assert.True(message.HasRecoverableFinalAnswer);
+        Assert.Contains(nameof(CopilotChatMessage.HasRecoverableFinalAnswer), changedProperties);
+        Assert.Contains(nameof(CopilotChatMessage.HasRecoverableAgentTasks), changedProperties);
+        Assert.Contains(nameof(CopilotChatMessage.AgentRecoveryActionLabel), changedProperties);
+        Assert.Contains(nameof(CopilotChatMessage.AgentRecoveryToolTip), changedProperties);
+    }
+
+    [Fact]
     public void ProviderFailureWithIncompleteTasksKeepsResumeEntryPoint()
     {
         var profile = CreateProfile();
@@ -100,6 +181,43 @@ public sealed class CopilotAgentRecoveryPolicyTests
         Assert.True(decision.IsAvailable);
         Assert.Equal(CopilotAgentRecoveryMode.Resume, decision.Request!.Mode);
         Assert.Equal("继续任务", decision.ActionLabel);
+    }
+
+    [Fact]
+    public void HookSurfaceDriftChangesResumeEntryPointToReplan()
+    {
+        var profile = CreateProfile();
+        var capabilitySnapshot = CopilotCapabilityCatalog.Shared.GetSnapshot();
+        var registry = new CopilotToolExecutionHookRegistry();
+        var executor = new CopilotToolExecutor(registry);
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordRunStarted();
+        journal.RecordStop(CopilotAgentStopReason.Paused);
+        var checkpoint = CopilotAgentSessionCheckpoint.Create(
+            profile,
+            "{}",
+            capabilitySnapshot,
+            taskEventJournal: journal.Snapshot(),
+            hookSurfaceSnapshot: executor.GetHookSurfaceSnapshot());
+        var message = new CopilotChatMessage(CopilotChatRole.Assistant, "Paused")
+        {
+            AgentStopReason = CopilotAgentStopReason.Paused,
+        };
+        using var registration = registry.Register(
+            "test:recovery-drift",
+            new NoOpHook(),
+            "^RecoveryProbe$");
+
+        var decision = CopilotAgentRecoveryPolicy.Evaluate(
+            message,
+            checkpoint,
+            profile,
+            capabilitySnapshot,
+            executor.GetHookSurfaceSnapshot());
+
+        Assert.True(decision.IsAvailable);
+        Assert.Equal(CopilotAgentRecoveryMode.Replan, decision.Request!.Mode);
+        Assert.Equal("重新规划", decision.ActionLabel);
     }
 
     [Fact]
@@ -199,5 +317,22 @@ public sealed class CopilotAgentRecoveryPolicyTests
             Model = "test-model",
             MaxTokens = 4_096,
         };
+    }
+
+    private sealed class NoOpHook : ICopilotToolExecutionHook
+    {
+        public Task<CopilotToolExecutionHookDecision> BeforeExecuteAsync(
+            CopilotToolExecutionHookContext context,
+            CancellationToken cancellationToken)
+        {
+            return Task.FromResult(CopilotToolExecutionHookDecision.Proceed);
+        }
+
+        public Task AfterExecuteAsync(
+            CopilotToolExecutionOutcome outcome,
+            CancellationToken cancellationToken)
+        {
+            return Task.CompletedTask;
+        }
     }
 }

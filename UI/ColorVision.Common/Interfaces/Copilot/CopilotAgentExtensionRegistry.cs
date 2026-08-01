@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -22,6 +23,7 @@ namespace ColorVision.UI
         Code,
         Review,
         Diagnose,
+        Plan,
     }
 
     public sealed class CopilotModuleToolRequest
@@ -98,6 +100,9 @@ namespace ColorVision.UI
         public IReadOnlyList<ICopilotContextProvider> ContextProviders { get; init; } = Array.Empty<ICopilotContextProvider>();
 
         public IReadOnlyList<ICopilotModuleTool> Tools { get; init; } = Array.Empty<ICopilotModuleTool>();
+
+        public IReadOnlyList<ICopilotModuleToolExecutionHook> ToolExecutionHooks { get; init; } =
+            Array.Empty<ICopilotModuleToolExecutionHook>();
     }
 
     public sealed class CopilotAgentExtensionDescriptor
@@ -108,6 +113,7 @@ namespace ColorVision.UI
             string sourceVersion,
             IReadOnlyList<ICopilotContextProvider> contextProviders,
             IReadOnlyList<ICopilotModuleTool> tools,
+            IReadOnlyList<ICopilotModuleToolExecutionHook> toolExecutionHooks,
             string registrationToken)
         {
             SourceId = sourceId;
@@ -115,6 +121,7 @@ namespace ColorVision.UI
             SourceVersion = sourceVersion;
             ContextProviders = contextProviders;
             Tools = tools;
+            ToolExecutionHooks = toolExecutionHooks;
             RegistrationToken = registrationToken;
         }
 
@@ -127,6 +134,8 @@ namespace ColorVision.UI
         public IReadOnlyList<ICopilotContextProvider> ContextProviders { get; }
 
         public IReadOnlyList<ICopilotModuleTool> Tools { get; }
+
+        public IReadOnlyList<ICopilotModuleToolExecutionHook> ToolExecutionHooks { get; }
 
         internal string RegistrationToken { get; }
     }
@@ -149,6 +158,8 @@ namespace ColorVision.UI
         public int ContextProviderCount { get; init; }
 
         public int ToolCount { get; init; }
+
+        public int ToolExecutionHookCount { get; init; }
     }
 
     public sealed class CopilotAgentExtensionRegistry
@@ -160,6 +171,10 @@ namespace ColorVision.UI
         private const int MaximumToolNameLength = 64;
         private const int MaximumToolDescriptionLength = 800;
         private const int MaximumInputSchemaLength = 32_768;
+        private const int MaximumToolExecutionHooks = 128;
+        private const int MaximumHooksPerExtension = 16;
+        private const int MaximumHookNameLength = 64;
+        private const int MaximumHookPatternLength = 512;
         private readonly Dictionary<string, CopilotAgentExtensionDescriptor> _extensions = new(StringComparer.OrdinalIgnoreCase);
         private readonly object _syncRoot = new();
         private long _revision;
@@ -187,6 +202,13 @@ namespace ColorVision.UI
                 var conflictingToolName = descriptor.Tools.Select(tool => tool.Name.Trim()).FirstOrDefault(existingToolNames.Contains);
                 if (!string.IsNullOrWhiteSpace(conflictingToolName))
                     throw new InvalidOperationException($"Copilot module tool '{conflictingToolName}' is already registered by another extension.");
+                var prospectiveHookCount = _extensions.Values.Sum(extension => extension.ToolExecutionHooks.Count)
+                    + descriptor.ToolExecutionHooks.Count;
+                if (prospectiveHookCount > MaximumToolExecutionHooks)
+                {
+                    throw new InvalidOperationException(
+                        $"The Copilot Agent extension registry reached its {MaximumToolExecutionHooks}-hook limit.");
+                }
 
                 var previousRevision = _revision;
                 _extensions.Add(descriptor.SourceId, descriptor);
@@ -249,6 +271,7 @@ namespace ColorVision.UI
                 ExtensionCount = _extensions.Count,
                 ContextProviderCount = _extensions.Values.Sum(extension => extension.ContextProviders.Count),
                 ToolCount = _extensions.Values.Sum(extension => extension.Tools.Count),
+                ToolExecutionHookCount = _extensions.Values.Sum(extension => extension.ToolExecutionHooks.Count),
             };
         }
 
@@ -259,20 +282,45 @@ namespace ColorVision.UI
             var sourceVersion = NormalizeOptionalText(registration.SourceVersion, MaximumSourceVersionLength);
             var contextProviders = (registration.ContextProviders ?? Array.Empty<ICopilotContextProvider>()).ToArray();
             var tools = (registration.Tools ?? Array.Empty<ICopilotModuleTool>()).ToArray();
+            var toolExecutionHooks = (registration.ToolExecutionHooks ?? Array.Empty<ICopilotModuleToolExecutionHook>()).ToArray();
             if (contextProviders.Any(provider => provider == null))
                 throw new ArgumentException("An Agent extension context provider cannot be null.", nameof(registration));
             if (tools.Any(tool => tool == null))
                 throw new ArgumentException("An Agent extension tool cannot be null.", nameof(registration));
-            if (contextProviders.Length == 0 && tools.Length == 0)
-                throw new ArgumentException("An Agent extension must provide at least one context provider or module tool.", nameof(registration));
+            if (toolExecutionHooks.Any(hook => hook == null))
+                throw new ArgumentException("An Agent extension tool execution hook cannot be null.", nameof(registration));
+            if (toolExecutionHooks.Length > MaximumHooksPerExtension)
+            {
+                throw new ArgumentException(
+                    $"An Agent extension may declare at most {MaximumHooksPerExtension} tool execution hooks.",
+                    nameof(registration));
+            }
+            if (contextProviders.Length == 0 && tools.Length == 0 && toolExecutionHooks.Length == 0)
+            {
+                throw new ArgumentException(
+                    "An Agent extension must provide at least one context provider, module tool, or tool execution hook.",
+                    nameof(registration));
+            }
 
             foreach (var provider in contextProviders)
                 _ = provider.Order;
             foreach (var tool in tools)
                 ValidateTool(tool);
+            foreach (var hook in toolExecutionHooks)
+                ValidateToolExecutionHook(hook);
             var duplicateToolName = tools.GroupBy(tool => tool.Name.Trim(), StringComparer.OrdinalIgnoreCase).FirstOrDefault(group => group.Count() > 1)?.Key;
             if (!string.IsNullOrWhiteSpace(duplicateToolName))
                 throw new ArgumentException($"Agent extension '{sourceId}' declares module tool '{duplicateToolName}' more than once.", nameof(registration));
+            var duplicateHookName = toolExecutionHooks
+                .GroupBy(hook => hook.Name.Trim(), StringComparer.OrdinalIgnoreCase)
+                .FirstOrDefault(group => group.Count() > 1)
+                ?.Key;
+            if (!string.IsNullOrWhiteSpace(duplicateHookName))
+            {
+                throw new ArgumentException(
+                    $"Agent extension '{sourceId}' declares tool execution hook '{duplicateHookName}' more than once.",
+                    nameof(registration));
+            }
 
             return new CopilotAgentExtensionDescriptor(
                 sourceId,
@@ -280,6 +328,7 @@ namespace ColorVision.UI
                 sourceVersion,
                 contextProviders,
                 tools,
+                toolExecutionHooks,
                 Guid.NewGuid().ToString("N"));
         }
 
@@ -309,6 +358,49 @@ namespace ColorVision.UI
             {
                 throw new ArgumentException($"Module tool '{name}' input schema is not valid JSON: {ex.Message}", ex);
             }
+        }
+
+        private static void ValidateToolExecutionHook(ICopilotModuleToolExecutionHook hook)
+        {
+            var name = hook.Name?.Trim() ?? string.Empty;
+            if (name.Length == 0 || name.Length > MaximumHookNameLength)
+            {
+                throw new ArgumentException(
+                    $"A module tool execution hook name must contain 1-{MaximumHookNameLength} characters.");
+            }
+            if (name.Any(character => !(character is >= 'a' and <= 'z'
+                or >= 'A' and <= 'Z'
+                or >= '0' and <= '9'
+                or '_'
+                or '-'
+                or '.')))
+            {
+                throw new ArgumentException(
+                    $"Module tool execution hook '{name}' may contain only ASCII letters, digits, '_', '-' and '.'.");
+            }
+
+            var pattern = string.IsNullOrWhiteSpace(hook.ToolNamePattern)
+                ? "*"
+                : hook.ToolNamePattern.Trim();
+            if (pattern.Length > MaximumHookPatternLength || pattern.Any(char.IsControl))
+            {
+                throw new ArgumentException(
+                    $"Module tool execution hook '{name}' matcher must be at most {MaximumHookPatternLength} visible characters.");
+            }
+            try
+            {
+                _ = new Regex(
+                    pattern == "*" ? ".*" : pattern,
+                    RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.NonBacktracking);
+            }
+            catch (Exception ex) when (ex is ArgumentException or NotSupportedException)
+            {
+                throw new ArgumentException(
+                    $"Module tool execution hook '{name}' matcher must be a valid non-backtracking regular expression.",
+                    ex);
+            }
+
+            _ = hook.Order;
         }
 
         private static string NormalizeSourceId(string sourceId)

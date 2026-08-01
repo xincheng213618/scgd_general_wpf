@@ -188,7 +188,8 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
                 TemplateName = dialog.SelectedTemplate.Key,
                 PostProcessor = dialog.SelectedProcess,
                 ConfigJson = config == null ? string.Empty : JsonConvert.SerializeObject(config),
-                Tag = dialog.MetaTag
+                Tag = dialog.MetaTag,
+                FailurePolicy = dialog.FailurePolicy
             };
             ProcessMetas.Add(meta);
             SelectedProcessMeta = meta;
@@ -216,7 +217,8 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
                 selectedMeta.Name,
                 selectedMeta.TemplateName,
                 selectedMeta.PostProcessor,
-                selectedMeta.Tag)
+                selectedMeta.Tag,
+                selectedMeta.FailurePolicy)
             {
                 Owner = Application.Current.GetActiveWindow(),
                 WindowStartupLocation = WindowStartupLocation.CenterOwner
@@ -238,6 +240,7 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
             selectedMeta.PostProcessor = dialog.SelectedProcess;
             selectedMeta.ConfigJson = config == null ? string.Empty : JsonConvert.SerializeObject(config);
             selectedMeta.Tag = dialog.MetaTag;
+            selectedMeta.FailurePolicy = dialog.FailurePolicy;
         }
 
         private bool CanMoveUp()
@@ -310,7 +313,8 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
                         TemplateName = item.TemplateName, 
                         PostProcessor = proc,
                         ConfigJson = item.ConfigJson,
-                        Tag = item.Tag
+                        Tag = item.Tag,
+                        FailurePolicy = item.FailurePolicy
                     };
                     
                     // Apply the stored config to the batch process
@@ -338,7 +342,8 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
                     TemplateName = m.TemplateName,
                     ProcessTypeFullName = m.PostProcessor?.GetType().FullName,
                     ConfigJson = m.ConfigJson,
-                    Tag = m.Tag
+                    Tag = m.Tag,
+                    FailurePolicy = m.FailurePolicy
                 }).ToList();
                 string json = JsonConvert.SerializeObject(list, Formatting.Indented);
                 File.WriteAllText(PersistFilePath, json);

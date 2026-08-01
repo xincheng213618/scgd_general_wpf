@@ -7,7 +7,6 @@ using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Drawing.Text;
 using System.IO;
-using System.IO.Compression;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -240,9 +239,11 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 
 	private WriteableBitmap m_render_target;
 
-	private bool m_disposed;
+	private volatile bool m_disposed;
 
 	private bool m_is_loaded;
+
+	internal bool IsDisposed => m_disposed;
 
 	[Browsable(false)]
 	public float CanvasOffsetX => _CanvasOffsetX;
@@ -2595,14 +2596,33 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 
 	public IAsyncResult BeginInvoke(Delegate method, params object[] args)
 	{
-		if (method == null || m_disposed)
+		if (method == null
+			|| m_disposed
+			|| Dispatcher.HasShutdownStarted
+			|| Dispatcher.HasShutdownFinished)
 		{
 			return null;
 		}
-		DispatcherOperation operation = Dispatcher.BeginInvoke(
-			DispatcherPriority.Normal,
-			new Action(() => method.DynamicInvoke(args ?? Array.Empty<object>())));
-		return operation.Task;
+		try
+		{
+			DispatcherOperation operation = Dispatcher.BeginInvoke(
+				DispatcherPriority.Normal,
+				new Action(() =>
+				{
+					if (!m_disposed)
+					{
+						method.DynamicInvoke(args ?? Array.Empty<object>());
+					}
+				}));
+			return operation.Task;
+		}
+		catch (InvalidOperationException) when (
+			m_disposed
+			|| Dispatcher.HasShutdownStarted
+			|| Dispatcher.HasShutdownFinished)
+		{
+			return null;
+		}
 	}
 
 	public object Invoke(Delegate method)
@@ -2978,47 +2998,13 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 
 	public void SaveCanvas(Stream s)
 	{
-		Dictionary<STNodeOption, long> dictionary = new Dictionary<STNodeOption, long>();
-		List<ConnectionInfo> connections = GetConnections().ToList();
-		s.Write(STNodeConstant.NodeFlag, 0, 4);
-		s.WriteByte(1);
-		using GZipStream gZipStream = new GZipStream(s, CompressionMode.Compress);
-		gZipStream.Write(BitConverter.GetBytes(_CanvasOffsetX), 0, 4);
-		gZipStream.Write(BitConverter.GetBytes(_CanvasOffsetY), 0, 4);
-		gZipStream.Write(BitConverter.GetBytes(_CanvasScale), 0, 4);
-		gZipStream.Write(BitConverter.GetBytes(_Nodes.Count), 0, 4);
-		foreach (STNode node in _Nodes)
-		{
-			try
-			{
-				byte[] saveData = node.GetSaveData();
-				gZipStream.Write(BitConverter.GetBytes(saveData.Length), 0, 4);
-				gZipStream.Write(saveData, 0, saveData.Length);
-				foreach (STNodeOption inputOption in node.GetAllInputOptions())
-				{
-					if (!dictionary.ContainsKey(inputOption))
-					{
-						dictionary.Add(inputOption, dictionary.Count);
-					}
-				}
-				foreach (STNodeOption outputOption in node.GetAllOutputOptions())
-				{
-					if (!dictionary.ContainsKey(outputOption))
-					{
-						dictionary.Add(outputOption, dictionary.Count);
-					}
-				}
-			}
-			catch (Exception innerException)
-			{
-				throw new Exception("获取节点数据出错-" + node.Title, innerException);
-			}
-		}
-		gZipStream.Write(BitConverter.GetBytes(connections.Count), 0, 4);
-		foreach (ConnectionInfo value in connections)
-		{
-			gZipStream.Write(BitConverter.GetBytes((dictionary[value.Output] << 32) | dictionary[value.Input]), 0, 8);
-		}
+		STNodeCanvasWriter.Write(
+			s,
+			_Nodes.Cast<STNode>(),
+			GetConnections(),
+			_CanvasOffsetX,
+			_CanvasOffsetY,
+			_CanvasScale);
 	}
 
 	public byte[] GetCanvasData()
@@ -3095,100 +3081,26 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 
 	private void LoadCanvasCore(Stream s)
 	{
-		int num = 0;
-		byte[] array = new byte[32];
-		s.Read(array, 0, 5);
-		if (!CheckHeader(array))
-		{
-			return;
-		}
-		using (GZipStream gZipStream = new GZipStream(s, CompressionMode.Decompress))
-		{
-			gZipStream.Read(array, 0, 16);
-			float num2 = BitConverter.ToSingle(array, 0);
-			float num3 = BitConverter.ToSingle(array, 4);
-			float f = BitConverter.ToSingle(array, 8);
-			int num4 = BitConverter.ToInt32(array, 12);
-			Dictionary<long, STNodeOption> dictionary = new Dictionary<long, STNodeOption>();
-			HashSet<STNodeOption> hashSet = new HashSet<STNodeOption>();
-			byte[] array2 = null;
-			for (int i = 0; i < num4; i++)
-			{
-				gZipStream.Read(array, 0, 4);
-				num = BitConverter.ToInt32(array, 0);
-				array2 = new byte[num];
-				gZipStream.Read(array2, 0, array2.Length);
-				STNode sTNode = null;
-				try
-				{
-					sTNode = GetNodeFromData(array2);
-				}
-				catch (Exception ex)
-				{
-					throw new Exception("加载节点时发生错误可能数据已损坏\r\n" + ex.Message, ex);
-				}
-				if (sTNode == null)
-				{
-					continue;
-				}
-				try
-				{
-					_Nodes.Add(sTNode);
-				}
-				catch (Exception innerException)
-				{
-					throw new Exception("加载节点出错-" + sTNode.Title, innerException);
-				}
-				foreach (STNodeOption inputOption in sTNode.InputOptions)
-				{
-					if (hashSet.Add(inputOption))
-					{
-						dictionary.Add(dictionary.Count, inputOption);
-					}
-				}
-				foreach (STNodeOption outputOption in sTNode.OutputOptions)
-				{
-					if (hashSet.Add(outputOption))
-					{
-						dictionary.Add(dictionary.Count, outputOption);
-					}
-				}
-			}
-			gZipStream.Read(array, 0, 4);
-			num4 = BitConverter.ToInt32(array, 0);
-			array2 = new byte[8];
-			for (int j = 0; j < num4; j++)
-			{
-				gZipStream.Read(array2, 0, array2.Length);
-				long num5 = BitConverter.ToInt64(array2, 0);
-				long key = num5 >> 32;
-				long key2 = (int)num5;
-				if (dictionary.ContainsKey(key) && dictionary.ContainsKey(key2))
-				{
-					dictionary[key].ConnectOption(dictionary[key2]);
-				}
-			}
-			ScaleCanvas(f, 0f, 0f);
-			MoveCanvas(num2, num3, bAnimation: false, CanvasMoveArgs.All);
-		}
+		STNodeCanvasReader.Document document = STNodeCanvasReader.Read(s);
+		document.ConnectDetachedNodes();
+
+		// Parsing and connection validation are complete before the live graph
+		// is replaced, so truncated/corrupt input cannot leave a half-loaded
+		// canvas behind.
+		_Nodes.Clear();
+		foreach (STNode node in document.Nodes)
+			_Nodes.Add(node);
+		ScaleCanvas(document.CanvasScale, 0f, 0f);
+		MoveCanvas(
+			document.CanvasOffsetX,
+			document.CanvasOffsetY,
+			bAnimation: false,
+			CanvasMoveArgs.All);
 		BuildBounds();
 		foreach (STNode node in _Nodes)
 		{
 			node.OnEditorLoadCompleted();
 		}
-	}
-
-	private bool CheckHeader(byte[] header)
-	{
-		if (BitConverter.ToInt32(header, 0) != STNodeConstant.NodeFlagInt)
-		{
-			throw new InvalidDataException("无法识别的文件类型");
-		}
-		if (header[4] != 1)
-		{
-			throw new InvalidDataException("无法识别的文件版本号");
-		}
-		return true;
 	}
 
 	internal STNode GetNodeFromData(byte[] byData)

@@ -68,6 +68,14 @@ namespace ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam
         public int Aperture { get => GetValue(_Aperture); set { SetProperty(ref _Aperture, value); } }
         private int _Aperture = -1;
 
+        public void SetAllExposure(float exposure)
+        {
+            ExpTime = exposure;
+            ExpTimeR = exposure;
+            ExpTimeG = exposure;
+            ExpTimeB = exposure;
+        }
+
     }
 
 }

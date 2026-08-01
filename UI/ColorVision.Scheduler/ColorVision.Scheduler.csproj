@@ -14,11 +14,11 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.8" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.10" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
-		<PackageReference Include="Quartz" Version="3.19.0" />
-		<PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.3" />
-		<PackageReference Include="SqlSugarCore" Version="5.1.4.214" />
+		<PackageReference Include="Quartz" Version="3.19.1" />
+		<PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.5" />
+		<PackageReference Include="SqlSugarCore" Version="5.1.4.216" />
 	</ItemGroup>
 
 	<ItemGroup>

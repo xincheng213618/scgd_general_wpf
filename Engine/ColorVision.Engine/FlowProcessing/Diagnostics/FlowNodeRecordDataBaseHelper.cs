@@ -16,11 +16,14 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
     public static class FlowNodeRecordDataBaseHelper
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(FlowNodeRecordDataBaseHelper));
-        private static bool _initialized;
+        private static volatile bool _initialized;
+        private static Exception? _initializationException;
+        private static DateTime _nextInitializationAttemptUtc;
         private static readonly object _initLock = new object();
+        private static readonly TimeSpan _synchronousWriteTimeout = TimeSpan.FromSeconds(5);
 
         // Shared persistent connection for the write queue
-        private static SqlSugarClient _sharedDb;
+        private static SqlSugarClient? _sharedDb;
         private static readonly BlockingCollection<Action<SqlSugarClient>> _writeQueue = new BlockingCollection<Action<SqlSugarClient>>();
         private static readonly ConcurrentDictionary<long, Task> _pendingWriteProducers = new ConcurrentDictionary<long, Task>();
         private static Thread _writerThread;
@@ -37,19 +40,42 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             });
         }
 
-        private static void EnsureInitialized()
+        private static bool EnsureInitialized()
         {
-            if (_initialized) return;
+            if (_initialized) return true;
+            if (_initializationException != null
+                && DateTime.UtcNow < _nextInitializationAttemptUtc)
+            {
+                return false;
+            }
+
             lock (_initLock)
             {
-                if (_initialized) return;
+                if (_initialized) return true;
+                if (_initializationException != null
+                    && DateTime.UtcNow < _nextInitializationAttemptUtc)
+                {
+                    return false;
+                }
+
                 try
                 {
-                    _sharedDb = CreateDb();
-                    _sharedDb.CodeFirst.InitTables<FlowNodeRecord>();
-                    _sharedDb.CodeFirst.InitTables<FlowNodeMessage>();
-                    _sharedDb.CodeFirst.InitTables<FlowRunRecord>();
+                    SqlSugarClient sharedDb = CreateDb();
+                    FlowDiagnosticsSchemaMigrator.EnsureSchema(sharedDb);
 
+                    DatabaseBrowserProviderRegistry.Register(new SqliteDatabaseBrowserProvider(
+                        "sqlite.flownoderecords",
+                        "流程节点记录",
+                        () => ConfigService.Instance.GetRequiredService<FlowNodeRecordConfig>().SqliteDbPath,
+                        dbPath => new SqlSugarClient(new ConnectionConfig
+                        {
+                            ConnectionString = $"Data Source={dbPath}",
+                            DbType = DbType.Sqlite,
+                            IsAutoCloseConnection = true,
+                            InitKeyType = InitKeyType.Attribute
+                        })));
+
+                    _sharedDb = sharedDb;
                     _writerThread = new Thread(WriteLoop)
                     {
                         IsBackground = true,
@@ -58,22 +84,18 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                     _writerThread.Start();
 
                     _initialized = true;
-
-                        DatabaseBrowserProviderRegistry.Register(new SqliteDatabaseBrowserProvider(
-                            "sqlite.flownoderecords",
-                            "流程节点记录",
-                            () => ConfigService.Instance.GetRequiredService<FlowNodeRecordConfig>().SqliteDbPath,
-                            dbPath => new SqlSugarClient(new ConnectionConfig
-                            {
-                                ConnectionString = $"Data Source={dbPath}",
-                                DbType = DbType.Sqlite,
-                                IsAutoCloseConnection = true,
-                                InitKeyType = InitKeyType.Attribute
-                            })));
+                    _initializationException = null;
+                    _nextInitializationAttemptUtc = default;
+                    return true;
                 }
                 catch (Exception ex)
                 {
+                    _initializationException = ex;
+                    _nextInitializationAttemptUtc = DateTime.UtcNow.AddSeconds(30);
+                    _sharedDb?.Dispose();
+                    _sharedDb = null;
                     log.Error("初始化FlowNodeRecord表失败", ex);
+                    return false;
                 }
             }
         }
@@ -84,12 +106,47 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             {
                 try
                 {
-                    action(_sharedDb);
+                    SqlSugarClient? sharedDb = _sharedDb;
+                    if (sharedDb == null)
+                    {
+                        log.Error("FlowNodeRecord写入队列没有可用数据库连接。");
+                        continue;
+                    }
+                    action(sharedDb);
                 }
                 catch (Exception ex)
                 {
                     log.Error("FlowNodeRecord写入队列执行失败", ex);
                 }
+            }
+        }
+
+        internal static bool TryGetSynchronousWriteResult<T>(
+            Task<T> task,
+            TimeSpan timeout,
+            out T result)
+        {
+            ArgumentNullException.ThrowIfNull(task);
+            ArgumentOutOfRangeException.ThrowIfLessThan(
+                timeout,
+                TimeSpan.Zero);
+
+            try
+            {
+                if (!task.Wait(timeout))
+                {
+                    result = default!;
+                    return false;
+                }
+
+                result = task.GetAwaiter().GetResult();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                log.Error("等待流程诊断同步写入失败。", ex);
+                result = default!;
+                return false;
             }
         }
 
@@ -149,13 +206,15 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
 
         public static int Insert(FlowNodeRecord item)
         {
-            EnsureInitialized();
+            if (item == null || !EnsureInitialized())
+                return -1;
+
             try
             {
-                if (item == null) return -1;
                 // Use a temporary connection for synchronous insert (needs return value)
                 // but enqueue for hot path when called from Task.Run
-                var tcs = new TaskCompletionSource<int>();
+                var tcs = new TaskCompletionSource<int>(
+                    TaskCreationOptions.RunContinuationsAsynchronously);
                 _writeQueue.Add(db =>
                 {
                     try
@@ -170,7 +229,15 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                         tcs.TrySetResult(-1);
                     }
                 });
-                return tcs.Task.Result;
+                if (!TryGetSynchronousWriteResult(
+                    tcs.Task,
+                    _synchronousWriteTimeout,
+                    out int result))
+                {
+                    log.Error("插入FlowNodeRecord等待写入队列超时。");
+                    return -1;
+                }
+                return result;
             }
             catch (Exception ex)
             {
@@ -181,8 +248,8 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
 
         public static void Update(FlowNodeRecord item)
         {
-            EnsureInitialized();
-            if (item == null) return;
+            if (item == null || !EnsureInitialized())
+                return;
             _writeQueue.Add(db =>
             {
                 try
@@ -383,6 +450,58 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             }
         }
 
+        internal static FlowRunRecord? GetFlowRun(
+            int batchId,
+            string? serialNumber)
+        {
+            EnsureInitialized();
+            try
+            {
+                using var db = CreateReadDb();
+                if (!string.IsNullOrWhiteSpace(serialNumber))
+                {
+                    FlowRunRecord? exact = db.Queryable<FlowRunRecord>()
+                        .Where(item => item.BatchId == batchId)
+                        .Where(item => item.SerialNumber == serialNumber)
+                        .OrderByDescending(item => item.StartedTimeUtc)
+                        .First();
+                    if (exact != null)
+                        return exact;
+                }
+
+                return db.Queryable<FlowRunRecord>()
+                    .Where(item => item.BatchId == batchId)
+                    .OrderByDescending(item => item.StartedTimeUtc)
+                    .First();
+            }
+            catch (Exception ex)
+            {
+                log.Error("查询流程运行 journal 失败", ex);
+                return null;
+            }
+        }
+
+        internal static List<FlowExecutionEvent> GetExecutionEvents(
+            int runRecordId)
+        {
+            if (runRecordId <= 0 || !EnsureInitialized())
+                return new List<FlowExecutionEvent>();
+
+            try
+            {
+                using var db = CreateReadDb();
+                return db.Queryable<FlowExecutionEvent>()
+                    .Where(item => item.RunRecordId == runRecordId)
+                    .OrderBy(item => item.SequenceNo)
+                    .ToList();
+            }
+            catch (Exception ex)
+            {
+                log.Error("查询流程阶段事件失败", ex);
+                return new List<FlowExecutionEvent>();
+            }
+        }
+
         public static int RecordFlowRun(
             int templateId,
             string? flowName,
@@ -390,7 +509,9 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             FlowStatus status,
             long elapsedMs)
         {
-            EnsureInitialized();
+            if (!EnsureInitialized())
+                return -1;
+
             try
             {
                 var record = new FlowRunRecord
@@ -417,7 +538,15 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                         completion.TrySetResult(-1);
                     }
                 });
-                return completion.Task.Result;
+                if (!TryGetSynchronousWriteResult(
+                    completion.Task,
+                    _synchronousWriteTimeout,
+                    out int result))
+                {
+                    log.Error("插入流程运行记录等待写入队列超时。");
+                    return -1;
+                }
+                return result;
             }
             catch (Exception ex)
             {
@@ -462,6 +591,53 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 log.Error("查询相同流程历史执行记录失败", ex);
                 return new List<FlowRunRecord>();
             }
+        }
+
+        public static bool UpdateFlowRun(
+            int runRecordId,
+            FlowStatus status,
+            long elapsedMs)
+        {
+            if (runRecordId <= 0)
+                return false;
+
+            if (!EnsureInitialized())
+                return false;
+
+            var completion = new TaskCompletionSource<bool>(
+                TaskCreationOptions.RunContinuationsAsynchronously);
+            _writeQueue.Add(db =>
+            {
+                try
+                {
+                    DateTime completedTime = DateTime.Now;
+                    int affected = db.Updateable<FlowRunRecord>()
+                        .SetColumns(item => new FlowRunRecord
+                        {
+                            Status = status,
+                            ElapsedMs = Math.Max(0, elapsedMs),
+                            CompletedTime = completedTime,
+                            CompletedTimeUtc = completedTime.ToUniversalTime()
+                        })
+                        .Where(item => item.Id == runRecordId)
+                        .ExecuteCommand();
+                    completion.TrySetResult(affected > 0);
+                }
+                catch (Exception ex)
+                {
+                    log.Error("更新流程运行记录失败", ex);
+                    completion.TrySetResult(false);
+                }
+            });
+            if (!TryGetSynchronousWriteResult(
+                completion.Task,
+                _synchronousWriteTimeout,
+                out bool result))
+            {
+                log.Error("更新流程运行记录等待写入队列超时。");
+                return false;
+            }
+            return result;
         }
 
         public static FlowNodeRecord? GetLastByNodeId(string nodeId)
@@ -526,9 +702,11 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
 
         public static int InsertMessage(FlowNodeMessage item)
         {
-            EnsureInitialized();
-            if (item == null) return -1;
-            var tcs = new TaskCompletionSource<int>();
+            if (item == null || !EnsureInitialized())
+                return -1;
+
+            var tcs = new TaskCompletionSource<int>(
+                TaskCreationOptions.RunContinuationsAsynchronously);
             _writeQueue.Add(db =>
             {
                 try
@@ -543,13 +721,21 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                     tcs.TrySetResult(-1);
                 }
             });
-            return tcs.Task.Result;
+            if (!TryGetSynchronousWriteResult(
+                tcs.Task,
+                _synchronousWriteTimeout,
+                out int result))
+            {
+                log.Error("插入FlowNodeMessage等待写入队列超时。");
+                return -1;
+            }
+            return result;
         }
 
         public static void UpdateMessage(FlowNodeMessage item)
         {
-            EnsureInitialized();
-            if (item == null) return;
+            if (item == null || !EnsureInitialized())
+                return;
             _writeQueue.Add(db =>
             {
                 try
@@ -760,7 +946,8 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
 
         public static void DeleteAllMessages()
         {
-            EnsureInitialized();
+            if (!EnsureInitialized())
+                return;
             _writeQueue.Add(db =>
             {
                 try

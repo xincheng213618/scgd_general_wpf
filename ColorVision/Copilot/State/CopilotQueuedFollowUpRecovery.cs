@@ -9,6 +9,7 @@ namespace ColorVision.Copilot
     {
         internal const int MaximumIdentifierCharacters = 128;
         internal const int MaximumPromptCharacters = CopilotConversationHistoryWindow.MaximumContentCharacterLimit;
+        internal const int MaximumAttachments = 32;
 
         public string RunId { get; set; } = string.Empty;
 
@@ -16,15 +17,39 @@ namespace ColorVision.Copilot
 
         public string Prompt { get; set; } = string.Empty;
 
-        internal bool TryGetNormalized(out string runId, out string conversationId, out string prompt)
+        public CopilotComposerStash? ComposerState { get; set; }
+
+        public bool ShouldSerializeComposerState() => ComposerState?.HasContent == true;
+
+        internal bool TryGetNormalized(
+            out string runId,
+            out string conversationId,
+            out CopilotComposerStash composerState)
         {
             runId = (RunId ?? string.Empty).Trim();
             conversationId = (ConversationId ?? string.Empty).Trim();
-            prompt = (Prompt ?? string.Empty).Trim();
+            var prompt = string.IsNullOrWhiteSpace(ComposerState?.Text)
+                ? (Prompt ?? string.Empty).Trim()
+                : ComposerState.Text.Trim();
+            var attachments = ComposerState?.Attachments
+                ?? new ObservableCollection<CopilotAttachmentItem>();
+            composerState = CopilotComposerStash.Capture(
+                prompt,
+                prompt.Length,
+                Enum.IsDefined(ComposerState?.RequestMode ?? CopilotAgentMode.Auto)
+                    ? ComposerState?.RequestMode ?? CopilotAgentMode.Auto
+                    : CopilotAgentMode.Auto,
+                attachments);
             return runId.Length is > 0 and <= MaximumIdentifierCharacters
                 && conversationId.Length is > 0 and <= MaximumIdentifierCharacters
-                && prompt.Length is > 0 and <= MaximumPromptCharacters;
+                && prompt.Length is > 0 and <= MaximumPromptCharacters
+                && attachments.Count <= MaximumAttachments
+                && attachments.All(attachment => attachment != null);
         }
+
+        internal IEnumerable<CopilotAttachmentItem> EnumerateReferencedAttachments() =>
+            ComposerState?.Attachments?.Where(attachment => attachment != null)
+            ?? Enumerable.Empty<CopilotAttachmentItem>();
     }
 
     internal static class CopilotQueuedFollowUpRecovery
@@ -45,31 +70,41 @@ namespace ColorVision.Copilot
                 .Where(conversation => conversation != null && !string.IsNullOrWhiteSpace(conversation.Id))
                 .GroupBy(conversation => conversation.Id, StringComparer.Ordinal)
                 .ToDictionary(group => group.Key, group => group.First(), StringComparer.Ordinal);
-            var promptsByConversation = new Dictionary<string, List<string>>(StringComparer.Ordinal);
+            var recoveriesByConversation = new Dictionary<string, List<CopilotComposerStash>>(StringComparer.Ordinal);
             var seenRunIds = new HashSet<string>(StringComparer.Ordinal);
 
             foreach (var record in state.QueuedFollowUpRecoveries.Take(CopilotAgentTaskHost.MaximumQueuedRuns))
             {
                 if (record == null
-                    || !record.TryGetNormalized(out var runId, out var conversationId, out var prompt)
+                    || !record.TryGetNormalized(out var runId, out var conversationId, out var composerState)
                     || !seenRunIds.Add(runId)
                     || !conversationsById.ContainsKey(conversationId))
                 {
                     continue;
                 }
 
-                if (!promptsByConversation.TryGetValue(conversationId, out var prompts))
+                if (!recoveriesByConversation.TryGetValue(conversationId, out var recoveries))
                 {
-                    prompts = [];
-                    promptsByConversation.Add(conversationId, prompts);
+                    recoveries = [];
+                    recoveriesByConversation.Add(conversationId, recoveries);
                 }
-                prompts.Add(prompt);
+                recoveries.Add(composerState);
             }
 
-            foreach (var pair in promptsByConversation)
+            foreach (var pair in recoveriesByConversation)
             {
                 var conversation = conversationsById[pair.Key];
-                var restoredDraft = FormatRestoredDraft(pair.Value);
+                var recoveredModes = pair.Value
+                    .Select(recovery => recovery.RequestMode)
+                    .Distinct()
+                    .ToArray();
+                var hasExistingModeConflict = conversation.DraftRequestMode != CopilotAgentMode.Auto
+                    && recoveredModes.Any(mode => mode != conversation.DraftRequestMode);
+                var prompts = recoveredModes.Length <= 1 && !hasExistingModeConflict
+                    ? pair.Value.Select(recovery => recovery.Text).ToArray()
+                    : pair.Value.Select(recovery =>
+                        $"[{FormatMode(recovery.RequestMode)}] {recovery.Text}").ToArray();
+                var restoredDraft = FormatRestoredDraft(prompts);
                 if (string.IsNullOrWhiteSpace(restoredDraft))
                     continue;
 
@@ -79,6 +114,12 @@ namespace ColorVision.Copilot
                     conversation.DraftText = string.IsNullOrWhiteSpace(existingDraft)
                         ? restoredDraft
                         : existingDraft + Environment.NewLine + Environment.NewLine + restoredDraft;
+                }
+                RestoreAttachments(conversation, pair.Value);
+                if (conversation.DraftRequestMode == CopilotAgentMode.Auto
+                    && recoveredModes.Length == 1)
+                {
+                    conversation.DraftRequestMode = recoveredModes[0];
                 }
                 state.RecoveredQueuedFollowUpCount += pair.Value.Count;
             }
@@ -100,5 +141,46 @@ namespace ColorVision.Copilot
                     Environment.NewLine + Environment.NewLine,
                     prompts.Select((prompt, index) => $"{index + 1}. {prompt}"));
         }
+
+        private static void RestoreAttachments(
+            CopilotConversationRecord conversation,
+            IEnumerable<CopilotComposerStash> recoveries)
+        {
+            var identities = conversation.Attachments
+                .Where(attachment => attachment != null)
+                .Select(BuildAttachmentIdentity)
+                .ToHashSet(StringComparer.Ordinal);
+            foreach (var attachment in recoveries
+                .SelectMany(recovery => recovery.CreateAttachmentSnapshots()))
+            {
+                if (identities.Add(BuildAttachmentIdentity(attachment)))
+                    conversation.Attachments.Add(attachment);
+            }
+        }
+
+        private static string BuildAttachmentIdentity(CopilotAttachmentItem attachment)
+        {
+            if (!string.IsNullOrWhiteSpace(attachment.Id))
+                return "id:" + attachment.Id.Trim();
+
+            return string.Join(
+                "\0",
+                (int)attachment.Type,
+                attachment.Title,
+                attachment.Value,
+                attachment.Source);
+        }
+
+        private static string FormatMode(CopilotAgentMode mode) => mode switch
+        {
+            CopilotAgentMode.Chat => "Chat",
+            CopilotAgentMode.Explain => "Explain",
+            CopilotAgentMode.Web => "Web",
+            CopilotAgentMode.Code => "Code",
+            CopilotAgentMode.Review => "Review",
+            CopilotAgentMode.Diagnose => "Diagnose",
+            CopilotAgentMode.Plan => "Plan",
+            _ => "Auto",
+        };
     }
 }

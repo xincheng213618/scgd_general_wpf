@@ -20,6 +20,7 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
         public string MetaTag => _viewModel.Tag.Trim();
         public TemplateModel<FlowParam>? SelectedTemplate => _viewModel.SelectedTemplate;
         public IPostProcessor? SelectedProcess => _viewModel.SelectedProcess;
+        public PostProcessFailurePolicy FailurePolicy => _viewModel.FailurePolicy;
 
         public PostProcessMetaEditWindow(
             IEnumerable<TemplateModel<FlowParam>> templates,
@@ -28,7 +29,8 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
             string metaName = "",
             string templateName = "",
             IPostProcessor? process = null,
-            string tag = "")
+            string tag = "",
+            PostProcessFailurePolicy failurePolicy = PostProcessFailurePolicy.Warning)
         {
             InitializeComponent();
             Title = title;
@@ -39,6 +41,7 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
                 templateName,
                 process,
                 tag,
+                failurePolicy,
                 string.IsNullOrWhiteSpace(metaName) ? "新增后处理项" : "编辑后处理项");
             DataContext = _viewModel;
         }
@@ -108,6 +111,8 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
         public ObservableCollection<TemplateModel<FlowParam>> VisibleTemplates { get; } = new();
         public ObservableCollection<string> Categories { get; } = new();
         public ObservableCollection<PostProcessTypeOption> VisibleProcesses { get; } = new();
+        public IReadOnlyList<PostProcessFailurePolicy> FailurePolicies { get; } =
+            Enum.GetValues<PostProcessFailurePolicy>();
 
         public string PageTitle { get; }
 
@@ -136,6 +141,19 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
             }
         }
         private string _tag;
+
+        public PostProcessFailurePolicy FailurePolicy
+        {
+            get => _failurePolicy;
+            set
+            {
+                if (_failurePolicy == value)
+                    return;
+                _failurePolicy = value;
+                OnPropertyChanged();
+            }
+        }
+        private PostProcessFailurePolicy _failurePolicy;
 
         public TemplateModel<FlowParam>? SelectedTemplate
         {
@@ -204,12 +222,14 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
             string templateName,
             IPostProcessor? process,
             string tag,
+            PostProcessFailurePolicy failurePolicy,
             string pageTitle)
         {
             _allTemplates = templates.ToList();
             _allOptions = PostProcessTypeCatalog.CreateOptions(processes);
             _metaName = metaName;
             _tag = tag;
+            _failurePolicy = failurePolicy;
             PageTitle = pageTitle;
             _selectedTemplate = _allTemplates.FirstOrDefault(template => template.Key == templateName)
                 ?? (_allTemplates.Count > 0 ? _allTemplates[0] : null);

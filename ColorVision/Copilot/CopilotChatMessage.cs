@@ -50,7 +50,9 @@ namespace ColorVision.Copilot
 
         public bool HasAny => InputTokens > 0 || OutputTokens > 0 || TotalTokens > 0;
 
-        public int EffectiveTotalTokens => TotalTokens > 0 ? TotalTokens : Math.Max(0, InputTokens) + Math.Max(0, OutputTokens);
+        public int EffectiveTotalTokens => Math.Max(
+            Math.Max(0, TotalTokens),
+            AddClamped(InputTokens, OutputTokens));
 
         public int EffectiveCachedInputTokens => Math.Clamp(CachedInputTokens ?? 0, 0, Math.Max(0, InputTokens));
 
@@ -86,12 +88,13 @@ namespace ColorVision.Copilot
             if (!other.HasAny)
                 return this;
 
-            var inputTokens = Math.Max(0, InputTokens) + Math.Max(0, other.InputTokens);
-            var outputTokens = Math.Max(0, OutputTokens) + Math.Max(0, other.OutputTokens);
+            var inputTokens = AddClamped(InputTokens, other.InputTokens);
+            var outputTokens = AddClamped(OutputTokens, other.OutputTokens);
+            var totalTokens = AddClamped(EffectiveTotalTokens, other.EffectiveTotalTokens);
             int? cachedInputTokens = CachedInputTokens.HasValue || other.CachedInputTokens.HasValue
-                ? EffectiveCachedInputTokens + other.EffectiveCachedInputTokens
+                ? AddClamped(EffectiveCachedInputTokens, other.EffectiveCachedInputTokens)
                 : null;
-            return new CopilotTokenUsage(inputTokens, outputTokens, inputTokens + outputTokens, cachedInputTokens);
+            return new CopilotTokenUsage(inputTokens, outputTokens, totalTokens, cachedInputTokens);
         }
 
         public static string FormatCount(int value)
@@ -100,6 +103,13 @@ namespace ColorVision.Copilot
             return normalized >= 1000
                 ? $"{normalized / 1000d:0.#}k"
                 : normalized.ToString();
+        }
+
+        private static int AddClamped(int left, int right)
+        {
+            return (int)Math.Min(
+                int.MaxValue,
+                Math.Max(0L, left) + Math.Max(0L, right));
         }
     }
 
@@ -118,6 +128,18 @@ namespace ColorVision.Copilot
         internal const string CompressedRequestContentPrefix = "cv-request-gzip-v1:";
         internal const string ResponseTruncationMarker = "\n\n...<response truncated by app>";
         internal const string ReasoningTruncationMarker = "\n...<reasoning truncated by app>";
+        internal const string ResponseInterruptionModelMarker =
+            "<assistant_response_interrupted>\n"
+            + "The assistant turn ended before producing a complete response. Treat any retained text as partial context, not as a completed answer. "
+            + "Do not infer that unfinished steps, tool calls, file changes, or verification succeeded. Re-check current evidence before continuing.\n"
+            + "</assistant_response_interrupted>";
+        private const string IncompleteAgentOutcomeModelMarkerPrefix =
+            "<agent_turn_incomplete stop_reason=\"";
+        private const string IncompleteAgentOutcomeModelMarkerSuffix =
+            "\">\n"
+            + "The agent task did not reach a completed outcome. Treat any retained answer as a terminal status or partial result, not as evidence that remaining tasks, file changes, or verification succeeded. "
+            + "Re-check current evidence and the unresolved task state before continuing.\n"
+            + "</agent_turn_incomplete>";
         private const int MinimumRequestContentCompressionCharacters = 1_024;
         private const int MaximumCompressibleRequestContentCharacters = CopilotAgentSessionCheckpoint.MaxSerializedSessionCharacters;
         private const int MaximumResponseInterruptionDetailLength = 800;
@@ -147,6 +169,8 @@ namespace ColorVision.Copilot
                     OnPropertyChanged(nameof(IsUser));
                     OnPropertyChanged(nameof(Header));
                     OnPropertyChanged(nameof(HasResponseInterruption));
+                    OnPropertyChanged(nameof(HasCompletedPlan));
+                    OnPropertyChanged(nameof(HasAgentTaskState));
                 }
             }
         }
@@ -154,6 +178,22 @@ namespace ColorVision.Copilot
 
         [JsonIgnore]
         public bool IsUser => Role == CopilotChatRole.User;
+
+        [JsonIgnore]
+        public bool IsConversationFindMatch
+        {
+            get => _isConversationFindMatch;
+            private set => SetProperty(ref _isConversationFindMatch, value);
+        }
+        private bool _isConversationFindMatch;
+
+        [JsonIgnore]
+        public bool IsCurrentConversationFindMatch
+        {
+            get => _isCurrentConversationFindMatch;
+            private set => SetProperty(ref _isCurrentConversationFindMatch, value);
+        }
+        private bool _isCurrentConversationFindMatch;
 
         [JsonIgnore]
         public string Header => IsUser ? CopilotUiText.UserHeader : string.IsNullOrWhiteSpace(AssistantName) ? "AI" : AssistantName;
@@ -196,7 +236,19 @@ namespace ColorVision.Copilot
         }
         private string _content = string.Empty;
 
-        public bool IsResponseContentTruncated { get; set; }
+        public bool IsResponseContentTruncated
+        {
+            get => _isResponseContentTruncated;
+            set
+            {
+                if (SetProperty(ref _isResponseContentTruncated, value))
+                {
+                    OnPropertyChanged(nameof(HasCompletedPlan));
+                    OnPropertyChanged(nameof(HasAgentTaskState));
+                }
+            }
+        }
+        private bool _isResponseContentTruncated;
 
         public bool ShouldSerializeIsResponseContentTruncated() => IsResponseContentTruncated;
 
@@ -283,6 +335,11 @@ namespace ColorVision.Copilot
                     OnPropertyChanged(nameof(RetryActionToolTip));
                     OnPropertyChanged(nameof(RefreshActionToolTip));
                     OnPropertyChanged(nameof(ShowsRefreshAction));
+                    OnPropertyChanged(nameof(HasCompletedPlan));
+                    OnPropertyChanged(nameof(HasAgentTaskState));
+                    OnPropertyChanged(nameof(AgentTaskProgressLabel));
+                    OnPropertyChanged(nameof(AgentStopReasonLabel));
+                    OnPropertyChanged(nameof(AgentTaskSummaryToolTip));
                 }
             }
         }
@@ -319,6 +376,8 @@ namespace ColorVision.Copilot
                     OnPropertyChanged(nameof(HasThinkingTrace));
                     OnPropertyChanged(nameof(ThinkingHeader));
                     OnPropertyChanged(nameof(ThinkingSummaryToolTip));
+                    OnPropertyChanged(nameof(HasCompletedPlan));
+                    OnPropertyChanged(nameof(HasAgentTaskState));
                 }
             }
         }
@@ -335,6 +394,7 @@ namespace ColorVision.Copilot
                 {
                     OnPropertyChanged(nameof(HasResponseInterruption));
                     OnPropertyChanged(nameof(ResponseInterruptionText));
+                    OnAgentTaskStateChanged();
                 }
             }
         }
@@ -375,9 +435,33 @@ namespace ColorVision.Copilot
         }
 
         [JsonIgnore]
-        public string ModelContent => IsContentDisplayOnly
-            ? string.Empty
-            : string.IsNullOrWhiteSpace(RequestContent) ? Content : RequestContent;
+        public string ModelContent
+        {
+            get
+            {
+                var content = IsContentDisplayOnly
+                    ? string.Empty
+                    : string.IsNullOrWhiteSpace(RequestContent) ? Content : RequestContent;
+                if (IsUser)
+                    return content;
+                if (WasResponseInterrupted)
+                    return AppendModelMarker(content, ResponseInterruptionModelMarker);
+                if (RequestMode != CopilotAgentMode.Chat
+                    && AgentStopReason is not (CopilotAgentStopReason.None or CopilotAgentStopReason.Completed))
+                {
+                    var marker = IncompleteAgentOutcomeModelMarkerPrefix
+                        + AgentStopReason
+                        + IncompleteAgentOutcomeModelMarkerSuffix;
+                    return AppendModelMarker(content, marker);
+                }
+                return content;
+            }
+        }
+
+        private static string AppendModelMarker(string content, string marker) =>
+            string.IsNullOrWhiteSpace(content)
+                ? marker
+                : content.TrimEnd() + "\n\n" + marker;
 
         public string ExecutionContent
         {
@@ -477,6 +561,49 @@ namespace ColorVision.Copilot
 
         public bool ShouldSerializeAgentRunBudget() => HasAgentRunMetrics;
 
+        public int ReportedUsageInputTokens
+        {
+            get => _reportedUsageInputTokens;
+            set => _reportedUsageInputTokens = Math.Max(0, value);
+        }
+        private int _reportedUsageInputTokens;
+
+        public int ReportedUsageOutputTokens
+        {
+            get => _reportedUsageOutputTokens;
+            set => _reportedUsageOutputTokens = Math.Max(0, value);
+        }
+        private int _reportedUsageOutputTokens;
+
+        public int ReportedUsageTotalTokens
+        {
+            get => _reportedUsageTotalTokens;
+            set => _reportedUsageTotalTokens = Math.Max(0, value);
+        }
+        private int _reportedUsageTotalTokens;
+
+        public int? ReportedUsageCachedInputTokens
+        {
+            get => _reportedUsageCachedInputTokens;
+            set => _reportedUsageCachedInputTokens = value.HasValue ? Math.Max(0, value.Value) : null;
+        }
+        private int? _reportedUsageCachedInputTokens;
+
+        [JsonIgnore]
+        public CopilotTokenUsage ReportedUsage => new(
+            ReportedUsageInputTokens,
+            ReportedUsageOutputTokens,
+            ReportedUsageTotalTokens,
+            ReportedUsageCachedInputTokens);
+
+        public bool ShouldSerializeReportedUsageInputTokens() => ReportedUsageInputTokens > 0;
+
+        public bool ShouldSerializeReportedUsageOutputTokens() => ReportedUsageOutputTokens > 0;
+
+        public bool ShouldSerializeReportedUsageTotalTokens() => ReportedUsageTotalTokens > 0;
+
+        public bool ShouldSerializeReportedUsageCachedInputTokens() => ReportedUsageCachedInputTokens.HasValue;
+
         public IReadOnlyList<CopilotAgentBlockerSnapshot> AgentBlockers
         {
             get => _agentBlockers;
@@ -495,34 +622,88 @@ namespace ColorVision.Copilot
         public bool ShouldSerializeAgentBlockers() => AgentBlockers?.Count > 0;
 
         [JsonIgnore]
+        public CopilotUserQuestionSnapshot? UserQuestion
+        {
+            get => _userQuestion;
+            set
+            {
+                var normalized = value?.IsStructurallyValid() == true ? value : null;
+                if (SetProperty(ref _userQuestion, normalized))
+                {
+                    OnPropertyChanged(nameof(HasUserQuestion));
+                    OnPropertyChanged(nameof(HasPendingUserQuestion));
+                    OnPropertyChanged(nameof(HasResolvedUserQuestion));
+                    OnPropertyChanged(nameof(UserQuestionStatusText));
+                }
+            }
+        }
+        private CopilotUserQuestionSnapshot? _userQuestion;
+
+        [JsonIgnore]
+        public bool HasUserQuestion => !IsUser && UserQuestion != null;
+
+        [JsonIgnore]
+        public bool HasPendingUserQuestion => HasUserQuestion && UserQuestion!.IsPending;
+
+        [JsonIgnore]
+        public bool HasResolvedUserQuestion => HasUserQuestion && !UserQuestion!.IsPending;
+
+        [JsonIgnore]
+        public string UserQuestionStatusText => UserQuestion?.Resolution switch
+        {
+            CopilotUserQuestionResolution.Answered => "已回答：" + UserQuestion.Answer,
+            CopilotUserQuestionResolution.Cancelled => "问题已取消",
+            _ => "可选择一个选项，或在输入框中直接回答。",
+        };
+
+        [JsonIgnore]
         public CopilotAgentRecoveryRequest? RecoveryRequest { get; set; }
+
+        public bool IsAgentRecoveryDismissed
+        {
+            get => _isAgentRecoveryDismissed;
+            set
+            {
+                if (SetProperty(ref _isAgentRecoveryDismissed, value))
+                    OnAgentTaskStateChanged();
+            }
+        }
+        private bool _isAgentRecoveryDismissed;
+
+        public bool ShouldSerializeIsAgentRecoveryDismissed() => IsAgentRecoveryDismissed;
 
         [JsonIgnore]
         public bool HasAgentTaskLedger => !IsUser && AgentTaskLedger.TotalCount > 0;
 
         [JsonIgnore]
-        public bool HasAgentTaskState => !IsUser && (HasAgentTaskLedger || HasAgentBlockers || HasRecoverableAgentTasks);
+        public bool HasAgentTaskState => !IsUser && (HasAgentTaskLedger || HasAgentBlockers || HasRecoverableAgentTasks || HasCompletedPlan);
+
+        [JsonIgnore]
+        public bool HasCompletedPlan => CopilotPlanHandoff.IsCompletedPlan(this);
 
         [JsonIgnore]
         public bool HasIncompleteAgentTasks => HasAgentTaskLedger && AgentTaskLedger.RemainingCount > 0;
 
         [JsonIgnore]
-        public bool HasRecoverableFinalAnswer => !HasIncompleteAgentTasks
-            && (AgentStopReason == CopilotAgentStopReason.Interrupted
+        public bool HasRecoverableFinalAnswer => !IsAgentRecoveryDismissed
+            && !HasIncompleteAgentTasks
+            && ((WasResponseInterrupted && AgentStopReason == CopilotAgentStopReason.Completed)
+                || AgentStopReason == CopilotAgentStopReason.Interrupted
                 || (AgentStopReason is (CopilotAgentStopReason.IncompleteOutput
                         or CopilotAgentStopReason.BudgetExhausted
                         or CopilotAgentStopReason.ProviderFailure)
                     && AgentBlockers.Any(blocker => blocker?.Kind == CopilotAgentBlockerKind.ProviderOutput)));
 
         [JsonIgnore]
-        public bool HasRecoverableAgentTasks => (!IsUser && AgentStopReason == CopilotAgentStopReason.Paused)
-            || (HasIncompleteAgentTasks
-                && AgentStopReason is CopilotAgentStopReason.BudgetExhausted
-                    or CopilotAgentStopReason.TaskPassLimit
-                    or CopilotAgentStopReason.Paused
-                    or CopilotAgentStopReason.ProviderFailure)
-            || (HasIncompleteAgentTasks && AgentStopReason == CopilotAgentStopReason.Interrupted)
-            || HasRecoverableFinalAnswer;
+        public bool HasRecoverableAgentTasks => !IsAgentRecoveryDismissed
+            && ((!IsUser && AgentStopReason == CopilotAgentStopReason.Paused)
+                || (HasIncompleteAgentTasks
+                    && AgentStopReason is CopilotAgentStopReason.BudgetExhausted
+                        or CopilotAgentStopReason.TaskPassLimit
+                        or CopilotAgentStopReason.Paused
+                        or CopilotAgentStopReason.ProviderFailure)
+                || (HasIncompleteAgentTasks && AgentStopReason == CopilotAgentStopReason.Interrupted)
+                || HasRecoverableFinalAnswer);
 
         [JsonIgnore]
         public string AgentRecoveryActionLabel => HasRecoverableFinalAnswer
@@ -567,13 +748,16 @@ namespace ColorVision.Copilot
         public string AgentTaskModeLabel => string.Equals(AgentTaskLedger.Mode, "plan", StringComparison.OrdinalIgnoreCase) ? "计划" : "执行";
 
         [JsonIgnore]
-        public string AgentTaskProgressLabel => $"{AgentTaskLedger.CompletedCount}/{AgentTaskLedger.TotalCount} 已完成";
+        public string AgentTaskProgressLabel => RequestMode == CopilotAgentMode.Plan
+            ? $"{AgentTaskLedger.TotalCount} 个计划步骤"
+            : $"{AgentTaskLedger.CompletedCount}/{AgentTaskLedger.TotalCount} 已完成";
 
         [JsonIgnore]
         public string AgentStopReasonLabel => AgentStopReason switch
         {
             CopilotAgentStopReason.None when IsExecutionInProgress => "任务执行中",
             CopilotAgentStopReason.None when HasIncompleteAgentTasks => "任务尚未完成",
+            CopilotAgentStopReason.Completed when RequestMode == CopilotAgentMode.Plan => "计划已生成",
             CopilotAgentStopReason.Completed => "任务完成",
             CopilotAgentStopReason.AwaitingUser => "等待用户决定",
             CopilotAgentStopReason.ApprovalDenied => "审批未通过",
@@ -1116,7 +1300,11 @@ namespace ColorVision.Copilot
             get
             {
                 if (IsThinkingInProgress)
-                    return CopilotUiText.ProcessingHeader;
+                {
+                    return string.IsNullOrWhiteSpace(AgentRunCompactLabel)
+                        ? CopilotUiText.ProcessingHeader
+                        : $"{CopilotUiText.ProcessingHeader} · {AgentRunCompactLabel}";
+                }
 
                 var elapsed = FormatCompletedProcessingElapsed();
                 var header = string.IsNullOrWhiteSpace(elapsed)
@@ -1179,6 +1367,40 @@ namespace ColorVision.Copilot
             OnPropertyChanged(nameof(HasThinkingContent));
             OnPropertyChanged(nameof(ThinkingHeader));
             OnPropertyChanged(nameof(ThinkingSummaryToolTip));
+        }
+
+        internal void SetConversationFindState(bool isMatch, bool isCurrent)
+        {
+            IsConversationFindMatch = isMatch;
+            IsCurrentConversationFindMatch = isMatch && isCurrent;
+        }
+
+        internal bool SetReportedUsage(CopilotTokenUsage usage)
+        {
+            var inputTokens = Math.Max(0, usage.InputTokens);
+            var outputTokens = Math.Max(0, usage.OutputTokens);
+            var totalTokens = usage.HasAny ? usage.EffectiveTotalTokens : 0;
+            int? cachedInputTokens = usage.HasAny && usage.CachedInputTokens.HasValue
+                ? Math.Clamp(usage.CachedInputTokens.Value, 0, inputTokens)
+                : null;
+            if (ReportedUsageInputTokens == inputTokens
+                && ReportedUsageOutputTokens == outputTokens
+                && ReportedUsageTotalTokens == totalTokens
+                && ReportedUsageCachedInputTokens == cachedInputTokens)
+            {
+                return false;
+            }
+
+            ReportedUsageInputTokens = inputTokens;
+            ReportedUsageOutputTokens = outputTokens;
+            ReportedUsageTotalTokens = totalTokens;
+            ReportedUsageCachedInputTokens = cachedInputTokens;
+            return true;
+        }
+
+        internal bool ClearReportedUsage()
+        {
+            return SetReportedUsage(CopilotTokenUsage.Empty);
         }
 
         public bool EnsureValid()
@@ -1308,6 +1530,7 @@ namespace ColorVision.Copilot
                 OnAgentRunMetricsChanged();
                 changed = true;
             }
+            changed |= SetReportedUsage(IsUser ? CopilotTokenUsage.Empty : ReportedUsage);
 
             var validBlockers = (_agentBlockers ?? Array.Empty<CopilotAgentBlockerSnapshot>())
                 .Where(item => item?.IsStructurallyValid() == true)
@@ -1433,7 +1656,9 @@ namespace ColorVision.Copilot
         {
             OnPropertyChanged(nameof(HasAgentTaskLedger));
             OnPropertyChanged(nameof(HasAgentTaskState));
+            OnPropertyChanged(nameof(HasCompletedPlan));
             OnPropertyChanged(nameof(HasIncompleteAgentTasks));
+            OnPropertyChanged(nameof(IsAgentRecoveryDismissed));
             OnPropertyChanged(nameof(HasRecoverableFinalAnswer));
             OnPropertyChanged(nameof(HasRecoverableAgentTasks));
             OnPropertyChanged(nameof(AgentRecoveryActionLabel));
@@ -1571,6 +1796,37 @@ namespace ColorVision.Copilot
             OnPropertyChanged(nameof(AgentRecoveryToolTip));
         }
 
+        internal bool CompleteActiveAgentTraces(
+            CopilotToolExecutionState terminalState,
+            CopilotToolFailureKind failureKind,
+            string failureCode,
+            string errorMessage,
+            DateTimeOffset? completedAtUtc = null)
+        {
+            if (AgentTraceEntries == null || AgentTraceEntries.Count == 0)
+                return false;
+
+            var completedAt = completedAtUtc ?? DateTimeOffset.UtcNow;
+            var changed = false;
+            foreach (var entry in AgentTraceEntries.Where(entry => entry != null))
+            {
+                changed |= entry.CompleteActiveExecution(
+                    terminalState,
+                    failureKind,
+                    failureCode,
+                    errorMessage,
+                    completedAt);
+            }
+
+            if (!changed)
+                return false;
+
+            RebuildExecutionContentFromAgentTrace();
+            OnPropertyChanged(nameof(AgentRecoveryActionLabel));
+            OnPropertyChanged(nameof(AgentRecoveryToolTip));
+            return true;
+        }
+
         public void RebuildExecutionContentFromAgentTrace()
         {
             if (AgentTraceEntries == null || AgentTraceEntries.Count == 0)
@@ -1619,6 +1875,8 @@ namespace ColorVision.Copilot
             OnPropertyChanged(nameof(HasResponseTimeline));
             OnPropertyChanged(nameof(HasLegacyResponseLayout));
             OnPropertyChanged(nameof(HasLegacyThinkingTrace));
+            OnPropertyChanged(nameof(HasCompletedPlan));
+            OnPropertyChanged(nameof(HasAgentTaskState));
         }
 
         private IReadOnlyList<CopilotResponseTimelineItem> BuildResponseTimelineItems()
@@ -2243,7 +2501,11 @@ namespace ColorVision.Copilot
         public string Id
         {
             get => _id;
-            set => SetProperty(ref _id, NormalizeText(value));
+            set
+            {
+                if (SetProperty(ref _id, NormalizeText(value)))
+                    OnPropertyChanged(nameof(HasBranchOrigin));
+            }
         }
         private string _id = Guid.NewGuid().ToString("N");
 
@@ -2275,6 +2537,15 @@ namespace ColorVision.Copilot
         }
         private bool _isPinned;
 
+        public bool IsArchived
+        {
+            get => _isArchived;
+            set => SetProperty(ref _isArchived, value);
+        }
+        private bool _isArchived;
+
+        public bool ShouldSerializeIsArchived() => IsArchived;
+
         public string PreviewText
         {
             get => _previewText;
@@ -2302,6 +2573,34 @@ namespace ColorVision.Copilot
 
         public bool ShouldSerializeDraftText() => HasDraft;
 
+        public CopilotAgentMode DraftRequestMode
+        {
+            get => _draftRequestMode;
+            set => SetProperty(
+                ref _draftRequestMode,
+                Enum.IsDefined(value) ? value : CopilotAgentMode.Auto);
+        }
+        private CopilotAgentMode _draftRequestMode = CopilotAgentMode.Auto;
+
+        public bool ShouldSerializeDraftRequestMode() =>
+            DraftRequestMode != CopilotAgentMode.Auto;
+
+        public CopilotComposerStash? ComposerStash
+        {
+            get => _composerStash;
+            set
+            {
+                if (SetProperty(ref _composerStash, value))
+                {
+                    OnPropertyChanged(nameof(HasComposerStash));
+                    OnPropertyChanged(nameof(ConversationListPreviewText));
+                }
+            }
+        }
+        private CopilotComposerStash? _composerStash;
+
+        public bool ShouldSerializeComposerStash() => HasComposerStash;
+
         public string ProfileId
         {
             get => _profileId;
@@ -2315,6 +2614,16 @@ namespace ColorVision.Copilot
             set => SetProperty(ref _profileDisplayName, NormalizeText(value));
         }
         private string _profileDisplayName = string.Empty;
+
+        public CopilotResponsePersonality ResponsePersonality
+        {
+            get => _responsePersonality;
+            set => SetProperty(ref _responsePersonality, value);
+        }
+        private CopilotResponsePersonality _responsePersonality;
+
+        public bool ShouldSerializeResponsePersonality() =>
+            ResponsePersonality != CopilotResponsePersonality.None;
 
         [JsonIgnore]
         public CopilotAgentAccessMode AccessMode => _accessContext.Mode;
@@ -2444,9 +2753,59 @@ namespace ColorVision.Copilot
 
         public ObservableCollection<CopilotAttachmentItem> Attachments { get; set; } = new();
 
+        public ObservableCollection<CopilotPendingSteeringRecoveryRecord> PendingSteeringRecoveries { get; set; } = new();
+
+        public bool ShouldSerializePendingSteeringRecoveries() => PendingSteeringRecoveries?.Count > 0;
+
+        public ObservableCollection<string> AdditionalReadRootPaths { get; set; } = new();
+
+        public bool ShouldSerializeAdditionalReadRootPaths() => HasAdditionalReadRoots;
+
+        [JsonIgnore]
+        public bool HasAdditionalReadRoots => AdditionalReadRootPaths?.Count > 0;
+
         public CopilotAgentSessionCheckpoint? AgentSessionCheckpoint { get; set; }
 
+        public CopilotAgentTaskEventJournalSnapshot? LatestAgentTaskEventJournal { get; set; }
+
+        public bool ShouldSerializeLatestAgentTaskEventJournal() =>
+            LatestAgentTaskEventJournal?.Events?.Count > 0
+            && LatestAgentTaskEventJournal.IsStructurallyValid();
+
         public CopilotConversationCompaction? Compaction { get; set; }
+
+        public CopilotConversationBranchOrigin? BranchOrigin
+        {
+            get => _branchOrigin;
+            set
+            {
+                if (SetProperty(ref _branchOrigin, value))
+                {
+                    OnPropertyChanged(nameof(HasBranchOrigin));
+                    OnPropertyChanged(nameof(BranchLabel));
+                }
+            }
+        }
+        private CopilotConversationBranchOrigin? _branchOrigin;
+
+        public bool ShouldSerializeBranchOrigin() => BranchOrigin != null;
+
+        public CopilotConversationGoal? Goal
+        {
+            get => _goal;
+            set
+            {
+                if (SetProperty(ref _goal, value))
+                {
+                    OnPropertyChanged(nameof(HasGoal));
+                    OnPropertyChanged(nameof(GoalDisplayText));
+                    OnPropertyChanged(nameof(GoalToolTip));
+                }
+            }
+        }
+        private CopilotConversationGoal? _goal;
+
+        public bool ShouldSerializeGoal() => Goal != null;
 
         [JsonIgnore]
         public string UpdatedLabel => UpdatedAt.Date == DateTime.Today ? UpdatedAt.ToString("HH:mm") : UpdatedAt.ToString("M/d");
@@ -2455,13 +2814,76 @@ namespace ColorVision.Copilot
         public bool HasDraft => !string.IsNullOrWhiteSpace(DraftText);
 
         [JsonIgnore]
-        public string ConversationListPreviewText => HasDraft ? $"草稿：{BuildPreview(DraftText, 42)}" : PreviewText;
+        public bool HasComposerStash => ComposerStash?.HasContent == true;
+
+        [JsonIgnore]
+        public string ConversationListPreviewText =>
+            !string.IsNullOrWhiteSpace(SearchMatchPreviewText)
+                ? SearchMatchPreviewText
+                : HasDraft
+                    ? $"草稿：{BuildPreview(DraftText, 42)}"
+                    : HasComposerStash
+                        ? BuildComposerStashPreview(ComposerStash!)
+                        : PreviewText;
+
+        [JsonIgnore]
+        public string SearchMatchPreviewText
+        {
+            get => _searchMatchPreviewText;
+            private set
+            {
+                if (SetProperty(ref _searchMatchPreviewText, value ?? string.Empty))
+                    OnPropertyChanged(nameof(ConversationListPreviewText));
+            }
+        }
+        private string _searchMatchPreviewText = string.Empty;
+
+        internal void SetSearchMatchPreview(string? preview) =>
+            SearchMatchPreviewText = preview;
 
         [JsonIgnore]
         public string PinLabel => IsPinned ? CopilotUiText.PinnedLabel : string.Empty;
 
         [JsonIgnore]
         public string PinMenuText => IsPinned ? CopilotUiText.UnpinMenuText : CopilotUiText.PinMenuText;
+
+        [JsonIgnore]
+        public bool HasBranchOrigin => BranchOrigin?.IsStructurallyValid(Id) == true;
+
+        [JsonIgnore]
+        public string BranchLabel => HasBranchOrigin ? "分支" : string.Empty;
+
+        [JsonIgnore]
+        public bool HasGoal => Goal?.IsStructurallyValid() == true;
+
+        [JsonIgnore]
+        public string GoalDisplayText => Goal == null
+            ? string.Empty
+            : $"{Goal.State switch
+            {
+                CopilotConversationGoalState.Active => "持续目标",
+                CopilotConversationGoalState.Achieved => "目标已达成",
+                _ => "目标已暂停",
+            }} · {BuildPreview(Goal.Objective, 120)}";
+
+        [JsonIgnore]
+        public string GoalToolTip => Goal == null
+            ? string.Empty
+            : $"{Goal.State switch
+            {
+                CopilotConversationGoalState.Active => "活动目标会绑定到后续新 Agent 任务，并在每轮后独立评估。",
+                CopilotConversationGoalState.Achieved => "独立完成评估已确认该目标达成。",
+                _ => "该目标已暂停，不会自动启动新任务。",
+            }}"
+                + Environment.NewLine
+                + Goal.Objective
+                + Environment.NewLine
+                + $"{Goal.TurnCount:N0} 轮 · {Goal.EvaluationCount:N0} 次独立评估 · {Goal.TokensUsed:N0} Token"
+                + (string.IsNullOrWhiteSpace(Goal.LastEvaluationReason)
+                    ? string.Empty
+                    : Environment.NewLine + "最近判断：" + Goal.LastEvaluationReason)
+                + Environment.NewLine
+                + "目标约束完成判定，但不授权写入、工具调用、审批复用或外部副作用。";
 
         [JsonIgnore]
         public string AgentRunStatusLabel
@@ -2512,6 +2934,25 @@ namespace ColorVision.Copilot
                 DraftText = string.Empty;
                 changed = true;
             }
+            if (!Enum.IsDefined(DraftRequestMode))
+            {
+                DraftRequestMode = CopilotAgentMode.Auto;
+                changed = true;
+            }
+            if (ComposerStash != null)
+            {
+                changed |= ComposerStash.EnsureValid();
+                if (!ComposerStash.HasContent)
+                {
+                    ComposerStash = null;
+                    changed = true;
+                }
+            }
+            if (!Enum.IsDefined(ResponsePersonality))
+            {
+                ResponsePersonality = CopilotResponsePersonality.None;
+                changed = true;
+            }
             if (_legacyAccessModeLoaded)
             {
                 _legacyAccessModeLoaded = false;
@@ -2527,6 +2968,23 @@ namespace ColorVision.Copilot
             if (Attachments == null)
             {
                 Attachments = new ObservableCollection<CopilotAttachmentItem>();
+                changed = true;
+            }
+            changed |= CopilotSteeringRecovery.NormalizePendingRecords(this);
+            if (AdditionalReadRootPaths == null)
+            {
+                AdditionalReadRootPaths = new ObservableCollection<string>();
+                changed = true;
+            }
+            var normalizedReadRoots = CopilotAdditionalDirectoryCommand.NormalizeStoredPaths(
+                AdditionalReadRootPaths);
+            if (!AdditionalReadRootPaths.SequenceEqual(
+                    normalizedReadRoots,
+                    StringComparer.OrdinalIgnoreCase))
+            {
+                AdditionalReadRootPaths.Clear();
+                foreach (var path in normalizedReadRoots)
+                    AdditionalReadRootPaths.Add(path);
                 changed = true;
             }
             for (var index = Messages.Count - 1; index >= 0; index--)
@@ -2550,9 +3008,31 @@ namespace ColorVision.Copilot
                 AgentSessionCheckpoint = null;
                 changed = true;
             }
+            if (LatestAgentTaskEventJournal != null
+                && (LatestAgentTaskEventJournal.Events?.Count is not > 0
+                    || !LatestAgentTaskEventJournal.IsStructurallyValid()))
+            {
+                LatestAgentTaskEventJournal = null;
+                changed = true;
+            }
+            if (LatestAgentTaskEventJournal == null
+                && AgentSessionCheckpoint?.TaskEventJournal is { Events.Count: > 0 } checkpointJournal)
+            {
+                changed |= UpdateLatestAgentTaskEventJournal(checkpointJournal);
+            }
             if (Compaction != null && !Compaction.IsStructurallyValid())
             {
                 Compaction = null;
+                changed = true;
+            }
+            if (BranchOrigin != null && !BranchOrigin.IsStructurallyValid(Id))
+            {
+                BranchOrigin = null;
+                changed = true;
+            }
+            if (Goal != null && !Goal.IsStructurallyValid())
+            {
+                Goal = null;
                 changed = true;
             }
 
@@ -2570,6 +3050,15 @@ namespace ColorVision.Copilot
                     changed = true;
                 }
             }
+            var lastAssistantMessage = Messages.LastOrDefault(message =>
+                !message.IsUser
+                && !message.WasResponseInterrupted);
+            if (lastAssistantMessage != null
+                && !lastAssistantMessage.ReportedUsage.HasAny
+                && LastUsage.HasAny)
+            {
+                changed |= lastAssistantMessage.SetReportedUsage(LastUsage);
+            }
 
             foreach (var attachment in Attachments)
             {
@@ -2579,9 +3068,47 @@ namespace ColorVision.Copilot
             return changed;
         }
 
+        internal bool ReplaceAdditionalReadRootPaths(IEnumerable<string>? paths)
+        {
+            var normalized = CopilotAdditionalDirectoryCommand.NormalizeStoredPaths(paths);
+            AdditionalReadRootPaths ??= new ObservableCollection<string>();
+            if (AdditionalReadRootPaths.SequenceEqual(normalized, StringComparer.OrdinalIgnoreCase))
+                return false;
+
+            AdditionalReadRootPaths.Clear();
+            foreach (var path in normalized)
+                AdditionalReadRootPaths.Add(path);
+            OnPropertyChanged(nameof(AdditionalReadRootPaths));
+            OnPropertyChanged(nameof(HasAdditionalReadRoots));
+            return true;
+        }
+
+        internal bool UpdateLatestAgentTaskEventJournal(CopilotAgentTaskEventJournalSnapshot? journal)
+        {
+            if (journal?.Events?.Count is not > 0 || !journal.IsStructurallyValid())
+                return false;
+
+            var currentEvents = LatestAgentTaskEventJournal?.Events;
+            var currentLast = currentEvents?.Count > 0 ? currentEvents[^1] : null;
+            var candidateLast = journal.Events[^1];
+            if (LatestAgentTaskEventJournal?.IsStructurallyValid() == true
+                && currentLast != null
+                && string.Equals(currentLast.RunId, candidateLast.RunId, StringComparison.Ordinal)
+                && currentLast.Sequence >= candidateLast.Sequence)
+            {
+                return false;
+            }
+
+            LatestAgentTaskEventJournal = journal;
+            return true;
+        }
+
         internal IEnumerable<CopilotAttachmentItem> EnumerateReferencedAttachments()
         {
             foreach (var attachment in Attachments?.Where(attachment => attachment != null) ?? Enumerable.Empty<CopilotAttachmentItem>())
+                yield return attachment;
+
+            foreach (var attachment in ComposerStash?.Attachments?.Where(attachment => attachment != null) ?? Enumerable.Empty<CopilotAttachmentItem>())
                 yield return attachment;
 
             foreach (var message in Messages?.Where(message => message != null) ?? Enumerable.Empty<CopilotChatMessage>())
@@ -2653,6 +3180,12 @@ namespace ColorVision.Copilot
             HasCustomTitle = true;
         }
 
+        internal static bool TryNormalizeCustomTitle(string? title, out string normalizedTitle)
+        {
+            normalizedTitle = NormalizeText(title);
+            return normalizedTitle.Length is > 0 and <= MaximumTitleCharacters;
+        }
+
         public void SetGeneratedTitle(string title)
         {
             Title = title;
@@ -2680,6 +3213,15 @@ namespace ColorVision.Copilot
                 return normalized;
 
             return normalized[..maxLength] + "...";
+        }
+
+        private static string BuildComposerStashPreview(CopilotComposerStash stash)
+        {
+            var textPreview = BuildPreview(stash.Text, 34);
+            if (!string.IsNullOrWhiteSpace(textPreview))
+                return $"已暂存：{textPreview}";
+
+            return $"已暂存：{stash.Attachments.Count:N0} 个附件";
         }
 
         private static string NormalizeText(string? value) => value?.Trim() ?? string.Empty;
@@ -3091,7 +3633,12 @@ namespace ColorVision.Copilot
         private static string NormalizeText(string? value) => value?.Trim() ?? string.Empty;
     }
 
-    public readonly record struct CopilotRequestMessage(string Role, string Content);
+    public readonly record struct CopilotRequestMessage(string Role, string Content)
+    {
+        [Newtonsoft.Json.JsonProperty(DefaultValueHandling = Newtonsoft.Json.DefaultValueHandling.Ignore)]
+        [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingDefault)]
+        public bool IsSteering { get; init; }
+    }
 
     public sealed class CopilotProviderOption
     {

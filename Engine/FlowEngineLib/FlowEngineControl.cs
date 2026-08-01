@@ -6,8 +6,10 @@ using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 using FlowEngineLib.Base;
+using FlowEngineLib.Runtime;
 using FlowEngineLib.Start;
 using log4net;
+using ST.Library.UI.NodeContainer;
 using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib;
@@ -17,6 +19,8 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 	private static readonly ILog logger = LogManager.GetLogger(typeof(FlowEngineControl));
 
 	protected STNodeEditor NodeEditor;
+
+	private IFlowGraphHost graphHost;
 
 	protected Dictionary<string, BaseStartNode> startNodeNames;
 
@@ -35,6 +39,14 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 	private readonly Dictionary<CVBaseServerNode, DeviceNode> attachedDeviceNodes;
 
 	private readonly HashSet<STNode> attachedNodes;
+
+	private IFlowFailureRouter failureRouter;
+
+	private IReadOnlyDictionary<string, FlowNodeRetryPolicy> retryPolicies =
+		new Dictionary<string, FlowNodeRetryPolicy>(
+			StringComparer.OrdinalIgnoreCase);
+
+	private readonly IFlowServiceResolver runtimeServiceResolver;
 
 	private readonly object lifecycleLock = new object();
 
@@ -56,6 +68,64 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 	}
 
 	public event FlowEngineEventHandler Finished;
+
+	public void ConfigureFailureRoutes(IEnumerable<FlowErrorRoute> routes)
+	{
+		ArgumentNullException.ThrowIfNull(routes);
+		FlowErrorRoute[] routeSnapshot = routes.ToArray();
+		lock (lifecycleLock)
+		{
+			lock (stateLock)
+			{
+				ThrowIfDisposedLocked();
+				failureRouter = routeSnapshot.Length == 0
+					? null
+					: new FlowFailureRouter(
+						routeSnapshot,
+						() =>
+						{
+							lock (stateLock)
+							{
+								return attachedNodes.ToArray();
+							}
+						});
+				foreach (CVBaseServerNode serverNode in attachedDeviceNodes.Keys)
+				{
+					serverNode.RuntimeFailureRouter = failureRouter;
+				}
+			}
+		}
+	}
+
+	public void ConfigureRetryPolicies(
+		IEnumerable<FlowNodeRetryPolicy> policies)
+	{
+		ArgumentNullException.ThrowIfNull(policies);
+		FlowNodeRetryPolicy[] policySnapshot = policies.ToArray();
+		foreach (FlowNodeRetryPolicy policy in policySnapshot)
+		{
+			ArgumentNullException.ThrowIfNull(policy);
+			policy.Validate();
+		}
+		IReadOnlyDictionary<string, FlowNodeRetryPolicy> nextPolicies =
+			policySnapshot.ToDictionary(
+				policy => policy.NodeId,
+				policy => policy,
+				StringComparer.OrdinalIgnoreCase);
+		lock (lifecycleLock)
+		{
+			lock (stateLock)
+			{
+				ThrowIfDisposedLocked();
+				retryPolicies = nextPolicies;
+				foreach (CVBaseServerNode serverNode in attachedDeviceNodes.Keys)
+				{
+					serverNode.RuntimeRetryPolicy =
+						GetRetryPolicyLocked(serverNode.NodeID);
+				}
+			}
+		}
+	}
 
 	private bool GetFlowReady()
 	{
@@ -144,14 +214,50 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 		AttachNodeEditor(nodeEditor);
 	}
 
+	public FlowEngineControl(CVNodeContainer nodeContainer, bool isAutoStartName)
+		: this(nodeContainer, isAutoStartName, FlowNodeManager.Instance)
+	{
+	}
+
+	public FlowEngineControl(CVNodeContainer nodeContainer, bool isAutoStartName, FlowNodeManager nodeManager)
+		: this(isAutoStartName, nodeManager)
+	{
+		AttachNodeContainer(nodeContainer);
+	}
+
+	internal FlowEngineControl(
+		CVNodeContainer nodeContainer,
+		bool isAutoStartName,
+		FlowNodeManager nodeManager,
+		IFlowServiceResolver runtimeServiceResolver)
+		: this(
+			isAutoStartName,
+			nodeManager,
+			runtimeServiceResolver)
+	{
+		AttachNodeContainer(nodeContainer);
+	}
+
 	public FlowEngineControl(bool isAutoStartName)
 		: this(isAutoStartName, FlowNodeManager.Instance)
 	{
 	}
 
 	public FlowEngineControl(bool isAutoStartName, FlowNodeManager nodeManager)
+		: this(
+			isAutoStartName,
+			nodeManager,
+			runtimeServiceResolver: null)
+	{
+	}
+
+	private FlowEngineControl(
+		bool isAutoStartName,
+		FlowNodeManager nodeManager,
+		IFlowServiceResolver runtimeServiceResolver)
 	{
 		NodeManager = nodeManager ?? throw new ArgumentNullException(nameof(nodeManager));
+		this.runtimeServiceResolver = runtimeServiceResolver;
 		startNodeNames = new Dictionary<string, BaseStartNode>();
 		IsAutoStartName = isAutoStartName;
 		services = new Dictionary<string, ServiceNode>();
@@ -179,23 +285,52 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 				}
 			}
 			DetachNodeEditorCore();
+			AttachGraphHostCore(new EditorFlowGraphHost(nodeEditor), nodeEditor);
+		}
+		return this;
+	}
+
+	public FlowEngineControl AttachNodeContainer(CVNodeContainer nodeContainer)
+	{
+		if (nodeContainer == null)
+		{
+			throw new ArgumentNullException(nameof(nodeContainer));
+		}
+		lock (lifecycleLock)
+		{
 			lock (stateLock)
 			{
 				ThrowIfDisposedLocked();
-				NodeEditor = nodeEditor;
-				NodeEditor.NodeAdded += NodeEditor_NodeAdded;
-				NodeEditor.NodeRemoved += NodeEditor_NodeRemoved;
-				NodeEditor.OptionConnected += NodeEditor_OptionChanged;
-				NodeEditor.OptionDisConnected += NodeEditor_OptionChanged;
-				NodeEditor.NodeLocationChanged += NodeEditor_NodeLocationChanged;
-				NodeEditor.HistoryChanged += NodeEditor_HistoryChanged;
+				if (graphHost is HeadlessFlowGraphHost current
+					&& ReferenceEquals(current.Container, nodeContainer))
+				{
+					return this;
+				}
 			}
-			foreach (STNode node in nodeEditor.Nodes)
-			{
-				RegisterNode(node, nodeEditor);
-			}
+			DetachNodeEditorCore();
+			AttachGraphHostCore(new HeadlessFlowGraphHost(nodeContainer), null);
 		}
 		return this;
+	}
+
+	private void AttachGraphHostCore(IFlowGraphHost host, STNodeEditor nodeEditor)
+	{
+		lock (stateLock)
+		{
+			ThrowIfDisposedLocked();
+			graphHost = host;
+			NodeEditor = nodeEditor;
+			host.NodeAdded += NodeEditor_NodeAdded;
+			host.NodeRemoved += NodeEditor_NodeRemoved;
+			host.OptionConnected += NodeEditor_OptionChanged;
+			host.OptionDisconnected += NodeEditor_OptionChanged;
+			host.NodeLocationChanged += NodeEditor_NodeLocationChanged;
+			host.HistoryChanged += NodeEditor_HistoryChanged;
+		}
+		foreach (STNode node in host.Nodes)
+		{
+			RegisterNode(node, host);
+		}
 	}
 
 	public FlowEngineControl DetachNodeEditor()
@@ -227,43 +362,72 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 	private void NodeEditor_NodeAdded(object sender, STNodeEditorEventArgs e)
 	{
 		InvalidateLoadedCanvas();
-		RegisterNode(e.Node, sender as STNodeEditor);
+		IFlowGraphHost host;
+		lock (stateLock)
+		{
+			host = graphHost;
+		}
+		if (host != null && host.IsEventSource(sender))
+		{
+			RegisterNode(e.Node, host);
+		}
 	}
 
 	private void NodeEditor_NodeRemoved(object sender, STNodeEditorEventArgs e)
 	{
+		if (!IsCurrentGraphEventSource(sender))
+		{
+			return;
+		}
 		UnregisterNode(e.Node);
 		InvalidateLoadedCanvas();
 	}
 
 	private void NodeEditor_HistoryChanged(object sender, EventArgs e)
 	{
-		InvalidateLoadedCanvas();
+		if (IsCurrentGraphEventSource(sender))
+		{
+			InvalidateLoadedCanvas();
+		}
 	}
 
 	private void NodeEditor_OptionChanged(object sender, STNodeEditorOptionEventArgs e)
 	{
-		InvalidateLoadedCanvas();
+		if (IsCurrentGraphEventSource(sender))
+		{
+			InvalidateLoadedCanvas();
+		}
 	}
 
 	private void NodeEditor_NodeLocationChanged(object sender, EventArgs e)
 	{
-		InvalidateLoadedCanvas();
-	}
-
-	private void RegisterNode(STNode node, STNodeEditor expectedEditor)
-	{
-		lock (lifecycleLock)
+		if (IsCurrentGraphEventSource(sender))
 		{
-			RegisterNodeCore(node, expectedEditor);
+			InvalidateLoadedCanvas();
 		}
 	}
 
-	private void RegisterNodeCore(STNode node, STNodeEditor expectedEditor)
+	private bool IsCurrentGraphEventSource(object sender)
 	{
 		lock (stateLock)
 		{
-			if (isDisposed || !ReferenceEquals(NodeEditor, expectedEditor) || !attachedNodes.Add(node))
+			return graphHost != null && graphHost.IsEventSource(sender);
+		}
+	}
+
+	private void RegisterNode(STNode node, IFlowGraphHost expectedHost)
+	{
+		lock (lifecycleLock)
+		{
+			RegisterNodeCore(node, expectedHost);
+		}
+	}
+
+	private void RegisterNodeCore(STNode node, IFlowGraphHost expectedHost)
+	{
+		lock (stateLock)
+		{
+			if (isDisposed || !ReferenceEquals(graphHost, expectedHost) || !attachedNodes.Add(node))
 			{
 				return;
 			}
@@ -274,11 +438,11 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 			string generatedName = null;
 			lock (stateLock)
 			{
-				if (isDisposed || !ReferenceEquals(NodeEditor, expectedEditor) || attachedStartNodes.Contains(baseStartNode))
+				if (isDisposed || !ReferenceEquals(graphHost, expectedHost) || attachedStartNodes.Contains(baseStartNode))
 				{
 					return;
 				}
-				if (IsAutoStartName && !NodeEditor.IsReplayingHistory)
+				if (IsAutoStartName && !expectedHost.IsReplayingChanges)
 				{
 					long ticks = DateTime.Now.Ticks;
 					do
@@ -294,7 +458,7 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 			}
 			lock (stateLock)
 			{
-				if (isDisposed || !ReferenceEquals(NodeEditor, expectedEditor) || !attachedNodes.Contains(baseStartNode)
+				if (isDisposed || !ReferenceEquals(graphHost, expectedHost) || !attachedNodes.Contains(baseStartNode)
 					|| attachedStartNodes.Contains(baseStartNode))
 				{
 					return;
@@ -309,11 +473,16 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 			DeviceNode device;
 			lock (stateLock)
 			{
-				if (isDisposed || !ReferenceEquals(NodeEditor, expectedEditor) || attachedDeviceNodes.ContainsKey(serverNode))
+				if (isDisposed || !ReferenceEquals(graphHost, expectedHost) || attachedDeviceNodes.ContainsKey(serverNode))
 				{
 					return;
 				}
 				device = new DeviceNode(serverNode);
+				serverNode.RuntimeFailureRouter = failureRouter;
+				serverNode.RuntimeRetryPolicy =
+					GetRetryPolicyLocked(serverNode.NodeID);
+				serverNode.RuntimeServiceResolver =
+					runtimeServiceResolver;
 				attachedDeviceNodes.Add(serverNode, device);
 				RebuildServicesLocked();
 			}
@@ -347,6 +516,9 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 			}
 			else if (node is CVBaseServerNode serverNode && attachedDeviceNodes.Remove(serverNode, out DeviceNode device))
 			{
+				serverNode.RuntimeFailureRouter = null;
+				serverNode.RuntimeRetryPolicy = null;
+				serverNode.RuntimeServiceResolver = null;
 				RebuildServicesLocked();
 				deviceToRemove = device;
 			}
@@ -487,27 +659,47 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 			}
 			_IsRunning = attachedStartNodes.Any(startNode => startNode.Running);
 			finished = Finished;
-			args = new FlowEngineEventArgs(baseStartNode.NodeName, e.SerialNumber, e.Status, e.TotalTime, e.Message, e.ErrorNodeName, e.ErrorNodeId);
+			args = new FlowEngineEventArgs(
+				baseStartNode.NodeName,
+				e.SerialNumber,
+				e.Status,
+				e.TotalTime,
+				e.Message,
+				e.ErrorNodeName,
+				e.ErrorNodeId,
+				e.HandledFailures);
 		}
-		finished?.Invoke(sender, args);
+		Delegate[] handlers = finished?.GetInvocationList() ?? Array.Empty<Delegate>();
+		foreach (FlowEngineEventHandler handler in handlers.Cast<FlowEngineEventHandler>())
+		{
+			try
+			{
+				handler(sender, args);
+			}
+			catch (Exception ex)
+			{
+				logger.Error("Flow completion subscriber failed.", ex);
+			}
+		}
 	}
 
 	private void DetachNodeEditorCore()
 	{
-		STNodeEditor nodeEditor;
+		IFlowGraphHost host;
 		lock (stateLock)
 		{
-			nodeEditor = NodeEditor;
+			host = graphHost;
+			graphHost = null;
 			NodeEditor = null;
 		}
-		if (nodeEditor != null)
+		if (host != null)
 		{
-			nodeEditor.NodeAdded -= NodeEditor_NodeAdded;
-			nodeEditor.NodeRemoved -= NodeEditor_NodeRemoved;
-			nodeEditor.OptionConnected -= NodeEditor_OptionChanged;
-			nodeEditor.OptionDisConnected -= NodeEditor_OptionChanged;
-			nodeEditor.NodeLocationChanged -= NodeEditor_NodeLocationChanged;
-			nodeEditor.HistoryChanged -= NodeEditor_HistoryChanged;
+			host.NodeAdded -= NodeEditor_NodeAdded;
+			host.NodeRemoved -= NodeEditor_NodeRemoved;
+			host.OptionConnected -= NodeEditor_OptionChanged;
+			host.OptionDisconnected -= NodeEditor_OptionChanged;
+			host.NodeLocationChanged -= NodeEditor_NodeLocationChanged;
+			host.HistoryChanged -= NodeEditor_HistoryChanged;
 		}
 		ClearRegistrations();
 	}
@@ -523,6 +715,12 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 			foreach (STNode node in attachedNodes)
 			{
 				node.PropertyChanged -= AttachedNode_PropertyChanged;
+				if (node is CVBaseServerNode serverNode)
+				{
+					serverNode.RuntimeFailureRouter = null;
+					serverNode.RuntimeRetryPolicy = null;
+					serverNode.RuntimeServiceResolver = null;
+				}
 			}
 			foreach (BaseStartNode startNode in startNodes)
 			{
@@ -548,15 +746,14 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 
 	public void LoadFromFile(string strFileName, List<MQTTServiceInfo> services)
 	{
-		STNodeEditor nodeEditor = GetNodeEditor();
-		clear();
+		IFlowGraphHost host = GetGraphHost();
 		try
 		{
-			nodeEditor.LoadCanvas(strFileName);
+			ReplaceCanvas(host, System.IO.File.ReadAllBytes(strFileName));
 		}
 		finally
 		{
-			nodeEditor.ClearHistory();
+			host.ClearHistory();
 		}
 		NodeManager.UpdateDevice(services);
 	}
@@ -586,22 +783,22 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 	public void FlowClear()
 	{
 		clear();
-		STNodeEditor nodeEditor;
+		IFlowGraphHost host;
 		lock (stateLock)
 		{
-			nodeEditor = NodeEditor;
+			host = graphHost;
 		}
-		nodeEditor?.ClearHistory();
+		host?.ClearHistory();
 	}
 
 	private void clear()
 	{
 		BaseStartNode[] startNodes;
-		STNodeEditor nodeEditor;
+		IFlowGraphHost host;
 		lock (stateLock)
 		{
 			startNodes = attachedStartNodes.ToArray();
-			nodeEditor = NodeEditor;
+			host = graphHost;
 		}
 		try
 		{
@@ -609,7 +806,7 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 			{
 				StopStartNode(startNode);
 			}
-			nodeEditor?.Nodes.Clear();
+			host?.Clear();
 		}
 		finally
 		{
@@ -623,7 +820,7 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 
 	public void Load(byte[] rawData, bool waitReady)
 	{
-		STNodeEditor nodeEditor = GetNodeEditor();
+		IFlowGraphHost host = GetGraphHost();
 		if (rawData != null)
 		{
 			string text = BitConverter.ToString(MD5.HashData(rawData));
@@ -635,14 +832,13 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 					return;
 				}
 			}
-			clear();
 			try
 			{
-				nodeEditor.LoadCanvas(rawData);
+				ReplaceCanvas(host, rawData);
 			}
 			finally
 			{
-				nodeEditor.ClearHistory();
+				host.ClearHistory();
 			}
 			lock (stateLock)
 			{
@@ -664,7 +860,29 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 		else
 		{
 			clear();
-			nodeEditor.ClearHistory();
+			host.ClearHistory();
+		}
+	}
+
+	private void ReplaceCanvas(IFlowGraphHost host, byte[] rawData)
+	{
+		BaseStartNode[] previousStartNodes;
+		lock (stateLock)
+		{
+			previousStartNodes = attachedStartNodes.ToArray();
+		}
+
+		host.LoadCanvas(rawData);
+		foreach (BaseStartNode startNode in previousStartNodes)
+		{
+			try
+			{
+				startNode.Dispose();
+			}
+			catch (Exception ex)
+			{
+				logger.Warn($"Failed to dispose replaced start node => {startNode.NodeName}", ex);
+			}
 		}
 	}
 
@@ -722,7 +940,7 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 		TryStartNode(name, serialNumber);
 	}
 
-	protected bool TryStartNode(string name, string serialNumber)
+	public bool TryStartNode(string name, string serialNumber)
 	{
 		BaseStartNode startNode = null;
 		lock (stateLock)
@@ -812,12 +1030,13 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 		GC.SuppressFinalize(this);
 	}
 
-	private STNodeEditor GetNodeEditor()
+	private IFlowGraphHost GetGraphHost()
 	{
 		lock (stateLock)
 		{
 			ThrowIfDisposedLocked();
-			return NodeEditor ?? throw new InvalidOperationException("Attach an STNodeEditor before loading a flow.");
+			return graphHost ?? throw new InvalidOperationException(
+				"Attach an STNodeEditor or CVNodeContainer before loading a flow.");
 		}
 	}
 
@@ -832,5 +1051,15 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 	private void ThrowIfDisposedLocked()
 	{
 		ObjectDisposedException.ThrowIf(isDisposed, this);
+	}
+
+	private FlowNodeRetryPolicy GetRetryPolicyLocked(string nodeId)
+	{
+		return nodeId != null
+			&& retryPolicies.TryGetValue(
+				nodeId,
+				out FlowNodeRetryPolicy policy)
+					? policy
+					: null;
 	}
 }

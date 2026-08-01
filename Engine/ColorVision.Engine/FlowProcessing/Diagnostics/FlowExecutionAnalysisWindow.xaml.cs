@@ -20,6 +20,8 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
     {
         private const long SlowNodeThresholdMs = 30000;
         private readonly MeasureBatchModel? _initialBatch;
+        private readonly int? _initialBatchId;
+        private readonly string? _initialSerialNumber;
         private readonly string? _initialNodeId;
         private readonly string? _initialNodeName;
         private readonly Func<FlowNodeRecord, bool>? _focusFlowNode;
@@ -34,22 +36,22 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
         private bool _isLoading;
 
         public FlowExecutionAnalysisWindow()
-            : this(null, null, null, null)
+            : this(null, null, null, null, null, null)
         {
         }
 
         public FlowExecutionAnalysisWindow(MeasureBatchModel batch)
-            : this(batch, null, null, null)
+            : this(batch, null, null, null, null, null)
         {
         }
 
         internal FlowExecutionAnalysisWindow(Func<FlowNodeRecord, bool> focusFlowNode)
-            : this(null, null, null, focusFlowNode)
+            : this(null, null, null, null, null, focusFlowNode)
         {
         }
 
         internal FlowExecutionAnalysisWindow(MeasureBatchModel batch, Func<FlowNodeRecord, bool> focusFlowNode)
-            : this(batch, null, null, focusFlowNode)
+            : this(batch, null, null, null, null, focusFlowNode)
         {
         }
 
@@ -57,17 +59,35 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             string nodeId,
             string? nodeName,
             Func<FlowNodeRecord, bool>? focusFlowNode)
-            : this(null, nodeId, nodeName, focusFlowNode)
+            : this(null, null, null, nodeId, nodeName, focusFlowNode)
+        {
+        }
+
+        internal FlowExecutionAnalysisWindow(
+            int batchId,
+            string? serialNumber,
+            string? nodeId)
+            : this(
+                null,
+                batchId,
+                serialNumber,
+                nodeId,
+                null,
+                null)
         {
         }
 
         private FlowExecutionAnalysisWindow(
             MeasureBatchModel? batch,
+            int? batchId,
+            string? serialNumber,
             string? initialNodeId,
             string? initialNodeName,
             Func<FlowNodeRecord, bool>? focusFlowNode)
         {
             _initialBatch = batch;
+            _initialBatchId = batchId;
+            _initialSerialNumber = serialNumber;
             _initialNodeId = initialNodeId;
             _initialNodeName = initialNodeName;
             _focusFlowNode = focusFlowNode;
@@ -123,6 +143,18 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                     requestedNodeRecord?.Id);
             }
 
+            if (_initialBatchId is > 0)
+            {
+                return new InitialRunSelection(
+                    _initialBatchId,
+                    _initialSerialNumber
+                        ?? requestedNodeRecord?.SerialNumber
+                        ?? string.Empty,
+                    requestedNodeRecord?.BatchId == _initialBatchId
+                        ? requestedNodeRecord.Id
+                        : null);
+            }
+
             FlowNodeRecord? runRecord =
                 requestedNodeRecord ?? FlowNodeRecordDataBaseHelper.GetLatestRecord();
             return runRecord == null
@@ -164,6 +196,11 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                         FlowNodeRecordDataBaseHelper.GetDistinctBatchIds(500);
                     List<FlowNodeRecord> recentRecords =
                         FlowNodeRecordDataBaseHelper.GetByBatchIds(recentBatchIds);
+                    FlowRunRecord? run =
+                        FlowNodeRecordDataBaseHelper.GetFlowRun(batchId, serialNumber);
+                    List<FlowExecutionEvent> events = run == null
+                        ? new List<FlowExecutionEvent>()
+                        : FlowNodeRecordDataBaseHelper.GetExecutionEvents(run.Id);
                     if (string.IsNullOrWhiteSpace(serialNumber))
                     {
                         records = records
@@ -190,7 +227,9 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                         Messages: messages,
                         AllRuns: allRuns,
                         SameFlowRuns: sameFlowRuns,
-                        EffectiveSerialNumber: effectiveSerialNumber);
+                        EffectiveSerialNumber: effectiveSerialNumber,
+                        Run: run,
+                        Events: events);
                 });
 
                 if (loadVersion != _loadVersion)
@@ -208,8 +247,10 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                     batchId,
                     effectiveSerial,
                     batch,
+                    result.Run,
                     result.Records,
                     result.Messages,
+                    result.Events,
                     DateTime.Now,
                     SlowNodeThresholdMs);
 

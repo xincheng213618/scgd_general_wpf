@@ -14,6 +14,10 @@ namespace ColorVision.Copilot
         public const int DefaultMaxToolCalls = 128;
         public const int DefaultMaxAgentPasses = 32;
         public const int DefaultTimeoutSeconds = 7_200;
+        public const int MinimumAutoCompactThresholdPercent = 50;
+        public const int MaximumAutoCompactThresholdPercent = 95;
+        public const int DefaultAutoCompactThresholdPercent = 85;
+        public const int MaximumAutoCompactInstructionsCharacters = 4_000;
 
         [Browsable(false)]
         public int ContextWindowTokens
@@ -22,6 +26,32 @@ namespace ColorVision.Copilot
             set => SetProperty(ref _contextWindowTokens, Math.Clamp(value, CopilotAgentTokenBudget.MinimumContextWindowTokens, CopilotAgentTokenBudget.MaximumContextWindowTokens));
         }
         private int _contextWindowTokens = DefaultContextWindowTokens;
+
+        [Browsable(false)]
+        public bool AutoCompactConversationHistory
+        {
+            get => _autoCompactConversationHistory;
+            set => SetProperty(ref _autoCompactConversationHistory, value);
+        }
+        private bool _autoCompactConversationHistory = true;
+
+        [Browsable(false)]
+        public int AutoCompactThresholdPercent
+        {
+            get => _autoCompactThresholdPercent;
+            set => SetProperty(
+                ref _autoCompactThresholdPercent,
+                Math.Clamp(value, MinimumAutoCompactThresholdPercent, MaximumAutoCompactThresholdPercent));
+        }
+        private int _autoCompactThresholdPercent = DefaultAutoCompactThresholdPercent;
+
+        [Browsable(false)]
+        public string AutoCompactInstructions
+        {
+            get => _autoCompactInstructions;
+            set => SetProperty(ref _autoCompactInstructions, NormalizeAutoCompactInstructions(value));
+        }
+        private string _autoCompactInstructions = string.Empty;
 
         [Browsable(false)]
         public int RequestTokenBudget
@@ -69,6 +99,11 @@ namespace ColorVision.Copilot
         public bool EnsureValid()
         {
             var normalizedContextWindowTokens = Math.Clamp(ContextWindowTokens, CopilotAgentTokenBudget.MinimumContextWindowTokens, CopilotAgentTokenBudget.MaximumContextWindowTokens);
+            var normalizedAutoCompactThresholdPercent = Math.Clamp(
+                AutoCompactThresholdPercent,
+                MinimumAutoCompactThresholdPercent,
+                MaximumAutoCompactThresholdPercent);
+            var normalizedAutoCompactInstructions = NormalizeAutoCompactInstructions(AutoCompactInstructions);
             var normalizedRequestTokenBudget = Math.Clamp(RequestTokenBudget, CopilotAgentRunBudget.MinimumRequestTokenBudget, CopilotAgentRunBudget.MaximumRequestTokenBudget);
             var normalizedMaxToolCalls = Math.Clamp(MaxToolCalls, CopilotAgentRunBudget.MinimumToolCalls, CopilotAgentRunBudget.MaximumToolCalls);
             var normalizedMaxAgentPasses = Math.Clamp(MaxAgentPasses, CopilotAgentRunBudget.MinimumAgentPasses, CopilotAgentRunBudget.MaximumAgentPasses);
@@ -80,6 +115,8 @@ namespace ColorVision.Copilot
                 .Select(item => (item?.Name ?? string.Empty, item?.State ?? CopilotAgentSkillOverrideState.Auto))
                 .SequenceEqual(normalizedSkillOverrides.Select(item => (item.Name, item.State)));
             var changed = normalizedContextWindowTokens != ContextWindowTokens
+                || normalizedAutoCompactThresholdPercent != AutoCompactThresholdPercent
+                || !string.Equals(normalizedAutoCompactInstructions, AutoCompactInstructions, StringComparison.Ordinal)
                 || normalizedRequestTokenBudget != RequestTokenBudget
                 || normalizedMaxToolCalls != MaxToolCalls
                 || normalizedMaxAgentPasses != MaxAgentPasses
@@ -87,6 +124,8 @@ namespace ColorVision.Copilot
                 || normalizedShell != PreferredShell
                 || skillOverridesChanged;
             ContextWindowTokens = normalizedContextWindowTokens;
+            AutoCompactThresholdPercent = normalizedAutoCompactThresholdPercent;
+            AutoCompactInstructions = normalizedAutoCompactInstructions;
             RequestTokenBudget = normalizedRequestTokenBudget;
             MaxToolCalls = normalizedMaxToolCalls;
             MaxAgentPasses = normalizedMaxAgentPasses;
@@ -106,6 +145,9 @@ namespace ColorVision.Copilot
             return new CopilotAgentDefaultsConfig
             {
                 ContextWindowTokens = ContextWindowTokens,
+                AutoCompactConversationHistory = AutoCompactConversationHistory,
+                AutoCompactThresholdPercent = AutoCompactThresholdPercent,
+                AutoCompactInstructions = AutoCompactInstructions,
                 RequestTokenBudget = RequestTokenBudget,
                 MaxToolCalls = MaxToolCalls,
                 MaxAgentPasses = MaxAgentPasses,
@@ -131,6 +173,16 @@ namespace ColorVision.Copilot
         {
             return CopilotAgentSkillOverrideConfig.Normalize(SkillOverrides)
                 .ToDictionary(item => item.Name, item => item.State, StringComparer.OrdinalIgnoreCase);
+        }
+
+        public static string NormalizeAutoCompactInstructions(string? value)
+        {
+            var normalized = (value ?? string.Empty).Trim();
+            if (normalized.Length > MaximumAutoCompactInstructionsCharacters)
+                normalized = normalized[..MaximumAutoCompactInstructionsCharacters].TrimEnd();
+            if (normalized.Length > 0 && char.IsHighSurrogate(normalized[^1]))
+                normalized = normalized[..^1].TrimEnd();
+            return normalized;
         }
     }
 }

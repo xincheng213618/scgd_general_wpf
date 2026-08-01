@@ -16,6 +16,7 @@ namespace ColorVision.Copilot
         AttachedFileEvidence,
         LocalFileEvidence,
         GitReviewEvidence,
+        GitReviewAndWorkspaceValidation,
         DirectUrlEvidence,
         PublicWebSearch,
         WorkspaceEdit,
@@ -115,6 +116,7 @@ namespace ColorVision.Copilot
                     CopilotAgentExecutionRequirement.AttachedFileEvidence => "attached file evidence",
                     CopilotAgentExecutionRequirement.LocalFileEvidence => "explicit local file evidence",
                     CopilotAgentExecutionRequirement.GitReviewEvidence => "Git working tree and diff evidence",
+                    CopilotAgentExecutionRequirement.GitReviewAndWorkspaceValidation => "Git working tree and diff evidence followed by approved workspace validation",
                     CopilotAgentExecutionRequirement.DirectUrlEvidence => "direct URL evidence",
                     CopilotAgentExecutionRequirement.PublicWebSearch => "explicit public web search",
                     CopilotAgentExecutionRequirement.WorkspaceEdit => "approved workspace edit",
@@ -185,7 +187,13 @@ namespace ColorVision.Copilot
             var workspaceApplyTools = availableTools.Where(CopilotToolIntentPolicy.IsWorkspaceApplyTool).Select(tool => tool.Name);
             var workspaceValidationTools = availableTools.Where(CopilotToolIntentPolicy.IsWorkspaceValidationTool).Select(tool => tool.Name);
             var workspaceRollbackTools = availableTools.Where(CopilotToolIntentPolicy.IsWorkspaceRollbackTool).Select(tool => tool.Name);
-            var shellExecutionTools = availableTools.Where(CopilotToolIntentPolicy.IsShellExecutionTool).Select(tool => tool.Name);
+            var needsBackgroundShellExecution =
+                CopilotToolIntentPolicy.NeedsBackgroundShellExecution(request);
+            var shellExecutionTools = availableTools
+                .Where(needsBackgroundShellExecution
+                    ? CopilotToolIntentPolicy.IsBackgroundShellExecutionTool
+                    : CopilotToolIntentPolicy.IsShellExecutionTool)
+                .Select(tool => tool.Name);
             var batchImageProcessingTools = availableTools.Where(CopilotToolIntentPolicy.IsBatchImageProcessingTool).Select(tool => tool.Name);
             var batchImageConversionTools = availableTools.Where(CopilotToolIntentPolicy.IsBatchImageConversionTool).Select(tool => tool.Name);
             var needsValidation = CopilotToolIntentPolicy.NeedsWorkspaceValidation(request);
@@ -241,6 +249,30 @@ namespace ColorVision.Copilot
                     attachedFilePaths,
                     requiredLocalFilePaths);
             }
+            if (request.Mode == CopilotAgentMode.Review)
+            {
+                var gitWorkingTreeTools = availableTools
+                    .Where(tool => string.Equals(tool.Name, "InspectGitWorkingTree", StringComparison.OrdinalIgnoreCase))
+                    .Select(tool => tool.Name)
+                    .ToArray();
+                var gitDiffTools = availableTools
+                    .Where(tool => string.Equals(tool.Name, "InspectGitDiff", StringComparison.OrdinalIgnoreCase))
+                    .Select(tool => tool.Name)
+                    .ToArray();
+                if (gitWorkingTreeTools.Length > 0 || gitDiffTools.Length > 0)
+                {
+                    return Required(
+                        needsValidation
+                            ? CopilotAgentExecutionRequirement.GitReviewAndWorkspaceValidation
+                            : CopilotAgentExecutionRequirement.GitReviewEvidence,
+                        needsValidation
+                            ? [gitWorkingTreeTools, gitDiffTools, workspaceValidationTools]
+                            : [gitWorkingTreeTools, gitDiffTools],
+                        prerequisiteToolGroups,
+                        attachedFilePaths,
+                        requiredLocalFilePaths);
+                }
+            }
             if (needsValidation)
             {
                 return Required(
@@ -276,27 +308,6 @@ namespace ColorVision.Copilot
                     prerequisiteToolGroups,
                     attachedFilePaths,
                     requiredLocalFilePaths);
-            }
-
-            if (request.Mode == CopilotAgentMode.Review)
-            {
-                var gitWorkingTreeTools = availableTools
-                    .Where(tool => string.Equals(tool.Name, "InspectGitWorkingTree", StringComparison.OrdinalIgnoreCase))
-                    .Select(tool => tool.Name)
-                    .ToArray();
-                var gitDiffTools = availableTools
-                    .Where(tool => string.Equals(tool.Name, "InspectGitDiff", StringComparison.OrdinalIgnoreCase))
-                    .Select(tool => tool.Name)
-                    .ToArray();
-                if (gitWorkingTreeTools.Length > 0 || gitDiffTools.Length > 0)
-                {
-                    return Required(
-                        CopilotAgentExecutionRequirement.GitReviewEvidence,
-                        [gitWorkingTreeTools, gitDiffTools],
-                        prerequisiteToolGroups,
-                        attachedFilePaths,
-                        requiredLocalFilePaths);
-                }
             }
 
             var urlFetchTools = availableTools.Where(CopilotToolIntentPolicy.IsUrlFetchTool).Select(tool => tool.Name);
@@ -493,6 +504,12 @@ namespace ColorVision.Copilot
             {
                 return "Execution contract: the user explicitly requested real command or script execution, but no successful process result was collected. Call RunShellCommand now after any required workspace write, use the exact working directory, and base the answer on its exit code, stdout, and stderr. Do not substitute a command suggestion or code block for execution.";
             }
+            if (missingGroup.Contains(
+                    "StartBackgroundShellCommand",
+                    StringComparer.OrdinalIgnoreCase))
+            {
+                return "Execution contract: the user explicitly requested a background command, but no approved application-managed process was started. Call StartBackgroundShellCommand now with the exact command and working directory. A successful start proves only that the process launched; inspect its bounded output or a specialized readiness signal before claiming that the service is ready.";
+            }
             if (missingGroup.Contains("ConvertBatchImages", StringComparer.OrdinalIgnoreCase))
             {
                 return "Execution contract: the user requested real native batch image conversion, but no successful conversion result was collected. Call ConvertBatchImages with the exact approved sources, output format, and destination. Base the answer on its succeeded/failed counts and output paths; do not substitute opening the batch window or merely describe how to convert.";
@@ -515,7 +532,7 @@ namespace ColorVision.Copilot
                 CopilotAgentExecutionRequirement.WorkspaceEditAndValidation =>
                     $"Execution contract: the requested workspace edit and validation are not both complete in order. Apply the approved workspace patch envelope first, then call RunWorkspaceValidation and base the answer on its reported outcome. The next untried required tool is {preferred}; never validate before the write or claim an unverified result.",
                 CopilotAgentExecutionRequirement.WorkspaceEditAndShellExecution =>
-                    $"Execution contract: the requested workspace edit and command execution are not both complete in order. Apply the approved workspace patch envelope first, then call RunShellCommand. The next untried required tool is {preferred}; never claim that the changed code ran without a successful process result.",
+                    $"Execution contract: the requested workspace edit and command execution are not both complete in order. Apply the approved workspace patch envelope first, then call {preferred}. Never claim that the changed code ran without a successful process result.",
                 CopilotAgentExecutionRequirement.WorkspaceEditAndShellExecutionAndValidation =>
                     $"Execution contract: the requested workspace edit, command execution, and validation are not complete in order. Apply the patch first, run the requested command or script second, then call RunWorkspaceValidation. The next untried required tool is {preferred}.",
                 CopilotAgentExecutionRequirement.WorkspaceCreate =>
@@ -525,11 +542,13 @@ namespace ColorVision.Copilot
                 CopilotAgentExecutionRequirement.WorkspaceCreateAndValidation =>
                     $"Execution contract: the requested file creation and validation are not both complete in order. Create the approved file first, then call RunWorkspaceValidation and base the answer on its reported outcome. The next untried required tool is {preferred}; never validate before creation or claim an unverified result.",
                 CopilotAgentExecutionRequirement.WorkspaceCreateAndShellExecution =>
-                    $"Execution contract: the requested script or file creation and execution are not both complete in order. Create the approved file first, then call RunShellCommand from its exact working directory. The next untried required tool is {preferred}; never claim the new file ran without a successful process result.",
+                    $"Execution contract: the requested script or file creation and execution are not both complete in order. Create the approved file first, then call {preferred} from its exact working directory; never claim the new file ran without a successful process result.",
                 CopilotAgentExecutionRequirement.WorkspaceCreateAndShellExecutionAndValidation =>
                     $"Execution contract: the requested file creation, command execution, and validation are not complete in order. Create the file first, run it second, then call RunWorkspaceValidation. The next untried required tool is {preferred}.",
                 CopilotAgentExecutionRequirement.WorkspaceValidation =>
                     $"Execution contract: the user explicitly requested workspace validation, but no approved validation result was collected. Call {preferred} with a workspace solution or project path and report its structured passed/failed outcome; do not claim a build or test was run without this result.",
+                CopilotAgentExecutionRequirement.GitReviewAndWorkspaceValidation =>
+                    $"Execution contract: verification requires current Git working-tree and diff evidence followed by an approved bounded build or test. Call {preferred} for the next missing step and end with PASS only after every required result succeeds; never modify files or claim uncollected validation.",
                 CopilotAgentExecutionRequirement.WorkspaceRollback =>
                     usesPatchEnvelope
                         ? "Execution contract: the requested workspace rollback has not completed. Call RollbackWorkspacePatchEnvelope once with the exact prior changeSetId so every Add/Update/Delete operation is restored as one guarded unit."

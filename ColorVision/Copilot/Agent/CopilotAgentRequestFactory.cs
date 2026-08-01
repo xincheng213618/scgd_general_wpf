@@ -18,12 +18,15 @@ namespace ColorVision.Copilot
 
         public CopilotConversationHistorySnapshot ConversationHistory { get; }
 
+        public IReadOnlyList<string> AdditionalReadRootPaths { get; }
+
         public CopilotAgentHostContextSnapshot(
             string? activeDocumentPath,
             string? solutionDirectoryPath,
             IEnumerable<CopilotAttachmentItem>? attachments,
             CopilotLiveContext? liveContext = null,
-            CopilotConversationHistorySnapshot? conversationHistory = null)
+            CopilotConversationHistorySnapshot? conversationHistory = null,
+            IEnumerable<string>? additionalReadRootPaths = null)
         {
             ActiveDocumentPath = activeDocumentPath ?? string.Empty;
             SolutionDirectoryPath = solutionDirectoryPath ?? string.Empty;
@@ -35,6 +38,7 @@ namespace ColorVision.Copilot
             ConversationHistory = conversationHistory == null
                 ? CopilotConversationHistorySnapshot.Empty
                 : new CopilotConversationHistorySnapshot(conversationHistory.ModelMessages, conversationHistory.VisibleMessages);
+            AdditionalReadRootPaths = CopilotAdditionalDirectoryCommand.NormalizeStoredPaths(additionalReadRootPaths);
         }
 
         private static CopilotLiveContext? CloneLiveContext(CopilotLiveContext? source)
@@ -144,6 +148,8 @@ namespace ColorVision.Copilot
         public CopilotAgentAccessContext AccessContext { get; init; } = new();
 
         public string TaskIntentText { get; init; } = string.Empty;
+
+        public string ActiveGoalText { get; init; } = string.Empty;
     }
 
     public static class CopilotAgentRequestFactory
@@ -161,6 +167,10 @@ namespace ColorVision.Copilot
                 .Where(IsExistingDirectoryPath)
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToArray();
+            var additionalReadRootPaths = CopilotAdditionalDirectoryCommand.NormalizeStoredPaths(
+                hostContext.AdditionalReadRootPaths);
+            var readableLocalDirectoryPaths = CopilotWorkspaceSearchSupport.NormalizeSearchRoots(
+                additionalReadRootPaths.Concat(explicitLocalDirectoryPaths));
             var explicitLocalFilePaths = explicitLocalPaths
                 .Where(path => !IsExistingDirectoryPath(path))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
@@ -176,7 +186,7 @@ namespace ColorVision.Copilot
                 UserText = normalizedUserText,
                 Mode = mode,
                 ReadableLocalFilePaths = explicitLocalFilePaths,
-                ReadableLocalDirectoryPaths = explicitLocalDirectoryPaths,
+                ReadableLocalDirectoryPaths = readableLocalDirectoryPaths,
                 WritableLocalRootPaths = requestedWritableLocalRootPaths,
                 WritableLocalFilePaths = writableLocalFilePaths,
             };
@@ -216,7 +226,7 @@ namespace ColorVision.Copilot
                 ActiveDocumentPath = hostContext.ActiveDocumentPath,
                 ProjectInstructions = projectInstructions,
                 ReadableLocalFilePaths = explicitLocalFilePaths,
-                ReadableLocalDirectoryPaths = explicitLocalDirectoryPaths,
+                ReadableLocalDirectoryPaths = readableLocalDirectoryPaths,
                 WritableLocalRootPaths = writableLocalRootPaths,
                 WritableLocalFilePaths = writableLocalFilePaths,
                 PreferBatchReadLocalFiles = explicitLocalDirectoryPaths.Length > 0 && explicitLocalFilePaths.Length == 0,
@@ -241,6 +251,12 @@ namespace ColorVision.Copilot
                 TaskIntentText = string.IsNullOrWhiteSpace(input.TaskIntentText)
                     ? plan.UserText
                     : input.TaskIntentText.Trim(),
+                ActiveGoalText = CopilotConversationGoal.TryNormalizeObjective(
+                    input.ActiveGoalText,
+                    out var normalizedGoal,
+                    out _)
+                    ? normalizedGoal
+                    : string.Empty,
                 Profile = input.Profile,
                 History = input.History.ToArray(),
                 Attachments = plan.Attachments,
@@ -285,6 +301,9 @@ namespace ColorVision.Copilot
             AddSearchCandidate(roots, hostContext.ActiveDocumentPath);
 
             foreach (var path in explicitLocalPaths)
+                AddSearchCandidate(roots, path);
+
+            foreach (var path in hostContext.AdditionalReadRootPaths)
                 AddSearchCandidate(roots, path);
 
             foreach (var attachment in hostContext.Attachments.Where(item => item.Type == CopilotAttachmentType.File && !string.IsNullOrWhiteSpace(item.Value)))

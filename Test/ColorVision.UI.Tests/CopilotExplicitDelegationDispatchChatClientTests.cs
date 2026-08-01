@@ -71,6 +71,28 @@ public sealed class CopilotExplicitDelegationDispatchChatClientTests
         Assert.Equal("provider fallback", second.Text);
     }
 
+    [Fact]
+    public async Task ActiveGoalUsesProviderForGoalAwarePlanning()
+    {
+        using var provider = new RecordingChatClient("provider fallback");
+        var dispatchCount = 0;
+        using var client = new CopilotExplicitDelegationDispatchChatClient(
+            provider,
+            ExclusiveExploreRequest(activeGoalText: "Keep investigating until every requested file is covered."),
+            DelegateFunctionName,
+            taskLedgerEnabled: false,
+            () => dispatchCount++);
+
+        var response = await client.GetResponseAsync(
+            [new Microsoft.Extensions.AI.ChatMessage(ChatRole.User, "inspect")],
+            ToolOptions(),
+            CancellationToken.None);
+
+        Assert.Equal(1, provider.CallCount);
+        Assert.Equal(0, dispatchCount);
+        Assert.Equal("provider fallback", response.Text);
+    }
+
     [Theory]
     [InlineData(true, true, true, false)]
     [InlineData(false, false, true, false)]
@@ -108,7 +130,9 @@ public sealed class CopilotExplicitDelegationDispatchChatClientTests
         Assert.Equal("provider fallback", response.Text);
     }
 
-    private static CopilotAgentRequest ExclusiveExploreRequest(bool hasConversationHistory = false) => new()
+    private static CopilotAgentRequest ExclusiveExploreRequest(
+        bool hasConversationHistory = false,
+        string? activeGoalText = null) => new()
     {
         UserText =
             "请只使用 DelegateExplore 子 Agent 检查 C:\\workspace 下的 Coordinator.cs 和 Explore.cs，"
@@ -123,6 +147,7 @@ public sealed class CopilotExplicitDelegationDispatchChatClientTests
             : Array.Empty<CopilotRequestMessage>(),
         RequiredSuccessfulToolNames = ["DelegateExplore"],
         RequiresDelegatedWorkspaceEvidence = true,
+        ActiveGoalText = activeGoalText,
     };
 
     private static ChatOptions ToolOptions() => new()

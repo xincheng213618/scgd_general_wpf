@@ -13,6 +13,8 @@ namespace ColorVision.Copilot
 
         public CopilotAgentMode Mode { get; init; }
 
+        public CopilotResponsePersonality ResponsePersonality { get; init; }
+
         public int SystemPromptCharacters { get; init; }
 
         public int SourceHistoryMessages { get; init; }
@@ -37,9 +39,21 @@ namespace ColorVision.Copilot
 
         public int HistoryContextWindowTokens { get; init; }
 
+        public bool AutoCompactConversationHistory { get; init; }
+
+        public int AutoCompactThresholdPercent { get; init; }
+
+        public int AutoCompactInstructionsCharacters { get; init; }
+
         public int CompactedSourceMessages { get; init; }
 
         public int CompactionSummaryCharacters { get; init; }
+
+        public int ConversationGoalCharacters { get; init; }
+
+        public bool ConversationGoalActive { get; init; }
+
+        public bool ConversationGoalAchieved { get; init; }
 
         public int AttachmentCount { get; init; }
 
@@ -85,6 +99,8 @@ namespace ColorVision.Copilot
 
         public int EnabledExternalMcpServers { get; init; }
 
+        public CopilotToolExecutionHookRegistrySnapshot? ToolHookSurface { get; init; }
+
         public IReadOnlyList<CopilotAgentExtensionSourceSnapshot> AgentExtensions { get; init; } = Array.Empty<CopilotAgentExtensionSourceSnapshot>();
 
         public IReadOnlyList<CopilotAgentExtensionIssue> AgentExtensionIssues { get; init; } = Array.Empty<CopilotAgentExtensionIssue>();
@@ -105,7 +121,14 @@ namespace ColorVision.Copilot
             builder.AppendLine();
             builder.Append("模型：").AppendLine(string.IsNullOrWhiteSpace(snapshot.ProfileLabel) ? "未选择" : snapshot.ProfileLabel.Trim());
             builder.Append("模式：").AppendLine(snapshot.Mode.ToString());
-            builder.Append("系统提示：").Append(FormatCount(snapshot.SystemPromptCharacters)).AppendLine(" 字符");
+            builder.Append("回答风格：")
+                .Append(CopilotResponsePersonalitySelection.GetDisplayName(snapshot.ResponsePersonality))
+                .Append('（')
+                .Append(CopilotResponsePersonalitySelection.GetCommandToken(snapshot.ResponsePersonality))
+                .AppendLine("）");
+            builder.Append("有效系统提示：")
+                .Append(FormatCount(snapshot.SystemPromptCharacters))
+                .AppendLine(" 字符（已应用宿主响应规则）");
             builder.Append("对话历史：");
             if (snapshot.SourceHistoryMessages <= 0)
             {
@@ -133,6 +156,21 @@ namespace ColorVision.Copilot
                 .Append("%，窗口 ")
                 .Append(FormatCount(snapshot.HistoryContextWindowTokens))
                 .AppendLine(" Token）");
+            builder.Append("自动压缩：");
+            if (snapshot.AutoCompactConversationHistory)
+            {
+                builder.Append("已开启 · 活动历史达到 ")
+                    .Append(snapshot.AutoCompactThresholdPercent.ToString(CultureInfo.InvariantCulture))
+                    .AppendLine("% 时在发送前压缩；失败时保留原请求");
+            }
+            else
+            {
+                builder.AppendLine("已关闭");
+            }
+            builder.Append("压缩重点：")
+                .AppendLine(snapshot.AutoCompactInstructionsCharacters > 0
+                    ? $"已配置 {FormatCount(snapshot.AutoCompactInstructionsCharacters)} 字符长期要求"
+                    : "使用内置默认要求");
             if (snapshot.CompactionSummaryCharacters > 0)
             {
                 builder.Append("主动压缩：")
@@ -140,6 +178,22 @@ namespace ColorVision.Copilot
                     .Append(" 条来源已归纳为 ")
                     .Append(FormatCount(snapshot.CompactionSummaryCharacters))
                     .AppendLine(" 字符摘要；完整记录仍保留在本地");
+            }
+            builder.Append("持续目标：");
+            if (snapshot.ConversationGoalCharacters <= 0)
+            {
+                builder.AppendLine("无");
+            }
+            else
+            {
+                builder.Append(snapshot.ConversationGoalActive
+                        ? "活动"
+                        : snapshot.ConversationGoalAchieved
+                            ? "已达成"
+                            : "已暂停")
+                    .Append(" · ")
+                    .Append(FormatCount(snapshot.ConversationGoalCharacters))
+                    .AppendLine(" 字符；仅约束完成判定，不授予操作权限");
             }
             builder.Append("附件：").AppendLine(FormatAttachments(snapshot));
             builder.Append("窗口上下文：").AppendLine(snapshot.HasLiveWindowContext ? "已提供" : "无");
@@ -194,6 +248,7 @@ namespace ColorVision.Copilot
             builder.Append("外部 MCP：")
                 .Append(FormatCount(snapshot.EnabledExternalMcpServers))
                 .AppendLine(" 个启用服务；仅在 Agent 请求中发现工具");
+            AppendToolHookDetails(builder, snapshot.ToolHookSurface);
             AppendAgentExtensionDetails(builder, snapshot.AgentExtensions, snapshot.AgentExtensionIssues);
             AppendOptimizationSuggestions(builder, snapshot);
             return builder.ToString().TrimEnd();
@@ -267,6 +322,10 @@ namespace ColorVision.Copilot
                 .Append(FormatCount(extensions.Sum(extension => extension.ActiveToolCount)))
                 .Append('/')
                 .Append(FormatCount(extensions.Sum(extension => extension.DeclaredToolCount)))
+                .Append(" 个已激活/声明；Hook ")
+                .Append(FormatCount(extensions.Sum(extension => extension.ActiveHookCount)))
+                .Append('/')
+                .Append(FormatCount(extensions.Sum(extension => extension.DeclaredHookCount)))
                 .AppendLine(" 个已激活/声明");
 
             foreach (var extension in extensions.Take(12))
@@ -281,6 +340,10 @@ namespace ColorVision.Copilot
                     .Append(FormatCount(extension.ActiveToolCount))
                     .Append('/')
                     .Append(FormatCount(extension.DeclaredToolCount))
+                    .Append(" · hooks ")
+                    .Append(FormatCount(extension.ActiveHookCount))
+                    .Append('/')
+                    .Append(FormatCount(extension.DeclaredHookCount))
                     .AppendLine();
             }
             if (extensions.Count > 12)
@@ -294,6 +357,38 @@ namespace ColorVision.Copilot
             }
             if (issues.Count > 8)
                 builder.Append("  ! ...另有 ").Append(FormatCount(issues.Count - 8)).AppendLine(" 个问题未展开");
+        }
+
+        private static void AppendToolHookDetails(
+            StringBuilder builder,
+            CopilotToolExecutionHookRegistrySnapshot? hookSurface)
+        {
+            if (hookSurface?.IsStructurallyValid() != true)
+            {
+                builder.AppendLine("工具 Hook：无有效运行时快照");
+                return;
+            }
+
+            builder.Append("工具 Hook：")
+                .Append(FormatCount(hookSurface.Entries.Count))
+                .Append(" 个已生效 · revision ")
+                .Append(FormatCount(hookSurface.Revision));
+            if (!string.IsNullOrWhiteSpace(hookSurface.Fingerprint))
+                builder.Append(" · fingerprint ").Append(hookSurface.Fingerprint[..Math.Min(12, hookSurface.Fingerprint.Length)]);
+            builder.AppendLine();
+
+            foreach (var hook in hookSurface.Entries.Take(16))
+            {
+                builder.Append("  - ")
+                    .Append(FormatInlineDiagnosticText(hook.SourceId, "unknown", 160))
+                    .Append(" · matcher ")
+                    .Append(FormatInlineDiagnosticText(hook.ToolNamePattern, "*", 120))
+                    .Append(" · order ")
+                    .Append(hook.Order)
+                    .AppendLine();
+            }
+            if (hookSurface.Entries.Count > 16)
+                builder.Append("  - ...另有 ").Append(FormatCount(hookSurface.Entries.Count - 16)).AppendLine(" 个 Hook 未展开");
         }
 
         private static string FormatInlineDiagnosticText(string? value, string fallback, int maxLength)

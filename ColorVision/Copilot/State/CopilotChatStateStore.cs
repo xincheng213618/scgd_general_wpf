@@ -105,6 +105,22 @@ namespace ColorVision.Copilot
             };
             AddStringProperty(_document, nameof(CopilotChatState.ActiveConversationId), state.ActiveConversationId);
             AddStringProperty(_document, nameof(CopilotChatState.ActiveProfileId), state.ActiveProfileId);
+            if (!state.IsAgentTaskPanelExpanded)
+                _document[nameof(CopilotChatState.IsAgentTaskPanelExpanded)] = false;
+            if (!state.ShowMessageTimestamps)
+                _document[nameof(CopilotChatState.ShowMessageTimestamps)] = false;
+            if (state.UseCompactMessageLayout)
+                _document[nameof(CopilotChatState.UseCompactMessageLayout)] = true;
+            if (!state.EnablePromptHistoryCompletions)
+                _document[nameof(CopilotChatState.EnablePromptHistoryCompletions)] = false;
+            if (state.UseMultilineComposer)
+                _document[nameof(CopilotChatState.UseMultilineComposer)] = true;
+            var followUpBehavior = CopilotFollowUpPreference.Normalize(state.DefaultFollowUpBehavior);
+            if (followUpBehavior != CopilotFollowUpBehavior.Steer)
+            {
+                _document[nameof(CopilotChatState.DefaultFollowUpBehavior)] =
+                    (int)followUpBehavior;
+            }
             if (_queuedFollowUpRecoveryDocuments != null)
                 _document[nameof(CopilotChatState.QueuedFollowUpRecoveries)] = _queuedFollowUpRecoveryDocuments;
         }
@@ -595,7 +611,11 @@ namespace ColorVision.Copilot
             var referencedPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var attachment in (state.Conversations ?? new System.Collections.ObjectModel.ObservableCollection<CopilotConversationRecord>())
                 .Where(conversation => conversation != null)
-                .SelectMany(conversation => conversation.EnumerateReferencedAttachments()))
+                .SelectMany(conversation => conversation.EnumerateReferencedAttachments())
+                .Concat((state.QueuedFollowUpRecoveries
+                        ?? new System.Collections.ObjectModel.ObservableCollection<CopilotQueuedFollowUpRecoveryRecord>())
+                    .Where(recovery => recovery != null)
+                    .SelectMany(recovery => recovery.EnumerateReferencedAttachments())))
             {
                 if (string.IsNullOrWhiteSpace(attachment.Value))
                     continue;
@@ -783,6 +803,12 @@ namespace ColorVision.Copilot
         {
             if (!IsStringOrNull(document.GetValue(nameof(CopilotChatState.ActiveConversationId), StringComparison.OrdinalIgnoreCase))
                 || !IsStringOrNull(document.GetValue(nameof(CopilotChatState.ActiveProfileId), StringComparison.OrdinalIgnoreCase))
+                || !IsOptionalBoolean(document.GetValue(nameof(CopilotChatState.IsAgentTaskPanelExpanded), StringComparison.OrdinalIgnoreCase))
+                || !IsOptionalBoolean(document.GetValue(nameof(CopilotChatState.ShowMessageTimestamps), StringComparison.OrdinalIgnoreCase))
+                || !IsOptionalBoolean(document.GetValue(nameof(CopilotChatState.UseCompactMessageLayout), StringComparison.OrdinalIgnoreCase))
+                || !IsOptionalBoolean(document.GetValue(nameof(CopilotChatState.EnablePromptHistoryCompletions), StringComparison.OrdinalIgnoreCase))
+                || !IsOptionalBoolean(document.GetValue(nameof(CopilotChatState.UseMultilineComposer), StringComparison.OrdinalIgnoreCase))
+                || !IsOptionalInteger(document.GetValue(nameof(CopilotChatState.DefaultFollowUpBehavior), StringComparison.OrdinalIgnoreCase))
                 || document.GetValue(nameof(CopilotChatState.Conversations), StringComparison.OrdinalIgnoreCase) is not JArray conversations)
             {
                 return false;
@@ -794,6 +820,11 @@ namespace ColorVision.Copilot
                     || conversation.GetValue(nameof(CopilotConversationRecord.Messages), StringComparison.OrdinalIgnoreCase) is not JArray messages
                     || conversation.GetValue(nameof(CopilotConversationRecord.Attachments), StringComparison.OrdinalIgnoreCase) is not JArray attachments
                     || !IsOptionalString(conversation.GetValue(nameof(CopilotConversationRecord.DraftText), StringComparison.OrdinalIgnoreCase))
+                    || !IsOptionalInteger(conversation.GetValue(nameof(CopilotConversationRecord.DraftRequestMode), StringComparison.OrdinalIgnoreCase))
+                    || !IsOptionalComposerStash(conversation.GetValue(nameof(CopilotConversationRecord.ComposerStash), StringComparison.OrdinalIgnoreCase))
+                    || !IsOptionalPendingSteeringRecoveries(conversation.GetValue(nameof(CopilotConversationRecord.PendingSteeringRecoveries), StringComparison.OrdinalIgnoreCase))
+                    || !IsOptionalObject(conversation.GetValue(nameof(CopilotConversationRecord.BranchOrigin), StringComparison.OrdinalIgnoreCase))
+                    || !IsOptionalBoolean(conversation.GetValue(nameof(CopilotConversationRecord.IsArchived), StringComparison.OrdinalIgnoreCase))
                     || messages.Any(item => item is not JObject)
                     || attachments.Any(item => item is not JObject))
                 {
@@ -812,7 +843,8 @@ namespace ColorVision.Copilot
                     if (recoveryTokenItem is not JObject recovery
                         || !IsOptionalString(recovery.GetValue(nameof(CopilotQueuedFollowUpRecoveryRecord.RunId), StringComparison.OrdinalIgnoreCase))
                         || !IsOptionalString(recovery.GetValue(nameof(CopilotQueuedFollowUpRecoveryRecord.ConversationId), StringComparison.OrdinalIgnoreCase))
-                        || !IsOptionalString(recovery.GetValue(nameof(CopilotQueuedFollowUpRecoveryRecord.Prompt), StringComparison.OrdinalIgnoreCase)))
+                        || !IsOptionalString(recovery.GetValue(nameof(CopilotQueuedFollowUpRecoveryRecord.Prompt), StringComparison.OrdinalIgnoreCase))
+                        || !IsOptionalComposerStash(recovery.GetValue(nameof(CopilotQueuedFollowUpRecoveryRecord.ComposerState), StringComparison.OrdinalIgnoreCase)))
                     {
                         return false;
                     }
@@ -825,6 +857,52 @@ namespace ColorVision.Copilot
         private static bool IsStringOrNull(JToken? token) => token?.Type is JTokenType.String or JTokenType.Null;
 
         private static bool IsOptionalString(JToken? token) => token == null || IsStringOrNull(token);
+
+        private static bool IsOptionalBoolean(JToken? token) =>
+            token == null || token.Type is JTokenType.Boolean or JTokenType.Null;
+
+        private static bool IsOptionalInteger(JToken? token) =>
+            token == null || token.Type is JTokenType.Integer or JTokenType.Null;
+
+        private static bool IsOptionalObject(JToken? token) => token == null || token.Type == JTokenType.Null || token is JObject;
+
+        private static bool IsOptionalComposerStash(JToken? token)
+        {
+            if (token == null || token.Type == JTokenType.Null)
+                return true;
+            if (token is not JObject stash
+                || !IsOptionalString(stash.GetValue(nameof(CopilotComposerStash.Text), StringComparison.OrdinalIgnoreCase)))
+            {
+                return false;
+            }
+
+            var caretIndex = stash.GetValue(nameof(CopilotComposerStash.CaretIndex), StringComparison.OrdinalIgnoreCase);
+            var requestMode = stash.GetValue(nameof(CopilotComposerStash.RequestMode), StringComparison.OrdinalIgnoreCase);
+            var attachments = stash.GetValue(nameof(CopilotComposerStash.Attachments), StringComparison.OrdinalIgnoreCase);
+            return (caretIndex == null || caretIndex.Type is JTokenType.Integer or JTokenType.Null)
+                && (requestMode == null || requestMode.Type is JTokenType.Integer or JTokenType.Null)
+                && (attachments == null
+                    || attachments.Type == JTokenType.Null
+                    || attachments is JArray attachmentArray
+                        && attachmentArray.All(item => item is JObject));
+        }
+
+        private static bool IsOptionalPendingSteeringRecoveries(JToken? token)
+        {
+            if (token == null || token.Type == JTokenType.Null)
+                return true;
+            if (token is not JArray records)
+                return false;
+
+            return records.All(item => item is JObject record
+                && IsOptionalString(record.GetValue(nameof(CopilotPendingSteeringRecoveryRecord.MessageId), StringComparison.OrdinalIgnoreCase))
+                && IsOptionalString(record.GetValue(nameof(CopilotPendingSteeringRecoveryRecord.TaskId), StringComparison.OrdinalIgnoreCase))
+                && IsOptionalString(record.GetValue(nameof(CopilotPendingSteeringRecoveryRecord.Text), StringComparison.OrdinalIgnoreCase))
+                && IsOptionalDate(record.GetValue(nameof(CopilotPendingSteeringRecoveryRecord.AcceptedAtUtc), StringComparison.OrdinalIgnoreCase)));
+        }
+
+        private static bool IsOptionalDate(JToken? token) =>
+            token == null || token.Type is JTokenType.Date or JTokenType.String or JTokenType.Null;
 
         private static bool IsPathUnderRoot(string path, string root)
         {
