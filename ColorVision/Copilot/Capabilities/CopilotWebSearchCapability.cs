@@ -281,13 +281,7 @@ namespace ColorVision.Copilot
             if (!string.IsNullOrWhiteSpace(uddg) && Uri.TryCreate(uddg, UriKind.Absolute, out var decodedUri))
                 uri = decodedUri;
 
-            if (!string.Equals(uri.Scheme, Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase)
-                && !string.Equals(uri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase))
-            {
-                return string.Empty;
-            }
-
-            if (uri.IsLoopback || string.Equals(uri.Host, "localhost", StringComparison.OrdinalIgnoreCase))
+            if (!CopilotWebPageToolSupport.IsPotentiallyPublicWebPageUri(uri))
                 return string.Empty;
 
             return uri.ToString();
