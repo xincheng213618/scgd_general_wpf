@@ -93,6 +93,11 @@ namespace ColorVision.Copilot
             "PASSWORD", "PASSWD", "PWD", "SECRET", "TOKEN", "API_KEY", "APIKEY", "AUTHORIZATION",
             "BEARER", "PRIVATE_KEY", "ACCESS_KEY",
         };
+        private static readonly HashSet<string> SideEffectFunctions = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "GET_LOCK", "RELEASE_LOCK", "MASTER_POS_WAIT", "WAIT_FOR_EXECUTED_GTID_SET",
+            "WAIT_UNTIL_SQL_THREAD_AFTER_GTIDS", "LAST_INSERT_ID",
+        };
 
         public static bool TryAnalyze(string? sql, out CopilotDatabaseSqlAnalysis? analysis, out string error)
         {
@@ -175,6 +180,16 @@ namespace ColorVision.Copilot
                     || ContainsSequence(normalizedTokens, "LOCK", "IN", "SHARE", "MODE")))
             {
                 error = "Row-locking SELECT statements are not available to the read-only database tool.";
+                return false;
+            }
+            if (root == "SELECT" && normalizedTokens.Contains(":=", StringComparer.OrdinalIgnoreCase))
+            {
+                error = "SELECT user-variable assignments are not available to the read-only database tool.";
+                return false;
+            }
+            if (tokens.Any(token => token.IsFunction && SideEffectFunctions.Contains(token.Text)))
+            {
+                error = "Session-lock and replication-wait SQL functions are not available to Copilot.";
                 return false;
             }
             if (root is "CREATE" or "ALTER" or "DROP" or "RENAME")
@@ -365,12 +380,22 @@ namespace ColorVision.Copilot
                     index++;
                     continue;
                 }
+                if (current == ':' && index + 1 < sql.Length && sql[index + 1] == '=')
+                {
+                    tokens.Add(new SqlToken(":=", depth, tokens.Count));
+                    index += 2;
+                    continue;
+                }
                 if (char.IsLetter(current) || current == '_')
                 {
                     var start = index++;
                     while (index < sql.Length && (char.IsLetterOrDigit(sql[index]) || sql[index] is '_' or '$'))
                         index++;
-                    tokens.Add(new SqlToken(sql[start..index], depth, tokens.Count));
+                    tokens.Add(new SqlToken(
+                        sql[start..index],
+                        depth,
+                        tokens.Count,
+                        IsFollowedByOpenParenthesis(sql, index)));
                     continue;
                 }
                 index++;
@@ -381,6 +406,42 @@ namespace ColorVision.Copilot
                 return false;
             }
             return true;
+        }
+
+        private static bool IsFollowedByOpenParenthesis(string sql, int index)
+        {
+            while (index < sql.Length)
+            {
+                if (char.IsWhiteSpace(sql[index]))
+                {
+                    index++;
+                    continue;
+                }
+                if (sql[index] == '-' && index + 1 < sql.Length && sql[index + 1] == '-')
+                {
+                    index += 2;
+                    while (index < sql.Length && sql[index] is not '\r' and not '\n')
+                        index++;
+                    continue;
+                }
+                if (sql[index] == '#')
+                {
+                    while (index < sql.Length && sql[index] is not '\r' and not '\n')
+                        index++;
+                    continue;
+                }
+                if (sql[index] == '/' && index + 1 < sql.Length && sql[index + 1] == '*')
+                {
+                    var end = sql.IndexOf("*/", index + 2, StringComparison.Ordinal);
+                    if (end < 0)
+                        return false;
+                    index = end + 2;
+                    continue;
+                }
+                return sql[index] == '(';
+            }
+
+            return false;
         }
 
         private static bool ContainsSequence(string[] values, string first, string second)
@@ -420,7 +481,7 @@ namespace ColorVision.Copilot
             return false;
         }
 
-        private sealed record SqlToken(string Text, int Depth, int Index);
+        private sealed record SqlToken(string Text, int Depth, int Index, bool IsFunction = false);
     }
 
     internal sealed class CopilotMySqlDatabaseSqlExecutor : ICopilotDatabaseSqlExecutor
