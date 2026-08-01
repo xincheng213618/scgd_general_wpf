@@ -211,62 +211,18 @@ namespace ColorVision.Copilot
                     $"Active background command context · {activeBackgroundShellCommandCount} current-conversation command(s) captured for this request."));
             }
 
-            var providerInactivityTimeouts =
-                CopilotProviderInactivityPolicy.Resolve(request.Profile);
-            var usedDelegatedDirectAnswer = false;
-            var toolSurface = default(CopilotAgentToolSurfaceMetrics);
-            var providerChatClient = new CopilotProviderInactivityChatClient(
-                new CopilotCancellationGuardChatClient(
-                    _chatClientFactory(request.Profile)),
-                providerInactivityTimeouts.FirstResponseTimeout,
-                providerInactivityTimeouts.StreamingUpdateTimeout);
-            chatClient = new CopilotTokenBudgetChatClient(
-                providerChatClient,
+            var providerPipeline = CreateProviderClientPipeline(
+                request,
+                runBudget,
+                stopwatch,
                 tokenBudget,
-                snapshot => emit(CopilotAgentEvent.RuntimeDiagnostic(
-                    $"Agent token budget exhausted after {snapshot.ProviderCalls} provider call(s); the model loop was stopped without replaying tools.")),
-                snapshot => emit(CopilotAgentEvent.BudgetUpdated(runBudget.CreateSnapshot(
-                    snapshot,
-                    stopwatch.Elapsed,
-                    bridge.StepRecords.Count,
-                    timeBudgetExhausted: false,
-                    bridge.ToolBudgetExhausted,
-                    usedDelegatedDirectAnswer,
-                    toolSurface))));
-            var retryChatClient = new CopilotProviderRetryChatClient(
-                chatClient,
-                retry =>
-                {
-                    chatClient.RecordProviderRetry(retry);
-                    emit(CopilotAgentEvent.FromProviderRetry(retry));
-                });
-            var contextRecoveryChatClient = new CopilotContextWindowRecoveryChatClient(
-                retryChatClient,
-                tokenBudget.InputBudgetTokens,
-                recoveryInfo =>
-                {
-                    chatClient.RecordContextRecovery(recoveryInfo);
-                    emit(CopilotAgentEvent.RuntimeDiagnostic(recoveryInfo.ToDiagnosticText()));
-                });
-            var delegatedDirectAnswerChatClient = new CopilotDelegatedDirectAnswerChatClient(
-                contextRecoveryChatClient,
-                request,
-                () => bridge.StepRecords,
-                taskLedgerEnabled,
-                () =>
-                {
-                    usedDelegatedDirectAnswer = true;
-                    emit(CopilotAgentEvent.RuntimeDiagnostic(
-                        "The explicit completed DelegateExplore result was returned directly without a second parent provider call."));
-                });
-            var explicitDelegationDispatchChatClient = new CopilotExplicitDelegationDispatchChatClient(
-                delegatedDirectAnswerChatClient,
-                request,
-                HarnessToolBridge.ToFunctionName("DelegateExplore"),
-                taskLedgerEnabled,
-                () => emit(CopilotAgentEvent.RuntimeDiagnostic(
-                    "The explicit exclusive DelegateExplore request was dispatched directly without a parent provider planning call.")));
-            using var trackingChatClient = new CopilotUnknownToolCallTrackingChatClient(explicitDelegationDispatchChatClient, bridge.RecordUnknownToolCall);
+                bridge,
+                emit,
+                taskLedgerEnabled);
+            using var providerPipelineLifetime = providerPipeline;
+            chatClient = providerPipeline.ChatClient;
+            var contextRecoveryChatClient = providerPipeline.ContextRecoveryChatClient;
+            var trackingChatClient = providerPipeline.TrackingChatClient;
             LiveCheckpointPublisher? liveCheckpointPublisher = null;
             async ValueTask OnHistoryStoredAsync(AIAgent checkpointAgent, AgentSession checkpointSession, CancellationToken checkpointToken)
             {
@@ -302,13 +258,13 @@ namespace ColorVision.Copilot
                 + (requiresCheckpointReplan
                     ? "\n\nThe persisted task plan was discarded because its runtime context changed or predates safe checkpoint tracking. Re-plan from the current conversation and current tools before taking action; do not assume prior todo items remain valid."
                     : string.Empty);
-            toolSurface = CopilotAgentToolSurfaceMetrics.Capture(
+            providerPipeline.ToolSurface = CopilotAgentToolSurfaceMetrics.Capture(
                 registeredToolCount,
                 availableTools,
                 harnessInstructions);
             emit(CopilotAgentEvent.RuntimeDiagnostic(
-                $"Request prompt surface · {toolSurface.AvailableToolDefinitionCharacters:N0} tool-definition character(s)"
-                + $" · {toolSurface.HarnessInstructionCharacters:N0} harness-instruction character(s)."));
+                $"Request prompt surface · {providerPipeline.ToolSurface.AvailableToolDefinitionCharacters:N0} tool-definition character(s)"
+                + $" · {providerPipeline.ToolSurface.HarnessInstructionCharacters:N0} harness-instruction character(s)."));
             var agent = trackingChatClient.AsHarnessAgent(new HarnessAgentOptions
             {
                 Name = "ColorVisionCopilot",
@@ -558,8 +514,8 @@ namespace ColorVision.Copilot
                 bridge.StepRecords.Count,
                 timeBudgetExhausted,
                 bridge.ToolBudgetExhausted,
-                usedDelegatedDirectAnswer,
-                toolSurface);
+                providerPipeline.UsedDelegatedDirectAnswer,
+                providerPipeline.ToolSurface);
             var skillSelectionDiagnostic = agentSkills.BuildSelectionDiagnostic();
             if (!string.IsNullOrWhiteSpace(skillSelectionDiagnostic))
                 emit(CopilotAgentEvent.RuntimeDiagnostic(skillSelectionDiagnostic));
