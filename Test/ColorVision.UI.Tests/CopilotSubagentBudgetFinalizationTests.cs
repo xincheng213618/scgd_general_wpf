@@ -806,6 +806,20 @@ public sealed class CopilotSubagentBudgetFinalizationTests
         Assert.Equal(14_000, combined.ElapsedMs);
     }
 
+    [Fact]
+    public void CompletedFinalizationSaturatesCombinedConsumedTokens()
+    {
+        var combined = CopilotSubagentRunner.CombineBudgets(
+            new CopilotAgentBudgetSnapshot { ConsumedTokens = long.MaxValue },
+            new CopilotAgentBudgetSnapshot { ConsumedTokens = 1 },
+            totalTokenBudget: 16_384,
+            elapsed: TimeSpan.Zero,
+            finalizationCompleted: true);
+
+        Assert.Equal(long.MaxValue, combined.ConsumedTokens);
+        Assert.True(combined.RequestTokenBudgetExhausted);
+    }
+
     private static CopilotAgentRequest CreateChildRequest(CopilotSubagentRoleDescriptor role)
     {
         var parentRequest = new CopilotAgentRequest

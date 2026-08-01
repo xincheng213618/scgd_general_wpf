@@ -271,7 +271,7 @@ namespace ColorVision.Copilot
                 totalTokenBudget,
                 CopilotAgentRunBudget.MinimumRequestTokenBudget,
                 CopilotAgentRunBudget.MaximumRequestTokenBudget);
-            var consumedTokens = Math.Max(0, exploration.ConsumedTokens) + Math.Max(0, finalization.ConsumedTokens);
+            var consumedTokens = AddClampedLong(exploration.ConsumedTokens, finalization.ConsumedTokens);
             var totalRequestBudgetExhausted = consumedTokens >= normalizedTotalTokenBudget;
             var registeredToolCount = Math.Max(
                 Math.Max(0, exploration.RegisteredToolCount),
