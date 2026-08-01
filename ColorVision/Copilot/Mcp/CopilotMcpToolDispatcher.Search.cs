@@ -234,6 +234,12 @@ namespace ColorVision.Copilot.Mcp
                 return false;
             }
 
+            if (CopilotWorkspaceSearchSupport.HasReparsePointInPath(resolvedFullPath))
+            {
+                error = $"The path crosses a file-system reparse point and is not allowed: {fullPath}";
+                return false;
+            }
+
             return true;
         }
 
