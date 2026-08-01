@@ -588,7 +588,11 @@ namespace ProjectARVRPro
                 _currentFlowProcess = runProcessMeta?.Process ?? ProcessManager.CreateBlankProcess();
                 _currentFlowTemplateId = flowTemplate.Id;
                 LastFlowTime = await Task.Run(
-                    () => FlowNodeRecordDataBaseHelper.GetLastCompletedFlowElapsed(flowTemplate.Id, flowTemplate.Key),
+                    () => FlowNodeRecordDataBaseHelper.GetLastCompletedFlowElapsed(
+                        new FlowIdentity(
+                            flowTemplate.Id,
+                            flowTemplate.Key,
+                            flowTemplate.Key)),
                     cancellationToken);
 
                 CurrentFlowResult = new ProjectARVRReuslt();
@@ -2065,7 +2069,11 @@ namespace ProjectARVRPro
                     CurrentFlowResult.FlowStatus = FlowStatus.Ready;
 
                     LastFlowTime = await Task.Run(
-                        () => FlowNodeRecordDataBaseHelper.GetLastCompletedFlowElapsed(templateParam.Id, FlowName),
+                        () => FlowNodeRecordDataBaseHelper.GetLastCompletedFlowElapsed(
+                            new FlowIdentity(
+                                templateParam.Id,
+                                templateParam.Key,
+                                FlowName)),
                         cancellationToken);
 
                     CreateCurrentFlowBatch();

@@ -3,11 +3,11 @@ using System;
 namespace ColorVision.Engine.FlowProcessing.Diagnostics;
 
 /// <summary>
-/// Internal identity used when querying flow execution history. FlowKey is the
+/// Identity used when querying flow execution history. FlowKey is the
 /// canonical identity; TemplateId and FlowName are compatibility fallbacks for
 /// records written before a stable FlowKey was available.
 /// </summary>
-internal readonly record struct FlowIdentity
+public readonly record struct FlowIdentity
 {
     public FlowIdentity(
         int templateId,
