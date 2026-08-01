@@ -69,4 +69,29 @@ public sealed class CopilotLocalPathAuthorizationTests
 
         Assert.Equal([expected], paths, StringComparer.OrdinalIgnoreCase);
     }
+
+    [Fact]
+    public void MissingAbsoluteFileKeepsItsExistingParentSearchable()
+    {
+        var root = Path.Combine(Path.GetTempPath(), $"copilot-missing-file-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(root);
+        var missingFile = Path.Combine(root, "GeneratedLater.cs");
+        try
+        {
+            var plan = CopilotAgentRequestFactory.Prepare(
+                $"检查文件 {missingFile}",
+                CopilotAgentMode.Auto,
+                new CopilotAgentHostContextSnapshot(
+                    activeDocumentPath: null,
+                    solutionDirectoryPath: null,
+                    attachments: null));
+
+            Assert.Equal([missingFile], plan.ReadableLocalFilePaths, StringComparer.OrdinalIgnoreCase);
+            Assert.Equal([root], plan.SearchRootPaths, StringComparer.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
 }
