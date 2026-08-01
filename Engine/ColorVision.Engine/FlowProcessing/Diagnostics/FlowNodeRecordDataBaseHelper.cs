@@ -554,7 +554,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             return result;
         }
 
-        internal static long GetLastCompletedFlowElapsed(
+        public static long GetLastCompletedFlowElapsed(
             FlowIdentity identity)
         {
             if (identity.IsEmpty)

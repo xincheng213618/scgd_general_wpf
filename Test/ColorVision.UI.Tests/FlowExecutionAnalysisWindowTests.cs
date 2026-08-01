@@ -6,6 +6,15 @@ namespace ColorVision.UI.Tests;
 public class FlowExecutionAnalysisWindowTests
 {
     [Fact]
+    public void FlowHistoryIdentityApiIsPublicForExternalProjects()
+    {
+        Assert.True(typeof(FlowIdentity).IsPublic);
+        Assert.NotNull(typeof(FlowNodeRecordDataBaseHelper).GetMethod(
+            nameof(FlowNodeRecordDataBaseHelper.GetLastCompletedFlowElapsed),
+            [typeof(FlowIdentity)]));
+    }
+
+    [Fact]
     public void ResolveBatchSerialNumberPrefersExecutedCode()
     {
         var batch = new MeasureBatchModel
