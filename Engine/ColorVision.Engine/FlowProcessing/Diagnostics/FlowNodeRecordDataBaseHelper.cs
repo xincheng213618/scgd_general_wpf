@@ -272,6 +272,59 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             }
         }
 
+        public static List<FlowNodeRecord> GetBySerialNumbers(IEnumerable<string> serialNumbers)
+        {
+            string[] selectedSerialNumbers = serialNumbers?
+                .Where(serialNumber => !string.IsNullOrWhiteSpace(serialNumber))
+                .Distinct(StringComparer.Ordinal)
+                .ToArray() ?? Array.Empty<string>();
+            if (selectedSerialNumbers.Length == 0)
+                return new List<FlowNodeRecord>();
+
+            EnsureInitialized();
+            try
+            {
+                using var db = CreateReadDb();
+                return db.Queryable<FlowNodeRecord>()
+                    .Where(item => selectedSerialNumbers.Contains(item.SerialNumber))
+                    .OrderBy(item => item.StartTime)
+                    .ToList();
+            }
+            catch (Exception ex)
+            {
+                log.Error("查询多次流程执行节点记录失败", ex);
+                return new List<FlowNodeRecord>();
+            }
+        }
+
+        public static List<FlowNodeRecord> GetRecentByNodeIds(
+            IEnumerable<string> nodeIds,
+            int limit = 5000)
+        {
+            string[] selectedNodeIds = nodeIds?
+                .Where(nodeId => !string.IsNullOrWhiteSpace(nodeId))
+                .Distinct(StringComparer.Ordinal)
+                .ToArray() ?? Array.Empty<string>();
+            if (selectedNodeIds.Length == 0 || limit <= 0)
+                return new List<FlowNodeRecord>();
+
+            EnsureInitialized();
+            try
+            {
+                using var db = CreateReadDb();
+                return db.Queryable<FlowNodeRecord>()
+                    .Where(item => selectedNodeIds.Contains(item.NodeId))
+                    .OrderByDescending(item => item.StartTime)
+                    .Take(limit)
+                    .ToList();
+            }
+            catch (Exception ex)
+            {
+                log.Error("按节点查询相同流程执行记录失败", ex);
+                return new List<FlowNodeRecord>();
+            }
+        }
+
         public static Dictionary<string, long> GetLastElapsedByNodeIds(IEnumerable<string> nodeIds)
         {
             EnsureInitialized();
@@ -370,6 +423,44 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             {
                 log.Error("插入流程运行记录失败", ex);
                 return -1;
+            }
+        }
+
+        public static List<FlowRunRecord> GetSameFlowRuns(
+            string? serialNumber,
+            int limit = 500)
+        {
+            if (string.IsNullOrWhiteSpace(serialNumber) || limit <= 0)
+                return new List<FlowRunRecord>();
+
+            EnsureInitialized();
+            try
+            {
+                using var db = CreateReadDb();
+                FlowRunRecord? currentRun = db.Queryable<FlowRunRecord>()
+                    .Where(item => item.SerialNumber == serialNumber)
+                    .OrderByDescending(item => item.CompletedTime)
+                    .First();
+                if (currentRun == null)
+                    return new List<FlowRunRecord>();
+
+                var query = db.Queryable<FlowRunRecord>();
+                if (currentRun.TemplateId > 0)
+                    query = query.Where(item => item.TemplateId == currentRun.TemplateId);
+                else if (!string.IsNullOrWhiteSpace(currentRun.FlowName))
+                    query = query.Where(item => item.TemplateId <= 0 && item.FlowName == currentRun.FlowName);
+                else
+                    return new List<FlowRunRecord>();
+
+                return query
+                    .OrderByDescending(item => item.CompletedTime)
+                    .Take(limit)
+                    .ToList();
+            }
+            catch (Exception ex)
+            {
+                log.Error("查询相同流程历史执行记录失败", ex);
+                return new List<FlowRunRecord>();
             }
         }
 
