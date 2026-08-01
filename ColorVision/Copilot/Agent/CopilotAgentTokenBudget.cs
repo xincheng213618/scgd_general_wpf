@@ -222,7 +222,9 @@ namespace ColorVision.Copilot
                     AddClamped(
                         _contextRecoveryEstimatedInputTokensAfter,
                         delegatedRun.ContextRecoveryEstimatedInputTokensAfter));
-                _consumedTokens += Math.Max(Math.Max(0, delegatedRun.ConsumedTokens), delegatedRun.Usage.EffectiveTotalTokens);
+                _consumedTokens = AddClamped(
+                    _consumedTokens,
+                    Math.Max(Math.Max(0, delegatedRun.ConsumedTokens), delegatedRun.Usage.EffectiveTotalTokens));
                 _usedEstimatedUsage |= delegatedRun.UsedEstimatedUsage;
                 if (_consumedTokens >= _budget.RequestTokenBudget)
                     _budgetExhausted = true;
@@ -491,7 +493,9 @@ namespace ColorVision.Copilot
             CopilotAgentBudgetSnapshot? notification = null;
             lock (_syncRoot)
             {
-                var wouldExceedBudget = _consumedTokens + Math.Max(1, estimatedInputTokens) > _budget.RequestTokenBudget;
+                var wouldExceedBudget = AddClamped(
+                    _consumedTokens,
+                    Math.Max(1, estimatedInputTokens)) > _budget.RequestTokenBudget;
                 if (_consumedTokens >= _budget.RequestTokenBudget || wouldExceedBudget)
                 {
                     _budgetExhausted = true;
@@ -532,7 +536,7 @@ namespace ColorVision.Copilot
                 {
                     _usedEstimatedUsage = true;
                 }
-                _consumedTokens += consumedTokens;
+                _consumedTokens = AddClamped(_consumedTokens, consumedTokens);
 
                 if (_consumedTokens >= _budget.RequestTokenBudget)
                     _budgetExhausted = true;

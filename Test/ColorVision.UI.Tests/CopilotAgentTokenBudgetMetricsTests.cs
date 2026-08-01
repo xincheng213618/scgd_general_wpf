@@ -269,6 +269,24 @@ public sealed class CopilotAgentTokenBudgetMetricsTests
     }
 
     [Fact]
+    public void DelegatedUsageSaturatesConsumedTokensInsteadOfWrapping()
+    {
+        using var client = CreateClient(usage: null);
+
+        client.RecordDelegatedRunUsage(new CopilotDelegatedRunUsage
+        {
+            ConsumedTokens = long.MaxValue,
+        });
+        client.RecordDelegatedRunUsage(new CopilotDelegatedRunUsage
+        {
+            ConsumedTokens = 1,
+        });
+
+        Assert.Equal(long.MaxValue, client.Snapshot.ConsumedTokens);
+        Assert.True(client.Snapshot.BudgetExhausted);
+    }
+
+    [Fact]
     public async Task SnapshotRetainsPeakInputEstimateWhenProviderOmitsUsage()
     {
         using var client = CreateClient(usage: null);

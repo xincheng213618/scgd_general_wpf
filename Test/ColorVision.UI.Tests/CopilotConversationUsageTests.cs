@@ -390,6 +390,16 @@ public sealed class CopilotConversationUsageTests
         Assert.Equal(int.MaxValue, combined.EffectiveTotalTokens);
     }
 
+    [Fact]
+    public void UsageProgressSaturatesDerivedTotalInsteadOfOverflowing()
+    {
+        var merged = new CopilotTokenUsage(int.MaxValue, 0, 0)
+            .MergeProgress(new CopilotTokenUsage(0, int.MaxValue, 0));
+
+        Assert.Equal(int.MaxValue, merged.TotalTokens);
+        Assert.Equal(int.MaxValue, merged.EffectiveTotalTokens);
+    }
+
     private static CopilotConversationRecord CreateConversation()
     {
         return CopilotConversationRecord.CreateEmpty("profile-id", "Primary");
