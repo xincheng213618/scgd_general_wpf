@@ -155,54 +155,25 @@ namespace ColorVision.Copilot
                 () => _capabilityCatalog.GetSnapshot().Revision,
                 delegatedRun => chatClient?.RecordDelegatedRunUsage(delegatedRun),
                 toolBudgetCancellation.RequestCancellation);
-            var executionContract = CopilotAgentExecutionContract.Create(request, availableTools);
-            if (executionContract.IsRequired)
-            {
-                emit(CopilotAgentEvent.RuntimeDiagnostic(
-                    $"Agent execution contract enabled · {executionContract.Description} · accepted tools: {string.Join(", ", executionContract.AcceptedToolNames)}."));
-            }
-            var frameworkTools = bridge.CreateFunctions();
-            if (request.RuntimePurpose == CopilotAgentRuntimePurpose.Standard)
-                frameworkTools.Add(new HarnessToolBridge.UserQuestionAIFunction(_userQuestionCoordinator, request, emit));
-            var preparedPrompt = _contextBuilder.BuildAnswerMessages(request, Array.Empty<CopilotAgentStepRecord>());
-            var tokenBudget = CopilotAgentTokenBudget.Create(request.Profile, runBudget);
-            var compactionStrategy = new ContextWindowCompactionStrategy(
-                tokenBudget.ContextWindowTokens,
-                request.Profile.MaxTokens);
-            var autonomousTaskPasses = runBudget.MaxAgentPasses;
-            var taskLedgerAvailable = request.HarnessFeatures.HasFlag(CopilotAgentHarnessFeatures.TaskLedger);
-            var taskLedgerEnabled = taskLedgerAvailable && CopilotToolIntentPolicy.NeedsTaskLedger(request);
-            var agentModeEnabled = taskLedgerEnabled && request.HarnessFeatures.HasFlag(CopilotAgentHarnessFeatures.AgentMode);
-            var minimalDelegatedFinalization = CanUseMinimalDelegatedFinalizationInstructions(
+            var harnessPreparation = PrepareHarnessPolicy(
                 request,
+                runBudget,
                 availableTools,
-                taskLedgerEnabled,
-                agentModeEnabled);
-            var skillsFeatureEnabled = request.HarnessFeatures.HasFlag(CopilotAgentHarnessFeatures.Skills);
-            var historicalExplicitOnlySkillNames = skillsFeatureEnabled
-                ? _skillUsageStore.GetSnapshot().HistoricalExplicitOnlySkills.Select(entry => entry.Name).ToArray()
-                : Array.Empty<string>();
-            using var agentSkills = skillsFeatureEnabled
-                ? CopilotAgentSkills.Create(request, historicalExplicitOnlySkillNames, tokenBudget.ContextWindowTokens)
-                : CopilotAgentSkills.Disabled();
-            var agentSkillsEnabled = skillsFeatureEnabled && agentSkills.IsEnabled;
-            emit(CopilotAgentEvent.RuntimeDiagnostic(
-                $"Agent budgets · input {tokenBudget.InputBudgetTokens:N0} tokens · request {tokenBudget.RequestTokenBudget:N0} tokens · tools {runBudget.MaxToolCalls} · passes {runBudget.MaxAgentPasses} · total time {FormatDuration(runBudget.TotalDuration)}."));
-            if (runBudget.NarrowEvidenceResultLimit > 0)
-            {
-                emit(CopilotAgentEvent.RuntimeDiagnostic(
-                    $"Adaptive evidence budget · the request asks for {runBudget.NarrowEvidenceResultLimit} bounded result(s); stop after collecting that many high-confidence findings with enough evidence."));
-            }
-            emit(CopilotAgentEvent.RuntimeDiagnostic(!skillsFeatureEnabled
-                ? "Agent Skills disabled by the isolated runtime tool surface."
-                : agentSkillsEnabled
-                    ? agentSkills.BuildStartupDiagnostic()
-                    : "Agent Skills enabled · no trusted project or built-in skills were discovered."));
-            var projectInstructionCount = request.ProjectInstructions.Count(document => document?.IsStructurallyValid() == true);
-            if (projectInstructionCount > 0)
-                emit(CopilotAgentEvent.RuntimeDiagnostic($"Project instructions enabled · {projectInstructionCount} scoped workspace instruction document(s)."));
-            if (!string.IsNullOrWhiteSpace(request.ActiveGoalText))
-                emit(CopilotAgentEvent.RuntimeDiagnostic($"Active conversation goal bound · {request.ActiveGoalText.Length:N0} character(s) · completion constraint only, never authorization."));
+                bridge,
+                emit);
+            using var harnessPreparationLifetime = harnessPreparation;
+            var executionContract = harnessPreparation.ExecutionContract;
+            var frameworkTools = harnessPreparation.FrameworkTools;
+            var preparedPrompt = harnessPreparation.PreparedPrompt;
+            var tokenBudget = harnessPreparation.TokenBudget;
+            var compactionStrategy = harnessPreparation.CompactionStrategy;
+            var taskLedgerAvailable = harnessPreparation.TaskLedgerAvailable;
+            var taskLedgerEnabled = harnessPreparation.TaskLedgerEnabled;
+            var agentModeEnabled = harnessPreparation.AgentModeEnabled;
+            var minimalDelegatedFinalization = harnessPreparation.MinimalDelegatedFinalization;
+            var agentSkills = harnessPreparation.AgentSkills;
+            var agentSkillsEnabled = harnessPreparation.AgentSkillsEnabled;
+            var autonomousTaskPasses = runBudget.MaxAgentPasses;
             var activeBackgroundShellCommandCount =
                 backgroundShellCommandSnapshots.Length;
             if (activeBackgroundShellCommandCount > 0)
