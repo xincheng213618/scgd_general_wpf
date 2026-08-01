@@ -6,7 +6,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -141,9 +140,6 @@ namespace ColorVision.Copilot
             }
 
             var explorationAnswer = answer.ToString().Trim();
-            CopilotAgentRunResult? finalizationResult = null;
-            var usedBudgetFinalization = false;
-            var finalizationCompleted = false;
             var finalizationRequest = usedPreselectedEvidence
                 ? CreatePreselectedEvidenceFinalizationRequest(
                     childRequest,
@@ -157,75 +153,22 @@ namespace ColorVision.Copilot
                     result,
                     runRequest.RequestTokenBudget,
                     stopwatch.Elapsed);
-            if (finalizationRequest != null)
-            {
-                answer.Clear();
-                var finalizationProgressBudget = result.Budget;
-                var finalizationToolActivity = new CopilotSubagentToolActivityTracker();
-                try
-                {
-                    var finalizationRuntime = new CopilotMicrosoftAgentFrameworkRuntime(
-                        new CopilotToolRegistry(Array.Empty<ICopilotTool>()),
-                        new CopilotAgentContextBuilder(),
-                        new CopilotToolExecutor(),
-                        _chatClientFactory,
-                        EmptyExternalToolProvider.Instance,
-                        new CopilotCapabilityCatalog());
-                    using var steeringTarget = CopilotSubagentCoordination.TryAttachSteeringTarget(
-                        parentRequest.ConversationId,
-                        runRequest.RunId,
-                        message => finalizationRuntime.EnqueueSteeringMessage(finalizationRequest.TaskId, message));
-                    finalizationResult = await finalizationRuntime.RunAsync(
-                        finalizationRequest,
-                        agentEvent =>
-                        {
-                            steeringMetrics.Observe(agentEvent);
-                            if (agentEvent.Type == CopilotAgentEventType.AnswerReset)
-                            {
-                                answer.Clear();
-                            }
-                            else if (agentEvent.Type == CopilotAgentEventType.AnswerDelta)
-                            {
-                                answer.Append(agentEvent.Text);
-                            }
-                            var budgetUpdated = agentEvent.Type == CopilotAgentEventType.BudgetUpdated
-                                && agentEvent.Budget != null;
-                            if (budgetUpdated)
-                            {
-                                finalizationProgressBudget = CombineBudgets(
-                                    result.Budget,
-                                    agentEvent.Budget,
-                                    runRequest.RequestTokenBudget,
-                                    stopwatch.Elapsed,
-                                    finalizationCompleted: false);
-                            }
-                            if (budgetUpdated || finalizationToolActivity.Observe(agentEvent))
-                            {
-                                runRequest.ReportProgress(
-                                    CopilotSubagentRunPhase.Finalization,
-                                    finalizationProgressBudget,
-                                    finalizationToolActivity.ActiveToolName);
-                            }
-                        },
-                        cancellationToken);
-                    finalizationCompleted = finalizationResult.StopReason == CopilotAgentStopReason.Completed
-                        && !string.IsNullOrWhiteSpace(answer.ToString());
-                    usedBudgetFinalization = finalizationCompleted && !usedPreselectedEvidence;
-                }
-                catch (OperationCanceledException)
-                {
-                    throw;
-                }
-                catch (Exception ex)
-                {
-                    Trace.TraceWarning(
-                        "Copilot subagent budget finalization failed: {0}",
-                        CopilotUserFacingErrorFormatter.Sanitize(ex.Message));
-                }
-            }
+            var finalizationOutcome = finalizationRequest == null
+                ? CopilotSubagentFinalizationOutcome.Empty
+                : await RunFinalizationAsync(
+                    parentRequest,
+                    runRequest,
+                    result,
+                    finalizationRequest,
+                    steeringMetrics,
+                    stopwatch,
+                    cancellationToken);
+            var finalizationResult = finalizationOutcome.RunResult;
+            var finalizationCompleted = finalizationOutcome.Completed;
+            var usedBudgetFinalization = finalizationCompleted && !usedPreselectedEvidence;
 
             var finalAnswer = finalizationCompleted
-                ? answer.ToString().Trim()
+                ? finalizationOutcome.Answer
                 : explorationAnswer;
             var requiredEvidenceToolNames = GetRequiredEvidenceToolNames(role);
             var successfulEvidence = result.StepRecords
@@ -328,7 +271,7 @@ namespace ColorVision.Copilot
                 totalTokenBudget,
                 CopilotAgentRunBudget.MinimumRequestTokenBudget,
                 CopilotAgentRunBudget.MaximumRequestTokenBudget);
-            var consumedTokens = Math.Max(0, exploration.ConsumedTokens) + Math.Max(0, finalization.ConsumedTokens);
+            var consumedTokens = AddClampedLong(exploration.ConsumedTokens, finalization.ConsumedTokens);
             var totalRequestBudgetExhausted = consumedTokens >= normalizedTotalTokenBudget;
             var registeredToolCount = Math.Max(
                 Math.Max(0, exploration.RegisteredToolCount),

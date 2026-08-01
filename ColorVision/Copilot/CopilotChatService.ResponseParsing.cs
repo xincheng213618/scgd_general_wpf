@@ -231,12 +231,12 @@ namespace ColorVision.Copilot
             if (extraInputKeys != null)
             {
                 foreach (var key in extraInputKeys)
-                    inputTokens += ReadFirstInt(usageElement, new[] { key });
+                    inputTokens = AddClamped(inputTokens, ReadFirstInt(usageElement, new[] { key }));
             }
 
             var totalTokens = TryReadInt(usageElement, "total_tokens", out var total)
                 ? total
-                : Math.Max(0, inputTokens) + Math.Max(0, outputTokens);
+                : AddClamped(inputTokens, outputTokens);
 
             int? cachedInputTokens = null;
             if (!string.IsNullOrWhiteSpace(cachedInputKey)
@@ -246,6 +246,13 @@ namespace ColorVision.Copilot
             }
 
             return new CopilotTokenUsage(inputTokens, outputTokens, totalTokens, cachedInputTokens);
+        }
+
+        private static int AddClamped(int left, int right)
+        {
+            return (int)Math.Min(
+                int.MaxValue,
+                Math.Max(0L, left) + Math.Max(0L, right));
         }
 
         private static int? ReadOpenAiCachedInputTokens(JsonElement usageElement)

@@ -400,7 +400,16 @@ namespace ColorVision.Copilot
                 _activeRunIds.Remove(lease.RunId);
                 _reservedTokens = Math.Max(0, _reservedTokens - lease.RequestTokenBudget);
                 if (consumedTokens.HasValue)
-                    _committedTokens += Math.Max(0, consumedTokens.Value);
+                {
+                    var normalizedCommittedTokens = Math.Clamp(
+                        _committedTokens,
+                        0L,
+                        (long)_totalTokenBudget);
+                    var normalizedConsumedTokens = Math.Max(0L, consumedTokens.Value);
+                    _committedTokens = normalizedConsumedTokens >= _totalTokenBudget - normalizedCommittedTokens
+                        ? _totalTokenBudget
+                        : normalizedCommittedTokens + normalizedConsumedTokens;
+                }
             }
             _slots.Release();
         }

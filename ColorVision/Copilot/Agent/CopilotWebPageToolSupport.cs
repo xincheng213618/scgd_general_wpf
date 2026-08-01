@@ -473,8 +473,29 @@ namespace ColorVision.Copilot
                 throw new InvalidOperationException("Fetching localhost or loopback URLs is not allowed.");
             if (!string.IsNullOrWhiteSpace(uri.UserInfo))
                 throw new InvalidOperationException("Web page URLs containing embedded credentials are not allowed.");
+            if (IPAddress.TryParse(uri.Host, out var parsedAddress)
+                && IsBlockedWebPageAddress(parsedAddress))
+            {
+                throw new InvalidOperationException("Fetching private, local, or reserved IP addresses is not allowed.");
+            }
 
             return uri;
+        }
+
+        internal static bool IsPotentiallyPublicWebPageUri(Uri? uri)
+        {
+            if (uri == null
+                || (!string.Equals(uri.Scheme, Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase)
+                    && !string.Equals(uri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase))
+                || uri.IsLoopback
+                || string.Equals(uri.Host, "localhost", StringComparison.OrdinalIgnoreCase)
+                || !string.IsNullOrWhiteSpace(uri.UserInfo))
+            {
+                return false;
+            }
+
+            return !IPAddress.TryParse(uri.Host, out var parsedAddress)
+                || !IsBlockedWebPageAddress(parsedAddress);
         }
 
         private static bool IsRedirectStatusCode(HttpStatusCode statusCode)

@@ -209,6 +209,84 @@ public sealed class CopilotAgentTokenBudgetMetricsTests
     }
 
     [Fact]
+    public async Task BudgetChangedObserverReceivesProviderRetryImmediately()
+    {
+        var snapshots = new List<CopilotAgentBudgetSnapshot>();
+        using var client = new CopilotTokenBudgetChatClient(
+            new UsageReportingChatClient(new UsageDetails { TotalTokenCount = 12 }),
+            new CopilotAgentTokenBudget
+            {
+                ContextWindowTokens = 64_000,
+                MaxOutputTokens = 4_096,
+                RequestTokenBudget = 128_000,
+            },
+            onBudgetChanged: snapshots.Add);
+
+        await client.GetResponseAsync([new ChatMessage(ChatRole.User, "First attempt.")]);
+        client.RecordProviderRetry(new CopilotProviderRetryInfo(
+            1,
+            2,
+            3,
+            TimeSpan.FromMilliseconds(250),
+            "HTTP 429",
+            429));
+
+        var snapshot = Assert.IsType<CopilotAgentBudgetSnapshot>(snapshots[^1]);
+        Assert.Equal(2, snapshots.Count);
+        Assert.Equal(1, snapshot.ProviderRetryCount);
+        Assert.Equal(1, snapshot.ProviderRateLimitRetryCount);
+        Assert.Equal(250, snapshot.ProviderRetryDelayMs);
+    }
+
+    [Fact]
+    public async Task BudgetChangedObserverReceivesContextRecoveryImmediately()
+    {
+        var snapshots = new List<CopilotAgentBudgetSnapshot>();
+        using var client = new CopilotTokenBudgetChatClient(
+            new UsageReportingChatClient(new UsageDetails { TotalTokenCount = 12 }),
+            new CopilotAgentTokenBudget
+            {
+                ContextWindowTokens = 64_000,
+                MaxOutputTokens = 4_096,
+                RequestTokenBudget = 128_000,
+            },
+            onBudgetChanged: snapshots.Add);
+
+        await client.GetResponseAsync([new ChatMessage(ChatRole.User, "Original request.")]);
+        client.RecordContextRecovery(new CopilotContextWindowRecoveryInfo(
+            OriginalMessageCount: 8,
+            CompactedMessageCount: 4,
+            EstimatedInputTokensBefore: 90_000,
+            EstimatedInputTokensAfter: 35_000,
+            TargetInputTokens: 64_000,
+            FailureKind: "provider context window"));
+
+        var snapshot = Assert.IsType<CopilotAgentBudgetSnapshot>(snapshots[^1]);
+        Assert.Equal(2, snapshots.Count);
+        Assert.Equal(1, snapshot.ContextRecoveryCount);
+        Assert.Equal(90_000, snapshot.ContextRecoveryEstimatedInputTokensBefore);
+        Assert.Equal(35_000, snapshot.ContextRecoveryEstimatedInputTokensAfter);
+    }
+
+    [Fact]
+    public void DelegatedUsageSaturatesConsumedTokensInsteadOfWrapping()
+    {
+        using var client = CreateClient(usage: null);
+
+        client.RecordDelegatedRunUsage(new CopilotDelegatedRunUsage
+        {
+            ConsumedTokens = long.MaxValue,
+        });
+        client.RecordDelegatedRunUsage(new CopilotDelegatedRunUsage
+        {
+            ConsumedTokens = 1,
+        });
+
+        Assert.Equal(long.MaxValue, client.Snapshot.ConsumedTokens);
+        Assert.True(client.Snapshot.BudgetExhausted);
+    }
+
+    [Fact]
     public async Task SnapshotRetainsPeakInputEstimateWhenProviderOmitsUsage()
     {
         using var client = CreateClient(usage: null);

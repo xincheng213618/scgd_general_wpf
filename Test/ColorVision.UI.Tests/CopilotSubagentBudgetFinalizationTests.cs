@@ -619,6 +619,24 @@ public sealed class CopilotSubagentBudgetFinalizationTests
     }
 
     [Fact]
+    public void FinalizationNormalizesNegativeExplorationUsageBeforeAllocatingRemainingBudget()
+    {
+        var role = CopilotSubagentRoleCatalog.Default.GetRequired(CopilotSubagentRoleCatalog.ExploreRoleId);
+        var childRequest = CreateChildRequest(role);
+        var explorationResult = CreateExplorationResult(consumedTokens: -1);
+
+        var finalization = CopilotSubagentRunner.CreateBudgetFinalizationRequest(
+            childRequest,
+            role,
+            explorationResult,
+            totalTokenBudget: 16_384,
+            elapsed: TimeSpan.FromSeconds(5));
+
+        Assert.NotNull(finalization);
+        Assert.Equal(16_384, finalization.RunBudgetOverride?.RequestTokenBudget);
+    }
+
+    [Fact]
     public void DelegatedFinalizationMarkerCannotMinimizeARuntimeWithTools()
     {
         var role = CopilotSubagentRoleCatalog.Default.GetRequired(CopilotSubagentRoleCatalog.ExploreRoleId);
@@ -804,6 +822,20 @@ public sealed class CopilotSubagentBudgetFinalizationTests
         Assert.False(combined.BudgetExhausted);
         Assert.False(combined.RequestTokenBudgetExhausted);
         Assert.Equal(14_000, combined.ElapsedMs);
+    }
+
+    [Fact]
+    public void CompletedFinalizationSaturatesCombinedConsumedTokens()
+    {
+        var combined = CopilotSubagentRunner.CombineBudgets(
+            new CopilotAgentBudgetSnapshot { ConsumedTokens = long.MaxValue },
+            new CopilotAgentBudgetSnapshot { ConsumedTokens = 1 },
+            totalTokenBudget: 16_384,
+            elapsed: TimeSpan.Zero,
+            finalizationCompleted: true);
+
+        Assert.Equal(long.MaxValue, combined.ConsumedTokens);
+        Assert.True(combined.RequestTokenBudgetExhausted);
     }
 
     private static CopilotAgentRequest CreateChildRequest(CopilotSubagentRoleDescriptor role)

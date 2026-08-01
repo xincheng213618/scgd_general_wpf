@@ -364,6 +364,19 @@ namespace ColorVision.Copilot
                     var directory = Path.GetDirectoryName(fullPath);
                     if (!string.IsNullOrWhiteSpace(directory))
                         roots.Add(directory);
+                    return;
+                }
+
+                // An explicitly named file may not exist yet (for example, a
+                // requested source file that was renamed or generated later).
+                // Keep its existing absolute parent searchable so the Agent can
+                // inspect nearby candidates and report the missing path with
+                // useful workspace evidence instead of losing the only scope.
+                if (Path.IsPathFullyQualified(path))
+                {
+                    var directory = Path.GetDirectoryName(fullPath);
+                    if (!string.IsNullOrWhiteSpace(directory) && Directory.Exists(directory))
+                        roots.Add(directory);
                 }
             }
             catch

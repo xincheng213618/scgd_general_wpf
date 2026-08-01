@@ -145,6 +145,20 @@ public sealed class CopilotAgentRunBudgetTests
     }
 
     [Fact]
+    public void SnapshotNormalizesNegativeConsumedTokens()
+    {
+        var budget = CopilotAgentRunBudget.Resolve(Request("Run a bounded audit."));
+
+        var snapshot = budget.CreateSnapshot(
+            new CopilotAgentBudgetSnapshot { ConsumedTokens = -1 },
+            TimeSpan.Zero,
+            toolCalls: 0,
+            timeBudgetExhausted: false);
+
+        Assert.Equal(0, snapshot.ConsumedTokens);
+    }
+
+    [Fact]
     public void CompletedNarrowEvidenceAnswerAtToolLimitDoesNotRemainRecoverable()
     {
         var stopReason = CopilotMicrosoftAgentFrameworkRuntime.DetermineStopReason(

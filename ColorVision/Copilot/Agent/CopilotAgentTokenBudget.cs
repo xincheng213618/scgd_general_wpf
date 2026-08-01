@@ -222,7 +222,9 @@ namespace ColorVision.Copilot
                     AddClamped(
                         _contextRecoveryEstimatedInputTokensAfter,
                         delegatedRun.ContextRecoveryEstimatedInputTokensAfter));
-                _consumedTokens += Math.Max(Math.Max(0, delegatedRun.ConsumedTokens), delegatedRun.Usage.EffectiveTotalTokens);
+                _consumedTokens = AddClamped(
+                    _consumedTokens,
+                    Math.Max(Math.Max(0, delegatedRun.ConsumedTokens), delegatedRun.Usage.EffectiveTotalTokens));
                 _usedEstimatedUsage |= delegatedRun.UsedEstimatedUsage;
                 if (_consumedTokens >= _budget.RequestTokenBudget)
                     _budgetExhausted = true;
@@ -234,6 +236,7 @@ namespace ColorVision.Copilot
         internal void RecordProviderRetry(CopilotProviderRetryInfo retry)
         {
             ArgumentNullException.ThrowIfNull(retry);
+            CopilotAgentBudgetSnapshot snapshot;
             lock (_syncRoot)
             {
                 _providerRetryCount = AddClamped(_providerRetryCount, 1);
@@ -242,7 +245,9 @@ namespace ColorVision.Copilot
                 _providerRetryDelayMs = AddClamped(
                     _providerRetryDelayMs,
                     ToMilliseconds(retry.Delay));
+                snapshot = CreateSnapshot();
             }
+            PublishBudgetChanged(snapshot);
         }
 
         private void RecordProviderInactivity(Exception exception)
@@ -274,6 +279,7 @@ namespace ColorVision.Copilot
         internal void RecordContextRecovery(CopilotContextWindowRecoveryInfo recovery)
         {
             ArgumentNullException.ThrowIfNull(recovery);
+            CopilotAgentBudgetSnapshot snapshot;
             lock (_syncRoot)
             {
                 var estimatedInputTokensBefore = Math.Max(0, recovery.EstimatedInputTokensBefore);
@@ -288,7 +294,9 @@ namespace ColorVision.Copilot
                 _contextRecoveryEstimatedInputTokensAfter = AddClamped(
                     _contextRecoveryEstimatedInputTokensAfter,
                     estimatedInputTokensAfter);
+                snapshot = CreateSnapshot();
             }
+            PublishBudgetChanged(snapshot);
         }
 
         public override async Task<ChatResponse> GetResponseAsync(
@@ -485,7 +493,9 @@ namespace ColorVision.Copilot
             CopilotAgentBudgetSnapshot? notification = null;
             lock (_syncRoot)
             {
-                var wouldExceedBudget = _consumedTokens + Math.Max(1, estimatedInputTokens) > _budget.RequestTokenBudget;
+                var wouldExceedBudget = AddClamped(
+                    _consumedTokens,
+                    Math.Max(1, estimatedInputTokens)) > _budget.RequestTokenBudget;
                 if (_consumedTokens >= _budget.RequestTokenBudget || wouldExceedBudget)
                 {
                     _budgetExhausted = true;
@@ -526,7 +536,7 @@ namespace ColorVision.Copilot
                 {
                     _usedEstimatedUsage = true;
                 }
-                _consumedTokens += consumedTokens;
+                _consumedTokens = AddClamped(_consumedTokens, consumedTokens);
 
                 if (_consumedTokens >= _budget.RequestTokenBudget)
                     _budgetExhausted = true;

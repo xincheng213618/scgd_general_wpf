@@ -500,6 +500,37 @@ public sealed class CopilotDelegateSubagentToolTests
     }
 
     [Fact]
+    public async Task CoordinatorSaturatesExtremeCommittedTokensAndStaysExhausted()
+    {
+        var coordinator = new CopilotSubagentCoordinator(Request());
+        var first = await coordinator.TryAcquireAsync(
+            CopilotSubagentRoleCatalog.ExploreRoleId,
+            CancellationToken.None);
+        var second = await coordinator.TryAcquireAsync(
+            CopilotSubagentRoleCatalog.ScoutRoleId,
+            CancellationToken.None);
+
+        Assert.NotNull(first);
+        Assert.NotNull(second);
+        try
+        {
+            first!.Commit(long.MaxValue);
+            second!.Commit(long.MaxValue);
+        }
+        finally
+        {
+            first?.Dispose();
+            second?.Dispose();
+        }
+
+        var next = await coordinator.TryAcquireAsync(
+            CopilotSubagentRoleCatalog.ExploreRoleId,
+            CancellationToken.None);
+        next?.Dispose();
+        Assert.Null(next);
+    }
+
+    [Fact]
     public async Task FreshFallbackAfterRequestedResumeIsRejectedAndCannotBeChained()
     {
         var runner = new StubRunner(

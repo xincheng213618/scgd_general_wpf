@@ -155,54 +155,25 @@ namespace ColorVision.Copilot
                 () => _capabilityCatalog.GetSnapshot().Revision,
                 delegatedRun => chatClient?.RecordDelegatedRunUsage(delegatedRun),
                 toolBudgetCancellation.RequestCancellation);
-            var executionContract = CopilotAgentExecutionContract.Create(request, availableTools);
-            if (executionContract.IsRequired)
-            {
-                emit(CopilotAgentEvent.RuntimeDiagnostic(
-                    $"Agent execution contract enabled · {executionContract.Description} · accepted tools: {string.Join(", ", executionContract.AcceptedToolNames)}."));
-            }
-            var frameworkTools = bridge.CreateFunctions();
-            if (request.RuntimePurpose == CopilotAgentRuntimePurpose.Standard)
-                frameworkTools.Add(new HarnessToolBridge.UserQuestionAIFunction(_userQuestionCoordinator, request, emit));
-            var preparedPrompt = _contextBuilder.BuildAnswerMessages(request, Array.Empty<CopilotAgentStepRecord>());
-            var tokenBudget = CopilotAgentTokenBudget.Create(request.Profile, runBudget);
-            var compactionStrategy = new ContextWindowCompactionStrategy(
-                tokenBudget.ContextWindowTokens,
-                request.Profile.MaxTokens);
-            var autonomousTaskPasses = runBudget.MaxAgentPasses;
-            var taskLedgerAvailable = request.HarnessFeatures.HasFlag(CopilotAgentHarnessFeatures.TaskLedger);
-            var taskLedgerEnabled = taskLedgerAvailable && CopilotToolIntentPolicy.NeedsTaskLedger(request);
-            var agentModeEnabled = taskLedgerEnabled && request.HarnessFeatures.HasFlag(CopilotAgentHarnessFeatures.AgentMode);
-            var minimalDelegatedFinalization = CanUseMinimalDelegatedFinalizationInstructions(
+            var harnessPreparation = PrepareHarnessPolicy(
                 request,
+                runBudget,
                 availableTools,
-                taskLedgerEnabled,
-                agentModeEnabled);
-            var skillsFeatureEnabled = request.HarnessFeatures.HasFlag(CopilotAgentHarnessFeatures.Skills);
-            var historicalExplicitOnlySkillNames = skillsFeatureEnabled
-                ? _skillUsageStore.GetSnapshot().HistoricalExplicitOnlySkills.Select(entry => entry.Name).ToArray()
-                : Array.Empty<string>();
-            using var agentSkills = skillsFeatureEnabled
-                ? CopilotAgentSkills.Create(request, historicalExplicitOnlySkillNames, tokenBudget.ContextWindowTokens)
-                : CopilotAgentSkills.Disabled();
-            var agentSkillsEnabled = skillsFeatureEnabled && agentSkills.IsEnabled;
-            emit(CopilotAgentEvent.RuntimeDiagnostic(
-                $"Agent budgets · input {tokenBudget.InputBudgetTokens:N0} tokens · request {tokenBudget.RequestTokenBudget:N0} tokens · tools {runBudget.MaxToolCalls} · passes {runBudget.MaxAgentPasses} · total time {FormatDuration(runBudget.TotalDuration)}."));
-            if (runBudget.NarrowEvidenceResultLimit > 0)
-            {
-                emit(CopilotAgentEvent.RuntimeDiagnostic(
-                    $"Adaptive evidence budget · the request asks for {runBudget.NarrowEvidenceResultLimit} bounded result(s); stop after collecting that many high-confidence findings with enough evidence."));
-            }
-            emit(CopilotAgentEvent.RuntimeDiagnostic(!skillsFeatureEnabled
-                ? "Agent Skills disabled by the isolated runtime tool surface."
-                : agentSkillsEnabled
-                    ? agentSkills.BuildStartupDiagnostic()
-                    : "Agent Skills enabled · no trusted project or built-in skills were discovered."));
-            var projectInstructionCount = request.ProjectInstructions.Count(document => document?.IsStructurallyValid() == true);
-            if (projectInstructionCount > 0)
-                emit(CopilotAgentEvent.RuntimeDiagnostic($"Project instructions enabled · {projectInstructionCount} scoped workspace instruction document(s)."));
-            if (!string.IsNullOrWhiteSpace(request.ActiveGoalText))
-                emit(CopilotAgentEvent.RuntimeDiagnostic($"Active conversation goal bound · {request.ActiveGoalText.Length:N0} character(s) · completion constraint only, never authorization."));
+                bridge,
+                emit);
+            using var harnessPreparationLifetime = harnessPreparation;
+            var executionContract = harnessPreparation.ExecutionContract;
+            var frameworkTools = harnessPreparation.FrameworkTools;
+            var preparedPrompt = harnessPreparation.PreparedPrompt;
+            var tokenBudget = harnessPreparation.TokenBudget;
+            var compactionStrategy = harnessPreparation.CompactionStrategy;
+            var taskLedgerAvailable = harnessPreparation.TaskLedgerAvailable;
+            var taskLedgerEnabled = harnessPreparation.TaskLedgerEnabled;
+            var agentModeEnabled = harnessPreparation.AgentModeEnabled;
+            var minimalDelegatedFinalization = harnessPreparation.MinimalDelegatedFinalization;
+            var agentSkills = harnessPreparation.AgentSkills;
+            var agentSkillsEnabled = harnessPreparation.AgentSkillsEnabled;
+            var autonomousTaskPasses = runBudget.MaxAgentPasses;
             var activeBackgroundShellCommandCount =
                 backgroundShellCommandSnapshots.Length;
             if (activeBackgroundShellCommandCount > 0)
@@ -211,62 +182,18 @@ namespace ColorVision.Copilot
                     $"Active background command context · {activeBackgroundShellCommandCount} current-conversation command(s) captured for this request."));
             }
 
-            var providerInactivityTimeouts =
-                CopilotProviderInactivityPolicy.Resolve(request.Profile);
-            var usedDelegatedDirectAnswer = false;
-            var toolSurface = default(CopilotAgentToolSurfaceMetrics);
-            var providerChatClient = new CopilotProviderInactivityChatClient(
-                new CopilotCancellationGuardChatClient(
-                    _chatClientFactory(request.Profile)),
-                providerInactivityTimeouts.FirstResponseTimeout,
-                providerInactivityTimeouts.StreamingUpdateTimeout);
-            chatClient = new CopilotTokenBudgetChatClient(
-                providerChatClient,
+            var providerPipeline = CreateProviderClientPipeline(
+                request,
+                runBudget,
+                stopwatch,
                 tokenBudget,
-                snapshot => emit(CopilotAgentEvent.RuntimeDiagnostic(
-                    $"Agent token budget exhausted after {snapshot.ProviderCalls} provider call(s); the model loop was stopped without replaying tools.")),
-                snapshot => emit(CopilotAgentEvent.BudgetUpdated(runBudget.CreateSnapshot(
-                    snapshot,
-                    stopwatch.Elapsed,
-                    bridge.StepRecords.Count,
-                    timeBudgetExhausted: false,
-                    bridge.ToolBudgetExhausted,
-                    usedDelegatedDirectAnswer,
-                    toolSurface))));
-            var retryChatClient = new CopilotProviderRetryChatClient(
-                chatClient,
-                retry =>
-                {
-                    chatClient.RecordProviderRetry(retry);
-                    emit(CopilotAgentEvent.FromProviderRetry(retry));
-                });
-            var contextRecoveryChatClient = new CopilotContextWindowRecoveryChatClient(
-                retryChatClient,
-                tokenBudget.InputBudgetTokens,
-                recoveryInfo =>
-                {
-                    chatClient.RecordContextRecovery(recoveryInfo);
-                    emit(CopilotAgentEvent.RuntimeDiagnostic(recoveryInfo.ToDiagnosticText()));
-                });
-            var delegatedDirectAnswerChatClient = new CopilotDelegatedDirectAnswerChatClient(
-                contextRecoveryChatClient,
-                request,
-                () => bridge.StepRecords,
-                taskLedgerEnabled,
-                () =>
-                {
-                    usedDelegatedDirectAnswer = true;
-                    emit(CopilotAgentEvent.RuntimeDiagnostic(
-                        "The explicit completed DelegateExplore result was returned directly without a second parent provider call."));
-                });
-            var explicitDelegationDispatchChatClient = new CopilotExplicitDelegationDispatchChatClient(
-                delegatedDirectAnswerChatClient,
-                request,
-                HarnessToolBridge.ToFunctionName("DelegateExplore"),
-                taskLedgerEnabled,
-                () => emit(CopilotAgentEvent.RuntimeDiagnostic(
-                    "The explicit exclusive DelegateExplore request was dispatched directly without a parent provider planning call.")));
-            using var trackingChatClient = new CopilotUnknownToolCallTrackingChatClient(explicitDelegationDispatchChatClient, bridge.RecordUnknownToolCall);
+                bridge,
+                emit,
+                taskLedgerEnabled);
+            using var providerPipelineLifetime = providerPipeline;
+            chatClient = providerPipeline.ChatClient;
+            var contextRecoveryChatClient = providerPipeline.ContextRecoveryChatClient;
+            var trackingChatClient = providerPipeline.TrackingChatClient;
             LiveCheckpointPublisher? liveCheckpointPublisher = null;
             async ValueTask OnHistoryStoredAsync(AIAgent checkpointAgent, AgentSession checkpointSession, CancellationToken checkpointToken)
             {
@@ -302,13 +229,13 @@ namespace ColorVision.Copilot
                 + (requiresCheckpointReplan
                     ? "\n\nThe persisted task plan was discarded because its runtime context changed or predates safe checkpoint tracking. Re-plan from the current conversation and current tools before taking action; do not assume prior todo items remain valid."
                     : string.Empty);
-            toolSurface = CopilotAgentToolSurfaceMetrics.Capture(
+            providerPipeline.ToolSurface = CopilotAgentToolSurfaceMetrics.Capture(
                 registeredToolCount,
                 availableTools,
                 harnessInstructions);
             emit(CopilotAgentEvent.RuntimeDiagnostic(
-                $"Request prompt surface · {toolSurface.AvailableToolDefinitionCharacters:N0} tool-definition character(s)"
-                + $" · {toolSurface.HarnessInstructionCharacters:N0} harness-instruction character(s)."));
+                $"Request prompt surface · {providerPipeline.ToolSurface.AvailableToolDefinitionCharacters:N0} tool-definition character(s)"
+                + $" · {providerPipeline.ToolSurface.HarnessInstructionCharacters:N0} harness-instruction character(s)."));
             var agent = trackingChatClient.AsHarnessAgent(new HarnessAgentOptions
             {
                 Name = "ColorVisionCopilot",
@@ -379,103 +306,33 @@ namespace ColorVision.Copilot
                     : "Agent control tools disabled by the isolated runtime tool surface."));
 
             var usage = CopilotTokenUsage.Empty;
-            var sessionResumed = false;
-            var sessionResumeFailed = false;
-            AgentSession session;
-            if (checkpointCompatibility?.CanResume == true && requestedCheckpoint != null)
-            {
-                try
-                {
-                    using var checkpointDocument = JsonDocument.Parse(requestedCheckpoint.SerializedSessionJson);
-                    session = await agent.DeserializeSessionAsync(checkpointDocument.RootElement.Clone(), null, cancellationToken);
-                    sessionResumed = true;
-                    taskEventJournalBuilder.RecordSessionResumed();
-                    emit(CopilotAgentEvent.RuntimeDiagnostic("Agent Framework session resumed from the persisted conversation checkpoint."));
-                }
-                catch (OperationCanceledException)
-                {
-                    throw;
-                }
-                catch (Exception ex)
-                {
-                    sessionResumeFailed = true;
-                    taskEventJournalBuilder.RecordReplanRequired(CopilotAgentCheckpointCompatibilityKind.Invalid);
-                    emit(CopilotAgentEvent.RuntimeDiagnostic($"Agent session checkpoint could not be resumed; starting a fresh session ({CopilotUserFacingErrorFormatter.Sanitize(ex.Message)})."));
-                    session = await agent.CreateSessionAsync(cancellationToken);
-                }
-            }
-            else
-            {
-                if (requiresCheckpointReplan)
-                {
-                    taskEventJournalBuilder.RecordReplanRequired(checkpointCompatibility!.Kind);
-                    emit(CopilotAgentEvent.RuntimeDiagnostic(FormatCapabilityReplanDiagnostic(checkpointCompatibility!)));
-                }
-                session = await agent.CreateSessionAsync(cancellationToken);
-            }
-            using var steeringRegistration = RegisterSteeringContext(
-                request.ConversationId,
-                request.TaskId,
-                messageInjector,
-                session,
-                taskEventJournalBuilder);
-            liveCheckpointPublisher = new LiveCheckpointPublisher(
+            var sessionPreparation = await PrepareAgentSessionAsync(
                 request,
                 requestedCheckpoint,
+                checkpointCompatibility,
+                requiresCheckpointReplan,
                 capabilitySnapshot,
                 availableToolNames,
                 environmentContext,
                 hookSurfaceSnapshot,
                 previousEvidenceArtifacts,
+                agent,
                 bridge,
                 todoProvider,
                 modeProvider,
+                messageInjector,
                 taskEventJournalBuilder,
                 emit,
-                sessionResumed,
-                () => answerText.ToString(),
-                steeringRegistration.GetDeliveredSteeringMessages);
-
-            var recoveredTaskLedger = await CaptureTaskLedgerAsync(todoProvider, modeProvider, session, sessionResumed, cancellationToken);
-            taskEventJournalBuilder.RecordTaskLedger(recoveredTaskLedger, sessionResumed ? "recovered" : "initial");
-            if (await liveCheckpointPublisher.TryPublishAsync(agent, session, cancellationToken, recoveredTaskLedger))
-                emit(CopilotAgentEvent.CheckpointReady());
-            if (sessionResumed)
-            {
-                emit(CopilotAgentEvent.RuntimeDiagnostic(
-                    FormatTaskLedgerDiagnostic("Agent task ledger recovered", recoveredTaskLedger)
-                    + " Persisted tasks are planning state, not authorization; protected tools require a fresh exact-call approval."));
-            }
-
-            IReadOnlyList<CopilotRequestMessage> unseenVisibleHistory = sessionResumed && requestedCheckpoint != null
-                ? CopilotAgentConversationMemory.SelectUnseenVisibleTail(requestedCheckpoint.ConversationMemory, request.History)
-                : Array.Empty<CopilotRequestMessage>();
-            var promptMessages = sessionResumed
-                ? unseenVisibleHistory.Concat(preparedPrompt.Messages.TakeLast(1)).ToArray()
-                : preparedPrompt.Messages;
-            if (unseenVisibleHistory.Count > 0)
-            {
-                emit(CopilotAgentEvent.RuntimeDiagnostic(
-                    $"Agent session reconciled {unseenVisibleHistory.Count} visible conversation message(s) newer than the persisted checkpoint."));
-            }
-            if (!sessionResumed
-                && (requiresCheckpointReplan || sessionResumeFailed)
-                && requestedCheckpoint?.ConversationMemory.Count > 0)
-            {
-                promptMessages = CopilotAgentConversationMemory.MergeIntoPreparedPrompt(
-                    requestedCheckpoint.ConversationMemory,
-                    preparedPrompt.Messages);
-                emit(CopilotAgentEvent.RuntimeDiagnostic(
-                    $"Agent task session was reset, but {requestedCheckpoint.ConversationMemory.Count} bounded conversation memory message(s) were restored for continuity."));
-            }
-            var recoveryEvidencePrompt = !sessionResumed && (requiresCheckpointReplan || sessionResumeFailed)
-                ? CopilotAgentEvidenceArtifacts.BuildRecoveryPrompt(previousEvidenceArtifacts, capabilitySnapshot)
-                : string.Empty;
-            if (!string.IsNullOrWhiteSpace(recoveryEvidencePrompt))
-            {
-                promptMessages = InsertEvidenceMessageBeforeCurrentUser(promptMessages, recoveryEvidencePrompt);
-                emit(CopilotAgentEvent.RuntimeDiagnostic($"Agent recovery checkpoint contained {previousEvidenceArtifacts.Count} evidence artifact(s); bounded untrusted historical context was supplied."));
-            }
+                answerText,
+                preparedPrompt.Messages,
+                cancellationToken);
+            using var sessionPreparationLifetime = sessionPreparation;
+            var session = sessionPreparation.Session;
+            var sessionResumed = sessionPreparation.SessionResumed;
+            var steeringRegistration = sessionPreparation.SteeringRegistration;
+            liveCheckpointPublisher = sessionPreparation.LiveCheckpointPublisher;
+            var recoveredTaskLedger = sessionPreparation.RecoveredTaskLedger;
+            var promptMessages = sessionPreparation.PromptMessages;
             using var deferredBackgroundOutputDelivery =
                 _backgroundShellOutputEventInbox.BeginDelivery(
                     request.ConversationId);
@@ -516,7 +373,7 @@ namespace ColorVision.Copilot
                 emit(CopilotAgentEvent.RuntimeDiagnostic(
                     "Invalid delayed background signals were discarded before provider delivery."));
             }
-            IReadOnlyList<Microsoft.Extensions.AI.ChatMessage> messages = CopilotRequestMessageSequence
+            var initialMessages = CopilotRequestMessageSequence
                 .Normalize(promptMessages)
                 .Select(ToFrameworkMessage)
                 .ToArray();
@@ -524,215 +381,38 @@ namespace ColorVision.Copilot
                 ? "Agent Framework is generating an answer without tools."
                 : $"Agent Framework can use {frameworkTools.Count} request-scoped tool(s)."));
 
-            var controlIntent = CopilotAgentControlIntent.None;
-            var timeBudgetExhausted = false;
-            var providerInterrupted = false;
-            var contextWindowExceeded = false;
-            var toolBudgetForcedFinalization = false;
-            var deferredBackgroundSignalsAccepted = false;
-            var frameworkApprovalAwaitingProviderUpdate = false;
-            var steeringInputSealed = false;
-            AIChatFinishReason? providerFinishReason = null;
-            try
-            {
-                while (true)
-                {
-                    var approvalRequests = new List<ToolApprovalRequestContent>();
-                    await foreach (var update in agent.RunStreamingAsync(messages, session, null, agentLoopCancellation.Token))
-                    {
-                        agentLoopCancellation.Token.ThrowIfCancellationRequested();
-                        if (frameworkApprovalAwaitingProviderUpdate)
-                        {
-                            CompleteFrameworkApprovalRouting();
-                            frameworkApprovalAwaitingProviderUpdate = false;
-                        }
-                        if (!deferredBackgroundSignalsAccepted
-                            && deferredBackgroundSignalMessages.Length > 0)
-                        {
-                            deferredBackgroundOutputDelivery.Commit();
-                            deferredBackgroundCompletionDelivery.Commit();
-                            deferredBackgroundSignalsAccepted = true;
-                            foreach (var deferredEvent in deferredBackgroundOutputEvents)
-                            {
-                                taskEventJournalBuilder
-                                    .RecordBackgroundShellCommandOutput(
-                                        deferredEvent.EventArgs);
-                            }
-                            foreach (var completion in deferredBackgroundCompletions)
-                            {
-                                taskEventJournalBuilder
-                                    .RecordBackgroundShellCommandCompletion(
-                                        completion.Snapshot);
-                            }
-                            emit(CopilotAgentEvent.RuntimeDiagnostic(
-                                $"The provider produced its first update; {deferredBackgroundSignalMessages.Length} delayed background signal(s) are now marked delivered and will not be replayed."));
-                        }
-
-                        foreach (var usageContent in update.Contents.OfType<UsageContent>())
-                            usage = usage.Add(ToCopilotUsage(usageContent.Details));
-                        if (update.FinishReason.HasValue)
-                            providerFinishReason = update.FinishReason;
-
-                        approvalRequests.AddRange(update.Contents.OfType<ToolApprovalRequestContent>());
-                        if (!string.IsNullOrEmpty(update.Text))
-                            emit(CopilotAgentEvent.AnswerDelta(update.Text));
-                    }
-
-                    var deliveredSteeringMessages = await steeringRegistration
-                        .RecordDeliveredSteeringMessagesAsync(
-                            agentLoopCancellation.Token);
-                    if (deliveredSteeringMessages.Count > 0)
-                    {
-                        emit(CopilotAgentEvent.SteeringDelivered(deliveredSteeringMessages));
-                        emit(CopilotAgentEvent.RuntimeDiagnostic(
-                            $"Agent provider received {deliveredSteeringMessages.Count} queued user steering instruction(s)."));
-                        await liveCheckpointPublisher.TryPublishAsync(
-                            agent,
-                            session,
-                            agentLoopCancellation.Token);
-                    }
-
-                    if (approvalRequests.Count == 0)
-                    {
-                        if (frameworkApprovalAwaitingProviderUpdate)
-                        {
-                            CancelFrameworkApprovalRouting();
-                            frameworkApprovalAwaitingProviderUpdate = false;
-                        }
-
-                        if (!steeringInputSealed)
-                        {
-                            emit(CopilotAgentEvent.RuntimeDiagnostic(
-                                "Agent provider loop completed; live steering input is now sealed."));
-                            steeringRegistration.StopAcceptingInput();
-                            steeringInputSealed = true;
-                        }
-                        var pendingInjectedMessages = await messageInjector
-                            .GetPendingMessagesAsync(
-                                session,
-                                agentLoopCancellation.Token);
-                        if (pendingInjectedMessages.Count > 0)
-                        {
-                            emit(CopilotAgentEvent.RuntimeDiagnostic(
-                                $"Agent sealed live steering input with {pendingInjectedMessages.Count} injected message(s) still pending; running the final Agent Framework drain before finalization."));
-                            messages = Array.Empty<Microsoft.Extensions.AI.ChatMessage>();
-                            continue;
-                        }
-                        break;
-                    }
-
-                    var approvalRouting = await RouteFrameworkApprovalsAsync(
-                        approvalRequests,
-                        request,
-                        bridge,
-                        contextRecoveryChatClient,
-                        taskEventJournalBuilder,
-                        emit,
-                        usage,
-                        cancellationToken);
-                    usage = approvalRouting.Usage;
-                    messages =
-                    [
-                        new Microsoft.Extensions.AI.ChatMessage(
-                            ChatRole.User,
-                            approvalRouting.Responses),
-                    ];
-                    frameworkApprovalAwaitingProviderUpdate = true;
-                }
-            }
-            catch (OperationCanceledException) when (toolBudgetCancellation.Token.IsCancellationRequested
-                && !callerCancellationToken.IsCancellationRequested
-                && !timeBudgetCancellation.IsCancellationRequested
-                && request.RunControl?.Intent is not (CopilotAgentControlIntent.Pause or CopilotAgentControlIntent.Cancel))
-            {
-                toolBudgetForcedFinalization = true;
-                emit(CopilotAgentEvent.RuntimeDiagnostic(
-                    $"Agent reached its {runBudget.MaxToolCalls}-call tool limit; the tool-enabled loop was stopped and one bounded no-tools finalization call will summarize the collected evidence."));
-            }
-            catch (OperationCanceledException) when (request.RunControl?.Intent is CopilotAgentControlIntent.Pause or CopilotAgentControlIntent.Cancel
-                || (timeBudgetCancellation.IsCancellationRequested && !callerCancellationToken.IsCancellationRequested))
-            {
-                var requestedControl = request.RunControl?.Intent ?? CopilotAgentControlIntent.None;
-                if (requestedControl is CopilotAgentControlIntent.Pause or CopilotAgentControlIntent.Cancel)
-                {
-                    controlIntent = requestedControl;
-                    taskEventJournalBuilder.RecordControl(controlIntent);
-                    emit(CopilotAgentEvent.RuntimeDiagnostic(controlIntent == CopilotAgentControlIntent.Pause
-                        ? "Agent pause requested; preserving the current task session checkpoint."
-                        : "Agent cancellation requested; the new task session checkpoint will be discarded."));
-                }
-                else
-                {
-                    timeBudgetExhausted = timeBudgetCancellation.IsCancellationRequested && !callerCancellationToken.IsCancellationRequested;
-                    emit(CopilotAgentEvent.RuntimeDiagnostic($"Agent total-time budget exhausted after {FormatDuration(stopwatch.Elapsed)}; finalizing the current task checkpoint."));
-                }
-            }
-            catch (CopilotAgentTokenBudgetExceededException ex)
-            {
-                emit(CopilotAgentEvent.AnswerDelta(ex.Message));
-            }
-            catch (CopilotAgentContextWindowExceededException ex)
-            {
-                contextWindowExceeded = true;
-                emit(CopilotAgentEvent.RuntimeDiagnostic(
-                    $"Agent provider call was rejected locally because its estimated input ({ex.EstimatedInputTokens:N0} tokens) exceeded the configured input window ({ex.InputBudgetTokens:N0} tokens)."));
-                emit(CopilotAgentEvent.AnswerDelta(ex.Message));
-            }
-            catch (CopilotAgentContextWindowRecoveryExhaustedException ex)
-            {
-                contextWindowExceeded = true;
-                emit(CopilotAgentEvent.RuntimeDiagnostic(
-                    $"Agent context recovery stopped after one bounded compaction attempt for the current model turn"
-                    + $" ({ex.OriginalMessageCount} → {ex.CompactedMessageCount} messages"
-                    + $" · estimated input {ex.EstimatedInputTokensBefore:N0} → {ex.EstimatedInputTokensAfter:N0} tokens"
-                    + $" · target {ex.TargetInputTokens:N0})."));
-                emit(CopilotAgentEvent.AnswerDelta(ex.Message));
-            }
-            catch (Exception ex) when (CopilotProviderRetryChatClient.IsProviderInterruption(ex, cancellationToken))
-            {
-                if (bridge.StepRecords.Count == 0 && answerText.Length == 0)
-                    throw;
-
-                providerInterrupted = true;
-                if (CopilotProviderInactivityException.TryFind(
-                    ex,
-                    out var inactivity))
-                {
-                    var inactivityDescription =
-                        inactivity.Phase == CopilotProviderInactivityPhase.FirstResponse
-                            ? "returned no content"
-                            : "returned no new stream content";
-                    emit(CopilotAgentEvent.RuntimeDiagnostic(
-                        $"The provider {inactivityDescription} for {FormatDuration(inactivity.TimeoutDuration)} after material Agent progress. The current Harness session will be checkpointed without replaying tools."));
-                }
-                else
-                {
-                    emit(CopilotAgentEvent.RuntimeDiagnostic(
-                        "The provider stream was interrupted after material Agent progress. The current Harness session will be checkpointed without replaying tools."));
-                }
-                if (answerText.Length == 0)
-                {
-                    emit(CopilotAgentEvent.AnswerDelta(
-                        "模型连接在 Agent 已取得进展后中断。当前任务状态和工具结果正在保存，可安全恢复，不会自动重放工具。"));
-                }
-            }
-            catch
-            {
-                bridge.CancelOutstandingApprovals();
-                throw;
-            }
-            finally
-            {
-                steeringRegistration.StopAcceptingInput();
-                var undeliveredSteeringMessages = steeringRegistration.GetUndeliveredSteeringMessages();
-                if (undeliveredSteeringMessages.Count > 0)
-                    emit(CopilotAgentEvent.SteeringRecovery(undeliveredSteeringMessages));
-            }
-
-            bridge.CancelOutstandingApprovals();
-
-            if (controlIntent == CopilotAgentControlIntent.None)
-                timeBudgetExhausted |= timeBudgetCancellation.IsCancellationRequested && !callerCancellationToken.IsCancellationRequested;
+            var loopResult = await RunAgentStreamingLoopAsync(
+                request,
+                runBudget,
+                stopwatch,
+                timeBudgetCancellation,
+                callerCancellationToken,
+                cancellationToken,
+                toolBudgetCancellation.Token,
+                agentLoopCancellation.Token,
+                agent,
+                initialMessages,
+                session,
+                bridge,
+                contextRecoveryChatClient,
+                taskEventJournalBuilder,
+                emit,
+                steeringRegistration,
+                liveCheckpointPublisher,
+                messageInjector,
+                answerText,
+                deferredBackgroundOutputDelivery,
+                deferredBackgroundCompletionDelivery,
+                deferredBackgroundOutputEvents,
+                deferredBackgroundCompletions,
+                deferredBackgroundSignalMessages);
+            usage = loopResult.Usage;
+            var controlIntent = loopResult.ControlIntent;
+            var timeBudgetExhausted = loopResult.TimeBudgetExhausted;
+            var providerInterrupted = loopResult.ProviderInterrupted;
+            var contextWindowExceeded = loopResult.ContextWindowExceeded;
+            var toolBudgetForcedFinalization = loopResult.ToolBudgetForcedFinalization;
+            var providerFinishReason = loopResult.ProviderFinishReason;
             var outputLengthLimitReached = IsLengthLimitedOutput(providerFinishReason);
             var outputContentFiltered = IsContentFilteredOutput(providerFinishReason);
             var outputFinishReasonIncomplete = IsUnexpectedIncompleteOutput(providerFinishReason);
@@ -763,134 +443,50 @@ namespace ColorVision.Copilot
                 && !outputContentFiltered
                 && (!hasModelFinalAnswer || toolBudgetForcedFinalization))
             {
-                emit(CopilotAgentEvent.RuntimeDiagnostic(toolBudgetForcedFinalization
-                    ? "The tool-enabled Agent loop reached its hard limit; starting one bounded finalization call with business tools disabled."
-                    : "Agent Framework returned no displayable final answer; starting one bounded finalization call with business tools disabled."));
-                var repairLedger = await CaptureTaskLedgerAsync(todoProvider, modeProvider, session, sessionResumed, cancellationToken);
-                var repairPrompt = _contextBuilder.BuildAnswerMessages(request, bridge.StepRecords);
-                var repairInstruction = "# Final answer recovery\n"
-                    + (toolBudgetForcedFinalization
-                        ? "The tool-enabled Agent loop reached its hard tool-call limit. Provide the final answer now using only the supplied request, context, and collected tool observations. Do not request or call tools. Do not claim unfinished work is complete; state remaining work or a concrete blocker when applicable.\n"
-                        : "The Agent loop ended without displayable final text. Provide the final answer now using only the supplied request, context, and tool observations. Do not request or call tools. Do not claim unfinished work is complete; state remaining work or a concrete blocker when applicable.\n")
-                    + CodeFindingEvidenceInstruction + "\n"
-                    + FormatTaskLedgerDiagnostic("Current task ledger", repairLedger);
-                var repairMessages = CopilotRequestMessageSequence
-                    .Normalize(repairPrompt.Messages.Append(new CopilotRequestMessage("user", repairInstruction)))
-                    .Select(ToFrameworkMessage)
-                    .ToArray();
-                hasModelFinalAnswer = false;
-                try
-                {
-                    var repairResponse = await contextRecoveryChatClient.GetResponseAsync(
-                        repairMessages,
-                        BuildFinalAnswerOptions(request.Profile),
-                        cancellationToken);
-                    foreach (var usageContent in repairResponse.Messages.SelectMany(message => message.Contents).OfType<UsageContent>())
-                        usage = usage.Add(ToCopilotUsage(usageContent.Details));
-                    var repairLengthLimited = IsLengthLimitedOutput(repairResponse.FinishReason);
-                    var repairContentFiltered = IsContentFilteredOutput(repairResponse.FinishReason);
-                    var repairFinishReasonIncomplete = IsUnexpectedIncompleteOutput(repairResponse.FinishReason);
-                    var repairedText = ExtractFinalAnswerText(repairResponse);
-                    outputLengthLimitReached = repairLengthLimited;
-                    outputContentFiltered = repairContentFiltered;
-                    outputFinishReasonIncomplete = repairFinishReasonIncomplete;
-                    if (repairLengthLimited)
-                    {
-                        emit(CopilotAgentEvent.RuntimeDiagnostic(
-                            "The bounded no-tools finalization call also reached its maximum output length; allowed partial text was retained without replacing earlier output."));
-                    }
-                    else if (repairContentFiltered)
-                    {
-                        emit(CopilotAgentEvent.RuntimeDiagnostic(
-                            "The bounded no-tools finalization call was stopped by the provider content filter; filtered replacement text was not accepted as complete and earlier partial output was retained."));
-                    }
-                    else if (repairFinishReasonIncomplete)
-                    {
-                        emit(CopilotAgentEvent.RuntimeDiagnostic(
-                            "The bounded no-tools finalization call ended with an explicit non-success finish reason; replacement text was not accepted as complete and earlier partial output was retained."));
-                    }
-                    if (!repairLengthLimited
-                        && !repairContentFiltered
-                        && !repairFinishReasonIncomplete
-                        && !string.IsNullOrWhiteSpace(repairedText))
-                    {
-                        if (answerText.Length > 0)
-                            emit(CopilotAgentEvent.AnswerReset());
-                        emit(CopilotAgentEvent.AnswerDelta(repairedText));
-                        hasModelFinalAnswer = true;
-                        emit(CopilotAgentEvent.RuntimeDiagnostic("The bounded no-tools finalization call produced the final answer."));
-                    }
-                    else if (!string.IsNullOrWhiteSpace(repairedText))
-                    {
-                        if (answerText.Length == 0)
-                            emit(CopilotAgentEvent.AnswerDelta(repairedText));
-                    }
-                    else
-                    {
-                        emit(CopilotAgentEvent.RuntimeDiagnostic("The bounded no-tools finalization call also returned no displayable text."));
-                    }
-                }
-                catch (OperationCanceledException)
-                {
-                    throw;
-                }
-                catch (Exception ex)
-                {
-                    emit(CopilotAgentEvent.RuntimeDiagnostic($"The bounded no-tools finalization call failed ({CopilotAgentTraceEntry.Sanitize(ex.Message)})."));
-                }
-            }
-            if (controlIntent == CopilotAgentControlIntent.None
-                && !timeBudgetExhausted
-                && !providerInterrupted
-                && !contextWindowExceeded
-                && !hasModelFinalAnswer)
-            {
-                var partialAnswerPrefix = answerText.Length > 0 ? "\n\n" : string.Empty;
-                emit(CopilotAgentEvent.AnswerDelta(outputContentFiltered
-                    ? partialAnswerPrefix + "最终回答被提供商内容策略提前停止；已保留以上允许返回的内容，可调整请求后重试最终回答。"
-                    : outputLengthLimitReached
-                        ? partialAnswerPrefix + "最终回答达到模型输出上限；已保留以上部分内容，可稍后重试最终回答。"
-                        : outputFinishReasonIncomplete
-                            ? partialAnswerPrefix + "最终回答以未确认完成的提供商状态结束；已保留以上部分内容，可稍后重试最终回答。"
-                        : "模型没有返回可显示的最终回答。本轮上下文和工具执行记录已经保留，可使用“重试最终回答”仅重新生成总结，不会再次调用工具。"));
-            }
-            if (controlIntent == CopilotAgentControlIntent.None
-                && !timeBudgetExhausted
-                && !providerInterrupted
-                && hasModelFinalAnswer
-                && CopilotNarrowEvidenceAnswerPolicy.TryGetUnsupportedFindingReason(
+                var recoveredFinalAnswer = await RecoverFinalAnswerAsync(
                     request,
-                    answerText.ToString(),
-                    out var unsupportedFindingReason))
-            {
-                emit(CopilotAgentEvent.RuntimeDiagnostic(
-                    $"Narrow evidence quality gate rejected an unsupported finding ({unsupportedFindingReason}); the answer was replaced with an explicit no-verified-finding result."));
-                emit(CopilotAgentEvent.AnswerReset());
-                emit(CopilotAgentEvent.AnswerDelta(CopilotNarrowEvidenceAnswerPolicy.BuildNoVerifiedFindingAnswer(request)));
-                hasModelFinalAnswer = true;
+                    emit,
+                    bridge,
+                    todoProvider,
+                    modeProvider,
+                    session,
+                    sessionResumed,
+                    contextRecoveryChatClient,
+                    cancellationToken,
+                    toolBudgetForcedFinalization,
+                    answerText.Length > 0,
+                    usage,
+                    outputLengthLimitReached,
+                    outputContentFiltered,
+                    outputFinishReasonIncomplete);
+                usage = recoveredFinalAnswer.Usage;
+                outputLengthLimitReached = recoveredFinalAnswer.OutputLengthLimitReached;
+                outputContentFiltered = recoveredFinalAnswer.OutputContentFiltered;
+                outputFinishReasonIncomplete = recoveredFinalAnswer.OutputFinishReasonIncomplete;
+                hasModelFinalAnswer = recoveredFinalAnswer.HasModelFinalAnswer;
             }
-            if (controlIntent == CopilotAgentControlIntent.None
-                && !timeBudgetExhausted
-                && hasModelFinalAnswer)
-            {
-                var sourceAppendix = CopilotWebEvidenceSourceLedger.BuildMissingSourceAppendix(
-                    bridge.StepRecords,
-                    availableTools,
-                    answerText.ToString());
-                if (!string.IsNullOrWhiteSpace(sourceAppendix))
-                {
-                    emit(CopilotAgentEvent.AnswerDelta(sourceAppendix));
-                    emit(CopilotAgentEvent.RuntimeDiagnostic("The model used web evidence without citing a returned URL; a bounded source ledger was appended to the final answer."));
-                }
-            }
+            hasModelFinalAnswer = ApplyFinalAnswerQualityGates(
+                request,
+                emit,
+                bridge,
+                availableTools,
+                () => answerText.ToString(),
+                controlIntent,
+                timeBudgetExhausted,
+                providerInterrupted,
+                contextWindowExceeded,
+                hasModelFinalAnswer,
+                outputLengthLimitReached,
+                outputContentFiltered,
+                outputFinishReasonIncomplete);
             var budgetSnapshot = runBudget.CreateSnapshot(
                 chatClient.Snapshot,
                 stopwatch.Elapsed,
                 bridge.StepRecords.Count,
                 timeBudgetExhausted,
                 bridge.ToolBudgetExhausted,
-                usedDelegatedDirectAnswer,
-                toolSurface);
+                providerPipeline.UsedDelegatedDirectAnswer,
+                providerPipeline.ToolSurface);
             var skillSelectionDiagnostic = agentSkills.BuildSelectionDiagnostic();
             if (!string.IsNullOrWhiteSpace(skillSelectionDiagnostic))
                 emit(CopilotAgentEvent.RuntimeDiagnostic(skillSelectionDiagnostic));
@@ -1044,53 +640,23 @@ namespace ColorVision.Copilot
             }
             taskEventJournalBuilder.RecordStop(stopReason);
             var taskEventJournal = taskEventJournalBuilder.Snapshot();
-            CopilotAgentSessionCheckpoint? sessionCheckpoint = null;
-            try
-            {
-                if (controlIntent != CopilotAgentControlIntent.Cancel)
-                {
-                    var serializedSession = await agent.SerializeSessionAsync(session, null, finalization.Token)
-                        .AsTask()
-                        .WaitAsync(finalization.Token);
-                    var conversationMemory = CopilotAgentConversationMemory.Merge(
-                        requestedCheckpoint?.ConversationMemory,
-                        request.History,
-                        request.UserText,
-                        answerText.ToString(),
-                        steeringRegistration.GetDeliveredSteeringMessages());
-                    sessionCheckpoint = CopilotAgentSessionCheckpoint.Create(
-                        request.Profile,
-                        serializedSession.GetRawText(),
-                        capabilitySnapshot,
-                        evidenceArtifacts,
-                        taskEventJournal,
-                        availableToolNames,
-                        conversationMemory,
-                        environmentContext,
-                        request.TaskIntentText,
-                        hookSurfaceSnapshot);
-                    if (sessionCheckpoint == null)
-                        emit(CopilotAgentEvent.RuntimeDiagnostic("Agent session checkpoint exceeded its session or capability persistence limit and was not saved."));
-                }
-            }
-            catch (OperationCanceledException) when (finalization.IsTimeoutCancellationRequested)
-            {
-                sessionCheckpoint = liveCheckpointPublisher.LatestCheckpoint?.CopyWithTaskEventJournal(taskEventJournal);
-                emit(CopilotAgentEvent.RuntimeDiagnostic(sessionCheckpoint == null
-                    ? $"Agent finalization exceeded {FormatDuration(CopilotAgentRunFinalizationScope.DefaultInterruptedTimeout)}; no final checkpoint could be saved."
-                    : $"Agent finalization exceeded {FormatDuration(CopilotAgentRunFinalizationScope.DefaultInterruptedTimeout)}; the latest incremental checkpoint was sealed with the final task state."));
-            }
-            catch (OperationCanceledException)
-            {
-                throw;
-            }
-            catch (Exception ex)
-            {
-                emit(CopilotAgentEvent.RuntimeDiagnostic($"Agent session checkpoint could not be saved ({CopilotUserFacingErrorFormatter.Sanitize(ex.Message)})."));
-                sessionCheckpoint = liveCheckpointPublisher.LatestCheckpoint?.CopyWithTaskEventJournal(taskEventJournal);
-                if (sessionCheckpoint != null)
-                    emit(CopilotAgentEvent.RuntimeDiagnostic("The latest incremental Agent checkpoint was sealed with the final task state instead."));
-            }
+            var sessionCheckpoint = await SaveFinalSessionCheckpointAsync(
+                request,
+                requestedCheckpoint,
+                agent,
+                session,
+                finalization,
+                capabilitySnapshot,
+                evidenceArtifacts,
+                taskEventJournal,
+                availableToolNames,
+                environmentContext,
+                hookSurfaceSnapshot,
+                steeringRegistration,
+                liveCheckpointPublisher,
+                answerText.ToString(),
+                controlIntent,
+                emit);
             emit(CopilotAgentEvent.Completed());
             return new CopilotAgentRunResult
             {
