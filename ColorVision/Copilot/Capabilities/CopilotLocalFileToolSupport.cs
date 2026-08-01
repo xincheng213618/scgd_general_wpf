@@ -155,6 +155,22 @@ namespace ColorVision.Copilot
                     0);
             }
 
+            if (CopilotWorkspaceSearchSupport.HasReparsePointInPath(fullPath))
+            {
+                return new CopilotLocalFileReadResult(
+                    fullPath,
+                    false,
+                    false,
+                    string.Empty,
+                    "Reading through a file-system reparse point is not allowed.",
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0);
+            }
+
             try
             {
                 await using var stream = new FileStream(fullPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
