@@ -99,47 +99,6 @@ public sealed class FlowCanvasCatalogBuilderTests
     }
 
     [Fact]
-    public void BuildProjectsNumericSubflowRevisionAndRejectsStringRevision()
-    {
-        TestCanvas canvas = CreateCanvas();
-        FlowSubflowCall call = CreateSubflowCall(
-            canvas,
-            revision: "17");
-
-        FlowCanvasCatalogBuildResult result =
-            new FlowCanvasCatalogBuilder().Build(
-                canvas.Data,
-                new FlowSubflowSidecar([call]));
-
-        FlowSubflowReference subflow = Assert.Single(
-            result.SemanticDocument.Subflows);
-        Assert.Equal("child-call", subflow.CallNodeId);
-        Assert.Equal("flow:child", subflow.FlowKey);
-        Assert.Equal("PinnedRevision", subflow.Binding);
-        Assert.Equal(17, subflow.Revision);
-        Assert.Equal(
-            $"{canvas.Source.Guid:N}/outputs/0",
-            subflow.InputMappings["parentSource"]);
-        Assert.Equal(
-            $"{canvas.Target.Guid:N}/inputs/0",
-            subflow.OutputMappings["parentTarget"]);
-
-        FlowCanvasCatalogException exception =
-            Assert.Throws<FlowCanvasCatalogException>(() =>
-                new FlowCanvasCatalogBuilder().Build(
-                    canvas.Data,
-                    new FlowSubflowSidecar(
-                    [
-                        CreateSubflowCall(
-                            canvas,
-                            revision: "fixed-r17"),
-                    ])));
-        Assert.Equal(
-            FlowCanvasCatalogError.UnsupportedSubflowRevision,
-            exception.Error);
-    }
-
-    [Fact]
     public void BuildProjectsErrorPortsAndRetryPoliciesIntoVersionSemantics()
     {
         TestCanvas canvas = CreateCanvas();
@@ -267,23 +226,6 @@ public sealed class FlowCanvasCatalogBuilderTests
                         FlowFailureKind.Technical,
                     ]),
             ]);
-    }
-
-    private static FlowSubflowCall CreateSubflowCall(
-        TestCanvas canvas,
-        string revision)
-    {
-        return new FlowSubflowCall(
-            "child-call",
-            new FlowPortReference(
-                canvas.Source.Guid,
-                OptionIndex: 0),
-            new FlowPortReference(
-                canvas.Target.Guid,
-                OptionIndex: 0),
-            new FlowDefinitionReference(
-                "flow:child",
-                revision));
     }
 
     private static TestCanvas CreateCanvas()

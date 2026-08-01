@@ -12,7 +12,6 @@
 | 节点属性没有设备/模板下拉 | `STNodeEditorHelper`、`NodeConfigurator/`、服务和模板列表 |
 | `.cvflow` 导入后模板名不对 | `manifest.json`、重名映射、`ReplaceTemplateNames(...)` |
 | 调度能触发但结果没回去 | `FlowJob`、`RunFlowAndWaitAsync()`、`FlowCompleted`、项目包 `Processing` |
-| 配置子流程后不能启动 | 当前目录 revision、已发布 Artifact、源 STN hash、固定子流程 revision/hash |
 | 打开新窗口后画布串流程 | `FlowTemplateWorkspaceController` 的实例选择、刷新 generation、已加载文档 |
 | 运行失败需要人工处置 | `FlowIncidentManagementWindow`、Run/Event/Attempt 关联记录 |
 
@@ -28,8 +27,6 @@
 | 旧图文件 | `.stn` | 仅保存节点图原始数据 |
 | 调度运行 | `FlowJob`、`FlowEngineManager.RunFlowAsync()` | Quartz 线程切回 UI 线程运行流程并等待结果 |
 | 裸执行器 | `FlowHeadlessExecutionService`、`HeadlessFlowJob` | 每次运行拥有独立 `FlowRuntimeHost`，不依赖 WPF 画布、当前模板或全局选择 |
-| 流程 Artifact | `FlowArtifactApplicationService` | 以 7 个内容寻址部件保存 authoring/compiled STN、策略、子流程侧车、编译映射和 manifest |
-| 可复用子流程 | `FlowSubflowEditorWindow` | 调用点写入版本侧车，目标固定到 FlowKey、revision 和内容 hash，不修改 `.stn` |
 | Incident 管理 | `FlowIncidentService`、`FlowIncidentManagementWindow` | 查询、筛选、确认、关闭并关联 Run/Event/Attempt |
 
 ## 存储边界
@@ -41,8 +38,8 @@
 | 数据库流程 | 保存前 `CheckFlow()`，再取画布数据、Base64、`TemplateFlow.Save2DB(...)` |
 | 资源引用 | `SysResourceModel.Type = 101`，`ModDetailModel.ValueA` 保存资源 id |
 | 多选导出 | 仍是 zip 内多个 `.stn`，不会像 `.cvflow` 一样收集关联模板 manifest |
-| 版本和搜索侧车 | 每次有效保存记录不可变 catalog revision、语义索引、执行策略和子流程侧车 |
-| Artifact | MySQL 保存 immutable revision 和内容寻址 blob；普通模板保存只做 best-effort draft，无子流程的 draft 仍走 UI 执行链，不改变 legacy STN 保存成功语义 |
+| 版本和搜索侧车 | 每次有效保存记录不可变 catalog revision、语义索引和执行策略 |
+| 历史 Artifact 表 | 当前版本不再读写或迁移，已有表和数据原样保留 |
 
 ## `.cvflow` 包
 
@@ -66,24 +63,18 @@
 | 等待引擎结束 | `FlowEngineManager.RunFlowAsync()` | 只等待流程图执行结束，不代表后处理成功 |
 | 等待最终结果 | `FlowEngineManager.RunFlowAndWaitForFinalizationAsync()` | 给调度、自动化或外部调用等待引擎和全部后处理结束 |
 | Quartz 调度 | `FlowJob.Execute(...)` -> `FlowExecutionCoordinator` -> `RunSelectedFlowAndWaitForFinalizationAsync()` | 通过 `Application.Current.Dispatcher` 切回 UI，并以最终结果决定任务状态 |
-| 独立调度 | `HeadlessFlowJob` -> `RunPublishedArtifactHeadlessAsync(...)` | 读取并验证已发布 Artifact，在隔离 RuntimeHost 中执行，不触碰编辑器 |
+| 独立调度 | `HeadlessFlowJob` -> `RunSavedFlowHeadlessAsync(...)` | 复制当前已保存 STN 和执行策略，在隔离 RuntimeHost 中执行，不触碰编辑器 |
 | 停止流程 | `ViewFlow` -> `FlowExecutionSession.StopFlow()` -> `FlowControl.Stop()` | 批次状态更新为 `Canceled` |
 
 `EngineExecutionCompleted` 表示“流程图引擎已结束”，此时后处理可能仍在运行；原有 `FlowExecutionCompleted` 作为它的过时兼容别名保留，不能作为整次业务运行成功的依据。引擎结束后会执行配置的后处理；后处理分为 `Warning` 和 `Required`，其中必需后处理失败会把最终结果判为失败。外部调用、Quartz 调度和自动化应等待 `RunFinalized`，或直接调用 `RunFlowAndWaitForFinalizationAsync()` 取得 `FlowRunFinalizedData.FinalOutcome`。`DisplayFlow` 只负责主程序视图注册、选中状态和服务重启。
 
-普通流程继续使用 UI 执行链。当前 revision 存在子流程调用时，`FlowExecutionSession` 必须先取得与 FlowKey、catalog revision 和源 STN hash 完全一致的已发布 Artifact，再把 compiled STN 交给隔离运行时；主界面的批次、前处理、后处理和最终结果仍由原会话负责。画布未保存、Artifact 未发布、依赖版本漂移或校验失败都会明确阻止启动，禁止退回 authoring STN，因为 authoring STN 本身不包含展开后的子流程。
+UI 手动运行始终执行当前画布加载的 STN，不再读取或校验 Artifact。独立调度按 FlowKey 取得当前已保存 STN，并在创建请求时复制二进制数据和执行策略，后续编辑不会改变已经启动的这次执行。
 
 ## 工作区与运行对象
 
 `FlowTemplateWorkspaceController` 只保存当前 `ViewFlow` 实例的 requested template、已加载 `FlowParam`、起点选择和刷新 generation。刷新按 latest-wins 串行加载，较早请求完成后不能覆盖较新的选择；加载失败时保留原画布。独立编辑器也不再写入主程序的全局模板选择和全局节点集合。
 
 `FlowHeadlessExecutionRequest` 在创建时复制 STN、MQTT 服务 token、错误路由和重试策略。`FlowHeadlessExecutionService` 每次执行新建并释放一个 `FlowRuntimeHost`，返回结构化的启动状态、终止原因、内容 hash、耗时和 `FlowControlData` 映射。裸执行器不自动创建批次，也不执行前后处理；这些业务语义由 UI 会话或插件调用方明确编排。
-
-## Artifact 与子流程
-
-Artifact 的 authoring STN 始终保留原始 `.stn` 字节。编译器根据子流程侧车递归展开调用，固定并验证每个依赖的 FlowKey、revision 和 SHA-256，再生成 compiled STN、effective policy、compilation map 和 manifest。发布读取会重新读取全部 7 个部件、验证内容 hash、依赖锁、编译器标识和映射归属，并再次解码 STND。
-
-子流程编辑器把父流程的一条现有连接作为调用点。保存配置会创建新的流程目录 revision；勾选“同时发布 Artifact”后才产生可供生产执行的发布版本。目标流程有任何新保存不会自动改变父流程，父流程必须显式更新固定版本并重新发布。
 
 ## Incident
 
@@ -99,7 +90,6 @@ Artifact 的 authoring STN 始终保留原始 `.stn` 字节。编译器根据子
 | 多流程导出 | zip 内是多个 `.stn`，不要误认为包含关联模板 |
 | 调度执行 | Quartz `FlowJob` 能启动流程、等待后处理完成，并在 `context.Result` 返回最终 `FlowJobResult` |
 | 项目维护 | `RunFinalized` 后批次状态、耗时、节点尝试、Incident、后处理和最终结果都能追踪 |
-| 子流程执行 | 未发布或 hash 不匹配时拒绝启动；发布后实际执行 compiled STN，且 UI 最终态仍包含后处理结果 |
 | 多窗口切换 | 快速 A→B 选择最终只显示 B；坏模板加载失败不清空当前画布；独立窗口不改变主界面选择 |
 | 裸执行器 | 两次并行执行各自拥有 RuntimeHost；取消、超时、加载失败和启动拒绝都有明确终止状态 |
 | Incident | 确认和关闭能记录操作人、备注和时间，Run/Event/Attempt 详情可回查 |
@@ -124,7 +114,6 @@ Artifact 的 authoring STN 始终保留原始 `.stn` 字节。编译器根据子
 | 工作区生命周期 | `FlowTemplateWorkspaceController.cs` |
 | 执行会话 | `FlowExecutionSession.cs` |
 | 裸执行器 | `FlowHeadlessExecutionService.cs`、`FlowRuntimeHost.cs` |
-| Artifact | `FlowProcessing/Artifacts/` |
-| 子流程编译与编辑 | `FlowProcessing/Compilation/` |
+| 版本与搜索投影 | `FlowProcessing/Compilation/FlowCanvasCatalogBuilder.cs` |
 | Incident | `FlowProcessing/Diagnostics/FlowIncident*.cs` |
 | 主程序壳 | `DisplayFlow.xaml.cs` |

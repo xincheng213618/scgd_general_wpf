@@ -13,8 +13,6 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
 
         public List<FlowSemanticEdge> Edges { get; set; } = new();
 
-        public List<FlowSubflowReference> Subflows { get; set; } = new();
-
         public List<FlowErrorRoute> ErrorRoutes { get; set; } = new();
 
         public List<FlowRetryPolicyReference> RetryPolicies { get; set; } =
@@ -32,8 +30,6 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
                 clone.Nodes.Add(node.DeepClone());
             foreach (FlowSemanticEdge edge in Edges)
                 clone.Edges.Add(edge.DeepClone());
-            foreach (FlowSubflowReference subflow in Subflows)
-                clone.Subflows.Add(subflow.DeepClone());
             foreach (FlowErrorRoute route in ErrorRoutes)
                 clone.ErrorRoutes.Add(route.DeepClone());
             foreach (FlowRetryPolicyReference retryPolicy in RetryPolicies)
@@ -82,46 +78,6 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
                 SourcePort = SourcePort,
                 TargetNodeId = TargetNodeId,
                 TargetPort = TargetPort,
-            };
-        }
-    }
-
-    public sealed class FlowSubflowReference
-    {
-        public string CallNodeId { get; set; } = string.Empty;
-
-        public string FlowKey { get; set; } = string.Empty;
-
-        public string Binding { get; set; } = "PinnedRevision";
-
-        public int? Revision { get; set; }
-
-        public bool WaitForCompletion { get; set; } = true;
-
-        public bool CancelWithParent { get; set; } = true;
-
-        public Dictionary<string, string> InputMappings { get; set; } =
-            new(StringComparer.Ordinal);
-
-        public Dictionary<string, string> OutputMappings { get; set; } =
-            new(StringComparer.Ordinal);
-
-        public FlowSubflowReference DeepClone()
-        {
-            return new FlowSubflowReference
-            {
-                CallNodeId = CallNodeId,
-                FlowKey = FlowKey,
-                Binding = Binding,
-                Revision = Revision,
-                WaitForCompletion = WaitForCompletion,
-                CancelWithParent = CancelWithParent,
-                InputMappings = new Dictionary<string, string>(
-                    InputMappings,
-                    StringComparer.Ordinal),
-                OutputMappings = new Dictionary<string, string>(
-                    OutputMappings,
-                    StringComparer.Ordinal),
             };
         }
     }

@@ -1,6 +1,5 @@
 ﻿#pragma warning disable CA1720,CA1822,CA1863,CS4014,CS8602
 using ColorVision.Common.MVVM;
-using ColorVision.Engine.FlowProcessing.Compilation;
 using ColorVision.Engine.FlowProcessing.Diagnostics;
 using ColorVision.Engine.FlowProcessing.Editor;
 using ColorVision.Engine.FlowProcessing.Integration;
@@ -52,7 +51,6 @@ namespace ColorVision.Engine.FlowProcessing
         public RelayCommand SaveCommand { get; set; }
         public RelayCommand VersionHistoryCommand { get; set; }
         public RelayCommand ExecutionPolicyCommand { get; set; }
-        public RelayCommand SubflowCommand { get; set; }
         public RelayCommand IncidentManagementCommand { get; set; }
 
         public RelayCommand AutoAlignmentCommand { get; set; }
@@ -234,11 +232,6 @@ namespace ColorVision.Engine.FlowProcessing
                 _ => ShowExecutionPolicy(),
                 _ => GetActiveFlowParam()?.FlowKey != null
                     && !IsFlowExecutionActive);
-            SubflowCommand = new RelayCommand(
-                _ => ShowSubflowEditor(),
-                _ => FlowSubflowEditorCommand.CanOpen(
-                    GetActiveFlowParam(),
-                    IsFlowExecutionActive));
             IncidentManagementCommand =
                 new RelayCommand(_ => ShowIncidentManagement());
             AutoAlignmentCommand = new RelayCommand(a => AutoAlignment());
@@ -614,44 +607,6 @@ namespace ColorVision.Engine.FlowProcessing
             {
                 Owner = Application.Current.GetActiveWindow()
             }.ShowDialog();
-        }
-
-        private void ShowSubflowEditor()
-        {
-            FlowParam? flowParam = GetActiveFlowParam();
-            if (!FlowSubflowEditorCommand.CanOpen(
-                    flowParam,
-                    IsFlowExecutionActive)
-                || flowParam == null)
-            {
-                MessageBox.Show(
-                    Application.Current.GetActiveWindow(),
-                    "当前流程尚未保存，或流程正在运行，不能配置子流程。",
-                    "可复用子流程");
-                return;
-            }
-            if (STNodeEditorMain.IsModified)
-            {
-                MessageBoxResult result = MessageBox.Show(
-                    Application.Current.GetActiveWindow(),
-                    "子流程通过节点 Guid 和端口关联已保存版本。"
-                    + Environment.NewLine
-                    + "画布有未保存修改，是否先保存再继续？",
-                    "可复用子流程",
-                    MessageBoxButton.YesNo,
-                    MessageBoxImage.Question);
-                if (result != MessageBoxResult.Yes || !TrySave())
-                    return;
-
-                flowParam = GetActiveFlowParam();
-                if (flowParam == null)
-                    return;
-            }
-
-            FlowSubflowEditorCommand.Open(
-                flowParam,
-                STNodeEditorMain,
-                Application.Current.GetActiveWindow());
         }
 
         private void ShowIncidentManagement()

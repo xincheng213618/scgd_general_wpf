@@ -49,22 +49,6 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
                 canonical.EndGroup();
             }
 
-            foreach (FlowSubflowReference subflow in document.Subflows
-                .OrderBy(GetSubflowKey, StringComparer.Ordinal))
-            {
-                canonical.Add("subflow");
-                canonical.Add(subflow.CallNodeId);
-                canonical.Add(subflow.FlowKey);
-                canonical.Add(subflow.Binding);
-                canonical.Add(subflow.Revision?.ToString(
-                    CultureInfo.InvariantCulture));
-                canonical.Add(subflow.WaitForCompletion ? "1" : "0");
-                canonical.Add(subflow.CancelWithParent ? "1" : "0");
-                AddMap(canonical, subflow.InputMappings);
-                AddMap(canonical, subflow.OutputMappings);
-                canonical.EndGroup();
-            }
-
             foreach (FlowErrorRoute route in document.ErrorRoutes
                 .OrderBy(GetErrorRouteKey, StringComparer.Ordinal))
             {
@@ -135,21 +119,6 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
                 edge.TargetPort);
         }
 
-        internal static string GetSubflowKey(FlowSubflowReference subflow)
-        {
-            var canonical = new CanonicalTextBuilder();
-            canonical.Add(subflow.CallNodeId);
-            canonical.Add(subflow.FlowKey);
-            canonical.Add(subflow.Binding);
-            canonical.Add(subflow.Revision?.ToString(
-                CultureInfo.InvariantCulture));
-            canonical.Add(subflow.WaitForCompletion ? "1" : "0");
-            canonical.Add(subflow.CancelWithParent ? "1" : "0");
-            AddMap(canonical, subflow.InputMappings);
-            AddMap(canonical, subflow.OutputMappings);
-            return canonical.ToString();
-        }
-
         internal static string GetErrorRouteKey(FlowErrorRoute route)
         {
             return string.Join(
@@ -190,19 +159,6 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
                 ToInvariant(node.Y),
                 ToInvariant(node.Width),
                 ToInvariant(node.Height));
-        }
-
-        private static void AddMap(
-            CanonicalTextBuilder builder,
-            IReadOnlyDictionary<string, string> values)
-        {
-            foreach (KeyValuePair<string, string> value in values
-                .OrderBy(item => item.Key, StringComparer.Ordinal))
-            {
-                builder.Add(value.Key);
-                builder.Add(value.Value);
-            }
-            builder.EndGroup();
         }
 
         private static string ToInvariant(double value)

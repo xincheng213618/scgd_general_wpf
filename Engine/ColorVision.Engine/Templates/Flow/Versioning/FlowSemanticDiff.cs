@@ -34,10 +34,6 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
 
         public List<FlowSemanticEdge> RemovedEdges { get; } = new();
 
-        public List<FlowSubflowReference> AddedSubflows { get; } = new();
-
-        public List<FlowSubflowReference> RemovedSubflows { get; } = new();
-
         public List<FlowErrorRoute> AddedErrorRoutes { get; } = new();
 
         public List<FlowErrorRoute> RemovedErrorRoutes { get; } = new();
@@ -59,8 +55,6 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
             || PropertyChanges.Count > 0
             || AddedEdges.Count > 0
             || RemovedEdges.Count > 0
-            || AddedSubflows.Count > 0
-            || RemovedSubflows.Count > 0
             || AddedErrorRoutes.Count > 0
             || RemovedErrorRoutes.Count > 0
             || AddedRetryPolicies.Count > 0
@@ -128,13 +122,6 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
                 FlowSemanticHash.GetEdgeKey,
                 result.RemovedEdges,
                 result.AddedEdges,
-                item => item.DeepClone());
-            CompareSet(
-                before.Subflows,
-                after.Subflows,
-                FlowSemanticHash.GetSubflowKey,
-                result.RemovedSubflows,
-                result.AddedSubflows,
                 item => item.DeepClone());
             CompareSet(
                 before.ErrorRoutes,

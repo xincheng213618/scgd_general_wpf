@@ -1,6 +1,5 @@
 ﻿#pragma warning disable CS4014,CS8601,CS8602,CS8603,CS8625
 using ColorVision.Database;
-using ColorVision.Engine.FlowProcessing.Artifacts;
 using ColorVision.Engine.FlowProcessing.Diagnostics;
 using ColorVision.Engine.FlowProcessing.Editor;
 using ColorVision.Engine.FlowProcessing.PostProcess;
@@ -54,88 +53,6 @@ namespace ColorVision.Engine.FlowProcessing
         private readonly record struct FlowRunCoreResult(
             FlowControlData? EngineResult,
             FlowRunFinalizedData? FinalizedResult);
-
-        private bool TryResolvePublishedArtifactExecutable(
-            FlowParam flowParam,
-            out FlowPublishedExecutable? executable,
-            out string? failureReason)
-        {
-            executable = null;
-            failureReason = null;
-            if (string.IsNullOrWhiteSpace(flowParam.FlowKey))
-            {
-                return true;
-            }
-
-            try
-            {
-                using FlowArtifactApplicationService artifacts =
-                    FlowArtifactServiceProvider.Create(
-                        ensureSchema: false);
-                FlowRuntimeArtifactResolution resolution =
-                    artifacts.ResolveForExecution(flowParam);
-                if (resolution.Kind is
-                    FlowRuntimeArtifactResolutionKind.Legacy
-                    or FlowRuntimeArtifactResolutionKind
-                        .LegacyRequiresLocalSubflowCheck)
-                {
-                    bool? currentRevisionHasSubflows = null;
-                    if (flowParam.TemplateRevision is int revision
-                        && revision > 0)
-                    {
-                        currentRevisionHasSubflows =
-                            FlowArtifactServiceProvider
-                                .GetAuthoringSubflowPresence(
-                                flowParam.FlowKey,
-                                revision);
-                    }
-                    if (!FlowRuntimeArtifactFallbackPolicy
-                            .CanUseLegacy(
-                                resolution.Kind,
-                                currentRevisionHasSubflows,
-                                out failureReason))
-                    {
-                        return false;
-                    }
-                    return true;
-                }
-
-                if (resolution.Kind
-                    == FlowRuntimeArtifactResolutionKind.Blocked)
-                {
-                    failureReason =
-                        resolution.FailureReason
-                        ?? "共享 Artifact 当前不可执行。";
-                    return false;
-                }
-
-                if (View.STNodeEditorMain.IsModified)
-                {
-                    failureReason =
-                        "当前画布有未保存修改。请先保存并重新发布 "
-                        + "Artifact 后再运行。";
-                    return false;
-                }
-
-                executable = resolution.Executable;
-                if (executable != null)
-                    return true;
-
-                failureReason =
-                    "共享 Artifact 已发布，但没有生成可执行快照。";
-                return false;
-            }
-            catch (Exception ex)
-            {
-                failureReason =
-                    "读取共享 Artifact 执行状态失败："
-                    + ex.Message;
-                log.Error(
-                    $"解析流程 {flowParam.Name} 的共享 Artifact 失败。",
-                    ex);
-                return false;
-            }
-        }
 
         private MeasureBatchModel? CurrentBatch
         {
@@ -1164,28 +1081,9 @@ namespace ColorVision.Engine.FlowProcessing
             string flowName = executionSnapshot.FlowName;
             FlowParam selectedFlowParam =
                 executionSnapshot.CreateFlowParam();
-            if (!TryResolvePublishedArtifactExecutable(
-                    selectedFlowParam,
-                    out FlowPublishedExecutable? publishedExecutable,
-                    out string? artifactFailure))
-            {
-                string message = artifactFailure
-                    ?? "当前流程的已发布 Artifact 不可执行。";
-                View.ShowExecutionSummary(message);
-                MessageBox.Show(
-                    WindowHelpers.GetActiveWindow(),
-                    message,
-                    "可复用子流程",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
-                return default;
-            }
-
-            bool requiresServices =
-                publishedExecutable?.RequiresServices
-                ?? View.STNodeEditorMain.Nodes
-                    .OfType<CVBaseServerNode>()
-                    .Any();
+            bool requiresServices = View.STNodeEditorMain.Nodes
+                .OfType<CVBaseServerNode>()
+                .Any();
             if (requiresServices && !MqttRCService.GetInstance().IsConnect)
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(),ColorVision.Engine.Properties.Resources.RegistryCenterNotConnected);
@@ -1271,8 +1169,7 @@ namespace ColorVision.Engine.FlowProcessing
                 _pendingNodeExecutions.Clear();
                 _runningNodeNames.Clear();
                 _runningNodeCounts.Clear();
-                if (publishedExecutable == null)
-                    AttachExecutionNodeEvents();
+                AttachExecutionNodeEvents();
 
                 _stopwatch.Restart();
                 _timer.Change(0, 100); // 启动定时器
@@ -1356,88 +1253,17 @@ namespace ColorVision.Engine.FlowProcessing
                 bool executionStarted;
                 FlowControlData executionData;
                 bool startRejected;
-                if (publishedExecutable == null)
-                {
-                    FlowRunExecutionResult execution =
-                        await _flowRunExecutor.RunAsync(
-                            startNodeName,
-                            sn,
-                            executionTimeout: null,
-                            flowRunCts.Token);
-                    executionStarted = execution.Started;
-                    executionData = execution.Data;
-                    startRejected =
-                        execution.Termination
-                        == FlowRunTermination.StartRejected;
-                }
-                else
-                {
-                    journalScope?.TryAppendEvent(
-                        "published-artifact-selected",
-                        "PublishedArtifactSelected",
-                        code:
-                            publishedExecutable.Revision.Revision
-                                .ToString(),
-                        message:
-                            "使用隔离运行时执行已发布 Artifact "
-                            + publishedExecutable.Manifest.ArtifactHash);
-                    var request = new FlowHeadlessExecutionRequest(
-                        publishedExecutable.CompiledStn,
+                FlowRunExecutionResult execution =
+                    await _flowRunExecutor.RunAsync(
                         startNodeName,
                         sn,
-                        MqttRCService.GetInstance().ServiceTokens,
-                        FlowExecutionPolicyRuntimeAdapter
-                            .ToRuntimeErrorRoutes(
-                                publishedExecutable.ExecutionPolicy),
-                        FlowExecutionPolicyRuntimeAdapter
-                            .ToRuntimeRetryPolicies(
-                                publishedExecutable.ExecutionPolicy));
-                    var observer =
-                        new FlowHeadlessExecutionObserver(
-                            NodeRunEvent,
-                            NodeEndEvent);
-                    FlowHeadlessExecutionResult execution =
-                        await FlowExecutionCoordinator.Instance
-                            .RunHeadlessAsync(
-                                request,
-                                observer,
-                                flowRunCts.Token);
-                    journalScope?.TryAppendEvent(
-                        "headless-engine-completed",
-                        "HeadlessEngineCompleted",
-                        code: execution.Termination.ToString(),
-                        message: execution.Data.Message);
-                    if (execution.Termination
-                            != FlowHeadlessExecutionTermination.Completed
-                        || execution.Data.Status
-                            != StatusTypeEnum.Completed)
-                    {
-                        journalScope?.TryCreateIncident(
-                            "headless-engine-terminal-failure",
-                            "HeadlessEngineFailure",
-                            execution.Termination
-                                    == FlowHeadlessExecutionTermination
-                                        .Canceled
-                                ? "Warning"
-                                : "Error",
-                            execution.Data.Message,
-                            execution.Data.ErrorNodeId,
-                            detailsJson:
-                                System.Text.Json.JsonSerializer.Serialize(
-                                    new
-                                    {
-                                        execution.Termination,
-                                        execution.Started,
-                                        execution.Data.ErrorNodeName,
-                                        execution.ElapsedMilliseconds
-                                    }));
-                    }
-                    executionStarted = execution.Started;
-                    executionData = execution.ToFlowControlData();
-                    startRejected =
-                        execution.Termination
-                        == FlowHeadlessExecutionTermination.StartRejected;
-                }
+                        executionTimeout: null,
+                        flowRunCts.Token);
+                executionStarted = execution.Started;
+                executionData = execution.Data;
+                startRejected =
+                    execution.Termination
+                    == FlowRunTermination.StartRejected;
 
                 if (startRejected)
                 {

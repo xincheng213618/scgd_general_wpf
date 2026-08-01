@@ -142,8 +142,8 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
 
                 flowParam.DataBase64 = Convert.ToBase64String(
                     revision.FullSnapshot);
-                // TemplateFlow uses this revision to inherit the exact
-                // immutable subflow sidecar while creating the new revision.
+                // TemplateFlow uses this revision to restore the exact
+                // semantic projection while creating the new revision.
                 flowParam.TemplateRevision = revision.Revision;
                 saveTemplate(
                     flowParam,

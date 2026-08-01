@@ -12,7 +12,6 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
             ArgumentNullException.ThrowIfNull(document);
             if (document.Nodes == null
                 || document.Edges == null
-                || document.Subflows == null
                 || document.ErrorRoutes == null
                 || document.RetryPolicies == null)
             {
@@ -55,35 +54,6 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
                 {
                     throw new ArgumentException(
                         "流程包含重复普通边。",
-                        nameof(document));
-                }
-            }
-
-            var subflowCallNodes = new HashSet<string>(
-                StringComparer.Ordinal);
-            foreach (FlowSubflowReference subflow in document.Subflows)
-            {
-                ArgumentNullException.ThrowIfNull(subflow);
-                EnsureText(subflow.CallNodeId, "子流程调用节点");
-                EnsureText(subflow.FlowKey, "子流程 FlowKey");
-                EnsureText(subflow.Binding, "子流程绑定方式");
-                if (!subflowCallNodes.Add(subflow.CallNodeId))
-                {
-                    throw new ArgumentException(
-                        $"调用节点 {subflow.CallNodeId} 包含多个子流程绑定。",
-                        nameof(document));
-                }
-                if (subflow.Revision is <= 0)
-                {
-                    throw new ArgumentException(
-                        "子流程版本必须为正整数。",
-                        nameof(document));
-                }
-                if (subflow.InputMappings == null
-                    || subflow.OutputMappings == null)
-                {
-                    throw new ArgumentException(
-                        "子流程输入输出映射不能为 null。",
                         nameof(document));
                 }
             }

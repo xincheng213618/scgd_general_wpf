@@ -1,4 +1,5 @@
 using ColorVision.Engine.Templates.Flow.Versioning;
+using System.Text.Json;
 
 namespace ColorVision.UI.Tests;
 
@@ -27,7 +28,7 @@ public sealed class FlowSemanticDiffTests
     }
 
     [Fact]
-    public void DiffReportsNodesPropertiesEdgesSubflowsRoutesAndRetries()
+    public void DiffReportsNodesPropertiesEdgesRoutesAndRetries()
     {
         FlowSemanticDocument before = CreateFullDocument();
         FlowSemanticDocument after = CreateFullDocument();
@@ -46,7 +47,6 @@ public sealed class FlowSemanticDiffTests
             TargetNodeId = "node-c",
             TargetPort = "in",
         });
-        after.Subflows[0].Revision = 8;
         after.ErrorRoutes[0].TargetNodeId = "node-c";
         after.RetryPolicies[0].MaxAttempts = 5;
 
@@ -60,8 +60,6 @@ public sealed class FlowSemanticDiffTests
         Assert.Equal("Mode", Assert.Single(diff.PropertyChanges).PropertyName);
         Assert.Single(diff.AddedEdges);
         Assert.Single(diff.RemovedEdges);
-        Assert.Single(diff.AddedSubflows);
-        Assert.Single(diff.RemovedSubflows);
         Assert.Single(diff.AddedErrorRoutes);
         Assert.Single(diff.RemovedErrorRoutes);
         Assert.Single(diff.AddedRetryPolicies);
@@ -75,7 +73,6 @@ public sealed class FlowSemanticDiffTests
         FlowSemanticDocument reordered = CreateFullDocument();
         reordered.Nodes.Reverse();
         reordered.Edges.Reverse();
-        reordered.Subflows.Reverse();
         reordered.ErrorRoutes.Reverse();
         reordered.RetryPolicies.Reverse();
         reordered.RetryPolicies[0].RetryableKinds.Reverse();
@@ -87,6 +84,29 @@ public sealed class FlowSemanticDiffTests
         Assert.Equal(
             FlowSemanticHash.ComputeLayoutHash(first),
             FlowSemanticHash.ComputeLayoutHash(reordered));
+    }
+
+    [Fact]
+    public void LegacySubflowJsonIsIgnoredWithoutChangingStoredData()
+    {
+        const string legacyJson = """
+            {
+              "Nodes": [],
+              "Edges": [],
+              "Subflows": [{ "CallNodeId": "legacy-call" }],
+              "ErrorRoutes": [],
+              "RetryPolicies": [],
+              "Layout": { "Nodes": [] }
+            }
+            """;
+
+        FlowSemanticDocument document = Assert.IsType<FlowSemanticDocument>(
+            JsonSerializer.Deserialize<FlowSemanticDocument>(legacyJson));
+
+        Assert.Empty(document.Nodes);
+        Assert.Empty(document.Edges);
+        Assert.Empty(document.ErrorRoutes);
+        Assert.Empty(document.RetryPolicies);
     }
 
     [Fact]
@@ -156,19 +176,6 @@ public sealed class FlowSemanticDiffTests
                     SourcePort = "out",
                     TargetNodeId = "node-b",
                     TargetPort = "in",
-                },
-            ],
-            Subflows =
-            [
-                new FlowSubflowReference
-                {
-                    CallNodeId = "node-a",
-                    FlowKey = "flow:child",
-                    Revision = 7,
-                    InputMappings = new Dictionary<string, string>
-                    {
-                        ["input"] = "parent.value",
-                    },
                 },
             ],
             ErrorRoutes =

@@ -68,7 +68,7 @@ public sealed class FlowCatalogServiceTests
     }
 
     [Fact]
-    public void SameBinaryWithChangedSidecarsAppendsNewRevision()
+    public void SameBinaryWithChangedSemanticAndLayoutAppendsNewRevision()
     {
         var catalog = new FlowCatalogService(
             new InMemoryFlowRevisionStore(),
@@ -76,41 +76,37 @@ public sealed class FlowCatalogServiceTests
         byte[] snapshot = [7, 8, 9];
 
         FlowRevision first = catalog.RecordEditorSave(
-            "flow:sidecars",
+            "flow:projections",
             snapshot,
             CreateDocument(
                 "node-1",
                 "Camera",
-                retryAttempts: 2,
-                subflowRevision: 1),
+                retryAttempts: 2),
             [CreateSearchDocument("第一版")]);
         FlowRevision semanticChange = catalog.RecordEditorSave(
-            "flow:sidecars",
+            "flow:projections",
             snapshot,
             CreateDocument(
                 "node-1",
                 "Camera",
-                retryAttempts: 3,
-                subflowRevision: 2),
-            [CreateSearchDocument("策略和子流程已更新")]);
+                retryAttempts: 3),
+            [CreateSearchDocument("策略已更新")]);
         FlowRevision layoutChange = catalog.RecordEditorSave(
-            "flow:sidecars",
+            "flow:projections",
             snapshot,
             CreateDocument(
                 "node-1",
                 "Camera",
                 retryAttempts: 3,
-                subflowRevision: 2,
                 layoutX: 120),
             [CreateSearchDocument("布局已更新")]);
         FlowRevision repeated = catalog.RecordEditorSave(
-            "flow:sidecars",
+            "flow:projections",
             snapshot,
             CreateDocument(
                 "node-1",
                 "Camera",
                 retryAttempts: 3,
-                subflowRevision: 2,
                 layoutX: 120),
             [CreateSearchDocument("布局已更新")]);
 
@@ -228,7 +224,6 @@ public sealed class FlowCatalogServiceTests
         string nodeId,
         string typeKey,
         int? retryAttempts = null,
-        int? subflowRevision = null,
         double layoutX = 0)
     {
         var document = new FlowSemanticDocument
@@ -266,16 +261,6 @@ public sealed class FlowCatalogServiceTests
                     Backoff = 2,
                     MaxDelayMs = 100,
                     RetryableKinds = ["Timeout"],
-                });
-        }
-        if (subflowRevision != null)
-        {
-            document.Subflows.Add(
-                new FlowSubflowReference
-                {
-                    CallNodeId = nodeId,
-                    FlowKey = "flow:child",
-                    Revision = subflowRevision,
                 });
         }
         return document;

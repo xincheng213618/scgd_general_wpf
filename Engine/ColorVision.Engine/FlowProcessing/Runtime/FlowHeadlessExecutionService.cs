@@ -237,8 +237,7 @@ public sealed record FlowHeadlessExecutionResult(
 }
 
 /// <summary>
-/// Adapter seam shared by raw STN, published artifact and future subflow
-/// execution entry points.
+/// Adapter seam for isolated raw-STN execution entry points.
 /// </summary>
 public interface IFlowExecutionRunner
 {

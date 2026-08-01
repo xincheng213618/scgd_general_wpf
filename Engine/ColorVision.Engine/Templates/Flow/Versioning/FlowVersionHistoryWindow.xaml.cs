@@ -109,8 +109,6 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
                 + $"属性变化：{diff.PropertyChanges.Count}\n"
                 + $"普通连接：+{diff.AddedEdges.Count} "
                 + $"-{diff.RemovedEdges.Count}\n"
-                + $"子流程：+{diff.AddedSubflows.Count} "
-                + $"-{diff.RemovedSubflows.Count}\n"
                 + $"错误路由：+{diff.AddedErrorRoutes.Count} "
                 + $"-{diff.RemovedErrorRoutes.Count}\n"
                 + $"重试策略：+{diff.AddedRetryPolicies.Count} "

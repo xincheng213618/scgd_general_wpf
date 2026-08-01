@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace ColorVision.Engine.FlowProcessing.Scheduling;
 
 /// <summary>
-/// Explicit scheduler entry point for published, editor-independent flows.
+/// Explicit scheduler entry point for saved, editor-independent flows.
 /// The existing <see cref="FlowJob"/> keeps its UI batch and finalization
 /// compatibility semantics.
 /// </summary>
@@ -54,7 +54,7 @@ public sealed class HeadlessFlowJob : IJob
 
             FlowHeadlessExecutionResult result =
                 await FlowExecutionCoordinator.Instance
-                    .RunPublishedArtifactHeadlessAsync(
+                    .RunSavedFlowHeadlessAsync(
                         flowKey,
                         startNodeName,
                         serialNumber,

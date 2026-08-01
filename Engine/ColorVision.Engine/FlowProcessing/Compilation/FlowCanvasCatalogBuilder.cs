@@ -16,8 +16,6 @@ namespace ColorVision.Engine.FlowProcessing.Compilation;
 public enum FlowCanvasCatalogError
 {
     InvalidNodePayload,
-    InvalidSubflow,
-    UnsupportedSubflowRevision,
     InvalidExecutionPolicy,
 }
 
@@ -83,17 +81,16 @@ public sealed class FlowCanvasCatalogBuilder
         "cookie",
     ];
 
-    private readonly FlowSubflowCompilerOptions options;
+    private readonly StnV1CodecOptions options;
 
     public FlowCanvasCatalogBuilder(
-        FlowSubflowCompilerOptions? options = null)
+        StnV1CodecOptions? options = null)
     {
-        this.options = options ?? new FlowSubflowCompilerOptions();
+        this.options = options ?? new StnV1CodecOptions();
     }
 
     public FlowCanvasCatalogBuildResult Build(
         byte[] canvasData,
-        FlowSubflowSidecar? subflowSidecar = null,
         FlowExecutionPolicySnapshot? executionPolicy = null)
     {
         ArgumentNullException.ThrowIfNull(canvasData);
@@ -146,11 +143,6 @@ public sealed class FlowCanvasCatalogBuilder
             });
         }
 
-        AddSubflows(
-            document,
-            canvas,
-            nodesById,
-            subflowSidecar ?? FlowSubflowSidecar.Empty);
         AddExecutionPolicy(
             document,
             nodesById,
@@ -266,118 +258,6 @@ public sealed class FlowCanvasCatalogBuilder
         };
     }
 
-    private static void AddSubflows(
-        FlowSemanticDocument document,
-        NeutralCanvas canvas,
-        IReadOnlyDictionary<Guid, NeutralNode> nodesById,
-        FlowSubflowSidecar sidecar)
-    {
-        IReadOnlyList<FlowSubflowCall> calls =
-            sidecar.Calls ?? Array.Empty<FlowSubflowCall>();
-        var callIds = new HashSet<string>(StringComparer.Ordinal);
-        var callSites = new HashSet<string>(StringComparer.Ordinal);
-        foreach (FlowSubflowCall call in calls
-            .OrderBy(item => item?.CallId, StringComparer.Ordinal))
-        {
-            if (call == null)
-            {
-                throw new FlowCanvasCatalogException(
-                    FlowCanvasCatalogError.InvalidSubflow,
-                    "子流程调用不能为 null。");
-            }
-
-            string callId = NormalizeCallId(call.CallId);
-            if (!callIds.Add(callId))
-            {
-                throw new FlowCanvasCatalogException(
-                    FlowCanvasCatalogError.InvalidSubflow,
-                    $"子流程调用 ID 重复：{callId}。");
-            }
-            if (call.Child == null)
-            {
-                throw new FlowCanvasCatalogException(
-                    FlowCanvasCatalogError.InvalidSubflow,
-                    $"子流程调用 {callId} 缺少子流程定义。");
-            }
-
-            NeutralPort source = ResolvePort(
-                callId,
-                call.Source,
-                isInput: false,
-                nodesById);
-            NeutralPort target = ResolvePort(
-                callId,
-                call.Target,
-                isInput: true,
-                nodesById);
-            bool connectionExists = canvas.Connections.Any(connection =>
-                ReferenceEquals(connection.Output, source)
-                && ReferenceEquals(connection.Input, target));
-            if (!connectionExists)
-            {
-                throw new FlowCanvasCatalogException(
-                    FlowCanvasCatalogError.InvalidSubflow,
-                    $"子流程调用 {callId} 未引用现有画布连接。");
-            }
-
-            string callSite =
-                $"{source.Node.NodeId:N}:{source.LocalIndex}>"
-                + $"{target.Node.NodeId:N}:{target.LocalIndex}";
-            if (!callSites.Add(callSite))
-            {
-                throw new FlowCanvasCatalogException(
-                    FlowCanvasCatalogError.InvalidSubflow,
-                    $"画布连接 {callSite} 包含多个子流程调用。");
-            }
-
-            string flowKey;
-            try
-            {
-                flowKey = FlowSearchSafety.NormalizeFlowKey(
-                    call.Child.FlowKey);
-            }
-            catch (ArgumentException ex)
-            {
-                throw new FlowCanvasCatalogException(
-                    FlowCanvasCatalogError.InvalidSubflow,
-                    $"子流程调用 {callId} 的 FlowKey 无效。",
-                    ex);
-            }
-
-            int? revision = ParseRevision(
-                callId,
-                call.Child.Revision);
-            string? contentHash = NormalizeOptionalContentHash(
-                callId,
-                call.Child.ContentHash);
-            document.Subflows.Add(new FlowSubflowReference
-            {
-                CallNodeId = callId,
-                FlowKey = flowKey,
-                Binding = CreateBinding(revision, contentHash),
-                Revision = revision,
-                WaitForCompletion = true,
-                CancelWithParent = true,
-                InputMappings = new Dictionary<string, string>(
-                    StringComparer.Ordinal)
-                {
-                    ["parentSource"] =
-                        $"{source.Node.NodeId:N}/outputs/"
-                        + source.LocalIndex.ToString(
-                            CultureInfo.InvariantCulture),
-                },
-                OutputMappings = new Dictionary<string, string>(
-                    StringComparer.Ordinal)
-                {
-                    ["parentTarget"] =
-                        $"{target.Node.NodeId:N}/inputs/"
-                        + target.LocalIndex.ToString(
-                            CultureInfo.InvariantCulture),
-                },
-            });
-        }
-    }
-
     private static void AddExecutionPolicy(
         FlowSemanticDocument document,
         Dictionary<Guid, NeutralNode> nodesById,
@@ -462,114 +342,6 @@ public sealed class FlowCanvasCatalogBuilder
                 });
             }
         }
-    }
-
-    private static NeutralPort ResolvePort(
-        string callId,
-        FlowPortReference reference,
-        bool isInput,
-        IReadOnlyDictionary<Guid, NeutralNode> nodesById)
-    {
-        if (reference == null
-            || !nodesById.TryGetValue(
-                reference.NodeId,
-                out NeutralNode? node))
-        {
-            throw new FlowCanvasCatalogException(
-                FlowCanvasCatalogError.InvalidSubflow,
-                $"子流程调用 {callId} 引用了不存在的"
-                + $"{(isInput ? "目标" : "来源")}节点。");
-        }
-
-        NeutralPort[] ports = isInput
-            ? node.Inputs
-            : node.Outputs;
-        if (reference.OptionIndex < 0
-            || reference.OptionIndex >= ports.Length)
-        {
-            throw new FlowCanvasCatalogException(
-                FlowCanvasCatalogError.InvalidSubflow,
-                $"子流程调用 {callId} 引用了不存在的"
-                + $"{(isInput ? "输入" : "输出")}端口 "
-                + $"{reference.OptionIndex}。");
-        }
-        return ports[reference.OptionIndex];
-    }
-
-    private static int? ParseRevision(
-        string callId,
-        string? revision)
-    {
-        if (revision == null)
-            return null;
-
-        string normalized = revision.Trim();
-        if (normalized.Length == 0
-            || !int.TryParse(
-                normalized,
-                NumberStyles.None,
-                CultureInfo.InvariantCulture,
-                out int value)
-            || value <= 0)
-        {
-            throw new FlowCanvasCatalogException(
-                FlowCanvasCatalogError.UnsupportedSubflowRevision,
-                $"子流程调用 {callId} 的 revision“{revision}”"
-                + "不能转换为版本模型要求的正整数。");
-        }
-        return value;
-    }
-
-    private static string? NormalizeOptionalContentHash(
-        string callId,
-        string? contentHash)
-    {
-        if (contentHash == null)
-            return null;
-
-        string normalized = contentHash.Trim();
-        if (normalized.Length != 64
-            || normalized.Any(value => !Uri.IsHexDigit(value)))
-        {
-            throw new FlowCanvasCatalogException(
-                FlowCanvasCatalogError.InvalidSubflow,
-                $"子流程调用 {callId} 的内容哈希不是 SHA-256。");
-        }
-        return normalized.ToLowerInvariant();
-    }
-
-    private static string CreateBinding(
-        int? revision,
-        string? contentHash)
-    {
-        if (revision != null)
-        {
-            return contentHash == null
-                ? "PinnedRevision"
-                : $"PinnedRevision+SHA256:{contentHash}";
-        }
-        return contentHash == null
-            ? "Latest"
-            : $"PinnedContentHash:{contentHash}";
-    }
-
-    private static string NormalizeCallId(string? callId)
-    {
-        if (string.IsNullOrWhiteSpace(callId))
-        {
-            throw new FlowCanvasCatalogException(
-                FlowCanvasCatalogError.InvalidSubflow,
-                "子流程调用 ID 不能为空。");
-        }
-        string normalized = callId.Trim();
-        if (normalized.Length > 256
-            || normalized.Any(char.IsControl))
-        {
-            throw new FlowCanvasCatalogException(
-                FlowCanvasCatalogError.InvalidSubflow,
-                "子流程调用 ID 无效。");
-        }
-        return normalized;
     }
 
     private static string? ReadSearchValue(

@@ -7,7 +7,7 @@ using System.Linq;
 namespace ColorVision.Engine.Templates.Flow.Versioning
 {
     /// <summary>
-    /// Rebuilds and validates the sidecar projection that belongs to an
+    /// Rebuilds and validates the semantic projection that belongs to an
     /// immutable flow revision. It does not mutate stores or editor state.
     /// </summary>
     internal static class FlowVersionRestoreProjection
@@ -75,18 +75,6 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
             FlowRevision revision,
             FlowExecutionPolicySaveRequest policy)
         {
-            StoredFlowSubflowDefinition? sidecar =
-                FlowSubflowDefinitionStoreProvider.Shared.GetRevision(
-                    revision.FlowKey,
-                    revision.Revision);
-            if (revision.SemanticDocument.Subflows.Count > 0
-                && sidecar == null)
-            {
-                throw new InvalidOperationException(
-                    $"版本 {revision.Revision} 引用了子流程，"
-                    + "但对应的不可变子流程侧车不存在。");
-            }
-
             NormalizedFlowExecutionPolicy normalized =
                 FlowExecutionPolicyRules.Normalize(
                     revision.FlowKey,
@@ -102,26 +90,30 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
             FlowCanvasCatalogBuildResult projection =
                 new FlowCanvasCatalogBuilder().Build(
                     revision.FullSnapshot,
-                    sidecar?.Sidecar
-                        ?? FlowSubflowSidecar.Empty,
-                    snapshot);
+                    executionPolicy: snapshot);
             string semanticHash =
                 FlowSemanticHash.ComputeSemanticHash(
                     projection.SemanticDocument);
             string layoutHash =
                 FlowSemanticHash.ComputeLayoutHash(
                     projection.SemanticDocument);
+            string expectedSemanticHash =
+                FlowSemanticHash.ComputeSemanticHash(
+                    revision.SemanticDocument);
+            string expectedLayoutHash =
+                FlowSemanticHash.ComputeLayoutHash(
+                    revision.SemanticDocument);
             if (!string.Equals(
                     semanticHash,
-                    revision.SemanticHash,
+                    expectedSemanticHash,
                     StringComparison.Ordinal)
                 || !string.Equals(
                     layoutHash,
-                    revision.LayoutHash,
+                    expectedLayoutHash,
                     StringComparison.Ordinal))
             {
                 throw new InvalidOperationException(
-                    $"版本 {revision.Revision} 的 STN 与侧车内容"
+                    $"版本 {revision.Revision} 的 STN 与执行策略"
                     + "无法重建出原始语义，已拒绝恢复。");
             }
         }

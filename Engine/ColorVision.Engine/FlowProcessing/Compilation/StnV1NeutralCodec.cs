@@ -32,7 +32,7 @@ internal static class StnV1NeutralCodec
 
     internal static NeutralCanvas Decode(
         byte[] canvasData,
-        FlowSubflowCompilerOptions options)
+        StnV1CodecOptions options)
     {
         ArgumentNullException.ThrowIfNull(canvasData);
         ArgumentNullException.ThrowIfNull(options);
@@ -59,7 +59,7 @@ internal static class StnV1NeutralCodec
 
     internal static byte[] Encode(
         NeutralCanvas canvas,
-        FlowSubflowCompilerOptions options)
+        StnV1CodecOptions options)
     {
         ValidateCounts(canvas, options);
         var nodeIndices = canvas.Nodes
@@ -129,7 +129,7 @@ internal static class StnV1NeutralCodec
 
     internal static void ValidateCounts(
         NeutralCanvas canvas,
-        FlowSubflowCompilerOptions options)
+        StnV1CodecOptions options)
     {
         if (canvas.Nodes.Count > options.MaximumNodeCount)
         {
@@ -149,7 +149,7 @@ internal static class StnV1NeutralCodec
 
     private static NeutralCanvas DecodeCore(
         byte[] canvasData,
-        FlowSubflowCompilerOptions options)
+        StnV1CodecOptions options)
     {
         if (canvasData.Length > MaximumCompressedLength)
             throw new InvalidDataException("压缩流程数据超过限制。");
