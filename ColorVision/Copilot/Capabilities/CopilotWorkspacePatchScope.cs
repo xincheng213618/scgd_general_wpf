@@ -126,14 +126,9 @@ namespace ColorVision.Copilot
                     return false;
                 }
 
-                if ((File.GetAttributes(resolvedPath) & FileAttributes.ReparsePoint) != 0)
+                if (CopilotWorkspaceSearchSupport.HasReparsePointInPath(resolvedPath))
                 {
                     error = "Writing through a file-system reparse point is not allowed.";
-                    return false;
-                }
-                if (!string.IsNullOrWhiteSpace(containingRoot) && ContainsReparsePoint(containingRoot, resolvedPath))
-                {
-                    error = "Writing through a workspace directory reparse point is not allowed.";
                     return false;
                 }
                 return true;
@@ -266,21 +261,6 @@ namespace ColorVision.Copilot
             return !Path.IsPathRooted(relative)
                 && !string.Equals(relative, "..", StringComparison.Ordinal)
                 && !relative.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal);
-        }
-
-        private static bool ContainsReparsePoint(string root, string target)
-        {
-            var current = root;
-            if ((File.GetAttributes(current) & FileAttributes.ReparsePoint) != 0)
-                return true;
-            foreach (var segment in Path.GetRelativePath(root, target)
-                .Split([Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar], StringSplitOptions.RemoveEmptyEntries))
-            {
-                current = Path.Combine(current, segment);
-                if ((File.GetAttributes(current) & FileAttributes.ReparsePoint) != 0)
-                    return true;
-            }
-            return false;
         }
 
         private static bool HasSafeNewPathSegments(string root, string target, out string error)
