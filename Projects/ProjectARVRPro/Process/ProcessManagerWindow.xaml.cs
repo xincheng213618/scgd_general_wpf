@@ -1,4 +1,5 @@
 ﻿#pragma warning disable CA1822,CA1859,CS8622,CS8625
+using ColorVision.Engine.FlowProcessing.PreProcess;
 using ColorVision.Themes;
 using ColorVision.UI;
 using Newtonsoft.Json;
@@ -25,6 +26,11 @@ namespace ProjectARVRPro.Process
             InitializeComponent();
             this.ApplyCaption();
             Closing += Window_Closing;
+        }
+
+        private void PreProcessManager_Click(object sender, RoutedEventArgs e)
+        {
+            PreProcessManager.GetInstance().Edit();
         }
 
         private void Window_Closing(object sender, CancelEventArgs e)
