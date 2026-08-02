@@ -16,6 +16,7 @@ namespace ColorVision.UI.Tests;
 public class LocalFlowNodePortTests
 {
     private static readonly string[] CombinedInputNames = { "IN_IMG", "IN_POI" };
+    private static readonly string[] RealPoiInputNames = { "IN_CIE", "IN_POI" };
     private static readonly string[] SingleInputName = { "IN" };
 
     [Fact]
@@ -26,16 +27,29 @@ public class LocalFlowNodePortTests
         node.Create();
 
         Assert.Equal(CombinedInputNames, node.GetAllInputOptions().Select(option => option.Text));
+        Assert.NotNull(typeof(LocalCalibrationRealPoiNode).GetProperty(nameof(LocalCalibrationRealPoiNode.ImageFilePath)));
     }
 
     [Fact]
-    public void LocalCalibrationNodeKeepsSingleInput()
+    public void LocalCalibrationNodeUsesOnlyCurrentFrame()
     {
         LocalCalibrationNode node = new();
 
         node.Create();
 
         Assert.Equal(SingleInputName, node.GetAllInputOptions().Select(option => option.Text));
+        Assert.Null(typeof(LocalCalibrationNode).GetProperty("ImageFilePath"));
+    }
+
+    [Fact]
+    public void LocalRealPoiNodeUsesCieAndPoiInputsWithoutImageProperty()
+    {
+        LocalRealPoiNode node = new();
+
+        node.Create();
+
+        Assert.Equal(RealPoiInputNames, node.GetAllInputOptions().Select(option => option.Text));
+        Assert.Null(typeof(LocalRealPoiNode).GetProperty("ImageFilePath"));
     }
 
     [Fact]
@@ -190,6 +204,19 @@ public class LocalFlowNodePortTests
     public void LocalCalibrationRealPoiNodeMatchesServicePoiSizeRules()
     {
         LocalCalibrationRealPoiNode node = new()
+        {
+            POIType = POIPointTypes.Circle,
+            POIWidth = 11
+        };
+
+        Assert.Equal(12, node.POIWidth);
+        Assert.Equal(node.POIWidth, node.POIHeight);
+    }
+
+    [Fact]
+    public void LocalRealPoiNodeMatchesServicePoiSizeRules()
+    {
+        LocalRealPoiNode node = new()
         {
             POIType = POIPointTypes.Circle,
             POIWidth = 11

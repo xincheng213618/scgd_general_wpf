@@ -80,6 +80,8 @@ namespace ColorVision.Copilot
                 var candidate = NormalizeToExistingDirectory(root);
                 if (string.IsNullOrWhiteSpace(candidate))
                     continue;
+                if (IsReparsePoint(candidate))
+                    continue;
 
                 if (normalized.Any(existing => string.Equals(existing, candidate, StringComparison.OrdinalIgnoreCase)))
                     continue;
@@ -112,6 +114,8 @@ namespace ColorVision.Copilot
 
                 var isDirectory = Directory.Exists(candidate);
                 if (!isDirectory && !File.Exists(candidate))
+                    continue;
+                if (IsReparsePoint(candidate))
                     continue;
                 if (normalized.Any(existing => string.Equals(existing, candidate, StringComparison.OrdinalIgnoreCase)))
                     continue;
@@ -178,6 +182,43 @@ namespace ColorVision.Copilot
                 }
 
                 return !CrossesReparsePoint(root, fullPath);
+            }
+
+            return false;
+        }
+
+        public static bool HasReparsePointInPath(string? path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+                return false;
+
+            string fullPath;
+            try
+            {
+                fullPath = Path.GetFullPath(path);
+            }
+            catch
+            {
+                return true;
+            }
+
+            var current = fullPath;
+            if (!File.Exists(fullPath) && !Directory.Exists(fullPath))
+                current = Path.GetDirectoryName(fullPath) ?? string.Empty;
+
+            while (!string.IsNullOrWhiteSpace(current))
+            {
+                if (IsReparsePoint(current))
+                    return true;
+
+                var parent = Path.GetDirectoryName(current);
+                if (string.IsNullOrWhiteSpace(parent)
+                    || string.Equals(parent, current, StringComparison.OrdinalIgnoreCase))
+                {
+                    break;
+                }
+
+                current = parent;
             }
 
             return false;
@@ -510,6 +551,9 @@ namespace ColorVision.Copilot
 
         private static bool CrossesReparsePoint(string rootPath, string fullPath)
         {
+            if (IsReparsePoint(rootPath))
+                return true;
+
             if (File.Exists(fullPath) && IsReparsePoint(fullPath))
                 return true;
 

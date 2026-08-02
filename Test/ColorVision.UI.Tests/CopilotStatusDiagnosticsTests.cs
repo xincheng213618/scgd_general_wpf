@@ -44,6 +44,98 @@ public sealed class CopilotStatusDiagnosticsTests
             "当前运行重试：2 次 · 最近 3/4 · HTTP 429 · 请求 req_status_429 · 计划等待 1.5 秒",
             report,
             StringComparison.Ordinal);
+        Assert.Contains(
+            "供应商限额：尚未收到可识别的限额响应头",
+            report,
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void StatusIncludesLatestProviderRateLimitSnapshot()
+    {
+        var report = CopilotStatusDiagnostics.Format(new CopilotStatusDiagnosticSnapshot
+        {
+            ProviderRateLimitCapturedAtUtc = new DateTimeOffset(2026, 7, 31, 6, 3, 0, TimeSpan.Zero),
+            ProviderRequestLimit = 20,
+            ProviderRequestRemaining = 19,
+            ProviderRequestReset = "2s",
+            ProviderTokenLimit = 1000,
+            ProviderTokenRemaining = 900,
+            ProviderTokenReset = "1s",
+            ProviderProjectTokenLimit = 2000,
+            ProviderProjectTokenRemaining = 1800,
+            ProviderProjectTokenReset = "500ms",
+            ProviderRateLimitRetryAfter = "3",
+            ProviderRateLimitRequestId = "req_status_limit",
+        });
+
+        Assert.Contains(
+            "供应商限额：请求：剩余 19/20（重置 2s） · Token：剩余 900/1,000（重置 1s） · 项目 Token：剩余 1,800/2,000（重置 500ms） · Retry-After 3 · 请求 req_status_limit · 快照 2026-07-31 06:03:00 UTC",
+            report,
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void StatusIncludesCopyableConversationIdentityAndRecoveryState()
+    {
+        var report = CopilotStatusDiagnostics.Format(new CopilotStatusDiagnosticSnapshot
+        {
+            HasConversation = true,
+            ConversationTitle = "Camera recovery",
+            ConversationId = "conversation-123",
+            ConversationVisibleTurns = 4,
+            ConversationMessageCount = 9,
+            ConversationQueuedFollowUps = 2,
+            ConversationHasCheckpoint = true,
+            ConversationHasRecoverableAgentTasks = true,
+            ConversationIsBranch = true,
+            ConversationParentId = "conversation-parent",
+            ConversationRootId = "conversation-root",
+            AdditionalReadRootCount = 2,
+            BackgroundCommandCount = 3,
+            ActiveBackgroundCommandCount = 1,
+        });
+
+        Assert.Contains("会话：Camera recovery", report, StringComparison.Ordinal);
+        Assert.Contains("会话 ID：conversation-123", report, StringComparison.Ordinal);
+        Assert.Contains("可见历史：4 轮请求 · 9 条消息", report, StringComparison.Ordinal);
+        Assert.Contains(
+            "恢复：有可安全继续的 Agent 任务 · 2 条排队后续",
+            report,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "分支：父会话 conversation-parent · 根会话 conversation-root",
+            report,
+            StringComparison.Ordinal);
+        Assert.Contains("附加只读目录：2", report, StringComparison.Ordinal);
+        Assert.Contains("后台命令：1 运行中 / 3 保留", report, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void StatusReportsLiveConversationRunAheadOfSavedCheckpoint()
+    {
+        var report = CopilotStatusDiagnostics.Format(new CopilotStatusDiagnosticSnapshot
+        {
+            HasConversation = true,
+            ConversationRunState = CopilotHostedRunState.Running,
+            ConversationHasCheckpoint = true,
+            ConversationHasRecoverableAgentTasks = true,
+        });
+
+        Assert.Contains("恢复：Agent 运行中", report, StringComparison.Ordinal);
+        Assert.DoesNotContain("有可安全继续的 Agent 任务", report, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void SessionInfoAliasUsesStatusCommandWithoutArguments()
+    {
+        var invocation = CopilotLocalCommandCatalog.Parse("/session-info");
+
+        Assert.NotNull(invocation);
+        Assert.Equal(CopilotLocalCommandKind.Status, invocation.Command.Kind);
+        Assert.Equal("/status", invocation.Command.Name);
+        Assert.True(invocation.Command.AvailableWhileAgentRuns);
+        Assert.Null(CopilotLocalCommandCatalog.Parse("/session-info now"));
     }
 
     [Fact]

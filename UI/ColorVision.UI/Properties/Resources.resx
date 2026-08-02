@@ -135,18 +135,6 @@
   <data name="en" xml:space="preserve">
     <value>English（英语）</value>
   </data>
-  <data name="fr" xml:space="preserve">
-    <value>Français（法语）</value>
-  </data>
-  <data name="ja" xml:space="preserve">
-    <value>日本語（日语）</value>
-  </data>
-  <data name="ko" xml:space="preserve">
-    <value>한국어（韩语）</value>
-  </data>
-  <data name="ru" xml:space="preserve">
-    <value>Русский（俄语）</value>
-  </data>
   <data name="MenuOptions" xml:space="preserve">
     <value>选项(_O)</value>
   </data>

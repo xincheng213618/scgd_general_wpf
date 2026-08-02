@@ -22,7 +22,6 @@ namespace ColorVision.Copilot
         private const double CompactSidebarThreshold = 960;
         private const double CompactComposerThreshold = 560;
         private const double ExpandedSidebarWidth = 232;
-        private const double CollapsedSidebarWidth = 48;
         private const double ProfileSelectorPopupMainWidth = 230;
         private const double ProfileSelectorPopupSubmenuWidth = 284;
         private const double ProfileSelectorPopupShadowInset = 14;
@@ -33,9 +32,11 @@ namespace ColorVision.Copilot
         private CopilotChatViewModel? _attachedViewModel;
         private ObservableCollection<CopilotChatMessage>? _attachedMessages;
         private readonly HashSet<CopilotChatMessage> _attachedMessageItems = new();
+        private readonly CopilotDoubleEscapeGesture _rewindEscapeGesture = new();
         private ScrollViewer? _messagesScrollViewer;
         private bool _isCompactSidebar;
         private bool _isConversationSidebarExpanded = true;
+        private bool _hasConversationSearchPreviewSelection;
         private bool _isScrollToBottomPending;
         private bool _isThemeSubscriptionActive;
 
@@ -92,7 +93,40 @@ namespace ColorVision.Copilot
 
         private void CopilotChatPanel_PreviewKeyDown(object sender, KeyEventArgs e)
         {
+            var key = e.Key == Key.System ? e.SystemKey : e.Key;
+            var isPlainEscape = key == Key.Escape && Keyboard.Modifiers == ModifierKeys.None;
+            if (!isPlainEscape)
+                _rewindEscapeGesture.Reset();
+            var showRewindPoints = isPlainEscape
+                && _rewindEscapeGesture.Register(DateTimeOffset.UtcNow);
+            if (key is Key.Oem2 or Key.Divide
+                && Keyboard.Modifiers == ModifierKeys.Control
+                && DataContext is CopilotChatViewModel shortcutViewModel)
+            {
+                shortcutViewModel.ShowKeyboardShortcutHelp();
+                e.Handled = true;
+                return;
+            }
+
+            if (key == Key.P && Keyboard.Modifiers == ModifierKeys.Alt)
+            {
+                if (OpenProfileSelector())
+                    e.Handled = true;
+                return;
+            }
+
             if (e.Key == Key.F && Keyboard.Modifiers == ModifierKeys.Control)
+            {
+                if (DataContext is CopilotChatViewModel openFindViewModel)
+                {
+                    openFindViewModel.OpenConversationFind();
+                    FocusConversationFind();
+                    e.Handled = true;
+                }
+                return;
+            }
+
+            if (e.Key == Key.G && Keyboard.Modifiers == ModifierKeys.Control)
             {
                 FocusConversationSearch();
                 e.Handled = true;
@@ -111,18 +145,56 @@ namespace ColorVision.Copilot
                 return;
             }
 
+            if (e.Key == Key.O && Keyboard.Modifiers == ModifierKeys.Control)
+            {
+                if (DataContext is CopilotChatViewModel viewModel
+                    && viewModel.CopyLatestResponseCommand.CanExecute(null))
+                {
+                    viewModel.CopyLatestResponseCommand.Execute(null);
+                    e.Handled = true;
+                }
+                return;
+            }
+
+            if (e.Key == Key.T && Keyboard.Modifiers == ModifierKeys.Control)
+            {
+                if (DataContext is CopilotChatViewModel viewModel
+                    && viewModel.ToggleAgentTaskPanelCommand.CanExecute(null))
+                {
+                    viewModel.ToggleAgentTaskPanelCommand.Execute(null);
+                    e.Handled = true;
+                }
+                return;
+            }
+
             if (e.Key != Key.Escape)
                 return;
 
             if (ProfileSelectorPopup.IsOpen)
             {
+                _rewindEscapeGesture.Reset();
                 CloseProfileSelectorPopup();
                 e.Handled = true;
                 return;
             }
 
-            if (ConversationSearchTextBox.IsKeyboardFocusWithin)
+            if (ConversationFindTextBox.IsKeyboardFocusWithin
+                && DataContext is CopilotChatViewModel closeFindViewModel
+                && closeFindViewModel.CloseConversationFindCommand.CanExecute(null))
             {
+                _rewindEscapeGesture.Reset();
+                closeFindViewModel.CloseConversationFindCommand.Execute(null);
+                FocusPromptInput();
+                e.Handled = true;
+                return;
+            }
+
+            if (ConversationSearchTextBox.IsKeyboardFocusWithin
+                || (ConversationListBox.IsKeyboardFocusWithin
+                    && DataContext is CopilotChatViewModel focusedSearchViewModel
+                    && focusedSearchViewModel.HasConversationSearchQuery))
+            {
+                _rewindEscapeGesture.Reset();
                 if (DataContext is CopilotChatViewModel searchViewModel
                     && searchViewModel.ClearConversationSearchCommand.CanExecute(null))
                 {
@@ -136,6 +208,7 @@ namespace ColorVision.Copilot
             if (DataContext is CopilotChatViewModel historyViewModel
                 && historyViewModel.CancelPromptHistoryNavigation())
             {
+                _rewindEscapeGesture.Reset();
                 FocusPromptInput();
                 e.Handled = true;
                 return;
@@ -144,6 +217,7 @@ namespace ColorVision.Copilot
             if (DataContext is CopilotChatViewModel editViewModel
                 && editViewModel.CancelMessageEditCommand.CanExecute(null))
             {
+                _rewindEscapeGesture.Reset();
                 editViewModel.CancelMessageEditCommand.Execute(null);
                 FocusPromptInput();
                 e.Handled = true;
@@ -152,16 +226,60 @@ namespace ColorVision.Copilot
 
             if (_isCompactSidebar && _isConversationSidebarExpanded)
             {
+                _rewindEscapeGesture.Reset();
                 _isConversationSidebarExpanded = false;
                 UpdateResponsiveLayout();
                 FocusPromptInput();
                 e.Handled = true;
+                return;
             }
+
+            if (PromptTextBox.IsKeyboardFocusWithin
+                && DataContext is CopilotChatViewModel composerViewModel
+                && (composerViewModel.IsPromptHistorySearchOpen
+                    || composerViewModel.IsComposerReferenceMentionActive))
+            {
+                _rewindEscapeGesture.Reset();
+                return;
+            }
+
+            if (isPlainEscape
+                && DataContext is CopilotChatViewModel escapeViewModel)
+            {
+                if (escapeViewModel.TryStopCurrentReplyFromKeyboard())
+                {
+                    _rewindEscapeGesture.Reset();
+                    e.Handled = true;
+                    return;
+                }
+
+                if (escapeViewModel.CanShowConversationRewindShortcut)
+                {
+                    e.Handled = true;
+                    if (showRewindPoints)
+                        escapeViewModel.ShowConversationRewindPointsFromKeyboard();
+                    return;
+                }
+            }
+
+            _rewindEscapeGesture.Reset();
+        }
+
+        private void FocusConversationFind()
+        {
+            CloseProfileSelectorPopup();
+            Dispatcher.BeginInvoke(DispatcherPriority.Input, () =>
+            {
+                ConversationFindTextBox.Focus();
+                Keyboard.Focus(ConversationFindTextBox);
+                ConversationFindTextBox.SelectAll();
+            });
         }
 
         private void FocusConversationSearch()
         {
             CloseProfileSelectorPopup();
+            _hasConversationSearchPreviewSelection = false;
             if (_isCompactSidebar && !_isConversationSidebarExpanded)
             {
                 _isConversationSidebarExpanded = true;
@@ -176,13 +294,13 @@ namespace ColorVision.Copilot
             });
         }
 
-        private void FocusPromptInput()
+        private void FocusPromptInput(int caretIndex = -1)
         {
             Dispatcher.BeginInvoke(DispatcherPriority.Input, () =>
             {
                 PromptTextBox.Focus();
                 Keyboard.Focus(PromptTextBox);
-                MovePromptCaretToEnd();
+                ApplyPromptCaret(caretIndex);
             });
         }
 
@@ -193,6 +311,7 @@ namespace ColorVision.Copilot
 
         private void CopilotChatPanel_DataContextChanged(object sender, System.Windows.DependencyPropertyChangedEventArgs e)
         {
+            _rewindEscapeGesture.Reset();
             DetachViewModel(e.OldValue as CopilotChatViewModel);
             AttachViewModel(e.NewValue as CopilotChatViewModel);
             ScrollToBottom();
@@ -200,6 +319,7 @@ namespace ColorVision.Copilot
 
         private void CopilotChatPanel_Unloaded(object sender, System.Windows.RoutedEventArgs e)
         {
+            _rewindEscapeGesture.Reset();
             if (_isThemeSubscriptionActive)
             {
                 ThemeManager.Current.CurrentUIThemeChanged -= ThemeManager_CurrentUIThemeChanged;
@@ -225,6 +345,11 @@ namespace ColorVision.Copilot
             DetachViewModel(_attachedViewModel);
 
             _attachedViewModel = viewModel;
+            viewModel.ConversationSearchRequested += ViewModel_ConversationSearchRequested;
+            viewModel.ProfileSelectionRequested += ViewModel_ProfileSelectionRequested;
+            viewModel.ReasoningSelectionRequested += ViewModel_ReasoningSelectionRequested;
+            viewModel.AccessModeSelectionRequested += ViewModel_AccessModeSelectionRequested;
+            viewModel.MessageNavigationRequested += ViewModel_MessageNavigationRequested;
             viewModel.PropertyChanged += ViewModel_PropertyChanged;
             ResetMessageSubscriptions(viewModel.Messages);
             UpdateEmptyStateVisibility();
@@ -236,9 +361,46 @@ namespace ColorVision.Copilot
                 || viewModel != null && !ReferenceEquals(_attachedViewModel, viewModel))
                 return;
 
+            _attachedViewModel.ConversationSearchRequested -= ViewModel_ConversationSearchRequested;
+            _attachedViewModel.ProfileSelectionRequested -= ViewModel_ProfileSelectionRequested;
+            _attachedViewModel.ReasoningSelectionRequested -= ViewModel_ReasoningSelectionRequested;
+            _attachedViewModel.AccessModeSelectionRequested -= ViewModel_AccessModeSelectionRequested;
+            _attachedViewModel.MessageNavigationRequested -= ViewModel_MessageNavigationRequested;
             _attachedViewModel.PropertyChanged -= ViewModel_PropertyChanged;
             ResetMessageSubscriptions(null);
             _attachedViewModel = null;
+        }
+
+        private void ViewModel_ConversationSearchRequested(object? sender, EventArgs e)
+        {
+            if (ReferenceEquals(sender, _attachedViewModel))
+                FocusConversationSearch();
+        }
+
+        private void ViewModel_ProfileSelectionRequested(object? sender, EventArgs e)
+        {
+            if (ReferenceEquals(sender, _attachedViewModel))
+                OpenProfileSelector();
+        }
+
+        private void ViewModel_ReasoningSelectionRequested(object? sender, EventArgs e)
+        {
+            if (ReferenceEquals(sender, _attachedViewModel))
+                OpenReasoningSelector();
+        }
+
+        private void ViewModel_AccessModeSelectionRequested(object? sender, EventArgs e)
+        {
+            if (ReferenceEquals(sender, _attachedViewModel))
+                OpenAccessModeMenu();
+        }
+
+        private void ViewModel_MessageNavigationRequested(
+            object? sender,
+            CopilotChatMessageNavigationRequestedEventArgs e)
+        {
+            if (ReferenceEquals(sender, _attachedViewModel))
+                ScrollToMessage(e.Message);
         }
 
         private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -259,6 +421,31 @@ namespace ColorVision.Copilot
             {
                 UpdateEmptyStateVisibility();
             }
+
+            if (e.PropertyName == nameof(CopilotChatViewModel.IsConversationFindOpen)
+                && _attachedViewModel.IsConversationFindOpen)
+            {
+                FocusConversationFind();
+            }
+
+            if (e.PropertyName == nameof(CopilotChatViewModel.CurrentConversationFindMatch)
+                && _attachedViewModel.CurrentConversationFindMatch is { } match)
+            {
+                ScrollToMessage(match);
+            }
+        }
+
+        private void ScrollToMessage(CopilotChatMessage message)
+        {
+            Dispatcher.BeginInvoke(DispatcherPriority.Loaded, () =>
+            {
+                if (_attachedViewModel?.Messages.Contains(message) != true)
+                    return;
+
+                MessagesListBox.ScrollIntoView(message);
+                if (MessagesListBox.ItemContainerGenerator.ContainerFromItem(message) is FrameworkElement container)
+                    container.BringIntoView();
+            });
         }
 
         private void ResetMessageSubscriptions(ObservableCollection<CopilotChatMessage>? messages)
@@ -315,6 +502,9 @@ namespace ColorVision.Copilot
                 || e.PropertyName == nameof(CopilotChatMessage.ExecutionContent)
                 || e.PropertyName == nameof(CopilotChatMessage.ReasoningContent))
             {
+                if (_attachedViewModel?.IsConversationFindOpen == true)
+                    _attachedViewModel.RefreshConversationFind();
+
                 if (_isScrollToBottomPending || IsNearBottom())
                     ScrollToBottom();
                 else
@@ -330,6 +520,28 @@ namespace ColorVision.Copilot
             element.ContextMenu.PlacementTarget = element;
             element.ContextMenu.Placement = PlacementMode.Top;
             element.ContextMenu.IsOpen = true;
+        }
+
+        private void ConversationBranchFamilyButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not FrameworkElement element || element.ContextMenu == null)
+                return;
+
+            element.ContextMenu.PlacementTarget = element;
+            element.ContextMenu.Placement = PlacementMode.Bottom;
+            element.ContextMenu.IsOpen = true;
+        }
+
+        private void ConversationBranchFamilyMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (DataContext is not CopilotChatViewModel viewModel
+                || sender is not MenuItem { DataContext: CopilotConversationBranchFamilyMember member }
+                || !viewModel.SelectConversationCommand.CanExecute(member.Conversation))
+            {
+                return;
+            }
+
+            viewModel.SelectConversationCommand.Execute(member.Conversation);
         }
 
         private void ComposerReferenceMenuItem_Click(object sender, RoutedEventArgs e)
@@ -351,369 +563,27 @@ namespace ColorVision.Copilot
 
         private void AccessModeButton_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is not FrameworkElement element || element.ContextMenu == null)
+            if (ReferenceEquals(sender, AccessModeButton))
+                OpenAccessModeMenu();
+        }
+
+        private void OpenAccessModeMenu()
+        {
+            if (AccessModeButton.ContextMenu == null)
                 return;
 
-            element.ContextMenu.PlacementTarget = element;
-            element.ContextMenu.Placement = PlacementMode.Top;
-            element.ContextMenu.IsOpen = true;
+            AccessModeButton.ContextMenu.PlacementTarget = AccessModeButton;
+            AccessModeButton.ContextMenu.Placement = PlacementMode.Top;
+            AccessModeButton.ContextMenu.IsOpen = true;
         }
 
-        private void ProfileSelectorPopup_Opened(object sender, EventArgs e)
-        {
-            SetProfileSelectorSubmenu(modelVisible: false, reasoningVisible: false);
-        }
 
-        private void ProfileSelectorPopup_Closed(object sender, EventArgs e)
-        {
-            ProfileSelectorButton.IsChecked = false;
-            SetProfileSelectorSubmenu(modelVisible: false, reasoningVisible: false);
-        }
-
-        private void ModelSelectorRowButton_Click(object sender, RoutedEventArgs e)
-        {
-            SetProfileSelectorSubmenu(modelVisible: ModelSelectorRowButton.IsChecked == true, reasoningVisible: false);
-        }
-
-        private void ReasoningSelectorRowButton_Click(object sender, RoutedEventArgs e)
-        {
-            SetProfileSelectorSubmenu(modelVisible: false, reasoningVisible: ReasoningSelectorRowButton.IsChecked == true);
-        }
-
-        private void ProfileListBox_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
-        {
-            if (e.OriginalSource is not DependencyObject source
-                || ItemsControl.ContainerFromElement(ProfileListBox, source) is not ListBoxItem)
-            {
-                return;
-            }
-
-            Dispatcher.BeginInvoke(new Action(CloseProfileSelectorPopup), System.Windows.Threading.DispatcherPriority.Input);
-        }
-
-        private void ReasoningOptionButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is Button { Tag: CopilotReasoningMode mode }
-                && DataContext is CopilotChatViewModel viewModel)
-            {
-                viewModel.SetSelectedProfileReasoningMode(mode);
-            }
-
-            CloseProfileSelectorPopup();
-        }
-
-        private void CloseSelectorPopupButton_Click(object sender, RoutedEventArgs e)
-        {
-            CloseProfileSelectorPopup();
-        }
-
-        private void SetProfileSelectorSubmenu(bool modelVisible, bool reasoningVisible)
-        {
-            ModelSelectorRowButton.IsChecked = modelVisible;
-            ReasoningSelectorRowButton.IsChecked = reasoningVisible;
-            ModelSubmenuBorder.Visibility = modelVisible ? Visibility.Visible : Visibility.Collapsed;
-            ReasoningSubmenuBorder.Visibility = reasoningVisible ? Visibility.Visible : Visibility.Collapsed;
-            var popupWidth = ProfileSelectorPopupMainWidth + (modelVisible || reasoningVisible ? ProfileSelectorPopupSubmenuWidth : 0);
-            ProfileSelectorPopup.HorizontalOffset = ProfileSelectorButton.ActualWidth - popupWidth - ProfileSelectorPopupShadowInset;
-        }
-
-        private void CloseProfileSelectorPopup()
-        {
-            if (ProfileSelectorPopup == null)
-                return;
-
-            ProfileSelectorPopup.IsOpen = false;
-        }
-
-        private void VoiceInputButton_Click(object sender, RoutedEventArgs e)
-        {
-            PromptTextBox.Focus();
-            Keyboard.Focus(PromptTextBox);
-            CopilotUiTaskObserver.Run(
-                ActivateVoiceInputAsync,
-                "启动 Windows 语音输入",
-                message => MessageBox.Show(
-                    Application.Current.GetActiveWindow(),
-                    "无法启动语音输入：" + message,
-                    "ColorVision",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning));
-        }
-
-        private static async Task ActivateVoiceInputAsync()
-        {
-            await Task.Delay(80);
-            SendWindowsVoiceTypingShortcut();
-        }
-
-        private async void PromptTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
-        {
-            if (Keyboard.Modifiers == ModifierKeys.None
-                && DataContext is CopilotChatViewModel referenceViewModel
-                && referenceViewModel.IsComposerReferenceMentionActive)
-            {
-                if (e.Key == Key.Escape)
-                {
-                    referenceViewModel.DismissComposerReferenceSuggestions();
-                    e.Handled = true;
-                    return;
-                }
-                if (e.Key is Key.Up or Key.Down
-                    && referenceViewModel.TryNavigateComposerReference(previous: e.Key == Key.Up))
-                {
-                    e.Handled = true;
-                    return;
-                }
-                if (e.Key is Key.Enter or Key.Tab)
-                {
-                    if (referenceViewModel.HasComposerReferenceSuggestions
-                        && referenceViewModel.TryCompleteComposerReference())
-                    {
-                        MovePromptCaretToEnd();
-                        e.Handled = true;
-                        return;
-                    }
-
-                    if (CopilotComposerReferenceCatalog.ShouldConsumeReferenceCompletionKey(
-                            e.Key == Key.Tab,
-                            referenceViewModel.HasComposerReferenceSuggestions,
-                            referenceViewModel.IsComposerReferenceSearchPending))
-                    {
-                        e.Handled = true;
-                        return;
-                    }
-                }
-            }
-
-            if (Keyboard.Modifiers == ModifierKeys.None
-                && e.Key is Key.Up or Key.Down
-                && DataContext is CopilotChatViewModel historyViewModel
-                && (historyViewModel.IsInputEmpty || historyViewModel.IsNavigatingPromptHistory)
-                && historyViewModel.TryNavigatePromptHistory(previous: e.Key == Key.Up))
-            {
-                MovePromptCaretToEnd();
-                e.Handled = true;
-                return;
-            }
-
-            if (e.Key == Key.V && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
-            {
-                if (DataContext is CopilotChatViewModel pasteViewModel
-                    && pasteViewModel.TryBeginPasteClipboardImageAttachment(out var operation))
-                {
-                    e.Handled = true;
-                    await operation;
-                    return;
-                }
-            }
-
-            if (DataContext is CopilotChatViewModel completionViewModel
-                && e.Key == Key.Tab
-                && completionViewModel.TryCompleteLocalCommand())
-            {
-                MovePromptCaretToEnd();
-                e.Handled = true;
-                return;
-            }
-
-            if (DataContext is CopilotChatViewModel queueViewModel
-                && e.Key == Key.Tab
-                && Keyboard.Modifiers == ModifierKeys.None
-                && queueViewModel.TryQueueCurrentRunFollowUp())
-            {
-                e.Handled = true;
-                return;
-            }
-
-            if (e.Key != Key.Enter || (Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift)
-                return;
-
-            if (DataContext is CopilotChatViewModel viewModel)
-            {
-                viewModel.TryCompleteLocalCommand();
-                viewModel.SendCommand.Execute(null);
-            }
-
-            e.Handled = true;
-        }
-
-        private void LocalCommandSuggestionButton_Click(object sender, RoutedEventArgs e)
-        {
-            FocusPromptInput();
-        }
-
-        private void ComposerReferenceSuggestionButton_Click(object sender, RoutedEventArgs e)
-        {
-            FocusPromptInput();
-        }
-
-        private void EditMessageButton_Click(object sender, RoutedEventArgs e)
-        {
-            FocusPromptInput();
-        }
-
-        private void MovePromptCaretToEnd()
-        {
-            PromptTextBox.GetBindingExpression(TextBox.TextProperty)?.UpdateTarget();
-            PromptTextBox.CaretIndex = PromptTextBox.Text.Length;
-        }
-
-        private async void PromptTextBox_Pasting(object sender, DataObjectPastingEventArgs e)
-        {
-            if (DataContext is not CopilotChatViewModel viewModel)
-                return;
-
-            if (!viewModel.TryBeginPasteClipboardImageAttachment(out var operation))
-                return;
-
-            e.CancelCommand();
-            await operation;
-        }
-
-        private void ComposerShellBorder_PreviewDragOver(object sender, DragEventArgs e)
-        {
-            var canAttach = DataContext is CopilotChatViewModel { IsBusy: false }
-                && TryGetDroppedFiles(e.Data, out _);
-            FileDropOverlay.Visibility = canAttach ? Visibility.Visible : Visibility.Collapsed;
-            e.Effects = canAttach ? DragDropEffects.Copy : DragDropEffects.None;
-            e.Handled = true;
-        }
-
-        private void ComposerShellBorder_PreviewDragLeave(object sender, DragEventArgs e)
-        {
-            FileDropOverlay.Visibility = Visibility.Collapsed;
-        }
-
-        private async void ComposerShellBorder_PreviewDrop(object sender, DragEventArgs e)
-        {
-            FileDropOverlay.Visibility = Visibility.Collapsed;
-            e.Effects = DragDropEffects.None;
-            e.Handled = true;
-
-            if (DataContext is not CopilotChatViewModel { IsBusy: false } viewModel
-                || !TryGetDroppedFiles(e.Data, out var filePaths))
-            {
-                return;
-            }
-
-            e.Effects = DragDropEffects.Copy;
-            if (await viewModel.AddFileAttachmentsAsync(filePaths) == 0)
-                return;
-
-            FocusPromptInput();
-        }
-
-        private static bool TryGetDroppedFiles(IDataObject data, out string[] filePaths)
-        {
-            filePaths = Array.Empty<string>();
-            if (!data.GetDataPresent(DataFormats.FileDrop)
-                || data.GetData(DataFormats.FileDrop) is not string[] droppedPaths)
-            {
-                return false;
-            }
-
-            filePaths = droppedPaths
-                .Where(filePath => !string.IsNullOrWhiteSpace(filePath))
-                .ToArray();
-            return filePaths.Length > 0;
-        }
-
-        private bool IsNearBottom()
-        {
-            const double threshold = 36;
-            var scrollViewer = GetMessagesScrollViewer();
-            return scrollViewer == null || scrollViewer.ScrollableHeight - scrollViewer.VerticalOffset <= threshold;
-        }
-
-        private void ScrollToBottom()
-        {
-            if (_isScrollToBottomPending)
-                return;
-
-            _isScrollToBottomPending = true;
-            HideScrollToLatestButton();
-            Dispatcher.BeginInvoke(DispatcherPriority.Background, () =>
-            {
-                try
-                {
-                    if (MessagesListBox.Items.Count > 0)
-                        MessagesListBox.ScrollIntoView(MessagesListBox.Items[MessagesListBox.Items.Count - 1]);
-                    GetMessagesScrollViewer()?.ScrollToEnd();
-                }
-                finally
-                {
-                    _isScrollToBottomPending = false;
-                    HideScrollToLatestButton();
-                }
-            });
-        }
-
-        private void ShowScrollToLatestButton()
-        {
-            if (!_isScrollToBottomPending && !IsNearBottom())
-                ScrollToLatestButton.Visibility = Visibility.Visible;
-        }
-
-        private void HideScrollToLatestButton()
-        {
-            ScrollToLatestButton.Visibility = Visibility.Collapsed;
-        }
-
-        private void MessagesScrollViewer_ScrollChanged(object sender, ScrollChangedEventArgs e)
-        {
-            var scrollViewer = GetMessagesScrollViewer();
-            if (scrollViewer == null || !ReferenceEquals(e.OriginalSource, scrollViewer))
-                return;
-
-            if (IsNearBottom())
-                HideScrollToLatestButton();
-        }
-
-        private ScrollViewer? GetMessagesScrollViewer()
-        {
-            _messagesScrollViewer ??= FindVisualChild<ScrollViewer>(MessagesListBox);
-            return _messagesScrollViewer;
-        }
-
-        private static T? FindVisualChild<T>(DependencyObject parent) where T : DependencyObject
-        {
-            var childCount = VisualTreeHelper.GetChildrenCount(parent);
-            for (var index = 0; index < childCount; index++)
-            {
-                var child = VisualTreeHelper.GetChild(parent, index);
-                if (child is T match)
-                    return match;
-
-                var nestedMatch = FindVisualChild<T>(child);
-                if (nestedMatch != null)
-                    return nestedMatch;
-            }
-
-            return null;
-        }
 
         private void ScrollToLatestButton_Click(object sender, RoutedEventArgs e)
         {
             ScrollToBottom();
         }
 
-        private void ToggleConversationSidebarButton_Click(object sender, RoutedEventArgs e)
-        {
-            _isConversationSidebarExpanded = !_isConversationSidebarExpanded;
-            UpdateResponsiveLayout();
-        }
-
-        private void ConversationListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (ConversationListBox.SelectedItem is not CopilotConversationRecord conversation
-                || DataContext is not CopilotChatViewModel viewModel
-                || !viewModel.SelectConversationCommand.CanExecute(conversation))
-            {
-                return;
-            }
-
-            viewModel.SelectConversationCommand.Execute(conversation);
-        }
 
         private void UpdateResponsiveLayout()
         {

@@ -106,7 +106,8 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                     new StateFilterOption(FlowMessageState.Sent, "已发送"),
                     new StateFilterOption(FlowMessageState.Success, "成功"),
                     new StateFilterOption(FlowMessageState.Fail, "失败"),
-                    new StateFilterOption(FlowMessageState.Timeout, "超时")
+                    new StateFilterOption(FlowMessageState.Timeout, "超时"),
+                    new StateFilterOption(FlowMessageState.Canceled, "已取消")
                 };
                 StateFilterComboBox.SelectedIndex = 0;
             }
@@ -375,6 +376,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 FlowMessageState.Success => "成功",
                 FlowMessageState.Fail => "失败",
                 FlowMessageState.Timeout => "超时",
+                FlowMessageState.Canceled => "已取消",
                 _ => state.ToString()
             };
         }

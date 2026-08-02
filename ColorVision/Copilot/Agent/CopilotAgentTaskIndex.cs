@@ -45,6 +45,18 @@ namespace ColorVision.Copilot
 
         public bool CanResume => Conversation.AgentSessionCheckpoint != null && Message.HasRecoverableAgentTasks;
 
+        public string RecoveryActionLabel => Message.AgentRecoveryActionLabel;
+
+        public string RecoveryToolTip => Message.AgentRecoveryToolTip;
+
+        public string DismissToolTip => Message.HasRecoverableFinalAnswer
+            ? "放弃重试最终回答并清除恢复 checkpoint；原任务终态和审计证据仍保留"
+            : "放弃任务恢复并清除 checkpoint；原停止原因和审计证据仍保留";
+
+        public string DismissConfirmationText => Message.HasRecoverableFinalAnswer
+            ? $"放弃“{Title}”的最终回答恢复项？保存的恢复 checkpoint 会被清除，但已完成任务的终态和审计证据仍会保留。"
+            : $"放弃 Agent 任务“{Title}”的恢复项？保存的恢复 checkpoint 会被清除，但原停止原因和审计证据仍会保留。";
+
         public string StatusLabel => AttentionKind switch
         {
             CopilotAgentTaskAttentionKind.Paused => "已暂停",
@@ -65,9 +77,16 @@ namespace ColorVision.Copilot
             {
                 var blocker = Message.AgentBlockers.FirstOrDefault(item => item != null && item.IsStructurallyValid());
                 if (blocker?.Kind == CopilotAgentBlockerKind.ProviderOutput)
-                    return blocker.Code == "provider_interrupted"
-                        ? Conversation.AgentSessionCheckpoint == null ? "恢复点未能保存，请重新发送请求" : "已保存当前进度，可安全恢复"
-                        : "模型未返回最终回答";
+                    return blocker.Code switch
+                    {
+                        "provider_interrupted" => Conversation.AgentSessionCheckpoint == null
+                            ? "恢复点未能保存，请重新发送请求"
+                            : "已保存当前进度，可安全恢复",
+                        "provider_output_length" => "最终回答达到输出上限，已保留部分内容",
+                        "provider_content_filtered" => "最终回答被内容策略提前停止",
+                        "provider_output_finish_reason" => "最终回答以未确认完成的状态结束",
+                        _ => "模型未返回最终回答",
+                    };
                 if (blocker != null && !string.IsNullOrWhiteSpace(blocker.Summary))
                     return blocker.Summary;
 
@@ -95,8 +114,7 @@ namespace ColorVision.Copilot
                 return false;
 
             task.Conversation.AgentSessionCheckpoint = null;
-            task.Message.AgentStopReason = CopilotAgentStopReason.Cancelled;
-            task.Message.AgentBlockers = Array.Empty<CopilotAgentBlockerSnapshot>();
+            task.Message.IsAgentRecoveryDismissed = true;
             task.Conversation.Touch();
             task.Conversation.RefreshSummary();
             return true;
@@ -106,11 +124,14 @@ namespace ColorVision.Copilot
         {
             var message = conversation.Messages.LastOrDefault(candidate => candidate != null && !candidate.IsUser);
             if (message == null
+                || message.IsAgentRecoveryDismissed
                 || (message.AgentTaskLedger.RemainingCount <= 0 && !message.HasRecoverableAgentTasks))
                 return null;
 
             var attentionKind = message.AgentStopReason switch
             {
+                CopilotAgentStopReason.Completed when message.HasRecoverableFinalAnswer =>
+                    CopilotAgentTaskAttentionKind.IncompleteOutput,
                 CopilotAgentStopReason.Paused => CopilotAgentTaskAttentionKind.Paused,
                 CopilotAgentStopReason.AwaitingUser => CopilotAgentTaskAttentionKind.AwaitingUser,
                 CopilotAgentStopReason.ApprovalDenied => CopilotAgentTaskAttentionKind.ApprovalDenied,

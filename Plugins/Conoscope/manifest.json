@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "Id": "Conoscope",
   "name": "Conoscope",
-  "version": "1.4.7.3",
+  "version": "1.4.7.4",
   "description": "Conoscope",
   "dllpath": "Conoscope.dll"
 }

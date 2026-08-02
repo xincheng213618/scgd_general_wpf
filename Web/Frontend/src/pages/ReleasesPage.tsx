@@ -3,7 +3,7 @@ import { Alert, Button, Card, Col, Collapse, Form, Pagination, Row, Select, Skel
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { getReleases } from '../services/site'
-import type { ReleasesPayload } from '../types/site'
+import type { ReleaseGroup, ReleasesPayload } from '../types/site'
 import { downloadPath, humanSize, shortDate } from '../utils/format'
 
 const { Text } = Typography
@@ -13,6 +13,13 @@ const androidArchivePageSize = 100
 function archivePage(value: string | null) {
   const page = Number(value || 1)
   return Number.isInteger(page) && page > 0 ? page : 1
+}
+
+function releaseGroupTimeRange(group: ReleaseGroup) {
+  const earliest = shortDate(group.earliest_modified || group.earliest_modified_display)
+  const latest = shortDate(group.latest_modified || group.latest_modified_display)
+  if (earliest === '-' || latest === '-') return group.time_range_display || '-'
+  return earliest === latest ? latest : `${earliest} → ${latest}`
 }
 
 export function ReleasesPage() {
@@ -118,7 +125,7 @@ export function ReleasesPage() {
                   <div>
                     <Text strong>{release.display_title}</Text>
                     <div className="muted-line">
-                      {release.filename} · {release.kind_label} · {humanSize(release.size)} · {shortDate(release.modified_display || release.modified)}
+                      {release.filename} · {release.kind_label} · {humanSize(release.size)} · {shortDate(release.modified || release.modified_display)}
                     </div>
                   </div>
                   <Button type="primary" icon={<CloudDownloadOutlined />} href={downloadPath(release.relative_path)}>
@@ -149,7 +156,7 @@ export function ReleasesPage() {
                   <div>
                     <Text strong>{release.display_title || `ColorVision Android ${release.version || ''}`}</Text>
                     <div className="muted-line">
-                      {release.filename} · {release.kind_label} · {humanSize(release.size)} · {shortDate(release.modified_display || release.modified)}
+                      {release.filename} · {release.kind_label} · {humanSize(release.size)} · {shortDate(release.modified || release.modified_display)}
                     </div>
                   </div>
                   <Button type="primary" icon={<CloudDownloadOutlined />} href={downloadPath(release.relative_path)}>
@@ -212,13 +219,13 @@ export function ReleasesPage() {
             ),
             children: (
               <Space direction="vertical" className="wide-space">
-                <Text type="secondary">{group.time_range_display} · {group.visible_kind_summary || group.kind_summary}</Text>
+                <Text type="secondary">{releaseGroupTimeRange(group)} · {group.visible_kind_summary || group.kind_summary}</Text>
                 {(group.visible_items || []).map((release) => (
                   <div className="resource-row" key={release.relative_path}>
                     <div>
                       <Text strong>{release.display_title}</Text>
                       <div className="muted-line">
-                        {release.era_label} · {release.kind_label} · {humanSize(release.size)} · {shortDate(release.modified_display || release.modified)}
+                        {release.era_label} · {release.kind_label} · {humanSize(release.size)} · {shortDate(release.modified || release.modified_display)}
                       </div>
                     </div>
                     <Button href={downloadPath(release.relative_path)}>下载</Button>
@@ -259,7 +266,7 @@ export function ReleasesPage() {
                 <div>
                   <Text strong>{release.display_title || `ColorVision Android ${release.version || ''}`}</Text>
                   <div className="muted-line">
-                    {release.filename} · {release.kind_label} · {humanSize(release.size)} · {shortDate(release.modified_display || release.modified)}
+                    {release.filename} · {release.kind_label} · {humanSize(release.size)} · {shortDate(release.modified || release.modified_display)}
                   </div>
                 </div>
                 <Button icon={<CloudDownloadOutlined />} href={downloadPath(release.relative_path)}>

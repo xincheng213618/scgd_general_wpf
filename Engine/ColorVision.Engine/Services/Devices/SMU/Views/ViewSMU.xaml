@@ -46,15 +46,15 @@
                         </ToggleButton>
                         <Button  Content="{x:Static properties:Resources.Exchange}" Click="Exchange_Click" Margin="0,0,2,0" />
 
-                        <Button Style="{StaticResource PanelIconButtonStyle}" ToolTip="{x:Static properties:Resources.Inquire}" Click="Search_Click">
-                            <Path Style="{StaticResource PanelActionIconPathStyle}" Data="M7.2,3.2 A4,4 0 1 1 7.2,11.2 A4,4 0 1 1 7.2,3.2 M10.2,10.2 L14.2,14.2"/>
-                        </Button>
-                        <Button x:Name="Search" Style="{StaticResource PanelIconButtonStyle}" ToolTip="{x:Static properties:Resources.AdvanceSearch}" Click="Search1_Click">
-                            <Path Style="{StaticResource PanelActionIconPathStyle}" Data="M3,4.5 H15 L10.5,9 V13 L7.5,14 V9 Z"/>
-                        </Button>
                 </StackPanel>
 
                 <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
+                    <Button Style="{StaticResource PanelIconButtonStyle}" ToolTip="{x:Static properties:Resources.Inquire}" Click="Search_Click">
+                        <Path Style="{StaticResource PanelActionIconPathStyle}" Data="M7.2,3.2 A4,4 0 1 1 7.2,11.2 A4,4 0 1 1 7.2,3.2 M10.2,10.2 L14.2,14.2"/>
+                    </Button>
+                    <Button x:Name="Search" Style="{StaticResource PanelIconButtonStyle}" ToolTip="{x:Static properties:Resources.AdvanceSearch}" Click="Search1_Click">
+                        <Path Style="{StaticResource PanelActionIconPathStyle}" Data="M3,4.5 H15 L10.5,9 V13 L7.5,14 V9 Z"/>
+                    </Button>
                     <Button Click="Button_Click" Padding="2" Height="25" Width="25" Margin="0,1,5,0">
                         <Rectangle Width="16" Height="16" Fill="{DynamicResource DISave}" />
                     </Button>

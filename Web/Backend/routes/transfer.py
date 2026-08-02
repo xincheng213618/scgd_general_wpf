@@ -14,6 +14,7 @@ from typing import Any, Callable
 from urllib.parse import quote, urlencode
 
 from flask import Blueprint, jsonify, redirect, request, send_from_directory, session
+from werkzeug.wsgi import get_input_stream
 
 from db_cache import CacheManager
 from transfer_files import (
@@ -149,9 +150,9 @@ def api_transfer_file(filename: str):
             return send_from_directory(str(root), target.name, as_attachment=True)
 
         if request.method in ("PUT", "POST"):
-            stream = request.environ.get("wsgi.input")
-            if stream is None:
-                return _json_error("Request body is required", 400)
+            # Stop at Content-Length on keep-alive connections without applying the
+            # global upload-size limit that the transfer endpoint intentionally bypasses.
+            stream = get_input_stream(request.environ)
             result = stream_transfer_upload(root, filename, stream)
             _write_audit(
                 "transfer_upload",

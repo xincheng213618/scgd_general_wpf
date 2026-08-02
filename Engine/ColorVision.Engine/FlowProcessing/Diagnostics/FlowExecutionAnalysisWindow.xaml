@@ -43,18 +43,49 @@
                 </Grid.ColumnDefinitions>
 
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <Button x:Name="BackButton"
+                    <TextBlock Text="同流程"
+                               Margin="0,0,6,0"
+                               VerticalAlignment="Center"
+                               FontSize="11"
+                               Foreground="{DynamicResource SecondaryTextBrush}"/>
+                    <Button x:Name="PreviousSameFlowRunButton"
                             Content="&#xE72B;"
-                            ToolTip="返回上一页"
+                            ToolTip="上次相同流程执行"
+                            AutomationProperties.Name="上次相同流程执行"
                             IsEnabled="False"
-                            Click="BackButton_Click"
+                            Click="PreviousSameFlowRunButton_Click"
                             Style="{StaticResource ShellNavigationButtonStyle}"/>
-                    <Button x:Name="ForwardButton"
+                    <Button x:Name="NextSameFlowRunButton"
                             Content="&#xE72A;"
-                            ToolTip="前进到下一页"
+                            ToolTip="下次相同流程执行"
+                            AutomationProperties.Name="下次相同流程执行"
                             IsEnabled="False"
                             Margin="6,0,0,0"
-                            Click="ForwardButton_Click"
+                            Click="NextSameFlowRunButton_Click"
+                            Style="{StaticResource ShellNavigationButtonStyle}"/>
+                    <Border Width="1"
+                            Height="24"
+                            Margin="10,0"
+                            Background="{DynamicResource ButtonBorderBrush}"/>
+                    <TextBlock Text="全部流程"
+                               Margin="0,0,6,0"
+                               VerticalAlignment="Center"
+                               FontSize="11"
+                               Foreground="{DynamicResource SecondaryTextBrush}"/>
+                    <Button x:Name="PreviousRunButton"
+                            Content="&#xE72B;"
+                            ToolTip="上一次流程执行"
+                            AutomationProperties.Name="上一次流程执行"
+                            IsEnabled="False"
+                            Click="PreviousRunButton_Click"
+                            Style="{StaticResource ShellNavigationButtonStyle}"/>
+                    <Button x:Name="NextRunButton"
+                            Content="&#xE72A;"
+                            ToolTip="下一次流程执行"
+                            AutomationProperties.Name="下一次流程执行"
+                            IsEnabled="False"
+                            Margin="6,0,0,0"
+                            Click="NextRunButton_Click"
                             Style="{StaticResource ShellNavigationButtonStyle}"/>
                 </StackPanel>
 

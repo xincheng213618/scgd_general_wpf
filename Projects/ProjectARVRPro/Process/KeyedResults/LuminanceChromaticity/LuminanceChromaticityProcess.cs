@@ -8,6 +8,7 @@ using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.ImageEditor.Draw;
 using CVCommCore.CVAlgorithm;
 using Newtonsoft.Json;
+using ProjectARVRPro.Process.Uniformity;
 using ProjectARVRPro.Recipe;
 using System.Text;
 using System.Windows;
@@ -28,6 +29,9 @@ namespace ProjectARVRPro.Process.KeyedResults.LuminanceChromaticity
             try
             {
                 var testResult = new LuminanceChromaticityViewTestResult();
+                bool calculateUniformityFromCorrectedPoi = Config.CalculateUniformityFromCorrectedPoi;
+                string luminanceUniformityResultName = Config.GetLuminanceUniformityResultName();
+                string colorUniformityResultName = Config.GetColorUniformityResultName();
                 var images = MeasureImgResultDao.Instance.GetAllByBatchId(ctx.Batch.Id);
                 if (images.Count > 0)
                     ctx.Result.FileName = images[0].FileUrl;
@@ -38,8 +42,22 @@ namespace ProjectARVRPro.Process.KeyedResults.LuminanceChromaticity
                     {
                         ReadPoiResults(ctx, master, testResult);
                     }
-                    else if (master.ImgFileType == ViewResultAlgType.PoiAnalysis)
-                        ReadUniformityResult(ctx, master, testResult);
+                    else if (master.ImgFileType == ViewResultAlgType.PoiAnalysis && !calculateUniformityFromCorrectedPoi)
+                        ReadUniformityResult(ctx, master, testResult, luminanceUniformityResultName, colorUniformityResultName);
+                }
+
+                if (calculateUniformityFromCorrectedPoi)
+                {
+                    var calculation = LuminanceChromaticityUniformityCalculator.Calculate(testResult.ViewPoixyuvDatas);
+                    if (!calculation.Success)
+                    {
+                        ctx.Log?.Error($"亮色度本地均匀性计算失败: key={Config.GetOutputKey()}, message={calculation.ErrorMessage}");
+                        return Task.FromResult(false);
+                    }
+
+                    SetLuminanceUniformity(ctx, testResult, calculation.LuminanceUniformity);
+                    SetColorUniformity(ctx, testResult, calculation.ColorUniformity);
+                    ctx.Log?.Info($"亮色度均匀性来源: corrected-poi, key={Config.GetOutputKey()}, pointCount={calculation.PointCount}, luminance={testResult.LuminanceUniformity.Value:R}, color={testResult.ColorUniformity.Value:R}");
                 }
 
                 ctx.Result.ViewResultJson = JsonConvert.SerializeObject(testResult);
@@ -114,25 +132,43 @@ namespace ProjectARVRPro.Process.KeyedResults.LuminanceChromaticity
             ctx.Result.Result &= testResult.CenterCIE1976ChromaticCoordinatesv.TestResult;
         }
 
-        private void ReadUniformityResult(IProcessExecutionContext ctx, AlgResultMasterModel master, LuminanceChromaticityTestResult testResult)
+        private void ReadUniformityResult(
+            IProcessExecutionContext ctx,
+            AlgResultMasterModel master,
+            LuminanceChromaticityTestResult testResult,
+            string luminanceUniformityResultName,
+            string colorUniformityResultName)
         {
+            bool isLuminanceUniformity = LuminanceChromaticityUniformityCalculator.MatchesResultName(master.TName, luminanceUniformityResultName);
+            bool isColorUniformity = LuminanceChromaticityUniformityCalculator.MatchesResultName(master.TName, colorUniformityResultName);
+            if (isLuminanceUniformity && isColorUniformity)
+                throw new InvalidOperationException($"同一个PoiAnalysis结果同时匹配亮度和色度均匀性TName: {master.TName}");
+            if (!isLuminanceUniformity && !isColorUniformity)
+                return;
+
             var details = DeatilCommonDao.Instance.GetAllByPid(master.Id);
             if (details.Count != 1)
                 return;
 
             var value = new PoiAnalysisDetailViewReslut(details[0]).PoiAnalysisResult.result.Value;
-            if (master.TName.Contains("Luminance_uniformity", StringComparison.OrdinalIgnoreCase))
-            {
-                value = Config.RecipeConfig.LuminanceUniformity.Apply(value);
-                testResult.LuminanceUniformity = CreateItem("Luminance_uniformity(%)", value, Config.RecipeConfig.LuminanceUniformity, "F4", "%", 100);
-                ctx.Result.Result &= testResult.LuminanceUniformity.TestResult;
-            }
-            else if (master.TName.Contains("Color_uniformity", StringComparison.OrdinalIgnoreCase))
-            {
-                value = Config.RecipeConfig.ColorUniformity.Apply(value);
-                testResult.ColorUniformity = CreateItem("Color_uniformity", value, Config.RecipeConfig.ColorUniformity, "F5");
-                ctx.Result.Result &= testResult.ColorUniformity.TestResult;
-            }
+            if (isLuminanceUniformity)
+                SetLuminanceUniformity(ctx, testResult, value);
+            else
+                SetColorUniformity(ctx, testResult, value);
+        }
+
+        private void SetLuminanceUniformity(IProcessExecutionContext ctx, LuminanceChromaticityTestResult testResult, double value)
+        {
+            value = Config.RecipeConfig.LuminanceUniformity.Apply(value);
+            testResult.LuminanceUniformity = CreateItem("Luminance_uniformity(%)", value, Config.RecipeConfig.LuminanceUniformity, "F4", "%", 100);
+            ctx.Result.Result &= testResult.LuminanceUniformity.TestResult;
+        }
+
+        private void SetColorUniformity(IProcessExecutionContext ctx, LuminanceChromaticityTestResult testResult, double value)
+        {
+            value = Config.RecipeConfig.ColorUniformity.Apply(value);
+            testResult.ColorUniformity = CreateItem("Color_uniformity", value, Config.RecipeConfig.ColorUniformity, "F5");
+            ctx.Result.Result &= testResult.ColorUniformity.TestResult;
         }
 
         private static ObjectiveTestItem CreateItem(string name, double value, RecipeBase recipe, string format, string unit = "", double displayScale = 1)

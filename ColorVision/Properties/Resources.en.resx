@@ -496,42 +496,6 @@
   <data name="Save" xml:space="preserve">
     <value>Save</value>
   </data>
-  <data name="CopilotExceptionDiagnosis" xml:space="preserve">
-    <value>Exception Diagnosis</value>
-  </data>
-  <data name="CopilotUnhandledException" xml:space="preserve">
-    <value>ColorVision Captured an Unhandled Exception</value>
-  </data>
-  <data name="CopilotExceptionDetails" xml:space="preserve">
-    <value>Exception Details</value>
-  </data>
-  <data name="CopilotRecentLogs" xml:space="preserve">
-    <value>Recent Logs</value>
-  </data>
-  <data name="CopilotRecentNLines" xml:space="preserve">
-    <value>Recent N Lines</value>
-  </data>
-  <data name="CopilotLines" xml:space="preserve">
-    <value>Lines</value>
-  </data>
-  <data name="CopilotTodayLog" xml:space="preserve">
-    <value>Today's Log</value>
-  </data>
-  <data name="CopilotRefreshLog" xml:space="preserve">
-    <value>Refresh Log</value>
-  </data>
-  <data name="CopilotAiRequest" xml:space="preserve">
-    <value>AI Request</value>
-  </data>
-  <data name="CopilotCopyDetails" xml:space="preserve">
-    <value>Copy Details</value>
-  </data>
-  <data name="CopilotAskAi" xml:space="preserve">
-    <value>Ask AI</value>
-  </data>
-  <data name="CopilotGoogleSearch" xml:space="preserve">
-    <value>Google Search</value>
-  </data>
   <data name="Close" xml:space="preserve">
     <value>Close</value>
   </data>

@@ -95,6 +95,10 @@ public sealed class CopilotComposerAccessAndReferenceTests
             protectedTool,
             workspacePath));
         Assert.False(CopilotAgentAccessPolicy.CanAutoApprove(
+            CreateRequest(conversation, "task-1", workspacePath, CopilotAgentMode.Plan),
+            protectedTool,
+            workspacePath));
+        Assert.False(CopilotAgentAccessPolicy.CanAutoApprove(
             CreateRequest(conversation, "task-1", workspacePath),
             readTool,
             workspacePath));
@@ -197,6 +201,55 @@ public sealed class CopilotComposerAccessAndReferenceTests
     }
 
     [Fact]
+    public void TemporaryGrantAutoReviewsOnlyUnsupportedProtectedToolsInTheExactTaskScope()
+    {
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Model");
+        var workspacePath = Path.Combine(Path.GetTempPath(), "copilot-auto-review-workspace");
+        var deterministicTool = new TestTool(
+            CopilotToolAccess.Write,
+            CopilotToolApprovalMode.Always,
+            allowsTemporaryFullAccess: true);
+        var reviewableTool = new TestTool(
+            CopilotToolAccess.Write,
+            CopilotToolApprovalMode.Always,
+            allowsTemporaryFullAccess: false);
+        conversation.PrepareFullAccessGrant(
+            workspacePath,
+            "task-auto-review",
+            DateTimeOffset.UtcNow.AddMinutes(15));
+
+        Assert.True(CopilotAgentAccessPolicy.CanAutoReview(
+            CreateRequest(conversation, "task-auto-review", workspacePath),
+            reviewableTool,
+            workspacePath));
+        Assert.False(CopilotAgentAccessPolicy.CanAutoReview(
+            CreateRequest(conversation, "task-auto-review", workspacePath),
+            deterministicTool,
+            workspacePath));
+        Assert.False(CopilotAgentAccessPolicy.CanAutoReview(
+            CreateRequest(conversation, "task-auto-review", workspacePath, CopilotAgentMode.Review),
+            reviewableTool,
+            workspacePath));
+        Assert.False(CopilotAgentAccessPolicy.CanAutoReview(
+            CreateRequest(conversation, "task-other", workspacePath),
+            reviewableTool,
+            workspacePath));
+        Assert.False(CopilotAgentAccessPolicy.CanAutoReview(
+            CreateRequest(
+                conversation,
+                "task-auto-review",
+                workspacePath,
+                conversationId: "conversation-other"),
+            reviewableTool,
+            workspacePath));
+        Assert.False(CopilotAgentAccessPolicy.CanAutoReview(
+            CreateRequest(conversation, "task-auto-review", workspacePath),
+            reviewableTool,
+            workspacePath + "-other"));
+        Assert.Equal(CopilotAgentAccessMode.ConfirmProtectedActions, conversation.AccessMode);
+    }
+
+    [Fact]
     public void OnlyPathAndHashBoundWorkspaceEnvelopeToolsAllowTemporaryApproval()
     {
         var autoApprovableToolNames = CopilotToolRegistry.CreateCoreDefaultTools()
@@ -261,6 +314,52 @@ public sealed class CopilotComposerAccessAndReferenceTests
     {
         Assert.True(CopilotComposerReferenceCatalog.TryParseMention(input, out var mention));
         Assert.Equal(expectedQuery, mention.Query);
+    }
+
+    [Theory]
+    [InlineData(null, "@", "")]
+    [InlineData("", "@", "")]
+    [InlineData("  FlowParam  ", "@FlowParam", "FlowParam")]
+    [InlineData("模板 管理", "@模板 管理", "模板 管理")]
+    public void MentionCommandCreatesLiveComposerQuery(
+        string? query,
+        string expectedInput,
+        string expectedQuery)
+    {
+        Assert.True(CopilotComposerReferenceCatalog.TryCreateMentionInput(
+            query,
+            out var input,
+            out var errorMessage));
+        Assert.Equal(string.Empty, errorMessage);
+        Assert.Equal(expectedInput, input);
+        Assert.True(CopilotComposerReferenceCatalog.TryParseMention(input, out var mention));
+        Assert.Equal(expectedQuery, mention.Query);
+    }
+
+    [Theory]
+    [InlineData("first\nsecond", "单行")]
+    [InlineData("[SFR 模板]", "@[标题]")]
+    public void MentionCommandRejectsQueriesThatCannotOpenTheReferenceCatalog(
+        string query,
+        string expectedError)
+    {
+        Assert.False(CopilotComposerReferenceCatalog.TryCreateMentionInput(
+            query,
+            out var input,
+            out var errorMessage));
+        Assert.Equal(string.Empty, input);
+        Assert.Contains(expectedError, errorMessage, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void MentionCommandRejectsQueriesBeyondTheComposerSearchLimit()
+    {
+        Assert.False(CopilotComposerReferenceCatalog.TryCreateMentionInput(
+            new string('x', 81),
+            out var input,
+            out var errorMessage));
+        Assert.Equal(string.Empty, input);
+        Assert.Contains("80", errorMessage, StringComparison.Ordinal);
     }
 
     [Theory]

@@ -207,6 +207,31 @@ public sealed class CopilotDelegatedDirectAnswerChatClientTests
         Assert.Equal(ChatFinishReason.Stop, Assert.Single(updates).FinishReason);
     }
 
+    [Fact]
+    public async Task ActiveGoalFallsBackToParentProviderForGoalEvaluation()
+    {
+        const string callId = "call-goal-aware-explore";
+        const string answer =
+            "- C:\\workspace\\Coordinator.cs:24-26 — verified bounded evidence.\n"
+            + "complete: yes — done.";
+        using var provider = new RecordingChatClient("provider fallback");
+        var directAnswerCount = 0;
+        using var client = new CopilotDelegatedDirectAnswerChatClient(
+            provider,
+            ExclusiveExploreRequest("Keep investigating until every requested file is covered."),
+            () => [CompletedExploreStep(callId, answer)],
+            taskLedgerEnabled: false,
+            () => directAnswerCount++);
+
+        var response = await client.GetResponseAsync(
+            [FunctionResultMessage(callId)],
+            cancellationToken: CancellationToken.None);
+
+        Assert.Equal(1, provider.CallCount);
+        Assert.Equal(0, directAnswerCount);
+        Assert.Equal("provider fallback", response.Text);
+    }
+
     [Theory]
     [InlineData(true, true, false, "complete: yes — done.")]
     [InlineData(false, false, false, "complete: yes — done.")]
@@ -292,7 +317,7 @@ public sealed class CopilotDelegatedDirectAnswerChatClientTests
         Assert.Equal("provider fallback", response.Text);
     }
 
-    private static CopilotAgentRequest ExclusiveExploreRequest() => new()
+    private static CopilotAgentRequest ExclusiveExploreRequest(string? activeGoalText = null) => new()
     {
         UserText =
             "请只使用 DelegateExplore 子 Agent 检查 C:\\workspace 下的 Coordinator.cs 和 Explore.cs，"
@@ -308,6 +333,7 @@ public sealed class CopilotDelegatedDirectAnswerChatClientTests
         RequiredSuccessfulToolNames = ["DelegateExplore"],
         RequiresDelegatedWorkspaceEvidence = true,
         Mode = CopilotAgentMode.Code,
+        ActiveGoalText = activeGoalText,
     };
 
     private static Microsoft.Extensions.AI.ChatMessage FunctionResultMessage(string callId) =>

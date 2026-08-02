@@ -64,6 +64,16 @@ namespace ColorVision.ImageEditor.Algorithms
             _isCompleted = true;
         }
 
+        public void ShowOriginal()
+        {
+            if (_isCompleted)
+            {
+                return;
+            }
+
+            RestoreOriginal();
+        }
+
         public void Cancel()
         {
             if (_isCompleted)

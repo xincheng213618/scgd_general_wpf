@@ -394,4 +394,135 @@
   <data name="DB_EditRow" xml:space="preserve">
     <value>Edit Row</value>
   </data>
+  <data name="DB_FilterDataTitle" xml:space="preserve">
+    <value>Filter Data</value>
+  </data>
+  <data name="DB_FilterDataDescription" xml:space="preserve">
+    <value>Add one or more conditions. Matching records will appear in the current results table after you apply the filter.</value>
+  </data>
+  <data name="DB_AddFilterField" xml:space="preserve">
+    <value>Add filter field</value>
+  </data>
+  <data name="DB_SelectFilterField" xml:space="preserve">
+    <value>Select a filter field</value>
+  </data>
+  <data name="DB_AddCondition" xml:space="preserve">
+    <value>Add Condition</value>
+  </data>
+  <data name="DB_ClearConditions" xml:space="preserve">
+    <value>Clear Conditions</value>
+  </data>
+  <data name="DB_FilterConditions" xml:space="preserve">
+    <value>Filter Conditions</value>
+  </data>
+  <data name="DB_AllConditionsMustMatch" xml:space="preserve">
+    <value>All of the following conditions must match</value>
+  </data>
+  <data name="DB_FilterFieldColumn" xml:space="preserve">
+    <value>Field</value>
+  </data>
+  <data name="DB_FilterOperatorColumn" xml:space="preserve">
+    <value>Condition</value>
+  </data>
+  <data name="DB_FilterValueColumn" xml:space="preserve">
+    <value>Value</value>
+  </data>
+  <data name="DB_NoFilterConditions" xml:space="preserve">
+    <value>No filter conditions yet</value>
+  </data>
+  <data name="DB_NoFilterConditionsDescription" xml:space="preserve">
+    <value>Without conditions, the most recent records are returned using the settings below. Select a field above to start filtering.</value>
+  </data>
+  <data name="DB_MaxResults" xml:space="preserve">
+    <value>Maximum results</value>
+  </data>
+  <data name="DB_ResultUnit" xml:space="preserve">
+    <value>rows</value>
+  </data>
+  <data name="DB_SortById" xml:space="preserve">
+    <value>Sort by ID</value>
+  </data>
+  <data name="DB_NewestFirst" xml:space="preserve">
+    <value>Newest first</value>
+  </data>
+  <data name="DB_OldestFirst" xml:space="preserve">
+    <value>Oldest first</value>
+  </data>
+  <data name="DB_ApplyFilter" xml:space="preserve">
+    <value>Apply Filter</value>
+  </data>
+  <data name="DB_MaxResultsRange" xml:space="preserve">
+    <value>Maximum results must be an integer from 1 to 10000.</value>
+  </data>
+  <data name="DB_FilterValueRequired" xml:space="preserve">
+    <value>Enter a filter value for "{0}".</value>
+  </data>
+  <data name="DB_FilterValueInvalid" xml:space="preserve">
+    <value>"{0}" cannot use the value "{1}".</value>
+  </data>
+  <data name="DB_FilterOperatorAutomationName" xml:space="preserve">
+    <value>Filter condition for {0}</value>
+  </data>
+  <data name="DB_FilterValueAutomationName" xml:space="preserve">
+    <value>Filter value for {0}</value>
+  </data>
+  <data name="DB_RemoveNamedCondition" xml:space="preserve">
+    <value>Remove the {0} condition</value>
+  </data>
+  <data name="DB_BooleanTrue" xml:space="preserve">
+    <value>Yes</value>
+  </data>
+  <data name="DB_BooleanFalse" xml:space="preserve">
+    <value>No</value>
+  </data>
+  <data name="DB_OperatorContains" xml:space="preserve">
+    <value>Contains</value>
+  </data>
+  <data name="DB_OperatorEqual" xml:space="preserve">
+    <value>Equals</value>
+  </data>
+  <data name="DB_OperatorNotEqual" xml:space="preserve">
+    <value>Does not equal</value>
+  </data>
+  <data name="DB_OperatorGreater" xml:space="preserve">
+    <value>Greater than</value>
+  </data>
+  <data name="DB_OperatorGreaterOrEqual" xml:space="preserve">
+    <value>Greater than or equal to</value>
+  </data>
+  <data name="DB_OperatorLess" xml:space="preserve">
+    <value>Less than</value>
+  </data>
+  <data name="DB_OperatorLessOrEqual" xml:space="preserve">
+    <value>Less than or equal to</value>
+  </data>
+  <data name="DB_FieldId" xml:space="preserve"><value>ID</value></data>
+  <data name="DB_FieldName" xml:space="preserve"><value>Name</value></data>
+  <data name="DB_FieldCode" xml:space="preserve"><value>Code</value></data>
+  <data name="DB_FieldModel" xml:space="preserve"><value>Model</value></data>
+  <data name="DB_FieldResult" xml:space="preserve"><value>Result</value></data>
+  <data name="DB_FieldFlowStatus" xml:space="preserve"><value>Flow Status</value></data>
+  <data name="DB_FieldCreateTime" xml:space="preserve"><value>Created At</value></data>
+  <data name="DB_FieldUpdateTime" xml:space="preserve"><value>Updated At</value></data>
+  <data name="DB_FieldFileName" xml:space="preserve"><value>File Name</value></data>
+  <data name="DB_FieldMessage" xml:space="preserve"><value>Message</value></data>
+  <data name="DB_FieldZIndex" xml:space="preserve"><value>Sequence</value></data>
+  <data name="DB_FieldBatchId" xml:space="preserve"><value>Batch ID</value></data>
+  <data name="DB_FieldTestType" xml:space="preserve"><value>Test Type</value></data>
+  <data name="DB_FieldRunTime" xml:space="preserve"><value>Run Time</value></data>
+  <data name="DB_Close" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="DB_TableMaintenance" xml:space="preserve">
+    <value>Table maintenance</value>
+  </data>
+  <data name="DB_ClearTableConfirm" xml:space="preserve">
+    <value>Clear all data from this table? This action cannot be undone.</value>
+  </data>
+  <data name="DB_TruncateTableConfirm" xml:space="preserve">
+    <value>Truncate this table? All data will be deleted and the identity reset. This action cannot be undone.</value>
+  </data>
+  <data name="DB_OperationFailed" xml:space="preserve">
+    <value>Operation failed: {0}</value>
+  </data>
 </root>

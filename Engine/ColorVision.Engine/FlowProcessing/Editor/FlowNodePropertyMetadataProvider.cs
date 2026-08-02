@@ -21,6 +21,7 @@ namespace ColorVision.Engine.FlowProcessing.Editor
             "NodeID",
             "NodeType",
             "Token",
+            nameof(FlowEngineLib.Base.CVBaseServerNode.ContinueOnFail),
         };
 
         public static PropertyEditorAdvancedOptions AdvancedOptions { get; } = new(propertyInfo => DefaultHiddenProperties.Contains(propertyInfo.Name))

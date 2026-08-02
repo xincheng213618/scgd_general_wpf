@@ -23,6 +23,7 @@ internal static class MQTTClientPool
     private static readonly object _lock = new object();
     private static readonly Dictionary<string, PoolEntry> _pool = new Dictionary<string, PoolEntry>();
     private static readonly byte[] CredentialKeySalt = RandomNumberGenerator.GetBytes(32);
+    private static readonly TimeSpan SlowSubscriptionThreshold = TimeSpan.FromMilliseconds(100);
     private static string _activeKey;
 
     private class PoolEntry
@@ -301,11 +302,14 @@ internal static class MQTTClientPool
         using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(
             cancellationToken,
             entry.LifetimeCts.Token);
+        var operationStopwatch = System.Diagnostics.Stopwatch.StartNew();
+        long gateWaitMilliseconds = 0;
         bool gateAcquired = false;
         try
         {
             await entry.SubscriptionGate.WaitAsync(linkedCts.Token);
             gateAcquired = true;
+            gateWaitMilliseconds = operationStopwatch.ElapsedMilliseconds;
             lock (_lock)
             {
                 if (entry.Disposing ||
@@ -388,6 +392,15 @@ internal static class MQTTClientPool
             {
                 entry.SubscriptionGate.Release();
             }
+            operationStopwatch.Stop();
+            if (operationStopwatch.Elapsed >= SlowSubscriptionThreshold)
+            {
+                logger.InfoFormat(
+                    "MQTT subscription slow => operation=subscribe, topic={0}, gateWait={1}ms, total={2}ms",
+                    topic,
+                    gateWaitMilliseconds,
+                    operationStopwatch.ElapsedMilliseconds);
+            }
         }
     }
 
@@ -427,11 +440,14 @@ internal static class MQTTClientPool
         using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(
             cancellationToken,
             entry.LifetimeCts.Token);
+        var operationStopwatch = System.Diagnostics.Stopwatch.StartNew();
+        long gateWaitMilliseconds = 0;
         bool gateAcquired = false;
         try
         {
             await entry.SubscriptionGate.WaitAsync(linkedCts.Token);
             gateAcquired = true;
+            gateWaitMilliseconds = operationStopwatch.ElapsedMilliseconds;
             bool shouldUnsubscribe;
             lock (_lock)
             {
@@ -499,32 +515,51 @@ internal static class MQTTClientPool
             {
                 entry.SubscriptionGate.Release();
             }
+            operationStopwatch.Stop();
+            if (operationStopwatch.Elapsed >= SlowSubscriptionThreshold)
+            {
+                logger.InfoFormat(
+                    "MQTT subscription slow => operation=unsubscribe, topic={0}, gateWait={1}ms, total={2}ms",
+                    topic,
+                    gateWaitMilliseconds,
+                    operationStopwatch.ElapsedMilliseconds);
+            }
         }
     }
 
-    public static async Task ReleaseOwnerTopicsAsync(
+    public static Task ReleaseOwnerTopicsAsync(
         IMqttClient client,
         Guid ownerId,
         CancellationToken cancellationToken = default)
     {
-        string[] topics;
+        cancellationToken.ThrowIfCancellationRequested();
         lock (_lock)
         {
             PoolEntry entry = FindEntryLocked(client);
             if (entry == null)
             {
-                return;
+                return Task.CompletedTask;
             }
-            topics = entry.Topics
-                .Where(item => item.Value.Owners.Contains(ownerId))
-                .Select(item => item.Key)
-                .ToArray();
-        }
 
-        foreach (string topic in topics)
-        {
-            await TryUnsubscribeAsync(client, ownerId, topic, cancellationToken);
+            foreach (string topic in entry.Topics
+                         .Where(item => item.Value.Owners.Contains(ownerId))
+                         .Select(item => item.Key)
+                         .ToArray())
+            {
+                TopicRegistration registration = entry.Topics[topic];
+                registration.Owners.Remove(ownerId);
+                // Keep one broker subscription per distinct topic on the active
+                // connection so the next flow can take ownership without a
+                // blocking unsubscribe/subscribe round trip. Explicit topic
+                // changes and endpoint retirement still perform cleanup.
+                if (registration.Owners.Count == 0 &&
+                    (entry.Retired || !entry.Client.IsConnected))
+                {
+                    entry.Topics.Remove(topic);
+                }
+            }
         }
+        return Task.CompletedTask;
     }
 
     public static void MarkDisconnected(IMqttClient client)
@@ -634,9 +669,13 @@ internal static class MQTTClientPool
 
     private static async Task<bool> RestoreSubscriptionsCoreAsync(PoolEntry entry)
     {
+        var restoreStopwatch = System.Diagnostics.Stopwatch.StartNew();
+        long gateWaitMilliseconds = 0;
+        int topicCount = 0;
         try
         {
             await entry.SubscriptionGate.WaitAsync(entry.LifetimeCts.Token);
+            gateWaitMilliseconds = restoreStopwatch.ElapsedMilliseconds;
         }
         catch (OperationCanceledException)
         {
@@ -657,6 +696,7 @@ internal static class MQTTClientPool
                     .Select(item => item.Key)
                     .ToArray();
             }
+            topicCount = topics.Length;
 
             bool success = true;
             foreach (string topic in topics)
@@ -704,6 +744,15 @@ internal static class MQTTClientPool
         finally
         {
             entry.SubscriptionGate.Release();
+            restoreStopwatch.Stop();
+            if (restoreStopwatch.Elapsed >= SlowSubscriptionThreshold)
+            {
+                logger.InfoFormat(
+                    "MQTT subscription restore slow => topics={0}, gateWait={1}ms, total={2}ms",
+                    topicCount,
+                    gateWaitMilliseconds,
+                    restoreStopwatch.ElapsedMilliseconds);
+            }
         }
     }
 

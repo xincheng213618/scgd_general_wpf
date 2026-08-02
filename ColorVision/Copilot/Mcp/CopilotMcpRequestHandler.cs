@@ -2,6 +2,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -430,8 +432,11 @@ namespace ColorVision.Copilot.Mcp
                 return false;
             }
 
-            var expected = "Bearer " + token.Trim();
-            if (string.Equals(value.Trim(), expected, StringComparison.Ordinal))
+            var presentedToken = value.Trim()["Bearer ".Length..];
+            var expectedToken = token.Trim();
+            if (CryptographicOperations.FixedTimeEquals(
+                Encoding.UTF8.GetBytes(presentedToken),
+                Encoding.UTF8.GetBytes(expectedToken)))
                 return true;
 
             failureReason = "invalid bearer token";

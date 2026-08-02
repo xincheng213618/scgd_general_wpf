@@ -32,7 +32,8 @@ namespace ColorVision.Copilot
                 message,
                 conversation.AgentSessionCheckpoint,
                 profile,
-                capabilitySnapshot).IsAvailable;
+                capabilitySnapshot,
+                CopilotToolExecutor.GetSharedHookSurfaceSnapshot()).IsAvailable;
         }
     }
 }

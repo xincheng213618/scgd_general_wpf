@@ -15,13 +15,16 @@ namespace ColorVision.Engine.FlowProcessing.Editor
 {
     public partial class FlowEditorCanvas : UserControl, IDisposable
     {
-        internal const double PropertyPanelMaxWidth = 420;
+        internal const double PropertyPanelMaxWidth = 360;
         internal const double PropertyPanelMaxHeight = 520;
         internal const double PropertyPanelNodeGap = 10;
 
         private bool _forwardingEditCommand;
         private bool _hidePropertyEditorUntilNextSelection;
         private bool _propertyPanelPositionUpdatePending;
+        private bool _fitCanvasToNodesPending;
+        private bool _fitCanvasToNodesScheduled;
+        private float _fitCanvasMaximumScale = 0.85f;
         private bool _disposed;
         private readonly StackPanel _generatedPropertyPanel = new();
         private readonly List<(UIElement Host, CommandBinding Binding)> _editCommandForwarders = [];
@@ -52,7 +55,7 @@ namespace ColorVision.Engine.FlowProcessing.Editor
 
         public STNodeEditor NodeEditor => STNodeEditorMain;
         public Grid NodePropertyPanelContainer => PropertyEditorPanel;
-        public FlowNodePropertyPanel NodePropertyPanel => InlineNodePropertyPanel;
+        public StackPanel NodePropertyPanel => NodePropertyPanelContent;
 
         public FlowEditorCanvas()
         {
@@ -60,6 +63,7 @@ namespace ColorVision.Engine.FlowProcessing.Editor
             STNodeEditorMain.EnableHistory = true;
             AttachEditCommandRouting(this);
             SizeChanged += FlowEditorCanvas_SizeChanged;
+            STNodeEditorMain.SizeChanged += STNodeEditorMain_SizeChanged;
             PropertyEditorPanel.IsVisibleChanged += PropertyEditorPanel_IsVisibleChanged;
             PropertyEditorPanel.SizeChanged += PropertyEditorPanel_SizeChanged;
             STNodeEditorMain.ActiveChanged += STNodeEditorMain_SelectionChanged;
@@ -80,8 +84,67 @@ namespace ColorVision.Engine.FlowProcessing.Editor
 
         private void FlowEditorCanvas_SizeChanged(object sender, SizeChangedEventArgs e)
         {
+            PreserveCanvasCenter(e.PreviousSize, e.NewSize);
+            QueuePendingCanvasFit();
             UpdatePropertyPanelSizeLimit();
             QueuePropertyPanelPositionUpdate();
+        }
+
+        private void STNodeEditorMain_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            QueuePendingCanvasFit();
+        }
+
+        internal void FitCanvasToNodesAfterLayout(float maximumScale = 0.85f)
+        {
+            _fitCanvasMaximumScale = Math.Clamp(maximumScale, 0.2f, 5f);
+            _fitCanvasToNodesPending = true;
+            QueuePendingCanvasFit();
+        }
+
+        private void QueuePendingCanvasFit()
+        {
+            if (_disposed ||
+                !_fitCanvasToNodesPending ||
+                _fitCanvasToNodesScheduled ||
+                ActualWidth <= 0 ||
+                ActualHeight <= 0)
+                return;
+
+            _fitCanvasToNodesScheduled = true;
+            _ = Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(() =>
+            {
+                _fitCanvasToNodesScheduled = false;
+                if (_disposed || !_fitCanvasToNodesPending)
+                    return;
+
+                if (STNodeEditorMain.ClientSize.Width <= 0 || STNodeEditorMain.ClientSize.Height <= 0)
+                    return;
+
+                _fitCanvasToNodesPending = false;
+                STNodeEditorMain.FitCanvasToNodes(_fitCanvasMaximumScale);
+            }));
+        }
+
+        private void PreserveCanvasCenter(System.Windows.Size previousSize, System.Windows.Size newSize)
+        {
+            if (STNodeEditorMain.Nodes.Count == 0 ||
+                previousSize.Width <= 0 ||
+                previousSize.Height <= 0 ||
+                newSize.Width <= 0 ||
+                newSize.Height <= 0)
+                return;
+
+            float offsetX = (float)((newSize.Width - previousSize.Width) / 2);
+            float offsetY = (float)((newSize.Height - previousSize.Height) / 2);
+            if (offsetX == 0 && offsetY == 0)
+                return;
+
+            STNodeEditorMain.MoveCanvas(
+                STNodeEditorMain.CanvasOffsetX + offsetX,
+                STNodeEditorMain.CanvasOffsetY + offsetY,
+                bAnimation: false,
+                CanvasMoveArgs.All);
         }
 
         private void PropertyEditorPanel_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
@@ -152,7 +215,8 @@ namespace ColorVision.Engine.FlowProcessing.Editor
                 return;
             }
 
-            StackPanel signPanel = InlineNodePropertyPanel.SignStackPanel;
+            StackPanel signPanel = NodePropertyPanel;
+            bool wasPropertyPanelVisible = PropertyEditorPanel.Visibility == Visibility.Visible;
             signPanel.Children.Clear();
 
             STNode? activeNode = STNodeEditorMain.ActiveNode;
@@ -185,7 +249,19 @@ namespace ColorVision.Engine.FlowProcessing.Editor
                 advancedOptions: FlowNodePropertyMetadataProvider.AdvancedOptions));
             signPanel.Children.Add(_generatedPropertyPanel);
             signPanel.Visibility = signPanel.Children.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
-            PropertyEditorPanel.Visibility = signPanel.Visibility;
+            if (signPanel.Visibility != Visibility.Visible)
+            {
+                PropertyEditorPanel.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            if (wasPropertyPanelVisible)
+            {
+                PropertyEditorPanel.Visibility = Visibility.Visible;
+                return;
+            }
+
+            PreparePropertyPanelForFirstRender();
         }
 
         public void HideNodePropertyPanel()
@@ -203,6 +279,29 @@ namespace ColorVision.Engine.FlowProcessing.Editor
                 PropertyEditorPanel.MaxHeight = Math.Min(PropertyPanelMaxHeight, availableHeight);
         }
 
+        private void PreparePropertyPanelForFirstRender()
+        {
+            UpdatePropertyPanelSizeLimit();
+            PreparePropertyPanelForFirstRender(
+                PropertyEditorPanel,
+                new System.Windows.Size(PropertyEditorPanel.MaxWidth, PropertyEditorPanel.MaxHeight),
+                panelSize => UpdatePropertyPanelPosition(panelSize, allowHidden: true));
+        }
+
+        internal static void PreparePropertyPanelForFirstRender(
+            FrameworkElement propertyPanel,
+            System.Windows.Size measureConstraint,
+            Action<System.Windows.Size> updatePosition)
+        {
+            ArgumentNullException.ThrowIfNull(propertyPanel);
+            ArgumentNullException.ThrowIfNull(updatePosition);
+
+            propertyPanel.Visibility = Visibility.Hidden;
+            propertyPanel.Measure(measureConstraint);
+            updatePosition(propertyPanel.DesiredSize);
+            propertyPanel.Visibility = Visibility.Visible;
+        }
+
         private void QueuePropertyPanelPositionUpdate()
         {
             if (_disposed || _propertyPanelPositionUpdatePending || PropertyEditorPanel.Visibility != Visibility.Visible)
@@ -212,22 +311,23 @@ namespace ColorVision.Engine.FlowProcessing.Editor
             _ = Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(() =>
             {
                 _propertyPanelPositionUpdatePending = false;
-                UpdatePropertyPanelPosition();
+                UpdatePropertyPanelPosition(
+                    new System.Windows.Size(PropertyEditorPanel.ActualWidth, PropertyEditorPanel.ActualHeight));
             }));
         }
 
-        private void UpdatePropertyPanelPosition()
+        private void UpdatePropertyPanelPosition(System.Windows.Size panelSize, bool allowHidden = false)
         {
             STNode? activeNode = STNodeEditorMain.ActiveNode;
             if (_disposed ||
-                PropertyEditorPanel.Visibility != Visibility.Visible ||
+                (PropertyEditorPanel.Visibility != Visibility.Visible &&
+                 (!allowHidden || PropertyEditorPanel.Visibility != Visibility.Hidden)) ||
                 activeNode == null ||
                 !activeNode.IsSelected)
                 return;
 
             System.Drawing.Rectangle nodeRectangle = STNodeEditorMain.CanvasToControl(activeNode.Rectangle);
             var nodeBounds = new Rect(nodeRectangle.X, nodeRectangle.Y, nodeRectangle.Width, nodeRectangle.Height);
-            var panelSize = new System.Windows.Size(PropertyEditorPanel.ActualWidth, PropertyEditorPanel.ActualHeight);
             var viewportSize = new System.Windows.Size(ActualWidth, ActualHeight);
             System.Windows.Point position = CalculatePropertyPanelPosition(
                 nodeBounds,
@@ -424,6 +524,7 @@ namespace ColorVision.Engine.FlowProcessing.Editor
             _disposed = true;
             ThemeManager.Current.CurrentUIThemeChanged -= ThemeChanged;
             SizeChanged -= FlowEditorCanvas_SizeChanged;
+            STNodeEditorMain.SizeChanged -= STNodeEditorMain_SizeChanged;
             PropertyEditorPanel.IsVisibleChanged -= PropertyEditorPanel_IsVisibleChanged;
             PropertyEditorPanel.SizeChanged -= PropertyEditorPanel_SizeChanged;
             STNodeEditorMain.ActiveChanged -= STNodeEditorMain_SelectionChanged;

@@ -1,4 +1,5 @@
 using FlowEngineLib;
+using FlowEngineLib.Start;
 using MQTTnet;
 using System.Reflection;
 
@@ -147,6 +148,40 @@ public class MQTTClientPoolTests
     }
 
     [Fact]
+    public async Task ConsecutiveOwnerHandoffReusesBrokerSubscriptionWithoutUnsubscribe()
+    {
+        string server = $"mqtt-pool-topic-handoff-{Guid.NewGuid():N}";
+        const int port = 1883;
+        const string userName = "test-user";
+        const string topic = "FLOW/CMD/S1";
+        var (client, proxy) = CreateTrackingClient(isConnected: true);
+        Guid outgoingOwner = Guid.NewGuid();
+        Guid incomingOwner = Guid.NewGuid();
+
+        try
+        {
+            MQTTClientPool.SetActiveEndpoint(server, port, userName);
+            Assert.True(MQTTClientPool.Register(client, server, port, userName));
+            Assert.True(await MQTTClientPool.TrySubscribeAsync(client, outgoingOwner, topic));
+            Assert.Equal(1, proxy.SubscribeCalls);
+
+            await MQTTClientPool.ReleaseOwnerTopicsAsync(client, outgoingOwner);
+            Assert.True(await MQTTClientPool.TrySubscribeAsync(client, incomingOwner, topic));
+
+            Assert.Equal(1, proxy.SubscribeCalls);
+            Assert.Equal(0, proxy.UnsubscribeCalls);
+
+            Assert.True(await MQTTClientPool.TryUnsubscribeAsync(client, incomingOwner, topic));
+            Assert.Equal(1, proxy.UnsubscribeCalls);
+        }
+        finally
+        {
+            MQTTClientPool.SetActiveEndpoint(server + "-new", port, userName);
+            MQTTClientPool.Release(client);
+        }
+    }
+
+    [Fact]
     public async Task CancelledSubscriptionDoesNotLeaveAnOwnerRegistration()
     {
         string server = $"mqtt-pool-cancelled-topic-{Guid.NewGuid():N}";
@@ -208,41 +243,113 @@ public class MQTTClientPoolTests
         Assert.True(proxy.LastSubscribeCancellationToken.CanBeCanceled);
     }
 
-    [Fact]
-    public async Task ConfigurationVersionOnlyChangesForARealDefaultChange()
+    public static TheoryData<Type> MqttStartNodeTypes => new()
     {
-        string server = $"mqtt-helper-config-{Guid.NewGuid():N}";
+        typeof(MQTTStartNode),
+        typeof(MQTTStartV5Node)
+    };
+
+    [Theory]
+    [MemberData(nameof(MqttStartNodeTypes))]
+    public async Task CurrentClientRemainsPublishableWhileAnotherTopicRestores(Type startNodeType)
+    {
+        string server = $"mqtt-start-publish-{Guid.NewGuid():N}";
         const int port = 1883;
         const string userName = "test-user";
-        const string password = "test-password";
-        long initialVersion = MQTTHelper.DefaultConfigurationVersion;
-
-        MQTTHelper.SetDefaultCfg(server, port, userName, password, false, null!);
-        long configuredVersion = MQTTHelper.DefaultConfigurationVersion;
-        Assert.Equal(initialVersion + 1, configuredVersion);
-
-        MQTTHelper.SetDefaultCfg(server, port, userName, password, false, null!);
-        Assert.Equal(configuredVersion, MQTTHelper.DefaultConfigurationVersion);
-
         var (client, _) = CreateTrackingClient(isConnected: true);
-        Assert.True(MQTTClientPool.Register(client, server, port, userName, password));
+
+        MQTTClientPool.SetActiveEndpoint(server, port, userName);
+        Assert.True(MQTTClientPool.Register(client, server, port, userName));
         MQTTClientPool.Release(client);
+
         var helper = new MQTTHelper();
         ResultData_MQTT result = await helper.CreateMQTTClientAndStart(
             server,
             port,
             userName,
-            password,
+            string.Empty,
             _ => { });
-
         Assert.Equal(1, result.ResultCode);
-        Assert.Equal(configuredVersion, helper.ConfigurationVersion);
-        Assert.True(helper.UsesCurrentDefaultConfiguration);
 
-        MQTTHelper.SetDefaultCfg(server, port, userName, password + "-new", false, null!);
-        Assert.Equal(configuredVersion + 1, MQTTHelper.DefaultConfigurationVersion);
-        Assert.False(helper.UsesCurrentDefaultConfiguration);
+        var startNode = (BaseStartNode)Activator.CreateInstance(startNodeType)!;
+        startNode.Create();
+        FieldInfo helperField = startNodeType.GetField("_MQTTHelper", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        MethodInfo hasCurrentClientMethod = startNodeType.GetMethod(
+            "HasCurrentMqttClient",
+            BindingFlags.Instance | BindingFlags.NonPublic)!;
+        helperField.SetValue(startNode, helper);
+        startNode.Ready = false;
+
+        Assert.False(startNode.IsExecutionReady);
+        Assert.True((bool)hasCurrentClientMethod.Invoke(startNode, [helper])!);
+
+        helperField.SetValue(startNode, null);
+        startNode.Dispose();
         await helper.DisconnectAsync_Client();
+        MQTTClientPool.SetActiveEndpoint(server + "-retired", port, userName);
+    }
+
+    [Theory]
+    [MemberData(nameof(MqttStartNodeTypes))]
+    public async Task ReadinessRechecksStateAfterWaitingForLifecycleLock(Type startNodeType)
+    {
+        string server = $"mqtt-start-ready-{Guid.NewGuid():N}";
+        const int port = 1883;
+        const string userName = "test-user";
+        var (client, proxy) = CreateTrackingClient(isConnected: true);
+
+        MQTTClientPool.SetActiveEndpoint(server, port, userName);
+        Assert.True(MQTTClientPool.Register(client, server, port, userName));
+        MQTTClientPool.Release(client);
+
+        var helper = new MQTTHelper();
+        ResultData_MQTT result = await helper.CreateMQTTClientAndStart(
+            server,
+            port,
+            userName,
+            string.Empty,
+            _ => { });
+        Assert.Equal(1, result.ResultCode);
+
+        var startNode = (BaseStartNode)Activator.CreateInstance(startNodeType)!;
+        startNode.Create();
+        FieldInfo helperField = startNodeType.GetField("_MQTTHelper", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        FieldInfo lifecycleLockField = startNodeType.GetField("mqttLifecycleLock", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        FieldInfo restoredTopicsField = startNodeType.GetField("restoredTopicSubscriptionVersion", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        FieldInfo restoredStartTopicField = startNodeType.GetField("restoredStartTopicVersion", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        MethodInfo beginSessionMethod = startNodeType.GetMethod("BeginMqttSession", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var lifecycleLock = (SemaphoreSlim)lifecycleLockField.GetValue(startNode)!;
+
+        helperField.SetValue(startNode, helper);
+        beginSessionMethod.Invoke(startNode, null);
+        await lifecycleLock.WaitAsync();
+        bool lifecycleLockHeldByTest = true;
+        try
+        {
+            Task<bool> readinessTask = startNode.EnsureReadyAsync();
+            await Task.Delay(20);
+            Assert.False(readinessTask.IsCompleted);
+
+            restoredTopicsField.SetValue(startNode, 0);
+            restoredStartTopicField.SetValue(startNode, 0L);
+            startNode.Ready = true;
+            lifecycleLock.Release();
+            lifecycleLockHeldByTest = false;
+
+            Assert.True(await readinessTask.WaitAsync(TimeSpan.FromSeconds(2)));
+            Assert.Equal(0, proxy.SubscribeCalls);
+        }
+        finally
+        {
+            if (lifecycleLockHeldByTest)
+            {
+                lifecycleLock.Release();
+            }
+            helperField.SetValue(startNode, null);
+            startNode.Dispose();
+            await helper.DisconnectAsync_Client();
+            MQTTClientPool.SetActiveEndpoint(server + "-retired", port, userName);
+        }
     }
 
     [Fact]

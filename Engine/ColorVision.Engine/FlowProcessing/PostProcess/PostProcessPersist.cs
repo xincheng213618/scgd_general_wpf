@@ -16,5 +16,11 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
         /// User-defined tag/label for this post-processor.
         /// </summary>
         public string Tag { get; set; }
+
+        /// <summary>
+        /// Determines whether a post-process failure is a warning or fails the run.
+        /// Missing values in older JSON files remain Warning.
+        /// </summary>
+        public PostProcessFailurePolicy FailurePolicy { get; set; } = PostProcessFailurePolicy.Warning;
     }
 }

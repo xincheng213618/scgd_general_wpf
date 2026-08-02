@@ -41,6 +41,7 @@ namespace ColorVision.Copilot
             string capabilityName,
             IReadOnlyDictionary<string, JsonElement>? arguments,
             CopilotAgentRequest request,
+            CopilotExecutionScope executionScope,
             CancellationToken cancellationToken);
     }
 
@@ -50,7 +51,41 @@ namespace ColorVision.Copilot
             string capabilityName,
             IReadOnlyDictionary<string, JsonElement>? arguments,
             CopilotAgentRequest request,
+            CopilotExecutionScope executionScope,
             CancellationToken cancellationToken);
+    }
+
+    internal static class CopilotCapabilityRevisionAuthorization
+    {
+        public static bool TryValidate(
+            CopilotExecutionScope executionScope,
+            Func<long> currentRevisionProvider,
+            out string rejectionReason)
+        {
+            ArgumentNullException.ThrowIfNull(executionScope);
+            ArgumentNullException.ThrowIfNull(currentRevisionProvider);
+
+            long currentRevision;
+            try
+            {
+                currentRevision = Math.Max(0, currentRevisionProvider());
+            }
+            catch
+            {
+                rejectionReason = "The current Copilot capability revision could not be verified before execution.";
+                return false;
+            }
+
+            if (currentRevision == executionScope.CapabilityRevision)
+            {
+                rejectionReason = string.Empty;
+                return true;
+            }
+
+            rejectionReason =
+                $"The Copilot capability catalog changed after approval (revision {executionScope.CapabilityRevision} -> {currentRevision}). Re-plan the tool call and request a fresh approval.";
+            return false;
+        }
     }
 
     internal static class CopilotApplicationCapabilityInvocation
@@ -65,6 +100,9 @@ namespace ColorVision.Copilot
         {
             ArgumentNullException.ThrowIfNull(invoker);
             ArgumentNullException.ThrowIfNull(request);
+            var activeInvocation = CopilotToolInvocationContext.Current;
+            var executionScope = activeInvocation?.ExecutionScope
+                ?? CopilotExecutionScope.ForAgentRequest(request);
             if (!frameworkApprovalGranted)
             {
                 if (invoker is ICopilotScopedApplicationCapabilityInvoker scopedInvoker)
@@ -73,6 +111,7 @@ namespace ColorVision.Copilot
                         capabilityName,
                         arguments,
                         request,
+                        executionScope,
                         cancellationToken);
                 }
 
@@ -83,8 +122,29 @@ namespace ColorVision.Copilot
                     cancellationToken);
             }
 
+            if (activeInvocation == null
+                || !activeInvocation.FrameworkApprovalGranted
+                || !ReferenceEquals(activeInvocation.AgentRequest, request)
+                || !executionScope.HasToolCallBinding)
+            {
+                return Task.FromResult(new CopilotApplicationCapabilityCallResult
+                {
+                    Success = false,
+                    ErrorCode = "approved_execution_context_missing",
+                    FailureKind = CopilotToolFailureKind.Authorization,
+                    Content = "The approved application capability call is not bound to the active ColorVision tool invocation.",
+                });
+            }
+
             if (invoker is ICopilotApprovedApplicationCapabilityInvoker approvedInvoker)
-                return approvedInvoker.InvokeApprovedAsync(capabilityName, arguments, request, cancellationToken);
+            {
+                return approvedInvoker.InvokeApprovedAsync(
+                    capabilityName,
+                    arguments,
+                    request,
+                    executionScope,
+                    cancellationToken);
+            }
 
             return Task.FromResult(new CopilotApplicationCapabilityCallResult
             {

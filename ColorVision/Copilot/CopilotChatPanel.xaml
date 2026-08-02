@@ -761,6 +761,26 @@
                                 HorizontalAlignment="Left"
                                 Background="Transparent"
                                 BorderBrush="Transparent"
+                                Command="{Binding OpenBranchOriginCommand}"
+                                CommandParameter="{Binding SelectedConversation}"
+                                Content="↩ 返回源会话"
+                                Foreground="{DynamicResource GlobalTextBrush}"
+                                FontSize="10"
+                                Opacity="0.62"
+                                ToolTip="返回创建此分支的直接源会话；如果中间分支已删除，则返回仍存在的根会话。"
+                                Visibility="{Binding SelectedConversation.HasBranchOrigin, Converter={StaticResource bool2VisibilityConverter}}" />
+                        <TextBlock Margin="0,3,0,0"
+                                   FontSize="10"
+                                   Foreground="{StaticResource CopilotControlBrush}"
+                                   Text="{Binding SelectedConversation.GoalDisplayText}"
+                                   TextTrimming="CharacterEllipsis"
+                                   ToolTip="{Binding SelectedConversation.GoalToolTip}"
+                                   Visibility="{Binding SelectedConversation.HasGoal, Converter={StaticResource bool2VisibilityConverter}}" />
+                        <Button Margin="0,3,0,0"
+                                Padding="0"
+                                HorizontalAlignment="Left"
+                                Background="Transparent"
+                                BorderBrush="Transparent"
                                 Command="{Binding OpenAgentRunNoticeCommand}"
                                 Foreground="{DynamicResource GlobalTextBrush}"
                                 FontSize="10"
@@ -768,6 +788,18 @@
                                 Content="{Binding AgentRunNoticeText}"
                                 ToolTip="打开或查看 Agent 任务状态"
                                 Visibility="{Binding HasAgentRunNotice, Converter={StaticResource bool2VisibilityConverter}}" />
+                        <Button Margin="0,3,0,0"
+                                Padding="0"
+                                HorizontalAlignment="Left"
+                                Background="Transparent"
+                                BorderBrush="Transparent"
+                                Command="{Binding OpenCompletionNoticeCommand}"
+                                Foreground="{StaticResource CopilotControlBrush}"
+                                FontSize="10"
+                                Opacity="0.72"
+                                Content="{Binding CompletionNoticeText}"
+                                ToolTip="打开最新的子代理结果或后台命令输出"
+                                Visibility="{Binding HasCompletionNotice, Converter={StaticResource bool2VisibilityConverter}}" />
                         <TextBlock Margin="0,3,0,0"
                                    FontSize="10"
                                    Foreground="{StaticResource CopilotControlWarningBrush}"
@@ -812,6 +844,44 @@
                                        Text="&#xE8A7;" />
                         </Button>
 
+                        <Button x:Name="ConversationBranchFamilyButton"
+                                Margin="0,0,6,0"
+                                Padding="6,2"
+                                VerticalAlignment="Center"
+                                Background="Transparent"
+                                BorderBrush="{DynamicResource ButtonBorderBrush}"
+                                Click="ConversationBranchFamilyButton_Click"
+                                Content="{Binding ConversationBranchFamilyLabel}"
+                                FontSize="10"
+                                Foreground="{DynamicResource GlobalTextBrush}"
+                                IsEnabled="{Binding CanSwitchConversation}"
+                                Opacity="0.72"
+                                ToolTip="打开当前根会话及其全部分支；会话切换不会继承其他分支的运行状态、授权或 checkpoint。"
+                                Visibility="{Binding HasConversationBranchFamily, Converter={StaticResource bool2VisibilityConverter}}">
+                            <Button.ContextMenu>
+                                <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}"
+                                             ItemsSource="{Binding ConversationBranchFamily}">
+                                    <ContextMenu.ItemContainerStyle>
+                                        <Style TargetType="{x:Type MenuItem}">
+                                            <Setter Property="Header" Value="{Binding DisplayLabel}" />
+                                            <Setter Property="IsCheckable" Value="True" />
+                                            <Setter Property="IsChecked" Value="{Binding IsCurrent, Mode=OneWay}" />
+                                            <EventSetter Event="Click" Handler="ConversationBranchFamilyMenuItem_Click" />
+                                        </Style>
+                                    </ContextMenu.ItemContainerStyle>
+                                </ContextMenu>
+                            </Button.ContextMenu>
+                        </Button>
+
+                        <Button Margin="0,0,6,0"
+                                Style="{StaticResource CopilotIconButtonStyle}"
+                                Command="{Binding OpenConversationFindCommand}"
+                                ToolTip="查找当前会话 (Ctrl+F)">
+                            <TextBlock FontFamily="Segoe MDL2 Assets"
+                                       FontSize="14"
+                                       Text="&#xE721;" />
+                        </Button>
+
                         <Button Margin="0,0,6,0"
                                 Style="{StaticResource CopilotIconButtonStyle}"
                                 Command="{Binding NewChatCommand}"
@@ -828,6 +898,7 @@
 
             <Grid Grid.Row="1">
                 <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
@@ -1005,8 +1076,72 @@
                     </StackPanel>
                 </Border>
 
+                <Border Grid.Row="1"
+                        Margin="18,8,18,0"
+                        Padding="8,5"
+                        Style="{StaticResource CopilotInsetBorderStyle}"
+                        BorderThickness="1"
+                        CornerRadius="7"
+                        Visibility="{Binding IsConversationFindOpen, Converter={StaticResource bool2VisibilityConverter}}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock VerticalAlignment="Center"
+                                   FontFamily="Segoe MDL2 Assets"
+                                   FontSize="12"
+                                   Foreground="{DynamicResource GlobalTextBrush}"
+                                   Opacity="0.5"
+                                   Text="&#xE721;" />
+                        <TextBox x:Name="ConversationFindTextBox"
+                                 Grid.Column="1"
+                                 Margin="7,0,8,0"
+                                 Padding="0"
+                                 VerticalContentAlignment="Center"
+                                 Background="Transparent"
+                                 BorderThickness="0"
+                                 FontSize="11"
+                                 Foreground="{DynamicResource GlobalTextBrush}"
+                                 MaxLength="256"
+                                 PreviewKeyDown="ConversationFindTextBox_PreviewKeyDown"
+                                 Text="{Binding ConversationFindText, UpdateSourceTrigger=PropertyChanged}"
+                                 ToolTip="查找当前会话可见内容；Enter 下一个，Shift+Enter 上一个，Esc 关闭" />
+                        <TextBlock Grid.Column="2"
+                                   MinWidth="52"
+                                   Margin="0,0,6,0"
+                                   VerticalAlignment="Center"
+                                   FontSize="10"
+                                   Foreground="{DynamicResource GlobalTextBrush}"
+                                   Opacity="0.58"
+                                   Text="{Binding ConversationFindStatusText}"
+                                   TextAlignment="Right" />
+                        <Button Grid.Column="3"
+                                Margin="0,0,3,0"
+                                Style="{StaticResource AttachmentCloseButtonStyle}"
+                                Command="{Binding FindPreviousConversationMatchCommand}"
+                                Content="↑"
+                                ToolTip="上一个匹配项 (Shift+Enter)" />
+                        <Button Grid.Column="4"
+                                Margin="0,0,3,0"
+                                Style="{StaticResource AttachmentCloseButtonStyle}"
+                                Command="{Binding FindNextConversationMatchCommand}"
+                                Content="↓"
+                                ToolTip="下一个匹配项 (Enter)" />
+                        <Button Grid.Column="5"
+                                Style="{StaticResource AttachmentCloseButtonStyle}"
+                                Command="{Binding CloseConversationFindCommand}"
+                                Content="×"
+                                ToolTip="关闭查找 (Esc)" />
+                    </Grid>
+                </Border>
+
                 <TextBlock x:Name="EmptyStateTextBlock"
-                           Grid.Row="1"
+                           Grid.Row="2"
                            HorizontalAlignment="Center"
                            VerticalAlignment="Center"
                            MaxWidth="320"
@@ -1018,7 +1153,7 @@
                            Visibility="Collapsed" />
 
                 <StackPanel x:Name="CompactHistoryPanel"
-                            Grid.Row="1"
+                            Grid.Row="2"
                             MaxWidth="620"
                             Margin="24,34,24,18"
                             HorizontalAlignment="Stretch"
@@ -1088,8 +1223,8 @@
                 </StackPanel>
 
                 <ListBox x:Name="MessagesListBox"
-                         Grid.Row="1"
-                         Padding="16,12,16,12"
+                         Grid.Row="2"
+                         Padding="{Binding MessageListPadding}"
                          Background="Transparent"
                          BorderThickness="0"
                          HorizontalContentAlignment="Stretch"
@@ -1121,8 +1256,33 @@
                             <Setter Property="Template">
                                 <Setter.Value>
                                     <ControlTemplate TargetType="{x:Type ListBoxItem}">
-                                        <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+                                        <Border x:Name="ConversationFindHighlight"
+                                                Padding="0"
+                                                Background="Transparent"
+                                                BorderBrush="Transparent"
+                                                BorderThickness="0"
+                                                CornerRadius="7">
+                                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding IsConversationFindMatch}" Value="True">
+                                                <Setter TargetName="ConversationFindHighlight"
+                                                        Property="Background"
+                                                        Value="{DynamicResource GlobalBorderBrush1}" />
+                                                <Setter TargetName="ConversationFindHighlight"
+                                                        Property="Padding"
+                                                        Value="4" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsCurrentConversationFindMatch}" Value="True">
+                                                <Setter TargetName="ConversationFindHighlight"
+                                                        Property="BorderBrush"
+                                                        Value="{StaticResource CopilotControlBrush}" />
+                                                <Setter TargetName="ConversationFindHighlight"
+                                                        Property="BorderThickness"
+                                                        Value="1" />
+                                            </DataTrigger>
+                                        </ControlTemplate.Triggers>
                                     </ControlTemplate>
                                 </Setter.Value>
                             </Setter>
@@ -1130,10 +1290,10 @@
                     </ListBox.ItemContainerStyle>
                     <ListBox.ItemTemplate>
                             <DataTemplate DataType="{x:Type local:CopilotChatMessage}">
-                                <Grid Margin="0,0,0,12">
+                                <Grid Margin="{Binding DataContext.MessageItemMargin, Source={x:Reference Root}}">
                                     <Border x:Name="UserBubble"
                                             MaxWidth="680"
-                                            Padding="10,5"
+                                            Padding="{Binding DataContext.UserMessagePadding, Source={x:Reference Root}}"
                                             HorizontalAlignment="Right"
                                             Background="{DynamicResource GlobalBorderBrush1}"
                                             BorderBrush="{DynamicResource ButtonBorderBrush}"
@@ -1188,7 +1348,8 @@
                                                            VerticalAlignment="Center"
                                                            FontSize="10"
                                                            Style="{StaticResource UserMessageMetaTextStyle}"
-                                                           Text="{Binding TimeLabel}" />
+                                                           Text="{Binding TimeLabel}"
+                                                           Visibility="{Binding DataContext.ShowMessageTimestamps, Source={x:Reference Root}, Converter={StaticResource bool2VisibilityConverter}}" />
                                                 <StackPanel DockPanel.Dock="Right"
                                                             HorizontalAlignment="Right"
                                                             Orientation="Horizontal">
@@ -1332,6 +1493,53 @@
                                                           Visibility="{Binding HasAgentTraceEntries, Converter={StaticResource bool2VisibilityConverter}}" />
                                         </StackPanel>
 
+                                        <Border Margin="0,8,0,10"
+                                                Padding="12,10"
+                                                Background="{DynamicResource GlobalBorderBrush}"
+                                                BorderBrush="{DynamicResource PrimaryBrush}"
+                                                BorderThickness="1"
+                                                CornerRadius="8"
+                                                Visibility="{Binding HasUserQuestion, Converter={StaticResource bool2VisibilityConverter}}">
+                                            <StackPanel>
+                                                <TextBlock FontSize="10"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="{DynamicResource PrimaryBrush}"
+                                                           Text="{Binding UserQuestion.Header}" />
+                                                <TextBlock Margin="0,4,0,0"
+                                                           FontSize="12"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="{DynamicResource GlobalTextBrush}"
+                                                           Text="{Binding UserQuestion.Question}"
+                                                           TextWrapping="Wrap" />
+                                                <ItemsControl Margin="0,8,0,0"
+                                                              ItemsSource="{Binding UserQuestion.Options}"
+                                                              Visibility="{Binding HasPendingUserQuestion, Converter={StaticResource bool2VisibilityConverter}}">
+                                                    <ItemsControl.ItemsPanel>
+                                                        <ItemsPanelTemplate>
+                                                            <WrapPanel />
+                                                        </ItemsPanelTemplate>
+                                                    </ItemsControl.ItemsPanel>
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <Button Margin="0,0,6,6"
+                                                                    Padding="10,4"
+                                                                    Command="{Binding DataContext.AnswerUserQuestionOptionCommand, Source={x:Reference Root}}"
+                                                                    CommandParameter="{Binding}"
+                                                                    Content="{Binding Label}"
+                                                                    Style="{StaticResource MessageActionButtonStyle}"
+                                                                    ToolTip="{Binding Description}" />
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                                <TextBlock Margin="0,2,0,0"
+                                                           FontSize="10"
+                                                           Foreground="{DynamicResource GlobalTextBrush}"
+                                                           Opacity="0.62"
+                                                           Text="{Binding UserQuestionStatusText}"
+                                                           TextWrapping="Wrap" />
+                                            </StackPanel>
+                                        </Border>
+
                                         <Border Margin="0,0,0,10"
                                                 Padding="10,8"
                                                 Background="{DynamicResource GlobalBorderBrush}"
@@ -1342,15 +1550,32 @@
                                                 Visibility="{Binding HasAgentTaskState, Converter={StaticResource bool2VisibilityConverter}}">
                                             <StackPanel>
                                                 <DockPanel LastChildFill="True">
-                                                    <Button DockPanel.Dock="Right"
-                                                            Margin="8,0,0,0"
-                                                            Padding="10,3"
-                                                            Command="{Binding DataContext.ContinueAgentTasksCommand, Source={x:Reference Root}}"
-                                                            CommandParameter="{Binding}"
-                                                            Content="{Binding AgentRecoveryActionLabel}"
-                                                            Style="{StaticResource MessageActionButtonStyle}"
-                                                            ToolTip="{Binding AgentRecoveryToolTip}"
-                                                            Visibility="{Binding HasRecoverableAgentTasks, Converter={StaticResource bool2VisibilityConverter}}" />
+                                                    <StackPanel DockPanel.Dock="Right"
+                                                                Margin="8,0,0,0"
+                                                                Orientation="Horizontal">
+                                                        <Button Padding="10,3"
+                                                                Command="{Binding DataContext.ContinueAgentTasksCommand, Source={x:Reference Root}}"
+                                                                CommandParameter="{Binding}"
+                                                                Content="{Binding AgentRecoveryActionLabel}"
+                                                                Style="{StaticResource MessageActionButtonStyle}"
+                                                                ToolTip="{Binding AgentRecoveryToolTip}"
+                                                                Visibility="{Binding HasRecoverableAgentTasks, Converter={StaticResource bool2VisibilityConverter}}" />
+                                                        <Button Padding="10,3"
+                                                                Command="{Binding DataContext.ContinuePlanningCommand, Source={x:Reference Root}}"
+                                                                CommandParameter="{Binding}"
+                                                                Content="继续规划"
+                                                                Style="{StaticResource MessageActionButtonStyle}"
+                                                                ToolTip="切回计划模式，在输入框中补充反馈后生成修订计划"
+                                                                Visibility="{Binding HasCompletedPlan, Converter={StaticResource bool2VisibilityConverter}}" />
+                                                        <Button Margin="0"
+                                                                Padding="10,3"
+                                                                Command="{Binding DataContext.ExecuteApprovedPlanCommand, Source={x:Reference Root}}"
+                                                                CommandParameter="{Binding}"
+                                                                Content="执行计划"
+                                                                Style="{StaticResource MessageActionButtonStyle}"
+                                                                ToolTip="批准这份计划并作为新的执行任务开始；受保护操作仍按当前权限策略处理"
+                                                                Visibility="{Binding HasCompletedPlan, Converter={StaticResource bool2VisibilityConverter}}" />
+                                                    </StackPanel>
                                                     <StackPanel Orientation="Horizontal">
                                                         <TextBlock VerticalAlignment="Center"
                                                                    FontSize="12"
@@ -1427,7 +1652,7 @@
                                         </Border>
 
                                         <StackPanel x:Name="AssistantActionsPanel"
-                                                    Margin="0,10,0,0"
+                                                    Margin="{Binding DataContext.AssistantActionsMargin, Source={x:Reference Root}}"
                                                     Orientation="Horizontal">
                                             <StackPanel.Style>
                                                 <Style TargetType="StackPanel">
@@ -1439,6 +1664,13 @@
                                                     </Style.Triggers>
                                                 </Style>
                                             </StackPanel.Style>
+                                            <TextBlock Margin="0,0,8,0"
+                                                       VerticalAlignment="Center"
+                                                       FontSize="10"
+                                                       Foreground="{DynamicResource GlobalTextBrush}"
+                                                       Opacity="0.52"
+                                                       Text="{Binding TimeLabel}"
+                                                       Visibility="{Binding DataContext.ShowMessageTimestamps, Source={x:Reference Root}, Converter={StaticResource bool2VisibilityConverter}}" />
                                             <Button Style="{StaticResource MessageActionButtonStyle}"
                                                     Command="{Binding DataContext.CopyMessageCommand, Source={x:Reference Root}}"
                                                     CommandParameter="{Binding}"
@@ -1478,7 +1710,7 @@
                 </ListBox>
 
                 <Button x:Name="ScrollToLatestButton"
-                        Grid.Row="1"
+                        Grid.Row="2"
                         Panel.ZIndex="10"
                         MinHeight="30"
                         Margin="0,0,0,14"
@@ -1511,11 +1743,10 @@
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
 
                     <Border x:Name="FileDropOverlay"
-                            Grid.RowSpan="7"
+                            Grid.RowSpan="6"
                             Panel.ZIndex="20"
                             Background="{DynamicResource GlobalBackground}"
                             BorderBrush="{DynamicResource PrimaryBrush}"
@@ -1616,83 +1847,6 @@
                     </Border>
 
                     <Border Grid.Row="1"
-                            MaxHeight="300"
-                            Margin="0,0,0,8"
-                            Padding="11,9"
-                            Style="{StaticResource CopilotInsetBorderStyle}"
-                            BorderBrush="{DynamicResource PrimaryBrush}"
-                            BorderThickness="1"
-                            CornerRadius="10"
-                            Visibility="{Binding HasSideQuestion, Converter={StaticResource bool2VisibilityConverter}}">
-                        <Grid>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto" />
-                                <RowDefinition Height="Auto" />
-                                <RowDefinition Height="Auto" />
-                                <RowDefinition Height="Auto" />
-                            </Grid.RowDefinitions>
-                            <DockPanel>
-                                <StackPanel DockPanel.Dock="Right"
-                                            Margin="10,0,0,0"
-                                            Orientation="Horizontal">
-                                    <Button Width="24"
-                                            Height="24"
-                                            Padding="0"
-                                            Command="{Binding CancelSideQuestionCommand}"
-                                            Content="■"
-                                            FontSize="9"
-                                            Style="{StaticResource AttachmentCloseButtonStyle}"
-                                            Visibility="{Binding IsSideQuestionRunning, Converter={StaticResource bool2VisibilityConverter}}"
-                                            ToolTip="取消旁路提问；主 Agent 任务不会停止" />
-                                    <Button Width="24"
-                                            Height="24"
-                                            Padding="0"
-                                            Command="{Binding DismissSideQuestionCommand}"
-                                            Content="×"
-                                            Style="{StaticResource AttachmentCloseButtonStyle}"
-                                            Visibility="{Binding CanDismissSideQuestion, Converter={StaticResource bool2VisibilityConverter}}"
-                                            ToolTip="关闭旁路回答" />
-                                </StackPanel>
-                                <StackPanel>
-                                    <TextBlock FontSize="11"
-                                               FontWeight="SemiBold"
-                                               Foreground="{DynamicResource PrimaryBrush}"
-                                               Text="/btw · 旁路提问" />
-                                    <TextBlock Margin="0,2,0,0"
-                                               FontSize="9"
-                                               Opacity="0.58"
-                                               Text="{Binding SideQuestionStatusText}"
-                                               TextWrapping="Wrap" />
-                                </StackPanel>
-                            </DockPanel>
-                            <Border Grid.Row="1"
-                                    Margin="0,7,0,0"
-                                    Padding="8,5"
-                                    Background="{DynamicResource GlobalBorderBrush1}"
-                                    CornerRadius="6">
-                                <TextBlock FontSize="11"
-                                           FontStyle="Italic"
-                                           Opacity="0.76"
-                                           Text="{Binding SideQuestionPrompt}"
-                                           TextTrimming="CharacterEllipsis"
-                                           ToolTip="{Binding SideQuestionPrompt}" />
-                            </Border>
-                            <ProgressBar Grid.Row="2"
-                                         Height="2"
-                                         Margin="0,7,0,0"
-                                         IsIndeterminate="True"
-                                         Visibility="{Binding IsSideQuestionRunning, Converter={StaticResource bool2VisibilityConverter}}" />
-                            <ScrollViewer Grid.Row="3"
-                                          MaxHeight="190"
-                                          Margin="0,8,0,0"
-                                          VerticalScrollBarVisibility="Auto"
-                                          Visibility="{Binding HasSideQuestionAnswer, Converter={StaticResource bool2VisibilityConverter}}">
-                                <local:CopilotMarkdownView Markdown="{Binding SideQuestionAnswer, Mode=OneWay}" />
-                            </ScrollViewer>
-                        </Grid>
-                    </Border>
-
-                    <Border Grid.Row="2"
                             MaxHeight="150"
                             Margin="0,0,0,6"
                             Padding="9,7"
@@ -1711,7 +1865,7 @@
                                            VerticalAlignment="Center"
                                            FontSize="10"
                                            Opacity="0.54"
-                                           Text="Enter 调整当前任务 · Tab 排到下一轮" />
+                                           Text="{Binding FollowUpQueueHintText}" />
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock VerticalAlignment="Center"
                                                FontSize="11"
@@ -1762,8 +1916,18 @@
                                                     <StackPanel Grid.Column="2"
                                                                 Margin="8,0,0,0"
                                                                 Orientation="Horizontal">
+                                                        <Button Width="30"
+                                                                Height="22"
+                                                                Padding="0"
+                                                                Command="{Binding DataContext.SendQueuedFollowUpNowCommand, Source={x:Reference Root}}"
+                                                                CommandParameter="{Binding}"
+                                                                Content="立即"
+                                                                FontSize="9"
+                                                                Style="{StaticResource AttachmentCloseButtonStyle}"
+                                                                ToolTip="取消当前轮，把这条提升为下一轮立即执行" />
                                                         <Button Width="22"
                                                                 Height="22"
+                                                                Margin="4,0,0,0"
                                                                 Padding="0"
                                                                 Command="{Binding DataContext.MoveQueuedFollowUpUpCommand, Source={x:Reference Root}}"
                                                                 CommandParameter="{Binding}"
@@ -1808,7 +1972,7 @@
                         </Grid>
                     </Border>
 
-                    <StackPanel Grid.Row="3" Margin="0,0,0,6"
+                    <StackPanel Grid.Row="2" Margin="0,0,0,6"
                                 Visibility="{Binding HasComposerAttachmentItems, Converter={StaticResource bool2VisibilityConverter}}">
                         <ScrollViewer x:Name="AttachmentScrollViewer"
                                       HorizontalScrollBarVisibility="Auto"
@@ -1912,7 +2076,109 @@
                         </ScrollViewer>
                     </StackPanel>
 
-                    <Border Grid.Row="4"
+                    <Border Grid.Row="3"
+                            Margin="0,0,0,6"
+                            Style="{StaticResource CopilotInsetBorderStyle}"
+                            BorderThickness="1"
+                            CornerRadius="7"
+                            Visibility="{Binding HasPromptHistoryPrefixCompletion, Converter={StaticResource bool2VisibilityConverter}}">
+                        <Button Padding="10,7"
+                                Command="{Binding AcceptPromptHistoryPrefixCompletionCommand}"
+                                Click="PromptHistoryPrefixCompletionButton_Click"
+                                Style="{StaticResource ComposerPopoverButtonStyle}"
+                                ToolTip="恢复这条当前会话中的历史请求，不会自动发送">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock VerticalAlignment="Center"
+                                           FontSize="9"
+                                           FontWeight="SemiBold"
+                                           Opacity="0.58"
+                                           Text="历史补全" />
+                                <TextBlock Grid.Column="1"
+                                           Margin="10,0,0,0"
+                                           VerticalAlignment="Center"
+                                           FontSize="11"
+                                           Text="{Binding PromptHistoryPrefixCompletionText}"
+                                           TextTrimming="CharacterEllipsis"
+                                           ToolTip="{Binding PromptHistoryPrefixCompletionText}" />
+                                <TextBlock Grid.Column="2"
+                                           Margin="12,0,0,0"
+                                           VerticalAlignment="Center"
+                                           FontSize="9"
+                                           Opacity="0.52"
+                                           Text="→ 接受" />
+                            </Grid>
+                        </Button>
+                    </Border>
+
+                    <Border Grid.Row="3"
+                            MaxHeight="260"
+                            Margin="0,0,0,6"
+                            Style="{StaticResource CopilotInsetBorderStyle}"
+                            BorderBrush="{DynamicResource PrimaryBrush}"
+                            BorderThickness="1"
+                            CornerRadius="9"
+                            Visibility="{Binding IsPromptHistorySearchOpen, Converter={StaticResource bool2VisibilityConverter}}">
+                        <DockPanel LastChildFill="True">
+                            <DockPanel DockPanel.Dock="Top" Margin="10,7,10,4">
+                                <TextBlock DockPanel.Dock="Right"
+                                           VerticalAlignment="Center"
+                                           FontSize="9"
+                                           Opacity="0.48"
+                                           Text="↑↓ 选择 · Enter/→ 恢复 · Ctrl+S 范围 · Esc 关闭" />
+                                <TextBlock VerticalAlignment="Center"
+                                           FontSize="10"
+                                           FontWeight="SemiBold"
+                                           Opacity="0.68"
+                                           Text="{Binding PromptHistorySearchHeader}" />
+                            </DockPanel>
+                            <TextBlock DockPanel.Dock="Top"
+                                       Margin="10,3,10,7"
+                                       FontSize="9"
+                                       Opacity="0.54"
+                                       Text="{Binding PromptHistorySearchStatusText}"
+                                       TextWrapping="Wrap" />
+                            <ListBox x:Name="PromptHistorySearchListBox"
+                                     Background="Transparent"
+                                     BorderThickness="0"
+                                     ItemContainerStyle="{StaticResource ComposerPopoverListBoxItemStyle}"
+                                     ItemsSource="{Binding PromptHistorySearchResults}"
+                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                     ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                     SelectedItem="{Binding SelectedPromptHistorySearchResult, Mode=TwoWay}">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Button Padding="10,7"
+                                                Command="{Binding DataContext.SelectPromptHistorySearchResultCommand, Source={x:Reference Root}}"
+                                                CommandParameter="{Binding}"
+                                                Click="PromptHistorySearchResultButton_Click"
+                                                Style="{StaticResource ComposerPopoverButtonStyle}"
+                                                ToolTip="恢复到输入框，不会自动发送">
+                                            <StackPanel MaxWidth="760">
+                                                <TextBlock FontSize="11"
+                                                           Text="{Binding Preview}"
+                                                           TextTrimming="CharacterEllipsis"
+                                                           TextWrapping="NoWrap" />
+                                                <TextBlock Margin="0,3,0,0"
+                                                           FontSize="9"
+                                                           Opacity="0.52"
+                                                           Text="{Binding SourceSummary}"
+                                                           TextTrimming="CharacterEllipsis"
+                                                           TextWrapping="NoWrap"
+                                                           Visibility="{Binding HasSourceSummary, Converter={StaticResource bool2VisibilityConverter}}" />
+                                            </StackPanel>
+                                        </Button>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </DockPanel>
+                    </Border>
+
+                    <Border Grid.Row="3"
                             MaxHeight="260"
                             Margin="0,0,0,6"
                             Style="{StaticResource CopilotInsetBorderStyle}"
@@ -1926,7 +2192,7 @@
                                            VerticalAlignment="Center"
                                            FontSize="9"
                                            Opacity="0.48"
-                                           Text="↑↓ 选择 · Enter 关联 · Esc 关闭" />
+                                           Text="↑↓ 选择 · Enter/→ 关联 · Esc 关闭" />
                                 <TextBlock VerticalAlignment="Center"
                                            FontSize="10"
                                            FontWeight="SemiBold"
@@ -1994,23 +2260,42 @@
                         </DockPanel>
                     </Border>
 
-                    <Border Grid.Row="4"
+                    <Border Grid.Row="3"
                             MaxHeight="190"
                             Margin="0,0,0,6"
                             Style="{StaticResource CopilotInsetBorderStyle}"
                             BorderThickness="1"
                             CornerRadius="7"
                             Visibility="{Binding HasLocalCommandSuggestions, Converter={StaticResource bool2VisibilityConverter}}">
-                        <ScrollViewer VerticalScrollBarVisibility="Auto">
-                            <ItemsControl ItemsSource="{Binding LocalCommandSuggestions}">
-                                <ItemsControl.ItemTemplate>
+                        <DockPanel LastChildFill="True">
+                            <DockPanel DockPanel.Dock="Top" Margin="10,6,10,3">
+                                <TextBlock DockPanel.Dock="Right"
+                                           VerticalAlignment="Center"
+                                           FontSize="9"
+                                           Opacity="0.48"
+                                           Text="↑↓ 选择 · Tab/→ 补全 · Enter 执行" />
+                                <TextBlock VerticalAlignment="Center"
+                                           FontSize="10"
+                                           FontWeight="SemiBold"
+                                           Opacity="0.68"
+                                           Text="{Binding LocalCommandSuggestionHeader}" />
+                            </DockPanel>
+                            <ListBox x:Name="LocalCommandSuggestionListBox"
+                                     Background="Transparent"
+                                     BorderThickness="0"
+                                     ItemContainerStyle="{StaticResource ComposerPopoverListBoxItemStyle}"
+                                     ItemsSource="{Binding LocalCommandSuggestions}"
+                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                     ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                     SelectedIndex="{Binding SelectedLocalCommandSuggestionIndex, Mode=TwoWay}">
+                                <ListBox.ItemTemplate>
                                     <DataTemplate>
                                         <Button Padding="10,6"
                                                 Style="{StaticResource ComposerPopoverButtonStyle}"
                                                 Command="{Binding DataContext.CompleteLocalCommandCommand, Source={x:Reference Root}}"
                                                 CommandParameter="{Binding}"
                                                 Click="LocalCommandSuggestionButton_Click"
-                                                ToolTip="点击或使用 Tab 补全；Enter 执行">
+                                                ToolTip="点击，或用 ↑↓ 选择后按 Tab/→ 补全；Enter 在参数完整时执行">
                                             <Grid>
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="Auto" />
@@ -2027,16 +2312,16 @@
                                                 <TextBlock Grid.Column="2"
                                                            Margin="14,0,0,0"
                                                            Opacity="0.48"
-                                                           Text="Tab 补全" />
+                                                           Text="Tab/→ 补全" />
                                             </Grid>
                                         </Button>
                                     </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </ScrollViewer>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </DockPanel>
                     </Border>
 
-                    <Grid Grid.Row="5"
+                    <Grid Grid.Row="4"
                           MinHeight="24">
                         <TextBlock Padding="0,2"
                                    Foreground="{DynamicResource GlobalTextBrush}"
@@ -2073,12 +2358,12 @@
                                  PreviewKeyDown="PromptTextBox_PreviewKeyDown"
                                  Text="{Binding InputText, UpdateSourceTrigger=PropertyChanged}"
                                  TextWrapping="Wrap"
-                                 ToolTip="输入为空时按 ↑/↓ 浏览本会话的请求历史"
+                                 ToolTip="{Binding ComposerInputToolTip}"
                                  VerticalContentAlignment="Top"
                                  VerticalScrollBarVisibility="Auto" />
                     </Grid>
 
-                    <Grid x:Name="ComposerFooterGrid" Grid.Row="6" Margin="0,2,0,0">
+                    <Grid x:Name="ComposerFooterGrid" Grid.Row="5" Margin="0,2,0,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
@@ -2142,12 +2427,12 @@
                                               Command="{Binding SetComposerAccessModeCommand}"
                                               CommandParameter="{x:Static local:CopilotAgentAccessMode.ConfirmProtectedActions}"
                                               ToolTip="受保护操作执行前逐次确认。" />
-                                    <MenuItem Header="临时自动批准（仅下一任务/本任务）"
+                                    <MenuItem Header="临时自动复核（仅下一任务/本任务）"
                                               IsCheckable="True"
                                               IsChecked="{Binding IsComposerFullAccess, Mode=OneWay}"
                                               Command="{Binding SetComposerAccessModeCommand}"
                                               CommandParameter="{x:Static local:CopilotAgentAccessMode.FullAccess}"
-                                              ToolTip="最长 15 分钟，当前仅自动批准已预览且执行前逐文件复核路径和 SHA-256 的工作区补丁及回滚；模板、Flow、批量转换、Shell、菜单和数据库仍逐项确认。" />
+                                              ToolTip="最长 15 分钟并绑定任务与工作区。结构化补丁走确定性范围规则；其他受保护调用仅在提供完整原生审批详情时由独立模型复核，每次复核会增加一次模型调用。仅 LOW/MEDIUM 风险自动批准，无法判断或较高风险仍等待用户。" />
                                 </ContextMenu>
                             </Button.ContextMenu>
                             <StackPanel Orientation="Horizontal">
@@ -2209,19 +2494,80 @@
                             </DockPanel>
                         </Border>
 
-                        <Button Grid.Row="0"
-                                Grid.Column="3"
-                                Width="44"
-                                Height="28"
-                                Margin="4,0"
-                                HorizontalAlignment="Right"
-                                AutomationProperties.Name="压缩已裁剪的会话上下文"
-                                Command="{Binding CompactConversationCommand}"
-                                Content="压缩"
-                                FontSize="10"
-                                Style="{StaticResource CopilotIconButtonStyle}"
-                                ToolTip="{Binding ConversationContextCompactionToolTip}"
-                                Visibility="{Binding IsConversationContextReduced, Converter={StaticResource bool2VisibilityConverter}}" />
+                        <StackPanel Grid.Row="0"
+                                    Grid.Column="3"
+                                    Margin="4,0"
+                                    HorizontalAlignment="Right"
+                                    Orientation="Horizontal">
+                            <Button MinWidth="60"
+                                    MaxWidth="82"
+                                    Height="28"
+                                    Margin="0,0,4,0"
+                                    Padding="5,0"
+                                    AutomationProperties.Name="查看当前 Copilot 模型供应商限额"
+                                    Command="{Binding ShowUsageDiagnosticsCommand}"
+                                    Content="{Binding ProviderRateLimitStatusLabel}"
+                                    FontSize="10"
+                                    ToolTip="{Binding ProviderRateLimitStatusToolTip}"
+                                    Visibility="{Binding IsProviderRateLimitStatusVisible, Converter={StaticResource bool2VisibilityConverter}}">
+                                <Button.Style>
+                                    <Style BasedOn="{StaticResource CopilotIconButtonStyle}" TargetType="Button">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsProviderRateLimitUnderPressure}" Value="True">
+                                                <Setter Property="Foreground" Value="{StaticResource CopilotControlWarningBrush}" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+                            <Button Width="60"
+                                    Height="28"
+                                    Margin="0,0,4,0"
+                                    AutomationProperties.Name="查看 Copilot 会话历史上下文占用"
+                                    Command="{Binding ShowContextDiagnosticsCommand}"
+                                    Content="{Binding ConversationContextUsageLabel}"
+                                    FontSize="10"
+                                    ToolTip="{Binding ConversationContextUsageToolTip}">
+                                <Button.Style>
+                                    <Style BasedOn="{StaticResource CopilotIconButtonStyle}" TargetType="Button">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsConversationContextUnderPressure}" Value="True">
+                                                <Setter Property="Foreground" Value="{StaticResource CopilotControlWarningBrush}" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+                            <Button Width="28"
+                                    Height="28"
+                                    Margin="0,0,4,0"
+                                    AutomationProperties.Name="展开编辑 Copilot 提示词"
+                                    Click="OpenPromptEditorButton_Click"
+                                    Content="↗"
+                                    FontSize="13"
+                                    IsEnabled="{Binding CanOpenExpandedComposerEditor}"
+                                    Style="{StaticResource CopilotIconButtonStyle}"
+                                    ToolTip="展开编辑当前输入（Ctrl+E；Ctrl+Enter 保存）" />
+                            <Button Width="62"
+                                    Height="28"
+                                    Margin="0,0,4,0"
+                                    AutomationProperties.Name="恢复暂存的 Copilot 草稿"
+                                    Click="ComposerStashButton_Click"
+                                    Content="恢复草稿"
+                                    FontSize="10"
+                                    Style="{StaticResource CopilotIconButtonStyle}"
+                                    ToolTip="{Binding ComposerStashToolTip}"
+                                    Visibility="{Binding HasComposerStash, Converter={StaticResource bool2VisibilityConverter}}" />
+                            <Button Width="44"
+                                    Height="28"
+                                    AutomationProperties.Name="压缩已裁剪的会话上下文"
+                                    Command="{Binding CompactConversationCommand}"
+                                    Content="压缩"
+                                    FontSize="10"
+                                    Style="{StaticResource CopilotIconButtonStyle}"
+                                    ToolTip="{Binding ConversationContextCompactionToolTip}"
+                                    Visibility="{Binding IsConversationContextReduced, Converter={StaticResource bool2VisibilityConverter}}" />
+                        </StackPanel>
 
                         <Grid x:Name="ComposerSelectorGrid"
                               Grid.Row="0"
@@ -2464,7 +2810,8 @@
                                                        FontWeight="SemiBold"
                                                        Opacity="0.58"
                                                        Text="推理强度" />
-                                            <ItemsControl ItemsSource="{Binding SelectedProfileReasoningOptions}">
+                                            <ItemsControl x:Name="ReasoningOptionsControl"
+                                                          ItemsSource="{Binding SelectedProfileReasoningOptions}">
                                                 <ItemsControl.ItemTemplate>
                                                     <DataTemplate>
                                                         <Button Tag="{Binding Mode}"
@@ -2505,12 +2852,21 @@
                             <Button Width="28"
                                     Height="28"
                                     Margin="0,0,6,0"
+                                    Command="{Binding SubmitUserQuestionAnswerCommand}"
+                                    Content="✓"
+                                    FontSize="15"
+                                    Style="{StaticResource CopilotIconButtonStyle}"
+                                    Visibility="{Binding CanSubmitUserQuestionAnswer, Converter={StaticResource bool2VisibilityConverter}}"
+                                    ToolTip="提交当前澄清问题的答案（Enter）" />
+                            <Button Width="28"
+                                    Height="28"
+                                    Margin="0,0,6,0"
                                     Command="{Binding SteerCommand}"
                                     Content="↳"
                                     FontSize="15"
                                     Style="{StaticResource CopilotIconButtonStyle}"
                                     Visibility="{Binding CanSteerCurrentRun, Converter={StaticResource bool2VisibilityConverter}}"
-                                    ToolTip="把输入作为新指令加入当前 Agent 运行（Enter）" />
+                                    ToolTip="{Binding SteerActionToolTip}" />
                             <Button Width="28"
                                     Height="28"
                                     Margin="0,0,6,0"
@@ -2519,7 +2875,7 @@
                                     FontSize="15"
                                     Style="{StaticResource CopilotIconButtonStyle}"
                                     Visibility="{Binding CanQueueCurrentRunFollowUp, Converter={StaticResource bool2VisibilityConverter}}"
-                                    ToolTip="排到当前 Agent 任务结束后再执行（Tab）" />
+                                    ToolTip="{Binding QueueFollowUpToolTip}" />
 
                             <Button x:Name="VoiceInputButton"
                                     Width="28"
@@ -2640,8 +2996,10 @@
                                          FontSize="11"
                                          Foreground="{DynamicResource GlobalTextBrush}"
                                          MaxLength="256"
+                                         PreviewKeyDown="ConversationSearchTextBox_PreviewKeyDown"
                                          Text="{Binding ConversationSearchText, UpdateSourceTrigger=PropertyChanged}"
-                                         ToolTip="搜索会话 (Ctrl+F)" />
+                                         TextChanged="ConversationSearchTextBox_TextChanged"
+                                         ToolTip="搜索会话 (Ctrl+G)；↑↓ 选择，Enter 切换，Ctrl+R 重命名，Esc 退出" />
                             </Grid>
                             <Button Grid.Column="2"
                                     Style="{StaticResource AttachmentCloseButtonStyle}"
@@ -2671,15 +3029,31 @@
                                                Foreground="{DynamicResource GlobalTextBrush}"
                                                Text="{Binding AgentTaskCountLabel}" />
                                 </Border>
-                                <TextBlock VerticalAlignment="Center"
-                                           FontSize="11"
-                                           FontWeight="SemiBold"
-                                           Foreground="{DynamicResource GlobalTextBrush}"
-                                           Opacity="0.72"
-                                           Text="Agent 任务" />
+                                <Button Padding="0"
+                                        Background="Transparent"
+                                        BorderBrush="Transparent"
+                                        Command="{Binding ToggleAgentTaskPanelCommand}"
+                                        ToolTip="{Binding AgentTaskPanelToolTip}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Width="14"
+                                                   VerticalAlignment="Center"
+                                                   FontSize="11"
+                                                   Foreground="{DynamicResource GlobalTextBrush}"
+                                                   Opacity="0.62"
+                                                   Text="{Binding AgentTaskPanelToggleGlyph}" />
+                                        <TextBlock VerticalAlignment="Center"
+                                                   FontSize="11"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource GlobalTextBrush}"
+                                                   Opacity="0.72"
+                                                   Text="Agent 任务" />
+                                    </StackPanel>
+                                </Button>
                             </DockPanel>
 
-                            <ScrollViewer MaxHeight="168" VerticalScrollBarVisibility="Auto">
+                            <ScrollViewer MaxHeight="168"
+                                          VerticalScrollBarVisibility="Auto"
+                                          Visibility="{Binding IsAgentTaskListVisible, Converter={StaticResource bool2VisibilityConverter}}">
                                 <ItemsControl ItemsSource="{Binding AgentTasks}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate DataType="{x:Type local:CopilotAgentTaskSummary}">
@@ -2724,7 +3098,7 @@
                                                         CommandParameter="{Binding}"
                                                         Content="▶"
                                                         FontSize="9"
-                                                        ToolTip="继续 Agent 任务"
+                                                        ToolTip="{Binding RecoveryToolTip}"
                                                         Visibility="{Binding CanResume, Converter={StaticResource bool2VisibilityConverter}}" />
                                                 <Button Grid.Column="2"
                                                         Width="24"
@@ -2737,7 +3111,7 @@
                                                         CommandParameter="{Binding}"
                                                         Content="×"
                                                         FontSize="13"
-                                                        ToolTip="放弃并清除继续状态" />
+                                                        ToolTip="{Binding DismissToolTip}" />
                                             </Grid>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
@@ -2753,8 +3127,9 @@
                              Background="Transparent"
                              ItemContainerStyle="{StaticResource SidebarListBoxItemStyle}"
                              ItemsSource="{Binding FilteredConversations}"
+                             PreviewKeyDown="ConversationListBox_PreviewKeyDown"
+                             PreviewMouseLeftButtonUp="ConversationListBox_PreviewMouseLeftButtonUp"
                              SelectedItem="{Binding SelectedConversation, Mode=OneWay}"
-                             SelectionChanged="ConversationListBox_SelectionChanged"
                              IsEnabled="{Binding CanSwitchConversation}">
                         <ListBox.ItemTemplate>
                             <DataTemplate DataType="{x:Type local:CopilotConversationRecord}">
@@ -2773,6 +3148,10 @@
                                             <MenuItem Header="导出 Markdown"
                                                       Command="{Binding DataContext.ExportConversationCommand, Source={x:Reference Root}}"
                                                       CommandParameter="{Binding}" />
+                                            <MenuItem Header="打开源会话"
+                                                      Command="{Binding DataContext.OpenBranchOriginCommand, Source={x:Reference Root}}"
+                                                      CommandParameter="{Binding}"
+                                                      Visibility="{Binding HasBranchOrigin, Converter={StaticResource bool2VisibilityConverter}}" />
                                             <Separator />
                                             <MenuItem Header="{x:Static properties:Resources.Delete}"
                                                       Command="{Binding DataContext.DeleteConversationCommand, Source={x:Reference Root}}"
@@ -2804,6 +3183,17 @@
                                                         </Style>
                                                     </TextBlock.Style>
                                                 </TextBlock>
+                                                <Border Margin="6,0,0,0"
+                                                        Padding="5,1"
+                                                        VerticalAlignment="Center"
+                                                        Background="{DynamicResource GlobalBorderBrush1}"
+                                                        CornerRadius="6"
+                                                        Visibility="{Binding HasBranchOrigin, Converter={StaticResource bool2VisibilityConverter}}">
+                                                    <TextBlock FontSize="9"
+                                                               Foreground="{DynamicResource GlobalTextBrush}"
+                                                               Opacity="0.66"
+                                                               Text="{Binding BranchLabel}" />
+                                                </Border>
                                                 <Border Margin="6,0,0,0"
                                                         Padding="5,1"
                                                         VerticalAlignment="Center"

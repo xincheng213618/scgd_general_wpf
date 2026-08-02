@@ -18,7 +18,9 @@ public class MQTTStartV5Node : BaseStartNode
 
 	private static readonly TimeSpan PublishReadyTimeout = TimeSpan.FromSeconds(3);
 
-	private string _Server;
+	private static readonly TimeSpan SlowReadinessThreshold = TimeSpan.FromMilliseconds(100);
+
+	private string _Server = "127.0.0.1";
 
 	private int _Port = 1883;
 
@@ -36,6 +38,8 @@ public class MQTTStartV5Node : BaseStartNode
 
 	private readonly object mqttSessionLock = new object();
 
+	private readonly object subscriptionRestoreQueueLock = new object();
+
 	private CancellationTokenSource mqttSessionCts = CreateCanceledTokenSource();
 
 	private long mqttSessionGeneration;
@@ -47,6 +51,10 @@ public class MQTTStartV5Node : BaseStartNode
 	private long restoredStartTopicVersion = -1;
 
 	private bool connectionWanted;
+
+	private bool subscriptionRestoreRequested;
+
+	private bool subscriptionRestoreWorkerRunning;
 
 	private volatile bool isDisposed;
 
@@ -64,7 +72,6 @@ public class MQTTStartV5Node : BaseStartNode
 					&& Ready
 					&& mqttHelper != null
 					&& mqttHelper.IsClientConnect()
-					&& mqttHelper.UsesCurrentDefaultConfiguration
 					&& restoredTopicSubscriptionVersion == TopicSubscriptionVersion
 					&& restoredStartTopicVersion == startTopicVersion;
 			}
@@ -255,9 +262,14 @@ public class MQTTStartV5Node : BaseStartNode
 			return true;
 		}
 
+		var readinessStopwatch = System.Diagnostics.Stopwatch.StartNew();
+		long lifecycleWaitMilliseconds = 0;
+		long connectionMilliseconds = 0;
+		long restoreMilliseconds = 0;
 		try
 		{
 			await mqttLifecycleLock.WaitAsync(linkedToken).ConfigureAwait(false);
+			lifecycleWaitMilliseconds = readinessStopwatch.ElapsedMilliseconds;
 		}
 		catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
 		{
@@ -266,16 +278,13 @@ public class MQTTStartV5Node : BaseStartNode
 		try
 		{
 			ThrowIfMqttSessionChanged(generation, topicVersion, linkedToken);
-			current = _MQTTHelper;
-			if (current != null && !current.UsesCurrentDefaultConfiguration)
+			if (IsExecutionReady)
 			{
-				if (ReferenceEquals(Interlocked.CompareExchange(ref _MQTTHelper, null, current), current))
-				{
-					await current.DisconnectAsync_Client().ConfigureAwait(false);
-					ThrowIfMqttSessionChanged(generation, topicVersion, linkedToken);
-				}
-				current = null;
+				return true;
 			}
+
+			var connectionStopwatch = System.Diagnostics.Stopwatch.StartNew();
+			current = _MQTTHelper;
 			if (current != null && !current.IsClientConnect())
 			{
 				await current.TryReconnectAsync_Client(linkedToken).ConfigureAwait(false);
@@ -292,10 +301,13 @@ public class MQTTStartV5Node : BaseStartNode
 				ThrowIfMqttSessionChanged(generation, topicVersion, linkedToken);
 				current = new MQTTHelper();
 				Interlocked.Exchange(ref _MQTTHelper, current);
-				string userName = string.Empty;
-				string password = string.Empty;
-				MQTTHelper.GetDefaultCfg(ref _Server, ref _Port, ref userName, ref password);
-				ResultData_MQTT result = await current.CreateMQTTClientAndStart(_Server, _Port, userName, password, onMsgSub, linkedToken).ConfigureAwait(false);
+				ResultData_MQTT result = await current.CreateMQTTClientAndStart(
+					_Server,
+					_Port,
+					string.Empty,
+					string.Empty,
+					onMsgSub,
+					linkedToken).ConfigureAwait(false);
 				ThrowIfMqttSessionChanged(generation, topicVersion, linkedToken);
 				if (result.ResultCode <= 0 || !current.IsClientConnect())
 				{
@@ -314,8 +326,14 @@ public class MQTTStartV5Node : BaseStartNode
 					return false;
 				}
 			}
+			connectionStopwatch.Stop();
+			connectionMilliseconds = connectionStopwatch.ElapsedMilliseconds;
 
-			return await RestoreSubscriptionsAsync(current, generation, topicVersion, linkedToken).ConfigureAwait(false);
+			var restoreStopwatch = System.Diagnostics.Stopwatch.StartNew();
+			bool restored = await RestoreSubscriptionsAsync(current, generation, topicVersion, linkedToken).ConfigureAwait(false);
+			restoreStopwatch.Stop();
+			restoreMilliseconds = restoreStopwatch.ElapsedMilliseconds;
+			return restored;
 		}
 		catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
 		{
@@ -326,6 +344,18 @@ public class MQTTStartV5Node : BaseStartNode
 		finally
 		{
 			mqttLifecycleLock.Release();
+			readinessStopwatch.Stop();
+			if (readinessStopwatch.Elapsed >= SlowReadinessThreshold)
+			{
+				logger.InfoFormat(
+					"MQTT start-node readiness slow => node={0}, lifecycleWait={1}ms, connection={2}ms, restore={3}ms, total={4}ms, ready={5}",
+					m_nodeName,
+					lifecycleWaitMilliseconds,
+					connectionMilliseconds,
+					restoreMilliseconds,
+					readinessStopwatch.ElapsedMilliseconds,
+					IsExecutionReady);
+			}
 		}
 	}
 
@@ -374,8 +404,7 @@ public class MQTTStartV5Node : BaseStartNode
 		{
 			ThrowIfMqttSessionChanged(generation, topicVersion, cancellationToken);
 			if (!ReferenceEquals(_MQTTHelper, mqttHelper)
-				|| !mqttHelper.IsClientConnect()
-				|| !mqttHelper.UsesCurrentDefaultConfiguration)
+				|| !mqttHelper.IsClientConnect())
 			{
 				Ready = false;
 				return false;
@@ -407,8 +436,7 @@ public class MQTTStartV5Node : BaseStartNode
 					restoredTopicSubscriptionVersion = version;
 					restoredStartTopicVersion = topicVersion;
 					Ready = ReferenceEquals(_MQTTHelper, mqttHelper)
-						&& mqttHelper.IsClientConnect()
-						&& mqttHelper.UsesCurrentDefaultConfiguration;
+						&& mqttHelper.IsClientConnect();
 					if (Ready)
 					{
 						logger.DebugFormat("MQTT subscriptions restored => start={0}, responses={1}", GetStartTopic(), topics.Length);
@@ -459,7 +487,7 @@ public class MQTTStartV5Node : BaseStartNode
 		string text = (string)resultData_MQTT.ResultObject1;
 		if (resultData_MQTT.EventType == EventTypeEnum.MsgRecv)
 		{
-			if (!IsExecutionReady)
+			if (!HasCurrentMqttClient(_MQTTHelper))
 			{
 				return;
 			}
@@ -571,30 +599,56 @@ public class MQTTStartV5Node : BaseStartNode
 		MQTTHelper mqttHelper = _MQTTHelper;
 		if (mqttHelper != null
 			&& mqttHelper.IsClientConnect()
-			&& TryCaptureMqttSession(out long generation, out long topicVersion, out CancellationToken sessionToken))
+			&& TryCaptureMqttSession(out _, out _, out _))
 		{
-			_ = RestoreSubscriptionsForSessionAsync(mqttHelper, generation, topicVersion, sessionToken);
+			lock (subscriptionRestoreQueueLock)
+			{
+				subscriptionRestoreRequested = true;
+				if (subscriptionRestoreWorkerRunning)
+				{
+					return;
+				}
+				subscriptionRestoreWorkerRunning = true;
+			}
+			_ = RunSubscriptionRestoreQueueAsync();
 		}
 	}
 
-	private async Task RestoreSubscriptionsForSessionAsync(
-		MQTTHelper mqttHelper,
-		long generation,
-		long topicVersion,
-		CancellationToken sessionToken)
+	private async Task RunSubscriptionRestoreQueueAsync()
 	{
-		try
+		while (true)
 		{
-			await RestoreSubscriptionsAsync(mqttHelper, generation, topicVersion, sessionToken).ConfigureAwait(false);
-		}
-		catch (OperationCanceledException)
-		{
-			Ready = false;
-		}
-		catch (Exception ex)
-		{
-			Ready = false;
-			logger.Warn("Failed to restore MQTT subscriptions.", ex);
+			lock (subscriptionRestoreQueueLock)
+			{
+				if (!subscriptionRestoreRequested)
+				{
+					subscriptionRestoreWorkerRunning = false;
+					return;
+				}
+				subscriptionRestoreRequested = false;
+			}
+
+			MQTTHelper mqttHelper = _MQTTHelper;
+			if (mqttHelper == null
+				|| !mqttHelper.IsClientConnect()
+				|| !TryCaptureMqttSession(out long generation, out long topicVersion, out CancellationToken sessionToken))
+			{
+				continue;
+			}
+
+			try
+			{
+				await RestoreSubscriptionsAsync(mqttHelper, generation, topicVersion, sessionToken).ConfigureAwait(false);
+			}
+			catch (OperationCanceledException)
+			{
+				Ready = false;
+			}
+			catch (Exception ex)
+			{
+				Ready = false;
+				logger.Warn("Failed to restore MQTT subscriptions.", ex);
+			}
 		}
 	}
 
@@ -622,9 +676,9 @@ public class MQTTStartV5Node : BaseStartNode
 			}
 			ThrowIfMqttSessionChanged(generation, topicVersion, linkedToken);
 			MQTTHelper mqttHelper = _MQTTHelper;
-			if (mqttHelper == null || !IsExecutionReady)
+			if (!HasCurrentMqttClient(mqttHelper))
 			{
-				logger.ErrorFormat("MQTT publish skipped because the active client changed => topic={0}", topic);
+				logger.ErrorFormat("MQTT publish skipped because the active client is unavailable or changed => topic={0}", topic);
 				return;
 			}
 			bool published = await mqttHelper.TryPublishAsync_Client(topic, message, retained: false, linkedToken).ConfigureAwait(false);
@@ -660,6 +714,13 @@ public class MQTTStartV5Node : BaseStartNode
 				publishLock.Release();
 			}
 		}
+	}
+
+	internal bool HasCurrentMqttClient(MQTTHelper mqttHelper)
+	{
+		return mqttHelper != null
+			&& ReferenceEquals(mqttHelper, _MQTTHelper)
+			&& mqttHelper.IsClientConnect();
 	}
 
 	public override void Dispose()

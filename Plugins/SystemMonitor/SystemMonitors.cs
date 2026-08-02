@@ -4,6 +4,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.UI.CUDA;
 using System;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -150,14 +151,17 @@ namespace ColorVision.UI.Configs
         private static readonly object _locker = new();
         public static SystemMonitors GetInstance() { lock (_locker) { return _instance ??= new SystemMonitors(); } }
 
-        private bool _isDisposed;
+        private volatile bool _isDisposed;
         private readonly object _perfCounterLock = new();
-        private bool _perfCounterReady;
+        private volatile bool _perfCounterReady;
+        private int _perfCounterInitializationStarted;
         private PerformanceCounter? _cpuCounter;
         private PerformanceCounter? _cpuThisCounter;
         private PerformanceCounter? _ramCounter;
         private PerformanceCounter? _ramThisCounter;
+        private readonly object _timerLock = new();
         private Timer? _timer;
+        private int _activeDetailViewCount;
         private readonly double _totalRAMGB;
 
         public SystemMonitorSetting Config { get; set; }
@@ -273,12 +277,10 @@ namespace ColorVision.UI.Configs
             get => Config.UpdateSpeed;
             set
             {
-                if (value != Config.UpdateSpeed && value > 0)
+                if (value != Config.UpdateSpeed && value >= 100)
                 {
                     Config.UpdateSpeed = value;
                     OnPropertyChanged();
-                    _timer?.Dispose();
-                    _timer = new Timer(OnTimerTick, null, 0, value);
                 }
             }
         }
@@ -286,6 +288,7 @@ namespace ColorVision.UI.Configs
         public SystemMonitors()
         {
             Config = ConfigService.Instance.GetRequiredService<SystemMonitorSetting>();
+            Config.PropertyChanged += Config_PropertyChanged;
             _totalRAMGB = (double)Common.NativeMethods.PerformanceInfo.GetTotalMemoryInMiB() / 1024;
             CPUStatusText = FormatUsageStatus(Resources.CPU, 0);
             RAMStatusText = FormatUsageStatus(Resources.RAM, 0);
@@ -332,13 +335,91 @@ namespace ColorVision.UI.Configs
             RefreshNetworkCommand = new RelayCommand(a => LoadNetworkInterfaces());
             RefreshProcessesCommand = new RelayCommand(a => LoadTopProcesses());
 
-            Task.Run(InitPerformanceCounters);
             LoadDrives();
             LoadNetworkInterfaces();
             UpdateCacheSize();
             LoadTopProcesses();
 
-            _timer = new Timer(OnTimerTick, null, 0, Config.UpdateSpeed);
+            UpdateTimerState();
+        }
+
+        private bool IsDetailViewActive => Volatile.Read(ref _activeDetailViewCount) > 0;
+
+        private bool RequiresPeriodicUpdates()
+        {
+            return ShouldRunPeriodicUpdates(IsDetailViewActive, Config);
+        }
+
+        private static bool ShouldRunPeriodicUpdates(bool isDetailViewActive, SystemMonitorSetting config)
+        {
+            return isDetailViewActive
+                || config.IsShowTime
+                || config.IsShowRAM
+                || config.IsShowCPU
+                || config.IsShowUptime;
+        }
+
+        private bool RequiresPerformanceCounters()
+        {
+            return IsDetailViewActive || Config.IsShowRAM || Config.IsShowCPU;
+        }
+
+        internal void SetDetailViewActive(bool isActive)
+        {
+            lock (_timerLock)
+            {
+                if (isActive)
+                    _activeDetailViewCount++;
+                else if (_activeDetailViewCount > 0)
+                    _activeDetailViewCount--;
+            }
+            UpdateTimerState();
+        }
+
+        private void Config_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(SystemMonitorSetting.UpdateSpeed))
+            {
+                OnPropertyChanged(nameof(UpdateSpeed));
+                UpdateTimerState(restart: true);
+                return;
+            }
+
+            if (e.PropertyName == nameof(SystemMonitorSetting.IsShowTime)
+             || e.PropertyName == nameof(SystemMonitorSetting.IsShowRAM)
+             || e.PropertyName == nameof(SystemMonitorSetting.IsShowCPU)
+             || e.PropertyName == nameof(SystemMonitorSetting.IsShowUptime))
+            {
+                UpdateTimerState();
+            }
+        }
+
+        private void UpdateTimerState(bool restart = false)
+        {
+            lock (_timerLock)
+            {
+                if (_isDisposed || !RequiresPeriodicUpdates())
+                {
+                    _timer?.Dispose();
+                    _timer = null;
+                    return;
+                }
+
+                if (RequiresPerformanceCounters())
+                    EnsurePerformanceCountersInitialized();
+
+                int interval = Math.Max(100, Config.UpdateSpeed);
+                if (_timer == null)
+                    _timer = new Timer(OnTimerTick, null, 0, interval);
+                else if (restart)
+                    _timer.Change(0, interval);
+            }
+        }
+
+        private void EnsurePerformanceCountersInitialized()
+        {
+            if (Interlocked.CompareExchange(ref _perfCounterInitializationStarted, 1, 0) == 0)
+                _ = Task.Run(InitPerformanceCounters);
         }
 
         private void InitPerformanceCounters()
@@ -347,6 +428,8 @@ namespace ColorVision.UI.Configs
             {
                 lock (_perfCounterLock)
                 {
+                    if (_isDisposed) return;
+
                     string processName = Process.GetCurrentProcess().ProcessName;
                     _cpuCounter = new PerformanceCounter("Processor", "% Processor Time", "_Total");
                     _cpuThisCounter = new PerformanceCounter("Process", "% Processor Time", processName);
@@ -475,66 +558,78 @@ namespace ColorVision.UI.Configs
 
         private void OnTimerTick(object? state)
         {
-            if (_isDisposed) return;
+            if (_isDisposed || !RequiresPeriodicUpdates()) return;
 
-            Application.Current?.Dispatcher.BeginInvoke(() =>
+            bool isDetailViewActive = IsDetailViewActive;
+            bool updateUptime = isDetailViewActive || Config.IsShowUptime;
+            if (isDetailViewActive || updateUptime)
             {
-                // 应用运行时长
-                var ts = SystemHelper.GetUptime();
-                GetUptime = FormatDuration(ts);
+                Application.Current?.Dispatcher.BeginInvoke(() =>
+                {
+                    if (updateUptime)
+                        GetUptime = FormatDuration(SystemHelper.GetUptime());
 
-                // 系统运行时长
-                var osTs = TimeSpan.FromMilliseconds(Environment.TickCount64);
-                OSUptime = FormatDuration(osTs);
+                    if (isDetailViewActive)
+                    {
+                        var osTs = TimeSpan.FromMilliseconds(Environment.TickCount64);
+                        OSUptime = FormatDuration(osTs);
 
-                // 当前进程信息
+                        try
+                        {
+                            var proc = Process.GetCurrentProcess();
+                            ThreadCount = proc.Threads.Count;
+                            HandleCount = proc.HandleCount;
+                        }
+                        catch { }
+                    }
+                });
+            }
+
+            bool updateRAM = isDetailViewActive || Config.IsShowRAM;
+            bool updateCPU = isDetailViewActive || Config.IsShowCPU;
+            if (_perfCounterReady && (updateRAM || updateCPU))
+            {
                 try
                 {
-                    var proc = Process.GetCurrentProcess();
-                    ThreadCount = proc.Threads.Count;
-                    HandleCount = proc.HandleCount;
+                    lock (_perfCounterLock)
+                    {
+                        if (updateRAM && _ramCounter != null && _ramThisCounter != null)
+                        {
+                            float availableRAM = _ramCounter.NextValue();
+                            float usedRAMGB = (float)_totalRAMGB - (availableRAM / 1024);
+                            RAMPercent = (usedRAMGB / _totalRAMGB) * 100;
+
+                            float curRAM = _ramThisCounter.NextValue() / 1024 / 1024;
+                            RAMThisPercent = (curRAM / 1024 / _totalRAMGB) * 100;
+                            RAMThis = curRAM.ToString("f1") + " MB";
+                            MemoryThis = curRAM.ToString("f1") + " MB / " + _totalRAMGB.ToString("f1") + " GB";
+                            MemoryAvailable = availableRAM.ToString("f0") + " MB";
+                            RAMStatusText = FormatUsageStatus(Resources.RAM, RAMPercent);
+                        }
+
+                        if (updateCPU && _cpuCounter != null && _cpuThisCounter != null)
+                        {
+                            CPUPercent = _cpuCounter.NextValue();
+                            CPUThisPercent = _cpuThisCounter.NextValue();
+                            ProcessorTotal = CPUPercent.ToString("f1") + "%";
+                            CPUStatusText = FormatUsageStatus(Resources.CPU, CPUPercent);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Perf counter error: {ex.Message}");
+                }
+            }
+
+            if (isDetailViewActive || Config.IsShowTime)
+            {
+                try
+                {
+                    Time = DateTime.Now.ToString(Config.DefaultTimeFormat);
                 }
                 catch { }
-            });
-
-            if (!_perfCounterReady) return;
-
-            try
-            {
-                lock (_perfCounterLock)
-                {
-                    if (_cpuCounter == null || _ramCounter == null) return;
-
-                    float availableRAM = _ramCounter.NextValue();
-                    float usedRAMGB = (float)_totalRAMGB - (availableRAM / 1024);
-                    RAMPercent = (usedRAMGB / _totalRAMGB) * 100;
-
-                    float curRAM = _ramThisCounter!.NextValue() / 1024 / 1024;
-                    RAMThisPercent = (curRAM / 1024 / _totalRAMGB) * 100;
-                    RAMThis = curRAM.ToString("f1") + " MB";
-                    MemoryThis = curRAM.ToString("f1") + " MB / " + _totalRAMGB.ToString("f1") + " GB";
-                    MemoryAvailable = availableRAM.ToString("f0") + " MB";
-
-                    CPUPercent = _cpuCounter.NextValue();
-                    CPUThisPercent = _cpuThisCounter!.NextValue();
-                    ProcessorTotal = CPUPercent.ToString("f1") + "%";
-
-                    // 状态栏醒目文本
-                    CPUStatusText = FormatUsageStatus(Resources.CPU, CPUPercent);
-                    RAMStatusText = FormatUsageStatus(Resources.RAM, RAMPercent);
-                }
             }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Perf counter error: {ex.Message}");
-            }
-
-            try
-            {
-                // 始终更新时间，可见性由状态栏配置控制
-                Time = DateTime.Now.ToString(Config.DefaultTimeFormat);
-            }
-            catch { }
         }
 
         public void ClearCache()
@@ -575,8 +670,12 @@ namespace ColorVision.UI.Configs
         {
             if (_isDisposed) return;
             _isDisposed = true;
-            _timer?.Dispose();
-            _timer = null;
+            Config.PropertyChanged -= Config_PropertyChanged;
+            lock (_timerLock)
+            {
+                _timer?.Dispose();
+                _timer = null;
+            }
             lock (_perfCounterLock)
             {
                 _cpuCounter?.Dispose();

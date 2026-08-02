@@ -33,7 +33,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         private readonly Dictionary<Type, IDisplayAlgorithm> _algorithmDict = new();
         private readonly Dictionary<Type, UserControl> _algorithmViewDict = new();
         private List<DisplayAlgorithmMeta> _algorithmMetas = new();
-        private DisplayAlgorithmVisibilityConfig? _visibilityConfig;
         private DisplayAlgorithmManager? _algorithmManager;
         private readonly string _allAlgorithmsGroup = "All";
 
@@ -69,11 +68,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = Device;
-            _visibilityConfig = DisplayAlgorithmVisibilityConfig.Instance;
             _algorithmManager = DisplayAlgorithmManager.GetInstance();
-            _algorithmMetas = _algorithmManager.AlgorithmMetas.ToList();
-
-            RefreshAlgorithmList();
+            _algorithmMetas = _algorithmManager.AlgorithmMetas.OrderBy(a => a.Order).ToList();
 
             CB_Algorithms.SelectionChanged += (_, _) =>
             {
@@ -99,10 +95,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                 CB_StackPanel.Children.Add(view);
             };
 
+            InitializeAlgorithmList();
             CB_AlgorithmTypes.SelectionChanged += (_, _) => CB_AlgorithmTypesChanged();
-            _visibilityConfig.Changed += VisibilityConfig_Changed;
-
-            CB_AlgorithmTypesChanged();
 
             this.AddViewConfig(Device.View, DisPlayName);
             this.ApplyChangedSelectedColor(DisPlayBorder);
@@ -111,33 +105,10 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             Device.DService.DeviceStatusChanged += DService_DeviceStatusChanged;
         }
 
-        private List<DisplayAlgorithmMeta> GetVisibleAlgorithmMetas()
+        private void InitializeAlgorithmList()
         {
-            if (_visibilityConfig == null)
-            {
-                return _algorithmMetas;
-            }
-
-            return _algorithmMetas
-                .Where(a => _visibilityConfig.GetAlgorithmVisibility(a.Name))
-                .Select(a => new DisplayAlgorithmMeta
-                {
-                    Type = a.Type,
-                    Order = _visibilityConfig.GetOrderOverride(a.Name, a.Order),
-                    Name = a.Name,
-                    DisplayName = _visibilityConfig.GetNameOverride(a.Name, a.DisplayName),
-                    Group = a.Group
-                })
-                .OrderBy(a => a.Order)
-                .ToList();
-        }
-
-        private void RefreshAlgorithmList()
-        {
-            List<DisplayAlgorithmMeta> visibleAlgorithmMetas = GetVisibleAlgorithmMetas();
-
             List<string> groups = new() { _allAlgorithmsGroup };
-            groups.AddRange(visibleAlgorithmMetas
+            groups.AddRange(_algorithmMetas
                 .Select(a => a.Group)
                 .Distinct()
                 .Where(group => !string.IsNullOrWhiteSpace(group) && group != _allAlgorithmsGroup));
@@ -151,11 +122,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             CB_AlgorithmTypesChanged();
         }
 
-        private void VisibilityConfig_Changed(object? sender, EventArgs e)
-        {
-            Dispatcher.Invoke(RefreshAlgorithmList);
-        }
-
         private void CB_AlgorithmTypesChanged()
         {
             if (CB_AlgorithmTypes.SelectedItem is not string selectedGroup)
@@ -164,12 +130,10 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             }
 
             Device.DisplayConfig.LastSelectGroup = selectedGroup;
-            List<DisplayAlgorithmMeta> visibleAlgorithmMetas = GetVisibleAlgorithmMetas();
             List<DisplayAlgorithmMeta> filteredAlgorithms = selectedGroup == _allAlgorithmsGroup
-                ? visibleAlgorithmMetas.OrderBy(a => a.Order).ToList()
-                : visibleAlgorithmMetas
+                ? _algorithmMetas
+                : _algorithmMetas
                     .Where(a => a.Group == selectedGroup)
-                    .OrderBy(a => a.Order)
                     .ToList();
 
             CB_Algorithms.ItemsSource = filteredAlgorithms;
@@ -243,22 +207,9 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         }
         private bool _isSelected;
 
-        private void ButtonVisibilitySettings_Click(object sender, RoutedEventArgs e)
-        {
-            new DisplayAlgorithmVisibilityWindow
-            {
-                Owner = Window.GetWindow(this),
-                WindowStartupLocation = WindowStartupLocation.CenterOwner
-            }.ShowDialog();
-        }
-
         public void Dispose()
         {
             Device.DService.DeviceStatusChanged -= DService_DeviceStatusChanged;
-            if (_visibilityConfig != null)
-            {
-                _visibilityConfig.Changed -= VisibilityConfig_Changed;
-            }
         }
     }
 }

@@ -394,4 +394,135 @@
   <data name="DB_EditRow" xml:space="preserve">
     <value>編輯行</value>
   </data>
+  <data name="DB_FilterDataTitle" xml:space="preserve">
+    <value>篩選資料</value>
+  </data>
+  <data name="DB_FilterDataDescription" xml:space="preserve">
+    <value>新增一個或多個條件，套用後將在目前結果表中顯示符合的記錄。</value>
+  </data>
+  <data name="DB_AddFilterField" xml:space="preserve">
+    <value>新增篩選欄位</value>
+  </data>
+  <data name="DB_SelectFilterField" xml:space="preserve">
+    <value>選擇篩選欄位</value>
+  </data>
+  <data name="DB_AddCondition" xml:space="preserve">
+    <value>新增條件</value>
+  </data>
+  <data name="DB_ClearConditions" xml:space="preserve">
+    <value>清除條件</value>
+  </data>
+  <data name="DB_FilterConditions" xml:space="preserve">
+    <value>篩選條件</value>
+  </data>
+  <data name="DB_AllConditionsMustMatch" xml:space="preserve">
+    <value>以下條件需要全部符合</value>
+  </data>
+  <data name="DB_FilterFieldColumn" xml:space="preserve">
+    <value>欄位</value>
+  </data>
+  <data name="DB_FilterOperatorColumn" xml:space="preserve">
+    <value>條件</value>
+  </data>
+  <data name="DB_FilterValueColumn" xml:space="preserve">
+    <value>值</value>
+  </data>
+  <data name="DB_NoFilterConditions" xml:space="preserve">
+    <value>尚未新增篩選條件</value>
+  </data>
+  <data name="DB_NoFilterConditionsDescription" xml:space="preserve">
+    <value>不新增條件時，將依照下方設定傳回最近的資料。也可以從上方選擇欄位開始篩選。</value>
+  </data>
+  <data name="DB_MaxResults" xml:space="preserve">
+    <value>最多傳回</value>
+  </data>
+  <data name="DB_ResultUnit" xml:space="preserve">
+    <value>筆</value>
+  </data>
+  <data name="DB_SortById" xml:space="preserve">
+    <value>依 ID 排序</value>
+  </data>
+  <data name="DB_NewestFirst" xml:space="preserve">
+    <value>最新優先</value>
+  </data>
+  <data name="DB_OldestFirst" xml:space="preserve">
+    <value>最早優先</value>
+  </data>
+  <data name="DB_ApplyFilter" xml:space="preserve">
+    <value>套用篩選</value>
+  </data>
+  <data name="DB_MaxResultsRange" xml:space="preserve">
+    <value>最多傳回數量必須是 1 到 10000 之間的整數。</value>
+  </data>
+  <data name="DB_FilterValueRequired" xml:space="preserve">
+    <value>請填寫「{0}」的篩選值。</value>
+  </data>
+  <data name="DB_FilterValueInvalid" xml:space="preserve">
+    <value>「{0}」無法使用值「{1}」。</value>
+  </data>
+  <data name="DB_FilterOperatorAutomationName" xml:space="preserve">
+    <value>{0}的篩選條件</value>
+  </data>
+  <data name="DB_FilterValueAutomationName" xml:space="preserve">
+    <value>{0}的篩選值</value>
+  </data>
+  <data name="DB_RemoveNamedCondition" xml:space="preserve">
+    <value>移除{0}條件</value>
+  </data>
+  <data name="DB_BooleanTrue" xml:space="preserve">
+    <value>是</value>
+  </data>
+  <data name="DB_BooleanFalse" xml:space="preserve">
+    <value>否</value>
+  </data>
+  <data name="DB_OperatorContains" xml:space="preserve">
+    <value>包含</value>
+  </data>
+  <data name="DB_OperatorEqual" xml:space="preserve">
+    <value>等於</value>
+  </data>
+  <data name="DB_OperatorNotEqual" xml:space="preserve">
+    <value>不等於</value>
+  </data>
+  <data name="DB_OperatorGreater" xml:space="preserve">
+    <value>大於</value>
+  </data>
+  <data name="DB_OperatorGreaterOrEqual" xml:space="preserve">
+    <value>大於或等於</value>
+  </data>
+  <data name="DB_OperatorLess" xml:space="preserve">
+    <value>小於</value>
+  </data>
+  <data name="DB_OperatorLessOrEqual" xml:space="preserve">
+    <value>小於或等於</value>
+  </data>
+  <data name="DB_FieldId" xml:space="preserve"><value>ID</value></data>
+  <data name="DB_FieldName" xml:space="preserve"><value>名稱</value></data>
+  <data name="DB_FieldCode" xml:space="preserve"><value>編碼</value></data>
+  <data name="DB_FieldModel" xml:space="preserve"><value>型號</value></data>
+  <data name="DB_FieldResult" xml:space="preserve"><value>結果</value></data>
+  <data name="DB_FieldFlowStatus" xml:space="preserve"><value>流程狀態</value></data>
+  <data name="DB_FieldCreateTime" xml:space="preserve"><value>建立時間</value></data>
+  <data name="DB_FieldUpdateTime" xml:space="preserve"><value>更新時間</value></data>
+  <data name="DB_FieldFileName" xml:space="preserve"><value>檔案名稱</value></data>
+  <data name="DB_FieldMessage" xml:space="preserve"><value>訊息</value></data>
+  <data name="DB_FieldZIndex" xml:space="preserve"><value>序號</value></data>
+  <data name="DB_FieldBatchId" xml:space="preserve"><value>批次 ID</value></data>
+  <data name="DB_FieldTestType" xml:space="preserve"><value>測試類型</value></data>
+  <data name="DB_FieldRunTime" xml:space="preserve"><value>執行時間</value></data>
+  <data name="DB_Close" xml:space="preserve">
+    <value>關閉</value>
+  </data>
+  <data name="DB_TableMaintenance" xml:space="preserve">
+    <value>資料表維護</value>
+  </data>
+  <data name="DB_ClearTableConfirm" xml:space="preserve">
+    <value>確定清空目前資料表的全部資料？此操作無法復原。</value>
+  </data>
+  <data name="DB_TruncateTableConfirm" xml:space="preserve">
+    <value>確定截斷目前資料表？全部資料將被刪除並重設自動編號，此操作無法復原。</value>
+  </data>
+  <data name="DB_OperationFailed" xml:space="preserve">
+    <value>操作失敗：{0}</value>
+  </data>
 </root>

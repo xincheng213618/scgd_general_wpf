@@ -1,0 +1,500 @@
+using ColorVision.Copilot.Mcp;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Text;
+
+namespace ColorVision.Copilot
+{
+    internal enum CopilotConfigFileProbeState
+    {
+        Loaded,
+        FileMissing,
+        SectionMissing,
+        InvalidJson,
+        TooLarge,
+        Unreadable,
+        Unavailable,
+    }
+
+    internal sealed record CopilotConfigFileProbe(
+        string FilePath,
+        CopilotConfigFileProbeState State,
+        int? SchemaVersion,
+        bool HasAgentDefaults,
+        bool HasMcpSettings,
+        IReadOnlySet<string> PersistedProfileIds);
+
+    internal sealed class CopilotEffectiveConfigDiagnosticContext
+    {
+        public CopilotConfig Config { get; init; } = null!;
+
+        public CopilotChatState State { get; init; } = null!;
+
+        public CopilotConversationRecord? Conversation { get; init; }
+
+        public CopilotProfileConfig? SelectedProfile { get; init; }
+
+        public CopilotAgentMode ComposerMode { get; init; } = CopilotAgentMode.Auto;
+
+        public string ConfigFilePath { get; init; } = string.Empty;
+
+        public string StateFilePath { get; init; } = string.Empty;
+
+        public CopilotChatStateLoadStatus StateLoadStatus { get; init; } =
+            new(CopilotChatStateLoadSource.NotAttempted);
+
+        public CopilotHostedRunState? ConversationRunState { get; init; }
+
+        public bool McpListenerRunning { get; init; }
+    }
+
+    internal static class CopilotEffectiveConfigDiagnostics
+    {
+        private const long MaximumConfigProbeBytes = 16L * 1024 * 1024;
+        private const int MaximumDisplayTextCharacters = 160;
+
+        public static CopilotConfigFileProbe ProbeConfigFile(string? filePath)
+        {
+            var normalizedPath = NormalizePath(filePath);
+            if (normalizedPath.Length == 0)
+                return CreateProbe(normalizedPath, CopilotConfigFileProbeState.Unavailable);
+            if (!File.Exists(normalizedPath))
+                return CreateProbe(normalizedPath, CopilotConfigFileProbeState.FileMissing);
+
+            try
+            {
+                var fileInfo = new FileInfo(normalizedPath);
+                if (fileInfo.Length > MaximumConfigProbeBytes)
+                    return CreateProbe(normalizedPath, CopilotConfigFileProbeState.TooLarge);
+
+                using var stream = new FileStream(
+                    normalizedPath,
+                    FileMode.Open,
+                    FileAccess.Read,
+                    FileShare.ReadWrite | FileShare.Delete);
+                using var textReader = new StreamReader(stream, detectEncodingFromByteOrderMarks: true);
+                using var jsonReader = new JsonTextReader(textReader)
+                {
+                    DateParseHandling = DateParseHandling.None,
+                };
+                var document = JObject.Load(jsonReader);
+                if (document.GetValue(nameof(CopilotConfig), StringComparison.OrdinalIgnoreCase) is not JObject section)
+                    return CreateProbe(normalizedPath, CopilotConfigFileProbeState.SectionMissing);
+
+                var schemaToken = section.GetValue(
+                    nameof(CopilotConfig.SchemaVersion),
+                    StringComparison.OrdinalIgnoreCase);
+                int? schemaVersion = schemaToken?.Type == JTokenType.Integer
+                    ? schemaToken.Value<int>()
+                    : null;
+                var profileIds = section
+                    .GetValue(nameof(CopilotConfig.Profiles), StringComparison.OrdinalIgnoreCase) is JArray profiles
+                    ? profiles
+                        .OfType<JObject>()
+                        .Select(profile => profile
+                            .GetValue(nameof(CopilotProfileConfig.Id), StringComparison.OrdinalIgnoreCase)
+                            ?.Value<string>()
+                            ?.Trim() ?? string.Empty)
+                        .Where(id => id.Length > 0)
+                        .ToHashSet(StringComparer.Ordinal)
+                    : new HashSet<string>(StringComparer.Ordinal);
+                var hasAgentDefaults = section
+                    .GetValue(nameof(CopilotConfig.AgentDefaults), StringComparison.OrdinalIgnoreCase) is JObject;
+                var hasMcpSettings = section.Properties().Any(property =>
+                    string.Equals(property.Name, nameof(CopilotConfig.McpEnabled), StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(property.Name, nameof(CopilotConfig.McpPort), StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(property.Name, nameof(CopilotConfig.ExternalMcpServers), StringComparison.OrdinalIgnoreCase));
+                return new CopilotConfigFileProbe(
+                    normalizedPath,
+                    CopilotConfigFileProbeState.Loaded,
+                    schemaVersion,
+                    hasAgentDefaults,
+                    hasMcpSettings,
+                    profileIds);
+            }
+            catch (JsonException)
+            {
+                return CreateProbe(normalizedPath, CopilotConfigFileProbeState.InvalidJson);
+            }
+            catch (IOException)
+            {
+                return CreateProbe(normalizedPath, CopilotConfigFileProbeState.Unreadable);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return CreateProbe(normalizedPath, CopilotConfigFileProbeState.Unreadable);
+            }
+        }
+
+        public static string Format(CopilotEffectiveConfigDiagnosticContext context)
+        {
+            ArgumentNullException.ThrowIfNull(context);
+            ArgumentNullException.ThrowIfNull(context.Config);
+            ArgumentNullException.ThrowIfNull(context.State);
+
+            var config = context.Config;
+            var state = context.State;
+            var conversation = context.Conversation;
+            var profile = context.SelectedProfile;
+            var defaults = config.AgentDefaults ?? new CopilotAgentDefaultsConfig();
+            var configProbe = ProbeConfigFile(context.ConfigFilePath);
+            var title = string.IsNullOrWhiteSpace(conversation?.Title)
+                ? CopilotUiText.NewConversationTitle
+                : NormalizeDisplayText(conversation.Title);
+            var builder = new StringBuilder()
+                .Append("有效配置 · ")
+                .AppendLine(title)
+                .AppendLine()
+                .AppendLine("生效来源（基础 → 当前任务）")
+                .Append("1. 内置默认 · CopilotConfig schema ")
+                .Append(CopilotConfig.CurrentSchemaVersion.ToString(CultureInfo.InvariantCulture))
+                .Append(" · ChatState schema ")
+                .AppendLine(CopilotChatState.CurrentSchemaVersion.ToString(CultureInfo.InvariantCulture))
+                .Append("2. 应用配置 · ")
+                .AppendLine(FormatConfigProbe(configProbe, config.SchemaVersion))
+                .Append("   ")
+                .AppendLine(FormatPath(configProbe.FilePath))
+                .Append("3. 会话状态 · ")
+                .Append(FormatStateLoadStatus(context.StateLoadStatus))
+                .Append(" · runtime schema ")
+                .AppendLine(state.SchemaVersion.ToString(CultureInfo.InvariantCulture))
+                .Append("   ")
+                .AppendLine(FormatPath(context.StateFilePath))
+                .Append("4. 临时运行 · ")
+                .Append(context.ConversationRunState?.ToString() ?? "Idle")
+                .Append(" · 权限 ")
+                .AppendLine(FormatAccessMode(conversation));
+
+            AppendProfile(builder, profile, configProbe, state, conversation);
+            AppendAgent(builder, defaults, configProbe, context.ComposerMode);
+            AppendConversation(builder, state, conversation);
+            AppendIntegrations(builder, config, configProbe, context.McpListenerRunning);
+
+            builder.AppendLine()
+                .AppendLine("快照边界")
+                .AppendLine(context.ConversationRunState.HasValue
+                    ? "当前运行已在请求启动时固定模型 Profile、Agent 预算、Skill 覆盖和外部 MCP 列表；设置修改只影响后续请求。临时权限仍受当前任务与到期时间约束。"
+                    : "下一次请求会从上述当前值创建独立请求快照；临时权限仍按会话、工作区、任务与到期时间单独约束。")
+                .AppendLine("来源说明：文件状态按执行命令时重新探测；应用未保留每个键的启动期来源，因此文件在启动后被修改、删除或损坏时只报告“当前文件来源未证实”。")
+                .Append("脱敏：报告仅使用主配置的节、schema、属性存在性与 Profile ID 元数据；不会输出 API Key、MCP Bearer、系统提示正文、后端同步地址、外部 MCP 地址或其他配置值；模型端点仅显示 origin。");
+            return builder.ToString();
+        }
+
+        private static void AppendProfile(
+            StringBuilder builder,
+            CopilotProfileConfig? profile,
+            CopilotConfigFileProbe configProbe,
+            CopilotChatState state,
+            CopilotConversationRecord? conversation)
+        {
+            builder.AppendLine()
+                .AppendLine("模型 Profile");
+            if (profile == null)
+            {
+                builder.AppendLine("- 当前没有可用 Profile。");
+                return;
+            }
+
+            var selectionSource = string.Equals(conversation?.ProfileId, profile.Id, StringComparison.Ordinal)
+                ? "会话 ProfileId"
+                : string.Equals(state.ActiveProfileId, profile.Id, StringComparison.Ordinal)
+                    ? "ChatState ActiveProfileId"
+                    : "应用首选 Profile";
+            var definitionSource = profile.IsBackendSynced
+                ? "后端同步快照"
+                : configProbe.PersistedProfileIds.Contains(profile.Id)
+                    ? "应用配置 CopilotConfig.Profiles"
+                    : configProbe.State == CopilotConfigFileProbeState.Loaded
+                        ? "运行时默认或迁移"
+                        : "已加载运行时 Profile（当前文件来源未证实）";
+            var promptSource = string.Equals(
+                profile.EffectiveSystemPrompt,
+                CopilotProfileConfig.DefaultSystemPrompt,
+                StringComparison.Ordinal)
+                ? "内置默认"
+                : "Profile 覆盖";
+            var credential = profile.CredentialNeedsReentry
+                ? "需重新输入"
+                : string.IsNullOrWhiteSpace(profile.ApiKey)
+                    ? "缺失"
+                    : "已配置";
+
+            builder.Append("- 选择：")
+                .Append(NormalizeDisplayText(profile.DisplayLabel))
+                .Append(" · ")
+                .Append(NormalizeDisplayText(profile.Model))
+                .Append(" · 来源 ")
+                .AppendLine(selectionSource)
+                .Append("- 定义：")
+                .Append(definitionSource)
+                .Append(" · ")
+                .Append(profile.VendorLabel)
+                .Append(" · ")
+                .AppendLine(profile.ProviderLabel)
+                .Append("- 端点：")
+                .Append(FormatEndpointOrigin(profile.BaseUrl))
+                .Append(" · 凭据 ")
+                .AppendLine(credential)
+                .Append("- 推理：")
+                .Append(profile.ReasoningLabel)
+                .Append(" · 系统提示 ")
+                .Append(promptSource)
+                .Append('（')
+                .Append(profile.EffectiveSystemPrompt.Length.ToString("N0", CultureInfo.CurrentCulture))
+                .AppendLine(" 字符）")
+                .Append("- Provider 停顿：首内容 ")
+                .Append(profile.FirstContentTimeoutSeconds.ToString("N0", CultureInfo.CurrentCulture))
+                .Append("s · 流式静默 ")
+                .Append(profile.StreamingInactivityTimeoutSeconds.ToString("N0", CultureInfo.CurrentCulture))
+                .AppendLine("s");
+        }
+
+        private static void AppendAgent(
+            StringBuilder builder,
+            CopilotAgentDefaultsConfig defaults,
+            CopilotConfigFileProbe configProbe,
+            CopilotAgentMode composerMode)
+        {
+            var source = configProbe.HasAgentDefaults
+                ? "应用配置 CopilotConfig.AgentDefaults"
+                : configProbe.State == CopilotConfigFileProbeState.Loaded
+                    ? "内置默认或迁移"
+                    : "已加载运行时值（当前文件来源未证实）";
+            builder.AppendLine()
+                .AppendLine("Agent")
+                .Append("- 当前输入模式：")
+                .Append(composerMode)
+                .AppendLine(" · 来源 会话草稿")
+                .Append("- 预算：context ")
+                .Append(FormatNumber(defaults.ContextWindowTokens))
+                .Append(" · request ")
+                .Append(FormatNumber(defaults.RequestTokenBudget))
+                .Append(" tokens · tools ")
+                .Append(FormatNumber(defaults.MaxToolCalls))
+                .Append(" · passes ")
+                .Append(FormatNumber(defaults.MaxAgentPasses))
+                .Append(" · timeout ")
+                .Append(FormatDuration(TimeSpan.FromSeconds(defaults.TimeoutSeconds)))
+                .Append(" · 来源 ")
+                .AppendLine(source)
+                .Append("- Shell：")
+                .Append(defaults.PreferredShell)
+                .Append(" · 自动压缩 ")
+                .Append(defaults.AutoCompactConversationHistory ? "开启" : "关闭")
+                .Append(" @ ")
+                .Append(defaults.AutoCompactThresholdPercent.ToString(CultureInfo.CurrentCulture))
+                .Append("% · 自定义聚焦 ")
+                .Append(defaults.AutoCompactInstructions.Length.ToString("N0", CultureInfo.CurrentCulture))
+                .AppendLine(" 字符")
+                .Append("- Skill 手动覆盖：")
+                .Append(defaults.SkillOverrides?.Count.ToString("N0", CultureInfo.CurrentCulture) ?? "0")
+                .AppendLine(" 项");
+        }
+
+        private static void AppendConversation(
+            StringBuilder builder,
+            CopilotChatState state,
+            CopilotConversationRecord? conversation)
+        {
+            var personality = conversation?.ResponsePersonality ?? CopilotResponsePersonality.None;
+            var personalitySource = personality == CopilotResponsePersonality.None
+                ? "内置默认"
+                : "会话覆盖";
+            var followUp = CopilotFollowUpPreference.Normalize(state.DefaultFollowUpBehavior);
+            var followUpSource = followUp == CopilotFollowUpBehavior.Steer
+                ? "ChatState 默认"
+                : "ChatState 保存值";
+
+            builder.AppendLine()
+                .AppendLine("会话与本机偏好")
+                .Append("- 回答风格：")
+                .Append(CopilotResponsePersonalitySelection.GetDisplayName(personality))
+                .Append(" · 来源 ")
+                .AppendLine(personalitySource)
+                .Append("- 权限：")
+                .AppendLine(FormatAccessMode(conversation))
+                .Append("- 附加只读目录：")
+                .Append(CopilotAdditionalDirectoryCommand.NormalizeStoredPaths(
+                    conversation?.AdditionalReadRootPaths).Length)
+                .AppendLine(" 个 · 来源 会话状态")
+                .Append("- 运行中 Enter：")
+                .Append(followUp == CopilotFollowUpBehavior.Queue ? "排队" : "调整当前任务")
+                .Append(" · 来源 ")
+                .AppendLine(followUpSource)
+                .Append("- 输入与显示：多行 ")
+                .Append(state.UseMultilineComposer ? "开启" : "关闭")
+                .Append(" · 时间戳 ")
+                .Append(state.ShowMessageTimestamps ? "显示" : "隐藏")
+                .Append(" · 紧凑布局 ")
+                .Append(state.UseCompactMessageLayout ? "开启" : "关闭")
+                .Append(" · 历史提示 ")
+                .Append(state.EnablePromptHistoryCompletions ? "开启" : "关闭")
+                .AppendLine(" · 来源 ChatState");
+        }
+
+        private static void AppendIntegrations(
+            StringBuilder builder,
+            CopilotConfig config,
+            CopilotConfigFileProbe configProbe,
+            bool mcpListenerRunning)
+        {
+            var enabledExternalServers = config.ExternalMcpServers?
+                .Count(server => server?.Enabled == true) ?? 0;
+            var source = configProbe.HasMcpSettings
+                ? "应用配置 CopilotConfig"
+                : configProbe.State == CopilotConfigFileProbeState.Loaded
+                    ? "内置默认或迁移"
+                    : "已加载运行时值（当前文件来源未证实）";
+            builder.AppendLine()
+                .AppendLine("集成")
+                .Append("- 本机 MCP：")
+                .Append(config.McpEnabled ? "启用" : "禁用")
+                .Append(" · listener ")
+                .Append(mcpListenerRunning ? "运行中" : "未运行")
+                .Append(" · port ")
+                .Append(config.McpPort.ToString(CultureInfo.InvariantCulture))
+                .Append(" · Bearer ")
+                .Append(string.IsNullOrWhiteSpace(config.McpBearerToken) ? "缺失" : "已配置")
+                .Append(" · 来源 ")
+                .AppendLine(source)
+                .Append("- 外部 MCP：")
+                .Append(enabledExternalServers.ToString("N0", CultureInfo.CurrentCulture))
+                .Append(" / ")
+                .Append(config.ExternalMcpServers?.Count.ToString("N0", CultureInfo.CurrentCulture) ?? "0")
+                .AppendLine(" 个已启用");
+        }
+
+        private static string FormatConfigProbe(
+            CopilotConfigFileProbe probe,
+            int runtimeSchemaVersion)
+        {
+            return probe.State switch
+            {
+                CopilotConfigFileProbeState.Loaded =>
+                    $"已加载 CopilotConfig · file schema {probe.SchemaVersion?.ToString(CultureInfo.InvariantCulture) ?? "未声明"} → runtime {runtimeSchemaVersion.ToString(CultureInfo.InvariantCulture)}",
+                CopilotConfigFileProbeState.FileMissing => "当前文件不存在 · 继续使用已加载运行时值",
+                CopilotConfigFileProbeState.SectionMissing => "当前无 CopilotConfig 节 · 继续使用已加载运行时值",
+                CopilotConfigFileProbeState.InvalidJson => "JSON 无法解析 · 运行时使用已加载值或默认值",
+                CopilotConfigFileProbeState.TooLarge => "超过 16 MiB · 为安全起见未解析来源元数据",
+                CopilotConfigFileProbeState.Unreadable => "当前不可读取 · 运行时使用已加载值",
+                _ => "路径不可用 · 运行时使用已加载值",
+            };
+        }
+
+        private static string FormatStateLoadStatus(CopilotChatStateLoadStatus status)
+        {
+            var label = status.Source switch
+            {
+                CopilotChatStateLoadSource.Primary => "主状态文件",
+                CopilotChatStateLoadSource.Temporary => "临时快照恢复",
+                CopilotChatStateLoadSource.Backup => "备份恢复",
+                CopilotChatStateLoadSource.RecoverySnapshot => "历史恢复快照",
+                CopilotChatStateLoadSource.Fresh => "新建内存状态",
+                CopilotChatStateLoadSource.FutureVersion => "更高版本阻止写入",
+                CopilotChatStateLoadSource.Unrecoverable => "状态不可恢复",
+                _ => "尚未探测",
+            };
+            return status.SchemaVersion.HasValue
+                ? $"{label} · file schema {status.SchemaVersion.Value.ToString(CultureInfo.InvariantCulture)}"
+                : label;
+        }
+
+        private static string FormatAccessMode(CopilotConversationRecord? conversation)
+        {
+            if (conversation?.AccessMode != CopilotAgentAccessMode.FullAccess)
+                return "按需确认 · 内置安全默认";
+
+            var scope = conversation.IsFullAccessPreparedForNextTask
+                ? "自动复核 · 下一任务"
+                : "自动复核 · 当前任务";
+            return conversation.FullAccessExpiresAtUtc.HasValue
+                ? $"{scope} · 到期 {conversation.FullAccessExpiresAtUtc.Value.ToLocalTime():MM-dd HH:mm:ss}"
+                : scope;
+        }
+
+        private static string FormatEndpointOrigin(string? baseUrl)
+        {
+            if (!Uri.TryCreate((baseUrl ?? string.Empty).Trim(), UriKind.Absolute, out var uri)
+                || string.IsNullOrWhiteSpace(uri.Host))
+            {
+                return "无有效 origin";
+            }
+
+            try
+            {
+                var host = uri.HostNameType == UriHostNameType.IPv6
+                    ? "[" + uri.Host + "]"
+                    : uri.IdnHost;
+                return uri.Scheme + "://" + host + (uri.IsDefaultPort ? string.Empty : ":" + uri.Port.ToString(CultureInfo.InvariantCulture));
+            }
+            catch (UriFormatException)
+            {
+                return "无有效 origin";
+            }
+        }
+
+        private static string NormalizeDisplayText(string? value)
+        {
+            var text = CopilotMcpAuditLogger.RedactText(value ?? string.Empty)
+                .Replace('\r', ' ')
+                .Replace('\n', ' ')
+                .Trim();
+            if (text.Length > MaximumDisplayTextCharacters)
+                text = text[..MaximumDisplayTextCharacters].TrimEnd() + "…";
+            if (text.Length > 0 && char.IsHighSurrogate(text[^1]))
+                text = text[..^1].TrimEnd() + "…";
+            return text.Length == 0 ? "未设置" : text;
+        }
+
+        private static string FormatPath(string? path)
+        {
+            var normalized = NormalizePath(path);
+            return normalized.Length == 0 ? "路径不可用" : normalized;
+        }
+
+        private static string NormalizePath(string? path)
+        {
+            var normalized = (path ?? string.Empty).Trim();
+            if (normalized.Length == 0)
+                return string.Empty;
+            try
+            {
+                return Path.GetFullPath(normalized);
+            }
+            catch (Exception ex) when (ex is ArgumentException
+                or NotSupportedException
+                or PathTooLongException)
+            {
+                return string.Empty;
+            }
+        }
+
+        private static CopilotConfigFileProbe CreateProbe(
+            string filePath,
+            CopilotConfigFileProbeState state) =>
+            new(
+                filePath,
+                state,
+                null,
+                false,
+                false,
+                new HashSet<string>(StringComparer.Ordinal));
+
+        private static string FormatNumber(long value) =>
+            Math.Max(0, value).ToString("N0", CultureInfo.CurrentCulture);
+
+        private static string FormatDuration(TimeSpan duration)
+        {
+            if (duration.TotalHours >= 1)
+                return $"{(int)duration.TotalHours:N0}h {duration.Minutes:N0}m";
+            if (duration.TotalMinutes >= 1)
+                return $"{(int)duration.TotalMinutes:N0}m {duration.Seconds:N0}s";
+            return $"{Math.Max(0, (int)duration.TotalSeconds):N0}s";
+        }
+    }
+}

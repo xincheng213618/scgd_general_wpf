@@ -6,7 +6,7 @@ namespace ColorVision.Copilot
 {
     public sealed class CopilotChatState
     {
-        public const int CurrentSchemaVersion = 17;
+        public const int CurrentSchemaVersion = 31;
 
         public int SchemaVersion { get; set; } = CurrentSchemaVersion;
 
@@ -16,17 +16,102 @@ namespace ColorVision.Copilot
 
         public string ActiveProfileId { get; set; } = string.Empty;
 
+        public bool IsAgentTaskPanelExpanded { get; set; } = true;
+
+        public bool ShouldSerializeIsAgentTaskPanelExpanded() => !IsAgentTaskPanelExpanded;
+
+        public bool ShowMessageTimestamps { get; set; } = true;
+
+        public bool ShouldSerializeShowMessageTimestamps() => !ShowMessageTimestamps;
+
+        public bool UseCompactMessageLayout { get; set; }
+
+        public bool ShouldSerializeUseCompactMessageLayout() => UseCompactMessageLayout;
+
+        public bool EnablePromptHistoryCompletions { get; set; } = true;
+
+        public bool ShouldSerializeEnablePromptHistoryCompletions() => !EnablePromptHistoryCompletions;
+
+        public bool UseMultilineComposer { get; set; }
+
+        public bool ShouldSerializeUseMultilineComposer() => UseMultilineComposer;
+
+        public CopilotFollowUpBehavior DefaultFollowUpBehavior { get; set; } = CopilotFollowUpBehavior.Steer;
+
+        public bool ShouldSerializeDefaultFollowUpBehavior() =>
+            DefaultFollowUpBehavior != CopilotFollowUpBehavior.Steer;
+
         public ObservableCollection<CopilotQueuedFollowUpRecoveryRecord> QueuedFollowUpRecoveries { get; set; } = new();
 
         public bool ShouldSerializeQueuedFollowUpRecoveries() => QueuedFollowUpRecoveries?.Count > 0;
 
         internal int RecoveredQueuedFollowUpCount { get; set; }
 
+        internal int RecoveredSteeringCount { get; set; }
+
+        internal bool ToggleAgentTaskPanelExpanded()
+        {
+            IsAgentTaskPanelExpanded = !IsAgentTaskPanelExpanded;
+            return IsAgentTaskPanelExpanded;
+        }
+
+        internal bool SetShowMessageTimestamps(bool show)
+        {
+            if (ShowMessageTimestamps == show)
+                return false;
+
+            ShowMessageTimestamps = show;
+            return true;
+        }
+
+        internal bool SetUseCompactMessageLayout(bool useCompactLayout)
+        {
+            if (UseCompactMessageLayout == useCompactLayout)
+                return false;
+
+            UseCompactMessageLayout = useCompactLayout;
+            return true;
+        }
+
+        internal bool SetEnablePromptHistoryCompletions(bool enabled)
+        {
+            if (EnablePromptHistoryCompletions == enabled)
+                return false;
+
+            EnablePromptHistoryCompletions = enabled;
+            return true;
+        }
+
+        internal bool SetUseMultilineComposer(bool enabled)
+        {
+            if (UseMultilineComposer == enabled)
+                return false;
+
+            UseMultilineComposer = enabled;
+            return true;
+        }
+
+        internal bool SetDefaultFollowUpBehavior(CopilotFollowUpBehavior behavior)
+        {
+            var normalized = CopilotFollowUpPreference.Normalize(behavior);
+            if (DefaultFollowUpBehavior == normalized)
+                return false;
+
+            DefaultFollowUpBehavior = normalized;
+            return true;
+        }
+
         public bool EnsureInitialized(CopilotConfig config)
         {
             ArgumentNullException.ThrowIfNull(config);
 
             var changed = false;
+            var normalizedFollowUpBehavior = CopilotFollowUpPreference.Normalize(DefaultFollowUpBehavior);
+            if (DefaultFollowUpBehavior != normalizedFollowUpBehavior)
+            {
+                DefaultFollowUpBehavior = normalizedFollowUpBehavior;
+                changed = true;
+            }
             if (Conversations == null)
             {
                 Conversations = new ObservableCollection<CopilotConversationRecord>();
@@ -90,17 +175,21 @@ namespace ColorVision.Copilot
 
             changed |= CopilotQueuedFollowUpRecovery.RestoreToDrafts(this);
 
-            if (Conversations.Count == 0)
+            var activeConversations = Conversations
+                .Where(conversation => !conversation.IsArchived)
+                .ToArray();
+            if (activeConversations.Length == 0)
             {
                 var conversation = CopilotConversationRecord.CreateEmpty(ActiveProfileId, config.FindProfile(ActiveProfileId)?.DisplayLabel ?? string.Empty);
-                Conversations.Add(conversation);
+                Conversations.Insert(0, conversation);
                 ActiveConversationId = conversation.Id;
                 return true;
             }
 
-            if (string.IsNullOrWhiteSpace(ActiveConversationId) || Conversations.All(conversation => conversation.Id != ActiveConversationId))
+            if (string.IsNullOrWhiteSpace(ActiveConversationId)
+                || activeConversations.All(conversation => conversation.Id != ActiveConversationId))
             {
-                ActiveConversationId = Conversations[0].Id;
+                ActiveConversationId = activeConversations[0].Id;
                 changed = true;
             }
 

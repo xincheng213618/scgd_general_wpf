@@ -17,6 +17,8 @@ namespace ColorVision.Copilot
 
         public CopilotAgentStopReason PreviousStopReason { get; init; }
 
+        public bool PreviousResponseWasInterrupted { get; init; }
+
         public string ToolName { get; init; } = string.Empty;
 
         public string SourceCallKey { get; init; } = string.Empty;
@@ -27,12 +29,17 @@ namespace ColorVision.Copilot
                 return false;
 
             if (Mode == CopilotAgentRecoveryMode.Finalize)
-                return PreviousStopReason is (CopilotAgentStopReason.IncompleteOutput
-                    or CopilotAgentStopReason.BudgetExhausted
-                    or CopilotAgentStopReason.ProviderFailure
-                    or CopilotAgentStopReason.Interrupted)
+                return (PreviousStopReason is (CopilotAgentStopReason.IncompleteOutput
+                        or CopilotAgentStopReason.BudgetExhausted
+                        or CopilotAgentStopReason.ProviderFailure
+                        or CopilotAgentStopReason.Interrupted)
+                    || (PreviousStopReason == CopilotAgentStopReason.Completed
+                        && PreviousResponseWasInterrupted))
                     && string.IsNullOrWhiteSpace(ToolName)
                     && string.IsNullOrWhiteSpace(SourceCallKey);
+
+            if (PreviousResponseWasInterrupted)
+                return false;
 
             if (PreviousStopReason is not (CopilotAgentStopReason.BudgetExhausted
                 or CopilotAgentStopReason.TaskPassLimit
@@ -72,10 +79,12 @@ namespace ColorVision.Copilot
             CopilotChatMessage? message,
             CopilotAgentSessionCheckpoint? checkpoint,
             CopilotProfileConfig? profile,
-            CopilotCapabilityCatalogSnapshot capabilitySnapshot)
+            CopilotCapabilityCatalogSnapshot capabilitySnapshot,
+            CopilotToolExecutionHookRegistrySnapshot? hookSurfaceSnapshot = null)
         {
             if (message == null
                 || message.IsUser
+                || message.IsAgentRecoveryDismissed
                 || checkpoint?.IsStructurallyValid() != true
                 || profile?.IsConfigured != true)
             {
@@ -101,7 +110,10 @@ namespace ColorVision.Copilot
                 return CopilotAgentRecoveryDecision.Unavailable;
             }
 
-            var compatibility = checkpoint.EvaluateFor(profile, capabilitySnapshot);
+            var compatibility = checkpoint.EvaluateFor(
+                profile,
+                capabilitySnapshot,
+                hookSurfaceSnapshot: hookSurfaceSnapshot);
             if (compatibility.Kind == CopilotAgentCheckpointCompatibilityKind.Invalid)
                 return CopilotAgentRecoveryDecision.Unavailable;
 
@@ -111,7 +123,8 @@ namespace ColorVision.Copilot
                     CopilotAgentRecoveryMode.Finalize,
                     message.AgentStopReason,
                     "重试最终回答",
-                    FinalizeUserMessage);
+                    FinalizeUserMessage,
+                    previousResponseWasInterrupted: message.WasResponseInterrupted);
             }
 
             if (compatibility.Kind != CopilotAgentCheckpointCompatibilityKind.Compatible)
@@ -155,7 +168,8 @@ namespace ColorVision.Copilot
             string actionLabel,
             string userMessage,
             string toolName = "",
-            string sourceCallKey = "")
+            string sourceCallKey = "",
+            bool previousResponseWasInterrupted = false)
         {
             return new CopilotAgentRecoveryDecision
             {
@@ -163,6 +177,7 @@ namespace ColorVision.Copilot
                 {
                     Mode = mode,
                     PreviousStopReason = stopReason,
+                    PreviousResponseWasInterrupted = previousResponseWasInterrupted,
                     ToolName = toolName,
                     SourceCallKey = sourceCallKey,
                 },

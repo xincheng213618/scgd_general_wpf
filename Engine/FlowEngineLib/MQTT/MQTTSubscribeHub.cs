@@ -13,7 +13,7 @@ public class MQTTSubscribeHub : STNodeOutHub
 {
 	public static readonly ILog logger = LogManager.GetLogger(typeof(MQTTSubscribeHub));
 
-	private string _Server;
+	private string _Server = "127.0.0.1";
 
 	private int _Port = 1883;
 
@@ -56,14 +56,6 @@ public class MQTTSubscribeHub : STNodeOutHub
 	{
 	}
 
-	protected override void OnCreate()
-	{
-		base.OnCreate();
-		string userName = "";
-		string password = "";
-		MQTTHelper.GetDefaultCfg(ref _Server, ref _Port, ref userName, ref password);
-	}
-
 	protected override void Addhub()
 	{
 		base.Addhub();
@@ -84,10 +76,7 @@ public class MQTTSubscribeHub : STNodeOutHub
 		if (_MQTTHelper == null)
 		{
 			_MQTTHelper = new MQTTHelper();
-			string userName = "";
-			string password = "";
-			MQTTHelper.GetDefaultCfg(ref _Server, ref _Port, ref userName, ref password);
-			_MQTTHelper.CreateMQTTClientAndStart(_Server, _Port, userName, password, onMsgSub);
+			_MQTTHelper.CreateMQTTClientAndStart(_Server, _Port, string.Empty, string.Empty, onMsgSub);
 		}
 	}
 

@@ -1,4 +1,5 @@
 ﻿#pragma warning disable CA1822,CA1859,CS8622,CS8625
+using ColorVision.Engine.FlowProcessing.PreProcess;
 using ColorVision.Themes;
 using ColorVision.UI;
 using Newtonsoft.Json;
@@ -17,6 +18,7 @@ namespace ProjectARVRPro.Process
     public partial class ProcessManagerWindow : Window
     {
         private ProcessMeta _currentSelectedMeta;
+        private ProcessManager? _recipeImportManager;
         private readonly List<(INotifyPropertyChanged obj, PropertyChangedEventHandler handler)> _configSubscriptions = new();
 
         public ProcessManagerWindow()
@@ -24,6 +26,11 @@ namespace ProjectARVRPro.Process
             InitializeComponent();
             this.ApplyCaption();
             Closing += Window_Closing;
+        }
+
+        private void PreProcessManager_Click(object sender, RoutedEventArgs e)
+        {
+            PreProcessManager.GetInstance().Edit();
         }
 
         private void Window_Closing(object sender, CancelEventArgs e)
@@ -40,6 +47,12 @@ namespace ProjectARVRPro.Process
                 _currentSelectedMeta = null;
             }
 
+            if (_recipeImportManager != null)
+            {
+                _recipeImportManager.RecipeConfigImported -= ProcessManager_RecipeConfigImported;
+                _recipeImportManager = null;
+            }
+
             CleanupConfigSubscriptions();
         }
 
@@ -53,6 +66,16 @@ namespace ProjectARVRPro.Process
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (DataContext is ProcessManager manager)
+            {
+                _recipeImportManager = manager;
+                _recipeImportManager.RecipeConfigImported += ProcessManager_RecipeConfigImported;
+            }
+            RefreshConfigPanels();
+        }
+
+        private void ProcessManager_RecipeConfigImported(object? sender, EventArgs e)
         {
             RefreshConfigPanels();
         }

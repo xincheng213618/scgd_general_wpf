@@ -53,6 +53,7 @@ namespace ColorVision.Copilot
         private const int MaximumIndexedWorkspaceFiles = 5000;
         private const int MaximumTemplateReferences = 2048;
         private const int MaximumSuggestions = 12;
+        private const int MaximumMentionQueryCharacters = 80;
         private static readonly object FileIndexLock = new();
         private static readonly HashSet<string> SkippedDirectoryNames = new(StringComparer.OrdinalIgnoreCase)
         {
@@ -82,7 +83,9 @@ namespace ColorVision.Copilot
                     continue;
 
                 var suffix = text[(index + 1)..];
-                if (suffix.Contains('\r') || suffix.Contains('\n') || suffix.Length > 80)
+                if (suffix.Contains('\r')
+                    || suffix.Contains('\n')
+                    || suffix.Length > MaximumMentionQueryCharacters)
                     break;
                 if (suffix.StartsWith('[') && suffix.Contains(']'))
                     break;
@@ -93,6 +96,36 @@ namespace ColorVision.Copilot
 
             mention = default;
             return false;
+        }
+
+        internal static bool TryCreateMentionInput(
+            string? query,
+            out string input,
+            out string errorMessage)
+        {
+            input = string.Empty;
+            errorMessage = string.Empty;
+            var normalizedQuery = (query ?? string.Empty).Trim();
+            if (normalizedQuery.Contains('\r') || normalizedQuery.Contains('\n'))
+            {
+                errorMessage = "关联查询必须是单行文本。";
+                return false;
+            }
+            if (normalizedQuery.Length > MaximumMentionQueryCharacters)
+            {
+                errorMessage = $"关联查询最多 {MaximumMentionQueryCharacters} 个字符。";
+                return false;
+            }
+
+            var candidate = "@" + normalizedQuery;
+            if (!TryParseMention(candidate, out var mention) || mention.StartIndex != 0)
+            {
+                errorMessage = "关联查询不能使用已经闭合的 @[标题] 语法。";
+                return false;
+            }
+
+            input = candidate;
+            return true;
         }
 
         public static string CompleteMention(string? input, CopilotComposerMention mention, string title)

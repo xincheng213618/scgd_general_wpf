@@ -25,6 +25,19 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
         public string Tag { get => _Tag; set { _Tag = value; OnPropertyChanged(); } }
         private string _Tag;
 
+        public PostProcessFailurePolicy FailurePolicy
+        {
+            get => _FailurePolicy;
+            set
+            {
+                if (_FailurePolicy == value)
+                    return;
+                _FailurePolicy = value;
+                OnPropertyChanged();
+            }
+        }
+        private PostProcessFailurePolicy _FailurePolicy = PostProcessFailurePolicy.Warning;
+
         /// <summary>
         /// Gets or sets the JSON representation of the batch process configuration.
         /// </summary>

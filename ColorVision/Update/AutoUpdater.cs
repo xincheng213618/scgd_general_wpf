@@ -98,10 +98,8 @@ namespace ColorVision.Update
         private static readonly LatestVersionCheckRequestCache _latestVersionRequests = new();
         private static readonly object _latestVersionCacheLock = new();
         private static readonly TimeSpan MetadataRequestTimeout = TimeSpan.FromSeconds(4);
-        private static readonly TimeSpan LatestVersionClientCacheDuration = TimeSpan.FromMinutes(5);
         private static string? _cachedLatestVersionUrl;
         private static Version? _cachedLatestVersion;
-        private static DateTimeOffset _cachedLatestVersionAt = DateTimeOffset.MinValue;
         private static string? _cachedLatestVersionETag;
         public static string UpdateUrl => BuildAppApiUrl("latest-version");
 
@@ -224,12 +222,9 @@ namespace ColorVision.Update
                 return new LatestVersionCheckResult(new Version(), UpdateServerCheckStatus.ServerUnavailable);
             }
 
-            if (!forceRefresh && TryGetFreshCachedLatestVersion(url, out Version freshCachedVersion))
-                return new LatestVersionCheckResult(freshCachedVersion, UpdateServerCheckStatus.Success);
-
             Task<LatestVersionCheckResult> request = _latestVersionRequests.GetOrCreate(
                 url,
-                () => FetchLatestVersionCheckResultAsync(url, forceRefresh),
+                () => FetchLatestVersionCheckResultAsync(url),
                 out bool reused);
             if (reused)
                 log.Info($"Reusing the update metadata request already in progress for {url}.");
@@ -237,13 +232,8 @@ namespace ColorVision.Update
             return await request.WaitAsync(cancellationToken);
         }
 
-        private static async Task<LatestVersionCheckResult> FetchLatestVersionCheckResultAsync(
-            string url,
-            bool forceRefresh)
+        private static async Task<LatestVersionCheckResult> FetchLatestVersionCheckResultAsync(string url)
         {
-            if (!forceRefresh && TryGetFreshCachedLatestVersion(url, out Version freshCachedVersion))
-                return new LatestVersionCheckResult(freshCachedVersion, UpdateServerCheckStatus.Success);
-
             if (!WindowsNetworkState.IsConnectedToInternet())
             {
                 if (TryGetAnyCachedLatestVersion(url, out Version offlineCachedVersion))
@@ -258,9 +248,6 @@ namespace ColorVision.Update
 
             try
             {
-                if (!forceRefresh && TryGetFreshCachedLatestVersion(url, out freshCachedVersion))
-                    return new LatestVersionCheckResult(freshCachedVersion, UpdateServerCheckStatus.Success);
-
                 string? cachedETag = GetCachedLatestVersionETag(url);
                 using HttpResponseMessage response = await UpdateHttpClientProvider.SendWithTransientRetryAsync(
                     () =>
@@ -276,7 +263,6 @@ namespace ColorVision.Update
                 if (response.StatusCode == HttpStatusCode.NotModified
                     && TryGetAnyCachedLatestVersion(url, out Version notModifiedVersion))
                 {
-                    TouchCachedLatestVersion(url);
                     return new LatestVersionCheckResult(notModifiedVersion, UpdateServerCheckStatus.Success);
                 }
 
@@ -323,23 +309,6 @@ namespace ColorVision.Update
             return new LatestVersionCheckResult(new Version(), UpdateServerCheckStatus.ServerUnavailable);
         }
 
-        private static bool TryGetFreshCachedLatestVersion(string url, out Version version)
-        {
-            lock (_latestVersionCacheLock)
-            {
-                if (_cachedLatestVersion != null
-                    && string.Equals(_cachedLatestVersionUrl, url, StringComparison.OrdinalIgnoreCase)
-                    && DateTimeOffset.UtcNow - _cachedLatestVersionAt <= LatestVersionClientCacheDuration)
-                {
-                    version = _cachedLatestVersion;
-                    return true;
-                }
-            }
-
-            version = new Version();
-            return false;
-        }
-
         private static bool TryGetAnyCachedLatestVersion(string url, out Version version)
         {
             lock (_latestVersionCacheLock)
@@ -372,17 +341,7 @@ namespace ColorVision.Update
             {
                 _cachedLatestVersionUrl = url;
                 _cachedLatestVersion = version;
-                _cachedLatestVersionAt = DateTimeOffset.UtcNow;
                 _cachedLatestVersionETag = etag;
-            }
-        }
-
-        private static void TouchCachedLatestVersion(string url)
-        {
-            lock (_latestVersionCacheLock)
-            {
-                if (string.Equals(_cachedLatestVersionUrl, url, StringComparison.OrdinalIgnoreCase))
-                    _cachedLatestVersionAt = DateTimeOffset.UtcNow;
             }
         }
 

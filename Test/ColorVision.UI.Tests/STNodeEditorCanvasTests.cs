@@ -1,7 +1,10 @@
 #pragma warning disable CA1707
 using ColorVision.Engine.FlowProcessing.Editor;
 using ST.Library.UI.NodeEditor;
+using System.Reflection;
 using System.Runtime.ExceptionServices;
+using System.Windows;
+using System.Windows.Threading;
 
 namespace ColorVision.UI.Tests
 {
@@ -56,6 +59,81 @@ namespace ColorVision.UI.Tests
 
                 Assert.Equal(10000f, editor.CanvasOffsetX);
                 Assert.Equal(-10000f, editor.CanvasOffsetY);
+            });
+        }
+
+        [Fact]
+        public void AnimationTimer_RemainsStoppedWhenLoadedEditorIsIdle()
+        {
+            RunInSta(() =>
+            {
+                using var editor = new STNodeEditor();
+                Window window = ShowLoaded(editor);
+                try
+                {
+                    Assert.False(GetAnimationTimer(editor).IsEnabled);
+                }
+                finally
+                {
+                    window.Close();
+                }
+            });
+        }
+
+        [Fact]
+        public void AnimationTimer_StopsAfterAnimatedCanvasMovementCompletes()
+        {
+            RunInSta(() =>
+            {
+                using var editor = new STNodeEditor
+                {
+                    LimitCanvasToContentBounds = false
+                };
+                Window window = ShowLoaded(editor);
+                try
+                {
+                    editor.MoveCanvas(120f, -80f, bAnimation: true, CanvasMoveArgs.All);
+
+                    DispatcherTimer timer = GetAnimationTimer(editor);
+                    Assert.True(timer.IsEnabled);
+                    AdvanceAnimationUntilIdle(editor);
+                    Assert.Equal(120f, editor.CanvasOffsetX);
+                    Assert.Equal(-80f, editor.CanvasOffsetY);
+                    Assert.False(timer.IsEnabled);
+                }
+                finally
+                {
+                    window.Close();
+                }
+            });
+        }
+
+        [Fact]
+        public void AnimationTimer_StopsAfterAlertFadeCompletes()
+        {
+            RunInSta(() =>
+            {
+                using var editor = new STNodeEditor();
+                Window window = ShowLoaded(editor);
+                try
+                {
+                    editor.ShowAlert(
+                        "done",
+                        System.Drawing.Color.White,
+                        System.Drawing.Color.Black,
+                        -1001,
+                        AlertLocation.RightBottom,
+                        bRedraw: false);
+
+                    DispatcherTimer timer = GetAnimationTimer(editor);
+                    Assert.True(timer.IsEnabled);
+                    AdvanceAnimation(editor);
+                    Assert.False(timer.IsEnabled);
+                }
+                finally
+                {
+                    window.Close();
+                }
             });
         }
 
@@ -211,6 +289,65 @@ namespace ColorVision.UI.Tests
         }
 
         [Fact]
+        public void PropertyEditorFirstRender_PositionsWhileHidden()
+        {
+            RunInSta(() =>
+            {
+                var panel = new System.Windows.Controls.Border
+                {
+                    Width = 300,
+                    Height = 240,
+                    Visibility = System.Windows.Visibility.Collapsed
+                };
+                bool positionedWhileHidden = false;
+
+                FlowEditorCanvas.PreparePropertyPanelForFirstRender(
+                    panel,
+                    new System.Windows.Size(420, 520),
+                    measuredSize =>
+                    {
+                        positionedWhileHidden = panel.Visibility == System.Windows.Visibility.Hidden;
+                        Assert.Equal(300, measuredSize.Width);
+                        Assert.Equal(240, measuredSize.Height);
+                        System.Windows.Controls.Canvas.SetLeft(panel, 640);
+                        System.Windows.Controls.Canvas.SetTop(panel, 320);
+                    });
+
+                Assert.True(positionedWhileHidden);
+                Assert.Equal(System.Windows.Visibility.Visible, panel.Visibility);
+                Assert.Equal(640, System.Windows.Controls.Canvas.GetLeft(panel));
+                Assert.Equal(320, System.Windows.Controls.Canvas.GetTop(panel));
+            });
+        }
+
+        [Fact]
+        public void PropertyEditorPanel_LongContentDoesNotExceedMaximumWidth()
+        {
+            RunInSta(() =>
+            {
+                using var canvas = new FlowEditorCanvas();
+                canvas.NodePropertyPanel.Children.Add(new System.Windows.Controls.TextBox
+                {
+                    Text = new string('W', 200),
+                    Width = 2000
+                });
+                canvas.NodePropertyPanelContainer.Visibility = System.Windows.Visibility.Visible;
+
+                canvas.Measure(new System.Windows.Size(1200, 800));
+                canvas.Arrange(new System.Windows.Rect(0, 0, 1200, 800));
+                canvas.UpdateLayout();
+
+                Assert.Equal(
+                    FlowEditorCanvas.PropertyPanelMaxWidth,
+                    canvas.NodePropertyPanelContainer.MaxWidth);
+                Assert.InRange(
+                    canvas.NodePropertyPanelContainer.ActualWidth,
+                    0,
+                    FlowEditorCanvas.PropertyPanelMaxWidth);
+            });
+        }
+
+        [Fact]
         public void NodeMovement_HidesEmbeddedPropertyEditor()
         {
             RunInSta(() =>
@@ -237,7 +374,7 @@ namespace ColorVision.UI.Tests
             {
                 using var canvas = new FlowEditorCanvas();
                 STNodeEditor editor = canvas.NodeEditor;
-                var signPanel = canvas.NodePropertyPanel.SignStackPanel;
+                var signPanel = canvas.NodePropertyPanel;
                 signPanel.Children.Add(new System.Windows.Controls.Border());
 
                 Exception? workerException = null;
@@ -385,6 +522,67 @@ namespace ColorVision.UI.Tests
                 editor.FitCanvasToNodes(0.85f);
 
                 Assert.Equal(0.85f, editor.CanvasScale);
+            });
+        }
+
+        [Fact]
+        public void FlowEditorResize_PreservesFittedCanvasCenterAndScale()
+        {
+            RunInSta(() =>
+            {
+                using var canvas = new FlowEditorCanvas();
+                canvas.Measure(new System.Windows.Size(1600, 900));
+                canvas.Arrange(new System.Windows.Rect(0, 0, 1600, 900));
+                canvas.UpdateLayout();
+
+                STNodeEditor editor = canvas.NodeEditor;
+                var node = new STNodeHub();
+                node.Create();
+                node.Left = 100;
+                node.Top = 100;
+                editor.Nodes.Add(node);
+                editor.FitCanvasToNodes(0.85f);
+                float fittedScale = editor.CanvasScale;
+
+                canvas.Measure(new System.Windows.Size(800, 450));
+                canvas.Arrange(new System.Windows.Rect(0, 0, 800, 450));
+                canvas.UpdateLayout();
+
+                float contentCenterX = editor.CanvasValidBounds.Left + editor.CanvasValidBounds.Width / 2f;
+                float contentCenterY = editor.CanvasValidBounds.Top + editor.CanvasValidBounds.Height / 2f;
+                Assert.Equal(fittedScale, editor.CanvasScale);
+                Assert.Equal(400f, contentCenterX * editor.CanvasScale + editor.CanvasOffsetX, 3);
+                Assert.Equal(225f, contentCenterY * editor.CanvasScale + editor.CanvasOffsetY, 3);
+            });
+        }
+
+        [Fact]
+        public void FlowEditorInitialLoad_FitsCanvasAfterFirstLayout()
+        {
+            RunInSta(() =>
+            {
+                using var canvas = new FlowEditorCanvas();
+                STNodeEditor editor = canvas.NodeEditor;
+                var node = new STNodeHub();
+                node.Create();
+                node.Left = 100;
+                node.Top = 100;
+                editor.Nodes.Add(node);
+                editor.MoveCanvas(5000f, -5000f, bAnimation: false, CanvasMoveArgs.All);
+
+                canvas.FitCanvasToNodesAfterLayout();
+                canvas.Measure(new System.Windows.Size(800, 450));
+                canvas.Arrange(new System.Windows.Rect(0, 0, 800, 450));
+                canvas.UpdateLayout();
+                Dispatcher.CurrentDispatcher.Invoke(
+                    DispatcherPriority.Background,
+                    new Action(() => { }));
+
+                float contentCenterX = editor.CanvasValidBounds.Left + editor.CanvasValidBounds.Width / 2f;
+                float contentCenterY = editor.CanvasValidBounds.Top + editor.CanvasValidBounds.Height / 2f;
+                Assert.Equal(400f, contentCenterX * editor.CanvasScale + editor.CanvasOffsetX, 3);
+                Assert.Equal(225f, contentCenterY * editor.CanvasScale + editor.CanvasOffsetY, 3);
+                Assert.InRange(editor.CanvasScale, 0.2f, 0.85f);
             });
         }
 
@@ -587,6 +785,46 @@ namespace ColorVision.UI.Tests
                 }
             }
             return alpha;
+        }
+
+        private static Window ShowLoaded(STNodeEditor editor)
+        {
+            var window = new Window
+            {
+                Content = editor,
+                ShowInTaskbar = false,
+                WindowStyle = WindowStyle.None,
+                Width = 1,
+                Height = 1,
+                Left = -10000,
+                Top = -10000
+            };
+            window.Show();
+            Assert.True(editor.IsLoaded);
+            return window;
+        }
+
+        private static DispatcherTimer GetAnimationTimer(STNodeEditor editor)
+        {
+            return Assert.IsType<DispatcherTimer>(
+                typeof(STNodeEditor)
+                    .GetField("m_animation_timer", BindingFlags.Instance | BindingFlags.NonPublic)!
+                    .GetValue(editor));
+        }
+
+        private static void AdvanceAnimationUntilIdle(STNodeEditor editor)
+        {
+            DispatcherTimer timer = GetAnimationTimer(editor);
+            for (int i = 0; i < 200 && timer.IsEnabled; i++)
+                AdvanceAnimation(editor);
+            Assert.False(timer.IsEnabled);
+        }
+
+        private static void AdvanceAnimation(STNodeEditor editor)
+        {
+            typeof(STNodeEditor)
+                .GetMethod("AnimationTimer_Tick", BindingFlags.Instance | BindingFlags.NonPublic)!
+                .Invoke(editor, [editor, EventArgs.Empty]);
         }
 
         private static void RunInSta(Action action)

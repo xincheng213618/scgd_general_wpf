@@ -1,26 +1,29 @@
 using System;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace FlowEngineLib;
 
 public class LockFreeMessageWaiter
 {
-	private volatile TaskCompletionSource<bool> _tcs = new TaskCompletionSource<bool>();
-
-	private CancellationTokenSource _cts = new CancellationTokenSource();
+	private volatile TaskCompletionSource<bool> _tcs =
+		CreateCompletion();
 
 	private readonly TimeSpan _defaultTimeout = TimeSpan.FromSeconds(60.0);
 
-	public Task<bool> WaitForMessageAsync(TimeSpan? timeout = null)
+	public async Task<bool> WaitForMessageAsync(
+		TimeSpan? timeout = null)
 	{
 		TaskCompletionSource<bool> tcs = _tcs;
-		_cts.CancelAfter(timeout ?? _defaultTimeout);
-		_cts.Token.Register(delegate
+		try
 		{
-			tcs.TrySetResult(result: false);
-		});
-		return tcs.Task;
+			return await tcs.Task
+				.WaitAsync(timeout ?? _defaultTimeout)
+				.ConfigureAwait(false);
+		}
+		catch (TimeoutException)
+		{
+			return false;
+		}
 	}
 
 	public Task<bool> WaitForMessageAsync(int milliseconds = 6000)
@@ -47,8 +50,12 @@ public class LockFreeMessageWaiter
 		{
 			tcs.TrySetResult(result: false);
 		}
-		_tcs = new TaskCompletionSource<bool>();
-		_cts.Dispose();
-		_cts = new CancellationTokenSource();
+		_tcs = CreateCompletion();
+	}
+
+	private static TaskCompletionSource<bool> CreateCompletion()
+	{
+		return new TaskCompletionSource<bool>(
+			TaskCreationOptions.RunContinuationsAsynchronously);
 	}
 }

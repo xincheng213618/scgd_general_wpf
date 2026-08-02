@@ -28,17 +28,39 @@ namespace ColorVision.ImageEditor.Algorithms
             Cv2.BitwiseNot(mat, mat);
         }
 
-        public static void AdjustBrightnessContrast(Mat mat, double contrast, double brightness)
+        public static void AdjustBasic(Mat mat, double exposure, double brightness, double contrast, double gamma)
         {
-            double alpha = contrast / 300 + 1;
-            double beta = brightness * 4 / 5;
-            if (mat.Depth() != MatType.CV_8U)
+            double maximum = GetNominalMaximum(mat.Depth());
+            double exposureGain = Math.Pow(2, Math.Clamp(exposure, -5, 5));
+            double brightnessOffset = Math.Clamp(brightness, -100, 100) / 100;
+            double contrastGain = 1 + Math.Clamp(contrast, -100, 100) / 100;
+            double gammaValue = Math.Clamp(gamma, 0.1, 5);
+            double alpha = exposureGain * contrastGain;
+            double beta = brightnessOffset * contrastGain + 0.5 * (1 - contrastGain);
+
+            if (mat.Channels() != 4)
             {
-                beta *= 255;
+                ApplyToneAdjustment(mat, alpha, beta, gammaValue, maximum);
+                return;
             }
 
-            using Mat source = mat.Clone();
-            source.ConvertTo(mat, mat.Type(), alpha, beta);
+            Mat[] channels = Cv2.Split(mat);
+            try
+            {
+                for (int index = 0; index < 3; index++)
+                {
+                    ApplyToneAdjustment(channels[index], alpha, beta, gammaValue, maximum);
+                }
+
+                Cv2.Merge(channels, mat);
+            }
+            finally
+            {
+                foreach (Mat channel in channels)
+                {
+                    channel.Dispose();
+                }
+            }
         }
 
         public static void Threshold(Mat mat, double threshold, double maxValue, ThresholdTypes type = ThresholdTypes.Binary)
@@ -167,6 +189,42 @@ namespace ColorVision.ImageEditor.Algorithms
         {
             value = Math.Max(1, value);
             return value % 2 == 0 ? value + 1 : value;
+        }
+
+        private static void ApplyToneAdjustment(Mat mat, double alpha, double beta, double gamma, double maximum)
+        {
+            using Mat source = mat.Clone();
+            MatType workingType = mat.Depth() == MatType.CV_64F
+                ? MatType.MakeType(MatType.CV_64F, mat.Channels())
+                : MatType.MakeType(MatType.CV_32F, mat.Channels());
+            using Mat normalized = new();
+            source.ConvertTo(normalized, workingType, 1 / maximum);
+            normalized.ConvertTo(normalized, workingType, alpha, beta);
+            Cv2.Max(normalized, 0, normalized);
+            Cv2.Pow(normalized, 1 / gamma, normalized);
+            Cv2.Min(normalized, 1, normalized);
+
+            normalized.ConvertTo(mat, mat.Type(), maximum);
+        }
+
+        private static double GetNominalMaximum(MatType depth)
+        {
+            if (depth == MatType.CV_8U)
+            {
+                return byte.MaxValue;
+            }
+
+            if (depth == MatType.CV_16U)
+            {
+                return ushort.MaxValue;
+            }
+
+            if (depth == MatType.CV_32F || depth == MatType.CV_64F)
+            {
+                return 1;
+            }
+
+            throw new NotSupportedException($"Unsupported image depth for basic adjustment: {depth}");
         }
     }
 }

@@ -44,7 +44,7 @@ public class FlowExecutionAnalysisPresentationTests
     }
 
     [Fact]
-    public void BuildSummary_SeparatesActiveIdleAndParallelTime()
+    public void BuildSummary_SeparatesActiveNodeInactiveAndParallelTime()
     {
         DateTime start = new DateTime(2026, 7, 27, 10, 0, 0);
         FlowNodeRecord first = CreateRecord(1, 260, "run-a", "node-a", "A", start, 600);
@@ -59,9 +59,56 @@ public class FlowExecutionAnalysisPresentationTests
 
         Assert.Equal(1200, summary.WallClockMs);
         Assert.Equal(1000, summary.ActiveMs);
-        Assert.Equal(200, summary.IdleMs);
+        Assert.Equal(200, summary.NodeInactiveMs);
         Assert.Equal(400, summary.OverlapMs);
         Assert.Equal(1400, summary.NodeWorkMs);
+    }
+
+    [Fact]
+    public void BuildPhaseSummary_UsesRecordedElapsedAndFallsBackToEventTimes()
+    {
+        DateTime start = new DateTime(
+            2026,
+            7,
+            31,
+            10,
+            0,
+            0,
+            DateTimeKind.Utc);
+        IReadOnlyList<FlowExecutionEvent> events =
+        [
+            new FlowExecutionEvent
+            {
+                SequenceNo = 1,
+                EventType = "PreProcessStarted",
+                OccurredTimeUtc = start,
+            },
+            new FlowExecutionEvent
+            {
+                SequenceNo = 2,
+                EventType = "PreProcessCompleted",
+                OccurredTimeUtc = start.AddMilliseconds(200),
+                DataJson = "{\"elapsedMs\":125}",
+            },
+            new FlowExecutionEvent
+            {
+                SequenceNo = 3,
+                EventType = "PostProcessStarted",
+                OccurredTimeUtc = start.AddSeconds(1),
+            },
+            new FlowExecutionEvent
+            {
+                SequenceNo = 4,
+                EventType = "PostProcessCompleted",
+                OccurredTimeUtc = start.AddMilliseconds(1450),
+            },
+        ];
+
+        FlowExecutionPhaseSummary summary =
+            FlowExecutionAnalysisPresentation.BuildPhaseSummary(events);
+
+        Assert.Equal(125, summary.PreProcessMs);
+        Assert.Equal(450, summary.PostProcessMs);
     }
 
     [Fact]
@@ -219,6 +266,36 @@ public class FlowExecutionAnalysisPresentationTests
                 new[] { success, pending });
 
         Assert.Equal(FlowNodeExecutionOutcome.Completed, outcome);
+    }
+
+    [Fact]
+    public void GetNodeExecutionOutcome_DoesNotCountCancellationAsFailure()
+    {
+        DateTime start =
+            new DateTime(2026, 7, 31, 10, 0, 0);
+        FlowNodeRecord record = CreateRecord(
+            1,
+            260,
+            "run-a",
+            "same-node",
+            "循环节点",
+            start,
+            100);
+        FlowNodeMessage canceled = CreateMessage(
+            1,
+            260,
+            "run-a",
+            "same-node",
+            start.AddMilliseconds(10));
+        canceled.State = FlowMessageState.Canceled;
+        canceled.StatusCode = -4;
+
+        FlowNodeExecutionOutcome outcome =
+            FlowExecutionAnalysisPresentation.GetNodeExecutionOutcome(
+                record,
+                new[] { canceled });
+
+        Assert.Equal(FlowNodeExecutionOutcome.Canceled, outcome);
     }
 
     [Fact]

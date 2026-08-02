@@ -58,6 +58,109 @@ public sealed class CopilotQueuedFollowUpRecoveryTests
     }
 
     [Fact]
+    public void RestoreToDraftsRecoversRequestModeAndDeduplicatesAttachments()
+    {
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        var attachment = CopilotAttachmentItem.CreateContext(
+            "camera context",
+            "Camera",
+            "colorvision://camera");
+        var first = CreateRecord("run-1", conversation.Id, "先检查相机");
+        first.ComposerState = CopilotComposerStash.Capture(
+            first.Prompt,
+            first.Prompt.Length,
+            CopilotAgentMode.Code,
+            [attachment]);
+        var second = CreateRecord("run-2", conversation.Id, "再验证恢复");
+        second.ComposerState = CopilotComposerStash.Capture(
+            second.Prompt,
+            second.Prompt.Length,
+            CopilotAgentMode.Code,
+            [attachment]);
+        var state = new CopilotChatState
+        {
+            Conversations = new ObservableCollection<CopilotConversationRecord> { conversation },
+            QueuedFollowUpRecoveries = new ObservableCollection<CopilotQueuedFollowUpRecoveryRecord>
+            {
+                first,
+                second,
+            },
+        };
+
+        Assert.True(CopilotQueuedFollowUpRecovery.RestoreToDrafts(state));
+
+        Assert.Contains("1. 先检查相机", conversation.DraftText, StringComparison.Ordinal);
+        Assert.Contains("2. 再验证恢复", conversation.DraftText, StringComparison.Ordinal);
+        Assert.Equal(CopilotAgentMode.Code, conversation.DraftRequestMode);
+        var restoredAttachment = Assert.Single(conversation.Attachments);
+        Assert.Equal("camera context", restoredAttachment.Value);
+        Assert.NotSame(attachment, restoredAttachment);
+        Assert.Equal(2, state.RecoveredQueuedFollowUpCount);
+        Assert.Empty(state.QueuedFollowUpRecoveries);
+    }
+
+    [Fact]
+    public void MixedRecoveredModesRemainVisibleAndFallBackToAuto()
+    {
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        var code = CreateRecord("run-code", conversation.Id, "修复代码");
+        code.ComposerState = CopilotComposerStash.Capture(
+            code.Prompt,
+            code.Prompt.Length,
+            CopilotAgentMode.Code,
+            []);
+        var review = CreateRecord("run-review", conversation.Id, "审查改动");
+        review.ComposerState = CopilotComposerStash.Capture(
+            review.Prompt,
+            review.Prompt.Length,
+            CopilotAgentMode.Review,
+            []);
+        var state = new CopilotChatState
+        {
+            Conversations = new ObservableCollection<CopilotConversationRecord> { conversation },
+            QueuedFollowUpRecoveries = new ObservableCollection<CopilotQueuedFollowUpRecoveryRecord>
+            {
+                code,
+                review,
+            },
+        };
+
+        CopilotQueuedFollowUpRecovery.RestoreToDrafts(state);
+
+        Assert.Contains("[Code] 修复代码", conversation.DraftText, StringComparison.Ordinal);
+        Assert.Contains("[Review] 审查改动", conversation.DraftText, StringComparison.Ordinal);
+        Assert.Equal(CopilotAgentMode.Auto, conversation.DraftRequestMode);
+    }
+
+    [Fact]
+    public void ExistingDraftModeConflictKeepsRecoveredModeVisible()
+    {
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        conversation.DraftText = "已有审查草稿";
+        conversation.DraftRequestMode = CopilotAgentMode.Review;
+        var queuedCode = CreateRecord("run-code", conversation.Id, "修复代码");
+        queuedCode.ComposerState = CopilotComposerStash.Capture(
+            queuedCode.Prompt,
+            queuedCode.Prompt.Length,
+            CopilotAgentMode.Code,
+            []);
+        var state = new CopilotChatState
+        {
+            Conversations = new ObservableCollection<CopilotConversationRecord> { conversation },
+            QueuedFollowUpRecoveries = new ObservableCollection<CopilotQueuedFollowUpRecoveryRecord>
+            {
+                queuedCode,
+            },
+        };
+
+        CopilotQueuedFollowUpRecovery.RestoreToDrafts(state);
+
+        Assert.Contains("已有审查草稿", conversation.DraftText, StringComparison.Ordinal);
+        Assert.Contains("[Code] 修复代码", conversation.DraftText, StringComparison.Ordinal);
+        Assert.Equal(CopilotAgentMode.Review, conversation.DraftRequestMode);
+    }
+
+    [Fact]
     public void RestoreToDraftsDropsInvalidDuplicateAndExcessRecords()
     {
         var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
@@ -91,7 +194,21 @@ public sealed class CopilotQueuedFollowUpRecoveryTests
         try
         {
             var store = new CopilotChatStateStore(root);
+            Directory.CreateDirectory(store.AttachmentDirectoryPath);
+            var attachmentPath = Path.Combine(
+                store.AttachmentDirectoryPath,
+                "queued-image.png");
+            File.WriteAllText(attachmentPath, "queued attachment");
             var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+            var recovery = CreateRecord(
+                "run-1",
+                conversation.Id,
+                "恢复这个提示");
+            recovery.ComposerState = CopilotComposerStash.Capture(
+                recovery.Prompt,
+                recovery.Prompt.Length,
+                CopilotAgentMode.Diagnose,
+                [CopilotAttachmentItem.CreateImage(attachmentPath)]);
             var state = new CopilotChatState
             {
                 ActiveConversationId = conversation.Id,
@@ -99,18 +216,57 @@ public sealed class CopilotQueuedFollowUpRecoveryTests
                 Conversations = new ObservableCollection<CopilotConversationRecord> { conversation },
                 QueuedFollowUpRecoveries = new ObservableCollection<CopilotQueuedFollowUpRecoveryRecord>
                 {
-                    CreateRecord("run-1", conversation.Id, "恢复这个提示"),
+                    recovery,
                 },
             };
 
             store.Save(state);
             var loaded = store.Load();
+            var deletedCount = store.CleanupOrphanedAttachments(loaded);
 
             Assert.Equal(CopilotChatStateLoadSource.Primary, store.LastLoadStatus.Source);
-            var recovery = Assert.Single(loaded.QueuedFollowUpRecoveries);
-            Assert.Equal("run-1", recovery.RunId);
-            Assert.Equal(conversation.Id, recovery.ConversationId);
-            Assert.Equal("恢复这个提示", recovery.Prompt);
+            var restoredRecovery = Assert.Single(loaded.QueuedFollowUpRecoveries);
+            Assert.Equal("run-1", restoredRecovery.RunId);
+            Assert.Equal(conversation.Id, restoredRecovery.ConversationId);
+            Assert.Equal("恢复这个提示", restoredRecovery.Prompt);
+            var composerState = Assert.IsType<CopilotComposerStash>(
+                restoredRecovery.ComposerState);
+            Assert.Equal(CopilotAgentMode.Diagnose, composerState.RequestMode);
+            Assert.Equal(
+                attachmentPath,
+                Assert.Single(composerState.Attachments).Value);
+            Assert.Equal(0, deletedCount);
+            Assert.True(File.Exists(attachmentPath));
+        }
+        finally
+        {
+            DeleteTemporaryDirectory(root);
+        }
+    }
+
+    [Fact]
+    public void StateStoreRoundTripsDraftRequestMode()
+    {
+        var root = CreateTemporaryDirectory();
+        try
+        {
+            var store = new CopilotChatStateStore(root);
+            var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+            conversation.DraftText = "继续诊断";
+            conversation.DraftRequestMode = CopilotAgentMode.Diagnose;
+            var state = new CopilotChatState
+            {
+                ActiveConversationId = conversation.Id,
+                ActiveProfileId = "profile",
+                Conversations = new ObservableCollection<CopilotConversationRecord> { conversation },
+            };
+
+            store.Save(state);
+            var loaded = store.Load();
+
+            var restoredConversation = Assert.Single(loaded.Conversations);
+            Assert.Equal("继续诊断", restoredConversation.DraftText);
+            Assert.Equal(CopilotAgentMode.Diagnose, restoredConversation.DraftRequestMode);
         }
         finally
         {

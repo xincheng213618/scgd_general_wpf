@@ -33,7 +33,7 @@ Scripts\release.bat
 | 仓库内项目包 | `Scripts\package_project.bat ProjectLUX` |
 | 外部编译产物 | `py Scripts\package_cvxp.py --src-dir C:\path\to\MyPlugin\bin\x64\Release\net10.0-windows` |
 
-插件和项目包默认上传，并在上传流程结束后删除本地 `.cvxp`。构建和上传前会先校验 `manifest.json`；若声明 `copilot_agents`，还会检查角色 ID、工具名、作用域、只读能力、模式、预算、重复项，以及单插件最多 16 个角色和 8,000 个常驻名称/说明字符的上限。需要在 CI 或发布前单独检查时使用 `--validate-only`。校验通过后，打包再读取 `Scripts/shared_files.json`，剔除宿主已共享文件和 `.pdb`，生成 `.cvxp`。
+插件和项目包默认上传，并在上传流程结束后删除本地 `.cvxp`。构建和上传前会先校验 `manifest.json` 的插件 ID、DLL 路径和文件大小；需要在 CI 或发布前单独检查时使用 `--validate-only`。校验通过后，打包再读取 `Scripts/shared_files.json`，剔除宿主已共享文件和 `.pdb`，生成 `.cvxp`。
 
 存在清单时，`manifest.id` 是唯一的发布身份：它决定服务器目录、`.cvxp` 文件名前缀、包内根目录和最终的 `Plugins/<id>/` 安装目录；`dllpath` 只决定用于读取版本并启动插件的主 DLL。因此第三方插件不需要让项目名、程序集名和插件 ID 完全相同。
 

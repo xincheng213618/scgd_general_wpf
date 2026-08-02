@@ -150,11 +150,7 @@ namespace ColorVision.Copilot
         private static bool IsEligiblePublicResult(string value)
         {
             return Uri.TryCreate(value, UriKind.Absolute, out var uri)
-                && (string.Equals(uri.Scheme, Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase)
-                    || string.Equals(uri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase))
-                && !uri.IsLoopback
-                && !string.Equals(uri.Host, "localhost", StringComparison.OrdinalIgnoreCase)
-                && string.IsNullOrWhiteSpace(uri.UserInfo);
+                && CopilotWebPageToolSupport.IsPotentiallyPublicWebPageUri(uri);
         }
 
         private static bool HostMatches(string candidate, string preferred)

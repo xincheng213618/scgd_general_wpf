@@ -41,7 +41,7 @@ const columns: ColumnsType<StorageItem> = [
   { title: '类型', dataIndex: 'is_dir', width: 90, render: (value) => <Tag>{value ? '目录' : '文件'}</Tag> },
   { title: '文件数', dataIndex: 'file_count', width: 100, render: (value) => value ?? '-' },
   { title: '大小', dataIndex: 'size', width: 120, render: (value) => humanSize(value) },
-  { title: '修改时间', dataIndex: 'modified', width: 170, render: (value) => shortDate(value) },
+  { title: '修改时间', dataIndex: 'modified', width: 170, render: (value, record) => shortDate(record.modified_iso || value) },
   {
     title: '操作',
     width: 120,

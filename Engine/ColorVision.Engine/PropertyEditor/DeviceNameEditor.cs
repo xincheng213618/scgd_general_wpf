@@ -9,6 +9,7 @@ using ColorVision.Engine.Services.Devices.Sensor;
 using ColorVision.Engine.Services.Devices.SMU;
 using ColorVision.Engine.Services.Devices.Spectrum;
 using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms;
+using ColorVision.Engine.FlowProcessing.Nodes;
 using ColorVision.UI;
 using FlowEngineLib;
 using FlowEngineLib.Base;
@@ -63,6 +64,12 @@ namespace ColorVision.Engine.PropertyEditor
 
             string? code = property.GetValue(obj)?.ToString();
             var selectedItem = ItemsSource.FirstOrDefault(x => x.Code == code);
+            if (selectedItem == null && string.IsNullOrWhiteSpace(code) && IsLocalCameraNode(obj))
+            {
+                selectedItem = ItemsSource.FirstOrDefault();
+                if (selectedItem != null)
+                    SetValueAndNotify(property, obj, selectedItem.Code);
+            }
             if (selectedItem != null)
                 combo.SelectedItem = selectedItem;
 
@@ -132,6 +139,9 @@ namespace ColorVision.Engine.PropertyEditor
             if (sourceTypeAttr?.DeviceType != null)
                 return sourceTypeAttr.DeviceType;
 
+            if (IsLocalCameraNode(obj))
+                return typeof(DeviceCamera);
+
             var nodeType = obj.GetType().GetProperty("NodeType")?.GetValue(obj)?.ToString();
             return nodeType?.ToUpperInvariant() switch
             {
@@ -148,6 +158,9 @@ namespace ColorVision.Engine.PropertyEditor
                 _ => typeof(DeviceService)
             };
         }
+
+        private static bool IsLocalCameraNode(object obj)
+            => obj is LocalCameraNode or LocalCalibrationNodeBase;
 
         private static void SetValueAndNotify(PropertyInfo property, object obj, string value)
         {

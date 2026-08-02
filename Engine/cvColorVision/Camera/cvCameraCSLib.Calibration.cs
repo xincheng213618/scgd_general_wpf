@@ -55,6 +55,27 @@ namespace cvColorVision
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SetCalibParam", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern int CM_SetCalibParam(IntPtr handle, CalibrationType cType, bool bEnabled, string filename);
 
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_InitCalibration", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public static extern int CM_InitCalibration(IntPtr handle);
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_UnInitCalibration", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public static extern int CM_UnInitCalibration(IntPtr handle);
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_LoadItemV1", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public static extern int CM_LoadItemV1(IntPtr handle, CalibrationType calibrationType, string title, string filename);
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SelectItemV1", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public static extern int CM_SelectItemV1(IntPtr handle, CalibrationType calibrationType, string title);
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_ClearSelectItemV1", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public static extern int CM_ClearSelectItemV1(IntPtr handle);
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_RoutineCalibrationV1", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public static extern int CM_RoutineCalibrationV1(IntPtr handle, uint width, uint height, uint bpp, uint channels, IntPtr imageData);
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_TransformV1", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public static extern int CM_TransformV1(IntPtr handle, uint width, uint height, uint bpp, uint channels, IntPtr sourceData, IntPtr destinationData, float[] exposure);
+
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SetParamDarkNoise", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern bool CM_SetParamDarkNoise(IntPtr handle, bool bEnabled, float darkNoiseRatio);
 

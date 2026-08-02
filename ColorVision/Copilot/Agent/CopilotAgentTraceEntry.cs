@@ -9,10 +9,13 @@ using System.Text;
 
 namespace ColorVision.Copilot
 {
-    public sealed class CopilotAgentTraceEntry : ViewModelBase
+    public sealed partial class CopilotAgentTraceEntry : ViewModelBase
     {
-        public const int CurrentSchemaVersion = 9;
+        public const int CurrentSchemaVersion = 13;
         private const int MaxSummaryLength = 800;
+        private const int MaxDelegatedAnswerLength = 20_000;
+        private const int MaxPersistedHookRuns = 64;
+        private static readonly TimeSpan MaximumWorkspaceRollbackLifetime = TimeSpan.FromMinutes(31);
 
         public int SchemaVersion { get; set; } = CurrentSchemaVersion;
 
@@ -60,6 +63,8 @@ namespace ColorVision.Copilot
 
         public long TimeoutMs { get; set; }
 
+        public List<CopilotToolExecutionHookRun> HookRuns { get; set; } = new();
+
         public string ProgressMessage { get; set; } = string.Empty;
 
         public long? ProgressCompleted { get; set; }
@@ -76,6 +81,8 @@ namespace ColorVision.Copilot
 
         public string DelegatedRunId { get; set; } = string.Empty;
 
+        public string DelegatedResumeFromRunId { get; set; } = string.Empty;
+
         public string DelegatedRoleId { get; set; } = string.Empty;
 
         public CopilotAgentStopReason DelegatedStopReason { get; set; }
@@ -88,6 +95,10 @@ namespace ColorVision.Copilot
 
         public int DelegatedToolCalls { get; set; }
 
+        public int DelegatedDeliveredSteeringCount { get; set; }
+
+        public int DelegatedUndeliveredSteeringCount { get; set; }
+
         public int DelegatedRegisteredToolCount { get; set; }
 
         public int DelegatedAvailableToolCount { get; set; }
@@ -98,10 +109,18 @@ namespace ColorVision.Copilot
 
         public long DelegatedQueueDurationMs { get; set; }
 
-        [JsonIgnore]
+        public string DelegatedAnswerText { get; set; } = string.Empty;
+
+        public bool DelegatedAnswerHasSuccessfulEvidence { get; set; }
+
+        public bool DelegatedAnswerWasTruncated { get; set; }
+
+        public bool DelegatedRunClosed { get; set; }
+
+        [JsonProperty]
         public string WorkspaceChangeSetId { get; private set; } = string.Empty;
 
-        [JsonIgnore]
+        [JsonProperty]
         public DateTimeOffset? WorkspaceChangeSetExpiresAtUtc { get; private set; }
 
         public bool WorkspaceChangeSetRolledBack { get; private set; }
@@ -138,6 +157,10 @@ namespace ColorVision.Copilot
 
         public bool ShouldSerializeWorkspaceChangeSetRolledBack() => WorkspaceChangeSetRolledBack;
 
+        public bool ShouldSerializeWorkspaceChangeSetId() => !string.IsNullOrWhiteSpace(WorkspaceChangeSetId);
+
+        public bool ShouldSerializeWorkspaceChangeSetExpiresAtUtc() => WorkspaceChangeSetExpiresAtUtc.HasValue;
+
         public bool ShouldSerializeWorkspaceChangedFiles() => WorkspaceChangedFiles?.Count > 0;
 
         public bool ShouldSerializeFailureCode() => !string.IsNullOrWhiteSpace(FailureCode);
@@ -151,6 +174,8 @@ namespace ColorVision.Copilot
         public bool ShouldSerializeQueueDurationMs() => QueueDurationMs != 0;
 
         public bool ShouldSerializeTimeoutMs() => TimeoutMs != 0;
+
+        public bool ShouldSerializeHookRuns() => HookRuns?.Count > 0;
 
         public bool ShouldSerializeProgressMessage() => !string.IsNullOrWhiteSpace(ProgressMessage);
 
@@ -168,6 +193,8 @@ namespace ColorVision.Copilot
 
         public bool ShouldSerializeDelegatedRunId() => !string.IsNullOrEmpty(DelegatedRunId);
 
+        public bool ShouldSerializeDelegatedResumeFromRunId() => !string.IsNullOrEmpty(DelegatedResumeFromRunId);
+
         public bool ShouldSerializeDelegatedRoleId() => !string.IsNullOrEmpty(DelegatedRoleId);
 
         public bool ShouldSerializeDelegatedStopReason() => DelegatedStopReason != CopilotAgentStopReason.None;
@@ -180,6 +207,10 @@ namespace ColorVision.Copilot
 
         public bool ShouldSerializeDelegatedToolCalls() => DelegatedToolCalls != 0;
 
+        public bool ShouldSerializeDelegatedDeliveredSteeringCount() => DelegatedDeliveredSteeringCount != 0;
+
+        public bool ShouldSerializeDelegatedUndeliveredSteeringCount() => DelegatedUndeliveredSteeringCount != 0;
+
         public bool ShouldSerializeDelegatedRegisteredToolCount() => DelegatedRegisteredToolCount != 0;
 
         public bool ShouldSerializeDelegatedAvailableToolCount() => DelegatedAvailableToolCount != 0;
@@ -189,6 +220,14 @@ namespace ColorVision.Copilot
         public bool ShouldSerializeDelegatedHarnessInstructionCharacters() => DelegatedHarnessInstructionCharacters != 0;
 
         public bool ShouldSerializeDelegatedQueueDurationMs() => DelegatedQueueDurationMs != 0;
+
+        public bool ShouldSerializeDelegatedAnswerText() => !string.IsNullOrWhiteSpace(DelegatedAnswerText);
+
+        public bool ShouldSerializeDelegatedAnswerHasSuccessfulEvidence() => DelegatedAnswerHasSuccessfulEvidence;
+
+        public bool ShouldSerializeDelegatedAnswerWasTruncated() => DelegatedAnswerWasTruncated;
+
+        public bool ShouldSerializeDelegatedRunClosed() => DelegatedRunClosed;
 
         [JsonIgnore]
         public bool HasWorkspaceChangedFiles => WorkspaceChangedFiles?.Count > 0;
@@ -298,6 +337,10 @@ namespace ColorVision.Copilot
                     builder.AppendLine().Append("Child run: ").Append(DelegatedRunId);
                     if (!string.IsNullOrWhiteSpace(DelegatedRoleId))
                         builder.Append(" · role: ").Append(DelegatedRoleId);
+                    if (!string.IsNullOrWhiteSpace(DelegatedResumeFromRunId))
+                        builder.Append(" · resumed from: ").Append(DelegatedResumeFromRunId);
+                    if (DelegatedRunClosed)
+                        builder.Append(" · closed");
                     builder.Append(" · stop: ").Append(DelegatedStopReason)
                         .Append(" · provider calls: ").Append(DelegatedProviderCalls)
                         .Append(" · tool calls: ").Append(DelegatedToolCalls);
@@ -332,6 +375,24 @@ namespace ColorVision.Copilot
                 {
                     builder.AppendLine().Append("Failure code: ").Append(FailureCode);
                 }
+                if (HookRuns?.Count > 0)
+                {
+                    builder.AppendLine().Append("Hooks:");
+                    foreach (var hookRun in HookRuns)
+                    {
+                        builder.AppendLine()
+                            .Append("- ")
+                            .Append(FormatHookPhase(hookRun.Phase))
+                            .Append(' ')
+                            .Append(hookRun.SourceId)
+                            .Append(" · ")
+                            .Append(FormatHookState(hookRun.State))
+                            .Append(" · ")
+                            .Append(FormatDuration(hookRun.DurationMs));
+                        if (!string.IsNullOrWhiteSpace(hookRun.FailureCode))
+                            builder.Append(" · ").Append(hookRun.FailureCode);
+                    }
+                }
                 if (!string.IsNullOrWhiteSpace(ApprovalActionId))
                     builder.AppendLine().Append("Approval action: ").Append(ApprovalActionId);
                 if (!string.IsNullOrWhiteSpace(ArgumentSummary) && ArgumentSummary != "(none)")
@@ -363,16 +424,40 @@ namespace ColorVision.Copilot
             if (entry.ProgressCompleted.HasValue && entry.ProgressTotal.HasValue)
                 entry.ProgressCompleted = Math.Min(entry.ProgressCompleted.Value, entry.ProgressTotal.Value);
             entry.ProgressUnit = SanitizeProgressUnit(reportedProgress?.Unit);
+            if (reportedProgress?.DelegatedRun != null)
+            {
+                entry.DelegatedRoleId = SanitizeIdentifier(reportedProgress.DelegatedRun.RoleId);
+                entry.DelegatedRunId = SanitizeIdentifier(reportedProgress.DelegatedRun.RunId);
+                entry.DelegatedResumeFromRunId = SanitizeIdentifier(reportedProgress.DelegatedRun.ResumeFromRunId);
+                entry.DelegatedRequestTokenBudget = Math.Max(0, reportedProgress.DelegatedRun.RequestTokenBudget);
+                entry.DelegatedQueueDurationMs = Math.Max(0, reportedProgress.DelegatedRun.QueueDurationMs);
+                entry.DelegatedConsumedTokens = Math.Max(0, reportedProgress.DelegatedRun.ConsumedTokens);
+                entry.DelegatedProviderCalls = Math.Max(0, reportedProgress.DelegatedRun.ProviderCalls);
+                entry.DelegatedToolCalls = Math.Max(0, reportedProgress.DelegatedRun.ToolCalls);
+            }
             entry.ResultSummary = !string.IsNullOrWhiteSpace(entry.ProgressMessage)
                 ? entry.ProgressMessage
                 : Sanitize(progress);
             return entry;
         }
 
-        public static CopilotAgentTraceEntry FromResult(CopilotToolExecutionInfo execution, CopilotToolResult? result)
+        public static CopilotAgentTraceEntry FromResult(
+            CopilotToolExecutionInfo execution,
+            CopilotToolResult? result,
+            IReadOnlyList<CopilotToolExecutionHookRun>? hookRuns = null)
         {
             ArgumentNullException.ThrowIfNull(execution);
             var entry = FromExecution(execution);
+            if (hookRuns != null)
+            {
+                foreach (var hookRun in hookRuns)
+                {
+                    if (entry.HookRuns.Count >= MaxPersistedHookRuns)
+                        break;
+                    if (hookRun?.IsStructurallyValid() == true)
+                        entry.HookRuns.Add(hookRun);
+                }
+            }
             if (result != null)
             {
                 var summary = !string.IsNullOrWhiteSpace(result.Summary) ? result.Summary : result.Content;
@@ -383,11 +468,14 @@ namespace ColorVision.Copilot
                 {
                     entry.DelegatedRoleId = SanitizeIdentifier(result.DelegatedRunUsage.RoleId);
                     entry.DelegatedRunId = SanitizeIdentifier(result.DelegatedRunUsage.RunId);
+                    entry.DelegatedResumeFromRunId = SanitizeIdentifier(result.DelegatedRunUsage.ResumeFromRunId);
                     entry.DelegatedStopReason = result.DelegatedRunUsage.StopReason;
                     entry.DelegatedRequestTokenBudget = Math.Max(0, result.DelegatedRunUsage.RequestTokenBudget);
                     entry.DelegatedConsumedTokens = Math.Max(0, result.DelegatedRunUsage.ConsumedTokens);
                     entry.DelegatedProviderCalls = Math.Max(0, result.DelegatedRunUsage.ProviderCalls);
                     entry.DelegatedToolCalls = Math.Max(0, result.DelegatedRunUsage.ToolCalls);
+                    entry.DelegatedDeliveredSteeringCount = Math.Max(0, result.DelegatedRunUsage.DeliveredSteeringCount);
+                    entry.DelegatedUndeliveredSteeringCount = Math.Max(0, result.DelegatedRunUsage.UndeliveredSteeringCount);
                     entry.DelegatedRegisteredToolCount = Math.Max(0, result.DelegatedRunUsage.RegisteredToolCount);
                     entry.DelegatedAvailableToolCount = Math.Clamp(
                         result.DelegatedRunUsage.AvailableToolCount,
@@ -401,286 +489,24 @@ namespace ColorVision.Copilot
                         result.DelegatedRunUsage.HarnessInstructionCharacters);
                     entry.DelegatedQueueDurationMs = Math.Max(0, result.DelegatedRunUsage.QueueDurationMs);
                 }
+                if (result.DelegatedAnswer != null)
+                {
+                    entry.DelegatedAnswerText = SanitizeDelegatedAnswer(
+                        result.DelegatedAnswer.Text,
+                        out var answerWasTruncated);
+                    entry.DelegatedAnswerHasSuccessfulEvidence =
+                        entry.DelegatedAnswerText.Length > 0
+                        && result.DelegatedAnswer.HasSuccessfulEvidence;
+                    entry.DelegatedAnswerWasTruncated =
+                        entry.DelegatedAnswerText.Length > 0
+                        && (result.DelegatedAnswer.WasTruncated || answerWasTruncated);
+                }
                 entry.CaptureWorkspaceChangeSetMetadata(result.Content);
             }
 
             return entry;
         }
 
-        internal bool MarkWorkspaceChangeSetRolledBack(string changeSetId)
-        {
-            if (WorkspaceChangeSetRolledBack
-                || !string.Equals(WorkspaceChangeSetId, changeSetId, StringComparison.Ordinal))
-            {
-                return false;
-            }
-
-            WorkspaceChangeSetRolledBack = true;
-            OnPropertyChanged(nameof(WorkspaceChangeSetRolledBack));
-            OnPropertyChanged(nameof(CanRequestWorkspaceRollback));
-            OnPropertyChanged(nameof(ActivityLabel));
-            OnPropertyChanged(nameof(ActivityDescription));
-            return true;
-        }
-
-        private void CaptureWorkspaceChangeSetMetadata(string? content)
-        {
-            if (!string.Equals(ToolName, "ApplyWorkspacePatchEnvelope", StringComparison.Ordinal)
-                && !string.Equals(ToolName, "RollbackWorkspacePatchEnvelope", StringComparison.Ordinal))
-            {
-                return;
-            }
-
-            var changeSetId = ReadMetadataValue(content, "change_set_id");
-            const string changeSetPrefix = "workspace-change-set:";
-            if (!changeSetId.StartsWith(changeSetPrefix, StringComparison.Ordinal)
-                || !Guid.TryParseExact(changeSetId[changeSetPrefix.Length..], "N", out _))
-            {
-                return;
-            }
-
-            WorkspaceChangeSetId = changeSetId;
-            var expiresAt = ReadMetadataValue(content, "expires_at_utc");
-            if (DateTimeOffset.TryParse(expiresAt, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var parsedExpiresAt))
-                WorkspaceChangeSetExpiresAtUtc = parsedExpiresAt;
-
-            if (!string.Equals(ToolName, "ApplyWorkspacePatchEnvelope", StringComparison.Ordinal)
-                || !int.TryParse(ReadMetadataValue(content, "file_count"), NumberStyles.None, CultureInfo.InvariantCulture, out var fileCount))
-            {
-                return;
-            }
-
-            WorkspaceChangedFiles.Clear();
-            for (var index = 1; index <= Math.Min(8, fileCount); index++)
-            {
-                var file = new CopilotWorkspaceChangeFile
-                {
-                    Operation = ReadMetadataValue(content, $"file_{index}_operation"),
-                    FilePath = ReadMetadataValue(content, $"file_{index}_path"),
-                };
-                if (file.EnsureValid(out _) && !WorkspaceChangedFiles.Exists(item =>
-                    string.Equals(item.FilePath, file.FilePath, StringComparison.OrdinalIgnoreCase)))
-                {
-                    WorkspaceChangedFiles.Add(file);
-                }
-            }
-        }
-
-        private static string ReadMetadataValue(string? content, string key)
-        {
-            if (string.IsNullOrWhiteSpace(content))
-                return string.Empty;
-
-            foreach (var line in content.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries))
-            {
-                var separator = line.IndexOf(':');
-                if (separator <= 0 || !string.Equals(line[..separator].Trim(), key, StringComparison.OrdinalIgnoreCase))
-                    continue;
-
-                return line[(separator + 1)..].Trim();
-            }
-
-            return string.Empty;
-        }
-
-        public bool EnsureValid(DateTimeOffset recoveredAtUtc)
-        {
-            var changed = false;
-            WorkspaceChangedFiles ??= new List<CopilotWorkspaceChangeFile>();
-            var seenWorkspacePaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            for (var index = 0; index < WorkspaceChangedFiles.Count; index++)
-            {
-                var file = WorkspaceChangedFiles[index];
-                if (file == null)
-                {
-                    WorkspaceChangedFiles.RemoveAt(index--);
-                    changed = true;
-                    continue;
-                }
-
-                var isValid = file.EnsureValid(out var fileChanged);
-                changed |= fileChanged;
-                if (!isValid || !seenWorkspacePaths.Add(file.FilePath) || index >= 8)
-                {
-                    WorkspaceChangedFiles.RemoveAt(index--);
-                    changed = true;
-                }
-            }
-            if (!string.Equals(ToolName, "ApplyWorkspacePatchEnvelope", StringComparison.Ordinal)
-                && (WorkspaceChangeSetRolledBack || WorkspaceChangedFiles.Count > 0))
-            {
-                WorkspaceChangeSetRolledBack = false;
-                WorkspaceChangedFiles.Clear();
-                changed = true;
-            }
-            var originalSchemaVersion = SchemaVersion;
-            var originalCallId = CallId;
-            var originalRuntimeName = RuntimeName;
-            var originalToolName = ToolName;
-            var originalArgumentSummary = ArgumentSummary;
-            var originalApprovalActionId = ApprovalActionId;
-            var originalConcurrencyKey = ConcurrencyKey;
-            var originalResultSummary = ResultSummary;
-            var originalErrorMessage = ErrorMessage;
-            var originalFailureCode = FailureCode;
-            var originalDelegatedRoleId = DelegatedRoleId;
-            var originalDelegatedRunId = DelegatedRunId;
-            var originalDelegatedStopReason = DelegatedStopReason;
-            var originalDelegatedRequestTokenBudget = DelegatedRequestTokenBudget;
-            var originalDelegatedConsumedTokens = DelegatedConsumedTokens;
-            var originalDelegatedProviderCalls = DelegatedProviderCalls;
-            var originalDelegatedToolCalls = DelegatedToolCalls;
-            var originalDelegatedRegisteredToolCount = DelegatedRegisteredToolCount;
-            var originalDelegatedAvailableToolCount = DelegatedAvailableToolCount;
-            var originalDelegatedAvailableToolDefinitionCharacters = DelegatedAvailableToolDefinitionCharacters;
-            var originalDelegatedHarnessInstructionCharacters = DelegatedHarnessInstructionCharacters;
-            var originalDelegatedQueueDurationMs = DelegatedQueueDurationMs;
-            var originalRound = Round;
-            var originalAttempt = Attempt;
-            var originalMaxAttempts = MaxAttempts;
-            var originalDurationMs = DurationMs;
-            var originalQueueDurationMs = QueueDurationMs;
-            var originalTimeoutMs = TimeoutMs;
-            var originalProgressMessage = ProgressMessage;
-            var originalProgressCompleted = ProgressCompleted;
-            var originalProgressTotal = ProgressTotal;
-            var originalProgressUnit = ProgressUnit;
-            SchemaVersion = CurrentSchemaVersion;
-            CallId = SanitizeIdentifier(CallId);
-            RuntimeName = SanitizeIdentifier(RuntimeName);
-            ToolName = SanitizeIdentifier(ToolName);
-            ArgumentSummary = Sanitize(ArgumentSummary);
-            ApprovalActionId = SanitizeIdentifier(ApprovalActionId);
-            ConcurrencyKey = SanitizeIdentifier(ConcurrencyKey);
-            ResultSummary = Sanitize(ResultSummary);
-            ErrorMessage = Sanitize(ErrorMessage);
-            FailureCode = State == CopilotToolExecutionState.Completed
-                ? string.Empty
-                : CopilotToolFailureCode.Normalize(FailureCode);
-            DelegatedRoleId = SanitizeIdentifier(DelegatedRoleId);
-            DelegatedRunId = SanitizeIdentifier(DelegatedRunId);
-            DelegatedRequestTokenBudget = Math.Max(0, DelegatedRequestTokenBudget);
-            DelegatedConsumedTokens = Math.Max(0, DelegatedConsumedTokens);
-            DelegatedProviderCalls = Math.Max(0, DelegatedProviderCalls);
-            DelegatedToolCalls = Math.Max(0, DelegatedToolCalls);
-            DelegatedRegisteredToolCount = Math.Max(0, DelegatedRegisteredToolCount);
-            DelegatedAvailableToolCount = Math.Clamp(
-                DelegatedAvailableToolCount,
-                0,
-                DelegatedRegisteredToolCount);
-            DelegatedAvailableToolDefinitionCharacters = Math.Max(0, DelegatedAvailableToolDefinitionCharacters);
-            DelegatedHarnessInstructionCharacters = Math.Max(0, DelegatedHarnessInstructionCharacters);
-            DelegatedQueueDurationMs = Math.Max(0, DelegatedQueueDurationMs);
-            Round = Math.Max(1, Round);
-            Attempt = Math.Max(1, Attempt);
-            MaxAttempts = Math.Max(Attempt, MaxAttempts);
-            DurationMs = Math.Max(0, DurationMs);
-            QueueDurationMs = Math.Max(0, QueueDurationMs);
-            TimeoutMs = Math.Max(0, TimeoutMs);
-            ProgressMessage = Sanitize(ProgressMessage);
-            ProgressCompleted = NormalizeProgressCount(ProgressCompleted);
-            ProgressTotal = NormalizeProgressCount(ProgressTotal);
-            if (ProgressCompleted.HasValue && ProgressTotal.HasValue)
-                ProgressCompleted = Math.Min(ProgressCompleted.Value, ProgressTotal.Value);
-            ProgressUnit = SanitizeProgressUnit(ProgressUnit);
-            if (originalSchemaVersion < 4)
-            {
-                ConcurrencyMode = Access == CopilotToolAccess.Write || Idempotency != CopilotToolIdempotency.Idempotent
-                    ? CopilotToolConcurrencyMode.Exclusive
-                    : CopilotToolConcurrencyMode.SharedRead;
-                if (string.IsNullOrWhiteSpace(ConcurrencyKey) && !string.IsNullOrWhiteSpace(ToolName))
-                    ConcurrencyKey = "legacy:" + ToolName;
-            }
-            changed |= originalSchemaVersion != SchemaVersion
-                || !string.Equals(originalCallId, CallId, StringComparison.Ordinal)
-                || !string.Equals(originalRuntimeName, RuntimeName, StringComparison.Ordinal)
-                || !string.Equals(originalToolName, ToolName, StringComparison.Ordinal)
-                || !string.Equals(originalArgumentSummary, ArgumentSummary, StringComparison.Ordinal)
-                || !string.Equals(originalApprovalActionId, ApprovalActionId, StringComparison.Ordinal)
-                || !string.Equals(originalConcurrencyKey, ConcurrencyKey, StringComparison.Ordinal)
-                || !string.Equals(originalResultSummary, ResultSummary, StringComparison.Ordinal)
-                || !string.Equals(originalErrorMessage, ErrorMessage, StringComparison.Ordinal)
-                || !string.Equals(originalFailureCode, FailureCode, StringComparison.Ordinal)
-                || !string.Equals(originalDelegatedRoleId, DelegatedRoleId, StringComparison.Ordinal)
-                || !string.Equals(originalDelegatedRunId, DelegatedRunId, StringComparison.Ordinal)
-                || originalDelegatedStopReason != DelegatedStopReason
-                || originalDelegatedRequestTokenBudget != DelegatedRequestTokenBudget
-                || originalDelegatedConsumedTokens != DelegatedConsumedTokens
-                || originalDelegatedProviderCalls != DelegatedProviderCalls
-                || originalDelegatedToolCalls != DelegatedToolCalls
-                || originalDelegatedRegisteredToolCount != DelegatedRegisteredToolCount
-                || originalDelegatedAvailableToolCount != DelegatedAvailableToolCount
-                || originalDelegatedAvailableToolDefinitionCharacters != DelegatedAvailableToolDefinitionCharacters
-                || originalDelegatedHarnessInstructionCharacters != DelegatedHarnessInstructionCharacters
-                || originalDelegatedQueueDurationMs != DelegatedQueueDurationMs
-                || originalRound != Round
-                || originalAttempt != Attempt
-                || originalMaxAttempts != MaxAttempts
-                || originalDurationMs != DurationMs
-                || originalQueueDurationMs != QueueDurationMs
-                || originalTimeoutMs != TimeoutMs
-                || !string.Equals(originalProgressMessage, ProgressMessage, StringComparison.Ordinal)
-                || originalProgressCompleted != ProgressCompleted
-                || originalProgressTotal != ProgressTotal
-                || !string.Equals(originalProgressUnit, ProgressUnit, StringComparison.Ordinal);
-
-            if (!Enum.IsDefined(State))
-            {
-                State = CopilotToolExecutionState.Failed;
-                changed = true;
-            }
-
-            if (!Enum.IsDefined(RiskLevel))
-            {
-                RiskLevel = CopilotToolRiskLevel.Low;
-                changed = true;
-            }
-
-            if (!Enum.IsDefined(ApprovalMode))
-            {
-                ApprovalMode = CopilotToolApprovalMode.Never;
-                changed = true;
-            }
-
-            if (!Enum.IsDefined(Idempotency))
-            {
-                Idempotency = CopilotToolIdempotency.Unknown;
-                changed = true;
-            }
-
-            if (!Enum.IsDefined(ConcurrencyMode))
-            {
-                ConcurrencyMode = Access == CopilotToolAccess.Write ? CopilotToolConcurrencyMode.Exclusive : CopilotToolConcurrencyMode.SharedRead;
-                changed = true;
-            }
-
-            if (!Enum.IsDefined(FailureKind))
-            {
-                FailureKind = CopilotToolFailureKind.Unspecified;
-                changed = true;
-            }
-
-            if (!Enum.IsDefined(DelegatedStopReason))
-            {
-                DelegatedStopReason = CopilotAgentStopReason.None;
-                changed = true;
-            }
-
-            if (State is CopilotToolExecutionState.Pending or CopilotToolExecutionState.Running or CopilotToolExecutionState.AwaitingApproval)
-            {
-                var wasAwaitingApproval = State == CopilotToolExecutionState.AwaitingApproval;
-                State = CopilotToolExecutionState.Interrupted;
-                CompletedAtUtc = recoveredAtUtc;
-                if (StartedAtUtc != default)
-                    DurationMs = Math.Max(DurationMs, (long)Math.Max(0, (recoveredAtUtc - StartedAtUtc).TotalMilliseconds));
-                ErrorMessage = wasAwaitingApproval
-                    ? "Approval was interrupted before a decision was recorded. Submit the request again to create a fresh approval."
-                    : "Execution was interrupted before completion.";
-                changed = true;
-            }
-
-            return changed;
-        }
 
         private static CopilotAgentTraceEntry FromExecution(CopilotToolExecutionInfo execution)
         {
@@ -711,189 +537,6 @@ namespace ColorVision.Copilot
             };
         }
 
-        internal static string Sanitize(string? value)
-        {
-            var redacted = CopilotMcpAuditLogger.RedactText(value ?? string.Empty).Trim();
-            return redacted.Length <= MaxSummaryLength ? redacted : redacted[..MaxSummaryLength] + "...";
-        }
-
-        private static string SanitizeIdentifier(string? value)
-        {
-            var text = (value ?? string.Empty).Replace('\r', ' ').Replace('\n', ' ').Trim();
-            return text.Length <= 120 ? text : text[..120];
-        }
-
-        private static long? NormalizeProgressCount(long? value)
-        {
-            return value.HasValue ? Math.Clamp(value.Value, 0, 1_000_000_000) : null;
-        }
-
-        private static string SanitizeProgressUnit(string? value)
-        {
-            var text = string.Join(" ", SanitizeIdentifier(value)
-                .Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
-            return text.Length <= 24 ? text : text[..24];
-        }
-
-        private static string FormatProgressUnit(string unit)
-        {
-            return unit switch
-            {
-                "files" => "个文件",
-                "items" => "项",
-                _ => unit,
-            };
-        }
-
-        private string BuildActivityLabel()
-        {
-            var (running, completed) = ToolName switch
-            {
-                "FetchUrl" => ("正在读取网页", "读取了网页"),
-                "WebSearch" => ("正在搜索网页", "搜索了网页"),
-                "ReadLocalFile" or "ReadAttachedFile" => ("正在读取文件", "读取了文件"),
-                "ListDirectory" or "SearchFiles" or "GrepText" or "SearchDocs" => ("正在搜索文件", "搜索了文件"),
-                "DelegateExplore" => ("正在委派代码探索", "委派了代码探索"),
-                "DelegateScout" => ("正在查阅外部资料", "查阅了外部资料"),
-                _ when ToolName.StartsWith("Delegate", StringComparison.Ordinal) => ("正在委派子任务", "委派了子任务"),
-                "GetRecentLog" => ("正在读取日志", "读取了日志"),
-                "QueryFlowExecutionStats" or "QueryDatabaseSql" => ("正在查询数据库", "查询了数据库"),
-                "ExecuteDatabaseSql" => ("正在执行数据库 SQL", "执行了数据库 SQL"),
-                "InspectWindowsSystem" => ("正在检查系统", "检查了系统"),
-                "InspectWindowsProcesses" => ("正在检查进程", "检查了进程"),
-                "InspectWindowsServices" => ("正在检查服务", "检查了服务"),
-                "InspectTcpPort" => ("正在检查端口", "检查了端口"),
-                "InspectGitWorkingTree" => ("正在检查工作树", "检查了工作树"),
-                "InspectGitDiff" => ("正在读取 Git 差异", "读取了 Git 差异"),
-                "RunShellCommand" => ("正在运行命令", "运行了命令"),
-                "ConvertBatchImages" => ("正在转换图像", "转换了图像"),
-                "PreviewWorkspacePatchEnvelope" => ("正在准备修改", "准备了修改"),
-                "ApplyWorkspacePatchEnvelope" => ("正在修改文件", "修改了文件"),
-                "RollbackWorkspacePatchEnvelope" => ("正在回滚修改", "回滚了修改"),
-                "CreateFlow" => ("正在创建流程", "创建了流程"),
-                "ApplyTemplatePatch" or "TemplatePatch" => ("正在修改模板", "修改了模板"),
-                "ExecuteMenu" => ("正在执行应用操作", "执行了应用操作"),
-                "SetLanguage" or "SetTheme" => ("正在修改应用设置", "修改了应用设置"),
-                _ => ($"正在运行 {ToolName}", $"运行了 {ToolName}"),
-            };
-
-            if (State == CopilotToolExecutionState.Completed
-                && WorkspaceChangeSetRolledBack
-                && string.Equals(ToolName, "ApplyWorkspacePatchEnvelope", StringComparison.Ordinal))
-            {
-                return completed + " · 已撤销";
-            }
-
-            return State switch
-            {
-                CopilotToolExecutionState.Pending => BuildWaitingActivityLabel(running),
-                CopilotToolExecutionState.Running => running,
-                CopilotToolExecutionState.AwaitingApproval => completed + " · 等待批准",
-                CopilotToolExecutionState.Failed or CopilotToolExecutionState.TimedOut => completed + " · 失败",
-                CopilotToolExecutionState.Denied => completed + " · 未批准",
-                CopilotToolExecutionState.Cancelled => completed + " · 已取消",
-                CopilotToolExecutionState.Interrupted => completed + " · 已中断",
-                _ => completed,
-            };
-        }
-
-        private static string BuildWaitingActivityLabel(string runningLabel)
-        {
-            const string runningPrefix = "正在";
-            return runningLabel.StartsWith(runningPrefix, StringComparison.Ordinal)
-                ? "等待" + runningLabel[runningPrefix.Length..]
-                : "等待运行";
-        }
-
-        private bool IsFailedSearchAttempt()
-        {
-            if (!IsFailure)
-                return false;
-
-            return string.Equals(ToolName, "SearchFiles", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(ToolName, "GrepText", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(ToolName, "SearchDocs", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(ToolName, "WebSearch", StringComparison.OrdinalIgnoreCase);
-        }
-
-        private string BuildFriendlyFailureSummary()
-        {
-            return FailureKind switch
-            {
-                CopilotToolFailureKind.NotFound => "没有找到可用结果。",
-                CopilotToolFailureKind.Validation => "工具输入不符合要求。",
-                CopilotToolFailureKind.Authorization => "当前操作没有获得授权。",
-                CopilotToolFailureKind.Transient => "暂时无法完成，Agent 可以重试。",
-                CopilotToolFailureKind.Cancelled => "操作已取消。",
-                _ => !string.IsNullOrWhiteSpace(ResultSummary) ? ResultSummary : ErrorMessage,
-            };
-        }
-
-        private string BuildFriendlySuccessSummary()
-        {
-            if (State is CopilotToolExecutionState.Pending or CopilotToolExecutionState.Running)
-                return ResultSummary;
-
-            return ToolName switch
-            {
-                "FetchUrl" => "已读取网页正文。",
-                "WebSearch" => "已获得网页搜索结果。",
-                "ReadLocalFile" or "ReadAttachedFile" => "已读取文件内容。",
-                "ListDirectory" or "SearchFiles" or "GrepText" or "SearchDocs" => "已完成文件搜索。",
-                "DelegateExplore" => "只读 Explore 子 Agent 已返回结果。",
-                "DelegateScout" => "只读 Scout 子 Agent 已返回外部资料。",
-                _ when ToolName.StartsWith("Delegate", StringComparison.Ordinal) => ResultSummary,
-                "GetRecentLog" => "已读取最近日志。",
-                "QueryFlowExecutionStats" or "QueryDatabaseSql" => "已获得数据库查询结果。",
-                "ExecuteDatabaseSql" => "数据库 SQL 已执行。",
-                "InspectWindowsSystem" => "Windows 系统信息检查完成。",
-                "InspectWindowsProcesses" => "Windows 进程检查完成。",
-                "InspectWindowsServices" => "Windows 服务检查完成。",
-                "InspectTcpPort" => "端口检查完成。",
-                "InspectGitWorkingTree" => "Git 工作树检查完成。",
-                "InspectGitDiff" => "Git 差异读取完成。",
-                "RunShellCommand" => "命令已执行。",
-                "PreviewWorkspacePatchEnvelope" => "文件修改预览已准备。",
-                "ApplyWorkspacePatchEnvelope" => WorkspaceChangeSetRolledBack
-                    ? "这组文件修改已撤销。"
-                    : WorkspaceChangedFiles.Count > 0
-                        ? $"已完成 {WorkspaceChangedFiles.Count} 个文件的修改，可逐个打开核对。"
-                        : "文件修改已完成。",
-                "RollbackWorkspacePatchEnvelope" => "文件修改已回滚。",
-                "CreateFlow" => "流程已创建。",
-                "ApplyTemplatePatch" or "TemplatePatch" => "模板修改已完成。",
-                "ExecuteMenu" => "应用操作已执行。",
-                "SetLanguage" or "SetTheme" => "应用设置已更新。",
-                _ => ResultSummary,
-            };
-        }
-
-        private static string TrimForActivity(string? value, int maxLength)
-        {
-            var normalized = (value ?? string.Empty).Replace('\r', ' ').Replace('\n', ' ').Trim();
-            while (normalized.Contains("  ", StringComparison.Ordinal))
-                normalized = normalized.Replace("  ", " ", StringComparison.Ordinal);
-            return normalized.Length <= maxLength ? normalized : normalized[..maxLength] + "...";
-        }
-
-        private static string FormatDuration(long durationMs)
-        {
-            return durationMs < 1000 ? $"{Math.Max(0, durationMs)}ms" : $"{durationMs / 1000d:0.#}s";
-        }
-
-        private static string FormatDiagnosticState(CopilotToolExecutionState state) => state switch
-        {
-            CopilotToolExecutionState.Pending => "Pending",
-            CopilotToolExecutionState.Running => "Running...",
-            CopilotToolExecutionState.Completed => "Completed",
-            CopilotToolExecutionState.Failed => "Failed",
-            CopilotToolExecutionState.TimedOut => "Timed out",
-            CopilotToolExecutionState.Denied => "Denied",
-            CopilotToolExecutionState.Cancelled => "Cancelled",
-            CopilotToolExecutionState.Interrupted => "Interrupted",
-            CopilotToolExecutionState.AwaitingApproval => "Awaiting approval",
-            _ => "Unknown",
-        };
     }
 
     public sealed class CopilotWorkspaceChangeFile

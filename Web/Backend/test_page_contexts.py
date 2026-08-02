@@ -247,7 +247,9 @@ class PageContextsTests(unittest.TestCase):
 
         self.assertTrue(context["recent_change_dashboard"])
         self.assertEqual(context["recent_change_dashboard"][0]["title"], "ColorVision 1.2.0.1")
-        self.assertTrue(any(item["category"] == "目录" for item in context["recent_change_dashboard"]))
+        self.assertEqual(context["recent_change_dashboard"][0]["timestamp"], "2026-03-31T10:00:00+00:00")
+        directory_item = next(item for item in context["recent_change_dashboard"] if item["category"] == "目录")
+        self.assertTrue(directory_item["timestamp"].endswith("+00:00"))
         self.assertGreaterEqual(context["recent_change_summary"]["change_count"], 3)
 
     def test_build_browse_page_context_only_builds_current_page_items(self):

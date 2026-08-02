@@ -149,7 +149,7 @@ namespace ColorVision.Engine.Templates.Jsons.MTF2
                     }
                 }
 
-                File.AppendAllText(filePath, csvBuilder.ToString(), Encoding.UTF8);
+                File.WriteAllText(filePath, csvBuilder.ToString(), Encoding.UTF8);
             }
         }
 

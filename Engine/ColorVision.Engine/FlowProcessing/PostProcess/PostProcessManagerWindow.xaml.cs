@@ -110,6 +110,12 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
             RefreshPropertyPanel();
         }
 
+        private void ListView_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            if (DataContext is PostProcessManager manager && manager.UpdateMetaCommand.CanExecute(null))
+                manager.UpdateMetaCommand.Execute(null);
+        }
+
         private void RefreshPropertyPanel()
         {
             PropertyPanel.Children.Clear();
@@ -204,6 +210,13 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
             // Tag (editable)
             AddLabeledTextBox(stack, "标签:", meta.Tag ?? "", text => meta.Tag = text);
 
+            AddLabeledComboBox(
+                stack,
+                "失败策略:",
+                Enum.GetValues<PostProcessFailurePolicy>(),
+                meta.FailurePolicy,
+                value => meta.FailurePolicy = value);
+
             // Description (read-only)
             if (!string.IsNullOrEmpty(meta.ProcessDescription))
             {
@@ -292,6 +305,37 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
             textBox.LostFocus += (s, e) => onChanged?.Invoke(textBox.Text);
             
             dock.Children.Add(textBox);
+            parent.Children.Add(dock);
+        }
+
+        private static void AddLabeledComboBox(
+            StackPanel parent,
+            string label,
+            PostProcessFailurePolicy[] values,
+            PostProcessFailurePolicy selectedValue,
+            Action<PostProcessFailurePolicy> onChanged)
+        {
+            var dock = new DockPanel { Margin = new Thickness(0, 0, 0, 6) };
+            dock.Children.Add(new TextBlock
+            {
+                Text = label,
+                Width = 70,
+                VerticalAlignment = VerticalAlignment.Center
+            });
+
+            var comboBox = new ComboBox
+            {
+                ItemsSource = values,
+                SelectedItem = selectedValue,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            comboBox.SelectionChanged += (s, e) =>
+            {
+                if (comboBox.SelectedItem is PostProcessFailurePolicy value)
+                    onChanged(value);
+            };
+
+            dock.Children.Add(comboBox);
             parent.Children.Add(dock);
         }
     }

@@ -2,6 +2,7 @@ using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine;
+using ColorVision.Engine.FlowProcessing.Diagnostics;
 using ColorVision.UI;
 using SqlSugar;
 using System.Collections.ObjectModel;
@@ -116,6 +117,9 @@ namespace ProjectARVRPro
             var batchHistoryCommand = new RelayCommand(
                 _ => OpenBatchDataHistory(),
                 _ => DetailList.SelectedItem is ProjectARVRReuslt item && item.BatchId > 0);
+            var flowExecutionAnalysisCommand = new RelayCommand(
+                _ => OpenFlowExecutionAnalysis(),
+                _ => DetailList.SelectedItem is ProjectARVRReuslt item && item.BatchId > 0);
             var viewTestResultCommand = new RelayCommand(
                 _ => ViewTestResult(),
                 _ => DetailList.SelectedItem is ProjectARVRReuslt item && !string.IsNullOrEmpty(item.ViewResultJson));
@@ -125,6 +129,7 @@ namespace ProjectARVRPro
             contextMenu.Items.Add(new Separator());
             contextMenu.Items.Add(new MenuItem { Command = openFolderCommand, Header = "OpenFolderAndSelectFile" });
             contextMenu.Items.Add(new MenuItem { Command = batchHistoryCommand, Header = "流程结果查询" });
+            contextMenu.Items.Add(new MenuItem { Command = flowExecutionAnalysisCommand, Header = "流程执行分析" });
             contextMenu.Items.Add(new MenuItem { Command = viewTestResultCommand, Header = "查看测试结果" });
             contextMenu.Opened += (_, _) => CommandManager.InvalidateRequerySuggested();
 
@@ -155,18 +160,7 @@ namespace ProjectARVRPro
 
         private void OpenBatchDataHistory()
         {
-            if (DetailList.SelectedItem is not ProjectARVRReuslt item)
-            {
-                return;
-            }
-
-            using var db = new SqlSugarClient(new ConnectionConfig
-            {
-                ConnectionString = MySqlControl.GetConnectionString(),
-                DbType = DbType.MySql,
-                IsAutoCloseConnection = true
-            });
-            MeasureBatchModel? batch = db.Queryable<MeasureBatchModel>().Where(model => model.Id == item.BatchId).First();
+            MeasureBatchModel? batch = GetSelectedMeasureBatch();
             if (batch == null)
             {
                 MessageBox.Show(this, "找不到批次号，请检查流程配置", "ColorVision");
@@ -180,6 +174,38 @@ namespace ProjectARVRPro
                 Content = new MeasureBatchPage(frame, batch)
             };
             window.Show();
+        }
+
+        private void OpenFlowExecutionAnalysis()
+        {
+            MeasureBatchModel? batch = GetSelectedMeasureBatch();
+            if (batch == null)
+            {
+                MessageBox.Show(this, "找不到批次号，请检查流程配置", "ColorVision");
+                return;
+            }
+
+            new FlowExecutionAnalysisWindow(batch)
+            {
+                Owner = this,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            }.Show();
+        }
+
+        private MeasureBatchModel? GetSelectedMeasureBatch()
+        {
+            if (DetailList.SelectedItem is not ProjectARVRReuslt item || item.BatchId <= 0)
+            {
+                return null;
+            }
+
+            using var db = new SqlSugarClient(new ConnectionConfig
+            {
+                ConnectionString = MySqlControl.GetConnectionString(),
+                DbType = DbType.MySql,
+                IsAutoCloseConnection = true
+            });
+            return db.Queryable<MeasureBatchModel>().Where(model => model.Id == item.BatchId).First();
         }
 
         private void ViewTestResult()

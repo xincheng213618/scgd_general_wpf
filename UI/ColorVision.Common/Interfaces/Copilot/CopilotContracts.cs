@@ -13,6 +13,7 @@ namespace ColorVision.UI
         Web,
         Code,
         Diagnose,
+        Plan,
     }
 
     public enum CopilotContextScope

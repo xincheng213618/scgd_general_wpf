@@ -47,7 +47,13 @@
                         <Button Content="复制组" Padding="8 3" Margin="0 0 5 0" Command="{Binding DuplicateGroupCommand}"/>
                         <Button Content="删除组" Padding="8 3" Margin="0 0 5 0" Command="{Binding RemoveGroupCommand}" Foreground="Red"/>
                         <Button Content="导入配置" Padding="8 3" Margin="12 0 5 0" Command="{Binding ImportConfigCommand}"/>
+                        <Button Content="导入旧版Recipe" Padding="8 3" Margin="0 0 5 0"
+                                Command="{Binding ImportLegacyRecipeCommand}"
+                                ToolTip="从旧版 ARVRRecipe.json 导入上下限和修正参数"/>
                         <Button Content="导出配置" Padding="8 3" Margin="0 0 5 0" Command="{Binding ExportConfigCommand}"/>
+                        <Button Content="预处理管理" Padding="8 3" Margin="12 0 5 0"
+                                ToolTip="配置流程执行前的预处理动作"
+                                Click="PreProcessManager_Click"/>
                     </WrapPanel>
                 </Border>
 
@@ -214,17 +220,17 @@
                         </Border>
 
                         <TabControl Grid.Row="1">
-                            <TabItem Header="Process">
+                            <TabItem Header="Recipe">
                                 <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="8">
-                                    <StackPanel x:Name="ProcessPanel">
+                                    <StackPanel x:Name="RecipePanel">
                                         <TextBlock Text="请选择一个处理项" Foreground="Gray"
                                                    HorizontalAlignment="Center" Margin="0 20 0 0"/>
                                     </StackPanel>
                                 </ScrollViewer>
                             </TabItem>
-                            <TabItem Header="Recipe">
+                            <TabItem Header="Process">
                                 <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="8">
-                                    <StackPanel x:Name="RecipePanel">
+                                    <StackPanel x:Name="ProcessPanel">
                                         <TextBlock Text="请选择一个处理项" Foreground="Gray"
                                                    HorizontalAlignment="Center" Margin="0 20 0 0"/>
                                     </StackPanel>
@@ -324,17 +330,17 @@
                     </Border>
 
                     <TabControl Grid.Row="1">
-                        <TabItem Header="Process">
+                        <TabItem Header="Recipe">
                             <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="8">
-                                <StackPanel x:Name="ResultProcessPanel">
+                                <StackPanel x:Name="ResultRecipePanel">
                                     <TextBlock Text="请选择一个解析映射" Foreground="Gray"
                                                HorizontalAlignment="Center" Margin="0 20 0 0"/>
                                 </StackPanel>
                             </ScrollViewer>
                         </TabItem>
-                        <TabItem Header="Recipe">
+                        <TabItem Header="Process">
                             <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="8">
-                                <StackPanel x:Name="ResultRecipePanel">
+                                <StackPanel x:Name="ResultProcessPanel">
                                     <TextBlock Text="请选择一个解析映射" Foreground="Gray"
                                                HorizontalAlignment="Center" Margin="0 20 0 0"/>
                                 </StackPanel>

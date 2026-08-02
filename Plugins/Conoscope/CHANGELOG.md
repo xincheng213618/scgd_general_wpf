@@ -1,5 +1,8 @@
 # CHANGELOG
 
+## [1.4.7.4] 2026.07.28
+- Conoscope 流程采集改用 `FlowEngineManager` 的统一执行入口，不再依赖 `DisplayFlow` UI 壳，适配内置的 `ViewFlow` / `FlowExecutionSession` 运行结构。
+
 ## [1.4.7.3] 2026.07.26
 - 适配新版 FlowProcessing 流程运行时命名空间，保持 Conoscope 采集流程和窗口入口兼容。
 

@@ -1,0 +1,220 @@
+using ColorVision.Copilot;
+
+namespace ColorVision.UI.Tests;
+
+public sealed class CopilotLocalCommandHelpTests
+{
+    [Fact]
+    public void HelpCommandAcceptsAnOptionalCommandAndRunsDuringAgentWork()
+    {
+        var overview = CopilotLocalCommandCatalog.Parse("/help");
+        var detail = CopilotLocalCommandCatalog.Parse("/help permissions");
+
+        Assert.NotNull(overview);
+        Assert.Equal(CopilotLocalCommandKind.Help, overview.Command.Kind);
+        Assert.Empty(overview.Arguments);
+        Assert.True(overview.Command.AvailableWhileAgentRuns);
+        Assert.NotNull(detail);
+        Assert.Same(overview.Command, detail.Command);
+        Assert.Equal("permissions", detail.Arguments);
+    }
+
+    [Fact]
+    public void EveryFixedCommandDeclaresUsageBeginningWithItsName()
+    {
+        Assert.Equal(56, CopilotLocalCommandCatalog.All.Count);
+        foreach (var command in CopilotLocalCommandCatalog.All)
+        {
+            Assert.False(string.IsNullOrWhiteSpace(command.Usage));
+            Assert.True(
+                command.Usage.StartsWith(command.Name, StringComparison.OrdinalIgnoreCase),
+                $"{command.Name} usage must begin with its command name.");
+        }
+    }
+
+    [Fact]
+    public void OverviewGroupsAndRendersEveryFixedCommandExactlyOnce()
+    {
+        var report = CopilotLocalCommandHelp.Format(null);
+        var lines = report.Split(Environment.NewLine);
+
+        Assert.Contains("Copilot 命令 · 56", report);
+        Assert.Contains("状态与诊断", report);
+        Assert.Contains("工作区与 Agent", report);
+        Assert.Contains("会话与输出", report);
+        Assert.Contains("模型与推理", report);
+        Assert.Contains("◎ Agent 运行中可立即执行；· 当前任务结束后执行。", report);
+        Assert.Contains("动态 Skill 不计入固定命令", report);
+
+        foreach (var command in CopilotLocalCommandCatalog.All)
+        {
+            var availability = command.AvailableWhileAgentRuns ? '◎' : '·';
+            Assert.Single(
+                lines,
+                line => line == $"{availability} {command.Usage} — {command.Description}");
+        }
+    }
+
+    [Theory]
+    [InlineData("permissions", "/permissions [status|ask|auto]", "Agent 运行中：可立即执行")]
+    [InlineData("/diff", "/diff [both|staged|unstaged]", "Agent 运行中：当前任务结束后执行")]
+    [InlineData("mention", "/mention [查询]", "Agent 运行中：当前任务结束后执行")]
+    [InlineData("rewind", "/rewind [N]", "仅会话回溯分支")]
+    [InlineData("rollback", "/rollback [N]", "精确文件修改")]
+    [InlineData("add-dir", "/add-dir [绝对目录|list|remove N|clear]", "后续 Agent 请求")]
+    [InlineData("ps", "/ps [N|stop N|clear]", "后台命令")]
+    [InlineData("personality", "/personality [friendly|pragmatic|none]", "默认沟通风格")]
+    [InlineData("EFFORT", "/reasoning [auto|off|on|high|max]", "别名：/effort")]
+    [InlineData("new", "/clear [旧会话名称]", "别名：/new")]
+    public void DetailAcceptsNamesWithOrWithoutSlashAndPreservesAliases(
+        string query,
+        string expectedUsage,
+        string expectedText)
+    {
+        var report = CopilotLocalCommandHelp.Format(query);
+
+        Assert.StartsWith(expectedUsage, report);
+        Assert.Contains(expectedText, report);
+        Assert.Contains("参数：可选", report);
+    }
+
+    [Fact]
+    public void AliasesResolveToCanonicalCommandsWithoutDuplicatingTheCatalog()
+    {
+        var aliases = CopilotLocalCommandCatalog.All
+            .SelectMany(command => command.Aliases.Select(alias => (Command: command, Alias: alias)))
+            .ToArray();
+
+        Assert.Equal(14, aliases.Length);
+        Assert.Equal(
+            aliases.Length,
+            aliases.Select(item => item.Alias).Distinct(StringComparer.OrdinalIgnoreCase).Count());
+        foreach (var (command, alias) in aliases)
+        {
+            var invocation = Assert.IsType<CopilotLocalCommandInvocation>(
+                CopilotLocalCommandCatalog.Parse(alias));
+            Assert.Same(command, invocation.Command);
+            Assert.DoesNotContain(
+                CopilotLocalCommandCatalog.All,
+                candidate => string.Equals(candidate.Name, alias, StringComparison.OrdinalIgnoreCase));
+        }
+
+        var rootSuggestions = CopilotLocalCommandCatalog.Suggest("/");
+        Assert.DoesNotContain(
+            rootSuggestions,
+            suggestion => aliases.Any(item => string.Equals(
+                item.Alias,
+                suggestion.Name,
+                StringComparison.OrdinalIgnoreCase)));
+    }
+
+    [Fact]
+    public void QueueHelpDescribesImmediateExplicitQueueActions()
+    {
+        var report = CopilotLocalCommandHelp.Format("queue");
+
+        Assert.StartsWith("/queue [clear|send N|edit N|up N|down N|delete N]", report);
+        Assert.Contains("查看或控制", report);
+        Assert.Contains("参数：可选", report);
+        Assert.Contains("Agent 运行中：可立即执行", report);
+    }
+
+    [Fact]
+    public void StopHelpExposesTheSafeHostedRunControl()
+    {
+        var invocation = Assert.IsType<CopilotLocalCommandInvocation>(
+            CopilotLocalCommandCatalog.Parse("/stop"));
+        var report = CopilotLocalCommandHelp.Format("stop");
+
+        Assert.Equal(CopilotLocalCommandKind.StopTask, invocation.Command.Kind);
+        Assert.True(invocation.Command.AvailableWhileAgentRuns);
+        Assert.StartsWith("/stop", report);
+        Assert.Contains("安全 checkpoint", report);
+        Assert.Contains("Agent 运行中：可立即执行", report);
+    }
+
+    [Fact]
+    public void AgentsHelpExposesTargetedSubagentSteeringAndStopWithoutStoppingTheParent()
+    {
+        var report = CopilotLocalCommandHelp.Format("agents");
+
+        Assert.StartsWith("/agents [roles|runs [N]|active [N]|done [N]|show <run_id>|close <run_id>|steer <run_id> <message>|stop <run_id>]", report);
+        Assert.Contains("按活动或结束状态查看、关闭请求级子代理", report);
+        Assert.Contains("按 run_id 引导", report);
+        Assert.Contains("引导、停止子代理", report);
+        Assert.Contains("父 Agent 继续", report);
+        Assert.Contains("Agent 运行中：可立即执行", report);
+    }
+
+    [Fact]
+    public void RemovedLoopCommandIsNotCatalogued()
+    {
+        Assert.Null(CopilotLocalCommandCatalog.Parse("/loop 30m check deployment"));
+        Assert.DoesNotContain(
+            CopilotLocalCommandCatalog.All,
+            command => string.Equals(command.Name, "/loop", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Theory]
+    [InlineData("/side check status")]
+    [InlineData("/btw check status")]
+    public void RemovedSideQuestionCommandsAreNotCatalogued(string input)
+    {
+        Assert.Null(CopilotLocalCommandCatalog.Parse(input));
+    }
+
+    [Fact]
+    public void MemoryHelpDescribesEffectiveProjectInstructionPreview()
+    {
+        var report = CopilotLocalCommandHelp.Format("memory");
+
+        Assert.StartsWith("/memory [open N]", report);
+        Assert.Contains("工作区型 Agent 请求", report);
+        Assert.Contains("Agent 运行中：可立即执行", report);
+    }
+
+    [Fact]
+    public void ApproveHelpKeepsNativeReviewExplicit()
+    {
+        var report = CopilotLocalCommandHelp.Format("approve");
+
+        Assert.StartsWith("/approve [N]", report);
+        Assert.Contains("原生审查窗口", report);
+        Assert.Contains("参数：可选", report);
+        Assert.Contains("Agent 运行中：可立即执行", report);
+    }
+
+    [Fact]
+    public void UsageHelpIncludesLatestProviderLimits()
+    {
+        var report = CopilotLocalCommandHelp.Format("usage");
+        var aliasReport = CopilotLocalCommandHelp.Format("stats");
+
+        Assert.StartsWith("/usage [session|daily|weekly|cumulative]", report);
+        Assert.Contains("本地每日、每周与累计 Token 活动", report);
+        Assert.Contains("别名：/stats", report);
+        Assert.Contains("参数：可选", report);
+        Assert.Contains("Agent 运行中：可立即执行", report);
+        Assert.Equal(report, aliasReport);
+    }
+
+    [Fact]
+    public void HistoryHelpDescribesIdleComposerRecovery()
+    {
+        var report = CopilotLocalCommandHelp.Format("history");
+
+        Assert.StartsWith("/history", report);
+        Assert.Contains("恢复到输入框", report);
+        Assert.Contains("参数：无", report);
+        Assert.Contains("Agent 运行中：当前任务结束后执行", report);
+    }
+
+    [Fact]
+    public void UnknownCommandReturnsARecoveryHint()
+    {
+        var report = CopilotLocalCommandHelp.Format("missing");
+
+        Assert.Contains("未找到命令“/missing”", report);
+        Assert.Contains("输入 /help 查看全部命令", report);
+    }
+}

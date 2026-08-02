@@ -2,6 +2,7 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
+using ColorVision.Engine.FlowProcessing.Diagnostics;
 using ColorVision.Engine.FlowProcessing.PreProcess;
 using ColorVision.Engine;
 using ColorVision.Engine.MQTT;
@@ -361,8 +362,6 @@ namespace ProjectKB
 
         public void InitFlow()
         {
-            MQTTConfig mQTTConfig = MQTTSetting.Instance.MQTTConfig;
-            MQTTHelper.SetDefaultCfg(mQTTConfig.Host, mQTTConfig.Port, mQTTConfig.UserName, mQTTConfig.UserPwd, false, null);
             flowEngine = new FlowEngineControl(false);
             STNodeEditorMain = new STNodeEditor();
             STNodeEditorMain.LoadAssembly("FlowEngineLib.dll");
@@ -517,6 +516,7 @@ namespace ProjectKB
         }
         string Msg1;
         private long LastFlowTime;
+        private int _currentFlowTemplateId;
         string FlowName;
         private void UpdateMsg(object? sender)
         {
@@ -594,7 +594,11 @@ namespace ProjectKB
             }
 
             TryCount++;
-            LastFlowTime = FlowEngineConfig.Instance.FlowRunTime.TryGetValue(FlowTemplate.Text, out long time) ? time : 0;
+            _currentFlowTemplateId = TemplateFlow.Params
+                .FirstOrDefault(template => string.Equals(template.Key, FlowTemplate.Text, StringComparison.OrdinalIgnoreCase))
+                ?.Id ?? 0;
+            LastFlowTime = await Task.Run(
+                () => FlowNodeRecordDataBaseHelper.GetLastCompletedFlowElapsed(_currentFlowTemplateId, FlowTemplate.Text));
             FlowName = FlowTemplate.Text;
             CurrentFlowResult = new KBItemMaster();
             CurrentFlowResult.Id = -1;
@@ -606,12 +610,6 @@ namespace ProjectKB
 
             CurrentFlowResult.FlowStatus = FlowStatus.Ready;
             await Refresh();
-            if (string.IsNullOrWhiteSpace(flowEngine.GetStartNodeName()))
-            {
-                log.Info("找不到完整流程，运行失败");
-                TryCount = 0;
-                return;
-            }
 
             if (!await PreProcessingAsync(FlowName, CurrentFlowResult.SN))
             {
@@ -635,7 +633,17 @@ namespace ProjectKB
             stopwatch.Start();
             BatchResultMasterDao.Instance.Save(new MeasureBatchModel() { Name = CurrentFlowResult.SN, Code = CurrentFlowResult.Code, CreateDate = DateTime.Now });
 
-            flowControl.Start(CurrentFlowResult.Code);
+            if (!await flowControl.TryStartAsync(CurrentFlowResult.Code))
+            {
+                FlowControl_FlowCompleted(flowControl, new FlowControlData
+                {
+                    EventName = "Failed",
+                    Status = StatusTypeEnum.Failed,
+                    SerialNumber = CurrentFlowResult.Code,
+                    Params = "FlowStartRejected"
+                });
+                return;
+            }
             timer.Change(0, 500); // 启动定时器
         }
 
@@ -668,10 +676,15 @@ namespace ProjectKB
             stopwatch.Stop();
             timer.Change(Timeout.Infinite, 500); // 停止定时器
             Interlocked.Exchange(ref _pendingUiUpdate, 0);
-            FlowEngineConfig.Instance.FlowRunTime[FlowTemplate.Text] = stopwatch.ElapsedMilliseconds;
 
             log.Info($"流程执行Elapsed Time: {stopwatch.ElapsedMilliseconds} ms");
             CurrentFlowResult.RunTime = stopwatch.ElapsedMilliseconds;
+            FlowNodeRecordDataBaseHelper.RecordFlowRun(
+                _currentFlowTemplateId,
+                FlowName,
+                FlowControlData.SerialNumber,
+                FlowControlData.FlowStatus,
+                CurrentFlowResult.RunTime);
 
             logTextBox.Text = FlowName + Environment.NewLine + FlowControlData.EventName;
             CurrentFlowResult.Msg = FlowControlData.EventName;

@@ -12,7 +12,6 @@ namespace ColorVision.Engine.Templates
         Default,
         Prepared,
         Existing,
-        Sample,
         File
     }
 
@@ -144,25 +143,6 @@ namespace ColorVision.Engine.Templates
                 }
             }
 
-            bool supportsSample = _template.GetType().GetMethod(nameof(ITemplate.ImportJsonContent), [typeof(string), typeof(string)])?.DeclaringType != typeof(ITemplate)
-                || _template.GetType().GetMethod(nameof(ITemplate.ImportFile), [typeof(string)])?.DeclaringType != typeof(ITemplate);
-            if (supportsSample)
-            {
-                foreach (TemplateSampleRecord sample in TemplateSampleLibrary.GetInstance().GetSamples(_template))
-                {
-                    _templateSources.Add(new TemplateCreateSource
-                    {
-                        Kind = TemplateCreateSourceKind.Sample,
-                        Title = sample.Name,
-                        Description = string.IsNullOrWhiteSpace(sample.Description)
-                            ? $"{sample.GroupName} · {sample.UpdatedAt:yyyy-MM-dd HH:mm}"
-                            : sample.Description,
-                        SourceLabel = "样例",
-                        Sample = sample
-                    });
-                }
-            }
-
             bool supportsImport = _template.GetType().GetMethod(nameof(ITemplate.Import), Type.EmptyTypes)?.DeclaringType != typeof(ITemplate);
             if (supportsImport)
             {
@@ -265,9 +245,6 @@ namespace ColorVision.Engine.Templates
                     case TemplateCreateSourceKind.Existing:
                         applied = source.TemplateIndex >= 0 && _template.CopyTo(source.TemplateIndex);
                         break;
-                    case TemplateCreateSourceKind.Sample:
-                        applied = source.Sample != null && _template.ImportJsonContent(source.Sample.Name, source.Sample.Content);
-                        break;
                     case TemplateCreateSourceKind.File:
                         applied = _template.Import();
                         if (applied)
@@ -360,7 +337,6 @@ namespace ColorVision.Engine.Templates
             {
                 TemplateCreateSourceKind.Prepared when !string.IsNullOrWhiteSpace(_template.ImportName) => _template.ImportName,
                 TemplateCreateSourceKind.Existing => _template.NewCreateFileName($"{source.Title}_Copy"),
-                TemplateCreateSourceKind.Sample => _template.NewCreateFileName(source.Title),
                 TemplateCreateSourceKind.File when !string.IsNullOrWhiteSpace(_template.ImportName) => _template.ImportName,
                 _ => _template.NewCreateFileName(_template.Code)
             };
@@ -473,7 +449,6 @@ namespace ColorVision.Engine.Templates
             public string Description { get; set; } = string.Empty;
             public string SourceLabel { get; set; } = string.Empty;
             public int TemplateIndex { get; set; } = -1;
-            public TemplateSampleRecord? Sample { get; set; }
         }
     }
 }

@@ -80,6 +80,8 @@ namespace ColorVision.Copilot
                 cancellationToken.ThrowIfCancellationRequested();
                 if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
                     throw new InvalidOperationException($"图片“{label}”不存在或已被移动。");
+                if (CopilotWorkspaceSearchSupport.HasReparsePointInPath(filePath))
+                    throw new InvalidOperationException($"图片“{label}”的文件路径穿过文件系统 reparse point，无法读取。");
                 cancellationToken.ThrowIfCancellationRequested();
 
                 using var stream = new FileStream(

@@ -12,6 +12,8 @@
 | 节点属性没有设备/模板下拉 | `STNodeEditorHelper`、`NodeConfigurator/`、服务和模板列表 |
 | `.cvflow` 导入后模板名不对 | `manifest.json`、重名映射、`ReplaceTemplateNames(...)` |
 | 调度能触发但结果没回去 | `FlowJob`、`RunFlowAndWaitAsync()`、`FlowCompleted`、项目包 `Processing` |
+| 打开新窗口后画布串流程 | `FlowTemplateWorkspaceController` 的实例选择、刷新 generation、已加载文档 |
+| 运行失败需要人工处置 | `FlowIncidentManagementWindow`、Run/Event/Attempt 关联记录 |
 
 ## 当前能力
 
@@ -23,7 +25,9 @@
 | 节点配置 | `NodeConfigurator/*.cs` | 把设备列表、本地图像、普通模板、JSON 模板挂进节点属性面板 |
 | 单流程包 | `.cvflow`、`FlowPackageHelper` | ZIP 包，包含 `flow.stn` 和 `manifest.json`，可携带关联模板 |
 | 旧图文件 | `.stn` | 仅保存节点图原始数据 |
-| 调度运行 | `FlowJob`、`DisplayFlow.RunFlowAndWaitAsync()` | Quartz 线程切回 UI 线程运行流程并等待结果 |
+| 调度运行 | `FlowJob`、`FlowEngineManager.RunFlowAsync()` | Quartz 线程切回 UI 线程运行流程并等待结果 |
+| 裸执行器 | `FlowHeadlessExecutionService`、`HeadlessFlowJob` | 每次运行拥有独立 `FlowRuntimeHost`，不依赖 WPF 画布、当前模板或全局选择 |
+| Incident 管理 | `FlowIncidentService`、`FlowIncidentManagementWindow` | 查询、筛选、确认、关闭并关联 Run/Event/Attempt |
 
 ## 存储边界
 
@@ -34,39 +38,61 @@
 | 数据库流程 | 保存前 `CheckFlow()`，再取画布数据、Base64、`TemplateFlow.Save2DB(...)` |
 | 资源引用 | `SysResourceModel.Type = 101`，`ModDetailModel.ValueA` 保存资源 id |
 | 多选导出 | 仍是 zip 内多个 `.stn`，不会像 `.cvflow` 一样收集关联模板 manifest |
+| 版本和搜索侧车 | 每次有效保存记录不可变 catalog revision、语义索引和执行策略 |
+| 历史 Artifact 表 | 当前版本不再读写或迁移，已有表和数据原样保留 |
 
 ## `.cvflow` 包
 
 | 包内文件 | 作用 |
 | --- | --- |
-| `flow.stn` | 流程画布二进制数据 |
-| `manifest.json` | `FlowPackageManifest`，记录流程名、版本和关联模板 |
+| `flow.stn` | 原样保存的 STND v1 画布二进制数据；`.cvflow` 升级不会修改其格式 |
+| `manifest.json` | 包版本、流程哈希和关联模板元数据 |
+| `templates/<sha256>.json` | v3 起按内容哈希存放的关联模板载荷，相同载荷在包内只保存一次 |
 
 导出时 `FlowPackageHelper.CollectTemplatesForExport(...)` 会扫描 STN 里的模板引用属性，如 `TempName`、`POITempName`、`SavePOITempName`、`OutputTemplateName`、`ModelName` 等，并继续扫描模板内容里的二级引用。
 
-导入时会读取包、创建关联模板、处理重名映射、改写 STN 模板引用，再把最终 STN 转成 Base64 作为新流程模板内容。
+`.cvflow` v3 是 ColorVision 自有的可演进包格式：`flow.stn` 和每个模板载荷都有 SHA-256 校验，导入还会有上限地完整解压并验证 STND v1；未知的未来大版本会明确拒绝，v1/v2 的 manifest 内联模板仍可导入。
+
+导入时先校验完整包，再以“模板类型 + 规范化有效内容”匹配本地模板：同名同内容直接复用，异名同内容映射到已有模板，同名不同内容才创建带流程名的冲突副本；重复导入同一个包会复用第一次产生的副本。发生名称映射后，会同时改写关联模板的二级引用和 STN 节点引用，再把最终 STN 转成 Base64 作为新流程模板内容。
 
 ## 运行链路
 
 | 入口 | 当前链路 | 维护重点 |
 | --- | --- | --- |
-| UI 手动运行 | `DisplayFlow.RunFlow()` -> `FlowControl.Start(sn)` | 创建 `MeasureBatchModel`，绑定 `FlowCompleted` |
-| 等待式运行 | `DisplayFlow.RunFlowAndWaitAsync()` | 给调度、自动化或外部调用等待流程结束 |
-| Quartz 调度 | `FlowJob.Execute(...)` -> UI 线程调用 `RunFlowAndWaitAsync()` | 通过 `Application.Current.Dispatcher` 切回 UI |
-| 停止流程 | `DisplayFlow.StopFlow()` -> `FlowControl.Stop()` | 批次状态更新为 `Canceled` |
+| UI 手动运行 | `ViewFlow` -> `FlowExecutionSession.RunFlowAsync()` -> `FlowControl.TryStartAsync(...)` | 创建 `MeasureBatchModel`，绑定 `FlowCompleted` |
+| 等待引擎结束 | `FlowEngineManager.RunFlowAsync()` | 只等待流程图执行结束，不代表后处理成功 |
+| 等待最终结果 | `FlowEngineManager.RunFlowAndWaitForFinalizationAsync()` | 给调度、自动化或外部调用等待引擎和全部后处理结束 |
+| Quartz 调度 | `FlowJob.Execute(...)` -> `FlowExecutionCoordinator` -> `RunSelectedFlowAndWaitForFinalizationAsync()` | 通过 `Application.Current.Dispatcher` 切回 UI，并以最终结果决定任务状态 |
+| 独立调度 | `HeadlessFlowJob` -> `RunSavedFlowHeadlessAsync(...)` | 复制当前已保存 STN 和执行策略，在隔离 RuntimeHost 中执行，不触碰编辑器 |
+| 停止流程 | `ViewFlow` -> `FlowExecutionSession.StopFlow()` -> `FlowControl.Stop()` | 批次状态更新为 `Canceled` |
 
-`FlowControl_FlowCompleted(...)` 会写回 `FlowStatus`、`TotalTime`、`Result`，触发 `FlowExecutionCompleted`，再进入项目包后续 `Processing(FlowEngineManager.Batch)`。
+`EngineExecutionCompleted` 表示“流程图引擎已结束”，此时后处理可能仍在运行；原有 `FlowExecutionCompleted` 作为它的过时兼容别名保留，不能作为整次业务运行成功的依据。引擎结束后会执行配置的后处理；后处理分为 `Warning` 和 `Required`，其中必需后处理失败会把最终结果判为失败。外部调用、Quartz 调度和自动化应等待 `RunFinalized`，或直接调用 `RunFlowAndWaitForFinalizationAsync()` 取得 `FlowRunFinalizedData.FinalOutcome`。`DisplayFlow` 只负责主程序视图注册、选中状态和服务重启。
+
+UI 手动运行始终执行当前画布加载的 STN，不再读取或校验 Artifact。独立调度按 FlowKey 取得当前已保存 STN，并在创建请求时复制二进制数据和执行策略，后续编辑不会改变已经启动的这次执行。
+
+## 工作区与运行对象
+
+`FlowTemplateWorkspaceController` 只保存当前 `ViewFlow` 实例的 requested template、已加载 `FlowParam`、起点选择和刷新 generation。刷新按 latest-wins 串行加载，较早请求完成后不能覆盖较新的选择；加载失败时保留原画布。独立编辑器也不再写入主程序的全局模板选择和全局节点集合。
+
+`FlowHeadlessExecutionRequest` 在创建时复制 STN、MQTT 服务 token、错误路由和重试策略。`FlowHeadlessExecutionService` 每次执行新建并释放一个 `FlowRuntimeHost`，返回结构化的启动状态、终止原因、内容 hash、耗时和 `FlowControlData` 映射。裸执行器不自动创建批次，也不执行前后处理；这些业务语义由 UI 会话或插件调用方明确编排。
+
+## Incident
+
+运行日志在关键异常边界创建 Incident，但诊断写入保持 fail-open，不得改变生产流程结果。管理窗口支持按状态、级别、类型和文本分页筛选，查看关联 Run/Event/Attempt，并记录确认或关闭的 UTC 时间、操作人和备注。旧数据库由 CodeFirst 补齐新增字段。
 
 ## 验收
 
 | 场景 | 必验项 |
 | --- | --- |
 | 保存流程 | 新增节点、选择模板、保存、关闭、重开后参数仍在 |
-| 单流程导出 | `.cvflow` 包内有 `flow.stn` 和 `manifest.json` |
-| 单流程导入 | 同名模板环境下能重命名冲突模板并更新节点引用 |
+| 单流程导出 | `.cvflow` 包内有未改写的 `flow.stn`、`manifest.json` 和内容寻址模板载荷 |
+| 单流程导入 | 相同模板不重复创建；内容冲突时能重命名副本并更新节点及二级模板引用 |
 | 多流程导出 | zip 内是多个 `.stn`，不要误认为包含关联模板 |
-| 调度执行 | Quartz `FlowJob` 能启动流程并在 `context.Result` 返回 `FlowJobResult` |
-| 项目维护 | `FlowCompleted` 后批次状态、耗时、结果和项目包处理都能追踪 |
+| 调度执行 | Quartz `FlowJob` 能启动流程、等待后处理完成，并在 `context.Result` 返回最终 `FlowJobResult` |
+| 项目维护 | `RunFinalized` 后批次状态、耗时、节点尝试、Incident、后处理和最终结果都能追踪 |
+| 多窗口切换 | 快速 A→B 选择最终只显示 B；坏模板加载失败不清空当前画布；独立窗口不改变主界面选择 |
+| 裸执行器 | 两次并行执行各自拥有 RuntimeHost；取消、超时、加载失败和启动拒绝都有明确终止状态 |
+| Incident | 确认和关闭能记录操作人、备注和时间，Run/Event/Attempt 详情可回查 |
 
 ## 边界
 
@@ -84,3 +110,10 @@
 | 编辑器宿主 | `STNodeEditorHelper.cs` |
 | 节点属性配置 | `NodeConfigurator/` |
 | `.cvflow` 导入导出 | `FlowPackageHelper` 相关实现 |
+| 流程工作区 | `ViewFlow.xaml.cs` |
+| 工作区生命周期 | `FlowTemplateWorkspaceController.cs` |
+| 执行会话 | `FlowExecutionSession.cs` |
+| 裸执行器 | `FlowHeadlessExecutionService.cs`、`FlowRuntimeHost.cs` |
+| 版本与搜索投影 | `FlowProcessing/Compilation/FlowCanvasCatalogBuilder.cs` |
+| Incident | `FlowProcessing/Diagnostics/FlowIncident*.cs` |
+| 主程序壳 | `DisplayFlow.xaml.cs` |

@@ -45,7 +45,6 @@ namespace ColorVision.Engine.Templates
             InitializeComponent();
             this.ApplyCaption();
             MainGrid.CommandBindings.Add(new CommandBinding(ApplicationCommands.New, (s, e) => New(), (s, e) => e.CanExecute = true));
-            MainGrid.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, (s, e) => CreateCopy(), (s, e) => e.CanExecute = ListView1.SelectedIndex > -1));
             MainGrid.CommandBindings.Add(new CommandBinding(ApplicationCommands.Save, (s, e) => {
                 ITemplate.Save();
                 HandyControl.Controls.Growl.SuccessGlobal(string.Format(Properties.Resources.TemplateEditor_SaveSuccess, Title));
@@ -63,9 +62,6 @@ namespace ColorVision.Engine.Templates
             if (ListView1.View is GridView gridView)
             {
                 GridViewColumnVisibility.AddGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
-                GridViewColumnVisibility? moveActionsColumnVisibility = GridViewColumnVisibilitys.FirstOrDefault(item => item.GridViewColumn == MoveActionsColumn);
-                if (moveActionsColumnVisibility != null)
-                    GridViewColumnVisibilitys.Remove(moveActionsColumnVisibility);
                 Config.GridViewColumnVisibilitys.CopyToGridView(GridViewColumnVisibilitys);
                 Config.GridViewColumnVisibilitys = GridViewColumnVisibilitys;
                 GridViewColumnVisibility.AdjustGridViewColumnAuto(gridView.Columns, GridViewColumnVisibilitys);
@@ -634,100 +630,6 @@ namespace ColorVision.Engine.Templates
                     ListView1.SelectedIndex += 1;
 
 
-            }
-        }
-
-        private void CreateTemplate_Click(object sender, RoutedEventArgs e)
-        {
-            SaveSelectedTemplatesAsSamples();
-        }
-
-        private void SaveSelectedTemplatesAsSamples()
-        {
-            var templateEntries = ITemplate.ItemsSource
-                .OfType<TemplateBase>()
-                .Select((template, index) => new { Template = template, Index = index })
-                .ToList();
-
-            var selectedEntries = templateEntries.Where(item => item.Template.IsSelected).ToList();
-            if (selectedEntries.Count == 0 && ListView1.SelectedItem is TemplateBase selectedTemplate)
-            {
-                var entry = templateEntries.FirstOrDefault(item => ReferenceEquals(item.Template, selectedTemplate));
-                if (entry != null)
-                    selectedEntries.Add(entry);
-            }
-
-            if (selectedEntries.Count == 0)
-            {
-                MessageBox1.Show(Application.Current.GetActiveWindow(), Properties.Resources.TemplateEditor_SelectFirst, "ColorVision");
-                return;
-            }
-
-            TemplateSampleLibrary sampleLibrary = TemplateSampleLibrary.GetInstance();
-            string defaultName = selectedEntries.Count == 1 ? selectedEntries[0].Template.Key : string.Empty;
-            TemplateSampleSaveWindow saveWindow = new TemplateSampleSaveWindow(sampleLibrary.GetGroupNames(ITemplate), defaultName, selectedEntries.Count)
-            {
-                Owner = this,
-                WindowStartupLocation = WindowStartupLocation.CenterOwner
-            };
-
-            if (saveWindow.ShowDialog() != true)
-                return;
-
-            try
-            {
-                foreach (var entry in selectedEntries)
-                {
-                    string sampleName = selectedEntries.Count == 1 ? saveWindow.SampleName : entry.Template.Key;
-                    sampleLibrary.SaveFromTemplate(ITemplate, entry.Index, saveWindow.GroupName, sampleName, saveWindow.Description);
-                }
-
-                HandyControl.Controls.Growl.SuccessGlobal(string.Format(Properties.Resources.TemplateEditor_SamplesSaved, selectedEntries.Count));
-            }
-            catch (Exception ex)
-            {
-                MessageBox1.Show(Application.Current.GetActiveWindow(), string.Format(Properties.Resources.TemplateEditor_SaveSamplesFailed, ex.Message), "ColorVision");
-            }
-        }
-
-        private void SwapTemplateAndUpdateUI(int newIndex, string errorMessage)
-        {
-            int currentIndex = GetSelectedTemplateSourceIndex();
-            TemplateBase? selectedTemplate = ListView1.SelectedItem as TemplateBase;
-            if (currentIndex >= 0 && selectedTemplate != null && ITemplate.SwapTemplateOrder(currentIndex, newIndex))
-            {
-                RefreshTemplateList(selectedTemplate);
-                HandyControl.Controls.Growl.SuccessGlobal(Properties.Resources.TemplateEditor_OrderSwapped);
-            }
-            else
-            {
-                MessageBox1.Show(Application.Current.GetActiveWindow(), errorMessage, "ColorVision");
-            }
-        }
-
-        private void Button_MoveUp_Click(object sender, RoutedEventArgs e)
-        {
-            int selectedIndex = GetSelectedTemplateSourceIndex();
-            if (selectedIndex > 0)
-            {
-                SwapTemplateAndUpdateUI(selectedIndex - 1, Properties.Resources.TemplateEditor_SwapFailed);
-            }
-            else
-            {
-                MessageBox1.Show(Application.Current.GetActiveWindow(), Properties.Resources.TemplateEditor_AlreadyFirst, "ColorVision");
-            }
-        }
-
-        private void Button_MoveDown_Click(object sender, RoutedEventArgs e)
-        {
-            int selectedIndex = GetSelectedTemplateSourceIndex();
-            if (selectedIndex >= 0 && selectedIndex < ITemplate.Count - 1)
-            {
-                SwapTemplateAndUpdateUI(selectedIndex + 1, Properties.Resources.TemplateEditor_SwapFailed);
-            }
-            else
-            {
-                MessageBox1.Show(Application.Current.GetActiveWindow(), Properties.Resources.TemplateEditor_AlreadyLast, "ColorVision");
             }
         }
 

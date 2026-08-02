@@ -96,6 +96,20 @@ public sealed class CopilotMcpRequestIdentityTests
     }
 
     [Fact]
+    public async Task InvalidBearerTokenIsRejectedBeforeSessionResolution()
+    {
+        var sessionStore = new CopilotMcpClientSessionStore();
+        var handler = CreateHandler(sessionStore);
+        var request = CreateInitializeRequest(bearerToken: "invalid-token");
+
+        var response = await handler.HandleAsync(request, CancellationToken.None);
+
+        Assert.Equal(401, response.StatusCode);
+        Assert.Contains("Unauthorized ColorVision MCP request", response.Body, StringComparison.Ordinal);
+        Assert.Equal(0, sessionStore.Count);
+    }
+
+    [Fact]
     public async Task AuditAndPendingActionViewsAreIsolatedPerMcpSession()
     {
         CopilotMcpAuditLogger.ClearForTests();
@@ -383,23 +397,27 @@ public sealed class CopilotMcpRequestIdentityTests
             sessionStore);
     }
 
-    private static CopilotMcpHttpRequest CreateInitializeRequest(string? sessionId = null)
+    private static CopilotMcpHttpRequest CreateInitializeRequest(
+        string? sessionId = null,
+        string? bearerToken = null)
     {
         return CreateRequest(
             "POST",
             """{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"session-test","version":"1.0"}}}""",
-            sessionId);
+            sessionId,
+            bearerToken: bearerToken);
     }
 
     private static CopilotMcpHttpRequest CreateRequest(
         string method,
         string body,
         string? sessionId = null,
-        string? protocolVersion = null)
+        string? protocolVersion = null,
+        string? bearerToken = null)
     {
         var headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
-            ["Authorization"] = "Bearer " + BearerToken,
+            ["Authorization"] = "Bearer " + (bearerToken ?? BearerToken),
         };
         if (!string.IsNullOrWhiteSpace(sessionId))
             headers[CopilotMcpRequestHandler.SessionHeaderName] = sessionId;

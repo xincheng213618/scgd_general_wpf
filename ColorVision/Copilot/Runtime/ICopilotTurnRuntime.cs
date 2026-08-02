@@ -12,7 +12,22 @@ namespace ColorVision.Copilot
             CopilotTurnRequest request,
             CancellationToken cancellationToken);
 
-        bool TryEnqueueSteeringMessage(string message);
+        CopilotSteeringAdmissionResult EnqueueSteeringMessage(
+            string taskId,
+            string message);
+
+        bool TryEnqueueBackgroundShellCommandCompletion(
+            CopilotBackgroundShellCommandSnapshot snapshot);
+
+        bool TryEnqueueBackgroundShellCommandOutput(
+            CopilotBackgroundShellOutputMonitorEventArgs eventArgs);
+
+        bool TryAnswerUserQuestion(string taskId, string requestId, string answer);
+
+        Task<CopilotWorkspaceRollbackActionResult> RequestWorkspaceRollbackAsync(
+            CopilotWorkspaceRollbackActionRequest request,
+            Action<CopilotAgentEvent> onEvent,
+            CancellationToken cancellationToken);
     }
 
     internal abstract record CopilotTurnEvent;
@@ -76,7 +91,8 @@ namespace ColorVision.Copilot
             IEnumerable<CopilotMcpClientServerConfig>? externalMcpServers,
             string? conversationId,
             string? taskId,
-            CopilotAgentAccessContext? accessContext = null)
+            CopilotAgentAccessContext? accessContext = null,
+            string? activeGoalText = null)
         {
             Profile = profile ?? throw new ArgumentNullException(nameof(profile));
             Mode = mode;
@@ -93,6 +109,12 @@ namespace ColorVision.Copilot
             ConversationId = (conversationId ?? string.Empty).Trim();
             TaskId = (taskId ?? string.Empty).Trim();
             AccessContext = accessContext ?? new CopilotAgentAccessContext();
+            ActiveGoalText = CopilotConversationGoal.TryNormalizeObjective(
+                activeGoalText,
+                out var normalizedGoal,
+                out _)
+                ? normalizedGoal
+                : string.Empty;
             ExternalMcpServers = (externalMcpServers ?? Array.Empty<CopilotMcpClientServerConfig>())
                 .Where(server => server != null)
                 .Select(server => server.Clone())
@@ -128,6 +150,8 @@ namespace ColorVision.Copilot
         public string TaskId { get; }
 
         public CopilotAgentAccessContext AccessContext { get; }
+
+        public string ActiveGoalText { get; }
 
         public IReadOnlyList<CopilotMcpClientServerConfig> ExternalMcpServers { get; }
     }

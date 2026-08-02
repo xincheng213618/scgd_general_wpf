@@ -14,6 +14,7 @@ namespace ColorVision.Copilot
         private readonly CopilotImageUnderstandingService _imageUnderstandingService;
         private readonly CopilotContextRegistry _contextRegistry;
         private readonly CopilotMicrosoftAgentFrameworkRuntime _agentRuntime;
+        private readonly CopilotWorkspaceRollbackCoordinator _workspaceRollbackCoordinator;
 
         public CopilotTurnRuntime(CopilotChatService chatService)
         {
@@ -21,10 +22,15 @@ namespace ColorVision.Copilot
             _conversationRequestBuilder = new CopilotConversationRequestBuilder();
             _imageUnderstandingService = new CopilotImageUnderstandingService(_chatService);
             _contextRegistry = CopilotContextRegistry.CreateDefault();
+            var toolRegistry = CopilotToolRegistry.CreateDefault();
+            var toolExecutor = new CopilotToolExecutor();
             _agentRuntime = new CopilotMicrosoftAgentFrameworkRuntime(
-                CopilotToolRegistry.CreateDefault(),
+                toolRegistry,
                 new CopilotAgentContextBuilder(),
-                new CopilotToolExecutor());
+                toolExecutor);
+            _workspaceRollbackCoordinator = new CopilotWorkspaceRollbackCoordinator(
+                toolRegistry,
+                toolExecutor);
         }
 
         public IAsyncEnumerable<CopilotTurnEvent> RunAsync(
@@ -50,7 +56,30 @@ namespace ColorVision.Copilot
                 : RunAgentAsync(request, eventSink, cancellationToken);
         }
 
-        public bool TryEnqueueSteeringMessage(string message) => _agentRuntime.TryEnqueueSteeringMessage(message);
+        public CopilotSteeringAdmissionResult EnqueueSteeringMessage(
+            string taskId,
+            string message) =>
+            _agentRuntime.EnqueueSteeringMessage(taskId, message);
+
+        public bool TryEnqueueBackgroundShellCommandCompletion(
+            CopilotBackgroundShellCommandSnapshot snapshot) =>
+            _agentRuntime.TryEnqueueBackgroundShellCommandCompletion(snapshot);
+
+        public bool TryEnqueueBackgroundShellCommandOutput(
+            CopilotBackgroundShellOutputMonitorEventArgs eventArgs) =>
+            _agentRuntime.TryEnqueueBackgroundShellCommandOutput(eventArgs);
+
+        public bool TryAnswerUserQuestion(string taskId, string requestId, string answer) =>
+            _agentRuntime.TryAnswerUserQuestion(taskId, requestId, answer);
+
+        public Task<CopilotWorkspaceRollbackActionResult> RequestWorkspaceRollbackAsync(
+            CopilotWorkspaceRollbackActionRequest request,
+            Action<CopilotAgentEvent> onEvent,
+            CancellationToken cancellationToken) =>
+            _workspaceRollbackCoordinator.RequestAsync(
+                request,
+                onEvent,
+                cancellationToken);
 
         private async Task<CopilotTurnResult> RunChatAsync(
             CopilotTurnRequest request,
@@ -121,8 +150,11 @@ namespace ColorVision.Copilot
             CopilotTurnEventSink eventSink,
             CancellationToken cancellationToken)
         {
-            var recoveryTaskContext = CopilotAgentRecoveryTaskContext.Resolve(
+            var effectiveUserText = CopilotPlanHandoff.ResolveEffectiveUserText(
                 request.UserText,
+                request.ExistingRequestContent);
+            var recoveryTaskContext = CopilotAgentRecoveryTaskContext.Resolve(
+                effectiveUserText,
                 request.Recovery,
                 request.SessionCheckpoint);
             var requestPlan = CopilotAgentRequestFactory.Prepare(
@@ -160,6 +192,7 @@ namespace ColorVision.Copilot
                 AccessContext = request.AccessContext,
                 ExternalMcpServers = request.ExternalMcpServers,
                 TaskIntentText = recoveryTaskContext.TaskIntentText,
+                ActiveGoalText = request.ActiveGoalText,
             });
             var result = await _agentRuntime.RunAsync(agentRequest, eventSink.OnAgentEvent, cancellationToken).ConfigureAwait(false);
             return CopilotTurnResult.FromAgent(request.Mode, imageUnderstanding.Usage.Add(result.Usage), result);

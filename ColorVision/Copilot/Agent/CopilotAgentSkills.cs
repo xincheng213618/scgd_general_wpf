@@ -190,7 +190,7 @@ namespace ColorVision.Copilot
             {
                 var candidate = Path.GetFullPath(Path.Combine(parentDirectory, relativePath));
                 if (!Directory.Exists(candidate)
-                    || (File.GetAttributes(candidate) & FileAttributes.ReparsePoint) != 0
+                    || CopilotWorkspaceSearchSupport.HasReparsePointInPath(candidate)
                     || paths.Contains(candidate, StringComparer.OrdinalIgnoreCase))
                 {
                     return;

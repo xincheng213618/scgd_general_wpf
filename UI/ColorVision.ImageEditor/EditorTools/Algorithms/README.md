@@ -30,27 +30,19 @@
   - 实时预览效果
   - 点击"应用"保存更改或"取消"恢复原图
 
-### 4. 伽马校正 (Gamma Correction)
+### 4. 基础调整 (Basic Adjustment)
 - **类型**: 窗口调整
-- **文件**: `GammaCorrectionWindow.xaml/cs`
-- **功能**: 调整图像的伽马值
+- **文件**: `BasicAdjustmentWindow.xaml/cs`
+- **功能**: 统一调整曝光、亮度偏移、对比度和 Gamma
 - **使用方式**:
   - 打开窗口
-  - 使用滑动条调整伽马值 (范围: 0 - 10)
-  - 实时预览效果
+  - 曝光使用 EV 乘法增益，亮度偏移单独调节黑位，对比度围绕中灰点调整
+  - Gamma 使用非线性曲线调整中间调
+  - 所有参数始终从原始图像重新计算并实时预览
+  - 可一键复位
   - 点击"应用"保存更改或"取消"恢复原图
 
-### 5. 亮度对比度调整 (Brightness & Contrast)
-- **类型**: 窗口调整
-- **文件**: `BrightnessContrastWindow.xaml/cs`
-- **功能**: 调整图像的亮度和对比度
-- **使用方式**:
-  - 打开窗口
-  - 使用两个滑动条分别调整亮度 (-100 到 150) 和对比度 (-50 到 100)
-  - 实时预览效果
-  - 点击"应用"保存更改或"取消"恢复原图
-
-### 6. 阈值处理 (Threshold)
+### 5. 阈值处理 (Threshold)
 - **类型**: 窗口调整
 - **文件**: `ThresholdWindow.xaml/cs`
 - **功能**: 对图像进行阈值化处理
@@ -60,19 +52,19 @@
   - 实时预览效果
   - 点击"应用"保存更改或"取消"恢复原图
 
-### 7. 去除摩尔纹 (Remove Moire)
+### 6. 去除摩尔纹 (Remove Moire)
 - **类型**: 直接应用
 - **文件**: `RemoveMoireEditorTool.cs`
 - **功能**: 去除图像中的摩尔纹干扰
 - **使用方式**: 点击后立即应用
 
-### 8. 锐化 (Sharpen)
+### 7. 锐化 (Sharpen)
 - **类型**: 直接应用
 - **文件**: `SharpenEditorTool.cs`
 - **功能**: 增强图像的边缘和细节
 - **使用方式**: 点击后立即应用
 
-### 9. 高斯模糊 (Gaussian Blur)
+### 8. 高斯模糊 (Gaussian Blur)
 - **类型**: 窗口调整
 - **文件**: `GaussianBlurWindow.xaml/cs`
 - **功能**: 对图像应用高斯模糊
@@ -82,7 +74,7 @@
   - 实时预览效果
   - 点击"应用"保存更改或"取消"恢复原图
 
-### 10. 中值滤波 (Median Blur)
+### 9. 中值滤波 (Median Blur)
 - **类型**: 窗口调整
 - **文件**: `MedianBlurWindow.xaml/cs`
 - **功能**: 对图像应用中值滤波，有效去除椒盐噪声
@@ -92,7 +84,7 @@
   - 实时预览效果
   - 点击"应用"保存更改或"取消"恢复原图
 
-### 11. 边缘检测 (Edge Detection - Canny)
+### 10. 边缘检测 (Edge Detection - Canny)
 - **类型**: 窗口调整
 - **文件**: `EdgeDetectionWindow.xaml/cs`
 - **功能**: 使用Canny算法检测图像边缘
@@ -102,7 +94,7 @@
   - 实时预览效果
   - 点击"应用"保存更改或"取消"恢复原图
 
-### 12. 直方图均衡化 (Histogram Equalization)
+### 11. 直方图均衡化 (Histogram Equalization)
 - **类型**: 直接应用
 - **文件**: `HistogramEqualizationEditorTool.cs`
 - **功能**: 增强图像对比度，对灰度图像特别有效
@@ -166,12 +158,12 @@
 var invertTool = new InvertEditorTool(imageView);
 invertTool.Execute();
 
-// 或通过窗口调整参数
-var gammaWindow = new GammaCorrectionWindow(imageView)
+// 或通过统一的基础调整窗口修改曝光、亮度、对比度和 Gamma
+var adjustmentWindow = new BasicAdjustmentWindow(imageView)
 {
     Owner = Application.Current.GetActiveWindow()
 };
-gammaWindow.ShowDialog();
+adjustmentWindow.ShowDialog();
 ```
 
 ## 依赖

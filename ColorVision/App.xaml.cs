@@ -237,14 +237,7 @@ namespace ColorVision
             }
 
             if (shouldLoadPlugins)
-            {
                 PluginLoader.LoadPlugins(_moduleCatalog);
-                ColorVision.Copilot.CopilotPluginSubagentRoleLoader.Shared.Synchronize(
-                    PluginLoader.Config.Plugins.Values,
-                    ColorVision.Copilot.CopilotConfig.Instance.DisabledPluginSubagentRoles);
-            }
-            else
-                ColorVision.Copilot.CopilotPluginSubagentRoleLoader.Shared.Synchronize(Array.Empty<PluginInfo>());
 
             _moduleCatalog.Seal();
 
@@ -334,7 +327,6 @@ namespace ColorVision
                 Update.CombinedUpdateCoordinator.TryApplyPrefetchedUpdateOnExit();
             else if (updateIsActive)
                 log.Info("Skipped exit-time prefetched update because an external update is already active.");
-            ColorVision.Copilot.CopilotPluginSubagentRoleLoader.Shared.Dispose();
             CopilotMcpServer.Instance.Stop();
             LanRemoteControlService.Instance.Stop();
             //正常结束时清除标志位

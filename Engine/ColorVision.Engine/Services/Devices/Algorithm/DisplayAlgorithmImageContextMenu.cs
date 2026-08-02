@@ -19,11 +19,9 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                 return new List<MenuItemMetadata>();
             }
 
-            DisplayAlgorithmVisibilityConfig visibilityConfig = DisplayAlgorithmVisibilityConfig.Instance;
             List<DisplayAlgorithmMeta> algorithms = DisplayAlgorithmManager.GetInstance().AlgorithmMetas
-                .Where(meta => visibilityConfig.GetAlgorithmVisibility(meta.Name))
                 .OrderBy(meta => meta.Group)
-                .ThenBy(meta => visibilityConfig.GetOrderOverride(meta.Name, meta.Order))
+                .ThenBy(meta => meta.Order)
                 .ToList();
 
             if (algorithms.Count == 0)
@@ -66,8 +64,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                     {
                         OwnerGuid = groupGuid,
                         GuidId = $"{RootGuid}.Algorithm.{meta.Type.FullName}",
-                        Order = visibilityConfig.GetOrderOverride(meta.Name, meta.Order),
-                        Header = visibilityConfig.GetNameOverride(meta.Name, meta.DisplayName),
+                        Order = meta.Order,
+                        Header = meta.DisplayName,
                         Command = command,
                         Visibility = Visibility.Visible
                     });

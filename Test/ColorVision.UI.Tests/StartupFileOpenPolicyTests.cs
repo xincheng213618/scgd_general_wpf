@@ -1,4 +1,5 @@
 using ColorVision.Engine.Impl.SolutionImpl;
+using ColorVision.Solution.Editor;
 using ColorVision.UI;
 using System.ComponentModel;
 using System.Reflection;
@@ -26,6 +27,20 @@ public sealed class StartupFileOpenPolicyTests
         FileExtensionAttribute extensionAttribute = typeof(CVRawStandaloneFileProcessor)
             .GetCustomAttribute<FileExtensionAttribute>()!;
 
+        Assert.Contains(extensionAttribute.Extensions, extension =>
+            string.Equals(extension, ".cvraw", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(extensionAttribute.Extensions, extension =>
+            string.Equals(extension, ".cvcie", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void CvRawWorkspaceEditorIsRegisteredForBothExtensions()
+    {
+        EditorForExtensionAttribute extensionAttribute = typeof(ColorVision.Solution.Editor.ImageEditor)
+            .GetCustomAttribute<EditorForExtensionAttribute>()!;
+
+        Assert.Equal("colorvision.image", extensionAttribute.EditorId);
+        Assert.True(extensionAttribute.IsDefault);
         Assert.Contains(extensionAttribute.Extensions, extension =>
             string.Equals(extension, ".cvraw", StringComparison.OrdinalIgnoreCase));
         Assert.Contains(extensionAttribute.Extensions, extension =>

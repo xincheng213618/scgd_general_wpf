@@ -37,4 +37,21 @@ namespace ColorVision.UI
         /// </summary>
         IEnumerable<(string EntryPath, string FilePath)> CollectFiles();
     }
+
+    /// <summary>
+    /// Optional capability for collectors whose source can be filtered by a recent-day range
+    /// and opened directly from the feedback window.
+    /// </summary>
+    public interface IFeedbackLogTimeRangeCollector
+    {
+        /// <summary>
+        /// Number of recent days to collect.
+        /// </summary>
+        int RecentDays { get; set; }
+
+        /// <summary>
+        /// Directory containing the source logs, when available.
+        /// </summary>
+        string? LogDirectory { get; }
+    }
 }

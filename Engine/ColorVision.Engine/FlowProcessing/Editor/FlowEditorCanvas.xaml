@@ -38,7 +38,7 @@
                 ClipToBounds="True"
                 Panel.ZIndex="30">
             <Grid x:Name="PropertyEditorPanel"
-                  MaxWidth="420"
+                  MaxWidth="360"
                   MaxHeight="520"
                   Visibility="Collapsed"
                   Opacity="0.9">
@@ -47,8 +47,13 @@
                         BorderThickness="1"
                         CornerRadius="7"
                         Opacity="0.78"/>
-                <local:FlowNodePropertyPanel x:Name="InlineNodePropertyPanel"
-                                             Background="Transparent"/>
+                <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                              VerticalScrollBarVisibility="Auto"
+                              Background="Transparent">
+                    <StackPanel x:Name="NodePropertyPanelContent"
+                                Orientation="Vertical"
+                                Margin="5"/>
+                </ScrollViewer>
             </Grid>
         </Canvas>
     </Grid>

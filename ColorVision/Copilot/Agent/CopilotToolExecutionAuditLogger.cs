@@ -89,6 +89,11 @@ namespace ColorVision.Copilot
 
         public long QueueDurationMs { get; init; }
 
+        public IReadOnlyList<CopilotToolExecutionHookRun> HookRuns { get; init; } =
+            Array.Empty<CopilotToolExecutionHookRun>();
+
+        public string HookSummary { get; init; } = string.Empty;
+
         public string ArgumentSummary { get; init; } = string.Empty;
 
         public string ErrorMessage { get; init; } = string.Empty;
@@ -97,6 +102,8 @@ namespace ColorVision.Copilot
     internal static class CopilotToolExecutionAuditLogger
     {
         private const int MaxEntries = 200;
+        private const int MaxHookRuns = (CopilotToolExecutionHookRegistry.MaxRegistrations + 1) * 3;
+        private const int MaxHookSummaryCharacters = 4_000;
         private static readonly ILog Log = LogManager.GetLogger("ColorVision.Copilot.AgentToolAudit");
         private static readonly object SyncRoot = new();
         private static readonly List<CopilotToolExecutionAuditEntry> RecentEntries = new();
@@ -106,6 +113,10 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(outcome);
             var execution = outcome.Execution;
             var executionScope = ResolveExecutionScope(outcome);
+            var hookRuns = (outcome.HookRuns ?? Array.Empty<CopilotToolExecutionHookRun>())
+                .Where(item => item?.IsStructurallyValid() == true)
+                .Take(MaxHookRuns)
+                .ToArray();
             var entry = new CopilotToolExecutionAuditEntry
             {
                 CallId = Sanitize(execution.CallId),
@@ -147,6 +158,8 @@ namespace ColorVision.Copilot
                 CompletedAtUtc = execution.CompletedAtUtc,
                 DurationMs = execution.DurationMs,
                 QueueDurationMs = execution.QueueDurationMs,
+                HookRuns = hookRuns,
+                HookSummary = CreateHookSummary(hookRuns),
                 ArgumentSummary = execution.ArgumentSummary,
                 ErrorMessage = outcome.Result.Success ? string.Empty : Sanitize(CopilotMcpAuditLogger.RedactText(outcome.Result.ErrorMessage)),
             };
@@ -158,8 +171,50 @@ namespace ColorVision.Copilot
                     RecentEntries.RemoveRange(0, RecentEntries.Count - MaxEntries);
             }
 
-            Log.Info($"Agent tool completed. CallId={entry.CallId} ProviderCallId={EmptyLabel(entry.ProviderCallId)} Runtime={entry.RuntimeName} Round={entry.Round} Attempt={entry.Attempt}/{entry.MaxAttempts} Tool={entry.ToolName} ScopeTool={EmptyLabel(entry.ScopeToolName)} Source={entry.SourceKind} AuthorizationChannel={entry.AuthorizationChannel} ScopeId={EmptyLabel(entry.ScopeId)} AuthorizationScopeId={EmptyLabel(entry.AuthorizationScopeId)} OperationBindingId={EmptyLabel(entry.OperationBindingId)} TraceId={EmptyLabel(entry.TraceId)} Session={EmptyLabel(entry.SessionIdentity)} Caller={EmptyLabel(entry.CallerIdentity)} Conversation={EmptyLabel(entry.ConversationId)} Task={EmptyLabel(entry.TaskId)} Run={EmptyLabel(entry.RunId)} ParentRun={EmptyLabel(entry.ParentRunId)} Workspace={EmptyLabel(entry.WorkspaceIdentity)} WorkspaceSnapshot={EmptyLabel(entry.WorkspaceSnapshotId)} CapabilityRevision={entry.CapabilityRevision} ArgumentsSignature={EmptyLabel(entry.ArgumentsSignature)} Access={entry.Access} Risk={entry.RiskLevel} Approval={entry.ApprovalMode} Idempotency={entry.Idempotency} Concurrency={entry.ConcurrencyMode} ConcurrencyKey={EmptyLabel(entry.ConcurrencyKey)} QueueMs={entry.QueueDurationMs} State={entry.State} FailureKind={entry.FailureKind} FailureCode={EmptyLabel(entry.FailureCode)} RetryEligible={entry.RetryEligible} ApprovalActionId={EmptyLabel(entry.ApprovalActionId)} DurationMs={entry.DurationMs} Arguments={entry.ArgumentSummary} Error={EmptyLabel(entry.ErrorMessage)}");
+            Log.Info($"Agent tool completed. CallId={entry.CallId} ProviderCallId={EmptyLabel(entry.ProviderCallId)} Runtime={entry.RuntimeName} Round={entry.Round} Attempt={entry.Attempt}/{entry.MaxAttempts} Tool={entry.ToolName} ScopeTool={EmptyLabel(entry.ScopeToolName)} Source={entry.SourceKind} AuthorizationChannel={entry.AuthorizationChannel} ScopeId={EmptyLabel(entry.ScopeId)} AuthorizationScopeId={EmptyLabel(entry.AuthorizationScopeId)} OperationBindingId={EmptyLabel(entry.OperationBindingId)} TraceId={EmptyLabel(entry.TraceId)} Session={EmptyLabel(entry.SessionIdentity)} Caller={EmptyLabel(entry.CallerIdentity)} Conversation={EmptyLabel(entry.ConversationId)} Task={EmptyLabel(entry.TaskId)} Run={EmptyLabel(entry.RunId)} ParentRun={EmptyLabel(entry.ParentRunId)} Workspace={EmptyLabel(entry.WorkspaceIdentity)} WorkspaceSnapshot={EmptyLabel(entry.WorkspaceSnapshotId)} CapabilityRevision={entry.CapabilityRevision} ArgumentsSignature={EmptyLabel(entry.ArgumentsSignature)} Access={entry.Access} Risk={entry.RiskLevel} Approval={entry.ApprovalMode} Idempotency={entry.Idempotency} Concurrency={entry.ConcurrencyMode} ConcurrencyKey={EmptyLabel(entry.ConcurrencyKey)} QueueMs={entry.QueueDurationMs} State={entry.State} FailureKind={entry.FailureKind} FailureCode={EmptyLabel(entry.FailureCode)} RetryEligible={entry.RetryEligible} ApprovalActionId={EmptyLabel(entry.ApprovalActionId)} DurationMs={entry.DurationMs} Hooks={EmptyLabel(entry.HookSummary)} Arguments={entry.ArgumentSummary} Error={EmptyLabel(entry.ErrorMessage)}");
         }
+
+        private static string CreateHookSummary(IReadOnlyList<CopilotToolExecutionHookRun> hookRuns)
+        {
+            if (hookRuns.Count == 0)
+                return string.Empty;
+
+            var builder = new StringBuilder();
+            foreach (var hookRun in hookRuns)
+            {
+                var item = $"{FormatHookPhase(hookRun.Phase)}:{hookRun.SourceId}={FormatHookState(hookRun.State)}/{hookRun.DurationMs}ms";
+                if (!string.IsNullOrWhiteSpace(hookRun.FailureCode))
+                    item += "/" + hookRun.FailureCode;
+                if (builder.Length > 0)
+                    item = "," + item;
+                if (builder.Length + item.Length > MaxHookSummaryCharacters)
+                {
+                    builder.Append(",...");
+                    break;
+                }
+                builder.Append(item);
+            }
+            return builder.ToString();
+        }
+
+        private static string FormatHookPhase(CopilotToolExecutionHookPhase phase) => phase switch
+        {
+            CopilotToolExecutionHookPhase.PermissionRequest => "permission",
+            CopilotToolExecutionHookPhase.BeforeExecute => "before",
+            CopilotToolExecutionHookPhase.AfterExecute => "after",
+            _ => "unknown",
+        };
+
+        private static string FormatHookState(CopilotToolExecutionHookState state) => state switch
+        {
+            CopilotToolExecutionHookState.Completed => "completed",
+            CopilotToolExecutionHookState.Denied => "denied",
+            CopilotToolExecutionHookState.Failed => "failed",
+            CopilotToolExecutionHookState.TimedOut => "timed_out",
+            CopilotToolExecutionHookState.Cancelled => "cancelled",
+            CopilotToolExecutionHookState.Skipped => "skipped",
+            _ => "unknown",
+        };
 
         public static IReadOnlyList<CopilotToolExecutionAuditEntry> GetRecentEntries(int maxEntries = 50)
         {

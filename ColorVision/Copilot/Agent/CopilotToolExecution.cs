@@ -15,124 +15,8 @@ using System.Threading.Tasks;
 
 namespace ColorVision.Copilot
 {
-    public sealed class CopilotToolInvocation
-    {
-        public string CallId { get; init; } = string.Empty;
 
-        public int Round { get; init; }
-
-        public int Attempt { get; init; } = 1;
-
-        public int MaxAttempts { get; init; } = 1;
-
-        public string RuntimeName { get; init; } = string.Empty;
-
-        public ICopilotTool Tool { get; init; } = null!;
-
-        public CopilotAgentRequest AgentRequest { get; init; } = null!;
-
-        internal CopilotExecutionScope ExecutionScope { get; init; } = CopilotExecutionScope.Empty;
-
-        public CopilotAgentToolInput ToolInput { get; init; } = CopilotAgentToolInput.Empty;
-
-        public CopilotToolCall ToolCall { get; init; } = new();
-
-        public bool FrameworkApprovalGranted { get; internal init; }
-
-        public string ApprovalActionId { get; internal init; } = string.Empty;
-
-        public CopilotToolConcurrencyMode ConcurrencyMode { get; internal init; }
-
-        public string ConcurrencyKey { get; internal init; } = string.Empty;
-    }
-
-    public sealed class CopilotToolExecutionOutcome
-    {
-        public CopilotToolInvocation Invocation { get; init; } = null!;
-
-        public CopilotToolResult Result { get; init; } = new();
-
-        public CopilotToolExecutionInfo Execution { get; init; } = new();
-
-        public CopilotAgentStepRecord StepRecord => new()
-        {
-            Round = Invocation.Round,
-            ToolCall = Invocation.ToolCall,
-            Observation = CopilotToolObservation.FromResult(Result),
-            Execution = Execution,
-        };
-    }
-
-    public sealed class CopilotToolExecutionHookContext
-    {
-        public CopilotToolInvocation Invocation { get; init; } = null!;
-
-        public DateTimeOffset StartedAtUtc { get; init; }
-
-        public TimeSpan Timeout { get; init; }
-    }
-
-    public sealed class CopilotToolExecutionHookDecision
-    {
-        public static CopilotToolExecutionHookDecision Proceed { get; } = new() { ShouldProceed = true };
-
-        public bool ShouldProceed { get; init; }
-
-        public string Reason { get; init; } = string.Empty;
-
-        public static CopilotToolExecutionHookDecision Deny(string reason) => new()
-        {
-            ShouldProceed = false,
-            Reason = reason ?? string.Empty,
-        };
-    }
-
-    public interface ICopilotToolExecutionHook
-    {
-        Task<CopilotToolExecutionHookDecision> BeforeExecuteAsync(CopilotToolExecutionHookContext context, CancellationToken cancellationToken);
-
-        Task AfterExecuteAsync(CopilotToolExecutionOutcome outcome, CancellationToken cancellationToken);
-    }
-
-    public sealed class CopilotWriteToolPolicyHook : ICopilotToolExecutionHook
-    {
-        public Task<CopilotToolExecutionHookDecision> BeforeExecuteAsync(CopilotToolExecutionHookContext context, CancellationToken cancellationToken)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            var invocation = context.Invocation;
-            var capability = invocation.Tool.Capability;
-            if (capability.Access == CopilotToolAccess.ReadOnly)
-                return Task.FromResult(CopilotToolExecutionHookDecision.Proceed);
-
-            if (invocation.AgentRequest.Mode == CopilotAgentMode.Review)
-                return Task.FromResult(CopilotToolExecutionHookDecision.Deny("Review mode permits read-only tools only."));
-
-            if (capability.RiskLevel == CopilotToolRiskLevel.High
-                && capability.ApprovalMode == CopilotToolApprovalMode.Never)
-            {
-                return Task.FromResult(CopilotToolExecutionHookDecision.Deny("High-risk write tools must declare an approval policy."));
-            }
-
-            if (invocation.AgentRequest.Mode == CopilotAgentMode.Chat || string.IsNullOrWhiteSpace(invocation.AgentRequest.UserText))
-                return Task.FromResult(CopilotToolExecutionHookDecision.Deny("Write-capable tools require a non-empty explicit user request outside Chat mode."));
-
-            try
-            {
-                if (!CopilotToolRegistry.IsAvailableForAgent(invocation.Tool, invocation.AgentRequest))
-                    return Task.FromResult(CopilotToolExecutionHookDecision.Deny("The tool is not available in the current Agent runtime."));
-            }
-            catch (Exception ex)
-            {
-                return Task.FromResult(CopilotToolExecutionHookDecision.Deny($"Write-tool authorization failed: {ex.Message}"));
-            }
-
-            return Task.FromResult(CopilotToolExecutionHookDecision.Proceed);
-        }
-
-        public Task AfterExecuteAsync(CopilotToolExecutionOutcome outcome, CancellationToken cancellationToken) => Task.CompletedTask;
-    }
-
-    public sealed class CopilotToolExecutor
+    public sealed partial class CopilotToolExecutor
     {
         private static readonly ILog Log = LogManager.GetLogger(typeof(CopilotToolExecutor));
         private static readonly TimeSpan DefaultHookPhaseTimeout = TimeSpan.FromSeconds(5);
@@ -140,8 +24,11 @@ namespace ColorVision.Copilot
         private static readonly TimeSpan DefaultProgressInterval = TimeSpan.FromSeconds(5);
         private static readonly TimeSpan MaximumProgressInterval = TimeSpan.FromMinutes(1);
         private static readonly TimeSpan MinimumStructuredProgressInterval = TimeSpan.FromMilliseconds(250);
+        private static readonly ICopilotToolExecutionHook BuiltInWriteToolPolicyHook = new CopilotWriteToolPolicyHook();
+        private const int MaxRecordedHookRuns = (CopilotToolExecutionHookRegistry.MaxRegistrations + 1) * 3;
 
-        private readonly IReadOnlyList<ICopilotToolExecutionHook> _hooks;
+        private readonly IReadOnlyList<ICopilotToolExecutionHook> _fixedHooks;
+        private readonly CopilotToolExecutionHookRegistry? _hookRegistry;
         private readonly Func<DateTimeOffset> _utcNow;
         private readonly CopilotToolExecutionGate _executionGate;
         private readonly TimeSpan _hookPhaseTimeout;
@@ -151,7 +38,25 @@ namespace ColorVision.Copilot
             IEnumerable<ICopilotToolExecutionHook>? hooks = null,
             Func<DateTimeOffset>? utcNow = null,
             TimeSpan? hookPhaseTimeout = null)
-            : this(hooks, utcNow, hookPhaseTimeout, DefaultProgressInterval)
+            : this(
+                hooks == null ? CopilotToolExecutionHookRegistry.Shared : null,
+                hooks,
+                utcNow,
+                hookPhaseTimeout,
+                DefaultProgressInterval)
+        {
+        }
+
+        public CopilotToolExecutor(
+            CopilotToolExecutionHookRegistry hookRegistry,
+            Func<DateTimeOffset>? utcNow = null,
+            TimeSpan? hookPhaseTimeout = null)
+            : this(
+                hookRegistry ?? throw new ArgumentNullException(nameof(hookRegistry)),
+                hooks: null,
+                utcNow,
+                hookPhaseTimeout,
+                DefaultProgressInterval)
         {
         }
 
@@ -160,9 +65,26 @@ namespace ColorVision.Copilot
             Func<DateTimeOffset>? utcNow,
             TimeSpan? hookPhaseTimeout,
             TimeSpan progressInterval)
+            : this(
+                hooks == null ? CopilotToolExecutionHookRegistry.Shared : null,
+                hooks,
+                utcNow,
+                hookPhaseTimeout,
+                progressInterval)
         {
-            var configuredHooks = hooks?.Where(hook => hook != null) ?? Enumerable.Empty<ICopilotToolExecutionHook>();
-            _hooks = new ICopilotToolExecutionHook[] { new CopilotWriteToolPolicyHook() }.Concat(configuredHooks).ToArray();
+        }
+
+        private CopilotToolExecutor(
+            CopilotToolExecutionHookRegistry? hookRegistry,
+            IEnumerable<ICopilotToolExecutionHook>? hooks,
+            Func<DateTimeOffset>? utcNow,
+            TimeSpan? hookPhaseTimeout,
+            TimeSpan progressInterval)
+        {
+            _hookRegistry = hookRegistry;
+            _fixedHooks = (hooks ?? Enumerable.Empty<ICopilotToolExecutionHook>())
+                .Where(hook => hook != null)
+                .ToArray();
             _utcNow = utcNow ?? (() => DateTimeOffset.UtcNow);
             _executionGate = new CopilotToolExecutionGate();
             _hookPhaseTimeout = hookPhaseTimeout ?? DefaultHookPhaseTimeout;
@@ -189,6 +111,14 @@ namespace ColorVision.Copilot
 
             var callId = string.IsNullOrWhiteSpace(invocation.CallId) ? Guid.NewGuid().ToString("N") : invocation.CallId.Trim();
             invocation = NormalizeInvocation(invocation, callId);
+            var hooks = invocation.InitialHookBindings.Count > 0
+                ? invocation.InitialHookBindings.ToArray()
+                : ResolveInvocationHooks(invocation.Tool.Name);
+            var hookRuns = new List<CopilotToolExecutionHookRun>(
+                Math.Min(MaxRecordedHookRuns, invocation.InitialHookRuns.Count + hooks.Length * 2));
+            hookRuns.AddRange(invocation.InitialHookRuns
+                .Where(run => run?.IsStructurallyValid() == true)
+                .Take(MaxRecordedHookRuns));
             var startedAt = _utcNow();
             var timeout = invocation.Tool.Capability.EffectiveExecutionTimeout;
             var stopwatch = Stopwatch.StartNew();
@@ -208,7 +138,7 @@ namespace ColorVision.Copilot
                         timeout,
                         stopwatch,
                         Failure(invocation.Tool.Name, $"{invocation.Tool.Name} execution was denied.", approvalError, CopilotToolFailureKind.Authorization));
-                    return await PublishOutcomeAsync(denied, onEvent);
+                    return await PublishOutcomeAsync(denied, hooks, hookRuns, onEvent);
                 }
             }
 
@@ -219,17 +149,51 @@ namespace ColorVision.Copilot
                 Timeout = timeout,
             };
 
-            var decision = await RunBeforeHooksAsync(hookContext, cancellationToken);
+            CopilotToolExecutionHookDecision decision;
+            try
+            {
+                decision = await RunBeforeHooksAsync(hookContext, hooks, hookRuns, cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                var cancelled = CreateOutcome(
+                    invocation,
+                    CopilotToolExecutionState.Cancelled,
+                    startedAt,
+                    timeout,
+                    stopwatch,
+                    Failure(
+                        invocation.Tool.Name,
+                        $"{invocation.Tool.Name} was cancelled during pre-execution checks.",
+                        "Tool execution was cancelled before its pre-execution hooks completed.",
+                        CopilotToolFailureKind.Cancelled,
+                        "tool_execution_cancelled"));
+                await PublishOutcomeAsync(cancelled, hooks, hookRuns, onEvent);
+                throw;
+            }
             if (!decision.ShouldProceed)
             {
+                var failureCode = CopilotToolFailureCode.Normalize(decision.FailureCode);
+                var failureKind = decision.FailureKind != CopilotToolFailureKind.None
+                    && Enum.IsDefined(decision.FailureKind)
+                        ? decision.FailureKind
+                        : CopilotToolFailureKind.Authorization;
+                var reason = string.IsNullOrWhiteSpace(decision.Reason)
+                    ? "A pre-execution hook denied the tool call."
+                    : CopilotUserFacingErrorFormatter.Sanitize(decision.Reason);
                 var denied = CreateOutcome(
                     invocation,
                     CopilotToolExecutionState.Denied,
                     startedAt,
                     timeout,
                     stopwatch,
-                    Failure(invocation.Tool.Name, $"{invocation.Tool.Name} execution was denied.", decision.Reason, CopilotToolFailureKind.Authorization));
-                return await PublishOutcomeAsync(denied, onEvent);
+                    Failure(
+                        invocation.Tool.Name,
+                        $"{invocation.Tool.Name} execution was denied.",
+                        reason,
+                        failureKind,
+                        string.IsNullOrWhiteSpace(failureCode) ? "tool_hook_denied" : failureCode));
+                return await PublishOutcomeAsync(denied, hooks, hookRuns, onEvent);
             }
 
             IDisposable executionLease;
@@ -264,7 +228,7 @@ namespace ColorVision.Copilot
                     stopwatch,
                     Failure(invocation.Tool.Name, $"{invocation.Tool.Name} was cancelled while waiting to run.", "Tool execution was cancelled while queued.", CopilotToolFailureKind.Cancelled),
                     queueStopwatch.ElapsedMilliseconds);
-                await PublishOutcomeAsync(cancelled, onEvent);
+                await PublishOutcomeAsync(cancelled, hooks, hookRuns, onEvent);
                 throw;
             }
             catch
@@ -309,7 +273,7 @@ namespace ColorVision.Copilot
                 {
                     executionProgress.Complete();
                     await StopProgressAsync();
-                    return await PublishOutcomeAsync(outcome, onEvent);
+                    return await PublishOutcomeAsync(outcome, hooks, hookRuns, onEvent);
                 }
 
                 try
@@ -378,560 +342,94 @@ namespace ColorVision.Copilot
             }
         }
 
-        private async Task PublishToolQueueProgressAsync(
-            CopilotToolInvocation invocation,
-            DateTimeOffset startedAt,
-            TimeSpan timeout,
-            Stopwatch queueStopwatch,
-            Stopwatch totalStopwatch,
-            Action<CopilotAgentEvent> onEvent,
-            CancellationToken cancellationToken)
-        {
-            try
-            {
-                using var timer = new PeriodicTimer(_progressInterval);
-                while (await timer.WaitForNextTickAsync(cancellationToken))
-                {
-                    var queueDurationMs = Math.Max(0, queueStopwatch.ElapsedMilliseconds);
-                    var execution = CreateExecutionInfo(
-                        invocation,
-                        CopilotToolExecutionState.Pending,
-                        startedAt,
-                        completedAt: null,
-                        Math.Max(0, totalStopwatch.ElapsedMilliseconds),
-                        timeout,
-                        queueDurationMs: queueDurationMs);
-                    onEvent(CopilotAgentEvent.ToolProgress(
-                        execution,
-                        $"{invocation.Tool.Name} is waiting for an execution slot · {FormatElapsed(queueDurationMs)} queued."));
-                }
-            }
-            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-            {
-            }
-            catch (Exception ex)
-            {
-                Log.Warn($"Copilot tool queue progress reporting stopped unexpectedly. Tool={invocation.Tool.Name} CallId={invocation.CallId}", ex);
-            }
-        }
-
-        private async Task PublishToolProgressAsync(
-            CopilotToolInvocation invocation,
-            DateTimeOffset startedAt,
-            TimeSpan timeout,
-            long queueDurationMs,
-            Stopwatch stopwatch,
-            CopilotToolProgressContext progressContext,
-            Action<CopilotAgentEvent> onEvent,
-            CancellationToken cancellationToken)
-        {
-            try
-            {
-                var hasPublishedStructuredProgress = false;
-                var lastStructuredProgressAt = TimeSpan.Zero;
-                var lastPublishedProgressVersion = 0L;
-                while (true)
-                {
-                    var waitResult = await progressContext.WaitForUpdateAsync(
-                        _progressInterval,
-                        cancellationToken);
-                    if (waitResult == CopilotToolProgressWaitResult.Completed)
-                        return;
-
-                    CopilotToolProgressUpdate? reportedProgress;
-                    if (waitResult == CopilotToolProgressWaitResult.Updated)
-                    {
-                        if (hasPublishedStructuredProgress)
-                        {
-                            var remainingDelay = MinimumStructuredProgressInterval
-                                - (stopwatch.Elapsed - lastStructuredProgressAt);
-                            if (remainingDelay > TimeSpan.Zero)
-                                await Task.Delay(remainingDelay, cancellationToken);
-                        }
-
-                        progressContext.DrainUpdateNotifications();
-                        var progressSnapshot = progressContext.GetLatestSnapshot();
-                        reportedProgress = progressSnapshot.Update;
-                        if (reportedProgress == null
-                            || progressSnapshot.Version <= lastPublishedProgressVersion)
-                            continue;
-                        lastStructuredProgressAt = stopwatch.Elapsed;
-                        hasPublishedStructuredProgress = true;
-                        lastPublishedProgressVersion = progressSnapshot.Version;
-                    }
-                    else
-                    {
-                        var progressSnapshot = progressContext.GetLatestSnapshot();
-                        reportedProgress = progressSnapshot.Update;
-                        lastPublishedProgressVersion = Math.Max(
-                            lastPublishedProgressVersion,
-                            progressSnapshot.Version);
-                    }
-
-                    if (!stopwatch.IsRunning)
-                        return;
-
-                    var elapsedMs = Math.Max(0, stopwatch.ElapsedMilliseconds);
-                    var execution = CreateExecutionInfo(
-                        invocation,
-                        CopilotToolExecutionState.Running,
-                        startedAt,
-                        completedAt: null,
-                        elapsedMs,
-                        timeout,
-                        queueDurationMs: queueDurationMs);
-                    var progressText = FormatReportedProgress(reportedProgress);
-                    onEvent(CopilotAgentEvent.ToolProgress(
-                        execution,
-                        string.IsNullOrWhiteSpace(progressText)
-                            ? $"{invocation.Tool.Name} is still running · {FormatElapsed(elapsedMs)} elapsed."
-                            : $"{invocation.Tool.Name} · {progressText} · {FormatElapsed(elapsedMs)} elapsed.",
-                        reportedProgress));
-                }
-            }
-            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-            {
-            }
-            catch (Exception ex)
-            {
-                Log.Warn($"Copilot tool progress reporting stopped unexpectedly. Tool={invocation.Tool.Name} CallId={invocation.CallId}", ex);
-            }
-        }
-
-        private static Task<CopilotToolResult> ExecuteToolAsync(
+        private static async Task<CopilotToolResult> ExecuteToolAsync(
             CopilotToolInvocation invocation,
             CopilotToolProgressContext progress,
             CancellationToken cancellationToken)
         {
+            using var invocationContext = CopilotToolInvocationContext.Enter(invocation);
             if (invocation.FrameworkApprovalGranted
                 && invocation.Tool is ICopilotFrameworkApprovedProgressReportingTool approvedProgressTool)
             {
-                return approvedProgressTool.ExecuteApprovedWithProgressAsync(
+                return await approvedProgressTool.ExecuteApprovedWithProgressAsync(
                     invocation.AgentRequest,
                     invocation.ToolInput,
                     progress,
-                    cancellationToken);
+                    cancellationToken).ConfigureAwait(false);
             }
 
             if (invocation.FrameworkApprovalGranted
                 && invocation.Tool is ICopilotFrameworkApprovedTool approvedTool)
             {
-                return approvedTool.ExecuteApprovedAsync(
+                return await approvedTool.ExecuteApprovedAsync(
                     invocation.AgentRequest,
                     invocation.ToolInput,
-                    cancellationToken);
+                    cancellationToken).ConfigureAwait(false);
             }
 
             if (invocation.Tool is ICopilotProgressReportingTool progressTool)
             {
-                return progressTool.ExecuteWithProgressAsync(
+                return await progressTool.ExecuteWithProgressAsync(
                     invocation.AgentRequest,
                     invocation.ToolInput,
                     progress,
-                    cancellationToken);
+                    cancellationToken).ConfigureAwait(false);
             }
 
-            return invocation.Tool.ExecuteAsync(
+            return await invocation.Tool.ExecuteAsync(
                 invocation.AgentRequest,
                 invocation.ToolInput,
-                cancellationToken);
+                cancellationToken).ConfigureAwait(false);
         }
 
-        private static string FormatReportedProgress(CopilotToolProgressUpdate? progress)
+        private CopilotToolExecutionHookBinding[] ResolveInvocationHooks(string toolName)
         {
-            if (progress == null)
-                return string.Empty;
-
-            var count = progress.Completed.HasValue && progress.Total.HasValue
-                ? $"{progress.Completed.Value}/{progress.Total.Value}"
-                : progress.Completed?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty;
-            if (!string.IsNullOrWhiteSpace(count) && !string.IsNullOrWhiteSpace(progress.Unit))
-                count += " " + progress.Unit;
-            if (string.IsNullOrWhiteSpace(progress.Message))
-                return count;
-            return string.IsNullOrWhiteSpace(count)
-                ? progress.Message
-                : $"{count} · {progress.Message}";
+            var configuredHooks = _hookRegistry?.Resolve(toolName)
+                ?? _fixedHooks.Select((hook, index) =>
+                    new CopilotToolExecutionHookBinding($"fixed:{index}", hook)).ToArray();
+            var hooks = new CopilotToolExecutionHookBinding[configuredHooks.Count + 1];
+            hooks[0] = new CopilotToolExecutionHookBinding(
+                "builtin:write-tool-policy",
+                BuiltInWriteToolPolicyHook);
+            for (var i = 0; i < configuredHooks.Count; i++)
+                hooks[i + 1] = configuredHooks[i];
+            return hooks;
         }
 
-        private async Task<CopilotToolExecutionHookDecision> RunBeforeHooksAsync(CopilotToolExecutionHookContext context, CancellationToken cancellationToken)
+        internal CopilotToolExecutionHookRegistrySnapshot GetHookSurfaceSnapshot()
         {
-            var phaseStopwatch = Stopwatch.StartNew();
-            foreach (var hook in _hooks)
-            {
-                var remaining = _hookPhaseTimeout - phaseStopwatch.Elapsed;
-                if (remaining <= TimeSpan.Zero)
-                    return CreateBeforeHookTimeoutDecision();
+            var configuredSnapshot = _hookRegistry?.GetSnapshot()
+                ?? CopilotToolExecutionHookRegistry.CreateSnapshot(
+                    revision: 0,
+                    _fixedHooks.Select((hook, index) =>
+                        CopilotToolExecutionHookRegistry.CreateSnapshotEntry(
+                            $"fixed:{index}",
+                            "*",
+                            index,
+                            hook)));
+            return CreateHookSurfaceSnapshot(configuredSnapshot);
+        }
 
-                CancellationTokenSource? hookCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-                Task<CopilotToolExecutionHookDecision>? hookTask = null;
-                try
+        internal static CopilotToolExecutionHookRegistrySnapshot GetSharedHookSurfaceSnapshot()
+        {
+            return CreateHookSurfaceSnapshot(CopilotToolExecutionHookRegistry.Shared.GetSnapshot());
+        }
+
+        private static CopilotToolExecutionHookRegistrySnapshot CreateHookSurfaceSnapshot(
+            CopilotToolExecutionHookRegistrySnapshot configuredSnapshot)
+        {
+            return CopilotToolExecutionHookRegistry.CreateSnapshot(
+                configuredSnapshot.Revision,
+                new[]
                 {
-                    hookTask = hook.BeforeExecuteAsync(context, hookCancellation.Token);
-                    var decision = await hookTask.WaitAsync(remaining, cancellationToken) ?? CopilotToolExecutionHookDecision.Proceed;
-                    if (!decision.ShouldProceed)
-                        return decision;
-                }
-                catch (TimeoutException)
-                {
-                    CancelAndDisposeWithoutWaiting(ref hookCancellation);
-                    CopilotCancellationBoundary.ObserveLateFault(hookTask);
-                    return CreateBeforeHookTimeoutDecision();
-                }
-                catch (OperationCanceledException)
-                {
-                    CancelAndDisposeWithoutWaiting(ref hookCancellation);
-                    CopilotCancellationBoundary.ObserveLateFault(hookTask);
-                    throw;
-                }
-                catch (Exception ex)
-                {
-                    return CopilotToolExecutionHookDecision.Deny($"A pre-execution hook failed: {ex.Message}");
-                }
-                finally
-                {
-                    hookCancellation?.Dispose();
-                }
-            }
-
-            return CopilotToolExecutionHookDecision.Proceed;
+                    CopilotToolExecutionHookRegistry.CreateSnapshotEntry(
+                        "builtin:write-tool-policy",
+                        "*",
+                        int.MinValue,
+                        BuiltInWriteToolPolicyHook),
+                }.Concat(configuredSnapshot.Entries));
         }
 
-        private async Task<CopilotToolExecutionOutcome> PublishOutcomeAsync(CopilotToolExecutionOutcome outcome, Action<CopilotAgentEvent> onEvent)
-        {
-            CopilotToolExecutionAuditLogger.Record(outcome);
-            var phaseStopwatch = Stopwatch.StartNew();
-            foreach (var hook in _hooks)
-            {
-                var remaining = _hookPhaseTimeout - phaseStopwatch.Elapsed;
-                if (remaining <= TimeSpan.Zero)
-                {
-                    Log.Warn($"Copilot post-tool hook phase timed out. Tool={outcome.Invocation.Tool.Name} CallId={outcome.Execution.CallId}");
-                    break;
-                }
-
-                CancellationTokenSource? hookCancellation = new();
-                Task? hookTask = null;
-                try
-                {
-                    hookTask = hook.AfterExecuteAsync(outcome, hookCancellation.Token);
-                    await hookTask.WaitAsync(remaining);
-                }
-                catch (TimeoutException)
-                {
-                    CancelAndDisposeWithoutWaiting(ref hookCancellation);
-                    CopilotCancellationBoundary.ObserveLateFault(hookTask);
-                    Log.Warn($"Copilot post-tool hook phase timed out. Tool={outcome.Invocation.Tool.Name} CallId={outcome.Execution.CallId} Hook={hook.GetType().FullName}");
-                    break;
-                }
-                catch (Exception ex)
-                {
-                    Log.Warn($"Copilot post-tool hook failed. Tool={outcome.Invocation.Tool.Name} CallId={outcome.Execution.CallId}", ex);
-                }
-                finally
-                {
-                    hookCancellation?.Dispose();
-                }
-            }
-
-            onEvent(CopilotAgentEvent.FromToolResult(outcome.Result, outcome.Execution));
-            return outcome;
-        }
-
-        private CopilotToolExecutionHookDecision CreateBeforeHookTimeoutDecision()
-        {
-            return CopilotToolExecutionHookDecision.Deny(
-                $"The pre-execution hook phase exceeded its {FormatTimeout(_hookPhaseTimeout)} timeout.");
-        }
-
-        private CopilotToolExecutionOutcome CreateOutcome(
-            CopilotToolInvocation invocation,
-            CopilotToolExecutionState state,
-            DateTimeOffset startedAt,
-            TimeSpan timeout,
-            Stopwatch stopwatch,
-            CopilotToolResult result,
-            long queueDurationMs = 0)
-        {
-            stopwatch.Stop();
-            var completedAt = _utcNow();
-            if (result.Approval != null
-                && !CopilotMcpConfirmationStore.Instance.LinkAgentCall(
-                    result.Approval.ActionId,
-                    invocation.CallId,
-                    invocation.AgentRequest,
-                    invocation.ExecutionScope))
-            {
-                result = new CopilotToolResult
-                {
-                    ToolName = invocation.Tool.Name,
-                    Success = false,
-                    Summary = "The protected action could not be linked to this Copilot task.",
-                    ErrorMessage = "ColorVision rejected an approval action whose source or task scope did not match the active tool call.",
-                    FailureKind = CopilotToolFailureKind.Authorization,
-                    FailureCode = "approval_scope_link_failed",
-                };
-                state = CopilotToolExecutionState.Denied;
-            }
-
-            var outcome = new CopilotToolExecutionOutcome
-            {
-                Invocation = invocation,
-                Result = result,
-                Execution = CreateExecutionInfo(
-                    invocation,
-                    state,
-                    startedAt,
-                    completedAt,
-                    stopwatch.ElapsedMilliseconds,
-                    timeout,
-                    result.Approval?.ActionId,
-                    result.Success ? CopilotToolFailureKind.None : NormalizeFailureKind(result.FailureKind),
-                    CopilotToolRetryPolicy.IsRetryEligible(invocation, result, state),
-                    queueDurationMs),
-            };
-
-            return outcome;
-        }
-
-        private static CopilotToolInvocation NormalizeInvocation(CopilotToolInvocation invocation, string callId)
-        {
-            var toolInput = invocation.ToolInput ?? CopilotAgentToolInput.Empty;
-            var toolCall = invocation.ToolCall ?? new CopilotToolCall();
-            var executionSignature = CopilotAgentToolInputExactBinding.CreateExecutionSignature(
-                invocation.Tool.Name,
-                toolInput);
-            var executionScope = invocation.ExecutionScope.IsEmpty
-                ? CopilotExecutionScope.ForAgentRequest(invocation.AgentRequest)
-                : invocation.ExecutionScope;
-            executionScope = executionScope.BindToolCall(
-                invocation.Tool.Name,
-                callId,
-                executionSignature);
-            if (string.IsNullOrWhiteSpace(toolCall.ToolName))
-            {
-                toolCall = new CopilotToolCall
-                {
-                    ToolName = invocation.Tool.Name,
-                    ToolInput = toolInput,
-                    Reason = toolCall.Reason,
-                    IsFallback = toolCall.IsFallback,
-                };
-            }
-
-            return new CopilotToolInvocation
-            {
-                CallId = callId,
-                Round = Math.Max(1, invocation.Round),
-                Attempt = Math.Max(1, invocation.Attempt),
-                MaxAttempts = Math.Max(Math.Max(1, invocation.Attempt), invocation.MaxAttempts),
-                RuntimeName = string.IsNullOrWhiteSpace(invocation.RuntimeName) ? "agent" : invocation.RuntimeName.Trim(),
-                Tool = invocation.Tool,
-                AgentRequest = invocation.AgentRequest,
-                ExecutionScope = executionScope,
-                ToolInput = toolInput,
-                ToolCall = toolCall,
-                FrameworkApprovalGranted = invocation.FrameworkApprovalGranted,
-                ApprovalActionId = invocation.ApprovalActionId?.Trim() ?? string.Empty,
-                ConcurrencyMode = ResolveConcurrencyMode(invocation.Tool),
-                ConcurrencyKey = ResolveConcurrencyKey(invocation.Tool, invocation.AgentRequest, toolInput),
-            };
-        }
-
-        private static CopilotToolExecutionInfo CreateExecutionInfo(
-            CopilotToolInvocation invocation,
-            CopilotToolExecutionState state,
-            DateTimeOffset startedAt,
-            DateTimeOffset? completedAt,
-            long durationMs,
-            TimeSpan timeout,
-            string? approvalActionId = null,
-            CopilotToolFailureKind failureKind = CopilotToolFailureKind.None,
-            bool retryEligible = false,
-            long queueDurationMs = 0)
-        {
-            var capability = invocation.Tool.Capability;
-            return new CopilotToolExecutionInfo
-            {
-                CallId = invocation.CallId,
-                Round = invocation.Round,
-                Attempt = invocation.Attempt,
-                MaxAttempts = invocation.MaxAttempts,
-                RuntimeName = invocation.RuntimeName,
-                ToolName = invocation.Tool.Name,
-                Access = capability.Access,
-                RiskLevel = capability.RiskLevel,
-                ApprovalMode = capability.ApprovalMode,
-                Idempotency = capability.Idempotency,
-                ConcurrencyMode = invocation.ConcurrencyMode,
-                ConcurrencyKey = invocation.ConcurrencyKey,
-                ApprovalActionId = !string.IsNullOrWhiteSpace(approvalActionId)
-                    ? approvalActionId.Trim()
-                    : invocation.ApprovalActionId?.Trim() ?? string.Empty,
-                ArgumentSummary = CopilotToolExecutionAuditLogger.CreateArgumentSummary(invocation.Tool, invocation.ToolInput),
-                State = state,
-                FailureKind = failureKind,
-                RetryEligible = retryEligible,
-                StartedAtUtc = startedAt,
-                CompletedAtUtc = completedAt,
-                DurationMs = Math.Max(0, durationMs),
-                QueueDurationMs = Math.Max(0, queueDurationMs),
-                TimeoutMs = Math.Max(1, (long)timeout.TotalMilliseconds),
-            };
-        }
-
-        internal static CopilotToolConcurrencyMode ResolveConcurrencyMode(ICopilotTool tool)
-        {
-            return tool.Capability.EffectiveConcurrencyMode;
-        }
-
-        internal static string ResolveConcurrencyKey(ICopilotTool tool, CopilotAgentRequest request, CopilotAgentToolInput toolInput)
-        {
-            var key = tool.GetConcurrencyKey(request, toolInput)?.Trim();
-            key = string.IsNullOrWhiteSpace(key) ? $"tool:{tool.Name}" : key;
-            var fingerprint = SHA256.HashData(Encoding.UTF8.GetBytes(key.ToUpperInvariant()));
-            return $"resource:{Convert.ToHexString(fingerprint.AsSpan(0, 8)).ToLowerInvariant()}";
-        }
-
-        private static CopilotToolResult Failure(string toolName, string summary, string errorMessage, CopilotToolFailureKind failureKind)
-        {
-            return new CopilotToolResult
-            {
-                ToolName = toolName,
-                Success = false,
-                Summary = summary,
-                ErrorMessage = errorMessage,
-                FailureKind = failureKind,
-            };
-        }
-
-        private static CopilotToolFailureKind NormalizeFailureKind(CopilotToolFailureKind failureKind)
-        {
-            return failureKind == CopilotToolFailureKind.None ? CopilotToolFailureKind.Unspecified : failureKind;
-        }
-
-        private static string FormatTimeout(TimeSpan timeout)
-        {
-            return timeout.TotalSeconds >= 1
-                ? $"{timeout.TotalSeconds:0.#}-second"
-                : $"{timeout.TotalMilliseconds:0}-millisecond";
-        }
-
-        private static string FormatElapsed(long elapsedMs)
-        {
-            return elapsedMs < 1000
-                ? $"{Math.Max(0, elapsedMs)} ms"
-                : $"{elapsedMs / 1000d:0.#} s";
-        }
-
-        private static void CancelAndDisposeWithoutWaiting(ref CancellationTokenSource? cancellation)
-        {
-            var ownedCancellation = Interlocked.Exchange(ref cancellation, null);
-            if (ownedCancellation != null)
-                _ = CancelAndDisposeAsync(ownedCancellation);
-        }
-
-        private static async Task CancelAndDisposeAsync(CancellationTokenSource cancellation)
-        {
-            try
-            {
-                await cancellation.CancelAsync();
-            }
-            catch (Exception ex)
-            {
-                Log.Warn("Copilot tool hook cancellation failed.", ex);
-            }
-            finally
-            {
-                cancellation.Dispose();
-            }
-        }
-
-        private sealed class DeferredExecutionLease : IDisposable
-        {
-            private IDisposable? _lease;
-
-            public DeferredExecutionLease(IDisposable lease)
-            {
-                _lease = lease ?? throw new ArgumentNullException(nameof(lease));
-            }
-
-            public void HoldUntilCompleted(Task? executionTask)
-            {
-                if (executionTask == null || executionTask.IsCompleted)
-                    return;
-
-                var lease = Interlocked.Exchange(ref _lease, null);
-                if (lease != null)
-                    _ = ReleaseAfterCompletionAsync(executionTask, lease);
-            }
-
-            public void Dispose()
-            {
-                Interlocked.Exchange(ref _lease, null)?.Dispose();
-            }
-
-            private static async Task ReleaseAfterCompletionAsync(Task executionTask, IDisposable lease)
-            {
-                try
-                {
-                    await executionTask.ConfigureAwait(false);
-                }
-                catch
-                {
-                }
-                finally
-                {
-                    lease.Dispose();
-                }
-            }
-        }
     }
 
-    internal static class CopilotToolRetryPolicy
-    {
-        public const int MaximumAttemptsPerCall = 2;
-
-        public static bool IsRetryEligible(CopilotToolInvocation invocation, CopilotToolResult result, CopilotToolExecutionState state)
-        {
-            return invocation.Tool.Capability.Idempotency == CopilotToolIdempotency.Idempotent
-                && invocation.Attempt < invocation.MaxAttempts
-                && result.FailureKind == CopilotToolFailureKind.Transient
-                && state is CopilotToolExecutionState.Failed or CopilotToolExecutionState.TimedOut;
-        }
-    }
-
-    internal static class CopilotToolFailureClassifier
-    {
-        public static CopilotToolFailureKind Classify(Exception exception)
-        {
-            ArgumentNullException.ThrowIfNull(exception);
-            if (exception is HttpRequestException httpException)
-                return ClassifyHttpStatus(httpException.StatusCode);
-
-            return exception is TimeoutException or IOException or SocketException
-                ? CopilotToolFailureKind.Transient
-                : CopilotToolFailureKind.Internal;
-        }
-
-        private static CopilotToolFailureKind ClassifyHttpStatus(HttpStatusCode? statusCode)
-        {
-            if (!statusCode.HasValue
-                || statusCode == HttpStatusCode.RequestTimeout
-                || statusCode == HttpStatusCode.TooManyRequests
-                || (int)statusCode.Value >= 500)
-            {
-                return CopilotToolFailureKind.Transient;
-            }
-
-            return statusCode switch
-            {
-                HttpStatusCode.BadRequest or HttpStatusCode.UnprocessableEntity => CopilotToolFailureKind.Validation,
-                HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden => CopilotToolFailureKind.Authorization,
-                HttpStatusCode.NotFound or HttpStatusCode.Gone => CopilotToolFailureKind.NotFound,
-                HttpStatusCode.Conflict => CopilotToolFailureKind.Conflict,
-                _ => CopilotToolFailureKind.Internal,
-            };
-        }
-    }
 }

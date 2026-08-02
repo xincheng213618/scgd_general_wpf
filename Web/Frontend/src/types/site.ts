@@ -84,6 +84,10 @@ export interface ReleaseGroup {
   visible_kind_summary?: string
   visible_era_summary?: string
   time_range_display?: string
+  latest_modified?: string
+  latest_modified_display?: string
+  earliest_modified?: string
+  earliest_modified_display?: string
   contains_archive_only_formats?: boolean
   is_expanded?: boolean
   items?: ReleaseArtifact[]

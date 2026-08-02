@@ -16,16 +16,16 @@
 
 	<ItemGroup>
 		<PackageReference Include="CsvHelper" Version="33.1.0" />
-		<PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.8" />
+		<PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.10" />
 		<PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.142" />
-		<PackageReference Include="MQTTnet" Version="5.1.0.1559" />
+		<PackageReference Include="MQTTnet" Version="5.2.0.1603" />
 		<PackageReference Include="NPOI" Version="2.8.0" />
-		<PackageReference Include="OpenCvSharp4" Version="4.13.0.20260602" />
-		<PackageReference Include="OpenCvSharp4.runtime.win" Version="4.13.0.20260602" />
-		<PackageReference Include="OpenCvSharp4.WpfExtensions" Version="4.13.0.20260602" />
-		<PackageReference Include="SqlSugarCore" Version="5.1.4.215" />
-		<PackageReference Include="System.IO.Ports" Version="10.0.8" />
-		<PackageReference Include="System.ServiceProcess.ServiceController" Version="10.0.8" />
+		<PackageReference Include="OpenCvSharp4" Version="4.13.0.20260627" />
+		<PackageReference Include="OpenCvSharp4.runtime.win" Version="4.13.0.20260627" />
+		<PackageReference Include="OpenCvSharp4.WpfExtensions" Version="4.13.0.20260627" />
+		<PackageReference Include="SqlSugarCore" Version="5.1.4.216" />
+		<PackageReference Include="System.IO.Ports" Version="10.0.10" />
+		<PackageReference Include="System.ServiceProcess.ServiceController" Version="10.0.10" />
 	</ItemGroup>
 
 

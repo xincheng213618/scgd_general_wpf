@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace ColorVision.Copilot
 {
@@ -115,6 +116,63 @@ namespace ColorVision.Copilot
         public static bool HasConfigurableReasoning(CopilotProfileConfig? profile)
         {
             return profile?.VendorType is CopilotVendorType.DeepSeek or CopilotVendorType.Xiaomi;
+        }
+
+        public static CopilotReasoningOption? FindCommandOption(
+            CopilotProfileConfig? profile,
+            string? query)
+        {
+            var normalized = (query ?? string.Empty).Trim();
+            if (normalized.Length == 0 || !HasConfigurableReasoning(profile))
+                return null;
+
+            return GetOptions(profile).FirstOrDefault(option =>
+                IsCommandToken(option.Mode, option.Label, normalized));
+        }
+
+        public static string GetCommandOptionSummary(CopilotProfileConfig? profile)
+        {
+            return string.Join(
+                "、",
+                GetOptions(profile).Select(option =>
+                    $"{GetCommandToken(option.Mode)}（{option.Label}）"));
+        }
+
+        private static bool IsCommandToken(
+            CopilotReasoningMode mode,
+            string label,
+            string query)
+        {
+            if (string.Equals(query, label, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(query, mode.ToString(), StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            return mode switch
+            {
+                CopilotReasoningMode.Default =>
+                    string.Equals(query, "auto", StringComparison.OrdinalIgnoreCase),
+                CopilotReasoningMode.Disabled =>
+                    string.Equals(query, "off", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(query, "none", StringComparison.OrdinalIgnoreCase),
+                CopilotReasoningMode.Enabled =>
+                    string.Equals(query, "on", StringComparison.OrdinalIgnoreCase),
+                _ => false,
+            };
+        }
+
+        internal static string GetCommandToken(CopilotReasoningMode mode)
+        {
+            return mode switch
+            {
+                CopilotReasoningMode.Default => "auto",
+                CopilotReasoningMode.Disabled => "off",
+                CopilotReasoningMode.Enabled => "on",
+                CopilotReasoningMode.High => "high",
+                CopilotReasoningMode.Max => "max",
+                _ => "auto",
+            };
         }
 
         private static string GetDescription(CopilotVendorType? vendorType, CopilotReasoningMode mode)

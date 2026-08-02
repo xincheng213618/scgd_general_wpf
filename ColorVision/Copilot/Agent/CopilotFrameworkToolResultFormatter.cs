@@ -144,7 +144,7 @@ namespace ColorVision.Copilot
             if (result.DelegatedRunUsage != null)
             {
                 var delegated = result.DelegatedRunUsage;
-                payload["delegated_run"] = new Dictionary<string, object?>
+                var delegatedRun = new Dictionary<string, object?>
                 {
                     ["role"] = SanitizeInline(delegated.RoleId, 40),
                     ["run_id"] = SanitizeInline(delegated.RunId, 120),
@@ -152,6 +152,8 @@ namespace ColorVision.Copilot
                     ["request_token_budget"] = Math.Max(0, delegated.RequestTokenBudget),
                     ["provider_calls"] = Math.Max(0, delegated.ProviderCalls),
                     ["tool_calls"] = Math.Max(0, delegated.ToolCalls),
+                    ["steering_delivered"] = Math.Max(0, delegated.DeliveredSteeringCount),
+                    ["steering_undelivered"] = Math.Max(0, delegated.UndeliveredSteeringCount),
                     ["queue_ms"] = Math.Max(0, delegated.QueueDurationMs),
                     ["consumed_tokens"] = Math.Max(0, delegated.ConsumedTokens),
                     ["input_tokens"] = Math.Max(0, delegated.Usage.InputTokens),
@@ -159,6 +161,9 @@ namespace ColorVision.Copilot
                     ["total_tokens"] = Math.Max(0, delegated.Usage.EffectiveTotalTokens),
                     ["includes_estimates"] = delegated.UsedEstimatedUsage,
                 };
+                if (!string.IsNullOrWhiteSpace(delegated.ResumeFromRunId))
+                    delegatedRun["resumed_from"] = SanitizeInline(delegated.ResumeFromRunId, 120);
+                payload["delegated_run"] = delegatedRun;
             }
 
             return JsonSerializer.Serialize(payload, JsonOptions);

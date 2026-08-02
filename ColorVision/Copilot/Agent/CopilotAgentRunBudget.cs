@@ -204,7 +204,7 @@ namespace ColorVision.Copilot
                 ContextWindowTokens = tokenSnapshot.ContextWindowTokens,
                 InputBudgetTokens = tokenSnapshot.InputBudgetTokens,
                 RequestTokenBudget = RequestTokenBudget,
-                ConsumedTokens = tokenSnapshot.ConsumedTokens,
+                ConsumedTokens = Math.Max(0, tokenSnapshot.ConsumedTokens),
                 ProviderCalls = providerCalls,
                 PeakEstimatedInputTokens = Math.Max(0, tokenSnapshot.PeakEstimatedInputTokens),
                 ProviderRetryCount = providerRetryCount,

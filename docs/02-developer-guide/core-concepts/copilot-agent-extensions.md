@@ -12,7 +12,7 @@ Flow、设备、模板、图像和其他业务项目不能反向引用主程序�
 
 `/context` 本地诊断会列出当前模块扩展来源、版本、上下文提供者数量、工具已激活/声明数量以及最多八个冲突或发布问题；输出有数量和单行长度上限，不调用模型，也不写入会话历史。模块工具名与内置工具冲突时，诊断会保留来源和原因，实际工具不会进入 Agent 工具面。
 
-Marketplace manifest 中的 `copilot_agents` 仍只用于宿主管理的受限只读子 Agent，不等同于任意模块工具授权。能够执行 `ICopilotModuleTool` 的 DLL 本来就在 ColorVision 进程内运行，应只来自与普通插件代码相同信任级别的已审核程序集；未来若要允许远程或低信任扩展，应使用 MCP 或独立 ServiceHost 能力面，不应复用进程内注册表冒充沙箱。
+能够执行 `ICopilotModuleTool` 的 DLL 本来就在 ColorVision 进程内运行，应只来自与普通插件代码相同信任级别的已审核程序集；未来若要允许远程或低信任扩展，应使用 MCP 或独立 ServiceHost 能力面，不应复用进程内注册表冒充沙箱。
 
 ## 外部 MCP 工具发现
 
@@ -54,4 +54,4 @@ Copilot 使用官方 `ModelContextProtocol.Core` SDK 连接显式配置的 Strea
 
 框架中间件与函数调用层的设计参考 [Microsoft Agent Framework Middleware](https://learn.microsoft.com/en-us/agent-framework/agents/middleware/)；请求预算中间件使用官方建议的 [DelegatingChatClient](https://learn.microsoft.com/en-us/dotnet/api/microsoft.extensions.ai.delegatingchatclient?view=net-11.0-pp) 组合方式。
 
-相关测试集中在 `CopilotCoreRuntimeTests`、`CopilotAgentExtensionRegistryTests`、`CopilotFlowContextProviderTests`、`CopilotDeviceContextProviderTests`、`CopilotDatabaseContextProviderTests`、`CopilotMeasurementResultContextProviderTests`、`CopilotSchedulerContextProviderTests`、`ProjectARVRCopilotContextTests`、`CopilotExploreSubagentTests`、`CopilotScoutSubagentTests`、`CopilotSubagentRoleRegistryTests` 与 `CopilotToolExecutorTests`。
+相关测试集中在 `CopilotCoreRuntimeTests`、`CopilotAgentExtensionRegistryTests`、`CopilotFlowContextProviderTests`、`CopilotDeviceContextProviderTests`、`CopilotDatabaseContextProviderTests`、`CopilotMeasurementResultContextProviderTests`、`CopilotSchedulerContextProviderTests`、`ProjectARVRCopilotContextTests`、`CopilotExploreSubagentTests`、`CopilotScoutSubagentTests` 与 `CopilotToolExecutorTests`。

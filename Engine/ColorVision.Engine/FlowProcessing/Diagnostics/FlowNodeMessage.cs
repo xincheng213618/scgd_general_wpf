@@ -14,7 +14,8 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
         Sended = Sent,
         Success = 2,
         Fail = 3,
-        Timeout = 4
+        Timeout = 4,
+        Canceled = 5
     }
 
     /// <summary>

@@ -31,7 +31,7 @@
 
 | 你要维护 | 先看 |
 | --- | --- |
-| 模板发现、编辑、搜索和默认样例 | [模板管理](./templates/template-management.md)、[Templates API 参考](./templates/api-reference.md) |
+| 模板发现、编辑、搜索和创建 | [模板管理](./templates/template-management.md)、[Templates API 参考](./templates/api-reference.md) |
 | Flow 流程模板和节点参数 | [流程引擎](./templates/flow-engine.md)、[Engine 模板与 Flow 链路](../engine-components/template-flow-chain.md) |
 | POI、ROI、发光区和关注点 | [POI 模板](./templates/poi-template.md)、[ROI 原语](./primitives/roi.md)、[FindLightArea 发光区定位模板](./templates/find-light-area.md)、[FocusPoints 关注点模板](./templates/focus-points-template.md) |
 | AR/VR、JND、LED 和灯条检测 | [ARVR 模板](./templates/arvr-template.md)、[JND 模板](./templates/jnd-template.md)、[LED 检测模板](./templates/led-detection.md) |
@@ -44,7 +44,6 @@
 从现状看，模板与算法链路最值得先认识的是这几类文件：
 
 - `Templates/TemplateContorl.cs`：模板发现与注册入口。
-- `Templates/TemplateManagerWindow.xaml.cs`：模板管理窗口。
 - `Templates/TemplateEditorWindow.xaml.cs`：模板编辑窗口。
 - `Templates/Flow/TemplateFlow.cs`：流程模板与流程编辑器接入点。
 - `Templates/Jsons/ITemplateJson.cs`：JSON 模板的公共装载/导入导出逻辑。

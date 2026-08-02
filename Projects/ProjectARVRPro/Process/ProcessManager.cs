@@ -12,6 +12,8 @@ using Newtonsoft.Json.Linq;
 using System.IO;
 using Microsoft.Win32;
 using ProjectARVRPro.Process.Blank;
+using ProjectARVRPro.Process.KeyedResults.LuminanceChromaticity;
+using ProjectARVRPro.Recipe;
 
 namespace ProjectARVRPro.Process
 {
@@ -21,6 +23,8 @@ namespace ProjectARVRPro.Process
         private const string PersistFileName = "ProcessMetas.json";
         private const string GroupPersistFileName = "ProcessGroups.json";
         private const string ExportConfigFilter = "ARVR流程配置 (*.arvrprocess.json)|*.arvrprocess.json|JSON文件 (*.json)|*.json|所有文件 (*.*)|*.*";
+        private const string LegacyRecipeFilter = "旧版 ARVR Recipe (ARVRRecipe.json)|ARVRRecipe.json|JSON文件 (*.json)|*.json|所有文件 (*.*)|*.*";
+
         private static string PersistDirectory => ViewResultManager.DirectoryPath;
         private static string PersistFilePath => Path.Combine(PersistDirectory, PersistFileName);
         private static string GroupPersistFilePath => Path.Combine(PersistDirectory, GroupPersistFileName);
@@ -88,6 +92,7 @@ namespace ProjectARVRPro.Process
         /// 组切换事件
         /// </summary>
         public event EventHandler ActiveGroupChanged;
+        public event EventHandler? RecipeConfigImported;
 
         public ObservableCollection<TemplateModel<FlowParam>> templateModels { get; set; } = TemplateFlow.Params;
 
@@ -149,6 +154,7 @@ namespace ProjectARVRPro.Process
         public RelayCommand RenameGroupCommand { get; set; }
         public RelayCommand DuplicateGroupCommand { get; set; }
         public RelayCommand ImportConfigCommand { get; set; }
+        public RelayCommand ImportLegacyRecipeCommand { get; set; }
         public RelayCommand ExportConfigCommand { get; set; }
 
         /// <summary>
@@ -219,6 +225,7 @@ namespace ProjectARVRPro.Process
             RenameGroupCommand = new RelayCommand(a => RenameGroup(), a => ActiveGroup != null && !string.IsNullOrWhiteSpace(NewGroupName));
             DuplicateGroupCommand = new RelayCommand(a => DuplicateGroup(), a => ActiveGroup != null);
             ImportConfigCommand = new RelayCommand(a => ImportConfig());
+            ImportLegacyRecipeCommand = new RelayCommand(a => ImportLegacyRecipe());
             ExportConfigCommand = new RelayCommand(a => ExportConfig(), a => ProcessGroups.Count > 0);
 
             LoadPersistedGroups();
@@ -310,6 +317,113 @@ namespace ProjectARVRPro.Process
             ProcessGroups.Add(newGroup);
             ActiveGroupIndex = ProcessGroups.Count - 1;
             SavePersistedGroups();
+        }
+
+        private void ImportLegacyRecipe()
+        {
+            string legacyDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColorVision", "Config");
+            string legacyFilePath = Path.Combine(legacyDirectory, "ARVRRecipe.json");
+            var dialog = new OpenFileDialog
+            {
+                Title = "导入旧版 Recipe 清单",
+                Filter = LegacyRecipeFilter,
+                DefaultExt = "json",
+                InitialDirectory = Directory.Exists(legacyDirectory) ? legacyDirectory : string.Empty,
+                FileName = File.Exists(legacyFilePath) ? Path.GetFileName(legacyFilePath) : string.Empty
+            };
+
+            if (dialog.ShowDialog(Application.Current.GetActiveWindow()) != true)
+                return;
+
+            if (!LegacyRecipeImporter.TryReadFile(dialog.FileName, out var importResult, out string errorMessage))
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), $"导入旧版 Recipe 失败:\n{errorMessage}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            string confirmation = $"识别到 {importResult.SourceCount} 项旧版 Recipe，其中 {importResult.SharedConfigs.Count} 项迁移到共享 Recipe";
+            if (importResult.LuminanceConfigs.Count > 0)
+                confirmation += $"，{importResult.LuminanceConfigs.Count} 项 RGB/W25 Recipe 将按 Key 应用到当前亮色度流程";
+            confirmation += "。\n导入只覆盖对应 Recipe，不会修改流程组结构。是否继续？";
+
+            if (MessageBox.Show(Application.Current.GetActiveWindow(), confirmation, "ColorVision", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
+                return;
+
+            try
+            {
+                var (updatedLuminanceProcesses, unmatchedLuminanceKeys) = ApplyLegacyRecipe(importResult);
+                SavePersistedGroups();
+                OnPropertyChanged(nameof(RecipeConfig));
+                RecipeConfigImported?.Invoke(this, EventArgs.Empty);
+
+                string message = $"旧版 Recipe 已导入：更新 {importResult.SharedConfigs.Count} 项共享配置";
+                if (importResult.LuminanceConfigs.Count > 0)
+                    message += $"、{updatedLuminanceProcesses} 个亮色度流程项";
+                message += "。";
+
+                if (unmatchedLuminanceKeys.Count > 0)
+                    message += $"\n未找到以下亮色度 Key，对应旧配置未应用：{string.Join(", ", unmatchedLuminanceKeys)}。";
+
+                if (importResult.UnsupportedTypeNames.Count > 0)
+                {
+                    string unsupportedTypes = string.Join(", ", importResult.UnsupportedTypeNames
+                        .Select(typeName => typeName.Split('.').Last())
+                        .Distinct(StringComparer.Ordinal));
+                    message += $"\n当前版本不支持以下旧类型，已跳过：{unsupportedTypes}。";
+                }
+
+                MessageBox.Show(Application.Current.GetActiveWindow(), message, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                log.Error("应用旧版 Recipe 失败", ex);
+                MessageBox.Show(Application.Current.GetActiveWindow(), $"应用旧版 Recipe 失败:\n{ex.Message}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private (int UpdatedLuminanceProcesses, List<string> UnmatchedLuminanceKeys) ApplyLegacyRecipe(LegacyRecipeImportResult importResult)
+        {
+            RecipeConfig.Configs ??= new Dictionary<Type, IRecipeConfig>();
+            foreach (var (type, config) in importResult.SharedConfigs)
+                RecipeConfig.Configs[type] = config;
+
+            int updatedLuminanceProcesses = 0;
+            var appliedLuminanceKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            UnhookProcessMetasEvents();
+            UnhookResultParserEvents();
+            try
+            {
+                IEnumerable<ProcessMeta> metas = ProcessGroups
+                    .SelectMany(group => group.ProcessMetas)
+                    .Concat(ResultParserMetas)
+                    .Distinct();
+
+                foreach (ProcessMeta meta in metas)
+                {
+                    if (meta.Process is not LuminanceChromaticityProcess process)
+                        continue;
+
+                    string outputKey = process.Config.GetOutputKey();
+                    if (!importResult.LuminanceConfigs.TryGetValue(outputKey, out var importedConfig))
+                        continue;
+
+                    process.Config.RecipeConfig = LegacyRecipeImporter.CloneLuminanceConfig(importedConfig);
+                    meta.ConfigJson = JsonConvert.SerializeObject(process.Config);
+                    appliedLuminanceKeys.Add(outputKey);
+                    updatedLuminanceProcesses++;
+                }
+            }
+            finally
+            {
+                HookProcessMetasEvents();
+                HookResultParserEvents();
+            }
+
+            List<string> unmatchedLuminanceKeys = importResult.LuminanceConfigs.Keys
+                .Where(key => !appliedLuminanceKeys.Contains(key))
+                .OrderBy(key => key, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            return (updatedLuminanceProcesses, unmatchedLuminanceKeys);
         }
 
         private void ExportConfig()

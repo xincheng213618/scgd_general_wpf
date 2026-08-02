@@ -687,11 +687,26 @@ public abstract class STNode : INotifyPropertyChanged
 
 	protected internal void BuildSize(bool bBuildNode, bool bBuildMark, bool bRedraw)
 	{
-		if (_Owner == null)
+		STNodeEditor owner = _Owner;
+		if (owner == null || owner.IsDisposed)
 		{
 			return;
 		}
-		using (Graphics g = _Owner.CreateGraphics())
+		if (!owner.Dispatcher.CheckAccess())
+		{
+			// Runtime nodes update option captions from thread-pool callbacks.
+			// WPF layout and its shared measurement bitmap belong to the editor
+			// dispatcher, so defer only the visual work and let execution continue.
+			owner.BeginInvoke(new Action(() =>
+			{
+				if (ReferenceEquals(_Owner, owner))
+				{
+					BuildSize(bBuildNode, bBuildMark, bRedraw);
+				}
+			}));
+			return;
+		}
+		using (Graphics g = owner.CreateGraphics())
 		{
 			if (_AutoSize && bBuildNode)
 			{
@@ -711,7 +726,7 @@ public abstract class STNode : INotifyPropertyChanged
 		}
 		if (bRedraw)
 		{
-			_Owner.Invalidate();
+			owner.Invalidate();
 		}
 	}
 
@@ -1205,6 +1220,7 @@ public abstract class STNode : INotifyPropertyChanged
 				}
 			}
 		}
+		SetOptionsLocation();
 	}
 
 	protected internal virtual void OnEditorLoadCompleted()

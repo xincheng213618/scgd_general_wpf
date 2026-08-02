@@ -385,6 +385,8 @@ namespace ColorVision.Copilot
                 cancellationToken.ThrowIfCancellationRequested();
                 if (!File.Exists(attachment.Value))
                     return $"[{CopilotUiText.FileBadge}] {attachment.Value}\nThe file does not exist and cannot be read.\n";
+                if (CopilotWorkspaceSearchSupport.HasReparsePointInPath(attachment.Value))
+                    return $"[{CopilotUiText.FileBadge}] {attachment.Value}\nThe file path crosses a file-system reparse point and cannot be read.\n";
                 cancellationToken.ThrowIfCancellationRequested();
 
                 var content = await ReadBoundedTextFileAsync(attachment.Value, cancellationToken).ConfigureAwait(false);

@@ -7,6 +7,7 @@ using FlowEngineLib.Start;
 using ST.Library.UI.NodeEditor;
 using System.Diagnostics;
 using System.Runtime.ExceptionServices;
+using System.Windows.Threading;
 
 namespace ColorVision.UI.Tests;
 
@@ -65,6 +66,35 @@ public class FlowEngineControlLifecycleTests
             Assert.Equal(1, selected.EnsureReadyCallCount);
             Assert.True(control.TryStartByName("Selected", "SN-Ready"));
             Assert.True(selected.Running);
+        });
+    }
+
+    [Fact]
+    public void FlowControlAsyncReadinessUsesTheSelectedStartNode()
+    {
+        RunInSta(() =>
+        {
+            using var editor = new STNodeEditor();
+            var nodeManager = new FlowNodeManager();
+            using var engineControl = new InspectableFlowEngineControl(editor, false, nodeManager);
+            var first = CreateStartNode("First");
+            var selected = CreateStartNode("Selected");
+            first.RequiresReady = true;
+            first.EnsureReadyHandler = _ => Task.FromResult(true);
+            selected.RequiresReady = true;
+            selected.EnsureReadyHandler = _ => Task.FromResult(false);
+            editor.Nodes.Add(first);
+            editor.Nodes.Add(selected);
+            var flowControl = new FlowControl(MQTTControl.GetInstance(), engineControl);
+
+            bool started = flowControl.TryStartAsync("Selected", "SN-Selected").GetAwaiter().GetResult();
+
+            Assert.False(started);
+            Assert.Equal(0, first.EnsureReadyCallCount);
+            Assert.Equal(1, selected.EnsureReadyCallCount);
+            Assert.False(first.Running);
+            Assert.False(selected.Running);
+            Assert.False(flowControl.IsFlowRun);
         });
     }
 
@@ -397,7 +427,7 @@ public class FlowEngineControlLifecycleTests
 
             Assert.False(control.TryStartByName("Start", "SN-1"));
             var flowControl = new FlowControl(MQTTControl.GetInstance(), control);
-            Assert.False(flowControl.TryStart("Start", "SN-2"));
+            Assert.False(flowControl.TryStartAsync("SN-2").GetAwaiter().GetResult());
 
             Assert.Equal(0, start.ActiveCount);
             Assert.False(start.Running);
@@ -571,6 +601,43 @@ public class FlowEngineControlLifecycleTests
     }
 
     [Fact]
+    public void WorkerCompletionMeasuresStartNodeOnlyOnEditorDispatcher()
+    {
+        RunInSta(() =>
+        {
+            using var editor = new STNodeEditor();
+            var start = CreateStartNode("Start");
+            var sink = new StartSinkNode();
+            sink.Create();
+            editor.Nodes.Add(start);
+            editor.Nodes.Add(sink);
+            Assert.Equal(ConnectionStatus.Connected, start.m_op_start.ConnectOption(sink.Input));
+
+            int editorThreadId = Environment.CurrentManagedThreadId;
+            int finishedCount = 0;
+            start.RecordLayoutThreads = true;
+            start.Finished += (_, _) => Interlocked.Increment(ref finishedCount);
+            CVStartCFC action = start.AddActive("SN-Worker");
+
+            Task completionTask = Task.Run(() =>
+            {
+                if (action.TryDoFinishing())
+                {
+                    action.FireFinished();
+                }
+            });
+
+            PumpDispatcherUntilCompleted(editor.Dispatcher, completionTask);
+
+            Assert.Equal(1, Volatile.Read(ref finishedCount));
+            Assert.Equal(0, start.ActiveCount);
+            Assert.False(start.Running);
+            Assert.NotEmpty(start.LayoutThreadIds);
+            Assert.All(start.LayoutThreadIds, threadId => Assert.Equal(editorThreadId, threadId));
+        });
+    }
+
+    [Fact]
     public void FinishedAndNodeChurnAreSerialized()
     {
         RunInSta(() =>
@@ -605,6 +672,20 @@ public class FlowEngineControlLifecycleTests
 
             Assert.True(completionTask.Wait(TimeSpan.FromSeconds(10)));
         });
+    }
+
+    private static void PumpDispatcherUntilCompleted(Dispatcher dispatcher, Task task)
+    {
+        var frame = new DispatcherFrame();
+        _ = task.ContinueWith(
+            _ => dispatcher.BeginInvoke(
+                DispatcherPriority.ContextIdle,
+                new Action(() => frame.Continue = false)),
+            CancellationToken.None,
+            TaskContinuationOptions.None,
+            TaskScheduler.Default);
+        Dispatcher.PushFrame(frame);
+        task.GetAwaiter().GetResult();
     }
 
     private static TestStartNode CreateStartNode(string name)
@@ -722,6 +803,10 @@ public class FlowEngineControlLifecycleTests
 
         public bool RequiresReady { get; set; }
 
+        public bool RecordLayoutThreads { get; set; }
+
+        public System.Collections.Concurrent.ConcurrentQueue<int> LayoutThreadIds { get; } = new();
+
         public int EnsureReadyCallCount { get; private set; }
 
         public Func<CancellationToken, Task<bool>>? EnsureReadyHandler { get; set; }
@@ -748,6 +833,15 @@ public class FlowEngineControlLifecycleTests
             {
                 throw new InvalidOperationException("Test finishing failure.");
             }
+        }
+
+        protected override System.Drawing.Size GetDefaultNodeSize(System.Drawing.Graphics graphics)
+        {
+            if (RecordLayoutThreads)
+            {
+                LayoutThreadIds.Enqueue(Environment.CurrentManagedThreadId);
+            }
+            return base.GetDefaultNodeSize(graphics);
         }
     }
 

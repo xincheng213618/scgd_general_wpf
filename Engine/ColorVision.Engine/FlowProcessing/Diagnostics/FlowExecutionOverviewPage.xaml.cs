@@ -55,14 +55,31 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
         {
             FlowExecutionAnalysisSummary summary = _session.Summary;
             long wallClockMs = _session.WallClockMs;
-            long idleMs = Math.Max(0, wallClockMs - summary.ActiveMs);
 
             SummaryTotalTimeText.Text = FlowExecutionAnalysisPresentation.FormatDuration(wallClockMs);
-            string timingBreakdown =
-                $"活动 {FlowExecutionAnalysisPresentation.FormatDuration(summary.ActiveMs)} · 空档 {FlowExecutionAnalysisPresentation.FormatDuration(idleMs)}";
+            var timingParts = new List<string>();
+            if (_session.PhaseSummary.PreProcessMs is long preProcessMs)
+            {
+                timingParts.Add(
+                    $"前处理 {FlowExecutionAnalysisPresentation.FormatDuration(preProcessMs)}");
+            }
+            timingParts.Add(
+                $"节点活动 {FlowExecutionAnalysisPresentation.FormatDuration(summary.ActiveMs)}");
+            timingParts.Add(
+                _session.PhaseSummary.PreProcessMs.HasValue
+                    ? $"其他流程开销 {FlowExecutionAnalysisPresentation.FormatDuration(_session.OtherExecutionMs)}"
+                    : $"节点外耗时 {FlowExecutionAnalysisPresentation.FormatDuration(_session.NodeInactiveMs)}");
+            if (_session.PhaseSummary.PostProcessMs is long postProcessMs)
+            {
+                timingParts.Add(
+                    $"后处理 {FlowExecutionAnalysisPresentation.FormatDuration(postProcessMs)}（另计）");
+            }
             if (summary.OverlapMs > 0)
-                timingBreakdown += $" · 并行 {FlowExecutionAnalysisPresentation.FormatDuration(summary.OverlapMs)}";
-            SummaryTotalTimeHintText.Text = timingBreakdown;
+            {
+                timingParts.Add(
+                    $"节点并行重叠 {FlowExecutionAnalysisPresentation.FormatDuration(summary.OverlapMs)}");
+            }
+            SummaryTotalTimeHintText.Text = string.Join(" · ", timingParts);
 
             SummaryNodeCountText.Text = summary.NodeCount.ToString();
             SummaryNodeStateText.Text = BuildNodeStateSummary(summary);

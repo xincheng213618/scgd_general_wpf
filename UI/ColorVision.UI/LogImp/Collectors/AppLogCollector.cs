@@ -8,25 +8,26 @@ namespace ColorVision.UI.LogImp
     /// <summary>
     /// Collects the local log4net application log files for the feedback system.
     /// </summary>
-    public class AppLogCollector : IFeedbackLogCollector
+    public class AppLogCollector : IFeedbackLogCollector, IFeedbackLogTimeRangeCollector
     {
-        private const int MaxFiles = 20;
         private const long MaxFileBytes = 50L * 1024 * 1024;
         private static readonly ILog log = LogManager.GetLogger(typeof(AppLogCollector));
 
         public string Name => "Application Logs";
         public string Description => "ColorVision UI runtime logs";
         public int Order => 0;
+        public int RecentDays { get; set; } = 7;
+        public string? LogDirectory => GetLogDirectory();
 
         public IEnumerable<(string EntryPath, string FilePath)> CollectFiles()
         {
             var results = new List<(string, string)>();
 
-            string? logDir = GetLogDirectory();
+            string? logDir = LogDirectory;
             if (string.IsNullOrEmpty(logDir) || !Directory.Exists(logDir))
                 return results;
 
-            foreach (var file in GetRecentLogFiles(logDir))
+            foreach (var file in GetRecentLogFiles(logDir, RecentDays, DateTime.UtcNow))
             {
                 try
                 {
@@ -43,15 +44,15 @@ namespace ColorVision.UI.LogImp
             return results;
         }
 
-        private static IReadOnlyList<FileInfo> GetRecentLogFiles(string logDir)
+        internal static IReadOnlyList<FileInfo> GetRecentLogFiles(string logDir, int recentDays, DateTime utcNow)
         {
             try
             {
+                DateTime cutoffUtc = utcNow.AddDays(-Math.Max(1, recentDays));
                 return new DirectoryInfo(logDir)
                     .EnumerateFiles("*", SearchOption.TopDirectoryOnly)
-                    .Where(file => file.Length <= MaxFileBytes)
+                    .Where(file => file.Length <= MaxFileBytes && file.LastWriteTimeUtc >= cutoffUtc)
                     .OrderByDescending(file => file.LastWriteTimeUtc)
-                    .Take(MaxFiles)
                     .ToList();
             }
             catch (Exception ex)
@@ -66,7 +67,7 @@ namespace ColorVision.UI.LogImp
             var hierarchy = (Hierarchy)LogManager.GetRepository();
             var fileAppender = hierarchy.Root.Appenders.OfType<FileAppender>().FirstOrDefault();
             if (fileAppender?.File != null)
-                return Path.GetDirectoryName(fileAppender.File);
+                return Path.GetDirectoryName(Path.GetFullPath(fileAppender.File));
             return null;
         }
     }

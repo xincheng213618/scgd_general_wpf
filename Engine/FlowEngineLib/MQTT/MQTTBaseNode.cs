@@ -8,7 +8,7 @@ internal class MQTTBaseNode : STNode
 {
 	public static readonly ILog loginfo = LogManager.GetLogger(typeof(MQTTBaseNode));
 
-	protected string _Server;
+	protected string _Server = "127.0.0.1";
 
 	protected int _Port = 1883;
 
@@ -47,11 +47,4 @@ internal class MQTTBaseNode : STNode
 		base.Title = Lang.Get(title);
 	}
 
-	protected override void OnCreate()
-	{
-		base.OnCreate();
-		string userName = "";
-		string password = "";
-		MQTTHelper.GetDefaultCfg(ref _Server, ref _Port, ref userName, ref password);
-	}
 }

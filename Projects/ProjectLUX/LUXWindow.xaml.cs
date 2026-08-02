@@ -3,6 +3,7 @@ using Azure;
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine;
+using ColorVision.Engine.FlowProcessing.Diagnostics;
 using ColorVision.Engine.FlowProcessing.PreProcess;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services.RC;
@@ -173,8 +174,6 @@ namespace ProjectLUX
 
             this.DataContext = ProjectLUXConfig.Instance;
 
-            MQTTConfig mQTTConfig = MQTTSetting.Instance.MQTTConfig;
-            MQTTHelper.SetDefaultCfg(mQTTConfig.Host, mQTTConfig.Port, mQTTConfig.UserName, mQTTConfig.UserPwd, false, null);
             flowEngine = new FlowEngineControl(false);
             STNodeEditorMain = new STNodeEditor();
             STNodeEditorMain.LoadAssembly("FlowEngineLib.dll");
@@ -272,6 +271,7 @@ namespace ProjectLUX
 
         string Msg1;
         private long LastFlowTime;
+        private int _currentFlowTemplateId;
         string FlowName;
         private void UpdateMsg(object? sender)
         {
@@ -331,7 +331,11 @@ namespace ProjectLUX
             if (flowControl != null && flowControl.IsFlowRun) return;
 
             TryCount++;
-            LastFlowTime = FlowEngineConfig.Instance.FlowRunTime.TryGetValue(FlowTemplate.Text, out long time) ? time : 0;
+            _currentFlowTemplateId = TemplateFlow.Params
+                .FirstOrDefault(template => string.Equals(template.Key, FlowTemplate.Text, StringComparison.OrdinalIgnoreCase))
+                ?.Id ?? 0;
+            LastFlowTime = await Task.Run(
+                () => FlowNodeRecordDataBaseHelper.GetLastCompletedFlowElapsed(_currentFlowTemplateId, FlowTemplate.Text));
 
             CurrentFlowResult = new ProjectLUXReuslt();
             CurrentFlowResult.SN = ProjectLUXConfig.Instance.SN;
@@ -370,8 +374,6 @@ namespace ProjectLUX
 
             await Refresh();
 
-            if (string.IsNullOrWhiteSpace(flowEngine.GetStartNodeName())) { log.Info("找不到完整流程，运行失败"); return; }
-
             if (!await PreProcessing(FlowName, CurrentFlowResult.Code))
             {
                 CurrentFlowResult.FlowStatus = FlowStatus.Failed;
@@ -392,7 +394,17 @@ namespace ProjectLUX
             int id = Db.Insertable(measureBatchModel).ExecuteReturnIdentity();
             CurrentFlowResult.BatchId = id;
 
-            flowControl.Start(CurrentFlowResult.Code);
+            if (!await flowControl.TryStartAsync(CurrentFlowResult.Code))
+            {
+                FlowControl_FlowCompleted(flowControl, new FlowControlData
+                {
+                    EventName = "Failed",
+                    Status = StatusTypeEnum.Failed,
+                    SerialNumber = CurrentFlowResult.Code,
+                    Params = "FlowStartRejected"
+                });
+                return;
+            }
             timer.Change(0, 500); // 启动定时器
         }
 
@@ -411,10 +423,15 @@ namespace ProjectLUX
             flowControl.FlowCompleted -= FlowControl_FlowCompleted;
             stopwatch.Stop();
             timer.Change(Timeout.Infinite, 500); // 停止定时器
-            FlowEngineConfig.Instance.FlowRunTime[FlowTemplate.Text] = stopwatch.ElapsedMilliseconds;
 
             log.Info($"流程执行Elapsed Time: {stopwatch.ElapsedMilliseconds} ms");
             CurrentFlowResult.RunTime = stopwatch.ElapsedMilliseconds;
+            FlowNodeRecordDataBaseHelper.RecordFlowRun(
+                _currentFlowTemplateId,
+                FlowName,
+                FlowControlData.SerialNumber,
+                FlowControlData.FlowStatus,
+                CurrentFlowResult.RunTime);
             logTextBox.Text = FlowName + Environment.NewLine + FlowControlData.EventName;
 
             if (FlowControlData.EventName == "Completed")

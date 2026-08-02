@@ -25,7 +25,6 @@ namespace ColorVision.UI.Desktop.Marketplace
         private static readonly ILog log = LogManager.GetLogger(typeof(MarketplaceClient));
         private static readonly ConcurrentDictionary<string, Lazy<Task<ImageSource?>>> _iconCache = new(StringComparer.OrdinalIgnoreCase);
         private static readonly ConcurrentDictionary<string, CachedPluginDetail> _pluginDetailCache = new(StringComparer.OrdinalIgnoreCase);
-        private static readonly TimeSpan UpdateMetadataCacheDuration = TimeSpan.FromMinutes(5);
         private static readonly TimeSpan UpdateRequestTimeout = TimeSpan.FromSeconds(6);
 
         private static MarketplaceClient? _instance;
@@ -38,7 +37,6 @@ namespace ColorVision.UI.Desktop.Marketplace
         private readonly SemaphoreSlim _batchVersionSemaphore = new(1, 1);
         private string? _batchVersionCacheKey;
         private Dictionary<string, string?>? _batchVersionCache;
-        private DateTimeOffset _batchVersionCachedAt = DateTimeOffset.MinValue;
 
         public MarketplaceClient()
         {
@@ -88,9 +86,6 @@ namespace ColorVision.UI.Desktop.Marketplace
             string baseUrl = BaseUrl;
             if (string.IsNullOrEmpty(baseUrl)) return null;
 
-            if (!forceRefresh && TryGetCachedPluginDetail(pluginId, requireFresh: true, out MarketplacePluginDetail? cachedDetail))
-                return cachedDetail;
-
             try
             {
                 using CancellationTokenSource timeoutSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -103,7 +98,7 @@ namespace ColorVision.UI.Desktop.Marketplace
                 string json = await response.Content.ReadAsStringAsync(timeoutSource.Token);
                 MarketplacePluginDetail? detail = JsonConvert.DeserializeObject<MarketplacePluginDetail>(json);
                 if (detail != null)
-                    _pluginDetailCache[pluginId] = new CachedPluginDetail(detail, DateTimeOffset.UtcNow);
+                    _pluginDetailCache[pluginId] = new CachedPluginDetail(detail);
                 return detail;
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -112,7 +107,7 @@ namespace ColorVision.UI.Desktop.Marketplace
             }
             catch (OperationCanceledException ex)
             {
-                if (TryGetCachedPluginDetail(pluginId, requireFresh: false, out MarketplacePluginDetail? staleDetail))
+                if (TryGetCachedPluginDetail(pluginId, out MarketplacePluginDetail? staleDetail))
                 {
                     log.Warn($"Plugin detail request timed out for {pluginId}; using the last successful response.");
                     return staleDetail;
@@ -123,7 +118,7 @@ namespace ColorVision.UI.Desktop.Marketplace
             }
             catch (Exception ex)
             {
-                if (TryGetCachedPluginDetail(pluginId, requireFresh: false, out MarketplacePluginDetail? staleDetail))
+                if (TryGetCachedPluginDetail(pluginId, out MarketplacePluginDetail? staleDetail))
                 {
                     log.Warn($"GetPluginDetailAsync failed for {pluginId}; using the last successful response: {ex.Message}");
                     return staleDetail;
@@ -180,9 +175,6 @@ namespace ColorVision.UI.Desktop.Marketplace
             await _batchVersionSemaphore.WaitAsync(cancellationToken);
             try
             {
-                if (!forceRefresh && TryGetBatchVersionCache(cacheKey, requireFresh: true, out Dictionary<string, string?>? cachedVersions))
-                    return cachedVersions;
-
                 string requestJson = JsonConvert.SerializeObject(new { PluginIds = normalizedPluginIds });
                 try
                 {
@@ -205,7 +197,6 @@ namespace ColorVision.UI.Desktop.Marketplace
 
                     _batchVersionCacheKey = cacheKey;
                     _batchVersionCache = versions;
-                    _batchVersionCachedAt = DateTimeOffset.UtcNow;
                     return CloneVersions(versions);
                 }
                 catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -214,7 +205,7 @@ namespace ColorVision.UI.Desktop.Marketplace
                 }
                 catch (OperationCanceledException ex)
                 {
-                    if (TryGetBatchVersionCache(cacheKey, requireFresh: false, out Dictionary<string, string?>? staleVersions))
+                    if (TryGetBatchVersionCache(cacheKey, out Dictionary<string, string?>? staleVersions))
                     {
                         log.Warn("Plugin batch-version request timed out; using the last successful response.");
                         return staleVersions;
@@ -224,7 +215,7 @@ namespace ColorVision.UI.Desktop.Marketplace
                 }
                 catch (Exception ex)
                 {
-                    if (TryGetBatchVersionCache(cacheKey, requireFresh: false, out Dictionary<string, string?>? staleVersions))
+                    if (TryGetBatchVersionCache(cacheKey, out Dictionary<string, string?>? staleVersions))
                     {
                         log.Warn($"Plugin batch-version request failed; using the last successful response: {ex.Message}");
                         return staleVersions;
@@ -363,11 +354,10 @@ namespace ColorVision.UI.Desktop.Marketplace
             return VerifyFileHash(filePath, expectedHash) ? filePath : null;
         }
 
-        private bool TryGetBatchVersionCache(string cacheKey, bool requireFresh, out Dictionary<string, string?> versions)
+        private bool TryGetBatchVersionCache(string cacheKey, out Dictionary<string, string?> versions)
         {
             if (_batchVersionCache != null
-                && string.Equals(_batchVersionCacheKey, cacheKey, StringComparison.OrdinalIgnoreCase)
-                && (!requireFresh || DateTimeOffset.UtcNow - _batchVersionCachedAt <= UpdateMetadataCacheDuration))
+                && string.Equals(_batchVersionCacheKey, cacheKey, StringComparison.OrdinalIgnoreCase))
             {
                 versions = CloneVersions(_batchVersionCache);
                 return true;
@@ -382,10 +372,9 @@ namespace ColorVision.UI.Desktop.Marketplace
             return new Dictionary<string, string?>(versions, StringComparer.OrdinalIgnoreCase);
         }
 
-        private static bool TryGetCachedPluginDetail(string pluginId, bool requireFresh, out MarketplacePluginDetail? detail)
+        private static bool TryGetCachedPluginDetail(string pluginId, out MarketplacePluginDetail? detail)
         {
-            if (_pluginDetailCache.TryGetValue(pluginId, out CachedPluginDetail? cached)
-                && (!requireFresh || DateTimeOffset.UtcNow - cached.CachedAt <= UpdateMetadataCacheDuration))
+            if (_pluginDetailCache.TryGetValue(pluginId, out CachedPluginDetail? cached))
             {
                 detail = cached.Detail;
                 return true;
@@ -395,7 +384,7 @@ namespace ColorVision.UI.Desktop.Marketplace
             return false;
         }
 
-        private sealed record CachedPluginDetail(MarketplacePluginDetail Detail, DateTimeOffset CachedAt);
+        private sealed record CachedPluginDetail(MarketplacePluginDetail Detail);
 
         private sealed class BatchVersionItem
         {

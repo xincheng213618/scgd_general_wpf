@@ -111,6 +111,22 @@ public class CVStartCFC : CVBaseCFC
 		}
 	}
 
+	internal bool TryDoFinishing(Action prepareFinishing)
+	{
+		ArgumentNullException.ThrowIfNull(prepareFinishing);
+		lock (finishState.Lock)
+		{
+			if (finishState.IsFinished)
+			{
+				return false;
+			}
+			prepareFinishing();
+			finishState.IsFinished = true;
+			DoFinishingCore();
+			return true;
+		}
+	}
+
 	public BaseStartNode GetStartNode()
 	{
 		return StartNode;

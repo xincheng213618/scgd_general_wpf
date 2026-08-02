@@ -4,45 +4,19 @@ using System.Linq;
 
 namespace ColorVision.Copilot
 {
-    internal sealed class CopilotTemporaryProfileSyncContext
+    internal static class CopilotTemporaryProfileSource
     {
-        public CopilotTemporaryProfileSyncContext(ObservableCollection<CopilotProfileConfig> profiles, DateTimeOffset nowUtc)
-        {
-            Profiles = profiles;
-            NowUtc = nowUtc;
-        }
-
-        public ObservableCollection<CopilotProfileConfig> Profiles { get; }
-
-        public DateTimeOffset NowUtc { get; }
-
-        public bool Changed { get; set; }
-    }
-
-    internal static partial class CopilotTemporaryProfileSource
-    {
-        public static bool Sync(ObservableCollection<CopilotProfileConfig> profiles, DateTimeOffset nowUtc)
+        public static bool Sync(ObservableCollection<CopilotProfileConfig> profiles)
         {
             ArgumentNullException.ThrowIfNull(profiles);
 
-            var context = new CopilotTemporaryProfileSyncContext(profiles, nowUtc);
-            RemoveExpiredBuiltInTemporaryProfiles(context);
-            SyncCore(context);
-            return context.Changed;
-        }
-
-        private static void RemoveExpiredBuiltInTemporaryProfiles(CopilotTemporaryProfileSyncContext context)
-        {
             const string expiredProfileId = "builtin-minimax-trial-20260527";
-            var existing = context.Profiles.FirstOrDefault(profile => string.Equals(profile.Id, expiredProfileId, StringComparison.Ordinal));
+            var existing = profiles.FirstOrDefault(profile => string.Equals(profile.Id, expiredProfileId, StringComparison.Ordinal));
+            if (existing == null)
+                return false;
 
-            if (existing != null)
-            {
-                context.Profiles.Remove(existing);
-                context.Changed = true;
-            }
+            profiles.Remove(existing);
+            return true;
         }
-
-        static partial void SyncCore(CopilotTemporaryProfileSyncContext context);
     }
 }

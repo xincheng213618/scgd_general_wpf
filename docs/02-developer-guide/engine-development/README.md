@@ -28,6 +28,8 @@ Engine 开发要先确认你改的是哪条业务链。不要把设备、模板�
 - [MQTT 消息处理](./mqtt.md)
 - [OpenCV 集成开发](./opencv-integration.md)
 - [本地相机内存帧预览方案（待实施）](./local-camera-memory-preview.md)
+- [本地相机内存帧预览生命周期与显示语义](./local-camera-memory-preview-runtime.md)
+- [本地相机内存帧预览实施与验证](./local-camera-memory-preview-validation.md)
 
 ## 开发验证
 

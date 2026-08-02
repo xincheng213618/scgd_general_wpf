@@ -132,10 +132,10 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                 Command = whiteBalanceCommand 
             });
 
-            // 伽马校正 - 打开窗口调整
-            RelayCommand gammaCorrectionCommand = new(o =>
+            // 基础调整 - 曝光、亮度、对比度和 Gamma 使用同一套预览与应用语义
+            RelayCommand basicAdjustmentCommand = new(o =>
             {
-                var window = new GammaCorrectionWindow(imageContext)
+                var window = new BasicAdjustmentWindow(imageContext)
                 {
                     Owner = Application.Current.GetActiveWindow()
                 };
@@ -144,28 +144,10 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
             MenuItemMetadatas.Add(new MenuItemMetadata() 
             { 
                 OwnerGuid = "Algorithms", 
-                GuidId = "GammaCorrection", 
+                GuidId = "BasicAdjustment",
                 Order = 4, 
-                Header = ColorVision.ImageEditor.Properties.Resources.GammaCorrection, 
-                Command = gammaCorrectionCommand 
-            });
-
-            // 亮度对比度 - 打开窗口调整
-            RelayCommand brightnessContrastCommand = new(o =>
-            {
-                var window = new BrightnessContrastWindow(imageContext)
-                {
-                    Owner = Application.Current.GetActiveWindow()
-                };
-                window.ShowDialog();
-            });
-            MenuItemMetadatas.Add(new MenuItemMetadata() 
-            { 
-                OwnerGuid = "Algorithms", 
-                GuidId = "BrightnessContrast", 
-                Order = 5, 
                 Header = ColorVision.ImageEditor.Properties.Resources.LuminanceContrastAdjustment, 
-                Command = brightnessContrastCommand 
+                Command = basicAdjustmentCommand
             });
 
             // 阈值处理 - 打开窗口调整
@@ -181,7 +163,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
             { 
                 OwnerGuid = "Algorithms", 
                 GuidId = "Threshold", 
-                Order = 6, 
+                Order = 5,
                 Header = ColorVision.ImageEditor.Properties.Resources.ThresholdProcessing, 
                 Command = thresholdCommand 
             });
@@ -196,7 +178,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
             { 
                 OwnerGuid = "Algorithms", 
                 GuidId = "RemoveMoire", 
-                Order = 7, 
+                Order = 6,
                 Header = ColorVision.ImageEditor.Properties.Resources.MoireRemove, 
                 Command = removeMoireCommand 
             });
@@ -211,7 +193,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
             { 
                 OwnerGuid = "Algorithms", 
                 GuidId = "Sharpen", 
-                Order = 8, 
+                Order = 7,
                 Header = ColorVision.ImageEditor.Properties.Resources.Sharpening, 
                 Command = sharpenCommand 
             });
@@ -229,7 +211,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
             { 
                 OwnerGuid = "Algorithms", 
                 GuidId = "GaussianBlur", 
-                Order = 9, 
+                Order = 8,
                 Header = ColorVision.ImageEditor.Properties.Resources.GaussianBlur, 
                 Command = gaussianBlurCommand 
             });
@@ -247,7 +229,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
             { 
                 OwnerGuid = "Algorithms", 
                 GuidId = "MedianBlur", 
-                Order = 10, 
+                Order = 9,
                 Header = ColorVision.ImageEditor.Properties.Resources.MedianFilter, 
                 Command = medianBlurCommand 
             });
@@ -265,7 +247,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
             { 
                 OwnerGuid = "Algorithms", 
                 GuidId = "EdgeDetection", 
-                Order = 11, 
+                Order = 10,
                 Header = ColorVision.ImageEditor.Properties.Resources.Canny, 
                 Command = edgeDetectionCommand 
             });
@@ -280,7 +262,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
             { 
                 OwnerGuid = "Algorithms", 
                 GuidId = "HistogramEqualization", 
-                Order = 12, 
+                Order = 11,
                 Header = ColorVision.ImageEditor.Properties.Resources.HistogramEqualization, 
                 Command = histogramEqualizationCommand 
             });
@@ -297,7 +279,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
             {
                 OwnerGuid = "Algorithms",
                 GuidId = "Erode",
-                Order = 13,
+                Order = 12,
                 Header = "腐蚀",
                 Command = erodeCommand
             });
@@ -314,7 +296,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
             {
                 OwnerGuid = "Algorithms",
                 GuidId = "Dilate",
-                Order = 14,
+                Order = 13,
                 Header = "膨胀",
                 Command = dilateCommand
             });
@@ -331,7 +313,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
             {
                 OwnerGuid = "Algorithms",
                 GuidId = "MorphologyEx",
-                Order = 15,
+                Order = 14,
                 Header = "形态学操作",
                 Command = morphologyCommand
             });

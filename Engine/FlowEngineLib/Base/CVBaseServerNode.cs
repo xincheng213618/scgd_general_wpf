@@ -1,6 +1,7 @@
 using FlowEngineLib.Algorithm;
 using FlowEngineLib.MQTT;
 using FlowEngineLib.Node.Algorithm;
+using FlowEngineLib.Runtime;
 using log4net;
 using Newtonsoft.Json;
 using ST.Library.UI.NodeEditor;
@@ -11,6 +12,7 @@ using System.ComponentModel;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace FlowEngineLib.Base;
@@ -22,6 +24,12 @@ public class CVBaseServerNode : CVCommonNode
 	protected string _Token;
 	protected int _MaxTime;
 	protected bool _ContinueOnFail;
+
+	internal IFlowFailureRouter RuntimeFailureRouter { get; set; }
+
+	internal FlowNodeRetryPolicy RuntimeRetryPolicy { get; set; }
+
+	internal IFlowServiceResolver RuntimeServiceResolver { get; set; }
 
 	protected STNodeOption m_op_svr_out_act;
 
@@ -247,7 +255,7 @@ public class CVBaseServerNode : CVCommonNode
 		}
 	}
 
-    private async void WaitingOverTime(CVBaseEventCmd cmd)
+    private async Task WaitingOverTimeAsync(CVBaseEventCmd cmd)
     {
 		CVMQTTRequest cmd2 = cmd.cmd;
 		int maxDelay = GetMaxDelay();
@@ -262,34 +270,56 @@ public class CVBaseServerNode : CVCommonNode
             else
                 logger.InfoFormat("[{0}]Task.Timed out after {1}ms", ToShortString(), maxDelay);
 		}
-        if (result)
+		if (result)
 		{
 			return;
 		}
-		CVTransAction cVTransAction = RemoveTrans(cmd2.SerialNumber, cmd2.MsgID);
-		if (cVTransAction != null)
+		if (!m_trans_action.TryGetValue(
+				cmd2.SerialNumber,
+				out CVTransAction trans)
+			|| !trans.TryTakeActionCommand(
+				cmd2.MsgID,
+				out CVBaseEventCmd claimedCommand))
+		{
+			return;
+		}
+
+		string failureMessage = $"OverTime {maxDelay}ms";
+		if (TryScheduleRetry(
+				trans,
+				claimedCommand,
+				FlowFailureKind.Timeout,
+				failureMessage))
+		{
+			return;
+		}
+
+		if (m_trans_action.TryRemove(
+				new KeyValuePair<string, CVTransAction>(
+					cmd2.SerialNumber,
+					trans)))
 		{
 			if (logger.IsInfoEnabled)
 			{
 				logger.InfoFormat("[{0}]OverTime => {1} ms", ToShortString(), maxDelay);
 			}
-			cVTransAction.NodeOverTime(GetFullNodeName(), NodeID);
-			Reset(cVTransAction);
-			m_op_end.TransferData(cVTransAction.trans_action);
-			base.nodeEndEvent?.Invoke(this, new FlowEngineNodeEndEventArgs
-			{
-				SerialNumber = cVTransAction.trans_action.SerialNumber,
-				RecvTopic = GetRecvTopic(),
-				RecvMsgId = cmd2.MsgID,
-				RecvStatusCode = -2,
-				RecvStatusMessage = $"OverTime {maxDelay}ms"
-			});
+			CompleteRuntimeFailure(
+				trans,
+				claimedCommand,
+				FlowFailureKind.Timeout,
+				"NodeTimeout",
+				failureMessage,
+				-2);
 		}
 		else
 		{
-			logger.WarnFormat("[{0}]MQTTRequest not exist => {1}", ToShortString(), cmd2.SerialNumber);
+			logger.DebugFormat(
+				"[{0}]Timeout lost completion ownership => {1}/{2}",
+				ToShortString(),
+				cmd2.SerialNumber,
+				cmd2.MsgID);
 		}
-	}
+    }
 
 	protected virtual int GetMaxDelay()
 	{
@@ -309,20 +339,6 @@ public class CVBaseServerNode : CVCommonNode
 		return base.Title + "." + m_nodeName;
 	}
 
-	private CVTransAction RemoveTrans(string serialNumber, string svrEventId)
-	{
-		if (m_trans_action.TryGetValue(serialNumber, out var cVTransAction))
-		{
-			if (cVTransAction.m_sever_actionEvent.ContainsKey(svrEventId))
-			{
-				logger.DebugFormat("[{0}]RemoveTrans => {1}/{2}", ToShortString(), serialNumber, svrEventId);
-				m_trans_action.TryRemove(serialNumber, out _);
-				return cVTransAction;
-			}
-		}
-		return null;
-	}
-
 	protected string GetServiceName()
 	{
 		return m_nodeName;
@@ -336,7 +352,7 @@ public class CVBaseServerNode : CVCommonNode
 	public string GetSendTopic()
 	{
 		string result = DefaultPublishTopic;
-		MQTTServiceInfo service = FlowServiceManager.Instance.GetService(m_nodeType, m_nodeName);
+		MQTTServiceInfo service = GetRuntimeService();
 		if (service != null)
 		{
 			result = service.PublishTopic;
@@ -347,7 +363,7 @@ public class CVBaseServerNode : CVCommonNode
 	public string GetRecvTopic()
 	{
 		string result = DefaultSubscribeTopic;
-		MQTTServiceInfo service = FlowServiceManager.Instance.GetService(m_nodeType, m_nodeName);
+		MQTTServiceInfo service = GetRuntimeService();
 		if (service != null)
 		{
 			result = service.SubscribeTopic;
@@ -398,6 +414,10 @@ public class CVBaseServerNode : CVCommonNode
 			if (actionEvent != null)
 			{
 				CVBaseEventCmd cmd = AddActionCmd(cVTransAction, actionEvent);
+				if (cmd == null)
+				{
+					return;
+				}
 				string message = JsonConvert.SerializeObject(actionEvent, Formatting.None);
 				string token = GetToken();
 				MQActionEvent act = new MQActionEvent(actionEvent.MsgID, m_nodeName, GetDeviceCode(), GetSendTopic(), actionEvent.EventName, message, token);
@@ -410,17 +430,20 @@ public class CVBaseServerNode : CVCommonNode
 		}
 	}
 
-	protected void DoTransferToServer(CVTransAction trans, MQActionEvent act, CVBaseEventCmd cmd)
+	protected void DoTransferToServer(
+		CVTransAction trans,
+		MQActionEvent act,
+		CVBaseEventCmd cmd,
+		bool publishNodeRun = true)
 	{
 		svrRecvResp = null;
-		base.nodeRunEvent?.Invoke(this, new FlowEngineNodeRunEventArgs
+		if (publishNodeRun)
 		{
-			SerialNumber = trans.trans_action.SerialNumber,
-			SendTopic = act.Topic,
-			SendMsgId = act.MsgID,
-			SendEventName = act.EventName,
-			SendPayload = act.Message
-		});
+			PublishNodeRun(CreateNodeRunEventArgs(
+				trans,
+				act,
+				cmd));
+		}
 		if (m_in_act_status == null || m_in_act_status.ConnectionCount == 0)
 		{
 			trans.trans_action.GetStartNode().DoSubscribe(GetRecvTopic(), this);
@@ -436,8 +459,71 @@ public class CVBaseServerNode : CVCommonNode
 			trans.trans_action.GetStartNode().DoPublish(act);
 		}
 
-		// 使用 Task.Run 启动超时监控，避免阻塞主线程
-		Task.Run(() => WaitingOverTime(cmd));
+		// Waiter is already asynchronous; keeping the task directly avoids
+		// an extra thread-pool hop while the command itself remains the
+		// single completion token shared by response and timeout paths.
+		ObserveBackgroundTask(
+			WaitingOverTimeAsync(cmd),
+			"timeout monitor");
+	}
+
+	private FlowEngineNodeRunEventArgs CreateNodeRunEventArgs(
+		CVTransAction trans,
+		MQActionEvent action,
+		CVBaseEventCmd command)
+	{
+		return new FlowEngineNodeRunEventArgs
+		{
+			SerialNumber = trans.trans_action.SerialNumber,
+			SendTopic = action.Topic,
+			SendMsgId = action.MsgID,
+			SendEventName = action.EventName,
+			SendPayload = action.Message,
+			AttemptNumber = command.AttemptNumber,
+			MaxAttempts = RuntimeRetryPolicy?.MaxAttempts ?? 1
+		};
+	}
+
+	private void PublishNodeRun(FlowEngineNodeRunEventArgs args)
+	{
+		Delegate[] handlers =
+			base.nodeRunEvent?.GetInvocationList()
+			?? Array.Empty<Delegate>();
+		foreach (FlowEngineNodeRunEvent handler in
+			handlers.Cast<FlowEngineNodeRunEvent>())
+		{
+			try
+			{
+				handler(this, args);
+			}
+			catch (Exception ex)
+			{
+				logger.Error(
+					$"[{ToShortString()}] node-run subscriber failed",
+					ex);
+			}
+		}
+	}
+
+	private void PublishNodeEnd(FlowEngineNodeEndEventArgs args)
+	{
+		Delegate[] handlers =
+			base.nodeEndEvent?.GetInvocationList()
+			?? Array.Empty<Delegate>();
+		foreach (FlowEngineNodeEndEvent handler in
+			handlers.Cast<FlowEngineNodeEndEvent>())
+		{
+			try
+			{
+				handler(this, args);
+			}
+			catch (Exception ex)
+			{
+				logger.Error(
+					$"[{ToShortString()}] node-end subscriber failed",
+					ex);
+			}
+		}
 	}
 
 	public bool DoServerStatusRecv(CVBaseDataFlowResp statusEvent)
@@ -461,16 +547,79 @@ public class CVBaseServerNode : CVCommonNode
 		if (cVTransByEvent != null)
 		{
 			CVServerResponse cVServerResponse = BuildServerResponse(cVTransByEvent, statusEvent);
-			if (cVServerResponse.Status != ActionStatusEnum.Pending && cVTransByEvent.m_sever_actionEvent.ContainsKey(cVServerResponse.Id))
+			if (cVServerResponse.Status != ActionStatusEnum.Pending
+				&& cVTransByEvent.TryTakeActionCommand(
+					cVServerResponse.Id,
+					out CVBaseEventCmd cVBaseEventCmd))
 			{
-				CVBaseEventCmd cVBaseEventCmd = cVTransByEvent.m_sever_actionEvent[cVServerResponse.Id];
-				cVBaseEventCmd.waiter.SignalMessageReceived();
 				cVBaseEventCmd.resp = cVServerResponse;
-				OnServerResponse(cVServerResponse, cVTransByEvent.trans_action);
-				if (!IsCacheActResponse(cVTransByEvent, cVServerResponse))
+				cVBaseEventCmd.waiter.SignalMessageReceived();
+				try
 				{
-					DoThisNodeCompleted(cVTransByEvent, cVBaseEventCmd);
+					OnServerResponse(
+						cVServerResponse,
+						cVTransByEvent.trans_action);
 				}
+				catch (Exception ex)
+				{
+					logger.Error(
+						$"[{ToShortString()}] response handling failed",
+						ex);
+					if (TryScheduleRetry(
+							cVTransByEvent,
+							cVBaseEventCmd,
+							FlowFailureKind.Technical,
+							ex.Message))
+					{
+						return true;
+					}
+					if (m_trans_action.TryRemove(
+							new KeyValuePair<string, CVTransAction>(
+								cVTransByEvent.trans_action.SerialNumber,
+								cVTransByEvent)))
+					{
+						CompleteRuntimeFailure(
+							cVTransByEvent,
+							cVBaseEventCmd,
+							FlowFailureKind.Technical,
+							"ResponseHandlingFailed",
+							ex.Message,
+							-3);
+					}
+					return true;
+				}
+
+				if (IsCacheActResponse(
+						cVTransByEvent,
+						cVServerResponse))
+				{
+					if (!cVTransByEvent.IsCanceled
+						&& cVTransByEvent.trans_action.IsPaused)
+					{
+						cVTransByEvent.TryAddActionCommand(
+							cVServerResponse.Id,
+							cVBaseEventCmd);
+					}
+					else
+					{
+						PublishCanceledAttempt(
+							cVTransByEvent,
+							cVBaseEventCmd,
+							"Flow stopped while the response was cached.");
+					}
+					return true;
+				}
+
+				if (cVServerResponse.Status == ActionStatusEnum.Failed
+					&& TryScheduleRetry(
+						cVTransByEvent,
+						cVBaseEventCmd,
+						FlowFailureKind.Business,
+						cVServerResponse.Message))
+				{
+					return true;
+				}
+				DoThisNodeCompleted(cVTransByEvent, cVBaseEventCmd);
 				return true;
 			}
 		}
@@ -555,16 +704,23 @@ public class CVBaseServerNode : CVCommonNode
 				cVStartCFC.NormalizeStopStatus();
 				if (ShouldEndFlowImmediately(cVStartCFC))
 				{
-					FinishFlow(cVStartCFC);
 					if (cVTransByEvent != null)
 					{
+						m_trans_action.TryRemove(
+							new KeyValuePair<string, CVTransAction>(
+								cVTransByEvent.trans_action.SerialNumber,
+								cVTransByEvent));
 						cVTransByEvent.Cancel();
+						CompleteCanceledPendingAttempts(
+							cVTransByEvent,
+							"Flow stopped before the node attempt completed.");
 						Reset(cVTransByEvent);
 					}
 					else
 					{
 						Reset(cVStartCFC);
 					}
+					FinishFlow(cVStartCFC);
 					m_op_end.TransferData(e.TargetOption.Data);
 					return;
 				}
@@ -575,7 +731,8 @@ public class CVBaseServerNode : CVCommonNode
 						cVTransByEvent.ResetStartTime();
 						if (cVTransByEvent.trans_action.FlowStatus == StatusTypeEnum.Paused)
 						{
-							foreach (CVBaseEventCmd value in cVTransByEvent.m_sever_actionEvent.Values)
+							foreach (CVBaseEventCmd value in
+								cVTransByEvent.GetActionCommandsSnapshot())
 							{
 								if (value.cmd.SerialNumber.Equals(serialNumber))
 								{
@@ -635,23 +792,21 @@ public class CVBaseServerNode : CVCommonNode
 	{
 	}
 
-	protected CVBaseEventCmd AddActionCmd(CVTransAction trans, CVMQTTRequest sendEvent)
+	protected CVBaseEventCmd AddActionCmd(
+		CVTransAction trans,
+		CVMQTTRequest sendEvent,
+		int attemptNumber = 1)
 	{
 		if (logger.IsDebugEnabled)
 		{
 			logger.DebugFormat("Add To Server request => {0}", JsonConvert.SerializeObject(sendEvent));
 		}
-		CVBaseEventCmd cVBaseEventCmd;
-		if (trans.m_sever_actionEvent.ContainsKey(sendEvent.MsgID))
-		{
-			cVBaseEventCmd = trans.m_sever_actionEvent[sendEvent.MsgID];
-		}
-		else
-		{
-			cVBaseEventCmd = new CVBaseEventCmd(sendEvent, null);
-			trans.m_sever_actionEvent.Add(sendEvent.MsgID, cVBaseEventCmd);
-		}
-		return cVBaseEventCmd;
+		return trans.TryStartActionCommand(
+				sendEvent,
+				attemptNumber,
+				out CVBaseEventCmd command)
+			? command
+			: null;
 	}
 
 	protected bool HasTransAction(string serialNumber, ref CVTransAction trans)
@@ -713,6 +868,9 @@ public class CVBaseServerNode : CVCommonNode
 	{
 		CVServerResponse resp = cmd.resp;
 		bool isIgnoredFailed = ShouldContinueOnFailedResponse(resp);
+		FlowFailureRouteResult failureRouteResult = null;
+		bool failureHandled = false;
+		string statusMessage = resp.Message ?? string.Empty;
 		if (resp.Status == ActionStatusEnum.Finish)
 		{
 			dynamic data = resp.Data;
@@ -727,27 +885,549 @@ public class CVBaseServerNode : CVCommonNode
 		}
 		else if (resp.Status == ActionStatusEnum.Failed)
 		{
-			trans.NodeFailed(cmd.resp.Message, GetFullNodeName(), NodeID);
-			logger.InfoFormat("[{0}]CVTransAction Failed => {1}", ToShortString(), JsonConvert.SerializeObject(trans.trans_action));
+			FlowFailure failure = new FlowFailure(
+				FlowFailureKind.Business,
+				"ServiceFailed",
+				statusMessage,
+				NodeID,
+				GetFullNodeName(),
+				DateTime.UtcNow);
+			failureRouteResult = RuntimeFailureRouter?.TryRoute(
+				this,
+				trans.trans_action,
+				failure);
+			failureHandled = TryDispatchFailureRoute(
+				failureRouteResult,
+				out string routeFailureMessage);
+			if (failureHandled)
+			{
+				trans.AddTTL();
+				logger.WarnFormat(
+					"[{0}]CVTransAction Failed routed => {1}/{2}",
+					ToShortString(),
+					failureRouteResult.TargetNodeId,
+					failureRouteResult.TargetInputIndex);
+			}
+			else
+			{
+				if (!string.IsNullOrWhiteSpace(routeFailureMessage))
+				{
+					statusMessage = string.IsNullOrWhiteSpace(statusMessage)
+						? routeFailureMessage
+						: $"{statusMessage}；{routeFailureMessage}";
+				}
+				trans.NodeFailed(statusMessage, GetFullNodeName(), NodeID);
+				logger.InfoFormat("[{0}]CVTransAction Failed => {1}", ToShortString(), JsonConvert.SerializeObject(trans.trans_action));
+			}
 		}
 
-		trans.AddTTL();
+		if (resp.Status != ActionStatusEnum.Failed)
+		{
+			trans.AddTTL();
+		}
         TimeSpan timeSpan = DateTime.Now - trans.startTime;
 		if (logger.IsInfoEnabled)
 		{
 			logger.InfoFormat("[{0}]Node completed. Transfer to the next node. TotalTime={1}/{2}", ToShortString(), timeSpan.ToString(), trans.startTime.ToString("O"));
 		}
-		m_op_end.TransferData(trans.trans_action);
-		base.nodeEndEvent?.Invoke(this, new FlowEngineNodeEndEventArgs
+		if (!failureHandled)
+		{
+			m_op_end.TransferData(trans.trans_action);
+		}
+		PublishNodeEnd(new FlowEngineNodeEndEventArgs
 		{
 			SerialNumber = trans.trans_action.SerialNumber,
 			RecvTopic = GetRecvTopic(),
 			RecvMsgId = cmd.cmd?.MsgID,
 			RecvEventName = cmd.resp?.EventName,
 			RecvStatusCode = cmd.resp?.Status == ActionStatusEnum.Finish || isIgnoredFailed ? 0 : (cmd.resp?.Status == ActionStatusEnum.Failed ? -1 : null),
-			RecvStatusMessage = isIgnoredFailed ? $"Ignored Failed: {cmd.resp?.Message}" : cmd.resp?.Message,
-			RecvPayload = cmd.resp?.Data != null ? JsonConvert.SerializeObject(cmd.resp.Data) : null
+			RecvStatusMessage = isIgnoredFailed
+				? $"Ignored Failed: {cmd.resp?.Message}"
+				: statusMessage,
+			RecvPayload = cmd.resp?.Data != null ? JsonConvert.SerializeObject(cmd.resp.Data) : null,
+			FailureKind = resp.Status == ActionStatusEnum.Failed
+				? FlowFailureKind.Business
+				: null,
+			FailureHandled = failureHandled,
+			FailureRouteTargetNodeId = failureHandled
+				? failureRouteResult?.TargetNodeId
+				: null,
+			AttemptNumber = cmd.AttemptNumber,
+			MaxAttempts = RuntimeRetryPolicy?.MaxAttempts ?? 1
 		});
+	}
+
+	internal ConnectionStatus CanTransferFailureTo(STNodeOption targetInput)
+	{
+		return m_op_end.CanTransferDataTo(targetInput);
+	}
+
+	internal ConnectionStatus TransferFailureTo(
+		STNodeOption targetInput,
+		CVStartCFC action)
+	{
+		return m_op_end.TransferDataTo(targetInput, action);
+	}
+
+	private bool TryDispatchFailureRoute(
+		FlowFailureRouteResult route,
+		out string failureMessage)
+	{
+		failureMessage = route?.Message ?? string.Empty;
+		if (route?.IsRouted != true)
+		{
+			return false;
+		}
+
+		try
+		{
+			ConnectionStatus dispatchStatus = route.Dispatch();
+			if (dispatchStatus == ConnectionStatus.Connected)
+			{
+				return true;
+			}
+
+			failureMessage =
+				$"错误分支运行时传输被拒绝：{dispatchStatus}。";
+		}
+		catch (Exception ex)
+		{
+			logger.Error(
+				$"[{ToShortString()}] runtime error route dispatch failed",
+				ex);
+			failureMessage = $"错误分支运行失败：{ex.Message}";
+		}
+		return false;
+	}
+
+	private void CompleteRuntimeFailure(
+		CVTransAction trans,
+		CVBaseEventCmd command,
+		FlowFailureKind failureKind,
+		string failureCode,
+		string failureMessage,
+		int statusCode)
+	{
+		if (trans == null || command?.cmd == null)
+		{
+			return;
+		}
+
+		var failure = new FlowFailure(
+			failureKind,
+			failureCode,
+			failureMessage ?? string.Empty,
+			NodeID,
+			GetFullNodeName(),
+			DateTime.UtcNow);
+		FlowFailureRouteResult route = RuntimeFailureRouter?.TryRoute(
+			this,
+			trans.trans_action,
+			failure);
+		bool failureHandled = TryDispatchFailureRoute(
+			route,
+			out string routeFailureMessage);
+		string statusMessage = failureMessage ?? string.Empty;
+		if (failureHandled)
+		{
+			trans.AddTTL();
+		}
+		else
+		{
+			if (!string.IsNullOrWhiteSpace(routeFailureMessage))
+			{
+				statusMessage = string.IsNullOrWhiteSpace(statusMessage)
+					? routeFailureMessage
+					: $"{statusMessage}；{routeFailureMessage}";
+			}
+			if (failureKind == FlowFailureKind.Timeout)
+			{
+				trans.NodeOverTime(GetFullNodeName(), NodeID);
+			}
+			else
+			{
+				trans.NodeFailed(
+					statusMessage,
+					GetFullNodeName(),
+					NodeID);
+			}
+		}
+
+		Reset(trans);
+		if (!failureHandled)
+		{
+			m_op_end.TransferData(trans.trans_action);
+		}
+		PublishNodeEnd(new FlowEngineNodeEndEventArgs
+		{
+			SerialNumber = trans.trans_action.SerialNumber,
+			RecvTopic = GetRecvTopic(),
+			RecvMsgId = command.cmd.MsgID,
+			RecvEventName = command.resp?.EventName
+				?? command.cmd.EventName,
+			RecvStatusCode = statusCode,
+			RecvStatusMessage = statusMessage,
+			RecvPayload = command.resp?.Data != null
+				? JsonConvert.SerializeObject(command.resp.Data)
+				: null,
+			FailureKind = failureKind,
+			FailureHandled = failureHandled,
+			FailureRouteTargetNodeId = failureHandled
+				? route?.TargetNodeId
+				: null,
+			AttemptNumber = command.AttemptNumber,
+			MaxAttempts = RuntimeRetryPolicy?.MaxAttempts ?? 1
+		});
+	}
+
+	private bool TryScheduleRetry(
+		CVTransAction trans,
+		CVBaseEventCmd failedCommand,
+		FlowFailureKind failureKind,
+		string failureMessage)
+	{
+		if (trans == null
+			|| failedCommand?.cmd == null
+			|| RuntimeRetryPolicy == null
+			|| (failureKind == FlowFailureKind.Business
+				&& ContinueOnFail))
+		{
+			return false;
+		}
+
+		FlowRetryDecision decision = RuntimeRetryPolicy.GetDecision(
+			failedCommand.AttemptNumber,
+			failureKind);
+		if (!decision.ShouldRetry
+			|| !trans.trans_action.IsRunning
+			|| trans.IsCanceled)
+		{
+			return false;
+		}
+
+		trans.AddTTL();
+		PublishNodeEnd(new FlowEngineNodeEndEventArgs
+		{
+			SerialNumber = trans.trans_action.SerialNumber,
+			RecvTopic = GetRecvTopic(),
+			RecvMsgId = failedCommand.cmd.MsgID,
+			RecvEventName = failedCommand.resp?.EventName,
+			RecvStatusCode =
+				failureKind == FlowFailureKind.Timeout ? -2 : -1,
+			RecvStatusMessage = failureMessage ?? string.Empty,
+			RecvPayload = failedCommand.resp?.Data != null
+				? JsonConvert.SerializeObject(failedCommand.resp.Data)
+				: null,
+			FailureKind = failureKind,
+			WillRetry = true,
+			AttemptNumber = failedCommand.AttemptNumber,
+			MaxAttempts = RuntimeRetryPolicy.MaxAttempts,
+			RetryDelayMs = (int)decision.Delay.TotalMilliseconds
+		});
+		if (m_op_svr_out_act != null)
+		{
+			try
+			{
+				m_op_svr_out_act.TransferData(null);
+			}
+			catch (Exception ex)
+			{
+				logger.Error(
+					$"[{ToShortString()}] retry output reset failed",
+					ex);
+			}
+		}
+		ObserveBackgroundTask(
+			RetryAsync(
+				trans,
+				failedCommand.cmd,
+				decision),
+			"retry");
+		return true;
+	}
+
+	private void ObserveBackgroundTask(
+		Task task,
+		string operation)
+	{
+		_ = task.ContinueWith(
+			faultedTask => logger.Error(
+				$"[{ToShortString()}] {operation} task failed",
+				faultedTask.Exception),
+			CancellationToken.None,
+			TaskContinuationOptions.OnlyOnFaulted
+				| TaskContinuationOptions.ExecuteSynchronously,
+			TaskScheduler.Default);
+	}
+
+	private void CompleteCanceledPendingAttempts(
+		CVTransAction trans,
+		string message)
+	{
+		foreach (var item in
+			trans.GetActionCommandPairsSnapshot())
+		{
+			if (!trans.TryTakeActionCommand(
+					item.Key,
+					out CVBaseEventCmd command))
+			{
+				continue;
+			}
+
+			command.waiter.SignalMessageReceived();
+			PublishCanceledAttempt(trans, command, message);
+		}
+	}
+
+	private void PublishCanceledAttempt(
+		CVTransAction trans,
+		CVBaseEventCmd command,
+		string message)
+	{
+		PublishNodeEnd(new FlowEngineNodeEndEventArgs
+		{
+			SerialNumber = trans.trans_action.SerialNumber,
+			RecvTopic = GetRecvTopic(),
+			RecvMsgId = command.cmd?.MsgID,
+			RecvEventName = command.cmd?.EventName,
+			RecvStatusCode = -4,
+			RecvStatusMessage = message,
+			FailureKind = FlowFailureKind.Canceled,
+			AttemptNumber = command.AttemptNumber,
+			MaxAttempts = RuntimeRetryPolicy?.MaxAttempts ?? 1
+		});
+	}
+
+	private async Task RetryAsync(
+		CVTransAction trans,
+		CVMQTTRequest previousRequest,
+		FlowRetryDecision decision)
+	{
+		string resourceKey =
+			$"retry:{NodeID}:{previousRequest.MsgID}";
+		var retryCancellation =
+			new RetryCancellationResource();
+		CancellationToken retryToken =
+			retryCancellation.Token;
+		CVMQTTRequest retryRequest = null;
+		CVBaseEventCmd retryCommand = null;
+		MQActionEvent actionEvent = null;
+		bool attemptStarted = false;
+		bool nodeRunPublished = false;
+		try
+		{
+			trans.trans_action.RuntimeResources.Set(
+				resourceKey,
+				retryCancellation);
+			// Even a zero-delay policy must not recurse through synchronous
+			// response handlers and grow the caller stack.
+			await Task.Yield();
+			await Task.Delay(
+				decision.Delay,
+				retryToken).ConfigureAwait(false);
+			retryToken.ThrowIfCancellationRequested();
+
+			if (!trans.trans_action.IsRunning
+				|| trans.IsCanceled
+				|| !m_trans_action.TryGetValue(
+					trans.trans_action.SerialNumber,
+					out CVTransAction current)
+				|| !ReferenceEquals(current, trans))
+			{
+				return;
+			}
+
+			retryRequest = new CVMQTTRequest(
+				previousRequest.Version,
+				previousRequest.ServiceCode,
+				previousRequest.DeviceCode,
+				previousRequest.EventName,
+				previousRequest.SerialNumber,
+				previousRequest.Data,
+				previousRequest.Token,
+				previousRequest.ZIndex);
+			string message = JsonConvert.SerializeObject(
+				retryRequest,
+				Formatting.None);
+			actionEvent = new MQActionEvent(
+				retryRequest.MsgID,
+				m_nodeName,
+				GetDeviceCode(),
+				GetSendTopic(),
+				retryRequest.EventName,
+				message,
+				GetToken());
+			retryToken.ThrowIfCancellationRequested();
+			retryCommand = AddActionCmd(
+				trans,
+				retryRequest,
+				decision.NextAttempt);
+			if (retryCommand == null)
+			{
+				return;
+			}
+			attemptStarted = true;
+			PublishNodeRun(CreateNodeRunEventArgs(
+				trans,
+				actionEvent,
+				retryCommand));
+			nodeRunPublished = true;
+			retryToken.ThrowIfCancellationRequested();
+			DoTransferToServer(
+				trans,
+				actionEvent,
+				retryCommand,
+				publishNodeRun: false);
+		}
+		catch (OperationCanceledException)
+			when (retryCancellation.IsCancellationRequested
+				|| trans.IsCanceled
+				|| !trans.trans_action.IsRunning)
+		{
+			if (nodeRunPublished)
+			{
+				CompleteCanceledPendingAttempts(
+					trans,
+					"Retry canceled before dispatch.");
+			}
+		}
+		catch (ObjectDisposedException)
+			when (retryCancellation.IsCancellationRequested
+				|| trans.trans_action.RuntimeResources.IsDisposed)
+		{
+			if (nodeRunPublished)
+			{
+				CompleteCanceledPendingAttempts(
+					trans,
+					"Retry canceled because the flow already finished.");
+			}
+		}
+		catch (Exception ex)
+		{
+			logger.Error(
+				$"[{ToShortString()}] retry dispatch failed",
+				ex);
+			if (!trans.trans_action.IsRunning
+				|| trans.IsCanceled
+				|| !m_trans_action.TryGetValue(
+					trans.trans_action.SerialNumber,
+					out CVTransAction current)
+				|| !ReferenceEquals(current, trans))
+			{
+				return;
+			}
+
+			retryRequest ??= CloneRetryRequest(previousRequest);
+			if (!attemptStarted)
+			{
+				retryCommand = AddActionCmd(
+					trans,
+					retryRequest,
+					decision.NextAttempt);
+				if (retryCommand == null)
+				{
+					return;
+				}
+				attemptStarted = true;
+			}
+
+			if (!nodeRunPublished)
+			{
+				actionEvent ??= new MQActionEvent(
+					retryRequest.MsgID,
+					m_nodeName,
+					retryRequest.DeviceCode,
+					string.Empty,
+					retryRequest.EventName,
+					JsonConvert.SerializeObject(
+						retryRequest,
+						Formatting.None),
+					retryRequest.Token);
+				PublishNodeRun(
+					CreateNodeRunEventArgs(
+						trans,
+						actionEvent,
+						retryCommand));
+				nodeRunPublished = true;
+			}
+
+			if (!trans.TryTakeActionCommand(
+					retryRequest.MsgID,
+					out CVBaseEventCmd claimedCommand))
+			{
+				return;
+			}
+			if (TryScheduleRetry(
+					trans,
+					claimedCommand,
+					FlowFailureKind.Technical,
+					ex.Message))
+			{
+				return;
+			}
+
+			if (m_trans_action.TryRemove(
+					new KeyValuePair<string, CVTransAction>(
+						trans.trans_action.SerialNumber,
+						trans)))
+			{
+				CompleteRuntimeFailure(
+					trans,
+					claimedCommand,
+					FlowFailureKind.Technical,
+					"RetryDispatchFailed",
+					ex.Message,
+					-3);
+			}
+		}
+		finally
+		{
+			trans.trans_action.RuntimeResources.Remove(resourceKey);
+			retryCancellation.Dispose();
+		}
+	}
+
+	private sealed class RetryCancellationResource : IDisposable
+	{
+		private readonly CancellationTokenSource source = new();
+
+		private int disposed;
+
+		public CancellationToken Token => source.Token;
+
+		public bool IsCancellationRequested =>
+			Volatile.Read(ref disposed) != 0;
+
+		public void Dispose()
+		{
+			if (Interlocked.Exchange(ref disposed, 1) != 0)
+			{
+				return;
+			}
+
+			try
+			{
+				source.Cancel();
+			}
+			finally
+			{
+				source.Dispose();
+			}
+		}
+	}
+
+	private static CVMQTTRequest CloneRetryRequest(
+		CVMQTTRequest previousRequest)
+	{
+		return new CVMQTTRequest(
+			previousRequest.Version,
+			previousRequest.ServiceCode,
+			previousRequest.DeviceCode,
+			previousRequest.EventName,
+			previousRequest.SerialNumber,
+			previousRequest.Data,
+			previousRequest.Token,
+			previousRequest.ZIndex);
 	}
 
 	protected virtual void release(string serialNumber)
@@ -840,10 +1520,7 @@ public class CVBaseServerNode : CVCommonNode
 
 	protected void RemoveActionCmd(CVTransAction trans, string key)
 	{
-		if (trans.m_sever_actionEvent.ContainsKey(key))
-		{
-			trans.m_sever_actionEvent.Remove(key);
-		}
+		trans.TryTakeActionCommand(key, out _);
 	}
 
 	private void DoThisNodeCompleted(CVTransAction trans, CVBaseEventCmd cmd)
@@ -893,12 +1570,22 @@ public class CVBaseServerNode : CVCommonNode
 	protected string GetTokenHide()
 	{
 		string result = string.Empty;
-		MQTTServiceInfo service = FlowServiceManager.Instance.GetService(m_nodeType, m_nodeName);
+		MQTTServiceInfo service = GetRuntimeService();
 		if (service != null)
 		{
 			result = service.Token;
 		}
 		return result;
+	}
+
+	private MQTTServiceInfo GetRuntimeService()
+	{
+		IFlowServiceResolver serviceResolver =
+			RuntimeServiceResolver
+			?? FlowRuntimeServiceResolver.Ambient;
+		return serviceResolver != null
+			? serviceResolver.GetService(m_nodeType, m_nodeName)
+			: FlowServiceManager.Instance.GetService(m_nodeType, m_nodeName);
 	}
 
 	protected bool GetRecvMasterResult(AlgorithmPreStepParam param)

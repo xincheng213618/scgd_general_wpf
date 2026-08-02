@@ -36,6 +36,16 @@ namespace ColorVision.Copilot
         TimeSpan Duration)
     {
         public bool ProcessTreeContained { get; init; }
+
+        public long ObservedStandardOutputCharacters { get; init; } =
+            StandardOutput.Length;
+
+        public long ObservedStandardErrorCharacters { get; init; } =
+            StandardError.Length;
+
+        public bool StandardOutputTruncated { get; init; }
+
+        public bool StandardErrorTruncated { get; init; }
     }
 
     internal interface ICopilotShellProcessRunner
@@ -51,18 +61,27 @@ namespace ColorVision.Copilot
 
         private readonly ICopilotShellProcessRunner _runner;
         private readonly Func<CopilotShellKind, string?> _executablePathProvider;
+        private readonly CopilotShellCommandOutputArchiveRegistry
+            _outputArchiveRegistry;
 
         public CopilotShellCommandService()
-            : this(new CopilotShellProcessRunner(), FindTrustedShellExecutable)
+            : this(
+                new CopilotShellProcessRunner(),
+                FindTrustedShellExecutable,
+                CopilotShellCommandOutputArchiveRegistry.Shared)
         {
         }
 
         public CopilotShellCommandService(
             ICopilotShellProcessRunner runner,
-            Func<CopilotShellKind, string?>? executablePathProvider = null)
+            Func<CopilotShellKind, string?>? executablePathProvider = null,
+            CopilotShellCommandOutputArchiveRegistry? outputArchiveRegistry =
+                null)
         {
             _runner = runner ?? throw new ArgumentNullException(nameof(runner));
             _executablePathProvider = executablePathProvider ?? FindTrustedShellExecutable;
+            _outputArchiveRegistry = outputArchiveRegistry
+                ?? CopilotShellCommandOutputArchiveRegistry.Shared;
         }
 
         public Task<CopilotToolResult> ExecuteAsync(
@@ -103,6 +122,8 @@ namespace ColorVision.Copilot
             }
 
             CopilotShellProcessResult processResult;
+            CopilotShellCommandOutputArchiveSnapshot? outputArchive = null;
+            CopilotShellCommandOutputCapture? outputCapture = new();
             try
             {
                 var shellLabel = GetShellLabel(execution.Shell);
@@ -114,11 +135,34 @@ namespace ColorVision.Copilot
                     execution.WorkingDirectory,
                     TimeSpan.FromSeconds(execution.TimeoutSeconds))
                 {
-                    StandardOutputReceived = chunk => CopilotProcessExecutionSupport.ReportLatestOutput(
-                        progress, shellLabel, chunk, isError: false),
-                    StandardErrorReceived = chunk => CopilotProcessExecutionSupport.ReportLatestOutput(
-                        progress, shellLabel, chunk, isError: true),
+                    StandardOutputReceived = chunk =>
+                    {
+                        outputCapture?.AppendStandardOutput(chunk);
+                        CopilotProcessExecutionSupport.ReportLatestOutput(
+                            progress,
+                            shellLabel,
+                            chunk,
+                            isError: false);
+                    },
+                    StandardErrorReceived = chunk =>
+                    {
+                        outputCapture?.AppendStandardError(chunk);
+                        CopilotProcessExecutionSupport.ReportLatestOutput(
+                            progress,
+                            shellLabel,
+                            chunk,
+                            isError: true);
+                    },
                 }, cancellationToken);
+                outputCapture.EnsureCaptured(
+                    processResult.StandardOutput,
+                    processResult.StandardError);
+                outputCapture.Complete();
+                outputArchive = _outputArchiveRegistry.Retain(
+                    request.ConversationId,
+                    outputCapture,
+                    processResult);
+                outputCapture = null;
             }
             catch (OperationCanceledException)
             {
@@ -130,6 +174,10 @@ namespace ColorVision.Copilot
                     "The shell process could not be started.",
                     CopilotMcpAuditLogger.RedactText(ex.Message));
             }
+            finally
+            {
+                outputCapture?.Dispose();
+            }
 
             if (processResult.TimedOut)
             {
@@ -138,7 +186,11 @@ namespace ColorVision.Copilot
                     ToolName = "RunShellCommand",
                     Success = false,
                     Summary = $"The {GetShellLabel(execution.Shell)} command exceeded its {execution.TimeoutSeconds}-second timeout.",
-                    Content = BuildContent(execution.Shell, execution.WorkingDirectory, processResult),
+                    Content = BuildContent(
+                        execution.Shell,
+                        execution.WorkingDirectory,
+                        processResult,
+                        outputArchive),
                     ErrorMessage = $"The command did not finish within {execution.TimeoutSeconds} seconds; inspect the captured shell output.",
                     FailureKind = CopilotToolFailureKind.Transient,
                     FailureCode = TimedOutFailureCode,
@@ -153,7 +205,11 @@ namespace ColorVision.Copilot
                 Summary = succeeded
                     ? $"{GetShellLabel(execution.Shell)} command completed successfully."
                     : $"{GetShellLabel(execution.Shell)} command completed with exit code {processResult.ExitCode}.",
-                Content = BuildContent(execution.Shell, execution.WorkingDirectory, processResult),
+                Content = BuildContent(
+                    execution.Shell,
+                    execution.WorkingDirectory,
+                    processResult,
+                    outputArchive),
                 ErrorMessage = succeeded
                     ? string.Empty
                     : $"The command returned exit code {processResult.ExitCode}; inspect the captured shell output.",
@@ -179,7 +235,7 @@ namespace ColorVision.Copilot
             return new CopilotToolApprovalPresentation(
                 $"Run {shellLabel} command",
                 $"Review the complete {shellLabel} command and resolved working directory before approving.",
-                ImpactSummary: $"将在工作目录 {execution.WorkingDirectory} 中执行一条 {shellLabel} 命令；其影响取决于命令内容。",
+                ImpactSummary: $"将在工作目录 {execution.WorkingDirectory} 中执行一条 {shellLabel} 命令；其影响取决于命令内容。ColorVision 会捕获脱敏预览，并仅在预览截断时临时保留自动删除的脱敏输出存档。",
                 Reversibility: CopilotApprovalReversibility.NotReversible,
                 ReversibilitySummary: "Copilot 不会自动撤销命令产生的文件、进程、网络或系统状态变化。")
             {
@@ -247,7 +303,7 @@ namespace ColorVision.Copilot
             }
         }
 
-        private static IReadOnlyList<string> BuildArguments(CopilotShellKind shell, string commandText)
+        internal static IReadOnlyList<string> BuildArguments(CopilotShellKind shell, string commandText)
         {
             return shell == CopilotShellKind.CommandPrompt
                 ? ["/d", "/s", "/c", commandText]
@@ -290,7 +346,7 @@ namespace ColorVision.Copilot
             return true;
         }
 
-        private static bool TryResolveExecution(
+        internal static bool TryResolveExecution(
             CopilotAgentRequest request,
             CopilotAgentToolInput input,
             out CopilotShellExecution execution,
@@ -341,7 +397,7 @@ namespace ColorVision.Copilot
             return true;
         }
 
-        private static string? FindTrustedShellExecutable(CopilotShellKind shell)
+        internal static string? FindTrustedShellExecutable(CopilotShellKind shell)
         {
             var windows = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
             var programFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
@@ -358,7 +414,11 @@ namespace ColorVision.Copilot
             return candidates.Where(path => !string.IsNullOrWhiteSpace(path)).Select(SafeFullPath).FirstOrDefault(File.Exists);
         }
 
-        private static string BuildContent(CopilotShellKind shell, string workingDirectory, CopilotShellProcessResult result)
+        private static string BuildContent(
+            CopilotShellKind shell,
+            string workingDirectory,
+            CopilotShellProcessResult result,
+            CopilotShellCommandOutputArchiveSnapshot? outputArchive)
         {
             var builder = new StringBuilder();
             builder.AppendLine("[Shell Command]");
@@ -368,6 +428,30 @@ namespace ColorVision.Copilot
             builder.AppendLine($"outcome: {(result.TimedOut ? "timed_out" : result.ExitCode == 0 ? "completed" : "nonzero_exit")}");
             builder.AppendLine($"duration_ms: {Math.Max(0, (long)result.Duration.TotalMilliseconds)}");
             builder.AppendLine($"process_tree: {(result.ProcessTreeContained ? "windows_job_object" : "best_effort")}");
+            builder.AppendLine(
+                $"stdout_observed_characters: {result.ObservedStandardOutputCharacters}");
+            builder.AppendLine(
+                $"stderr_observed_characters: {result.ObservedStandardErrorCharacters}");
+            builder.AppendLine(
+                $"stdout_preview_truncated: {(result.StandardOutputTruncated ? "true" : "false")}");
+            builder.AppendLine(
+                $"stderr_preview_truncated: {(result.StandardErrorTruncated ? "true" : "false")}");
+            if (outputArchive != null)
+            {
+                builder.AppendLine($"output_archive_id: {outputArchive.Id}");
+                builder.AppendLine(
+                    $"stdout_archive_available: {(outputArchive.StandardOutputArchiveAvailable ? "true" : "false")}");
+                builder.AppendLine(
+                    $"stdout_archived_characters: {outputArchive.ArchivedStandardOutputCharacters}");
+                builder.AppendLine(
+                    $"stdout_archive_truncated: {(outputArchive.StandardOutputArchiveTruncated ? "true" : "false")}");
+                builder.AppendLine(
+                    $"stderr_archive_available: {(outputArchive.StandardErrorArchiveAvailable ? "true" : "false")}");
+                builder.AppendLine(
+                    $"stderr_archived_characters: {outputArchive.ArchivedStandardErrorCharacters}");
+                builder.AppendLine(
+                    $"stderr_archive_truncated: {(outputArchive.StandardErrorArchiveTruncated ? "true" : "false")}");
+            }
             builder.AppendLine("stdout:");
             builder.AppendLine(string.IsNullOrWhiteSpace(result.StandardOutput) ? "<empty>" : CopilotMcpAuditLogger.RedactText(result.StandardOutput).TrimEnd());
             builder.AppendLine("stderr:");
@@ -450,7 +534,7 @@ namespace ColorVision.Copilot
             };
         }
 
-        private readonly record struct CopilotShellExecution(
+        internal readonly record struct CopilotShellExecution(
             string CommandText,
             CopilotShellKind Shell,
             string WorkingDirectory,
@@ -500,20 +584,36 @@ namespace ColorVision.Copilot
             process.StandardInput.Close();
 
             using var outputReadSource = new CancellationTokenSource();
+            long observedStandardOutputCharacters = 0;
+            long observedStandardErrorCharacters = 0;
             var stdoutTask = CopilotProcessExecutionSupport.ReadBoundedAsync(
                 process.StandardOutput,
                 MaxStreamCharacters,
                 16_384,
                 "\n...<shell output truncated>...\n",
                 outputReadSource.Token,
-                command.StandardOutputReceived);
+                chunk =>
+                {
+                    observedStandardOutputCharacters =
+                        SaturatingAdd(
+                            observedStandardOutputCharacters,
+                            chunk.Length);
+                    command.StandardOutputReceived?.Invoke(chunk);
+                });
             var stderrTask = CopilotProcessExecutionSupport.ReadBoundedAsync(
                 process.StandardError,
                 MaxStreamCharacters,
                 16_384,
                 "\n...<shell output truncated>...\n",
                 outputReadSource.Token,
-                command.StandardErrorReceived);
+                chunk =>
+                {
+                    observedStandardErrorCharacters =
+                        SaturatingAdd(
+                            observedStandardErrorCharacters,
+                            chunk.Length);
+                    command.StandardErrorReceived?.Invoke(chunk);
+                });
             using var timeoutSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             timeoutSource.CancelAfter(command.Timeout);
             var timedOut = false;
@@ -547,10 +647,25 @@ namespace ColorVision.Copilot
                 stopwatch.Elapsed)
             {
                 ProcessTreeContained = processJob != null,
+                ObservedStandardOutputCharacters =
+                    observedStandardOutputCharacters,
+                ObservedStandardErrorCharacters =
+                    observedStandardErrorCharacters,
+                StandardOutputTruncated =
+                    observedStandardOutputCharacters
+                    > MaxStreamCharacters,
+                StandardErrorTruncated =
+                    observedStandardErrorCharacters
+                    > MaxStreamCharacters,
             };
         }
 
-        private static Encoding GetStreamEncoding(CopilotShellKind shell)
+        private static long SaturatingAdd(long value, int increment) =>
+            value > long.MaxValue - increment
+                ? long.MaxValue
+                : value + increment;
+
+        internal static Encoding GetStreamEncoding(CopilotShellKind shell)
         {
             if (shell != CopilotShellKind.CommandPrompt)
                 return Encoding.UTF8;

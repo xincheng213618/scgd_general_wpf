@@ -144,7 +144,7 @@
         <UniformGrid Grid.Row="1" Columns="4" Margin="0,0,0,12">
             <Border Style="{StaticResource OverviewCardStyle}" Margin="0,0,8,0">
                 <StackPanel>
-                    <TextBlock Text="流程总耗时" Style="{StaticResource OverviewMetricLabelStyle}"/>
+                    <TextBlock Text="流程执行耗时" Style="{StaticResource OverviewMetricLabelStyle}"/>
                     <TextBlock x:Name="SummaryTotalTimeText" Text="—" Style="{StaticResource OverviewMetricValueStyle}"/>
                     <TextBlock x:Name="SummaryTotalTimeHintText"
                                Margin="0,4,0,0"
@@ -319,7 +319,7 @@
                         </Grid.ColumnDefinitions>
                         <StackPanel>
                             <TextBlock Text="执行时序" Style="{StaticResource OverviewSectionTitleStyle}"/>
-                            <TextBlock Text="观察并行、等待和节点间空档"
+                            <TextBlock Text="观察节点执行、并行与调度衔接"
                                        Margin="0,4,0,0"
                                        Foreground="{DynamicResource SecondaryTextBrush}"
                                        FontSize="12"/>

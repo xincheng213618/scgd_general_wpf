@@ -529,15 +529,6 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 输入不存在的组名会在保存时自动创建 的本地化字符串。
-        /// </summary>
-        public static string AutoCreateGroupHint {
-            get {
-                return ResourceManager.GetString("AutoCreateGroupHint", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 自动检测键区 的本地化字符串。
         /// </summary>
         public static string AutoDetectKeyRegions {
@@ -2670,15 +2661,6 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 创建为样例 的本地化字符串。
-        /// </summary>
-        public static string CreateSample {
-            get {
-                return ResourceManager.GetString("CreateSample", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 创建来源 的本地化字符串。
         /// </summary>
         public static string CreateSource {
@@ -2792,15 +2774,6 @@ namespace ColorVision.Engine.Properties {
         public static string CurrentPosition {
             get {
                 return ResourceManager.GetString("CurrentPosition", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 当前选择 的本地化字符串。
-        /// </summary>
-        public static string CurrentSelection {
-            get {
-                return ResourceManager.GetString("CurrentSelection", resourceCulture);
             }
         }
         
@@ -9276,15 +9249,6 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 打开完整编辑器 的本地化字符串。
-        /// </summary>
-        public static string OpenFullEditor {
-            get {
-                return ResourceManager.GetString("OpenFullEditor", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 打开中 的本地化字符串。
         /// </summary>
         public static string Opening {
@@ -9605,15 +9569,6 @@ namespace ColorVision.Engine.Properties {
         public static string PleaseConfigureCameraIDFirst {
             get {
                 return ResourceManager.GetString("PleaseConfigureCameraIDFirst", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 请选择一个模板以查看和编辑 的本地化字符串。
-        /// </summary>
-        public static string PleaseSelectTemplateToViewAndEdit {
-            get {
-                return ResourceManager.GetString("PleaseSelectTemplateToViewAndEdit", resourceCulture);
             }
         }
         
@@ -10860,33 +10815,6 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 样例组 的本地化字符串。
-        /// </summary>
-        public static string SampleGroup {
-            get {
-                return ResourceManager.GetString("SampleGroup", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 选择已有组或输入新组 的本地化字符串。
-        /// </summary>
-        public static string SampleGroupPlaceholder {
-            get {
-                return ResourceManager.GetString("SampleGroupPlaceholder", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 样例名 的本地化字符串。
-        /// </summary>
-        public static string SampleName {
-            get {
-                return ResourceManager.GetString("SampleName", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 饱和度 的本地化字符串。
         /// </summary>
         public static string Saturation {
@@ -11369,15 +11297,6 @@ namespace ColorVision.Engine.Properties {
         public static string SelectTemplateAsModule {
             get {
                 return ResourceManager.GetString("SelectTemplateAsModule", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 选择一个模板查看详情 的本地化字符串。
-        /// </summary>
-        public static string SelectTemplateToViewDetails {
-            get {
-                return ResourceManager.GetString("SelectTemplateToViewDetails", resourceCulture);
             }
         }
         
@@ -12775,24 +12694,6 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 已是第一个，无法上移 的本地化字符串。
-        /// </summary>
-        public static string TemplateEditor_AlreadyFirst {
-            get {
-                return ResourceManager.GetString("TemplateEditor_AlreadyFirst", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 已是最后一个，无法下移 的本地化字符串。
-        /// </summary>
-        public static string TemplateEditor_AlreadyLast {
-            get {
-                return ResourceManager.GetString("TemplateEditor_AlreadyLast", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 是否删除 {0} 模板？删除后无法恢复！ 的本地化字符串。
         /// </summary>
         public static string TemplateEditor_ConfirmDelete {
@@ -12834,24 +12735,6 @@ namespace ColorVision.Engine.Properties {
         public static string TemplateEditor_OrderSwapped {
             get {
                 return ResourceManager.GetString("TemplateEditor_OrderSwapped", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 已保存 {0} 个模板样例 的本地化字符串。
-        /// </summary>
-        public static string TemplateEditor_SamplesSaved {
-            get {
-                return ResourceManager.GetString("TemplateEditor_SamplesSaved", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 保存模板样例失败：{0} 的本地化字符串。
-        /// </summary>
-        public static string TemplateEditor_SaveSamplesFailed {
-            get {
-                return ResourceManager.GetString("TemplateEditor_SaveSamplesFailed", resourceCulture);
             }
         }
         
@@ -12901,15 +12784,6 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 无法加载模板编辑器 的本地化字符串。
-        /// </summary>
-        public static string TemplateEditorLoadFailed {
-            get {
-                return ResourceManager.GetString("TemplateEditorLoadFailed", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 已经存在改模板，请修改模板名称 的本地化字符串。
         /// </summary>
         public static string TemplateExists_PleaseRename {
@@ -12937,24 +12811,6 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 模板列表 的本地化字符串。
-        /// </summary>
-        public static string TemplateList {
-            get {
-                return ResourceManager.GetString("TemplateList", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 模板管理窗口 的本地化字符串。
-        /// </summary>
-        public static string TemplateManagementWindow {
-            get {
-                return ResourceManager.GetString("TemplateManagementWindow", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 模板匹配 的本地化字符串。
         /// </summary>
         public static string TemplateMatching {
@@ -12969,15 +12825,6 @@ namespace ColorVision.Engine.Properties {
         public static string TemplateName {
             get {
                 return ResourceManager.GetString("TemplateName", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 个模板 的本地化字符串。
-        /// </summary>
-        public static string TemplatesCount {
-            get {
-                return ResourceManager.GetString("TemplatesCount", resourceCulture);
             }
         }
         
