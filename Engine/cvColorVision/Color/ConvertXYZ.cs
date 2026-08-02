@@ -9,6 +9,30 @@ namespace cvColorVision
     {
         private const string LIBRARY_CVCAMERA = "cvCamera.dll";
 
+        [StructLayout(LayoutKind.Sequential)]
+        public struct PoiRequestV1
+        {
+            public int Type;
+            public int X;
+            public int Y;
+            public int Width;
+            public int Height;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct PoiResultV1
+        {
+            public float X;
+            public float Y;
+            public float Z;
+            public float x;
+            public float y;
+            public float u;
+            public float v;
+            public float Cct;
+            public float Wave;
+        }
+
         #region cvConvertXYZ.cpp
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_InitXYZ", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
@@ -22,6 +46,10 @@ namespace cvColorVision
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SetBufferXYZ", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern int CM_SetBufferXYZ(IntPtr handle, UInt32 w, UInt32 h, UInt32 bpp, UInt32 channels, IntPtr rawBuffer);
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_CalculatePoiBatchV1", CallingConvention = CallingConvention.StdCall)]
+        public static extern int CM_CalculatePoiBatchV1(int width, int height, int bpp, int channels, IntPtr cieData,
+            [In] PoiRequestV1[] requests, int requestCount, [Out] PoiResultV1[] results);
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_ReleaseBuffer", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern int CM_ReleaseBuffer(IntPtr handle);

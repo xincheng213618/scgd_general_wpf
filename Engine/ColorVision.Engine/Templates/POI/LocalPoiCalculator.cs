@@ -47,6 +47,18 @@ namespace ColorVision.Engine.Templates.POI
             if (poi.PoiPoints.Count == 0 && poi.Id > 0) PoiParam.LoadPoiDetailFromDB(poi);
             if (poi.PoiPoints.Count == 0) throw new InvalidOperationException($"POI 模板没有关注点：{poi.Name}");
 
+            if (CanUseBatchFastPath(filter, revise))
+            {
+                try
+                {
+                    return CalculateBatch(frame, poi);
+                }
+                catch (EntryPointNotFoundException)
+                {
+                    // Keep compatibility with older cvCamera.dll deployments.
+                }
+            }
+
             IntPtr convertHandle = Tool.GenerateRandomIntPtr();
             bool initialized = false;
             try
@@ -107,17 +119,7 @@ namespace ColorVision.Engine.Templates.POI
 
         private static LocalPoiPointResult CalculatePoint(IntPtr handle, int channels, PoiPoint point)
         {
-            int x = checked((int)point.PixX);
-            int y = checked((int)point.PixY);
-            int width = Math.Max(checked((int)point.PixWidth), 1);
-            int height = Math.Max(checked((int)point.PixHeight), 1);
-            POIPointTypes pointType = point.PointType switch
-            {
-                GraphicTypes.Point => POIPointTypes.SolidPoint,
-                GraphicTypes.Circle => POIPointTypes.Circle,
-                GraphicTypes.Rect => POIPointTypes.Rect,
-                _ => throw new NotSupportedException($"本地 POI 暂不支持形状：{point.PointType}")
-            };
+            (int x, int y, int width, int height, POIPointTypes pointType) = ResolvePoint(point);
             ValidateRegion(x, y, width, height, pointType, point.Name);
 
             IPOIResultData value = channels == 1
@@ -134,6 +136,86 @@ namespace ColorVision.Engine.Templates.POI
                 Height = height,
                 Value = value
             };
+        }
+
+        private static LocalPoiResultSet CalculateBatch(LocalFlowFrameLease frame, PoiParam poi)
+        {
+            ConvertXYZ.PoiRequestV1[] requests = new ConvertXYZ.PoiRequestV1[poi.PoiPoints.Count];
+            (int X, int Y, int Width, int Height, POIPointTypes Type)[] definitions =
+                new (int, int, int, int, POIPointTypes)[poi.PoiPoints.Count];
+            for (int index = 0; index < poi.PoiPoints.Count; index++)
+            {
+                PoiPoint point = poi.PoiPoints[index];
+                definitions[index] = ResolvePoint(point);
+                (int x, int y, int width, int height, POIPointTypes pointType) = definitions[index];
+                ValidateRegion(x, y, width, height, pointType, point.Name);
+                requests[index] = new ConvertXYZ.PoiRequestV1
+                {
+                    Type = pointType switch
+                    {
+                        POIPointTypes.SolidPoint => 0,
+                        POIPointTypes.Circle => 1,
+                        POIPointTypes.Rect => 2,
+                        _ => throw new NotSupportedException($"Unsupported POI type: {pointType}")
+                    },
+                    X = x,
+                    Y = y,
+                    Width = width,
+                    Height = height
+                };
+            }
+
+            ConvertXYZ.PoiResultV1[] nativeResults = new ConvertXYZ.PoiResultV1[requests.Length];
+            int success = ConvertXYZ.CM_CalculatePoiBatchV1(frame.Metadata.Width, frame.Metadata.Height,
+                frame.Metadata.CieBpp, frame.Metadata.Channels, frame.CiePointer, requests, requests.Length, nativeResults);
+            if (success == 0) throw new InvalidOperationException("Batch POI calculation failed.");
+
+            LocalPoiResultSet result = new() { FrameId = frame.FrameId.ToString("N"), TemplateName = poi.Name };
+            for (int index = 0; index < requests.Length; index++)
+            {
+                PoiPoint point = poi.PoiPoints[index];
+                (int x, int y, int width, int height, POIPointTypes pointType) = definitions[index];
+                ConvertXYZ.PoiResultV1 native = nativeResults[index];
+                IPOIResultData value = frame.Metadata.Channels == 1
+                    ? new POIResultDataCIEY(native.Y)
+                    : new POIResultDataCIExyuv(native.Cct, native.Wave, native.X, native.Y, native.Z,
+                        native.x, native.y, native.u, native.v);
+                result.Points.Add(new LocalPoiPointResult
+                {
+                    PoiId = point.Id,
+                    Name = point.Name ?? point.Id.ToString(),
+                    PointType = pointType,
+                    X = x,
+                    Y = y,
+                    Width = width,
+                    Height = height,
+                    Value = value
+                });
+            }
+            return result;
+        }
+
+        private static bool CanUseBatchFastPath(PoiFilterParam? filter, PoiReviseParam? revise)
+        {
+            bool filterDisabled = filter == null || (!filter.Enable && !filter.NoAreaEnable && !filter.XYZEnable);
+            bool reviseDisabled = revise == null || revise.GenCalibrationType == GenCalibrationType.None;
+            return filterDisabled && reviseDisabled;
+        }
+
+        private static (int X, int Y, int Width, int Height, POIPointTypes Type) ResolvePoint(PoiPoint point)
+        {
+            int x = checked((int)point.PixX);
+            int y = checked((int)point.PixY);
+            int width = Math.Max(checked((int)point.PixWidth), 1);
+            int height = Math.Max(checked((int)point.PixHeight), 1);
+            POIPointTypes pointType = point.PointType switch
+            {
+                GraphicTypes.Point => POIPointTypes.SolidPoint,
+                GraphicTypes.Circle => POIPointTypes.Circle,
+                GraphicTypes.Rect => POIPointTypes.Rect,
+                _ => throw new NotSupportedException($"本地 POI 暂不支持形状：{point.PointType}")
+            };
+            return (x, y, width, height, pointType);
         }
 
         private static POIResultDataCIEY CalculateLuminance(IntPtr handle, int x, int y, int width, int height, POIPointTypes type, string name)
