@@ -148,6 +148,17 @@ namespace ColorVision.Engine.Services
             Stopwatch totalStopwatch = Stopwatch.StartNew();
             ClearCurrentCopilotDeviceContext();
             ResetCopilotDisplayDeviceMap();
+            foreach (DeviceService deviceService in DeviceServices.ToArray())
+            {
+                try
+                {
+                    deviceService.Dispose();
+                }
+                catch (Exception ex)
+                {
+                    log.Warn($"Failed to dispose device service before reloading. Code={deviceService.Code}", ex);
+                }
+            }
             LastGenControl?.Clear();
             Stopwatch phaseStopwatch = Stopwatch.StartNew();
             List<SysDictionaryModel> SysDictionaryModels = SysDictionaryDao.Instance.GetAllByPid(1);
