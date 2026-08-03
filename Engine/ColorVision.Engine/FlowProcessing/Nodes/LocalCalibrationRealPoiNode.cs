@@ -174,6 +174,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                         CalibrationMasterId = calibrationMasterId,
                         PoiMasterId = poiMasterId,
                         TotalTime = execution.TotalTime + poiTime,
+                        FlipMode = execution.Frame.Metadata.FlipMode.ToString(),
+                        FlipApplied = execution.Frame.IsFlipApplied,
                         LoadedFromFile = execution.LoadedFromFile,
                         Calibrated = execution.Calibrated,
                         HasRaw = execution.Frame.HasRaw,

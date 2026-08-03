@@ -24,7 +24,6 @@ using ColorVision.UI.Authorizations;
 using ColorVision.UI.Extension;
 using ColorVision.UI.LogImp;
 using cvColorVision;
-using log4net;
 using SqlSugar;
 using System;
 using System.Collections.Generic;
@@ -32,7 +31,6 @@ using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -48,8 +46,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
     public class DeviceCamera : DeviceService<ConfigCamera>
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(DeviceCamera));
-
         public PhyCamera? PhyCamera { get => _PhyCamera; set { _PhyCamera = value; OnPropertyChanged(); } }
         private PhyCamera? _PhyCamera;
         private readonly Lazy<ViewCamera> _view;
@@ -98,7 +94,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             EditRealtimeCameraConfigCommand = new RelayCommand(_ => EditRealtimeCameraConfig());
             EditCalibrationCommand = new RelayCommand(a => EditCalibration());
             OpenCameraLogCommand = new RelayCommand(a => OpenCameraLog());
-            ReleaseLocalCalibrationCacheCommand = new RelayCommand(_ => ReleaseLocalCalibrationCache());
+            ReleaseLocalCalibrationCacheCommand = new RelayCommand(_ => LocalCalibrationCacheManagerWindow.OpenWindow());
 
             this.ContextMenu.Items.Add(new MenuItem
             {
@@ -122,34 +118,15 @@ namespace ColorVision.Engine.Services.Devices.Camera
             };
 
             ContextMenu.Items.Add(menuItem);
-            ContextMenu.Items.Add(new MenuItem() { Header = "释放本地校正缓存", Command = ReleaseLocalCalibrationCacheCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = "本地校正缓存管理", Command = ReleaseLocalCalibrationCacheCommand });
 
         }
 
         [CommandDisplay("CameraLog")]
         public RelayCommand OpenCameraLogCommand { get; set; }
 
-        [CommandDisplay("释放本地校正缓存")]
+        [CommandDisplay("本地校正缓存管理")]
         public RelayCommand ReleaseLocalCalibrationCacheCommand { get; set; }
-
-        private async void ReleaseLocalCalibrationCache()
-        {
-            await ReleaseLocalCalibrationCacheAsync();
-        }
-
-        internal async Task ReleaseLocalCalibrationCacheAsync()
-        {
-            try
-            {
-                int releasedItems = await LocalCalibrationCacheManager.ReleaseCacheAsync();
-                MessageBox1.Show(Application.Current.GetActiveWindow(), $"已释放 {releasedItems} 个本地校正缓存项。当前流程中的 RAW/CIE 帧不受影响。", "ColorVision");
-            }
-            catch (Exception ex)
-            {
-                log.Error($"Release local calibration cache failed: {Code}", ex);
-                MessageBox1.Show(Application.Current.GetActiveWindow(), $"释放本地校正缓存失败：{ex.Message}", "ColorVision");
-            }
-        }
 
         public void OpenCameraLog()
         {

@@ -23,6 +23,14 @@
 
 using json = nlohmann::json;
 
+bool RunCalibrationApiSmokeTests();
+bool RunCalibrationCacheSmallBudgetTests();
+bool RunCalibrationRealDataTests(const std::filesystem::path& testRoot);
+bool RunCalibrationLegacyColorComparison(
+    const std::filesystem::path& rawPath,
+    const std::filesystem::path& colorFile,
+    const std::filesystem::path& legacyDll);
+
 bool RunP2AlgorithmTests();
 
 static std::atomic<int> g_videoCallbackFrames{ 0 };
@@ -1741,6 +1749,21 @@ void testWithRealImage(const std::string& imagePath)
 
 int main(int argc, char* argv[])
 {
+    if (argc == 2 && std::string(argv[1]) == "--calibration-smoke") {
+        return RunCalibrationApiSmokeTests() ? 0 : 1;
+    }
+    if (argc == 2 && std::string(argv[1]) == "--calibration-cache-small-budget") {
+        return RunCalibrationCacheSmallBudgetTests() ? 0 : 1;
+    }
+    if (argc == 3 && std::string(argv[1]) == "--calibration-real-data") {
+        return RunCalibrationRealDataTests(std::filesystem::u8path(argv[2])) ? 0 : 1;
+    }
+    if (argc == 5 && std::string(argv[1]) == "--calibration-legacy-color") {
+        return RunCalibrationLegacyColorComparison(
+            std::filesystem::u8path(argv[2]),
+            std::filesystem::u8path(argv[3]),
+            std::filesystem::u8path(argv[4])) ? 0 : 1;
+    }
     if (argc == 2 && std::string(argv[1]) == "--p2-only") {
         return RunP2AlgorithmTests() ? 0 : 1;
     }
@@ -1748,6 +1771,11 @@ int main(int argc, char* argv[])
     std::cout << "========================================" << std::endl;
     std::cout << "M_FindLuminousArea smoke test" << std::endl;
     std::cout << "========================================" << std::endl;
+
+    if (!RunCalibrationApiSmokeTests()) {
+        std::cerr << "Calibration API smoke test failed" << std::endl;
+        return 1;
+    }
 
     if (!smokeHImageHelpersValidateLayoutAndOwnership()) {
         std::cerr << "HImage helper validation test failed" << std::endl;

@@ -272,7 +272,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             {
                 throw new InvalidOperationException("IN_CIE 没有可用的本地 CIE 内存帧。");
             }
-
             _ = TryGetInputMasterResult(action, 1, out int poiInputMasterId, out int poiInputResultType, out _);
             LocalRealPoiParameters parameters = LocalRealPoiInputResolver.Resolve(
                 poiInputMasterId,
@@ -314,6 +313,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                         POITemplate = parameters.Poi.Name,
                         POIFilterTemplate = parameters.Filter?.Name,
                         POIReviseTemplate = parameters.Revise?.Name,
+                        FlipMode = currentFrame.Metadata.FlipMode.ToString(),
+                        FlipApplied = currentFrame.IsCieFlipApplied,
                         ImageRead = false,
                         MemoryOnly = string.IsNullOrWhiteSpace(currentFrame.CvCieFilePath)
                     });

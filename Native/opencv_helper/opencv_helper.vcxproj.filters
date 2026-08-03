@@ -31,6 +31,9 @@
     <Filter Include="算法\SurfaceDefect">
       <UniqueIdentifier>{08a7b7d1-04ab-4b7a-a654-2f35546c4f92}</UniqueIdentifier>
     </Filter>
+    <Filter Include="算法\Calibration">
+      <UniqueIdentifier>{54e2196b-0adb-4a30-bad4-61d6cc148b13}</UniqueIdentifier>
+    </Filter>
     <Filter Include="导出">
       <UniqueIdentifier>{a1b2c3d4-1234-5678-9abc-def012345678}</UniqueIdentifier>
     </Filter>
@@ -81,6 +84,16 @@
     <ClInclude Include="native_log.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="algorithm\calibration\calibration_core.h">
+      <Filter>算法\Calibration</Filter>
+    </ClInclude>
+    <ClInclude Include="algorithm\calibration\calibration_context.h">
+      <Filter>算法\Calibration</Filter>
+    </ClInclude>
+    <ClInclude Include="algorithm\poi\poi_batch.h" />
+    <ClInclude Include="algorithm\calibration\calibration_geometric.h">
+      <Filter>算法\Calibration</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
@@ -121,6 +134,23 @@
     </ClCompile>
     <ClCompile Include="native_log.cpp">
       <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="algorithm\calibration\calibration_basic.cpp">
+      <Filter>算法\Calibration</Filter>
+    </ClCompile>
+    <ClCompile Include="algorithm\calibration\calibration_color.cpp">
+      <Filter>算法\Calibration</Filter>
+    </ClCompile>
+    <ClCompile Include="algorithm\calibration\calibration_context.cpp">
+      <Filter>算法\Calibration</Filter>
+    </ClCompile>
+    <ClCompile Include="algorithm\calibration\calibration_geometric.cpp">
+      <Filter>算法\Calibration</Filter>
+    </ClCompile>
+    <ClCompile Include="algorithm\poi\poi_batch.cpp" />
+    <ClCompile Include="exports\poi_export.cpp" />
+    <ClCompile Include="exports\calibration_export.cpp">
+      <Filter>导出</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

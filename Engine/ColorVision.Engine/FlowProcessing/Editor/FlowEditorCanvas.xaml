@@ -47,13 +47,77 @@
                         BorderThickness="1"
                         CornerRadius="7"
                         Opacity="0.78"/>
-                <ScrollViewer HorizontalScrollBarVisibility="Disabled"
-                              VerticalScrollBarVisibility="Auto"
-                              Background="Transparent">
-                    <StackPanel x:Name="NodePropertyPanelContent"
-                                Orientation="Vertical"
-                                Margin="5"/>
-                </ScrollViewer>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <Border Margin="9,4,9,0"
+                            Padding="0,0,0,4"
+                            BorderBrush="{DynamicResource GlobalBorderBrush}"
+                            BorderThickness="0,0,0,1">
+                        <DockPanel LastChildFill="True">
+                            <StackPanel DockPanel.Dock="Right" HorizontalAlignment="Right" Orientation="Horizontal">
+                            <Button x:Name="ConfigurationViewButton"
+                                    Content="配置"
+                                    Click="ConfigurationViewButton_Click"
+                                    Padding="9,2"
+                                    Margin="0,0,3,0"
+                                    BorderThickness="0"
+                                    Background="Transparent"
+                                    Focusable="False"/>
+                            <Button x:Name="DocumentationViewButton"
+                                    Content="说明"
+                                    Click="DocumentationViewButton_Click"
+                                    Padding="9,2"
+                                    BorderThickness="0"
+                                    Background="Transparent"
+                                    Focusable="False"/>
+                                <ToggleButton x:Name="AdvancedPropertiesButton"
+                                              Checked="AdvancedPropertiesButton_Checked"
+                                              Unchecked="AdvancedPropertiesButton_Unchecked"
+                                              Width="25"
+                                              Height="22"
+                                              Padding="0"
+                                              Margin="4,0,0,0"
+                                              BorderThickness="0"
+                                              Background="Transparent"
+                                              Focusable="False">
+                                    <Canvas Width="16" Height="16" IsHitTestVisible="False">
+                                        <Line X1="1.5" X2="14.5" Y1="3.5" Y2="3.5"
+                                              Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType={x:Type ToggleButton}}}"
+                                              StrokeThickness="1.25" StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
+                                        <Ellipse Canvas.Left="9.5" Canvas.Top="1" Width="5" Height="5"
+                                                 Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType={x:Type ToggleButton}}}"/>
+                                        <Line X1="1.5" X2="14.5" Y1="8" Y2="8"
+                                              Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType={x:Type ToggleButton}}}"
+                                              StrokeThickness="1.25" StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
+                                        <Ellipse Canvas.Left="3.5" Canvas.Top="5.5" Width="5" Height="5"
+                                                 Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType={x:Type ToggleButton}}}"/>
+                                        <Line X1="1.5" X2="14.5" Y1="12.5" Y2="12.5"
+                                              Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType={x:Type ToggleButton}}}"
+                                              StrokeThickness="1.25" StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
+                                        <Ellipse Canvas.Left="8" Canvas.Top="10" Width="5" Height="5"
+                                                 Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType={x:Type ToggleButton}}}"/>
+                                    </Canvas>
+                                </ToggleButton>
+                            </StackPanel>
+                            <TextBlock x:Name="NodeInspectorTitle"
+                                       VerticalAlignment="Center"
+                                       FontWeight="Bold"
+                                       TextTrimming="CharacterEllipsis"
+                                       Foreground="{DynamicResource GlobalTextBrush}"/>
+                        </DockPanel>
+                    </Border>
+                    <ScrollViewer Grid.Row="1"
+                                  HorizontalScrollBarVisibility="Disabled"
+                                  VerticalScrollBarVisibility="Auto"
+                                  Background="Transparent">
+                        <StackPanel x:Name="NodePropertyPanelContent"
+                                    Orientation="Vertical"
+                                    Margin="5"/>
+                    </ScrollViewer>
+                </Grid>
             </Grid>
         </Canvas>
     </Grid>

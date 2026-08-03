@@ -1,5 +1,6 @@
 #pragma warning disable CA1707
 using ColorVision.Engine.FlowProcessing.Editor;
+using ColorVision.Engine.FlowProcessing.Nodes;
 using ST.Library.UI.NodeEditor;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
@@ -345,6 +346,95 @@ namespace ColorVision.UI.Tests
                     0,
                     FlowEditorCanvas.PropertyPanelMaxWidth);
             });
+        }
+
+        [Fact]
+        public void NodeInspector_CanSwitchBetweenConfigurationAndDocumentation()
+        {
+            RunInSta(() =>
+            {
+                using var canvas = new FlowEditorCanvas();
+                STNodeEditor editor = canvas.NodeEditor;
+                var node = new TrackingNode();
+                node.Create();
+                editor.Nodes.Add(node);
+                canvas.ShowNodeDocumentation(true);
+                editor.SetActiveNode(node);
+
+                Assert.True(canvas.IsShowingNodeDocumentation);
+                Assert.Single(canvas.NodePropertyPanel.Children);
+                Assert.IsType<System.Windows.Controls.StackPanel>(canvas.NodePropertyPanel.Children[0]);
+
+                editor.SetActiveNode(null);
+                canvas.ShowNodeDocumentation(false);
+
+                Assert.False(canvas.IsShowingNodeDocumentation);
+                Assert.Empty(canvas.NodePropertyPanel.Children);
+            });
+        }
+
+        [Fact]
+        public void LocalCameraDocumentation_ExplainsCalibrationAndFlipOrder()
+        {
+            var node = new LocalCameraNode();
+
+            FlowNodeDocumentation documentation = FlowNodeDocumentationPresenter.GetDocumentation(node);
+
+            Assert.Contains("空间/普通校正", documentation.Processing);
+            Assert.Contains("色度校正", documentation.Processing);
+            Assert.Contains("图像翻转", documentation.Processing);
+            Assert.Contains(documentation.Properties, property => property.Name == "图像翻转");
+        }
+
+        [Fact]
+        public void LocalCameraDirectParameters_SetAllExposureChannels()
+        {
+            var node = new LocalCameraNode
+            {
+                ExpTime = 125.5f,
+                Gain = 2.5f,
+                AvgCount = 3
+            };
+
+            var cameraParameters = node.BuildCameraParameters();
+
+            Assert.Equal(125.5f, cameraParameters.ExpTime);
+            Assert.Equal(125.5f, cameraParameters.ExpTimeR);
+            Assert.Equal(125.5f, cameraParameters.ExpTimeG);
+            Assert.Equal(125.5f, cameraParameters.ExpTimeB);
+            Assert.Equal(2.5f, cameraParameters.Gain);
+            Assert.Equal(3, cameraParameters.AvgCount);
+        }
+
+        [Fact]
+        public void LocalCameraDirectParameters_DefaultToOneHundredMilliseconds()
+        {
+            var node = new LocalCameraNode();
+
+            var cameraParameters = node.BuildCameraParameters();
+
+            Assert.Equal(100f, cameraParameters.ExpTime);
+            Assert.Equal(100f, cameraParameters.ExpTimeR);
+            Assert.Equal(100f, cameraParameters.ExpTimeG);
+            Assert.Equal(100f, cameraParameters.ExpTimeB);
+            Assert.Equal(0f, cameraParameters.Gain);
+            Assert.Equal(1, cameraParameters.AvgCount);
+        }
+
+        [Fact]
+        public void LocalCameraLoad_IgnoresRemovedLegacyTemplateProperty()
+        {
+            var node = new LocalCameraNode();
+            node.Create();
+            var savedProperties = new Dictionary<string, byte[]>
+            {
+                ["CamTempName"] = System.Text.Encoding.UTF8.GetBytes("Legacy.Template")
+            };
+
+            Exception? exception = Record.Exception(() => node.OnLoadNode(savedProperties));
+
+            Assert.Null(exception);
+            Assert.Null(typeof(LocalCameraNode).GetProperty("CamTempName"));
         }
 
         [Fact]

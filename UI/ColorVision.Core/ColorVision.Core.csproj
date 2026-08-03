@@ -15,15 +15,20 @@
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<UseProjectReference Condition="!Exists('..\..\x64\Release\opencv_helper.dll')">true</UseProjectReference>
+		<!-- Package the maintained optimized native build for both managed configurations;
+		     the former repository-root path could silently select an unrelated stale DLL. -->
+		<OpenCvHelperBinary>..\..\Native\opencv_helper\x64\Release\opencv_helper.dll</OpenCvHelperBinary>
+		<UseProjectReference Condition="'$(UseProjectReference)' == '' and ('$(MSBuildRuntimeType)' == 'Full' or !Exists('$(OpenCvHelperBinary)'))">true</UseProjectReference>
 	</PropertyGroup>
 
 	<ItemGroup Condition="'$(UseProjectReference)'=='true'">
-		<ProjectReference Include="..\..\Native\opencv_helper\opencv_helper.vcxproj" />
+		<ProjectReference Include="..\..\Native\opencv_helper\opencv_helper.vcxproj"
+			ReferenceOutputAssembly="false"
+			AdditionalProperties="Configuration=Release;Platform=x64" />
 	</ItemGroup>
 	
 	<ItemGroup>
-		<Content Include="..\..\x64\Release\opencv_helper.dll" Link="runtimes\win-x64\native\opencv_helper.dll">
+		<Content Include="$(OpenCvHelperBinary)" Link="runtimes\win-x64\native\opencv_helper.dll">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<Pack>true</Pack>
 			<PackagePath>runtimes/win-x64/native</PackagePath>

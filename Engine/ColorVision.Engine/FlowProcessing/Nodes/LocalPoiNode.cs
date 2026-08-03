@@ -67,9 +67,9 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             {
                 throw new InvalidOperationException("流程中没有可用的本地图像内存帧。");
             }
+            Stopwatch stopwatch = Stopwatch.StartNew();
             using (LocalFlowFrameLease frame = currentFrame.Acquire())
             {
-                Stopwatch stopwatch = Stopwatch.StartNew();
                 LocalPoiResultSet result = LocalPoiCalculator.Calculate(frame, poi, filter, revise);
                 stopwatch.Stop();
                 int totalTime = checked((int)Math.Min(stopwatch.ElapsedMilliseconds, int.MaxValue));
@@ -89,6 +89,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                         POITemplate = poi.Name,
                         POIFilterTemplate = filter?.Name,
                         POIReviseTemplate = revise?.Name,
+                        FlipMode = frame.Metadata.FlipMode.ToString(),
+                        FlipApplied = frame.IsCieFlipApplied,
                         MemoryOnly = string.IsNullOrWhiteSpace(currentFrame.CvCieFilePath)
                     });
                 try

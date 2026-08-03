@@ -751,13 +751,18 @@ namespace ColorVision.UI
                 bool hasAdvancedProperties = advancedOptions != null && categoryGroups.Values.SelectMany(properties => properties).Any(property => advancedOptions.IsAdvancedProperty(property));
                 bool hasStandardProperties = advancedOptions == null || categoryGroups.Values.SelectMany(properties => properties).Any(property => !advancedOptions.IsAdvancedProperty(property));
                 bool advancedToggleAdded = false;
+                bool categoryHeaderAdded = false;
 
                 foreach (var categoryGroup in categoryGroups)
                 {
                     var visibleProperties = advancedOptions?.ShowAdvancedProperties == false
                         ? categoryGroup.Value.Where(property => !advancedOptions.IsAdvancedProperty(property)).ToList()
                         : categoryGroup.Value;
-                    bool addAdvancedToggle = showCategoryHeader && hasAdvancedProperties && !advancedToggleAdded && (visibleProperties.Count > 0 || !hasStandardProperties);
+                    bool addAdvancedToggle = showCategoryHeader
+                        && advancedOptions?.ShowAdvancedToggleInCategoryHeader != false
+                        && hasAdvancedProperties
+                        && !advancedToggleAdded
+                        && (visibleProperties.Count > 0 || !hasStandardProperties);
                     if (visibleProperties.Count == 0 && !addAdvancedToggle)
                         continue;
 
@@ -773,8 +778,13 @@ namespace ColorVision.UI
 
                     if (showCategoryHeader)
                     {
-                        var categoryHeader = CreateCategoryHeader(categoryGroup.Key, addAdvancedToggle ? advancedOptions : null, advancedChanged);
-                        stackPanel.Children.Add(categoryHeader);
+                        bool showCurrentCategoryHeader = categoryHeaderAdded || advancedOptions?.ShowFirstCategoryHeader != false;
+                        if (showCurrentCategoryHeader)
+                        {
+                            var categoryHeader = CreateCategoryHeader(categoryGroup.Key, addAdvancedToggle ? advancedOptions : null, advancedChanged);
+                            stackPanel.Children.Add(categoryHeader);
+                        }
+                        categoryHeaderAdded = true;
                         advancedToggleAdded |= addAdvancedToggle;
                     }
 

@@ -29,6 +29,10 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         public static void SaveCapture(LocalFlowFrame frame, string basePath, string deviceCode)
         {
             using LocalFlowFrameLease lease = frame.Acquire();
+            if (lease.Metadata.IsMirrorReady && !lease.IsFlipApplied)
+            {
+                throw new InvalidOperationException("The primary frame cannot be saved before its mirror operation completes.");
+            }
             string root = string.IsNullOrWhiteSpace(basePath)
                 ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "ColorVision")
                 : basePath;
@@ -40,7 +44,15 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             if (lease.HasRaw)
             {
                 string rawPath = Path.Combine(directory, stem + ".cvraw");
-                CVCIEFile rawFile = BuildFileInfo(lease, CVType.Raw, lease.CopyRawToArray(), string.Empty, lease.Metadata.SourceBpp);
+                if (lease.IsBufferFlipFailed(LocalFrameBufferKind.CvRaw))
+                {
+                    throw new InvalidOperationException("The RAW mirror operation failed; the frame cannot be saved safely.");
+                }
+                // Copy the runtime orientation exactly. Deferred/non-primary RAW stays
+                // canonical; materializing its pending mirror only in the file would
+                // lose orientation metadata and break spatial calibration after reload.
+                byte[] rawData = lease.CopyRawToArray();
+                CVCIEFile rawFile = BuildFileInfo(lease, CVType.Raw, rawData, string.Empty, lease.Metadata.SourceBpp);
                 if (!CVFileUtil.WriteCVRaw(rawPath, rawFile)) throw new IOException($"保存 CVRAW 失败：{rawPath}");
                 frame.CvRawFilePath = rawPath;
             }
@@ -48,7 +60,16 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             if (lease.HasCie)
             {
                 string ciePath = Path.Combine(directory, stem + ".cvcie");
-                CVCIEFile cieFile = BuildFileInfo(lease, CVType.CIE, lease.CopyCieToArray(), Path.GetFileName(frame.CvRawFilePath), lease.Metadata.CieBpp);
+                if (lease.IsBufferFlipFailed(LocalFrameBufferKind.CvCie))
+                {
+                    throw new InvalidOperationException("The CIE mirror operation failed; the frame cannot be saved safely.");
+                }
+                if (!lease.IsCieFlipApplied)
+                {
+                    throw new InvalidOperationException("The CIE buffer cannot be saved before its mirror operation completes.");
+                }
+                byte[] cieData = lease.CopyCieToArray();
+                CVCIEFile cieFile = BuildFileInfo(lease, CVType.CIE, cieData, Path.GetFileName(frame.CvRawFilePath), lease.Metadata.CieBpp);
                 if (!CVFileUtil.WriteCVCIE(ciePath, cieFile)) throw new IOException($"保存 CVCIE 失败：{ciePath}");
                 frame.CvCieFilePath = ciePath;
             }

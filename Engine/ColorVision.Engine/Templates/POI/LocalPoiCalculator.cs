@@ -6,6 +6,7 @@ using ColorVision.Engine.Templates.POI.POIGenCali;
 using ColorVision.Engine.Templates.POI.POIRevise;
 using ColorVision.ImageEditor;
 using ColorVision.Common.Utilities;
+using ColorVision.Core;
 using CVCommCore.CVAlgorithm;
 using cvColorVision;
 using MQTTMessageLib.Algorithm;
@@ -36,6 +37,8 @@ namespace ColorVision.Engine.Templates.POI
 
     internal static class LocalPoiCalculator
     {
+        private const string UseLegacyLocalPoiSwitch = "ColorVision.UseLegacyLocalPoi";
+
         public static ViewResultAlgType ResolveResultType(int channels)
         {
             return channels == 1 ? ViewResultAlgType.POI_Y : ViewResultAlgType.POI_XYZ;
@@ -43,20 +46,18 @@ namespace ColorVision.Engine.Templates.POI
 
         public static LocalPoiResultSet Calculate(LocalFlowFrameLease frame, PoiParam poi, PoiFilterParam? filter, PoiReviseParam? revise)
         {
-            if (!frame.HasCie) throw new InvalidOperationException("当前内存帧没有 CIE 数据，无法计算 POI。");
+            ValidateCieFrame(frame);
             if (poi.PoiPoints.Count == 0 && poi.Id > 0) PoiParam.LoadPoiDetailFromDB(poi);
             if (poi.PoiPoints.Count == 0) throw new InvalidOperationException($"POI 模板没有关注点：{poi.Name}");
 
+            if (!UseLegacyLocalPoi())
+            {
+                return CalculateBatch(frame, poi, filter, revise);
+            }
+
             if (CanUseBatchFastPath(filter, revise))
             {
-                try
-                {
-                    return CalculateBatch(frame, poi);
-                }
-                catch (EntryPointNotFoundException)
-                {
-                    // Keep compatibility with older cvCamera.dll deployments.
-                }
+                return CalculateLegacyBatch(frame, poi);
             }
 
             IntPtr convertHandle = Tool.GenerateRandomIntPtr();
@@ -138,7 +139,71 @@ namespace ColorVision.Engine.Templates.POI
             };
         }
 
-        private static LocalPoiResultSet CalculateBatch(LocalFlowFrameLease frame, PoiParam poi)
+        private static LocalPoiResultSet CalculateBatch(
+            LocalFlowFrameLease frame,
+            PoiParam poi,
+            PoiFilterParam? filter,
+            PoiReviseParam? revise)
+        {
+            PoiRequestV1[] requests = new PoiRequestV1[poi.PoiPoints.Count];
+            (int X, int Y, int Width, int Height, POIPointTypes Type)[] definitions =
+                new (int, int, int, int, POIPointTypes)[poi.PoiPoints.Count];
+            for (int index = 0; index < poi.PoiPoints.Count; index++)
+            {
+                PoiPoint point = poi.PoiPoints[index];
+                definitions[index] = ResolvePoint(point);
+                (int x, int y, int width, int height, POIPointTypes pointType) = definitions[index];
+                ValidateRegion(x, y, width, height, pointType, point.Name);
+                requests[index] = new PoiRequestV1
+                {
+                    Type = pointType switch
+                    {
+                        POIPointTypes.SolidPoint => 0,
+                        POIPointTypes.Circle => 1,
+                        POIPointTypes.Rect => 2,
+                        _ => throw new NotSupportedException($"Unsupported POI type: {pointType}")
+                    },
+                    X = x,
+                    Y = y,
+                    Width = width,
+                    Height = height
+                };
+            }
+
+            PoiResultV1[] nativeResults = new PoiResultV1[requests.Length];
+            ulong cieFloatCount = checked((ulong)frame.CieLength / sizeof(float));
+            PoiOptionsV2 options = CreateOptions(filter, revise, frame.Metadata.Channels);
+            int success = OpenCVCalibration.M_CalculatePoiBatchV2(frame.Metadata.Width, frame.Metadata.Height,
+                frame.Metadata.CieBpp, frame.Metadata.Channels, frame.CiePointer, cieFloatCount,
+                requests, checked((uint)requests.Length), in options, nativeResults);
+            if (success != OpenCVCalibration.PoiOk) throw new InvalidOperationException($"Batch POI calculation failed: {success}.");
+
+            LocalPoiResultSet result = new() { FrameId = frame.FrameId.ToString("N"), TemplateName = poi.Name };
+            for (int index = 0; index < requests.Length; index++)
+            {
+                PoiPoint point = poi.PoiPoints[index];
+                (int x, int y, int width, int height, POIPointTypes pointType) = definitions[index];
+                PoiResultV1 native = nativeResults[index];
+                IPOIResultData value = frame.Metadata.Channels == 1
+                    ? new POIResultDataCIEY(native.Y)
+                    : new POIResultDataCIExyuv(native.Cct, native.Wave, native.X, native.Y, native.Z,
+                        native.ChromaX, native.ChromaY, native.u, native.v);
+                result.Points.Add(new LocalPoiPointResult
+                {
+                    PoiId = point.Id,
+                    Name = point.Name ?? point.Id.ToString(),
+                    PointType = pointType,
+                    X = x,
+                    Y = y,
+                    Width = width,
+                    Height = height,
+                    Value = value
+                });
+            }
+            return result;
+        }
+
+        private static LocalPoiResultSet CalculateLegacyBatch(LocalFlowFrameLease frame, PoiParam poi)
         {
             ConvertXYZ.PoiRequestV1[] requests = new ConvertXYZ.PoiRequestV1[poi.PoiPoints.Count];
             (int X, int Y, int Width, int Height, POIPointTypes Type)[] definitions =
@@ -168,7 +233,7 @@ namespace ColorVision.Engine.Templates.POI
             ConvertXYZ.PoiResultV1[] nativeResults = new ConvertXYZ.PoiResultV1[requests.Length];
             int success = ConvertXYZ.CM_CalculatePoiBatchV1(frame.Metadata.Width, frame.Metadata.Height,
                 frame.Metadata.CieBpp, frame.Metadata.Channels, frame.CiePointer, requests, requests.Length, nativeResults);
-            if (success == 0) throw new InvalidOperationException("Batch POI calculation failed.");
+            if (success == 0) throw new InvalidOperationException("Legacy batch POI calculation failed.");
 
             LocalPoiResultSet result = new() { FrameId = frame.FrameId.ToString("N"), TemplateName = poi.Name };
             for (int index = 0; index < requests.Length; index++)
@@ -193,6 +258,89 @@ namespace ColorVision.Engine.Templates.POI
                 });
             }
             return result;
+        }
+
+        private static bool UseLegacyLocalPoi()
+        {
+            return AppContext.TryGetSwitch(UseLegacyLocalPoiSwitch, out bool enabled) && enabled;
+        }
+
+        private static void ValidateCieFrame(LocalFlowFrameLease frame)
+        {
+            ArgumentNullException.ThrowIfNull(frame);
+            if (!frame.HasCie || frame.CiePointer == IntPtr.Zero)
+            {
+                throw new InvalidOperationException("当前内存帧没有 CIE 数据，无法计算 POI。");
+            }
+            if (!frame.IsCieFlipApplied)
+            {
+                throw new InvalidOperationException("The CIE mirror operation must complete before POI calculation.");
+            }
+            if (frame.Metadata.Width <= 0 || frame.Metadata.Height <= 0)
+            {
+                throw new InvalidOperationException("当前 CIE 图像尺寸无效。");
+            }
+            if (frame.Metadata.CieBpp != 32)
+            {
+                throw new NotSupportedException($"本地 POI 仅支持 32 位浮点 CIE，当前位深：{frame.Metadata.CieBpp}。");
+            }
+            if (frame.Metadata.Channels is not (1 or 3))
+            {
+                throw new NotSupportedException($"本地 POI 仅支持单通道或三通道 CIE，当前通道数：{frame.Metadata.Channels}。");
+            }
+
+            long expectedLength = checked((long)frame.Metadata.Width * frame.Metadata.Height
+                * frame.Metadata.Channels * sizeof(float));
+            if (frame.CieLength < expectedLength || frame.CieLength % sizeof(float) != 0)
+            {
+                throw new InvalidOperationException($"CIE 内存长度无效：至少需要 {expectedLength} 字节，实际 {frame.CieLength} 字节。");
+            }
+        }
+
+        private static PoiOptionsV2 CreateOptions(PoiFilterParam? filter, PoiReviseParam? revise, int channels)
+        {
+            PoiOptionsV2 options = PoiOptionsV2.Create();
+            if (filter != null)
+            {
+                options.FilterMode = filter.Enable ? 1 : filter.XYZEnable ? 2 : filter.NoAreaEnable ? 3 : 0;
+                options.XyzChannel = channels == 1 ? 0 : filter.XYZType is >= 0 and <= 2 ? filter.XYZType : 1;
+                options.Threshold = filter.Threshold;
+                options.MaxPercent = filter.MaxPercent;
+                if (options.FilterMode != 0 && filter.ThresholdUsePercent)
+                {
+                    options.Flags |= PoiOptionsFlagsV2.PercentThreshold;
+                }
+            }
+
+            (bool enabled, float scaleX, float scaleY, float scaleZ) = ResolveMnp(revise);
+            if (!enabled)
+            {
+                return options;
+            }
+
+            options.Flags |= PoiOptionsFlagsV2.ApplyMnp;
+            options.ScaleX = scaleX;
+            options.ScaleY = scaleY;
+            options.ScaleZ = scaleZ;
+            return options;
+        }
+
+        private static (bool Enabled, float ScaleX, float ScaleY, float ScaleZ) ResolveMnp(PoiReviseParam? revise)
+        {
+            if (revise == null || revise.GenCalibrationType == GenCalibrationType.None)
+            {
+                return (false, 1, 1, 1);
+            }
+
+            return revise.GenCalibrationType switch
+            {
+                GenCalibrationType.ChromaOnly when revise.N == 0
+                    => throw new InvalidOperationException("POI 色度修正参数 N 不能为 0。"),
+                GenCalibrationType.ChromaOnly => (true, revise.M / revise.N, 1, revise.P / revise.N),
+                GenCalibrationType.BrightnessOnly => (true, revise.N, revise.N, revise.N),
+                GenCalibrationType.BrightnessAndChroma => (true, revise.M, revise.N, revise.P),
+                _ => throw new NotSupportedException($"不支持的 POI 修正类型：{revise.GenCalibrationType}")
+            };
         }
 
         private static bool CanUseBatchFastPath(PoiFilterParam? filter, PoiReviseParam? revise)
@@ -249,19 +397,29 @@ namespace ColorVision.Engine.Templates.POI
 
         private static void ApplyFilter(IntPtr handle, PoiFilterParam? filter)
         {
-            _ = ConvertXYZ.CM_SetPercentFilter(handle, filter?.ThresholdUsePercent == true, filter?.MaxPercent ?? 0.2f);
-            _ = ConvertXYZ.CM_SetFilter(handle, filter?.Enable == true, filter?.Threshold ?? 0);
-            _ = ConvertXYZ.CM_SetFilterNoArea(handle, filter?.NoAreaEnable == true, filter?.Threshold ?? 0);
-            _ = ConvertXYZ.CM_SetFilterXYZ(handle, filter?.XYZEnable == true, filter?.XYZType ?? 0, filter?.Threshold ?? 0);
+            if (ConvertXYZ.CM_SetPercentFilter(handle, filter?.ThresholdUsePercent == true, filter?.MaxPercent ?? 0.2f) == 0)
+            {
+                throw new InvalidOperationException("设置旧版 POI 百分比过滤失败。");
+            }
+            if (filter == null) return;
+
+            int result = filter.Enable
+                ? ConvertXYZ.CM_SetFilter(handle, true, filter.Threshold)
+                : filter.XYZEnable
+                    ? ConvertXYZ.CM_SetFilterXYZ(handle, true, filter.XYZType, filter.Threshold)
+                    : filter.NoAreaEnable
+                        ? ConvertXYZ.CM_SetFilterNoArea(handle, true, filter.Threshold)
+                        : 1;
+            if (result == 0) throw new InvalidOperationException("设置旧版 POI 过滤模式失败。");
         }
 
         private static void ApplyRevise(IntPtr handle, PoiReviseParam? revise)
         {
-            bool enabled = revise != null && revise.GenCalibrationType != GenCalibrationType.None;
-            float m = revise?.M ?? 1;
-            float n = revise?.N ?? 1;
-            float p = revise?.P ?? 1;
-            _ = ConvertXYZ.CM_SetBymnp(handle, enabled, m, n, p);
+            (bool enabled, float scaleX, float scaleY, float scaleZ) = ResolveMnp(revise);
+            if (ConvertXYZ.CM_SetBymnp(handle, enabled, scaleX, scaleY, scaleZ) == 0)
+            {
+                throw new InvalidOperationException("设置旧版 POI MNP 修正失败。");
+            }
         }
 
         private static void ValidateRegion(int x, int y, int width, int height, POIPointTypes type, string name)

@@ -27,5 +27,17 @@ namespace ColorVision.UI
         /// Gets or sets whether categories are rendered directly in the editor instead of inside card borders.
         /// </summary>
         public bool UseIntegratedCategoryLayout { get; set; } = true;
+
+        /// <summary>
+        /// Gets or sets whether the first rendered category header is visible.
+        /// An owning inspector can provide this header itself.
+        /// </summary>
+        public bool ShowFirstCategoryHeader { get; set; } = true;
+
+        /// <summary>
+        /// Gets or sets whether the advanced toggle is rendered in a category header.
+        /// An owning inspector can render and control the toggle itself.
+        /// </summary>
+        public bool ShowAdvancedToggleInCategoryHeader { get; set; } = true;
     }
 }

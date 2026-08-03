@@ -1,6 +1,5 @@
 #pragma warning disable CA1707
 using ColorVision.Engine.PropertyEditor;
-using ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.POI.BuildPoi;
 using ColorVision.Engine.FlowProcessing.Editor.NodeConfiguration;
@@ -85,36 +84,6 @@ public class NodeConfiguratorBindingTests
                 Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.DataBind);
                 Assert.Equal(-1, comboBox.SelectedIndex);
                 Assert.Equal(string.Empty, node.Title);
-
-                const string cameraTemplateName = "UnitTest.Camera.Template";
-                var cameraTemplate = new TemplateModel<CameraRunParam>(cameraTemplateName, new CameraRunParam { Name = cameraTemplateName });
-                TemplateCameraRunParam.Params.Add(cameraTemplate);
-                try
-                {
-                    var localCameraNode = new LocalCameraNode { CamTempName = cameraTemplateName };
-                    Assert.True(localCameraNode.AutoConnect);
-                    FlowNodePropertyEditorRegistration.EnsureRegistered();
-                    var cameraTemplateProperty = typeof(LocalCameraNode).GetProperty(nameof(LocalCameraNode.CamTempName));
-                    Assert.NotNull(cameraTemplateProperty);
-
-                    DockPanel cameraTemplateEditor = new FlowCameraRunTemplateEditor().GenProperties(cameraTemplateProperty, localCameraNode);
-                    var cameraTemplateCombo = Assert.Single(FindVisualChildren<HandyControl.Controls.ComboBox>(cameraTemplateEditor));
-                    Assert.True(cameraTemplateCombo.IsEditable);
-                    Assert.True(HandyControl.Controls.InfoElement.GetShowClearButton(cameraTemplateCombo));
-                    Assert.Equal(cameraTemplateName, ((TemplateBase)cameraTemplateCombo.SelectedItem).Key);
-
-                    Assert.DoesNotContain(
-                        FindVisualChildren<Button>(cameraTemplateEditor),
-                        button => button.Content is TextBlock { Text: "\uE711" });
-                    ControlCommands.Clear.Execute(null, cameraTemplateCombo);
-
-                    Assert.Equal(-1, cameraTemplateCombo.SelectedIndex);
-                    Assert.Equal(string.Empty, localCameraNode.CamTempName);
-                }
-                finally
-                {
-                    TemplateCameraRunParam.Params.Remove(cameraTemplate);
-                }
 
                 const string buildPoiTemplateName = "UnitTest.BuildPoi.Template";
                 var buildPoiTemplate = new TemplateModel<ParamBuildPoi>(

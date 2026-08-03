@@ -191,6 +191,10 @@
     <ClInclude Include="..\include\custom_structs.h" />
     <ClInclude Include="..\include\opencv_media_export.h" />
     <ClInclude Include="..\include\video_export.h" />
+    <ClInclude Include="algorithm\calibration\calibration_context.h" />
+    <ClInclude Include="algorithm\calibration\calibration_core.h" />
+    <ClInclude Include="algorithm\calibration\calibration_geometric.h" />
+    <ClInclude Include="algorithm\poi\poi_batch.h" />
     <ClInclude Include="algorithm\binocular\binocular_fusion.h" />
     <ClInclude Include="algorithm\distortion\distortion_p9.h" />
     <ClInclude Include="algorithm\ghost\ghost_detection.h" />
@@ -207,6 +211,23 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="algorithm.cpp" />
+    <ClCompile Include="algorithm\calibration\calibration_basic.cpp">
+      <FloatingPointModel>Precise</FloatingPointModel>
+    </ClCompile>
+    <ClCompile Include="algorithm\calibration\calibration_color.cpp">
+      <FloatingPointModel>Precise</FloatingPointModel>
+    </ClCompile>
+    <ClCompile Include="algorithm\calibration\calibration_context.cpp">
+      <!-- The cache/state implementation exceeds legacy BSCMAKE's per-SBR
+           record limit in VS 18. This affects IDE browse data only. -->
+      <BrowseInformation>false</BrowseInformation>
+    </ClCompile>
+    <ClCompile Include="algorithm\calibration\calibration_geometric.cpp">
+      <FloatingPointModel>Precise</FloatingPointModel>
+    </ClCompile>
+    <ClCompile Include="algorithm\poi\poi_batch.cpp">
+      <FloatingPointModel>Precise</FloatingPointModel>
+    </ClCompile>
     <ClCompile Include="algorithm\binocular\binocular_fusion.cpp">
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>
@@ -224,6 +245,8 @@
     <ClCompile Include="algorithm\sfr\sfr_slanted.cpp" />
     <ClCompile Include="algorithm\surface_defect\surface_defect.cpp" />
     <ClCompile Include="common.cpp" />
+    <ClCompile Include="exports\calibration_export.cpp" />
+    <ClCompile Include="exports\poi_export.cpp" />
     <ClCompile Include="exports\p2_export.cpp" />
     <ClCompile Include="exports\sfr_export.cpp" />
     <ClCompile Include="native_log.cpp" />

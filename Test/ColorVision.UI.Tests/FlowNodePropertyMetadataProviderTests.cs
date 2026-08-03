@@ -12,5 +12,7 @@ public class FlowNodePropertyMetadataProviderTests
 
         Assert.NotNull(property);
         Assert.True(FlowNodePropertyMetadataProvider.AdvancedOptions.IsAdvancedProperty(property));
+        Assert.False(FlowNodePropertyMetadataProvider.AdvancedOptions.ShowFirstCategoryHeader);
+        Assert.False(FlowNodePropertyMetadataProvider.AdvancedOptions.ShowAdvancedToggleInCategoryHeader);
     }
 }

@@ -1,3 +1,4 @@
+using ColorVision.Core;
 using cvColorVision;
 using log4net;
 using System;
@@ -17,9 +18,12 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
     internal sealed class LocalCalibrationCacheManager : IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(LocalCalibrationCacheManager));
-        private static readonly SemaphoreSlim NativeGate = new(1, 1);
-
+        private static readonly SemaphoreSlim LegacyNativeGate = new(1, 1);
+        private static readonly ReaderWriterLockSlim SharedCacheLifecycleGate = new(LockRecursionPolicy.NoRecursion);
         private readonly string deviceCode;
+        private readonly bool useLegacyCalibration;
+        private readonly SemaphoreSlim openCvGate = new(1, 1);
+        private readonly OpenCvLocalCalibrationCache openCvCache = new();
         private readonly Dictionary<string, CachedCalibrationFile> loadedFiles = new(StringComparer.OrdinalIgnoreCase);
         private IntPtr contextToken;
         private IntPtr lineArityHandle;
@@ -30,7 +34,27 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         public LocalCalibrationCacheManager(string deviceCode)
         {
             this.deviceCode = deviceCode;
+            useLegacyCalibration = AppContext.TryGetSwitch("ColorVision.UseLegacyLocalCalibration", out bool enabled) && enabled;
         }
+
+        private SemaphoreSlim NativeGate => useLegacyCalibration ? LegacyNativeGate : openCvGate;
+
+        public string BackendName => useLegacyCalibration ? "cvCamera" : "opencv_helper";
+
+        /// <summary>
+        /// Returns a coherent snapshot of the process-wide immutable native
+        /// calibration assets. Per-device contexts are reported as owners.
+        /// </summary>
+        public static CalibrationSharedCacheSnapshot GetEntries()
+            => OpenCVCalibration.GetCalibrationSharedCacheEntries();
+
+        /// <summary>
+        /// Drops the native cache's process-wide strong references. Callers
+        /// that intend to release memory should first release every device's
+        /// context LRU so those contexts no longer own the assets.
+        /// </summary>
+        public static CalibrationSharedCacheReleaseResult ClearShared()
+            => OpenCVCalibration.ClearCalibrationSharedCache();
 
         public int CachedItemCount
         {
@@ -39,6 +63,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 NativeGate.Wait();
                 try
                 {
+                    if (!useLegacyCalibration) return openCvCache.CachedItemCount;
                     return loadedFiles.Count + (loadedLineArity.HasValue ? 1 : 0);
                 }
                 finally
@@ -59,10 +84,15 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             ArgumentNullException.ThrowIfNull(exposure);
             if (rawPointer == IntPtr.Zero) throw new ArgumentException("RAW 指针为空。", nameof(rawPointer));
 
-            NativeGate.Wait();
+            SemaphoreSlim executionGate = EnterExecution();
             try
             {
                 ObjectDisposedException.ThrowIf(disposed, this);
+                if (!useLegacyCalibration)
+                {
+                    openCvCache.Execute(layout, calibrationFiles, rawPointer, ciePointer, exposure);
+                    return;
+                }
                 CachedCalibrationFile[] files = calibrationFiles.Select(CreateCachedFile).ToArray();
                 DeviceCameraCalibrationFile[] colorFiles = calibrationFiles.Where(file => IsColorCalibration(file.CalibrationType)).ToArray();
                 if (colorFiles.Length > 1)
@@ -126,7 +156,70 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             }
             finally
             {
-                NativeGate.Release();
+                ExitExecution(executionGate);
+            }
+        }
+
+        public void ExecuteFromSource(
+            LocalCalibrationLayout layout,
+            IReadOnlyList<DeviceCameraCalibrationFile> calibrationFiles,
+            IntPtr sourceRawPointer,
+            IntPtr correctedRawPointer,
+            IntPtr ciePointer,
+            float[] exposure)
+        {
+            ArgumentNullException.ThrowIfNull(calibrationFiles);
+            ArgumentNullException.ThrowIfNull(exposure);
+            if (sourceRawPointer == IntPtr.Zero) throw new ArgumentException("源 RAW 指针为空。", nameof(sourceRawPointer));
+
+            bool hasColor = calibrationFiles.Any(file => IsColorCalibration(file.CalibrationType));
+            bool hasBasic = calibrationFiles.Any(file => !IsColorCalibration(file.CalibrationType));
+            if (!hasColor && correctedRawPointer == IntPtr.Zero)
+            {
+                throw new ArgumentException("不包含颜色转换时，校正 RAW 输出指针不能为空。", nameof(correctedRawPointer));
+            }
+
+            if (!useLegacyCalibration)
+            {
+                SemaphoreSlim executionGate = EnterExecution();
+                try
+                {
+                    ObjectDisposedException.ThrowIf(disposed, this);
+                    openCvCache.ExecuteFromSource(
+                        layout, calibrationFiles, sourceRawPointer, correctedRawPointer, ciePointer, exposure);
+                    return;
+                }
+                finally
+                {
+                    ExitExecution(executionGate);
+                }
+            }
+
+            // The rollback backend has only an in-place ABI. Color-only
+            // conversion is read-only; basic correction still needs a private
+            // materialized RAW when the caller does not request corrected RAW.
+            if (!hasBasic)
+            {
+                Execute(layout, calibrationFiles, sourceRawPointer, ciePointer, exposure);
+                return;
+            }
+
+            int rawLength = checked((layout.Bpp / 8) * layout.Width * layout.Height * layout.Channels);
+            IntPtr workingRaw = correctedRawPointer;
+            bool ownsWorkingRaw = workingRaw == IntPtr.Zero;
+            if (ownsWorkingRaw)
+            {
+                workingRaw = Marshal.AllocHGlobal(rawLength);
+                if (workingRaw == IntPtr.Zero) throw new OutOfMemoryException("分配旧版校正 RAW 临时缓冲区失败。");
+            }
+            try
+            {
+                CopyMemory(sourceRawPointer, workingRaw, rawLength);
+                Execute(layout, calibrationFiles, workingRaw, ciePointer, exposure);
+            }
+            finally
+            {
+                if (ownsWorkingRaw) Marshal.FreeHGlobal(workingRaw);
             }
         }
 
@@ -136,6 +229,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             try
             {
                 ObjectDisposedException.ThrowIf(disposed, this);
+                if (!useLegacyCalibration) return openCvCache.Release();
                 return ReleaseNativeContextsCore();
             }
             finally
@@ -146,6 +240,25 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
 
         public Task<int> ReleaseCacheAsync() => Task.Run(ReleaseCache);
 
+        /// <summary>
+        /// Prevents new opencv_helper executions while a process-wide cache
+        /// maintenance operation waits for and releases every device context.
+        /// Existing executions use shared/read access and finish normally.
+        /// </summary>
+        internal static T RunWithExclusiveSharedCacheAccess<T>(Func<T> action)
+        {
+            ArgumentNullException.ThrowIfNull(action);
+            SharedCacheLifecycleGate.EnterWriteLock();
+            try
+            {
+                return action();
+            }
+            finally
+            {
+                SharedCacheLifecycleGate.ExitWriteLock();
+            }
+        }
+
         public void Dispose()
         {
             NativeGate.Wait();
@@ -155,7 +268,14 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 disposed = true;
                 try
                 {
-                    ReleaseNativeContextsCore();
+                    if (useLegacyCalibration)
+                    {
+                        ReleaseNativeContextsCore();
+                    }
+                    else
+                    {
+                        openCvCache.Dispose();
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -165,6 +285,40 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             finally
             {
                 NativeGate.Release();
+            }
+        }
+
+        private SemaphoreSlim EnterExecution()
+        {
+            bool sharedCacheReadLockHeld = false;
+            if (!useLegacyCalibration)
+            {
+                SharedCacheLifecycleGate.EnterReadLock();
+                sharedCacheReadLockHeld = true;
+            }
+
+            try
+            {
+                SemaphoreSlim gate = NativeGate;
+                gate.Wait();
+                return gate;
+            }
+            catch
+            {
+                if (sharedCacheReadLockHeld) SharedCacheLifecycleGate.ExitReadLock();
+                throw;
+            }
+        }
+
+        private void ExitExecution(SemaphoreSlim executionGate)
+        {
+            try
+            {
+                executionGate.Release();
+            }
+            finally
+            {
+                if (!useLegacyCalibration) SharedCacheLifecycleGate.ExitReadLock();
             }
         }
 
@@ -265,28 +419,31 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             contextToken = token;
         }
 
-        private bool HasChangedCachedFile(IEnumerable<CachedCalibrationFile> files)
+        private bool HasChangedCachedFile(IReadOnlyList<CachedCalibrationFile> files)
         {
+            int requestedNormalCount = 0;
+            CachedCalibrationFile? requestedLineArity = null;
             foreach (CachedCalibrationFile file in files)
             {
                 if (file.CalibrationType == CalibrationType.LineArity)
                 {
-                    if (loadedLineArity.HasValue
-                        && (!string.Equals(loadedLineArity.Value.CacheKey, file.CacheKey, StringComparison.OrdinalIgnoreCase)
-                            || loadedLineArity.Value.Fingerprint != file.Fingerprint))
-                    {
-                        return true;
-                    }
+                    requestedLineArity = file;
                     continue;
                 }
 
-                if (loadedFiles.TryGetValue(file.CacheKey, out CachedCalibrationFile cached)
-                    && cached.Fingerprint != file.Fingerprint)
+                requestedNormalCount++;
+                if (!loadedFiles.TryGetValue(file.CacheKey, out CachedCalibrationFile cached)
+                    || cached.Fingerprint != file.Fingerprint)
                 {
                     return true;
                 }
             }
-            return false;
+
+            if (requestedNormalCount != loadedFiles.Count) return true;
+            if (requestedLineArity.HasValue != loadedLineArity.HasValue) return true;
+            return requestedLineArity.HasValue
+                && (!string.Equals(requestedLineArity.Value.CacheKey, loadedLineArity!.Value.CacheKey, StringComparison.OrdinalIgnoreCase)
+                    || requestedLineArity.Value.Fingerprint != loadedLineArity.Value.Fingerprint);
         }
 
         private int ReleaseNativeContextsCore()
@@ -378,6 +535,11 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 or CalibrationType.LumOneColor
                 or CalibrationType.LumFourColor
                 or CalibrationType.LumMultiColor;
+
+        private static unsafe void CopyMemory(IntPtr source, IntPtr destination, int length)
+        {
+            Buffer.MemoryCopy(source.ToPointer(), destination.ToPointer(), length, length);
+        }
 
         private readonly record struct CachedCalibrationFile(
             CalibrationType CalibrationType,
