@@ -238,6 +238,15 @@ namespace ColorVision.Engine.FlowProcessing.Editor
             }
             else
             {
+                UniformGrid commandGrid = new()
+                {
+                    HorizontalAlignment = HorizontalAlignment.Stretch,
+                    Margin = new Thickness(0, 0, 0, 4)
+                };
+                PropertyEditorHelper.GenCommand(activeNode!, commandGrid, compact: true);
+                if (commandGrid.Children.Count > 0)
+                    signPanel.Children.Add(commandGrid);
+
                 var configurator = NodeConfiguratorRegistry.GetConfigurator(activeNode!.GetType());
                 if (configurator != null)
                 {

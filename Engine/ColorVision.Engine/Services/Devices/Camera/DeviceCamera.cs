@@ -2,6 +2,7 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
 using ColorVision.Engine.FlowProcessing;
+using ColorVision.Engine.FlowProcessing.Nodes;
 using ColorVision.Engine.Services.Logging;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Camera.Configs;
@@ -105,21 +106,28 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
 
             MenuItem menuItem = new MenuItem() { Header = "Local" };
-            menuItem.Click += (s, e) =>
-            {
-                if (!File.Exists($"lincense\\{Config.CameraCode}.lic"))
-                {
-                    LicenseManagerViewModel licenseManagerViewModel  = new LicenseManagerViewModel();
-                    licenseManagerViewModel.SaveToLincense();
-                }
-
-                CameraLocalWindow cameraLocalWindow = new CameraLocalWindow(this);
-                cameraLocalWindow.Show();
-            };
+            menuItem.Click += (s, e) => OpenLocalCameraWindow();
 
             ContextMenu.Items.Add(menuItem);
             ContextMenu.Items.Add(new MenuItem() { Header = "本地校正缓存管理", Command = ReleaseLocalCalibrationCacheCommand });
 
+        }
+
+        internal void OpenLocalCameraWindow(LocalCameraNode? sourceNode = null)
+        {
+            if (!File.Exists($"lincense\\{Config.CameraCode}.lic"))
+            {
+                LicenseManagerViewModel licenseManagerViewModel = new();
+                licenseManagerViewModel.SaveToLincense();
+            }
+
+            CameraLocalWindow cameraLocalWindow = new(this, sourceNode);
+            Window? owner = Application.Current.GetActiveWindow();
+            if (owner != null && owner.IsVisible)
+            {
+                cameraLocalWindow.Owner = owner;
+            }
+            cameraLocalWindow.Show();
         }
 
         [CommandDisplay("CameraLog")]

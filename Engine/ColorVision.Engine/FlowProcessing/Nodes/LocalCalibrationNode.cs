@@ -1,8 +1,10 @@
+using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Database;
+using ColorVision.Themes.Controls;
 using FlowEngineLib.Base;
 using FlowEngineLib.PropertyEditor;
 using MQTTMessageLib.Camera;
@@ -91,9 +93,15 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         [STNodeProperty("保存校正文件", "默认关闭；基础校正保存 CVRAW，包含亮度/颜色校正时保存 CVCIE", true)]
         public bool SaveFiles { get => saveFiles; set { saveFiles = value; OnPropertyChanged(); } }
 
+        [JsonIgnore]
+        [CommandDisplay("校正缓存", Order = -100)]
+        [Description("查看已缓存的校正文件、内存占用，并可释放本机校正缓存")]
+        public RelayCommand OpenLocalCalibrationCacheManagerCommand { get; }
+
         protected LocalCalibrationNodeBase(string title, string nodeType, string operatorName, int timeoutMs, params string[] inputNames)
             : base(title, nodeType, operatorName, timeoutMs, inputNames)
         {
+            OpenLocalCalibrationCacheManagerCommand = new RelayCommand(_ => LocalCalibrationCacheManagerWindow.OpenWindow());
             SelectFirstAvailableDevice<DeviceCamera>();
         }
 

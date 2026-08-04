@@ -1,3 +1,4 @@
+using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Local;
@@ -5,6 +6,7 @@ using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
+using ColorVision.Themes.Controls;
 using cvColorVision;
 using FlowEngineLib;
 using FlowEngineLib.Algorithm;
@@ -15,6 +17,7 @@ using ST.Library.UI.NodeEditor;
 using System;
 using System.ComponentModel;
 using System.Linq;
+using System.Windows;
 
 namespace ColorVision.Engine.FlowProcessing.Nodes
 {
@@ -89,9 +92,34 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         [STNodeProperty("图像翻转", "X=上下翻转，Y=左右镜像，XY=180°（不支持 90°/270°旋转）。空间/普通校正始终先执行；有色度校正时翻转最终 CIE，否则翻转校正后的 RAW。未选择校正模板时保留方向配置，等待下游本地校正后应用；POI 使用最终方向的坐标。", true)]
         public CVImageFlipMode FlipMode { get => _FlipMode; set { _FlipMode = value; OnPropertyChanged(); } }
 
+        [JsonIgnore]
+        [CommandDisplay("相机管理", Order = -100)]
+        [Description("打开本地相机管理窗口，并与当前节点同步取图参数")]
+        public RelayCommand OpenLocalCameraManagerCommand { get; }
+
+        [JsonIgnore]
+        [CommandDisplay("校正缓存", Order = -90)]
+        [Description("查看已缓存的校正文件、内存占用，并可释放本机校正缓存")]
+        public RelayCommand OpenLocalCalibrationCacheManagerCommand { get; }
+
         public LocalCameraNode() : base("本地相机取图", "Camera", "GetData", 60000)
         {
+            OpenLocalCameraManagerCommand = new RelayCommand(_ => OpenLocalCameraManager());
+            OpenLocalCalibrationCacheManagerCommand = new RelayCommand(_ => LocalCalibrationCacheManagerWindow.OpenWindow());
             SelectFirstAvailableDevice<DeviceCamera>();
+        }
+
+        private void OpenLocalCameraManager()
+        {
+            DeviceCamera? device = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>()
+                .FirstOrDefault(camera => string.Equals(camera.Code, DeviceCode, StringComparison.Ordinal));
+            if (device == null)
+            {
+                MessageBox1.Show(Application.Current.GetActiveWindow(), $"找不到本地相机设备：{DeviceCode}", "ColorVision");
+                return;
+            }
+
+            device.OpenLocalCameraWindow(this);
         }
 
         protected override LocalNodeExecutionResult ExecuteLocal(CVStartCFC action)
