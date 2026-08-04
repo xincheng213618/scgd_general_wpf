@@ -15,14 +15,13 @@
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<!-- The VC++ default output is solution-relative when build.sln drives the build,
-		     and project-relative when this project builds opencv_helper directly. A managed
-		     build after build.sln should reuse the solution output instead of asking dotnet
-		     MSBuild to load the VC++ project. -->
+		<!-- NATIVE_BUILD_POLICY: 日常托管项目/Visual Studio 构建复用已有 DLL，仅在 DLL 缺失时加入 C++ 项目引用；
+		     build.sln 和发布流程仍负责显式构建原生项目。VC++ 输出在解决方案构建时位于仓库 x64\Release，
+		     单独构建原生项目时可能位于 Native\opencv_helper\x64\Release。 -->
 		<OpenCvHelperBinary Condition="'$(SolutionDir)' != '' and '$(SolutionDir)' != '*Undefined*'">$(SolutionDir)x64\Release\opencv_helper.dll</OpenCvHelperBinary>
 		<OpenCvHelperBinary Condition="'$(OpenCvHelperBinary)' == '' and Exists('..\..\x64\Release\opencv_helper.dll')">..\..\x64\Release\opencv_helper.dll</OpenCvHelperBinary>
 		<OpenCvHelperBinary Condition="'$(OpenCvHelperBinary)' == ''">..\..\Native\opencv_helper\x64\Release\opencv_helper.dll</OpenCvHelperBinary>
-		<UseProjectReference Condition="'$(UseProjectReference)' == '' and ('$(MSBuildRuntimeType)' == 'Full' or !Exists('$(OpenCvHelperBinary)'))">true</UseProjectReference>
+		<UseProjectReference Condition="'$(UseProjectReference)' == '' and !Exists('$(OpenCvHelperBinary)')">true</UseProjectReference>
 	</PropertyGroup>
 
 	<ItemGroup Condition="'$(UseProjectReference)'=='true'">
