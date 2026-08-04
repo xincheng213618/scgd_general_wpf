@@ -38,7 +38,6 @@ using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
 
 namespace ProjectARVRPro
 {
@@ -1575,24 +1574,21 @@ namespace ProjectARVRPro
                     log.Error(ex);
                 }
 
-                Task.Run(() =>
+                string? filePath = result.FileName;
+                _ = Application.Current.Dispatcher.BeginInvoke(async () =>
                 {
                     try
                     {
-                        string? filePath = result.FileName;
-                        _ = Application.Current.Dispatcher.BeginInvoke(() =>
+                        if (!string.IsNullOrWhiteSpace(filePath) && File.Exists(filePath))
                         {
-                            if (!string.IsNullOrWhiteSpace(filePath) && File.Exists(filePath))
-                            {
-                                ImageView.OpenImage(filePath);
-                                RenderResultImage(result);
-                                SaveImageResultIfNeeded(result);
-                            }
-                            else
-                            {
-                                ImageView.Clear();
-                            }
-                        });
+                            await OpenResultImageAsync(filePath);
+                            RenderResultImage(result);
+                            SaveImageResultIfNeeded(result);
+                        }
+                        else
+                        {
+                            ImageView.Clear();
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -1633,6 +1629,26 @@ namespace ProjectARVRPro
             }
         }
 
+        private async Task OpenResultImageAsync(string filePath)
+        {
+            string? currentPath = ImageView.Config.GetProperties<string>(ImageViewPropertyKeys.FilePath);
+            if (ImageView.ImageShow.Source != null && string.Equals(currentPath, filePath, StringComparison.Ordinal))
+                return;
+
+            TaskCompletionSource<object?> imageLoaded = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            EventHandler imageInitialized = (_, _) => imageLoaded.TrySetResult(null);
+            ImageView.ImageShow.ImageInitialized += imageInitialized;
+            try
+            {
+                ImageView.OpenImage(filePath);
+                await imageLoaded.Task.WaitAsync(TimeSpan.FromSeconds(30));
+            }
+            finally
+            {
+                ImageView.ImageShow.ImageInitialized -= imageInitialized;
+            }
+        }
+
         private void SaveImageResultIfNeeded(ProjectARVRReuslt result)
         {
             if (!IsSaveImageReuslt || _isDisposed || string.IsNullOrWhiteSpace(result.FileName)) return;
@@ -1641,7 +1657,7 @@ namespace ProjectARVRPro
             IsSaveImageReuslt = false;
             string sourceFileName = result.FileName;
             Stopwatch snapshotStopwatch = Stopwatch.StartNew();
-            BitmapSource? snapshot = ImageView.CaptureSnapshot();
+            ImageViewSnapshot? snapshot = ImageView.CaptureSnapshotForBackgroundSave();
             snapshotStopwatch.Stop();
             if (snapshot == null)
             {
@@ -1649,7 +1665,7 @@ namespace ProjectARVRPro
                 return;
             }
             log.Info(
-                $"结果截图 UI 快照完成，耗时 {snapshotStopwatch.ElapsedMilliseconds}ms。");
+                $"结果截图 UI 场景准备完成，耗时 {snapshotStopwatch.ElapsedMilliseconds}ms。");
 
             string linkPath = ViewResultManager.Config.CsvSavePath;
             bool saveByDate = ViewResultManager.Config.SaveByDate;
@@ -1668,8 +1684,14 @@ namespace ProjectARVRPro
                 requestedAt);
         }
 
+        private void ReleaseSnapshotBuffer_Click(object sender, RoutedEventArgs e)
+        {
+            ImageView.ReleaseSnapshotBuffer();
+            log.Info("结果截图缓存已释放；若正在后台使用，将在归还时释放。");
+        }
+
         private async Task SaveImageResultSnapshotAsync(
-            BitmapSource snapshot,
+            ImageViewSnapshot snapshot,
             string sourceFileName,
             string linkPath,
             bool saveByDate,
@@ -1699,19 +1721,23 @@ namespace ProjectARVRPro
 
                 string fileName = Path.GetFileNameWithoutExtension(sourceFileName);
                 string filePath = Path.Combine(linkPath, $"{fileName}_{model}result.png");
-                log.Info($"后台保存结果快照: {filePath}");
+                log.Info($"后台合成并保存结果快照: {filePath}");
                 Stopwatch saveStopwatch = Stopwatch.StartNew();
                 await ColorVision.ImageEditor.ImageView.SaveSnapshotAsync(
                     snapshot,
                     filePath).ConfigureAwait(false);
                 saveStopwatch.Stop();
                 log.Info(
-                    $"结果快照后台排队及编码写盘完成，耗时 "
+                    $"结果快照后台排队、合成及编码写盘完成，耗时 "
                     + $"{saveStopwatch.ElapsedMilliseconds}ms。");
             }
             catch (Exception ex)
             {
                 log.Error("保存结果截图失败", ex);
+            }
+            finally
+            {
+                snapshot.Dispose();
             }
         }
 

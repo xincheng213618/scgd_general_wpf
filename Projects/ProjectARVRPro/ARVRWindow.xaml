@@ -49,6 +49,7 @@
                             </Button>
                             <Button Content="SlectDb" Command="{Binding ViewResultManager.SlectSqlLiteDbCommand}" Margin="2,0,0,0"/>
                             <Button Content="数据清理" Click="OpenDatabaseCleanup_Click" Margin="2,0,0,0"/>
+                            <Button Content="释放截图缓存" Click="ReleaseSnapshotBuffer_Click" Margin="2,0,0,0"/>
                             <Button Content="CT统计" Click="OpenCycleTimeStatistics_Click" Margin="2,0,0,0"/>
                         </StackPanel>
                         <StackPanel HorizontalAlignment="Right"  Orientation="Horizontal">
