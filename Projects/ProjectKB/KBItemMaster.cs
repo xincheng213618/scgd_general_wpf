@@ -20,6 +20,10 @@ namespace ProjectKB
         public int BatchId { get => _BatchId; set { _BatchId = value; OnPropertyChanged(); } }
         private int _BatchId;
 
+        [SugarColumn(IsNullable = true)]
+        public int? ProductionSessionId { get => _ProductionSessionId; set { _ProductionSessionId = value; OnPropertyChanged(); } }
+        private int? _ProductionSessionId;
+
         public FlowStatus FlowStatus { get; set; } = FlowStatus.Ready;
 
         [SugarColumn(IsIgnore = true)]

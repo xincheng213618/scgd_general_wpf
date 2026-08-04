@@ -9,6 +9,7 @@ namespace ProjectKB
     public sealed class KbSqliteCleanupProvider : IDatabaseCleanupSourceProvider
     {
         private const string CleanupTableName = "KBItemMaster";
+        private const string SessionTableName = "KBProductionSession";
 
         public string Id => "projectkb-sqlite";
         public string DisplayName => "KB SQLite";
@@ -45,6 +46,9 @@ namespace ProjectKB
             DateTime cutoffDate = DateTime.Now.AddMonths(-keepMonths);
             using var db = CreateDbClient();
             int deletedRows = db.Deleteable<KBItemMaster>().Where(item => item.CreateTime < cutoffDate).ExecuteCommand();
+            int deletedSessions = db.Deleteable<KBProductionSession>()
+                .Where(item => item.StartTime < cutoffDate)
+                .ExecuteCommand();
             TryVacuum(db);
             RefreshKbWindowIfOpen();
 
@@ -53,6 +57,7 @@ namespace ProjectKB
                 StatusMessage = $"已保留最近 {keepMonths} 个月的 KB 数据。"
             };
             result.SummaryLines.Add($"{CleanupTableName}: 删除 {deletedRows:N0} 行");
+            result.SummaryLines.Add($"{SessionTableName}: 删除 {deletedSessions:N0} 个历史会话");
             return result;
         }
 
@@ -68,6 +73,10 @@ namespace ProjectKB
 
             using var db = CreateDbClient();
             int deletedRows = db.Deleteable<KBItemMaster>().ExecuteCommand();
+            DateTime today = DateTime.Today;
+            int deletedSessions = db.Deleteable<KBProductionSession>()
+                .Where(item => item.EndTime != null || item.StartTime < today)
+                .ExecuteCommand();
             TryResetIdentity(db);
             TryVacuum(db);
             RefreshKbWindowIfOpen();
@@ -77,6 +86,7 @@ namespace ProjectKB
                 StatusMessage = "已清空 KB SQLite 结果表。"
             };
             result.SummaryLines.Add($"{CleanupTableName}: 删除 {deletedRows:N0} 行");
+            result.SummaryLines.Add($"{SessionTableName}: 删除 {deletedSessions:N0} 个已结束会话，当前会话保留");
             return result;
         }
 

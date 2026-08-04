@@ -25,7 +25,6 @@ using ProjectKB.Modbus;
 using SqlSugar;
 using ST.Library.UI.NodeEditor;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
@@ -108,6 +107,8 @@ namespace ProjectKB
             ImageView.EditorContext.DrawEditorContext.DrawCanvas.PreviewMouseLeftButtonDown += ImageCanvas_PreviewMouseLeftButtonDown;
             InitFlow();
             EnsureTimedButtonOperations();
+            logOutput = new LogOutput("%date{HH:mm:ss} [%thread] %-5level %message%newline");
+            LogGrid.Children.Add(logOutput);
             Task.Run(async () =>
             {
                 if (ProjectKBConfig.Instance.AutoModbusConnect)
@@ -122,16 +123,12 @@ namespace ProjectKB
                 }
             });
 
-            ProjectKBConfig.Instance.PropertyChanged += ProjectKBConfig_PropertyChanged;
-            ApplyLogControlVisibility();
-
             // 初始化权限系统
             InitAuth();
 
             this.Closed += (s, e) =>
             {
                 ProjectKBConfig.Instance.SNChanged -= Instance_SNChanged;
-                ProjectKBConfig.Instance.PropertyChanged -= ProjectKBConfig_PropertyChanged;
 
                 SummaryManager.GetInstance().Save();
                 ModbusControl.GetInstance().StatusChanged -= ProjectKBWindow_StatusChanged;
@@ -231,39 +228,6 @@ namespace ProjectKB
         }
 
         #endregion
-
-        private void ProjectKBConfig_PropertyChanged(object? sender, PropertyChangedEventArgs e)
-        {
-            if (e.PropertyName == nameof(ProjectKBConfig.LogControlVisibility))
-            {
-                ApplyLogControlVisibility();
-            }
-
-        }
-
-        private void ApplyLogControlVisibility()
-        {
-            if (ProjectKBConfig.Instance.LogControlVisibility)
-            {
-                LogGrid.Visibility = Visibility.Visible;
-                if (logOutput == null)
-                {
-                    logOutput = new LogOutput("%date{HH:mm:ss} [%thread] %-5level %message%newline");
-                    LogGrid.Children.Add(logOutput);
-                }
-                return;
-            }
-
-            LogGrid.Visibility = Visibility.Collapsed;
-            if (logOutput == null)
-            {
-                return;
-            }
-
-            LogGrid.Children.Remove(logOutput);
-            logOutput.Dispose();
-            logOutput = null;
-        }
 
         private void ProjectKBWindow_StatusChanged(object? sender, EventArgs e)
         {
@@ -640,6 +604,7 @@ namespace ProjectKB
 
                 CurrentFlowResult = new KBItemMaster
                 {
+                    ProductionSessionId = KBProductionDataStore.Instance.EnsureCurrentSession(Summary, template.Key, DateTime.Now),
                     Model = template.Key,
                     SN = serialNumber,
                     Code = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff"),
@@ -1078,15 +1043,6 @@ namespace ProjectKB
 
             KBItemMaster.Exposure = "50";
 
-            Summary.ActualProduction += 1;
-            if (KBItemMaster.Result)
-            {
-                Summary.GoodProductCount += 1;
-            }
-            else
-            {
-                Summary.DefectiveProductCount += 1;
-            }
             ViewResultManager.Save(KBItemMaster);
 
             if (ViewResultManager.Config.SaveText)
@@ -1316,9 +1272,6 @@ namespace ProjectKB
 
         public void GenoutputText(KBItemMaster kmitemmaster)
         {
-            NGResult.Text = kmitemmaster.Result ? "OK" : "NG";
-            NGResult.Foreground = kmitemmaster.Result ? Brushes.Green : Brushes.Red;
-
             outputText.Background = kmitemmaster.Result ? Brushes.Lime : Brushes.Red;
             outputText.Document.Blocks.Clear(); // 清除之前的内容
 
@@ -1578,7 +1531,6 @@ namespace ProjectKB
             ImageView.Clear();
             outputText.Document.Blocks.Clear();
             outputText.SetResourceReference(Control.BackgroundProperty, "RegionBrush");
-            NGResult.Text = string.Empty;
         }
 
         private void listView1_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
@@ -1935,12 +1887,6 @@ namespace ProjectKB
             new TestWindow().Show();
         }
 
-        private void GridSplitter_DragCompleted1(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e)
-        {
-            Summary.Width = col1.ActualWidth;
-            col1.Width = GridLength.Auto;
-        }
-
         public void Dispose()
         {
             if (_isDisposed) return;
@@ -1950,7 +1896,6 @@ namespace ProjectKB
             ImageView.EditorContext.DrawEditorContext.DrawCanvas.PreviewMouseLeftButtonDown -= ImageCanvas_PreviewMouseLeftButtonDown;
             ClearKeyOverlayState();
             ProjectKBConfig.Instance.SNChanged -= Instance_SNChanged;
-            ProjectKBConfig.Instance.PropertyChanged -= ProjectKBConfig_PropertyChanged;
             ModbusControl.GetInstance().StatusChanged -= ProjectKBWindow_StatusChanged;
             if (flowControl != null)
             {
@@ -1962,6 +1907,7 @@ namespace ProjectKB
             STNodeEditorMain?.Dispose();
             timer?.Dispose();
             logOutput?.Dispose();
+            logOutput = null;
             this.DisposeTimedButtonOperations();
             GC.SuppressFinalize(this);
         }

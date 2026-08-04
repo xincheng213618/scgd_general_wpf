@@ -47,11 +47,6 @@ namespace ProjectKB
         public string MachineNO { get => _MachineNO; set { _MachineNO = value; OnPropertyChanged(); } }
         private string _MachineNO = string.Empty;
 
-        [DisplayName("是否显示总结信息")]
-        public bool IsShowSummary { get => _IsShowSummary; set { _IsShowSummary = value; OnPropertyChanged(); } }
-        private bool _IsShowSummary;
-        public double Width { get => _Width; set { _Width = value; OnPropertyChanged(); } }
-        private double _Width = 300;
         /// <summary>
         /// 目标生产
         /// </summary>
@@ -59,38 +54,6 @@ namespace ProjectKB
         public int TargetProduction { get => _TargetProduction; set { _TargetProduction = value; OnPropertyChanged(); } }
         private int _TargetProduction;
 
-        /// <summary>
-        /// 已生产
-        /// </summary>
-        [DisplayName("已生产")]
-        public int ActualProduction { get => _ActualProduction; set { _ActualProduction = value; OnPropertyChanged(); } }
-        private int _ActualProduction;
-
-        [DisplayName("良品数量")]
-        public int GoodProductCount { get => _GoodProductCount; set { _GoodProductCount = value; OnPropertyChanged(); OnPropertyChanged(nameof(GoodProductRate)); } }
-        private int _GoodProductCount;
-
-        /// <summary>
-        /// 不良品数量
-        /// </summary>
-        [DisplayName("不良品数量")]
-        public int DefectiveProductCount { get => _DefectiveProductCount; set { _DefectiveProductCount = value; OnPropertyChanged(); OnPropertyChanged(nameof(DefectiveProductRate)); } }
-        private int _DefectiveProductCount;
-
-        /// <summary>
-        /// 良品率
-        /// </summary>
-        [JsonIgnore]
-        [DisplayName("良品率")]
-        [Browsable(false)]
-        public double GoodProductRate { get => ActualProduction > 0 ? GoodProductCount / (double)ActualProduction : 0; }
-
-        /// <summary>
-        /// 不良率
-        /// </summary>
-        [JsonIgnore]
-        [Browsable(false)]
-        public double DefectiveProductRate { get => ActualProduction > 0 ? DefectiveProductCount / (double)ActualProduction : 0; }
     }
 
     public class SummaryManager
@@ -99,6 +62,7 @@ namespace ProjectKB
         private static readonly object _locker = new();
         public static SummaryManager GetInstance() { lock (_locker) { _instance ??= new SummaryManager(); return _instance; } }
         public RelayCommand EditCommand { get; set; }
+        public RelayCommand OpenStatisticsCommand { get; set; }
 
         public static string DirectoryPath { get; set; } = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + $"\\ColorVision\\Config\\";
 
@@ -109,6 +73,7 @@ namespace ProjectKB
         public SummaryManager()
         {
             EditCommand = new RelayCommand(a => Edit());
+            OpenStatisticsCommand = new RelayCommand(a => OpenStatistics());
 
             if (!Directory.Exists(DirectoryPath))
                 Directory.CreateDirectory(DirectoryPath);
@@ -129,6 +94,16 @@ namespace ProjectKB
 
             new PropertyEditorWindow(Summary) { Owner =Application.Current.GetActiveWindow(), WindowStartupLocation = System.Windows.WindowStartupLocation.CenterOwner }.ShowDialog();
             this.Save();
+        }
+
+        public static void OpenStatistics()
+        {
+            Window? owner = Application.Current.GetActiveWindow();
+            new KBProductionStatisticsWindow
+            {
+                Owner = owner,
+                WindowStartupLocation = owner == null ? WindowStartupLocation.CenterScreen : WindowStartupLocation.CenterOwner
+            }.Show();
         }
 
         public void Save()

@@ -102,7 +102,7 @@ namespace ProjectKB
                 IsAutoCloseConnection = true
             });
             // 确保表存在
-            _db.CodeFirst.InitTables<KBItemMaster>();
+            _db.CodeFirst.InitTables<KBItemMaster, KBProductionSession>();
             LoadAll(Config.Count);
         }
 
