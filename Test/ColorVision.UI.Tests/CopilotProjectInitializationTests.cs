@@ -66,7 +66,7 @@ public sealed class CopilotProjectInitializationTests
     [Fact]
     public void InitializationBindsOneApprovedAgentsFileAddToTheEffectiveAgentRequest()
     {
-        var root = CreateTemporaryDirectory();
+        var root = CreateTemporaryDirectory("RUNNER");
         try
         {
             var plan = CopilotProjectInitialization.Create(root);
@@ -127,9 +127,12 @@ public sealed class CopilotProjectInitializationTests
             CopilotPlanHandoff.ResolveEffectiveUserText("visible request", "prepared context"));
     }
 
-    private static string CreateTemporaryDirectory()
+    private static string CreateTemporaryDirectory(string? parentName = null)
     {
-        var path = Path.Combine(Path.GetTempPath(), $"copilot-init-{Guid.NewGuid():N}");
+        var directoryName = string.IsNullOrWhiteSpace(parentName)
+            ? $"copilot-init-{Guid.NewGuid():N}"
+            : $"{parentName}-copilot-init-{Guid.NewGuid():N}";
+        var path = Path.Combine(Path.GetTempPath(), directoryName);
         Directory.CreateDirectory(path);
         return path;
     }

@@ -1,6 +1,7 @@
 #pragma warning disable CA1707
 using ColorVision.Engine.FlowProcessing.Editor;
 using ColorVision.Engine.FlowProcessing.Nodes;
+using ST.Library.UI;
 using ST.Library.UI.NodeEditor;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
@@ -383,7 +384,7 @@ namespace ColorVision.UI.Tests
             Assert.Contains("空间/普通校正", documentation.Processing);
             Assert.Contains("色度校正", documentation.Processing);
             Assert.Contains("图像翻转", documentation.Processing);
-            Assert.Contains(documentation.Properties, property => property.Name == "图像翻转");
+            Assert.Contains(documentation.Properties, property => property.Name == Lang.GetOrDefault("图像翻转"));
         }
 
         [Fact]

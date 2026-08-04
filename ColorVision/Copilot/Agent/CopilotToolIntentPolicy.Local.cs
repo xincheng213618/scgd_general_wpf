@@ -131,6 +131,7 @@ namespace ColorVision.Copilot
         {
             if (!IsAgentRequest(request)
                 || ExplicitlyDisallowsWriteAccess(request)
+                || CopilotProjectInitialization.IsInitializationRequest(request!.UserText)
                 || ContainsAny(request!.UserText, ShellExplanationMarkers))
                 return false;
 
