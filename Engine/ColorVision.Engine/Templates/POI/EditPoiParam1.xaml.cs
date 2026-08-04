@@ -1842,6 +1842,9 @@ namespace ColorVision.Engine.Templates.POI
 
         private void ListView1_ContextMenuOpening(object sender, ContextMenuEventArgs e)
         {
+            if (ListView1.SelectedIndex == -1)
+                return;
+
             ListView1.ContextMenu.Items.Clear();
 
             Type type = DrawingVisualLists[ListView1.SelectedIndex].GetType();
