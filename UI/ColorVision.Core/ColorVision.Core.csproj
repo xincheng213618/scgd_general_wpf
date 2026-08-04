@@ -15,9 +15,10 @@
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<!-- Package the maintained optimized native build for both managed configurations;
-		     the former repository-root path could silently select an unrelated stale DLL. -->
-		<OpenCvHelperBinary>..\..\Native\opencv_helper\x64\Release\opencv_helper.dll</OpenCvHelperBinary>
+		<!-- The VC++ default output is solution-relative when build.sln drives the build,
+		     and project-relative when this project builds opencv_helper directly. -->
+		<OpenCvHelperBinary Condition="'$(SolutionDir)' != '' and '$(SolutionDir)' != '*Undefined*'">$(SolutionDir)x64\Release\opencv_helper.dll</OpenCvHelperBinary>
+		<OpenCvHelperBinary Condition="'$(OpenCvHelperBinary)' == ''">..\..\Native\opencv_helper\x64\Release\opencv_helper.dll</OpenCvHelperBinary>
 		<UseProjectReference Condition="'$(UseProjectReference)' == '' and ('$(MSBuildRuntimeType)' == 'Full' or !Exists('$(OpenCvHelperBinary)'))">true</UseProjectReference>
 	</PropertyGroup>
 
