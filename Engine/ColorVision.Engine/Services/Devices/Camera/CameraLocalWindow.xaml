@@ -7,7 +7,7 @@
     xmlns:local="clr-namespace:ColorVision.Engine.Services.Devices.Camera"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
-    mc:Ignorable="d" Title="COLOR VISION" Width="1400" Height="900" Background="{DynamicResource GlobalBackground}" Closing="Window_Closing"
+    mc:Ignorable="d" Title="本地相机管理" Width="1220" Height="780" MinWidth="960" MinHeight="620" Background="{DynamicResource GlobalBackground}" Closing="Window_Closing"
     Loaded="Window_Loaded" WindowStartupLocation="CenterScreen">
     <Window.Resources>
         <Style TargetType="{x:Type TextBlock}">
@@ -16,36 +16,22 @@
         </Style>
     </Window.Resources>
     <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-        </Grid.RowDefinitions>
-
-        <!--  Menu Bar  -->
-        <Menu Grid.Row="0">
-            <MenuItem Header="{x:Static properties:Resources.DisplaySettings}">
-                <MenuItem x:Name="MenuItem_ShowCenterLine" Header="{x:Static properties:Resources.ShowCenterLine}" IsCheckable="True" />
-            </MenuItem>
-            <MenuItem Header="{x:Static properties:Resources.BasicParamSettings}">
-                <MenuItem Click="Camera_MenuItem_Click" Header="{x:Static properties:Resources.CameraParamSettings}" />
-                <MenuItem Click="Channels_MenuItem_Click" Header="{x:Static properties:Resources.ChannelParamSettings}" />
-                <MenuItem Click="Calibration_MenuItem_Click" Header="{x:Static properties:Resources.CaliberationParamSet}" />
-                <MenuItem Click="ExpTime_MenuItem_Click" Header="{x:Static properties:Resources.AutoExposureParamSettings}" />
-                <Separator />
-                <MenuItem Header="本地校正缓存管理" Command="{Binding ReleaseLocalCalibrationCacheCommand}" />
-            </MenuItem>
-        </Menu>
-
-        <Grid Grid.Row="1">
+        <Grid>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="360" />
+                <ColumnDefinition Width="380" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
 
             <!--  Left Panel - Controls  -->
             <ScrollViewer Grid.Column="0" Background="{DynamicResource SecondaryRegionBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,1,0" VerticalScrollBarVisibility="Auto">
-                <StackPanel Margin="10,5">
-                    <TextBlock Margin="0,0,0,6" FontSize="16" FontWeight="SemiBold" Text="{x:Static properties:Resources.LocalCamera}" />
+                <StackPanel Margin="14,10">
+                    <DockPanel Margin="0,0,0,10">
+                        <StackPanel DockPanel.Dock="Right" HorizontalAlignment="Right" Orientation="Horizontal">
+                            <TextBlock x:Name="NodeContextHint" Margin="8,0,8,0" VerticalAlignment="Center" Foreground="{DynamicResource SecondaryTextBrush}" Text="同步本地取图节点参数" Visibility="Collapsed" />
+                            <Button Command="{Binding ReleaseLocalCalibrationCacheCommand}" Content="校正缓存" Style="{DynamicResource ButtonDefault.Small}" ToolTip="查看已缓存的校正文件和内存占用" />
+                        </StackPanel>
+                        <TextBlock FontSize="18" FontWeight="SemiBold" Text="{x:Static properties:Resources.LocalCamera}" />
+                    </DockPanel>
 
                     <DockPanel Margin="0,3">
                         <TextBlock Width="78" Text="{x:Static properties:Resources.CameraType}" />
@@ -122,32 +108,34 @@
                         <ComboBox x:Name="ComboxCalibrationTemplate" DisplayMemberPath="Key" SelectedValuePath="Value" SelectionChanged="ComboxCalibrationTemplate_SelectionChanged" />
                     </DockPanel>
 
-                    <DockPanel Margin="0,3">
-                        <TextBlock Width="78" Text="{x:Static properties:Resources.SaveFile}" />
-                        <CheckBox x:Name="check_SaveFile" Content="{x:Static properties:Resources.AllowSave}" IsChecked="{Binding Config.UsingFileCaching, Mode=TwoWay}" />
-                    </DockPanel>
+                    <Grid Margin="0,6,0,3">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="78" />
+                            <ColumnDefinition Width="80" />
+                            <ColumnDefinition Width="20" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="{x:Static properties:Resources.AverageTimes}" />
+                        <hc:NumericUpDown Grid.Column="1" Minimum="1" Maximum="10000" Value="{Binding DisplayConfig.AvgCount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                        <CheckBox Grid.Column="3" VerticalAlignment="Center" Content="{x:Static properties:Resources.SaveFile}" IsChecked="{Binding Config.UsingFileCaching, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ToolTip="与本地相机取图节点一致：保存 CVRAW，有校正结果时同时保存 CVCIE" />
+                    </Grid>
 
                     <DockPanel Margin="0,3">
-                        <TextBlock Width="78" Text="{x:Static properties:Resources.ChannelOrder}" />
-                        <CheckBox x:Name="check_SwapRedBlueChannels" Content="{x:Static properties:Resources.SwapRB}" IsChecked="{Binding Config.SwapRedBlueChannels, Mode=TwoWay}" />
-                    </DockPanel>
-
-                    <DockPanel Margin="0,3" Visibility="{Binding Config.UsingFileCaching, Converter={StaticResource bool2VisibilityConverter}}">
-                        <TextBlock Width="78" Text="{x:Static properties:Resources.SaveDirectory}" />
-                        <TextBox IsReadOnly="True" Text="{Binding Config.FileServerCfg.DataBasePath}" />
+                        <TextBlock Width="78" Text="{x:Static properties:Resources.Flip}" />
+                        <ComboBox x:Name="CBFlip" DisplayMemberPath="Key" SelectedValuePath="Value" SelectedValue="{Binding DisplayConfig.FlipMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                     </DockPanel>
 
                     <StackPanel Margin="0,6,0,0">
                         <DockPanel Margin="0,0,0,3">
                             <TextBlock MinWidth="50" Margin="0,0,5,0" Text="{x:Static properties:Resources.Gain}" />
-                            <TextBox MinWidth="60" DockPanel.Dock="Right" Text="{Binding DisplayConfig.Gain, StringFormat=F2}" />
+                            <TextBox MinWidth="60" DockPanel.Dock="Right" Text="{Binding DisplayConfig.Gain, StringFormat=F2, UpdateSourceTrigger=PropertyChanged}" />
                             <hc:PreviewSlider TickFrequency="1" IsSnapToTickEnabled="True" SmallChange="1" LargeChange="10" ValueChanged="PreviewSliderLocalGain_ValueChanged1" Value="{Binding DisplayConfig.Gain}" Minimum="{Binding PhyCamera.Config.CameraParameterLimit.GainMin, FallbackValue=0, TargetNullValue=0}" Maximum="{Binding PhyCamera.Config.CameraParameterLimit.GainMax, FallbackValue=100, TargetNullValue=100}" />
                         </DockPanel>
 
                         <StackPanel Visibility="{Binding Config.IsExpThree, Converter={StaticResource bool2VisibilityConverter1}}">
                             <DockPanel Margin="0,0,0,3">
                                 <TextBlock MinWidth="50" Margin="0,0,5,0" Text="{x:Static properties:Resources.ExpTime}" />
-                                <TextBox MinWidth="60" DockPanel.Dock="Right" Text="{Binding DisplayConfig.ExpTime, StringFormat=F2}" />
+                                <TextBox MinWidth="60" DockPanel.Dock="Right" Text="{Binding DisplayConfig.ExpTime, StringFormat=F2, UpdateSourceTrigger=PropertyChanged}" />
                                 <hc:PreviewSlider TickFrequency="0.001" IsSnapToTickEnabled="True" SmallChange="0.001" LargeChange="0.01" ValueChanged="PreviewSliderLocalExp_ValueChanged" Value="{Binding DisplayConfig.ExpTimeLog}" Minimum="{Binding Config.ExpTimeMinLog}" Maximum="{Binding Config.ExpTimeMaxLog}" />
                             </DockPanel>
                         </StackPanel>
@@ -155,17 +143,17 @@
                         <StackPanel Visibility="{Binding Config.IsExpThree, Converter={StaticResource bool2VisibilityConverter}}">
                             <DockPanel Margin="0,0,0,3">
                                 <TextBlock MinWidth="50" Margin="0,0,5,0" Text="{x:Static properties:Resources.ExposureRLabel}" />
-                                <TextBox MinWidth="60" DockPanel.Dock="Right" Text="{Binding DisplayConfig.ExpTimeR, StringFormat=F2}" />
+                                <TextBox MinWidth="60" DockPanel.Dock="Right" Text="{Binding DisplayConfig.ExpTimeR, StringFormat=F2, UpdateSourceTrigger=PropertyChanged}" />
                                 <hc:PreviewSlider TickFrequency="0.001" IsSnapToTickEnabled="True" SmallChange="0.001" LargeChange="0.01" Value="{Binding DisplayConfig.ExpTimeRLog}" Minimum="{Binding Config.ExpTimeMinLog}" Maximum="{Binding Config.ExpTimeMaxLog}" />
                             </DockPanel>
                             <DockPanel Margin="0,0,0,3">
                                 <TextBlock MinWidth="50" Margin="0,0,5,0" Text="{x:Static properties:Resources.ExposureGLabel}" />
-                                <TextBox MinWidth="60" DockPanel.Dock="Right" Text="{Binding DisplayConfig.ExpTimeG, StringFormat=F2}" />
+                                <TextBox MinWidth="60" DockPanel.Dock="Right" Text="{Binding DisplayConfig.ExpTimeG, StringFormat=F2, UpdateSourceTrigger=PropertyChanged}" />
                                 <hc:PreviewSlider TickFrequency="0.001" IsSnapToTickEnabled="True" SmallChange="0.001" LargeChange="0.01" Value="{Binding DisplayConfig.ExpTimeGLog}" Minimum="{Binding Config.ExpTimeMinLog}" Maximum="{Binding Config.ExpTimeMaxLog}" />
                             </DockPanel>
                             <DockPanel Margin="0,0,0,3">
                                 <TextBlock MinWidth="50" Margin="0,0,5,0" Text="{x:Static properties:Resources.ExposureBLabel}" />
-                                <TextBox MinWidth="60" DockPanel.Dock="Right" Text="{Binding DisplayConfig.ExpTimeB, StringFormat=F2}" />
+                                <TextBox MinWidth="60" DockPanel.Dock="Right" Text="{Binding DisplayConfig.ExpTimeB, StringFormat=F2, UpdateSourceTrigger=PropertyChanged}" />
                                 <hc:PreviewSlider TickFrequency="0.001" IsSnapToTickEnabled="True" SmallChange="0.001" LargeChange="0.01" Value="{Binding DisplayConfig.ExpTimeBLog}" Minimum="{Binding Config.ExpTimeMinLog}" Maximum="{Binding Config.ExpTimeMaxLog}" />
                             </DockPanel>
                         </StackPanel>
@@ -175,26 +163,7 @@
                         <Button x:Name="btn_Meas" Margin="0,0,3,0" Padding="5" Click="btn_Meas_Click" Content="{x:Static properties:Resources.Measure}" IsEnabled="False" />
                         <Button x:Name="btn_CalAutoExp" Margin="3,0,0,0" Padding="5" Click="btn_CalAutoExp_Click" Content="{x:Static properties:Resources.CalcAutoExposure}" IsEnabled="False" />
                     </UniformGrid>
-
-                    <DockPanel Margin="0,3">
-                        <Button x:Name="button1" Width="100" Padding="5" Click="button1_Click" Content="{x:Static properties:Resources.CalcPosition}" DockPanel.Dock="Left" IsEnabled="False" />
-                        <TextBlock Margin="5,0,0,0" DockPanel.Dock="Right" Text="{x:Static properties:Resources.ThresholdRange}" />
-                        <TextBox x:Name="textBox1" Margin="5,0" Text="30" />
-                    </DockPanel>
-
-                    <Separator Margin="0,8" />
-
-                    <CheckBox x:Name="checkBox1" Margin="0,3" Checked="checkBox1_CheckedChanged" Content="{x:Static properties:Resources.FrameSelect}" />
-                    <UniformGrid Margin="0,3" Columns="2">
-                        <Button Margin="0,0,3,0" Padding="5" Click="btn_FOV_Click" Content="{x:Static properties:Resources.ExecuteFOV}" />
-                        <Button Margin="3,0,0,0" Padding="5" Click="btn_SFR_Click" Content="{x:Static properties:Resources.ExecuteSFR}" />
-                    </UniformGrid>
-                    <UniformGrid Margin="0,3" Columns="2">
-                        <Button Margin="0,0,3,0" Padding="5" Click="btn_Distortion_Click" Content="{x:Static properties:Resources.ExecuteDisto}" />
-                        <Button Margin="3,0,0,0" Padding="5" Click="button2_Click" Content="{x:Static properties:Resources.DisplaySettings}" />
-                    </UniformGrid>
-
-                    <Button x:Name="btn_Test" Margin="0,3" Padding="5" Click="btn_Test_Click" Content="{x:Static properties:Resources.AutoFocusTest}" />
+                    <TextBlock x:Name="CaptureStatusText" Margin="0,4,0,0" Foreground="{DynamicResource SecondaryTextBrush}" TextWrapping="Wrap" />
                 </StackPanel>
             </ScrollViewer>
 
