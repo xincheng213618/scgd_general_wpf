@@ -16,8 +16,11 @@
 
 	<PropertyGroup>
 		<!-- The VC++ default output is solution-relative when build.sln drives the build,
-		     and project-relative when this project builds opencv_helper directly. -->
+		     and project-relative when this project builds opencv_helper directly. A managed
+		     build after build.sln should reuse the solution output instead of asking dotnet
+		     MSBuild to load the VC++ project. -->
 		<OpenCvHelperBinary Condition="'$(SolutionDir)' != '' and '$(SolutionDir)' != '*Undefined*'">$(SolutionDir)x64\Release\opencv_helper.dll</OpenCvHelperBinary>
+		<OpenCvHelperBinary Condition="'$(OpenCvHelperBinary)' == '' and Exists('..\..\x64\Release\opencv_helper.dll')">..\..\x64\Release\opencv_helper.dll</OpenCvHelperBinary>
 		<OpenCvHelperBinary Condition="'$(OpenCvHelperBinary)' == ''">..\..\Native\opencv_helper\x64\Release\opencv_helper.dll</OpenCvHelperBinary>
 		<UseProjectReference Condition="'$(UseProjectReference)' == '' and ('$(MSBuildRuntimeType)' == 'Full' or !Exists('$(OpenCvHelperBinary)'))">true</UseProjectReference>
 	</PropertyGroup>
