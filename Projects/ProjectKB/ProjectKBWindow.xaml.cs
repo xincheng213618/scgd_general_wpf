@@ -611,7 +611,6 @@ namespace ProjectKB
             await RunTemplate();
         }
 
-        int TryCount;
         public async Task RunTemplate()
         {
             if (!Dispatcher.CheckAccess())
@@ -632,7 +631,6 @@ namespace ProjectKB
             _isFlowStartPending = true;
             try
             {
-                TryCount++;
                 _currentFlowTemplateId = template.Id;
                 FlowName = template.Key;
                 string serialNumber = SNtextBox.Text;
@@ -642,7 +640,6 @@ namespace ProjectKB
 
                 CurrentFlowResult = new KBItemMaster
                 {
-                    Id = -1,
                     Model = template.Key,
                     SN = serialNumber,
                     Code = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff"),
@@ -657,7 +654,6 @@ namespace ProjectKB
                     CurrentFlowResult.FlowStatus = FlowStatus.Failed;
                     CurrentFlowResult.Msg = "PreProcessFailed";
                     logTextBox.Text = FlowName + Environment.NewLine + "预处理失败";
-                    TryCount = 0;
                     return;
                 }
 
@@ -702,7 +698,6 @@ namespace ProjectKB
                     });
                 }
                 logTextBox.Text = $"{FlowName}{Environment.NewLine}流程启动失败：{ex.Message}";
-                TryCount = 0;
                 _isFlowLifecycleActive = false;
             }
             finally
@@ -824,7 +819,6 @@ namespace ProjectKB
 
         private async Task HandleFlowCompletedAsync(FlowControlData flowControlData)
         {
-            bool retry = false;
             bool isCompleted = flowControlData.EventName == "Completed";
             bool isOverTime = flowControlData.EventName == "OverTime";
             try
@@ -851,7 +845,6 @@ namespace ProjectKB
                     }
                     else
                     {
-                        TryCount = 0;
                         log.Error("流程运行失败" + flowControlData.EventName + Environment.NewLine + failureMessage);
                         CurrentFlowResult.FlowStatus = FlowStatus.Failed;
 
@@ -867,7 +860,8 @@ namespace ProjectKB
                         }
                     }
 
-                    ViewResluts.Insert(0, CurrentFlowResult); //倒序插入
+                    CurrentFlowResult.RunTime = Math.Max(0, stopwatch.ElapsedMilliseconds);
+                    ViewResultManager.Save(CurrentFlowResult);
                     logTextBox.Text = FlowName + Environment.NewLine + flowControlData.EventName + Environment.NewLine + failureMessage;
 
                     // 先让失败状态完成一次 UI 渲染，再等待节点统计写入和批次落库。
@@ -875,6 +869,9 @@ namespace ProjectKB
                 }
 
                 await FinalizeCurrentFlowRunAsync(flowControlData);
+
+                if (!isCompleted)
+                    ViewResultManager.Save(CurrentFlowResult);
 
                 if (isCompleted)
                 {
@@ -886,28 +883,16 @@ namespace ProjectKB
                     {
                         MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message);
                     }
-                    TryCount = 0;
                 }
                 else if (isOverTime)
                 {
                     ClearFlowSafely();
                     await Refresh();
-                    if (TryCount < ProjectKBConfig.Instance.TryCountMax)
-                        retry = true;
-                    else
-                        TryCount = 0;
                 }
             }
             finally
             {
                 _isFlowLifecycleActive = false;
-            }
-
-            if (retry)
-            {
-                await Task.Delay(200);
-                log.Info("重新尝试运行流程");
-                await RunTemplate();
             }
         }
 

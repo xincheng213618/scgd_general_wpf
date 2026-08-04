@@ -3,7 +3,7 @@
     "ColorVision": {
       "commandName": "Project",
       "hotReloadEnabled": false,
-      "debugEngines": "managed"
+      "debugEngines": "managed-dotnet,native"
     }
   }
 }
