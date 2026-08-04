@@ -35,6 +35,7 @@ using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 
 namespace ProjectKB
 {
@@ -58,8 +59,14 @@ namespace ProjectKB
         private static readonly TimeSpan RestartServicesTimeout = TimeSpan.FromMinutes(7);
         private static readonly TimeSpan RefreshAfterRestartTimeout = TimeSpan.FromSeconds(20);
         private const double DefaultRestartServicesExpectedDurationMs = 15000;
+        private const int CenterDistanceLcNeighborhoodVersion = 2;
+        private const double LegacyLcNeighborhoodPaddingPixels = 300;
         private readonly SemaphoreSlim _refreshGate = new(1, 1);
+        private readonly Dictionary<KBItem, DVRectangle> _keyVisuals = new();
         private bool _isDisposed;
+        private int _resultImageRequestId;
+        private KBItemMaster? _displayedKeyResult;
+        private DVCircle? _lcNeighborhoodCircle;
         public static ViewResultManager ViewResultManager => ViewResultManager.GetInstance();
         public static ObservableCollection<KBItemMaster> ViewResluts => ViewResultManager.ViewResluts;
         public static ProjectKBWindowConfig Config => ProjectKBWindowConfig.Instance;
@@ -91,6 +98,7 @@ namespace ProjectKB
                 },
                 (s, e) => e.CanExecute = listView1.SelectedIndex > -1));
             listView1.ItemsSource = ViewResluts;
+            ImageView.EditorContext.DrawEditorContext.DrawCanvas.PreviewMouseLeftButtonDown += ImageCanvas_PreviewMouseLeftButtonDown;
             InitFlow();
             EnsureTimedButtonOperations();
             Task.Run(async () =>
@@ -598,7 +606,8 @@ namespace ProjectKB
                 .FirstOrDefault(template => string.Equals(template.Key, FlowTemplate.Text, StringComparison.OrdinalIgnoreCase))
                 ?.Id ?? 0;
             LastFlowTime = await Task.Run(
-                () => FlowNodeRecordDataBaseHelper.GetLastCompletedFlowElapsed(_currentFlowTemplateId, FlowTemplate.Text));
+                () => FlowNodeRecordDataBaseHelper.GetLastCompletedFlowElapsed(
+                    new FlowIdentity(_currentFlowTemplateId, FlowTemplate.Text, FlowTemplate.Text)));
             FlowName = FlowTemplate.Text;
             CurrentFlowResult = new KBItemMaster();
             CurrentFlowResult.Id = -1;
@@ -868,7 +877,13 @@ namespace ProjectKB
                 return;
             }
 
-            CalCulLc(KBItemMaster.Items);
+            double keyLcNeighborhoodRadiusMm = RecipeConfig.KeyLcNeighborhoodRadiusMm;
+            double keyLcPixelsPerMillimeter = RecipeConfig.KeyLcPixelsPerMillimeter;
+            double keyLcNeighborhoodRadiusPixels = GetLcNeighborhoodRadiusPixels(keyLcNeighborhoodRadiusMm, keyLcPixelsPerMillimeter);
+            KBItemMaster.KeyLcNeighborhoodRadiusMm = keyLcNeighborhoodRadiusMm;
+            KBItemMaster.KeyLcPixelsPerMillimeter = keyLcPixelsPerMillimeter;
+            KBItemMaster.KeyLcNeighborhoodVersion = CenterDistanceLcNeighborhoodVersion;
+            CalCulLc(KBItemMaster.Items, keyLcNeighborhoodRadiusPixels);
 
             foreach (var item in KBItemMaster.Items)
             {
@@ -899,7 +914,7 @@ namespace ProjectKB
             KBItemMaster.SN = SNtextBox.Text;
 
 
-            CalCulLc(KBItemMaster.Items);
+            CalCulLc(KBItemMaster.Items, keyLcNeighborhoodRadiusPixels);
 
             KBItemMaster.Result = true;
 
@@ -1035,20 +1050,54 @@ namespace ProjectKB
             }
             return true;
         }
-        public static void CalCulLc(ObservableCollection<KBItem> kBItems)
-        {
-            if (kBItems.Count == 0) return;
-            foreach (var item in kBItems)
-            {
-                double centex = item.KBKeyRect.X + item.KBKeyRect.Width / 2;
-                double centey = item.KBKeyRect.Y + item.KBKeyRect.Height / 2;
 
-                List<KBItem> round = new List<KBItem>();
-                foreach (var keys in kBItems.Where(a => a != item))
+        public static double GetLcNeighborhoodRadiusPixels(double neighborhoodRadiusMm, double pixelsPerMillimeter)
+        {
+            if (!double.IsFinite(neighborhoodRadiusMm) || neighborhoodRadiusMm <= 0)
+                throw new ArgumentOutOfRangeException(nameof(neighborhoodRadiusMm), "局部对比度邻域半径必须是大于0的有限值。");
+            if (!double.IsFinite(pixelsPerMillimeter) || pixelsPerMillimeter <= 0)
+                throw new ArgumentOutOfRangeException(nameof(pixelsPerMillimeter), "图像标定必须是大于0的有限值。");
+
+            double radiusPixels = neighborhoodRadiusMm * pixelsPerMillimeter;
+            if (!double.IsFinite(radiusPixels) || radiusPixels <= 0)
+                throw new ArgumentOutOfRangeException(nameof(pixelsPerMillimeter), "局部对比度邻域换算后的像素半径必须是大于0的有限值。");
+
+            return radiusPixels;
+        }
+
+        public static IReadOnlyList<KBItem> GetLcNeighbors(IEnumerable<KBItem> kBItems, KBItem item, double neighborhoodRadiusPixels)
+        {
+            ArgumentNullException.ThrowIfNull(kBItems);
+            ArgumentNullException.ThrowIfNull(item);
+            if (!double.IsFinite(neighborhoodRadiusPixels) || neighborhoodRadiusPixels <= 0)
+                throw new ArgumentOutOfRangeException(nameof(neighborhoodRadiusPixels), "局部对比度邻域像素半径必须是大于0的有限值。");
+
+            double centerX = item.KBKeyRect.X + item.KBKeyRect.Width / 2d;
+            double centerY = item.KBKeyRect.Y + item.KBKeyRect.Height / 2d;
+
+            return kBItems
+                .Where(candidate =>
                 {
-                    if (IsRectInCircle(keys, centex, centey, item.KBKeyRect.Width + 300))
-                        round.Add(keys);
-                }
+                    if (ReferenceEquals(candidate, item)) return false;
+                    double candidateCenterX = candidate.KBKeyRect.X + candidate.KBKeyRect.Width / 2d;
+                    double candidateCenterY = candidate.KBKeyRect.Y + candidate.KBKeyRect.Height / 2d;
+                    return IsPointInCircle(candidateCenterX, candidateCenterY, centerX, centerY, neighborhoodRadiusPixels);
+                })
+                .ToList();
+        }
+
+        public static void CalCulLc(IEnumerable<KBItem> kBItems, double neighborhoodRadiusPixels)
+        {
+            ArgumentNullException.ThrowIfNull(kBItems);
+            if (!double.IsFinite(neighborhoodRadiusPixels) || neighborhoodRadiusPixels <= 0)
+                throw new ArgumentOutOfRangeException(nameof(neighborhoodRadiusPixels), "局部对比度邻域像素半径必须是大于0的有限值。");
+
+            List<KBItem> items = kBItems.ToList();
+            if (items.Count == 0) return;
+
+            foreach (var item in items)
+            {
+                IReadOnlyList<KBItem> round = GetLcNeighbors(items, item, neighborhoodRadiusPixels);
                 List<string> strings = round.Select(keys => keys.Name).ToList();
                 log.Debug($"Round Key {item.Name}: {string.Join(",", strings)}");
 
@@ -1072,6 +1121,7 @@ namespace ProjectKB
             sb.AppendLine($"型号: {modelName}");
             sb.AppendLine($"系列号: {kmitemmaster.SN}");
             sb.AppendLine($"测量设置: {GetSummaryMeasurementSetting(kmitemmaster)}");
+            sb.AppendLine($"LC邻域: {GetLcNeighborhoodDescription(kmitemmaster)}");
             sb.AppendLine($"关注点: {kmitemmaster.KBTemplate}");
             sb.AppendLine($"{kmitemmaster.CreateTime:yyyy/M/d HH:mm:ss}");
             sb.AppendLine();
@@ -1146,6 +1196,7 @@ namespace ProjectKB
             string outtext = string.Empty;
             outtext += $"机种 (Model):{kmitemmaster.Model}" + Environment.NewLine;
             outtext += $"SN:{kmitemmaster.SN}" + Environment.NewLine;
+            outtext += $"LC邻域 (LC Neighborhood): {GetLcNeighborhoodDescription(kmitemmaster)}" + Environment.NewLine;
             outtext += $"按键明细 (Points of Interest): " + Environment.NewLine;
             outtext += $"{kmitemmaster.CreateTime:yyyy/MM/dd HH:mm:ss}" + Environment.NewLine;
 
@@ -1389,6 +1440,8 @@ namespace ProjectKB
         {
             if (!AuthManager.RequireAdmin(this)) return;
 
+            Interlocked.Increment(ref _resultImageRequestId);
+            ClearKeyOverlayState();
             ViewResluts.Clear();
             ImageView.Clear();
             outputText.Document.Blocks.Clear();
@@ -1398,89 +1451,261 @@ namespace ProjectKB
 
         private void listView1_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
-            if (sender is ListView listView && listView.SelectedIndex > -1)
+            if (sender is not ListView listView) return;
+
+            int requestId = Interlocked.Increment(ref _resultImageRequestId);
+            ClearKeyOverlayState();
+            ImageView.Clear();
+            if (listView.SelectedIndex > -1)
             {
                 var kBItem = ViewResluts[listView.SelectedIndex];
                 GenoutputText(kBItem);
 
-                var maxKeyItem = kBItem.Items.Where(a => a.Result).OrderByDescending(item => item.Lv).FirstOrDefault();
-                var minLKey = kBItem.Items.Where(a => a.Result).OrderBy(item => item.Lv).FirstOrDefault();
-
-
-                string DrakestKey = minLKey?.Name;
-                string BrightestKey = maxKeyItem?.Name;
-                Task.Run(async () =>
+                _ = Task.Run(async () =>
                 {
                     if (File.Exists(kBItem.ResultImagFile))
                     {
+                        bool imageReady = false;
                         try
                         {
                             var fileInfo = new FileInfo(kBItem.ResultImagFile);
                             using (var fileStream = fileInfo.Open(FileMode.Open, FileAccess.Read, FileShare.None))
                             {
-
                             }
-   
-                            if (fileInfo.Length > 0)
-                            {
-                                _ = Application.Current.Dispatcher.BeginInvoke(() =>
-                                {
-                                    ImageView.OpenImage(kBItem.ResultImagFile);
-                                    ImageView.ImageShow.Clear();
-                                });
-                            }
+                            imageReady = fileInfo.Length > 0;
                         }
                         catch
                         {
                             log.Warn("文件还在写入");
                             await Task.Delay(ViewResultManager.Config.ViewImageReadDelay);
-                            _ = Application.Current.Dispatcher.BeginInvoke(() =>
+                            try
                             {
-                                ImageView.OpenImage(kBItem.ResultImagFile);
-                                ImageView.ImageShow.Clear();
-                            });
+                                imageReady = File.Exists(kBItem.ResultImagFile) && new FileInfo(kBItem.ResultImagFile).Length > 0;
+                            }
+                            catch
+                            {
+                                imageReady = false;
+                            }
                         }
+
+                        if (!imageReady) return;
+                        WriteableBitmap? resultBitmap = TryLoadResultBitmap(kBItem.ResultImagFile);
+                        if (resultBitmap == null) return;
+
                         _ = Application.Current.Dispatcher.BeginInvoke(() =>
                         {
-                            foreach (var item in kBItem.Items)
-                            {
-                                RectangleProperties rectangleProperties = new RectangleProperties();
-                                rectangleProperties.Rect = new Rect(item.KBKeyRect.X, item.KBKeyRect.Y, item.KBKeyRect.Width, item.KBKeyRect.Height);
-
-                                if (item.Result == false)
-                                {
-                                    rectangleProperties.Pen = new Pen(Brushes.Red, 10);
-                                }
-                                else if (item.Name == DrakestKey)
-                                {
-                                    rectangleProperties.Pen = new Pen(Brushes.Violet, 10);
-                                }
-                                else if (item.Name == BrightestKey)
-                                {
-                                    rectangleProperties.Pen = new Pen(Brushes.White, 10);
-                                }
-                                else
-                                {
-                                    rectangleProperties.Pen = new Pen(Brushes.Gray, 5);
-                                }
-
-                                rectangleProperties.Brush = Brushes.Transparent;
-                                rectangleProperties.Name = item.Name;
-                                rectangleProperties.Id = -1;
-
-                                DVRectangle Rectangle = new DVRectangle(rectangleProperties);
-
-                                Rectangle.Render();
-                                ImageView.AddVisual(Rectangle);
-                            }
-
-
+                            if (requestId != _resultImageRequestId) return;
+                            ImageView.Config.FilePath = kBItem.ResultImagFile;
+                            ImageView.OpenImage(resultBitmap);
+                            ImageView.UpdateZoomAndScale();
+                            RenderKeyOverlays(kBItem);
                         });
-
                     }
                 });
-
             }
+        }
+
+        private static WriteableBitmap? TryLoadResultBitmap(string filePath)
+        {
+            try
+            {
+                using FileStream stream = new(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                BitmapDecoder decoder = BitmapDecoder.Create(stream, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad);
+                if (decoder.Frames.Count == 0) return null;
+
+                WriteableBitmap bitmap = new(decoder.Frames[0]);
+                bitmap.Freeze();
+                return bitmap;
+            }
+            catch (Exception ex)
+            {
+                log.Warn($"结果图像加载失败: {filePath}", ex);
+                return null;
+            }
+        }
+
+        private void RenderKeyOverlays(KBItemMaster result)
+        {
+            ImageView.ImageShow.Clear();
+            ClearKeyOverlayState();
+            _displayedKeyResult = result;
+
+            KBItem? brightestKey = result.Items.Where(item => item.Result).OrderByDescending(item => item.Lv).FirstOrDefault();
+            KBItem? darkestKey = result.Items.Where(item => item.Result).OrderBy(item => item.Lv).FirstOrDefault();
+
+            foreach (KBItem item in result.Items)
+            {
+                RectangleProperties rectangleProperties = new()
+                {
+                    Rect = new Rect(item.KBKeyRect.X, item.KBKeyRect.Y, item.KBKeyRect.Width, item.KBKeyRect.Height),
+                    Pen = CreateDefaultKeyPen(item, darkestKey, brightestKey),
+                    Brush = Brushes.Transparent,
+                    Name = item.Name,
+                    Id = -1
+                };
+
+                DVRectangle rectangle = new(rectangleProperties) { Tag = item };
+                rectangle.Render();
+                ImageView.ImageShow.AddOverlayVisual(rectangle);
+                _keyVisuals[item] = rectangle;
+            }
+        }
+
+        private static Pen CreateDefaultKeyPen(KBItem item, KBItem? darkestKey, KBItem? brightestKey)
+        {
+            if (!item.Result) return new Pen(Brushes.Gray, 10);
+            if (ReferenceEquals(item, darkestKey)) return new Pen(Brushes.Violet, 10);
+            if (ReferenceEquals(item, brightestKey)) return new Pen(Brushes.White, 10);
+            return new Pen(Brushes.Red, 5);
+        }
+
+        private void ImageCanvas_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (_displayedKeyResult == null) return;
+
+            Point point = e.GetPosition(ImageView.EditorContext.DrawEditorContext.DrawCanvas);
+            KBItem? selectedKey = _displayedKeyResult.Items
+                .Where(item => new Rect(item.KBKeyRect.X, item.KBKeyRect.Y, item.KBKeyRect.Width, item.KBKeyRect.Height).Contains(point))
+                .OrderBy(item => item.KBKeyRect.Width * item.KBKeyRect.Height)
+                .FirstOrDefault();
+
+            if (selectedKey == null)
+            {
+                ClearLcNeighborhoodSelection();
+                return;
+            }
+
+            ShowLcNeighborhoodSelection(selectedKey);
+            e.Handled = true;
+        }
+
+        private void ShowLcNeighborhoodSelection(KBItem selectedKey)
+        {
+            if (_displayedKeyResult == null
+                || !_keyVisuals.TryGetValue(selectedKey, out DVRectangle? selectedVisual)
+                || selectedVisual == null) return;
+
+            ClearLcNeighborhoodSelection();
+
+            IReadOnlyList<KBItem> neighbors = GetDisplayedLcNeighbors(
+                _displayedKeyResult,
+                selectedKey,
+                out Point neighborhoodCenter,
+                out double radiusPixels,
+                out string neighborhoodMode);
+
+            foreach (KBItem neighbor in neighbors)
+            {
+                if (_keyVisuals.TryGetValue(neighbor, out DVRectangle? neighborVisual))
+                {
+                    neighborVisual.Pen = new Pen(Brushes.DeepSkyBlue, 10) { DashStyle = DashStyles.Dash };
+                    neighborVisual.Render();
+                }
+            }
+
+            selectedVisual.Pen = new Pen(Brushes.Lime, 12);
+            selectedVisual.Render();
+
+            Pen circlePen = new(Brushes.DeepSkyBlue, 5) { DashStyle = DashStyles.Dash };
+            CircleProperties circleProperties = new()
+            {
+                Center = neighborhoodCenter,
+                Radius = radiusPixels,
+                Pen = circlePen,
+                Brush = Brushes.Transparent,
+                Name = $"LC-{selectedKey.Name}"
+            };
+
+            _lcNeighborhoodCircle = new DVCircle(circleProperties);
+            _lcNeighborhoodCircle.Render();
+            ImageView.ImageShow.AddOverlayVisual(_lcNeighborhoodCircle);
+            ImageView.ImageShow.BatchTopVisuals(
+                _keyVisuals
+                    .Where(pair => !ReferenceEquals(pair.Key, selectedKey))
+                    .Select(pair => pair.Value)
+                    .Append(selectedVisual));
+            ImageView.ImageShow.ApplyLayoutScaleToVisuals();
+
+            log.Debug($"Selected Key {selectedKey.Name}: mode={neighborhoodMode}, radius={radiusPixels:F2}px, neighbors={string.Join(",", neighbors.Select(item => item.Name))}");
+        }
+
+        private void ClearLcNeighborhoodSelection()
+        {
+            if (_lcNeighborhoodCircle != null)
+            {
+                ImageView.ImageShow.RemoveOverlayVisual(_lcNeighborhoodCircle);
+                _lcNeighborhoodCircle = null;
+            }
+
+            if (_displayedKeyResult == null) return;
+
+            KBItem? brightestKey = _displayedKeyResult.Items.Where(item => item.Result).OrderByDescending(item => item.Lv).FirstOrDefault();
+            KBItem? darkestKey = _displayedKeyResult.Items.Where(item => item.Result).OrderBy(item => item.Lv).FirstOrDefault();
+            foreach ((KBItem item, DVRectangle visual) in _keyVisuals)
+            {
+                visual.Pen = CreateDefaultKeyPen(item, darkestKey, brightestKey);
+                visual.Render();
+            }
+            ImageView.ImageShow.ApplyLayoutScaleToVisuals();
+        }
+
+        private static IReadOnlyList<KBItem> GetDisplayedLcNeighbors(
+            KBItemMaster result,
+            KBItem selectedKey,
+            out Point neighborhoodCenter,
+            out double radiusPixels,
+            out string neighborhoodMode)
+        {
+            if (TryGetRecordedLcNeighborhood(result, out double radiusMm, out double pixelsPerMillimeter, out radiusPixels))
+            {
+                neighborhoodCenter = new Point(
+                    selectedKey.KBKeyRect.X + selectedKey.KBKeyRect.Width / 2d,
+                    selectedKey.KBKeyRect.Y + selectedKey.KBKeyRect.Height / 2d);
+                neighborhoodMode = $"CenterDistance/{radiusMm:F2}mm/{pixelsPerMillimeter:F4}px-per-mm";
+                return GetLcNeighbors(result.Items, selectedKey, radiusPixels);
+            }
+
+            double centerX = selectedKey.KBKeyRect.X + selectedKey.KBKeyRect.Width / 2;
+            double centerY = selectedKey.KBKeyRect.Y + selectedKey.KBKeyRect.Height / 2;
+            double legacyRadiusPixels = selectedKey.KBKeyRect.Width + LegacyLcNeighborhoodPaddingPixels;
+            neighborhoodCenter = new Point(centerX, centerY);
+            radiusPixels = legacyRadiusPixels;
+            neighborhoodMode = "Legacy/WholeRectangle/KeyWidth+300px";
+            return result.Items
+                .Where(candidate => !ReferenceEquals(candidate, selectedKey) && IsRectInCircle(candidate, centerX, centerY, legacyRadiusPixels))
+                .ToList();
+        }
+
+        private static string GetLcNeighborhoodDescription(KBItemMaster result)
+        {
+            return TryGetRecordedLcNeighborhood(result, out double radiusMm, out double pixelsPerMillimeter, out double radiusPixels)
+                ? $"中心距 ≤ {radiusMm:F2} mm ({radiusPixels:F2} px，标定 {pixelsPerMillimeter:F4} px/mm)"
+                : "旧版：整键位于键宽 + 300 px 圆内";
+        }
+
+        private static bool TryGetRecordedLcNeighborhood(KBItemMaster result, out double radiusMm, out double pixelsPerMillimeter, out double radiusPixels)
+        {
+            radiusMm = result.KeyLcNeighborhoodRadiusMm ?? 0;
+            pixelsPerMillimeter = result.KeyLcPixelsPerMillimeter ?? 0;
+            radiusPixels = 0;
+            if (result.KeyLcNeighborhoodVersion != CenterDistanceLcNeighborhoodVersion
+                || !double.IsFinite(radiusMm)
+                || radiusMm <= 0
+                || !double.IsFinite(pixelsPerMillimeter)
+                || pixelsPerMillimeter <= 0)
+            {
+                return false;
+            }
+
+            radiusPixels = radiusMm * pixelsPerMillimeter;
+            return double.IsFinite(radiusPixels) && radiusPixels > 0;
+        }
+
+        private void ClearKeyOverlayState()
+        {
+            _displayedKeyResult = null;
+            _lcNeighborhoodCircle = null;
+            _keyVisuals.Clear();
         }
 
 
@@ -1530,6 +1755,9 @@ namespace ProjectKB
             if (_isDisposed) return;
             _isDisposed = true;
 
+            Interlocked.Increment(ref _resultImageRequestId);
+            ImageView.EditorContext.DrawEditorContext.DrawCanvas.PreviewMouseLeftButtonDown -= ImageCanvas_PreviewMouseLeftButtonDown;
+            ClearKeyOverlayState();
             ProjectKBConfig.Instance.SNChanged -= Instance_SNChanged;
             ProjectKBConfig.Instance.PropertyChanged -= ProjectKBConfig_PropertyChanged;
             ModbusControl.GetInstance().StatusChanged -= ProjectKBWindow_StatusChanged;

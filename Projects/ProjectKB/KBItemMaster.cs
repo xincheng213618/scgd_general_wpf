@@ -105,6 +105,15 @@ namespace ProjectKB
         public double LvUniformity { get => _LvUniformity; set { _LvUniformity = value; OnPropertyChanged(); } }
         private double _LvUniformity;
 
+        public double? KeyLcNeighborhoodRadiusMm { get => _KeyLcNeighborhoodRadiusMm; set { _KeyLcNeighborhoodRadiusMm = value; OnPropertyChanged(); } }
+        private double? _KeyLcNeighborhoodRadiusMm;
+
+        public double? KeyLcPixelsPerMillimeter { get => _KeyLcPixelsPerMillimeter; set { _KeyLcPixelsPerMillimeter = value; OnPropertyChanged(); } }
+        private double? _KeyLcPixelsPerMillimeter;
+
+        public int? KeyLcNeighborhoodVersion { get => _KeyLcNeighborhoodVersion; set { _KeyLcNeighborhoodVersion = value; OnPropertyChanged(); } }
+        private int? _KeyLcNeighborhoodVersion;
+
         public bool BacklightAutotuneEnabled { get => _BacklightAutotuneEnabled; set { _BacklightAutotuneEnabled = value; OnPropertyChanged(); } }
         private bool _BacklightAutotuneEnabled;
 

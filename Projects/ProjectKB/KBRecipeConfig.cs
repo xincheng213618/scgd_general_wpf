@@ -54,6 +54,34 @@ namespace ProjectKB
         public double MaxKeyLc { get => _MaxKeyLc; set { _MaxKeyLc = value; OnPropertyChanged(); } }
         private double _MaxKeyLc;
 
+        [DisplayName("邻域半径(mm) (KeyLcNeighborhoodRadiusMm)"), Category("局部对比度")]
+        [Description("以当前键中心为圆心，使用中心距筛选参与局部平均的其他键；规范默认值为30 mm。")]
+        public double KeyLcNeighborhoodRadiusMm
+        {
+            get => _KeyLcNeighborhoodRadiusMm;
+            set
+            {
+                if (!double.IsFinite(value) || value <= 0 || _KeyLcNeighborhoodRadiusMm == value) return;
+                _KeyLcNeighborhoodRadiusMm = value;
+                OnPropertyChanged();
+            }
+        }
+        private double _KeyLcNeighborhoodRadiusMm = 30;
+
+        [DisplayName("图像标定(px/mm) (KeyLcPixelsPerMillimeter)"), Category("局部对比度")]
+        [Description("把物理邻域半径换算为图像像素；默认10 px/mm，对应30 mm = 300 px。")]
+        public double KeyLcPixelsPerMillimeter
+        {
+            get => _KeyLcPixelsPerMillimeter;
+            set
+            {
+                if (!double.IsFinite(value) || value <= 0 || _KeyLcPixelsPerMillimeter == value) return;
+                _KeyLcPixelsPerMillimeter = value;
+                OnPropertyChanged();
+            }
+        }
+        private double _KeyLcPixelsPerMillimeter = 10;
+
 
         [DisplayName("启用背光自动修正 (EnableBacklightAutotune)"), Category("背光自动修正")]
         public bool EnableBacklightAutotune { get => _EnableBacklightAutotune; set { _EnableBacklightAutotune = value; OnPropertyChanged(); } }
