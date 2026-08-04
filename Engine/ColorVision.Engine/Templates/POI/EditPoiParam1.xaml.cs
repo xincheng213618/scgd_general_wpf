@@ -208,10 +208,10 @@ namespace ColorVision.Engine.Templates.POI
                 rectangleManager.Config.IsContinuous = true;
 
             ListView1.ContextMenu = new ContextMenu();
-            MoveUpCommand = new RelayCommand(a => MoveUp(), a => ListView1?.SelectedIndex > 0); // 假设ListView1是ViewModel中的属性或可以通过绑定访问
-            MoveDownCommand = new RelayCommand(a => MoveDown(), a => ListView1?.SelectedIndex < DrawingVisualLists.Count - 1);
-            MoveToTopCommand = new RelayCommand(a => MoveToTop(), a => ListView1?.SelectedIndex > 0);
-            MoveToBottomCommand = new RelayCommand(a => MoveToBottom(), a => ListView1?.SelectedIndex < DrawingVisualLists.Count - 1);
+            MoveUpCommand = new RelayCommand(a => MoveUp(), a => GetSelectedDrawingVisualIndex() > 0);
+            MoveDownCommand = new RelayCommand(a => MoveDown(), a => CanMoveSelectedDrawingVisualDown());
+            MoveToTopCommand = new RelayCommand(a => MoveToTop(), a => GetSelectedDrawingVisualIndex() > 0);
+            MoveToBottomCommand = new RelayCommand(a => MoveToBottom(), a => CanMoveSelectedDrawingVisualDown());
 
 
             ComboBoxBorderType1.ItemsSource = from e1 in Enum.GetValues<GraphicBorderType>().Cast<GraphicBorderType>()  select new KeyValuePair<GraphicBorderType, string>(e1, e1.ToDescription());
@@ -843,9 +843,9 @@ namespace ColorVision.Engine.Templates.POI
 
         private void ListView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (sender is ListView listView && listView.SelectedIndex > -1 && DrawingVisualLists[listView.SelectedIndex] is ISelectVisual drawingVisua)
+            if (sender is ListView { SelectedItem: ISelectVisual drawingVisual })
             {
-                ImageView.EditorContext.SelectionVisual.SetRender(drawingVisua);
+                ImageView.EditorContext.SelectionVisual.SetRender(drawingVisual);
             }
         }
 
@@ -875,8 +875,7 @@ namespace ColorVision.Engine.Templates.POI
 
                     foreach (var selectedItem in listView.SelectedItems)
                     {
-                        int index = listView.Items.IndexOf(selectedItem);
-                        if (index >= 0 && DrawingVisualLists[index] is Visual visual)
+                        if (selectedItem is Visual visual)
                         {
                             visualsToRemove.Add(visual);
                         }
@@ -1842,17 +1841,20 @@ namespace ColorVision.Engine.Templates.POI
 
         private void ListView1_ContextMenuOpening(object sender, ContextMenuEventArgs e)
         {
-            if (ListView1.SelectedIndex == -1)
+            if (ListView1.SelectedItem is not IDrawingVisual selectedVisual)
+            {
+                e.Handled = true;
                 return;
+            }
 
             ListView1.ContextMenu.Items.Clear();
 
-            Type type = DrawingVisualLists[ListView1.SelectedIndex].GetType();
+            Type type = selectedVisual.GetType();
             foreach (var provider in ImageView.IEditorToolFactory.ContextMenuProviders)
             {
                 if (provider.ContextType.IsAssignableFrom(type))
                 {
-                    var items = provider.GetContextMenuItems(DrawingVisualLists[ListView1.SelectedIndex]);
+                    var items = provider.GetContextMenuItems(selectedVisual);
                     foreach (var item in items)
                         ListView1.ContextMenu.Items.Add(item);
                 }
@@ -1909,55 +1911,61 @@ namespace ColorVision.Engine.Templates.POI
         RelayCommand MoveToTopCommand { get; set; }
         RelayCommand MoveToBottomCommand { get; set; }
 
-        // 添加移动方法
+        private int GetSelectedDrawingVisualIndex()
+        {
+            return ListView1?.SelectedItem is IDrawingVisual selectedVisual ? DrawingVisualLists.IndexOf(selectedVisual) : -1;
+        }
+
+        private bool CanMoveSelectedDrawingVisualDown()
+        {
+            int index = GetSelectedDrawingVisualIndex();
+            return index >= 0 && index < DrawingVisualLists.Count - 1;
+        }
+
         private void MoveUp()
         {
-            int index = ListView1.SelectedIndex; // 假设ListView1是ViewModel中的属性
+            int index = GetSelectedDrawingVisualIndex();
             if (index > 0)
             {
                 var item = DrawingVisualLists[index];
-                DrawingVisualLists.RemoveAt(index);
-                DrawingVisualLists.Insert(index - 1, item);
-                ListView1.SelectedIndex = index - 1;
+                DrawingVisualLists.Move(index, index - 1);
+                ListView1.SelectedItem = item;
                 UpdateDBIndex(item, index - 1);
             }
         }
 
         private void MoveDown()
         {
-            int index = ListView1.SelectedIndex;
-            if (index < DrawingVisualLists.Count - 1)
+            int index = GetSelectedDrawingVisualIndex();
+            if (index >= 0 && index < DrawingVisualLists.Count - 1)
             {
                 var item = DrawingVisualLists[index];
-                DrawingVisualLists.RemoveAt(index);
-                DrawingVisualLists.Insert(index + 1, item);
-                ListView1.SelectedIndex = index + 1;
+                DrawingVisualLists.Move(index, index + 1);
+                ListView1.SelectedItem = item;
                 UpdateDBIndex(item, index + 1);
             }
         }
 
         private void MoveToTop()
         {
-            int index = ListView1.SelectedIndex;
+            int index = GetSelectedDrawingVisualIndex();
             if (index > 0)
             {
                 var item = DrawingVisualLists[index];
-                DrawingVisualLists.RemoveAt(index);
-                DrawingVisualLists.Insert(0, item);
-                ListView1.SelectedIndex = 0;
+                DrawingVisualLists.Move(index, 0);
+                ListView1.SelectedItem = item;
                 UpdateDBIndex(item, 0);
             }
         }
 
         private void MoveToBottom()
         {
-            int index = ListView1.SelectedIndex;
-            if (index < DrawingVisualLists.Count - 1)
+            int index = GetSelectedDrawingVisualIndex();
+            if (index >= 0 && index < DrawingVisualLists.Count - 1)
             {
                 var item = DrawingVisualLists[index];
-                DrawingVisualLists.RemoveAt(index);
-                DrawingVisualLists.Add(item);
-                ListView1.SelectedIndex = DrawingVisualLists.Count - 1;
+                DrawingVisualLists.Move(index, DrawingVisualLists.Count - 1);
+                ListView1.SelectedItem = item;
                 UpdateDBIndex(item, DrawingVisualLists.Count - 1);
             }
         }
