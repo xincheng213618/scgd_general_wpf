@@ -12,6 +12,26 @@ public class CVStartCFC : CVBaseCFC
 		public readonly object Lock = new object();
 
 		public bool IsFinished;
+
+		public int FinishedNotificationDeferralCount;
+
+		public bool IsFinishedNotificationPending;
+	}
+
+	private sealed class FinishedNotificationDeferral : IDisposable
+	{
+		private CVStartCFC owner;
+
+		public FinishedNotificationDeferral(CVStartCFC owner)
+		{
+			this.owner = owner;
+		}
+
+		public void Dispose()
+		{
+			CVStartCFC currentOwner = System.Threading.Interlocked.Exchange(ref owner, null);
+			currentOwner?.ReleaseFinishedNotification();
+		}
 	}
 
 	[JsonIgnore]
@@ -165,9 +185,46 @@ public class CVStartCFC : CVBaseCFC
 
 	public void FireFinished()
 	{
-		if (StartNode != null)
+		BaseStartNode startNode;
+		lock (finishState.Lock)
 		{
-			StartNode?.FireFinished(this);
+			if (finishState.FinishedNotificationDeferralCount > 0)
+			{
+				finishState.IsFinishedNotificationPending = true;
+				return;
+			}
+			startNode = StartNode;
 		}
+		startNode?.FireFinished(this);
+	}
+
+	/// <summary>
+	/// Defers the flow-completed notification until the current node has
+	/// published its terminal notification.
+	/// </summary>
+	public IDisposable DeferFlowCompletionNotification()
+	{
+		lock (finishState.Lock)
+			finishState.FinishedNotificationDeferralCount++;
+		return new FinishedNotificationDeferral(this);
+	}
+
+	private void ReleaseFinishedNotification()
+	{
+		BaseStartNode startNode = null;
+		lock (finishState.Lock)
+		{
+			if (finishState.FinishedNotificationDeferralCount <= 0)
+				return;
+
+			finishState.FinishedNotificationDeferralCount--;
+			if (finishState.FinishedNotificationDeferralCount == 0
+				&& finishState.IsFinishedNotificationPending)
+			{
+				finishState.IsFinishedNotificationPending = false;
+				startNode = StartNode;
+			}
+		}
+		startNode?.FireFinished(this);
 	}
 }

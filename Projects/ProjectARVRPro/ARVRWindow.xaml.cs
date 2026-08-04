@@ -749,13 +749,9 @@ namespace ProjectARVRPro
 
             try
             {
-                TimeSpan nodeEventDrainDelay = flowResult.FlowStatus == FlowStatus.Completed
-                    ? TimeSpan.Zero
-                    : TimeSpan.FromSeconds(1);
                 await _flowNodeExecutionRecorder.CompleteRunAsync(
                     serialNumber,
-                    nodeEventDrainDelay,
-                    TimeSpan.FromSeconds(5));
+                    flushTimeout: TimeSpan.FromSeconds(5));
             }
             catch (Exception ex)
             {

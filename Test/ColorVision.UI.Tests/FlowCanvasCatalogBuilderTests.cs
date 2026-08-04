@@ -1,5 +1,4 @@
 using ColorVision.Engine.FlowProcessing.Compilation;
-using ColorVision.Engine.Templates.Flow.Routing;
 using ColorVision.Engine.Templates.Flow.Versioning;
 using FlowEngineLib.Base;
 using ST.Library.UI.NodeEditor;
@@ -7,7 +6,6 @@ using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
-using FlowFailureKind = FlowEngineLib.Runtime.FlowFailureKind;
 
 namespace ColorVision.UI.Tests;
 
@@ -98,136 +96,6 @@ public sealed class FlowCanvasCatalogBuilderTests
                 after.SemanticDocument));
     }
 
-    [Fact]
-    public void BuildProjectsErrorPortsAndRetryPoliciesIntoVersionSemantics()
-    {
-        TestCanvas canvas = CreateCanvas();
-        using TempDirectory directory = new();
-        var store = new JsonFlowExecutionPolicyStore(directory.Path);
-        FlowExecutionPolicySnapshot firstPolicy = store.Save(
-            CreatePolicyRequest(
-                canvas,
-                expectedRevision: 0,
-                maxAttempts: 3));
-
-        FlowSemanticDocument first =
-            new FlowCanvasCatalogBuilder().Build(
-                canvas.Data,
-                executionPolicy: firstPolicy)
-            .SemanticDocument;
-
-        Assert.Collection(
-            first.ErrorRoutes.OrderBy(route => route.ErrorCode),
-            route =>
-            {
-                Assert.Equal("Business", route.ErrorCode);
-                Assert.Equal("in:0", route.TargetPort);
-                Assert.Equal(
-                    canvas.Source.Guid.ToString("D"),
-                    route.SourceNodeId);
-                Assert.Equal(
-                    canvas.Target.Guid.ToString("D"),
-                    route.TargetNodeId);
-            },
-            route =>
-            {
-                Assert.Equal("Technical", route.ErrorCode);
-                Assert.Equal("in:0", route.TargetPort);
-            });
-        FlowRetryPolicyReference retry = Assert.Single(
-            first.RetryPolicies);
-        Assert.Equal(canvas.Source.Guid.ToString("D"), retry.NodeId);
-        Assert.Equal(3, retry.MaxAttempts);
-        Assert.Equal(100, retry.InitialDelayMs);
-        Assert.Equal(2, retry.Backoff);
-        Assert.Equal(2_000, retry.MaxDelayMs);
-        Assert.Equal(
-            ["Technical", "Timeout"],
-            retry.RetryableKinds);
-
-        FlowExecutionPolicySnapshot secondPolicy = store.Save(
-            CreatePolicyRequest(
-                canvas,
-                expectedRevision: firstPolicy.Revision,
-                maxAttempts: 5));
-        FlowSemanticDocument second =
-            new FlowCanvasCatalogBuilder().Build(
-                canvas.Data,
-                executionPolicy: secondPolicy)
-            .SemanticDocument;
-        Assert.NotEqual(
-            FlowSemanticHash.ComputeSemanticHash(first),
-            FlowSemanticHash.ComputeSemanticHash(second));
-        FlowSemanticDiffResult diff =
-            FlowSemanticDiff.Compare(first, second);
-        Assert.Single(diff.RemovedRetryPolicies);
-        Assert.Single(diff.AddedRetryPolicies);
-    }
-
-    [Fact]
-    public void BuildRejectsPolicyReferencesOutsideCanvas()
-    {
-        TestCanvas canvas = CreateCanvas();
-        using TempDirectory directory = new();
-        var store = new JsonFlowExecutionPolicyStore(directory.Path);
-        FlowExecutionPolicySnapshot policy = store.Save(
-            new FlowExecutionPolicySaveRequest(
-                "flow:catalog",
-                expectedRevision: 0,
-                errorRoutes:
-                [
-                    new FlowErrorRoutePolicy(
-                        Guid.NewGuid().ToString("D"),
-                        canvas.Target.Guid.ToString("D"),
-                        targetInputIndex: 0,
-                        [FlowFailureKind.Technical]),
-                ]));
-
-        FlowCanvasCatalogException exception =
-            Assert.Throws<FlowCanvasCatalogException>(() =>
-                new FlowCanvasCatalogBuilder().Build(
-                    canvas.Data,
-                    executionPolicy: policy));
-        Assert.Equal(
-            FlowCanvasCatalogError.InvalidExecutionPolicy,
-            exception.Error);
-    }
-
-    private static FlowExecutionPolicySaveRequest CreatePolicyRequest(
-        TestCanvas canvas,
-        long expectedRevision,
-        int maxAttempts)
-    {
-        return new FlowExecutionPolicySaveRequest(
-            "flow:catalog",
-            expectedRevision,
-            errorRoutes:
-            [
-                new FlowErrorRoutePolicy(
-                    canvas.Source.Guid.ToString("D"),
-                    canvas.Target.Guid.ToString("D"),
-                    targetInputIndex: 0,
-                    [
-                        FlowFailureKind.Technical,
-                        FlowFailureKind.Business,
-                    ]),
-            ],
-            retryPolicies:
-            [
-                new FlowRetryPolicy(
-                    canvas.Source.Guid.ToString("D"),
-                    maxAttempts,
-                    initialDelayMs: 100,
-                    backoff: 2,
-                    maxDelayMs: 2_000,
-                    retryableKinds:
-                    [
-                        FlowFailureKind.Timeout,
-                        FlowFailureKind.Technical,
-                    ]),
-            ]);
-    }
-
     private static TestCanvas CreateCanvas()
     {
         FlowCanvasCatalogTestNode source = CreateNode();
@@ -299,23 +167,6 @@ public sealed class FlowCanvasCatalogBuilderTests
         FlowCanvasCatalogTestNode Source,
         FlowCanvasCatalogTestNode Target);
 
-    private sealed class TempDirectory : IDisposable
-    {
-        public TempDirectory()
-        {
-            Path = System.IO.Path.Combine(
-                System.IO.Path.GetTempPath(),
-                $"colorvision-flow-catalog-{Guid.NewGuid():N}");
-        }
-
-        public string Path { get; }
-
-        public void Dispose()
-        {
-            if (Directory.Exists(Path))
-                Directory.Delete(Path, recursive: true);
-        }
-    }
 }
 
 public sealed class FlowCanvasCatalogTestNode : CVCommonNode

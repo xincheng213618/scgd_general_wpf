@@ -1,6 +1,5 @@
 ﻿#pragma warning disable CS8601
 using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.Engine.FlowProcessing;
@@ -8,32 +7,12 @@ using Newtonsoft.Json;
 using SqlSugar;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.IO;
-using System.Windows.Controls;
 
 namespace ProjectKB
 {
     [@SugarTable("KBItemMaster")]
     public class KBItemMaster : ViewModelBase,IEntity
     {
-        [SugarColumn(IsIgnore = true)]
-        public ContextMenu ContextMenu { get; set; }
-
-        public KBItemMaster()
-        {
-            ContextMenu = new ContextMenu();
-            ContextMenu.Items.Add(new MenuItem() { Command = System.Windows.Input.ApplicationCommands.Delete });
-            ContextMenu.Items.Add(new MenuItem() { Command = System.Windows.Input.ApplicationCommands.Copy, Header = "复制" });
-
-            RelayCommand openFolderAndSelectFile = new RelayCommand(a =>
-            {
-                PlatformHelper.OpenFolderAndSelectFile(ResultImagFile);
-            }, e => File.Exists(ResultImagFile));
-
-            ContextMenu.Items.Add(new MenuItem() { Command = openFolderAndSelectFile, Header = "OpenFolderAndSelectFile" });
-        }
-
-
         [SugarColumn(IsPrimaryKey = true, IsIdentity = true)]
         public int Id { get => _Id; set { _Id = value; OnPropertyChanged(); } }
         private int _Id;

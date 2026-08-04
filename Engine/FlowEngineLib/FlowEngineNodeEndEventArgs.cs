@@ -42,18 +42,4 @@ public class FlowEngineNodeEndEventArgs : EventArgs
     /// </summary>
     public FlowFailureKind? FailureKind { get; set; }
 
-    /// <summary>
-    /// True when a runtime-only error route accepted the failure.
-    /// </summary>
-    public bool FailureHandled { get; set; }
-
-    public string FailureRouteTargetNodeId { get; set; }
-
-    public bool WillRetry { get; set; }
-
-    public int AttemptNumber { get; set; } = 1;
-
-    public int MaxAttempts { get; set; } = 1;
-
-    public int RetryDelayMs { get; set; }
 }

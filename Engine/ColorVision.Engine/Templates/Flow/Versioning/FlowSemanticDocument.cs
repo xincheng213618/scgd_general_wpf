@@ -13,11 +13,6 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
 
         public List<FlowSemanticEdge> Edges { get; set; } = new();
 
-        public List<FlowErrorRoute> ErrorRoutes { get; set; } = new();
-
-        public List<FlowRetryPolicyReference> RetryPolicies { get; set; } =
-            new();
-
         public FlowLayoutDocument Layout { get; set; } = new();
 
         public FlowSemanticDocument DeepClone()
@@ -30,10 +25,6 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
                 clone.Nodes.Add(node.DeepClone());
             foreach (FlowSemanticEdge edge in Edges)
                 clone.Edges.Add(edge.DeepClone());
-            foreach (FlowErrorRoute route in ErrorRoutes)
-                clone.ErrorRoutes.Add(route.DeepClone());
-            foreach (FlowRetryPolicyReference retryPolicy in RetryPolicies)
-                clone.RetryPolicies.Add(retryPolicy.DeepClone());
             return clone;
         }
     }
@@ -78,59 +69,6 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
                 SourcePort = SourcePort,
                 TargetNodeId = TargetNodeId,
                 TargetPort = TargetPort,
-            };
-        }
-    }
-
-    public sealed class FlowErrorRoute
-    {
-        public string SourceNodeId { get; set; } = string.Empty;
-
-        public string ErrorCode { get; set; } = string.Empty;
-
-        public string TargetNodeId { get; set; } = string.Empty;
-
-        public string TargetPort { get; set; } = "in:0";
-
-        public bool IsInterrupting { get; set; } = true;
-
-        public FlowErrorRoute DeepClone()
-        {
-            return new FlowErrorRoute
-            {
-                SourceNodeId = SourceNodeId,
-                ErrorCode = ErrorCode,
-                TargetNodeId = TargetNodeId,
-                TargetPort = TargetPort,
-                IsInterrupting = IsInterrupting,
-            };
-        }
-    }
-
-    public sealed class FlowRetryPolicyReference
-    {
-        public string NodeId { get; set; } = string.Empty;
-
-        public int MaxAttempts { get; set; } = 1;
-
-        public int InitialDelayMs { get; set; }
-
-        public double Backoff { get; set; } = 1;
-
-        public int MaxDelayMs { get; set; }
-
-        public List<string> RetryableKinds { get; set; } = new();
-
-        public FlowRetryPolicyReference DeepClone()
-        {
-            return new FlowRetryPolicyReference
-            {
-                NodeId = NodeId,
-                MaxAttempts = MaxAttempts,
-                InitialDelayMs = InitialDelayMs,
-                Backoff = Backoff,
-                MaxDelayMs = MaxDelayMs,
-                RetryableKinds = new List<string>(RetryableKinds),
             };
         }
     }

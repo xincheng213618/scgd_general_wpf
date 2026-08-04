@@ -97,13 +97,6 @@ public class CVTransAction
 	internal CVBaseEventCmd GetOrAddActionCommand(
 		CVMQTTRequest request)
 	{
-		return GetOrAddActionCommand(request, 1);
-	}
-
-	internal CVBaseEventCmd GetOrAddActionCommand(
-		CVMQTTRequest request,
-		int attemptNumber)
-	{
 		lock (actionEventsLock)
 		{
 			if (m_sever_actionEvent.TryGetValue(
@@ -115,8 +108,7 @@ public class CVTransAction
 
 			var command = new CVBaseEventCmd(
 				request,
-				null,
-				attemptNumber);
+				null);
 			m_sever_actionEvent.Add(request.MsgID, command);
 			return command;
 		}
@@ -124,7 +116,6 @@ public class CVTransAction
 
 	internal bool TryStartActionCommand(
 		CVMQTTRequest request,
-		int attemptNumber,
 		out CVBaseEventCmd command)
 	{
 		lock (actionEventsLock)
@@ -144,8 +135,7 @@ public class CVTransAction
 
 			command = new CVBaseEventCmd(
 				request,
-				null,
-				attemptNumber);
+				null);
 			m_sever_actionEvent.Add(request.MsgID, command);
 			return true;
 		}

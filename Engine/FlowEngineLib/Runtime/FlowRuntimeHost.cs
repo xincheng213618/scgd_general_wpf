@@ -63,54 +63,6 @@ public sealed class FlowRuntimeHost : IDisposable, IAsyncDisposable
         .Cast<STNode>()
         .ToArray();
 
-    public async Task ConfigureFailureRoutesAsync(
-        IEnumerable<FlowErrorRoute> routes,
-        CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(routes);
-        FlowErrorRoute[] routeSnapshot = routes.ToArray();
-        await _lifecycleGate.WaitAsync(cancellationToken).ConfigureAwait(false);
-        try
-        {
-            ThrowIfDisposed();
-            if (_state is FlowRuntimeHostState.Running
-                or FlowRuntimeHostState.Stopping)
-            {
-                throw new InvalidOperationException(
-                    "Failure routes cannot be replaced while a flow is running.");
-            }
-            _control.ConfigureFailureRoutes(routeSnapshot);
-        }
-        finally
-        {
-            _lifecycleGate.Release();
-        }
-    }
-
-    public async Task ConfigureRetryPoliciesAsync(
-        IEnumerable<FlowNodeRetryPolicy> policies,
-        CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(policies);
-        FlowNodeRetryPolicy[] policySnapshot = policies.ToArray();
-        await _lifecycleGate.WaitAsync(cancellationToken).ConfigureAwait(false);
-        try
-        {
-            ThrowIfDisposed();
-            if (_state is FlowRuntimeHostState.Running
-                or FlowRuntimeHostState.Stopping)
-            {
-                throw new InvalidOperationException(
-                    "Retry policies cannot be replaced while a flow is running.");
-            }
-            _control.ConfigureRetryPolicies(policySnapshot);
-        }
-        finally
-        {
-            _lifecycleGate.Release();
-        }
-    }
-
     public async Task LoadAsync(
         byte[] canvasData,
         IEnumerable<MQTTServiceInfo>? services = null,

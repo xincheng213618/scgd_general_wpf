@@ -7,7 +7,6 @@ using ColorVision.Engine.FlowProcessing.PreProcess;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
-using ColorVision.Engine.Templates.Flow.Routing;
 using ColorVision.UI;
 using FlowEngineLib;
 using FlowEngineLib.Base;
@@ -680,21 +679,7 @@ namespace ColorVision.Engine.FlowProcessing
                 string attemptOutcome;
                 string? attemptErrorCode = null;
                 string? attemptErrorMessage = null;
-                if (e?.WillRetry == true)
-                {
-                    attemptOutcome = "Retrying";
-                    attemptErrorCode =
-                        e.FailureKind?.ToString() ?? "RetryableFailure";
-                    attemptErrorMessage = e.RecvStatusMessage;
-                }
-                else if (e?.FailureHandled == true)
-                {
-                    attemptOutcome = "HandledFailure";
-                    attemptErrorCode =
-                        e.FailureKind?.ToString() ?? "HandledFailure";
-                    attemptErrorMessage = e.RecvStatusMessage;
-                }
-                else if (e?.FailureKind == FlowFailureKind.Canceled)
+                if (e?.FailureKind == FlowFailureKind.Canceled)
                 {
                     attemptOutcome = "Canceled";
                     attemptErrorCode = "Canceled";
@@ -732,8 +717,6 @@ namespace ColorVision.Engine.FlowProcessing
                     completionWrite);
 
                 if (e?.RecvStatusCode != 0
-                    && e?.FailureHandled != true
-                    && e?.WillRetry != true
                     && e?.FailureKind != FlowFailureKind.Canceled)
                 {
                     string? completedErrorNodeKey;
@@ -810,7 +793,6 @@ namespace ColorVision.Engine.FlowProcessing
             WriteNodeCompletionJournal(
                 execution,
                 node,
-                e,
                 attemptOutcome,
                 attemptErrorCode,
                 attemptErrorMessage);
@@ -819,7 +801,6 @@ namespace ColorVision.Engine.FlowProcessing
         private static void WriteNodeCompletionJournal(
             PendingNodeExecution execution,
             CVCommonNode node,
-            FlowEngineNodeEndEventArgs? e,
             string attemptOutcome,
             string? attemptErrorCode,
             string? attemptErrorMessage)
@@ -829,46 +810,7 @@ namespace ColorVision.Engine.FlowProcessing
                 attemptOutcome,
                 attemptErrorCode,
                 attemptErrorMessage);
-            if (string.Equals(
-                attemptOutcome,
-                "Retrying",
-                StringComparison.Ordinal))
-            {
-                execution.JournalScope?.TryAppendEvent(
-                    $"node-retry-scheduled:{execution.InvocationId}",
-                    "NodeRetryScheduled",
-                    node.NodeID,
-                    execution.Attempt?.Id,
-                    attemptErrorCode,
-                    attemptErrorMessage,
-                    System.Text.Json.JsonSerializer.Serialize(
-                        new
-                        {
-                            AttemptNumber = e?.AttemptNumber,
-                            MaxAttempts = e?.MaxAttempts,
-                            RetryDelayMs = e?.RetryDelayMs
-                        }));
-            }
-            else if (string.Equals(
-                attemptOutcome,
-                "HandledFailure",
-                StringComparison.Ordinal))
-            {
-                execution.JournalScope?.TryAppendEvent(
-                    $"node-failure-handled:{execution.InvocationId}",
-                    "NodeFailureHandled",
-                    node.NodeID,
-                    execution.Attempt?.Id,
-                    attemptErrorCode,
-                    attemptErrorMessage,
-                    System.Text.Json.JsonSerializer.Serialize(
-                        new
-                        {
-                            TargetNodeId =
-                                e?.FailureRouteTargetNodeId
-                        }));
-            }
-            else if (!string.Equals(
+            if (!string.Equals(
                 attemptOutcome,
                 "Succeeded",
                 StringComparison.Ordinal)
@@ -1031,12 +973,6 @@ namespace ColorVision.Engine.FlowProcessing
                         BatchId = batch.Id > 0 ? batch.Id : null,
                         TemplateRevision =
                             flowParam.TemplateRevision,
-                        ExecutionPolicyRevision =
-                            flowParam.ExecutionPolicyRevision,
-                        ExecutionPolicyHash =
-                            flowParam.ExecutionPolicyHash,
-                        ExecutionPolicySnapshotJson =
-                            flowParam.ExecutionPolicySnapshotJson,
                         RunKey = Guid.NewGuid().ToString("N"),
                         StartedTimeUtc = DateTime.UtcNow,
                     });

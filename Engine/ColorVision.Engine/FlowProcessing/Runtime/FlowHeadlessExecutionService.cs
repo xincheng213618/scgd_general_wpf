@@ -23,23 +23,19 @@ public enum FlowHeadlessExecutionTermination
 }
 
 /// <summary>
-/// Immutable execution input. Mutable STN, device and policy objects are
+/// Immutable execution input. Mutable STN and device objects are
 /// detached when the request is created and again when a host consumes it.
 /// </summary>
 public sealed class FlowHeadlessExecutionRequest
 {
     private readonly byte[] _stnSnapshot;
     private readonly MQTTServiceInfo[] _services;
-    private readonly FlowErrorRoute[] _errorRoutes;
-    private readonly FlowNodeRetryPolicy[] _retryPolicies;
 
     public FlowHeadlessExecutionRequest(
         byte[] stnSnapshot,
         string startNodeName,
         string serialNumber,
         IEnumerable<MQTTServiceInfo>? services = null,
-        IEnumerable<FlowErrorRoute>? errorRoutes = null,
-        IEnumerable<FlowNodeRetryPolicy>? retryPolicies = null,
         TimeSpan? readinessTimeout = null,
         TimeSpan? executionTimeout = null)
     {
@@ -63,8 +59,6 @@ public sealed class FlowHeadlessExecutionRequest
 
         _stnSnapshot = (byte[])stnSnapshot.Clone();
         _services = CloneServices(services);
-        _errorRoutes = CloneErrorRoutes(errorRoutes);
-        _retryPolicies = CloneRetryPolicies(retryPolicies);
         StartNodeName = startNodeName;
         SerialNumber = serialNumber;
         ReadinessTimeout = readinessTimeout;
@@ -91,14 +85,6 @@ public sealed class FlowHeadlessExecutionRequest
         new ReadOnlyCollection<MQTTServiceInfo>(
             CloneServices(_services));
 
-    public IReadOnlyList<FlowErrorRoute> ErrorRoutes =>
-        new ReadOnlyCollection<FlowErrorRoute>(
-            CloneErrorRoutes(_errorRoutes));
-
-    public IReadOnlyList<FlowNodeRetryPolicy> RetryPolicies =>
-        new ReadOnlyCollection<FlowNodeRetryPolicy>(
-            CloneRetryPolicies(_retryPolicies));
-
     internal byte[] CreateStnSnapshot()
     {
         return (byte[])_stnSnapshot.Clone();
@@ -107,16 +93,6 @@ public sealed class FlowHeadlessExecutionRequest
     internal MQTTServiceInfo[] CreateServices()
     {
         return CloneServices(_services);
-    }
-
-    internal FlowErrorRoute[] CreateErrorRoutes()
-    {
-        return CloneErrorRoutes(_errorRoutes);
-    }
-
-    internal FlowNodeRetryPolicy[] CreateRetryPolicies()
-    {
-        return CloneRetryPolicies(_retryPolicies);
     }
 
     private static void ValidateTimeout(
@@ -160,45 +136,6 @@ public sealed class FlowHeadlessExecutionRequest
             .ToArray() ?? Array.Empty<MQTTServiceInfo>();
     }
 
-    private static FlowErrorRoute[] CloneErrorRoutes(
-        IEnumerable<FlowErrorRoute>? routes)
-    {
-        return routes?
-            .Select(route =>
-            {
-                ArgumentNullException.ThrowIfNull(route);
-                return new FlowErrorRoute
-                {
-                    SourceNodeId = route.SourceNodeId,
-                    TargetNodeId = route.TargetNodeId,
-                    TargetInputIndex = route.TargetInputIndex,
-                    FailureKinds = route.FailureKinds?.ToArray()
-                        ?? Array.Empty<FlowFailureKind>()
-                };
-            })
-            .ToArray() ?? Array.Empty<FlowErrorRoute>();
-    }
-
-    private static FlowNodeRetryPolicy[] CloneRetryPolicies(
-        IEnumerable<FlowNodeRetryPolicy>? policies)
-    {
-        return policies?
-            .Select(policy =>
-            {
-                ArgumentNullException.ThrowIfNull(policy);
-                return new FlowNodeRetryPolicy
-                {
-                    NodeId = policy.NodeId,
-                    MaxAttempts = policy.MaxAttempts,
-                    InitialDelayMs = policy.InitialDelayMs,
-                    Backoff = policy.Backoff,
-                    MaxDelayMs = policy.MaxDelayMs,
-                    RetryableKinds = policy.RetryableKinds?.ToArray()
-                        ?? Array.Empty<FlowFailureKind>()
-                };
-            })
-            .ToArray() ?? Array.Empty<FlowNodeRetryPolicy>();
-    }
 }
 
 public sealed record FlowHeadlessExecutionResult(
@@ -230,8 +167,7 @@ public sealed record FlowHeadlessExecutionResult(
             Message = Data.Message,
             Params = Data.Message,
             ErrorNodeName = Data.ErrorNodeName,
-            ErrorNodeId = Data.ErrorNodeId,
-            HandledFailures = Data.HandledFailures.ToArray()
+            ErrorNodeId = Data.ErrorNodeId
         };
     }
 }
@@ -374,15 +310,6 @@ public sealed class FlowHeadlessExecutionService : IFlowExecutionRunner
                     }
                 }
 
-                await host.ConfigureFailureRoutesAsync(
-                        request.CreateErrorRoutes(),
-                        cancellationToken)
-                    .ConfigureAwait(false);
-                await host.ConfigureRetryPoliciesAsync(
-                        request.CreateRetryPolicies(),
-                        cancellationToken)
-                    .ConfigureAwait(false);
-
                 FlowEngineRunResult run = await host.RunAsync(
                         request.StartNodeName,
                         request.SerialNumber,
@@ -485,7 +412,6 @@ public sealed class FlowHeadlessExecutionService : IFlowExecutionRunner
             data.TotalTime,
             data.Message,
             data.ErrorNodeName,
-            data.ErrorNodeId,
-            data.HandledFailures.ToArray());
+            data.ErrorNodeId);
     }
 }

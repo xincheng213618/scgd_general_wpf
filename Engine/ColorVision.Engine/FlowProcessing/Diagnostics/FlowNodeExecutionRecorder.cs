@@ -1,4 +1,3 @@
-using ColorVision.Engine.FlowProcessing.Diagnostics;
 using FlowEngineLib;
 using FlowEngineLib.Base;
 using log4net;
@@ -9,13 +8,13 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace ProjectARVRPro
+namespace ColorVision.Engine.FlowProcessing.Diagnostics
 {
     /// <summary>
     /// Records node timing and MQTT request/response details for flow hosts that
     /// execute <see cref="FlowEngineControl"/> directly.
     /// </summary>
-    internal sealed class FlowNodeExecutionRecorder : IDisposable
+    public sealed class FlowNodeExecutionRecorder : IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(FlowNodeExecutionRecorder));
 
@@ -60,7 +59,7 @@ namespace ProjectARVRPro
         private long _generation;
         private bool _disposed;
 
-        internal FlowNodeExecutionRecorder()
+        public FlowNodeExecutionRecorder()
             : this(
                 FlowNodeRecordDataBaseHelper.Insert,
                 FlowNodeRecordDataBaseHelper.Update,
@@ -89,8 +88,7 @@ namespace ProjectARVRPro
 
         public void AttachNodes(IEnumerable<CVCommonNode> nodes)
         {
-            if (nodes == null)
-                throw new ArgumentNullException(nameof(nodes));
+            ArgumentNullException.ThrowIfNull(nodes);
 
             lock (_attachmentSync)
             {
@@ -117,8 +115,7 @@ namespace ProjectARVRPro
 
         public void StartRun(int batchId, string serialNumber)
         {
-            if (batchId <= 0)
-                throw new ArgumentOutOfRangeException(nameof(batchId));
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(batchId);
             if (string.IsNullOrWhiteSpace(serialNumber))
                 throw new ArgumentException("A flow serial number is required.", nameof(serialNumber));
 
@@ -147,15 +144,10 @@ namespace ProjectARVRPro
 
         public async Task<bool> CompleteRunAsync(
             string serialNumber,
-            TimeSpan? nodeEventDrainDelay = null,
             TimeSpan? flushTimeout = null)
         {
             if (string.IsNullOrWhiteSpace(serialNumber))
                 return false;
-
-            TimeSpan drainDelay = nodeEventDrainDelay.GetValueOrDefault();
-            if (drainDelay > TimeSpan.Zero)
-                await Task.Delay(drainDelay).ConfigureAwait(false);
 
             long completedGeneration;
             lock (_lifecycleSync)
@@ -465,8 +457,7 @@ namespace ProjectARVRPro
                 {
                     CompleteRunAsync(
                         activeSerialNumber,
-                        TimeSpan.Zero,
-                        TimeSpan.FromSeconds(2)).GetAwaiter().GetResult();
+                        flushTimeout: TimeSpan.FromSeconds(2)).GetAwaiter().GetResult();
                 }
                 catch (Exception ex)
                 {

@@ -512,6 +512,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
         private void FailCommandLineNode(CVTransAction trans, string message, CommandLineScriptResultData? resultData, int statusCode)
         {
+            using IDisposable finishedNotificationDeferral = trans.trans_action.DeferFlowCompletionNotification();
             CVStartCFC action = trans.trans_action;
             if (resultData != null)
             {

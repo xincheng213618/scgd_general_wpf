@@ -3,7 +3,6 @@ using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services.RC;
 using FlowEngineLib;
 using FlowEngineLib.Base;
-using FlowEngineLib.Runtime;
 using log4net;
 using System;
 using System.Collections.Generic;
@@ -46,9 +45,6 @@ namespace ColorVision.Engine.FlowProcessing
         public string ErrorNodeName { get; set; }
         public string ErrorNodeId { get; set; }
         public string Message { get; set; }
-
-        public IReadOnlyList<FlowHandledFailure> HandledFailures { get; set; } =
-            Array.Empty<FlowHandledFailure>();
 
         public StatusTypeEnum Status { get; set; }
 
@@ -255,9 +251,7 @@ namespace ColorVision.Engine.FlowProcessing
                     Status = e.Status,
                     TotalTime = e.TotalTime,
                     Message = e.Message,
-                    Params = e.Message,
-                    HandledFailures =
-                        e.HandledFailures ?? Array.Empty<FlowHandledFailure>()
+                    Params = e.Message
                 };
                 completedHandlers = FlowCompleted;
             }

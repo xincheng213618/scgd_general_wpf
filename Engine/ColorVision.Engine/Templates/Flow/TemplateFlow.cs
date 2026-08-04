@@ -3,7 +3,6 @@ using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine.FlowProcessing.Compilation;
 using ColorVision.Engine.FlowProcessing.Editor;
-using ColorVision.Engine.Templates.Flow.Routing;
 using ColorVision.Engine.Templates.Flow.Search;
 using ColorVision.Engine.Templates.Flow.Versioning;
 using ColorVision.Engine.Templates.Menus;
@@ -605,21 +604,8 @@ namespace ColorVision.Engine.Templates.Flow
                     FlowSemanticHash.ComputeBinaryHash(canvasData);
                 FlowCatalogService catalog =
                     FlowCatalogProvider.Shared;
-                if (!FlowExecutionPolicyStoreProvider.Shared.TryLoad(
-                        flowParam.FlowKey,
-                        out FlowExecutionPolicySnapshot executionPolicy,
-                        out string? policyFailure))
-                {
-                    log.Error(
-                        $"流程 {flowParam.Name} 的执行策略无法读取，"
-                        + $"跳过版本目录更新：{policyFailure}");
-                    return;
-                }
-
                 FlowCanvasCatalogBuildResult projection =
-                    new FlowCanvasCatalogBuilder().Build(
-                        canvasData,
-                        executionPolicy: executionPolicy);
+                    new FlowCanvasCatalogBuilder().Build(canvasData);
                 FlowNodeSearchDocument[] searchDocuments =
                     projection.SearchDocuments
                         .Select(document =>

@@ -13,9 +13,6 @@ public class FlowOutputCompatibilityTests
         nameof(FlowParam.TemplateRevision),
         nameof(FlowParam.TemplateContentHash),
         nameof(FlowParam.LoadedContentHash),
-        nameof(FlowParam.ExecutionPolicyRevision),
-        nameof(FlowParam.ExecutionPolicyHash),
-        nameof(FlowParam.ExecutionPolicySnapshotJson),
     };
 
     [Theory]

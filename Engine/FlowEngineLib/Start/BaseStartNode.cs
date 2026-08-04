@@ -562,8 +562,7 @@ public abstract class BaseStartNode : CVCommonNode
 				(long)startAction.GetTotalTime().TotalMilliseconds,
 				message,
 				errorNodeName,
-				errorNodeId,
-				FlowFailureData.GetHandledFailures(startAction)));
+				errorNodeId));
 	}
 
 	private static string GetDataString(Dictionary<string, object> data, string key)

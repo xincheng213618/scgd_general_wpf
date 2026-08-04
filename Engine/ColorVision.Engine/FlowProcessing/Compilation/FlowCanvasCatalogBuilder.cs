@@ -1,4 +1,3 @@
-using ColorVision.Engine.Templates.Flow.Routing;
 using ColorVision.Engine.Templates.Flow.Search;
 using ColorVision.Engine.Templates.Flow.Versioning;
 using System;
@@ -9,14 +8,12 @@ using System.Globalization;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
-using FlowFailureKind = FlowEngineLib.Runtime.FlowFailureKind;
 
 namespace ColorVision.Engine.FlowProcessing.Compilation;
 
 public enum FlowCanvasCatalogError
 {
     InvalidNodePayload,
-    InvalidExecutionPolicy,
 }
 
 public sealed class FlowCanvasCatalogException : Exception
@@ -89,9 +86,7 @@ public sealed class FlowCanvasCatalogBuilder
         this.options = options ?? new StnV1CodecOptions();
     }
 
-    public FlowCanvasCatalogBuildResult Build(
-        byte[] canvasData,
-        FlowExecutionPolicySnapshot? executionPolicy = null)
+    public FlowCanvasCatalogBuildResult Build(byte[] canvasData)
     {
         ArgumentNullException.ThrowIfNull(canvasData);
         NeutralCanvas canvas = StnV1NeutralCodec.Decode(
@@ -109,9 +104,6 @@ public sealed class FlowCanvasCatalogBuilder
         };
         var searchDocuments = new List<FlowNodeSearchDocument>(
             canvas.Nodes.Count);
-        var nodesById = canvas.Nodes.ToDictionary(
-            node => node.NodeId);
-
         foreach (NeutralNode node in canvas.Nodes
             .OrderBy(item => item.NodeId))
         {
@@ -143,10 +135,6 @@ public sealed class FlowCanvasCatalogBuilder
             });
         }
 
-        AddExecutionPolicy(
-            document,
-            nodesById,
-            executionPolicy);
         FlowSemanticDocumentValidator.Validate(document);
 
         return new FlowCanvasCatalogBuildResult(
@@ -256,92 +244,6 @@ public sealed class FlowCanvasCatalogBuilder
                 maximumLength: 128),
             Tags = Array.Empty<string>(),
         };
-    }
-
-    private static void AddExecutionPolicy(
-        FlowSemanticDocument document,
-        Dictionary<Guid, NeutralNode> nodesById,
-        FlowExecutionPolicySnapshot? executionPolicy)
-    {
-        if (executionPolicy == null)
-            return;
-
-        foreach (FlowRetryPolicy retry in executionPolicy.RetryPolicies)
-        {
-            if (!Guid.TryParse(retry.NodeId, out Guid retryNodeId)
-                || !nodesById.ContainsKey(retryNodeId))
-            {
-                throw new FlowCanvasCatalogException(
-                    FlowCanvasCatalogError.InvalidExecutionPolicy,
-                    $"重试策略引用了不存在的节点：{retry.NodeId}。");
-            }
-            document.RetryPolicies.Add(
-                new FlowRetryPolicyReference
-                {
-                    NodeId = retryNodeId.ToString("D"),
-                    MaxAttempts = retry.MaxAttempts,
-                    InitialDelayMs = retry.InitialDelayMs,
-                    Backoff = retry.Backoff,
-                    MaxDelayMs = retry.MaxDelayMs,
-                    RetryableKinds = retry.RetryableKinds
-                        .Select(kind => kind.ToString())
-                        .OrderBy(kind => kind, StringComparer.Ordinal)
-                        .ToList(),
-                });
-        }
-
-        foreach (FlowErrorRoutePolicy route in
-            executionPolicy.ErrorRoutes
-                .OrderBy(item => item.SourceNodeId, StringComparer.Ordinal)
-                .ThenBy(item => item.TargetNodeId, StringComparer.Ordinal)
-                .ThenBy(item => item.TargetInputIndex))
-        {
-            if (!Guid.TryParse(route.SourceNodeId, out Guid sourceNodeId)
-                || !nodesById.ContainsKey(sourceNodeId))
-            {
-                throw new FlowCanvasCatalogException(
-                    FlowCanvasCatalogError.InvalidExecutionPolicy,
-                    $"错误路由引用了不存在的来源节点："
-                    + $"{route.SourceNodeId}。");
-            }
-            if (!Guid.TryParse(route.TargetNodeId, out Guid targetNodeId)
-                || !nodesById.TryGetValue(
-                    targetNodeId,
-                    out NeutralNode? targetNode))
-            {
-                throw new FlowCanvasCatalogException(
-                    FlowCanvasCatalogError.InvalidExecutionPolicy,
-                    $"错误路由引用了不存在的目标节点："
-                    + $"{route.TargetNodeId}。");
-            }
-            if (route.TargetInputIndex < 0
-                || route.TargetInputIndex >= targetNode.Inputs.Length)
-            {
-                throw new FlowCanvasCatalogException(
-                    FlowCanvasCatalogError.InvalidExecutionPolicy,
-                    $"错误路由目标输入不存在：{route.TargetNodeId}/"
-                    + $"{route.TargetInputIndex}。");
-            }
-
-            foreach (FlowFailureKind kind in route.FailureKinds
-                .OrderBy(item => item.ToString(), StringComparer.Ordinal))
-            {
-                if (!Enum.IsDefined(kind))
-                {
-                    throw new FlowCanvasCatalogException(
-                        FlowCanvasCatalogError.InvalidExecutionPolicy,
-                        $"错误路由包含无法识别的失败类型：{kind}。");
-                }
-                document.ErrorRoutes.Add(new FlowErrorRoute
-                {
-                    SourceNodeId = sourceNodeId.ToString("D"),
-                    ErrorCode = kind.ToString(),
-                    TargetNodeId = targetNodeId.ToString("D"),
-                    TargetPort = $"in:{route.TargetInputIndex}",
-                    IsInterrupting = true,
-                });
-            }
-        }
     }
 
     private static string? ReadSearchValue(

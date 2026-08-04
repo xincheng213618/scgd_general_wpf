@@ -209,7 +209,6 @@ internal sealed class FlowTemplateWorkspaceController : IDisposable
                     : _flowEngineManager.CVBaseServerNodes;
             serverNodes.Clear();
             _resetNodeTitleProgress();
-            _view.ApplyExecutionPolicies(flowParam, out _);
             _view.SetDocumentBaseline(flowParam);
             _view.FitLoadedFlowToViewport();
             RefreshStartNodeSelection();
@@ -454,7 +453,6 @@ internal sealed class FlowTemplateWorkspaceController : IDisposable
         }
 
         _resetNodeTitleProgress();
-        _view.ApplyExecutionPolicies(flowParam, out _);
         _view.FlowEngineControl.LoadFromBase64(string.Empty);
         _view.SetDocumentBaseline(flowParam);
         RefreshStartNodeSelection();
@@ -497,7 +495,6 @@ internal sealed class FlowTemplateWorkspaceController : IDisposable
             FlowParam? loadedFlowParam;
             lock (_selectionSync)
                 loadedFlowParam = _loadedFlowParam;
-            _view.ApplyExecutionPolicies(loadedFlowParam, out _);
             _view.SetDocumentBaseline(loadedFlowParam);
             RefreshStartNodeSelection();
 
@@ -770,10 +767,7 @@ internal sealed record FlowTemplateExecutionSnapshot(
     string? FlowKey,
     int? TemplateRevision,
     string? TemplateContentHash,
-    string? LoadedContentHash,
-    long? ExecutionPolicyRevision,
-    string? ExecutionPolicyHash,
-    string? ExecutionPolicySnapshotJson)
+    string? LoadedContentHash)
 {
     public static FlowTemplateExecutionSnapshot Create(
         long generation,
@@ -790,10 +784,7 @@ internal sealed record FlowTemplateExecutionSnapshot(
             flowParam.FlowKey,
             flowParam.TemplateRevision,
             flowParam.TemplateContentHash,
-            flowParam.LoadedContentHash,
-            flowParam.ExecutionPolicyRevision,
-            flowParam.ExecutionPolicyHash,
-            flowParam.ExecutionPolicySnapshotJson);
+            flowParam.LoadedContentHash);
     }
 
     public FlowParam CreateFlowParam()
@@ -809,10 +800,6 @@ internal sealed record FlowTemplateExecutionSnapshot(
             TemplateRevision = TemplateRevision,
             TemplateContentHash = TemplateContentHash,
             LoadedContentHash = LoadedContentHash,
-            ExecutionPolicyRevision = ExecutionPolicyRevision,
-            ExecutionPolicyHash = ExecutionPolicyHash,
-            ExecutionPolicySnapshotJson =
-                ExecutionPolicySnapshotJson,
         };
     }
 }

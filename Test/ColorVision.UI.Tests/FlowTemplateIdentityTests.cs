@@ -57,7 +57,7 @@ public sealed class FlowTemplateIdentityTests
     }
 
     [Fact]
-    public void RuntimeVersionAndPolicyIdentityStayOutOfTemplateJson()
+    public void RuntimeVersionIdentityStaysOutOfTemplateJson()
     {
         var flow = new FlowParam
         {
@@ -66,9 +66,6 @@ public sealed class FlowTemplateIdentityTests
             TemplateRevision = 8,
             TemplateContentHash = new string('a', 64),
             LoadedContentHash = new string('c', 64),
-            ExecutionPolicyRevision = 3,
-            ExecutionPolicyHash = new string('b', 64),
-            ExecutionPolicySnapshotJson = """{"revision":3}""",
         };
 
         string newtonsoftJson =
@@ -85,7 +82,6 @@ public sealed class FlowTemplateIdentityTests
             Assert.DoesNotContain("TemplateRevision", json);
             Assert.DoesNotContain("TemplateContentHash", json);
             Assert.DoesNotContain("LoadedContentHash", json);
-            Assert.DoesNotContain("ExecutionPolicy", json);
         }
     }
 }

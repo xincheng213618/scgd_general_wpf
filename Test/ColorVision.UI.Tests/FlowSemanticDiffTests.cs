@@ -28,7 +28,7 @@ public sealed class FlowSemanticDiffTests
     }
 
     [Fact]
-    public void DiffReportsNodesPropertiesEdgesRoutesAndRetries()
+    public void DiffReportsNodesPropertiesAndEdges()
     {
         FlowSemanticDocument before = CreateFullDocument();
         FlowSemanticDocument after = CreateFullDocument();
@@ -47,9 +47,6 @@ public sealed class FlowSemanticDiffTests
             TargetNodeId = "node-c",
             TargetPort = "in",
         });
-        after.ErrorRoutes[0].TargetNodeId = "node-c";
-        after.RetryPolicies[0].MaxAttempts = 5;
-
         FlowSemanticDiffResult diff =
             FlowSemanticDiff.Compare(before, after);
 
@@ -60,10 +57,6 @@ public sealed class FlowSemanticDiffTests
         Assert.Equal("Mode", Assert.Single(diff.PropertyChanges).PropertyName);
         Assert.Single(diff.AddedEdges);
         Assert.Single(diff.RemovedEdges);
-        Assert.Single(diff.AddedErrorRoutes);
-        Assert.Single(diff.RemovedErrorRoutes);
-        Assert.Single(diff.AddedRetryPolicies);
-        Assert.Single(diff.RemovedRetryPolicies);
     }
 
     [Fact]
@@ -73,9 +66,6 @@ public sealed class FlowSemanticDiffTests
         FlowSemanticDocument reordered = CreateFullDocument();
         reordered.Nodes.Reverse();
         reordered.Edges.Reverse();
-        reordered.ErrorRoutes.Reverse();
-        reordered.RetryPolicies.Reverse();
-        reordered.RetryPolicies[0].RetryableKinds.Reverse();
         reordered.Layout.Nodes.Reverse();
 
         Assert.Equal(
@@ -94,8 +84,6 @@ public sealed class FlowSemanticDiffTests
               "Nodes": [],
               "Edges": [],
               "Subflows": [{ "CallNodeId": "legacy-call" }],
-              "ErrorRoutes": [],
-              "RetryPolicies": [],
               "Layout": { "Nodes": [] }
             }
             """;
@@ -105,8 +93,6 @@ public sealed class FlowSemanticDiffTests
 
         Assert.Empty(document.Nodes);
         Assert.Empty(document.Edges);
-        Assert.Empty(document.ErrorRoutes);
-        Assert.Empty(document.RetryPolicies);
     }
 
     [Fact]
@@ -117,34 +103,6 @@ public sealed class FlowSemanticDiffTests
 
         Assert.Throws<ArgumentException>(() =>
             FlowSemanticHash.ComputeSemanticHash(invalid));
-    }
-
-    [Fact]
-    public void DuplicateFailureKindRouteForOneNodeIsRejectedBeforeHashing()
-    {
-        FlowSemanticDocument invalid = CreateFullDocument();
-        FlowErrorRoute duplicate =
-            invalid.ErrorRoutes[0].DeepClone();
-        duplicate.TargetPort = "in:1";
-        invalid.ErrorRoutes.Add(duplicate);
-
-        Assert.Throws<ArgumentException>(() =>
-            FlowSemanticHash.ComputeSemanticHash(invalid));
-    }
-
-    [Fact]
-    public void ErrorAndRetryKindsMustUseCanonicalFailureKindNames()
-    {
-        FlowSemanticDocument invalidRoute = CreateFullDocument();
-        invalidRoute.ErrorRoutes[0].ErrorCode = "CAMERA_TIMEOUT";
-        Assert.Throws<ArgumentException>(() =>
-            FlowSemanticHash.ComputeSemanticHash(invalidRoute));
-
-        FlowSemanticDocument invalidRetry = CreateFullDocument();
-        invalidRetry.RetryPolicies[0].RetryableKinds.Add(
-            "Transient");
-        Assert.Throws<ArgumentException>(() =>
-            FlowSemanticHash.ComputeSemanticHash(invalidRetry));
     }
 
     private static FlowSemanticDocument CreateFullDocument()
@@ -176,32 +134,6 @@ public sealed class FlowSemanticDiffTests
                     SourcePort = "out",
                     TargetNodeId = "node-b",
                     TargetPort = "in",
-                },
-            ],
-            ErrorRoutes =
-            [
-                new FlowErrorRoute
-                {
-                    SourceNodeId = "node-a",
-                    ErrorCode = "Timeout",
-                    TargetNodeId = "node-b",
-                    TargetPort = "in:0",
-                },
-            ],
-            RetryPolicies =
-            [
-                new FlowRetryPolicyReference
-                {
-                    NodeId = "node-a",
-                    MaxAttempts = 3,
-                    InitialDelayMs = 100,
-                    Backoff = 2,
-                    MaxDelayMs = 1_000,
-                    RetryableKinds =
-                    [
-                        "Technical",
-                        "Timeout",
-                    ],
                 },
             ],
             Layout = new FlowLayoutDocument

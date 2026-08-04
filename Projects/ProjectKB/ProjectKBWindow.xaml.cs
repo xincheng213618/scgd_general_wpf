@@ -7,6 +7,7 @@ using ColorVision.Engine.FlowProcessing.PreProcess;
 using ColorVision.Engine;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services.RC;
+using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.Engine.FlowProcessing;
 using ColorVision.Engine.Templates.Jsons.KB;
@@ -62,8 +63,11 @@ namespace ProjectKB
         private const int CenterDistanceLcNeighborhoodVersion = 2;
         private const double LegacyLcNeighborhoodPaddingPixels = 300;
         private readonly SemaphoreSlim _refreshGate = new(1, 1);
+        private readonly FlowNodeExecutionRecorder _flowNodeExecutionRecorder = new();
         private readonly Dictionary<KBItem, DVRectangle> _keyVisuals = new();
         private bool _isDisposed;
+        private bool _isFlowStartPending;
+        private bool _isFlowLifecycleActive;
         private int _resultImageRequestId;
         private KBItemMaster? _displayedKeyResult;
         private DVCircle? _lcNeighborhoodCircle;
@@ -97,7 +101,10 @@ namespace ProjectKB
                         ViewResultManager.Delete(listView1.SelectedIndex);
                 },
                 (s, e) => e.CanExecute = listView1.SelectedIndex > -1));
+            listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.SelectAll, (s, e) => listView1.SelectAll(), (s, e) => e.CanExecute = true));
+            listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, ListViewUtils.Copy, (s, e) => e.CanExecute = true));
             listView1.ItemsSource = ViewResluts;
+            BuildListViewContextMenu();
             ImageView.EditorContext.DrawEditorContext.DrawCanvas.PreviewMouseLeftButtonDown += ImageCanvas_PreviewMouseLeftButtonDown;
             InitFlow();
             EnsureTimedButtonOperations();
@@ -262,7 +269,7 @@ namespace ProjectKB
         {
             if (ModbusControl.GetInstance().CurrentValue == 1)
             {
-                Application.Current.Dispatcher.BeginInvoke(() =>
+                Application.Current.Dispatcher.BeginInvoke(async () =>
                 {
                     if (ProjectKBConfig.Instance.IgnoreAutoRunWhenSnEmpty && string.IsNullOrWhiteSpace(SNtextBox.Text))
                     {
@@ -274,7 +281,7 @@ namespace ProjectKB
                     }
 
                     log.Info("触发拍照，执行流程");
-                    RunTemplate();
+                    await RunTemplate();
                 });
             }
         }
@@ -398,16 +405,21 @@ namespace ProjectKB
         }
 
 
-        public async Task Refresh()
+        public Task Refresh()
         {
-            if (FlowTemplate.SelectedIndex < 0) return;
+            return FlowTemplate.SelectedItem is TemplateModel<FlowParam> template
+                ? Refresh(template)
+                : Task.CompletedTask;
+        }
 
+        private async Task Refresh(TemplateModel<FlowParam> template)
+        {
             await _refreshGate.WaitAsync();
             try
             {
                 if (!EnsureFlowEngineAvailable()) return;
 
-                await RefreshCoreAsync();
+                await RefreshCoreAsync(template);
             }
             catch (ObjectDisposedException ex)
             {
@@ -416,7 +428,7 @@ namespace ProjectKB
 
                 try
                 {
-                    await RefreshCoreAsync();
+                    await RefreshCoreAsync(template);
                 }
                 catch (Exception retryEx)
                 {
@@ -435,18 +447,25 @@ namespace ProjectKB
             }
         }
 
-        private Task RefreshCoreAsync()
+        private Task RefreshCoreAsync(TemplateModel<FlowParam> template)
         {
-            if (FlowTemplate.SelectedIndex < 0 || !EnsureFlowEngineAvailable()) return Task.CompletedTask;
+            if (!EnsureFlowEngineAvailable()) return Task.CompletedTask;
 
-            flowEngine.LoadFromBase64(TemplateFlow.Params[FlowTemplate.SelectedIndex].Value.DataBase64, MqttRCService.GetInstance().ServiceTokens);
+            MqttRCService.GetInstance().QueryServices();
+            foreach (CVCommonNode node in STNodeEditorMain.Nodes.OfType<CVCommonNode>())
+                node.nodeRunEvent -= UpdateMsg;
+            _flowNodeExecutionRecorder.DetachNodes();
+
+            flowEngine.LoadFromBase64(template.Value.DataBase64, MqttRCService.GetInstance().ServiceTokens);
 
             if (!EnsureFlowEngineAvailable()) return Task.CompletedTask;
-            foreach (var item in STNodeEditorMain.Nodes.OfType<CVCommonNode>())
+            CVCommonNode[] flowNodes = STNodeEditorMain.Nodes.OfType<CVCommonNode>().ToArray();
+            foreach (CVCommonNode item in flowNodes)
             {
                 item.nodeRunEvent -= UpdateMsg;
                 item.nodeRunEvent += UpdateMsg;
             }
+            _flowNodeExecutionRecorder.AttachNodes(flowNodes);
             return Task.CompletedTask;
         }
 
@@ -587,73 +606,130 @@ namespace ProjectKB
                 }
             }
         }
-        private void TestClick(object sender, RoutedEventArgs e)
+        private async void TestClick(object sender, RoutedEventArgs e)
         {
-            RunTemplate();
+            await RunTemplate();
         }
 
         int TryCount;
         public async Task RunTemplate()
         {
-            if (flowControl != null && flowControl.IsFlowRun)
+            if (!Dispatcher.CheckAccess())
             {
-                log.Info("当前存在流程执行");
+                Task dispatchedTask = await Dispatcher.InvokeAsync(RunTemplate);
+                await dispatchedTask;
                 return;
             }
 
-            TryCount++;
-            _currentFlowTemplateId = TemplateFlow.Params
-                .FirstOrDefault(template => string.Equals(template.Key, FlowTemplate.Text, StringComparison.OrdinalIgnoreCase))
-                ?.Id ?? 0;
-            LastFlowTime = await Task.Run(
-                () => FlowNodeRecordDataBaseHelper.GetLastCompletedFlowElapsed(
-                    new FlowIdentity(_currentFlowTemplateId, FlowTemplate.Text, FlowTemplate.Text)));
-            FlowName = FlowTemplate.Text;
-            CurrentFlowResult = new KBItemMaster();
-            CurrentFlowResult.Id = -1;
-            CurrentFlowResult.Model = FlowTemplate.Text;
-            CurrentFlowResult.SN = SNtextBox.Text;
-            CurrentFlowResult.Code = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-
-            RecipeManager.SetCurrentTemplate(FlowName);
-
-            CurrentFlowResult.FlowStatus = FlowStatus.Ready;
-            await Refresh();
-
-            if (!await PreProcessingAsync(FlowName, CurrentFlowResult.SN))
+            if (_isFlowStartPending || _isFlowLifecycleActive || flowControl?.IsFlowRun == true)
             {
-                CurrentFlowResult.FlowStatus = FlowStatus.Failed;
-                CurrentFlowResult.Msg = "PreProcessFailed";
-                logTextBox.Text = FlowName + Environment.NewLine + "预处理失败";
-                TryCount = 0;
+                log.Info("当前存在流程执行或正在处理流程结果");
                 return;
             }
+            if (FlowTemplate.SelectedItem is not TemplateModel<FlowParam> template)
+                return;
 
-            CurrentFlowResult.FlowStatus = FlowStatus.Ready;
-
-
-            flowControl ??= new FlowControl(MQTTControl.GetInstance(), flowEngine);
-
-
-            flowControl.FlowCompleted -= FlowControl_FlowCompleted;
-            flowControl.FlowCompleted += FlowControl_FlowCompleted;
-            Interlocked.Exchange(ref _pendingUiUpdate, 0);
-            stopwatch.Reset();
-            stopwatch.Start();
-            BatchResultMasterDao.Instance.Save(new MeasureBatchModel() { Name = CurrentFlowResult.SN, Code = CurrentFlowResult.Code, CreateDate = DateTime.Now });
-
-            if (!await flowControl.TryStartAsync(CurrentFlowResult.Code))
+            _isFlowStartPending = true;
+            try
             {
-                FlowControl_FlowCompleted(flowControl, new FlowControlData
+                TryCount++;
+                _currentFlowTemplateId = template.Id;
+                FlowName = template.Key;
+                string serialNumber = SNtextBox.Text;
+                LastFlowTime = await Task.Run(
+                    () => FlowNodeRecordDataBaseHelper.GetLastCompletedFlowElapsed(
+                        new FlowIdentity(template.Id, template.Key, template.Key)));
+
+                CurrentFlowResult = new KBItemMaster
                 {
-                    EventName = "Failed",
-                    Status = StatusTypeEnum.Failed,
-                    SerialNumber = CurrentFlowResult.Code,
-                    Params = "FlowStartRejected"
-                });
-                return;
+                    Id = -1,
+                    Model = template.Key,
+                    SN = serialNumber,
+                    Code = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff"),
+                    FlowStatus = FlowStatus.Ready,
+                };
+
+                RecipeManager.SetCurrentTemplate(FlowName);
+                await Refresh(template);
+
+                if (!await PreProcessingAsync(FlowName, CurrentFlowResult.SN))
+                {
+                    CurrentFlowResult.FlowStatus = FlowStatus.Failed;
+                    CurrentFlowResult.Msg = "PreProcessFailed";
+                    logTextBox.Text = FlowName + Environment.NewLine + "预处理失败";
+                    TryCount = 0;
+                    return;
+                }
+
+                flowControl ??= new FlowControl(MQTTControl.GetInstance(), flowEngine);
+                flowControl.FlowCompleted -= FlowControl_FlowCompleted;
+                flowControl.FlowCompleted += FlowControl_FlowCompleted;
+                Interlocked.Exchange(ref _pendingUiUpdate, 0);
+                stopwatch.Reset();
+                stopwatch.Start();
+                CreateCurrentFlowBatch();
+                _isFlowLifecycleActive = true;
+
+                if (!await flowControl.TryStartAsync(CurrentFlowResult.Code))
+                {
+                    flowControl.FlowCompleted -= FlowControl_FlowCompleted;
+                    await HandleFlowCompletedAsync(new FlowControlData
+                    {
+                        EventName = "Failed",
+                        Status = StatusTypeEnum.Failed,
+                        SerialNumber = CurrentFlowResult.Code,
+                        Params = "FlowStartRejected"
+                    });
+                    return;
+                }
+                timer.Change(0, 500); // 启动定时器
             }
-            timer.Change(0, 500); // 启动定时器
+            catch (Exception ex)
+            {
+                log.Error("运行流程失败", ex);
+                flowControl?.FlowCompleted -= FlowControl_FlowCompleted;
+                stopwatch.Stop();
+                timer.Change(Timeout.Infinite, 500);
+                if (_currentFlowBatch?.Id > 0 && CurrentFlowResult != null)
+                {
+                    await FinalizeCurrentFlowRunAsync(new FlowControlData
+                    {
+                        EventName = "Failed",
+                        Status = StatusTypeEnum.Failed,
+                        SerialNumber = CurrentFlowResult.Code,
+                        Message = ex.Message,
+                        Params = ex.Message,
+                    });
+                }
+                logTextBox.Text = $"{FlowName}{Environment.NewLine}流程启动失败：{ex.Message}";
+                TryCount = 0;
+                _isFlowLifecycleActive = false;
+            }
+            finally
+            {
+                _isFlowStartPending = false;
+            }
+        }
+
+        private MeasureBatchModel? _currentFlowBatch;
+        private void CreateCurrentFlowBatch()
+        {
+            _currentFlowBatch = new MeasureBatchModel
+            {
+                TId = _currentFlowTemplateId > 0 ? _currentFlowTemplateId : null,
+                Name = CurrentFlowResult.SN,
+                Code = CurrentFlowResult.Code,
+                CreateDate = DateTime.Now,
+            };
+            using var db = new SqlSugarClient(new ConnectionConfig
+            {
+                ConnectionString = MySqlControl.GetConnectionString(),
+                DbType = SqlSugar.DbType.MySql,
+                IsAutoCloseConnection = true,
+            });
+            _currentFlowBatch.Id = db.Insertable(_currentFlowBatch).ExecuteReturnIdentity();
+            CurrentFlowResult.BatchId = _currentFlowBatch.Id;
+            _flowNodeExecutionRecorder.StartRun(_currentFlowBatch.Id, CurrentFlowResult.Code);
         }
 
         private async Task<bool> PreProcessingAsync(string flowName, string serialNumber)
@@ -664,103 +740,174 @@ namespace ProjectKB
 
 
         private FlowControl? flowControl;
-        private void FlowControl_FlowCompleted(object? sender, FlowControlData FlowControlData)
+        private async void FlowControl_FlowCompleted(object? sender, FlowControlData flowControlData)
         {
             if (sender is FlowControl completedFlowControl)
                 completedFlowControl.FlowCompleted -= FlowControl_FlowCompleted;
             else if (flowControl != null)
                 flowControl.FlowCompleted -= FlowControl_FlowCompleted;
 
-            if (!Dispatcher.CheckAccess())
+            try
             {
-                Dispatcher.BeginInvoke(() => HandleFlowCompleted(FlowControlData));
-                return;
-            }
+                if (!Dispatcher.CheckAccess())
+                {
+                    Task dispatchedTask = await Dispatcher.InvokeAsync(() => HandleFlowCompletedAsync(flowControlData));
+                    await dispatchedTask;
+                    return;
+                }
 
-            HandleFlowCompleted(FlowControlData);
+                await HandleFlowCompletedAsync(flowControlData);
+            }
+            catch (Exception ex)
+            {
+                _isFlowLifecycleActive = false;
+                log.Error("处理流程完成事件失败", ex);
+            }
         }
 
-        private void HandleFlowCompleted(FlowControlData FlowControlData)
+        private async Task FinalizeCurrentFlowRunAsync(FlowControlData flowControlData)
         {
-            stopwatch.Stop();
-            timer.Change(Timeout.Infinite, 500); // 停止定时器
-            Interlocked.Exchange(ref _pendingUiUpdate, 0);
-
-            log.Info($"流程执行Elapsed Time: {stopwatch.ElapsedMilliseconds} ms");
-            CurrentFlowResult.RunTime = stopwatch.ElapsedMilliseconds;
+            string serialNumber = string.IsNullOrWhiteSpace(flowControlData.SerialNumber)
+                ? CurrentFlowResult.Code
+                : flowControlData.SerialNumber;
+            flowControlData.SerialNumber = serialNumber;
+            long elapsedMilliseconds = Math.Max(0, stopwatch.ElapsedMilliseconds);
+            CurrentFlowResult.RunTime = elapsedMilliseconds;
+            CurrentFlowResult.FlowStatus = flowControlData.FlowStatus;
             FlowNodeRecordDataBaseHelper.RecordFlowRun(
                 _currentFlowTemplateId,
                 FlowName,
-                FlowControlData.SerialNumber,
-                FlowControlData.FlowStatus,
-                CurrentFlowResult.RunTime);
+                serialNumber,
+                flowControlData.FlowStatus,
+                elapsedMilliseconds);
 
-            logTextBox.Text = FlowName + Environment.NewLine + FlowControlData.EventName;
-            CurrentFlowResult.Msg = FlowControlData.EventName;
-
-
-            ProjectKBConfig.Instance.SNlocked = false;
-            SNtextBox.Focus();
-
-            if (FlowControlData.EventName == "Completed")
+            try
             {
-
-                try
+                MeasureBatchModel? batch = _currentFlowBatch;
+                if (batch == null && CurrentFlowResult.BatchId > 0)
+                    batch = BatchResultMasterDao.Instance.GetById(CurrentFlowResult.BatchId);
+                if (batch != null)
                 {
-                    Application.Current.Dispatcher.BeginInvoke(() =>
+                    batch.TId = _currentFlowTemplateId > 0 ? _currentFlowTemplateId : null;
+                    batch.TotalTime = elapsedMilliseconds > int.MaxValue ? int.MaxValue : (int)elapsedMilliseconds;
+                    batch.FlowStatus = flowControlData.FlowStatus;
+                    batch.Result = flowControlData.Params ?? flowControlData.Message ?? flowControlData.EventName;
+                    using var db = new SqlSugarClient(new ConnectionConfig
                     {
-                        Processing(FlowControlData.SerialNumber);
+                        ConnectionString = MySqlControl.GetConnectionString(),
+                        DbType = SqlSugar.DbType.MySql,
+                        IsAutoCloseConnection = true,
                     });
+                    db.Updateable(batch).ExecuteCommand();
                 }
-                catch (Exception ex)
-                {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message);
-                }
-                TryCount = 0;
             }
-            else if (FlowControlData.EventName == "OverTime")
+            catch (Exception ex)
             {
-                log.Info("流程运行超时，正在重新尝试");
-                CurrentFlowResult.FlowStatus = FlowStatus.OverTime;
-                ViewResluts.Insert(0, CurrentFlowResult); //倒序插入
-                ClearFlowSafely();
-                Refresh();
-                if (TryCount < ProjectKBConfig.Instance.TryCountMax)
-                {
-                    Task.Delay(200).ContinueWith(t =>
-                    {
-                        log.Info("重新尝试运行流程");
-                        Application.Current.Dispatcher.BeginInvoke(() =>
-                        {
-                            RunTemplate();
-                        });
-                    });
-                    return;
-                }
-                TryCount = 0;
+                log.Error($"回写流程批次失败 => batchId={CurrentFlowResult.BatchId}, serialNumber={serialNumber}", ex);
             }
-            else
-            {
-                TryCount = 0;
-                log.Error("流程运行失败" + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params);
-                CurrentFlowResult.FlowStatus = FlowStatus.Failed;
-                CurrentFlowResult.Msg = FlowControlData.Params;
 
-                if (CurrentFlowResult.Msg.Contains("SDK return failed"))
+            try
+            {
+                await _flowNodeExecutionRecorder.CompleteRunAsync(
+                    serialNumber,
+                    flushTimeout: TimeSpan.FromSeconds(5));
+            }
+            catch (Exception ex)
+            {
+                log.Error($"结束流程节点统计失败 => batchId={CurrentFlowResult.BatchId}, serialNumber={serialNumber}", ex);
+            }
+            finally
+            {
+                _currentFlowBatch = null;
+            }
+        }
+
+        private async Task HandleFlowCompletedAsync(FlowControlData flowControlData)
+        {
+            bool retry = false;
+            bool isCompleted = flowControlData.EventName == "Completed";
+            bool isOverTime = flowControlData.EventName == "OverTime";
+            try
+            {
+                stopwatch.Stop();
+                timer.Change(Timeout.Infinite, 500); // 停止定时器
+                Interlocked.Exchange(ref _pendingUiUpdate, 0);
+
+                log.Info($"流程执行Elapsed Time: {stopwatch.ElapsedMilliseconds} ms");
+                logTextBox.Text = FlowName + Environment.NewLine + flowControlData.EventName;
+                CurrentFlowResult.Msg = flowControlData.EventName;
+
+                ProjectKBConfig.Instance.SNlocked = false;
+                SNtextBox.Focus();
+
+                if (!isCompleted)
                 {
-                    MeasureBatchModel Batch = BatchResultMasterDao.Instance.GetByCode(FlowControlData.SerialNumber);
-                    if (Batch != null)
+                    string failureMessage = flowControlData.Params ?? flowControlData.Message ?? flowControlData.EventName;
+                    CurrentFlowResult.Msg = failureMessage;
+                    if (isOverTime)
                     {
-                        var values = MeasureImgResultDao.Instance.GetAllByBatchId(Batch.Id);
-                        if (values.Count > 0)
+                        log.Info("流程运行超时，正在重新尝试");
+                        CurrentFlowResult.FlowStatus = FlowStatus.OverTime;
+                    }
+                    else
+                    {
+                        TryCount = 0;
+                        log.Error("流程运行失败" + flowControlData.EventName + Environment.NewLine + failureMessage);
+                        CurrentFlowResult.FlowStatus = FlowStatus.Failed;
+
+                        if (failureMessage.Contains("SDK return failed"))
                         {
-                            CurrentFlowResult.ResultImagFile = values[0].FileUrl;
+                            MeasureBatchModel Batch = BatchResultMasterDao.Instance.GetByCode(flowControlData.SerialNumber);
+                            if (Batch != null)
+                            {
+                                var values = MeasureImgResultDao.Instance.GetAllByBatchId(Batch.Id);
+                                if (values.Count > 0)
+                                    CurrentFlowResult.ResultImagFile = values[0].FileUrl;
+                            }
                         }
                     }
+
+                    ViewResluts.Insert(0, CurrentFlowResult); //倒序插入
+                    logTextBox.Text = FlowName + Environment.NewLine + flowControlData.EventName + Environment.NewLine + failureMessage;
+
+                    // 先让失败状态完成一次 UI 渲染，再等待节点统计写入和批次落库。
+                    await System.Windows.Threading.Dispatcher.Yield(System.Windows.Threading.DispatcherPriority.Background);
                 }
 
-                ViewResluts.Insert(0, CurrentFlowResult); //倒序插入
-                logTextBox.Text = FlowName + Environment.NewLine + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params;
+                await FinalizeCurrentFlowRunAsync(flowControlData);
+
+                if (isCompleted)
+                {
+                    try
+                    {
+                        await Dispatcher.InvokeAsync(() => Processing(flowControlData.SerialNumber));
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message);
+                    }
+                    TryCount = 0;
+                }
+                else if (isOverTime)
+                {
+                    ClearFlowSafely();
+                    await Refresh();
+                    if (TryCount < ProjectKBConfig.Instance.TryCountMax)
+                        retry = true;
+                    else
+                        TryCount = 0;
+                }
+            }
+            finally
+            {
+                _isFlowLifecycleActive = false;
+            }
+
+            if (retry)
+            {
+                await Task.Delay(200);
+                log.Info("重新尝试运行流程");
+                await RunTemplate();
             }
         }
 
@@ -770,8 +917,8 @@ namespace ProjectKB
         private void Processing(string SerialNumber)
         {
             KBItemMaster KBItemMaster = CurrentFlowResult ?? new KBItemMaster();
-            KBItemMaster.Model = FlowTemplate.Text;
-            KBItemMaster.SN = SNtextBox.Text;
+            KBItemMaster.Model = CurrentFlowResult?.Model ?? FlowName;
+            KBItemMaster.SN = CurrentFlowResult?.SN ?? string.Empty;
             KBItemMaster.CreateTime = DateTime.Now;
             KBItemMaster.FlowStatus = FlowStatus.Completed;
 
@@ -1714,6 +1861,65 @@ namespace ProjectKB
 
         }
 
+        private void BuildListViewContextMenu()
+        {
+            var openFolderCommand = new RelayCommand(
+                _ => ContextMenu_OpenFolderAndSelectFile(),
+                _ => listView1.SelectedItem is KBItemMaster item && File.Exists(item.ResultImagFile));
+            var flowExecutionAnalysisCommand = new RelayCommand(
+                _ => ContextMenu_FlowExecutionAnalysis(),
+                _ => listView1.SelectedItem is KBItemMaster item && item.BatchId > 0);
+
+            var contextMenu = new ContextMenu();
+            contextMenu.Items.Add(new MenuItem() { Command = ApplicationCommands.Delete });
+            contextMenu.Items.Add(new MenuItem() { Command = ApplicationCommands.Copy, Header = "复制" });
+            contextMenu.Items.Add(new Separator());
+            contextMenu.Items.Add(new MenuItem() { Command = openFolderCommand, Header = "OpenFolderAndSelectFile" });
+            contextMenu.Items.Add(new MenuItem() { Command = flowExecutionAnalysisCommand, Header = "流程执行分析" });
+            contextMenu.Opened += (s, e) => CommandManager.InvalidateRequerySuggested();
+
+            listView1.PreviewMouseRightButtonDown += (s, e) =>
+            {
+                var element = listView1.InputHitTest(e.GetPosition(listView1)) as DependencyObject;
+                while (element != null && element is not ListViewItem)
+                    element = VisualTreeHelper.GetParent(element);
+
+                if (element is ListViewItem targetItem)
+                    targetItem.IsSelected = true;
+            };
+            listView1.ContextMenu = contextMenu;
+        }
+
+        private void ContextMenu_OpenFolderAndSelectFile()
+        {
+            if (listView1.SelectedItem is KBItemMaster item && !string.IsNullOrWhiteSpace(item.ResultImagFile))
+                PlatformHelper.OpenFolderAndSelectFile(item.ResultImagFile);
+        }
+
+        private void ContextMenu_FlowExecutionAnalysis()
+        {
+            MeasureBatchModel? batch = GetSelectedMeasureBatch();
+            if (batch == null)
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), "找不到批次号，请检查流程配置", "ColorVision");
+                return;
+            }
+
+            var window = new FlowExecutionAnalysisWindow(batch)
+            {
+                Owner = Application.Current.GetActiveWindow(),
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            };
+            window.Show();
+        }
+
+        private MeasureBatchModel? GetSelectedMeasureBatch()
+        {
+            return listView1.SelectedItem is KBItemMaster item && item.BatchId > 0
+                ? BatchResultMasterDao.Instance.GetById(item.BatchId)
+                : null;
+        }
+
         private void ContextMenu_Opened(object sender, RoutedEventArgs e)
         {
 
@@ -1766,6 +1972,7 @@ namespace ProjectKB
                 flowControl.FlowCompleted -= FlowControl_FlowCompleted;
                 flowControl.Stop();
             }
+            _flowNodeExecutionRecorder.Dispose();
             flowEngine?.Dispose();
             STNodeEditorMain?.Dispose();
             timer?.Dispose();

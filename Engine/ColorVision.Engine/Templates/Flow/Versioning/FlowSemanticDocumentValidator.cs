@@ -1,7 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
-using FlowFailureKind = FlowEngineLib.Runtime.FlowFailureKind;
 
 namespace ColorVision.Engine.Templates.Flow.Versioning
 {
@@ -10,10 +8,7 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
         public static void Validate(FlowSemanticDocument document)
         {
             ArgumentNullException.ThrowIfNull(document);
-            if (document.Nodes == null
-                || document.Edges == null
-                || document.ErrorRoutes == null
-                || document.RetryPolicies == null)
+            if (document.Nodes == null || document.Edges == null)
             {
                 throw new ArgumentException(
                     "流程语义集合不能为 null。",
@@ -58,130 +53,6 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
                 }
             }
 
-            var errorRouteKeys = new HashSet<string>(
-                StringComparer.Ordinal);
-            var errorRouteBindings =
-                new HashSet<(string SourceNodeId, FlowFailureKind Kind)>();
-            foreach (FlowErrorRoute route in document.ErrorRoutes)
-            {
-                ArgumentNullException.ThrowIfNull(route);
-                EnsureText(route.SourceNodeId, "错误路由来源节点");
-                EnsureText(route.ErrorCode, "错误代码");
-                EnsureText(route.TargetNodeId, "错误路由目标节点");
-                EnsureText(route.TargetPort, "错误路由目标端口");
-                if (!Enum.TryParse(
-                        route.ErrorCode,
-                        ignoreCase: false,
-                        out FlowFailureKind failureKind)
-                    || !Enum.IsDefined(failureKind)
-                    || !string.Equals(
-                        route.ErrorCode,
-                        failureKind.ToString(),
-                        StringComparison.Ordinal))
-                {
-                    throw new ArgumentException(
-                        $"错误代码必须是有效的失败类型：{route.ErrorCode}。",
-                        nameof(document));
-                }
-                EnsureInputPort(route.TargetPort, "错误路由目标端口");
-                if (!errorRouteBindings.Add(
-                    (route.SourceNodeId, failureKind)))
-                {
-                    throw new ArgumentException(
-                        $"节点 {route.SourceNodeId} 的 {failureKind} "
-                        + "失败类型只能配置一条错误路由。",
-                        nameof(document));
-                }
-                if (!errorRouteKeys.Add(
-                    FlowSemanticHash.GetErrorRouteKey(route)))
-                {
-                    throw new ArgumentException(
-                        "流程包含重复错误路由。",
-                        nameof(document));
-                }
-            }
-
-            var retryPolicyNodes = new HashSet<string>(
-                StringComparer.Ordinal);
-            foreach (FlowRetryPolicyReference retryPolicy in
-                document.RetryPolicies)
-            {
-                ArgumentNullException.ThrowIfNull(retryPolicy);
-                EnsureText(retryPolicy.NodeId, "重试策略节点");
-                if (!retryPolicyNodes.Add(retryPolicy.NodeId))
-                {
-                    throw new ArgumentException(
-                        $"节点 {retryPolicy.NodeId} 包含多个重试策略。",
-                        nameof(document));
-                }
-                if (retryPolicy.MaxAttempts is < 1 or > 100)
-                {
-                    throw new ArgumentException(
-                        "重试策略最大尝试次数必须介于 1 和 100 之间。",
-                        nameof(document));
-                }
-                if (retryPolicy.InitialDelayMs < 0)
-                {
-                    throw new ArgumentException(
-                        "重试策略初始延迟不能为负数。",
-                        nameof(document));
-                }
-                EnsureFinite(retryPolicy.Backoff, "重试策略退避倍数");
-                if (retryPolicy.Backoff < 1)
-                {
-                    throw new ArgumentException(
-                        "重试策略退避倍数不能小于 1。",
-                        nameof(document));
-                }
-                if (retryPolicy.MaxDelayMs
-                    < retryPolicy.InitialDelayMs)
-                {
-                    throw new ArgumentException(
-                        "重试策略最大延迟不能小于初始延迟。",
-                        nameof(document));
-                }
-                if (retryPolicy.RetryableKinds == null
-                    || retryPolicy.RetryableKinds.Count == 0)
-                {
-                    throw new ArgumentException(
-                        "重试策略必须包含可重试失败类型。",
-                        nameof(document));
-                }
-
-                var retryableKinds = new HashSet<string>(
-                    StringComparer.Ordinal);
-                foreach (string kind in retryPolicy.RetryableKinds)
-                {
-                    EnsureText(kind, "可重试失败类型");
-                    if (!retryableKinds.Add(kind))
-                    {
-                        throw new ArgumentException(
-                            $"重试策略包含重复失败类型：{kind}。",
-                            nameof(document));
-                    }
-                    if (!Enum.TryParse(
-                            kind,
-                            ignoreCase: false,
-                            out FlowFailureKind failureKind)
-                        || !Enum.IsDefined(failureKind)
-                        || !string.Equals(
-                            kind,
-                            failureKind.ToString(),
-                            StringComparison.Ordinal))
-                    {
-                        throw new ArgumentException(
-                            $"可重试失败类型无效：{kind}。",
-                            nameof(document));
-                    }
-                    if (failureKind == FlowFailureKind.Canceled)
-                    {
-                        throw new ArgumentException(
-                            "Canceled 不能配置为可重试失败类型。",
-                            nameof(document));
-                    }
-                }
-            }
-
             FlowLayoutDocument layout =
                 document.Layout ?? new FlowLayoutDocument();
             EnsureFinite(layout.ViewportX, "画布 X");
@@ -221,21 +92,5 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
                 throw new ArgumentException($"{fieldName}必须是有限数值。");
         }
 
-        private static void EnsureInputPort(
-            string value,
-            string fieldName)
-        {
-            if (!value.StartsWith("in:", StringComparison.Ordinal)
-                || !int.TryParse(
-                    value.AsSpan(3),
-                    NumberStyles.None,
-                    CultureInfo.InvariantCulture,
-                    out int index)
-                || index < 0)
-            {
-                throw new ArgumentException(
-                    $"{fieldName}必须使用 in:<本地索引> 格式。");
-            }
-        }
     }
 }

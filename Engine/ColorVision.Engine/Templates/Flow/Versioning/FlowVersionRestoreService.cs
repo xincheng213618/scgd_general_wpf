@@ -1,5 +1,4 @@
 using ColorVision.Engine.Templates.Flow;
-using ColorVision.Engine.Templates.Flow.Routing;
 using System;
 
 namespace ColorVision.Engine.Templates.Flow.Versioning
@@ -13,8 +12,7 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
         bool Succeeded,
         string? LoadedContentHash,
         bool VersionCatalogUpdated,
-        string? FailureMessage,
-        string? RollbackFailure)
+        string? FailureMessage)
     {
         public static FlowVersionRestoreResult Success(
             string? loadedContentHash,
@@ -24,59 +22,40 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
                 Succeeded: true,
                 LoadedContentHash: loadedContentHash,
                 VersionCatalogUpdated: versionCatalogUpdated,
-                FailureMessage: null,
-                RollbackFailure: null);
+                FailureMessage: null);
         }
 
         public static FlowVersionRestoreResult Failure(
-            string failureMessage,
-            string? rollbackFailure = null)
+            string failureMessage)
         {
             return new FlowVersionRestoreResult(
                 Succeeded: false,
                 LoadedContentHash: null,
                 VersionCatalogUpdated: false,
-                FailureMessage: failureMessage,
-                RollbackFailure: rollbackFailure);
+                FailureMessage: failureMessage);
         }
     }
 
     /// <summary>
-    /// Coordinates the policy sidecar and the legacy template save. It keeps
-    /// UI refresh outside the persistence transaction, so a refresh failure
-    /// cannot trigger an invalid rollback after the template has committed.
+    /// Restores a legacy template snapshot as a new current revision.
     /// </summary>
     internal sealed class FlowVersionRestoreService
     {
-        private readonly IFlowExecutionPolicyStore policyStore;
         private readonly Action<FlowParam, FlowTemplateSaveCondition>
             saveTemplate;
-        private readonly Action<
-            FlowRevision,
-            FlowExecutionPolicySaveRequest> validateProjection;
 
         public FlowVersionRestoreService()
             : this(
-                FlowExecutionPolicyStoreProvider.Shared,
                 (flowParam, condition) =>
-                    TemplateFlow.Save2DB(flowParam, condition),
-                FlowVersionRestoreProjection.Validate)
+                    TemplateFlow.Save2DB(flowParam, condition))
         {
         }
 
         internal FlowVersionRestoreService(
-            IFlowExecutionPolicyStore policyStore,
-            Action<FlowParam, FlowTemplateSaveCondition> saveTemplate,
-            Action<FlowRevision, FlowExecutionPolicySaveRequest>
-                validateProjection)
+            Action<FlowParam, FlowTemplateSaveCondition> saveTemplate)
         {
-            this.policyStore = policyStore
-                ?? throw new ArgumentNullException(nameof(policyStore));
             this.saveTemplate = saveTemplate
                 ?? throw new ArgumentNullException(nameof(saveTemplate));
-            this.validateProjection = validateProjection
-                ?? throw new ArgumentNullException(
-                    nameof(validateProjection));
         }
 
         public FlowVersionRestoreResult Restore(
@@ -107,39 +86,8 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
             string previousData = flowParam.DataBase64;
             int? previousTemplateRevision =
                 flowParam.TemplateRevision;
-            FlowExecutionPolicySnapshot? previousPolicy = null;
-            FlowExecutionPolicySnapshot? savedPolicy = null;
             try
             {
-                if (!policyStore.TryLoad(
-                        flowKey,
-                        out previousPolicy,
-                        out string? policyFailure))
-                {
-                    return FlowVersionRestoreResult.Failure(
-                        "读取当前执行策略失败，未开始恢复："
-                        + policyFailure);
-                }
-
-                FlowExecutionPolicySaveRequest targetPolicy =
-                    FlowVersionRestoreProjection.CreatePolicySaveRequest(
-                        flowKey,
-                        previousPolicy.Revision,
-                        revision.SemanticDocument);
-                validateProjection(revision, targetPolicy);
-                NormalizedFlowExecutionPolicy normalizedPolicy =
-                    FlowExecutionPolicyRules.Normalize(
-                        flowKey,
-                        targetPolicy.ErrorRoutes,
-                        targetPolicy.RetryPolicies);
-                if (!string.Equals(
-                        previousPolicy.ContentHash,
-                        normalizedPolicy.ContentHash,
-                        StringComparison.Ordinal))
-                {
-                    savedPolicy = policyStore.Save(targetPolicy);
-                }
-
                 flowParam.DataBase64 = Convert.ToBase64String(
                     revision.FullSnapshot);
                 // TemplateFlow uses this revision to restore the exact
@@ -158,36 +106,7 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
                 flowParam.DataBase64 = previousData;
                 flowParam.TemplateRevision =
                     previousTemplateRevision;
-                string? rollbackFailure = TryRestorePreviousPolicy(
-                    flowKey,
-                    previousPolicy,
-                    savedPolicy);
-                return FlowVersionRestoreResult.Failure(
-                    ex.Message,
-                    rollbackFailure);
-            }
-        }
-
-        private string? TryRestorePreviousPolicy(
-            string flowKey,
-            FlowExecutionPolicySnapshot? previous,
-            FlowExecutionPolicySnapshot? saved)
-        {
-            if (previous == null || saved == null)
-                return null;
-            try
-            {
-                policyStore.Save(
-                    new FlowExecutionPolicySaveRequest(
-                        flowKey,
-                        saved.Revision,
-                        previous.ErrorRoutes,
-                        previous.RetryPolicies));
-                return null;
-            }
-            catch (Exception ex)
-            {
-                return ex.Message;
+                return FlowVersionRestoreResult.Failure(ex.Message);
             }
         }
     }
