@@ -85,6 +85,7 @@ public class NodeConfiguratorBindingTests
                 Assert.Equal(-1, comboBox.SelectedIndex);
                 Assert.Equal(string.Empty, node.Title);
 
+                FlowNodePropertyEditorRegistration.EnsureRegistered();
                 const string buildPoiTemplateName = "UnitTest.BuildPoi.Template";
                 var buildPoiTemplate = new TemplateModel<ParamBuildPoi>(
                     buildPoiTemplateName,
@@ -114,7 +115,6 @@ public class NodeConfiguratorBindingTests
                     LmtRng = 3000
                 };
                 smuNode.Create();
-                FlowNodePropertyEditorRegistration.EnsureRegistered();
 
                 Assert.Equal(typeof(FlowSmuRangeEditor), FlowNodePropertyEditorAttribute.Resolve(typeof(SMUNode), nameof(SMUNode.SrcRng)));
                 Assert.Equal(typeof(FlowSmuRangeEditor), FlowNodePropertyEditorAttribute.Resolve(typeof(SMUFromCSVNode), nameof(SMUFromCSVNode.LmtRng)));
