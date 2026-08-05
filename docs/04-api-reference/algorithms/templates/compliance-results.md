@@ -70,4 +70,4 @@
 | 新增结果类型 | handler、DAO、数据表和文档映射 |
 | 修改 `ValidateResult` JSON | Y、XYZ、JND 三类模型 |
 | 现场验收 | 主结果、明细表、原图路径、Validate 模板和项目导出文件 |
-| 项目使用 JND | 同步看 [JND 模板](./jnd-template.md) 和项目页 |
+| 项目使用 JND | 同步看项目页中的最终判定来源 |

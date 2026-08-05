@@ -6,7 +6,6 @@ using ColorVision.Engine.Templates.FocusPoints;
 using ColorVision.Engine.Templates.FOV;
 using ColorVision.Engine.Templates.Ghost;
 using ColorVision.Engine.Templates.ImageCropping;
-using ColorVision.Engine.Templates.JND;
 using ColorVision.Engine.Templates.Jsons.AAFindPoints;
 using ColorVision.Engine.Templates.Jsons.BinocularFusion;
 using ColorVision.Engine.Templates.Jsons.DetectScreenDefects;
@@ -160,9 +159,6 @@ namespace ColorVision.Engine.FlowProcessing.Editor.NodeConfiguration
                         break;
                     case FlowEngineLib.Algorithm.AlgorithmType.发光区检测OLED:
                         context.AddTemplatePanel(nameof(node.TempName), Properties.Resources.FindLightAreaOLED, new TemplateRoi());
-                        break;
-                    case FlowEngineLib.Algorithm.AlgorithmType.JND:
-                        context.AddTemplatePanel(nameof(node.TempName), "JND", new TemplateJND());
                         break;
                     case FlowEngineLib.Algorithm.AlgorithmType.SFR_FindROI:
                         context.AddTemplateJsonPanel(nameof(node.TempName), "SFR_FindROI", new TemplateSFRFindROI());

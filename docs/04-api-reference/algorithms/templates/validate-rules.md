@@ -58,7 +58,7 @@
 | --- | --- |
 | [BuzProduct 产品业务参数模板](./buz-product-template.md) | 明细的 `val_rule_temp_id` 指向 Validate 模板 |
 | [Compliance 结果对接](./compliance-results.md) | 读取上游写回的 `ValidateResult`，按 `ValidateRuleResultType.M` 判断通过 |
-| [JND 模板](./jnd-template.md) | JND 类判定模板来自 `mod_type = 120` |
+| JND 类判定 | 判定模板来自 `mod_type = 120` |
 | 项目包 | 可能读取 Validate/Compliance 结果生成最终报表或 OK/NG |
 
 ## 排查和维护
