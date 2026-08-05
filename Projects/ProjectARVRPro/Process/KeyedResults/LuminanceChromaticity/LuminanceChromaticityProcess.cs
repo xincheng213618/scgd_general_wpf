@@ -195,46 +195,8 @@ namespace ProjectARVRPro.Process.KeyedResults.LuminanceChromaticity
 
             foreach (var poi in testResult.ViewPoixyuvDatas)
             {
-                var point = poi.Point;
-                switch (point.PointType)
-                {
-                    case POIPointTypes.Circle:
-                        var circle = CreateCircle(point, poi);
-                        circle.Render();
-                        ctx.ImageView.AddVisual(circle);
-                        break;
-                    case POIPointTypes.Rect:
-                        var rectangle = CreateRectangle(point, poi);
-                        rectangle.Render();
-                        ctx.ImageView.AddVisual(rectangle);
-                        break;
-                }
+                PoiOverlayRenderer.Add(ctx.ImageView, poi.Point, CVRawOpen.FormatMessage(CVCIEShowConfig.Instance.Template, poi));
             }
-        }
-
-        private static DVCircleText CreateCircle(POIPoint point, PoiResultCIExyuvData poi)
-        {
-            var circle = new DVCircleText();
-            circle.Attribute.Center = new Point(point.PixelX, point.PixelY);
-            circle.Attribute.Radius = point.Radius;
-            circle.Attribute.Brush = Brushes.Transparent;
-            circle.Attribute.Pen = new Pen(Brushes.Red, 1);
-            circle.Attribute.Id = point.Id ?? -1;
-            circle.Attribute.Text = point.Name;
-            circle.Attribute.Msg = CVRawOpen.FormatMessage(CVCIEShowConfig.Instance.Template, poi);
-            return circle;
-        }
-
-        private static DVRectangleText CreateRectangle(POIPoint point, PoiResultCIExyuvData poi)
-        {
-            var rectangle = new DVRectangleText();
-            rectangle.Attribute.Rect = new Rect(point.PixelX - point.Width / 2, point.PixelY - point.Height / 2, point.Width, point.Height);
-            rectangle.Attribute.Brush = Brushes.Transparent;
-            rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
-            rectangle.Attribute.Id = point.Id ?? -1;
-            rectangle.Attribute.Text = point.Name;
-            rectangle.Attribute.Msg = CVRawOpen.FormatMessage(CVCIEShowConfig.Instance.Template, poi);
-            return rectangle;
         }
 
         public override void GenText(IProcessExecutionContext ctx, Paragraph paragraph, Brush foreground, double fontSize)

@@ -1011,7 +1011,7 @@ namespace ColorVision.Engine.Templates.POI
                     {
                         Id = index,
                         Name = rectangle.Text,
-                        PointType = GraphicTypes.Rect,
+                        PointType = PoiShape.Rect,
                         PixX = rectangle.Rect.X + rectangle.Rect.Width / 2,
                         PixY = rectangle.Rect.Y + rectangle.Rect.Height / 2,
                         PixWidth = rectangle.Rect.Width,

@@ -173,34 +173,7 @@ namespace ProjectARVRPro.Process.Chessboard
             foreach (var poiResultCIExyuvData in testResult.PoixyuvDatas)
             {
                 var item = poiResultCIExyuvData.Point;
-                switch (item.PointType)
-                {
-                    case POIPointTypes.Circle:
-                        DVCircleText Circle = new DVCircleText();
-                        Circle.Attribute.Center = new Point(item.PixelX, item.PixelY);
-                        Circle.Attribute.Radius = item.Radius;
-                        Circle.Attribute.Brush = Brushes.Transparent;
-                        Circle.Attribute.Pen = new Pen(Brushes.Red, 1);
-                        Circle.Attribute.Id = item.Id ?? -1;
-                        Circle.Attribute.Text = item.Name;
-                        Circle.Attribute.Msg = CVRawOpen.FormatMessage("Y:@Y:F2", poiResultCIExyuvData);
-                        Circle.Render();
-                        ctx.ImageView.AddVisual(Circle);
-                        break;
-                    case POIPointTypes.Rect:
-                        DVRectangleText Rectangle = new DVRectangleText();
-                        Rectangle.Attribute.Rect = new Rect(item.PixelX - item.Width / 2, item.PixelY - item.Height / 2, item.Width, item.Height);
-                        Rectangle.Attribute.Brush = Brushes.Transparent;
-                        Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
-                        Rectangle.Attribute.Id = item.Id ?? -1;
-                        Rectangle.Attribute.Text = item.Name;
-                        Rectangle.Attribute.Msg = CVRawOpen.FormatMessage("Y:@Y:F2", poiResultCIExyuvData);
-                        Rectangle.Render();
-                        ctx.ImageView.AddVisual(Rectangle);
-                        break;
-                    default:
-                        break;
-                }
+                PoiOverlayRenderer.Add(ctx.ImageView, item, CVRawOpen.FormatMessage("Y:@Y:F2", poiResultCIExyuvData));
             }
         }
 

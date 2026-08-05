@@ -194,7 +194,7 @@ namespace ColorVision.Engine.Templates.Jsons.OLEDAOI
                                 PixY = item.y,
                                 PixHeight =item.w,
                                 PixWidth = item.h,
-                                PointType = GraphicTypes.Rect,
+                                PointType = PoiShape.Rect,
                                 Id = item.id
                             };
                             templatePoi1.ImportTemp.PoiPoints.Add(poiPoint);

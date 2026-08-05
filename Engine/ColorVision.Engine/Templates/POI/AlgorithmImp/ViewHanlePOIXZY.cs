@@ -3,16 +3,12 @@ using ColorVision.Common.MVVM;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.Services;
 using ColorVision.Database;
-using ColorVision.ImageEditor.Draw;
-using CVCommCore.CVAlgorithm;
 using log4net;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
-using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
-using System.Windows.Media;
 
 namespace ColorVision.Engine.Templates.POI.AlgorithmImp
 {
@@ -86,42 +82,8 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
 
             if (result.ViewResults.Count <= 4000)
             {
-                foreach (var poiResultCIExyuvData in result.ViewResults.ToSpecificViewResults<PoiResultCIExyuvData>())
-                {
-                    var item = poiResultCIExyuvData.Point;
-                    switch (item.PointType)
-                    {
-                        case POIPointTypes.Circle:
-                            CircleTextProperties circleTextProperties = new CircleTextProperties();
-                            circleTextProperties.Center = new Point(item.PixelX, item.PixelY);
-                            circleTextProperties.Radius = item.Radius;
-                            circleTextProperties.Brush = Brushes.Transparent;
-                            circleTextProperties.Pen = new Pen(Brushes.Red, 1);
-                            circleTextProperties.Id = item.Id ?? -1;
-                            circleTextProperties.Text = item.Name;
-                            circleTextProperties.Msg = CVRawOpen.FormatMessage(CVCIEShowConfig.Instance.Template, poiResultCIExyuvData);
-
-                            DVCircleText Circle = new DVCircleText(circleTextProperties);
-                            Circle.Render();
-                            ctx.ImageView.AddVisual(Circle);
-                            break;
-                        case POIPointTypes.Rect:
-                            RectangleTextProperties rectangleTextProperties = new RectangleTextProperties();
-                            rectangleTextProperties.Rect = new Rect(item.PixelX - item.Width / 2, item.PixelY - item.Height / 2, item.Width, item.Height);
-                            rectangleTextProperties.Brush = Brushes.Transparent;
-                            rectangleTextProperties.Pen = new Pen(Brushes.Red, 1);
-                            rectangleTextProperties.Id = item.Id ?? -1;
-                            rectangleTextProperties.Text = item.Name;
-                            rectangleTextProperties.Msg = CVRawOpen.FormatMessage(CVCIEShowConfig.Instance.Template, poiResultCIExyuvData);
-
-                            DVRectangleText Rectangle = new DVRectangleText(rectangleTextProperties);
-                            Rectangle.Render();
-                            ctx.ImageView.AddVisual(Rectangle);
-                            break;
-                        default:
-                            break;
-                    }
-                }
+                foreach (PoiResultCIExyuvData poiResult in result.ViewResults.ToSpecificViewResults<PoiResultCIExyuvData>())
+                    PoiOverlayRenderer.Add(ctx.ImageView, poiResult.Point, CVRawOpen.FormatMessage(CVCIEShowConfig.Instance.Template, poiResult));
             }
             else
             {

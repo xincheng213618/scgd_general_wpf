@@ -448,7 +448,7 @@ namespace ColorVision.Engine.Media
         {
 
 
-            PoiResultCIEYData GetCVCIEY(POIPoint poiPoint)
+            PoiResultCIEYData GetCVCIEY(PoiPoint poiPoint)
             {
                 int x = (int)poiPoint.PixelX; int y = (int)poiPoint.PixelY; int rect = (int)poiPoint.Width; int rect2 = (int)poiPoint.Height;
                 PoiResultCIEYData PoiResultCIEYData = new PoiResultCIEYData();
@@ -457,15 +457,16 @@ namespace ColorVision.Engine.Media
 
                 switch (poiPoint.PointType)
                 {
-                    case POIPointTypes.None:
+                    case PoiShape.None:
                         break;
-                    case POIPointTypes.SolidPoint:
+                    case PoiShape.Point:
+                    case PoiShape.LegacySolidPoint:
                         _ = ConvertXYZ.CM_GetYCircle(Config.ConvertXYZhandle, x, y, ref dYVal, 1);
                         break;
-                    case POIPointTypes.Circle:
+                    case PoiShape.Circle:
                         _ = ConvertXYZ.CM_GetYCircle(Config.ConvertXYZhandle, x, y, ref dYVal, rect / 2);
                         break;
-                    case POIPointTypes.Rect:
+                    case PoiShape.Rect:
                         _ = ConvertXYZ.CM_GetYRect(Config.ConvertXYZhandle, x, y, ref dYVal, rect, rect2);
                         break;
                     default:
@@ -476,7 +477,7 @@ namespace ColorVision.Engine.Media
             }
 
 
-            PoiResultCIExyuvData GetCVCIE(POIPoint pOIPoint)
+            PoiResultCIExyuvData GetCVCIE(PoiPoint pOIPoint)
             {
                 int x = (int)pOIPoint.PixelX; int y = (int)pOIPoint.PixelY; int rect = (int)pOIPoint.Width; int rect2 = (int)pOIPoint.Height;
                 PoiResultCIExyuvData poiResultCIExyuvData = new PoiResultCIExyuvData();
@@ -493,15 +494,16 @@ namespace ColorVision.Engine.Media
 
                 switch (pOIPoint.PointType)
                 {
-                    case POIPointTypes.None:
+                    case PoiShape.None:
                         break;
-                    case POIPointTypes.SolidPoint:
+                    case PoiShape.Point:
+                    case PoiShape.LegacySolidPoint:
                         _ = ConvertXYZ.CM_GetXYZxyuvCircle(Config.ConvertXYZhandle, x, y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, 1);
                         break;
-                    case POIPointTypes.Circle:
+                    case PoiShape.Circle:
                         _ = ConvertXYZ.CM_GetXYZxyuvCircle(Config.ConvertXYZhandle, x, y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, rect / 2);
                         break;
-                    case POIPointTypes.Rect:
+                    case PoiShape.Rect:
                         _ = ConvertXYZ.CM_GetXYZxyuvRect(Config.ConvertXYZhandle, x, y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, rect, rect2);
                         break;
                     default:
@@ -587,7 +589,7 @@ namespace ColorVision.Engine.Media
                                 BaseProperties drawAttributeBase = item.BaseAttribute;
                                 if (drawAttributeBase is CircleTextProperties circle)
                                 {
-                                    POIPoint pOIPoint = new POIPoint() { Name = circle.Text, PixelX = (int)circle.Center.X, PixelY = (int)circle.Center.Y, PointType = POIPointTypes.Circle, Height = (int)circle.Radius * 2, Width = (int)circle.Radius * 2 };
+                                    PoiPoint pOIPoint = new() { Name = circle.Text, PixelX = circle.Center.X, PixelY = circle.Center.Y, PointType = PoiShape.Circle, Height = circle.Radius * 2, Width = circle.Radius * 2 };
                                     var sss = GetCVCIEY(pOIPoint);
                                     if (Isshow)
                                         circle.Msg = "Y:" + sss.Y.ToString("F1");
@@ -596,7 +598,7 @@ namespace ColorVision.Engine.Media
                                 else if (drawAttributeBase is CircleProperties circleProperties)
                                 {
 
-                                    POIPoint pOIPoint = new POIPoint() { Name = circleProperties.Id.ToString(), PixelX = (int)circleProperties.Center.X, PixelY = (int)circleProperties.Center.Y, PointType = POIPointTypes.Circle, Height = (int)circleProperties.Radius * 2, Width = (int)circleProperties.Radius * 2 };
+                                    PoiPoint pOIPoint = new() { Name = circleProperties.Id.ToString(), PixelX = circleProperties.Center.X, PixelY = circleProperties.Center.Y, PointType = PoiShape.Circle, Height = circleProperties.Radius * 2, Width = circleProperties.Radius * 2 };
                                     var sss = GetCVCIEY(pOIPoint);
                                     if (Isshow)
                                         circleProperties.Msg = "Y:" + sss.Y.ToString("F1");
@@ -604,7 +606,7 @@ namespace ColorVision.Engine.Media
                                 }
                                 else if (drawAttributeBase is RectangleTextProperties rectangle)
                                 {
-                                    POIPoint pOIPoint = new POIPoint() { Name = rectangle.Id.ToString(), PixelX = (int)(rectangle.Rect.X + rectangle.Rect.Width / 2), PixelY = (int)(rectangle.Rect.Y + rectangle.Rect.Height / 2), PointType = POIPointTypes.Rect, Height = (int)rectangle.Rect.Height, Width = (int)rectangle.Rect.Width };
+                                    PoiPoint pOIPoint = new() { Name = rectangle.Id.ToString(), PixelX = rectangle.Rect.X + rectangle.Rect.Width / 2, PixelY = rectangle.Rect.Y + rectangle.Rect.Height / 2, PointType = PoiShape.Rect, Height = rectangle.Rect.Height, Width = rectangle.Rect.Width };
                                     var sss = GetCVCIEY(pOIPoint);
                                     if (Isshow)
                                         rectangle.Msg = "Y:" + sss.Y.ToString("F1");
@@ -612,7 +614,7 @@ namespace ColorVision.Engine.Media
                                 }
                                 else if (drawAttributeBase is RectangleProperties rectangleProperties)
                                 {
-                                    POIPoint pOIPoint = new POIPoint() { Name = rectangleProperties.Id.ToString(), PixelX = (int)(rectangleProperties.Rect.X + rectangleProperties.Rect.Width / 2), PixelY = (int)(rectangleProperties.Rect.Y + rectangleProperties.Rect.Height / 2), PointType = POIPointTypes.Rect, Height = (int)rectangleProperties.Rect.Height, Width = (int)rectangleProperties.Rect.Width };
+                                    PoiPoint pOIPoint = new() { Name = rectangleProperties.Id.ToString(), PixelX = rectangleProperties.Rect.X + rectangleProperties.Rect.Width / 2, PixelY = rectangleProperties.Rect.Y + rectangleProperties.Rect.Height / 2, PointType = PoiShape.Rect, Height = rectangleProperties.Rect.Height, Width = rectangleProperties.Rect.Width };
                                     var sss = GetCVCIEY(pOIPoint);
                                     if (Isshow)
                                         rectangleProperties.Msg = "Y:" + sss.Y.ToString("F1");
@@ -632,7 +634,7 @@ namespace ColorVision.Engine.Media
                                 BaseProperties drawAttributeBase = item.BaseAttribute;
                                 if (drawAttributeBase is CircleTextProperties circle)
                                 {
-                                    POIPoint pOIPoint = new POIPoint() { Name = circle.Text, PixelX = (int)circle.Center.X, PixelY = (int)circle.Center.Y, PointType = POIPointTypes.Circle, Height = (int)circle.Radius * 2, Width = (int)circle.Radius * 2 };
+                                    PoiPoint pOIPoint = new() { Name = circle.Text, PixelX = circle.Center.X, PixelY = circle.Center.Y, PointType = PoiShape.Circle, Height = circle.Radius * 2, Width = circle.Radius * 2 };
                                     var sss = GetCVCIE(pOIPoint);
                                     if (Isshow)
                                         if (CVCIEShowConfig.Instance.IsShowString)
@@ -642,7 +644,7 @@ namespace ColorVision.Engine.Media
                                 }
                                 else if (drawAttributeBase is CircleProperties circleProperties)
                                 {
-                                    POIPoint pOIPoint = new POIPoint() { Name = circleProperties.Id.ToString(), PixelX = (int)circleProperties.Center.X, PixelY = (int)circleProperties.Center.Y, PointType = POIPointTypes.Circle, Height = (int)circleProperties.Radius * 2, Width = (int)circleProperties.Radius * 2 };
+                                    PoiPoint pOIPoint = new() { Name = circleProperties.Id.ToString(), PixelX = circleProperties.Center.X, PixelY = circleProperties.Center.Y, PointType = PoiShape.Circle, Height = circleProperties.Radius * 2, Width = circleProperties.Radius * 2 };
                                     var sss = GetCVCIE(pOIPoint);
                                     if (Isshow)
                                         if (CVCIEShowConfig.Instance.IsShowString)
@@ -651,7 +653,7 @@ namespace ColorVision.Engine.Media
                                 }
                                 else if (drawAttributeBase is RectangleTextProperties rectangle)
                                 {
-                                    POIPoint pOIPoint = new POIPoint() { Name = rectangle.Id.ToString(), PixelX = (int)(rectangle.Rect.X + rectangle.Rect.Width / 2), PixelY = (int)(rectangle.Rect.Y + rectangle.Rect.Height / 2), PointType = POIPointTypes.Rect, Height = (int)rectangle.Rect.Height, Width = (int)rectangle.Rect.Width };
+                                    PoiPoint pOIPoint = new() { Name = rectangle.Id.ToString(), PixelX = rectangle.Rect.X + rectangle.Rect.Width / 2, PixelY = rectangle.Rect.Y + rectangle.Rect.Height / 2, PointType = PoiShape.Rect, Height = rectangle.Rect.Height, Width = rectangle.Rect.Width };
                                     var sss = GetCVCIE(pOIPoint);
                                     if (Isshow)
                                         if (CVCIEShowConfig.Instance.IsShowString)
@@ -661,7 +663,7 @@ namespace ColorVision.Engine.Media
                                 }
                                 else if (drawAttributeBase is RectangleProperties rectangleProperties)
                                 {
-                                    POIPoint pOIPoint = new POIPoint() { Name = rectangleProperties.Id.ToString(), PixelX = (int)(rectangleProperties.Rect.X + rectangleProperties.Rect.Width / 2), PixelY = (int)(rectangleProperties.Rect.Y + rectangleProperties.Rect.Height / 2), PointType = POIPointTypes.Rect, Height = (int)rectangleProperties.Rect.Height, Width = (int)rectangleProperties.Rect.Width };
+                                    PoiPoint pOIPoint = new() { Name = rectangleProperties.Id.ToString(), PixelX = rectangleProperties.Rect.X + rectangleProperties.Rect.Width / 2, PixelY = rectangleProperties.Rect.Y + rectangleProperties.Rect.Height / 2, PointType = PoiShape.Rect, Height = rectangleProperties.Rect.Height, Width = rectangleProperties.Rect.Width };
                                     var sss = GetCVCIE(pOIPoint);
                                     if (Isshow)
                                         if (CVCIEShowConfig.Instance.IsShowString)

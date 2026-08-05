@@ -79,34 +79,7 @@ namespace ProjectARVRPro.Process.POI
             foreach (var poiResultCIExyuvData in testResult.ViewPoixyuvDatas)
             {
                 var item = poiResultCIExyuvData.Point;
-                switch (item.PointType)
-                {
-                    case POIPointTypes.Circle:
-                        DVCircleText circle = new DVCircleText();
-                        circle.Attribute.Center = new Point(item.PixelX, item.PixelY);
-                        circle.Attribute.Radius = item.Radius;
-                        circle.Attribute.Brush = Brushes.Transparent;
-                        circle.Attribute.Pen = new Pen(Brushes.Red, 1);
-                        circle.Attribute.Id = item.Id ?? -1;
-                        circle.Attribute.Text = item.Name;
-                        circle.Attribute.Msg = CVRawOpen.FormatMessage(CVCIEShowConfig.Instance.Template, poiResultCIExyuvData);
-                        circle.Render();
-                        ctx.ImageView.AddVisual(circle);
-                        break;
-                    case POIPointTypes.Rect:
-                        DVRectangleText rectangle = new DVRectangleText();
-                        rectangle.Attribute.Rect = new Rect(item.PixelX - item.Width / 2, item.PixelY - item.Height / 2, item.Width, item.Height);
-                        rectangle.Attribute.Brush = Brushes.Transparent;
-                        rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
-                        rectangle.Attribute.Id = item.Id ?? -1;
-                        rectangle.Attribute.Text = item.Name;
-                        rectangle.Attribute.Msg = CVRawOpen.FormatMessage(CVCIEShowConfig.Instance.Template, poiResultCIExyuvData);
-                        rectangle.Render();
-                        ctx.ImageView.AddVisual(rectangle);
-                        break;
-                    default:
-                        break;
-                }
+                PoiOverlayRenderer.Add(ctx.ImageView, item, CVRawOpen.FormatMessage(CVCIEShowConfig.Instance.Template, poiResultCIExyuvData));
             }
         }
 

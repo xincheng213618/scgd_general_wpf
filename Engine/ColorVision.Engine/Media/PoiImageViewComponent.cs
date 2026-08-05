@@ -138,34 +138,12 @@ namespace ColorVision.Engine.Media
             }
 
             PoiParam.LoadPoiDetailFromDB(poiParams);
-            foreach (var item in poiParams.PoiPoints)
+            foreach (PoiPoint item in poiParams.PoiPoints)
             {
-                switch (item.PointType)
+                PoiOverlayRenderer.Add(imageView, item, style: new PoiOverlayStyle
                 {
-                    case GraphicTypes.Circle:
-                        DVCircleText circle = new();
-                        circle.Attribute.Center = new Point(item.PixX, item.PixY);
-                        circle.Attribute.Radius = item.PixHeight / 2;
-                        circle.Attribute.Brush = Brushes.Transparent;
-                        circle.Attribute.Pen = new Pen(Brushes.Red, item.PixWidth / 30);
-                        circle.Attribute.Id = item.Id;
-                        circle.Attribute.Text = item.Name;
-                        circle.Render();
-                        imageView.ImageShow.AddVisual(circle);
-                        break;
-                    case GraphicTypes.Rect:
-                        DVRectangleText rectangle = new();
-                        rectangle.Attribute.Rect = new Rect(item.PixX - item.PixWidth / 2, item.PixY - item.PixHeight / 2, item.PixWidth, item.PixHeight);
-                        rectangle.Attribute.Brush = Brushes.Transparent;
-                        rectangle.Attribute.Pen = new Pen(Brushes.Red, item.PixWidth / 30);
-                        rectangle.Attribute.Id = item.Id;
-                        rectangle.Attribute.Text = item.Name;
-                        rectangle.Render();
-                        imageView.ImageShow.AddVisual(rectangle);
-                        break;
-                    case GraphicTypes.Quadrilateral:
-                        break;
-                }
+                    StrokeThickness = item.PixWidth / 30
+                });
             }
         }
     }

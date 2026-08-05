@@ -1,16 +1,11 @@
 #pragma warning disable CA1822
 using ColorVision.Engine.Services;
 using ColorVision.ImageEditor;
-using ColorVision.ImageEditor.Draw;
 using ColorVision.UI.Sorts;
-using CVCommCore.CVAlgorithm;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
-using System.Threading.Tasks;
-using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
 
 namespace ColorVision.Engine
 {
@@ -79,59 +74,5 @@ namespace ColorVision.Engine
         {
         }
 
-        public async void AddPOIPoint(ImageView imageView, List<POIPoint> PoiPoints)
-        {
-            imageView.ImageShow.Clear();
-            await Task.Delay(1000);
-            for (int i = 0; i < PoiPoints.Count; i++)
-            {
-                if (i % 10000 == 0)
-                    await Task.Delay(30);
-
-                var item = PoiPoints[i];
-                switch (item.PointType)
-                {
-                    case POIPointTypes.Circle:
-                        CircleTextProperties circleTextProperties = new CircleTextProperties();
-                        circleTextProperties.Center = new Point(item.PixelX, item.PixelY);
-                        circleTextProperties.Radius = item.Radius;
-                        circleTextProperties.Brush = Brushes.Transparent;
-                        circleTextProperties.Pen = new Pen(Brushes.Red, 1);
-                        circleTextProperties.Id = item.Id ?? -1;
-                        circleTextProperties.Text = item.Name;
-
-                        DVCircleText Circle = new DVCircleText(circleTextProperties);
-                        Circle.Render();
-                        imageView.AddVisual(Circle);
-                        break;
-                    case POIPointTypes.Rect:
-                        RectangleTextProperties rectangleTextProperties = new RectangleTextProperties();
-                        rectangleTextProperties.Rect = new Rect(item.PixelX - item.Width / 2, item.PixelY - item.Height / 2, item.Width, item.Height);
-                        rectangleTextProperties.Brush = Brushes.Transparent;
-                        rectangleTextProperties.Pen = new Pen(Brushes.Red, 1);
-                        rectangleTextProperties.Id = item.Id ?? -1;
-                        rectangleTextProperties.Text = item.Name;
-
-                        DVRectangleText Rectangle = new DVRectangleText(rectangleTextProperties);
-                        Rectangle.Render();
-                        imageView.AddVisual(Rectangle);
-                        break;
-                    case POIPointTypes.SolidPoint:
-                        CircleProperties circleProperties = new CircleProperties();
-                        circleProperties.Center = new Point(item.PixelX, item.PixelY);
-                        circleProperties.Radius = 10;
-                        circleProperties.Brush = Brushes.Red;
-                        circleProperties.Pen = new Pen(Brushes.Red, 1);
-                        circleProperties.Id = item.Id ?? -1;
-
-                        DVCircle Circle1 = new DVCircle(circleProperties);
-                        Circle1.Render();
-                        imageView.AddVisual(Circle1);
-                        break;
-                    default:
-                        break;
-                }
-            }
-        }
     }
 }

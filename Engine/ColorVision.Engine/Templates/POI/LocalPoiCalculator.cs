@@ -358,9 +358,9 @@ namespace ColorVision.Engine.Templates.POI
             int height = Math.Max(checked((int)point.PixHeight), 1);
             POIPointTypes pointType = point.PointType switch
             {
-                GraphicTypes.Point => POIPointTypes.SolidPoint,
-                GraphicTypes.Circle => POIPointTypes.Circle,
-                GraphicTypes.Rect => POIPointTypes.Rect,
+                PoiShape.Point or PoiShape.LegacySolidPoint => POIPointTypes.SolidPoint,
+                PoiShape.Circle => POIPointTypes.Circle,
+                PoiShape.Rect => POIPointTypes.Rect,
                 _ => throw new NotSupportedException($"本地 POI 暂不支持形状：{point.PointType}")
             };
             return (x, y, width, height, pointType);

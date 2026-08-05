@@ -2,7 +2,6 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services;
 using ColorVision.Database;
-using CVCommCore.CVAlgorithm;
 using log4net;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -49,15 +48,15 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
 
             if (result.ViewResults.Count <= 4000)
             {
-                List<POIPoint> DrawPoiPoint = new();
+                List<PoiPoint> poiPoints = new();
                 foreach (var item in result.ViewResults)
                 {
                     if (item is PoiResultData poiResultData)
                     {
-                        DrawPoiPoint.Add(poiResultData.Point);
+                        poiPoints.Add(poiResultData.Point);
                     }
                 }
-                AddPOIPoint(ctx.ImageView, DrawPoiPoint);
+                PoiOverlayRenderer.AddRange(ctx.ImageView, poiPoints);
             }
             else
             {

@@ -8,7 +8,6 @@ using ColorVision.FileIO;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.UI.Sorts;
-using CVCommCore.CVAlgorithm;
 using log4net;
 using SqlSugar;
 using System;
@@ -17,7 +16,6 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -168,7 +166,6 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Views
                 if (File.Exists(result.FilePath))
                     ImageView.OpenImage(result.FilePath);
 
-                List<POIPoint> DrawPoiPoint = new();
                 List<string> header = new();
                 List<string> bdHeader = new();
 
@@ -256,58 +253,6 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Views
         {
             ViewResults.Clear();
         }
-
-        public async void AddPOIPoint(List<POIPoint> PoiPoints)
-        {
-            ImageView.ImageShow.Clear();
-            await Task.Delay(1000);
-            for (int i = 0; i < PoiPoints.Count; i++)
-            {
-                if (i % 10000 == 0)
-                    await Task.Delay(30);
-
-                var item = PoiPoints[i];
-                switch (item.PointType)
-                {
-                    case POIPointTypes.Circle:
-                        DVCircleText Circle = new();
-                        Circle.Attribute.Center = new Point(item.PixelX, item.PixelY);
-                        Circle.Attribute.Radius = item.Radius;
-                        Circle.Attribute.Brush = Brushes.Transparent;
-                        Circle.Attribute.Pen = new Pen(Brushes.Red, 1);
-                        Circle.Attribute.Id = item.Id ?? -1;
-                        Circle.Attribute.Text = item.Name;
-                        Circle.Render();
-                        ImageView.AddVisual(Circle);
-                        break;
-                    case POIPointTypes.Rect:
-                        DVRectangleText Rectangle = new();
-                        Rectangle.Attribute.Rect = new Rect(item.PixelX - item.Width / 2, item.PixelY - item.Height / 2, item.Width, item.Height);
-                        Rectangle.Attribute.Brush = Brushes.Transparent;
-                        Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
-                        Rectangle.Attribute.Id = item.Id ?? -1;
-                        Rectangle.Attribute.Text = item.Name;
-                        Rectangle.Render();
-                        ImageView.AddVisual(Rectangle);
-                        break;
-                    case POIPointTypes.SolidPoint:
-                        CircleProperties circleProperties = new CircleProperties();
-                        circleProperties.Center = new Point(item.PixelX, item.PixelY);
-                        circleProperties.Radius = 10;
-                        circleProperties.Brush = Brushes.Red;
-                        circleProperties.Pen = new Pen(Brushes.Red, 1);
-                        circleProperties.Id = item.Id ?? -1;
-                        DVCircle Circle1 = new DVCircle(circleProperties);
-                        Circle1.Render();
-                        ImageView.AddVisual(Circle1);
-                        break;
-                    default:
-                        break;
-                }
-
-            }
-        }
-
 
         public ObservableCollection<GridViewColumnVisibility> LeftGridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
 

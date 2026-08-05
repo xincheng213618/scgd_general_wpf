@@ -18,7 +18,7 @@ namespace ColorVision.Engine.Templates.POI
             Id = data.Id;
             Pid = pid;
             Name = data.Name;
-            Type = data.PointType;
+            Type = data.PointType.ToGraphicType();
             PixX = (int)data.PixX;
             PixY = (int)data.PixY;
             PixWidth = (int)data.PixWidth;

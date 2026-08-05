@@ -136,7 +136,7 @@ public class LocalFlowNodePortTests
         {
             Id = 7,
             Name = "Center",
-            PointType = ColorVision.ImageEditor.GraphicTypes.Circle,
+            PointType = PoiShape.Circle,
             PixX = 50,
             PixY = 50,
             PixWidth = 10,
@@ -180,7 +180,7 @@ public class LocalFlowNodePortTests
         {
             Id = 1,
             Name = "Point",
-            PointType = ColorVision.ImageEditor.GraphicTypes.Point,
+            PointType = PoiShape.Point,
             PixX = 5,
             PixY = 5,
             PixWidth = 1,

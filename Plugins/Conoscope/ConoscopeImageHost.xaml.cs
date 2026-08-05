@@ -462,7 +462,7 @@ namespace Conoscope
                 }
 
                 focusCircleSequence = 1;
-                foreach (PoiPoint poiPoint in poiPoints.Where(static item => item.PointType == GraphicTypes.Circle))
+                foreach (PoiPoint poiPoint in poiPoints.Where(static item => item.PointType == PoiShape.Circle))
                 {
                     DVCircleText circle = CreateFocusCircle(poiPoint, focusCircleSequence);
                     AttachFocusCircle(circle);
