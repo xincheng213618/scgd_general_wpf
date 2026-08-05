@@ -31,7 +31,6 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -418,46 +417,17 @@ namespace ColorVision.Engine.Templates.POI
         public HImage? HImageCache => ImageView.HImageCache;
 
         private bool Init;
-        public static WriteableBitmap CreateWhiteLayer(int width, int height)
-        {
-            // 创建 WriteableBitmap
-            var writeableBitmap = new WriteableBitmap(width, height, 96, 96, PixelFormats.Bgra32, null);
-
-            // 计算每行的字节数
-            int bytesPerPixel = (writeableBitmap.Format.BitsPerPixel + 7) / 8;
-            int stride = width * bytesPerPixel;
-            byte[] pixels = new byte[height * stride];
-
-            // 填充白色
-            for (int i = 0; i < pixels.Length; i += bytesPerPixel)
-            {
-                pixels[i] = 255;     // Blue
-                pixels[i + 1] = 255; // Green
-                pixels[i + 2] = 255; // Red
-                pixels[i + 3] = 255; // Alpha
-            }
-
-            // 写入像素数据
-            writeableBitmap.WritePixels(new Int32Rect(0, 0, width, height), pixels, stride, 0);
-            return writeableBitmap;
-        }
         private void CreateImage(int width, int height, Color color,bool IsClear = true)
         {
-            if (HImageCache != null)
+            ImageView.SetLayerController(null);
+            ImageView.SetImageSource(ImageUtils.CreateSolidColorDrawing(width, height, color), false, false);
+            ImageView.UpdateZoomAndScale();
+            InitPoiConfigValue(width, height);
+            if (IsClear)
             {
-                HImageCache?.Dispose();
+                ImageShow.Clear();
+                DrawingVisualLists.Clear();
             }
-            Thread thread = new(() => 
-            {
-                Application.Current.Dispatcher.Invoke((Action)(() =>
-                {
-                    ImageView.OpenImage(CreateWhiteLayer(width, height));
-                    ImageView.UpdateZoomAndScale();
-                    InitPoiConfigValue((int)ImageView.ViewBitmapSource.Width, (int)ImageView.ViewBitmapSource.Height);
-                    ImageShow.RaiseImageInitialized();
-                }));
-            });
-            thread.Start();
             PoiConfig.BackgroundFilePath = null;
         }
 
@@ -523,7 +493,7 @@ namespace ColorVision.Engine.Templates.POI
 
         private void Button2_Click(object sender, RoutedEventArgs e)
         {
-            if (ImageShow.Source is not BitmapSource bitmapImage) return;
+            if (!ImageUtils.TryGetImageSize(ImageShow.Source, out int imageWidth, out int imageHeight)) return;
 
             int Num = 0;
             int start = DrawingVisualLists.Count;
@@ -643,9 +613,9 @@ namespace ColorVision.Engine.Templates.POI
 
 
                     double startU = PoiConfig.CenterY - Height / 2;
-                    double startD = bitmapImage.PixelHeight - PoiConfig.CenterY - Height / 2;
+                    double startD = imageHeight - PoiConfig.CenterY - Height / 2;
                     double startL = PoiConfig.CenterX - Width / 2;
-                    double startR = bitmapImage.PixelWidth - PoiConfig.CenterX - Width / 2;
+                    double startR = imageWidth - PoiConfig.CenterX - Width / 2;
 
                     if (ComboBoxBorderType2.SelectedValue is DrawingGraphicPosition pOIPosition1)
                     {
@@ -701,8 +671,8 @@ namespace ColorVision.Engine.Templates.POI
                     }
 
 
-                    double StepRow = (rows > 1) ? (bitmapImage.PixelHeight - startD - startU) / (rows - 1) : 0;
-                    double StepCol = (cols > 1) ? (bitmapImage.PixelWidth - startL - startR) / (cols - 1) : 0;
+                    double StepRow = (rows > 1) ? (imageHeight - startD - startU) / (rows - 1) : 0;
+                    double StepCol = (cols > 1) ? (imageWidth - startL - startR) / (cols - 1) : 0;
 
 
                     int all = rows * cols;
@@ -1171,7 +1141,7 @@ namespace ColorVision.Engine.Templates.POI
 
         private void ButtonImportMarinSetting(object sender, RoutedEventArgs e)
         {
-            if (ImageShow.Source is BitmapSource bitmapImage)
+            if (ImageUtils.TryGetImageSize(ImageShow.Source, out int imageWidth, out int imageHeight))
             {
                 double startU = ParseDoubleOrDefault(TextBoxUp1.Text);
                 double startD = ParseDoubleOrDefault(TextBoxDown1.Text);
@@ -1180,10 +1150,10 @@ namespace ColorVision.Engine.Templates.POI
 
                 if (ComboBoxBorderType1.SelectedItem is KeyValuePair<GraphicBorderType, string> KeyValue && KeyValue.Key == GraphicBorderType.Relative)
                 {
-                    startU = bitmapImage.PixelHeight * startU / 100;
-                    startD = bitmapImage.PixelHeight * startD / 100;
-                    startL = bitmapImage.PixelWidth * startL / 100;
-                    startR = bitmapImage.PixelWidth * startR / 100;
+                    startU = imageHeight * startU / 100;
+                    startD = imageHeight * startD / 100;
+                    startL = imageWidth * startL / 100;
+                    startR = imageWidth * startR / 100;
                 }
 
                 PoiConfig.Polygon1X += (int)startL;
@@ -1204,7 +1174,7 @@ namespace ColorVision.Engine.Templates.POI
 
         private void ButtonImportMarinSetting2(object sender, RoutedEventArgs e)
         {
-            if (ImageShow.Source is BitmapSource bitmapImage)
+            if (ImageShow.Source != null)
             {
                 double startU = ParseDoubleOrDefault(TextBoxUp2.Text);
                 double startD = ParseDoubleOrDefault(TextBoxDown2.Text);
@@ -1369,7 +1339,11 @@ namespace ColorVision.Engine.Templates.POI
                             Console.WriteLine("Error occurred, code: " + length);
                         }
                     });
-                };
+                }
+                else
+                {
+                    MessageBox.Show("请先加载实际图像", "ColorVision");
+                }
             }));
         }
 

@@ -349,50 +349,48 @@ namespace ColorVision.Common.Utilities
 
 
         /// <summary>
-        /// 创建一个新的BitmapImage
+        /// Creates a frozen solid-color drawing with the requested logical size without allocating a pixel buffer.
         /// </summary>
-        public static BitmapImage CreateSolidColorBitmap(int width, int height, Color color)
+        public static DrawingImage CreateSolidColorDrawing(int width, int height, Color color)
         {
-            // 创建一个 WriteableBitmap，用于绘制纯色图像
-            WriteableBitmap writeableBitmap = new(width, height, 96, 96, PixelFormats.Pbgra32, null);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(width);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(height);
 
-            // 将所有像素设置为指定的颜色
+            SolidColorBrush brush = new(color);
+            brush.Freeze();
 
-            writeableBitmap.Lock();
-            unsafe
+            RectangleGeometry geometry = new(new Rect(0, 0, width, height));
+            geometry.Freeze();
+
+            GeometryDrawing drawing = new(brush, null, geometry);
+            drawing.Freeze();
+
+            DrawingImage image = new(drawing);
+            image.Freeze();
+            return image;
+        }
+
+        public static bool TryGetImageSize(ImageSource? source, out int width, out int height)
+        {
+            if (source is BitmapSource bitmap)
             {
-                byte* pBackBuffer = (byte*)writeableBitmap.BackBuffer;
-                int stride = writeableBitmap.BackBufferStride;
-
-                for (int y = 0; y < writeableBitmap.PixelHeight; y++)
-                {
-                    for (int x = 0; x < writeableBitmap.PixelWidth; x++)
-                    {
-                        pBackBuffer[y * stride + 4 * x] = color.B;     // 蓝色通道
-                        pBackBuffer[y * stride + 4 * x + 1] = color.G; // 绿色通道
-                        pBackBuffer[y * stride + 4 * x + 2] = color.R; // 红色通道
-                        pBackBuffer[y * stride + 4 * x + 3] = color.A; // 透明度通道
-                    }
-                }
+                width = bitmap.PixelWidth;
+                height = bitmap.PixelHeight;
+                return width > 0 && height > 0;
             }
 
-
-            writeableBitmap.Unlock();
-
-            BitmapImage bitmapImage = new();
-            using (var stream = new System.IO.MemoryStream())
+            if (source != null &&
+                double.IsFinite(source.Width) && source.Width > 0 && source.Width <= int.MaxValue &&
+                double.IsFinite(source.Height) && source.Height > 0 && source.Height <= int.MaxValue)
             {
-                BitmapEncoder encoder = new PngBitmapEncoder();
-                encoder.Frames.Add(BitmapFrame.Create(writeableBitmap));
-                encoder.Save(stream);
-                stream.Position = 0;
-
-                bitmapImage.BeginInit();
-                bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
-                bitmapImage.StreamSource = stream;
-                bitmapImage.EndInit();
+                width = (int)Math.Round(source.Width);
+                height = (int)Math.Round(source.Height);
+                return width > 0 && height > 0;
             }
-            return bitmapImage;
+
+            width = 0;
+            height = 0;
+            return false;
         }
 
         private static PixelFormat CoverFormat(System.Drawing.Bitmap src)
