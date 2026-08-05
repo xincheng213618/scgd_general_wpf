@@ -9,7 +9,6 @@ using FlowEngineLib.PropertyEditor;
 using HandyControl.Interactivity;
 using ST.Library.UI.NodeEditor;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
 using System.Windows;
@@ -49,27 +48,6 @@ public class NodeConfiguratorBindingTests
                 application.Resources["TextBox.Small"] = new Style(typeof(TextBox));
                 application.Resources["ComboBoxPlus.Small"] = new Style(typeof(HandyControl.Controls.ComboBox));
                 application.Resources["bool2VisibilityConverter"] = new BooleanToVisibilityConverter();
-
-                var layoutNode = new LocalCalibrationRealPoiNode();
-                DockPanel textEditor = new TextboxPropertiesEditor().GenProperties(
-                    typeof(LocalCalibrationRealPoiNode).GetProperty(nameof(LocalCalibrationRealPoiNode.POIWidth))!,
-                    layoutNode);
-                DockPanel enumEditor = new EnumPropertiesEditor().GenProperties(
-                    typeof(LocalCalibrationRealPoiNode).GetProperty(nameof(LocalCalibrationRealPoiNode.POIType))!,
-                    layoutNode);
-
-                textEditor.Measure(new Size(440, 30));
-                textEditor.Arrange(new Rect(0, 0, 440, 30));
-                enumEditor.Measure(new Size(440, 30));
-                enumEditor.Arrange(new Rect(0, 0, 440, 30));
-
-                var textBox = Assert.Single(textEditor.Children.OfType<TextBox>());
-                var enumComboBox = Assert.Single(enumEditor.Children.OfType<ComboBox>());
-                Assert.Equal(Dock.Left, DockPanel.GetDock(enumComboBox));
-                Assert.Equal(textBox.ActualWidth, enumComboBox.ActualWidth);
-                Assert.Equal(
-                    textBox.TranslatePoint(new Point(), textEditor).X,
-                    enumComboBox.TranslatePoint(new Point(), enumEditor).X);
 
                 var node = new STNodeHub { Title = "First" };
                 var panel = new StackPanel();

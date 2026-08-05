@@ -9,8 +9,6 @@ namespace ColorVision.UI.Tests
 {
     public class STNodeCopyPasteTests
     {
-        private const string RequiresStaUiTestRunner = "Requires an STA UI test runner.";
-
         [Fact]
         public void EmptyOption_ReportsZeroConnections()
         {
@@ -407,30 +405,5 @@ namespace ColorVision.UI.Tests
             }
         }
 
-        [Fact(Skip = RequiresStaUiTestRunner)]
-        public void STNodeEditor_AddAndRemoveNodes()
-        {
-            var editor = new STNodeEditor();
-            var node1 = new STNodeHub();
-            node1.Create();
-            var node2 = new STNodeInHub();
-            node2.Create();
-
-            editor.Nodes.Add(node1);
-            editor.Nodes.Add(node2);
-            Assert.Equal(2, editor.Nodes.Count);
-
-            editor.Nodes.Remove(node1);
-            Assert.Equal(1, editor.Nodes.Count);
-        }
-
-        [Fact(Skip = RequiresStaUiTestRunner)]
-        public void STNodeEditor_GetSelectedNode_InitiallyEmpty()
-        {
-            var editor = new STNodeEditor();
-            var selected = editor.GetSelectedNode();
-            Assert.NotNull(selected);
-            Assert.Empty(selected);
-        }
     }
 }

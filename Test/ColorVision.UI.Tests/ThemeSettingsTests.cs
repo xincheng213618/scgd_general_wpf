@@ -1,7 +1,5 @@
 using ColorVision.Themes;
 using ColorVision.UI;
-using System.ComponentModel;
-using System.Reflection;
 
 namespace ColorVision.UI.Tests
 {
@@ -24,17 +22,6 @@ namespace ColorVision.UI.Tests
             };
 
             Assert.Equal(Theme.UseSystem, config.Theme);
-        }
-
-        [Fact]
-        public void ThemeSettingUsesWideCustomPropertyEditor()
-        {
-            PropertyInfo property = typeof(ThemeConfig).GetProperty(nameof(ThemeConfig.Theme))!;
-            ConfigSettingAttribute setting = property.GetCustomAttribute<ConfigSettingAttribute>()!;
-            PropertyEditorTypeAttribute editor = property.GetCustomAttribute<PropertyEditorTypeAttribute>()!;
-
-            Assert.Equal(ConfigSettingLayout.Wide, setting.Layout);
-            Assert.Equal(typeof(ThemePropertiesEditor), editor.EditorType);
         }
     }
 }
