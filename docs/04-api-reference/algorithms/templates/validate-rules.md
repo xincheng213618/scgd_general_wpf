@@ -1,6 +1,6 @@
 # Validate 判定规则模板
 
-`Validate/` 保留早期合规判定模板的加载和执行兼容。默认合规字典维护窗口已经移除；BuzProduct、Compliance 和部分历史项目包仍可能间接读取现有规则数据。
+`Validate/` 保留早期合规判定模板的加载和执行兼容。默认合规字典维护窗口已经移除；Compliance 和部分历史项目包仍可能间接读取现有规则数据。
 
 ## 适用范围
 
@@ -43,7 +43,7 @@
 
 | 项 | 说明 |
 | --- | --- |
-| `CIEParams` | CIE/常规合规判定模板集合，BuzProduct 下拉框会读取 |
+| `CIEParams` | CIE/常规合规判定模板集合 |
 | `JNDParams` | JND 判定模板集合 |
 | JND 缓存行为 | 当前构造函数在 `type == 1` 时加入 `JNDParams`，随后也会加入 `CIEParams` |
 | 导入限制 | `TemplateComplyParam.Import()` 当前提示“暂不支持模板{Code}的导入” |
@@ -54,7 +54,6 @@
 
 | 模块 | 依赖方式 |
 | --- | --- |
-| [BuzProduct 产品业务参数模板](./buz-product-template.md) | 明细的 `val_rule_temp_id` 指向 Validate 模板 |
 | [Compliance 结果对接](./compliance-results.md) | 读取上游写回的 `ValidateResult`，按 `ValidateRuleResultType.M` 判断通过 |
 | JND 类判定 | 判定模板来自 `mod_type = 120` |
 | 项目包 | 可能读取 Validate/Compliance 结果生成最终报表或 OK/NG |
@@ -65,7 +64,6 @@
 | --- | --- |
 | 旧代码仍引用菜单类型 | `ExportComply` 相关类型仅为兼容保留并标记 `Obsolete`；不要依赖其重新出现在主菜单 |
 | 新建模板没有明细 | 默认字典明细是否启用，是否能按 `pid` 查到数据 |
-| BuzProduct 下拉没有规则 | `TemplateComplyParam.CIEParams` 是否已加载对应 `Code` |
 | JND 判定混在 CIE 列表中 | 当前构造函数行为，不要只看 `JNDParams` |
 | 新增判定字段 | 同步默认字典、模板明细、项目验收样例和结果说明 |
 | 修改 `ValType` 或阈值语义 | 同步算法服务写回的 `ValidateResult` |

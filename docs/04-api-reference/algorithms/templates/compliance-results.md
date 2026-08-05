@@ -44,12 +44,11 @@
 
 当前 `ViewHandleComplianceXYZ` 的表格绑定列包含 `DataValue`，但模型里主要暴露的是 `DataValuex/y/z/u/v/...` 分量字段。若 XYZ 页面出现空值，优先检查绑定列和模型属性是否需要对齐。
 
-## 与 Validate 和 BuzProduct 的关系
+## 与 Validate 的关系
 
 | 模块 | 在判定链里的角色 |
 | --- | --- |
 | [Validate 判定规则模板](./validate-rules.md) | 定义哪些字段、阈值和比较方式构成一套规则。 |
-| [BuzProduct 产品业务参数模板](./buz-product-template.md) | 在产品明细中通过 `val_rule_temp_id` 指定某个点位使用哪套规则。 |
 | Compliance 结果 | 读取上游写回的 `ValidateResult`，展示每个结果项是否通过。 |
 | 项目包 | 可能继续读取 Compliance/JND/POI 结果，生成报表、CSV 或最终 OK/NG。 |
 
