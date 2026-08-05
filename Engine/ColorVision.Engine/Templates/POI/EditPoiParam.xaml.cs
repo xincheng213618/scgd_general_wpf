@@ -369,7 +369,7 @@ namespace ColorVision.Engine.Templates.POI
                     No++;
                     switch (item.PointType)
                     {
-                        case GraphicTypes.Circle:
+                        case PoiShape.Circle:
                             DVCircleText Circle = new();
                             Circle.Attribute.Center = new Point(item.PixX, item.PixY);
                             Circle.Attribute.Radius = item.PixWidth/2;
@@ -384,7 +384,7 @@ namespace ColorVision.Engine.Templates.POI
                             visuals.Add(Circle);
                             DBIndex.Add(Circle,item.Id);
                             break;
-                        case GraphicTypes.Rect:
+                        case PoiShape.Rect:
                             DVRectangleText Rectangle = new();
                             Rectangle.Attribute.Rect = new System.Windows.Rect(item.PixX - item.PixWidth /2, item.PixY - item.PixHeight /2, item.PixWidth, item.PixHeight);
                             Rectangle.Attribute.Brush = Brushes.Transparent;
@@ -397,9 +397,9 @@ namespace ColorVision.Engine.Templates.POI
                             visuals.Add(Rectangle);
                             DBIndex.Add(Rectangle, item.Id);
                             break;
-                        case GraphicTypes.Quadrilateral:
+                        case PoiShape.Quadrilateral:
                             break;
-                        case GraphicTypes.Point:
+                        case PoiShape.Point:
                             if (item.Name == "PointInt1")
                             {
                                 PoiConfig.PointInt1.X = (int)item.PixX;
@@ -656,7 +656,7 @@ namespace ColorVision.Engine.Templates.POI
                                 case GraphicTypes.Rect:
                                     if (PoiConfig.IsPoiCIEFile)
                                     {
-                                        PoiParam.PoiPoints.Add(new PoiPoint() { PixX = x1, PixY = y1, PointType = GraphicTypes.Rect, PixWidth = PoiConfig.DefaultRectWidth, PixHeight = PoiConfig.DefaultRectHeight });
+                                        PoiParam.PoiPoints.Add(new PoiPoint() { PixX = x1, PixY = y1, PointType = PoiShape.Rect, PixWidth = PoiConfig.DefaultRectWidth, PixHeight = PoiConfig.DefaultRectHeight });
                                     }
                                     else
                                     {
@@ -795,7 +795,7 @@ namespace ColorVision.Engine.Templates.POI
                                 case GraphicTypes.Rect:
                                     if (PoiConfig.IsPoiCIEFile)
                                     {
-                                        PoiParam.PoiPoints.Add(new PoiPoint() { PixX = point.X, PixY = point.Y, PointType = GraphicTypes.Rect, PixWidth = PoiConfig.DefaultRectWidth, PixHeight = PoiConfig.DefaultRectHeight });
+                                        PoiParam.PoiPoints.Add(new PoiPoint() { PixX = point.X, PixY = point.Y, PointType = PoiShape.Rect, PixWidth = PoiConfig.DefaultRectWidth, PixHeight = PoiConfig.DefaultRectHeight });
                                     }
                                     else
                                     {
@@ -1145,7 +1145,7 @@ namespace ColorVision.Engine.Templates.POI
                     PoiPoint poiParamData = new PoiPoint()
                     {
                         Id = index,
-                        PointType = GraphicTypes.Circle,
+                        PointType = PoiShape.Circle,
                         PixX = circle.Center.X,
                         PixY = circle.Center.Y,
                         PixWidth = circle.Radius * 2,
@@ -1163,7 +1163,7 @@ namespace ColorVision.Engine.Templates.POI
                     {
                         Id = index,
                         Name = rectangle.Text,
-                        PointType = GraphicTypes.Rect,
+                        PointType = PoiShape.Rect,
                         PixX = rectangle.Rect.X + rectangle.Rect.Width/2,
                         PixY = rectangle.Rect.Y + rectangle.Rect.Height/2,
                         PixWidth = rectangle.Rect.Width,
@@ -1175,10 +1175,10 @@ namespace ColorVision.Engine.Templates.POI
 
             if (PoiConfig.IsPointInt)
             {
-                PoiPoint PointInt1 = new() { Id = -1, Name = "PointInt1", PointType = GraphicTypes.Point, PixX = PoiConfig.PointInt1.X, PixY = PoiConfig.PointInt1.Y, PixWidth = 1, PixHeight = 1, };
-                PoiPoint PointInt2 = new() { Id = -2, Name = "PointInt2", PointType = GraphicTypes.Point, PixX = PoiConfig.PointInt2.X, PixY = PoiConfig.PointInt2.Y, PixWidth = 1, PixHeight = 1, };
-                PoiPoint PointInt3 = new() { Id = -3, Name = "PointInt3", PointType = GraphicTypes.Point, PixX = PoiConfig.PointInt3.X, PixY = PoiConfig.PointInt3.Y, PixWidth = 1, PixHeight = 1, };
-                PoiPoint PointInt4 = new() { Id = -4, Name = "PointInt4", PointType = GraphicTypes.Point, PixX = PoiConfig.PointInt4.X, PixY = PoiConfig.PointInt4.Y, PixWidth = 1, PixHeight = 1, };
+                PoiPoint PointInt1 = new() { Id = -1, Name = "PointInt1", PointType = PoiShape.Point, PixX = PoiConfig.PointInt1.X, PixY = PoiConfig.PointInt1.Y, PixWidth = 1, PixHeight = 1, };
+                PoiPoint PointInt2 = new() { Id = -2, Name = "PointInt2", PointType = PoiShape.Point, PixX = PoiConfig.PointInt2.X, PixY = PoiConfig.PointInt2.Y, PixWidth = 1, PixHeight = 1, };
+                PoiPoint PointInt3 = new() { Id = -3, Name = "PointInt3", PointType = PoiShape.Point, PixX = PoiConfig.PointInt3.X, PixY = PoiConfig.PointInt3.Y, PixWidth = 1, PixHeight = 1, };
+                PoiPoint PointInt4 = new() { Id = -4, Name = "PointInt4", PointType = PoiShape.Point, PixX = PoiConfig.PointInt4.X, PixY = PoiConfig.PointInt4.Y, PixWidth = 1, PixHeight = 1, };
 
                 PoiParam.PoiPoints.Add(PointInt1);
                 PoiParam.PoiPoints.Add(PointInt2);

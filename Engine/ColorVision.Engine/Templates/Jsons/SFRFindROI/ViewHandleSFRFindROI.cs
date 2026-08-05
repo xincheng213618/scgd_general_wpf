@@ -131,7 +131,7 @@ namespace ColorVision.Engine.Templates.Jsons.SFRFindROI
                             PixY = (double)item.PoiY,
                             PixHeight = (double)item.PoiHeight,
                             PixWidth = (double)item.PoiWidth,
-                            PointType = (GraphicTypes)item.PoiType,
+                            PointType = item.PoiType.ToPoiShape(),
                             Id = -1
                         };
                         templatePoi1.ImportTemp.PoiPoints.Add(poiPoint);
@@ -161,36 +161,8 @@ namespace ColorVision.Engine.Templates.Jsons.SFRFindROI
             {
                 if (item is ViewSFRFindROI poiResultData)
                 {
-                    switch (poiResultData.PoiType)
-                    {
-                        case POIPointTypes.Circle:
-                            DVCircleText Circle = new();
-                            Circle.Attribute.Center = new Point((double)poiResultData.PoiX, (double)poiResultData.PoiY);
-                            Circle.Attribute.Radius = (double)poiResultData.PoiHeight / 2;
-                            Circle.Attribute.Brush = Brushes.Transparent;
-                            Circle.Attribute.Pen = new Pen(Brushes.Red, OverlayPenThickness);
-                            Circle.Attribute.Id = poiResultData.Id;
-                            Circle.Attribute.Text = poiResultData.PoiName;
-                            Circle.Attribute.FontSize = OverlayFontSize;
-                            Circle.Attribute.Msg = $"Angle:{FormatNumber(poiResultData.Value.Angle)}{Environment.NewLine}";
-                            Circle.Render();
-                            ctx.ImageView.AddVisual(Circle);
-                            break;
-                        case POIPointTypes.Rect:
-                            DVRectangleText Rectangle = new();
-                            Rectangle.Attribute.Rect = new Rect((double)poiResultData.PoiX - (double)poiResultData.PoiWidth / 2, (double)poiResultData.PoiY - (double)poiResultData.PoiHeight / 2, (double)poiResultData.PoiWidth, (double)poiResultData.PoiHeight);
-                            Rectangle.Attribute.Brush = Brushes.Transparent;
-                            Rectangle.Attribute.Pen = new Pen(Brushes.Red, OverlayPenThickness);
-                            Rectangle.Attribute.Id = poiResultData.Id;
-                            Rectangle.Attribute.Text = poiResultData.PoiName;
-                            Rectangle.Attribute.FontSize = OverlayFontSize;
-                            Rectangle.Attribute.Msg = $"Angle:{FormatNumber(poiResultData.Value.Angle)}{Environment.NewLine}";
-                            Rectangle.Render();
-                            ctx.ImageView.AddVisual(Rectangle);
-                            break;
-                        default:
-                            break;
-                    }
+                    PoiPoint point = new(poiResultData.Id, -1, poiResultData.PoiName, poiResultData.PoiType.ToPoiShape(), poiResultData.PoiX ?? 0, poiResultData.PoiY ?? 0, poiResultData.PoiWidth ?? 0, poiResultData.PoiHeight ?? 0);
+                    PoiOverlayRenderer.Add(ctx.ImageView, point, $"Angle:{FormatNumber(poiResultData.Value.Angle)}{Environment.NewLine}");
                 }
             }
 

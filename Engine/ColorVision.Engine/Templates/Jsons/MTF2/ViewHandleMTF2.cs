@@ -202,7 +202,7 @@ namespace ColorVision.Engine.Templates.Jsons.MTF2
                                 PixY = item.y,
                                 PixHeight =item.w,
                                 PixWidth = item.h,
-                                PointType = GraphicTypes.Rect,
+                                PointType = PoiShape.Rect,
                                 Id = item.id
                             };
                             templatePoi1.ImportTemp.PoiPoints.Add(poiPoint);

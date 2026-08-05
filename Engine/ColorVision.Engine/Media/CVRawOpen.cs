@@ -4,6 +4,7 @@ using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.POI;
+using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.FileIO;
 using ColorVision.ImageEditor;
@@ -446,7 +447,7 @@ namespace ColorVision.Engine.Media
         private sealed class ViewPoiRequest
         {
             public required BaseProperties DrawProperties { get; init; }
-            public required POIPoint Point { get; init; }
+            public required PoiPoint Point { get; init; }
             public required PoiMeasurementPoint MeasurementPoint { get; init; }
         }
 
@@ -456,7 +457,7 @@ namespace ColorVision.Engine.Media
             foreach (var drawing in EditorContext.DrawingVisualLists)
             {
                 BaseProperties properties = drawing.BaseAttribute;
-                POIPoint? point = properties switch
+                PoiPoint? point = properties switch
                 {
                     CircleTextProperties circle => CreateCirclePoint(
                         circle.Text,
@@ -484,9 +485,13 @@ namespace ColorVision.Engine.Media
                 };
                 if (point == null) continue;
 
-                PoiMeasurementShape shape = point.PointType == POIPointTypes.Circle
-                    ? PoiMeasurementShape.Circle
-                    : PoiMeasurementShape.Rect;
+                PoiMeasurementShape shape = point.PointType switch
+                {
+                    PoiShape.Point or PoiShape.LegacySolidPoint => PoiMeasurementShape.Point,
+                    PoiShape.Circle => PoiMeasurementShape.Circle,
+                    PoiShape.Rect or PoiShape.LeftTopRect => PoiMeasurementShape.Rect,
+                    _ => throw new NotSupportedException($"Unsupported POI shape: {point.PointType}")
+                };
                 requests.Add(new ViewPoiRequest
                 {
                     DrawProperties = properties,
@@ -502,24 +507,24 @@ namespace ColorVision.Engine.Media
             return requests;
         }
 
-        private static POIPoint CreateCirclePoint(string name, int x, int y, int diameter)
+        private static PoiPoint CreateCirclePoint(string name, int x, int y, int diameter)
             => new()
             {
                 Name = name,
                 PixelX = x,
                 PixelY = y,
-                PointType = POIPointTypes.Circle,
+                PointType = PoiShape.Circle,
                 Width = diameter,
                 Height = diameter
             };
 
-        private static POIPoint CreateRectPoint(string name, int x, int y, int width, int height)
+        private static PoiPoint CreateRectPoint(string name, int x, int y, int width, int height)
             => new()
             {
                 Name = name,
                 PixelX = x,
                 PixelY = y,
-                PointType = POIPointTypes.Rect,
+                PointType = PoiShape.Rect,
                 Width = width,
                 Height = height
             };
@@ -568,8 +573,6 @@ namespace ColorVision.Engine.Media
 
         public List<MenuItemMetadata> GetContextMenuItems()
         {
-
-
             List<MenuItemMetadata> menuItems = new List<MenuItemMetadata>();
             menuItems.Add(new MenuItemMetadata()
             {

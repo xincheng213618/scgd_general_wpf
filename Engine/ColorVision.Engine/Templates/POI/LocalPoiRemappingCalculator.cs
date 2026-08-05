@@ -206,15 +206,15 @@ namespace ColorVision.Engine.Templates.POI
             return checked((int)scaled);
         }
 
-        private static POIPointTypes ToPoiPointType(GraphicTypes type)
+        private static POIPointTypes ToPoiPointType(PoiShape type)
         {
             return type switch
             {
-                GraphicTypes.Point => POIPointTypes.SolidPoint,
-                GraphicTypes.Circle => POIPointTypes.Circle,
-                GraphicTypes.Rect => POIPointTypes.Rect,
-                GraphicTypes.Quadrilateral => POIPointTypes.LTRect,
-                GraphicTypes.Polygon => POIPointTypes.Polygon,
+                PoiShape.Point or PoiShape.LegacySolidPoint => POIPointTypes.SolidPoint,
+                PoiShape.Circle => POIPointTypes.Circle,
+                PoiShape.Rect => POIPointTypes.Rect,
+                PoiShape.LeftTopRect or PoiShape.Quadrilateral => POIPointTypes.LTRect,
+                PoiShape.Polygon => POIPointTypes.Polygon,
                 _ => throw new NotSupportedException($"本地关注点重映射暂不支持形状：{type}")
             };
         }

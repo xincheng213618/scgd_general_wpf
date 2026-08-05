@@ -73,7 +73,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 {
                     Id = detail.PoiId ?? detail.Id,
                     Name = string.IsNullOrWhiteSpace(detail.PoiName) ? (detail.PoiId ?? detail.Id).ToString() : detail.PoiName,
-                    PointType = ToGraphicType(ResolvePointType(detail.PoiType, poiType)),
+                    PointType = ResolvePointType(detail.PoiType, poiType),
                     PixX = detail.PoiX ?? 0,
                     PixY = detail.PoiY ?? 0,
                     PixWidth = Math.Max(detail.PoiWidth ?? 1, 1),
@@ -95,7 +95,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                     {
                         Id = pointId,
                         Name = pointId.ToString(),
-                        PointType = ToGraphicType(ResolvePointType(pointInfo.HeaderInfo.PointType, poiType)),
+                        PointType = ResolvePointType(pointInfo.HeaderInfo.PointType, poiType),
                         PixX = position.PixelX,
                         PixY = position.PixelY,
                         PixWidth = Math.Max(pointInfo.HeaderInfo.Width, 1),
@@ -121,10 +121,10 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 throw new NotSupportedException("本地实时 POI 暂不支持亚像素类型，请使用服务实时关注点算法。");
             }
 
-            GraphicTypes graphicType = ToGraphicType(ToCorePointType(poiType));
+            PoiShape pointType = poiType.ToPoiShape();
             foreach (PoiPoint point in poi.PoiPoints)
             {
-                point.PointType = graphicType;
+                point.PointType = pointType;
                 if (poiType is ServicePoiPointTypes.SolidPoint or ServicePoiPointTypes.SolidPoint_KB)
                 {
                     point.PixWidth = 1;
@@ -138,31 +138,10 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             }
         }
 
-        private static POIPointTypes ResolvePointType(POIPointTypes sourceType, ServicePoiPointTypes poiType)
-            => sourceType == POIPointTypes.None && poiType != ServicePoiPointTypes.None ? ToCorePointType(poiType) : sourceType;
-
-        private static POIPointTypes ToCorePointType(ServicePoiPointTypes pointType)
-        {
-            return pointType switch
-            {
-                ServicePoiPointTypes.SolidPoint_KB => POIPointTypes.SolidPoint_KB,
-                ServicePoiPointTypes.SolidPoint => POIPointTypes.SolidPoint,
-                ServicePoiPointTypes.Circle => POIPointTypes.Circle,
-                ServicePoiPointTypes.Rect => POIPointTypes.Rect,
-                _ => POIPointTypes.None
-            };
-        }
-
-        private static GraphicTypes ToGraphicType(POIPointTypes pointType)
-        {
-            return pointType switch
-            {
-                POIPointTypes.SolidPoint_KB or POIPointTypes.SolidPoint => GraphicTypes.Point,
-                POIPointTypes.Circle => GraphicTypes.Circle,
-                POIPointTypes.Rect or POIPointTypes.LTRect => GraphicTypes.Rect,
-                _ => throw new NotSupportedException($"本地实时 POI 暂不支持上游布点形状：{pointType}")
-            };
-        }
+        private static PoiShape ResolvePointType(POIPointTypes sourceType, ServicePoiPointTypes poiType)
+            => sourceType == POIPointTypes.None && poiType != ServicePoiPointTypes.None
+                ? poiType.ToPoiShape()
+                : sourceType.ToPoiShape();
     }
 
     internal sealed class LocalRealPoiNodeResultData

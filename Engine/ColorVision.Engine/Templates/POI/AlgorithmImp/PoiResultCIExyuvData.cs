@@ -51,10 +51,10 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
                 string number = string.IsNullOrWhiteSpace(it.Name) ? $"P_{i}" : EscapeCsv(it.Name);
                 string shape = EscapeCsv(it.Shapes);
 
-                float cx = it.Point?.PixelX ?? 0;
-                float cy = it.Point?.PixelY ?? 0;
-                float w = it.Point?.Width ?? 100;
-                float h = it.Point?.Height ?? 0;
+                double cx = it.Point?.PixelX ?? 0;
+                double cy = it.Point?.PixelY ?? 0;
+                double w = it.Point?.Width ?? 100;
+                double h = it.Point?.Height ?? 0;
 
                 string wRadius = w.ToString(culture);
                 string hh = h == 0 ? "" : h.ToString(culture);

@@ -36,7 +36,7 @@ public sealed class FlowPackagePoiCodecTests
         {
             Id = 200,
             Name = "persisted-point",
-            PointType = GraphicTypes.Rect,
+            PointType = PoiShape.Rect,
             PixX = 12,
             PixY = 34,
             PixWidth = 56,
@@ -51,7 +51,7 @@ public sealed class FlowPackagePoiCodecTests
         PoiPoint point = Assert.Single(snapshot.PoiPoints);
         Assert.Equal(-1, point.Id);
         Assert.Equal("persisted-point", point.Name);
-        Assert.Equal(GraphicTypes.Rect, point.PointType);
+        Assert.Equal(PoiShape.Rect, point.PointType);
         Assert.Equal(12, point.PixX);
         Assert.Equal(34, point.PixY);
         Assert.Equal(56, point.PixWidth);

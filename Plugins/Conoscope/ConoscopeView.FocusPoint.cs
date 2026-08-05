@@ -246,7 +246,7 @@ namespace Conoscope
                 {
                     Id = 0,
                     Name = ResolveFocusCircleName(circle),
-                    PointType = GraphicTypes.Circle,
+                    PointType = PoiShape.Circle,
                     PixX = circle.Attribute.Center.X,
                     PixY = circle.Attribute.Center.Y,
                     PixWidth = Math.Max(1, radiusX * 2),
@@ -672,12 +672,12 @@ namespace Conoscope
                 dominantWave = 0;
             }
 
-            POIPoint poiPoint = new()
+            PoiPoint poiPoint = new()
             {
                 Name = ResolveFocusCircleName(circle),
                 PixelX = (int)Math.Round(circle.Attribute.Center.X),
                 PixelY = (int)Math.Round(circle.Attribute.Center.Y),
-                PointType = CVCommCore.CVAlgorithm.POIPointTypes.Circle,
+                PointType = PoiShape.Circle,
                 Width = (int)Math.Round(circle.Attribute.Radius * 2),
                 Height = (int)Math.Round(circle.Attribute.RadiusY * 2)
             };
