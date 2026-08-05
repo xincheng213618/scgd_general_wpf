@@ -21,7 +21,7 @@
 | `MenuTemplate.cs` | 顶层“模板”菜单，`Order = 2` |
 | `MenuItemTemplateBase.cs` | 普通模板菜单项基类，默认打开模板编辑窗口 |
 | `MenuITemplateAlgorithm.cs` | “算法”模板分组和算法模板菜单基类 |
-| `ExportFocusPoints.cs`、`ExportRoi.cs`、`ExportMenuItemMatching.cs`、`MenuDefalutDicAlg.cs` | 具体菜单示例 |
+| `ExportFocusPoints.cs`、`ExportRoi.cs`、`ExportMenuItemMatching.cs` | 具体菜单示例 |
 
 当前层级：
 
@@ -55,7 +55,6 @@ MenuTemplate
 | `ExportFocusPoints` | `MenuITemplateAlgorithm` | `TemplateFocusPoints` |
 | `ExportRoi` | `MenuITemplateAlgorithm` | `TemplateRoi` |
 | `ExportMenuItemMatching` | `MenuITemplateAlgorithm` | `TemplateMatch` |
-| `MenuDefalutDicAlg` | `MenuITemplateAlgorithm` | `TemplateModParam` |
 | `MenuGhost2` | `MenuITemplateAlgorithm` | `TemplateGhostQK` |
 | `MenuLEDStripDetectionV2` | `MenuITemplateAlgorithm` | `TemplateLEDStripDetectionV2` |
 
@@ -79,4 +78,3 @@ MenuTemplate
 - 修改 `OwnerGuid` 会改变菜单可见路径。
 - `ShowTemplateWindow()` 默认用非模态 `Show()`；需要 `ShowDialog()` 时单独覆盖。
 - 具体模板是否能保存、导入、导出，仍由 `ITemplate` 实现决定。
-- 源码里有历史拼写，例如 `MenuDefalutDicAlg`，排查时按现有类名搜索。

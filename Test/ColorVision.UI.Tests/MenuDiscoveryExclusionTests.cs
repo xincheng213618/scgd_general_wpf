@@ -9,7 +9,6 @@ public class MenuDiscoveryExclusionTests
     [InlineData("ColorVision.Engine.Templates.Validate.ExportComply")]
     [InlineData("ColorVision.Engine.Templates.Validate.ExportComplyPoint")]
     [InlineData("ColorVision.Engine.Templates.Validate.ExportComplyPointList")]
-    [InlineData("ColorVision.Engine.Templates.Validate.ExportDicComply")]
     [InlineData("ColorVision.Engine.Templates.Validate.MenuItemProviderSensor")]
     [InlineData("ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates.MenuThirdPartyAlgorithms")]
     [InlineData("ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates.MenuItemProviderSensor")]

@@ -2,7 +2,6 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
 using ColorVision.Engine.Templates;
-using ColorVision.Engine.Templates.SysDictionary;
 using log4net;
 using log4net.Util;
 using MQTTMessageLib.Sensor;
