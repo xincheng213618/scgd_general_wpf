@@ -21,7 +21,7 @@
 
 ### 专题目录
 
-- `templates/`：模板管理、流程模板、JSON 模板、POI/ARVR、FindLightArea、LED 检测、Validate、Compliance、DataLoad、Matching、SysDictionary、FocusPoints、ImageCropping、模板菜单等专题页。
+- `templates/`：模板管理、流程模板、JSON 模板、POI/ARVR、FindLightArea、LED 检测、Validate、DataLoad、Matching、SysDictionary、FocusPoints、ImageCropping、模板菜单等专题页。
 - `detectors/`：少量缺陷/检测类专题，例如 [Ghost Detection](./detectors/ghost-detection.md)。
 - `primitives/`：少量基础构件说明，例如 [通用算法模块](./primitives/common-modules.md)、[ROI 原语](./primitives/roi.md)、[POI 原语](./primitives/poi.md)。
 
@@ -36,7 +36,7 @@
 | POI、ROI、发光区和关注点 | [POI 模板](./templates/poi-template.md)、[ROI 原语](./primitives/roi.md)、[FindLightArea 发光区定位模板](./templates/find-light-area.md)、[FocusPoints 关注点模板](./templates/focus-points-template.md) |
 | AR/VR、LED 和灯条检测 | [ARVR 模板](./templates/arvr-template.md)、[LED 检测模板](./templates/led-detection.md) |
 | 字典和判定规则 | [SysDictionary 系统字典模板](./templates/sys-dictionary-template.md)、[Validate 判定规则模板](./templates/validate-rules.md) |
-| 数据加载、匹配、裁剪和结果展示 | [DataLoad 数据加载模板](./templates/data-load-template.md)、[Matching 模板匹配](./templates/matching-template.md)、[ImageCropping 图像裁剪模板](./templates/image-cropping-template.md)、[Compliance 结果对接](./templates/compliance-results.md) |
+| 数据加载、匹配和裁剪 | [DataLoad 数据加载模板](./templates/data-load-template.md)、[Matching 模板匹配](./templates/matching-template.md)、[ImageCropping 图像裁剪模板](./templates/image-cropping-template.md) |
 | JSON 模板和模板菜单入口 | [JSON 模板](./templates/json-templates.md)、[模板菜单入口](./templates/template-menu-entries.md) |
 
 ## 当前最值得先认识的代码锚点

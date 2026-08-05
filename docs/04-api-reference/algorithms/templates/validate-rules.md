@@ -1,6 +1,6 @@
 # Validate 判定规则模板
 
-`Validate/` 保留早期合规判定模板的加载和执行兼容。默认合规字典维护窗口已经移除；Compliance 和部分历史项目包仍可能间接读取现有规则数据。
+`Validate/` 保留早期合规判定模板的加载和执行兼容。默认合规字典维护窗口已经移除；部分历史项目包仍可能间接读取现有规则数据。
 
 ## 适用范围
 
@@ -54,9 +54,8 @@
 
 | 模块 | 依赖方式 |
 | --- | --- |
-| [Compliance 结果对接](./compliance-results.md) | 读取上游写回的 `ValidateResult`，按 `ValidateRuleResultType.M` 判断通过 |
 | JND 类判定 | 判定模板来自 `mod_type = 120` |
-| 项目包 | 可能读取 Validate/Compliance 结果生成最终报表或 OK/NG |
+| 项目包 | 可能读取 Validate 结果生成最终报表或 OK/NG |
 
 ## 排查和维护
 
