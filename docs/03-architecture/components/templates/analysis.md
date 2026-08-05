@@ -32,7 +32,7 @@
 | --- | --- | --- |
 | 核心框架层 | `ITemplate.cs`、`ModelBase.cs`、`ParamModBase.cs`、`TemplateContorl.cs`、`TemplatesExtension.cs` | 负责抽象、注册、基础模型和公共 UI |
 | 流程模板层 | `Flow/` | 承接流程模板和流程编辑运行能力 |
-| 业务模板族 | `ARVR/`、`POI/`、`Matching/`、`FindLightArea/`、`FocusPoints/`、`ImageCropping/`、`LedCheck/`、`LEDStripDetection/`、`Validate/`、`DataLoad/` | 有的按算法域分组，有的按处理环节分组 |
+| 业务模板族 | `ARVR/`、`POI/`、`Matching/`、`FindLightArea/`、`FocusPoints/`、`ImageCropping/`、`LedCheck/`、`LEDStripDetection/`、`DataLoad/` | 有的按算法域分组，有的按处理环节分组 |
 | JSON 模板族 | `Jsons/` | 以 JSON 配置为核心，与传统目录式模板并存 |
 
 如果看到名称相近但目录不同的模板实现，不要先假定是重复代码，更可能是历史版本、配置方式或业务接入方式不同。
