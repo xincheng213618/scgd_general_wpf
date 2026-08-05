@@ -732,6 +732,7 @@ namespace ColorVision.Engine.Media
                             context.Config.SetImageMetadata(ImageViewPropertyKeys.DpiY, writeableBitmap.DpiY, nameof(CVRawOpen), "当前 CVCIE 图像垂直 DPI");
                             //这里需要强制切换过来
                             context.ImageView.ImageShow.Source = writeableBitmap;
+                            context.ImageView.ImageShow.RaiseImageInitialized();
                             mat.Dispose();
                         }
                     }
