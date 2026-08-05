@@ -3,8 +3,6 @@ using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.Engine.Templates.POI.BuildPoi;
-using ColorVision.Engine.Templates.POI.POIFilters;
-using ColorVision.Engine.Templates.POI.POIRevise;
 using ColorVision.ImageEditor;
 using CVCommCore.CVAlgorithm;
 using FlowEngineLib.Base;
@@ -24,8 +22,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
     internal sealed class LocalRealPoiParameters
     {
         public required PoiParam Poi { get; init; }
-        public PoiFilterParam? Filter { get; init; }
-        public PoiReviseParam? Revise { get; init; }
         public int SourceMasterId { get; init; } = -1;
     }
 
@@ -36,8 +32,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             int inputResultType,
             string imageInputName,
             string poiTemplateName,
-            string poiFilterTemplateName,
-            string poiReviseTemplateName,
             ServicePoiPointTypes poiType,
             float poiWidth,
             float poiHeight)
@@ -62,19 +56,9 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             }
 
             ApplyPoiTypeOverride(poi, poiType, poiWidth, poiHeight);
-            PoiFilterParam? filter = string.IsNullOrWhiteSpace(poiFilterTemplateName)
-                ? null
-                : TemplatePoiFilterParam.Params.FirstOrDefault(item => string.Equals(item.Key, poiFilterTemplateName, StringComparison.Ordinal))?.Value
-                    ?? throw new InvalidOperationException($"找不到 POI 过滤模板：{poiFilterTemplateName}");
-            PoiReviseParam? revise = string.IsNullOrWhiteSpace(poiReviseTemplateName)
-                ? null
-                : TemplatePoiReviseParam.Params.FirstOrDefault(item => string.Equals(item.Key, poiReviseTemplateName, StringComparison.Ordinal))?.Value
-                    ?? throw new InvalidOperationException($"找不到 POI 修正模板：{poiReviseTemplateName}");
             return new LocalRealPoiParameters
             {
                 Poi = poi,
-                Filter = filter,
-                Revise = revise,
                 SourceMasterId = sourceMasterId
             };
         }
@@ -196,8 +180,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
     [STNode("Flow_CustomNodes", "实时 POI")]
     [FlowNodePropertyEditorAttribute(nameof(POITempName), typeof(FlowPoiTemplateEditor))]
-    [FlowNodePropertyEditorAttribute(nameof(POIFilterTempName), typeof(FlowPoiFilterTemplateEditor))]
-    [FlowNodePropertyEditorAttribute(nameof(POIReviseTempName), typeof(FlowPoiReviseTemplateEditor))]
     public sealed class LocalRealPoiNode : LocalFlowNodeBase
     {
         private static readonly string[] InputPortNames = { "IN_CIE", "IN_POI" };
@@ -212,12 +194,12 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         [STNodeProperty("POI 模板", "IN_POI 没有布点结果时使用的备用 POI 模板", true)]
         public string POITempName { get => poiTempName; set { poiTempName = value ?? string.Empty; OnPropertyChanged(); } }
 
-        [Category("实时 POI")]
-        [STNodeProperty("POI 过滤", "可选的 POI 过滤模板", true)]
+        [Browsable(false)]
+        // Kept only so existing serialized node payloads can still be opened.
         public string POIFilterTempName { get => poiFilterTempName; set { poiFilterTempName = value ?? string.Empty; OnPropertyChanged(); } }
 
-        [Category("实时 POI")]
-        [STNodeProperty("POI 修正", "可选的 POI 修正模板", true)]
+        [Browsable(false)]
+        // Kept only so existing serialized node payloads can still be opened.
         public string POIReviseTempName { get => poiReviseTempName; set { poiReviseTempName = value ?? string.Empty; OnPropertyChanged(); } }
 
         [Category("实时 POI")]
@@ -278,8 +260,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 poiInputResultType,
                 InputPortNames[0],
                 POITempName,
-                POIFilterTempName,
-                POIReviseTempName,
                 POIType,
                 POIWidth,
                 POIHeight);
@@ -288,7 +268,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             LocalPoiResultSet result;
             using (LocalFlowFrameLease frame = currentFrame.Acquire())
             {
-                result = LocalPoiCalculator.Calculate(frame, parameters.Poi, parameters.Filter, parameters.Revise);
+                result = LocalPoiCalculator.Calculate(frame, parameters.Poi);
             }
             stopwatch.Stop();
             int totalTime = checked((int)Math.Min(stopwatch.ElapsedMilliseconds, int.MaxValue));
@@ -311,8 +291,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                         POISourceMasterId = parameters.SourceMasterId > 0 ? (int?)parameters.SourceMasterId : null,
                         CalibrationTemplate = currentFrame.Metadata.CalibrationTemplate,
                         POITemplate = parameters.Poi.Name,
-                        POIFilterTemplate = parameters.Filter?.Name,
-                        POIReviseTemplate = parameters.Revise?.Name,
                         FlipMode = currentFrame.Metadata.FlipMode.ToString(),
                         FlipApplied = currentFrame.IsCieFlipApplied,
                         ImageRead = false,
@@ -357,8 +335,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 EventName = operatorCode,
                 action.SerialNumber,
                 POITempName,
-                POIFilterTempName,
-                POIReviseTempName,
                 POIType,
                 POIWidth,
                 POIHeight,
