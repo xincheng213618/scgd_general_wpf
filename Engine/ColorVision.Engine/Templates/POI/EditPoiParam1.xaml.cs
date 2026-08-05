@@ -21,10 +21,13 @@ using ColorVision.Util.Draw.Rectangle;
 using cvColorVision;
 using log4net;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -35,6 +38,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 
 namespace ColorVision.Engine.Templates.POI
 {
@@ -109,51 +113,51 @@ namespace ColorVision.Engine.Templates.POI
         /// <summary>
         /// 结果缩放
         /// </summary>
-        public double KeyScale { get => _KeyScale; set { _KeyScale = value; OnPropertyChanged(); } }
+        public double KeyScale { get => _KeyScale; set { if (_KeyScale == value) return; _KeyScale = value; OnPropertyChanged(); } }
         private double _KeyScale = 1;
         /// <summary>
         /// 结果缩放
         /// </summary>
-        public double HaloScale { get => _HaloScale; set { _HaloScale = value; OnPropertyChanged(); } }
+        public double HaloScale { get => _HaloScale; set { if (_HaloScale == value) return; _HaloScale = value; OnPropertyChanged(); } }
         private double _HaloScale = 1;
 
-        public int HaloThreadV { get => _HaloThreadV; set { _HaloThreadV = value; OnPropertyChanged(); } }
+        public int HaloThreadV { get => _HaloThreadV; set { if (_HaloThreadV == value) return; _HaloThreadV = value; OnPropertyChanged(); } }
         private int _HaloThreadV = 500;
 
-        public int KeyThreadV { get => _KeyThreadV; set { _KeyThreadV = value; OnPropertyChanged(); } }
+        public int KeyThreadV { get => _KeyThreadV; set { if (_KeyThreadV == value) return; _KeyThreadV = value; OnPropertyChanged(); } }
         private int _KeyThreadV = 3000;
 
-        public int HaloOutMOVE { get => _HaloOutMOVE; set { _HaloOutMOVE = value; OnPropertyChanged(); } }
+        public int HaloOutMOVE { get => _HaloOutMOVE; set { if (_HaloOutMOVE == value) return; _HaloOutMOVE = value; OnPropertyChanged(); } }
         private int _HaloOutMOVE = 20;
 
-        public int KeyOutMOVE { get => _KeyOutMOVE; set { _KeyOutMOVE = value; OnPropertyChanged(); } }
+        public int KeyOutMOVE { get => _KeyOutMOVE; set { if (_KeyOutMOVE == value) return; _KeyOutMOVE = value; OnPropertyChanged(); } }
         private int _KeyOutMOVE = 5;
 
-        public int KeyOffsetX { get => _KeyOffsetX; set { _KeyOffsetX = value; OnPropertyChanged(); } }
+        public int KeyOffsetX { get => _KeyOffsetX; set { if (_KeyOffsetX == value) return; _KeyOffsetX = value; OnPropertyChanged(); } }
         private int _KeyOffsetX;
-        public int KeyOffsetY { get => _KeyOffsetY; set { _KeyOffsetY = value; OnPropertyChanged(); } }
+        public int KeyOffsetY { get => _KeyOffsetY; set { if (_KeyOffsetY == value) return; _KeyOffsetY = value; OnPropertyChanged(); } }
         private int _KeyOffsetY;
 
-        public int HaloOffsetX { get => _HaloOffsetX; set { _HaloOffsetX = value; OnPropertyChanged(); } }
+        public int HaloOffsetX { get => _HaloOffsetX; set { if (_HaloOffsetX == value) return; _HaloOffsetX = value; OnPropertyChanged(); } }
         private int _HaloOffsetX;
 
-        public int HaloSize { get => _HaloSize; set { _HaloSize = value; OnPropertyChanged(); } }
+        public int HaloSize { get => _HaloSize; set { if (_HaloSize == value) return; _HaloSize = value; OnPropertyChanged(); } }
         private int _HaloSize;
 
 
-        public int HaloOffsetY { get => _HaloOffsetY; set { _HaloOffsetY = value; OnPropertyChanged(); } }
+        public int HaloOffsetY { get => _HaloOffsetY; set { if (_HaloOffsetY == value) return; _HaloOffsetY = value; OnPropertyChanged(); } }
         private int _HaloOffsetY;
 
         /// <summary>
         /// 面积
         /// </summary>
-        public double Area { get => _Area; set { _Area = value; OnPropertyChanged(); } }
+        public double Area { get => _Area; set { if (_Area == value) return; _Area = value; OnPropertyChanged(); } }
         private double _Area = 1;
 
         /// <summary>
         /// 辉度
         /// </summary>
-        public double Brightness { get => _Brightness; set { _Brightness = value; OnPropertyChanged(); } }
+        public double Brightness { get => _Brightness; set { if (_Brightness == value) return; _Brightness = value; OnPropertyChanged(); } }
         private double _Brightness;
     }
 
@@ -166,6 +170,12 @@ namespace ColorVision.Engine.Templates.POI
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(EditPoiParam1));
         private string TagName { get; set; } = "P_";
+        private readonly HashSet<RectangleTextProperties> _dirtyKeyboardKeys = new();
+        private readonly DispatcherTimer _keyboardRecalculationTimer;
+        private bool _isApplyingKeyboardResults;
+        private IntPtr _keyboardCalibrationHandle;
+        private int _keyboardCalibrationResourceId = -1;
+        private string _keyboardCalibrationCameraPath = string.Empty;
 
         public KBJson KBJson { get; set; }
         public KBPoiConfig PoiConfig => KBJson.PoiConfig;
@@ -177,10 +187,19 @@ namespace ColorVision.Engine.Templates.POI
             TemplateJsonKBParam = poiParam;
             KBJson = TemplateJsonKBParam.KBJson;
             InitializeComponent();
+            _keyboardRecalculationTimer = new DispatcherTimer(
+                TimeSpan.FromMilliseconds(100),
+                DispatcherPriority.Background,
+                (_, _) => FlushPendingKeyboardRecalculation(),
+                Dispatcher);
+            _keyboardRecalculationTimer.Stop();
             PoiImageViewComponent.SetIsTemplateSelectorEnabled(ImageView, false);
             this.ApplyCaption();
             this.DelayClearImage((Action)(() => Application.Current.Dispatcher.Invoke((Action)(() =>
             {
+                _keyboardRecalculationTimer.Stop();
+                _dirtyKeyboardKeys.Clear();
+                ReleaseKeyboardCalibration();
                 ImageView?.Dispose();
             }))));
             this.Title = poiParam.Name + "-" + this.Title;
@@ -266,13 +285,7 @@ namespace ColorVision.Engine.Templates.POI
                         {
                             KBPoiVMParam poiPointParam = new KBPoiVMParam();
                             visual.BaseAttribute.Param = poiPointParam;
-                            poiPointParam.PropertyChanged += (s1, e1) =>
-                            {
-                                if (e1.PropertyName == "Area")
-                                {
-                                    CalPoiPointParamB(rectangle);
-                                }
-                            };
+                            AttachKeyboardParamChangeHandler(rectangle, poiPointParam);
 
                         }
 
@@ -489,13 +502,7 @@ namespace ColorVision.Engine.Templates.POI
                         KeyOutMOVE = item.KBKey.Move,
                         Area = item.KBKey.Area,
                     };
-                    poiPointParam.PropertyChanged += (s, e) =>
-                    {
-                        if (e.PropertyName == "Area")
-                        {
-                            CalPoiPointParamB(Rectangle.Attribute);
-                        }
-                    };
+                    AttachKeyboardParamChangeHandler(Rectangle.Attribute, poiPointParam);
 
                     Rectangle.Attribute.Param = poiPointParam;
 
@@ -989,6 +996,7 @@ namespace ColorVision.Engine.Templates.POI
 
         private void SavePoiParam()
         {
+            FlushPendingKeyboardRecalculation();
             KBJson.KBKeyRects.Clear();
             Rect rect = new Rect(0, 0, KBJson.Width, KBJson.Height);
             foreach (var item in DrawingVisualLists)
@@ -1289,11 +1297,7 @@ namespace ColorVision.Engine.Templates.POI
                                 rectangle.Attribute.Text = string.Format("{0}{1}", TagName, rectangle.Attribute.Name);
 
                                 KBPoiVMParam poiPointParam = new KBPoiVMParam();
-                                poiPointParam.PropertyChanged += (s1, e1) =>
-                                {
-                                    if (e1.PropertyName == "Area")
-                                        CalPoiPointParamB(rectangle.Attribute);
-                                };
+                                AttachKeyboardParamChangeHandler(rectangle.Attribute, poiPointParam);
                                 rectangle.Attribute.Param = poiPointParam;
 
                                 rectangle.Render();
@@ -1457,7 +1461,7 @@ namespace ColorVision.Engine.Templates.POI
         {
             try
             {
-                InitialKBKey();
+                CalculateKeyboardKeys();
             }
             catch (Exception ex)
             {
@@ -1470,291 +1474,494 @@ namespace ColorVision.Engine.Templates.POI
 
         }
 
-        private void CalPoiPointParamB(RectangleTextProperties rectangle)
+        private bool _hasKeyboardResult;
+
+        private void AttachKeyboardParamChangeHandler(RectangleTextProperties rectangle, KBPoiVMParam param)
         {
-            if (!IsInitialKB) return;
-            InitialKBKey(false);
+            rectangle.PropertyChanged += (_, e) =>
+            {
+                if (!_isApplyingKeyboardResults && _hasKeyboardResult &&
+                    e.PropertyName == nameof(RectangleTextProperties.Rect))
+                {
+                    QueueKeyboardRecalculation(rectangle);
+                }
+            };
+            param.PropertyChanged += (_, e) =>
+            {
+                if (_isApplyingKeyboardResults || !_hasKeyboardResult || !IsKeyboardCalculationProperty(e.PropertyName))
+                    return;
+                QueueKeyboardRecalculation(rectangle);
+            };
         }
-        nint Calibratiohandle = IntPtr.Zero;
 
-        bool IsInitialKB ;
-        private void InitialKBKey(bool show =true)
+        private static bool IsKeyboardCalculationProperty(string propertyName)
         {
-           if (PoiConfig.CalibrationParams == null)
-            {
-                MessageBox.Show("请先设置校准模板");
+            return propertyName == nameof(KBPoiVMParam.Area) ||
+                propertyName == nameof(KBPoiVMParam.KeyScale) ||
+                propertyName == nameof(KBPoiVMParam.HaloScale) ||
+                propertyName == nameof(KBPoiVMParam.KeyOutMOVE) ||
+                propertyName == nameof(KBPoiVMParam.KeyThreadV) ||
+                propertyName == nameof(KBPoiVMParam.KeyOffsetX) ||
+                propertyName == nameof(KBPoiVMParam.KeyOffsetY) ||
+                propertyName == nameof(KBPoiVMParam.HaloOutMOVE) ||
+                propertyName == nameof(KBPoiVMParam.HaloThreadV) ||
+                propertyName == nameof(KBPoiVMParam.HaloOffsetX) ||
+                propertyName == nameof(KBPoiVMParam.HaloOffsetY) ||
+                propertyName == nameof(KBPoiVMParam.HaloSize);
+        }
+
+        private void QueueKeyboardRecalculation(RectangleTextProperties rectangle)
+        {
+            if (!_hasKeyboardResult)
                 return;
-            }
-            string luminFile;
-            if (PoiConfig.CalibrationTemplateIndex > -1 && PoiConfig.CalibrationParams[PoiConfig.CalibrationTemplateIndex] is TemplateModel<CalibrationParam> templateModel)
+            _dirtyKeyboardKeys.Add(rectangle);
+            _keyboardRecalculationTimer.Stop();
+            _keyboardRecalculationTimer.Start();
+        }
+
+        private void FlushPendingKeyboardRecalculation()
+        {
+            _keyboardRecalculationTimer.Stop();
+            if (_dirtyKeyboardKeys.Count == 0 || !_hasKeyboardResult)
+                return;
+
+            RectangleTextProperties[] dirtyKeys = _dirtyKeyboardKeys.ToArray();
+            _dirtyKeyboardKeys.Clear();
+            CalculateKeyboardKeys(false, dirtyKeys);
+        }
+
+        private void CalculateKeyboardKeys(bool show = true, IReadOnlyCollection<RectangleTextProperties> requestedKeys = null)
+        {
+            bool isIncremental = requestedKeys != null;
+            if (!isIncremental)
             {
-                string path = templateModel.Value.Color.Luminance.FilePath;
-
-
-                if (string.IsNullOrEmpty(path))
-                {
-                    path = templateModel.Value.Color.LumFourColor.FilePath;
-                    if (string.IsNullOrEmpty(path))
-                    {
-                        MessageBox.Show("找不到亮度校正模板");
-                        return;
-                    }
-                    else
-                    {
-                        log.Info("执行四色校正");
-                        var resource = SysResourceDao.Instance.GetById(templateModel.Value.Color.LumFourColor.Id);
-
-                        PhyCamera phyCamera1 = PoiConfig.DeviceCamera.PhyCamera;
-                        string filepath = Path.Combine(phyCamera1.Config.FileServerCfg.FileBasePath, phyCamera1.Code, "cfg", resource.Value);
-                        log.Info($"Lum:{filepath}");
-
-                        if (File.Exists(filepath))
-                        {
-                            luminFile = filepath;
-                        }
-                        else
-                        {
-                            MessageBox.Show("找不到亮度校正模板");
-                            return;
-                        }
-                    }
-                }
-                else
-                {
-                    log.Info("执行单通道校正");
-
-                    var resource = SysResourceDao.Instance.GetById(templateModel.Value.Color.Luminance.Id);
-
-                    PhyCamera phyCamera1 = PoiConfig.DeviceCamera.PhyCamera;
-                    string filepath = Path.Combine(phyCamera1.Config.FileServerCfg.FileBasePath, phyCamera1.Code, "cfg", resource.Value);
-                    log.Info($"Lum:{filepath}");
-
-                    if (File.Exists(filepath))
-                    {
-                        luminFile = filepath;
-
-                        Calibratiohandle = cvCameraCSLib.CreatCalibrationManage();
-                        int ret = cvCameraCSLib.CM_SetCalibParam(Calibratiohandle, CalibrationType.Luminance,true, luminFile);
-                        if (ret != 1)
-                        {
-                            log.Error("read luminance file ERROR!");
-                        }
-                    }
-                    else
-                    {
-                        MessageBox.Show("找不到亮度校正模板");
-                        return;
-                    }
-                }
-
-
+                _keyboardRecalculationTimer.Stop();
+                _dirtyKeyboardKeys.Clear();
             }
-            else
+
+            HImage? cachedImage = HImageCache;
+            if (!cachedImage.HasValue)
             {
-                MessageBox.Show("请先设置校准模板");
+                MessageBox.Show("请先加载图像", "ColorVision");
                 return;
             }
 
-
-            if (luminFile ==null || !File.Exists(luminFile))
+            HImage image = cachedImage.Value;
+            if ((image.depth != 8 && image.depth != 16) ||
+                (image.channels != 1 && image.channels != 3 && image.channels != 4))
             {
-                MessageBox.Show("找不到亮度校正模板");
+                MessageBox.Show($"KB 计算仅支持 8/16 位、1/3/4 通道图像，当前为 {image.depth} 位 {image.channels} 通道。", "ColorVision");
                 return;
             }
-            string imgFileName = PoiConfig.BackgroundFilePath;
-            if (imgFileName == null || !File.Exists(imgFileName))
+            if (!PoiConfig.DefaultDoKey && !PoiConfig.DefaultDoHalo)
             {
-                MessageBox.Show("背景图片");
+                MessageBox.Show("请至少启用 CalKey 或 CalHalo。", "ColorVision");
                 return;
             }
 
-            OpenCvSharp.Mat image;
-            if (CVFileUtil.IsCIEFile(imgFileName))
+            List<(RectangleTextProperties Rectangle, KBPoiVMParam Param)> allKeyVisuals = new();
+            foreach (IDrawingVisual drawingVisual in DrawingVisualLists)
             {
-                int index = CVFileUtil.ReadCIEFileHeader(imgFileName, out CVCIEFile cvcie);
-                if (cvcie.FileExtType == CVType.CIE)
+                if (drawingVisual.BaseAttribute is RectangleTextProperties rectangle &&
+                    rectangle.Param is KBPoiVMParam param)
                 {
-                    string path = Path.GetDirectoryName(imgFileName);
-                    if (File.Exists(Path.Combine(path, cvcie.SrcFileName)))
-                    {
-                        int index1 = CVFileUtil.ReadCIEFileHeader(Path.Combine(path, cvcie.SrcFileName), out CVCIEFile cvcie1);
-
-                        if (index1 > 0)
-                        {
-                            CVFileUtil.ReadCIEFileData(Path.Combine(path, cvcie.SrcFileName), ref cvcie1, index1);
-                            if (cvcie1.Bpp == 16)
-                            {
-                                image = OpenCvSharp.Mat.FromPixelData(cvcie1.Rows, cvcie1.Cols, OpenCvSharp.MatType.MakeType(cvcie1.Depth, cvcie1.Channels), cvcie1.Data);
-                            }
-                            else if (cvcie1.Bpp == 32)
-                            {
-                                OpenCvSharp.Mat src = OpenCvSharp.Mat.FromPixelData(cvcie1.Rows, cvcie1.Cols, OpenCvSharp.MatType.MakeType(cvcie1.Depth, cvcie1.Channels), cvcie1.Data);
-                                OpenCvSharp.Cv2.Normalize(src, src, 0, 255, OpenCvSharp.NormTypes.MinMax);
-                                image = new OpenCvSharp.Mat();
-                                src.ConvertTo(image, OpenCvSharp.MatType.CV_8U);
-                            }
-                            else
-                            {
-                                image = OpenCvSharp.Mat.FromPixelData(cvcie1.Rows, cvcie1.Cols, OpenCvSharp.MatType.CV_8UC(cvcie1.Channels), cvcie1.Data);
-                            }
-                        }
-                        else
-                        {
-                            return;
-                        }
-                    }
-                    else
-                    {
-                        return;
-                    }
-                   
-                }
-                else
-                {
-                    if (index > 0)
-                    {
-                        CVFileUtil.ReadCIEFileData(imgFileName, ref cvcie, index);
-                        if (cvcie.Bpp == 16)
-                        {
-                            image = OpenCvSharp.Mat.FromPixelData(cvcie.Rows, cvcie.Cols, OpenCvSharp.MatType.MakeType(cvcie.Depth, cvcie.Channels), cvcie.Data);
-                        }
-                        else if (cvcie.Bpp == 32)
-                        {
-                            OpenCvSharp.Mat src = OpenCvSharp.Mat.FromPixelData(cvcie.Rows, cvcie.Cols, OpenCvSharp.MatType.MakeType(cvcie.Depth, cvcie.Channels), cvcie.Data);
-                            OpenCvSharp.Cv2.Normalize(src, src, 0, 255, OpenCvSharp.NormTypes.MinMax);
-                            image = new OpenCvSharp.Mat();
-                            src.ConvertTo(image, OpenCvSharp.MatType.CV_8U);
-                        }
-                        else
-                        {
-                            image = OpenCvSharp.Mat.FromPixelData(cvcie.Rows, cvcie.Cols, OpenCvSharp.MatType.CV_8UC(cvcie.Channels), cvcie.Data);
-                        }
-                    }
-                    else
-                    {
-                        return;
-                    }
-                }
-
-            }
-            else
-            {
-                image = OpenCvSharp.Cv2.ImRead(imgFileName, OpenCvSharp.ImreadModes.Unchanged);
-            }
-
-            int width = image.Width;
-            int height = image.Height;
-            int channels = image.Channels();
-            int bpp = image.ElemSize() * 8 / channels;
-            IntPtr imgData = image.Data;
-            KeyBoardDLL.CM_InitialKeyBoardSrc(width, height, bpp, channels, imgData, PoiConfig.SaveProcessData, PoiConfig.SaveFolderPath, PoiConfig.Exp, luminFile, 0);
-
-            string csvFilePath = PoiConfig.SaveFolderPath + "\\output.csv";
-            using (StreamWriter writer = new StreamWriter(csvFilePath, false, Encoding.UTF8))
-            {
-                writer.WriteLine("Name,rect,HaloGray,haloGraynum,KeyGray,Keygraynum");
-                foreach (var drawingVisual in DrawingVisualLists)
-                {
-                    BaseProperties drawAttributeBase = drawingVisual.BaseAttribute;
-                    if (drawAttributeBase is RectangleTextProperties rectangle && rectangle.Param is KBPoiVMParam poiPointParam)
-                    { 
-                        try
-                        {
-                            IRECT rect = new IRECT((int)rectangle.Rect.X, (int)rectangle.Rect.Y, (int)rectangle.Rect.Width, (int)rectangle.Rect.Height);
-                            float haloGray = -1;
-                            uint haloGraynum = 0;
-                            ushort[] haloGray1 = new ushort[256];
-                            uint Keygraynum = 0;
-                            ushort[] keygray1 = new ushort[256];
-
-                            if (PoiConfig.DefaultDoHalo)
-                            {
-                                haloGray = KeyBoardDLL.CM_CalculateHalo(rect, poiPointParam.HaloOutMOVE, poiPointParam.HaloThreadV, 15, PoiConfig.SaveFolderPath + $"\\{rectangle.Text}",  haloGray1,ref haloGraynum);
-                                haloGray = (float)(haloGray * poiPointParam.HaloScale);
-                            }
-                            float keyGray = -1;
-                            if (PoiConfig.DefaultDoKey)
-                            {
-                                keyGray = KeyBoardDLL.CM_CalculateKey(rect, poiPointParam.KeyOutMOVE, poiPointParam.KeyThreadV, PoiConfig.SaveFolderPath + $"\\{rectangle.Text}",  keygray1 ,ref Keygraynum);
-                                
-                                if (Calibratiohandle != IntPtr.Zero)
-                                {
-                                    byte[] byteArray = BitConverter.GetBytes(keygray1[0]);
-                                    byte[] byteArray1 = new byte[4];
-                                    cvCameraCSLib.CM_SCGD_SDP_Luminance(Calibratiohandle, 1, 1, 16, 1, byteArray, byteArray1, new float[] { PoiConfig.Exp , PoiConfig.Exp , PoiConfig.Exp });
-                                    keyGray =(float) BitConverter.ToSingle(byteArray1);
-                                }
-
-
-
-
-                                keyGray = (float)(keyGray * poiPointParam.KeyScale);
-                                if (poiPointParam.Area != 0)
-                                {
-                                    poiPointParam.Brightness = keyGray / poiPointParam.Area;
-                                    poiPointParam.Brightness = poiPointParam.Brightness * Keygraynum *KBJson.KBLVSacle;
-                                }
-                                else
-                                {
-                                    poiPointParam.Brightness = keyGray;
-                                    poiPointParam.Brightness = poiPointParam.Brightness * Keygraynum * KBJson.KBLVSacle;
-                                }
-
-                            }
-                            string name = rectangle.Text;
-                            if (name.Contains(',') || name.Contains('\"'))
-                            {
-                                name = $"\"{name.Replace("\"", "\"\"")}\"";
-                            }
-                            writer.WriteLine($"{name},{rect},{haloGray},{haloGraynum},{keyGray},{Keygraynum},{keygray1[0]},{keygray1[1]},{keygray1[2]}");
-                        }
-                        catch
-                        {
-
-                        }
-
-                    }
+                    allKeyVisuals.Add((rectangle, param));
                 }
             }
-
-            if (!show) return;
-
-            int rw = 0; int rh = 0; int rBpp = 0; int rChannel = 0;
-
-            byte[] pDst1 = new byte[image.Cols * image.Rows * bpp *channels];
-
-            int result = KeyBoardDLL.CM_GetKeyBoardResult(ref rw, ref rh, ref rBpp, ref rChannel, pDst1);
-            OpenCvSharp.Mat mat;
-            if (rBpp == 8)
+            List<(RectangleTextProperties Rectangle, KBPoiVMParam Param)> keyVisuals = requestedKeys == null
+                ? allKeyVisuals
+                : allKeyVisuals.Where(item => requestedKeys.Contains(item.Rectangle)).ToList();
+            if (keyVisuals.Count == 0)
             {
-                mat = OpenCvSharp.Mat.FromPixelData(rh, rw, OpenCvSharp.MatType.CV_8UC(rChannel), pDst1);
-
+                if (!isIncremental)
+                    MessageBox.Show("没有可计算的按键矩形。", "ColorVision");
+                return;
             }
-            else
-            {
-                mat = OpenCvSharp.Mat.FromPixelData(rh, rw, OpenCvSharp.MatType.CV_16UC(rChannel), pDst1);
-            }
-            IsInitialKB = true;
-            string Imageresult = $"{PoiConfig.SaveFolderPath}\\{Path.GetFileName(imgFileName)}_{DateTime.Now:yyyyMMdd_HHmmss}.tif";
-            mat.SaveImage(Imageresult);
 
-            ImageView imageView = new();
-            Window window = new() { Title = Properties.Resources.QuickPreview };
-            if (Application.Current.MainWindow != window)
+            JArray keys = new();
+            for (int index = 0; index < keyVisuals.Count; index++)
             {
-                window.Owner = Application.Current.GetActiveWindow();
-            }
-            window.Content = imageView;
-            imageView.OpenImage(Imageresult);
-            window.Show();
-            if (Application.Current.MainWindow != window)
-            {
-                window.DelayClearImage(() => Application.Current.Dispatcher.Invoke(() =>
+                (RectangleTextProperties rectangle, KBPoiVMParam param) = keyVisuals[index];
+                int haloWidth = param.HaloSize > 0 ? param.HaloSize : Math.Max(1, param.HaloOutMOVE);
+                int haloGap = Math.Max(0, param.HaloOutMOVE - haloWidth);
+                keys.Add(new JObject
                 {
-                    imageView.Clear();
+                    ["id"] = index + 1,
+                    ["name"] = rectangle.Text,
+                    ["rect"] = new JObject
+                    {
+                        ["x"] = (int)rectangle.Rect.X,
+                        ["y"] = (int)rectangle.Rect.Y,
+                        ["width"] = (int)rectangle.Rect.Width,
+                        ["height"] = (int)rectangle.Rect.Height
+                    },
+                    ["calculateKey"] = PoiConfig.DefaultDoKey,
+                    ["calculateHalo"] = PoiConfig.DefaultDoHalo,
+                    ["keyOffsetX"] = param.KeyOffsetX,
+                    ["keyOffsetY"] = param.KeyOffsetY,
+                    ["haloOffsetX"] = param.HaloOffsetX,
+                    ["haloOffsetY"] = param.HaloOffsetY,
+                    ["keyInsetPixels"] = Math.Max(0, param.KeyOutMOVE),
+                    ["haloGapPixels"] = haloGap,
+                    ["haloWidthPixels"] = Math.Max(1, haloWidth),
+                    ["keyValidMin"] = NormalizeKeyboardThreshold(param.KeyThreadV),
+                    ["haloValidMin"] = NormalizeKeyboardThreshold(param.HaloThreadV)
+                });
+            }
+
+            JObject config = new()
+            {
+                ["gray"] = new JObject
+                {
+                    ["mode"] = "luminance",
+                    ["validMin"] = 0.0,
+                    ["validMax"] = 1.0
+                },
+                ["minimumValidPixels"] = 1,
+                ["excludeKeyRectsFromHalo"] = true,
+                ["keys"] = keys
+            };
+            if (isIncremental)
+            {
+                config["haloExclusionRects"] = new JArray(allKeyVisuals.Select(item => new JObject
+                {
+                    ["x"] = (int)item.Rectangle.Rect.X,
+                    ["y"] = (int)item.Rectangle.Rect.Y,
+                    ["width"] = (int)item.Rectangle.Rect.Width,
+                    ["height"] = (int)item.Rectangle.Rect.Height
                 }));
             }
 
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            int length = OpenCVMediaHelper.M_AnalyzeKeyboardHalo(
+                image, new RoiRect(), config.ToString(Formatting.None), out IntPtr resultPtr);
+            long nativeElapsed = stopwatch.ElapsedMilliseconds;
+            if (length <= 0 || resultPtr == IntPtr.Zero)
+            {
+                MessageBox.Show($"KB 计算失败，错误码：{length}", "ColorVision");
+                return;
+            }
+
+            string resultJson = OpenCVMediaHelper.PtrToStringUtf8AndFree(resultPtr);
+            JObject output = JObject.Parse(resultJson);
+            if (output["keys"] is not JArray measurements || measurements.Count != keyVisuals.Count)
+                throw new InvalidDataException("KB 计算返回的按键数量与模板不一致。");
+
+            IntPtr calibrationHandle = PoiConfig.DefaultDoKey
+                ? GetOrCreateKeyboardCalibrationHandle()
+                : IntPtr.Zero;
+            float[] calibrationExposure = new[] { PoiConfig.Exp, PoiConfig.Exp, PoiConfig.Exp };
+            if (calibrationHandle != IntPtr.Zero)
+                calibrationExposure = GetKeyboardCalibrationExposure();
+
+            List<string> csvRows = new()
+            {
+                "Name,Rect,HaloGray,HaloPixelCount,KeyGray,KeyPixelCount,Status"
+            };
+            double[] calibratedKeyValues = null;
+            bool wasApplyingKeyboardResults = _isApplyingKeyboardResults;
+            try
+            {
+                if (calibrationHandle != IntPtr.Zero &&
+                    !TryCalibrateKeyboardMeans(calibrationHandle, measurements, calibrationExposure, out calibratedKeyValues))
+                {
+                    calibratedKeyValues = null;
+                    log.Warn("KB 批量亮度校正失败，本次回退为未校正灰阶。");
+                }
+                _isApplyingKeyboardResults = true;
+                for (int index = 0; index < measurements.Count; index++)
+                {
+                    JObject measurement = (JObject)measurements[index];
+                    (RectangleTextProperties rectangle, KBPoiVMParam param) = keyVisuals[index];
+                    bool keyValid = measurement.Value<bool>("keyValid");
+                    bool haloValid = measurement.Value<bool>("haloValid");
+                    int keyPixelCount = measurement.Value<int>("keyValidPixelCount");
+                    int haloPixelCount = measurement.Value<int>("haloValidPixelCount");
+
+                    double keyValue = -1.0;
+                    if (PoiConfig.DefaultDoKey && keyValid)
+                    {
+                        double keyMean = measurement.Value<double>("keyMean");
+                        double calibratedValue = calibratedKeyValues?[index] ?? double.NaN;
+                        keyValue = double.IsFinite(calibratedValue)
+                            ? calibratedValue
+                            : keyMean * ushort.MaxValue;
+                        keyValue *= param.KeyScale;
+                        param.Brightness = param.Area != 0
+                            ? keyValue / param.Area * keyPixelCount * KBJson.KBLVSacle
+                            : keyValue * keyPixelCount * KBJson.KBLVSacle;
+                    }
+
+                    double haloValue = -1.0;
+                    if (PoiConfig.DefaultDoHalo && haloValid)
+                        haloValue = measurement.Value<double>("haloMean") * ushort.MaxValue * param.HaloScale;
+
+                    measurement["keyValue"] = keyValue;
+                    measurement["haloValue"] = haloValue;
+                    csvRows.Add(string.Join(",",
+                        EscapeCsv(rectangle.Text),
+                        EscapeCsv(rectangle.Rect.ToString(CultureInfo.InvariantCulture)),
+                        haloValue.ToString("G17", CultureInfo.InvariantCulture),
+                        haloPixelCount.ToString(CultureInfo.InvariantCulture),
+                        keyValue.ToString("G17", CultureInfo.InvariantCulture),
+                        keyPixelCount.ToString(CultureInfo.InvariantCulture),
+                        EscapeCsv(measurement.Value<string>("status") ?? string.Empty)));
+
+                    if (!string.Equals(measurement.Value<string>("status"), "ok", StringComparison.Ordinal))
+                    {
+                        string warnings = string.Join("; ", measurement["warnings"]?.Values<string>() ?? Enumerable.Empty<string>());
+                        log.Warn($"KB[{rectangle.Text}] {measurement.Value<string>("status")}: {warnings}");
+                    }
+                }
+            }
+            finally
+            {
+                _isApplyingKeyboardResults = wasApplyingKeyboardResults;
+            }
+
+            if (!isIncremental && PoiConfig.SaveProcessData != 0)
+            {
+                Directory.CreateDirectory(PoiConfig.SaveFolderPath);
+                File.WriteAllLines(Path.Combine(PoiConfig.SaveFolderPath, "output.csv"), csvRows, new UTF8Encoding(true));
+            }
+
+            _hasKeyboardResult = true;
+            stopwatch.Stop();
+            log.Info($"KB 计算完成：{image.cols}x{image.rows}/{image.depth}bit/{image.channels}ch, " +
+                $"Mode={(isIncremental ? "Incremental" : "Full")}, Keys={keyVisuals.Count}, " +
+                $"Native={nativeElapsed}ms, Total={stopwatch.ElapsedMilliseconds}ms");
+            if (show)
+                ShowKeyboardResultPreview(measurements);
+        }
+
+        private static double NormalizeKeyboardThreshold(int threshold)
+        {
+            int value = Math.Max(0, threshold);
+            double maximum = value > byte.MaxValue ? ushort.MaxValue : byte.MaxValue;
+            return Math.Clamp(value / maximum, 0.0, 1.0);
+        }
+
+        private IntPtr GetOrCreateKeyboardCalibrationHandle()
+        {
+            if (PoiConfig.CalibrationParams == null ||
+                PoiConfig.CalibrationTemplateIndex < 0 ||
+                PoiConfig.CalibrationTemplateIndex >= PoiConfig.CalibrationParams.Count ||
+                PoiConfig.CalibrationParams[PoiConfig.CalibrationTemplateIndex] is not TemplateModel<CalibrationParam> templateModel)
+            {
+                ReleaseKeyboardCalibration();
+                log.Warn("KB 未配置亮度校正模板，将返回未校正灰阶。");
+                return IntPtr.Zero;
+            }
+            if (string.IsNullOrEmpty(templateModel.Value.Color.Luminance.FilePath))
+            {
+                ReleaseKeyboardCalibration();
+                log.Info("KB 四色校正不支持当前单通道快速校正，将返回未校正灰阶。");
+                return IntPtr.Zero;
+            }
+
+            int resourceId = templateModel.Value.Color.Luminance.Id;
+            if (PoiConfig.DeviceCamera?.PhyCamera is not PhyCamera phyCamera)
+            {
+                ReleaseKeyboardCalibration();
+                return IntPtr.Zero;
+            }
+            string cameraPath = Path.Combine(phyCamera.Config.FileServerCfg.FileBasePath, phyCamera.Code);
+            if (_keyboardCalibrationHandle != IntPtr.Zero &&
+                _keyboardCalibrationResourceId == resourceId &&
+                string.Equals(_keyboardCalibrationCameraPath, cameraPath, StringComparison.OrdinalIgnoreCase))
+            {
+                return _keyboardCalibrationHandle;
+            }
+
+            var resource = SysResourceDao.Instance.GetById(resourceId);
+            if (resource == null)
+            {
+                ReleaseKeyboardCalibration();
+                return IntPtr.Zero;
+            }
+            string luminFile = Path.Combine(
+                cameraPath,
+                "cfg",
+                resource.Value);
+            if (!File.Exists(luminFile))
+            {
+                ReleaseKeyboardCalibration();
+                log.Warn($"找不到 KB 亮度校正文件：{luminFile}");
+                return IntPtr.Zero;
+            }
+
+            ReleaseKeyboardCalibration();
+            IntPtr handle = cvCameraCSLib.CreatCalibrationManage();
+            if (handle == IntPtr.Zero ||
+                cvCameraCSLib.CM_SetCalibParam(handle, CalibrationType.Luminance, true, luminFile) != 1)
+            {
+                if (handle != IntPtr.Zero)
+                    _ = cvCameraCSLib.ReleaseCalibrationManage(handle);
+                log.Warn($"KB 亮度校正加载失败，将返回未校正灰阶：{luminFile}");
+                return IntPtr.Zero;
+            }
+
+            _keyboardCalibrationHandle = handle;
+            _keyboardCalibrationResourceId = resourceId;
+            _keyboardCalibrationCameraPath = cameraPath;
+            log.Info($"KB 单通道校正：{luminFile}");
+            return handle;
+        }
+
+        private void ReleaseKeyboardCalibration()
+        {
+            if (_keyboardCalibrationHandle != IntPtr.Zero)
+            {
+                _ = cvCameraCSLib.ReleaseCalibrationManage(_keyboardCalibrationHandle);
+                _keyboardCalibrationHandle = IntPtr.Zero;
+            }
+            _keyboardCalibrationResourceId = -1;
+            _keyboardCalibrationCameraPath = string.Empty;
+        }
+
+        private float[] GetKeyboardCalibrationExposure()
+        {
+            float fallback = float.IsFinite(PoiConfig.Exp) && PoiConfig.Exp > 0 ? PoiConfig.Exp : 1.0f;
+            float[] result = new[] { fallback, fallback, fallback };
+            float[] imageExposure = ImageView.Config.GetProperties<float[]>("Exp")
+                ?? ImageView.Config.GetProperties<float[]>("exp");
+            if (imageExposure == null || imageExposure.Length == 0)
+            {
+                log.Info($"KB 当前图像没有曝光元数据，使用模板曝光：{fallback:G9}");
+                return result;
+            }
+
+            for (int index = 0; index < result.Length; index++)
+            {
+                float value = imageExposure[Math.Min(index, imageExposure.Length - 1)];
+                result[index] = float.IsFinite(value) && value > 0 ? value : fallback;
+            }
+            log.Info($"KB 使用当前 CVRAW/CVCIE 曝光：{string.Join(",", result.Select(value => value.ToString("G9", CultureInfo.InvariantCulture)))}");
+            return result;
+        }
+
+        private static bool TryCalibrateKeyboardMeans(
+            IntPtr calibrationHandle,
+            JArray measurements,
+            float[] exposure,
+            out double[] calibratedValues)
+        {
+            calibratedValues = new double[measurements.Count];
+            Array.Fill(calibratedValues, double.NaN);
+            List<int> measurementIndexes = new();
+            List<ushort> rawValues = new();
+            for (int index = 0; index < measurements.Count; index++)
+            {
+                if (measurements[index] is not JObject measurement || !measurement.Value<bool>("keyValid"))
+                    continue;
+                measurementIndexes.Add(index);
+                rawValues.Add((ushort)Math.Clamp(
+                    Math.Round(measurement.Value<double>("keyMean") * ushort.MaxValue),
+                    ushort.MinValue,
+                    ushort.MaxValue));
+            }
+            if (rawValues.Count == 0)
+                return true;
+
+            ushort[] rawValueArray = rawValues.ToArray();
+            byte[] source = new byte[rawValueArray.Length * sizeof(ushort)];
+            Buffer.BlockCopy(rawValueArray, 0, source, 0, source.Length);
+            byte[] luminance = new byte[rawValueArray.Length * sizeof(float)];
+            bool succeeded = cvCameraCSLib.CM_SCGD_SDP_Luminance(
+                calibrationHandle,
+                (uint)rawValueArray.Length,
+                1,
+                16,
+                1,
+                source,
+                luminance,
+                exposure);
+            if (!succeeded)
+                return false;
+
+            for (int index = 0; index < measurementIndexes.Count; index++)
+            {
+                float value = BitConverter.ToSingle(luminance, index * sizeof(float));
+                if (float.IsFinite(value))
+                    calibratedValues[measurementIndexes[index]] = value;
+            }
+            return true;
+        }
+
+        private static string EscapeCsv(string value)
+        {
+            if (!value.Contains(',') && !value.Contains('"') && !value.Contains('\r') && !value.Contains('\n'))
+                return value;
+            return $"\"{value.Replace("\"", "\"\"")}\"";
+        }
+
+        private void ShowKeyboardResultPreview(JArray measurements)
+        {
+            if (ImageShow.Source is not ImageSource source)
+                return;
+
+            ImageView preview = new();
+            preview.SetImageSource(source);
+            double thickness = Math.Max(1.0, Math.Max(source.Width, source.Height) / 1500.0);
+            foreach (JObject measurement in measurements.OfType<JObject>())
+            {
+                string name = measurement.Value<string>("name") ?? measurement.Value<int>("id").ToString(CultureInfo.InvariantCulture);
+                string text = $"{name}  K:{measurement.Value<double>("keyValue"):F2}  H:{measurement.Value<double>("haloValue"):F2}";
+                AddKeyboardPreviewRect(preview, measurement["inputRect"], Brushes.Red, thickness, text);
+                AddKeyboardPreviewRect(preview, measurement["innerRect"], Brushes.Yellow, thickness, null);
+                AddKeyboardPreviewRect(preview, measurement["haloBounds"], Brushes.Cyan, thickness, null);
+            }
+
+            Window window = new()
+            {
+                Title = Properties.Resources.QuickPreview,
+                Content = preview,
+                Owner = Application.Current.GetActiveWindow(),
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            };
+            window.ContentRendered += (_, _) => preview.UpdateZoomAndScale();
+            window.Show();
+            window.DelayClearImage(() => Application.Current.Dispatcher.Invoke(preview.Clear));
+        }
+
+        private static void AddKeyboardPreviewRect(
+            ImageView preview,
+            JToken rectToken,
+            Brush brush,
+            double thickness,
+            string text)
+        {
+            if (rectToken is not JObject rectObject)
+                return;
+            Rect rect = new(
+                rectObject.Value<double>("x"),
+                rectObject.Value<double>("y"),
+                rectObject.Value<double>("width"),
+                rectObject.Value<double>("height"));
+            if (rect.Width <= 0 || rect.Height <= 0)
+                return;
+
+            if (string.IsNullOrEmpty(text))
+            {
+                DVRectangle rectangle = new();
+                rectangle.Attribute.Rect = rect;
+                rectangle.Attribute.Brush = Brushes.Transparent;
+                rectangle.Attribute.Pen = new Pen(brush, thickness);
+                rectangle.Render();
+                preview.ImageShow.AddVisualCommand(rectangle);
+                return;
+            }
+
+            DVRectangleText rectangleText = new();
+            rectangleText.Attribute.Rect = rect;
+            rectangleText.Attribute.Brush = Brushes.Transparent;
+            rectangleText.Attribute.Pen = new Pen(brush, thickness);
+            rectangleText.Attribute.Text = text;
+            rectangleText.Attribute.Foreground = brush;
+            rectangleText.Attribute.FontSize = Math.Max(12.0, thickness * 5.0);
+            rectangleText.Attribute.Position = RectangleTextPosition.Top;
+            rectangleText.Render();
+            preview.ImageShow.AddVisualCommand(rectangleText);
         }
 
         private void CreateCopy_Click(object sender, RoutedEventArgs e)

@@ -28,6 +28,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 source.Metadata.Channels,
                 calibrationFiles,
                 calibrationTemplate);
+            bool sourceRawAlreadyMirrored = IsRawAlreadyMirrored(source);
+            ValidateMirroredRawContinuation(sourceRawAlreadyMirrored, plan);
             int rawLength = GetExpectedRawLength(source);
             LocalFrameMetadata metadata = new()
             {
@@ -60,7 +62,16 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                         destination.CiePointer,
                         exposure);
                 }
-                LocalFrameMirrorService.ApplyPending(result);
+                if (sourceRawAlreadyMirrored)
+                {
+                    // Color conversion preserves pixel order. The generated CIE is therefore
+                    // already in the same mirrored orientation as the source RAW.
+                    result.MarkPrimaryBufferFlipApplied();
+                }
+                else
+                {
+                    LocalFrameMirrorService.ApplyPending(result);
+                }
                 return result;
             }
             catch
@@ -91,6 +102,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 frame.Metadata.Channels,
                 calibrationFiles,
                 calibrationTemplate);
+            bool sourceRawAlreadyMirrored = IsRawAlreadyMirrored(frame);
+            ValidateMirroredRawContinuation(sourceRawAlreadyMirrored, plan);
             LocalCalibrationLayout layout = new(
                 frame.Metadata.Width,
                 frame.Metadata.Height,
@@ -110,6 +123,10 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                     IntPtr.Zero,
                     frame.CiePointer,
                     NormalizeExposure(frame.Metadata.Exposure));
+                if (sourceRawAlreadyMirrored)
+                {
+                    frame.MarkBufferFlipApplied(LocalFrameBufferKind.CvCie);
+                }
                 return;
             }
 
@@ -126,11 +143,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
 
         private static void ValidateSource(LocalFlowFrameLease source)
         {
-            if (source.Metadata.FlipMode != FlowEngineLib.Algorithm.CVImageFlipMode.None
-                && source.IsRawFlipApplied)
-            {
-                throw new InvalidOperationException("The RAW frame has already been mirrored and can no longer be used with sensor-coordinate spatial calibration maps.");
-            }
             if (!source.HasRaw) throw new InvalidOperationException("当前本地帧没有 RAW 内存，无法执行校正。");
             if (source.RawPointer == IntPtr.Zero) throw new InvalidOperationException("当前本地帧的 RAW 指针无效。");
             if (source.Metadata.Width <= 0 || source.Metadata.Height <= 0) throw new InvalidOperationException("当前本地帧的图像尺寸无效。");
@@ -164,10 +176,29 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             {
                 throw new InvalidOperationException($"Invalid calibration image size: {width}x{height}.");
             }
-            if (colorFiles.Length == 0) return new CalibrationPlan(false, 0);
+            bool hasBasicCalibration = !IsColorOnlyTemplate(calibrationFiles);
+            if (colorFiles.Length == 0) return new CalibrationPlan(false, 0, hasBasicCalibration);
 
             int cieChannels = GetCieChannelCount(colorFiles[0], sourceChannels);
-            return new CalibrationPlan(true, checked(4 * width * height * cieChannels));
+            return new CalibrationPlan(true, checked(4 * width * height * cieChannels), hasBasicCalibration);
+        }
+
+        internal static bool IsColorOnlyTemplate(IReadOnlyList<DeviceCameraCalibrationFile> calibrationFiles)
+        {
+            ArgumentNullException.ThrowIfNull(calibrationFiles);
+            return calibrationFiles.Count > 0 && calibrationFiles.All(file => IsColorCalibration(file.CalibrationType));
+        }
+
+        private static bool IsRawAlreadyMirrored(LocalFlowFrameLease source)
+            => source.Metadata.FlipMode != FlowEngineLib.Algorithm.CVImageFlipMode.None && source.IsRawFlipApplied;
+
+        private static void ValidateMirroredRawContinuation(bool sourceRawAlreadyMirrored, CalibrationPlan plan)
+        {
+            if (!sourceRawAlreadyMirrored) return;
+            if (!plan.GeneratesCie || plan.HasBasicCalibration)
+            {
+                throw new InvalidOperationException("已翻转的 RAW 只能继续执行亮度/色度校正；不能再次执行常规或基于传感器坐标的空间校正。");
+            }
         }
 
         private static float[] NormalizeExposure(float[] exposure)
@@ -199,6 +230,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             return requiredChannels;
         }
 
-        private readonly record struct CalibrationPlan(bool GeneratesCie, int CieLength);
+        private readonly record struct CalibrationPlan(bool GeneratesCie, int CieLength, bool HasBasicCalibration);
     }
 }

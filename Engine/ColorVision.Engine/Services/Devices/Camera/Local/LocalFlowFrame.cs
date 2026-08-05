@@ -60,6 +60,13 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         public bool IsCieFlipApplied => storage.IsBufferFlipApplied(LocalFrameBufferKind.CvCie, Metadata.FlipMode);
         public bool IsFlipApplied => storage.IsBufferFlipApplied(Metadata.PrimaryBufferKind, Metadata.FlipMode);
 
+        /// <summary>
+        /// Records that a newly generated primary buffer inherited the already-finalized
+        /// pixel orientation of its source without performing another physical flip.
+        /// </summary>
+        internal void MarkPrimaryBufferFlipApplied()
+            => storage.MarkFlipApplied(Metadata.PrimaryBufferKind);
+
         public static LocalFlowFrame Allocate(LocalFrameMetadata metadata, int rawLength, int cieLength)
         {
             ArgumentNullException.ThrowIfNull(metadata);
@@ -226,6 +233,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
 
         internal bool IsBufferFlipFailed(LocalFrameBufferKind bufferKind)
             => GetStorage().IsBufferFlipFailed(bufferKind);
+
+        internal void MarkBufferFlipApplied(LocalFrameBufferKind bufferKind)
+            => GetStorage().MarkFlipApplied(bufferKind);
 
         public byte[] CopyRawToArray() => CopyToArray(RawPointer, RawLength);
         public byte[] CopyCieToArray() => CopyToArray(CiePointer, CieLength);

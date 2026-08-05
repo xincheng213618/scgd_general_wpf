@@ -34,12 +34,42 @@ struct KeyHaloConfig
     double haloGapRatio = 0.10;
     double haloWidthRatio = 0.25;
     bool excludeKeyRectsFromHalo = true;
+    // Optional neighboring key rectangles used when only a dirty subset is
+    // measured. They affect halo masking but do not produce result rows.
+    std::vector<cv::Rect> haloExclusionRects;
     int minimumValidPixels = 1;
+};
+
+// Per-key overrides use normalized brightness thresholds so the same
+// configuration behaves identically for 8- and 16-bit source images.
+struct KeyHaloRegion
+{
+    int id = 0;
+    std::string name;
+    cv::Rect rect;
+    bool calculateKey = true;
+    bool calculateHalo = true;
+    int keyOffsetX = 0;
+    int keyOffsetY = 0;
+    int haloOffsetX = 0;
+    int haloOffsetY = 0;
+    int keyInsetPixels = -1;
+    int haloGapPixels = -1;
+    int haloWidthPixels = -1;
+    double keyValidMin = -1.0;
+    double keyValidMax = -1.0;
+    double haloValidMin = -1.0;
+    double haloValidMax = -1.0;
 };
 
 struct KeyHaloMeasurement
 {
     int id = 0;
+    std::string name;
+    bool calculateKey = true;
+    bool calculateHalo = true;
+    bool keyValid = false;
+    bool haloValid = false;
     cv::Rect inputRect;
     cv::Rect clippedKeyRect;
     cv::Rect innerRect;
@@ -69,6 +99,11 @@ struct KeyHaloResult
 KeyHaloResult measureKeyHalo(
     const cv::Mat& image,
     const std::vector<cv::Rect>& keyRects,
+    const KeyHaloConfig& config = {});
+
+KeyHaloResult measureKeyHalo(
+    const cv::Mat& image,
+    const std::vector<KeyHaloRegion>& keys,
     const KeyHaloConfig& config = {});
 
 nlohmann::json ToJson(const KeyHaloMeasurement& measurement);

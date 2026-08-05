@@ -1,4 +1,6 @@
+using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Local;
+using cvColorVision;
 using FlowEngineLib.Algorithm;
 using System.Runtime.InteropServices;
 
@@ -133,6 +135,45 @@ public sealed class LocalFrameMirrorTests
         Assert.False(second.IsFlipApplied);
         using LocalFlowFrameLease secondResult = second.Acquire();
         Assert.Equal(new short[] { 3, 4 }, ReadInt16(secondResult.RawPointer, 2));
+    }
+
+    [Fact]
+    public void ColorOnlyTemplateCanContinueFromMirroredRaw()
+    {
+        DeviceCameraCalibrationFile color = new("color", CalibrationType.LumFourColor, "color", "color.cfg", "C:\\color.cfg");
+        DeviceCameraCalibrationFile basic = new("uniformity", CalibrationType.Uniformity, "uniformity", "uniformity.cfg", "C:\\uniformity.cfg");
+
+        Assert.True(LocalFrameCalibrationService.IsColorOnlyTemplate(new[] { color }));
+        Assert.False(LocalFrameCalibrationService.IsColorOnlyTemplate(new[] { basic, color }));
+        Assert.False(LocalFrameCalibrationService.IsColorOnlyTemplate(Array.Empty<DeviceCameraCalibrationFile>()));
+    }
+
+    [Fact]
+    public void InheritedFlipStatePreventsGeneratedCieFromBeingMirroredTwice()
+    {
+        LocalFrameMetadata metadata = new()
+        {
+            Width = 3,
+            Height = 1,
+            SourceBpp = 16,
+            Channels = 1,
+            PrimaryBufferKind = LocalFrameBufferKind.CvCie,
+            FlipMode = CVImageFlipMode.Y,
+            IsMirrorReady = true
+        };
+        using LocalFlowFrame frame = LocalFlowFrame.Allocate(metadata, 0, 3 * sizeof(float));
+        float[] alreadyMirrored = new float[] { 3, 2, 1 };
+        using (LocalFlowFrameLease lease = frame.Acquire())
+        {
+            Marshal.Copy(alreadyMirrored, 0, lease.CiePointer, alreadyMirrored.Length);
+        }
+
+        frame.MarkPrimaryBufferFlipApplied();
+        LocalFrameMirrorService.ApplyPending(frame);
+
+        using LocalFlowFrameLease result = frame.Acquire();
+        Assert.Equal(alreadyMirrored, ReadSingle(result.CiePointer, alreadyMirrored.Length));
+        Assert.True(frame.IsCieFlipApplied);
     }
 
     private static short[] ReadInt16(IntPtr pointer, int length)
