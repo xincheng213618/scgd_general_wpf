@@ -171,6 +171,7 @@ namespace ColorVision.Engine.Templates.POI
         private string TagName { get; set; } = "P_";
         private readonly HashSet<RectangleTextProperties> _dirtyKeyboardKeys = new();
         private readonly DispatcherTimer _keyboardRecalculationTimer;
+        private bool _isClosing;
         private bool _isApplyingKeyboardResults;
         private IntPtr _keyboardCalibrationHandle;
         private int _keyboardCalibrationResourceId = -1;
@@ -196,6 +197,7 @@ namespace ColorVision.Engine.Templates.POI
             this.ApplyCaption();
             this.DelayClearImage((Action)(() => Application.Current.Dispatcher.Invoke((Action)(() =>
             {
+                _isClosing = true;
                 _keyboardRecalculationTimer.Stop();
                 _dirtyKeyboardKeys.Clear();
                 ReleaseKeyboardCalibration();
@@ -211,7 +213,7 @@ namespace ColorVision.Engine.Templates.POI
 
         public DrawCanvas ImageShow => ImageView.ImageShow;
 
-        private void Window_Initialized(object sender, EventArgs e)
+        private async void Window_Initialized(object sender, EventArgs e)
         {
             DataContext = KBJson;
             ImageView.ImageEditMode = true;
@@ -294,17 +296,8 @@ namespace ColorVision.Engine.Templates.POI
 
             };
 
-            //如果是不显示
-            ImageShow.VisualsRemove += (s, e) =>
-            {
-                if (e.Visual is IDrawingVisual visual)
-                {
-                    DrawingVisualLists.Remove(visual);
-                }
-            };
-
-         
-            if (KBJson.Height != 0 && KBJson.Width != 0)
+            bool loadExistingPoi = KBJson.Height != 0 && KBJson.Width != 0;
+            if (loadExistingPoi)
             {
                 if (File.Exists(PoiConfig.BackgroundFilePath))
                     ImageView.OpenImage(PoiConfig.BackgroundFilePath);
@@ -312,7 +305,6 @@ namespace ColorVision.Engine.Templates.POI
                     CreateImage(KBJson.Width, KBJson.Height, Colors.White, false);
 
                 RenderPoiConfig();
-                PoiParamToDrawingVisual(KBJson);
             }
             else
             {
@@ -334,6 +326,15 @@ namespace ColorVision.Engine.Templates.POI
                 EditPoiParam1Config.Instance.GridViewColumnVisibilitys.CopyToGridView(GridViewColumnVisibilitys);
                 EditPoiParam1Config.Instance.GridViewColumnVisibilitys = GridViewColumnVisibilitys;
                 GridViewColumnVisibility.AdjustGridViewColumnAuto(gridView.Columns, GridViewColumnVisibilitys);
+            }
+
+            if (loadExistingPoi)
+            {
+                await Dispatcher.Yield(DispatcherPriority.Background);
+                if (!_isClosing)
+                {
+                    PoiParamToDrawingVisual(KBJson);
+                }
             }
         }
 
@@ -446,6 +447,12 @@ namespace ColorVision.Engine.Templates.POI
         {
             try
             {
+                if (poiParam.KBKeyRects.Count > 500)
+                {
+                    PoiConfig.IsLayoutUpdated = false;
+                }
+
+                List<Visual> visuals = new(poiParam.KBKeyRects.Count);
                 foreach (var item in poiParam.KBKeyRects)
                 {
                     No++;
@@ -480,14 +487,14 @@ namespace ColorVision.Engine.Templates.POI
 
 
                     Rectangle.Render();
-                    ImageShow.AddVisualCommand(Rectangle);
+                    visuals.Add(Rectangle);
                     DBIndex.Add(Rectangle, No);
                 }
-                ImageShow.ClearActionCommand();
+                ImageShow.AddVisuals(visuals);
             }
-            catch
+            catch (Exception ex)
             {
-
+                log.Error("加载键盘关注点视图失败", ex);
             }
         }
 
@@ -897,7 +904,7 @@ namespace ColorVision.Engine.Templates.POI
         {
             if (drawingVisualDatum != null)
             {
-                ImageShow.RemoveVisualCommand(drawingVisualDatum);
+                ImageShow.RemoveOverlayVisual(drawingVisualDatum);
             }
             if (PoiConfig.IsShowPoiConfig)
             {
@@ -911,7 +918,7 @@ namespace ColorVision.Engine.Templates.POI
                         Circle.Attribute.Pen = new Pen(Brushes.Blue, 1 / Zoombox1.ContentMatrix.M11);
                         Circle.Render();
                         drawingVisualDatum = Circle;
-                        ImageShow.AddVisualCommand(drawingVisualDatum);
+                        ImageShow.AddOverlayVisual(drawingVisualDatum);
                         break;
                     case GraphicTypes.Rect:
                         double Width = PoiConfig.AreaRectWidth;
@@ -922,7 +929,7 @@ namespace ColorVision.Engine.Templates.POI
                         Rectangle.Attribute.Pen = new Pen(Brushes.Blue, 1 / Zoombox1.ContentMatrix.M11);
                         Rectangle.Render();
                         drawingVisualDatum = Rectangle;
-                        ImageShow.AddVisualCommand(drawingVisualDatum);
+                        ImageShow.AddOverlayVisual(drawingVisualDatum);
                         break;
                     case GraphicTypes.Quadrilateral:
 
@@ -942,7 +949,7 @@ namespace ColorVision.Engine.Templates.POI
                         Polygon.Attribute.Points.Add(result[3]);
                         Polygon.Render();
                         drawingVisualDatum = Polygon;
-                        ImageShow.AddVisualCommand(drawingVisualDatum);
+                        ImageShow.AddOverlayVisual(drawingVisualDatum);
                         break;
                     case GraphicTypes.Polygon:
                         DVDatumPolygon Polygon1 = new() { IsComple = false };
@@ -954,7 +961,7 @@ namespace ColorVision.Engine.Templates.POI
                         }
                         Polygon1.Render();
                         drawingVisualDatum = Polygon1;
-                        ImageShow.AddVisualCommand(drawingVisualDatum);
+                        ImageShow.AddOverlayVisual(drawingVisualDatum);
 
                         break;
                     default:

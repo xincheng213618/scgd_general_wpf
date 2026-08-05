@@ -892,11 +892,14 @@ namespace ColorVision.ImageEditor
 
         private void ImageShow_VisualsAdd(object? sender, VisualChangedEventArgs e)
         {
-            if (e.Visual is IDrawingVisual visual && !EditorContext.DrawEditorContext.DrawingVisualLists.Contains(visual) && sender is Visual visual1)
+            if (e.Visual is IDrawingVisual visual)
             {
                 EditorContext.DrawEditorContext.DrawingVisualLists.Add(visual);
+                return;
             }
 
+            List<IDrawingVisual> drawingVisuals = e.Visuals.OfType<IDrawingVisual>().ToList();
+            EditorContext.DrawEditorContext.AddDrawingVisuals(drawingVisuals);
         }
 
         private void ImageShow_VisualsRemove(object? sender, VisualChangedEventArgs e)

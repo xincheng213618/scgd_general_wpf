@@ -44,6 +44,7 @@ namespace ColorVision.Engine.Templates.POI
     public partial class EditPoiParam : Window
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(EditPoiParam));
+        private bool _isClosing;
         private string TagName { get; set; } = "P_";
         public PoiParam PoiParam { get; set; }
         public PoiConfig PoiConfig => PoiParam.PoiConfig;
@@ -57,6 +58,7 @@ namespace ColorVision.Engine.Templates.POI
 
             this.DelayClearImage((Action)(() => Application.Current.Dispatcher.Invoke((Action)(() =>
             {
+                _isClosing = true;
                 ImageView?.Dispose();
             }))));
             this.Title = poiParam.Name + "-" + this.Title;
@@ -70,7 +72,7 @@ namespace ColorVision.Engine.Templates.POI
 
         public DrawCanvas ImageShow => ImageView.ImageShow;
 
-        private void Window_Initialized(object sender, EventArgs e)
+        private async void Window_Initialized(object sender, EventArgs e)
         {
             DataContext = PoiParam;
             ListView1.ItemsSource = DrawingVisualLists;
@@ -107,13 +109,9 @@ namespace ColorVision.Engine.Templates.POI
                 PoiParam.Height = (int)ImageView.ImageShow.Source.Height;
             };
 
-            if (PoiParam.Height != 0 && PoiParam.Width != 0)
+            bool loadExistingPoi = PoiParam.Height != 0 && PoiParam.Width != 0;
+            if (loadExistingPoi)
             {
-                PoiParam.LoadPoiDetailFromDB(PoiParam);
-                if (PoiParam.PoiPoints.Count > 500)
-                    PoiConfig.IsLayoutUpdated = false;
-
-
                 if (File.Exists(PoiConfig.BackgroundFilePath))
                 {
                     ImageView.OpenImage(PoiConfig.BackgroundFilePath);
@@ -122,8 +120,6 @@ namespace ColorVision.Engine.Templates.POI
                     CreateImage(PoiParam.Width, PoiParam.Height, Colors.White, false);
 
                 RenderPoiConfig();
-                PoiParamToDrawingVisual(PoiParam);
-                log.Debug("Render Poi end");
             }
             else
             {
@@ -176,6 +172,31 @@ namespace ColorVision.Engine.Templates.POI
                     ImageShow.RemoveVisualCommand((System.Windows.Media.Visual)e.Visual);
                 }
             };
+
+            if (!loadExistingPoi)
+            {
+                return;
+            }
+
+            List<PoiPoint> points = await PoiParam.LoadPoiDetailsFromDBAsync(PoiParam.Id);
+            if (_isClosing)
+            {
+                return;
+            }
+
+            PoiParam.PoiPoints.Clear();
+            foreach (PoiPoint point in points)
+            {
+                PoiParam.PoiPoints.Add(point);
+            }
+
+            if (points.Count > 500)
+            {
+                PoiConfig.IsLayoutUpdated = false;
+            }
+
+            PoiParamToDrawingVisual(PoiParam);
+            log.Debug($"Render Poi end, count={points.Count}");
         }
 
         private void UpdateAreaFromRect(Rect rect)
@@ -332,7 +353,7 @@ namespace ColorVision.Engine.Templates.POI
 
         private int No;
 
-        private async void PoiParamToDrawingVisual(PoiParam poiParam)
+        private void PoiParamToDrawingVisual(PoiParam poiParam)
         {
             try
             {
@@ -342,6 +363,7 @@ namespace ColorVision.Engine.Templates.POI
                     return;
                 }
 
+                List<Visual> visuals = new(poiParam.PoiPoints.Count);
                 foreach (var item in poiParam.PoiPoints)
                 {
                     No++;
@@ -359,7 +381,7 @@ namespace ColorVision.Engine.Templates.POI
                             Circle.Attribute.Name = item.Id.ToString();
 
                             Circle.Render();
-                            ImageShow.AddVisualCommand(Circle);
+                            visuals.Add(Circle);
                             DBIndex.Add(Circle,item.Id);
                             break;
                         case GraphicTypes.Rect:
@@ -372,7 +394,7 @@ namespace ColorVision.Engine.Templates.POI
                             Rectangle.Attribute.Name = item.Id.ToString();
 
                             Rectangle.Render();
-                            ImageShow.AddVisualCommand(Rectangle);
+                            visuals.Add(Rectangle);
                             DBIndex.Add(Rectangle, item.Id);
                             break;
                         case GraphicTypes.Quadrilateral:
@@ -401,12 +423,12 @@ namespace ColorVision.Engine.Templates.POI
                             break;
                     }
                 }
-                ImageShow.ClearActionCommand();
+                ImageShow.AddVisuals(visuals);
                 Init = true;
             }
-            catch
+            catch (Exception ex)
             {
-
+                log.Error("加载 POI 关注点视图失败", ex);
             }
         }
 
@@ -1039,7 +1061,7 @@ namespace ColorVision.Engine.Templates.POI
         {
             if (drawingVisualDatum != null)
             {
-                ImageShow.RemoveVisualCommand(drawingVisualDatum);
+                ImageShow.RemoveOverlayVisual(drawingVisualDatum);
             }
             if (PoiConfig.IsShowPoiConfig)
             {
@@ -1053,7 +1075,7 @@ namespace ColorVision.Engine.Templates.POI
                         Circle.Attribute.Pen = new Pen(Brushes.Blue, 1 / Zoombox1.ContentMatrix.M11);
                         Circle.Render();
                         drawingVisualDatum = Circle;
-                        ImageShow.AddVisualCommand(drawingVisualDatum);
+                        ImageShow.AddOverlayVisual(drawingVisualDatum);
                         break;
                     case GraphicTypes.Rect:
                         double Width = PoiConfig.AreaRectWidth;
@@ -1064,7 +1086,7 @@ namespace ColorVision.Engine.Templates.POI
                         Rectangle.Attribute.Pen = new Pen(Brushes.Blue, 1 / Zoombox1.ContentMatrix.M11);
                         Rectangle.Render();
                         drawingVisualDatum = Rectangle;
-                        ImageShow.AddVisualCommand(drawingVisualDatum);
+                        ImageShow.AddOverlayVisual(drawingVisualDatum);
                         break;
                     case GraphicTypes.Quadrilateral:
 
@@ -1084,7 +1106,7 @@ namespace ColorVision.Engine.Templates.POI
                         Polygon.Attribute.Points.Add(result[3]);
                         Polygon.Render();
                         drawingVisualDatum = Polygon;
-                        ImageShow.AddVisualCommand(drawingVisualDatum);
+                        ImageShow.AddOverlayVisual(drawingVisualDatum);
                         break;
                     case GraphicTypes.Polygon:
                         DVDatumPolygon Polygon1 = new() { IsComple = false };
@@ -1096,7 +1118,7 @@ namespace ColorVision.Engine.Templates.POI
                         }
                         Polygon1.Render();
                         drawingVisualDatum = Polygon1;
-                        ImageShow.AddVisualCommand(drawingVisualDatum);
+                        ImageShow.AddOverlayVisual(drawingVisualDatum);
 
                         break;
                     default:

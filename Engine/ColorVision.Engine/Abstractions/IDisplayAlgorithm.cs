@@ -80,30 +80,6 @@ namespace ColorVision.Engine
                 "ColorVision");
             return false;
         }
-
-        protected static bool TryGetOptionalTemplate<T>(
-            DisplayAlgorithmTemplateSelection selection,
-            out T? value)
-        {
-            if (selection.SelectedIndex < 0)
-            {
-                value = default;
-                return true;
-            }
-
-            if (selection.TryGetValue(out T selectedValue))
-            {
-                value = selectedValue;
-                return true;
-            }
-
-            value = default;
-            MessageBox1.Show(
-                Application.Current.GetActiveWindow(),
-                selection.ValidationMessage,
-                "ColorVision");
-            return false;
-        }
     }
 
     public abstract class DisplayAlgorithmBase<TConfiguration> : DisplayAlgorithmBase

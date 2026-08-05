@@ -1,5 +1,6 @@
 using ColorVision.ImageEditor.Draw.Special;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Windows;
 
@@ -20,7 +21,21 @@ namespace ColorVision.ImageEditor.Draw
 
         public Guid Id { get; }
 
-        public ObservableCollection<IDrawingVisual> DrawingVisualLists { get; set; } = new ObservableCollection<IDrawingVisual>();
+        public ObservableCollection<IDrawingVisual> DrawingVisualLists { get; set; } = new BulkObservableCollection<IDrawingVisual>();
+
+        internal void AddDrawingVisuals(IReadOnlyList<IDrawingVisual> visuals)
+        {
+            if (DrawingVisualLists is BulkObservableCollection<IDrawingVisual> bulkCollection)
+            {
+                bulkCollection.AddRange(visuals);
+                return;
+            }
+
+            foreach (IDrawingVisual visual in visuals)
+            {
+                DrawingVisualLists.Add(visual);
+            }
+        }
 
         public DrawCanvas DrawCanvas { get; }
 

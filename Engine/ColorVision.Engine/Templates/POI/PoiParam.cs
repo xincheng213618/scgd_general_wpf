@@ -6,6 +6,9 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace ColorVision.Engine.Templates.POI
 {
@@ -46,42 +49,43 @@ namespace ColorVision.Engine.Templates.POI
         public static void LoadPoiDetailFromDB(PoiParam poiParam)
         {
             poiParam.PoiPoints.Clear();
-            log.Debug($"Start loading PoiDetail for pid={poiParam.Id}");
+            foreach (PoiPoint point in QueryPoiDetailsFromDB(poiParam.Id))
+            {
+                poiParam.PoiPoints.Add(point);
+            }
+            log.Debug($"PoiPoints filled, count={poiParam.PoiPoints.Count}");
+        }
 
-            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        public static Task<List<PoiPoint>> LoadPoiDetailsFromDBAsync(int poiId, CancellationToken cancellationToken = default)
+        {
+            return Task.Run(() => QueryPoiDetailsFromDB(poiId), cancellationToken);
+        }
 
-            List<PoiDetailModel> poiDetails2 = null;
+        private static List<PoiPoint> QueryPoiDetailsFromDB(int poiId)
+        {
+            log.Debug($"Start loading PoiDetail for pid={poiId}");
+            Stopwatch stopwatch = Stopwatch.StartNew();
             try
             {
-                using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-
-                poiDetails2 = Db
+                using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                List<PoiDetailModel> details = db
                     .Queryable<PoiDetailModel>()
-                    .Where(x => x.Pid == poiParam.Id)
+                    .Where(x => x.Pid == poiId)
+                    .OrderBy(x => x.Id)
                     .ToList();
-                log.Debug($"Query finished, count={poiDetails2.Count}");
+                log.Debug($"Query finished, count={details.Count}");
+                return details.Select(detail => new PoiPoint(detail)).ToList();
             }
             catch (Exception ex)
             {
                 log.Error("Error querying PoiDetailModel", ex);
-                return;
+                return new List<PoiPoint>();
             }
-
-            try
+            finally
             {
-                foreach (var dbModel in poiDetails2)
-                {
-                    poiParam.PoiPoints.Add(new PoiPoint(dbModel));
-                }
-                log.Debug($"PoiPoints filled, count={poiParam.PoiPoints.Count}");
+                stopwatch.Stop();
+                log.Debug($"LoadPoiDetailFromDB finished in {stopwatch.ElapsedMilliseconds} ms for pid={poiId}");
             }
-            catch (Exception ex)
-            {
-                log.Error("Error filling PoiPoints", ex);
-            }
-
-            stopwatch.Stop();
-            log.Debug($"LoadPoiDetailFromDB finished in {stopwatch.ElapsedMilliseconds} ms for pid={poiParam.Id}");
         }
 
         public PoiParam()
