@@ -36,10 +36,9 @@ namespace System.ComponentModel
 
             var binding = PropertyEditorHelper.CreateTwoWayBinding(obj, property.Name);
             comboBox.SetBinding(Selector.SelectedItemProperty, binding);
-            DockPanel.SetDock(comboBox, Dock.Right);
 
-            dockPanel.Children.Add(comboBox);
             dockPanel.Children.Add(textBlock);
+            dockPanel.Children.Add(comboBox);
             return dockPanel;
         }
     }
