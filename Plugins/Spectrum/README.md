@@ -1,6 +1,6 @@
 # Spectrum Plugin - 光谱仪测试工具
 
-> 版本: 2.3.3.4 | 目标框架: .NET 10.0 Windows | 最低ColorVision版本: ≥ 1.3.15.8
+> 版本: 2.3.3.5 | 目标框架: .NET 10.0 Windows | 最低ColorVision版本: ≥ 1.3.15.8
 
 ## 🎯 功能定位
 

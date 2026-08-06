@@ -21,6 +21,9 @@ namespace Spectrum.Configs
         private static readonly ILog log = LogManager.GetLogger(typeof(FilterWheelController));
 
         private SerialPort? _serialPort;
+        private int activeOperationCount;
+
+        public bool IsBusy => Volatile.Read(ref activeOperationCount) > 0;
 
         public FilterWheelConfig Config => SpectrumConfig.Instance.FilterWheelConfig;
 
@@ -210,50 +213,58 @@ namespace Spectrum.Configs
 
         private async Task<string?> SendCommandAsync(string cmd)
         {
-            if (_serialPort == null || !_serialPort.IsOpen)
-                return null;
-
+            Interlocked.Increment(ref activeOperationCount);
             try
             {
-                // Clear input buffer
-                _serialPort.DiscardInBuffer();
-                _serialPort.Write(cmd);
+                if (_serialPort == null || !_serialPort.IsOpen)
+                    return null;
 
-                string receiveBuffer = "";
-                int maxLoops = CommandTimeoutMs / PollingIntervalMs;
-
-                for (int i = 0; i < maxLoops; i++)
+                try
                 {
-                    await Task.Delay(PollingIntervalMs);
+                    // Clear input buffer
+                    _serialPort.DiscardInBuffer();
+                    _serialPort.Write(cmd);
 
-                    if (_serialPort == null || !_serialPort.IsOpen) break;
+                    string receiveBuffer = "";
+                    int maxLoops = CommandTimeoutMs / PollingIntervalMs;
 
-                    int bytesRead = _serialPort.BytesToRead;
-                    if (bytesRead > 0)
+                    for (int i = 0; i < maxLoops; i++)
                     {
-                        byte[] buff = new byte[bytesRead];
-                        _serialPort.Read(buff, 0, bytesRead);
-                        string msg = Encoding.UTF8.GetString(buff);
-                        receiveBuffer += msg;
+                        await Task.Delay(PollingIntervalMs);
 
-                        // Check if we have a valid response (a single digit 0-4 or similar)
-                        string trimmed = receiveBuffer.Trim();
-                        if (trimmed.Length > 0 && int.TryParse(trimmed, out _))
+                        if (_serialPort == null || !_serialPort.IsOpen) break;
+
+                        int bytesRead = _serialPort.BytesToRead;
+                        if (bytesRead > 0)
                         {
-                            return trimmed;
+                            byte[] buff = new byte[bytesRead];
+                            _serialPort.Read(buff, 0, bytesRead);
+                            string msg = Encoding.UTF8.GetString(buff);
+                            receiveBuffer += msg;
+
+                            // Check if we have a valid response (a single digit 0-4 or similar)
+                            string trimmed = receiveBuffer.Trim();
+                            if (trimmed.Length > 0 && int.TryParse(trimmed, out _))
+                            {
+                                return trimmed;
+                            }
                         }
                     }
-                }
 
-                // Return whatever we received
-                return receiveBuffer.Trim().Length > 0 ? receiveBuffer.Trim() : null;
+                    // Return whatever we received
+                    return receiveBuffer.Trim().Length > 0 ? receiveBuffer.Trim() : null;
+                }
+                catch (Exception ex)
+                {
+                    log.Error($"FilterWheel: 发送或读取指令失败: {ex.Message}");
+                    MessageBox.Show($"滤色轮通信失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                    Disconnect();
+                    return null;
+                }
             }
-            catch (Exception ex)
+            finally
             {
-                log.Error($"FilterWheel: 发送或读取指令失败: {ex.Message}");
-                MessageBox.Show($"滤色轮通信失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
-                Disconnect();
-                return null;
+                Interlocked.Decrement(ref activeOperationCount);
             }
         }
 

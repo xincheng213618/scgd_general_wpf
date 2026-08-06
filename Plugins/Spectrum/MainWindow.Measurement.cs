@@ -22,7 +22,8 @@ namespace Spectrum
 
         internal bool CanInstallUpdate(out string reason)
         {
-            if (IsRun || isstartAuto || operationQueued || Manager.SmuController.IsBusy)
+            if (IsRun || isstartAuto || operationQueued || Manager.SmuController.IsBusy ||
+                Manager.ShutterController.IsBusy || Manager.FilterWheelController.IsBusy)
             {
                 reason = UpdateText.Get("UpdateDeferredMeasurementBusy", "测量或设备操作正在进行，更新已安全延后。请停止测量后重试安装。");
                 return false;
@@ -615,6 +616,7 @@ namespace Spectrum
             {
                 if (!Manager.ShutterController.IsConnected)
                 {
+                    isstartAuto = false;
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         MessageBox.Show(Application.Current.GetActiveWindow(), SpectrumResources.NoShutterAutoZero, SpectrumResources.PromptTitle, MessageBoxButton.OK, MessageBoxImage.Warning);

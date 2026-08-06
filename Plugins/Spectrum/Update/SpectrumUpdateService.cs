@@ -743,9 +743,20 @@ internal static class SpectrumUpdateService
 
             :restore
             >>"%SPECTRUM_LOG%" echo [%date% %time%] Update failed; restoring backup
-            if "%RESTORE_NEEDED%"=="1" robocopy "%SPECTRUM_BACKUP%" "%SPECTRUM_INSTALL%" /MIR /COPY:DAT /DCOPY:DAT /R:2 /W:1 /XJ /NP >>"%SPECTRUM_LOG%" 2>&1
+            if not "%RESTORE_NEEDED%"=="1" goto :restore_failed
+            robocopy "%SPECTRUM_BACKUP%" "%SPECTRUM_INSTALL%" /MIR /COPY:DAT /DCOPY:DAT /R:2 /W:1 /XJ /NP >>"%SPECTRUM_LOG%" 2>&1
+            if errorlevel 8 goto :restore_failed
+            if not exist "%SPECTRUM_INSTALL%\Spectrum.exe" goto :restore_failed
+            if not exist "%SPECTRUM_INSTALL%\Spectrum.dll" goto :restore_failed
+            if not exist "%SPECTRUM_INSTALL%\Spectrum.deps.json" goto :restore_failed
+            if not exist "%SPECTRUM_INSTALL%\Spectrum.runtimeconfig.json" goto :restore_failed
+            >>"%SPECTRUM_LOG%" echo [%date% %time%] Backup restored successfully
             start "" "%SPECTRUM_INSTALL%\Spectrum.exe"
             exit /b 1
+
+            :restore_failed
+            >>"%SPECTRUM_LOG%" echo [%date% %time%] CRITICAL: automatic backup restore failed; Spectrum will not be restarted
+            exit /b 2
 
             :failed
             >>"%SPECTRUM_LOG%" echo [%date% %time%] Update preparation failed

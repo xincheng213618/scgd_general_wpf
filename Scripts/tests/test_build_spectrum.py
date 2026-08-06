@@ -322,5 +322,49 @@ class SpectrumPublishFlowTests(unittest.TestCase):
         self.assertTrue(self.cvxp_path.is_file())
 
 
+class SpectrumClientUpdateContractTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.repo_root = Path(__file__).resolve().parents[2]
+
+    def test_install_gate_covers_continuous_and_serial_operations(self) -> None:
+        measurement = (self.repo_root / "Plugins/Spectrum/MainWindow.Measurement.cs").read_text(encoding="utf-8")
+        continuous_start = measurement.index("private void Button6_Click")
+        continuous_end = measurement.index("public async void LoopMeasure", continuous_start)
+        continuous_block = measurement[continuous_start:continuous_end]
+
+        self.assertIn("isstartAuto = false;", continuous_block)
+        self.assertIn("Manager.ShutterController.IsBusy", measurement)
+        self.assertIn("Manager.FilterWheelController.IsBusy", measurement)
+
+        for relative_path in (
+            "Plugins/Spectrum/Configs/ShutterController.cs",
+            "Plugins/Spectrum/Configs/FilterWheelController.cs",
+        ):
+            controller = (self.repo_root / relative_path).read_text(encoding="utf-8")
+            self.assertIn("public bool IsBusy => Volatile.Read(ref activeOperationCount) > 0;", controller)
+            self.assertIn("Interlocked.Increment(ref activeOperationCount);", controller)
+            self.assertIn("Interlocked.Decrement(ref activeOperationCount);", controller)
+
+    def test_restore_failure_is_checked_before_restart(self) -> None:
+        service = (self.repo_root / "Plugins/Spectrum/Update/SpectrumUpdateService.cs").read_text(encoding="utf-8")
+        restore_start = service.index("\n            :restore\n")
+        failed_start = service.index("\n            :failed\n", restore_start)
+        restore_block = service[restore_start:failed_start]
+        restore_failed_start = restore_block.index("\n            :restore_failed\n")
+        restore_failed_block = restore_block[restore_failed_start:]
+
+        self.assertIn("if errorlevel 8 goto :restore_failed", restore_block)
+        for required_file in (
+            "Spectrum.exe",
+            "Spectrum.dll",
+            "Spectrum.deps.json",
+            "Spectrum.runtimeconfig.json",
+        ):
+            self.assertIn(f'if not exist \"%SPECTRUM_INSTALL%\\{required_file}\" goto :restore_failed', restore_block)
+        self.assertIn("exit /b 2", restore_failed_block)
+        self.assertNotIn('start \"\" \"%SPECTRUM_INSTALL%\\Spectrum.exe\"', restore_failed_block)
+
+
 if __name__ == "__main__":
     unittest.main()
