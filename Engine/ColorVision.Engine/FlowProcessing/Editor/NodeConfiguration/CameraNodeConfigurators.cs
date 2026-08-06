@@ -30,6 +30,19 @@ namespace ColorVision.Engine.FlowProcessing.Editor.NodeConfiguration
             context.AddTemplateJsonPanel(nameof(node.AutoExpTempName), $"{Properties.Resources.ExposureTemplate} V2", new TemplateAutoExpTimeV2());
         }
     }
+
+    [NodeConfigurator(typeof(FlowEngineLib.AOIRegisterPixelsCameraNode))]
+    public class AOIRegisterPixelsCameraNodeConfigurator : NodeConfiguratorBase
+    {
+        public override void Configure(NodeConfiguratorContext context)
+        {
+            var node = (AOIRegisterPixelsCameraNode)context.Node;
+
+            context.AddTemplatePanel(nameof(node.AutoExpTempName), $"{Properties.Resources.ExposureTemplate} V1", new TemplateAutoExpTime());
+            context.AddTemplateJsonPanel(nameof(node.AutoExpTempName), $"{Properties.Resources.ExposureTemplate} V2", new TemplateAutoExpTimeV2());
+        }
+    }
+
     [NodeConfigurator(typeof(FlowEngineLib.AOILocAndRegPixelsCameraNode))]
     public class AOILocAndRegPixelsCameraNodeConfigurator : NodeConfiguratorBase
     {

@@ -8,7 +8,8 @@ namespace FlowEngineLib;
 
 [STNode("/02 相机")]
 [FlowEngineLib.PropertyEditor.FlowNodePropertyEditorAttribute("CaliTempName", typeof(FlowEngineLib.PropertyEditor.FlowCalibrationTemplateEditor))]
-[FlowEngineLib.PropertyEditor.FlowNodePropertyEditorAttribute("AlgTempName", typeof(FlowEngineLib.PropertyEditor.FlowOledAoiJsonTemplateEditor))]
+[FlowEngineLib.PropertyEditor.FlowNodePropertyEditorAttribute("AlgTempName", typeof(FlowEngineLib.PropertyEditor.FlowLedCheck2JsonTemplateEditor))]
+[FlowEngineLib.PropertyEditor.FlowNodePropertyEditorAttribute("OutputTempName", typeof(FlowEngineLib.PropertyEditor.FlowPoiOutputTemplateEditor))]
 public class AOILocAndRegPixelsCameraNode : CVBaseServerNode
 {
 	private ImgSaveBppMode _ImgSaveMode;
