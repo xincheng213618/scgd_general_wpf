@@ -15,7 +15,7 @@ OpenCV 4.13 的 .NET 互操作层，提供高性能图像处理算法调用接�
 
 ### 视频媒体
 - **OpenCVMediaHelper** — C++/C# 视频解码桥接（FFmpeg + OpenCV）
-- **NativeLogBridge** — C++ 原生日志桥接到 .NET log4net
+- **NativeLogBridge** — 可选的 C++ 原生日志回调/事件桥（默认关闭，按需启用）
 
 ### CUDA 加速
 - **OpenCVCuda** — CUDA 设备检测和 GPU 加速接口
@@ -35,7 +35,7 @@ OpenCV 4.13 的 .NET 互操作层，提供高性能图像处理算法调用接�
 | `OpenCVCuda.cs` | CUDA 接口 |
 | `nvcuda.cs` | CUDA P/Invoke |
 | `ColormapTypes.cs` | 色彩映射类型 |
-| `NativeLogBridge.cs` | 原生日志桥接 |
+| `NativeLogBridge.cs` | 原生日志回调、级别与动态开关桥接 |
 
 ## 依赖关系
 

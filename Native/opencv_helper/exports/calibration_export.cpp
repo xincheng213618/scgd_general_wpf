@@ -1,4 +1,5 @@
 #include "../algorithm/calibration/calibration_context.h"
+#include "../native_log.h"
 #include "../../include/opencv_media_export.h"
 
 #include <algorithm>
@@ -31,17 +32,27 @@ void setGlobalError(const char* message) noexcept
     }
 }
 
-int fail(void* context, int result, const char* message) noexcept
+int failImpl(const char* operation, void* context, int result, const char* message) noexcept
 {
+    bool contextRecorded = false;
     if (context != nullptr) {
         try {
             asContext(context)->recordError(message == nullptr ? "Unknown native calibration error" : message);
-            return result;
+            contextRecorded = true;
         }
         catch (...) {
         }
     }
-    setGlobalError(message);
+    if (!contextRecorded) {
+        setGlobalError(message);
+    }
+
+    const auto level = result == M_CALIBRATION_INTERNAL_ERROR
+        ? cvnative::LogLevel::Error
+        : result == M_CALIBRATION_LOAD_FAILED || result == M_CALIBRATION_EXECUTE_FAILED
+        ? cvnative::LogLevel::Warn
+        : cvnative::LogLevel::Debug;
+    cvnative::LogFailure(level, "calibration.export", operation, result, message);
     return result;
 }
 
@@ -62,6 +73,8 @@ ExecutionOptions convertOptions(const MCalibrationExecutionOptionsV1* value)
 
 } // namespace
 
+#define fail(...) failImpl(__func__, __VA_ARGS__)
+
 extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationCreate(void** context)
 {
     if (context == nullptr) {
@@ -72,19 +85,17 @@ extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationCreate(void** context)
     try {
         *context = new CalibrationContext();
         globalError.clear();
+        cvnative::LogEvent(cvnative::LogLevel::Info, "calibration.lifecycle", __func__, "context created");
         return M_CALIBRATION_OK;
     }
     catch (const std::bad_alloc&) {
-        setGlobalError("Unable to allocate calibration context");
-        return M_CALIBRATION_INTERNAL_ERROR;
+        return fail(nullptr, M_CALIBRATION_INTERNAL_ERROR, "Unable to allocate calibration context");
     }
     catch (const std::exception& ex) {
-        setGlobalError(ex.what());
-        return M_CALIBRATION_INTERNAL_ERROR;
+        return fail(nullptr, M_CALIBRATION_INTERNAL_ERROR, ex.what());
     }
     catch (...) {
-        setGlobalError("Unknown error while creating calibration context");
-        return M_CALIBRATION_INTERNAL_ERROR;
+        return fail(nullptr, M_CALIBRATION_INTERNAL_ERROR, "Unknown error while creating calibration context");
     }
 }
 
@@ -96,11 +107,11 @@ extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationDestroy(void* context)
     try {
         delete asContext(context);
         globalError.clear();
+        cvnative::LogEvent(cvnative::LogLevel::Info, "calibration.lifecycle", __func__, "context destroyed");
         return M_CALIBRATION_OK;
     }
     catch (...) {
-        setGlobalError("Unknown error while destroying calibration context");
-        return M_CALIBRATION_INTERNAL_ERROR;
+        return fail(nullptr, M_CALIBRATION_INTERNAL_ERROR, "Unknown error while destroying calibration context");
     }
 }
 
@@ -111,7 +122,12 @@ extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationClear(void* context)
     }
     try {
         const int result = asContext(context)->clear() ? M_CALIBRATION_OK : M_CALIBRATION_INTERNAL_ERROR;
-        if (result == M_CALIBRATION_OK) globalError.clear();
+        if (result == M_CALIBRATION_OK) {
+            globalError.clear();
+        }
+        else {
+            cvnative::LogFailure(cvnative::LogLevel::Error, "calibration.export", __func__, result);
+        }
         return result;
     }
     catch (const std::exception& ex) {
@@ -141,7 +157,13 @@ extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationLoadFileW(
         const int result = asContext(context)->load(type, std::filesystem::path(filePath))
             ? M_CALIBRATION_OK
             : M_CALIBRATION_LOAD_FAILED;
-        if (result == M_CALIBRATION_OK) globalError.clear();
+        if (result == M_CALIBRATION_OK) {
+            globalError.clear();
+            cvnative::LogEvent(cvnative::LogLevel::Info, "calibration.lifecycle", __func__, "calibration loaded");
+        }
+        else {
+            cvnative::LogFailure(cvnative::LogLevel::Warn, "calibration.export", __func__, result);
+        }
         return result;
     }
     catch (const std::exception& ex) {
@@ -181,7 +203,12 @@ extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationExecute(
             raw, cieData, static_cast<std::size_t>(cieFloatCount), convertOptions(options))
             ? M_CALIBRATION_OK
             : M_CALIBRATION_EXECUTE_FAILED;
-        if (result == M_CALIBRATION_OK) globalError.clear();
+        if (result == M_CALIBRATION_OK) {
+            globalError.clear();
+        }
+        else {
+            cvnative::LogFailure(cvnative::LogLevel::Warn, "calibration.export", __func__, result);
+        }
         return result;
     }
     catch (const std::exception& ex) {
@@ -238,7 +265,12 @@ extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationExecuteToV1(
             static_cast<std::size_t>(cieFloatCount), convertOptions(options))
             ? M_CALIBRATION_OK
             : M_CALIBRATION_EXECUTE_FAILED;
-        if (result == M_CALIBRATION_OK) globalError.clear();
+        if (result == M_CALIBRATION_OK) {
+            globalError.clear();
+        }
+        else {
+            cvnative::LogFailure(cvnative::LogLevel::Warn, "calibration.export", __func__, result);
+        }
         return result;
     }
     catch (const std::exception& ex) {
@@ -258,6 +290,8 @@ extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationGetLastError(
         std::string message = context == nullptr ? globalError : asContext(context)->lastError();
         if (message.empty()) message = globalError;
         if (message.size() >= static_cast<std::size_t>((std::numeric_limits<int>::max)())) {
+            cvnative::LogFailure(cvnative::LogLevel::Error, "calibration.export", __func__, M_CALIBRATION_INTERNAL_ERROR,
+                "last-error message exceeds the supported return length");
             return M_CALIBRATION_INTERNAL_ERROR;
         }
 
@@ -268,6 +302,7 @@ extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationGetLastError(
         return required;
     }
     catch (...) {
+        cvnative::LogException("calibration.export", __func__, M_CALIBRATION_INTERNAL_ERROR, "unknown");
         return M_CALIBRATION_INTERNAL_ERROR;
     }
 }
@@ -279,13 +314,13 @@ extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationGetItemCount(void* conte
     }
     try {
         const auto count = asContext(context)->itemCount();
-        return count > static_cast<std::size_t>((std::numeric_limits<int>::max)())
-            ? M_CALIBRATION_INTERNAL_ERROR
-            : static_cast<int>(count);
+        if (count > static_cast<std::size_t>((std::numeric_limits<int>::max)())) {
+            return fail(context, M_CALIBRATION_INTERNAL_ERROR, "Calibration item count exceeds the supported return range");
+        }
+        return static_cast<int>(count);
     }
     catch (...) {
-        setGlobalError("Unknown error while reading calibration item count");
-        return M_CALIBRATION_INTERNAL_ERROR;
+        return fail(context, M_CALIBRATION_INTERNAL_ERROR, "Unknown error while reading calibration item count");
     }
 }
 

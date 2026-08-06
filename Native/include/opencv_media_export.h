@@ -391,11 +391,17 @@ extern "C" COLORVISIONCORE_API int __cdecl M_CalculatePoiBatchV2(
     const MPoiOptionsV2* options,
     MPoiResultV1* results);
 
+// Synchronous logging callback. message is a borrowed, null-terminated UTF-8
+// string that is valid only for the duration of the callback. The callback must
+// copy data it retains, must not throw across the ABI, and must remain alive
+// while registered. Unregister/replacement is quiescent when called outside the
+// callback; do not change registration from inside the callback. Logging is
+// process-local and disabled by default.
 typedef void(__stdcall* CVNativeLogCallback)(int source, int level, const char* message);
 
-extern "C" COLORVISIONCORE_API void M_SetLogCallback(CVNativeLogCallback callback);
-extern "C" COLORVISIONCORE_API void M_SetLogEnabled(int enabled);
-extern "C" COLORVISIONCORE_API void M_SetLogLevel(int level);
-extern "C" COLORVISIONCORE_API void M_EnableNativeSink(int enabled);
+extern "C" COLORVISIONCORE_API void __cdecl M_SetLogCallback(CVNativeLogCallback callback);
+extern "C" COLORVISIONCORE_API void __cdecl M_SetLogEnabled(int enabled);
+extern "C" COLORVISIONCORE_API void __cdecl M_SetLogLevel(int level);
+extern "C" COLORVISIONCORE_API void __cdecl M_EnableNativeSink(int enabled);
 
 

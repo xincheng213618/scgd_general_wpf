@@ -5,6 +5,7 @@
 #include "algorithm/distortion/distortion_p9.h"
 #include "algorithm/sfr/sfr_bmw4.h"
 #include "algorithm/surface_defect/surface_defect.h"
+#include "native_log.h"
 #include <opencv2/opencv.hpp>
 #include <nlohmann\json.hpp>
 #include <algorithm>
@@ -19,6 +20,7 @@
 #include <future>
 #include <limits>
 #include <memory>
+#include <source_location>
 #include <vector>
 
 using json = nlohmann::json;
@@ -33,57 +35,109 @@ constexpr int ExportOpenCvException = -5;
 constexpr int ExportStdException = -6;
 constexpr int ExportUnknownException = -7;
 
+void LogCommonFailure(const char* operation, int resultCode) noexcept
+{
+	if (resultCode >= 0) {
+		return;
+	}
+
+	const auto level = resultCode == ExportAlgorithmFailed
+		? cvnative::LogLevel::Warn
+		: resultCode == ExportAllocationFailed
+		? cvnative::LogLevel::Error
+		: cvnative::LogLevel::Debug;
+	cvnative::LogFailure(level, "common.export", operation, resultCode);
+}
+
 template <typename Func>
-int GuardIntExport(Func func) noexcept
+int GuardIntExportImpl(const char* operation, Func func) noexcept
 {
 	try {
-		return func();
+		const int result = func();
+		LogCommonFailure(operation, result);
+		return result;
 	}
-	catch (const json::exception&) {
+	catch (const json::exception& ex) {
+		cvnative::LogException("common.export", operation, ExportInvalidJson, "json::exception", ex.what());
 		return ExportInvalidJson;
 	}
-	catch (const cv::Exception&) {
+	catch (const cv::Exception& ex) {
+		cvnative::LogException("common.export", operation, ExportOpenCvException, "cv::Exception", ex.what());
 		return ExportOpenCvException;
 	}
-	catch (const std::exception&) {
+	catch (const std::exception& ex) {
+		cvnative::LogException("common.export", operation, ExportStdException, "std::exception", ex.what());
 		return ExportStdException;
 	}
 	catch (...) {
+		cvnative::LogException("common.export", operation, ExportUnknownException, "unknown");
 		return ExportUnknownException;
 	}
 }
 
 template <typename Func>
-double GuardDoubleExport(Func func) noexcept
+double GuardDoubleExportImpl(const char* operation, Func func) noexcept
 {
 	try {
-		return func();
+		const double result = func();
+		if (result < 0.0) {
+			cvnative::LogFailure(cvnative::LogLevel::Debug, "common.export", operation, -1);
+		}
+		return result;
 	}
-	catch (const cv::Exception&) {
+	catch (const cv::Exception& ex) {
+		cvnative::LogException("common.export", operation, -1, "cv::Exception", ex.what());
 		return -1.0;
 	}
-	catch (const std::exception&) {
+	catch (const std::exception& ex) {
+		cvnative::LogException("common.export", operation, -1, "std::exception", ex.what());
 		return -1.0;
 	}
 	catch (...) {
+		cvnative::LogException("common.export", operation, -1, "unknown");
 		return -1.0;
 	}
 }
 
 template <typename Func>
-int GuardHImageExport(HImage* outImage, Func func) noexcept
+int GuardHImageExportImpl(const char* operation, HImage* outImage, Func func) noexcept
 {
 	if (outImage != nullptr) {
 		*outImage = HImage{};
 	}
 
-	return GuardIntExport([&]() -> int {
+	return GuardIntExportImpl(operation, [&]() -> int {
 		if (outImage == nullptr) {
 			return ExportInvalidArgument;
 		}
 
 		return func();
 		});
+}
+
+template <typename Func>
+int GuardIntExport(
+	Func func,
+	const std::source_location& location = std::source_location::current()) noexcept
+{
+	return GuardIntExportImpl(location.function_name(), std::move(func));
+}
+
+template <typename Func>
+double GuardDoubleExport(
+	Func func,
+	const std::source_location& location = std::source_location::current()) noexcept
+{
+	return GuardDoubleExportImpl(location.function_name(), std::move(func));
+}
+
+template <typename Func>
+int GuardHImageExport(
+	HImage* outImage,
+	Func func,
+	const std::source_location& location = std::source_location::current()) noexcept
+{
+	return GuardHImageExportImpl(location.function_name(), outImage, std::move(func));
 }
 
 cv::Mat CreateMatView(const HImage& img)
@@ -1880,7 +1934,6 @@ COLORVISIONCORE_API int M_Fusion(const char* fusionjson, HImage* outImage)
 
 		std::vector<std::string> files = j.get<std::vector<std::string>>();
 		if (files.empty()) {
-			std::cerr << "Error: No files provided in JSON array." << std::endl;
 			return ExportInvalidArgument;
 		}
 
