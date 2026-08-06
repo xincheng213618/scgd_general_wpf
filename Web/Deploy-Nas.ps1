@@ -29,7 +29,7 @@ function Invoke-RemotePowerShell {
     )
 
     $payload = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($ScriptText))
-    $loader = '$global:ProgressPreference = ''SilentlyContinue''; $payload = [Console]::In.ReadToEnd(); $scriptText = [Text.Encoding]::Unicode.GetString([Convert]::FromBase64String($payload.Trim())); $scriptBlock = [ScriptBlock]::Create($scriptText); & $scriptBlock'
+    $loader = '$global:ProgressPreference = ''SilentlyContinue''; $payload = [regex]::Replace([Console]::In.ReadToEnd(), ''[^A-Za-z0-9+/=]'', ''''); $scriptText = [Text.Encoding]::Unicode.GetString([Convert]::FromBase64String($payload)); $scriptBlock = [ScriptBlock]::Create($scriptText); & $scriptBlock'
     $encodedLoader = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($loader))
     $sshArguments = @(
         $Target,
@@ -44,7 +44,10 @@ function Invoke-RemotePowerShell {
     $previousErrorActionPreference = $ErrorActionPreference
     try {
         $ErrorActionPreference = 'Continue'
-        $remoteOutput = @($payload | & ssh @sshArguments 2>&1)
+        # Windows PowerShell 5.1 may emit a native-pipeline encoding preamble
+        # that consumes the first ASCII character. Prefix a disposable marker;
+        # the remote loader removes it together with any transport whitespace.
+        $remoteOutput = @(("!" + $payload) | & ssh @sshArguments 2>&1)
         $exitCode = $LASTEXITCODE
     } finally {
         $ErrorActionPreference = $previousErrorActionPreference
