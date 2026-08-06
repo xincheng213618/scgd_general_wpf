@@ -13,6 +13,7 @@ using ScottPlot;
 using Spectrum.Data;
 using Spectrum.Layout;
 using Spectrum.Models;
+using Spectrum.Update;
 using SpectrumResources = Spectrum.Properties.Resources;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -225,6 +226,7 @@ namespace Spectrum
             await Dispatcher.Yield(DispatcherPriority.Background);
             MenuManager.GetInstance().LoadMenuForWindow("Spectrum", menu);
             MarkPhase("菜单");
+            _ = SpectrumUpdateCoordinator.CheckAtStartupAsync(this);
 
             await Dispatcher.Yield(DispatcherPriority.Background);
             StatusBarManager.GetInstance().Init(StatusBarGrid, "Spectrum");

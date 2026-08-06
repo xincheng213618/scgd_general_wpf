@@ -343,4 +343,47 @@
   <data name="MeasuringAndReading" xml:space="preserve"><value>正在点亮并读取...</value></data>
   <data name="ReadCompletedAt" xml:space="preserve"><value>已读取 {0}</value></data>
   <data name="OutputClosed" xml:space="preserve"><value>输出已关闭</value></data>
+  <data name="CheckForUpdates" xml:space="preserve"><value>检查更新</value></data>
+  <data name="SpectrumUpdateTitle" xml:space="preserve"><value>Spectrum 更新</value></data>
+  <data name="SpectrumUpdateHeading" xml:space="preserve"><value>Spectrum 软件更新</value></data>
+  <data name="CurrentVersion" xml:space="preserve"><value>当前版本</value></data>
+  <data name="LatestVersion" xml:space="preserve"><value>最新版本</value></data>
+  <data name="ReleaseNotes" xml:space="preserve"><value>更新说明</value></data>
+  <data name="CheckingForUpdates" xml:space="preserve"><value>正在检查更新...</value></data>
+  <data name="Close" xml:space="preserve"><value>关闭</value></data>
+  <data name="CancelDownload" xml:space="preserve"><value>取消下载</value></data>
+  <data name="CheckAgain" xml:space="preserve"><value>重新检查</value></data>
+  <data name="AlreadyUpToDate" xml:space="preserve"><value>当前已是最新版本。</value></data>
+  <data name="NoReleaseNotes" xml:space="preserve"><value>此版本没有附加说明。</value></data>
+  <data name="NewVersionAvailable" xml:space="preserve"><value>发现新版本。下载后会完成安全校验，再提示重启安装。</value></data>
+  <data name="DownloadUpdate" xml:space="preserve"><value>下载更新</value></data>
+  <data name="DownloadingUpdate" xml:space="preserve"><value>正在下载完整更新包...</value></data>
+  <data name="UpdateReadyToInstall" xml:space="preserve"><value>下载和完整性校验已完成。请保存工作后重启安装。</value></data>
+  <data name="RestartAndInstall" xml:space="preserve"><value>重启并安装</value></data>
+  <data name="UpdateDownloadCancelled" xml:space="preserve"><value>下载已取消。</value></data>
+  <data name="RetryDownload" xml:space="preserve"><value>重新下载</value></data>
+  <data name="RestartInstallConfirmation" xml:space="preserve"><value>Spectrum 将退出并安装已校验的更新，然后自动重新启动。是否继续？</value></data>
+  <data name="UpdateCheckTimeout" xml:space="preserve"><value>检查更新超时，请稍后重试。</value></data>
+  <data name="UpdateDeferredMeasurementBusy" xml:space="preserve"><value>测量或设备操作正在进行，更新已安全延后。请停止测量后重试安装。</value></data>
+  <data name="UpdateNoPublishedVersion" xml:space="preserve"><value>服务器暂未发布 Spectrum 更新。</value></data>
+  <data name="UpdateServerError" xml:space="preserve"><value>更新服务器返回错误 ({0})。</value></data>
+  <data name="UpdateInvalidResponse" xml:space="preserve"><value>更新服务器响应无效。</value></data>
+  <data name="UpdateInvalidSignatureEnvelope" xml:space="preserve"><value>更新签名数据格式无效。</value></data>
+  <data name="UpdateSignatureInvalid" xml:space="preserve"><value>更新清单签名验证失败，已拒绝此更新。</value></data>
+  <data name="UpdateManifestInvalid" xml:space="preserve"><value>更新清单内容无效。</value></data>
+  <data name="UpdateManifestProductMismatch" xml:space="preserve"><value>更新清单不属于此 Spectrum 客户端。</value></data>
+  <data name="UpdateManifestVersionInvalid" xml:space="preserve"><value>更新版本号必须是四段数字版本。</value></data>
+  <data name="UpdateDownloadServerError" xml:space="preserve"><value>下载更新包失败 ({0})。</value></data>
+  <data name="UpdateLengthMismatch" xml:space="preserve"><value>更新包长度与已签名清单不一致。</value></data>
+  <data name="UpdateHashMismatch" xml:space="preserve"><value>更新包 SHA-256 校验失败。</value></data>
+  <data name="UpdateZipInvalid" xml:space="preserve"><value>更新 ZIP 结构无效。</value></data>
+  <data name="UpdateZipUnsafePath" xml:space="preserve"><value>更新 ZIP 包含不安全路径。</value></data>
+  <data name="UpdateZipDuplicatePath" xml:space="preserve"><value>更新 ZIP 包含重复路径。</value></data>
+  <data name="UpdateZipTooLarge" xml:space="preserve"><value>更新 ZIP 解压后大小异常。</value></data>
+  <data name="UpdateZipCrcFailed" xml:space="preserve"><value>更新 ZIP CRC 校验失败。</value></data>
+  <data name="UpdateMissingCriticalFiles" xml:space="preserve"><value>更新包缺少关键文件：{0}</value></data>
+  <data name="UpdateBinaryVersionMismatch" xml:space="preserve"><value>更新包中的 {0} 版本与清单不一致。</value></data>
+  <data name="UpdateInstallDirectoryNotWritable" xml:space="preserve"><value>当前目录不可写。请将 Spectrum 完整解压到当前用户可写目录后再使用自动更新。</value></data>
+  <data name="UpdateLaunchFailed" xml:space="preserve"><value>无法启动更新命令：{0}</value></data>
+  <data name="UpdateUnsafeInstallPath" xml:space="preserve"><value>安装路径包含更新命令无法安全处理的字符。</value></data>
 </root>

@@ -3,6 +3,7 @@ using ColorVision.Themes.Controls;
 using cvColorVision;
 using Newtonsoft.Json;
 using Spectrum.Data;
+using Spectrum.Update;
 using SpectrumResources = Spectrum.Properties.Resources;
 using System.Diagnostics;
 using System.Windows;
@@ -14,9 +15,22 @@ namespace Spectrum
         float fIntTime = 0;
         int testid = 0;
         int ret;
-        bool IsRun;
+        volatile bool IsRun;
         int errornum = 0;
-        bool isstartAuto;
+        volatile bool isstartAuto;
+        volatile bool operationQueued;
+
+        internal bool CanInstallUpdate(out string reason)
+        {
+            if (IsRun || isstartAuto || operationQueued || Manager.SmuController.IsBusy)
+            {
+                reason = UpdateText.Get("UpdateDeferredMeasurementBusy", "测量或设备操作正在进行，更新已安全延后。请停止测量后重试安装。");
+                return false;
+            }
+
+            reason = string.Empty;
+            return true;
+        }
 
         public int MyAutoTimeCallback(int time, double spectum)
         {
@@ -31,11 +45,11 @@ namespace Spectrum
                 MessageBox1.Show(SpectrumResources.OperationInProgressPleaseWait);
                 return;
             }
+            IsRun = true;
             SetOperationButtonsEnabled(false);
 
             Task.Run(() =>
             {
-                IsRun = true;
                 if (Manager.IntTimeConfig.IsOldVersion)
                 {
                     ret = Spectrometer.CM_Emission_GetAutoTime(SpectrometerHandle, ref fIntTime, Manager.IntTimeConfig.IntLimitTime, Manager.IntTimeConfig.AutoIntTimeB, (int)Manager.IntTimeConfig.MaxPercent);
@@ -512,15 +526,19 @@ namespace Spectrum
                 MessageBox.Show(SpectrumResources.OperationInProgressPleaseWait);
                 return;
             }
+            operationQueued = true;
             SetOperationButtonsEnabled(false);
             Task.Run(async () =>
             {
                 try
                 {
-                    await Measure();
+                    Task measurement = Measure();
+                    operationQueued = false;
+                    await measurement;
                 }
                 finally
                 {
+                    operationQueued = false;
                     SetOperationButtonsEnabled(true);
                 }
             });
@@ -549,10 +567,10 @@ namespace Spectrum
                 return;
             }
             log.Debug("开始自适应校零");
+            IsRun = true;
             SetOperationButtonsEnabled(false);
             Task.Run(() =>
             {
-                IsRun = true;
                 int ret = Spectrometer.CM_Emission_Init_Auto_Dark(SpectrometerHandle, Manager.AutodarkParam.fTimeStart, Manager.AutodarkParam.nStepTime, Manager.AutodarkParam.nStepCount, Manager.Average);
                 IsRun = false;
                 SetOperationButtonsEnabled(true);

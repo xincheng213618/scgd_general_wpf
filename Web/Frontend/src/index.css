@@ -1879,6 +1879,104 @@ body.cv-home-light .workflow-icon {
   line-height: 1;
 }
 
+.spectrum-download-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(260px, 0.65fr);
+  gap: 24px;
+  align-items: center;
+  padding: 26px;
+  overflow: hidden;
+  border: 1px solid rgba(96, 165, 250, 0.30);
+  border-radius: 8px;
+  color: #fff;
+  background:
+    radial-gradient(circle at 84% 12%, rgba(56, 189, 248, 0.42), transparent 28%),
+    radial-gradient(circle at 18% 100%, rgba(20, 184, 166, 0.30), transparent 36%),
+    linear-gradient(135deg, #0b1020 0%, #172554 58%, #164e63 100%);
+  box-shadow: 0 20px 54px rgba(15, 23, 42, 0.18);
+}
+
+.spectrum-download-card.unavailable {
+  color: var(--cv-text);
+  border-color: var(--cv-border);
+  background: var(--cv-surface);
+  box-shadow: var(--cv-shadow-soft);
+}
+
+.spectrum-download-copy {
+  min-width: 0;
+}
+
+.spectrum-download-copy h3 {
+  margin: 10px 0 8px;
+  color: inherit;
+}
+
+.spectrum-download-copy > .ant-typography {
+  max-width: 760px;
+  margin-bottom: 10px;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.spectrum-download-card.unavailable .spectrum-download-copy > .ant-typography {
+  color: var(--cv-muted-text);
+}
+
+.spectrum-download-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: rgba(255, 255, 255, 0.76);
+  font-size: 12px;
+  font-weight: 780;
+  letter-spacing: 0.04em;
+}
+
+.spectrum-download-card.unavailable .spectrum-download-kicker {
+  color: var(--cv-primary-strong);
+}
+
+.spectrum-release-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 13px;
+}
+
+.spectrum-release-notes {
+  margin-top: 12px;
+  white-space: pre-line;
+}
+
+.spectrum-download-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.spectrum-download-actions > .ant-typography {
+  margin-top: 2px;
+  color: rgba(255, 255, 255, 0.60);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.spectrum-download-card.unavailable .spectrum-download-actions {
+  border-color: var(--cv-border);
+  background: var(--cv-muted);
+}
+
+.spectrum-download-card.unavailable .spectrum-download-actions > .ant-typography {
+  color: var(--cv-muted-text);
+}
+
 .file-browser-panel {
   padding: 18px;
 }
@@ -2624,6 +2722,11 @@ body.cv-home-light .workflow-icon {
     min-width: 0;
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .spectrum-download-card {
+    grid-template-columns: 1fr;
+    padding: 20px;
   }
 
   .file-toolbar .ant-input-affix-wrapper {

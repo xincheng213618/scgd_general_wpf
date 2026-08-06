@@ -284,6 +284,7 @@ def register_all_blueprints(app, ctx, services, helpers):
     from routes.public_api import register_public_api
     from routes.pages import register_pages
     from routes.cvws_api import register_cvws_api
+    from routes.spectrum_api import register_spectrum_api
     from routes.admin_api import AdminApiContext, register_admin_api_routes
     from routes.copilot_config_api import (
         CopilotConfigApiContext,
@@ -324,6 +325,9 @@ def register_all_blueprints(app, ctx, services, helpers):
 
     # CVWindowsService
     register_cvws_api(app, ctx)
+
+    # Standalone Spectrum release/update contract
+    register_spectrum_api(app, ctx)
 
     # Marketplace API (plugin search, publish, download)
     def _refresh_plugin_index_on_publish(plugin_id):

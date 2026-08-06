@@ -91,6 +91,8 @@ export function ToolsPage() {
 
   const directoryCount = data.summary.directory_count ?? data.items.filter((item) => item.is_dir).length
   const fileCount = data.summary.file_count ?? data.items.filter((item) => !item.is_dir).length
+  const spectrum = data.spectrum
+  const spectrumRelease = spectrum.latest
 
   return (
     <Space direction="vertical" size={16} className="page-stack">
@@ -125,6 +127,49 @@ export function ToolsPage() {
           <Button icon={<BookOutlined />} href="/scgd_general_wpf/02-developer-guide/backend/">
             后端文档
           </Button>
+        </div>
+      </section>
+
+      <section className={`spectrum-download-card ${spectrumRelease ? '' : 'unavailable'}`}>
+        <div className="spectrum-download-copy">
+          <span className="spectrum-download-kicker">
+            <ToolOutlined />
+            独立软件
+          </span>
+          <Typography.Title level={3}>{spectrum.name}</Typography.Title>
+          <Typography.Paragraph>{spectrum.description}</Typography.Paragraph>
+          {spectrumRelease ? (
+            <div className="spectrum-release-meta">
+              <Tag color="blue">v{spectrumRelease.version}</Tag>
+              <span>{humanSize(spectrumRelease.size)}</span>
+              <span>发布于 {shortDate(spectrumRelease.publishedAtUtc)}</span>
+            </div>
+          ) : (
+            <Typography.Text type="secondary">签名发布包准备中，可先浏览历史文件。</Typography.Text>
+          )}
+          {spectrumRelease?.releaseNotes && (
+            <Typography.Paragraph className="spectrum-release-notes">
+              {spectrumRelease.releaseNotes}
+            </Typography.Paragraph>
+          )}
+        </div>
+        <div className="spectrum-download-actions">
+          {spectrumRelease && (
+            <Button
+              type="primary"
+              size="large"
+              icon={<DownloadOutlined />}
+              href={spectrumRelease.downloadUrl}
+            >
+              下载最新 ZIP
+            </Button>
+          )}
+          <Button size="large" icon={<FolderOpenOutlined />} href={spectrum.browseUrl}>
+            浏览 Spectrum 文件
+          </Button>
+          <Typography.Text type="secondary">
+            首次下载后请解压到当前用户可写目录（需要 .NET 10 桌面运行时）；后续可由 Spectrum 内置检查更新完成替换。
+          </Typography.Text>
         </div>
       </section>
 

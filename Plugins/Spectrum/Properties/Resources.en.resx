@@ -340,4 +340,47 @@
   <data name="MeasuringAndReading" xml:space="preserve"><value>Turning on and reading...</value></data>
   <data name="ReadCompletedAt" xml:space="preserve"><value>Read at {0}</value></data>
   <data name="OutputClosed" xml:space="preserve"><value>Output closed</value></data>
+  <data name="CheckForUpdates" xml:space="preserve"><value>Check for Updates</value></data>
+  <data name="SpectrumUpdateTitle" xml:space="preserve"><value>Spectrum Update</value></data>
+  <data name="SpectrumUpdateHeading" xml:space="preserve"><value>Spectrum Software Update</value></data>
+  <data name="CurrentVersion" xml:space="preserve"><value>Current version</value></data>
+  <data name="LatestVersion" xml:space="preserve"><value>Latest version</value></data>
+  <data name="ReleaseNotes" xml:space="preserve"><value>Release notes</value></data>
+  <data name="CheckingForUpdates" xml:space="preserve"><value>Checking for updates...</value></data>
+  <data name="Close" xml:space="preserve"><value>Close</value></data>
+  <data name="CancelDownload" xml:space="preserve"><value>Cancel download</value></data>
+  <data name="CheckAgain" xml:space="preserve"><value>Check again</value></data>
+  <data name="AlreadyUpToDate" xml:space="preserve"><value>You already have the latest version.</value></data>
+  <data name="NoReleaseNotes" xml:space="preserve"><value>No additional notes were provided for this version.</value></data>
+  <data name="NewVersionAvailable" xml:space="preserve"><value>A new version is available. The complete package will be verified before installation.</value></data>
+  <data name="DownloadUpdate" xml:space="preserve"><value>Download update</value></data>
+  <data name="DownloadingUpdate" xml:space="preserve"><value>Downloading the complete update package...</value></data>
+  <data name="UpdateReadyToInstall" xml:space="preserve"><value>Download and integrity checks completed. Save your work before restarting to install.</value></data>
+  <data name="RestartAndInstall" xml:space="preserve"><value>Restart and install</value></data>
+  <data name="UpdateDownloadCancelled" xml:space="preserve"><value>The download was cancelled.</value></data>
+  <data name="RetryDownload" xml:space="preserve"><value>Retry download</value></data>
+  <data name="RestartInstallConfirmation" xml:space="preserve"><value>Spectrum will exit, install the verified update, and restart automatically. Continue?</value></data>
+  <data name="UpdateCheckTimeout" xml:space="preserve"><value>The update check timed out. Please try again later.</value></data>
+  <data name="UpdateDeferredMeasurementBusy" xml:space="preserve"><value>A measurement or device operation is in progress. The update was safely deferred; stop it and try installation again.</value></data>
+  <data name="UpdateNoPublishedVersion" xml:space="preserve"><value>No Spectrum update has been published yet.</value></data>
+  <data name="UpdateServerError" xml:space="preserve"><value>The update server returned an error ({0}).</value></data>
+  <data name="UpdateInvalidResponse" xml:space="preserve"><value>The update server response is invalid.</value></data>
+  <data name="UpdateInvalidSignatureEnvelope" xml:space="preserve"><value>The update signature data has an invalid format.</value></data>
+  <data name="UpdateSignatureInvalid" xml:space="preserve"><value>The update manifest signature is invalid. This update was rejected.</value></data>
+  <data name="UpdateManifestInvalid" xml:space="preserve"><value>The update manifest is invalid.</value></data>
+  <data name="UpdateManifestProductMismatch" xml:space="preserve"><value>The update manifest does not belong to this Spectrum client.</value></data>
+  <data name="UpdateManifestVersionInvalid" xml:space="preserve"><value>The update version must contain four numeric parts.</value></data>
+  <data name="UpdateDownloadServerError" xml:space="preserve"><value>Could not download the update package ({0}).</value></data>
+  <data name="UpdateLengthMismatch" xml:space="preserve"><value>The update package length does not match the signed manifest.</value></data>
+  <data name="UpdateHashMismatch" xml:space="preserve"><value>The update package SHA-256 check failed.</value></data>
+  <data name="UpdateZipInvalid" xml:space="preserve"><value>The update ZIP structure is invalid.</value></data>
+  <data name="UpdateZipUnsafePath" xml:space="preserve"><value>The update ZIP contains an unsafe path.</value></data>
+  <data name="UpdateZipDuplicatePath" xml:space="preserve"><value>The update ZIP contains a duplicate path.</value></data>
+  <data name="UpdateZipTooLarge" xml:space="preserve"><value>The expanded size of the update ZIP is invalid.</value></data>
+  <data name="UpdateZipCrcFailed" xml:space="preserve"><value>The update ZIP CRC check failed.</value></data>
+  <data name="UpdateMissingCriticalFiles" xml:space="preserve"><value>The update package is missing critical files: {0}</value></data>
+  <data name="UpdateBinaryVersionMismatch" xml:space="preserve"><value>The {0} version in the update package does not match its manifest.</value></data>
+  <data name="UpdateInstallDirectoryNotWritable" xml:space="preserve"><value>The current folder is not writable. Extract Spectrum to a folder writable by the current user before using automatic updates.</value></data>
+  <data name="UpdateLaunchFailed" xml:space="preserve"><value>Could not start the update command: {0}</value></data>
+  <data name="UpdateUnsafeInstallPath" xml:space="preserve"><value>The installation path contains characters that the update command cannot handle safely.</value></data>
 </root>
