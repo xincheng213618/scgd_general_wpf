@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.NativeMethods;
 using ColorVision.Copilot.Mcp;
+using ColorVision.Core;
 using ColorVision.Properties;
 using ColorVision.Themes;
 using ColorVision.UI;
@@ -331,6 +332,7 @@ namespace ColorVision
             LanRemoteControlService.Instance.Stop();
             //正常结束时清除标志位
             StartupRegistryChecker.Clear();
+            NativeLogBridge.Shutdown();
             log.Info($"Application exit cleanup completed in {exitStopwatch.ElapsedMilliseconds} ms.");
             //Environment.Exit(0);
         }

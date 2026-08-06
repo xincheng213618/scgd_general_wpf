@@ -10,6 +10,7 @@
 #include "../include/cvcore/sfr.h"
 #include "../include/custom_structs.h"
 #include "../include/opencv_media_export.h"
+#include "../native_log.h"
 #include <opencv2/opencv.hpp>
 #include <algorithm>
 #include <exception>
@@ -19,18 +20,26 @@ using namespace cvcore;
 namespace
 {
 template <typename Func>
-int GuardSfrExport(Func func) noexcept
+int GuardSfrExport(const char* operation, Func func) noexcept
 {
     try {
-        return func();
+        const int result = func();
+        if (result < 0) {
+            const auto level = result == -3 ? cvnative::LogLevel::Warn : cvnative::LogLevel::Debug;
+            cvnative::LogFailure(level, "sfr.export", operation, result);
+        }
+        return result;
     }
-    catch (const cv::Exception&) {
+    catch (const cv::Exception& ex) {
+        cvnative::LogException("sfr.export", operation, -4, "cv::Exception", ex.what());
         return -4;
     }
-    catch (const std::exception&) {
+    catch (const std::exception& ex) {
+        cvnative::LogException("sfr.export", operation, -5, "std::exception", ex.what());
         return -5;
     }
     catch (...) {
+        cvnative::LogException("sfr.export", operation, -6, "unknown");
         return -6;
     }
 }
@@ -108,7 +117,7 @@ COLORVISIONCORE_API int M_CalSFR(
     double* mtf10_cypix,
     double* mtf50_cypix)
 {
-    return GuardSfrExport([&]() -> int {
+    return GuardSfrExport(__func__, [&]() -> int {
         ClearInt(outLen);
         ClearSfrMetrics(mtf10_norm, mtf50_norm, mtf10_cypix, mtf50_cypix);
 
@@ -156,7 +165,7 @@ COLORVISIONCORE_API int M_CalSFRMultiChannel(
     double* mtf10_norm_b, double* mtf50_norm_b, double* mtf10_cypix_b, double* mtf50_cypix_b,
     double* mtf10_norm_l, double* mtf50_norm_l, double* mtf10_cypix_l, double* mtf50_cypix_l)
 {
-    return GuardSfrExport([&]() -> int {
+    return GuardSfrExport(__func__, [&]() -> int {
         ClearInt(outLen);
         ClearInt(channelCount);
         ClearSfrMetrics(mtf10_norm_r, mtf50_norm_r, mtf10_cypix_r, mtf50_cypix_r);

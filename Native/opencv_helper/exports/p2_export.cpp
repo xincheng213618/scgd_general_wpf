@@ -3,6 +3,7 @@
 #include "../algorithm/ghost/ghost_detection.h"
 #include "../algorithm/keyboard_led/keyboard_led.h"
 #include "../algorithm/matching/rotated_template_matching.h"
+#include "../native_log.h"
 #include "../../include/opencv_media_export.h"
 
 #include <combaseapi.h>
@@ -30,24 +31,36 @@ constexpr int ExportStdException = -6;
 constexpr int ExportUnknownException = -7;
 
 template <typename Func>
-int GuardExport(Func func) noexcept
+int GuardExport(const char* operation, Func func) noexcept
 {
     try {
-        return func();
+        const int result = func();
+        if (result < 0) {
+            const auto level = result == ExportAllocationFailed
+                ? cvnative::LogLevel::Error
+                : cvnative::LogLevel::Debug;
+            cvnative::LogFailure(level, "p2.export", operation, result);
+        }
+        return result;
     }
-    catch (const json::exception&) {
+    catch (const json::exception& ex) {
+        cvnative::LogException("p2.export", operation, ExportInvalidJson, "json::exception", ex.what());
         return ExportInvalidJson;
     }
-    catch (const std::invalid_argument&) {
+    catch (const std::invalid_argument& ex) {
+        cvnative::LogException("p2.export", operation, ExportInvalidJson, "std::invalid_argument", ex.what());
         return ExportInvalidJson;
     }
-    catch (const cv::Exception&) {
+    catch (const cv::Exception& ex) {
+        cvnative::LogException("p2.export", operation, ExportOpenCvException, "cv::Exception", ex.what());
         return ExportOpenCvException;
     }
-    catch (const std::exception&) {
+    catch (const std::exception& ex) {
+        cvnative::LogException("p2.export", operation, ExportStdException, "std::exception", ex.what());
         return ExportStdException;
     }
     catch (...) {
+        cvnative::LogException("p2.export", operation, ExportUnknownException, "unknown");
         return ExportUnknownException;
     }
 }
@@ -679,7 +692,7 @@ void AddMetadata(json& output, const char* algorithm)
 
 COLORVISIONCORE_API int M_DetectGhosts(HImage img, RoiRect roi, const char* config, char** result)
 {
-    return GuardExport([&]() -> int {
+    return GuardExport(__func__, [&]() -> int {
         if (result != nullptr) *result = nullptr;
         cv::Mat image = HImageToMatView(img);
         json parsed;
@@ -695,7 +708,7 @@ COLORVISIONCORE_API int M_DetectGhosts(HImage img, RoiRect roi, const char* conf
 
 COLORVISIONCORE_API int M_AnalyzeKeyboardHalo(HImage img, RoiRect roi, const char* config, char** result)
 {
-    return GuardExport([&]() -> int {
+    return GuardExport(__func__, [&]() -> int {
         if (result != nullptr) *result = nullptr;
         cv::Mat image = HImageToMatView(img);
         json parsed;
@@ -728,7 +741,7 @@ COLORVISIONCORE_API int M_AnalyzeKeyboardHalo(HImage img, RoiRect roi, const cha
 
 COLORVISIONCORE_API int M_AnalyzeLedArray(HImage img, RoiRect roi, const char* config, char** result)
 {
-    return GuardExport([&]() -> int {
+    return GuardExport(__func__, [&]() -> int {
         if (result != nullptr) *result = nullptr;
         cv::Mat image = HImageToMatView(img);
         json parsed;
@@ -759,7 +772,7 @@ COLORVISIONCORE_API int M_MatchRotatedTemplate(
     const char* config,
     char** result)
 {
-    return GuardExport([&]() -> int {
+    return GuardExport(__func__, [&]() -> int {
         if (result != nullptr) *result = nullptr;
         cv::Mat image = HImageToMatView(img);
         cv::Mat templ = HImageToMatView(templateImage);
@@ -776,7 +789,7 @@ COLORVISIONCORE_API int M_MatchRotatedTemplate(
 
 COLORVISIONCORE_API int M_CalBinocularFusion(HImage img, RoiRect roi, const char* config, char** result)
 {
-    return GuardExport([&]() -> int {
+    return GuardExport(__func__, [&]() -> int {
         if (result != nullptr) *result = nullptr;
         cv::Mat image = HImageToMatView(img);
         json parsed;
@@ -798,7 +811,7 @@ COLORVISIONCORE_API int M_CalStereoBinocularFusion(
     const char* config,
     char** result)
 {
-    return GuardExport([&]() -> int {
+    return GuardExport(__func__, [&]() -> int {
         if (result != nullptr) *result = nullptr;
         cv::Mat left = HImageToMatView(leftImage);
         cv::Mat right = HImageToMatView(rightImage);

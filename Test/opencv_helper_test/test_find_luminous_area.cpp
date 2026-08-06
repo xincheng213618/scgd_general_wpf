@@ -32,6 +32,7 @@ bool RunCalibrationLegacyColorComparison(
     const std::filesystem::path& legacyDll);
 
 bool RunP2AlgorithmTests();
+bool RunNativeLoggingTests();
 
 static std::atomic<int> g_videoCallbackFrames{ 0 };
 static std::atomic<int> g_videoStatusPlaying{ 0 };
@@ -1767,6 +1768,9 @@ int main(int argc, char* argv[])
     if (argc == 2 && std::string(argv[1]) == "--p2-only") {
         return RunP2AlgorithmTests() ? 0 : 1;
     }
+    if (argc == 2 && std::string(argv[1]) == "--native-log") {
+        return RunNativeLoggingTests() ? 0 : 1;
+    }
 
     std::cout << "========================================" << std::endl;
     std::cout << "M_FindLuminousArea smoke test" << std::endl;
@@ -1929,6 +1933,11 @@ int main(int argc, char* argv[])
 
     if (!RunP2AlgorithmTests()) {
         std::cerr << "P2 native algorithm regression tests failed" << std::endl;
+        return 1;
+    }
+
+    if (!RunNativeLoggingTests()) {
+        std::cerr << "Native logging tests failed" << std::endl;
         return 1;
     }
 

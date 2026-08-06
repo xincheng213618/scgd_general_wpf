@@ -3,6 +3,7 @@
 
 #include "pch.h"
 #include "algorithm.h"
+#include "native_log.h"
 #include <opencv2/core/parallel/parallel_backend.hpp>
 #include <opencv2/core/parallel.hpp>
 
@@ -278,7 +279,9 @@ public:
     ~PerformanceTimer() {
         auto end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start_);
-        std::cout << "[" << name_ << "] " << duration.count() / 1000.0 << " ms" << std::endl;
+        cvnative::LogLazy(cvnative::LogLevel::Debug, [&] {
+            return "[algorithm.performance] " + name_ + " duration_us=" + std::to_string(duration.count());
+            });
     }
 };
 

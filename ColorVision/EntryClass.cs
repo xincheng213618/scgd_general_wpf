@@ -2,7 +2,6 @@
 // // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using ColorVision.UI.Shell;
-using ColorVision.Core;
 using log4net;
 using log4net.Config;
 using System;
@@ -43,32 +42,6 @@ namespace ColorVision
                     fileAppender.ActivateOptions();
                 }
             }
-
-            NativeLogBridge.Initialize((source, level, message) =>
-            {
-                string prefix = $"[Native:{source}] ";
-                switch (level)
-                {
-                    case NativeLogLevel.Trace:
-                        log.Logger.Log(typeof(App), log4net.Core.Level.Trace, prefix + message, null);
-                        break;
-                    case NativeLogLevel.Debug:
-                        log.Debug(prefix + message);
-                        break;
-                    case NativeLogLevel.Info:
-                        log.Info(prefix + message);
-                        break;
-                    case NativeLogLevel.Warn:
-                        log.Warn(prefix + message);
-                        break;
-                    case NativeLogLevel.Error:
-                        log.Error(prefix + message);
-                        break;
-                    default:
-                        log.Info(prefix + message);
-                        break;
-                }
-            }, level: NativeLogLevel.Info, enableLogs: true, enableNativeSink: false);
 
             App app;
             app = new App();
