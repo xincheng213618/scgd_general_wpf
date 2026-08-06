@@ -1,5 +1,11 @@
 #   CHANGELOG
 
+## [1.4.12.20] 2026.08.07
+
+1. ImageEditor 新增统一的源图 `ImageFrameLease` 与单调 revision 管理，切图或原地更新时延迟回收仍在计算中的旧 buffer，并拒绝过期算法结果覆盖当前图像。
+2. 准确度、伪彩色、P2、SFR、POI、畸变及常用图像算法统一迁移到 lease/revision 链路，修复后台线程访问 WPF 图像属性、计算期间切图和浮点清晰度计算修改源图的问题。
+3. 移除旧 `HImageCache` 公共兼容链和仅供其使用的冗余接口，补充 buffer 生命周期、并发切换、原地像素更新及源图不变性测试。
+
 ## [1.4.12.19] 2026.08.06
 
 1. 新增统一的 `PoiMeasurementService`，将标准 POI 测量从旧版逐点句柄调用迁移到 `opencv_helper` 的 `M_CalculatePoiBatchV2`，支持单通道与三通道 CIE 的点、圆和矩形批量计算。

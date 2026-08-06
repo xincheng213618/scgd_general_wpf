@@ -67,7 +67,7 @@ ImageView
 5. 打开器调用 `ImageView.SetImageSource(...)`。
 6. 如果当前 opener 同时实现了 `IImageOpenEditorToolProvider`，`EditorToolFactory` 会按 `GuidId` 把它提供的工具覆盖到全局工具集之上，并重建受管工具栏。
 7. `SetImageSource` 统一做：
-   - 清理 `FunctionImage`、`ViewBitmapSource`、`HImageCache`
+   - 清理 `FunctionImage`、`ViewBitmapSource`，并推进图像 revision、退役旧的原生帧
    - 重新写入像素格式、宽高、通道、位深、DPI 等元数据
    - 可选触发 `PseudoColorService.ConfigureForImage()`
    - 可选触发 `ImageCalibrationService.ApplyToDefault(EditorContext)`
@@ -334,14 +334,16 @@ ImageView
 | `ImageShow.Source` | 当前实际显示在画布上的图像 |
 | `ViewBitmapSource` | 当前“已确认”的图像基底，通常是原图或已应用处理后的结果 |
 | `FunctionImage` | 临时处理结果或预览结果，例如算法窗口预览、伪彩色、通道抽取 |
-| `HImageCache` | 从当前显示位图延迟构建的原生图像缓存，供 OpenCV/底层算法复用 |
+| `ImageRevision` | 当前源图版本；切图或原地修改像素时递增，用于拒绝过期计算结果 |
+| `ImageFrameLease` | 从当前源图延迟构建并引用计数保护的原生图像快照，供 OpenCV/底层算法使用 |
 
 可理解为：
 
 - `ViewBitmapSource` 是稳定层。
 - `FunctionImage` 是可丢弃的派生层。
 - `ImageShow.Source` 是最终显示层。
-- `HImageCache` 是底层算法缓存层。
+- `ImageFrameLease` 是底层算法读取层；使用期间固定原生 buffer，释放 lease 后才允许回收已退役帧。
+- `ImageRevision` 是结果发布边界；后台算法只能发布与当前 revision 一致的结果。
 
 ### 4.2 图元层
 

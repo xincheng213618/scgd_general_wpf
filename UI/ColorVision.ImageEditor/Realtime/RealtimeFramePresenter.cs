@@ -175,6 +175,7 @@ namespace ColorVision.ImageEditor.Realtime
                 return;
             }
 
+            _imageView.NotifySourcePixelsChanged();
             _hasRenderedFrame = true;
             _imageView.SchedulePixelValueOverlayRefresh();
         }

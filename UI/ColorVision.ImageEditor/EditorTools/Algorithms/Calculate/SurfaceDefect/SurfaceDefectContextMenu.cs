@@ -23,12 +23,13 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SurfaceDefect
 
         public void Execute()
         {
-            if (_imageContext.HImageCache is not HImage hImage)
+            using ImageFrameLease? lease = _imageContext.AcquireImageFrame();
+            if (lease == null)
             {
                 return;
             }
 
-            OpenWindow(new RoiRect(0, 0, hImage.cols, hImage.rows));
+            OpenWindow(new RoiRect(0, 0, lease.Width, lease.Height));
         }
 
         public void Execute(RoiRect roi)
@@ -89,12 +90,13 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SurfaceDefect
         public IEnumerable<MenuItem> GetContextMenuItems(object obj)
         {
             List<MenuItem> menuItems = new();
-            if (obj is not IRectangle rectangle || _imageContext.HImageCache is not HImage image)
+            using ImageFrameLease? lease = _imageContext.AcquireImageFrame();
+            if (obj is not IRectangle rectangle || lease == null)
             {
                 return menuItems;
             }
 
-            if (!TryBuildRoi(rectangle, image, out RoiRect roi))
+            if (!TryBuildRoi(rectangle, lease.Image, out RoiRect roi))
             {
                 return menuItems;
             }

@@ -692,10 +692,9 @@ namespace ColorVision.Engine.Templates.POI
                                     ints[2 * i] = (int)PoiParam.PoiPoints[i].PixX;
                                     ints[2 * i + 1] = (int)PoiParam.PoiPoints[i].PixY;
                                 }
-                                HImage hImage;
                                 if (ImageShow.Source is WriteableBitmap writeable)
                                 {
-                                    hImage = writeable.ToHImage();
+                                    using HImage hImage = writeable.ToHImage();
                                     int ret = OpenCVMediaHelper.M_DrawPoiImage(hImage, out HImage hImageProcessed, PoiConfig.DefaultCircleRadius, ints, ints.Length, PoiConfig.Thickness);
                                     Application.Current.Dispatcher.Invoke(() =>
                                     {
@@ -705,12 +704,16 @@ namespace ColorVision.Engine.Templates.POI
 
                                             ImageShow.Source = image;
                                         }
+                                        else
+                                        {
+                                            hImageProcessed.Dispose();
+                                        }
                                     });
                                 }
 
                                 else if (ImageShow.Source is BitmapImage bitmapSource)
                                 {
-                                    hImage = bitmapSource.ToHImage();
+                                    using HImage hImage = bitmapSource.ToHImage();
                                     int ret = OpenCVMediaHelper.M_DrawPoiImage(hImage, out HImage hImageProcessed, PoiConfig.DefaultCircleRadius, ints, ints.Length, PoiConfig.Thickness);
                                     Application.Current.Dispatcher.Invoke(() =>
                                     {
@@ -719,6 +722,10 @@ namespace ColorVision.Engine.Templates.POI
                                             var image = hImageProcessed.ToWriteableBitmapAndDispose();
 
                                             ImageShow.Source = image;
+                                        }
+                                        else
+                                        {
+                                            hImageProcessed.Dispose();
                                         }
                                     });
                                 }
@@ -833,12 +840,11 @@ namespace ColorVision.Engine.Templates.POI
                                 ints[2 * i] = (int)PoiParam.PoiPoints[i].PixX;
                                 ints[2 * i + 1] = (int)PoiParam.PoiPoints[i].PixY;
                             }
-                            HImage hImage;
                             Application.Current.Dispatcher.Invoke(() =>
                             {
                                 if (ImageShow.Source is BitmapImage bitmapSource)
                                 {
-                                    hImage = bitmapSource.ToHImage();
+                                    using HImage hImage = bitmapSource.ToHImage();
                                     int ret = OpenCVMediaHelper.M_DrawPoiImage(hImage, out HImage hImageProcessed, PoiConfig.DefaultCircleRadius, ints, ints.Length, PoiConfig.Thickness);
                                     Application.Current.Dispatcher.Invoke(() =>
                                     {
@@ -849,16 +855,24 @@ namespace ColorVision.Engine.Templates.POI
                                             ImageShow.Source = image;
 
                                         }
+                                        else
+                                        {
+                                            hImageProcessed.Dispose();
+                                        }
                                     });
                                 }
 
-                                if (ImageShow.Source is WriteableBitmap writeable)
+                                else if (ImageShow.Source is WriteableBitmap writeable)
                                 {
-                                    hImage = writeable.ToHImage();
+                                    using HImage hImage = writeable.ToHImage();
                                     int ret = OpenCVMediaHelper.M_DrawPoiImage(hImage, out HImage hImageProcessed, PoiConfig.DefaultCircleRadius, ints, ints.Length , PoiConfig.Thickness);
                                     Application.Current.Dispatcher.Invoke(() =>
                                     {
-                                        if (!HImageExtension.UpdateWriteableBitmap(ImageShow.Source, hImageProcessed))
+                                        if (ret != 0)
+                                        {
+                                            hImageProcessed.Dispose();
+                                        }
+                                        else if (!HImageExtension.UpdateWriteableBitmap(ImageShow.Source, hImageProcessed))
                                         {
                                             var image = hImageProcessed.ToWriteableBitmapAndDispose();
 
@@ -1489,20 +1503,31 @@ namespace ColorVision.Engine.Templates.POI
         {
             Application.Current.Dispatcher.BeginInvoke((Action)(() =>
             {
-                if (ImageView.HImageCache != null)
+                string FindLuminousAreajson = PoiConfig.FindLuminousArea.ToJsonN();
+                ImageFrameLease? acquiredLease = ImageView.AcquireImageFrame();
+                if (acquiredLease != null)
                 {
-                    string FindLuminousAreajson = PoiConfig.FindLuminousArea.ToJsonN();
-                    Task.Run(() =>
+                    ImageFrameLease lease = acquiredLease;
+                    long revision = lease.Revision;
+                    _ = Task.Run(() =>
                     {
-                        int length = OpenCVMediaHelper.M_FindLuminousArea((HImage)ImageView.HImageCache,new RoiRect(), FindLuminousAreajson,out IntPtr resultPtr);
+                        int length;
+                        IntPtr resultPtr;
+                        using (lease)
+                        {
+                            length = OpenCVMediaHelper.M_FindLuminousArea(lease.Image, new RoiRect(), FindLuminousAreajson, out resultPtr);
+                        }
                         if (length > 0)
                         {
                             string result = OpenCVMediaHelper.PtrToStringAnsiAndFree(resultPtr);
                             Console.WriteLine("Result: " + result);
                             MRect rect = Newtonsoft.Json.JsonConvert.DeserializeObject<MRect>(result);
 
-                            Application.Current.Dispatcher.Invoke(() =>
+                            Application.Current.Dispatcher.BeginInvoke(() =>
                             {
+                                if (!ImageView.IsCurrentImageRevision(revision))
+                                    return;
+
                                 if (rect.Width ==0)
                                 {
                                     PoiConfig.AreaRectWidth = (int)ImageView.ViewBitmapSource.Width;
@@ -1543,23 +1568,34 @@ namespace ColorVision.Engine.Templates.POI
 
         private void DetectKeyRegions_Click(object sender, RoutedEventArgs e)
         {
-            if (ImageView.HImageCache == null)
+            string configJson = PoiConfig.DetectKeyRegionsConfig.ToJsonN();
+            ImageFrameLease? acquiredLease = ImageView.AcquireImageFrame();
+            if (acquiredLease == null)
             {
                 MessageBox.Show("请先加载图像", "ColorVision");
                 return;
             }
 
-            string configJson = PoiConfig.DetectKeyRegionsConfig.ToJsonN();
-            Task.Run(() =>
+            ImageFrameLease lease = acquiredLease;
+            long revision = lease.Revision;
+            _ = Task.Run(() =>
             {
-                int length = OpenCVMediaHelper.M_DetectKeyRegions((HImage)ImageView.HImageCache, new RoiRect(), configJson, out IntPtr resultPtr);
+                int length;
+                IntPtr resultPtr;
+                using (lease)
+                {
+                    length = OpenCVMediaHelper.M_DetectKeyRegions(lease.Image, new RoiRect(), configJson, out resultPtr);
+                }
                 if (length > 0)
                 {
                     string result = OpenCVMediaHelper.PtrToStringAnsiAndFree(resultPtr);
                     log.Info("DetectKeyRegions result: " + result);
 
-                    Application.Current.Dispatcher.Invoke(() =>
+                    Application.Current.Dispatcher.BeginInvoke(() =>
                     {
+                        if (!ImageView.IsCurrentImageRevision(revision))
+                            return;
+
                         try
                         {
                             var jObj = Newtonsoft.Json.Linq.JObject.Parse(result);
@@ -1599,8 +1635,11 @@ namespace ColorVision.Engine.Templates.POI
                 }
                 else
                 {
-                    Application.Current.Dispatcher.Invoke(() =>
+                    Application.Current.Dispatcher.BeginInvoke(() =>
                     {
+                        if (!ImageView.IsCurrentImageRevision(revision))
+                            return;
+
                         MessageBox.Show($"按键区域检测失败(错误码: {length})，请调整参数后重试", "ColorVision");
                     });
                 }
@@ -1705,19 +1744,30 @@ namespace ColorVision.Engine.Templates.POI
         {
             Application.Current.Dispatcher.BeginInvoke((Action)(() =>
             {
-                if (ImageView.HImageCache != null)
+                string FindLuminousAreaCornerjson = PoiConfig.FindLuminousAreaCorner.ToJsonN();
+                ImageFrameLease? acquiredLease = ImageView.AcquireImageFrame();
+                if (acquiredLease != null)
                 {
-                    string FindLuminousAreaCornerjson = PoiConfig.FindLuminousAreaCorner.ToJsonN();
-                    Task.Run(() =>
+                    ImageFrameLease lease = acquiredLease;
+                    long revision = lease.Revision;
+                    _ = Task.Run(() =>
                     {
-                        int length = OpenCVMediaHelper.M_FindLuminousArea((HImage)ImageView.HImageCache, new RoiRect(), FindLuminousAreaCornerjson, out IntPtr resultPtr);
+                        int length;
+                        IntPtr resultPtr;
+                        using (lease)
+                        {
+                            length = OpenCVMediaHelper.M_FindLuminousArea(lease.Image, new RoiRect(), FindLuminousAreaCornerjson, out resultPtr);
+                        }
                         if (length > 0)
                         {
                             string result = OpenCVMediaHelper.PtrToStringAnsiAndFree(resultPtr);
                             log.Info(result);
 
-                            Application.Current.Dispatcher.Invoke(() =>
+                            Application.Current.Dispatcher.BeginInvoke(() =>
                             {
+                                if (!ImageView.IsCurrentImageRevision(revision))
+                                    return;
+
                                 if (PoiConfig.FindLuminousAreaCorner.UseRotatedRect)
                                 {
                                     var jObj = Newtonsoft.Json.Linq.JObject.Parse(result);

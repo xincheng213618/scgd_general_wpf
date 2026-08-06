@@ -18,18 +18,27 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FindLightBead
     {
         public void Execute(FindLightBeadsConfig config, RoiRect roiRect)
         {
-            if (ImageContext.HImageCache == null) return;
+            ImageFrameLease? lease = ImageContext.AcquireImageFrame();
+            if (lease == null) return;
 
             string configJson = config.ToJsonN();
-            Task.Run(() =>
+            long revision = lease.Revision;
+            _ = Task.Run(() =>
             {
-                int length = OpenCVMediaHelper.M_FindLightBeads((HImage)ImageContext.HImageCache, roiRect, configJson, out IntPtr resultPtr);
+                int length;
+                IntPtr resultPtr;
+                using (lease)
+                {
+                    length = OpenCVMediaHelper.M_FindLightBeads(lease.Image, roiRect, configJson, out resultPtr);
+                }
                 if (length > 0)
                 {
                     string result = OpenCVMediaHelper.PtrToStringAnsiAndFree(resultPtr);
 
-                    Application.Current.Dispatcher.Invoke(() =>
+                    Application.Current.Dispatcher.BeginInvoke(() =>
                     {
+                        if (!ImageContext.IsCurrentImageRevision(revision)) return;
+
                         var jObj = Newtonsoft.Json.Linq.JObject.Parse(result);
                         
                         // 获取检测到的灯珠中心点
@@ -85,8 +94,10 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FindLightBead
                 }
                 else
                 {
-                    Application.Current.Dispatcher.Invoke(() =>
+                    Application.Current.Dispatcher.BeginInvoke(() =>
                     {
+                        if (!ImageContext.IsCurrentImageRevision(revision)) return;
+
                         MessageBox.Show(
                             $"灯珠检测失败，错误代码: {length}\n请检查图像格式和参数设置。",
                             "错误",
@@ -118,7 +129,9 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FindLightBead
             List<MenuItem> menuItems = new();
             if (obj is not IRectangle dvRectangle) return menuItems;
 
-            if (_imageContext.HImageCache is not HImage hImage) return menuItems;
+            using ImageFrameLease? lease = _imageContext.AcquireImageFrame();
+            if (lease == null) return menuItems;
+            HImage hImage = lease.Image;
             double DpiX = _config.GetProperties<double>("DpiX");
             double DpiY = _config.GetProperties<double>("DpiY");
 

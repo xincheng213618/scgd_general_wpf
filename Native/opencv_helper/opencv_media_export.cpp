@@ -719,6 +719,14 @@ bool TryBuildGrayFocusInput(const HImage& img, const RoiRect& roi, cv::Mat& gray
 	}
 
 	if (grayMat.depth() == CV_32F) {
+		// A single-channel conversion is a shallow view of the caller-owned frame.
+		// Keep leased source buffers immutable while sanitizing non-finite values.
+		if (grayMat.data == mat.data) {
+			grayMat = grayMat.clone();
+			if (grayMat.empty()) {
+				return false;
+			}
+		}
 		cv::patchNaNs(grayMat, 0.0f);
 	}
 	else if (grayMat.depth() != CV_8U && grayMat.depth() != CV_16U) {

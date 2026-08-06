@@ -31,8 +31,9 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.P2
                     throw new InvalidOperationException($"{operation}失败，返回码: {length}。{DescribeReturnCode(length)}");
                 }
 
-                string rawJson = OpenCVMediaHelper.PtrToStringUtf8AndFree(resultPtr);
+                IntPtr ownedResult = resultPtr;
                 resultPtr = IntPtr.Zero;
+                string rawJson = OpenCVMediaHelper.PtrToStringUtf8AndFree(ownedResult);
                 if (JToken.Parse(rawJson) is not JObject json)
                 {
                     throw new InvalidOperationException($"{operation}返回的 JSON 不是对象。");

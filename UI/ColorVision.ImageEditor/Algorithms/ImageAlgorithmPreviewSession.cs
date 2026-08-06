@@ -59,7 +59,7 @@ namespace ColorVision.ImageEditor.Algorithms
         {
             _image.ViewBitmapSource = PreviewBitmap;
             _image.ImageShow.Source = _image.ViewBitmapSource;
-            _image.HImageCache = PreviewBitmap.ToHImage();
+            _image.NotifySourcePixelsChanged();
             _image.FunctionImage = null;
             _isCompleted = true;
         }

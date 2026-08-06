@@ -22,35 +22,39 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
 
         public void Execute()
         {
-            Application.Current.Dispatcher.BeginInvoke(() =>
+            ImageFrameLease? lease = _image.AcquireImageFrame();
+            if (lease == null) return;
+
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            long revision = lease.Revision;
+            log.Info("RemoveMoire - 开始执行");
+
+            _ = Task.Run(() =>
             {
-                if (_image.HImageCache == null) return;
-                
-                Stopwatch stopwatch = new Stopwatch();
-                stopwatch.Start();
-                log.Info("RemoveMoire - 开始执行");
-                
-                Task.Run(() =>
+                int ret;
+                HImage hImageProcessed;
+                using (lease)
                 {
-                    int ret = OpenCVMediaHelper.M_RemoveMoire((HImage)_image.HImageCache, out HImage hImageProcessed);
-                    Application.Current.Dispatcher.BeginInvoke(() =>
+                    ret = OpenCVMediaHelper.M_RemoveMoire(lease.Image, out hImageProcessed);
+                }
+
+                Application.Current.Dispatcher.BeginInvoke(() =>
+                {
+                    if (ret != 0 || !_image.IsCurrentImageRevision(revision))
                     {
-                        if (ret == 0)
-                        {
-                            if (!HImageExtension.UpdateWriteableBitmap(_image.ViewBitmapSource, hImageProcessed))
-                            {
-                                double DpiX = _image.Config.GetProperties<double>("DpiX");
-                                double DpiY = _image.Config.GetProperties<double>("DpiY");
-                                var image = hImageProcessed.ToWriteableBitmapAndDispose();
-                                _image.ViewBitmapSource = image;
-                            }
-                            _image.HImageCache?.Dispose();
-                            _image.HImageCache = null;
-                            _image.ImageShow.Source = _image.ViewBitmapSource;
-                            stopwatch.Stop();
-                            log.Info($"RemoveMoire 完成 - 耗时: {stopwatch.Elapsed}");
-                        }
-                    });
+                        hImageProcessed.Dispose();
+                        return;
+                    }
+
+                    if (!HImageExtension.UpdateWriteableBitmap(_image.ViewBitmapSource, hImageProcessed))
+                    {
+                        _image.ViewBitmapSource = hImageProcessed.ToWriteableBitmapAndDispose();
+                    }
+
+                    _image.NotifySourcePixelsChanged();
+                    _image.ImageShow.Source = _image.ViewBitmapSource;
+                    stopwatch.Stop();
+                    log.Info($"RemoveMoire 完成 - 耗时: {stopwatch.Elapsed}");
                 });
             });
         }

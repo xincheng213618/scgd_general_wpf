@@ -415,8 +415,6 @@ namespace ColorVision.Engine.Templates.POI
 
         }
 
-        public HImage? HImageCache => ImageView.HImageCache;
-
         private bool Init;
         private void CreateImage(int width, int height, Color color,bool IsClear = true)
         {
@@ -1231,23 +1229,34 @@ namespace ColorVision.Engine.Templates.POI
 
         private void DetectKeyRegions_Click(object sender, RoutedEventArgs e)
         {
-            if (HImageCache == null)
+            string configJson = PoiConfig.DetectKeyRegionsConfig.ToJsonN();
+            ImageFrameLease? acquiredLease = ImageView.AcquireImageFrame();
+            if (acquiredLease == null)
             {
                 MessageBox.Show("请先加载图像", "ColorVision");
                 return;
             }
 
-            string configJson = PoiConfig.DetectKeyRegionsConfig.ToJsonN();
-            Task.Run(() =>
+            ImageFrameLease lease = acquiredLease;
+            long revision = lease.Revision;
+            _ = Task.Run(() =>
             {
-                int length = OpenCVMediaHelper.M_DetectKeyRegions((HImage)HImageCache, new RoiRect(), configJson, out IntPtr resultPtr);
+                int length;
+                IntPtr resultPtr;
+                using (lease)
+                {
+                    length = OpenCVMediaHelper.M_DetectKeyRegions(lease.Image, new RoiRect(), configJson, out resultPtr);
+                }
                 if (length > 0)
                 {
                     string result = OpenCVMediaHelper.PtrToStringAnsiAndFree(resultPtr);
                     log.Info("DetectKeyRegions result: " + result);
 
-                    Application.Current.Dispatcher.Invoke(() =>
+                    Application.Current.Dispatcher.BeginInvoke(() =>
                     {
+                        if (!ImageView.IsCurrentImageRevision(revision))
+                            return;
+
                         try
                         {
                             var jObj = Newtonsoft.Json.Linq.JObject.Parse(result);
@@ -1292,8 +1301,11 @@ namespace ColorVision.Engine.Templates.POI
                 }
                 else
                 {
-                    Application.Current.Dispatcher.Invoke(() =>
+                    Application.Current.Dispatcher.BeginInvoke(() =>
                     {
+                        if (!ImageView.IsCurrentImageRevision(revision))
+                            return;
+
                         MessageBox.Show($"按键区域检测失败(错误码: {length})，请调整参数后重试", "ColorVision");
                     });
                 }
@@ -1308,20 +1320,31 @@ namespace ColorVision.Engine.Templates.POI
         {
             Application.Current.Dispatcher.BeginInvoke((Action)(() =>
             {
-                if (HImageCache != null)
+                string re = PoiConfig.FindLuminousArea.ToJsonN();
+                ImageFrameLease? acquiredLease = ImageView.AcquireImageFrame();
+                if (acquiredLease != null)
                 {
-                    string re = PoiConfig.FindLuminousArea.ToJsonN();
-                    Task.Run(() =>
+                    ImageFrameLease lease = acquiredLease;
+                    long revision = lease.Revision;
+                    _ = Task.Run(() =>
                     {
-                        int length = OpenCVMediaHelper.M_FindLuminousArea((HImage)HImageCache, new RoiRect(), re,out IntPtr resultPtr);
+                        int length;
+                        IntPtr resultPtr;
+                        using (lease)
+                        {
+                            length = OpenCVMediaHelper.M_FindLuminousArea(lease.Image, new RoiRect(), re, out resultPtr);
+                        }
                         if (length > 0)
                         {
                             string result = OpenCVMediaHelper.PtrToStringAnsiAndFree(resultPtr);
                             Console.WriteLine("Result: " + result);
                             MRect rect = Newtonsoft.Json.JsonConvert.DeserializeObject<MRect>(result);
 
-                            Application.Current.Dispatcher.Invoke(() =>
+                            Application.Current.Dispatcher.BeginInvoke(() =>
                             {
+                                if (!ImageView.IsCurrentImageRevision(revision))
+                                    return;
+
                                 if (rect.Width ==0)
                                 {
                                     PoiConfig.AreaRectWidth = (int)ViewBitmapSource.Width;
@@ -1520,14 +1543,14 @@ namespace ColorVision.Engine.Templates.POI
                 _dirtyKeyboardKeys.Clear();
             }
 
-            HImage? cachedImage = HImageCache;
-            if (!cachedImage.HasValue)
+            using ImageFrameLease? lease = ImageView.AcquireImageFrame();
+            if (lease == null)
             {
                 MessageBox.Show("请先加载图像", "ColorVision");
                 return;
             }
 
-            HImage image = cachedImage.Value;
+            HImage image = lease.Image;
             if ((image.depth != 8 && image.depth != 16) ||
                 (image.channels != 1 && image.channels != 3 && image.channels != 4))
             {

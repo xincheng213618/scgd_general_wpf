@@ -19,18 +19,27 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FindLuminousA
     {
         public void Execute(FindLuminousAreaCorner findLuminousAreaCorner, RoiRect roiRect)
         {
-            if (ImageContext.HImageCache == null) return;
+            ImageFrameLease? lease = ImageContext.AcquireImageFrame();
+            if (lease == null) return;
 
             string FindLuminousAreajson = findLuminousAreaCorner.ToJsonN();
-            Task.Run(() =>
+            long revision = lease.Revision;
+            _ = Task.Run(() =>
             {
-                int length = OpenCVMediaHelper.M_FindLuminousArea((HImage)ImageContext.HImageCache, roiRect, FindLuminousAreajson, out IntPtr resultPtr);
+                int length;
+                IntPtr resultPtr;
+                using (lease)
+                {
+                    length = OpenCVMediaHelper.M_FindLuminousArea(lease.Image, roiRect, FindLuminousAreajson, out resultPtr);
+                }
                 if (length > 0)
                 {
                     string result = OpenCVMediaHelper.PtrToStringAnsiAndFree(resultPtr);
 
-                    Application.Current.Dispatcher.Invoke(() =>
+                    Application.Current.Dispatcher.BeginInvoke(() =>
                     {
+                        if (!ImageContext.IsCurrentImageRevision(revision)) return;
+
                         if (findLuminousAreaCorner.UseRotatedRect)
                         {
                             var jObj = Newtonsoft.Json.Linq.JObject.Parse(result);
@@ -106,7 +115,9 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FindLuminousA
             List<MenuItem> menuItems = new();
             if (obj is not IRectangle dvRectangle) return menuItems;
 
-            if (_imageContext.HImageCache is not HImage hImage) return menuItems;
+            using ImageFrameLease? lease = _imageContext.AcquireImageFrame();
+            if (lease == null) return menuItems;
+            HImage hImage = lease.Image;
             double DpiX = _config.GetProperties<double>("DpiX");
             double DpiY = _config.GetProperties<double>("DpiY");
 

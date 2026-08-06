@@ -11,6 +11,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.P2
     public partial class P2JsonAnalysisWindow : Window
     {
         private readonly Func<string, Task<P2NativeResult>> _execute;
+        private readonly ImageProcessingContext _imageContext;
         private readonly Func<JObject, string> _summary;
         private readonly DrawEditorContext _drawContext;
         private readonly ImageViewConfig _config;
@@ -23,6 +24,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.P2
             string title,
             string inputDescription,
             string defaultConfig,
+            ImageProcessingContext imageContext,
             Func<string, Task<P2NativeResult>> execute,
             Func<JObject, string> summary,
             DrawEditorContext drawContext,
@@ -35,6 +37,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.P2
             InputDescriptionText.Text = inputDescription;
             ConfigText.Text = P2NativeJson.Format(defaultConfig);
             StatusText.Text = "调整 JSON 参数后点击运行；Overlay 仅用于当前调试窗口。";
+            _imageContext = imageContext;
             _execute = execute;
             _summary = summary;
             _drawContext = drawContext;
@@ -64,10 +67,11 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.P2
 
             RunButton.IsEnabled = false;
             StatusText.Text = "计算中...";
+            long revision = _imageContext.ImageRevision;
             try
             {
                 P2NativeResult result = await _execute(ConfigText.Text);
-                if (_closed) return;
+                if (_closed || !_imageContext.IsCurrentImageRevision(revision)) return;
                 _rawResult = P2NativeJson.Format(result.RawJson);
                 ResultText.Text = _rawResult;
                 MetricsGrid.ItemsSource = P2ResultRows.Build(result.Json);
@@ -86,7 +90,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.P2
             }
             catch (Exception ex)
             {
-                if (_closed) return;
+                if (_closed || !_imageContext.IsCurrentImageRevision(revision)) return;
                 StatusText.Text = ex.Message;
                 MessageBox.Show(this, ex.Message, Title, MessageBoxButton.OK, MessageBoxImage.Error);
             }

@@ -325,6 +325,26 @@ bool smokeCalArtculationUsesRawPixelScale()
         && nearlyEqual(stddev16, 32767.5, 1e-9);
 }
 
+bool smokeCalArtculationGray32FloatDoesNotMutateSource()
+{
+    cv::Mat image(2, 3, CV_32FC1);
+    image.at<float>(0, 0) = 1.0f;
+    image.at<float>(0, 1) = std::numeric_limits<float>::quiet_NaN();
+    image.at<float>(0, 2) = 3.0f;
+    image.at<float>(1, 0) = 5.0f;
+    image.at<float>(1, 1) = 7.0f;
+    image.at<float>(1, 2) = 9.0f;
+
+    HImage hImage = createHImageFromMat(image);
+    RoiRect roi = { 0, 0, 0, 0 };
+    const double result = M_CalArtculation(hImage, Variance, roi);
+
+    return result >= 0.0
+        && std::isnan(image.at<float>(0, 1))
+        && image.at<float>(0, 0) == 1.0f
+        && image.at<float>(1, 2) == 9.0f;
+}
+
 bool smokeGetMinMaxClearsOutputsOnFailure()
 {
     uint minValue = 123;
@@ -1813,6 +1833,11 @@ int main(int argc, char* argv[])
 
     if (!smokeCalArtculationUsesRawPixelScale()) {
         std::cerr << "M_CalArtculation raw pixel scale test failed" << std::endl;
+        return 1;
+    }
+
+    if (!smokeCalArtculationGray32FloatDoesNotMutateSource()) {
+        std::cerr << "M_CalArtculation Gray32Float source mutation test failed" << std::endl;
         return 1;
     }
 
