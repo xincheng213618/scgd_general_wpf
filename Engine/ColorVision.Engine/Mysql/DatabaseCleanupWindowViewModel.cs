@@ -4,6 +4,7 @@ using ColorVision.UI;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
@@ -14,27 +15,47 @@ namespace ColorVision.Database
     public sealed class DatabaseCleanupSourceViewModel : ViewModelBase
     {
         private readonly IDatabaseCleanupSourceProvider _provider;
+        private readonly IDatabaseCleanupSelectionProvider? _selectionProvider;
+        private readonly IDatabaseCleanupBackupProvider? _backupProvider;
+        private readonly IDatabaseCleanupMaintenanceProvider? _maintenanceProvider;
 
         private string _description = string.Empty;
         private string _keepMonthsText = "3";
         private string _status = "打开窗口后会自动统计。";
         private bool _isBusy;
+        private bool _backupBeforeCleanup;
+        private bool _suppressTableStateNotifications;
 
         public DatabaseCleanupSourceViewModel(IDatabaseCleanupSourceProvider provider)
         {
             _provider = provider;
+            _selectionProvider = provider as IDatabaseCleanupSelectionProvider;
+            _backupProvider = provider as IDatabaseCleanupBackupProvider;
+            _maintenanceProvider = provider as IDatabaseCleanupMaintenanceProvider;
             _description = provider.Description;
+            _backupBeforeCleanup = _backupProvider != null;
+
             RefreshCommand = new RelayCommand(_ => _ = RefreshAsync(), _ => !IsBusy);
-            CleanupHistoryCommand = new RelayCommand(_ => ExecuteCleanupHistory(), _ => !IsBusy);
-            CleanupAllCommand = new RelayCommand(_ => ExecuteCleanupAll(), _ => !IsBusy);
+            BackupCommand = new RelayCommand(_ => _ = ExecuteBackupAsync(), _ => !IsBusy && SupportsBackup);
+            SelectAllCommand = new RelayCommand(_ => SetAllExistingTablesSelected(true), _ => !IsBusy && SupportsTableCleanup && ExistingTableCount > 0);
+            ClearSelectionCommand = new RelayCommand(_ => SetAllExistingTablesSelected(false), _ => !IsBusy && SelectedTableCount > 0);
+            CleanupSelectedCommand = new RelayCommand(_ => ExecuteCleanupSelected(), _ => !IsBusy && SupportsTableCleanup && SelectedTableCount > 0);
+            CleanupHistoryCommand = new RelayCommand(_ => ExecuteCleanupHistory(), _ => !IsBusy && ExistingTableCount > 0);
+            CleanupAllCommand = new RelayCommand(_ => ExecuteCleanupAll(), _ => !IsBusy && ExistingTableCount > 0);
         }
 
         public string SourceId => _provider.Id;
         public string DisplayName => _provider.DisplayName;
         public int Order => _provider.Order;
+        public bool SupportsTableCleanup => _selectionProvider != null;
+        public bool SupportsBackup => _backupProvider != null;
         public ObservableCollection<DatabaseCleanupTableInfo> Tables { get; } = new();
 
         public RelayCommand RefreshCommand { get; }
+        public RelayCommand BackupCommand { get; }
+        public RelayCommand SelectAllCommand { get; }
+        public RelayCommand ClearSelectionCommand { get; }
+        public RelayCommand CleanupSelectedCommand { get; }
         public RelayCommand CleanupHistoryCommand { get; }
         public RelayCommand CleanupAllCommand { get; }
 
@@ -73,44 +94,90 @@ namespace ColorVision.Database
             get => _isBusy;
             set
             {
+                if (_isBusy == value)
+                    return;
+
                 _isBusy = value;
                 OnPropertyChanged();
                 CommandManager.InvalidateRequerySuggested();
             }
         }
 
-        public Task RefreshAsync()
+        public bool BackupBeforeCleanup
+        {
+            get => _backupBeforeCleanup;
+            set
+            {
+                bool nextValue = value && SupportsBackup;
+                if (_backupBeforeCleanup == nextValue)
+                    return;
+
+                _backupBeforeCleanup = nextValue;
+                OnPropertyChanged();
+            }
+        }
+
+        public int ExistingTableCount => Tables.Count(item => item.Exists);
+        public int SelectedTableCount => Tables.Count(item => item.Exists && item.IsSelected);
+        public long ExistingRowCount => Tables.Where(item => item.Exists).Sum(item => item.RowCount);
+        public string ExistingSizeDisplay => FormatSize(Tables.Where(item => item.Exists).Sum(item => item.SizeBytes));
+        public string TableSummary => $"{ExistingTableCount:N0} 张表 · {ExistingRowCount:N0} 行 · {ExistingSizeDisplay}";
+        public string SelectionSummary => SelectedTableCount > 0 ? $"已选择 {SelectedTableCount:N0} 张表" : "尚未选择数据表";
+
+        public async Task RefreshAsync()
         {
             if (IsBusy)
-                return Task.CompletedTask;
+                return;
 
-            return Task.Run(() =>
+            var selectedTableNames = GetSelectedTableNames().ToHashSet(StringComparer.OrdinalIgnoreCase);
+            SetBusy(true);
+            SetStatus("正在统计表数据...");
+
+            try
             {
-                SetBusy(true);
-                SetStatus("正在统计表数据...");
+                SetDescription(_provider.Description);
+                var snapshot = await Task.Run(_provider.LoadTables).ConfigureAwait(false);
+                ApplySnapshot(snapshot, selectedTableNames);
 
-                try
-                {
-                    SetDescription(_provider.Description);
-                    var snapshot = _provider.LoadTables();
-                    ApplySnapshot(snapshot);
+                int existingCount = snapshot.Count(item => item.Exists);
+                SetStatus(existingCount > 0
+                    ? $"已加载 {existingCount:N0} 张可清理数据表。"
+                    : "当前没有找到可清理数据表。");
+            }
+            catch (Exception ex)
+            {
+                SetStatus("加载统计失败。");
+                ShowMessage($"{DisplayName} 统计失败：{ex.Message}", MessageBoxImage.Error);
+            }
+            finally
+            {
+                SetBusy(false);
+            }
+        }
 
-                    int existingCount = snapshot.Count(item => item.Exists);
-                    SetStatus(existingCount > 0
-                        ? $"已加载 {existingCount:N0} 张可清理数据表。"
-                        : "当前没有找到可清理数据表。");
-                }
-                catch (Exception ex)
-                {
-                    SetStatus("加载统计失败。"
-                    );
-                    ShowMessage($"{DisplayName} 统计失败：{ex.Message}", MessageBoxImage.Error);
-                }
-                finally
-                {
-                    SetBusy(false);
-                }
-            });
+        private async Task ExecuteBackupAsync()
+        {
+            if (_backupProvider == null || IsBusy)
+                return;
+
+            SetBusy(true);
+            SetStatus($"正在创建 {DisplayName} 完整备份...");
+
+            try
+            {
+                var backup = await Task.Run(_backupProvider.CreateBackup).ConfigureAwait(false);
+                SetStatus(backup.StatusMessage);
+                ShowMessage($"{backup.StatusMessage}{Environment.NewLine}{backup.FilePath}", MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                SetStatus("完整备份失败。");
+                ShowMessage($"{DisplayName} 完整备份失败：{ex.Message}", MessageBoxImage.Error);
+            }
+            finally
+            {
+                SetBusy(false);
+            }
         }
 
         private void ExecuteCleanupHistory()
@@ -121,63 +188,161 @@ namespace ColorVision.Database
                 return;
             }
 
-            string tableList = BuildExistingTableList();
-            var confirmMessage = string.IsNullOrWhiteSpace(tableList)
-                ? $"将保留最近 {keepMonths} 个月的数据，继续执行 {DisplayName} 历史清理吗？"
-                : $"将保留最近 {keepMonths} 个月的数据，并清理以下数据表的历史数据：{Environment.NewLine}{tableList}{Environment.NewLine}{Environment.NewLine}是否继续？";
+            string confirmMessage =
+                $"将保留最近 {keepMonths} 个月的数据，并清理其余历史结果。{Environment.NewLine}{Environment.NewLine}" +
+                BuildBackupNotice() + Environment.NewLine + Environment.NewLine +
+                "是否继续？";
 
-            bool confirmed = false;
-            RunOnUi(() =>
-            {
-                confirmed = MessageBox1.Show(Application.Current.GetActiveWindow(), confirmMessage, DisplayName, MessageBoxButton.OKCancel, MessageBoxImage.Warning) == MessageBoxResult.OK;
-            });
-
-            if (!confirmed)
+            if (!ConfirmCleanup(confirmMessage, MessageBoxImage.Warning))
                 return;
 
-            _ = Task.Run(() => ExecuteCleanup(() => _provider.CleanupHistory(keepMonths), $"正在清理 {DisplayName} 历史数据..."));
+            _ = ExecuteCleanupAsync(
+                () => _provider.CleanupHistory(keepMonths),
+                $"正在清理 {DisplayName} 历史数据...");
+        }
+
+        private void ExecuteCleanupSelected()
+        {
+            if (_selectionProvider == null)
+                return;
+
+            var selectedTableNames = GetSelectedTableNames();
+            if (selectedTableNames.Count == 0)
+            {
+                ShowMessage("请先选择至少一张要清理的数据表。", MessageBoxImage.Warning);
+                return;
+            }
+
+            string confirmMessage =
+                $"将清空以下 {selectedTableNames.Count:N0} 张数据表：{Environment.NewLine}" +
+                BuildTableList(selectedTableNames) + Environment.NewLine + Environment.NewLine +
+                BuildBackupNotice() + Environment.NewLine + Environment.NewLine +
+                "此操作不可撤销，是否继续？";
+
+            if (!ConfirmCleanup(confirmMessage, MessageBoxImage.Warning))
+                return;
+
+            _ = ExecuteCleanupAsync(
+                () => _selectionProvider.CleanupTables(selectedTableNames),
+                $"正在清空选中的 {selectedTableNames.Count:N0} 张数据表...");
         }
 
         private void ExecuteCleanupAll()
         {
-            string tableList = BuildExistingTableList();
-            var confirmMessage = string.IsNullOrWhiteSpace(tableList)
-                ? $"将清空 {DisplayName} 的全部数据，是否继续？"
-                : $"将清空以下数据表的全部数据：{Environment.NewLine}{tableList}{Environment.NewLine}{Environment.NewLine}是否继续？";
+            var existingTableNames = GetExistingTableNames();
+            string confirmMessage =
+                $"危险操作：将清空 {DisplayName} 中全部 {existingTableNames.Count:N0} 张可用数据表。{Environment.NewLine}{Environment.NewLine}" +
+                BuildBackupNotice() + Environment.NewLine + Environment.NewLine +
+                "全部数据清理后无法撤销，是否确定继续？";
 
-            bool confirmed = false;
-            RunOnUi(() =>
-            {
-                confirmed = MessageBox1.Show(Application.Current.GetActiveWindow(), confirmMessage, DisplayName, MessageBoxButton.OKCancel, MessageBoxImage.Warning) == MessageBoxResult.OK;
-            });
-
-            if (!confirmed)
+            if (!ConfirmCleanup(confirmMessage, MessageBoxImage.Warning))
                 return;
 
-            _ = Task.Run(() => ExecuteCleanup(_provider.CleanupAll, $"正在清空 {DisplayName} 数据..."));
+            _ = ExecuteCleanupAsync(_provider.CleanupAll, $"正在清空 {DisplayName} 全部数据...");
         }
 
-        private void ExecuteCleanup(Func<DatabaseCleanupExecutionResult> action, string busyStatus)
+        private async Task ExecuteCleanupAsync(Func<DatabaseCleanupExecutionResult> action, string busyStatus)
         {
+            if (IsBusy)
+                return;
+
             SetBusy(true);
-            SetStatus(busyStatus);
+            DatabaseCleanupBackupResult? backup = null;
+            DatabaseCleanupExecutionResult? result = null;
 
             try
             {
-                var result = action();
-                SetDescription(_provider.Description);
-                ApplySnapshot(_provider.LoadTables());
-                SetStatus(result.StatusMessage);
+                if (BackupBeforeCleanup && _backupProvider != null)
+                {
+                    if (_maintenanceProvider != null)
+                    {
+                        SetStatus("正在同一维护操作中创建完整备份并执行清理...");
+                        try
+                        {
+                            var maintenanceResult = await Task.Run(() => ExecuteBackupAndCleanup(
+                                _backupProvider,
+                                _maintenanceProvider,
+                                action)).ConfigureAwait(false);
+                            backup = maintenanceResult.Backup;
+                            result = maintenanceResult.Cleanup;
+                        }
+                        catch (Exception ex)
+                        {
+                            SetStatus("完整备份与清理组合操作失败。");
+                            ShowMessage(
+                                $"{DisplayName} 完整备份与清理组合操作失败：{ex.Message}{Environment.NewLine}" +
+                                "如备份已经生成，备份文件会保留；请刷新统计后确认当前数据状态。",
+                                MessageBoxImage.Error);
+                            return;
+                        }
+                    }
+                    else
+                    {
+                        SetStatus("正在创建清理前完整备份...");
+                        try
+                        {
+                            backup = await Task.Run(_backupProvider.CreateBackup).ConfigureAwait(false);
+                        }
+                        catch (Exception ex)
+                        {
+                            SetStatus("备份失败，未执行清理。");
+                            ShowMessage($"清理前完整备份失败，数据尚未清理：{ex.Message}", MessageBoxImage.Error);
+                            return;
+                        }
+                    }
+                }
 
-                string message = result.SummaryLines.Count > 0
-                    ? string.Join(Environment.NewLine, result.SummaryLines)
-                    : result.StatusMessage;
-                ShowMessage(message, MessageBoxImage.Information);
-            }
-            catch (Exception ex)
-            {
-                SetStatus("清理失败。");
-                ShowMessage($"{DisplayName} 清理失败：{ex.Message}", MessageBoxImage.Error);
+                if (result == null)
+                {
+                    SetStatus(busyStatus);
+                    try
+                    {
+                        result = await Task.Run(action).ConfigureAwait(false);
+                    }
+                    catch (Exception ex)
+                    {
+                        SetStatus("清理失败。");
+                        ShowMessage($"{DisplayName} 清理失败：{ex.Message}", MessageBoxImage.Error);
+                        return;
+                    }
+                }
+
+                Exception? refreshError = null;
+                try
+                {
+                    SetDescription(_provider.Description);
+                    var snapshot = await Task.Run(_provider.LoadTables).ConfigureAwait(false);
+                    ApplySnapshot(snapshot, GetSelectedTableNames().ToHashSet(StringComparer.OrdinalIgnoreCase));
+                }
+                catch (Exception ex)
+                {
+                    refreshError = ex;
+                }
+
+                string status = backup == null
+                    ? result.StatusMessage
+                    : $"{result.StatusMessage} {backup.StatusMessage}";
+                if (refreshError != null)
+                {
+                    status += " 表统计刷新失败，请稍后手动刷新。";
+                }
+                SetStatus(status);
+
+                var messageLines = new List<string>();
+                if (backup != null)
+                {
+                    messageLines.Add(backup.StatusMessage);
+                    messageLines.Add(backup.FilePath);
+                    messageLines.Add(string.Empty);
+                }
+                messageLines.AddRange(result.SummaryLines.Count > 0 ? result.SummaryLines : new[] { result.StatusMessage });
+                if (refreshError != null)
+                {
+                    messageLines.Add(string.Empty);
+                    messageLines.Add($"数据已清理，但统计刷新失败：{refreshError.Message}");
+                }
+
+                ShowMessage(string.Join(Environment.NewLine, messageLines), refreshError == null ? MessageBoxImage.Information : MessageBoxImage.Warning);
             }
             finally
             {
@@ -185,26 +350,129 @@ namespace ColorVision.Database
             }
         }
 
+        internal static DatabaseCleanupMaintenanceResult ExecuteBackupAndCleanup(
+            IDatabaseCleanupBackupProvider backupProvider,
+            IDatabaseCleanupMaintenanceProvider? maintenanceProvider,
+            Func<DatabaseCleanupExecutionResult> cleanupAction)
+        {
+            ArgumentNullException.ThrowIfNull(backupProvider);
+            ArgumentNullException.ThrowIfNull(cleanupAction);
+
+            if (maintenanceProvider != null)
+                return maintenanceProvider.ExecuteCleanupWithBackup(cleanupAction);
+
+            return new DatabaseCleanupMaintenanceResult
+            {
+                Backup = backupProvider.CreateBackup(),
+                Cleanup = cleanupAction()
+            };
+        }
+
         private bool TryGetKeepMonths(out int keepMonths)
         {
             return int.TryParse(KeepMonthsText, out keepMonths) && keepMonths > 0;
         }
 
-        private string BuildExistingTableList()
+        private string BuildBackupNotice()
         {
-            return string.Join(Environment.NewLine, Tables.Where(item => item.Exists).Select(item => $"- {item.TableName}"));
+            if (!SupportsBackup)
+                return "当前数据源不支持自动备份，请确认已有可恢复副本。";
+
+            return BackupBeforeCleanup
+                ? "清理前会先创建完整备份；备份失败时不会执行清理。"
+                : "本次清理不会自动创建备份。";
         }
 
-        private void ApplySnapshot(IReadOnlyList<DatabaseCleanupTableInfo> snapshot)
+        private IReadOnlyList<string> GetExistingTableNames()
+        {
+            return RunOnUi(() => (IReadOnlyList<string>)Tables
+                .Where(item => item.Exists)
+                .Select(item => item.TableName)
+                .ToArray());
+        }
+
+        private IReadOnlyList<string> GetSelectedTableNames()
+        {
+            return RunOnUi(() => (IReadOnlyList<string>)Tables
+                .Where(item => item.Exists && item.IsSelected)
+                .Select(item => item.TableName)
+                .ToArray());
+        }
+
+        private static string BuildTableList(IEnumerable<string> tableNames)
+        {
+            return string.Join(Environment.NewLine, tableNames.Select(tableName => $"• {tableName}"));
+        }
+
+        private void SetAllExistingTablesSelected(bool isSelected)
         {
             RunOnUi(() =>
             {
+                _suppressTableStateNotifications = true;
+                try
+                {
+                    foreach (var item in Tables.Where(item => item.Exists))
+                    {
+                        item.IsSelected = isSelected;
+                    }
+                }
+                finally
+                {
+                    _suppressTableStateNotifications = false;
+                }
+
+                NotifyTableStateChanged();
+            });
+        }
+
+        private void ApplySnapshot(IReadOnlyList<DatabaseCleanupTableInfo> snapshot, ISet<string> selectedTableNames)
+        {
+            RunOnUi(() =>
+            {
+                foreach (var item in Tables)
+                {
+                    item.PropertyChanged -= TableInfo_PropertyChanged;
+                }
+
                 Tables.Clear();
                 foreach (var item in snapshot)
                 {
+                    item.IsSelected = selectedTableNames.Contains(item.TableName);
+                    item.PropertyChanged += TableInfo_PropertyChanged;
                     Tables.Add(item);
                 }
+
+                NotifyTableStateChanged();
             });
+        }
+
+        private void TableInfo_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (!_suppressTableStateNotifications && (e.PropertyName == nameof(DatabaseCleanupTableInfo.IsSelected) || e.PropertyName == nameof(DatabaseCleanupTableInfo.Exists)))
+            {
+                NotifyTableStateChanged();
+            }
+        }
+
+        private void NotifyTableStateChanged()
+        {
+            OnPropertyChanged(nameof(ExistingTableCount));
+            OnPropertyChanged(nameof(SelectedTableCount));
+            OnPropertyChanged(nameof(ExistingRowCount));
+            OnPropertyChanged(nameof(ExistingSizeDisplay));
+            OnPropertyChanged(nameof(TableSummary));
+            OnPropertyChanged(nameof(SelectionSummary));
+            CommandManager.InvalidateRequerySuggested();
+        }
+
+        private bool ConfirmCleanup(string message, MessageBoxImage image)
+        {
+            return RunOnUi(() => MessageBox1.Show(
+                Application.Current.GetActiveWindow(),
+                message,
+                DisplayName,
+                MessageBoxButton.OKCancel,
+                image) == MessageBoxResult.OK);
         }
 
         private void SetDescription(string description) => RunOnUi(() => Description = description);
@@ -213,10 +481,29 @@ namespace ColorVision.Database
 
         private void ShowMessage(string message, MessageBoxImage image)
         {
-            RunOnUi(() =>
+            RunOnUi(() => MessageBox1.Show(
+                Application.Current.GetActiveWindow(),
+                message,
+                DisplayName,
+                MessageBoxButton.OK,
+                image));
+        }
+
+        private static string FormatSize(long bytes)
+        {
+            if (bytes <= 0)
+                return "0 B";
+
+            string[] units = { "B", "KB", "MB", "GB", "TB" };
+            double size = bytes;
+            int unitIndex = 0;
+            while (size >= 1024 && unitIndex < units.Length - 1)
             {
-                MessageBox1.Show(Application.Current.GetActiveWindow(), message, DisplayName, MessageBoxButton.OK, image);
-            });
+                size /= 1024;
+                unitIndex++;
+            }
+
+            return $"{size:0.##} {units[unitIndex]}";
         }
 
         private static void RunOnUi(Action action)
@@ -228,6 +515,14 @@ namespace ColorVision.Database
             }
 
             Application.Current.Dispatcher.Invoke(action);
+        }
+
+        private static T RunOnUi<T>(Func<T> action)
+        {
+            if (Application.Current?.Dispatcher == null || Application.Current.Dispatcher.CheckAccess())
+                return action();
+
+            return Application.Current.Dispatcher.Invoke(action);
         }
     }
 

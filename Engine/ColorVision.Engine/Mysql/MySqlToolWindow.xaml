@@ -9,6 +9,7 @@
         d:DataContext="{d:DesignInstance local:MySqlLocalServicesManager}"
         Title="{x:Static properties:Resources.MysqlTool}" Height="620" Width="860" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
     <Window.Resources>
+        <local:SqlFileNameWithoutExtensionConverter x:Key="SqlFileNameWithoutExtensionConverter"/>
         <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource TextBox.Small}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
@@ -19,37 +20,20 @@
             <Setter Property="VerticalAlignment" Value="Center"/>
         </Style>
     </Window.Resources>
-        <Grid Margin="5">
+    <Grid Margin="10">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-        <StackPanel Margin="0,0,0,5">
-            <StackPanel Orientation="Horizontal">
-                <TextBlock Text="{Binding Config.ImagePath}"/>
-            </StackPanel>
-        </StackPanel>
 
-        <Grid Grid.Row="1" Margin="5">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*"/>
-            </Grid.RowDefinitions>
-
-            <StackPanel Orientation="Horizontal" Grid.Row="0">
+        <StackPanel Orientation="Horizontal" Grid.Row="0">
                 <Button Content="{x:Static properties:Resources.MigrationBackup}" Command="{Binding BackupResourcesCommand}" Margin="0,0,5,0"/>
                 <Button Content="{x:Static properties:Resources.FullBackup}" Command="{Binding BackupAllResourcesCommand}" Margin="0,0,5,0"/>
                 <Button Content="{x:Static properties:Resources.LoadBackup}" Command="{Binding RestoreSelectCommand}" Background="Red" Foreground="White" Margin="0,0,5,0"/>
                 <Button Content="{x:Static properties:Resources.DataCleanup}" Click="OpenCleanupWindow_Click"/>
-            </StackPanel>
+        </StackPanel>
 
-            <TextBlock Grid.Row="1"
-                       Margin="0,10,0,10"
-                       Opacity="0.8"
-                       Text="{x:Static properties:Resources.MysqlMovedToWindow}"/>
-
-            <ListView Grid.Row="2" x:Name="listView1" Background="Transparent" Margin="0" Padding="0" BorderThickness="0" ItemsSource="{Binding Backups}">
+        <ListView Grid.Row="1" x:Name="listView1" Background="Transparent" Margin="0,10,0,0" Padding="0" BorderThickness="0" KeyDown="ListView1_KeyDown">
                 <ListView.ItemContainerStyle>
                     <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
                         <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
@@ -64,34 +48,39 @@
                                 <Setter Property="BorderThickness" Value="0"/>
                             </Style>
                         </GridView.ColumnHeaderContainerStyle>
-                        <GridViewColumn Header="{x:Static properties:Resources.FileName_Mysql}">
+                        <GridViewColumn Width="380">
+                            <GridViewColumn.Header>
+                                <GridViewColumnHeader x:Name="FileNameColumnHeader" Tag="Name" Content="{x:Static properties:Resources.FileName_Mysql}" Click="GridViewColumnHeader_Click"/>
+                            </GridViewColumn.Header>
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
-                                    <TextBlock Text="{Binding Name}"/>
+                                    <TextBlock Text="{Binding Name, Converter={StaticResource SqlFileNameWithoutExtensionConverter}}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn Header="{x:Static properties:Resources.CreateDate}">
+                        <GridViewColumn Width="180">
+                            <GridViewColumn.Header>
+                                <GridViewColumnHeader x:Name="CreationTimeColumnHeader" Tag="CreationTime" Content="{x:Static properties:Resources.CreateDate}" Click="GridViewColumnHeader_Click"/>
+                            </GridViewColumn.Header>
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
                                     <TextBlock Text="{Binding CreationTimeDisplay}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn Header="{x:Static properties:Resources.Restore_Mysql}">
+                        <GridViewColumn Width="230" Header="{x:Static properties:Resources.Restore_Mysql}">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
                                     <StackPanel Orientation="Horizontal">
                                         <Button Content="{x:Static properties:Resources.Restore_Mysql}" Command="{Binding RestoreCommand}" Margin="0,0,5,0"/>
-                                        <Button Content="{x:Static properties:Resources.Selected}" Command="{Binding SelectCommand}"/>
+                                        <Button Content="{x:Static properties:Resources.Selected}" Command="{Binding SelectCommand}" Margin="0,0,5,0"/>
+                                        <Button Content="重命名" Tag="{Binding}" Click="RenameBackup_Click"/>
                                     </StackPanel>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
                     </GridView>
                 </ListView.View>
-            </ListView>
-        </Grid>
-
+        </ListView>
     </Grid>
 </Window>

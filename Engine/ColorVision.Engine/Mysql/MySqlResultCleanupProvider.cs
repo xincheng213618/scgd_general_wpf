@@ -1,18 +1,21 @@
 using SqlSugar;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 namespace ColorVision.Database
 {
-    public sealed class MySqlResultCleanupProvider : IDatabaseCleanupSourceProvider
+    public sealed class MySqlResultCleanupProvider : IDatabaseCleanupSourceProvider, IDatabaseCleanupSelectionProvider, IDatabaseCleanupBackupProvider, IDatabaseCleanupMaintenanceProvider
     {
         private const string ResultMasterTableName = "t_scgd_algorithm_result_master";
         private const string MeasureBatchTableName = "t_scgd_measure_batch";
+        private const string AlgorithmDetailTablePrefix = "t_scgd_algorithm_result_detail_";
+        private const string MeasureDetailTablePrefix = "t_scgd_measure_result_";
 
         private static readonly string[] CandidateTimeColumns = { "create_time", "create_date", "add_time" };
 
-        private static readonly CleanupTableDefinition[] CleanupTables =
+        private static readonly CleanupTableDefinition[] CleanupTableDefinitions =
         {
             new(ResultMasterTableName, CleanupTableKind.ResultMaster),
             new("t_scgd_algorithm_result_detail_sfr", CleanupTableKind.AlgorithmDetail),
@@ -38,7 +41,7 @@ namespace ColorVision.Database
             new("t_scgd_measure_result_third_party_algorithm", CleanupTableKind.MeasureDetail),
         };
 
-        public static IReadOnlyList<string> ResultTableNames { get; } = CleanupTables.Select(item => item.TableName).ToArray();
+        public static IReadOnlyList<string> ResultTableNames { get; } = CleanupTableDefinitions.Select(item => item.TableName).ToArray();
 
         public string Id => "mysql-results";
         public string DisplayName => "MySQL 结果表";
@@ -58,7 +61,7 @@ namespace ColorVision.Database
 
             var tableStats = db.Queryable<DatabaseTableStatusRow>()
                 .AS("INFORMATION_SCHEMA.TABLES")
-                .Where(row => row.TableSchema == MySqlSetting.Instance.MySqlConfig.Database && CleanupTables.Select(item => item.TableName).Contains(row.TableName))
+                .Where(row => row.TableSchema == MySqlSetting.Instance.MySqlConfig.Database && CleanupTableDefinitions.Select(item => item.TableName).Contains(row.TableName))
                 .Select(row => new DatabaseTableStatusRow
                 {
                     TableName = row.TableName,
@@ -68,8 +71,8 @@ namespace ColorVision.Database
                 .ToList()
                 .ToDictionary(row => row.TableName, StringComparer.OrdinalIgnoreCase);
 
-            var result = new List<DatabaseCleanupTableInfo>(CleanupTables.Length);
-            foreach (var definition in CleanupTables)
+            var result = new List<DatabaseCleanupTableInfo>(CleanupTableDefinitions.Length);
+            foreach (var definition in CleanupTableDefinitions)
             {
                 var info = new DatabaseCleanupTableInfo
                 {
@@ -91,10 +94,23 @@ namespace ColorVision.Database
 
         public DatabaseCleanupExecutionResult CleanupHistory(int keepMonths)
         {
+            return MySqlLocalServicesManager.RunDatabaseMaintenance(() => CleanupHistoryCore(keepMonths));
+        }
+
+        private static DatabaseCleanupExecutionResult CleanupHistoryCore(int keepMonths)
+        {
             DateTime cutoffDate = DateTime.Now.AddMonths(-keepMonths);
             using var db = CreateDbClient(timeout: 30);
 
             var existingTables = GetExistingTables(db);
+            var unknownDetailTables = FindUnknownDetailTables(existingTables);
+            if (unknownDetailTables.Count > 0)
+            {
+                string tableList = string.Join(Environment.NewLine, unknownDetailTables.Select(tableName => $"- {tableName}"));
+                throw new InvalidOperationException(
+                    $"检测到未登记的结果明细表，无法安全清理历史数据。请先确认这些表与主表的关联关系：{Environment.NewLine}{tableList}");
+            }
+
             var columnsByTable = GetColumnsByTable(db, existingTables);
             var result = new DatabaseCleanupExecutionResult
             {
@@ -104,7 +120,7 @@ namespace ColorVision.Database
             string? resultMasterTimeColumn = ResolveTimeColumn(columnsByTable, ResultMasterTableName);
             string? measureBatchTimeColumn = ResolveTimeColumn(columnsByTable, MeasureBatchTableName);
 
-            foreach (var definition in CleanupTables.Where(item => item.Kind == CleanupTableKind.AlgorithmDetail && existingTables.Contains(item.TableName)))
+            foreach (var definition in CleanupTableDefinitions.Where(item => item.Kind == CleanupTableKind.AlgorithmDetail && existingTables.Contains(item.TableName)))
             {
                 int deletedRows = 0;
                 if (existingTables.Contains(ResultMasterTableName)
@@ -127,7 +143,7 @@ namespace ColorVision.Database
                 result.SummaryLines.Add($"{ResultMasterTableName}: 删除 {deletedRows:N0} 行");
             }
 
-            foreach (var definition in CleanupTables.Where(item => item.Kind == CleanupTableKind.MeasureDetail && existingTables.Contains(item.TableName)))
+            foreach (var definition in CleanupTableDefinitions.Where(item => item.Kind == CleanupTableKind.MeasureDetail && existingTables.Contains(item.TableName)))
             {
                 int deletedRows = 0;
                 if (existingTables.Contains(MeasureBatchTableName)
@@ -160,23 +176,158 @@ namespace ColorVision.Database
 
         public DatabaseCleanupExecutionResult CleanupAll()
         {
+            return MySqlLocalServicesManager.RunDatabaseMaintenance(() => CleanupTablesCore(ResultTableNames, isCompleteCleanup: true));
+        }
+
+        public DatabaseCleanupExecutionResult CleanupTables(IReadOnlyCollection<string> tableNames)
+        {
+            var validatedTableNames = ValidateCleanupTableNames(tableNames);
+            return MySqlLocalServicesManager.RunDatabaseMaintenance(() => CleanupTablesCore(validatedTableNames, isCompleteCleanup: false));
+        }
+
+        public DatabaseCleanupBackupResult CreateBackup()
+        {
+            return MySqlLocalServicesManager.RunDatabaseMaintenance(() =>
+            {
+                string backupPath = MySqlLocalServicesManager.GetInstance().BackupAllMysql();
+                return new DatabaseCleanupBackupResult
+                {
+                    FilePath = backupPath,
+                    StatusMessage = $"完整备份已创建：{Path.GetFileName(backupPath)}"
+                };
+            });
+        }
+
+        public DatabaseCleanupMaintenanceResult ExecuteCleanupWithBackup(Func<DatabaseCleanupExecutionResult> cleanupAction)
+        {
+            ArgumentNullException.ThrowIfNull(cleanupAction);
+
+            return MySqlLocalServicesManager.RunDatabaseMaintenance(() =>
+            {
+                var backup = CreateBackup();
+                var cleanup = cleanupAction();
+                return new DatabaseCleanupMaintenanceResult
+                {
+                    Backup = backup,
+                    Cleanup = cleanup
+                };
+            });
+        }
+
+        internal static IReadOnlyList<string> ValidateCleanupTableNames(IReadOnlyCollection<string> tableNames)
+        {
+            ArgumentNullException.ThrowIfNull(tableNames);
+
+            if (tableNames.Count == 0)
+                throw new ArgumentException("至少选择一张要清理的数据表。", nameof(tableNames));
+
+            var definitionsByName = CleanupTableDefinitions.ToDictionary(item => item.TableName, StringComparer.OrdinalIgnoreCase);
+            var validatedDefinitions = new List<CleanupTableDefinition>();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (string tableName in tableNames)
+            {
+                if (string.IsNullOrWhiteSpace(tableName) || !definitionsByName.TryGetValue(tableName, out var definition))
+                    throw new ArgumentException($"不允许清理未登记的数据表：{tableName}", nameof(tableNames));
+
+                if (seen.Add(definition.TableName))
+                {
+                    validatedDefinitions.Add(definition);
+                }
+            }
+
+            return validatedDefinitions
+                .OrderBy(GetCleanupOrder)
+                .ThenBy(item => item.TableName, StringComparer.OrdinalIgnoreCase)
+                .Select(item => item.TableName)
+                .ToArray();
+        }
+
+        internal static IReadOnlyList<string> FindUnselectedRequiredDetailTables(
+            IReadOnlyCollection<string> requestedTableNames,
+            IReadOnlyCollection<string> existingTableNames)
+        {
+            ArgumentNullException.ThrowIfNull(requestedTableNames);
+            ArgumentNullException.ThrowIfNull(existingTableNames);
+
+            var requested = requestedTableNames.ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var existing = existingTableNames.ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var missingDependencies = new List<CleanupTableDefinition>();
+
+            if (requested.Contains(ResultMasterTableName))
+            {
+                missingDependencies.AddRange(existing
+                    .Where(IsAlgorithmDetailTableName)
+                    .Where(tableName => !requested.Contains(tableName))
+                    .Select(tableName => new CleanupTableDefinition(tableName, CleanupTableKind.AlgorithmDetail)));
+            }
+
+            if (requested.Contains(MeasureBatchTableName))
+            {
+                missingDependencies.AddRange(existing
+                    .Where(IsMeasureDetailTableName)
+                    .Where(tableName => !requested.Contains(tableName))
+                    .Select(tableName => new CleanupTableDefinition(tableName, CleanupTableKind.MeasureDetail)));
+            }
+
+            return missingDependencies
+                .OrderBy(GetCleanupOrder)
+                .ThenBy(definition => definition.TableName, StringComparer.OrdinalIgnoreCase)
+                .Select(definition => definition.TableName)
+                .ToArray();
+        }
+
+        internal static IReadOnlyList<string> FindUnknownDetailTables(IReadOnlyCollection<string> existingTableNames)
+        {
+            ArgumentNullException.ThrowIfNull(existingTableNames);
+
+            var registeredTableNames = ResultTableNames.ToHashSet(StringComparer.OrdinalIgnoreCase);
+            return existingTableNames
+                .Where(tableName => IsAlgorithmDetailTableName(tableName) || IsMeasureDetailTableName(tableName))
+                .Where(tableName => !registeredTableNames.Contains(tableName))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(tableName => tableName, StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+        }
+
+        private static DatabaseCleanupExecutionResult CleanupTablesCore(IReadOnlyCollection<string> tableNames, bool isCompleteCleanup)
+        {
             using var db = CreateDbClient(timeout: 30);
             var existingTables = GetExistingTables(db);
-            var result = new DatabaseCleanupExecutionResult
+            var missingDependencies = FindUnselectedRequiredDetailTables(tableNames, existingTables);
+            if (missingDependencies.Count > 0)
             {
-                StatusMessage = "已清空所有已存在的 MySQL 结果表。"
-            };
+                string dependencyList = string.Join(Environment.NewLine, missingDependencies.Select(tableName => $"- {tableName}"));
+                throw new InvalidOperationException(
+                    $"不能清理所选主表，因为仍存在未选中的关联明细表。请同时选择以下数据表：{Environment.NewLine}{dependencyList}");
+            }
+
+            var requestedTables = tableNames.ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var definitions = CleanupTableDefinitions
+                .Where(definition => requestedTables.Contains(definition.TableName))
+                .OrderBy(GetCleanupOrder)
+                .ThenBy(definition => definition.TableName, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            var result = new DatabaseCleanupExecutionResult();
+            int clearedTableCount = 0;
 
             db.Ado.ExecuteCommand("SET FOREIGN_KEY_CHECKS = 0;");
             try
             {
-                foreach (var definition in CleanupTables.OrderBy(GetCleanupOrder))
+                foreach (var definition in definitions)
                 {
                     if (!existingTables.Contains(definition.TableName))
+                    {
+                        if (!isCompleteCleanup)
+                        {
+                            result.SummaryLines.Add($"{definition.TableName}: 未找到，已跳过");
+                        }
                         continue;
+                    }
 
                     db.Ado.ExecuteCommand($"TRUNCATE TABLE {QuoteIdentifier(definition.TableName)};");
                     result.SummaryLines.Add($"{definition.TableName}: 已清空");
+                    clearedTableCount++;
                 }
             }
             finally
@@ -184,10 +335,14 @@ namespace ColorVision.Database
                 db.Ado.ExecuteCommand("SET FOREIGN_KEY_CHECKS = 1;");
             }
 
-            if (result.SummaryLines.Count == 0)
+            if (clearedTableCount == 0)
             {
                 result.SummaryLines.Add("没有找到可清空的 MySQL 结果表。");
             }
+
+            result.StatusMessage = isCompleteCleanup
+                ? $"已清空全部 {clearedTableCount:N0} 张可用 MySQL 结果表。"
+                : $"已清空选中的 {clearedTableCount:N0} 张 MySQL 结果表。";
 
             return result;
         }
@@ -205,12 +360,24 @@ namespace ColorVision.Database
 
         private static HashSet<string> GetExistingTables(SqlSugarClient db)
         {
+            var registeredTableNames = ResultTableNames.ToHashSet(StringComparer.OrdinalIgnoreCase);
             return db.Queryable<DatabaseTableStatusRow>()
                 .AS("INFORMATION_SCHEMA.TABLES")
-                .Where(row => row.TableSchema == MySqlSetting.Instance.MySqlConfig.Database && CleanupTables.Select(item => item.TableName).Contains(row.TableName))
+                .Where(row => row.TableSchema == MySqlSetting.Instance.MySqlConfig.Database && row.TableType == "BASE TABLE")
                 .Select(row => row.TableName)
                 .ToList()
+                .Where(tableName => registeredTableNames.Contains(tableName) || IsAlgorithmDetailTableName(tableName) || IsMeasureDetailTableName(tableName))
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        }
+
+        private static bool IsAlgorithmDetailTableName(string tableName)
+        {
+            return tableName.StartsWith(AlgorithmDetailTablePrefix, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsMeasureDetailTableName(string tableName)
+        {
+            return tableName.StartsWith(MeasureDetailTablePrefix, StringComparison.OrdinalIgnoreCase);
         }
 
         private static Dictionary<string, HashSet<string>> GetColumnsByTable(SqlSugarClient db, HashSet<string> existingTables)
@@ -303,6 +470,9 @@ WHERE parent.{QuoteIdentifier(parentTimeColumn)} < @cutoffDate;";
 
             [SugarColumn(ColumnName = "TABLE_NAME")]
             public string TableName { get; set; } = string.Empty;
+
+            [SugarColumn(ColumnName = "TABLE_TYPE")]
+            public string TableType { get; set; } = string.Empty;
 
             [SugarColumn(ColumnName = "DATA_LENGTH")]
             public long? DataLength { get; set; }

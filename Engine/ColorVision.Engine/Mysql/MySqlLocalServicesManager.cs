@@ -3,6 +3,7 @@ using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
+using ColorVision.UI.ServiceHost;
 using log4net;
 using Microsoft.Win32;
 using SqlSugar;
@@ -15,6 +16,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -67,14 +69,7 @@ namespace ColorVision.Database
 
         public void Restore()
         {
-            Task.Run(() =>
-            {
-                MySqlLocalServicesManager.GetInstance().RestoreMysql(FilePath);
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.Engine_Msg_RestoreSuccessRestartRequired);
-                });
-            });
+            _ = MySqlLocalServicesManager.GetInstance().RestoreAndRestartAsync(FilePath);
         }
 
         public string FilePath { get => _FilePath; set { _FilePath = value; OnPropertyChanged(); } }
@@ -149,6 +144,10 @@ namespace ColorVision.Database
     public class MySqlLocalServicesManager : ViewModelBase
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(MySqlLocalServicesManager));
+        private const string RegistrationCenterServiceName = "RegistrationCenterService";
+        private static readonly SemaphoreSlim DatabaseMaintenanceGate = new(1, 1);
+        private static readonly AsyncLocal<int> DatabaseMaintenanceDepth = new();
+        private static readonly TimeSpan MySqlCommandTimeout = TimeSpan.FromHours(2);
         private const string ResultMasterTableName = "t_scgd_algorithm_result_master";
         private const string MeasureBatchTableName = "t_scgd_measure_batch";
         private const string AlgorithmDetailPrefix = "t_scgd_algorithm_result_detail_";
@@ -157,6 +156,58 @@ namespace ColorVision.Database
         private static MySqlLocalServicesManager _instance;
         private static readonly object _locker = new();
         public static MySqlLocalServicesManager GetInstance() { lock (_locker) { return _instance ??= new MySqlLocalServicesManager(); } }
+
+        internal static T RunDatabaseMaintenance<T>(Func<T> maintenanceAction)
+        {
+            ArgumentNullException.ThrowIfNull(maintenanceAction);
+            if (DatabaseMaintenanceDepth.Value > 0)
+                return RunNestedDatabaseMaintenance(maintenanceAction);
+
+            DatabaseMaintenanceGate.Wait();
+            DatabaseMaintenanceDepth.Value = 1;
+            try
+            {
+                return maintenanceAction();
+            }
+            finally
+            {
+                DatabaseMaintenanceDepth.Value = 0;
+                DatabaseMaintenanceGate.Release();
+            }
+        }
+
+        internal static async Task<T> RunDatabaseMaintenanceAsync<T>(Func<T> maintenanceAction)
+        {
+            ArgumentNullException.ThrowIfNull(maintenanceAction);
+            if (DatabaseMaintenanceDepth.Value > 0)
+                return RunNestedDatabaseMaintenance(maintenanceAction);
+
+            await DatabaseMaintenanceGate.WaitAsync().ConfigureAwait(false);
+            DatabaseMaintenanceDepth.Value = 1;
+            try
+            {
+                return maintenanceAction();
+            }
+            finally
+            {
+                DatabaseMaintenanceDepth.Value = 0;
+                DatabaseMaintenanceGate.Release();
+            }
+        }
+
+        private static T RunNestedDatabaseMaintenance<T>(Func<T> maintenanceAction)
+        {
+            DatabaseMaintenanceDepth.Value++;
+            try
+            {
+                return maintenanceAction();
+            }
+            finally
+            {
+                DatabaseMaintenanceDepth.Value--;
+            }
+        }
+
         public string BackupPath { get; set; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "ColorVision", "Backup");
         public ObservableCollection<MysqlBack> Backups { get; set; } = new ObservableCollection<MysqlBack>();
         public ObservableCollection<MySqlCleanupTableInfo> CleanupTables { get; } = new ObservableCollection<MySqlCleanupTableInfo>();
@@ -231,8 +282,8 @@ namespace ColorVision.Database
             if (!Directory.Exists(BackupPath))
                 Directory.CreateDirectory(BackupPath);
 
-            var sqlFiles = Directory.GetFiles(BackupPath)
-                .Where(f => f.EndsWith(".sql", StringComparison.CurrentCulture))
+            var sqlFiles = Directory.EnumerateFiles(BackupPath, "*.sql", SearchOption.TopDirectoryOnly)
+                .Where(filePath => string.Equals(Path.GetExtension(filePath), ".sql", StringComparison.OrdinalIgnoreCase))
                 .OrderByDescending(f => File.GetCreationTime(f));
 
             Backups.Clear(); // 如果需要清空原有数据
@@ -242,7 +293,7 @@ namespace ColorVision.Database
             }
             RestoreSelectCommand = new RelayCommand(a => RestoreSelect());
             BackupResourcesCommand = new RelayCommand(a => BackupResources());
-            BackupAllResourcesCommand = new RelayCommand(a => BackupAllMysql());
+            BackupAllResourcesCommand = new RelayCommand(a => _ = BackupAllWithFeedbackAsync());
             RefreshCleanupTablesCommand = new RelayCommand(a => _ = RefreshCleanupTablesAsync(), a => !IsCleanupBusy);
             CleanupHistoryCommand = new RelayCommand(a => CleanupHistoricalResults(), a => !IsCleanupBusy);
             CleanupAllResultTablesCommand = new RelayCommand(a => CleanupAllResultTables(), a => !IsCleanupBusy);
@@ -441,21 +492,37 @@ namespace ColorVision.Database
 
         private void BackupResources()
         {
+            _ = BackupWithFeedbackAsync(BackupMysqlResource);
+        }
+
+        private Task BackupAllWithFeedbackAsync()
+        {
+            return BackupWithFeedbackAsync(BackupAllMysql);
+        }
+
+        private async Task BackupWithFeedbackAsync(Func<string> backupAction)
+        {
             if (IsRun)
             {
                 MessageBox.Show(ColorVision.Engine.Properties.Resources.Engine_Msg_BackupInProgress);
                 return;
             }
-            Task.Run(() =>
+
+            IsRun = true;
+            try
             {
-                IsRun = true;
-                BackupMysqlResource();
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.Engine_Msg_BackupSuccess);
-                });
+                await Task.Run(backupAction).ConfigureAwait(false);
+                RunOnUi(() => MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.Engine_Msg_BackupSuccess));
+            }
+            catch (Exception ex)
+            {
+                log.Error("MySQL备份失败。", ex);
+                RunOnUi(() => MessageBox.Show(Application.Current?.MainWindow, $"备份失败：{ex.Message}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error));
+            }
+            finally
+            {
                 IsRun = false;
-            });
+            }
         }
 
 
@@ -464,7 +531,7 @@ namespace ColorVision.Database
             OpenFileDialog openFileDialog = new OpenFileDialog
             {
                 InitialDirectory = BackupPath, // Set the initial directory
-                Filter = "SQL Files (*.sql)|*.sql|All Files (*.*)|*.*", // Filter for file types
+                Filter = "SQL Files (*.sql)|*.sql", // Filter for file types
                 Title = "Select a Backup File"
             };
 
@@ -472,29 +539,110 @@ namespace ColorVision.Database
             if (openFileDialog.ShowDialog() == true)
             {
                 string filePath = openFileDialog.FileName; // Get the selected file path
-
-                Task.Run(() =>
+                if (!string.Equals(Path.GetExtension(filePath), ".sql", StringComparison.OrdinalIgnoreCase))
                 {
-                    RestoreMysql(filePath); // Use the selected file path
-                    Application.Current.Dispatcher.Invoke(() =>
+                    MessageBox.Show(Application.Current.MainWindow, "仅支持加载 .sql 备份文件。");
+                    return;
+                }
+
+                _ = RestoreAndRestartAsync(filePath);
+            }
+        }
+
+        public async Task RestoreAndRestartAsync(string backupFile)
+        {
+            bool ownsMaintenanceGate = false;
+            if (DatabaseMaintenanceDepth.Value > 0)
+            {
+                DatabaseMaintenanceDepth.Value++;
+            }
+            else if (DatabaseMaintenanceGate.Wait(0))
+            {
+                DatabaseMaintenanceDepth.Value = 1;
+                ownsMaintenanceGate = true;
+            }
+            else
+            {
+                RunOnUi(() => MessageBox.Show(Application.Current?.MainWindow, "已有数据库维护任务正在执行，请稍候。", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information));
+                return;
+            }
+
+            try
+            {
+                try
+                {
+                    await Task.Run(() => RestoreMysql(backupFile)).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    log.Error($"加载MySQL备份失败：{backupFile}", ex);
+                    RunOnUi(() => MessageBox.Show(Application.Current?.MainWindow, $"加载备份失败：{ex.Message}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error));
+                    return;
+                }
+
+                RunOnUi(() => MessageBox.Show(Application.Current?.MainWindow, ColorVision.Engine.Properties.Resources.Engine_Msg_RestoreSuccessRestarting));
+
+                ServiceHostResponse response;
+                try
+                {
+                    response = await ColorVisionServiceHostClient.Default.RestartServiceAsync(
+                        RegistrationCenterServiceName,
+                        timeoutSeconds: 60,
+                        timeout: TimeSpan.FromSeconds(90)).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    log.Error($"通过ColorVisionServiceHost重启{RegistrationCenterServiceName}失败。", ex);
+                    RunOnUi(() => MessageBox.Show(
+                        Application.Current?.MainWindow,
+                        $"{ColorVision.Engine.Properties.Resources.Engine_Msg_ServiceRestartFailed}{Environment.NewLine}{ex.Message}",
+                        "ColorVision",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Error));
+                    return;
+                }
+
+                if (!response.Success)
+                {
+                    RunOnUi(() => MessageBox.Show(
+                        Application.Current?.MainWindow,
+                        $"{ColorVision.Engine.Properties.Resources.Engine_Msg_ServiceRestartFailed}{Environment.NewLine}{response.Message}",
+                        "ColorVision",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Error));
+                    return;
+                }
+
+                RunOnUi(() =>
+                {
+                    MessageBox.Show(Application.Current?.MainWindow, ColorVision.Engine.Properties.Resources.Engine_Msg_ServiceRestartSuccess);
+                    try
                     {
-                        MessageBox.Show(Application.Current.MainWindow, ColorVision.Engine.Properties.Resources.Engine_Msg_RestoreSuccessRestarting);
+                        string applicationPath = Path.ChangeExtension(Application.ResourceAssembly.Location, ".exe");
+                        Process? restartedApplication = Process.Start(applicationPath, "-r");
+                        if (restartedApplication == null)
+                            throw new InvalidOperationException("未能创建新的应用进程。");
+                    }
+                    catch (Exception ex)
+                    {
+                        log.Error("数据库及服务已恢复，但应用自动重启失败。", ex);
+                        MessageBox.Show(
+                            Application.Current?.MainWindow,
+                            $"数据库及服务已恢复，但应用自动重启失败。{Environment.NewLine}{ex.Message}",
+                            "ColorVision",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Error);
+                        return;
+                    }
 
-
-                        if (Tool.ExecuteCommandAsAdmin("net stop RegistrationCenterService&&net start RegistrationCenterService"))
-                        {
-                            MessageBox.Show(Application.Current.MainWindow, ColorVision.Engine.Properties.Resources.Engine_Msg_ServiceRestartSuccess);
-                            Process.Start(Application.ResourceAssembly.Location.Replace(".dll", ".exe"), "-r");
-                            Application.Current.Shutdown();
-                        }
-                        else
-                        {
-                            MessageBox.Show(Application.Current.MainWindow, ColorVision.Engine.Properties.Resources.Engine_Msg_ServiceRestartFailed);
-                        }
-
-
-                    });
+                    Application.Current.Shutdown();
                 });
+            }
+            finally
+            {
+                DatabaseMaintenanceDepth.Value--;
+                if (ownsMaintenanceGate)
+                    DatabaseMaintenanceGate.Release();
             }
         }
 
@@ -911,32 +1059,98 @@ namespace ColorVision.Database
         }
 
         //备份所有数据
-        public void BackupAllMysql()
+        public string BackupAllMysql()
         {
-            //备份的信息里应该只包含基础的信息不应该包含许多逻辑
-            string BackTable = string.Join(" ", GetTableNames());
-
-            string BackUpSql = Path.Combine(BackupPath, $"All_{DateTime.Now:yyyyMMddHHmmss}.sql");
-            string backCommnad = $"{Config.MysqldumpPath} -u {MySqlSetting.Instance.MySqlConfig.UserName} -h {MySqlSetting.Instance.MySqlConfig.Host} -p{MySqlSetting.Instance.MySqlConfig.UserPwd} {MySqlSetting.Instance.MySqlConfig.Database} {BackTable} >\"{BackUpSql}\"";
-            Common.Utilities.Tool.ExecuteCommandUI(backCommnad);
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                Backups.Add(new MysqlBack(BackUpSql));
-            });
+            return RunDatabaseMaintenance(() => CreateMySqlBackup("All", GetTableNames(), replaceExistingRows: false));
         }
+
         //备份Mysql资源
-        public void BackupMysqlResource()
+        public string BackupMysqlResource()
         {
-            //备份的信息里应该只包含基础的信息不应该包含许多逻辑
-            string BackTable = string.Join(" ",GetFilteredResourceTableNames());
-            string BackUpSql = Path.Combine(BackupPath, $"Res_{DateTime.Now:yyyyMMddHHmmss}.sql");
-            string backCommnad = $"{Config.MysqldumpPath} --replace -u {MySqlSetting.Instance.MySqlConfig.UserName} -h {MySqlSetting.Instance.MySqlConfig.Host} -p{MySqlSetting.Instance.MySqlConfig.UserPwd} {MySqlSetting.Instance.MySqlConfig.Database} {BackTable} > \"{BackUpSql}\"";
-            Common.Utilities.Tool.ExecuteCommandUI(backCommnad);
-            AppendMigrationDictionaryDependencySql(BackUpSql);
-            Application.Current.Dispatcher.Invoke(() =>
+            return RunDatabaseMaintenance(() => CreateMySqlBackup(
+                "Res",
+                GetFilteredResourceTableNames(),
+                replaceExistingRows: true,
+                AppendMigrationDictionaryDependencySql));
+        }
+
+        private string CreateMySqlBackup(string prefix, IReadOnlyCollection<string> tableNames, bool replaceExistingRows, Action<string>? preparePartFile = null)
+        {
+            Directory.CreateDirectory(BackupPath);
+            string backupFile = Path.Combine(BackupPath, $"{prefix}_{DateTime.Now:yyyyMMddHHmmssfff}_{Guid.NewGuid():N}.sql");
+            string partFile = backupFile + ".part";
+
+            try
             {
-                Backups.Add(new MysqlBack(BackUpSql));
+                RunMysqlDump(partFile, tableNames, replaceExistingRows);
+                preparePartFile?.Invoke(partFile);
+
+                FileInfo partInfo = new(partFile);
+                if (!partInfo.Exists || partInfo.Length <= 0)
+                    throw new InvalidOperationException("mysqldump 未生成有效的 SQL 备份文件。");
+
+                File.Move(partFile, backupFile);
+            }
+            catch
+            {
+                TryDeletePartialBackup(partFile);
+                throw;
+            }
+
+            RunOnUi(() => Backups.Add(new MysqlBack(backupFile)));
+            return backupFile;
+        }
+
+        private static void RunMysqlDump(string outputFile, IReadOnlyCollection<string> tableNames, bool replaceExistingRows)
+        {
+            RunMysqlDumpAsync(outputFile, tableNames, replaceExistingRows).GetAwaiter().GetResult();
+        }
+
+        private static async Task RunMysqlDumpAsync(string outputFile, IReadOnlyCollection<string> tableNames, bool replaceExistingRows)
+        {
+            MySqlConfig config = MySqlSetting.Instance.MySqlConfig;
+            ProcessStartInfo startInfo = CreateMySqlProcessStartInfo(Config.MysqldumpPath, config, redirectStandardInput: false);
+            if (replaceExistingRows)
+                startInfo.ArgumentList.Add("--replace");
+
+            startInfo.ArgumentList.Add(config.Database);
+            foreach (string tableName in tableNames)
+            {
+                startInfo.ArgumentList.Add(tableName);
+            }
+
+            using FileStream output = new(outputFile, new FileStreamOptions
+            {
+                Mode = FileMode.CreateNew,
+                Access = FileAccess.Write,
+                Share = FileShare.None,
+                Options = FileOptions.Asynchronous | FileOptions.SequentialScan,
             });
+            using Process process = new() { StartInfo = startInfo };
+            if (!process.Start())
+                throw new InvalidOperationException("无法启动 mysqldump 进程。");
+
+            Task copyOutputTask = process.StandardOutput.BaseStream.CopyToAsync(output);
+            Task<string> errorTask = process.StandardError.ReadToEndAsync();
+            string standardError = await CompleteMySqlProcessAsync(process, "mysqldump", errorTask, copyOutputTask).ConfigureAwait(false);
+            await output.FlushAsync().ConfigureAwait(false);
+            output.Flush(flushToDisk: true);
+
+            if (process.ExitCode != 0)
+                throw CreateMySqlProcessException("mysqldump", process.ExitCode, standardError);
+        }
+
+        private static void TryDeletePartialBackup(string partFile)
+        {
+            try
+            {
+                if (File.Exists(partFile))
+                    File.Delete(partFile);
+            }
+            catch (Exception ex)
+            {
+                log.Warn($"删除失败的MySQL临时备份文件失败：{partFile}", ex);
+            }
         }
         public List<string> GetTableNames()
         {
@@ -1087,15 +1301,192 @@ namespace ColorVision.Database
 
 
 
-        public void RestoreMysql(string backupFile)
+        public string RestoreMysql(string backupFile)
         {
-            if (!File.Exists(backupFile))
+            return RunDatabaseMaintenance(() => RestoreMysqlCore(backupFile));
+        }
+
+        private static string RestoreMysqlCore(string backupFile)
+        {
+            return RestoreMysqlCoreAsync(backupFile).GetAwaiter().GetResult();
+        }
+
+        private static async Task<string> RestoreMysqlCoreAsync(string backupFile)
+        {
+            string fullBackupPath = Path.GetFullPath(backupFile);
+            if (!string.Equals(Path.GetExtension(fullBackupPath), ".sql", StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("仅支持恢复 .sql 备份文件。");
+            if (!File.Exists(fullBackupPath))
+                throw new FileNotFoundException("MySQL备份文件不存在。", fullBackupPath);
+            if (new FileInfo(fullBackupPath).Length <= 0)
+                throw new InvalidOperationException("MySQL备份文件为空，已中止恢复。");
+
+            MySqlConfig config = MySqlSetting.Instance.MySqlConfig;
+            ProcessStartInfo startInfo = CreateMySqlProcessStartInfo(Config.MysqlPath, config, redirectStandardInput: true);
+            startInfo.ArgumentList.Add(config.Database);
+
+            using FileStream input = new(fullBackupPath, new FileStreamOptions
             {
-                MessageBox.Show("Backup file not found.");
-                return;
+                Mode = FileMode.Open,
+                Access = FileAccess.Read,
+                Share = FileShare.Read,
+                Options = FileOptions.Asynchronous | FileOptions.SequentialScan,
+            });
+            using Process process = new() { StartInfo = startInfo };
+            if (!process.Start())
+                throw new InvalidOperationException("无法启动 mysql 进程。");
+
+            Task inputTask = CopySqlToStandardInputAsync(input, process);
+            Task outputTask = process.StandardOutput.BaseStream.CopyToAsync(Stream.Null);
+            Task<string> errorTask = process.StandardError.ReadToEndAsync();
+            string standardError = await CompleteMySqlProcessAsync(process, "mysql", errorTask, inputTask, outputTask).ConfigureAwait(false);
+            if (process.ExitCode != 0)
+                throw CreateMySqlProcessException("mysql", process.ExitCode, standardError);
+
+            return fullBackupPath;
+        }
+
+        private static async Task CopySqlToStandardInputAsync(Stream input, Process process)
+        {
+            Exception? streamException = null;
+            try
+            {
+                await input.CopyToAsync(process.StandardInput.BaseStream).ConfigureAwait(false);
+                await process.StandardInput.BaseStream.FlushAsync().ConfigureAwait(false);
             }
-            string restoreCommand = $"{Config.MysqlPath} -u {MySqlSetting.Instance.MySqlConfig.UserName} -h {MySqlSetting.Instance.MySqlConfig.Host} -p{MySqlSetting.Instance.MySqlConfig.UserPwd} {MySqlSetting.Instance.MySqlConfig.Database} < \"{backupFile}\"";
-            Common.Utilities.Tool.ExecuteCommandUI(restoreCommand);
+            catch (Exception ex)
+            {
+                streamException = ex;
+            }
+
+            try
+            {
+                process.StandardInput.Close();
+            }
+            catch (Exception ex)
+            {
+                streamException ??= ex;
+            }
+
+            if (streamException != null)
+                throw new IOException("向 mysql 写入 SQL 备份失败。", streamException);
+        }
+
+        private static async Task<string> CompleteMySqlProcessAsync(Process process, string toolName, Task<string> errorTask, params Task[] streamTasks)
+        {
+            Task exitTask = process.WaitForExitAsync();
+            Task[] allTasks = [exitTask, errorTask, .. streamTasks];
+            List<Task> pendingTasks = allTasks.ToList();
+            Stopwatch stopwatch = Stopwatch.StartNew();
+
+            try
+            {
+                while (pendingTasks.Count > 0)
+                {
+                    TimeSpan remaining = MySqlCommandTimeout - stopwatch.Elapsed;
+                    if (remaining <= TimeSpan.Zero)
+                        throw new TimeoutException($"{toolName} 执行超过 {MySqlCommandTimeout.TotalHours:0.#} 小时，已终止。");
+
+                    using CancellationTokenSource timeoutCancellation = new();
+                    Task timeoutTask = Task.Delay(remaining, timeoutCancellation.Token);
+                    Task completedTask = await Task.WhenAny([.. pendingTasks, timeoutTask]).ConfigureAwait(false);
+                    if (ReferenceEquals(completedTask, timeoutTask))
+                        throw new TimeoutException($"{toolName} 执行超过 {MySqlCommandTimeout.TotalHours:0.#} 小时，已终止。");
+
+                    timeoutCancellation.Cancel();
+                    pendingTasks.Remove(completedTask);
+                    await completedTask.ConfigureAwait(false);
+                }
+
+                return await errorTask.ConfigureAwait(false);
+            }
+            catch (TimeoutException)
+            {
+                TerminateMySqlProcess(process, toolName);
+                await ObserveMySqlProcessTasksAsync(allTasks).ConfigureAwait(false);
+                throw;
+            }
+            catch (Exception ex)
+            {
+                TerminateMySqlProcess(process, toolName);
+                await ObserveMySqlProcessTasksAsync(allTasks).ConfigureAwait(false);
+                throw new InvalidOperationException($"{toolName} 数据流处理失败，进程已终止。", ex);
+            }
+        }
+
+        private static void TerminateMySqlProcess(Process process, string toolName)
+        {
+            try
+            {
+                if (!process.HasExited)
+                    process.Kill(entireProcessTree: true);
+            }
+            catch (Exception ex)
+            {
+                log.Warn($"终止超时或数据流失败的 {toolName} 进程失败。", ex);
+            }
+        }
+
+        private static async Task ObserveMySqlProcessTasksAsync(Task[] tasks)
+        {
+            try
+            {
+                await Task.WhenAll(tasks).WaitAsync(TimeSpan.FromSeconds(15)).ConfigureAwait(false);
+            }
+            catch
+            {
+                // The original timeout or stream failure is reported by the caller.
+            }
+        }
+
+        internal static ProcessStartInfo CreateMySqlProcessStartInfo(string executablePath, MySqlConfig config, bool redirectStandardInput)
+        {
+            ArgumentNullException.ThrowIfNull(config);
+            if (string.IsNullOrWhiteSpace(executablePath))
+                throw new InvalidOperationException("未配置MySQL命令行工具路径。");
+
+            string fullExecutablePath = Path.GetFullPath(executablePath);
+            if (!File.Exists(fullExecutablePath))
+                throw new FileNotFoundException("MySQL命令行工具不存在。", fullExecutablePath);
+            if (string.IsNullOrWhiteSpace(config.UserName))
+                throw new InvalidOperationException("MySQL用户名不能为空。");
+            if (string.IsNullOrWhiteSpace(config.Host))
+                throw new InvalidOperationException("MySQL地址不能为空。");
+            if (string.IsNullOrWhiteSpace(config.Database))
+                throw new InvalidOperationException("MySQL数据库名不能为空。");
+
+            ProcessStartInfo startInfo = new()
+            {
+                FileName = fullExecutablePath,
+                WorkingDirectory = Path.GetDirectoryName(fullExecutablePath) ?? string.Empty,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardInput = redirectStandardInput,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+            };
+            startInfo.ArgumentList.Add("--user");
+            startInfo.ArgumentList.Add(config.UserName);
+            startInfo.ArgumentList.Add("--host");
+            startInfo.ArgumentList.Add(config.Host);
+            if (config.Port > 0)
+            {
+                startInfo.ArgumentList.Add("--port");
+                startInfo.ArgumentList.Add(config.Port.ToString(CultureInfo.InvariantCulture));
+            }
+
+            startInfo.Environment["MYSQL_PWD"] = config.UserPwd ?? string.Empty;
+            return startInfo;
+        }
+
+        private static InvalidOperationException CreateMySqlProcessException(string toolName, int exitCode, string standardError)
+        {
+            return new InvalidOperationException($"{toolName} 执行失败（退出码 {exitCode}）：{FormatMySqlProcessError(standardError)}");
+        }
+
+        private static string FormatMySqlProcessError(string standardError)
+        {
+            return string.IsNullOrWhiteSpace(standardError) ? "未返回错误信息。" : standardError.Trim();
         }
 
         private sealed class TableStatusRow

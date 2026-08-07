@@ -127,6 +127,38 @@ namespace ColorVision.UI.Tests
             Assert.Equal("broker_ticket_scope_mismatch_or_expired", callerError);
         }
 
+        [Fact]
+        public void ServiceRestartRejectsServiceOutsideFixedAllowlist()
+        {
+            const string command = "service-restart";
+            const string operationId = "operation-unsupported-service";
+            ServiceHostCommandHandler handler = new();
+            ServiceHostRequestContext context = CreateContext();
+            ServiceHostResponse ticketResponse = handler.Handle(
+                new ServiceHostRequest
+                {
+                    Command = "issue-broker-ticket",
+                    OperationId = operationId,
+                    Data = JObject.FromObject(new { command }),
+                },
+                context);
+
+            Assert.True(ticketResponse.Success);
+
+            ServiceHostResponse restartResponse = handler.Handle(
+                new ServiceHostRequest
+                {
+                    Command = command,
+                    OperationId = operationId,
+                    BrokerTicket = ticketResponse.Data?["ticket"]?.ToString(),
+                    Data = JObject.FromObject(new { serviceName = "Spooler" }),
+                },
+                context);
+
+            Assert.False(restartResponse.Success);
+            Assert.Equal("Unsupported service name: Spooler", restartResponse.Message);
+        }
+
         private static ServiceHostRequestContext CreateContext() => new()
         {
             ProcessId = 1234,
