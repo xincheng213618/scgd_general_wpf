@@ -3,6 +3,7 @@
   "Id": "Conoscope",
   "name": "Conoscope",
   "version": "1.4.7.5",
+  "requires": "1.4.12.22",
   "description": "Conoscope",
   "dllpath": "Conoscope.dll"
 }
