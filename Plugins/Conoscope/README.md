@@ -2,13 +2,13 @@
 
 版本：1.4.7.4
 
-Conoscope 是 ColorVision 中用于锥光镜图像观察、参考坐标分析、关注点采样和综合色域/对比度计算的插件。当前版本已经把“图像交互”“结果计算”“结果显示”拆成了更清晰的三层：
+Conoscope 是 ColorVision 中用于锥光镜图像观察、参考坐标分析、关注点采样和综合色域/对比度计算的插件。当前代码按五个容易定位的职责组织：
 
-- 图像视图负责显示通道、参考线/极角圆、关注点圆和局部交互。
-- 主窗口 Ribbon 负责当前视图快捷控制、批量记录和计算触发。
-- 色域结果窗、对比度结果窗负责独立展示计算结果，不再把大量结果控件堆回主界面。
-
-帮助菜单中的“Conoscope 帮助”和窗口页中的“帮助”按钮都会直接打开这份文档以及插件更新日志。
+- 窗口 Shell 管理标签页、Ribbon、采集和分析槽位。
+- 单图 Viewer 管理该文档唯一的 `ConoscopeViewState`、参考图形和关注点。
+- Imaging 负责 CVCIE 按通道加载、Mat 预处理、渲染与导出。
+- Analysis 负责关注点快照、色域/对比度计算和结果窗口。
+- Settings / Integration 负责全局默认值、型号、参考图、宿主和相机边界。
 
 ## 当前版本重点
 
@@ -17,7 +17,6 @@ Conoscope 是 ColorVision 中用于锥光镜图像观察、参考坐标分析、
 - 图像上支持手动绘制关注点圆，并通过右键直接计算当前关注点数据。
 - 参考图形支持圆形和极角模式切换，并保留在视图中的拖拽调整能力。
 - 分析页支持从当前活动 View 批量记录 R/G/B、白/黑关注点数据，并弹出独立结果窗口。
-- 系统页和 Help 菜单新增帮助入口，直接读取插件目录中的 README.md 与 CHANGELOG.md。
 
 ## 快速开始
 
@@ -47,7 +46,7 @@ Conoscope 是 ColorVision 中用于锥光镜图像观察、参考坐标分析、
 
 ### 处理
 
-- 用于执行滤波、伪彩色、灰尘修复、阈值与裁剪等图像预处理。
+- 用于执行滤波、伪彩色范围显示和灰尘修复等图像预处理。
 - 预处理参数由当前视图和全局配置共同驱动，处理后立即刷新显示。
 
 ### 分析
@@ -64,14 +63,13 @@ Conoscope 是 ColorVision 中用于锥光镜图像观察、参考坐标分析、
 
 - 保存当前窗口配置。
 - 打开 Conoscope 配置窗口。
-- 打开新的帮助窗口，查看当前版本说明与更新日志。
 - 切换主题与语言。
 
 ## 当前视图交互
 
 ### 显示通道
 
-- 图像显示仍以当前视图为中心，主页快捷区和视图内通道控件会双向同步。
+- 图像显示仍以当前视图为中心；每个标签页只有一个 `ConoscopeViewState`，主页快捷区直接读写活动 View 的状态。
 - 切换标签页时，主页快捷区会自动切换到对应 View 的状态；没有活动 View 时会保留控件位置但禁用交互。
 - 方位导出和极角导出直接沿用当前显示通道，不再单独切换导出通道。
 
@@ -126,7 +124,7 @@ Conoscope 是 ColorVision 中用于锥光镜图像观察、参考坐标分析、
 - 3D 和 CIE 入口已经收口到主页的“视图功能”分组，计算结果仍独立展示。
 - 主窗口主页负责当前活动 View 的 CSV 导出，支持方位模式、极角模式以及高级导出。
 - 图像上方工具条只保留 - / + / 圆适，避免把窗口级功能继续堆在 View 内。
-- 如果只是查看综合色域或黑白对比度，不需要再打开旧版分析窗口；旧窗口目前仅用于兼容旧流程。
+- 如果只是查看综合色域或黑白对比度，直接使用分析页记录数据并打开独立结果窗口。
 
 ## 构建与输出
 
@@ -143,7 +141,7 @@ dotnet build Plugins/Conoscope/Conoscope.csproj -p:Platform=x64 -nologo
 - README.md
 - CHANGELOG.md
 
-这也是帮助窗口能在运行时直接读取文档的原因。
+README 和 CHANGELOG 作为插件元数据保留，供源码维护和插件信息页读取。
 
 ## 运行依赖
 
@@ -154,7 +152,7 @@ dotnet build Plugins/Conoscope/Conoscope.csproj -p:Platform=x64 -nologo
 
 ## 维护约定
 
-如果继续调整 Conoscope 的主交互，请一起更新以下文件，避免帮助窗口和版本信息失真：
+如果继续调整 Conoscope 的主交互，请一起更新以下文件，避免文档和版本信息失真：
 
 - README.md
 - CHANGELOG.md
@@ -165,10 +163,10 @@ dotnet build Plugins/Conoscope/Conoscope.csproj -p:Platform=x64 -nologo
 
 - 架构文档：Docs/ARCHITECTURE.md
 - 主窗口：ConoscopeWindow.xaml / ConoscopeWindow.xaml.cs
-- Ribbon 编排：ConoscopeWindow.Ribbon.cs
+- Ribbon 布局：ConoscopeWindow.xaml
 - 当前视图快捷控制：ConoscopeWindow.HomeQuickControls.cs
 - 分析 Ribbon：ConoscopeWindow.AnalysisRibbon.cs
-- 分析工作流服务：Application/Analysis/ConoscopeAnalysisWorkflow.cs
+- 分析会话：Application/Analysis/ConoscopeAnalysisSession.cs
 - Ribbon 资源：Presentation/Ribbon/ConoscopeRibbonResources.xaml
 - 当前视图桥接：ConoscopeView.WindowQuickControls.cs
 - 关注点逻辑：ConoscopeView.FocusPoint.cs
