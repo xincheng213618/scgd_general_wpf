@@ -1,5 +1,5 @@
 using Conoscope.Analysis;
-using System; // Exception
+using System;
 
 namespace Conoscope.ApplicationServices.Analysis
 {
@@ -12,11 +12,12 @@ namespace Conoscope.ApplicationServices.Analysis
         ContrastBlack,
     }
 
-    public sealed class ConoscopeAnalysisWorkflow
+    /// <summary>
+    /// Holds the five analysis snapshots for the current window and coordinates
+    /// calculations. Pixel math remains in <see cref="ConoscopeAnalysis"/>.
+    /// </summary>
+    public sealed class ConoscopeAnalysisSession
     {
-        private readonly DefaultBatchColorGamutCalculator batchColorGamutCalculator = new();
-        private readonly DefaultBatchContrastCalculator batchContrastCalculator = new();
-
         private MeasurementCapture? gamutRedCapture;
         private MeasurementCapture? gamutGreenCapture;
         private MeasurementCapture? gamutBlueCapture;
@@ -31,6 +32,7 @@ namespace Conoscope.ApplicationServices.Analysis
 
         public bool HasAnyGamutCapture => gamutRedCapture != null || gamutGreenCapture != null || gamutBlueCapture != null;
         public bool HasAnyContrastCapture => contrastWhiteCapture != null || contrastBlackCapture != null;
+        public bool CanComputeContrast => contrastWhiteCapture != null && contrastBlackCapture != null;
 
         public bool CanComputeGamut(ColorGamutStandard? standard)
         {
@@ -38,11 +40,6 @@ namespace Conoscope.ApplicationServices.Analysis
                 && gamutGreenCapture != null
                 && gamutBlueCapture != null
                 && standard != null;
-        }
-
-        public bool CanComputeContrast
-        {
-            get { return contrastWhiteCapture != null && contrastBlackCapture != null; }
         }
 
         public void RecordCapture(CaptureSlot slot, MeasurementCapture capture)
@@ -70,17 +67,21 @@ namespace Conoscope.ApplicationServices.Analysis
             contrastBlackCapture = null;
         }
 
-        public (ColorGamutComputationResult? Result, string? Error) ComputeGamut(ColorGamutStandard standard)
+        public (ColorGamutComputationResult? Result, string? Error) ComputeGamut(ColorGamutStandard? standard)
         {
             if (gamutRedCapture == null || gamutGreenCapture == null || gamutBlueCapture == null)
+            {
                 return (null, Properties.Resources.MsgNeedRGBData);
+            }
 
             if (standard == null)
+            {
                 return (null, Properties.Resources.MsgSelectGamutStandard);
+            }
 
             try
             {
-                return (batchColorGamutCalculator.Calculate(gamutRedCapture, gamutGreenCapture, gamutBlueCapture, standard), null);
+                return (ConoscopeAnalysis.CalculateColorGamut(gamutRedCapture, gamutGreenCapture, gamutBlueCapture, standard), null);
             }
             catch (Exception ex)
             {
@@ -91,11 +92,13 @@ namespace Conoscope.ApplicationServices.Analysis
         public (ContrastComputationResult? Result, string? Error) ComputeContrast()
         {
             if (contrastWhiteCapture == null || contrastBlackCapture == null)
+            {
                 return (null, Properties.Resources.MsgNeedWhiteBlackData);
+            }
 
             try
             {
-                return (batchContrastCalculator.Calculate(contrastWhiteCapture, contrastBlackCapture), null);
+                return (ConoscopeAnalysis.CalculateContrast(contrastWhiteCapture, contrastBlackCapture), null);
             }
             catch (Exception ex)
             {

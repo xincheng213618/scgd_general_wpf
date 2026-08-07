@@ -1,41 +1,21 @@
 using Conoscope.Core;
-using Conoscope.Presentation.Helpers;
 using System;
-using System.IO;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Media;
 
 namespace Conoscope
 {
     public partial class ConoscopeView
     {
-        private void InitializeContrastControls()
-        {
-            SyncContrastImageKindControl();
-            UpdateContrastReferenceUi();
-        }
-
         public ContrastReferenceKind GetCurrentContrastImageKind()
         {
-            return contrastImageKind;
-        }
-
-        private ContrastReferenceKind GetSelectedContrastImageKind()
-        {
-            return ComboBoxHelper.GetSelectedEnumByTag(cbContrastReferenceKind, contrastImageKind);
+            return State.ContrastImageKind;
         }
 
         private ContrastReferenceKind GetRequiredContrastReferenceKind()
         {
-            return contrastImageKind == ContrastReferenceKind.Black
+            return State.ContrastImageKind == ContrastReferenceKind.Black
                 ? ContrastReferenceKind.White
                 : ContrastReferenceKind.Black;
-        }
-
-        private static string GetContrastImageKindText(ContrastReferenceKind kind)
-        {
-            return kind == ContrastReferenceKind.Black ? Properties.Resources.ContrastImageBlack : Properties.Resources.ContrastImageWhite;
         }
 
         private static string GetContrastReferenceKindText(ContrastReferenceKind kind)
@@ -43,37 +23,15 @@ namespace Conoscope
             return kind == ContrastReferenceKind.Black ? Properties.Resources.ContrastReferenceBlackField : Properties.Resources.ContrastReferenceWhiteField;
         }
 
-        private void SyncContrastImageKindControl()
-        {
-            if (cbContrastReferenceKind == null)
-            {
-                return;
-            }
-
-            isUpdatingContrastControls = true;
-            try
-            {
-                ComboBoxHelper.SelectItemByTag(cbContrastReferenceKind, contrastImageKind.ToString());
-            }
-            finally
-            {
-                isUpdatingContrastControls = false;
-            }
-        }
-
         private void ApplyContrastImageKind(ContrastReferenceKind kind, bool refreshDisplay)
         {
-            if (contrastImageKind == kind)
+            if (State.ContrastImageKind == kind)
             {
-                SyncContrastImageKindControl();
-                UpdateContrastReferenceUi();
                 RaiseWindowQuickControlStateChanged();
                 return;
             }
 
-            contrastImageKind = kind;
-            SyncContrastImageKindControl();
-            UpdateContrastReferenceUi();
+            State.ContrastImageKind = kind;
             RaiseWindowQuickControlStateChanged();
 
             if (!refreshDisplay || GetSelectedDisplayChannel() != ExportChannel.Contrast || !HasXyzData())
@@ -96,49 +54,6 @@ namespace Conoscope
                 log.Error($"切换对比度图像类型失败: {ex.Message}", ex);
                 MessageBox.Show(ex.Message, Properties.Resources.GroupContrast, MessageBoxButton.OK, MessageBoxImage.Warning);
             }
-        }
-
-        private void UpdateContrastReferenceUi()
-        {
-            if (tbContrastReferenceStatus == null)
-            {
-                return;
-            }
-
-            tbContrastReferenceStatus.Text = GetContrastReferenceStatusText();
-        }
-
-        private string GetContrastReferenceStatusText()
-        {
-            ContrastReferenceKind imageKind = contrastImageKind;
-            ContrastReferenceKind requiredReferenceKind = GetRequiredContrastReferenceKind();
-            OpenCvSharp.Mat? requiredReferenceYMat = GlobalReferences.GetContrastReferenceYMat(requiredReferenceKind);
-
-            string requiredStatus = requiredReferenceYMat == null
-                ? Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgContrastReferenceMissingStatus, GetContrastImageKindText(imageKind), GetContrastReferenceKindText(requiredReferenceKind))
-                : YMat != null && (YMat.Width != requiredReferenceYMat.Width || YMat.Height != requiredReferenceYMat.Height)
-                    ? Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgContrastReferenceSizeMismatchStatus, GetContrastImageKindText(imageKind), GetContrastReferenceKindText(requiredReferenceKind))
-                    : Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgContrastReferenceUsingStatus, GetContrastImageKindText(imageKind), GetContrastReferenceKindText(requiredReferenceKind));
-
-            string blackStatus = GetSavedContrastReferenceSummary(ContrastReferenceKind.Black);
-            string whiteStatus = GetSavedContrastReferenceSummary(ContrastReferenceKind.White);
-            return Conoscope.Core.CompositeFormatCache.Format(
-                Properties.Resources.MsgContrastReferenceSummary,
-                requiredStatus,
-                Properties.Resources.ContrastReferenceBlackField,
-                blackStatus,
-                Properties.Resources.ContrastReferenceWhiteField,
-                whiteStatus);
-        }
-
-        private string GetSavedContrastReferenceSummary(ContrastReferenceKind referenceKind)
-        {
-            if (!GlobalReferences.HasContrastReference(referenceKind))
-            {
-                return Properties.Resources.StateNotSaved;
-            }
-
-            return Path.GetFileName(GlobalReferences.GetContrastReferenceFileName(referenceKind)) ?? Properties.Resources.StateSaved;
         }
 
         private bool EnsureContrastReferenceReady()
@@ -166,13 +81,11 @@ namespace Conoscope
             OpenCvSharp.Mat? referenceYMat = GlobalReferences.GetContrastReferenceYMat(requiredReferenceKind);
             if (referenceYMat == null)
             {
-                UpdateContrastReferenceUi();
                 return false;
             }
 
             if (YMat != null && (YMat.Width != referenceYMat.Width || YMat.Height != referenceYMat.Height))
             {
-                UpdateContrastReferenceUi();
                 return false;
             }
 
@@ -213,16 +126,6 @@ namespace Conoscope
             return ConoscopeColorimetry.CalculateContrast(currentY, referenceY, referenceKind);
         }
 
-        private void ContrastReferenceKind_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (isUpdatingContrastControls)
-            {
-                return;
-            }
-
-            ApplyContrastImageKind(GetSelectedContrastImageKind(), refreshDisplay: true);
-        }
-
         public void SaveCurrentAsGlobalContrastReference(ContrastReferenceKind referenceKind)
         {
             if (YMat == null)
@@ -235,20 +138,5 @@ namespace Conoscope
             ConoscopeModuleService.RefreshAllReferenceState();
         }
 
-        private void btnCalculateContrast_Click(object sender, RoutedEventArgs e)
-        {
-            if (!EnsureContrastReferenceReady())
-            {
-                return;
-            }
-
-            bool refreshAfterSelection = GetSelectedDisplayChannel() == ExportChannel.Contrast;
-            ComboBoxHelper.SelectItemByTag(cbDisplayChannel, ExportChannel.Contrast.ToString());
-            if (refreshAfterSelection && GetSelectedDisplayChannel() == ExportChannel.Contrast && HasXyzData())
-            {
-                RefreshDisplayedImage();
-                UpdateReferencePlot();
-            }
-        }
     }
 }

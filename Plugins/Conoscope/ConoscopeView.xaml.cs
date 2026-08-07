@@ -5,13 +5,9 @@ using ColorVision.Core;
 using log4net;
 using Microsoft.Win32;
 using Conoscope.Core;
-using Conoscope.Presentation.Helpers;
 using System;
-using System.Collections.ObjectModel;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.ComponentModel.DataAnnotations;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -24,51 +20,49 @@ using System.Windows.Media.Imaging;
 namespace Conoscope
 {
     /// <summary>
+    /// A document's editable state. The window ribbon and the view both use this
+    /// object; UI controls are never used as backing storage.
+    /// </summary>
+    internal sealed class ConoscopeViewState
+    {
+        public ExportChannel DisplayChannel { get; set; } = ExportChannel.Y;
+        public ExportChannel ExportChannel { get; set; } = ExportChannel.Y;
+        public ColormapTypes PseudoColorMap { get; set; } = ColormapTypes.COLORMAP_JET;
+        public bool UsePseudoColor { get; set; } = true;
+        public bool UsePseudoColorRangeLimit { get; set; } = true;
+
+        public bool ApplyFilterOnOpen { get; set; } = true;
+        public bool ClampNonPositiveXyzOnLoad { get; set; } = true;
+        public ImageFilterType FilterType { get; set; } = ImageFilterType.Gaussian;
+        public int FilterKernelSize { get; set; } = 55;
+        public double FilterSigma { get; set; } = 1.0;
+        public int FilterD { get; set; } = 5;
+        public double FilterSigmaColor { get; set; } = 75;
+        public double FilterSigmaSpace { get; set; } = 75;
+        public bool DustRemovalEnabled { get; set; }
+        public DustRemovalMode DustRemovalMode { get; set; } = DustRemovalMode.DarkSpot;
+        public double DustThresholdPercent { get; set; } = 12;
+        public int DustMinArea { get; set; } = 1;
+        public int DustMaxArea { get; set; } = 500;
+        public int DustRepairRadius { get; set; } = 3;
+
+        public ColorDifferenceReferenceMode ColorDifferenceReferenceMode { get; set; } = ColorDifferenceReferenceMode.D65;
+        public double ColorDifferenceCustomU { get; set; } = 0.1978;
+        public double ColorDifferenceCustomV { get; set; } = 0.4684;
+        public ContrastReferenceKind ContrastImageKind { get; set; } = ContrastReferenceKind.Black;
+        public ConoscopeCoordinateAxisParam CoordinateAxis { get; } = new();
+    }
+
+    /// <summary>
     /// ConoscopeView.xaml 的交互逻辑
     /// </summary>
     public partial class ConoscopeView : UserControl, IDisposable, IActiveDocumentStatusProvider
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ConoscopeView));
 
-        private sealed class ViewRenderingState
-        {
-            public ExportChannel DisplayChannel { get; set; } = ExportChannel.Y;
-            public ColormapTypes PseudoColorMap { get; set; } = ColormapTypes.COLORMAP_JET;
-            public bool UsePseudoColor { get; set; } = true;
-            public bool UsePseudoColorRangeLimit { get; set; } = true;
-        }
-
-        private sealed class ViewPreprocessState
-        {
-            public bool ApplyFilterOnOpen { get; set; } = true;
-            public bool ClampNonPositiveXyzOnLoad { get; set; } = true;
-            public ImageFilterType FilterType { get; set; } = ImageFilterType.Gaussian;
-            public int FilterKernelSize { get; set; } = 55;
-            public double FilterSigma { get; set; } = 1.0;
-            public int FilterD { get; set; } = 5;
-            public double FilterSigmaColor { get; set; } = 75;
-            public double FilterSigmaSpace { get; set; } = 75;
-            public bool DustRemovalEnabled { get; set; }
-            public DustRemovalMode DustRemovalMode { get; set; } = DustRemovalMode.DarkSpot;
-            public double DustThresholdPercent { get; set; } = 12;
-            public int DustMinArea { get; set; } = 1;
-            public int DustMaxArea { get; set; } = 500;
-            public int DustRepairRadius { get; set; } = 3;
-        }
-
-        private sealed class ViewColorDifferenceState
-        {
-            public ColorDifferenceReferenceMode ReferenceMode { get; set; } = ColorDifferenceReferenceMode.D65;
-            public double CustomU { get; set; } = 0.1978;
-            public double CustomV { get; set; } = 0.4684;
-        }
-
-        // Polar angle line management
-        private ObservableCollection<PolarAngleLine> polarAngleLines = new ObservableCollection<PolarAngleLine>();
-        private PolarAngleLine? selectedPolarLine;
-        
-        // Concentric circle line management
-        private ConcentricCircleLine? selectedCircleLine;
+        private ReferenceCurve? selectedReferenceCurve;
+        private PolarAngleLine? selectedPolarLine => selectedReferenceCurve as PolarAngleLine;
+        private ConcentricCircleLine? selectedCircleLine => selectedReferenceCurve as ConcentricCircleLine;
         
         // Current image state for dynamic angle addition
         private BitmapSource? currentBitmapSource;
@@ -77,16 +71,8 @@ namespace Conoscope
         private double currentPixelsPerDegree;
         private ExportChannel currentReferenceScaleChannel = ExportChannel.Y;
         private double currentReferenceScaleMaximum = 1;
-        private ExportChannel selectedExportChannel = ExportChannel.Y;
-
         private ConoscopeCoordinateAxisController? coordinateAxisController;
-        private PolarAngleLine? coordinateAxisPolarLine;
-        private ConcentricCircleLine? coordinateAxisCircleLine;
-        private bool isUpdatingQuickControls;
-        private bool isUpdatingDisplayControls;
-        private bool isUpdatingColorDifferenceControls;
-        private bool isUpdatingContrastControls;
-        private ContrastReferenceKind contrastImageKind = ContrastReferenceKind.Black;
+        private ReferenceCurve? coordinateAxisReferenceCurve;
         private ReferencePlotDisplayMode referencePlotDisplayMode;
         private WindowCIE? cieWindow;
         private ConoscopeModelProfile? subscribedModelProfile;
@@ -95,10 +81,7 @@ namespace Conoscope
         private ConoscopeImageZoomMode imageZoomMode = ConoscopeImageZoomMode.Fit;
         private bool applyCircleFitOnNextRefresh;
         private bool isApplyingImageZoomMode;
-        private readonly ViewRenderingState viewRenderingConfig = new();
-        private readonly ViewPreprocessState viewPreprocessConfig = new();
-        private readonly ViewColorDifferenceState viewColorDifferenceConfig = new();
-        private readonly ConoscopeCoordinateAxisParam viewCoordinateAxisConfig = new();
+        internal ConoscopeViewState State { get; } = new();
 
         public event EventHandler StatusBarItemsChanged;
 
@@ -122,39 +105,15 @@ namespace Conoscope
         public ConoscopeModelProfile CurrentModelProfile => ConoscopeConfig.CurrentModelProfile;
         public string FileName => Filename;
 
-        private void RefreshReferenceLineProfileBinding()
-        {
-            GridSetting.Children.Clear();
-            GridSetting.RowDefinitions.Clear();
-            GridSetting.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            GridSetting.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-
-            Border fieldOfViewEditorHost = new Border
-            {
-                Margin = new Thickness(0, 0, 0, 10),
-                Child = PropertyEditorHelper.GenPropertyEditorControl(new ConoscopeFieldOfViewSettings(CurrentModelProfile))
-            };
-            GridSetting.Children.Add(fieldOfViewEditorHost);
-            Grid.SetRow(fieldOfViewEditorHost, 0);
-
-            UIElement coordinateAxisEditor = PropertyEditorHelper.GenPropertyEditorControl(CoordinateAxisConfig);
-            GridSetting.Children.Add(coordinateAxisEditor);
-            Grid.SetRow(coordinateAxisEditor, 1);
-        }
-
-
         private void RefreshModelDependentUi()
         {
-            RefreshReferenceLineProfileBinding();
-            RefreshQuickControlsFromAxisParam();
+            NotifyReferenceStateChanged();
             SetReferencePlotLimits();
         }
 
         internal void RefreshConoscopeConfiguration()
         {
             RefreshModelDependentUi();
-            InitializeColorDifferenceControls();
-            InitializeContrastControls();
             RefreshRenderingFromConfig();
             UpdateReferencePlotHeader();
         }
@@ -180,8 +139,6 @@ namespace Conoscope
         internal void RefreshGlobalReferenceState()
         {
             RefreshChannelAvailability();
-            UpdateColorDifferenceReferenceUi();
-            UpdateContrastReferenceUi();
 
             if (!HasXyzData())
             {
@@ -235,18 +192,6 @@ namespace Conoscope
         private void RefreshDisplayControlsFromConfig()
         {
             RefreshChannelAvailability();
-
-            isUpdatingDisplayControls = true;
-            try
-            {
-                ComboBoxHelper.SelectItemByTag(cbDisplayChannel, RenderingConfig.DisplayChannel.ToString());
-            }
-            finally
-            {
-                isUpdatingDisplayControls = false;
-            }
-
-            UpdateColorDifferencePanelVisibility();
         }
 
         public IEnumerable<StatusBarMeta> GetActiveStatusBarItems()
@@ -306,7 +251,6 @@ namespace Conoscope
             ImageView.FocusCircleEditRequested += ImageView_FocusCircleEditRequested;
             ImageView.FocusCirclesChanged += ImageView_FocusCirclesChanged;
             ImageView.FocusCircleSelectionChanged += ImageView_FocusCircleSelectionChanged;
-            ConoscopeModuleService.Register(this);
         }
 
         private void InitializeFocusToolbarIcons()
@@ -348,44 +292,49 @@ namespace Conoscope
 
         public ConoscopeConfig ConoscopeConfig => ConoscopeManager.GetInstance().Config;
         private ConoscopeGlobalReferenceStore GlobalReferences => ConoscopeManager.GetInstance().GlobalReferences;
-        private ViewRenderingState RenderingConfig => viewRenderingConfig;
-        private ViewPreprocessState PreprocessConfig => viewPreprocessConfig;
-        private ViewColorDifferenceState ColorDifferenceConfig => viewColorDifferenceConfig;
-        private ConoscopeCoordinateAxisParam CoordinateAxisConfig => viewCoordinateAxisConfig;
+        // Category aliases keep call sites readable; every value is stored in State.
+        private ConoscopeViewState RenderingConfig => State;
+        private ConoscopeViewState PreprocessConfig => State;
+        private ConoscopeViewState ColorDifferenceConfig => State;
+        private ConoscopeCoordinateAxisParam CoordinateAxisConfig => State.CoordinateAxis;
 
         private void InitializeLocalViewStateFromDefaults()
         {
             ApplyDefaultRenderingStateFromConfig();
             ApplyDefaultPreprocessStateFromConfig();
+            State.ColorDifferenceReferenceMode = ConoscopeConfig.ColorDifferenceReferenceMode;
+            State.ColorDifferenceCustomU = ConoscopeConfig.ColorDifferenceCustomU;
+            State.ColorDifferenceCustomV = ConoscopeConfig.ColorDifferenceCustomV;
+            State.ContrastImageKind = ConoscopeConfig.ContrastReferenceKind;
             InitializeLocalCoordinateAxisState(preserveReferenceState: false);
         }
 
         private void ApplyDefaultRenderingStateFromConfig()
         {
-            viewRenderingConfig.DisplayChannel = ConoscopeConfig.DisplayChannel;
-            viewRenderingConfig.PseudoColorMap = ConoscopeConfig.PseudoColorMap;
-            viewRenderingConfig.UsePseudoColor = ConoscopeConfig.UsePseudoColor;
-            viewRenderingConfig.UsePseudoColorRangeLimit = ConoscopeConfig.UsePseudoColorRangeLimit;
+            State.DisplayChannel = ConoscopeConfig.DisplayChannel;
+            State.PseudoColorMap = ConoscopeConfig.PseudoColorMap;
+            State.UsePseudoColor = ConoscopeConfig.UsePseudoColor;
+            State.UsePseudoColorRangeLimit = ConoscopeConfig.UsePseudoColorRangeLimit;
         }
 
         private void ApplyDefaultPreprocessStateFromConfig()
         {
-            viewPreprocessConfig.ApplyFilterOnOpen = ConoscopeConfig.ApplyFilterOnOpen;
-            viewPreprocessConfig.ClampNonPositiveXyzOnLoad = ConoscopeConfig.ClampNonPositiveXyzOnLoad;
-            viewPreprocessConfig.FilterType = ConoscopeConfig.FilterType;
-            viewPreprocessConfig.FilterKernelSize = ConoscopeConfig.FilterKernelSize;
-            viewPreprocessConfig.FilterSigma = ConoscopeConfig.FilterSigma;
-            viewPreprocessConfig.FilterD = ConoscopeConfig.FilterD;
-            viewPreprocessConfig.FilterSigmaColor = ConoscopeConfig.FilterSigmaColor;
-            viewPreprocessConfig.FilterSigmaSpace = ConoscopeConfig.FilterSigmaSpace;
-            viewPreprocessConfig.DustRemovalEnabled = ConoscopeConfig.DustRemovalEnabled;
-            viewPreprocessConfig.DustRemovalMode = ConoscopeConfig.DustRemovalMode;
-            viewPreprocessConfig.DustThresholdPercent = ConoscopeConfig.DustThresholdPercent;
-            viewPreprocessConfig.DustMinArea = ConoscopeConfig.DustMinArea;
-            viewPreprocessConfig.DustMaxArea = ConoscopeConfig.DustMaxArea;
-            viewPreprocessConfig.DustRepairRadius = ConoscopeConfig.DustRepairRadius;
+            State.ApplyFilterOnOpen = ConoscopeConfig.ApplyFilterOnOpen;
+            State.ClampNonPositiveXyzOnLoad = ConoscopeConfig.ClampNonPositiveXyzOnLoad;
+            State.FilterType = ConoscopeConfig.FilterType;
+            State.FilterKernelSize = ConoscopeConfig.FilterKernelSize;
+            State.FilterSigma = ConoscopeConfig.FilterSigma;
+            State.FilterD = ConoscopeConfig.FilterD;
+            State.FilterSigmaColor = ConoscopeConfig.FilterSigmaColor;
+            State.FilterSigmaSpace = ConoscopeConfig.FilterSigmaSpace;
+            State.DustRemovalEnabled = ConoscopeConfig.DustRemovalEnabled;
+            State.DustRemovalMode = ConoscopeConfig.DustRemovalMode;
+            State.DustThresholdPercent = ConoscopeConfig.DustThresholdPercent;
+            State.DustMinArea = ConoscopeConfig.DustMinArea;
+            State.DustMaxArea = ConoscopeConfig.DustMaxArea;
+            State.DustRepairRadius = ConoscopeConfig.DustRepairRadius;
 
-            ImageFilterType filterType = NormalizeFilterType(viewPreprocessConfig.FilterType);
+            ImageFilterType filterType = NormalizeFilterType(State.FilterType);
             lastEnabledFilterType = filterType == ImageFilterType.None ? ImageFilterType.LowPass : filterType;
         }
 
@@ -444,16 +393,10 @@ namespace Conoscope
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            RefreshReferenceLineProfileBinding();
-
             this.DataContext = ConoscopeManager.GetInstance();
             RefreshDisplayControlsFromConfig();
-            RefreshQuickControlsFromAxisParam();
-            InitializeColorDifferenceControls();
-            InitializeContrastControls();
+            NotifyReferenceStateChanged();
             InitializePreprocessControls();
-            UpdateReferenceControlVisibility();
-            UpdateColorDifferencePanelVisibility();
             AttachCurrentModelProfile();
 
             ConoscopeConfig.ModelTypeChanged -= ConoscopeConfig_ModelTypeChanged;
@@ -516,7 +459,7 @@ namespace Conoscope
             }
 
             InitializeLocalCoordinateAxisState(preserveReferenceState: true);
-            RefreshQuickControlsFromAxisParam();
+            NotifyReferenceStateChanged();
             SetReferencePlotLimits();
             UpdateReferencePlotHeader();
 
@@ -545,7 +488,7 @@ namespace Conoscope
 
         public void Dispose()
         {
-            ConoscopeModuleService.Unregister(this);
+            CancelDeferredXyzLoad();
             ConoscopeConfig.ModelTypeChanged -= ConoscopeConfig_ModelTypeChanged;
             if (subscribedModelProfile != null)
             {
@@ -581,35 +524,5 @@ namespace Conoscope
             double Z,
             ConoscopeChromaticity Chromaticity);
 
-        private sealed class ConoscopeFieldOfViewSettings
-        {
-            private readonly ConoscopeModelProfile modelProfile;
-
-            public ConoscopeFieldOfViewSettings(ConoscopeModelProfile modelProfile)
-            {
-                this.modelProfile = modelProfile;
-            }
-
-            [Display(Name = "Con_FOV_Angle", GroupName = "Con_Category_FOV", Description = "设计视场角。分析半径 = 视场角 * 生效视场系数。", ResourceType = typeof(Properties.Resources))]
-            public int MaxAngle
-            {
-                get => modelProfile.MaxAngle;
-                set => modelProfile.MaxAngle = value;
-            }
-
-            [Display(Name = "Con_FOV_Pixels", GroupName = "Con_Category_FOV", Description = "对应 MaxAngle 的像素半径，也就是从圆心到最外圈的完整像素数。填 0 使用图像短边一半。输入 3000 时，ConoscopeCoefficient 按 视场角 / 3000 计算。", ResourceType = typeof(Properties.Resources))]
-            public double FullScalePixelCount
-            {
-                get => modelProfile.FullScalePixelCount;
-                set => modelProfile.FullScalePixelCount = value;
-            }
-
-            [Display(Name = "Con_FOV_Coefficient", GroupName = "Con_Category_FOV", Description = "可直接输入 60/3100 这类小数。填 0 表示按完整像素数自动计算。分析半径 = 视场角 / 该系数。", ResourceType = typeof(Properties.Resources))]
-            public double DirectConoscopeCoefficient
-            {
-                get => modelProfile.DirectConoscopeCoefficient;
-                set => modelProfile.DirectConoscopeCoefficient = value;
-            }
-        }
     }
 }

@@ -1,76 +1,22 @@
-#pragma warning disable CA1863
 using Conoscope.Core;
-using Conoscope.Presentation.Helpers;
 using System;
-using System.Globalization;
-using System.IO;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Media;
 
 namespace Conoscope
 {
     public partial class ConoscopeView
     {
-        private void InitializeColorDifferenceControls()
-        {
-            isUpdatingColorDifferenceControls = true;
-            try
-            {
-                ComboBoxHelper.SelectItemByTag(cbColorDifferenceReference, ColorDifferenceConfig.ReferenceMode.ToString());
-                txtColorDifferenceCustomU.Text = ColorDifferenceConfig.CustomU.ToString("F4", CultureInfo.InvariantCulture);
-                txtColorDifferenceCustomV.Text = ColorDifferenceConfig.CustomV.ToString("F4", CultureInfo.InvariantCulture);
-            }
-            finally
-            {
-                isUpdatingColorDifferenceControls = false;
-            }
-
-            UpdateColorDifferenceReferenceUi();
-        }
-
         private void ApplyColorDifferenceReferenceMode(ColorDifferenceReferenceMode mode, bool refreshDisplay)
         {
-            isUpdatingColorDifferenceControls = true;
-            try
-            {
-                ComboBoxHelper.SelectItemByTag(cbColorDifferenceReference, mode.ToString());
-                ColorDifferenceConfig.ReferenceMode = mode;
-            }
-            finally
-            {
-                isUpdatingColorDifferenceControls = false;
-            }
-
-            UpdateColorDifferenceReferenceUi();
+            ColorDifferenceConfig.ColorDifferenceReferenceMode = mode;
             RaiseWindowQuickControlStateChanged();
             RefreshColorDifferenceDisplayIfNeeded(refreshDisplay);
         }
 
         private void ApplyColorDifferenceCustomReference(double u, double v, bool refreshDisplay)
         {
-            ColorDifferenceConfig.CustomU = u;
-            ColorDifferenceConfig.CustomV = v;
-
-            isUpdatingColorDifferenceControls = true;
-            try
-            {
-                if (txtColorDifferenceCustomU != null)
-                {
-                    txtColorDifferenceCustomU.Text = u.ToString("F4", CultureInfo.InvariantCulture);
-                }
-
-                if (txtColorDifferenceCustomV != null)
-                {
-                    txtColorDifferenceCustomV.Text = v.ToString("F4", CultureInfo.InvariantCulture);
-                }
-            }
-            finally
-            {
-                isUpdatingColorDifferenceControls = false;
-            }
-
-            UpdateColorDifferenceReferenceUi();
+            ColorDifferenceConfig.ColorDifferenceCustomU = u;
+            ColorDifferenceConfig.ColorDifferenceCustomV = v;
             RaiseWindowQuickControlStateChanged();
             RefreshColorDifferenceDisplayIfNeeded(refreshDisplay && GetSelectedColorDifferenceReferenceMode() == ColorDifferenceReferenceMode.Custom);
         }
@@ -94,12 +40,12 @@ namespace Conoscope
             }
         }
 
-        public void SetWindowQuickColorDifferenceReferenceMode(ColorDifferenceReferenceMode mode)
+        internal void SetWindowQuickColorDifferenceReferenceMode(ColorDifferenceReferenceMode mode)
         {
             ApplyColorDifferenceReferenceMode(mode, refreshDisplay: true);
         }
 
-        public void SetWindowQuickColorDifferenceCustomReference(double u, double v)
+        internal void SetWindowQuickColorDifferenceCustomReference(double u, double v)
         {
             ApplyColorDifferenceCustomReference(u, v, refreshDisplay: true);
         }
@@ -120,19 +66,9 @@ namespace Conoscope
             ConoscopeModuleService.RefreshAllReferenceState();
         }
 
-        private void UpdateColorDifferencePanelVisibility()
-        {
-            if (gbColorDifference == null)
-            {
-                return;
-            }
-
-            gbColorDifference.Visibility = Visibility.Visible;
-        }
-
         private ColorDifferenceReferenceMode GetSelectedColorDifferenceReferenceMode()
         {
-            return ComboBoxHelper.GetSelectedEnumByTag(cbColorDifferenceReference, ColorDifferenceConfig.ReferenceMode);
+            return ColorDifferenceConfig.ColorDifferenceReferenceMode;
         }
 
         private static ConoscopeUvReference GetStandardColorDifferenceReference(ColorDifferenceReferenceMode mode)
@@ -150,14 +86,13 @@ namespace Conoscope
         private bool TryParseCustomColorDifferenceReference(out ConoscopeUvReference reference)
         {
             reference = default;
-            if (!ConoscopeNumericHelper.TryParseDouble(txtColorDifferenceCustomU?.Text, out double u)
-                || !ConoscopeNumericHelper.TryParseDouble(txtColorDifferenceCustomV?.Text, out double v))
+            double u = ColorDifferenceConfig.ColorDifferenceCustomU;
+            double v = ColorDifferenceConfig.ColorDifferenceCustomV;
+            if (!double.IsFinite(u) || !double.IsFinite(v))
             {
                 return false;
             }
 
-            ColorDifferenceConfig.CustomU = u;
-            ColorDifferenceConfig.CustomV = v;
             reference = new ConoscopeUvReference(u, v);
             return true;
         }
@@ -237,48 +172,6 @@ namespace Conoscope
             return new ConoscopeUvReference(sumU / count, sumV / count);
         }
 
-        private void UpdateColorDifferenceReferenceUi()
-        {
-            if (panelColorDifferenceCustomUv == null || tbColorDifferenceReferenceStatus == null || btnSaveColorDifferenceReference == null)
-            {
-                return;
-            }
-
-            ColorDifferenceReferenceMode mode = GetSelectedColorDifferenceReferenceMode();
-            panelColorDifferenceCustomUv.Visibility = mode == ColorDifferenceReferenceMode.Custom ? Visibility.Visible : Visibility.Collapsed;
-            tbColorDifferenceReferenceStatus.Text = GetColorDifferenceReferenceStatusText(mode);
-
-            if (GlobalReferences.HasColorDifferenceReference)
-            {
-                btnSaveColorDifferenceReference.Content = Properties.Resources.Conoscope_UpdateGlobalReference;
-                btnSaveColorDifferenceReference.Background = Brushes.LightGreen;
-                btnSaveColorDifferenceReference.Foreground = Brushes.Black;
-            }
-            else
-            {
-                btnSaveColorDifferenceReference.Content = Properties.Resources.Conoscope_SaveGlobalReference;
-                btnSaveColorDifferenceReference.ClearValue(BackgroundProperty);
-                btnSaveColorDifferenceReference.ClearValue(ForegroundProperty);
-            }
-        }
-
-        private string GetColorDifferenceReferenceStatusText(ColorDifferenceReferenceMode mode)
-        {
-            return mode switch
-            {
-                ColorDifferenceReferenceMode.D65 => "D65: u=0.1978, v=0.4684",
-                ColorDifferenceReferenceMode.D50 => "D50: u=0.2009, v=0.4707",
-                ColorDifferenceReferenceMode.A => "A: u=0.2560, v=0.5242",
-                ColorDifferenceReferenceMode.D75 => "D75: u=0.1952, v=0.4670",
-                ColorDifferenceReferenceMode.ImageCenter => Properties.Resources.MsgBaseCenter50px,
-                ColorDifferenceReferenceMode.Custom => string.Format(Properties.Resources.Conoscope_CustomUv, ColorDifferenceConfig.CustomU, ColorDifferenceConfig.CustomV),
-                ColorDifferenceReferenceMode.ReferenceImage => GlobalReferences.ColorDifferenceReferenceUMat == null
-                    ? Properties.Resources.Conoscope_NoGlobalReference
-                    : string.Format(Properties.Resources.Conoscope_GlobalReference, Path.GetFileName(GlobalReferences.ColorDifferenceReferenceFileName)),
-                _ => string.Empty
-            };
-        }
-
         private OpenCvSharp.Mat? CreateColorDifferenceMat()
         {
             if (XMat == null || YMat == null || ZMat == null)
@@ -307,14 +200,12 @@ namespace Conoscope
 
             if (!GlobalReferences.HasColorDifferenceReference)
             {
-                UpdateColorDifferenceReferenceUi();
                 return false;
             }
 
             if (XMat != null && GlobalReferences.ColorDifferenceReferenceUMat != null
                 && (XMat.Width != GlobalReferences.ColorDifferenceReferenceUMat.Width || XMat.Height != GlobalReferences.ColorDifferenceReferenceUMat.Height))
             {
-                UpdateColorDifferenceReferenceUi();
                 return false;
             }
 
@@ -346,79 +237,9 @@ namespace Conoscope
             return true;
         }
 
-        private void ColorDifferenceReference_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (isUpdatingColorDifferenceControls)
-            {
-                return;
-            }
-
-            ColorDifferenceConfig.ReferenceMode = GetSelectedColorDifferenceReferenceMode();
-            UpdateColorDifferenceReferenceUi();
-            RaiseWindowQuickControlStateChanged();
-
-            if (GetSelectedDisplayChannel() == ExportChannel.ColorDifference && HasXyzData())
-            {
-                try
-                {
-                    RefreshDisplayedImage();
-                    UpdateReferencePlot();
-                }
-                catch (Exception ex)
-                {
-                    log.Error($"切换色差基准失败: {ex.Message}", ex);
-                    MessageBox.Show(ex.Message, Properties.Resources.PanelColorDiff, MessageBoxButton.OK, MessageBoxImage.Warning);
-                }
-            }
-        }
-
-        private void ColorDifferenceCustom_LostFocus(object sender, RoutedEventArgs e)
-        {
-            if (isUpdatingColorDifferenceControls)
-            {
-                return;
-            }
-
-            if (!TryParseCustomColorDifferenceReference(out _))
-            {
-                MessageBox.Show(Properties.Resources.MsgInvalidCustomUV, Properties.Resources.PanelColorDiff, MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            UpdateColorDifferenceReferenceUi();
-            RaiseWindowQuickControlStateChanged();
-            if (GetSelectedDisplayChannel() == ExportChannel.ColorDifference
-                && GetSelectedColorDifferenceReferenceMode() == ColorDifferenceReferenceMode.Custom
-                && HasXyzData())
-            {
-                RefreshDisplayedImage();
-                UpdateReferencePlot();
-            }
-        }
-
-        private void btnSaveColorDifferenceReference_Click(object sender, RoutedEventArgs e)
-        {
-            SaveCurrentAsGlobalColorDifferenceReference();
-        }
-
-        private void btnCalculateColorDifference_Click(object sender, RoutedEventArgs e)
-        {
-            if (!EnsureColorDifferenceReferenceReady())
-            {
-                return;
-            }
-
-            ComboBoxHelper.SelectItemByTag(cbDisplayChannel, ExportChannel.ColorDifference.ToString());
-            if (GetSelectedDisplayChannel() == ExportChannel.ColorDifference && HasXyzData())
-            {
-                RefreshDisplayedImage();
-                UpdateReferencePlot();
-            }
-        }
-
         private double GetChannelValue(RgbSample sample, ExportChannel channel)
         {
-            return GetChannelValue((int)Math.Round(sample.DX), (int)Math.Round(sample.DY), sample.X, sample.Y, sample.Z, channel);
+            return GetChannelValue(sample.DX, sample.DY, sample.X, sample.Y, sample.Z, channel);
         }
 
         private double GetChannelValue(int ix, int iy, double X, double Y, double Z, ExportChannel channel)

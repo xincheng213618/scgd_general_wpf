@@ -3,10 +3,8 @@ using Conoscope.Core;
 using Conoscope.Presentation.Formatters;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Windows;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
 
 namespace Conoscope
 {
@@ -93,14 +91,10 @@ namespace Conoscope
 
         private void UpdateReferencePlot()
         {
-            if (CoordinateAxisConfig.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine)
-            {
-                UpdatePlot();
-            }
-            else
-            {
-                UpdatePlotForCircle();
-            }
+            ReferenceCurve? curve = CoordinateAxisConfig.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine
+                ? selectedPolarLine
+                : selectedCircleLine;
+            UpdateReferenceCurvePlot(curve);
         }
 
         private static SolidColorBrush GetChannelPlotBrush(ExportChannel channel)
@@ -143,12 +137,17 @@ namespace Conoscope
             return niceNormalized * magnitude * ringCount;
         }
 
-        private double GetStablePolarReferenceRadiusMaximum(ExportChannel channel, IEnumerable<double> values)
+        private double GetStablePolarReferenceRadiusMaximum(ExportChannel channel, IReadOnlyList<PolarPlotPoint> points)
         {
-            double curveMaximum = values
-                .Where(double.IsFinite)
-                .DefaultIfEmpty(0)
-                .Max();
+            double curveMaximum = 0;
+            for (int index = 0; index < points.Count; index++)
+            {
+                double radius = points[index].Radius;
+                if (double.IsFinite(radius))
+                {
+                    curveMaximum = Math.Max(curveMaximum, radius);
+                }
+            }
 
             double scaleMaximum = curveMaximum;
             if (channel == currentReferenceScaleChannel
@@ -179,7 +178,7 @@ namespace Conoscope
                 return;
             }
 
-            double radialMaximum = GetStablePolarReferenceRadiusMaximum(channel, points.Select(point => point.Radius));
+            double radialMaximum = GetStablePolarReferenceRadiusMaximum(channel, points);
             polarPlotReference.UpdatePlot(
                 points,
                 GetChannelPlotBrush(channel),
@@ -205,7 +204,7 @@ namespace Conoscope
             };
         }
 
-        private void ExtractRgbAlongLine(PolarAngleLine polarLine, Point start, Point end, BitmapSource bitmapSource, int radius)
+        private void ExtractRgbAlongLine(PolarAngleLine curve, Point start, Point end)
         {
             try
             {
@@ -217,7 +216,9 @@ namespace Conoscope
                 int imageWidth = YMat.Width;
                 int imageHeight = YMat.Height;
 
-                double lineLength = Math.Sqrt(Math.Pow(end.X - start.X, 2) + Math.Pow(end.Y - start.Y, 2));
+                double deltaX = end.X - start.X;
+                double deltaY = end.Y - start.Y;
+                double lineLength = Math.Sqrt(deltaX * deltaX + deltaY * deltaY);
                 int numSamples = (int)lineLength;
 
                 if (numSamples <= 1)
@@ -226,31 +227,23 @@ namespace Conoscope
                     return;
                 }
 
+                curve.Samples.EnsureCapacity(numSamples);
                 for (int i = 0; i < numSamples; i++)
                 {
                     double t = i / (double)(numSamples - 1);
-                    double x = start.X + t * (end.X - start.X);
-                    double y = start.Y + t * (end.Y - start.Y);
+                    double x = start.X + t * deltaX;
+                    double y = start.Y + t * deltaY;
 
-                    int ix = Math.Max(0, Math.Min(imageWidth - 1, (int)Math.Round(x)));
-                    int iy = Math.Max(0, Math.Min(imageHeight - 1, (int)Math.Round(y)));
+                    int ix = Math.Clamp((int)Math.Round(x), 0, imageWidth - 1);
+                    int iy = Math.Clamp((int)Math.Round(y), 0, imageHeight - 1);
 
-                    double position = -MaxAngle + (i / (double)(numSamples - 1)) * MaxAngle * 2;
+                    double position = -MaxAngle + t * MaxAngle * 2;
 
                     ExtractXYZValues(ix, iy, out double X, out double Y, out double Z);
-
-                    polarLine.RgbData.Add(new RgbSample
-                    {
-                        Position = position,
-                        DX = ix,
-                        DY = iy,
-                        X = X,
-                        Y = Y,
-                        Z = Z,
-                    });
+                    curve.Samples.Add(new RgbSample(position, ix, iy, X, Y, Z));
                 }
 
-                log.Info($"完成采样: 方位角{polarLine.Angle}°, 采样点数{polarLine.RgbData.Count}");
+                log.Info($"完成采样: 方位角{curve.Angle}°, 采样点数{curve.Samples.Count}");
             }
             catch (Exception ex)
             {
@@ -258,7 +251,7 @@ namespace Conoscope
             }
         }
 
-        private void ExtractRgbAlongCircle(ConcentricCircleLine circleLine, Point center, double radiusAngle, BitmapSource bitmapSource)
+        private void ExtractRgbAlongCircle(ConcentricCircleLine curve, Point center, double radiusAngle)
         {
             try
             {
@@ -272,6 +265,7 @@ namespace Conoscope
                 double radiusPixels = radiusAngle * currentPixelsPerDegree;
 
                 const int numSamples = 360;
+                curve.Samples.EnsureCapacity(numSamples);
                 for (int i = 0; i < numSamples; i++)
                 {
                     double anglePos = i * 360.0 / numSamples;
@@ -279,23 +273,14 @@ namespace Conoscope
                     double x = center.X + radiusPixels * Math.Cos(radians);
                     double y = center.Y - radiusPixels * Math.Sin(radians);
 
-                    int ix = Math.Max(0, Math.Min(imageWidth - 1, (int)Math.Round(x)));
-                    int iy = Math.Max(0, Math.Min(imageHeight - 1, (int)Math.Round(y)));
+                    int ix = Math.Clamp((int)Math.Round(x), 0, imageWidth - 1);
+                    int iy = Math.Clamp((int)Math.Round(y), 0, imageHeight - 1);
 
                     ExtractXYZValues(ix, iy, out double X, out double Y, out double Z);
-
-                    circleLine.RgbData.Add(new RgbSample
-                    {
-                        Position = anglePos,
-                        DX = ix,
-                        DY = iy,
-                        X = X,
-                        Y = Y,
-                        Z = Z
-                    });
+                    curve.Samples.Add(new RgbSample(anglePos, ix, iy, X, Y, Z));
                 }
 
-                log.Info($"完成采样: 极角半径角度{circleLine.RadiusAngle}°, 采样点数{circleLine.RgbData.Count}");
+                log.Info($"完成采样: 极角半径角度{curve.RadiusAngle}°, 采样点数{curve.Samples.Count}");
             }
             catch (Exception ex)
             {
@@ -303,107 +288,66 @@ namespace Conoscope
             }
         }
 
-        private void UpdatePlot()
+        private void UpdateReferenceCurvePlot(ReferenceCurve? curve)
         {
             try
             {
+                if (curve == null || curve.Samples.Count == 0)
+                {
+                    wpfPlotReference.Plot.Clear();
+                    wpfPlotReference.Refresh();
+                    polarPlotReference?.Clear();
+                    return;
+                }
+
+                ExportChannel channel = GetSelectedDisplayChannel();
                 if (referencePlotDisplayMode == ReferencePlotDisplayMode.Polar)
                 {
-                    if (selectedPolarLine == null || selectedPolarLine.RgbData.Count == 0)
+                    PolarPlotPoint[] points = new PolarPlotPoint[curve.Samples.Count];
+                    for (int index = 0; index < curve.Samples.Count; index++)
                     {
-                        polarPlotReference?.Clear();
-                        return;
+                        RgbSample sample = curve.Samples[index];
+                        double angle = curve.IsClosed
+                            ? ConvertCircleAngleToPolarDisplayAngle(sample.Position)
+                            : NormalizePolarPlotAngle(sample.Position);
+                        points[index] = new PolarPlotPoint(angle, GetChannelValue(sample, channel));
                     }
 
-                    ExportChannel polarChannel = GetSelectedDisplayChannel();
-                    PolarPlotPoint[] polarPoints = selectedPolarLine.RgbData
-                        .Select(sample => new PolarPlotPoint(NormalizePolarPlotAngle(sample.Position), GetChannelValue(sample, polarChannel)))
-                        .ToArray();
-                    UpdatePolarReferencePlot(polarPoints, polarChannel, closePath: false);
+                    UpdatePolarReferencePlot(points, channel, curve.IsClosed);
                     return;
                 }
 
                 wpfPlotReference.Plot.Clear();
-
-                if (selectedPolarLine == null || selectedPolarLine.RgbData.Count == 0)
+                double[] positions = new double[curve.Samples.Count];
+                double[] values = new double[curve.Samples.Count];
+                for (int index = 0; index < curve.Samples.Count; index++)
                 {
-                    wpfPlotReference.Refresh();
-                    return;
+                    RgbSample sample = curve.Samples[index];
+                    positions[index] = sample.Position;
+                    values[index] = GetChannelValue(sample, channel);
                 }
 
-                double[] positions = selectedPolarLine.RgbData.Select(sample => sample.Position).ToArray();
-                ExportChannel channel = GetSelectedDisplayChannel();
-                double[] values = selectedPolarLine.RgbData.Select(sample => GetChannelValue(sample, channel)).ToArray();
                 ScottPlot.Plottables.Scatter scatter = wpfPlotReference.Plot.Add.Scatter(positions, values);
                 scatter.Color = GetPlotColor(channel);
                 scatter.LineWidth = 2;
                 scatter.LegendText = ConoscopeChannelDisplayFormatter.GetLabel(channel);
 
-                wpfPlotReference.Plot.Title(string.Format(Properties.Resources.Conoscope_PolarDistributionTitle, selectedPolarLine.Angle, ConoscopeChannelDisplayFormatter.GetLabel(channel)));
-                wpfPlotReference.Plot.XLabel(Properties.Resources.Conoscope_AngleDegrees);
+                string channelLabel = ConoscopeChannelDisplayFormatter.GetLabel(channel);
+                string title = curve is ConcentricCircleLine circle
+                    ? string.Format(Properties.Resources.Conoscope_CircleDistributionTitle, circle.RadiusAngle, channelLabel)
+                    : string.Format(Properties.Resources.Conoscope_PolarDistributionTitle, ((PolarAngleLine)curve).Angle, channelLabel);
+                wpfPlotReference.Plot.Title(title);
+                wpfPlotReference.Plot.XLabel(curve.IsClosed ? Properties.Resources.Conoscope_CircleAngleDegrees : Properties.Resources.Conoscope_AngleDegrees);
                 wpfPlotReference.Plot.YLabel(ConoscopeChannelDisplayFormatter.GetAxisLabel(channel));
                 wpfPlotReference.Plot.Legend.IsVisible = true;
                 wpfPlotReference.Plot.Axes.AutoScale();
-
                 wpfPlotReference.Refresh();
 
-                log.Info($"更新图表: 方位角{selectedPolarLine.Angle}°");
+                log.Info($"更新参考曲线: {curve}");
             }
             catch (Exception ex)
             {
-                log.Error($"更新图表失败: {ex.Message}", ex);
-            }
-        }
-
-        private void UpdatePlotForCircle()
-        {
-            try
-            {
-                if (referencePlotDisplayMode == ReferencePlotDisplayMode.Polar)
-                {
-                    if (selectedCircleLine == null || selectedCircleLine.RgbData.Count == 0)
-                    {
-                        polarPlotReference?.Clear();
-                        return;
-                    }
-
-                    ExportChannel polarChannel = GetSelectedDisplayChannel();
-                    PolarPlotPoint[] polarPoints = selectedCircleLine.RgbData
-                        .Select(sample => new PolarPlotPoint(ConvertCircleAngleToPolarDisplayAngle(sample.Position), GetChannelValue(sample, polarChannel)))
-                        .ToArray();
-                    UpdatePolarReferencePlot(polarPoints, polarChannel, closePath: true);
-                    return;
-                }
-
-                wpfPlotReference.Plot.Clear();
-
-                if (selectedCircleLine == null || selectedCircleLine.RgbData.Count == 0)
-                {
-                    wpfPlotReference.Refresh();
-                    return;
-                }
-
-                double[] positions = selectedCircleLine.RgbData.Select(sample => sample.Position).ToArray();
-                ExportChannel channel = GetSelectedDisplayChannel();
-                double[] values = selectedCircleLine.RgbData.Select(sample => GetChannelValue(sample, channel)).ToArray();
-                ScottPlot.Plottables.Scatter scatter = wpfPlotReference.Plot.Add.Scatter(positions, values);
-                scatter.Color = GetPlotColor(channel);
-                scatter.LineWidth = 2;
-                scatter.LegendText = ConoscopeChannelDisplayFormatter.GetLabel(channel);
-
-                wpfPlotReference.Plot.Title(string.Format(Properties.Resources.Conoscope_CircleDistributionTitle, selectedCircleLine.RadiusAngle, ConoscopeChannelDisplayFormatter.GetLabel(channel)));
-                wpfPlotReference.Plot.XLabel(Properties.Resources.Conoscope_CircleAngleDegrees);
-                wpfPlotReference.Plot.YLabel(ConoscopeChannelDisplayFormatter.GetAxisLabel(channel));
-                wpfPlotReference.Plot.Legend.IsVisible = true;
-                wpfPlotReference.Plot.Axes.AutoScale();
-
-                wpfPlotReference.Refresh();
-
-                log.Info($"更新图表: 极角半径角度{selectedCircleLine.RadiusAngle}°");
-            }
-            catch (Exception ex)
-            {
-                log.Error($"更新极角图表失败: {ex.Message}", ex);
+                log.Error($"更新参考曲线失败: {ex.Message}", ex);
             }
         }
     }

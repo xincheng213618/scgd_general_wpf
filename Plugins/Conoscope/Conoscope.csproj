@@ -13,22 +13,11 @@
 
 	<ItemGroup>
 		<None Remove="Assets\Image\ColorVision1.ico" />
-		<None Remove="CHANGELOG.md" />
-		<None Remove="README.md" />
 	</ItemGroup>
 	<ItemGroup>	
 		<ProjectReference Include="..\..\Engine\ColorVision.Engine\ColorVision.Engine.csproj" />
 		<ProjectReference Include="..\..\UI\ColorVision.ImageEditor\ColorVision.ImageEditor.csproj" />
 		<ProjectReference Include="..\..\UI\ColorVision.Solution\ColorVision.Solution.csproj" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<EmbeddedResource Include="CHANGELOG.md">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</EmbeddedResource>
-		<EmbeddedResource Include="README.md">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</EmbeddedResource>
 	</ItemGroup>
 
 	<ItemGroup>

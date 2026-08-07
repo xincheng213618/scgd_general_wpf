@@ -48,6 +48,7 @@ namespace Conoscope
         private readonly HashSet<DVCircleText> trackedFocusCircles = new();
         private readonly ConoscopeFocusCircleDrawTool focusCircleDrawTool;
         private readonly EraseManager focusCircleEraseTool;
+        private readonly DispatcherTimer focusCircleChangedTimer;
 
         private DVCircleText? contextMenuFocusCircle;
         private bool isFocusCircleEditMode;
@@ -70,10 +71,16 @@ namespace Conoscope
             focusCircleDrawTool = new ConoscopeFocusCircleDrawTool(EditorContext, this);
             focusCircleEraseTool = new EraseManager(EditorContext);
             focusCircleEraseTool.CanEraseVisual = static visual => visual is DVCircleText;
+            focusCircleChangedTimer = new DispatcherTimer(DispatcherPriority.Background)
+            {
+                Interval = TimeSpan.FromMilliseconds(75)
+            };
+            focusCircleChangedTimer.Tick += FocusCircleChangedTimer_Tick;
             InitializeFocusCircleContextMenu();
             EditorContext.SelectionVisual.SelectionChanged += SelectionVisual_SelectionChanged;
             ZoomBox.ContentMatrixChanged += ZoomBox_ContentMatrixChanged;
             ImageCanvas.PreviewMouseRightButtonDown += ImageCanvas_PreviewMouseRightButtonDown;
+            ImageCanvas.PreviewMouseLeftButtonUp += ImageCanvas_PreviewMouseLeftButtonUp;
             ImageCanvas.ContextMenuOpening += ImageCanvas_ContextMenuOpening;
             ImageCanvas.VisualsAdd += ImageCanvas_VisualsAdd;
             ImageCanvas.VisualsRemove += ImageCanvas_VisualsRemove;
@@ -200,9 +207,12 @@ namespace Conoscope
             ZoomBox.ContentMatrixChanged -= ZoomBox_ContentMatrixChanged;
             EditorContext.SelectionVisual.SelectionChanged -= SelectionVisual_SelectionChanged;
             ImageCanvas.PreviewMouseRightButtonDown -= ImageCanvas_PreviewMouseRightButtonDown;
+            ImageCanvas.PreviewMouseLeftButtonUp -= ImageCanvas_PreviewMouseLeftButtonUp;
             ImageCanvas.ContextMenuOpening -= ImageCanvas_ContextMenuOpening;
             ImageCanvas.VisualsAdd -= ImageCanvas_VisualsAdd;
             ImageCanvas.VisualsRemove -= ImageCanvas_VisualsRemove;
+            focusCircleChangedTimer.Stop();
+            focusCircleChangedTimer.Tick -= FocusCircleChangedTimer_Tick;
             ClearCore(preserveFocusCircles: false);
             UntrackAllFocusCircles();
             ImageCanvas.ContextMenu = null;
@@ -704,8 +714,30 @@ namespace Conoscope
                 or nameof(CircleTextProperties.Text)
                 or nameof(CircleTextProperties.Id))
             {
-                FocusCirclesChanged?.Invoke(this, EventArgs.Empty);
+                focusCircleChangedTimer.Stop();
+                focusCircleChangedTimer.Start();
             }
+        }
+
+        private void ImageCanvas_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            FlushPendingFocusCircleChange();
+        }
+
+        private void FocusCircleChangedTimer_Tick(object? sender, EventArgs e)
+        {
+            FlushPendingFocusCircleChange();
+        }
+
+        private void FlushPendingFocusCircleChange()
+        {
+            if (!focusCircleChangedTimer.IsEnabled)
+            {
+                return;
+            }
+
+            focusCircleChangedTimer.Stop();
+            FocusCirclesChanged?.Invoke(this, EventArgs.Empty);
         }
 
         private void ClearFocusCircleSelection()

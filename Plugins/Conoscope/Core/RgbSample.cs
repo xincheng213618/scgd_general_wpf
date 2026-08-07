@@ -1,32 +1,13 @@
-﻿namespace Conoscope.Core
+namespace Conoscope.Core
 {
     /// <summary>
-    /// RGB采样点数据
+    /// 参考曲线上的单个 XYZ 采样点。使用值类型，避免每个像素分配一个对象。
     /// </summary>
-    public class RgbSample
-    {
-
-        public double Position { get; set; }
-
-        public double DX { get; set; }
-        public double DY { get; set; }
-
-
-        /// <summary>
-        /// X通道值
-        /// </summary>
-        public double X { get; set; }
-
-
-        /// <summary>
-        /// Y通道值
-        /// </summary>
-        public double Y { get; set; }
-
-
-        /// <summary>
-        /// Z通道值
-        /// </summary>
-        public double Z { get; set; }
-    }
+    public readonly record struct RgbSample(
+        double Position,
+        int DX,
+        int DY,
+        double X,
+        double Y,
+        double Z);
 }

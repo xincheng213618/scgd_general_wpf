@@ -2,9 +2,9 @@
 using ColorVision.Core;
 using OpenCvSharp.WpfExtensions;
 using System;
-using System.Collections.Generic;
+using System.Buffers;
+using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
 namespace Conoscope.Core
@@ -28,6 +28,7 @@ namespace Conoscope.Core
     public static class ConoscopePseudoColorRenderer
     {
         private const double ContrastDisplayUpperPercentile = 0.995;
+        private const int MaximumPercentileSamples = 1_000_000;
 
         public static ConoscopePseudoColorRenderResult Render(
             OpenCvSharp.Mat xMat,
@@ -41,34 +42,44 @@ namespace Conoscope.Core
             OpenCvSharp.Mat? rangeMask = null,
             OpenCvSharp.Mat? rangeOutsideMask = null)
         {
-            using OpenCvSharp.Mat channelMat = CreateDisplayChannelMat(xMat, yMat, zMat, channel, createColorDifferenceMat, createContrastMat);
-            using OpenCvSharp.Mat gray8 = new OpenCvSharp.Mat();
-            OpenCvSharp.Mat? effectiveRangeMask = IsUsableMask(rangeMask, channelMat) ? rangeMask : null;
-            OpenCvSharp.Mat? effectiveOutsideMask = IsUsableMask(rangeOutsideMask, channelMat) ? rangeOutsideMask : null;
-
-            GetDisplayRange(channelMat, channel, effectiveRangeMask, out double minValue, out double maxValue);
-            ConvertToGray8(channelMat, gray8, minValue, maxValue, effectiveOutsideMask);
-
-            WriteableBitmap bitmap;
-            if (usePseudoColor)
+            OpenCvSharp.Mat channelMat = GetDisplayChannelMat(xMat, yMat, zMat, channel, createColorDifferenceMat, createContrastMat, out bool ownsChannelMat);
+            try
             {
-                using OpenCvSharp.Mat pseudoColor = new OpenCvSharp.Mat();
-                OpenCvSharp.Cv2.ApplyColorMap(gray8, pseudoColor, ResolveOpenCvColormap(colormap));
-                if (effectiveOutsideMask != null)
+                using OpenCvSharp.Mat gray8 = new OpenCvSharp.Mat();
+                OpenCvSharp.Mat? effectiveRangeMask = IsUsableMask(rangeMask, channelMat) ? rangeMask : null;
+                OpenCvSharp.Mat? effectiveOutsideMask = IsUsableMask(rangeOutsideMask, channelMat) ? rangeOutsideMask : null;
+
+                GetDisplayRange(channelMat, channel, effectiveRangeMask, out double minValue, out double maxValue);
+                ConvertToGray8(channelMat, gray8, minValue, maxValue, effectiveOutsideMask);
+
+                WriteableBitmap bitmap;
+                if (usePseudoColor)
                 {
-                    pseudoColor.SetTo(OpenCvSharp.Scalar.All(0), effectiveOutsideMask);
+                    using OpenCvSharp.Mat pseudoColor = new OpenCvSharp.Mat();
+                    OpenCvSharp.Cv2.ApplyColorMap(gray8, pseudoColor, ResolveOpenCvColormap(colormap));
+                    if (effectiveOutsideMask != null)
+                    {
+                        pseudoColor.SetTo(OpenCvSharp.Scalar.All(0), effectiveOutsideMask);
+                    }
+
+                    bitmap = pseudoColor.ToWriteableBitmap();
+                }
+                else
+                {
+                    bitmap = gray8.ToWriteableBitmap();
                 }
 
-                bitmap = pseudoColor.ToWriteableBitmap();
+                bitmap.Freeze();
+
+                return new ConoscopePseudoColorRenderResult(bitmap, channel, minValue, maxValue);
             }
-            else
+            finally
             {
-                bitmap = gray8.ToWriteableBitmap();
+                if (ownsChannelMat)
+                {
+                    channelMat.Dispose();
+                }
             }
-
-            bitmap.Freeze();
-
-            return new ConoscopePseudoColorRenderResult(bitmap, channel, minValue, maxValue);
         }
 
         private static void GetDisplayRange(OpenCvSharp.Mat channelMat, ExportChannel channel, OpenCvSharp.Mat? rangeMask, out double minValue, out double maxValue)
@@ -98,7 +109,7 @@ namespace Conoscope.Core
             OpenCvSharp.Cv2.MinMaxLoc(channelMat, out minValue, out maxValue, out _, out _, rangeMask);
         }
 
-        private static double GetMaskedPercentile(OpenCvSharp.Mat source, OpenCvSharp.Mat? mask, double percentile)
+        internal static unsafe double GetMaskedPercentile(OpenCvSharp.Mat source, OpenCvSharp.Mat? mask, double percentile)
         {
             if (!double.IsFinite(percentile))
             {
@@ -106,36 +117,84 @@ namespace Conoscope.Core
             }
 
             percentile = Math.Max(0, Math.Min(1, percentile));
-            List<float> values = new List<float>();
-
-            for (int row = 0; row < source.Rows; row++)
-            {
-                for (int col = 0; col < source.Cols; col++)
-                {
-                    if (mask != null && mask.At<byte>(row, col) == 0)
-                    {
-                        continue;
-                    }
-
-                    float value = source.At<float>(row, col);
-                    if (!float.IsFinite(value))
-                    {
-                        continue;
-                    }
-
-                    values.Add(value);
-                }
-            }
-
-            if (values.Count == 0)
+            int rows = source.Rows;
+            int columns = source.Cols;
+            long finiteCount = CountFinitePixels(source, mask, rows, columns);
+            if (finiteCount == 0)
             {
                 return double.NaN;
             }
 
-            values.Sort();
-            int index = (int)Math.Round((values.Count - 1) * percentile);
-            index = Math.Max(0, Math.Min(values.Count - 1, index));
-            return values[index];
+            int desiredSampleCount = (int)Math.Min(finiteCount, MaximumPercentileSamples);
+            float[] values = ArrayPool<float>.Shared.Rent(desiredSampleCount);
+            int sampleCount = 0;
+
+            try
+            {
+                long finiteIndex = 0;
+                long nextSampleIndex = GetUniformSampleIndex(0, finiteCount, desiredSampleCount);
+                for (int row = 0; row < rows && sampleCount < desiredSampleCount; row++)
+                {
+                    float* sourceRow = (float*)source.Ptr(row);
+                    byte* maskRow = mask == null ? null : (byte*)mask.Ptr(row);
+                    for (int column = 0; column < columns && sampleCount < desiredSampleCount; column++)
+                    {
+                        if (maskRow != null && maskRow[column] == 0)
+                        {
+                            continue;
+                        }
+
+                        float value = sourceRow[column];
+                        if (!float.IsFinite(value))
+                        {
+                            continue;
+                        }
+
+                        if (finiteIndex == nextSampleIndex)
+                        {
+                            values[sampleCount++] = value;
+                            if (sampleCount < desiredSampleCount)
+                            {
+                                nextSampleIndex = GetUniformSampleIndex(sampleCount, finiteCount, desiredSampleCount);
+                            }
+                        }
+
+                        finiteIndex++;
+                    }
+                }
+
+                Array.Sort(values, 0, sampleCount);
+                int quantileIndex = (int)Math.Round((sampleCount - 1) * percentile);
+                return values[Math.Clamp(quantileIndex, 0, sampleCount - 1)];
+            }
+            finally
+            {
+                ArrayPool<float>.Shared.Return(values);
+            }
+        }
+
+        private static unsafe long CountFinitePixels(OpenCvSharp.Mat source, OpenCvSharp.Mat? mask, int rows, int columns)
+        {
+            long count = 0;
+            for (int row = 0; row < rows; row++)
+            {
+                float* sourceRow = (float*)source.Ptr(row);
+                byte* maskRow = mask == null ? null : (byte*)mask.Ptr(row);
+                for (int column = 0; column < columns; column++)
+                {
+                    if ((maskRow == null || maskRow[column] != 0) && float.IsFinite(sourceRow[column]))
+                    {
+                        count++;
+                    }
+                }
+            }
+
+            return count;
+        }
+
+        private static long GetUniformSampleIndex(int sampleIndex, long valueCount, int sampleCount)
+        {
+            return ((2L * sampleIndex + 1) * valueCount) / (2L * sampleCount);
         }
 
         private static void ConvertToGray8(OpenCvSharp.Mat channelMat, OpenCvSharp.Mat gray8, double minValue, double maxValue, OpenCvSharp.Mat? rangeOutsideMask)
@@ -168,70 +227,84 @@ namespace Conoscope.Core
             Point? maskCenter = null,
             double? maskRadius = null)
         {
-            using OpenCvSharp.Mat channelMat = CreateDisplayChannelMat(xMat, yMat, zMat, channel, createColorDifferenceMat, createContrastMat);
-            using OpenCvSharp.Mat normalized = new OpenCvSharp.Mat();
-            using OpenCvSharp.Mat gray8 = new OpenCvSharp.Mat();
-
-            OpenCvSharp.Cv2.Normalize(channelMat, normalized, 0, 255, OpenCvSharp.NormTypes.MinMax);
-            normalized.ConvertTo(gray8, OpenCvSharp.MatType.CV_8UC1);
-
-            if (maskCenter.HasValue && maskRadius.HasValue && double.IsFinite(maskRadius.Value) && maskRadius.Value > 0)
+            OpenCvSharp.Mat channelMat = GetDisplayChannelMat(xMat, yMat, zMat, channel, createColorDifferenceMat, createContrastMat, out bool ownsChannelMat);
+            try
             {
-                return CreateMaskedHeightMapBitmap(gray8, maskCenter.Value, maskRadius.Value);
-            }
+                using OpenCvSharp.Mat normalized = new OpenCvSharp.Mat();
+                using OpenCvSharp.Mat gray8 = new OpenCvSharp.Mat();
 
-            WriteableBitmap bitmap = gray8.ToWriteableBitmap();
-            bitmap.Freeze();
-            return bitmap;
-        }
+                OpenCvSharp.Cv2.Normalize(channelMat, normalized, 0, 255, OpenCvSharp.NormTypes.MinMax);
+                normalized.ConvertTo(gray8, OpenCvSharp.MatType.CV_8UC1);
 
-        private static WriteableBitmap CreateMaskedHeightMapBitmap(OpenCvSharp.Mat gray8, Point center, double radius)
-        {
-            WriteableBitmap grayBitmap = gray8.ToWriteableBitmap();
-            int width = grayBitmap.PixelWidth;
-            int height = grayBitmap.PixelHeight;
-            byte[] grayPixels = new byte[width * height];
-            grayBitmap.CopyPixels(grayPixels, width, 0);
-
-            byte[] pixels = new byte[width * height * 4];
-            double radiusSquared = radius * radius;
-
-            for (int y = 0; y < height; y++)
-            {
-                for (int x = 0; x < width; x++)
+                if (maskCenter.HasValue && maskRadius.HasValue && double.IsFinite(maskRadius.Value) && maskRadius.Value > 0)
                 {
-                    int grayIndex = y * width + x;
-                    int pixelIndex = grayIndex * 4;
-                    byte gray = grayPixels[grayIndex];
-                    bool isInsideMask = Math.Pow(x - center.X, 2) + Math.Pow(y - center.Y, 2) <= radiusSquared;
+                    return CreateMaskedHeightMapBitmap(gray8, maskCenter.Value, maskRadius.Value);
+                }
 
-                    pixels[pixelIndex] = gray;
-                    pixels[pixelIndex + 1] = gray;
-                    pixels[pixelIndex + 2] = gray;
-                    pixels[pixelIndex + 3] = isInsideMask ? (byte)255 : (byte)0;
+                WriteableBitmap bitmap = gray8.ToWriteableBitmap();
+                bitmap.Freeze();
+                return bitmap;
+            }
+            finally
+            {
+                if (ownsChannelMat)
+                {
+                    channelMat.Dispose();
                 }
             }
+        }
 
-            WriteableBitmap bitmap = new WriteableBitmap(width, height, 96, 96, PixelFormats.Bgra32, null);
-            bitmap.WritePixels(new Int32Rect(0, 0, width, height), pixels, width * 4, 0);
+        private static unsafe WriteableBitmap CreateMaskedHeightMapBitmap(OpenCvSharp.Mat gray8, Point center, double radius)
+        {
+            int width = gray8.Cols;
+            int height = gray8.Rows;
+            double radiusSquared = radius * radius;
+            using OpenCvSharp.Mat bgra = new OpenCvSharp.Mat(height, width, OpenCvSharp.MatType.CV_8UC4);
+            Parallel.For(0, height, row =>
+            {
+                byte* grayRow = (byte*)gray8.Ptr(row);
+                byte* bgraRow = (byte*)bgra.Ptr(row);
+                double deltaY = row - center.Y;
+                double deltaYSquared = deltaY * deltaY;
+                for (int column = 0; column < width; column++)
+                {
+                    byte gray = grayRow[column];
+                    int pixelOffset = column * 4;
+                    bgraRow[pixelOffset] = gray;
+                    bgraRow[pixelOffset + 1] = gray;
+                    bgraRow[pixelOffset + 2] = gray;
+                    double deltaX = column - center.X;
+                    bgraRow[pixelOffset + 3] = deltaX * deltaX + deltaYSquared <= radiusSquared ? (byte)255 : (byte)0;
+                }
+            });
+
+            WriteableBitmap bitmap = bgra.ToWriteableBitmap();
             bitmap.Freeze();
             return bitmap;
         }
 
-        private static OpenCvSharp.Mat CreateDisplayChannelMat(
+        private static OpenCvSharp.Mat GetDisplayChannelMat(
             OpenCvSharp.Mat xMat,
             OpenCvSharp.Mat yMat,
             OpenCvSharp.Mat zMat,
             ExportChannel channel,
             Func<OpenCvSharp.Mat> createColorDifferenceMat,
-            Func<OpenCvSharp.Mat> createContrastMat)
+            Func<OpenCvSharp.Mat> createContrastMat,
+            out bool ownsResult)
         {
-            return channel switch
+            OpenCvSharp.Mat result = channel switch
             {
+                ExportChannel.X => xMat,
+                ExportChannel.Y => yMat,
+                ExportChannel.Z => zMat,
                 ExportChannel.ColorDifference => createColorDifferenceMat(),
                 ExportChannel.Contrast => createContrastMat(),
                 _ => ConoscopeColorimetry.CreateChannelMat(xMat, yMat, zMat, channel)
             };
+            ownsResult = !ReferenceEquals(result, xMat)
+                && !ReferenceEquals(result, yMat)
+                && !ReferenceEquals(result, zMat);
+            return result;
         }
 
         private static OpenCvSharp.ColormapTypes ResolveOpenCvColormap(ColormapTypes colormapType)

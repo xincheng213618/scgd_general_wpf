@@ -1,185 +1,21 @@
 using Conoscope.ApplicationServices.Analysis;
 using Conoscope.Core;
 using Conoscope.Presentation.Formatters;
-using Conoscope.Presentation.Helpers;
 using Conoscope.Properties;
 using System;
 using System.ComponentModel;
-using System.Globalization;
 using System.Text;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Input;
 using System.Windows.Media.Imaging;
 
 namespace Conoscope
 {
     public partial class ConoscopeView
     {
-        private void RefreshQuickControlsFromAxisParam()
+        private void NotifyReferenceStateChanged()
         {
-            if (cbQuickReferenceMode == null || sliderQuickReferenceAngle == null || sliderQuickReferenceRadius == null)
-            {
-                return;
-            }
-
-            ConoscopeCoordinateAxisParam axisParam = CoordinateAxisConfig;
-
-            isUpdatingQuickControls = true;
-            try
-            {
-                ComboBoxHelper.SelectItemByTag(cbQuickReferenceMode, axisParam.ReferenceMode.ToString());
-                sliderQuickReferenceAngle.Value = axisParam.ReferenceAngle;
-                sliderQuickReferenceRadius.Maximum = MaxAngle;
-                sliderQuickReferenceRadius.Value = Math.Max(0, Math.Min(axisParam.ReferenceRadiusAngle, MaxAngle));
-                if (txtQuickReferenceAngle != null)
-                {
-                    txtQuickReferenceAngle.Text = axisParam.ReferenceAngle.ToString("F2", CultureInfo.InvariantCulture);
-                }
-
-                if (txtQuickReferenceRadius != null)
-                {
-                    txtQuickReferenceRadius.Text = axisParam.ReferenceRadiusAngle.ToString("F2", CultureInfo.InvariantCulture);
-                }
-
-                SyncReferenceInteractionToggle();
-            }
-            finally
-            {
-                isUpdatingQuickControls = false;
-            }
-
-            UpdateReferenceControlVisibility();
+            SyncReferenceInteractionToggle();
             RaiseWindowQuickControlStateChanged();
-        }
-
-        private void UpdateReferenceControlVisibility()
-        {
-            if (rowReferenceAngle == null || rowReferenceRadius == null)
-            {
-                return;
-            }
-
-            ConoscopeCoordinateReferenceMode mode = CoordinateAxisConfig.ReferenceMode;
-            rowReferenceAngle.Visibility = mode == ConoscopeCoordinateReferenceMode.AzimuthLine ? Visibility.Visible : Visibility.Collapsed;
-            rowReferenceRadius.Visibility = mode == ConoscopeCoordinateReferenceMode.PolarCircle ? Visibility.Visible : Visibility.Collapsed;
-        }
-
-        private void QuickReferenceMode_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (isUpdatingQuickControls)
-            {
-                return;
-            }
-
-            ConoscopeCoordinateReferenceMode mode = ComboBoxHelper.GetSelectedEnumByTag(
-                cbQuickReferenceMode,
-                CoordinateAxisConfig.ReferenceMode);
-
-            CoordinateAxisConfig.ReferenceMode = mode;
-            UpdateReferenceControlVisibility();
-            ApplyCoordinateAxisReference();
-        }
-
-        private void QuickReferenceAngle_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-        {
-            if (isUpdatingQuickControls || !IsInitialized)
-            {
-                return;
-            }
-
-            ConoscopeCoordinateAxisParam axisParam = CoordinateAxisConfig;
-            axisParam.ReferenceAngle = e.NewValue;
-            if (axisParam.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine)
-            {
-                ApplyCoordinateAxisReference();
-            }
-        }
-
-        private void QuickReferenceRadius_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-        {
-            if (isUpdatingQuickControls || !IsInitialized)
-            {
-                return;
-            }
-
-            ConoscopeCoordinateAxisParam axisParam = CoordinateAxisConfig;
-            axisParam.ReferenceRadiusAngle = Math.Max(0, Math.Min(e.NewValue, MaxAngle));
-            if (axisParam.ReferenceMode == ConoscopeCoordinateReferenceMode.PolarCircle)
-            {
-                ApplyCoordinateAxisReference();
-            }
-        }
-
-        private void QuickReferenceTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.Key != Key.Enter)
-            {
-                return;
-            }
-
-            if (ReferenceEquals(sender, txtQuickReferenceAngle))
-            {
-                ApplyQuickReferenceAngleFromText();
-            }
-            else if (ReferenceEquals(sender, txtQuickReferenceRadius))
-            {
-                ApplyQuickReferenceRadiusFromText();
-            }
-
-            e.Handled = true;
-        }
-
-        private void txtQuickReferenceAngle_LostFocus(object sender, RoutedEventArgs e)
-        {
-            ApplyQuickReferenceAngleFromText();
-        }
-
-        private void txtQuickReferenceRadius_LostFocus(object sender, RoutedEventArgs e)
-        {
-            ApplyQuickReferenceRadiusFromText();
-        }
-
-        private void ApplyQuickReferenceAngleFromText()
-        {
-            if (txtQuickReferenceAngle == null)
-            {
-                return;
-            }
-
-            if (!ConoscopeNumericHelper.TryParseDouble(txtQuickReferenceAngle.Text, out double angle) || !double.IsFinite(angle))
-            {
-                RefreshQuickControlsFromAxisParam();
-                return;
-            }
-
-            CoordinateAxisConfig.ReferenceAngle = ConoscopeCoordinateAxisParam.NormalizeAzimuthAngle(angle);
-            RefreshQuickControlsFromAxisParam();
-            if (CoordinateAxisConfig.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine)
-            {
-                ApplyCoordinateAxisReference();
-            }
-        }
-
-        private void ApplyQuickReferenceRadiusFromText()
-        {
-            if (txtQuickReferenceRadius == null)
-            {
-                return;
-            }
-
-            if (!ConoscopeNumericHelper.TryParseDouble(txtQuickReferenceRadius.Text, out double radiusAngle) || !double.IsFinite(radiusAngle))
-            {
-                RefreshQuickControlsFromAxisParam();
-                return;
-            }
-
-            CoordinateAxisConfig.ReferenceRadiusAngle = Math.Max(0, Math.Min(radiusAngle, MaxAngle));
-            RefreshQuickControlsFromAxisParam();
-            if (CoordinateAxisConfig.ReferenceMode == ConoscopeCoordinateReferenceMode.PolarCircle)
-            {
-                ApplyCoordinateAxisReference();
-            }
         }
 
         private void InitializeCoordinateAxis(Point center, int radius)
@@ -209,7 +45,7 @@ namespace Conoscope
 
         private void CoordinateAxisParam_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
-            RefreshQuickControlsFromAxisParam();
+            NotifyReferenceStateChanged();
 
             if (e.PropertyName == nameof(ConoscopeCoordinateAxisParam.ReferenceMode))
             {
@@ -220,7 +56,10 @@ namespace Conoscope
             if (e.PropertyName == nameof(ConoscopeCoordinateAxisParam.ReferenceAngle)
                 || e.PropertyName == nameof(ConoscopeCoordinateAxisParam.ReferenceRadiusAngle))
             {
-                ApplyCoordinateAxisReference();
+                if (coordinateAxisController?.IsUpdatingReference != true)
+                {
+                    ApplyCoordinateAxisReference();
+                }
             }
         }
 
@@ -234,7 +73,7 @@ namespace Conoscope
             UpdateCieWindowSelection(e.Position);
             HideCoordinateDragOverlay();
 
-            if (!e.IsValueChanged && !e.IsFinal)
+            if (!e.IsValueChanged)
             {
                 return;
             }
@@ -381,17 +220,18 @@ namespace Conoscope
 
             angle = ConoscopeCoordinateAxisParam.NormalizeAzimuthAngle(angle);
 
-            coordinateAxisPolarLine ??= new PolarAngleLine();
-            coordinateAxisPolarLine.Angle = angle;
-            coordinateAxisPolarLine.RgbData.Clear();
+            PolarAngleLine curve = coordinateAxisReferenceCurve as PolarAngleLine ?? new PolarAngleLine();
+            curve.Angle = angle;
+            curve.Samples.Clear();
 
             (Point Start, Point End) endpoints = ConoscopeCoordinateAxisVisual.GetAzimuthLineEndpoints(currentImageCenter, currentImageRadius, angle);
-            ExtractRgbAlongLine(coordinateAxisPolarLine, endpoints.End, endpoints.Start, currentBitmapSource, currentImageRadius);
+            ExtractRgbAlongLine(curve, endpoints.End, endpoints.Start);
 
-            selectedPolarLine = coordinateAxisPolarLine;
+            coordinateAxisReferenceCurve = curve;
+            selectedReferenceCurve = curve;
             SetReferencePlotLimits();
             UpdateReferencePlotHeader();
-            UpdatePlot();
+            UpdateReferencePlot();
         }
 
         private void UpdateCoordinateAxisPolar(double radiusAngle)
@@ -401,35 +241,34 @@ namespace Conoscope
                 return;
             }
 
-            radiusAngle = Math.Max(0, Math.Min(radiusAngle, MaxAngle));
+            radiusAngle = Math.Clamp(radiusAngle, 0, MaxAngle);
 
-            coordinateAxisCircleLine ??= new ConcentricCircleLine();
-            coordinateAxisCircleLine.RadiusAngle = radiusAngle;
-            coordinateAxisCircleLine.RgbData.Clear();
-            coordinateAxisCircleLine.Circle = null;
-            ExtractRgbAlongCircle(coordinateAxisCircleLine, currentImageCenter, radiusAngle, currentBitmapSource);
+            ConcentricCircleLine curve = coordinateAxisReferenceCurve as ConcentricCircleLine ?? new ConcentricCircleLine();
+            curve.RadiusAngle = radiusAngle;
+            curve.Samples.Clear();
+            ExtractRgbAlongCircle(curve, currentImageCenter, radiusAngle);
 
-            selectedCircleLine = coordinateAxisCircleLine;
+            coordinateAxisReferenceCurve = curve;
+            selectedReferenceCurve = curve;
             SetReferencePlotLimits();
             UpdateReferencePlotHeader();
-            UpdatePlotForCircle();
+            UpdateReferencePlot();
         }
 
         private void DisposeCoordinateAxis()
         {
-            if (coordinateAxisController == null)
+            if (coordinateAxisController != null)
             {
-                return;
+                coordinateAxisController.ReferenceChanged -= CoordinateAxisController_ReferenceChanged;
+                coordinateAxisController.PointerMoved -= CoordinateAxisController_PointerMoved;
+                coordinateAxisController.PointerLeft -= CoordinateAxisController_PointerLeft;
+                coordinateAxisController.Axis.Attribute.PropertyChanged -= CoordinateAxisParam_PropertyChanged;
+                coordinateAxisController.Dispose();
+                coordinateAxisController = null;
             }
 
-            coordinateAxisController.ReferenceChanged -= CoordinateAxisController_ReferenceChanged;
-            coordinateAxisController.PointerMoved -= CoordinateAxisController_PointerMoved;
-            coordinateAxisController.PointerLeft -= CoordinateAxisController_PointerLeft;
-            coordinateAxisController.Axis.Attribute.PropertyChanged -= CoordinateAxisParam_PropertyChanged;
-            coordinateAxisController.Dispose();
-            coordinateAxisController = null;
-            coordinateAxisPolarLine = null;
-            coordinateAxisCircleLine = null;
+            selectedReferenceCurve = null;
+            coordinateAxisReferenceCurve = null;
         }
 
         private void CreateAndAnalyzePolarLines()
@@ -467,11 +306,8 @@ namespace Conoscope
 
                 log.Info($"图像尺寸: {imageWidth}x{imageHeight}, 中心: ({center.X}, {center.Y}), 半径: {radius}, 系数: {currentPixelsPerDegree:F6}px/deg");
 
-                ClearDisplayedCircles();
-
-                polarAngleLines.Clear();
-                selectedPolarLine = null;
-                coordinateAxisPolarLine = null;
+                selectedReferenceCurve = null;
+                coordinateAxisReferenceCurve = null;
 
                 coordinateAxisController?.BringToFront();
                 ApplyCoordinateAxisReference();
@@ -483,10 +319,5 @@ namespace Conoscope
             }
         }
 
-        private void ClearDisplayedCircles()
-        {
-            selectedCircleLine = null;
-            coordinateAxisCircleLine = null;
-        }
     }
 }

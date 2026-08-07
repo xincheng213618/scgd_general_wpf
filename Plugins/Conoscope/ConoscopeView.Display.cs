@@ -1,27 +1,14 @@
 using ColorVision.ImageEditor;
 using ColorVision.UI;
 using Conoscope.Presentation.Formatters;
-using Conoscope.Presentation.Helpers;
 using Conoscope.Core;
 using System;
 using System.Windows;
-using System.Windows.Controls;
 
 namespace Conoscope
 {
     public partial class ConoscopeView
     {
-        private static readonly ExportChannel[] fullXyzChannels =
-        {
-            ExportChannel.X,
-            ExportChannel.Z,
-            ExportChannel.CieX,
-            ExportChannel.CieY,
-            ExportChannel.CieU,
-            ExportChannel.CieV,
-            ExportChannel.ColorDifference
-        };
-
         private OpenCvSharp.Mat? pseudoColorRangeMask;
         private OpenCvSharp.Mat? pseudoColorRangeOutsideMask;
         private int pseudoColorRangeMaskWidth;
@@ -213,14 +200,7 @@ namespace Conoscope
         private void RefreshChannelAvailability()
         {
             bool hasFullXyzData = HasXyzData();
-            foreach (ExportChannel channel in fullXyzChannels)
-            {
-                bool isVisible = hasFullXyzData;
-                UpdateChannelOptionVisibility(cbDisplayChannel, channel, isVisible);
-            }
-
             bool canOfferContrastChannel = hasFullXyzData && CanOfferContrastChannel();
-            UpdateChannelOptionVisibility(cbDisplayChannel, ExportChannel.Contrast, canOfferContrastChannel);
 
             if (RequiresFullXyzData(RenderingConfig.DisplayChannel) && !hasFullXyzData)
             {
@@ -232,91 +212,14 @@ namespace Conoscope
                 RenderingConfig.DisplayChannel = ExportChannel.Y;
             }
 
-            if ((RequiresFullXyzData(selectedExportChannel) && !hasFullXyzData)
-                || (!canOfferContrastChannel && selectedExportChannel == ExportChannel.Contrast))
+            if ((RequiresFullXyzData(State.ExportChannel) && !hasFullXyzData)
+                || (!canOfferContrastChannel && State.ExportChannel == ExportChannel.Contrast))
             {
-                selectedExportChannel = ExportChannel.Y;
+                State.ExportChannel = ExportChannel.Y;
             }
         }
 
-        private static void UpdateChannelOptionVisibility(ComboBox? comboBox, ExportChannel channel, bool isVisible)
-        {
-            if (comboBox == null)
-            {
-                return;
-            }
-
-            string tag = channel.ToString();
-            ComboBoxHelper.SetItemVisibilityByTag(comboBox, tag, isVisible ? Visibility.Visible : Visibility.Collapsed);
-            if (!isVisible
-                && comboBox.SelectedItem is ComboBoxItem selectedItem
-                && string.Equals(selectedItem.Tag?.ToString(), tag, StringComparison.OrdinalIgnoreCase))
-            {
-                ComboBoxHelper.TrySelectItemByTag(comboBox, ExportChannel.Y.ToString(), visibleOnly: true);
-            }
-        }
-
-        private ExportChannel GetSelectedDisplayChannel()
-        {
-            if (!IsLoaded || cbDisplayChannel == null)
-            {
-                return RenderingConfig.DisplayChannel;
-            }
-
-            return ComboBoxHelper.GetSelectedEnumByTag(cbDisplayChannel, RenderingConfig.DisplayChannel);
-        }
-
-        private void DisplayChannel_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (isUpdatingDisplayControls)
-            {
-                return;
-            }
-
-            ExportChannel channel = GetSelectedDisplayChannel();
-            if (RequiresFullXyzData(channel) && !HasXyzData())
-            {
-                RefreshChannelAvailability();
-                RaiseWindowQuickControlStateChanged();
-                return;
-            }
-
-            if (channel == ExportChannel.Contrast && !CanOfferContrastChannel())
-            {
-                RefreshChannelAvailability();
-                RaiseWindowQuickControlStateChanged();
-                return;
-            }
-
-            RenderingConfig.DisplayChannel = channel;
-            UpdateColorDifferencePanelVisibility();
-
-            if (HasXyzData())
-            {
-                if (channel == ExportChannel.ColorDifference && !CanRefreshColorDifferenceDisplay())
-                {
-                    RaiseWindowQuickControlStateChanged();
-                    return;
-                }
-
-                if (channel == ExportChannel.Contrast && !CanRefreshContrastDisplay())
-                {
-                    RaiseWindowQuickControlStateChanged();
-                    return;
-                }
-
-                try
-                {
-                    RefreshDisplayedImage();
-                    UpdateReferencePlot();
-                }
-                catch (Exception ex)
-                {
-                    log.Error($"刷新显示通道失败: {ex.Message}", ex);
-                    MessageBox.Show(ex.Message, Properties.Resources.PanelColorDiff, MessageBoxButton.OK, MessageBoxImage.Warning);
-                }
-            }
-        }
+        private ExportChannel GetSelectedDisplayChannel() => State.DisplayChannel;
 
         private void btnSaveConoscopeConfig_Click(object sender, RoutedEventArgs e)
         {

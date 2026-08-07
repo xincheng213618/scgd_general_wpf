@@ -4,64 +4,191 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:properties="clr-namespace:Conoscope.Properties"
+        xmlns:automation="clr-namespace:System.Windows.Automation;assembly=PresentationCore"
         mc:Ignorable="d"
-        Title="{x:Static properties:Resources.TitleConoscopeSettings}" Height="640" Width="720"
-        MinHeight="520" MinWidth="620"
+        Title="{x:Static properties:Resources.TitleConoscopeSettings}"
+        Height="700" Width="940" MinHeight="600" MinWidth="780"
         WindowStartupLocation="CenterOwner"
         Background="{StaticResource GlobalBackground}">
-    <Grid Margin="12">
+    <Grid Margin="16">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <Grid Grid.Row="0" Margin="0,0,0,10">
+        <Grid Margin="0,0,0,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="210"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel>
+                <TextBlock Text="{x:Static properties:Resources.TitleConoscopeSettings}"
+                           FontSize="20" FontWeight="SemiBold"/>
+                <TextBlock x:Name="tbPendingHint" Margin="0,4,0,0" Foreground="Gray" TextWrapping="Wrap"/>
+            </StackPanel>
+            <TextBlock Grid.Column="1" Text="{x:Static properties:Resources.LabelCurrentModel}"
+                       VerticalAlignment="Center" Margin="16,0,8,0"/>
+            <ComboBox x:Name="cbCurrentModel" Grid.Column="2" MinHeight="30"
+                      SelectionChanged="cbCurrentModel_SelectionChanged"
+                      automation:AutomationProperties.Name="{x:Static properties:Resources.LabelCurrentModel}"/>
+        </Grid>
+
+        <TabControl x:Name="SettingsTabs" Grid.Row="1">
+            <TabItem x:Name="tabBasic">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="12">
+                    <Grid x:Name="basicSettingsPanel">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="16"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <GroupBox x:Name="groupDisplayExport" Grid.Column="0">
+                            <StackPanel Margin="10">
+                                <Grid Margin="0,0,0,10">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="150"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{x:Static properties:Resources.Con_Cfg_DisplayChannel}" VerticalAlignment="Center"/>
+                                    <ComboBox x:Name="cbDisplayChannel" Grid.Column="1" MinHeight="28"
+                                              DisplayMemberPath="Name" SelectedValuePath="Value"
+                                              SelectedValue="{Binding DisplayChannel, Mode=TwoWay}"
+                                              automation:AutomationProperties.Name="{x:Static properties:Resources.Con_Cfg_DisplayChannel}"/>
+                                </Grid>
+
+                                <Grid Margin="0,0,0,10">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="150"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{x:Static properties:Resources.Con_Cfg_PseudoColor}" VerticalAlignment="Center"/>
+                                    <ComboBox x:Name="cbPseudoColorMap" Grid.Column="1" MinHeight="28"
+                                              DisplayMemberPath="Name" SelectedValuePath="Value"
+                                              SelectedValue="{Binding PseudoColorMap, Mode=TwoWay}"
+                                              automation:AutomationProperties.Name="{x:Static properties:Resources.Con_Cfg_PseudoColor}"/>
+                                </Grid>
+
+                                <CheckBox Content="{x:Static properties:Resources.Con_Cfg_UsePseudoColor}"
+                                          IsChecked="{Binding UsePseudoColor, Mode=TwoWay}" Margin="0,0,0,8"/>
+                                <CheckBox Content="{x:Static properties:Resources.ChkRangeLimit}"
+                                          IsChecked="{Binding UsePseudoColorRangeLimit, Mode=TwoWay}" Margin="0,0,0,16"/>
+
+                                <Separator Margin="0,0,0,14"/>
+
+                                <Grid Margin="0,0,0,10">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="180"/>
+                                        <ColumnDefinition Width="90"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{x:Static properties:Resources.Con_Cfg_SampleInterval}" VerticalAlignment="Center"/>
+                                    <TextBox Grid.Column="1" Text="{Binding CurrentCurveExportStepDegrees, Mode=TwoWay, UpdateSourceTrigger=LostFocus, ValidatesOnExceptions=True}" MinHeight="28"
+                                             automation:AutomationProperties.Name="{x:Static properties:Resources.Con_Cfg_SampleInterval}"/>
+                                    <TextBlock Grid.Column="2" Text="0.01–360°" Foreground="Gray" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                </Grid>
+
+                                <Grid Margin="0,0,0,10">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="180"/>
+                                        <ColumnDefinition Width="90"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{x:Static properties:Resources.Con_Cfg_Decimals}" VerticalAlignment="Center"/>
+                                    <TextBox Grid.Column="1" Text="{Binding ExportDecimalPlaces, Mode=TwoWay, UpdateSourceTrigger=LostFocus, ValidatesOnExceptions=True}" MinHeight="28"
+                                             automation:AutomationProperties.Name="{x:Static properties:Resources.Con_Cfg_Decimals}"/>
+                                    <TextBlock Grid.Column="2" Text="0–8" Foreground="Gray" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                </Grid>
+
+                                <CheckBox Content="{x:Static properties:Resources.Con_Cfg_ExportMetadata}"
+                                          IsChecked="{Binding CurrentCurveExportIncludeMetadata, Mode=TwoWay}"/>
+                            </StackPanel>
+                        </GroupBox>
+
+                        <GroupBox x:Name="groupModelBasic" Grid.Column="2">
+                            <Grid x:Name="modelBasicPanel" Margin="10">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="180"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <TextBlock Text="{x:Static properties:Resources.Con_Model_FOV}" VerticalAlignment="Center" Margin="0,0,8,10"/>
+                                <TextBox Grid.Column="1" Text="{Binding MaxAngle, Mode=TwoWay, UpdateSourceTrigger=LostFocus, ValidatesOnExceptions=True}" MinHeight="28" Margin="0,0,0,10"
+                                         automation:AutomationProperties.Name="{x:Static properties:Resources.Con_Model_FOV}"/>
+
+                                <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.Con_Model_Pixels}" VerticalAlignment="Center" Margin="0,0,8,10"/>
+                                <TextBox x:Name="txtFullScalePixels" Grid.Row="1" Grid.Column="1" Text="{Binding FullScalePixelCount, Mode=TwoWay, UpdateSourceTrigger=LostFocus, ValidatesOnExceptions=True}" MinHeight="28" Margin="0,0,0,10"
+                                         automation:AutomationProperties.Name="{x:Static properties:Resources.Con_Model_Pixels}"/>
+
+                                <CheckBox Grid.Row="2" Grid.ColumnSpan="2" Content="{x:Static properties:Resources.Con_Model_EnableObsCam}"
+                                          IsChecked="{Binding HasObservationCamera, Mode=TwoWay}" Margin="0,2,0,12"/>
+
+                                <TextBlock Grid.Row="3" Text="{x:Static properties:Resources.Con_Model_SizeCoeff}" VerticalAlignment="Center" Margin="0,0,8,10"/>
+                                <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding ObservationCameraScaleCoefficient, Mode=TwoWay, UpdateSourceTrigger=LostFocus, ValidatesOnExceptions=True}" MinHeight="28" Margin="0,0,0,10"
+                                         automation:AutomationProperties.Name="{x:Static properties:Resources.Con_Model_SizeCoeff}"/>
+
+                                <TextBlock Grid.Row="4" Text="{x:Static properties:Resources.Con_Model_CenterX}" VerticalAlignment="Center" Margin="0,0,8,10"/>
+                                <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding ObservationCameraCenterX, Mode=TwoWay, UpdateSourceTrigger=LostFocus, ValidatesOnExceptions=True}" MinHeight="28" Margin="0,0,0,10"
+                                         automation:AutomationProperties.Name="{x:Static properties:Resources.Con_Model_CenterX}"/>
+
+                                <TextBlock Grid.Row="5" Text="{x:Static properties:Resources.Con_Model_CenterY}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding ObservationCameraCenterY, Mode=TwoWay, UpdateSourceTrigger=LostFocus, ValidatesOnExceptions=True}" MinHeight="28"
+                                         automation:AutomationProperties.Name="{x:Static properties:Resources.Con_Model_CenterY}"/>
+                            </Grid>
+                        </GroupBox>
+                    </Grid>
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem Header="{x:Static properties:Resources.GroupBoxPreprocessSettings}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="12">
+                    <ContentControl x:Name="PreprocessSettingsHost"/>
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem x:Name="tabAdvanced">
+                <Grid Margin="12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="16"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <GroupBox Header="{x:Static properties:Resources.GroupBoxModelParams}">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                            <ContentControl x:Name="AdvancedProfileHost" Margin="8"/>
+                        </ScrollViewer>
+                    </GroupBox>
+                    <GroupBox Grid.Column="2" Header="{x:Static properties:Resources.Con_Category_CoordAxis}">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                            <ContentControl x:Name="CoordinateAxisHost" Margin="8"/>
+                        </ScrollViewer>
+                    </GroupBox>
+                </Grid>
+            </TabItem>
+        </TabControl>
+
+        <Grid Grid.Row="2" Margin="0,12,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="220"/>
                 <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <TextBlock Text="{x:Static properties:Resources.LabelCurrentModel}" VerticalAlignment="Center" Margin="0,0,8,0"/>
-            <ComboBox x:Name="cbCurrentModel" Grid.Column="1" MinHeight="28" SelectionChanged="cbCurrentModel_SelectionChanged"/>
+            <Button x:Name="btnRestoreDefaults" Width="104" Height="32" Click="btnRestoreDefaults_Click"/>
+            <TextBlock x:Name="tbSettingsStatus" Grid.Column="1" VerticalAlignment="Center" Margin="12,0" Foreground="Gray" TextWrapping="Wrap"/>
+            <StackPanel Grid.Column="2" Orientation="Horizontal">
+                <Button x:Name="btnApply" Width="112" Height="32" Margin="0,0,10,0" IsDefault="True" Click="btnApply_Click"/>
+                <Button Content="{x:Static properties:Resources.BtnCancel}" Width="88" Height="32" IsCancel="True" Click="btnCancel_Click"/>
+            </StackPanel>
         </Grid>
-
-        <Grid Grid.Row="1">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="12"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
-
-            <Grid Grid.Column="0">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="12"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
-
-                <GroupBox Header="{x:Static properties:Resources.GroupBoxGlobalSettings}" Grid.Row="0">
-                    <ScrollViewer VerticalScrollBarVisibility="Auto">
-                        <ContentControl x:Name="GlobalSettingsHost" Margin="8"/>
-                    </ScrollViewer>
-                </GroupBox>
-
-                <GroupBox Header="{x:Static properties:Resources.GroupBoxPreprocessSettings}" Grid.Row="2">
-                    <ScrollViewer VerticalScrollBarVisibility="Auto">
-                        <ContentControl x:Name="PreprocessSettingsHost" Margin="8"/>
-                    </ScrollViewer>
-                </GroupBox>
-            </Grid>
-
-            <GroupBox Header="{x:Static properties:Resources.GroupBoxModelParams}" Grid.Column="2">
-                <ScrollViewer VerticalScrollBarVisibility="Auto">
-                    <ContentControl x:Name="ModelProfileHost" Margin="8"/>
-                </ScrollViewer>
-            </GroupBox>
-        </Grid>
-
-        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
-            <Button Content="{x:Static properties:Resources.BtnClose}" Width="88" Height="30" IsDefault="True" Click="btnClose_Click"/>
-        </StackPanel>
     </Grid>
 </Window>

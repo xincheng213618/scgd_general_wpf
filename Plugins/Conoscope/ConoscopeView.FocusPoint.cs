@@ -581,21 +581,7 @@ namespace Conoscope
                 points.Add(point);
             }
 
-            capture = MeasurementCapture.FromFocusPoints(slotName, string.IsNullOrWhiteSpace(Filename) ? "CurrentView" : Path.GetFileName(Filename), points);
-            return true;
-        }
-
-        public bool TryGetLatestFocusPointMeasurement(out ImageMeasurement measurement, out string? errorMessage)
-        {
-            measurement = default!;
-            errorMessage = null;
-
-            if (!TryGetFocusPointMeasurementCapture("Latest", out MeasurementCapture capture, out errorMessage))
-            {
-                return false;
-            }
-
-            measurement = capture.Points[^1].Measurement;
+            capture = new MeasurementCapture(slotName, string.IsNullOrWhiteSpace(Filename) ? "CurrentView" : Path.GetFileName(Filename), points);
             return true;
         }
 

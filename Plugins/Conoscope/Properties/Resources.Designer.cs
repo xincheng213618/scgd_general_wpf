@@ -1375,6 +1375,15 @@ namespace Conoscope.Properties {
         }
         
         /// <summary>
+        ///   查找类似 观察相机标记圆心的 X 像素坐标。 的本地化字符串。
+        /// </summary>
+        public static string Con_Model_CenterX_Description {
+            get {
+                return ResourceManager.GetString("Con_Model_CenterX_Description", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 中心点Y(像素) 的本地化字符串。
         /// </summary>
         public static string Con_Model_CenterY {
@@ -1382,7 +1391,16 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("Con_Model_CenterY", resourceCulture);
             }
         }
-        
+
+        /// <summary>
+        ///   查找类似 观察相机标记圆心的 Y 像素坐标。 的本地化字符串。
+        /// </summary>
+        public static string Con_Model_CenterY_Description {
+            get {
+                return ResourceManager.GetString("Con_Model_CenterY_Description", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 ConoscopeCoefficient(度/像素) 的本地化字符串。
         /// </summary>
@@ -1391,7 +1409,16 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("Con_Model_Coefficient", resourceCulture);
             }
         }
-        
+
+        /// <summary>
+        ///   查找类似 每像素对应的角度。0 表示根据视场角和完整像素数自动计算。 的本地化字符串。
+        /// </summary>
+        public static string Con_Model_Coefficient_Description {
+            get {
+                return ResourceManager.GetString("Con_Model_Coefficient_Description", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 启用观察相机 的本地化字符串。
         /// </summary>
@@ -1400,7 +1427,16 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("Con_Model_EnableObsCam", resourceCulture);
             }
         }
-        
+
+        /// <summary>
+        ///   查找类似 启用后显示观察相机相关功能。VA60 默认启用，VA80 默认关闭。 的本地化字符串。
+        /// </summary>
+        public static string Con_Model_EnableObsCam_Description {
+            get {
+                return ResourceManager.GetString("Con_Model_EnableObsCam_Description", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 视场角(度) 的本地化字符串。
         /// </summary>
@@ -1409,7 +1445,16 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("Con_Model_FOV", resourceCulture);
             }
         }
-        
+
+        /// <summary>
+        ///   查找类似 测量范围的最大极角。VA60 通常为 60°，VA80 通常为 80°。 的本地化字符串。
+        /// </summary>
+        public static string Con_Model_FOV_Description {
+            get {
+                return ResourceManager.GetString("Con_Model_FOV_Description", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 完整像素数(px) 的本地化字符串。
         /// </summary>
@@ -1418,7 +1463,16 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("Con_Model_Pixels", resourceCulture);
             }
         }
-        
+
+        /// <summary>
+        ///   查找类似 图像圆心到测量边缘的像素半径。0 表示自动使用图像短边的一半。 的本地化字符串。
+        /// </summary>
+        public static string Con_Model_Pixels_Description {
+            get {
+                return ResourceManager.GetString("Con_Model_Pixels_Description", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 尺寸系数(mm/像素) 的本地化字符串。
         /// </summary>
@@ -1427,11 +1481,20 @@ namespace Conoscope.Properties {
                 return ResourceManager.GetString("Con_Model_SizeCoeff", resourceCulture);
             }
         }
-        
+
+        /// <summary>
+        ///   查找类似 观察相机中每像素对应的毫米数，用于绘制尺寸圆。 的本地化字符串。
+        /// </summary>
+        public static string Con_Model_SizeCoeff_Description {
+            get {
+                return ResourceManager.GetString("Con_Model_SizeCoeff_Description", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 全部关注点 的本地化字符串。
         /// </summary>
-        public static string Conoscope_AllFocusPoints {
+public static string Conoscope_AllFocusPoints {
             get {
                 return ResourceManager.GetString("Conoscope_AllFocusPoints", resourceCulture);
             }
@@ -4344,9 +4407,144 @@ namespace Conoscope.Properties {
         }
         
         /// <summary>
+        ///   查找类似 高级设置 的本地化字符串。
+        /// </summary>
+        public static string Ui_AdvancedSettings {
+            get {
+                return ResourceManager.GetString("Ui_AdvancedSettings", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 应用并保存 的本地化字符串。
+        /// </summary>
+        public static string Ui_ApplyAndSave {
+            get {
+                return ResourceManager.GetString("Ui_ApplyAndSave", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 常用设置 的本地化字符串。
+        /// </summary>
+        public static string Ui_BasicSettings {
+            get {
+                return ResourceManager.GetString("Ui_BasicSettings", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 快捷选择： 的本地化字符串。
+        /// </summary>
+        public static string Ui_ChannelPresets {
+            get {
+                return ResourceManager.GetString("Ui_ChannelPresets", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 已载入默认值；应用并保存后才会生效。 的本地化字符串。
+        /// </summary>
+        public static string Ui_DefaultsLoaded {
+            get {
+                return ResourceManager.GetString("Ui_DefaultsLoaded", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 显示与导出 的本地化字符串。
+        /// </summary>
+        public static string Ui_DisplayAndExport {
+            get {
+                return ResourceManager.GetString("Ui_DisplayAndExport", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 仅会导出上方勾选的通道和模式。 的本地化字符串。
+        /// </summary>
+        public static string Ui_ExportFooterHint {
+            get {
+                return ResourceManager.GetString("Ui_ExportFooterHint", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 请选择至少一个通道和一种导出模式。 的本地化字符串。
+        /// </summary>
+        public static string Ui_ExportNoSelectionSummary {
+            get {
+                return ResourceManager.GetString("Ui_ExportNoSelectionSummary", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 预计生成 {0} 个 CSV 文件；示例：{1} 的本地化字符串。
+        /// </summary>
+        public static string Ui_ExportSummaryFormat {
+            get {
+                return ResourceManager.GetString("Ui_ExportSummaryFormat", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 部分输入不是有效数值，请检查红色标记的输入框。 的本地化字符串。
+        /// </summary>
+        public static string Ui_InvalidSettings {
+            get {
+                return ResourceManager.GetString("Ui_InvalidSettings", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 型号与观察相机 的本地化字符串。
+        /// </summary>
+        public static string Ui_ModelAndCamera {
+            get {
+                return ResourceManager.GetString("Ui_ModelAndCamera", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 恢复默认 的本地化字符串。
+        /// </summary>
+        public static string Ui_RestoreDefaults {
+            get {
+                return ResourceManager.GetString("Ui_RestoreDefaults", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 恢复本窗口中的显示、预处理、导出和当前型号参数；取消可放弃。 的本地化字符串。
+        /// </summary>
+        public static string Ui_RestoreDefaultsHint {
+            get {
+                return ResourceManager.GetString("Ui_RestoreDefaultsHint", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 全选 的本地化字符串。
+        /// </summary>
+        public static string Ui_SelectAll {
+            get {
+                return ResourceManager.GetString("Ui_SelectAll", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 修改仅保留在本窗口中，单击“应用并保存”后才会生效。 的本地化字符串。
+        /// </summary>
+        public static string Ui_SettingsPendingHint {
+            get {
+                return ResourceManager.GetString("Ui_SettingsPendingHint", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 u 基准图 的本地化字符串。
         /// </summary>
-        public static string UReferenceImage {
+public static string UReferenceImage {
             get {
                 return ResourceManager.GetString("UReferenceImage", resourceCulture);
             }

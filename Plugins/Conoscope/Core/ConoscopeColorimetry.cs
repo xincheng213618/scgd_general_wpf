@@ -102,18 +102,42 @@ namespace Conoscope.Core
 
         public static OpenCvSharp.Mat CreateColorDifferenceMat(OpenCvSharp.Mat XMat, OpenCvSharp.Mat YMat, OpenCvSharp.Mat ZMat, double referenceU, double referenceV)
         {
-            using OpenCvSharp.Mat uMat = CreateUvChannelMat(XMat, YMat, ZMat, XMat, 4.0);
-            using OpenCvSharp.Mat vMat = CreateUvChannelMat(XMat, YMat, ZMat, YMat, 9.0);
-            using OpenCvSharp.Mat referenceUMat = new OpenCvSharp.Mat(new OpenCvSharp.Size(uMat.Width, uMat.Height), uMat.Type(), OpenCvSharp.Scalar.All(referenceU));
-            using OpenCvSharp.Mat referenceVMat = new OpenCvSharp.Mat(new OpenCvSharp.Size(vMat.Width, vMat.Height), vMat.Type(), OpenCvSharp.Scalar.All(referenceV));
-            return CreateColorDifferenceMat(uMat, vMat, referenceUMat, referenceVMat);
+            using OpenCvSharp.Mat deltaU = new OpenCvSharp.Mat();
+            using OpenCvSharp.Mat deltaV = new OpenCvSharp.Mat();
+            CreateUvChannelMats(XMat, YMat, ZMat, deltaU, deltaV);
+            OpenCvSharp.Cv2.Subtract(deltaU, OpenCvSharp.Scalar.All(referenceU), deltaU);
+            OpenCvSharp.Cv2.Subtract(deltaV, OpenCvSharp.Scalar.All(referenceV), deltaV);
+
+            OpenCvSharp.Mat result = new OpenCvSharp.Mat();
+            OpenCvSharp.Cv2.Magnitude(deltaU, deltaV, result);
+            return result;
         }
 
         public static OpenCvSharp.Mat CreateColorDifferenceMat(OpenCvSharp.Mat XMat, OpenCvSharp.Mat YMat, OpenCvSharp.Mat ZMat, OpenCvSharp.Mat referenceUMat, OpenCvSharp.Mat referenceVMat)
         {
-            using OpenCvSharp.Mat uMat = CreateUvChannelMat(XMat, YMat, ZMat, XMat, 4.0);
-            using OpenCvSharp.Mat vMat = CreateUvChannelMat(XMat, YMat, ZMat, YMat, 9.0);
-            return CreateColorDifferenceMat(uMat, vMat, referenceUMat, referenceVMat);
+            EnsureSameSize(XMat, referenceUMat, Properties.Resources.UReferenceImage);
+            EnsureSameSize(XMat, referenceVMat, Properties.Resources.Conoscope_VReferenceImage);
+
+            using OpenCvSharp.Mat deltaU = new OpenCvSharp.Mat();
+            using OpenCvSharp.Mat deltaV = new OpenCvSharp.Mat();
+            CreateUvChannelMats(XMat, YMat, ZMat, deltaU, deltaV);
+
+            OpenCvSharp.Mat? convertedReferenceU = ConvertReferenceIfRequired(referenceUMat, deltaU.Type());
+            OpenCvSharp.Mat? convertedReferenceV = ConvertReferenceIfRequired(referenceVMat, deltaV.Type());
+            try
+            {
+                OpenCvSharp.Cv2.Subtract(deltaU, convertedReferenceU ?? referenceUMat, deltaU);
+                OpenCvSharp.Cv2.Subtract(deltaV, convertedReferenceV ?? referenceVMat, deltaV);
+
+                OpenCvSharp.Mat result = new OpenCvSharp.Mat();
+                OpenCvSharp.Cv2.Magnitude(deltaU, deltaV, result);
+                return result;
+            }
+            finally
+            {
+                convertedReferenceU?.Dispose();
+                convertedReferenceV?.Dispose();
+            }
         }
 
         public static OpenCvSharp.Mat CreateContrastMat(OpenCvSharp.Mat currentYMat, OpenCvSharp.Mat referenceYMat, ContrastReferenceKind referenceKind)
@@ -131,29 +155,6 @@ namespace Conoscope.Core
             return denominator > double.Epsilon ? numerator / denominator : 0;
         }
 
-        private static OpenCvSharp.Mat CreateColorDifferenceMat(OpenCvSharp.Mat uMat, OpenCvSharp.Mat vMat, OpenCvSharp.Mat referenceUMat, OpenCvSharp.Mat referenceVMat)
-        {
-            EnsureSameSize(uMat, referenceUMat, Properties.Resources.UReferenceImage);
-            EnsureSameSize(vMat, referenceVMat, Properties.Resources.Conoscope_VReferenceImage);
-
-            using OpenCvSharp.Mat referenceU = EnsureType(referenceUMat, uMat.Type());
-            using OpenCvSharp.Mat referenceV = EnsureType(referenceVMat, vMat.Type());
-            using OpenCvSharp.Mat deltaU = new OpenCvSharp.Mat();
-            using OpenCvSharp.Mat deltaV = new OpenCvSharp.Mat();
-            using OpenCvSharp.Mat deltaUSquared = new OpenCvSharp.Mat();
-            using OpenCvSharp.Mat deltaVSquared = new OpenCvSharp.Mat();
-            using OpenCvSharp.Mat sum = new OpenCvSharp.Mat();
-            OpenCvSharp.Mat result = new OpenCvSharp.Mat();
-
-            OpenCvSharp.Cv2.Subtract(uMat, referenceU, deltaU);
-            OpenCvSharp.Cv2.Subtract(vMat, referenceV, deltaV);
-            OpenCvSharp.Cv2.Multiply(deltaU, deltaU, deltaUSquared);
-            OpenCvSharp.Cv2.Multiply(deltaV, deltaV, deltaVSquared);
-            OpenCvSharp.Cv2.Add(deltaUSquared, deltaVSquared, sum);
-            OpenCvSharp.Cv2.Sqrt(sum, result);
-            return result;
-        }
-
         private static void EnsureSameSize(OpenCvSharp.Mat source, OpenCvSharp.Mat reference, string referenceName)
         {
             if (source.Width != reference.Width || source.Height != reference.Height)
@@ -162,11 +163,11 @@ namespace Conoscope.Core
             }
         }
 
-        private static OpenCvSharp.Mat EnsureType(OpenCvSharp.Mat source, OpenCvSharp.MatType targetType)
+        private static OpenCvSharp.Mat? ConvertReferenceIfRequired(OpenCvSharp.Mat source, OpenCvSharp.MatType targetType)
         {
             if (source.Type() == targetType)
             {
-                return source.Clone();
+                return null;
             }
 
             OpenCvSharp.Mat converted = new OpenCvSharp.Mat();
@@ -184,27 +185,42 @@ namespace Conoscope.Core
 
         private static OpenCvSharp.Mat CreateUvChannelMat(OpenCvSharp.Mat XMat, OpenCvSharp.Mat YMat, OpenCvSharp.Mat ZMat, OpenCvSharp.Mat sourceNumerator, double numeratorScale)
         {
-            using OpenCvSharp.Mat denominator = new OpenCvSharp.Mat();
-            using OpenCvSharp.Mat scaledZ = new OpenCvSharp.Mat();
-            using OpenCvSharp.Mat numerator = new OpenCvSharp.Mat();
-
-            OpenCvSharp.Cv2.AddWeighted(XMat, 1.0, YMat, 15.0, 0, denominator);
-            ZMat.ConvertTo(scaledZ, ZMat.Type(), 3.0);
-            OpenCvSharp.Cv2.Add(denominator, scaledZ, denominator);
-            sourceNumerator.ConvertTo(numerator, sourceNumerator.Type(), numeratorScale);
-
-            return DivideWithZeroGuard(numerator, denominator);
+            using OpenCvSharp.Mat denominator = CreateUvDenominator(XMat, YMat, ZMat);
+            return DivideWithZeroGuard(sourceNumerator, denominator, numeratorScale);
         }
 
-        private static OpenCvSharp.Mat DivideWithZeroGuard(OpenCvSharp.Mat numerator, OpenCvSharp.Mat denominator)
+        private static void CreateUvChannelMats(
+            OpenCvSharp.Mat XMat,
+            OpenCvSharp.Mat YMat,
+            OpenCvSharp.Mat ZMat,
+            OpenCvSharp.Mat uMat,
+            OpenCvSharp.Mat vMat)
+        {
+            using OpenCvSharp.Mat denominator = CreateUvDenominator(XMat, YMat, ZMat);
+            using OpenCvSharp.Mat nonPositiveMask = new OpenCvSharp.Mat();
+            OpenCvSharp.Cv2.Compare(denominator, OpenCvSharp.Scalar.All(0), nonPositiveMask, OpenCvSharp.CmpTypes.LE);
+
+            OpenCvSharp.Cv2.Divide(XMat, denominator, uMat, 4.0);
+            OpenCvSharp.Cv2.Divide(YMat, denominator, vMat, 9.0);
+            uMat.SetTo(OpenCvSharp.Scalar.All(0), nonPositiveMask);
+            vMat.SetTo(OpenCvSharp.Scalar.All(0), nonPositiveMask);
+        }
+
+        private static OpenCvSharp.Mat CreateUvDenominator(OpenCvSharp.Mat XMat, OpenCvSharp.Mat YMat, OpenCvSharp.Mat ZMat)
+        {
+            OpenCvSharp.Mat denominator = new OpenCvSharp.Mat();
+            OpenCvSharp.Cv2.AddWeighted(XMat, 1.0, YMat, 15.0, 0, denominator);
+            OpenCvSharp.Cv2.AddWeighted(denominator, 1.0, ZMat, 3.0, 0, denominator);
+            return denominator;
+        }
+
+        private static OpenCvSharp.Mat DivideWithZeroGuard(OpenCvSharp.Mat numerator, OpenCvSharp.Mat denominator, double scale = 1.0)
         {
             OpenCvSharp.Mat result = new OpenCvSharp.Mat();
             using OpenCvSharp.Mat zeroMask = new OpenCvSharp.Mat();
-            using OpenCvSharp.Mat safeDenominator = denominator.Clone();
 
-            OpenCvSharp.Cv2.Compare(safeDenominator, OpenCvSharp.Scalar.All(0), zeroMask, OpenCvSharp.CmpTypes.LE);
-            safeDenominator.SetTo(OpenCvSharp.Scalar.All(1), zeroMask);
-            OpenCvSharp.Cv2.Divide(numerator, safeDenominator, result);
+            OpenCvSharp.Cv2.Compare(denominator, OpenCvSharp.Scalar.All(0), zeroMask, OpenCvSharp.CmpTypes.LE);
+            OpenCvSharp.Cv2.Divide(numerator, denominator, result, scale);
             result.SetTo(OpenCvSharp.Scalar.All(0), zeroMask);
             return result;
         }

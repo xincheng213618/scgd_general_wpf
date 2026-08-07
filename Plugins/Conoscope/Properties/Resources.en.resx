@@ -238,6 +238,28 @@
   <data name="BtnExport" xml:space="preserve">
     <value>Export</value>
   </data>
+  <data name="Ui_BasicSettings" xml:space="preserve"><value>Basic</value></data>
+  <data name="Ui_AdvancedSettings" xml:space="preserve"><value>Advanced</value></data>
+  <data name="Ui_DisplayAndExport" xml:space="preserve"><value>Display and Export</value></data>
+  <data name="Ui_ModelAndCamera" xml:space="preserve"><value>Model and Observation Camera</value></data>
+  <data name="Ui_RestoreDefaults" xml:space="preserve"><value>Restore Defaults</value></data>
+  <data name="Ui_RestoreDefaultsHint" xml:space="preserve"><value>Restore display, preprocessing, export, and current-model settings shown here. Cancel to discard.</value></data>
+  <data name="Ui_ApplyAndSave" xml:space="preserve"><value>Apply and Save</value></data>
+  <data name="Ui_SettingsPendingHint" xml:space="preserve"><value>Changes stay in this window until you choose Apply and Save.</value></data>
+  <data name="Ui_DefaultsLoaded" xml:space="preserve"><value>Defaults loaded. Choose Apply and Save to use them.</value></data>
+  <data name="Ui_InvalidSettings" xml:space="preserve"><value>Some values are invalid. Check the fields marked in red.</value></data>
+  <data name="Ui_ChannelPresets" xml:space="preserve"><value>Presets:</value></data>
+  <data name="Ui_SelectAll" xml:space="preserve"><value>Select All</value></data>
+  <data name="Ui_ExportFooterHint" xml:space="preserve"><value>Only the selected channels and modes will be exported.</value></data>
+  <data name="Ui_ExportNoSelectionSummary" xml:space="preserve"><value>Select at least one channel and one export mode.</value></data>
+  <data name="Ui_ExportSummaryFormat" xml:space="preserve"><value>About {0} CSV files will be created. Example: {1}</value></data>
+  <data name="Con_Model_FOV_Description" xml:space="preserve"><value>Maximum polar angle of the measurement range. VA60 normally uses 60° and VA80 uses 80°.</value></data>
+  <data name="Con_Model_Pixels_Description" xml:space="preserve"><value>Pixel radius from image center to measurement edge. Use 0 to derive it from half of the image short edge.</value></data>
+  <data name="Con_Model_Coefficient_Description" xml:space="preserve"><value>Degrees represented by one pixel. Use 0 to calculate it from the field of view and full-scale pixels.</value></data>
+  <data name="Con_Model_EnableObsCam_Description" xml:space="preserve"><value>Shows observation-camera features when enabled. VA60 enables them by default; VA80 does not.</value></data>
+  <data name="Con_Model_SizeCoeff_Description" xml:space="preserve"><value>Millimeters represented by one observation-camera pixel, used to draw the size circle.</value></data>
+  <data name="Con_Model_CenterX_Description" xml:space="preserve"><value>X pixel coordinate of the observation-camera marker center.</value></data>
+  <data name="Con_Model_CenterY_Description" xml:space="preserve"><value>Y pixel coordinate of the observation-camera marker center.</value></data>
   <data name="BtnCancel" xml:space="preserve">
     <value>Cancel</value>
   </data>

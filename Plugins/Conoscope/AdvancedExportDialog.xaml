@@ -4,135 +4,198 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:properties="clr-namespace:Conoscope.Properties"
+        xmlns:automation="clr-namespace:System.Windows.Automation;assembly=PresentationCore"
         mc:Ignorable="d"
-        Title="{x:Static properties:Resources.TitleAdvancedExport}" Height="600" Width="500"
+        Title="{x:Static properties:Resources.TitleAdvancedExport}"
+        Height="650" Width="820" MinHeight="570" MinWidth="720"
         WindowStartupLocation="CenterOwner"
         Background="{StaticResource GlobalBackground}">
-    <Grid Margin="10">
+    <Grid Margin="14">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- Title -->
-        <TextBlock Grid.Row="0" Text="{x:Static properties:Resources.TitleAdvancedExport}" FontSize="18" FontWeight="Bold" Margin="0,0,0,10"/>
-
-        <!-- Settings -->
-        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+        <Grid Margin="0,0,0,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
             <StackPanel>
-                <!-- File Prefix -->
-                <GroupBox Header="{x:Static properties:Resources.GroupBoxFileSettings}" Margin="0,0,0,10">
-                    <StackPanel>
-                        <DockPanel Margin="5">
-                            <TextBlock Text="{x:Static properties:Resources.LabelFilePrefix}" Width="100" VerticalAlignment="Center"/>
-                            <TextBox x:Name="txtFilePrefix" Text="Conoscope_Export" />
-                        </DockPanel>
-                        <DockPanel Margin="5,0,5,5">
-                            <TextBlock Text="{x:Static properties:Resources.LabelDecimalPlaces}" Width="100" VerticalAlignment="Center"/>
-                            <TextBox x:Name="txtDecimalPlaces" Text="4" Width="60"/>
-                            <TextBlock Text="{x:Static properties:Resources.HintDecimalPlacesDefault4}" Margin="5,0,0,0" VerticalAlignment="Center" Foreground="Gray"/>
-                        </DockPanel>
-                        <TextBlock Text="{x:Static properties:Resources.HintFileNaming}" 
-                                   Margin="5" FontSize="11" Foreground="Gray"/>
-                    </StackPanel>
-                </GroupBox>
-
-                <!-- Channel Selection -->
-                <GroupBox Header="{x:Static properties:Resources.GroupBoxChannelSelection}" Margin="0,0,0,10">
-                    <StackPanel>
-                        <CheckBox x:Name="chkChannelX" Content="{x:Static properties:Resources.ChannelX}" IsChecked="False" Margin="5"/>
-                        <CheckBox x:Name="chkChannelY" Content="{x:Static properties:Resources.ChannelY}" IsChecked="True" Margin="5"/>
-                        <CheckBox x:Name="chkChannelZ" Content="{x:Static properties:Resources.ChannelZ}" IsChecked="False" Margin="5"/>
-                        <CheckBox x:Name="chkChannelCieX" Content="{x:Static properties:Resources.ChannelCieX}" IsChecked="False" Margin="5"/>
-                        <CheckBox x:Name="chkChannelCieY" Content="{x:Static properties:Resources.ChannelCieY}" IsChecked="False" Margin="5"/>
-                        <CheckBox x:Name="chkChannelCieU" Content="{x:Static properties:Resources.ChannelCieU}" IsChecked="False" Margin="5"/>
-                        <CheckBox x:Name="chkChannelCieV" Content="{x:Static properties:Resources.ChannelCieV}" IsChecked="False" Margin="5"/>
-                        <CheckBox x:Name="chkChannelColorDifference" Content="{x:Static properties:Resources.ChannelDeltaUV}" IsChecked="False" Margin="5"/>
-                        <CheckBox x:Name="chkChannelContrast" Content="{x:Static properties:Resources.ChannelContrast}" IsChecked="False" Margin="5"/>
-                        <TextBlock Text="{x:Static properties:Resources.HintChannelPerFile}" 
-                                   Margin="5" FontSize="11" Foreground="Gray"/>
-                    </StackPanel>
-                </GroupBox>
-
-                <!-- Export Mode -->
-                <GroupBox Header="{x:Static properties:Resources.GroupBoxExportMode}" Margin="0,0,0,10">
-                    <StackPanel>
-                        <CheckBox x:Name="chkExportAzimuth" Content="{x:Static properties:Resources.CbiAzimuthExport}" IsChecked="True" Margin="5"/>
-                        <CheckBox x:Name="chkExportPolar" Content="{x:Static properties:Resources.CbiPolarExport}" IsChecked="False" Margin="5"/>
-                        <TextBlock Text="{x:Static properties:Resources.HintBothExportModes}" 
-                                   Margin="5" FontSize="11" Foreground="Gray"/>
-                    </StackPanel>
-                </GroupBox>
-
-                <!-- Azimuth Settings -->
-                <GroupBox Header="{x:Static properties:Resources.GroupBoxAzimuthSettings}" Margin="0,0,0,10">
-                    <StackPanel>
-                        <DockPanel Margin="5">
-                            <TextBlock Text="{x:Static properties:Resources.LabelAzimuthStep}" Width="120" VerticalAlignment="Center"/>
-                            <TextBox x:Name="txtAzimuthStep" Text="1" Width="60"/>
-                            <TextBlock Text="(0.01-180)" Margin="5,0,0,0" VerticalAlignment="Center" Foreground="Gray"/>
-                        </DockPanel>
-                        <DockPanel Margin="5">
-                            <TextBlock Text="{x:Static properties:Resources.LabelRadialStep}" Width="120" VerticalAlignment="Center"/>
-                            <TextBox x:Name="txtRadialStep" Text="1" Width="60"/>
-                            <TextBlock Text="(0.01-80)" Margin="5,0,0,0" VerticalAlignment="Center" Foreground="Gray"/>
-                        </DockPanel>
-                        <TextBlock Text="{x:Static properties:Resources.HintAzimuthSampling}" 
-                                   Margin="5" FontSize="11" Foreground="Gray"/>
-                    </StackPanel>
-                </GroupBox>
-
-                <!-- Polar Angle Settings -->
-                <GroupBox Header="{x:Static properties:Resources.GroupBoxPolarSettings}" Margin="0,0,0,10">
-                    <StackPanel>
-                        <DockPanel Margin="5">
-                            <TextBlock Text="{x:Static properties:Resources.LabelRingStep}" Width="120" VerticalAlignment="Center"/>
-                            <TextBox x:Name="txtPolarStep" Text="1" Width="60"/>
-                            <TextBlock Text="(0.01-80)" Margin="5,0,0,0" VerticalAlignment="Center" Foreground="Gray"/>
-                        </DockPanel>
-                        <DockPanel Margin="5">
-                            <TextBlock Text="{x:Static properties:Resources.LabelCircularStep}" Width="120" VerticalAlignment="Center"/>
-                            <TextBox x:Name="txtCircumferentialStep" Text="1" Width="60"/>
-                            <TextBlock Text="(0.01-360)" Margin="5,0,0,0" VerticalAlignment="Center" Foreground="Gray"/>
-                        </DockPanel>
-                        <TextBlock Text="{x:Static properties:Resources.HintPolarSampling}" 
-                                   Margin="5" FontSize="11" Foreground="Gray"/>
-                    </StackPanel>
-                </GroupBox>
-
-                <!-- Cross-section Export -->
-                <GroupBox Header="{x:Static properties:Resources.GroupBoxSectionExport}" Margin="0,0,0,10">
-                    <StackPanel>
-                        <CheckBox x:Name="chkEnableCrossSection" Content="{x:Static properties:Resources.ChkEnableSectionExport}" Margin="5" Checked="chkEnableCrossSection_Changed" Unchecked="chkEnableCrossSection_Changed"/>
-                        
-                        <StackPanel x:Name="panelCrossSection" IsEnabled="False" Margin="10,5,5,5">
-                            <RadioButton x:Name="rbCrossSectionAzimuth" Content="{x:Static properties:Resources.RbAzimuthSection}" IsChecked="True" Margin="0,5"/>
-                            <DockPanel Margin="20,5">
-                                <TextBlock Text="{x:Static properties:Resources.LabelAzimuthDeg}" Width="100" VerticalAlignment="Center"/>
-                                <TextBox x:Name="txtCrossSectionAzimuthAngle" Text="0" Width="60"/>
-                                <TextBlock Text="(0-180)" Margin="5,0,0,0" VerticalAlignment="Center" Foreground="Gray"/>
-                            </DockPanel>
-                            
-                            <RadioButton x:Name="rbCrossSectionPolar" Content="{x:Static properties:Resources.RbPolarSection}" Margin="0,10,0,5"/>
-                            <DockPanel Margin="20,5">
-                                <TextBlock Text="{x:Static properties:Resources.LabelPolarDeg}" Width="100" VerticalAlignment="Center"/>
-                                <TextBox x:Name="txtCrossSectionPolarAngle" Text="45" Width="60"/>
-                                <TextBlock Text="(0-80)" Margin="5,0,0,0" VerticalAlignment="Center" Foreground="Gray"/>
-                            </DockPanel>
-                        </StackPanel>
-                        
-                        <TextBlock Text="{x:Static properties:Resources.HintSectionExport}" 
-                                   Margin="5" FontSize="11" Foreground="Gray"/>
-                    </StackPanel>
-                </GroupBox>
+                <TextBlock Text="{x:Static properties:Resources.TitleAdvancedExport}" FontSize="20" FontWeight="SemiBold"/>
+                <TextBlock x:Name="tbExportSummary" Margin="0,5,0,0" Foreground="Gray" TextWrapping="Wrap"
+                           automation:AutomationProperties.LiveSetting="Polite"/>
             </StackPanel>
+        </Grid>
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="14"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0">
+                    <GroupBox Header="{x:Static properties:Resources.GroupBoxFileSettings}" Margin="0,0,0,10">
+                        <Grid Margin="10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="110"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <TextBlock Text="{x:Static properties:Resources.LabelFilePrefix}" VerticalAlignment="Center" Margin="0,0,8,8"/>
+                            <TextBox x:Name="txtFilePrefix" Grid.Column="1" MinHeight="28" Margin="0,0,0,8"
+                                     TextChanged="ExportText_Changed"
+                                     automation:AutomationProperties.Name="{x:Static properties:Resources.LabelFilePrefix}"/>
+
+                            <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.LabelDecimalPlaces}" VerticalAlignment="Center" Margin="0,0,8,8"/>
+                            <DockPanel Grid.Row="1" Grid.Column="1" LastChildFill="False" Margin="0,0,0,8">
+                                <TextBox x:Name="txtDecimalPlaces" Width="70" MinHeight="28"
+                                         automation:AutomationProperties.Name="{x:Static properties:Resources.LabelDecimalPlaces}"/>
+                                <TextBlock Text="0–8" Margin="8,0,0,0" Foreground="Gray" VerticalAlignment="Center"/>
+                            </DockPanel>
+
+                            <TextBlock Grid.Row="2" Grid.ColumnSpan="2" Text="{x:Static properties:Resources.HintFileNaming}"
+                                       FontSize="11" Foreground="Gray" TextWrapping="Wrap"/>
+                        </Grid>
+                    </GroupBox>
+
+                    <GroupBox Header="{x:Static properties:Resources.GroupBoxChannelSelection}">
+                        <StackPanel Margin="10">
+                            <DockPanel Margin="0,0,0,8">
+                                <TextBlock x:Name="tbChannelPresets" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <Button Content="XYZ" MinWidth="58" Margin="0,0,6,0" Click="btnPresetXyz_Click"/>
+                                <Button Content="xyuv" MinWidth="58" Margin="0,0,6,0" Click="btnPresetChromaticity_Click"/>
+                                <Button x:Name="btnPresetAll" MinWidth="58" Click="btnPresetAll_Click"/>
+                            </DockPanel>
+
+                            <UniformGrid Columns="3">
+                                <CheckBox x:Name="chkChannelX" Content="{x:Static properties:Resources.ChannelX}" Margin="2,5" Checked="ExportOption_Changed" Unchecked="ExportOption_Changed"/>
+                                <CheckBox x:Name="chkChannelY" Content="{x:Static properties:Resources.ChannelY}" Margin="2,5" Checked="ExportOption_Changed" Unchecked="ExportOption_Changed"/>
+                                <CheckBox x:Name="chkChannelZ" Content="{x:Static properties:Resources.ChannelZ}" Margin="2,5" Checked="ExportOption_Changed" Unchecked="ExportOption_Changed"/>
+                                <CheckBox x:Name="chkChannelCieX" Content="{x:Static properties:Resources.ChannelCieX}" Margin="2,5" Checked="ExportOption_Changed" Unchecked="ExportOption_Changed"/>
+                                <CheckBox x:Name="chkChannelCieY" Content="{x:Static properties:Resources.ChannelCieY}" Margin="2,5" Checked="ExportOption_Changed" Unchecked="ExportOption_Changed"/>
+                                <CheckBox x:Name="chkChannelCieU" Content="{x:Static properties:Resources.ChannelCieU}" Margin="2,5" Checked="ExportOption_Changed" Unchecked="ExportOption_Changed"/>
+                                <CheckBox x:Name="chkChannelCieV" Content="{x:Static properties:Resources.ChannelCieV}" Margin="2,5" Checked="ExportOption_Changed" Unchecked="ExportOption_Changed"/>
+                                <CheckBox x:Name="chkChannelColorDifference" Content="{x:Static properties:Resources.ChannelDeltaUV}" Margin="2,5" Checked="ExportOption_Changed" Unchecked="ExportOption_Changed"/>
+                                <CheckBox x:Name="chkChannelContrast" Content="{x:Static properties:Resources.ChannelContrast}" Margin="2,5" Checked="ExportOption_Changed" Unchecked="ExportOption_Changed"/>
+                            </UniformGrid>
+                            <TextBlock Text="{x:Static properties:Resources.HintChannelPerFile}" Margin="0,8,0,0" FontSize="11" Foreground="Gray" TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </GroupBox>
+                </StackPanel>
+
+                <StackPanel Grid.Column="2">
+                    <GroupBox Header="{x:Static properties:Resources.GroupBoxExportMode}" Margin="0,0,0,10">
+                        <StackPanel Margin="10">
+                            <WrapPanel>
+                                <CheckBox x:Name="chkExportAzimuth" Content="{x:Static properties:Resources.CbiAzimuthExport}" Margin="0,3,24,3"
+                                          Checked="ExportOption_Changed" Unchecked="ExportOption_Changed"/>
+                                <CheckBox x:Name="chkExportPolar" Content="{x:Static properties:Resources.CbiPolarExport}" Margin="0,3"
+                                          Checked="ExportOption_Changed" Unchecked="ExportOption_Changed"/>
+                            </WrapPanel>
+                            <TextBlock Text="{x:Static properties:Resources.HintBothExportModes}" Margin="0,7,0,0" FontSize="11" Foreground="Gray" TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </GroupBox>
+
+                    <GroupBox Header="{x:Static properties:Resources.GroupBoxSamplingSettings}" Margin="0,0,0,10">
+                        <StackPanel Margin="10">
+                            <Border x:Name="panelAzimuthSettings" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Padding="0,0,0,9" Margin="0,0,0,9">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="170"/>
+                                        <ColumnDefinition Width="72"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+                                    <TextBlock Text="{x:Static properties:Resources.LabelAzimuthStep}" VerticalAlignment="Center" Margin="0,0,6,7"/>
+                                    <TextBox x:Name="txtAzimuthStep" Grid.Column="1" MinHeight="27" Margin="0,0,0,7"
+                                             automation:AutomationProperties.Name="{x:Static properties:Resources.LabelAzimuthStep}"/>
+                                    <TextBlock Grid.Column="2" Text="0.01–180" Foreground="Gray" VerticalAlignment="Center" Margin="7,0,0,7"/>
+
+                                    <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.LabelRadialStep}" VerticalAlignment="Center"/>
+                                    <TextBox x:Name="txtRadialStep" Grid.Row="1" Grid.Column="1" MinHeight="27"
+                                             automation:AutomationProperties.Name="{x:Static properties:Resources.LabelRadialStep}"/>
+                                    <TextBlock Grid.Row="1" Grid.Column="2" Text="0.01–80" Foreground="Gray" VerticalAlignment="Center" Margin="7,0,0,0"/>
+                                </Grid>
+                            </Border>
+
+                            <Grid x:Name="panelPolarSettings">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="170"/>
+                                    <ColumnDefinition Width="72"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <TextBlock Text="{x:Static properties:Resources.LabelRingStep}" VerticalAlignment="Center" Margin="0,0,6,7"/>
+                                <TextBox x:Name="txtPolarStep" Grid.Column="1" MinHeight="27" Margin="0,0,0,7"
+                                         automation:AutomationProperties.Name="{x:Static properties:Resources.LabelRingStep}"/>
+                                <TextBlock Grid.Column="2" Text="0.01–80" Foreground="Gray" VerticalAlignment="Center" Margin="7,0,0,7"/>
+
+                                <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.LabelCircularStep}" VerticalAlignment="Center"/>
+                                <TextBox x:Name="txtCircumferentialStep" Grid.Row="1" Grid.Column="1" MinHeight="27"
+                                         automation:AutomationProperties.Name="{x:Static properties:Resources.LabelCircularStep}"/>
+                                <TextBlock Grid.Row="1" Grid.Column="2" Text="0.01–360" Foreground="Gray" VerticalAlignment="Center" Margin="7,0,0,0"/>
+                            </Grid>
+                        </StackPanel>
+                    </GroupBox>
+
+                    <GroupBox Header="{x:Static properties:Resources.GroupBoxSectionExport}">
+                        <StackPanel Margin="10">
+                            <CheckBox x:Name="chkEnableCrossSection" Content="{x:Static properties:Resources.ChkEnableSectionExport}" Margin="0,0,0,8"
+                                      Checked="ExportOption_Changed" Unchecked="ExportOption_Changed"/>
+                            <Grid x:Name="panelCrossSection">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="76"/>
+                                    <ColumnDefinition Width="55"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <RadioButton x:Name="rbCrossSectionAzimuth" Content="{x:Static properties:Resources.RbAzimuthSection}" Margin="0,4,8,7"
+                                             Checked="ExportOption_Changed"/>
+                                <TextBox x:Name="txtCrossSectionAzimuthAngle" Grid.Column="1" MinHeight="27" Margin="0,0,0,7"
+                                         automation:AutomationProperties.Name="{x:Static properties:Resources.LabelAzimuthDegLabel}"/>
+                                <TextBlock Grid.Column="2" Text="0–180°" Foreground="Gray" VerticalAlignment="Center" Margin="7,0,0,7"/>
+
+                                <RadioButton x:Name="rbCrossSectionPolar" Grid.Row="1" Content="{x:Static properties:Resources.RbPolarSection}" Margin="0,4,8,0"
+                                             Checked="ExportOption_Changed"/>
+                                <TextBox x:Name="txtCrossSectionPolarAngle" Grid.Row="1" Grid.Column="1" MinHeight="27"
+                                         automation:AutomationProperties.Name="{x:Static properties:Resources.LabelPolarDegLabel}"/>
+                                <TextBlock Grid.Row="1" Grid.Column="2" Text="0–80°" Foreground="Gray" VerticalAlignment="Center" Margin="7,0,0,0"/>
+                            </Grid>
+                            <TextBlock Text="{x:Static properties:Resources.HintSectionExport}" Margin="0,8,0,0" FontSize="11" Foreground="Gray" TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </GroupBox>
+                </StackPanel>
+            </Grid>
         </ScrollViewer>
 
-        <!-- Buttons -->
-        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
-            <Button x:Name="btnExport" Content="{x:Static properties:Resources.BtnExport}" Width="80" Height="30" Margin="0,0,10,0" Click="btnExport_Click"/>
-            <Button x:Name="btnCancel" Content="{x:Static properties:Resources.BtnCancel}" Width="80" Height="30" IsCancel="True"/>
-        </StackPanel>
+        <Grid Grid.Row="2" Margin="0,12,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock x:Name="tbFooterHint" VerticalAlignment="Center" Foreground="Gray" TextWrapping="Wrap"/>
+            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <Button x:Name="btnExport" Content="{x:Static properties:Resources.BtnExport}" Width="92" Height="32" Margin="0,0,10,0"
+                        IsDefault="True" Click="btnExport_Click"/>
+                <Button x:Name="btnCancel" Content="{x:Static properties:Resources.BtnCancel}" Width="88" Height="32" IsCancel="True"/>
+            </StackPanel>
+        </Grid>
     </Grid>
 </Window>

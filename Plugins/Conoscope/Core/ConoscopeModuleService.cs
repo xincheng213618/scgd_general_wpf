@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Windows;
@@ -9,55 +8,14 @@ namespace Conoscope.Core
 {
     internal static class ConoscopeModuleService
     {
-        private static readonly List<WeakReference<ConoscopeView>> Views = new();
-
-        public static ConoscopeView? ActiveView { get; private set; }
-
-        public static void Register(ConoscopeView view)
-        {
-            CleanupViews();
-            if (!Views.Any(item => item.TryGetTarget(out var target) && ReferenceEquals(target, view)))
-            {
-                Views.Add(new WeakReference<ConoscopeView>(view));
-            }
-
-            ActiveView = view;
-        }
-
-        public static void Unregister(ConoscopeView view)
-        {
-            Views.RemoveAll(item => !item.TryGetTarget(out var target) || ReferenceEquals(target, view));
-            if (ReferenceEquals(ActiveView, view))
-            {
-                ActiveView = Views.Select(item => item.TryGetTarget(out var target) ? target : null).FirstOrDefault(item => item != null);
-            }
-        }
-
-        public static void Activate(ConoscopeView view)
-        {
-            CleanupViews();
-            if (Views.Any(item => item.TryGetTarget(out var target) && ReferenceEquals(target, view)))
-            {
-                ActiveView = view;
-            }
-        }
-
         public static void RefreshAllConoscopeConfiguration()
         {
-            CleanupViews();
-            foreach (ConoscopeView view in Views.Select(item => item.TryGetTarget(out var target) ? target : null).Where(item => item != null)!)
-            {
-                view.RefreshConoscopeConfiguration();
-            }
+            ConoscopeWindow.Instance?.RefreshConoscopeConfiguration();
         }
 
         public static void RefreshAllReferenceState()
         {
-            CleanupViews();
-            foreach (ConoscopeView view in Views.Select(item => item.TryGetTarget(out var target) ? target : null).Where(item => item != null)!)
-            {
-                view.RefreshGlobalReferenceState();
-            }
+            ConoscopeWindow.Instance?.RefreshAllReferenceState();
         }
 
         public static void OpenModule(string? filePath = null)
@@ -117,11 +75,6 @@ namespace Conoscope.Core
             return Application.Current?.Windows.OfType<ConoscopeWindow>().FirstOrDefault(window => window.IsActive)
                 ?? ConoscopeWindow.Instance
                 ?? Application.Current?.Windows.OfType<ConoscopeWindow>().FirstOrDefault();
-        }
-
-        private static void CleanupViews()
-        {
-            Views.RemoveAll(item => !item.TryGetTarget(out _));
         }
     }
 }

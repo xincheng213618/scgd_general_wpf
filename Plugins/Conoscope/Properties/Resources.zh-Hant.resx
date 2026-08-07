@@ -223,6 +223,28 @@
   <data name="BtnExport" xml:space="preserve">
     <value>匯出</value>
   </data>
+  <data name="Ui_BasicSettings" xml:space="preserve"><value>常用設定</value></data>
+  <data name="Ui_AdvancedSettings" xml:space="preserve"><value>進階設定</value></data>
+  <data name="Ui_DisplayAndExport" xml:space="preserve"><value>顯示與匯出</value></data>
+  <data name="Ui_ModelAndCamera" xml:space="preserve"><value>型號與觀察相機</value></data>
+  <data name="Ui_RestoreDefaults" xml:space="preserve"><value>恢復預設</value></data>
+  <data name="Ui_RestoreDefaultsHint" xml:space="preserve"><value>恢復本視窗中的顯示、預處理、匯出和目前型號參數；取消可放棄。</value></data>
+  <data name="Ui_ApplyAndSave" xml:space="preserve"><value>套用並儲存</value></data>
+  <data name="Ui_SettingsPendingHint" xml:space="preserve"><value>修改僅保留在本視窗中，按一下「套用並儲存」後才會生效。</value></data>
+  <data name="Ui_DefaultsLoaded" xml:space="preserve"><value>已載入預設值；套用並儲存後才會生效。</value></data>
+  <data name="Ui_InvalidSettings" xml:space="preserve"><value>部分輸入不是有效數值，請檢查紅色標記的輸入框。</value></data>
+  <data name="Ui_ChannelPresets" xml:space="preserve"><value>快速選擇：</value></data>
+  <data name="Ui_SelectAll" xml:space="preserve"><value>全選</value></data>
+  <data name="Ui_ExportFooterHint" xml:space="preserve"><value>只會匯出上方勾選的通道和模式。</value></data>
+  <data name="Ui_ExportNoSelectionSummary" xml:space="preserve"><value>請選擇至少一個通道和一種匯出模式。</value></data>
+  <data name="Ui_ExportSummaryFormat" xml:space="preserve"><value>預計產生 {0} 個 CSV 檔案；範例：{1}</value></data>
+  <data name="Con_Model_FOV_Description" xml:space="preserve"><value>量測範圍的最大極角。VA60 通常為 60°，VA80 通常為 80°。</value></data>
+  <data name="Con_Model_Pixels_Description" xml:space="preserve"><value>影像圓心到量測邊緣的像素半徑。0 表示自動使用影像短邊的一半。</value></data>
+  <data name="Con_Model_Coefficient_Description" xml:space="preserve"><value>每個像素對應的角度。0 表示依視場角和完整像素數自動計算。</value></data>
+  <data name="Con_Model_EnableObsCam_Description" xml:space="preserve"><value>啟用後顯示觀察相機功能。VA60 預設啟用，VA80 預設關閉。</value></data>
+  <data name="Con_Model_SizeCoeff_Description" xml:space="preserve"><value>觀察相機中每個像素對應的毫米數，用於繪製尺寸圓。</value></data>
+  <data name="Con_Model_CenterX_Description" xml:space="preserve"><value>觀察相機標記圓心的 X 像素座標。</value></data>
+  <data name="Con_Model_CenterY_Description" xml:space="preserve"><value>觀察相機標記圓心的 Y 像素座標。</value></data>
   <data name="BtnCancel" xml:space="preserve">
     <value>取消</value>
   </data>

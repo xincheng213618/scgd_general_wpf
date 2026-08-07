@@ -1,65 +1,24 @@
 using ColorVision.ImageEditor.Cie;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 
 namespace Conoscope.Analysis
 {
-    public enum MeasurementCaptureKind
-    {
-        ManualFile,
-        FocusPoints
-    }
-
     public sealed record MeasurementPoint(
         string Key,
         string Name,
         ImageMeasurement Measurement,
         double? AzimuthDegrees,
         double? PolarDegrees,
-        double? RadiusDegrees)
-    {
-        public string CoordinateDisplay => AzimuthDegrees.HasValue && PolarDegrees.HasValue && RadiusDegrees.HasValue
-            ? $"A={AzimuthDegrees.Value:F2}°, P={PolarDegrees.Value:F2}°, R={RadiusDegrees.Value:F2}°"
-            : "-";
-    }
+        double? RadiusDegrees);
 
     public sealed record MeasurementCapture(
         string SlotName,
         string SourceLabel,
-        MeasurementCaptureKind Kind,
         IReadOnlyList<MeasurementPoint> Points)
     {
         public int PointCount => Points.Count;
-        public bool IsSinglePoint => Points.Count == 1;
-
-        public string SourceDisplayName => Kind == MeasurementCaptureKind.ManualFile
-            ? Path.GetFileName(SourceLabel)
-            : SourceLabel;
-
-        public static MeasurementCapture FromManualFile(string slotName, ImageMeasurement measurement)
-        {
-            return new MeasurementCapture(
-                slotName,
-                measurement.FilePath,
-                MeasurementCaptureKind.ManualFile,
-                new[]
-                {
-                    new MeasurementPoint(
-                        "ManualAverage",
-                        Properties.Resources.Conoscope_OverallAverage,
-                        measurement,
-                        null,
-                        null,
-                        null)
-                });
-        }
-
-        public static MeasurementCapture FromFocusPoints(string slotName, string sourceLabel, IReadOnlyList<MeasurementPoint> points)
-        {
-            return new MeasurementCapture(slotName, sourceLabel, MeasurementCaptureKind.FocusPoints, points);
-        }
     }
 
     public sealed record ColorGamutPointResult(
@@ -109,22 +68,26 @@ namespace Conoscope.Analysis
         public double MaximumRatio => Points.Count == 0 ? 0 : Points.Max(item => item.Ratio);
     }
 
-    public sealed class DefaultBatchColorGamutCalculator
+    public static class ConoscopeAnalysis
     {
-        private readonly DefaultColorGamutCalculator singleCalculator = new();
-
-        public ColorGamutComputationResult Calculate(MeasurementCapture redCapture, MeasurementCapture greenCapture, MeasurementCapture blueCapture, ColorGamutStandard standard)
+        public static ColorGamutComputationResult CalculateColorGamut(MeasurementCapture redCapture, MeasurementCapture greenCapture, MeasurementCapture blueCapture, ColorGamutStandard standard)
         {
+            ArgumentNullException.ThrowIfNull(standard);
+            double standardArea = TriangleArea(standard.Red, standard.Green, standard.Blue);
+            if (standardArea <= 0)
+            {
+                throw new InvalidOperationException(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.StandardGamutAreaInvalid, standard.Name));
+            }
+
             IReadOnlyList<AlignedPointSet> alignedPoints = MeasurementCaptureAlignment.Align(redCapture, greenCapture, blueCapture);
             List<ColorGamutPointResult> results = new(alignedPoints.Count);
 
             foreach (AlignedPointSet alignedPoint in alignedPoints)
             {
-                ColorGamutResult result = singleCalculator.Calculate(
-                    alignedPoint.Points[0].Measurement,
-                    alignedPoint.Points[1].Measurement,
-                    alignedPoint.Points[2].Measurement,
-                    standard);
+                ImageMeasurement red = alignedPoint.Points[0].Measurement;
+                ImageMeasurement green = alignedPoint.Points[1].Measurement;
+                ImageMeasurement blue = alignedPoint.Points[2].Measurement;
+                double sampleArea = TriangleArea(ToPoint(red), ToPoint(green), ToPoint(blue));
 
                 results.Add(new ColorGamutPointResult(
                     alignedPoint.Index,
@@ -133,32 +96,30 @@ namespace Conoscope.Analysis
                     alignedPoint.DisplayPoint.AzimuthDegrees,
                     alignedPoint.DisplayPoint.PolarDegrees,
                     alignedPoint.DisplayPoint.RadiusDegrees,
-                    alignedPoint.Points[0].Measurement,
-                    alignedPoint.Points[1].Measurement,
-                    alignedPoint.Points[2].Measurement,
-                    result.SampleArea,
-                    result.StandardArea,
-                    result.CoveragePercent));
+                    red,
+                    green,
+                    blue,
+                    sampleArea,
+                    standardArea,
+                    sampleArea / standardArea * 100.0));
             }
 
             return new ColorGamutComputationResult(standard, results);
         }
-    }
 
-    public sealed class DefaultBatchContrastCalculator
-    {
-        private readonly DefaultContrastCalculator singleCalculator = new();
-
-        public ContrastComputationResult Calculate(MeasurementCapture whiteCapture, MeasurementCapture blackCapture)
+        public static ContrastComputationResult CalculateContrast(MeasurementCapture whiteCapture, MeasurementCapture blackCapture)
         {
             IReadOnlyList<AlignedPointSet> alignedPoints = MeasurementCaptureAlignment.Align(whiteCapture, blackCapture);
             List<ContrastPointResult> results = new(alignedPoints.Count);
 
             foreach (AlignedPointSet alignedPoint in alignedPoints)
             {
-                ContrastResult contrast = singleCalculator.Calculate(
-                    alignedPoint.Points[1].Measurement,
-                    alignedPoint.Points[0].Measurement);
+                ImageMeasurement white = alignedPoint.Points[0].Measurement;
+                ImageMeasurement black = alignedPoint.Points[1].Measurement;
+                if (black.Luminance <= 0)
+                {
+                    throw new InvalidOperationException(Properties.Resources.BlackLuminanceMustBePositive);
+                }
 
                 results.Add(new ContrastPointResult(
                     alignedPoint.Index,
@@ -167,12 +128,22 @@ namespace Conoscope.Analysis
                     alignedPoint.DisplayPoint.AzimuthDegrees,
                     alignedPoint.DisplayPoint.PolarDegrees,
                     alignedPoint.DisplayPoint.RadiusDegrees,
-                    alignedPoint.Points[0].Measurement,
-                    alignedPoint.Points[1].Measurement,
-                    contrast.Ratio));
+                    white,
+                    black,
+                    white.Luminance / black.Luminance));
             }
 
             return new ContrastComputationResult(results);
+        }
+
+        private static ChromaticityPoint ToPoint(ImageMeasurement measurement)
+        {
+            return new ChromaticityPoint(measurement.Chromaticity.x, measurement.Chromaticity.y);
+        }
+
+        private static double TriangleArea(ChromaticityPoint red, ChromaticityPoint green, ChromaticityPoint blue)
+        {
+            return Math.Abs((red.X * (green.Y - blue.Y) + green.X * (blue.Y - red.Y) + blue.X * (red.Y - green.Y)) / 2.0);
         }
     }
 
@@ -272,7 +243,7 @@ namespace Conoscope.Analysis
                 return capture.Points[0];
             }
 
-            throw new InvalidOperationException(Conoscope.Core.CompositeFormatCache.Format(Conoscope.Properties.Resources.MsgMeasurementCaptureMissingFocusPoint, capture.SlotName, key, capture.SourceDisplayName));
+            throw new InvalidOperationException(Conoscope.Core.CompositeFormatCache.Format(Conoscope.Properties.Resources.MsgMeasurementCaptureMissingFocusPoint, capture.SlotName, key, capture.SourceLabel));
         }
     }
 }

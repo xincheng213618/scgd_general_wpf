@@ -55,17 +55,6 @@ namespace Conoscope
         private MVSViewWindow? observationCameraWindow;
 
         public ConoscopeWindow()
-            : this(createInitialView: false)
-        {
-        }
-
-        public ConoscopeWindow(string filePath)
-            : this(createInitialView: false)
-        {
-            OpenConoscope(filePath);
-        }
-
-        private ConoscopeWindow(bool createInitialView)
         {
             InitializeComponent();
             operationProgressTimer = new DispatcherTimer(DispatcherPriority.Background, Dispatcher)
@@ -96,11 +85,6 @@ namespace Conoscope
             ServiceManager.GetInstance().ServiceChanged += ServiceManager_ServiceChanged;
             RefreshWindowModelState();
 
-            if (createInitialView)
-            {
-                AddConoscopeView(null, activate: true);
-            }
-
             Closed += (s, e) =>
             {
                 if (ReferenceEquals(Instance, this))
@@ -114,8 +98,8 @@ namespace Conoscope
 
         public ConoscopeView? ActiveView => GetActiveView();
         private ConoscopeConfig ConoscopeConfig => ConoscopeManager.GetInstance().Config;
-        private ConoscopeRenderingSettings RenderingConfig => ConoscopeConfig.Rendering;
-        private ConoscopePreprocessSettings PreprocessConfig => ConoscopeConfig.Preprocess;
+        private ConoscopeConfig RenderingConfig => ConoscopeConfig;
+        private ConoscopeConfig PreprocessConfig => ConoscopeConfig;
 
         public void OpenConoscope(string filename, string? exposureSummary = null, bool preferReuseActiveView = false)
         {
@@ -160,6 +144,40 @@ namespace Conoscope
             }
 
             RefreshWindowModelState();
+        }
+
+        internal void RefreshAllReferenceState()
+        {
+            foreach (ConoscopeView view in GetOpenViews())
+            {
+                view.RefreshGlobalReferenceState();
+            }
+        }
+
+        private void InitializeRibbonControls()
+        {
+            RefreshFlowTemplates();
+            RefreshCameraDevices();
+            EnsureCaptureTimedButtonOperations();
+            InitializePreprocessControls();
+            InitializeAnalysisRibbonControls();
+            RefreshActiveViewControlState(ActiveView);
+        }
+
+        private void RefreshRibbonState(ConoscopeView? activeView)
+        {
+            RefreshActiveViewControlState(activeView);
+            RefreshAnalysisRibbonState(activeView);
+        }
+
+        private void btnOpenActiveView3D_Click(object sender, RoutedEventArgs e)
+        {
+            ActiveView?.Open3DForCurrentView();
+        }
+
+        private void btnOpenActiveViewCie_Click(object sender, RoutedEventArgs e)
+        {
+            ActiveView?.OpenCieForCurrentView();
         }
 
         private void InitializeTheme()
