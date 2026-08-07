@@ -329,13 +329,30 @@ class SpectrumClientUpdateContractTests(unittest.TestCase):
 
     def test_install_gate_covers_continuous_and_serial_operations(self) -> None:
         measurement = (self.repo_root / "Plugins/Spectrum/MainWindow.Measurement.cs").read_text(encoding="utf-8")
-        continuous_start = measurement.index("private void Button6_Click")
-        continuous_end = measurement.index("public async void LoopMeasure", continuous_start)
-        continuous_block = measurement[continuous_start:continuous_end]
+        manager = (self.repo_root / "Plugins/Spectrum/SpectrometerManager.cs").read_text(encoding="utf-8")
 
-        self.assertIn("isstartAuto = false;", continuous_block)
-        self.assertIn("Manager.ShutterController.IsBusy", measurement)
-        self.assertIn("Manager.FilterWheelController.IsBusy", measurement)
+        self.assertIn(
+            "Manager.IsBusy || continuousMeasurementTask is { IsCompleted: false }",
+            measurement,
+        )
+        self.assertIn(
+            "continuousMeasurementTask = RunContinuousMeasurementAsync(continuousMeasurementCancellation.Token);",
+            measurement,
+        )
+        self.assertIn("await continuousMeasurementTask;", measurement)
+        self.assertIn("SpectrumMeasurementResult result = await Manager.MeasureAsync(cancellationToken);", measurement)
+
+        manager_busy_line = next(
+            line for line in manager.splitlines() if "public bool IsBusy =>" in line
+        )
+        for busy_state in (
+            "IsDeviceBusy",
+            "IsMeasurementActive",
+            "SmuController.IsBusy",
+            "ShutterController.IsBusy",
+            "FilterWheelController.IsBusy",
+        ):
+            self.assertIn(busy_state, manager_busy_line)
 
         for relative_path in (
             "Plugins/Spectrum/Configs/ShutterController.cs",
