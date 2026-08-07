@@ -8,10 +8,13 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Media.Media3D;
+using ColorVision.ImageEditor.EditorTools.ThreeD;
 using Viewport3DHelper = ColorVision.ImageEditor.EditorTools.ThreeD.Viewport3DHelper;
 
 namespace ColorVision.ImageEditor
 {
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1001:Types that own disposable fields should be disposable",
+        Justification = "The WPF window disposes its camera coordinator from the Closed lifecycle event.")]
     public partial class Window3D : Window
     {
         private readonly WriteableBitmap colorBitmap;
@@ -24,15 +27,19 @@ namespace ColorVision.ImageEditor
         private int newWidth;
         private int newHeight;
         private double heightScale = 100.0;
+        private double meshBaseHeightScale = 1.0;
         private DiffuseMaterial? colormapMaterial;
         private ColormapInfo? currentColormap;
-        private List<Visual3D>? axesVisuals;
+        private CameraAxesUpdateCoordinator? axesUpdateCoordinator;
+        private ScaleTransform3D? heightTransform;
         private Point lastMousePosition;
         private bool isLeftButtonDown;
         private Transform3DGroup currentTransform = new Transform3DGroup();
         private QuaternionRotation3D currentRotation = new QuaternionRotation3D();
         private Point3D rotationCenter;
         private bool hasRotationCenter;
+        private int meshBuildVersion;
+        private bool isClosed;
 
         // Cached initial camera state for reset
         private Point3D initialCameraPosition;
@@ -41,10 +48,7 @@ namespace ColorVision.ImageEditor
 
         // Mouse move throttling
         private DateTime lastMouseMoveTime = DateTime.MinValue;
-        private readonly TimeSpan mouseMoveThrottle = TimeSpan.FromMilliseconds(16);
-
-        // Reusable position collection to avoid GC pressure
-        private Point3DCollection? cachedPositions;
+        private readonly TimeSpan mouseMoveThrottle = TimeSpan.FromMilliseconds(50);
 
         private static readonly string[] ColormapNames =
         {
@@ -145,14 +149,15 @@ namespace ColorVision.ImageEditor
             viewport.MouseMove += Viewport_ObjectRotateMouseMove;
             viewport.MouseUp += Viewport_ObjectRotateMouseUp;
 
-            axesVisuals = Viewport3DHelper.CreateFixedCornerAxes(20);
+            var axesVisuals = Viewport3DHelper.CreateFixedCornerAxes(20);
             foreach (var axis in axesVisuals)
                 viewport.Children.Add(axis);
 
-            CompositionTarget.Rendering += CompositionTarget_Rendering;
+            axesUpdateCoordinator = new CameraAxesUpdateCoordinator(viewport, axesVisuals);
 
             // Build mesh once with current height scale
             await BuildMeshAsync();
+            if (isClosed || viewport == null) return;
 
             // Setup input handling
             PreviewKeyDown += Window3D_PreviewKeyDown;
@@ -162,8 +167,11 @@ namespace ColorVision.ImageEditor
 
         private void Window_Closed(object sender, EventArgs e)
         {
+            isClosed = true;
+            meshBuildVersion++;
             PreviewKeyDown -= Window3D_PreviewKeyDown;
-            CompositionTarget.Rendering -= CompositionTarget_Rendering;
+            axesUpdateCoordinator?.Dispose();
+            axesUpdateCoordinator = null;
 
             if (viewport != null)
             {
@@ -197,12 +205,11 @@ namespace ColorVision.ImageEditor
             }
 
             currentMesh = null;
-            cachedPositions = null;
+            heightTransform = null;
             colormapMaterial = null;
             grayPixels = null;
             alphaPixels = null;
             currentColormap = null;
-            axesVisuals = null;
 
             GC.Collect(2, GCCollectionMode.Forced, true);
             GC.WaitForPendingFinalizers();
@@ -218,13 +225,13 @@ namespace ColorVision.ImageEditor
                 case Key.Add:
                 case Key.OemPlus:
                     heightScale *= 1.1;
-                    UpdateMeshPositions();
+                    UpdateHeightScaleTransform();
                     e.Handled = true;
                     break;
                 case Key.Subtract:
                 case Key.OemMinus:
                     heightScale *= 0.9;
-                    UpdateMeshPositions();
+                    UpdateHeightScaleTransform();
                     e.Handled = true;
                     break;
 
@@ -240,17 +247,11 @@ namespace ColorVision.ImageEditor
             }
         }
 
-        private void CompositionTarget_Rendering(object? sender, EventArgs e)
-        {
-            if (viewport?.Camera is ProjectionCamera camera && axesVisuals != null)
-                Viewport3DHelper.UpdateFixedCornerAxes(axesVisuals, camera);
-        }
-
         private void Viewport_MouseMove(object sender, MouseEventArgs e)
         {
-            if (viewport == null || grayPixels == null) return;
+            if (viewport == null || grayPixels == null || isLeftButtonDown) return;
 
-            // Throttle mouse move updates to ~60fps max to reduce unnecessary UI updates
+            // Dense-mesh hit testing is expensive; keep hover responsive without running it every render frame.
             var now = DateTime.Now;
             if (now - lastMouseMoveTime < mouseMoveThrottle) return;
             lastMouseMoveTime = now;
@@ -307,6 +308,7 @@ namespace ColorVision.ImageEditor
         {
             if (e.ChangedButton != MouseButton.Left || modelVisual == null) return;
             isLeftButtonDown = true;
+            HoverInfoPopup.IsOpen = false;
             lastMousePosition = e.GetPosition(viewport);
             viewport?.CaptureMouse();
             e.Handled = true;
@@ -400,7 +402,11 @@ namespace ColorVision.ImageEditor
             if (currentMesh == null) return;
 
             var material = CurrentMaterial;
-            var model = new GeometryModel3D(currentMesh, material) { BackMaterial = material };
+            var model = new GeometryModel3D(currentMesh, material)
+            {
+                BackMaterial = material,
+                Transform = new ScaleTransform3D(1, 1, GetHeightScaleFactor())
+            };
             Viewport3DHelper.ExportModel(model, $"3DView_{DateTime.Now:yyyyMMdd_HHmmss}.obj");
         }
 
@@ -414,13 +420,13 @@ namespace ColorVision.ImageEditor
         private void HeightScaleIncrease_Click(object sender, RoutedEventArgs e)
         {
             heightScale *= 1.1;
-            UpdateMeshPositions();
+            UpdateHeightScaleTransform();
         }
 
         private void HeightScaleDecrease_Click(object sender, RoutedEventArgs e)
         {
             heightScale *= 0.9;
-            UpdateMeshPositions();
+            UpdateHeightScaleTransform();
         }
 
         // Camera movement buttons
@@ -497,109 +503,15 @@ namespace ColorVision.ImageEditor
                 viewport.Camera.LookDirection.Z - 10);
         }
 
-        private static int FindClosestFactor(int value, int[] factors)
-        {
-            int closest = factors[0];
-            foreach (int factor in factors)
-            {
-                if (Math.Abs(value - factor) < Math.Abs(value - closest))
-                    closest = factor;
-            }
-            return closest;
-        }
-
         /// <summary>
-        /// Convert WriteableBitmap to downsampled grayscale bytes (pure C#, handles all WPF pixel formats).
+        /// Convert WriteableBitmap to downsampled grayscale bytes without materializing full-size color,
+        /// grayscale, and alpha buffers.
         /// </summary>
         private static (byte[] Gray, byte[]? Alpha, int Width, int Height) ConvertBitmapToGray(
             WriteableBitmap bitmap, int targetX, int targetY)
         {
-            int origW = bitmap.PixelWidth;
-            int origH = bitmap.PixelHeight;
-            int targetPixels = targetX * targetY;
-
-            double initScale = Math.Sqrt((double)origW * origH / targetPixels);
-            int[] factors = { 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048 };
-            int scaleFactor = Math.Max(FindClosestFactor((int)Math.Round(initScale), factors), 1);
-
-            int newW = Math.Max(origW / scaleFactor, 2);
-            int newH = Math.Max(origH / scaleFactor, 2);
-
-            var colorSource = new FormatConvertedBitmap(bitmap, PixelFormats.Bgra32, null, 0);
-            int colorStride = origW * 4;
-            byte[] fullColor = new byte[origH * colorStride];
-            colorSource.CopyPixels(fullColor, colorStride, 0);
-
-            byte[] fullGray = new byte[origW * origH];
-            byte[] fullAlpha = new byte[origW * origH];
-            bool hasTransparency = false;
-
-            for (int i = 0; i < fullGray.Length; i++)
-            {
-                int offset = i * 4;
-                byte blue = fullColor[offset];
-                byte green = fullColor[offset + 1];
-                byte red = fullColor[offset + 2];
-                byte alpha = fullColor[offset + 3];
-
-                fullGray[i] = (byte)Math.Clamp(Math.Round(blue * 0.114 + green * 0.587 + red * 0.299), 0, 255);
-                fullAlpha[i] = alpha;
-                hasTransparency |= alpha < 255;
-            }
-
-            // Bilinear interpolation downsample
-            byte[] gray = new byte[newW * newH];
-            byte[]? alphaMask = hasTransparency ? new byte[newW * newH] : null;
-            double scaleX = (double)(origW - 1) / Math.Max(newW - 1, 1);
-            double scaleY = (double)(origH - 1) / Math.Max(newH - 1, 1);
-
-            for (int y = 0; y < newH; y++)
-            {
-                double srcY = y * scaleY;
-                int y0 = (int)srcY;
-                int y1 = Math.Min(y0 + 1, origH - 1);
-                double fy = srcY - y0;
-
-                for (int x = 0; x < newW; x++)
-                {
-                    double srcX = x * scaleX;
-                    int x0 = (int)srcX;
-                    int x1 = Math.Min(x0 + 1, origW - 1);
-                    double fx = srcX - x0;
-
-                    int idx00 = y0 * origW + x0;
-                    int idx10 = y0 * origW + x1;
-                    int idx01 = y1 * origW + x0;
-                    int idx11 = y1 * origW + x1;
-
-                    double v00 = fullGray[idx00];
-                    double v10 = fullGray[idx10];
-                    double v01 = fullGray[idx01];
-                    double v11 = fullGray[idx11];
-
-                    double value = v00 * (1 - fx) * (1 - fy)
-                                 + v10 * fx * (1 - fy)
-                                 + v01 * (1 - fx) * fy
-                                 + v11 * fx * fy;
-
-                    gray[y * newW + x] = (byte)Math.Clamp(Math.Round(value), 0, 255);
-
-                    if (alphaMask != null)
-                    {
-                        double a00 = fullAlpha[idx00];
-                        double a10 = fullAlpha[idx10];
-                        double a01 = fullAlpha[idx01];
-                        double a11 = fullAlpha[idx11];
-                        double alphaValue = a00 * (1 - fx) * (1 - fy)
-                                          + a10 * fx * (1 - fy)
-                                          + a01 * (1 - fx) * fy
-                                          + a11 * fx * fy;
-                        alphaMask[y * newW + x] = (byte)Math.Clamp(Math.Round(alphaValue), 0, 255);
-                    }
-                }
-            }
-
-            return (gray, alphaMask, newW, newH);
+            HeightMapSample sample = HeightMapPixelSampler.Sample(bitmap, targetX, targetY);
+            return (sample.Gray, sample.Alpha, sample.Width, sample.Height);
         }
 
         private void CreateColormapMaterial(byte[] lut)
@@ -626,7 +538,7 @@ namespace ColorVision.ImageEditor
 
         /// <summary>
         /// Build mesh arrays - positions, indices, texture coordinates, and normals.
-        /// Separated from mesh creation to allow position-only updates.
+        /// Separated from WPF collection creation so the numeric work can run off the UI thread.
         /// </summary>
         private static (Point3D[] Positions, int[] Indices, Point[] TexCoords, Vector3D[] Normals) BuildMeshArrays(
             byte[] pixels, byte[]? alphaMask, int width, int height, double heightScale)
@@ -762,59 +674,38 @@ namespace ColorVision.ImageEditor
                     && alphaMask[bottomRight] > 127);
         }
 
-        /// <summary>
-        /// Update only vertex positions when height scale changes - much faster than rebuilding entire mesh.
-        /// Reuses the Point3DCollection to avoid GC pressure.
-        /// </summary>
-        private void UpdateMeshPositions()
+        private static (Point3DCollection Positions, Int32Collection Indices,
+            PointCollection TexCoords, Vector3DCollection Normals) BuildMeshCollections(
+            byte[] pixels, byte[]? alphaMask, int width, int height, double heightScale)
         {
-            if (currentMesh == null || grayPixels == null) return;
+            var arrays = BuildMeshArrays(pixels, alphaMask, width, height, heightScale);
+            var positions = new Point3DCollection(arrays.Positions);
+            var indices = new Int32Collection(arrays.Indices);
+            var texCoords = new PointCollection(arrays.TexCoords);
+            var normals = new Vector3DCollection(arrays.Normals);
 
-            if (cachedPositions == null)
-                cachedPositions = new Point3DCollection(newWidth * newHeight);
-            else
-                cachedPositions.Clear();
+            positions.Freeze();
+            indices.Freeze();
+            texCoords.Freeze();
+            normals.Freeze();
+            return (positions, indices, texCoords, normals);
+        }
 
-            var normals = new Vector3DCollection(newWidth * newHeight);
-            double centerX = Math.Max(newWidth - 1, 1) / 2.0;
-            double centerY = Math.Max(newHeight - 1, 1) / 2.0;
+        /// <summary>
+        /// Height changes are represented by a model-space transform, avoiding a full vertex and normal rewrite.
+        /// </summary>
+        private void UpdateHeightScaleTransform()
+        {
+            if (currentMesh == null || heightTransform == null) return;
 
-            for (int y = 0; y < newHeight; y++)
-            {
-                int flippedY = newHeight - 1 - y;
-                int rowOffset = y * newWidth;
-                for (int x = 0; x < newWidth; x++)
-                {
-                    int idx = rowOffset + x;
-
-                    if (!IsVertexVisible(alphaPixels, idx))
-                    {
-                        cachedPositions.Add(new Point3D(centerX, centerY, 0));
-                        normals.Add(new Vector3D(0, 0, 1));
-                        continue;
-                    }
-
-                    double z = grayPixels[idx] / 255.0 * heightScale;
-                    cachedPositions.Add(new Point3D(x, flippedY, z));
-
-                    // Recompute normal from height gradients
-                    double zL = x > 0 ? grayPixels[idx - 1] / 255.0 * heightScale : z;
-                    double zR = x < newWidth - 1 ? grayPixels[idx + 1] / 255.0 * heightScale : z;
-                    double zU = y > 0 ? grayPixels[idx - newWidth] / 255.0 * heightScale : z;
-                    double zD = y < newHeight - 1 ? grayPixels[idx + newWidth] / 255.0 * heightScale : z;
-
-                    double dzdx = (zR - zL) * 0.5;
-                    double dzdy = (zD - zU) * 0.5;
-                    var normal = new Vector3D(-dzdx, dzdy, 1.0);
-                    normal.Normalize();
-                    normals.Add(normal);
-                }
-            }
-
-            currentMesh.Positions = cachedPositions;
-            currentMesh.Normals = normals;
+            heightTransform.ScaleZ = GetHeightScaleFactor();
             UpdateRotationCenterFromMesh(currentMesh);
             ResetModelRotation();
+        }
+
+        private double GetHeightScaleFactor()
+        {
+            return meshBaseHeightScale > 0 ? heightScale / meshBaseHeightScale : 1.0;
         }
 
         private void UpdateRotationCenterFromMesh(MeshGeometry3D mesh)
@@ -826,6 +717,10 @@ namespace ColorVision.ImageEditor
             }
 
             Rect3D bounds = mesh.Bounds;
+            if (heightTransform != null)
+            {
+                bounds = heightTransform.TransformBounds(bounds);
+            }
             if (bounds.IsEmpty)
             {
                 hasRotationCenter = false;
@@ -847,32 +742,40 @@ namespace ColorVision.ImageEditor
         /// </summary>
         private async Task BuildMeshAsync()
         {
-            if (grayPixels == null || viewport == null) return;
+            if (grayPixels == null || viewport == null || isClosed) return;
 
+            int buildVersion = ++meshBuildVersion;
             var pixels = grayPixels;
             var alpha = alphaPixels;
             int w = newWidth, h = newHeight;
             double hs = heightScale;
 
-            var (positions, indices, texCoords, normals) = await Task.Run(() => BuildMeshArrays(pixels, alpha, w, h, hs));
+            var (positions, indices, texCoords, normals) = await Task.Run(
+                () => BuildMeshCollections(pixels, alpha, w, h, hs));
+            if (isClosed || viewport == null || buildVersion != meshBuildVersion)
+            {
+                return;
+            }
 
             currentMesh = new MeshGeometry3D
             {
-                Positions = new Point3DCollection(positions),
-                TriangleIndices = new Int32Collection(indices),
-                TextureCoordinates = new PointCollection(texCoords),
-                Normals = new Vector3DCollection(normals)
+                Positions = positions,
+                TriangleIndices = indices,
+                TextureCoordinates = texCoords,
+                Normals = normals
             };
 
-            UpdateRotationCenterFromMesh(currentMesh);
-            ResetModelRotation();
-
+            meshBaseHeightScale = hs;
+            heightTransform = new ScaleTransform3D(1, 1, GetHeightScaleFactor());
             var material = CurrentMaterial;
-            var model = new GeometryModel3D(currentMesh, material) { BackMaterial = material };
+            var model = new GeometryModel3D(currentMesh, material)
+            {
+                BackMaterial = material,
+                Transform = heightTransform
+            };
 
             if (modelVisual == null)
             {
-                ResetModelRotation();
                 modelVisual = new ModelVisual3D { Content = model, Transform = currentTransform };
                 viewport.Children.Add(modelVisual);
             }
@@ -880,6 +783,9 @@ namespace ColorVision.ImageEditor
             {
                 modelVisual.Content = model;
             }
+
+            UpdateRotationCenterFromMesh(currentMesh);
+            ResetModelRotation();
         }
 
         private void UpdateMaterial()
