@@ -182,7 +182,7 @@
   <data name="ClearRecords" xml:space="preserve"><value>清空記錄</value></data>
   <data name="ResetDatabase" xml:space="preserve"><value>重設資料庫</value></data>
   <data name="LoadCount" xml:space="preserve"><value>載入條數:</value></data>
-  <data name="TotalDurationMs" xml:space="preserve"><value>總耗時(ms)</value></data>
+  <data name="TotalDurationMs" xml:space="preserve"><value>結果就緒耗時(ms)</value></data>
   <data name="ExcitationPurity" xml:space="preserve"><value>興奮純度(%)</value></data>
   <data name="HalfWidth" xml:space="preserve"><value>半波寬</value></data>
   <data name="Log" xml:space="preserve"><value>日誌</value></data>

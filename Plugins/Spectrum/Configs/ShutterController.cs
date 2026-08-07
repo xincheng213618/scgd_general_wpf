@@ -15,6 +15,7 @@ namespace Spectrum.Configs
 
         private SerialPort? _serialPort;
         private int activeOperationCount;
+        private readonly SemaphoreSlim commandGate = new(1, 1);
 
         public bool IsBusy => Volatile.Read(ref activeOperationCount) > 0;
 
@@ -48,21 +49,21 @@ namespace Spectrum.Configs
 
             DisconnectCommand = new TimedButtonCommand(
                 async _ => await Task.FromResult(Disconnect()),
-                _ => IsConnected,
+                _ => IsConnected && !SpectrometerManager.Instance.IsDeviceBusy,
                 SpectrumTimedButtonHost.GetOwner,
                 SpectrumTimedButtonHost.BuildOperationKey,
                 "shutter-disconnect");
 
             OpenShutterCommand = new TimedButtonCommand(
                 _ => SendCommand(Config.OpenCmd),
-                _ => IsConnected,
+                _ => IsConnected && !SpectrometerManager.Instance.IsDeviceBusy,
                 SpectrumTimedButtonHost.GetOwner,
                 SpectrumTimedButtonHost.BuildOperationKey,
                 "shutter-open");
 
             CloseShutterCommand = new TimedButtonCommand(
                 _ => SendCommand(Config.CloseCmd),
-                _ => IsConnected,
+                _ => IsConnected && !SpectrometerManager.Instance.IsDeviceBusy,
                 SpectrumTimedButtonHost.GetOwner,
                 SpectrumTimedButtonHost.BuildOperationKey,
                 "shutter-close");
@@ -116,8 +117,17 @@ namespace Spectrum.Configs
             finally
             {
                 IsConnected = false;
-                _serialPort?.Dispose();
+                SerialPort? serialPort = _serialPort;
                 _serialPort = null;
+                try
+                {
+                    serialPort?.Dispose();
+                }
+                catch (Exception ex)
+                {
+                    log.Warn("释放快门串口失败", ex);
+                    success = false;
+                }
             }
 
             return success;
@@ -136,6 +146,7 @@ namespace Spectrum.Configs
         private async Task<bool> SendCommand(string cmd)
         {
             Interlocked.Increment(ref activeOperationCount);
+            await commandGate.WaitAsync();
             try
             {
                 if (_serialPort != null && _serialPort.IsOpen)
@@ -193,15 +204,14 @@ namespace Spectrum.Configs
             }
             finally
             {
+                commandGate.Release();
                 Interlocked.Decrement(ref activeOperationCount);
             }
         }
 
         public void Dispose()
         {
-            _serialPort?.Close();
-            _serialPort?.Dispose();
-            _serialPort = null;
+            Disconnect();
             GC.SuppressFinalize(this);
         }
     }

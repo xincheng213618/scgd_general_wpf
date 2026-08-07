@@ -266,7 +266,7 @@
   <data name="ClearRecords" xml:space="preserve"><value>清空记录</value></data>
   <data name="ResetDatabase" xml:space="preserve"><value>重置数据库</value></data>
   <data name="LoadCount" xml:space="preserve"><value>加载条数:</value></data>
-  <data name="TotalDurationMs" xml:space="preserve"><value>总耗时(ms)</value></data>
+  <data name="TotalDurationMs" xml:space="preserve"><value>结果就绪耗时(ms)</value></data>
   <data name="ExcitationPurity" xml:space="preserve"><value>兴奋纯度(%)</value></data>
   <data name="HalfWidth" xml:space="preserve"><value>半波宽</value></data>
   <data name="Log" xml:space="preserve"><value>日志</value></data>

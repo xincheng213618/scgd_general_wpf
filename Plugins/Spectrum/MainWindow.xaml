@@ -428,7 +428,7 @@
                                             <ScottPlot:WpfPlot x:Name="wpfplot2" Panel.ZIndex="9" Visibility="Collapsed" />
                                             <ListView x:Name="listView2" Grid.Column="1" Padding="2,0,2,2" BorderThickness="0" SelectionChanged="listView2_SelectionChanged" Style="{StaticResource ListView.Small}">
                                                 <ListView.Resources>
-                                                    <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu1_Opened" />
+                                                    <ContextMenu x:Key="ItemContextMenu" />
                                                 </ListView.Resources>
                                                 <ListView.View>
                                                     <GridView>
@@ -497,10 +497,10 @@
                                                     <Button Width="25" Height="25" Margin="0,1,5,0" Padding="2" Click="OpenCieWindow_Click" ToolTip="{x:Static properties:Resources.CieChromaticityDiagram}">
                                                         <Image Source="/ColorVision.ImageEditor;component/Assets/Image/CIE1931xy1.png" Stretch="Uniform" />
                                                     </Button>
-                                                    <Button Width="25" Height="25" Margin="0,1,5,0" Padding="2" Click="Export_Click" Command="{Binding ViewResultManager.SaveCommand}">
+                                                    <Button Width="25" Height="25" Margin="0,1,5,0" Padding="2" Click="Export_Click">
                                                         <Rectangle Width="16" Height="16" Fill="{DynamicResource DISave}" />
                                                     </Button>
-                                                    <Button Width="25" Height="25" Margin="0,1,5,0" Padding="2" Click="Cleartable_Click" Command="{Binding ViewResultManager.ViewReslutsClearCommand}">
+                                                    <Button Width="25" Height="25" Margin="0,1,5,0" Padding="2" Click="Cleartable_Click">
                                                         <Button.Triggers>
                                                             <EventTrigger RoutedEvent="Button.Click">
                                                                 <BeginStoryboard>

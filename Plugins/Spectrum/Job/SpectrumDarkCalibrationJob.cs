@@ -18,12 +18,6 @@ namespace Spectrum.Job
         {
             var manager = SpectrometerManager.Instance;
 
-            if (MainWindow.Instance == null)
-            {
-                log.Warn("光谱仪窗口未打开，无法执行校零任务");
-                throw new JobExecutionException("光谱仪窗口未打开");
-            }
-
             if (!manager.IsConnected)
             {
                 log.Warn("光谱仪未连接，无法执行校零任务");
@@ -32,9 +26,13 @@ namespace Spectrum.Job
 
             log.Info("开始执行光谱仪校零任务");
 
-            int ret = await manager.PerformDarkCalibrationAsync();
+            int ret = await manager.PerformDarkCalibrationAsync(context.CancellationToken);
 
-            if (ret == 1)
+            if (ret == SpectrometerManager.OperationBusy)
+            {
+                throw new JobExecutionException("光谱仪正在执行其他操作");
+            }
+            else if (ret == 1)
             {
                 log.Info("校零任务执行成功");
             }

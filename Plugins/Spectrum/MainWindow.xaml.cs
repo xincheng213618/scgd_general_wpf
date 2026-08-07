@@ -33,20 +33,22 @@ namespace Spectrum
         public override int Order => 1;
         public override void Execute()
         {
+            if (MainWindow.Instance is { IsLoaded: true } existingWindow)
+            {
+                if (existingWindow.WindowState == WindowState.Minimized)
+                    existingWindow.WindowState = WindowState.Normal;
+                existingWindow.Activate();
+                return;
+            }
+
             new MainWindow().Show();
         }
-    }
-
-
-    public class MainWindowResult : ViewModelBase, IConfig
-    {
-        public static MainWindowResult Instance => ConfigService.Instance.GetRequiredService<MainWindowResult>();
     }
 
     /// <summary>
     /// MainWindow.xaml 的交互逻辑
     /// </summary>
-    public partial class MainWindow : System.Windows.Window,IDisposable
+    public partial class MainWindow : System.Windows.Window, IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(App));
         private static readonly Lazy<Task<TimeSpan>> CvCameraResourceInitialization = new(() => Task.Run(() =>
@@ -62,7 +64,11 @@ namespace Spectrum
         private Task<ViewResultManager>? viewResultInitializationTask;
         private Task<string[]>? serialPortDiscoveryTask;
         private Task<TimeSpan>? cvCameraInitializationTask;
+        private Task? closePreparationTask;
+        private MeasurementAdmissionPause? measurementPause;
         private bool absoluteSpectrumPlotInitialized;
+        private bool isPreparingClose;
+        private bool isClosePrepared;
         public static SpectrometerManager Manager => SpectrometerManager.Instance;
 
         /// <summary>
@@ -91,21 +97,13 @@ namespace Spectrum
             this.SizeChanged += (s, e) => Config.SetConfig(this);
             this.ApplyCaption();
             this.SetWindowFull(Config);
-            this.Closing += (s, e) =>
+            Closing += MainWindow_Closing;
+            Closed += (_, _) =>
             {
-                // Auto-save layout when the window is closing
-                LayoutManager?.SaveLayout();
-            };
-            this.Closed += (s, e) =>
-            {
-                CloseCieWindow();
-                CleanupSmuTimedButtons();
-                Manager.SmuController.Close();
-                Manager.Disconnect();
-                logOutput?.Dispose();
-                logOutput = null;
-                nativeLogOutput?.Dispose();
-                Instance = null;
+                measurementPause?.Dispose();
+                measurementPause = null;
+                if (ReferenceEquals(Instance, this))
+                    Instance = null;
             };
             this.Title += " - " + Assembly.GetAssembly(typeof(MainWindow))?.GetName().Version?.ToString() ?? "";
 
@@ -128,16 +126,8 @@ namespace Spectrum
         {
             Stopwatch stopwatch = Stopwatch.StartNew();
 
-            // AvalonDock theme integration
-            void ThemeChange(Theme theme)
-            {
-                if (theme == Theme.Dark)
-                    DockingManager.Theme = new AvalonDock.Themes.Vs2013DarkTheme();
-                else
-                    DockingManager.Theme = new AvalonDock.Themes.Vs2013LightTheme();
-            }
-            ThemeManager.Current.CurrentUIThemeChanged += ThemeChange;
-            ThemeChange(ThemeManager.Current.CurrentUITheme);
+            ThemeManager.Current.CurrentUIThemeChanged += ApplyDockTheme;
+            ApplyDockTheme(ThemeManager.Current.CurrentUITheme);
 
             // Initialize layout manager and register all panel content
             LayoutManager = new DockLayoutManager(DockingManager);
@@ -203,20 +193,7 @@ namespace Spectrum
             ComboBoxSpectrometerType.ItemsSource = from e1 in Enum.GetValues<SpectrometerType>().Cast<SpectrometerType>()
                                                    select new KeyValuePair<SpectrometerType, string>(e1, e1.ToDescription());
 
-            SetEmissionSP100Config.Instance.EditChanged += (s, e) =>
-            {
-                if (SpectrometerHandle == IntPtr.Zero)
-                {
-                    return;
-                }
-
-                log.Debug($"设置 SP100 参数: IsEnabled={SetEmissionSP100Config.Instance.IsEnabled}, nStartPos={SetEmissionSP100Config.Instance.nStartPos}, nEndPos={SetEmissionSP100Config.Instance.nEndPos}, dMeanThreshold={SetEmissionSP100Config.Instance.dMeanThreshold}");
-                int ret = Spectrometer.CM_SetEmissionSP100(SpectrometerHandle, SetEmissionSP100Config.Instance.IsEnabled, SetEmissionSP100Config.Instance.nStartPos, SetEmissionSP100Config.Instance.nEndPos, SetEmissionSP100Config.Instance.dMeanThreshold);
-                if (ret == 1)
-                    log.Info("SP100 参数设置成功");
-                else
-                    log.Warn($"SP100 参数设置失败: {Spectrometer.GetErrorMessage(ret)}");
-            };
+            SetEmissionSP100Config.Instance.EditChanged += SetEmissionSP100Config_EditChanged;
 
             if (MainWindowConfig.Instance.LogControlVisibility)
             {
@@ -258,8 +235,8 @@ namespace Spectrum
                 return;
             }
 
-            viewResultManager.ListView = ViewResultList;
             ViewResultList.ItemsSource = viewResultManager.ViewResluts;
+            viewResultManager.ViewResluts.CollectionChanged += ViewResults_CollectionChanged;
             if (ViewResultList.View is GridView gridView)
             {
                 GridViewColumnVisibility.AddGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
@@ -329,6 +306,214 @@ namespace Spectrum
                     ShowNativeLogPlaceholder();
                 }
             }));
+        }
+
+        private async void SetEmissionSP100Config_EditChanged(object? sender, EventArgs e)
+        {
+            if (!Manager.IsConnected || SpectrometerHandle == IntPtr.Zero)
+            {
+                return;
+            }
+
+            try
+            {
+                int result = await Manager.ApplySp100ConfigurationAsync();
+                if (result == 1)
+                    log.Info("SP100 参数设置成功");
+                else
+                    log.Warn($"SP100 参数设置失败: {Spectrometer.GetErrorMessage(result)}");
+            }
+            catch (Exception ex)
+            {
+                log.Warn("SP100 参数设置异常", ex);
+            }
+        }
+
+        private void ApplyDockTheme(Theme theme)
+        {
+            DockingManager.Theme = theme == Theme.Dark
+                ? new AvalonDock.Themes.Vs2013DarkTheme()
+                : new AvalonDock.Themes.Vs2013LightTheme();
+        }
+
+        private async void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
+        {
+            if (isClosePrepared)
+                return;
+
+            e.Cancel = true;
+            if (isPreparingClose)
+                return;
+
+            try
+            {
+                await PrepareForShutdownAsync();
+                Close();
+            }
+            catch (Exception ex)
+            {
+                log.Error("准备关闭 Spectrum 窗口失败", ex);
+                IsEnabled = true;
+            }
+        }
+
+        internal Task PrepareForShutdownAsync()
+        {
+            closePreparationTask ??= PrepareForShutdownCoreAsync();
+            return closePreparationTask;
+        }
+
+        private async Task PrepareForShutdownCoreAsync()
+        {
+            isPreparingClose = true;
+            IsEnabled = false;
+
+            try
+            {
+                LayoutManager?.SaveLayout();
+            }
+            catch (Exception ex)
+            {
+                log.Warn("保存 Spectrum 窗口布局失败", ex);
+            }
+
+            measurementPause ??= Manager.StopAcceptingMeasurements();
+            try
+            {
+                CancelContinuousMeasurement();
+            }
+            catch (Exception ex)
+            {
+                log.Warn("停止连续测量失败", ex);
+            }
+
+            if (continuousMeasurementTask is { } measurementTask)
+            {
+                try
+                {
+                    await measurementTask;
+                }
+                catch (OperationCanceledException)
+                {
+                }
+                catch (Exception ex)
+                {
+                    log.Warn("等待连续测量结束失败", ex);
+                }
+            }
+
+            try
+            {
+                await measurementPause.WhenDrained;
+            }
+            catch (Exception ex)
+            {
+                log.Warn("等待光谱测量结束失败", ex);
+            }
+
+            try
+            {
+                SetEmissionSP100Config.Instance.EditChanged -= SetEmissionSP100Config_EditChanged;
+                ThemeManager.Current.CurrentUIThemeChanged -= ApplyDockTheme;
+                ViewResultManager.ViewResluts.CollectionChanged -= ViewResults_CollectionChanged;
+                Manager.AutodarkParam.ExecuteAdaptiveAutoDark = null;
+            }
+            catch (Exception ex)
+            {
+                log.Warn("取消 Spectrum 窗口事件订阅失败", ex);
+            }
+
+            try
+            {
+                CloseCieWindow();
+            }
+            catch (Exception ex)
+            {
+                log.Warn("关闭 CIE 窗口失败", ex);
+            }
+
+            try
+            {
+                CleanupSmuTimedButtons();
+            }
+            catch (Exception ex)
+            {
+                log.Warn("清理源表定时按钮失败", ex);
+            }
+
+            try
+            {
+                await Manager.DisconnectAsync();
+            }
+            catch (Exception ex)
+            {
+                log.Warn("断开光谱仪失败", ex);
+            }
+
+            try
+            {
+                await CloseAuxiliaryDevicesAsync();
+            }
+            catch (Exception ex)
+            {
+                log.Warn("关闭辅助设备失败", ex);
+            }
+
+            try
+            {
+                Dispose();
+            }
+            catch (Exception ex)
+            {
+                log.Warn("释放 Spectrum 窗口资源失败", ex);
+            }
+
+            isClosePrepared = true;
+            isPreparingClose = false;
+        }
+
+        public void Dispose()
+        {
+            continuousMeasurementCancellation?.Dispose();
+            continuousMeasurementCancellation = null;
+            logOutput?.Dispose();
+            logOutput = null;
+            nativeLogOutput?.Dispose();
+            nativeLogOutput = null;
+            GC.SuppressFinalize(this);
+        }
+
+        private async Task CloseAuxiliaryDevicesAsync()
+        {
+            while (Manager.ShutterController.IsBusy || Manager.FilterWheelController.IsBusy || Manager.SmuController.IsBusy)
+                await Task.Delay(20);
+
+            try
+            {
+                await Manager.SmuController.CloseAsync();
+            }
+            catch (Exception ex)
+            {
+                log.Warn("关闭源表失败", ex);
+            }
+
+            try
+            {
+                Manager.ShutterController.Dispose();
+            }
+            catch (Exception ex)
+            {
+                log.Warn("关闭快门串口失败", ex);
+            }
+
+            try
+            {
+                Manager.FilterWheelController.Dispose();
+            }
+            catch (Exception ex)
+            {
+                log.Warn("关闭滤光轮串口失败", ex);
+            }
         }
 
         private void InitializeRelativeSpectrumPlot()

@@ -7,7 +7,6 @@ using ScottPlot.DataSources;
 using ScottPlot.Plottables;
 using Spectrum.Data;
 using Spectrum.View;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
 using WpfBrush = System.Windows.Media.SolidColorBrush;
 
@@ -22,20 +21,49 @@ namespace Spectrum.Models
         public int Id { get; set; }
         [DisplayName("测量时间")]
         public DateTime? CreateTime { get; set; }
-        [DisplayName("总耗时(ms)")]
+        [DisplayName("结果就绪耗时(ms)")]
         public long? TotalDurationMs { get => _TotalDurationMs; set { _TotalDurationMs = value; OnPropertyChanged(); } }
         private long? _TotalDurationMs;
         public string Batch { get; set; }
         public int? BatchID { get; set; }
-        [JsonIgnore]
-        public Scatter ScatterPlot { get; set; }
-        [JsonIgnore]
-        public Scatter AbsoluteScatterPlot { get; set; }
 
-        public ObservableCollection<SpectralData> SpectralDatas { get; set; } = new ObservableCollection<SpectralData>();
+        private Scatter? _scatterPlot;
+        private Scatter? _absoluteScatterPlot;
+        private IReadOnlyList<SpectralData>? _spectralDatas;
+
+        [JsonIgnore]
+        public Scatter ScatterPlot
+        {
+            get
+            {
+                EnsurePlotsCreated();
+                return _scatterPlot!;
+            }
+        }
+
+        [JsonIgnore]
+        public Scatter AbsoluteScatterPlot
+        {
+            get
+            {
+                EnsurePlotsCreated();
+                return _absoluteScatterPlot!;
+            }
+        }
+
+        [JsonIgnore]
+        public IReadOnlyList<SpectralData> SpectralDatas => _spectralDatas ??= CreateSpectralDatas();
+
+        [JsonIgnore]
+        [Browsable(false)]
+        public int SpectrumPointCount => fPL.Length;
 
         public void Gen()
         {
+            NormalizeSpectrumData();
+            _spectralDatas = null;
+            _scatterPlot = null;
+            _absoluteScatterPlot = null;
 
             IP = Math.Round(fIp / 65535 * 100, 2).ToString() + "%";
 
@@ -44,56 +72,10 @@ namespace Spectrum.Models
 
             double sum1 = 0, sum2 = 0;
             for (int i = 35; i <= 75; i++)
-                sum1 += fPL[i * 10];
+                sum1 += GetSpectrumValue(fSpect1 + i);
             for (int i = 20; i <= 120; i++)
-                sum2 += fPL[i * 10];
-            Blue = Math.Round(sum1 / sum2 * 100, 2).ToString();
-
-            if (SpectralDatas.Count == 0)
-            {
-                for (int i = 0; i <= (780 - 380) * 10; i += 10)
-                {
-                    SpectralData SpectralData = new SpectralData();
-                    SpectralData.Wavelength = i / 10 + 380;
-
-                    SpectralData.RelativeSpectrum = fPL[i]>0? fPL[i] : 0;
-
-                    SpectralData.AbsoluteSpectrum = fPL[i] * fPlambda;
-                    SpectralDatas.Add(SpectralData);
-                }
-            }
-
-            fSpect1 = 380;
-
-            double[] xs = new double[fPL.Length];
-            double[] ys = new double[fPL.Length];
-            double[] ysAbsolute = new double[fPL.Length];
-            for (int i = 0; i < fPL.Length; i++)
-            {
-                xs[i] = ((double)fSpect1 + Math.Round(fInterval, 1) * i);
-                ys[i] = fPL[i];
-                ysAbsolute[i] = fPL[i] * fPlambda;
-            }
-
-            ScatterSourceDoubleArray source = new(xs, ys);
-            ScatterPlot = new Scatter(source)
-            {
-                Color = Color.FromColor(System.Drawing.Color.DarkGoldenrod),
-                LineWidth = 1,
-                MarkerSize = 1,
-                LegendText = string.Empty,
-                MarkerShape = MarkerShape.None,
-            };
-
-            ScatterSourceDoubleArray sourceAbsolute = new(xs, ysAbsolute);
-            AbsoluteScatterPlot = new Scatter(sourceAbsolute)
-            {
-                Color = Color.FromColor(System.Drawing.Color.DarkGoldenrod),
-                LineWidth = 1,
-                MarkerSize = 1,
-                LegendText = string.Empty,
-                MarkerShape = MarkerShape.None,
-            };
+                sum2 += GetSpectrumValue(fSpect1 + i);
+            Blue = sum2 == 0 ? "0" : Math.Round(sum1 / sum2 * 100, 2).ToString();
 
             // Compute dominant wavelength color
             DominantWavelengthColor = WavelengthToColor.ToBrush(fLd);
@@ -108,6 +90,139 @@ namespace Spectrum.Models
                 fRa = RaCalculator.ComputeRa(fPL, fSpect1, fInterval, fCCT);
             }
         }
+
+        internal static COLOR_PARA NormalizeColorParam(COLOR_PARA colorParam)
+        {
+            float[] values = colorParam.fPL ?? Array.Empty<float>();
+            if (values.Length == 0)
+            {
+                colorParam.fPL = Array.Empty<float>();
+                return colorParam;
+            }
+
+            int fallbackCount = Math.Min(values.Length, 4001);
+            bool hasStart = float.IsFinite(colorParam.fSpect1) && colorParam.fSpect1 > 0;
+            bool hasEnd = float.IsFinite(colorParam.fSpect2) && colorParam.fSpect2 > colorParam.fSpect1;
+            bool hasInterval = float.IsFinite(colorParam.fInterval) && colorParam.fInterval > 0;
+
+            float start = hasStart ? colorParam.fSpect1 : 380f;
+            float interval = hasInterval
+                ? colorParam.fInterval
+                : hasEnd && fallbackCount > 1
+                    ? (colorParam.fSpect2 - start) / (fallbackCount - 1)
+                    : fallbackCount > 401 ? 0.1f : 1f;
+            float end = hasEnd ? colorParam.fSpect2 : start + interval * (fallbackCount - 1);
+
+            double pointSpan = (end - start) / interval;
+            int pointCount = fallbackCount;
+            if (double.IsFinite(pointSpan) && pointSpan >= 0)
+            {
+                double requestedPointCount = Math.Round(pointSpan) + 1;
+                pointCount = requestedPointCount >= values.Length
+                    ? values.Length
+                    : Math.Max(1, (int)requestedPointCount);
+            }
+
+            if (values.Length != pointCount)
+            {
+                float[] trimmedValues = new float[pointCount];
+                Array.Copy(values, trimmedValues, pointCount);
+                values = trimmedValues;
+            }
+
+            colorParam.fSpect1 = start;
+            colorParam.fInterval = interval;
+            colorParam.fSpect2 = start + interval * (pointCount - 1);
+            colorParam.fPL = values;
+            return colorParam;
+        }
+
+        private void NormalizeSpectrumData()
+        {
+            COLOR_PARA normalized = NormalizeColorParam(new COLOR_PARA
+            {
+                fSpect1 = fSpect1,
+                fSpect2 = fSpect2,
+                fInterval = fInterval,
+                fPL = fPL
+            });
+            fSpect1 = normalized.fSpect1;
+            fSpect2 = normalized.fSpect2;
+            fInterval = normalized.fInterval;
+            fPL = normalized.fPL;
+        }
+
+        private IReadOnlyList<SpectralData> CreateSpectralDatas()
+        {
+            if (fPL.Length == 0)
+                return Array.Empty<SpectralData>();
+
+            int sampleStride = Math.Max(1, (int)Math.Round(1d / fInterval));
+            List<SpectralData> spectralDatas = new((fPL.Length + sampleStride - 1) / sampleStride);
+            for (int i = 0; i < fPL.Length; i += sampleStride)
+            {
+                float relativeSpectrum = Math.Max(0, fPL[i]);
+                spectralDatas.Add(new SpectralData
+                {
+                    Wavelength = fSpect1 + fInterval * i,
+                    RelativeSpectrum = relativeSpectrum,
+                    AbsoluteSpectrum = fPL[i] * fPlambda
+                });
+            }
+
+            int lastIndex = fPL.Length - 1;
+            if (lastIndex % sampleStride != 0)
+            {
+                spectralDatas.Add(new SpectralData
+                {
+                    Wavelength = fSpect1 + fInterval * lastIndex,
+                    RelativeSpectrum = Math.Max(0, fPL[lastIndex]),
+                    AbsoluteSpectrum = fPL[lastIndex] * fPlambda
+                });
+            }
+
+            return spectralDatas;
+        }
+
+        private double GetSpectrumValue(double wavelength)
+        {
+            if (fPL.Length == 0 || fInterval <= 0)
+                return 0;
+
+            int index = (int)Math.Round((wavelength - fSpect1) / fInterval);
+            return index >= 0 && index < fPL.Length ? fPL[index] : 0;
+        }
+
+        private void EnsurePlotsCreated()
+        {
+            if (_scatterPlot != null && _absoluteScatterPlot != null)
+                return;
+
+            double[] xs = new double[fPL.Length];
+            double[] ys = new double[fPL.Length];
+            double[] ysAbsolute = new double[fPL.Length];
+            for (int i = 0; i < fPL.Length; i++)
+            {
+                xs[i] = fSpect1 + fInterval * i;
+                ys[i] = fPL[i];
+                ysAbsolute[i] = fPL[i] * fPlambda;
+            }
+
+            _scatterPlot = CreateScatter(xs, ys);
+            _absoluteScatterPlot = CreateScatter(xs, ysAbsolute);
+        }
+
+        private static Scatter CreateScatter(double[] xs, double[] ys)
+        {
+            return new Scatter(new ScatterSourceDoubleArray(xs, ys))
+            {
+                Color = Color.FromColor(System.Drawing.Color.DarkGoldenrod),
+                LineWidth = 1,
+                MarkerSize = 1,
+                LegendText = string.Empty,
+                MarkerShape = MarkerShape.None,
+            };
+        }
         public ViewResultSpectrum()
         {
 
@@ -117,47 +232,7 @@ namespace Spectrum.Models
         {
             Id = No++;
             CreateTime = DateTime.Now;
-            fCIEx = colorParam.fCIEx;
-            fCIEy = colorParam.fCIEy;
-            fCIEz = colorParam.fCIEz;
-            fCIEx2015 = colorParam.fCIEx_2015;
-            fCIEy2015 = colorParam.fCIEy_2015;
-            fCIEz2015 = colorParam.fCIEz_2015;
-            fx2015 = colorParam.fx_2015;
-            fy2015 = colorParam.fy_2015;
-            fu2015 = colorParam.fu_2015;
-            fv2015 = colorParam.fv_2015;
-
-
-            fx = colorParam.fx;
-            fy = colorParam.fy;
-            fu = colorParam.fu;
-            fv = colorParam.fv;
-
-
-            fCCT = colorParam.fCCT;
-            dC = colorParam.dC;
-            fLd = colorParam.fLd;
-            fPur = colorParam.fPur;
-            fLp = colorParam.fLp;
-            fHW = colorParam.fHW;
-            fLav = colorParam.fLav;
-            dC = colorParam.dC;
-
-
-            fRa = colorParam.fRa;
-            fRR = colorParam.fRR;
-            fGR = colorParam.fGR;
-            fBR = colorParam.fBR;
-            fRi = colorParam.fRi;
-            fIp = colorParam.fIp;
-            fPh = colorParam.fPh;
-            fPhe = colorParam.fPhe;
-            fPlambda = colorParam.fPlambda;
-            fSpect1 = colorParam.fSpect1;
-            fSpect2 = colorParam.fSpect2;
-            fInterval = colorParam.fInterval;
-            fPL = colorParam.fPL;
+            ApplyColorParam(colorParam);
             Gen();
         }
 
@@ -166,50 +241,7 @@ namespace Spectrum.Models
             Id = sprectrumModel.Id;
             CreateTime = sprectrumModel.CreateTime;
             TotalDurationMs = sprectrumModel.TotalDurationMs;
-
-            var colorParam = sprectrumModel.ColorParam;
-
-            fCIEx = colorParam.fCIEx;
-            fCIEy = colorParam.fCIEy;
-            fCIEz = colorParam.fCIEz;
-            fCIEx2015 = colorParam.fCIEx_2015;
-            fCIEy2015 = colorParam.fCIEy_2015;
-            fCIEz2015 = colorParam.fCIEz_2015;
-            fx2015 = colorParam.fx_2015;
-            fy2015 = colorParam.fy_2015;
-            fu2015 = colorParam.fu_2015;
-            fv2015 = colorParam.fv_2015;
-
-
-            fx = colorParam.fx;
-            fy = colorParam.fy;
-            fu = colorParam.fu;
-            fv = colorParam.fv;
-
-
-            fCCT = colorParam.fCCT;
-            dC = colorParam.dC;
-            fLd = colorParam.fLd;
-            fPur = colorParam.fPur;
-            fLp = colorParam.fLp;
-            fHW = colorParam.fHW;
-            fLav = colorParam.fLav;
-            dC = colorParam.dC;
-
-
-            fRa = colorParam.fRa;
-            fRR = colorParam.fRR;
-            fGR = colorParam.fGR;
-            fBR = colorParam.fBR;
-            fRi = colorParam.fRi;
-            fIp = colorParam.fIp;
-            fPh = colorParam.fPh;
-            fPhe = colorParam.fPhe;
-            fPlambda = colorParam.fPlambda;
-            fSpect1 = colorParam.fSpect1;
-            fSpect2 = colorParam.fSpect2;
-            fInterval = colorParam.fInterval;
-            fPL = colorParam.fPL;
+            ApplyColorParam(sprectrumModel.ColorParam);
 
             // Restore persisted EQE fields
             V = sprectrumModel.EqeVoltage ?? 0;
@@ -219,10 +251,49 @@ namespace Spectrum.Models
             RadiantFlux = sprectrumModel.RadiantFlux;
             LuminousEfficacy = sprectrumModel.LuminousEfficacy;
             IsRecalculated = sprectrumModel.IsRecalculated ?? false;
+            Gen();
+
             if (sprectrumModel.ExcitationPurity.HasValue)
                 ExcitationPurity = sprectrumModel.ExcitationPurity.Value;
+        }
 
-            Gen();
+        private void ApplyColorParam(COLOR_PARA colorParam)
+        {
+            colorParam = NormalizeColorParam(colorParam);
+            fCIEx = colorParam.fCIEx;
+            fCIEy = colorParam.fCIEy;
+            fCIEz = colorParam.fCIEz;
+            fCIEx2015 = colorParam.fCIEx_2015;
+            fCIEy2015 = colorParam.fCIEy_2015;
+            fCIEz2015 = colorParam.fCIEz_2015;
+            fx2015 = colorParam.fx_2015;
+            fy2015 = colorParam.fy_2015;
+            fu2015 = colorParam.fu_2015;
+            fv2015 = colorParam.fv_2015;
+            fx = colorParam.fx;
+            fy = colorParam.fy;
+            fu = colorParam.fu;
+            fv = colorParam.fv;
+            fCCT = colorParam.fCCT;
+            dC = colorParam.dC;
+            fLd = colorParam.fLd;
+            fPur = colorParam.fPur;
+            fLp = colorParam.fLp;
+            fHW = colorParam.fHW;
+            fLav = colorParam.fLav;
+            fRa = colorParam.fRa;
+            fRR = colorParam.fRR;
+            fGR = colorParam.fGR;
+            fBR = colorParam.fBR;
+            fRi = colorParam.fRi ?? Array.Empty<float>();
+            fIp = colorParam.fIp;
+            fPh = colorParam.fPh;
+            fPhe = colorParam.fPhe;
+            fPlambda = colorParam.fPlambda;
+            fSpect1 = colorParam.fSpect1;
+            fSpect2 = colorParam.fSpect2;
+            fInterval = colorParam.fInterval;
+            fPL = colorParam.fPL;
         }
 
         // EQE properties
@@ -258,18 +329,14 @@ namespace Spectrum.Models
             const double h = 6.62607015e-34;
             const double c = 299792458.0;
             const double q = 1.602176634e-19;
-            double step_nm = 1.0;
-            if (fPL.Length > 2000)
-            {
-                step_nm = 0.1;
-            }
+            double step_nm = fInterval;
 
             double sum_P_times_Lambda = 0.0;
 
             for (int i = 0; i < fPL.Length; i++)
             {
                 double val = fPL[i];
-                double lambda_nm = 380.0 + step_nm * i;
+                double lambda_nm = fSpect1 + step_nm * i;
                 sum_P_times_Lambda += val * lambda_nm;
             }
 
@@ -302,7 +369,7 @@ namespace Spectrum.Models
 
             if (fPL != null && fPL.Length > 0)
             {
-                double step_nm = fPL.Length > 2000 ? 0.1 : 1.0;
+                double step_nm = fInterval;
                 double sum_Power = 0.0;
                 for (int i = 0; i < fPL.Length; i++)
                 {
@@ -457,7 +524,7 @@ namespace Spectrum.Models
         /// <summary>
         /// 显色性指数 R1-R15
         /// </summary>
-        public float[] fRi { get; set; }
+        public float[] fRi { get; set; } = Array.Empty<float>();
         /// <summary>
         /// 峰值AD
         /// </summary>
@@ -489,7 +556,7 @@ namespace Spectrum.Models
         /// <summary>
         /// 光谱数据
         /// </summary>
-        public float[] fPL { get; set; }
+        public float[] fPL { get; set; } = Array.Empty<float>();
 
         /// <summary>
         /// 主波长对应颜色 (WPF Brush, click to copy hex)

@@ -22,6 +22,7 @@ namespace Spectrum.Configs
 
         private SerialPort? _serialPort;
         private int activeOperationCount;
+        private readonly SemaphoreSlim commandGate = new(1, 1);
 
         public bool IsBusy => Volatile.Read(ref activeOperationCount) > 0;
 
@@ -80,14 +81,14 @@ namespace Spectrum.Configs
 
             DisconnectCommand = new TimedButtonCommand(
                 async _ => await Task.FromResult(Disconnect()),
-                _ => IsConnected,
+                _ => IsConnected && !SpectrometerManager.Instance.IsDeviceBusy,
                 SpectrumTimedButtonHost.GetOwner,
                 SpectrumTimedButtonHost.BuildOperationKey,
                 "filter-wheel-disconnect");
 
             QueryPositionCommand = new TimedButtonCommand(
                 async _ => await QueryPositionAsync() >= 0,
-                _ => IsConnected,
+                _ => IsConnected && !SpectrometerManager.Instance.IsDeviceBusy,
                 SpectrumTimedButtonHost.GetOwner,
                 SpectrumTimedButtonHost.BuildOperationKey,
                 "filter-wheel-query");
@@ -107,7 +108,7 @@ namespace Spectrum.Configs
 
                     return false;
                 },
-                _ => IsConnected,
+                _ => IsConnected && !SpectrometerManager.Instance.IsDeviceBusy,
                 SpectrumTimedButtonHost.GetOwner,
                 SpectrumTimedButtonHost.BuildOperationKey,
                 "filter-wheel-set-position");
@@ -162,8 +163,17 @@ namespace Spectrum.Configs
             {
                 IsConnected = false;
                 CurrentPosition = -1;
-                _serialPort?.Dispose();
+                SerialPort? serialPort = _serialPort;
                 _serialPort = null;
+                try
+                {
+                    serialPort?.Dispose();
+                }
+                catch (Exception ex)
+                {
+                    log.Warn("FilterWheel: 释放串口失败", ex);
+                    success = false;
+                }
             }
 
             return success;
@@ -214,6 +224,7 @@ namespace Spectrum.Configs
         private async Task<string?> SendCommandAsync(string cmd)
         {
             Interlocked.Increment(ref activeOperationCount);
+            await commandGate.WaitAsync();
             try
             {
                 if (_serialPort == null || !_serialPort.IsOpen)
@@ -264,15 +275,14 @@ namespace Spectrum.Configs
             }
             finally
             {
+                commandGate.Release();
                 Interlocked.Decrement(ref activeOperationCount);
             }
         }
 
         public void Dispose()
         {
-            _serialPort?.Close();
-            _serialPort?.Dispose();
-            _serialPort = null;
+            Disconnect();
             GC.SuppressFinalize(this);
         }
     }

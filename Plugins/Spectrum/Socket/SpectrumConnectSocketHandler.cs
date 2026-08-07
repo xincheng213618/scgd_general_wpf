@@ -1,7 +1,6 @@
 using ColorVision.SocketProtocol;
 using log4net;
 using System.Net.Sockets;
-using System.Windows;
 
 namespace Spectrum.Socket
 {
@@ -22,64 +21,40 @@ namespace Spectrum.Socket
 
         public SocketResponse Handle(NetworkStream stream, SocketRequest request)
         {
-            var mainWindow = MainWindow.Instance;
-            if (mainWindow == null)
-            {
-                return new SocketResponse
-                {
-                    MsgID = request.MsgID,
-                    EventName = EventName,
-                    Code = -1,
-                    Msg = "光谱仪窗口未打开"
-                };
-            }
-
             string action = request.Params?.Trim().ToLowerInvariant() ?? "connect";
+            SpectrometerManager manager = SpectrometerManager.Instance;
 
             try
             {
                 if (action == "disconnect")
                 {
                     log.Info("Socket指令: 断开光谱仪");
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        SpectrometerManager.Instance.Disconnect();
-                    });
+                    int result = manager.Disconnect();
 
                     return new SocketResponse
                     {
                         MsgID = request.MsgID,
                         EventName = EventName,
-                        Code = 200,
-                        Msg = "光谱仪已断开"
+                        Code = result == 1 ? 200 : -2,
+                        Msg = result == 1 ? "光谱仪已断开" : $"光谱仪断开失败: {cvColorVision.Spectrometer.GetErrorMessage(result)}",
+                        Data = new { manager.IsConnected }
                     };
                 }
                 else
                 {
-                    if (SpectrometerManager.Instance.IsConnected)
-                    {
-                        return new SocketResponse
-                        {
-                            MsgID = request.MsgID,
-                            EventName = EventName,
-                            Code = 200,
-                            Msg = "光谱仪已经连接"
-                        };
-                    }
-
                     log.Info("Socket指令: 连接光谱仪");
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        SpectrometerManager.Instance.Connect();
-                    });
-
-                    bool isConnected = SpectrometerManager.Instance.IsConnected;
+                    int result = manager.Connect();
+                    bool isConnected = result == 1 && manager.IsConnected;
                     return new SocketResponse
                     {
                         MsgID = request.MsgID,
                         EventName = EventName,
-                        Code = isConnected ? 200 : -2,
-                        Msg = isConnected ? "光谱仪连接成功" : "光谱仪连接失败",
+                        Code = isConnected ? 200 : result == SpectrometerManager.OperationBusy ? -4 : -2,
+                        Msg = isConnected
+                            ? "光谱仪连接成功"
+                            : result == SpectrometerManager.OperationBusy
+                                ? "光谱仪驱动正被其他会话使用，或上次释放失败"
+                                : $"光谱仪连接失败: {cvColorVision.Spectrometer.GetErrorMessage(result)}",
                         Data = new { IsConnected = isConnected }
                     };
                 }

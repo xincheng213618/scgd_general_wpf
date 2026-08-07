@@ -1,183 +1,60 @@
-#pragma warning disable CA1806,CA1822,CA1863
+#pragma warning disable CA1822,CA1863
 using cvColorVision;
-using Newtonsoft.Json;
 using Spectrum.License;
 using SpectrumResources = Spectrum.Properties.Resources;
-using System.Runtime.InteropServices;
-using System.Text;
 using System.Windows;
 
 namespace Spectrum
 {
     public partial class MainWindow
     {
-        public static int MyCallback(IntPtr strText, int nLen)
-        {
-            string text = Marshal.PtrToStringAnsi(strText, nLen);
-            log.Debug("光谱仪回调: " + text);
-            return 0;
-        }
         public IntPtr SpectrometerHandle => Manager.Handle;
 
         //连接光谱仪
-        private void Button_Click(object sender, RoutedEventArgs e)
+        private async void Button_Click(object sender, RoutedEventArgs e)
         {
             try
             {
-                // Sync licenses from DB before connecting
-                LicenseDatabase.Instance.SyncToLocal();
-
-                Manager.Handle = Spectrometer.CM_CreateEmission(0, MyCallback);
-
-                int com = 0;
-                if (Manager.Config.IsComPort)
+                int result = await Manager.ConnectAsync();
+                if (result == 1)
                 {
-                     com = int.Parse(Manager.Config.SzComName.Replace("COM", ""));
-                }
-
-                int iR = Spectrometer.CM_Emission_Init(SpectrometerHandle, com, Manager.Config.BaudRate);
-                if (iR == 1)
-                {
-                    log.Info("光谱仪连接成功");
-                    Manager.IsConnected = true;
-
-                    try
-                    {
-                        int bufferLength = 1024;
-                        StringBuilder snBuilder = new StringBuilder(bufferLength);
-                        int snRet = Spectrometer.CM_GetSpectrSerialNumber(SpectrometerHandle, snBuilder);
-                        if (snRet == 1)
-                        {
-                            string sn = snBuilder.ToString().Trim();
-                            if (!string.IsNullOrEmpty(sn))
-                            {
-                                Manager.SerialNumber = sn;
-                                log.Info($"光谱仪序列号: {sn}");
-                            }
-                            else
-                            {
-                                Manager.SerialNumber = "Unknown";
-                            }
-                        }
-                        else
-                        {
-                            log.Warn($"获取序列号失败: {Spectrometer.GetErrorMessage(snRet)}");
-                            Manager.SerialNumber = "Unknown";
-                        }
-                    }
-                    catch (Exception snEx)
-                    {
-                        log.Warn("读取序列号异常", snEx);
-                        Manager.SerialNumber = "Unknown";
-                    }
-                    Manager.LoadCalibrationConfig();
-
-                    iR = Spectrometer.CM_Emission_LoadWavaLengthFile(SpectrometerHandle, Manager.WavelengthFile);
-                    if (iR == 1)
-                        log.Info($"加载波长文件成功: {Manager.WavelengthFile}");
-                    else
-                        log.Warn($"加载波长文件失败: {Manager.WavelengthFile}, {Spectrometer.GetErrorMessage(iR)}");
-
-                    iR = Spectrometer.CM_Emission_LoadMagiudeFile(SpectrometerHandle, Manager.MaguideFile);
-                    if (iR == 1)
-                        log.Info($"加载幅值文件成功: {Manager.MaguideFile}");
-                    else
-                        log.Warn($"加载幅值文件失败: {Manager.MaguideFile}, {Spectrometer.GetErrorMessage(iR)}");
-
-                    log.Debug($"设置 SP100 参数: IsEnabled={SetEmissionSP100Config.Instance.IsEnabled}, nStartPos={SetEmissionSP100Config.Instance.nStartPos}, nEndPos={SetEmissionSP100Config.Instance.nEndPos}, dMeanThreshold={SetEmissionSP100Config.Instance.dMeanThreshold}");
-                    int ret = Spectrometer.CM_SetEmissionSP100(SpectrometerHandle, SetEmissionSP100Config.Instance.IsEnabled, SetEmissionSP100Config.Instance.nStartPos, SetEmissionSP100Config.Instance.nEndPos, SetEmissionSP100Config.Instance.dMeanThreshold);
-                    if (ret != 1)
-                        log.Warn($"SP100 参数设置失败: {Spectrometer.GetErrorMessage(ret)}");
-
-                    Manager.HardwareModel = "SP-100";
                     button3.IsEnabled = true;
                     button5.IsEnabled = true;
                     button6.IsEnabled = true;
                 }
+                else if (result == SpectrometerManager.OperationBusy)
+                {
+                    MessageBox.Show("光谱仪驱动当前不可用。请先关闭直连诊断窗口；若刚才释放失败，请重启程序。");
+                }
                 else
                 {
-                    Manager.IsConnected = false;
-                    string errorMsg = Spectrometer.GetErrorMessage(iR);
+                    string errorMsg = Spectrometer.GetErrorMessage(result);
                     log.Error($"光谱仪连接失败: {errorMsg}");
-
-                    // Check if device exists - if so, it may be a license issue
-                    CheckDeviceAndPromptLicense(errorMsg);
+                    await CheckDeviceAndPromptLicenseAsync(errorMsg);
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 log.Error("光谱仪连接异常", ex);
                 MessageBox.Show(ex.Message);
             }
-
         }
 
         //断开连接
-        private void ButtonClose_Click(object sender, RoutedEventArgs e)
+        private async void ButtonClose_Click(object sender, RoutedEventArgs e)
         {
-            testid = 0;
-            IsRun = false;
-            ret = Manager.Disconnect();
-            Manager.SerialNumber = string.Empty;
-        }
-
-        public async Task ReConnet()
-        {
-            for (int i = 0; i < 6; i++)
+            try
             {
-                log.Warn($"尝试重连光谱仪 ({i + 1}/6)");
-                int ret = Spectrometer.CM_Emission_Close(Manager.Handle);
-                log.Debug($"CM_Emission_Close: {ret}");
-                ret = Spectrometer.CM_ReleaseEmission(Manager.Handle);
-                log.Debug($"CM_ReleaseEmission: {ret}");
-                await Task.Delay(200);
-                Manager.Handle = Spectrometer.CM_CreateEmission(0, MyCallback);
-                int ncom = 0;
-                if (Manager.Config.IsComPort)
+                int result = await Manager.DisconnectAsync();
+                if (result != 1)
                 {
-                     ncom = int.Parse(Manager.Config.SzComName.Replace("COM", ""));
+                    log.Warn($"断开光谱仪时原生接口返回错误: {Spectrometer.GetErrorMessage(result)}");
                 }
-                int iR = Spectrometer.CM_Emission_Init(SpectrometerHandle, ncom, Manager.Config.BaudRate);
-                if (iR == 1)
-                {
-                    Manager.IsConnected = true;
-                    iR = Spectrometer.CM_Emission_LoadWavaLengthFile(SpectrometerHandle, Manager.WavelengthFile);
-                    if (iR != 1) log.Warn($"重连后加载波长文件失败: {Spectrometer.GetErrorMessage(iR)}");
-                    iR = Spectrometer.CM_Emission_LoadMagiudeFile(SpectrometerHandle, Manager.MaguideFile);
-                    if (iR != 1) log.Warn($"重连后加载幅值文件失败: {Spectrometer.GetErrorMessage(iR)}");
-
-                    log.Debug($"重连后设置 SP100: IsEnabled={SetEmissionSP100Config.Instance.IsEnabled}, nStartPos={SetEmissionSP100Config.Instance.nStartPos}, nEndPos={SetEmissionSP100Config.Instance.nEndPos}");
-                    ret = Spectrometer.CM_SetEmissionSP100(SpectrometerHandle, SetEmissionSP100Config.Instance.IsEnabled, SetEmissionSP100Config.Instance.nStartPos, SetEmissionSP100Config.Instance.nEndPos, SetEmissionSP100Config.Instance.dMeanThreshold);
-                    if (ret != 1) log.Warn($"重连后 SP100 设置失败: {Spectrometer.GetErrorMessage(ret)}");
-
-                    log.Info("光谱仪重连成功");
-                    break;
-                }
-                else
-                {
-                    log.Debug($"重连尝试 {i + 1} 失败: {Spectrometer.GetErrorMessage(iR)}");
-                }
-                await Task.Delay(200);
             }
-
-
-            IsRun = false;
-        }
-
-        private void Button_Click_1(object sender, RoutedEventArgs e)
-        {
-            log.Debug($"设置 SP100 参数: IsEnabled={SetEmissionSP100Config.Instance.IsEnabled}, nStartPos={SetEmissionSP100Config.Instance.nStartPos}, nEndPos={SetEmissionSP100Config.Instance.nEndPos}, dMeanThreshold={SetEmissionSP100Config.Instance.dMeanThreshold}");
-            int ret = Spectrometer.CM_SetEmissionSP100(SpectrometerHandle, SetEmissionSP100Config.Instance.IsEnabled, SetEmissionSP100Config.Instance.nStartPos, SetEmissionSP100Config.Instance.nEndPos, SetEmissionSP100Config.Instance.dMeanThreshold);
-            if (ret == 1)
+            catch (Exception ex)
             {
-                log.Info("SP100 参数设置成功");
-                MessageBox.Show(SpectrumResources.SP100SetSuccess);
-            }
-            else
-            {
-                string errorMsg = Spectrometer.GetErrorMessage(ret);
-                log.Error($"SP100 参数设置失败: {errorMsg}");
-                MessageBox.Show(string.Format(SpectrumResources.SP100SetFailed, errorMsg));
+                log.Error("断开光谱仪异常", ex);
+                MessageBox.Show(ex.Message);
             }
         }
 
@@ -185,45 +62,26 @@ namespace Spectrum
         /// On connection failure, detect if a device exists via CM_Emission_GetAllSN.
         /// If exactly one device is found, it's likely a license issue - open the license manager.
         /// </summary>
-        private void CheckDeviceAndPromptLicense(string errorMsg)
+        private async Task CheckDeviceAndPromptLicenseAsync(string errorMsg)
         {
             try
             {
-                int comPort = 0;
-                if (Manager.Config.IsComPort)
+                string? serialNumber = await Task.Run(() => Manager.FindSingleDetectedSerialNumber());
+                if (!string.IsNullOrEmpty(serialNumber))
                 {
-                    if (int.TryParse(Manager.Config.SzComName.Replace("COM", ""), out int z))
-                        comPort = z;
-                }
+                    log.Info($"检测到设备 {serialNumber}，连接失败可能是许可证问题");
+                    var msgResult = MessageBox.Show(
+                        Application.Current.GetActiveWindow(),
+                        string.Format(SpectrumResources.ConnectionFailedWithDeviceDetected, errorMsg, serialNumber),
+                        SpectrumResources.ConnectionFailedLicenseCheckTitle,
+                        MessageBoxButton.YesNo,
+                        MessageBoxImage.Warning);
 
-                int bufferLength = 1024;
-                StringBuilder sb = new StringBuilder(bufferLength);
-                Spectrometer.CM_Emission_GetAllSN((int)Manager.Config.SpectrometerType, comPort, sb, bufferLength);
-                string raw = sb.ToString();
-
-                if (!string.IsNullOrWhiteSpace(raw))
-                {
-                    var result = JsonConvert.DeserializeObject<SpectrometerManager.SpectrometerSnResult>(raw);
-                    if (result?.IDs != null && result.IDs.Count == 1)
+                    if (msgResult == MessageBoxResult.Yes)
                     {
-                        log.Info($"检测到设备 {result.IDs[0]}，连接失败可能是许可证问题");
-
-                        // Sync licenses from DB first
-                        LicenseDatabase.Instance.SyncToLocal();
-
-                        var msgResult = MessageBox.Show(
-                            Application.Current.GetActiveWindow(),
-                            string.Format(SpectrumResources.ConnectionFailedWithDeviceDetected, errorMsg, result.IDs[0]),
-                            SpectrumResources.ConnectionFailedLicenseCheckTitle,
-                            MessageBoxButton.YesNo,
-                            MessageBoxImage.Warning);
-
-                        if (msgResult == MessageBoxResult.Yes)
-                        {
-                            new LicenseManagerWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-                        }
-                        return;
+                        new LicenseManagerWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
                     }
+                    return;
                 }
             }
             catch (Exception ex)

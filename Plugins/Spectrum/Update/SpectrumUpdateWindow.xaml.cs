@@ -202,7 +202,7 @@ public partial class SpectrumUpdateWindow : Window, IDisposable
 
         if (downloadedUpdate != null)
         {
-            InstallDownloadedUpdate();
+            await InstallDownloadedUpdateAsync();
             return;
         }
 
@@ -265,7 +265,7 @@ public partial class SpectrumUpdateWindow : Window, IDisposable
         }
     }
 
-    private void InstallDownloadedUpdate()
+    private async Task InstallDownloadedUpdateAsync()
     {
         if (downloadedUpdate == null)
         {
@@ -273,7 +273,7 @@ public partial class SpectrumUpdateWindow : Window, IDisposable
         }
 
         MainWindow? mainWindow = MainWindow.Instance;
-        if (mainWindow != null && !mainWindow.CanInstallUpdate(out string reason))
+        if (!CanInstallUpdate(mainWindow, out string reason))
         {
             StatusText.Text = reason;
             return;
@@ -290,20 +290,63 @@ public partial class SpectrumUpdateWindow : Window, IDisposable
             return;
         }
 
-        if (mainWindow != null && !mainWindow.CanInstallUpdate(out reason))
+        SpectrometerManager manager = SpectrometerManager.Instance;
+        MeasurementAdmissionPause measurementPause = manager.StopAcceptingMeasurements();
+        bool keepMeasurementsStopped = false;
+        try
         {
-            StatusText.Text = reason;
-            return;
+            await measurementPause.WhenDrained;
+            if (!CanInstallUpdate(mainWindow, out reason))
+            {
+                StatusText.Text = reason;
+                return;
+            }
+
+            if (!SpectrumUpdateService.TryLaunchInstaller(downloadedUpdate, out string? errorMessage))
+            {
+                StatusText.Text = errorMessage;
+                return;
+            }
+
+            keepMeasurementsStopped = true;
+            installerLaunched = true;
+            if (mainWindow != null)
+            {
+                await mainWindow.PrepareForShutdownAsync();
+            }
+            else
+            {
+                try
+                {
+                    await manager.DisconnectAsync();
+                }
+                catch (Exception ex)
+                {
+                    log.Warn("更新退出前断开光谱仪失败", ex);
+                }
+            }
+            Application.Current.Shutdown();
+        }
+        finally
+        {
+            if (!keepMeasurementsStopped)
+                measurementPause.Dispose();
+        }
+    }
+
+    private static bool CanInstallUpdate(MainWindow? mainWindow, out string reason)
+    {
+        if (mainWindow != null)
+            return mainWindow.CanInstallUpdate(out reason);
+
+        if (SpectrometerManager.Instance.IsBusy)
+        {
+            reason = UpdateText.Get("UpdateDeferredMeasurementBusy", "测量或设备操作正在进行，更新已安全延后。请停止测量后重试安装。");
+            return false;
         }
 
-        if (!SpectrumUpdateService.TryLaunchInstaller(downloadedUpdate, out string? errorMessage))
-        {
-            StatusText.Text = errorMessage;
-            return;
-        }
-
-        installerLaunched = true;
-        Application.Current.Shutdown();
+        reason = string.Empty;
+        return true;
     }
 
     private void CancelDownloadButton_Click(object sender, RoutedEventArgs e) => operationCancellation?.Cancel();

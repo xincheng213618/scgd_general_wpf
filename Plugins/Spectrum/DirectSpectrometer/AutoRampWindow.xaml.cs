@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
@@ -19,17 +20,22 @@ public partial class AutoRampWindow : Window, IDisposable
         public int ResultCode { get; set; }
     }
 
-    private readonly List<TimingResult> _results = new();
+    private readonly ObservableCollection<TimingResult> _results = new();
     private readonly List<string> _uiLogs = new();
     private readonly int _spectrometerIndex;
     private readonly double[] _spectrumBuffer = new double[8192];
+    private readonly double[] _calibratedBuffer = new double[8192];
     private CancellationTokenSource? _cts;
+    private Task? _runTask;
     private bool _isRunning;
+    private bool _allowWindowClose;
+    private bool _isWindowClosing;
 
     public AutoRampWindow(int spectrometerIndex)
     {
         InitializeComponent();
         _spectrometerIndex = spectrometerIndex;
+        ResultsDataGrid.ItemsSource = _results;
         StatusTextBlock.Text = "就绪";
     }
 
@@ -53,7 +59,6 @@ public partial class AutoRampWindow : Window, IDisposable
             }
 
             _results.Clear();
-            ResultsDataGrid.ItemsSource = null;
             _uiLogs.Clear();
             LogTextBox.Clear();
 
@@ -64,7 +69,8 @@ public partial class AutoRampWindow : Window, IDisposable
             ExportButton.IsEnabled = false;
 
             AppendLog($"开始自动增长测试 | 范围: {startMs:F3}ms ~ {endMs:F3}ms | 步长: {stepMs:F3}ms | 平均次数: {avgTimes}");
-            await RunAutoRampTestAsync(startMs, endMs, stepMs, avgTimes, _cts.Token);
+            _runTask = RunAutoRampTestAsync(startMs, endMs, stepMs, avgTimes, _cts.Token);
+            await _runTask;
 
             AppendLog("测试完成");
             StatusTextBlock.Text = $"测试完成 | 共 {_results.Count} 组数据";
@@ -84,6 +90,7 @@ public partial class AutoRampWindow : Window, IDisposable
             _isRunning = false;
             _cts?.Dispose();
             _cts = null;
+            _runTask = null;
             StartButton.IsEnabled = true;
             StopButton.IsEnabled = false;
             ExportButton.IsEnabled = _results.Count > 0;
@@ -164,11 +171,10 @@ public partial class AutoRampWindow : Window, IDisposable
 
                 if (getResult == 0 && spectrumCount > 0)
                 {
-                    var calibrated = new double[spectrumCount];
-                    var calibResult = SpectrometerApi.SA_NonlinearCalibration(_spectrometerIndex, _spectrumBuffer, calibrated, spectrumCount);
+                    var calibResult = SpectrometerApi.SA_NonlinearCalibration(_spectrometerIndex, _spectrumBuffer, _calibratedBuffer, spectrumCount);
                     if (calibResult == 0)
                     {
-                        Array.Copy(calibrated, _spectrumBuffer, spectrumCount);
+                        Array.Copy(_calibratedBuffer, _spectrumBuffer, spectrumCount);
                     }
                 }
 
@@ -186,8 +192,6 @@ public partial class AutoRampWindow : Window, IDisposable
                 Dispatcher.Invoke(() =>
                 {
                     _results.Add(result);
-                    ResultsDataGrid.ItemsSource = null;
-                    ResultsDataGrid.ItemsSource = _results;
                     ResultsDataGrid.ScrollIntoView(result);
                     AppendLog($"#{result.Index} | Int={result.IntegrationTimeMs:F3}ms | Avg={avgTimes} | Measured={result.ElapsedMs}ms | Expected={result.ExpectedMs:F2}ms | Error={result.ErrorMs:F2}ms ({result.ErrorPercent:F2}%) | Result={result.ResultCode}");
                     StatusTextBlock.Text = $"测试中... #{result.Index} | Int={result.IntegrationTimeMs:F3}ms";
@@ -196,7 +200,7 @@ public partial class AutoRampWindow : Window, IDisposable
                 currentMs += stepMs;
                 if (!cancellationToken.IsCancellationRequested)
                 {
-                    Thread.Sleep(10);
+                    cancellationToken.WaitHandle.WaitOne(10);
                 }
             }
 
@@ -230,22 +234,50 @@ public partial class AutoRampWindow : Window, IDisposable
         _uiLogs.Add(line);
         if (_uiLogs.Count > 500)
         {
-            _uiLogs.RemoveAt(0);
+            _uiLogs.RemoveRange(0, 50);
+            LogTextBox.Text = string.Join(Environment.NewLine, _uiLogs) + Environment.NewLine;
+        }
+        else
+        {
+            LogTextBox.AppendText(line + Environment.NewLine);
         }
 
-        LogTextBox.Text = string.Join(Environment.NewLine, _uiLogs);
         LogTextBox.CaretIndex = LogTextBox.Text.Length;
         LogTextBox.ScrollToEnd();
     }
 
-    protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
+    protected override async void OnClosing(System.ComponentModel.CancelEventArgs e)
     {
-        if (_isRunning)
+        if (_allowWindowClose || _runTask == null)
         {
-            _cts?.Cancel();
+            base.OnClosing(e);
+            return;
         }
 
+        e.Cancel = true;
         base.OnClosing(e);
+        e.Cancel = true;
+        if (_isWindowClosing)
+        {
+            return;
+        }
+
+        _isWindowClosing = true;
+        _cts?.Cancel();
+        var runTask = _runTask;
+        try
+        {
+            await runTask;
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch
+        {
+        }
+
+        _allowWindowClose = true;
+        _ = Dispatcher.BeginInvoke(new Action(Close));
     }
 
     protected override void OnClosed(EventArgs e)

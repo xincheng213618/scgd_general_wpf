@@ -5,6 +5,7 @@ using ScottPlot.Plottables;
 using Spectrum.Data;
 using Spectrum.Models;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.Reflection;
 using System.Text;
 using System.Windows;
@@ -16,13 +17,37 @@ namespace Spectrum
     public partial class MainWindow
     {
         private ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
+        private bool comparisonRedrawQueued;
+
+        private void ViewResults_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+        {
+            if (!MulComparison || comparisonRedrawQueued || !IsLoaded)
+                return;
+
+            comparisonRedrawQueued = true;
+            _ = Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Background, new Action(() =>
+            {
+                comparisonRedrawQueued = false;
+                if (!MulComparison || !IsLoaded)
+                    return;
+                if (ViewResultSpectrums.Count == 0)
+                    ClearResultView();
+                else if (ViewResultList.SelectedIndex < 0)
+                    ViewResultList.SelectedIndex = 0;
+                else
+                    ReDrawPlot();
+            }));
+        }
 
         private void listView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (sender is ListView listview && listview.SelectedIndex > -1)
+            if (sender is ListView { SelectedItem: ViewResultSpectrum selected })
             {
-                DrawPlot();
-                var selected = ViewResultSpectrums[listview.SelectedIndex];
+                ViewResultList.ScrollIntoView(selected);
+                if (MulComparison)
+                    ReDrawPlot();
+                else
+                    DrawPlot();
                 listView2.ItemsSource = selected.SpectralDatas;
                 // Keep the optional CIE window synced with the selected result.
                 DrawCIEPoinr(selected.fx, selected.fy, selected.fu, selected.fv);
@@ -37,34 +62,32 @@ namespace Spectrum
         {
             if (e.Key == Key.Delete && ViewResultList.SelectedIndex > -1)
             {
-                int temp = ViewResultList.SelectedIndex;
-                ViewResultSpectrums.RemoveAt(ViewResultList.SelectedIndex);
+                int deletedIndex = ViewResultList.SelectedIndex;
+                ViewResultManager.Delete(deletedIndex);
 
                 if (ViewResultList.Items.Count > 0)
                 {
-                    ViewResultList.SelectedIndex = temp - 1; ;
-                    DrawPlot();
+                    ViewResultList.SelectedIndex = Math.Min(deletedIndex, ViewResultList.Items.Count - 1);
                 }
                 else
                 {
-                    wpfplot1.Plot.Clear();
-                    AddSpectrumColorBar(wpfplot1);
-                    wpfplot1.Refresh();
+                    ClearResultView();
                 }
-
+                e.Handled = true;
             }
         }
 
-        Marker markerPlot1;
+        Marker? markerPlot1;
         private void listView2_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            wpfplot1.Plot.Remove(markerPlot1);
-            if (listView2.SelectedIndex > -1)
+            if (markerPlot1 != null)
+                wpfplot1.Plot.Remove(markerPlot1);
+            if (listView2.SelectedItem is SpectralData spectralData)
             {
                 markerPlot1 = new Marker
                 {
-                    X = listView2.SelectedIndex + 380,
-                    Y = ViewResultSpectrums[ViewResultList.SelectedIndex].fPL[listView2.SelectedIndex * 10],
+                    X = spectralData.Wavelength,
+                    Y = spectralData.RelativeSpectrum,
                     MarkerShape = MarkerShape.FilledCircle,
                     MarkerSize = 10f,
                     Color = ScottPlot.Color.FromColor(System.Drawing.Color.Orange),
@@ -84,36 +107,24 @@ namespace Spectrum
             e.Handled = ViewResultSpectrums.SortByGridViewColumn<ViewResultSpectrum>(sender, GridViewColumnVisibilitys, Properties.Resources.ResourceManager);
         }
 
-        private void ContextMenu1_Opened(object sender, RoutedEventArgs e)
-        {
-
-        }
-
         //清空数据
         private void Cleartable_Click(object sender, RoutedEventArgs e)
         {
-            ViewResultSpectrums.Clear();
-            ScatterPlots.Clear();
-            AbsoluteScatterPlots.Clear();
-            listView2.ItemsSource = new ObservableCollection<SpectralData>();
+            ViewResultManager.ViewReslutsClear();
+            listView2.ItemsSource = Array.Empty<SpectralData>();
             if (ViewResultSpectrums.Count > 0)
             {
                 ViewResultList.SelectedIndex = 0;
             }
             else
             {
-                wpfplot1.Plot.Clear();
-                AddSpectrumColorBar(wpfplot1);
-                wpfplot1.Refresh();
-                wpfplot2.Plot.Clear();
-                wpfplot2.Refresh();
-                ClearCieSelection();
+                ClearResultView();
             }
-            ReDrawPlot();
         }
 
         private void Delete()
         {
+            int selectedIndex = ViewResultList.SelectedIndex;
             if (ViewResultList.SelectedItems.Count == ViewResultList.Items.Count)
             {
                 ViewResultManager.DeleteAllRecords();
@@ -124,6 +135,23 @@ namespace Spectrum
                 ViewResultList.SelectedIndex = -1;
                 ViewResultManager.DeleteSelected(selectedItems);
             }
+
+            if (ViewResultSpectrums.Count == 0)
+                ClearResultView();
+            else
+                ViewResultList.SelectedIndex = Math.Min(Math.Max(selectedIndex, 0), ViewResultSpectrums.Count - 1);
+        }
+
+        private void ClearResultView()
+        {
+            listView2.ItemsSource = Array.Empty<SpectralData>();
+            LastMulSelectComparsion = null;
+            wpfplot1.Plot.Clear();
+            AddSpectrumColorBar(wpfplot1);
+            wpfplot1.Refresh();
+            wpfplot2.Plot.Clear();
+            wpfplot2.Refresh();
+            ClearCieSelection();
         }
 
         /// <summary>
@@ -210,11 +238,6 @@ namespace Spectrum
             }
         }
 
-        private void GridViewColumnSort1(object sender, RoutedEventArgs e)
-        {
-
-        }
-
         private void GridSplitter_DragCompleted(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e)
         {
             ViewResultList.Height = ListRow2.ActualHeight - 32;
@@ -222,18 +245,5 @@ namespace Spectrum
             ListRow1.Height = new GridLength(1, GridUnitType.Star);
         }
 
-        private void Save_Click(object sender, RoutedEventArgs e)
-        {
-            ConfigService.Instance.SaveConfigs();
-        }
-
-        public void Dispose()
-        {
-            CloseCieWindow();
-            Manager.SmuController.Close();
-            logOutput?.Dispose();
-            nativeLogOutput?.Dispose();
-            GC.SuppressFinalize(this);
-        }
     }
 }

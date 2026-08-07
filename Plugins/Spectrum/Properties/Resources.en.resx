@@ -265,7 +265,7 @@
   <data name="ClearRecords" xml:space="preserve"><value>Clear Records</value></data>
   <data name="ResetDatabase" xml:space="preserve"><value>Reset Database</value></data>
   <data name="LoadCount" xml:space="preserve"><value>Load Count:</value></data>
-  <data name="TotalDurationMs" xml:space="preserve"><value>Total Duration (ms)</value></data>
+  <data name="TotalDurationMs" xml:space="preserve"><value>Result Ready Time (ms)</value></data>
   <data name="ExcitationPurity" xml:space="preserve"><value>Excitation Purity (%)</value></data>
   <data name="HalfWidth" xml:space="preserve"><value>FWHM</value></data>
   <data name="Log" xml:space="preserve"><value>Log</value></data>
