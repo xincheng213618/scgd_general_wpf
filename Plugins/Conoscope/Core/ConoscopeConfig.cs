@@ -107,7 +107,7 @@ namespace Conoscope.Core
 
         [Display(Name = "Con_Cfg_KernelSize", GroupName = "Con_Category_Filter", Description = "均值、高斯、中值滤波使用的核大小，自动修正为奇数。", ResourceType = typeof(Properties.Resources))]
         public int FilterKernelSize { get => _FilterKernelSize; set { _FilterKernelSize = NormalizeOdd(value, 1, 101); OnPropertyChanged(); } }
-        private int _FilterKernelSize = 55;
+        private int _FilterKernelSize = 7;
 
         [Display(Name = "Con_Cfg_GaussianSigma", GroupName = "Con_Category_Filter", Description = "高斯滤波使用的标准差。", ResourceType = typeof(Properties.Resources))]
         public double FilterSigma { get => _FilterSigma; set { _FilterSigma = Math.Max(0.1, value); OnPropertyChanged(); } }

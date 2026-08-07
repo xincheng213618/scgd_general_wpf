@@ -44,7 +44,7 @@
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="{x:Static properties:Resources.KernelSize}" VerticalAlignment="Center"/>
                     <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderKernelSize, Path=Value, StringFormat=F0}" TextAlignment="Right" VerticalAlignment="Center"/>
-                    <Slider x:Name="sliderKernelSize" Grid.Column="2" Minimum="1" Maximum="101" Value="55" TickFrequency="2" IsSnapToTickEnabled="True" ValueChanged="PreprocessSetting_Changed"
+                    <Slider x:Name="sliderKernelSize" Grid.Column="2" Minimum="1" Maximum="101" Value="7" TickFrequency="2" IsSnapToTickEnabled="True" ValueChanged="PreprocessSetting_Changed"
                             automation:AutomationProperties.Name="{x:Static properties:Resources.KernelSize}"/>
                 </Grid>
 

@@ -1,3 +1,4 @@
+using Conoscope.Core;
 using System.IO;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -29,6 +30,18 @@ public class ArchitectureSmokeTests
         {
             Assert.DoesNotContain("MessageBox.Show", File.ReadAllText(file));
         }
+    }
+
+    [Fact]
+    public void DefaultGaussianKernelCanBeRaisedByUser()
+    {
+        ConoscopeConfig config = new();
+
+        Assert.Equal(ImageFilterType.Gaussian, config.FilterType);
+        Assert.Equal(7, config.FilterKernelSize);
+
+        config.FilterKernelSize = 55;
+        Assert.Equal(55, config.FilterKernelSize);
     }
 
     private static string FindRepoRoot()

@@ -34,7 +34,7 @@ namespace Conoscope
         public bool ApplyFilterOnOpen { get; set; } = true;
         public bool ClampNonPositiveXyzOnLoad { get; set; } = true;
         public ImageFilterType FilterType { get; set; } = ImageFilterType.Gaussian;
-        public int FilterKernelSize { get; set; } = 55;
+        public int FilterKernelSize { get; set; } = 7;
         public double FilterSigma { get; set; } = 1.0;
         public int FilterD { get; set; } = 5;
         public double FilterSigmaColor { get; set; } = 75;
