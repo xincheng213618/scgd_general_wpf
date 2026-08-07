@@ -15,6 +15,11 @@ using System.Windows;
 
 namespace ProjectKB
 {
+    public sealed class ProjectKBLogConfig : RealtimeLogViewConfig, IConfig
+    {
+        public static ProjectKBLogConfig Instance => ConfigService.Instance.GetRequiredService<ProjectKBLogConfig>();
+    }
+
     public class ProjectKBConfig: ViewModelBase, IConfig
     {
         public static ProjectKBConfig Instance => ConfigService.Instance.GetRequiredService<ProjectKBConfig>();

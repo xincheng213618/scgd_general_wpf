@@ -175,7 +175,7 @@ namespace ColorVision.UI.LogImp
 
     internal static class LogTextViewMenuFactory
     {
-        public static void AppendRealtimeLogMenuItems(ContextMenu contextMenu, Action clear, Action<Level> setLogLevel, Func<bool> getAutoRefresh, Action<bool> setAutoRefresh)
+        public static void AppendRealtimeLogMenuItems(ContextMenu contextMenu, LogViewConfig viewConfig, Action clear, Action<Level> setLogLevel, Func<bool> getAutoRefresh, Action<bool> setAutoRefresh)
         {
             var clearMenuItem = new MenuItem { Header = Properties.Resources.Clear };
             clearMenuItem.Click += (_, _) => clear();
@@ -186,8 +186,8 @@ namespace ColorVision.UI.LogImp
 
             var autoScrollMenuItem = CreateCheckableItem(
                 Properties.Resources.AutoScrollToEnd,
-                () => LogConfig.Instance.AutoScrollToEnd,
-                value => LogConfig.Instance.AutoScrollToEnd = value);
+                () => viewConfig.AutoScrollToEnd,
+                value => viewConfig.AutoScrollToEnd = value);
             contextMenu.Items.Add(autoScrollMenuItem);
 
             var autoRefreshMenuItem = CreateCheckableItem(Properties.Resources.AutoRefresh, getAutoRefresh, setAutoRefresh);
@@ -197,13 +197,13 @@ namespace ColorVision.UI.LogImp
             contextMenu.Items.Add(new MenuItem
             {
                 Header = Properties.Resources.GeneralSettings,
-                Command = LogConfig.Instance.EditCommand
+                Command = viewConfig.EditCommand
             });
 
             contextMenu.Opened += (_, _) =>
             {
                 LogViewUiHelper.PopulateLogLevelMenu(logLevelMenuItem, LogConfig.GetAllLevels(), LogConfig.Instance.LogLevel, setLogLevel);
-                RefreshCheckableItem(autoScrollMenuItem, () => LogConfig.Instance.AutoScrollToEnd);
+                RefreshCheckableItem(autoScrollMenuItem, () => viewConfig.AutoScrollToEnd);
                 RefreshCheckableItem(autoRefreshMenuItem, getAutoRefresh);
             };
         }

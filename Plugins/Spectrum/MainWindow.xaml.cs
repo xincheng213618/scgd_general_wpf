@@ -102,6 +102,8 @@ namespace Spectrum
                 CleanupSmuTimedButtons();
                 Manager.SmuController.Close();
                 Manager.Disconnect();
+                logOutput?.Dispose();
+                logOutput = null;
                 nativeLogOutput?.Dispose();
                 Instance = null;
             };
@@ -218,7 +220,7 @@ namespace Spectrum
 
             if (MainWindowConfig.Instance.LogControlVisibility)
             {
-                logOutput = new LogOutput("%date{HH:mm:ss} [%thread] %-5level %message%newline");
+                logOutput = new LogOutput("%date{HH:mm:ss} [%thread] %-5level %message%newline", SpectrumLogConfig.Instance);
                 LogGrid.Children.Add(logOutput);
             }
             MarkPhase("模型与日志控件");

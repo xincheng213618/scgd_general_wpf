@@ -215,7 +215,7 @@ namespace ProjectARVRPro
             timer.Change(Timeout.Infinite, 100); // 停止定时器
 
 
-            logOutput = new LogOutput("%date{HH:mm:ss} [%thread] %-5level %message%newline");
+            logOutput = new LogOutput("%date{HH:mm:ss} [%thread] %-5level %message%newline", ProjectARVRProLogConfig.Instance);
             LogGrid.Children.Add(logOutput);
 
 

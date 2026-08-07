@@ -107,7 +107,7 @@ namespace ProjectKB
             ImageView.EditorContext.DrawEditorContext.DrawCanvas.PreviewMouseLeftButtonDown += ImageCanvas_PreviewMouseLeftButtonDown;
             InitFlow();
             EnsureTimedButtonOperations();
-            logOutput = new LogOutput("%date{HH:mm:ss} [%thread] %-5level %message%newline");
+            logOutput = new LogOutput("%date{HH:mm:ss} [%thread] %-5level %message%newline", ProjectKBLogConfig.Instance);
             LogGrid.Children.Add(logOutput);
             Task.Run(async () =>
             {

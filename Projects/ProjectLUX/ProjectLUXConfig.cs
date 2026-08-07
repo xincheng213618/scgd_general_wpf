@@ -14,6 +14,11 @@ using System.Windows;
 
 namespace ProjectLUX
 {
+    public sealed class ProjectLUXLogConfig : RealtimeLogViewConfig, IConfig
+    {
+        public static ProjectLUXLogConfig Instance => ConfigService.Instance.GetRequiredService<ProjectLUXLogConfig>();
+    }
+
     public class ProjectLUXConfig: ViewModelBase, IConfig
     {
         public static ProjectLUXConfig Instance => ConfigService.Instance.GetRequiredService<ProjectLUXConfig>();

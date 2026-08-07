@@ -35,7 +35,7 @@ namespace ColorVision.UI.LogImp
             var layout = new PatternLayout(ModuleLogPattern);
             layout.ActivateOptions();
 
-            _appender = new LogViewerAppender(logViewer)
+            _appender = new LogViewerAppender(logViewer, new RealtimeLogViewConfig())
             {
                 Name = $"ModuleLogViewerAppender-{Guid.NewGuid():N}",
                 Layout = layout,
