@@ -198,6 +198,7 @@ public sealed class CopilotExecutionScopeTests
             ConfiguredDeveloperInstructions = "Keep configured guidance.",
             CodexWebSearchMode = CopilotCodexWebSearchMode.Cached,
             CodexExperimentalRequestUserInputEnabled = false,
+            CodexDefaultModeRequestUserInputEnabled = true,
             CodexUpdatePlanEnabled = false,
             CodexIncludeSkillInstructions = false,
             ToolOutputTokenLimitOverride = 12_000,
@@ -233,6 +234,7 @@ public sealed class CopilotExecutionScopeTests
         Assert.Equal(parentRequest.ConfiguredDeveloperInstructions, childRequest.ConfiguredDeveloperInstructions);
         Assert.Equal(parentRequest.CodexWebSearchMode, childRequest.CodexWebSearchMode);
         Assert.Equal(parentRequest.CodexExperimentalRequestUserInputEnabled, childRequest.CodexExperimentalRequestUserInputEnabled);
+        Assert.Equal(parentRequest.CodexDefaultModeRequestUserInputEnabled, childRequest.CodexDefaultModeRequestUserInputEnabled);
         Assert.Equal(parentRequest.CodexUpdatePlanEnabled, childRequest.CodexUpdatePlanEnabled);
         Assert.Equal(parentRequest.CodexIncludeSkillInstructions, childRequest.CodexIncludeSkillInstructions);
         Assert.Equal(parentRequest.ToolOutputTokenLimitOverride, childRequest.ToolOutputTokenLimitOverride);
@@ -281,6 +283,7 @@ public sealed class CopilotExecutionScopeTests
         Assert.Equal(childRequest.ConfiguredDeveloperInstructions, finalizationRequest.ConfiguredDeveloperInstructions);
         Assert.Equal(childRequest.CodexWebSearchMode, finalizationRequest.CodexWebSearchMode);
         Assert.Equal(childRequest.CodexExperimentalRequestUserInputEnabled, finalizationRequest.CodexExperimentalRequestUserInputEnabled);
+        Assert.Equal(childRequest.CodexDefaultModeRequestUserInputEnabled, finalizationRequest.CodexDefaultModeRequestUserInputEnabled);
         Assert.Equal(childRequest.CodexUpdatePlanEnabled, finalizationRequest.CodexUpdatePlanEnabled);
         Assert.Equal(childRequest.CodexIncludeSkillInstructions, finalizationRequest.CodexIncludeSkillInstructions);
         Assert.Equal(childRequest.ToolOutputTokenLimitOverride, finalizationRequest.ToolOutputTokenLimitOverride);

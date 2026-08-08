@@ -315,6 +315,23 @@ namespace ColorVision.Copilot
             builder.AppendLine(effective.ConfiguredGoalsEnabled
                 ? "活动目标会绑定到 Agent 请求，并执行完成评估与自动续作"
                 : "不绑定、计数、评估或自动续作；已有目标记录保留，/goal 仍可查看、暂停或清除");
+            builder.Append("Codex features.default_mode_request_user_input：")
+                .Append(effective.ConfiguredDefaultModeRequestUserInputEnabled ? "true" : "false");
+            if (effective.HasDefaultModeRequestUserInputEnabledOverride)
+            {
+                builder.Append(" · 来源 ")
+                    .Append(effective.DefaultModeRequestUserInputEnabledSourceLabel.Length == 0
+                        ? "Codex config.toml"
+                        : effective.DefaultModeRequestUserInputEnabledSourceLabel)
+                    .Append(" 提交快照；");
+            }
+            else
+            {
+                builder.Append(" · 官方默认；");
+            }
+            builder.AppendLine(effective.ConfiguredDefaultModeRequestUserInputEnabled
+                ? "允许 Default 模式暴露 AskUserQuestion；仍受 tools.experimental_request_user_input.enabled 总开关约束"
+                : "Default 模式不暴露 AskUserQuestion；Plan 模式仍由 tools.experimental_request_user_input.enabled 控制");
             AppendToolEnabled(
                 builder,
                 "tools.experimental_request_user_input.enabled",

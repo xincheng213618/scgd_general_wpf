@@ -81,6 +81,12 @@ namespace ColorVision.Copilot
 
         public string CodexGoalsEnabledSourceLabel { get; init; } = string.Empty;
 
+        public bool CodexDefaultModeRequestUserInputEnabled { get; init; }
+
+        public bool HasCodexDefaultModeRequestUserInputEnabledOverride { get; init; }
+
+        public string CodexDefaultModeRequestUserInputEnabledSourceLabel { get; init; } = string.Empty;
+
         public bool CodexExperimentalRequestUserInputEnabled { get; init; } = true;
 
         public bool HasCodexExperimentalRequestUserInputEnabledOverride { get; init; }
@@ -537,6 +543,24 @@ namespace ColorVision.Copilot
             else
             {
                 builder.Append("（Codex 默认开启）");
+            }
+            builder.AppendLine();
+            builder.Append("Default 模式结构化提问：")
+                .Append(snapshot.CodexDefaultModeRequestUserInputEnabled ? "开放" : "关闭");
+            if (snapshot.HasCodexDefaultModeRequestUserInputEnabledOverride)
+            {
+                builder.Append('（')
+                    .Append(string.IsNullOrWhiteSpace(snapshot.CodexDefaultModeRequestUserInputEnabledSourceLabel)
+                        ? "Codex config.toml"
+                        : snapshot.CodexDefaultModeRequestUserInputEnabledSourceLabel.Trim())
+                    .Append(" 提交快照；")
+                    .Append(snapshot.CodexDefaultModeRequestUserInputEnabled
+                        ? "AskUserQuestion 仍受全局工具开关约束）"
+                        : "Plan 模式不受此 feature 影响）");
+            }
+            else
+            {
+                builder.Append("（Codex 默认关闭；Plan 模式不受影响）");
             }
             builder.AppendLine();
             AppendToolEnabled(

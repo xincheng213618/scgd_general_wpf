@@ -79,6 +79,8 @@ namespace ColorVision.Copilot
 
         internal bool CodexExperimentalRequestUserInputEnabled { get; init; } = true;
 
+        internal bool CodexDefaultModeRequestUserInputEnabled { get; init; }
+
         internal bool CodexUpdatePlanEnabled { get; init; } = true;
 
         internal bool CodexIncludeEnvironmentContext { get; init; } = true;

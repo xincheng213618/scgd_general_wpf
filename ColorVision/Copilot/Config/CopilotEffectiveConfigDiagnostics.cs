@@ -516,6 +516,7 @@ namespace ColorVision.Copilot
             AppendPreventIdleSleep(builder, codexConfigOptions);
             AppendShellToolEnabled(builder, codexConfigOptions);
             AppendGoalsEnabled(builder, codexConfigOptions);
+            AppendDefaultModeRequestUserInputEnabled(builder, codexConfigOptions);
             AppendExperimentalRequestUserInputEnabled(builder, codexConfigOptions);
             AppendUpdatePlanEnabled(builder, codexConfigOptions);
             AppendIncludeEnvironmentContext(builder, codexConfigOptions);
@@ -846,6 +847,29 @@ namespace ColorVision.Copilot
             builder.AppendLine(codexConfigOptions.ConfiguredIncludeSkillInstructions
                 ? " · 允许按请求相关性自动注入 Skill 元数据"
                 : " · 省略自动 Skill 说明；显式 $name 或 /name 调用仍可加载匹配 Skill");
+        }
+
+        private static void AppendDefaultModeRequestUserInputEnabled(
+            StringBuilder builder,
+            CopilotProjectInstructionDiscoveryOptions codexConfigOptions)
+        {
+            builder.Append("- Codex features.default_mode_request_user_input：")
+                .Append(codexConfigOptions.ConfiguredDefaultModeRequestUserInputEnabled ? "true" : "false");
+            if (codexConfigOptions.HasDefaultModeRequestUserInputEnabledOverride)
+            {
+                builder.Append(" · 来源 ")
+                    .Append(codexConfigOptions.DefaultModeRequestUserInputEnabledSourceLabel.Length == 0
+                        ? "Codex config.toml"
+                        : codexConfigOptions.DefaultModeRequestUserInputEnabledSourceLabel)
+                    .Append(" · 提交快照");
+            }
+            else
+            {
+                builder.Append(" · 官方默认");
+            }
+            builder.AppendLine(codexConfigOptions.ConfiguredDefaultModeRequestUserInputEnabled
+                ? " · Default 模式允许 AskUserQuestion；仍受 tools.experimental_request_user_input.enabled 总开关约束"
+                : " · Default 模式不暴露 AskUserQuestion；Plan 模式仍由 tools.experimental_request_user_input.enabled 控制");
         }
 
         private static void AppendExperimentalRequestUserInputEnabled(

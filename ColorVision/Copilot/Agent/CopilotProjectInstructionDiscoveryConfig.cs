@@ -368,6 +368,13 @@ namespace ColorVision.Copilot
         public CopilotProjectInstructionConfigSources GoalsEnabledSource { get; init; } =
             CopilotProjectInstructionConfigSources.None;
 
+        public bool ConfiguredDefaultModeRequestUserInputEnabled { get; init; }
+
+        public bool HasDefaultModeRequestUserInputEnabledOverride { get; init; }
+
+        public CopilotProjectInstructionConfigSources DefaultModeRequestUserInputEnabledSource { get; init; } =
+            CopilotProjectInstructionConfigSources.None;
+
         public bool ConfiguredExperimentalRequestUserInputEnabled { get; init; } = true;
 
         public bool HasExperimentalRequestUserInputEnabledOverride { get; init; }
@@ -636,6 +643,7 @@ namespace ColorVision.Copilot
             || HasPreventIdleSleepOverride
             || HasShellToolEnabledOverride
             || HasGoalsEnabledOverride
+            || HasDefaultModeRequestUserInputEnabledOverride
             || HasExperimentalRequestUserInputEnabledOverride
             || HasUpdatePlanEnabledOverride
             || HasIncludeEnvironmentContextOverride
@@ -761,6 +769,13 @@ namespace ColorVision.Copilot
         {
             CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml features.goals",
             CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml features.goals",
+            _ => string.Empty,
+        };
+
+        public string DefaultModeRequestUserInputEnabledSourceLabel => DefaultModeRequestUserInputEnabledSource switch
+        {
+            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml features.default_mode_request_user_input",
+            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml features.default_mode_request_user_input",
             _ => string.Empty,
         };
 
@@ -1004,6 +1019,8 @@ namespace ColorVision.Copilot
         private const string ShellToolEnabledFeatureKey = "shell_tool";
         private const string GoalsEnabledKey = "features.goals";
         private const string GoalsEnabledFeatureKey = "goals";
+        private const string DefaultModeRequestUserInputEnabledKey = "features.default_mode_request_user_input";
+        private const string DefaultModeRequestUserInputEnabledFeatureKey = "default_mode_request_user_input";
         private const string ExperimentalRequestUserInputEnabledKey = "tools.experimental_request_user_input.enabled";
         private const string UpdatePlanEnabledKey = "tools.update_plan.enabled";
         private const string ToolsEnabledTableKey = "enabled";
@@ -1286,6 +1303,14 @@ namespace ColorVision.Copilot
                 GoalsEnabledSource = layer.HasGoalsEnabledOverride
                     ? source
                     : current.GoalsEnabledSource,
+                ConfiguredDefaultModeRequestUserInputEnabled = layer.HasDefaultModeRequestUserInputEnabledOverride
+                    ? layer.DefaultModeRequestUserInputEnabled
+                    : current.ConfiguredDefaultModeRequestUserInputEnabled,
+                HasDefaultModeRequestUserInputEnabledOverride = current.HasDefaultModeRequestUserInputEnabledOverride
+                    || layer.HasDefaultModeRequestUserInputEnabledOverride,
+                DefaultModeRequestUserInputEnabledSource = layer.HasDefaultModeRequestUserInputEnabledOverride
+                    ? source
+                    : current.DefaultModeRequestUserInputEnabledSource,
                 ConfiguredExperimentalRequestUserInputEnabled = layer.HasExperimentalRequestUserInputEnabledOverride
                     ? layer.ExperimentalRequestUserInputEnabled
                     : current.ConfiguredExperimentalRequestUserInputEnabled,
@@ -1505,6 +1530,7 @@ namespace ColorVision.Copilot
                 || layer.HasPreventIdleSleepOverride
                 || layer.HasShellToolEnabledOverride
                 || layer.HasGoalsEnabledOverride
+                || layer.HasDefaultModeRequestUserInputEnabledOverride
                 || layer.HasExperimentalRequestUserInputEnabledOverride
                 || layer.HasUpdatePlanEnabledOverride
                 || layer.HasIncludeEnvironmentContextOverride
@@ -1798,6 +1824,7 @@ namespace ColorVision.Copilot
             var preventIdleSleep = false;
             var shellToolEnabled = true;
             var goalsEnabled = true;
+            var defaultModeRequestUserInputEnabled = false;
             var experimentalRequestUserInputEnabled = true;
             var updatePlanEnabled = true;
             var includeEnvironmentContext = true;
@@ -1844,6 +1871,7 @@ namespace ColorVision.Copilot
             var hasPreventIdleSleepOverride = false;
             var hasShellToolEnabledOverride = false;
             var hasGoalsEnabledOverride = false;
+            var hasDefaultModeRequestUserInputEnabledOverride = false;
             var hasExperimentalRequestUserInputEnabledOverride = false;
             var hasUpdatePlanEnabledOverride = false;
             var hasIncludeEnvironmentContextOverride = false;
@@ -2081,6 +2109,18 @@ namespace ColorVision.Copilot
                         continue;
                     }
                     hasGoalsEnabledOverride = true;
+                    continue;
+                }
+
+                if (string.Equals(assignment.Key, DefaultModeRequestUserInputEnabledKey, StringComparison.Ordinal))
+                {
+                    if (!TryParseTomlBoolean(
+                        assignment.Value,
+                        out defaultModeRequestUserInputEnabled))
+                    {
+                        continue;
+                    }
+                    hasDefaultModeRequestUserInputEnabledOverride = true;
                     continue;
                 }
 
@@ -2485,6 +2525,8 @@ namespace ColorVision.Copilot
                 HasShellToolEnabledOverride = hasShellToolEnabledOverride,
                 GoalsEnabled = goalsEnabled,
                 HasGoalsEnabledOverride = hasGoalsEnabledOverride,
+                DefaultModeRequestUserInputEnabled = defaultModeRequestUserInputEnabled,
+                HasDefaultModeRequestUserInputEnabledOverride = hasDefaultModeRequestUserInputEnabledOverride,
                 ExperimentalRequestUserInputEnabled = experimentalRequestUserInputEnabled,
                 HasExperimentalRequestUserInputEnabledOverride = hasExperimentalRequestUserInputEnabledOverride,
                 UpdatePlanEnabled = updatePlanEnabled,
@@ -2543,6 +2585,7 @@ namespace ColorVision.Copilot
                 || hasPreventIdleSleepOverride
                 || hasShellToolEnabledOverride
                 || hasGoalsEnabledOverride
+                || hasDefaultModeRequestUserInputEnabledOverride
                 || hasExperimentalRequestUserInputEnabledOverride
                 || hasUpdatePlanEnabledOverride
                 || hasIncludeEnvironmentContextOverride
@@ -2727,6 +2770,7 @@ namespace ColorVision.Copilot
                         PreventIdleSleepFeatureKey => PreventIdleSleepKey,
                         ShellToolEnabledFeatureKey => ShellToolEnabledKey,
                         GoalsEnabledFeatureKey => GoalsEnabledKey,
+                        DefaultModeRequestUserInputEnabledFeatureKey => DefaultModeRequestUserInputEnabledKey,
                         LegacyWebSearchFeatureKey => LegacyWebSearchKey,
                         LegacyWebSearchCachedFeatureKey => LegacyWebSearchCachedKey,
                         LegacyWebSearchRequestFeatureKey => LegacyWebSearchRequestKey,
@@ -2776,6 +2820,7 @@ namespace ColorVision.Copilot
                     && !string.Equals(key, PreventIdleSleepKey, StringComparison.Ordinal)
                     && !string.Equals(key, ShellToolEnabledKey, StringComparison.Ordinal)
                     && !string.Equals(key, GoalsEnabledKey, StringComparison.Ordinal)
+                    && !string.Equals(key, DefaultModeRequestUserInputEnabledKey, StringComparison.Ordinal)
                     && !string.Equals(key, ExperimentalRequestUserInputEnabledKey, StringComparison.Ordinal)
                     && !string.Equals(key, UpdatePlanEnabledKey, StringComparison.Ordinal)
                     && !string.Equals(key, IncludeEnvironmentContextKey, StringComparison.Ordinal)
@@ -3694,6 +3739,10 @@ namespace ColorVision.Copilot
             public bool GoalsEnabled { get; init; } = true;
 
             public bool HasGoalsEnabledOverride { get; init; }
+
+            public bool DefaultModeRequestUserInputEnabled { get; init; }
+
+            public bool HasDefaultModeRequestUserInputEnabledOverride { get; init; }
 
             public bool ExperimentalRequestUserInputEnabled { get; init; } = true;
 

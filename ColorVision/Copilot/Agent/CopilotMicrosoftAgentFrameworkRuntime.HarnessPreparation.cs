@@ -127,6 +127,8 @@ namespace ColorVision.Copilot
         {
             ArgumentNullException.ThrowIfNull(request);
             return request.CodexExperimentalRequestUserInputEnabled
+                && (request.Mode == CopilotAgentMode.Plan
+                    || request.CodexDefaultModeRequestUserInputEnabled)
                 && request.RuntimePurpose == CopilotAgentRuntimePurpose.Standard;
         }
 
