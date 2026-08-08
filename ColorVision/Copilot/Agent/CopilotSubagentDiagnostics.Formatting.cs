@@ -207,6 +207,16 @@ namespace ColorVision.Copilot
             if (hasTiming)
                 builder.AppendLine();
 
+            if (!string.IsNullOrWhiteSpace(run.Model)
+                || !string.IsNullOrWhiteSpace(run.ReasoningEffort))
+            {
+                builder.Append("配置：model ")
+                    .Append(string.IsNullOrWhiteSpace(run.Model) ? "unknown" : run.Model)
+                    .Append(" · reasoning ")
+                    .Append(string.IsNullOrWhiteSpace(run.ReasoningEffort) ? "unknown" : run.ReasoningEffort)
+                    .AppendLine();
+            }
+
             builder.Append("用量：tokens ")
                 .Append(FormatTokens(run.ConsumedTokens))
                 .Append('/')

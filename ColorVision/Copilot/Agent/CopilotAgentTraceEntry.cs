@@ -11,7 +11,7 @@ namespace ColorVision.Copilot
 {
     public sealed partial class CopilotAgentTraceEntry : ViewModelBase
     {
-        public const int CurrentSchemaVersion = 13;
+        public const int CurrentSchemaVersion = 14;
         private const int MaxSummaryLength = 800;
         private const int MaxDelegatedAnswerLength = 20_000;
         internal const int MaxPersistedHookRuns = 64;
@@ -84,6 +84,10 @@ namespace ColorVision.Copilot
         public string DelegatedResumeFromRunId { get; set; } = string.Empty;
 
         public string DelegatedRoleId { get; set; } = string.Empty;
+
+        public string DelegatedModel { get; set; } = string.Empty;
+
+        public string DelegatedReasoningEffort { get; set; } = string.Empty;
 
         public CopilotAgentStopReason DelegatedStopReason { get; set; }
 
@@ -196,6 +200,10 @@ namespace ColorVision.Copilot
         public bool ShouldSerializeDelegatedResumeFromRunId() => !string.IsNullOrEmpty(DelegatedResumeFromRunId);
 
         public bool ShouldSerializeDelegatedRoleId() => !string.IsNullOrEmpty(DelegatedRoleId);
+
+        public bool ShouldSerializeDelegatedModel() => !string.IsNullOrEmpty(DelegatedModel);
+
+        public bool ShouldSerializeDelegatedReasoningEffort() => !string.IsNullOrEmpty(DelegatedReasoningEffort);
 
         public bool ShouldSerializeDelegatedStopReason() => DelegatedStopReason != CopilotAgentStopReason.None;
 
@@ -429,6 +437,8 @@ namespace ColorVision.Copilot
                 entry.DelegatedRoleId = SanitizeIdentifier(reportedProgress.DelegatedRun.RoleId);
                 entry.DelegatedRunId = SanitizeIdentifier(reportedProgress.DelegatedRun.RunId);
                 entry.DelegatedResumeFromRunId = SanitizeIdentifier(reportedProgress.DelegatedRun.ResumeFromRunId);
+                entry.DelegatedModel = Sanitize(reportedProgress.DelegatedRun.Model);
+                entry.DelegatedReasoningEffort = SanitizeIdentifier(reportedProgress.DelegatedRun.ReasoningEffort);
                 entry.DelegatedRequestTokenBudget = Math.Max(0, reportedProgress.DelegatedRun.RequestTokenBudget);
                 entry.DelegatedQueueDurationMs = Math.Max(0, reportedProgress.DelegatedRun.QueueDurationMs);
                 entry.DelegatedConsumedTokens = Math.Max(0, reportedProgress.DelegatedRun.ConsumedTokens);
@@ -469,6 +479,8 @@ namespace ColorVision.Copilot
                     entry.DelegatedRoleId = SanitizeIdentifier(result.DelegatedRunUsage.RoleId);
                     entry.DelegatedRunId = SanitizeIdentifier(result.DelegatedRunUsage.RunId);
                     entry.DelegatedResumeFromRunId = SanitizeIdentifier(result.DelegatedRunUsage.ResumeFromRunId);
+                    entry.DelegatedModel = Sanitize(result.DelegatedRunUsage.Model);
+                    entry.DelegatedReasoningEffort = SanitizeIdentifier(result.DelegatedRunUsage.ReasoningEffort);
                     entry.DelegatedStopReason = result.DelegatedRunUsage.StopReason;
                     entry.DelegatedRequestTokenBudget = Math.Max(0, result.DelegatedRunUsage.RequestTokenBudget);
                     entry.DelegatedConsumedTokens = Math.Max(0, result.DelegatedRunUsage.ConsumedTokens);

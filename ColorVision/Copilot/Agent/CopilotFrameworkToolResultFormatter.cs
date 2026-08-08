@@ -227,6 +227,10 @@ namespace ColorVision.Copilot
                 };
                 if (!string.IsNullOrWhiteSpace(delegated.ResumeFromRunId))
                     delegatedRun["resumed_from"] = SanitizeInline(delegated.ResumeFromRunId, 120);
+                if (!string.IsNullOrWhiteSpace(delegated.Model))
+                    delegatedRun["model"] = SanitizeInline(delegated.Model, CopilotConfiguredModelSelection.MaximumModelCharacters);
+                if (!string.IsNullOrWhiteSpace(delegated.ReasoningEffort))
+                    delegatedRun["reasoning_effort"] = SanitizeInline(delegated.ReasoningEffort, 32);
                 payload["delegated_run"] = delegatedRun;
             }
 

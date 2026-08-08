@@ -528,12 +528,12 @@ namespace ColorVision.Copilot
                 : Array.Empty<string>();
             var parentBudget = CopilotAgentRunBudget.Resolve(parentRequest);
             var childProfile = parentRequest.Profile.Clone();
-            if (CopilotConfiguredModelSelection.TryNormalize(
-                parentRequest.CodexDefaultSubagentModel,
-                out var defaultSubagentModel))
+            var childModel = ResolveChildModel(parentRequest, runRequest);
+            if (CopilotConfiguredModelSelection.TryNormalize(childModel, out var normalizedChildModel))
             {
-                childProfile.Model = defaultSubagentModel;
+                childProfile.Model = normalizedChildModel;
             }
+            var childReasoningEffort = ResolveChildReasoningEffort(parentRequest, runRequest);
             childProfile.MaxTokens = Math.Min(childProfile.MaxTokens, MaximumExplorationOutputTokens);
             var childExecutionScope = CopilotExecutionScope.ForAgentRun(parentRequest)
                 .DeriveChild(CopilotAgentTaskEventIds.CreateRunId());
@@ -570,10 +570,7 @@ namespace ColorVision.Copilot
                 CodexDefaultSubagentModel = parentRequest.CodexDefaultSubagentModel,
                 CodexDefaultSubagentReasoningEffort = parentRequest.CodexDefaultSubagentReasoningEffort,
                 ToolOutputTokenLimitOverride = parentRequest.ToolOutputTokenLimitOverride,
-                CodexReasoningEffort = parentRequest.CodexDefaultSubagentReasoningEffort !=
-                    CopilotCodexReasoningEffort.Unspecified
-                        ? parentRequest.CodexDefaultSubagentReasoningEffort
-                        : parentRequest.CodexReasoningEffort,
+                CodexReasoningEffort = childReasoningEffort,
                 CodexReasoningSummary = parentRequest.CodexReasoningSummary,
                 CodexModelSupportsReasoningSummaries = parentRequest.CodexModelSupportsReasoningSummaries,
                 CodexServiceTier = parentRequest.CodexServiceTier,
@@ -607,6 +604,51 @@ namespace ColorVision.Copilot
                     : Array.Empty<string>(),
                 RuntimeExecutionScope = childExecutionScope,
             };
+        }
+
+        internal static string ResolveChildModel(
+            CopilotAgentRequest parentRequest,
+            CopilotSubagentRunRequest runRequest)
+        {
+            ArgumentNullException.ThrowIfNull(parentRequest);
+            ArgumentNullException.ThrowIfNull(runRequest);
+            if (CopilotConfiguredModelSelection.TryNormalize(runRequest.Model, out var explicitModel))
+                return explicitModel;
+            if (CopilotConfiguredModelSelection.TryNormalize(
+                parentRequest.CodexDefaultSubagentModel,
+                out var defaultSubagentModel))
+            {
+                return defaultSubagentModel;
+            }
+            return (parentRequest.Profile?.Model ?? string.Empty).Trim();
+        }
+
+        internal static CopilotCodexReasoningEffort ResolveChildReasoningEffort(
+            CopilotAgentRequest parentRequest,
+            CopilotSubagentRunRequest runRequest)
+        {
+            ArgumentNullException.ThrowIfNull(parentRequest);
+            ArgumentNullException.ThrowIfNull(runRequest);
+            if (CopilotCodexReasoningEffortSelection.TryParse(
+                runRequest.ReasoningEffort,
+                out var explicitEffort))
+            {
+                return explicitEffort;
+            }
+            if (parentRequest.CodexDefaultSubagentReasoningEffort !=
+                CopilotCodexReasoningEffort.Unspecified)
+            {
+                return parentRequest.CodexDefaultSubagentReasoningEffort;
+            }
+            if (CopilotConfiguredModelSelection.TryNormalize(runRequest.Model, out var explicitModel)
+                && !string.Equals(
+                    explicitModel,
+                    parentRequest.Profile?.Model,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return CopilotCodexReasoningEffort.Unspecified;
+            }
+            return parentRequest.CodexReasoningEffort;
         }
 
        internal static IReadOnlyList<string> GetRequiredEvidenceToolNames(CopilotSubagentRoleDescriptor role)
@@ -654,6 +696,16 @@ namespace ColorVision.Copilot
                 throw new ArgumentException($"Subagent task must contain 1 to {MaximumTaskCharacters} characters.", nameof(runRequest));
             if (string.IsNullOrWhiteSpace(runRequest.RunId))
                 throw new ArgumentException("Subagent run id is required.", nameof(runRequest));
+            if (!string.IsNullOrEmpty(runRequest.Model)
+                && !CopilotConfiguredModelSelection.TryNormalize(runRequest.Model, out _))
+            {
+                throw new ArgumentException("Subagent model override is invalid.", nameof(runRequest));
+            }
+            if (!string.IsNullOrEmpty(runRequest.ReasoningEffort)
+                && !CopilotCodexReasoningEffortSelection.TryParse(runRequest.ReasoningEffort, out _))
+            {
+                throw new ArgumentException("Subagent reasoning effort override is invalid.", nameof(runRequest));
+            }
             var resumeFromRunId = (runRequest.ResumeFromRunId ?? string.Empty).Trim();
             if ((resumeFromRunId.Length > 0) != (runRequest.ResumeCheckpoint != null)
                 || runRequest.ResumeCheckpoint?.IsStructurallyValid() == false)
