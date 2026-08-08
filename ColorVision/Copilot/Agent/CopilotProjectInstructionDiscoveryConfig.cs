@@ -107,6 +107,23 @@ namespace ColorVision.Copilot
         public CopilotProjectInstructionConfigSources WebSearchModeSource { get; init; } =
             CopilotProjectInstructionConfigSources.None;
 
+        public int ConfiguredModelContextWindowTokens { get; init; }
+
+        public bool HasModelContextWindowOverride { get; init; }
+
+        public CopilotProjectInstructionConfigSources ModelContextWindowSource { get; init; } =
+            CopilotProjectInstructionConfigSources.None;
+
+        public int ResolveContextWindowTokens(int fallbackTokens)
+        {
+            return HasModelContextWindowOverride
+                ? ConfiguredModelContextWindowTokens
+                : Math.Clamp(
+                    fallbackTokens,
+                    CopilotAgentTokenBudget.MinimumContextWindowTokens,
+                    CopilotAgentTokenBudget.MaximumContextWindowTokens);
+        }
+
         internal string ConfiguredModelInstructionsFileContent { get; init; } = string.Empty;
 
         internal bool HasModelInstructionsFileOverride { get; init; }
@@ -185,6 +202,7 @@ namespace ColorVision.Copilot
             || HasDeveloperInstructionsOverride
             || HasPersonalityOverride
             || HasWebSearchModeOverride
+            || HasModelContextWindowOverride
             || HasModelInstructionsFileOverride
             || HasCompactPromptOverride;
 
@@ -218,6 +236,13 @@ namespace ColorVision.Copilot
         {
             CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml web_search",
             CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml web_search",
+            _ => string.Empty,
+        };
+
+        public string ModelContextWindowSourceLabel => ModelContextWindowSource switch
+        {
+            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml model_context_window",
+            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml model_context_window",
             _ => string.Empty,
         };
 
@@ -290,6 +315,7 @@ namespace ColorVision.Copilot
         private const string DeveloperInstructionsKey = "developer_instructions";
         private const string PersonalityKey = "personality";
         private const string WebSearchKey = "web_search";
+        private const string ModelContextWindowKey = "model_context_window";
         private const string ModelInstructionsFileKey = "model_instructions_file";
         private const string CompactPromptKey = "compact_prompt";
         private const string ExperimentalCompactPromptFileKey = "experimental_compact_prompt_file";
@@ -447,6 +473,14 @@ namespace ColorVision.Copilot
                 WebSearchModeSource = layer.HasWebSearchModeOverride
                     ? source
                     : current.WebSearchModeSource,
+                ConfiguredModelContextWindowTokens = layer.HasModelContextWindowOverride
+                    ? layer.ModelContextWindowTokens
+                    : current.ConfiguredModelContextWindowTokens,
+                HasModelContextWindowOverride = current.HasModelContextWindowOverride
+                    || layer.HasModelContextWindowOverride,
+                ModelContextWindowSource = layer.HasModelContextWindowOverride
+                    ? source
+                    : current.ModelContextWindowSource,
                 ConfiguredModelInstructionsFileContent = layer.HasModelInstructionsFileOverride
                     ? layer.ModelInstructionsFileContent
                     : current.ConfiguredModelInstructionsFileContent,
@@ -489,6 +523,7 @@ namespace ColorVision.Copilot
                 || layer.HasDeveloperInstructionsOverride
                 || layer.HasPersonalityOverride
                 || layer.HasWebSearchModeOverride
+                || layer.HasModelContextWindowOverride
                 || layer.HasModelInstructionsFileOverride
                 || layer.HasCompactPromptOverride
                 || layer.HasCompactPromptFileOverride
@@ -752,6 +787,7 @@ namespace ColorVision.Copilot
             var developerInstructions = string.Empty;
             var personality = CopilotResponsePersonality.None;
             var webSearchMode = CopilotCodexWebSearchMode.Unspecified;
+            var modelContextWindowTokens = 0;
             var modelInstructionsFilePath = string.Empty;
             var compactPrompt = string.Empty;
             var compactPromptFilePath = string.Empty;
@@ -761,6 +797,7 @@ namespace ColorVision.Copilot
             var hasDeveloperInstructionsOverride = false;
             var hasPersonalityOverride = false;
             var hasWebSearchModeOverride = false;
+            var hasModelContextWindowOverride = false;
             var hasModelInstructionsFileOverride = false;
             var hasCompactPromptOverride = false;
             var hasCompactPromptFileOverride = false;
@@ -822,6 +859,18 @@ namespace ColorVision.Copilot
                         continue;
                     }
                     hasWebSearchModeOverride = true;
+                    continue;
+                }
+
+                if (string.Equals(assignment.Key, ModelContextWindowKey, StringComparison.Ordinal))
+                {
+                    if (!TryParseModelContextWindowTokens(
+                        assignment.Value,
+                        out modelContextWindowTokens))
+                    {
+                        continue;
+                    }
+                    hasModelContextWindowOverride = true;
                     continue;
                 }
 
@@ -897,6 +946,8 @@ namespace ColorVision.Copilot
                 HasPersonalityOverride = hasPersonalityOverride,
                 WebSearchMode = webSearchMode,
                 HasWebSearchModeOverride = hasWebSearchModeOverride,
+                ModelContextWindowTokens = modelContextWindowTokens,
+                HasModelContextWindowOverride = hasModelContextWindowOverride,
                 HasCompactPromptOverride = hasCompactPromptOverride,
                 HasCompactPromptFileOverride = hasCompactPromptFileOverride,
             };
@@ -906,6 +957,7 @@ namespace ColorVision.Copilot
                 || hasDeveloperInstructionsOverride
                 || hasPersonalityOverride
                 || hasWebSearchModeOverride
+                || hasModelContextWindowOverride
                 || hasModelInstructionsFileOverride
                 || hasCompactPromptOverride
                 || hasCompactPromptFileOverride;
@@ -1051,6 +1103,7 @@ namespace ColorVision.Copilot
                     && !string.Equals(key, DeveloperInstructionsKey, StringComparison.Ordinal)
                     && !string.Equals(key, PersonalityKey, StringComparison.Ordinal)
                     && !string.Equals(key, WebSearchKey, StringComparison.Ordinal)
+                    && !string.Equals(key, ModelContextWindowKey, StringComparison.Ordinal)
                     && !string.Equals(key, ModelInstructionsFileKey, StringComparison.Ordinal)
                     && !string.Equals(key, CompactPromptKey, StringComparison.Ordinal)
                     && !string.Equals(key, ExperimentalCompactPromptFileKey, StringComparison.Ordinal))
@@ -1200,6 +1253,23 @@ namespace ColorVision.Copilot
             }
             maximumBytes = parsed;
             return true;
+        }
+
+        private static bool TryParseModelContextWindowTokens(
+            string value,
+            out int contextWindowTokens)
+        {
+            contextWindowTokens = 0;
+            var normalized = (value ?? string.Empty)
+                .Replace("_", string.Empty, StringComparison.Ordinal)
+                .Trim();
+            return int.TryParse(
+                    normalized,
+                    NumberStyles.None,
+                    CultureInfo.InvariantCulture,
+                    out contextWindowTokens)
+                && contextWindowTokens >= CopilotAgentTokenBudget.MinimumContextWindowTokens
+                && contextWindowTokens <= CopilotAgentTokenBudget.MaximumContextWindowTokens;
         }
 
         private static bool TryParseFallbackFileNames(string value, out string[] fallbackFileNames)
@@ -1609,6 +1679,10 @@ namespace ColorVision.Copilot
                 CopilotCodexWebSearchMode.Unspecified;
 
             public bool HasWebSearchModeOverride { get; init; }
+
+            public int ModelContextWindowTokens { get; init; }
+
+            public bool HasModelContextWindowOverride { get; init; }
 
             public string CompactPrompt { get; init; } = string.Empty;
 

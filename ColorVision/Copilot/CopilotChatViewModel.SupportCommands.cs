@@ -350,7 +350,9 @@ namespace ColorVision.Copilot
             var requestProfile = selectedProfile == null
                 ? null
                 : CreateConversationRequestProfile(selectedProfile, conversation, projectInstructionOptions);
-            var historyLimits = ResolveConversationHistoryLimits(requestProfile);
+            var historyLimits = ResolveConversationHistoryLimits(
+                requestProfile,
+                projectInstructionOptions);
             var history = CopilotConversationRequestBuilder.CaptureHistorySelection(conversation, historyLimits);
             var projectInstructions = Array.Empty<CopilotProjectInstructionDocument>();
             var trustedProjectRoots = Array.Empty<string>();
@@ -406,7 +408,9 @@ namespace ColorVision.Copilot
                 HistoryMaximumContentCharacters = historyLimits.MaximumContentCharacters,
                 HistoryMaximumEstimatedTokens = CopilotTokenEstimator.WeightToTokenEstimate(historyLimits.MaximumCharacters),
                 HistoryMaximumContentEstimatedTokens = CopilotTokenEstimator.WeightToTokenEstimate(historyLimits.MaximumContentCharacters),
-                HistoryContextWindowTokens = agentDefaults.ContextWindowTokens,
+                HistoryContextWindowTokens = ResolveContextWindowTokens(projectInstructionOptions),
+                HasModelContextWindowOverride = projectInstructionOptions.HasModelContextWindowOverride,
+                ModelContextWindowSourceLabel = projectInstructionOptions.ModelContextWindowSourceLabel,
                 AutoCompactConversationHistory = agentDefaults.AutoCompactConversationHistory,
                 AutoCompactThresholdPercent = agentDefaults.AutoCompactThresholdPercent,
                 AutoCompactInstructionsCharacters = agentDefaults.AutoCompactInstructions.Length,

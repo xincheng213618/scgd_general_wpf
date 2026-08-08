@@ -3328,6 +3328,208 @@ public sealed class CopilotAgentProjectInstructionsTests
         Assert.DoesNotContain("已允许按请求意图实时公网检索", debugReport, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void ModelContextWindowUsesTheClosestTrustedLayerAndKeepsItsRequestSnapshot()
+    {
+        string globalRoot = CreateTemporaryDirectory();
+        string projectRoot = CreateTemporaryDirectory();
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
+            File.WriteAllText(
+                Path.Combine(globalRoot, "config.toml"),
+                $"""
+                model_context_window = 524_288
+
+                [projects.'{projectRoot}']
+                trust_level = "trusted"
+                """);
+            string sourceDirectory = Path.Combine(projectRoot, "src");
+            string configDirectory = Path.Combine(sourceDirectory, ".codex");
+            Directory.CreateDirectory(configDirectory);
+            string configPath = Path.Combine(configDirectory, "config.toml");
+            File.WriteAllText(configPath, "model_context_window = 131_072");
+
+            var submittedContext = new CopilotAgentHostContextSnapshot(
+                activeDocumentPath: null,
+                sourceDirectory,
+                attachments: null,
+                liveContext: null,
+                conversationHistory: null,
+                additionalReadRootPaths: null,
+                globalInstructionRootPath: globalRoot);
+            File.WriteAllText(configPath, "model_context_window = 65_536");
+            var submittedPlan = CopilotAgentRequestFactory.Prepare(
+                "Inspect the current workspace.",
+                CopilotAgentMode.Auto,
+                submittedContext);
+            var submittedRequest = CopilotAgentRequestFactory.Create(
+                submittedPlan,
+                new CopilotAgentRequestBuildInput
+                {
+                    Profile = CopilotProfileConfig.CreateDefault(),
+                    AgentDefaults = new CopilotAgentDefaultsConfig
+                    {
+                        ContextWindowTokens = 262_144,
+                    },
+                });
+            var updatedHistory = new CopilotConversationHistorySnapshot(
+                [new CopilotRequestMessage("user", "After compaction")],
+                [new CopilotRequestMessage("user", "After compaction")]);
+            var updatedSubmittedContext = submittedContext.WithConversationHistory(updatedHistory);
+            var refreshedContext = new CopilotAgentHostContextSnapshot(
+                activeDocumentPath: null,
+                sourceDirectory,
+                attachments: null,
+                liveContext: null,
+                conversationHistory: null,
+                additionalReadRootPaths: null,
+                globalInstructionRootPath: globalRoot);
+
+            var submittedOptions = submittedContext.ProjectInstructionDiscoveryOptions;
+            Assert.True(submittedOptions.HasModelContextWindowOverride);
+            Assert.Equal(131_072, submittedOptions.ConfiguredModelContextWindowTokens);
+            Assert.Equal(CopilotProjectInstructionConfigSources.TrustedProject, submittedOptions.ModelContextWindowSource);
+            Assert.Equal(131_072, submittedPlan.ModelContextWindowTokensOverride);
+            Assert.Equal(131_072, submittedRequest.RunBudgetDefaults?.ContextWindowTokens);
+            Assert.Equal(131_072, CopilotAgentRunBudget.Resolve(submittedRequest).ContextWindowTokens);
+            Assert.Equal(131_072, updatedSubmittedContext.ProjectInstructionDiscoveryOptions.ConfiguredModelContextWindowTokens);
+            Assert.Single(updatedSubmittedContext.ConversationHistory.ModelMessages);
+            Assert.Equal(
+                65_536,
+                refreshedContext.ProjectInstructionDiscoveryOptions.ConfiguredModelContextWindowTokens);
+        }
+        finally
+        {
+            Directory.Delete(globalRoot, recursive: true);
+            Directory.Delete(projectRoot, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void UntrustedOrOutOfRangeModelContextWindowCannotReplaceTheEffectiveValue()
+    {
+        string globalRoot = CreateTemporaryDirectory();
+        string projectRoot = CreateTemporaryDirectory();
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
+            File.WriteAllText(
+                Path.Combine(globalRoot, "config.toml"),
+                $"""
+                model_context_window = 262_144
+
+                [projects.'{projectRoot}']
+                trust_level = "untrusted"
+                """);
+            string configDirectory = Path.Combine(projectRoot, ".codex");
+            Directory.CreateDirectory(configDirectory);
+            File.WriteAllText(Path.Combine(configDirectory, "config.toml"), "model_context_window = 65_536");
+
+            var untrusted = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
+            Assert.Equal(262_144, untrusted.ConfiguredModelContextWindowTokens);
+            Assert.Equal(CopilotProjectInstructionConfigSources.CodexHome, untrusted.ModelContextWindowSource);
+            Assert.Empty(untrusted.AppliedProjectConfigFilePaths);
+
+            File.WriteAllText(Path.Combine(globalRoot, "config.toml"), "model_context_window = 16_384");
+            var belowHostMinimum = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot);
+            Assert.False(belowHostMinimum.HasModelContextWindowOverride);
+            Assert.Equal(524_288, belowHostMinimum.ResolveContextWindowTokens(524_288));
+
+            File.WriteAllText(Path.Combine(globalRoot, "config.toml"), "model_context_window = 2_097_152");
+            var aboveHostMaximum = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot);
+            Assert.False(aboveHostMaximum.HasModelContextWindowOverride);
+        }
+        finally
+        {
+            Directory.Delete(globalRoot, recursive: true);
+            Directory.Delete(projectRoot, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void ModelContextWindowChangesTheSharedHistoryAndAutoCompactionBudget()
+    {
+        var options = CopilotProjectInstructionDiscoveryConfig.CreateDefault() with
+        {
+            ConfiguredModelContextWindowTokens = 65_536,
+            HasModelContextWindowOverride = true,
+            ModelContextWindowSource = CopilotProjectInstructionConfigSources.CodexHome,
+        };
+        int effectiveContextWindow = options.ResolveContextWindowTokens(524_288);
+        var configuredLimits = CopilotConversationRequestBuilder.ResolveHistoryLimits(
+            effectiveContextWindow,
+            maxOutputTokens: 4_096);
+        var applicationLimits = CopilotConversationRequestBuilder.ResolveHistoryLimits(
+            contextWindowTokens: 524_288,
+            maxOutputTokens: 4_096);
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        conversation.Messages.Add(new CopilotChatMessage(CopilotChatRole.User, new string('x', 60_000)));
+        conversation.Messages.Add(new CopilotChatMessage(CopilotChatRole.Assistant, new string('y', 60_000)));
+
+        var configuredDecision = CopilotConversationAutoCompactionPolicy.Evaluate(
+            conversation,
+            configuredLimits,
+            pendingPrompt: "continue",
+            enabled: true,
+            thresholdPercent: 85);
+        var applicationDecision = CopilotConversationAutoCompactionPolicy.Evaluate(
+            conversation,
+            applicationLimits,
+            pendingPrompt: "continue",
+            enabled: true,
+            thresholdPercent: 85);
+
+        Assert.Equal(65_536, effectiveContextWindow);
+        Assert.True(configuredLimits.MaximumCharacters < applicationLimits.MaximumCharacters);
+        Assert.True(configuredDecision.ShouldCompact);
+        Assert.False(applicationDecision.ShouldCompact);
+    }
+
+    [Fact]
+    public void ModelContextWindowDiagnosticsReportTheEffectiveSnapshotAndSource()
+    {
+        var options = CopilotProjectInstructionDiscoveryConfig.CreateDefault() with
+        {
+            ConfiguredModelContextWindowTokens = 131_072,
+            HasModelContextWindowOverride = true,
+            ModelContextWindowSource = CopilotProjectInstructionConfigSources.CodexHome,
+        };
+        string memoryReport = CopilotProjectInstructionDiagnostics.Format(
+            new CopilotProjectInstructionSnapshot(
+                string.Empty,
+                string.Empty,
+                string.Empty,
+                options,
+                Array.Empty<CopilotProjectInstructionDocument>()),
+            hasActiveAgentRun: false);
+        string contextReport = CopilotContextDiagnostics.Format(new CopilotContextDiagnosticSnapshot
+        {
+            HistoryContextWindowTokens = options.ConfiguredModelContextWindowTokens,
+            HasModelContextWindowOverride = true,
+            ModelContextWindowSourceLabel = options.ModelContextWindowSourceLabel,
+        });
+        string debugReport = CopilotEffectiveConfigDiagnostics.Format(new CopilotEffectiveConfigDiagnosticContext
+        {
+            Config = new CopilotConfig
+            {
+                AgentDefaults = new CopilotAgentDefaultsConfig
+                {
+                    ContextWindowTokens = 524_288,
+                },
+            },
+            State = new CopilotChatState(),
+            CodexConfigOptions = options,
+        });
+
+        Assert.Contains("Codex model_context_window：131,072 Token", memoryReport, StringComparison.Ordinal);
+        Assert.Contains(options.ModelContextWindowSourceLabel, memoryReport, StringComparison.Ordinal);
+        Assert.Contains("Codex model_context_window：131,072 Token", contextReport, StringComparison.Ordinal);
+        Assert.Contains("同时约束聊天历史、发送校验、自动压缩和 Agent 上下文", contextReport, StringComparison.Ordinal);
+        Assert.Contains("Codex model_context_window：131,072 tokens", debugReport, StringComparison.Ordinal);
+        Assert.Contains("请求快照覆盖应用默认值", debugReport, StringComparison.Ordinal);
+    }
+
     private static string CreateTemporaryDirectory()
     {
         string path = Path.Combine(Path.GetTempPath(), $"copilot-instructions-{Guid.NewGuid():N}");

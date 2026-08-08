@@ -56,6 +56,10 @@ namespace ColorVision.Copilot
 
         public int HistoryContextWindowTokens { get; init; }
 
+        public bool HasModelContextWindowOverride { get; init; }
+
+        public string ModelContextWindowSourceLabel { get; init; } = string.Empty;
+
         public bool AutoCompactConversationHistory { get; init; }
 
         public int AutoCompactThresholdPercent { get; init; }
@@ -244,6 +248,16 @@ namespace ColorVision.Copilot
                 .Append("%，窗口 ")
                 .Append(FormatCount(snapshot.HistoryContextWindowTokens))
                 .AppendLine(" Token）");
+            if (snapshot.HasModelContextWindowOverride)
+            {
+                builder.Append("Codex model_context_window：")
+                    .Append(FormatCount(snapshot.HistoryContextWindowTokens))
+                    .Append(" Token · 来源 ")
+                    .Append(string.IsNullOrWhiteSpace(snapshot.ModelContextWindowSourceLabel)
+                        ? "Codex config.toml"
+                        : snapshot.ModelContextWindowSourceLabel.Trim())
+                    .AppendLine(" 请求快照；同时约束聊天历史、发送校验、自动压缩和 Agent 上下文");
+            }
             builder.Append("自动压缩：");
             if (snapshot.AutoCompactConversationHistory)
             {

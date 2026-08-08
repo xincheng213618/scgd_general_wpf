@@ -188,6 +188,16 @@ namespace ColorVision.Copilot
                     .AppendLine(CopilotCodexWebSearchModeSelection.GetEffectiveLabel(
                         effective.ConfiguredWebSearchMode));
             }
+            if (effective.HasModelContextWindowOverride)
+            {
+                builder.Append("Codex model_context_window：")
+                    .Append(effective.ConfiguredModelContextWindowTokens.ToString("N0", CultureInfo.CurrentCulture))
+                    .Append(" Token · 来源 ")
+                    .Append(effective.ModelContextWindowSourceLabel.Length == 0
+                        ? "Codex config.toml"
+                        : effective.ModelContextWindowSourceLabel)
+                    .AppendLine(" 请求快照；覆盖应用默认上下文窗口");
+            }
             if (effective.HasModelInstructionsFileOverride)
             {
                 builder.Append("Codex model_instructions_file：")

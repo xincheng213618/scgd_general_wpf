@@ -153,10 +153,23 @@ namespace ColorVision.Copilot
             RefreshComposerTokenEstimate();
         }
 
-        private CopilotConversationHistoryLimits ResolveConversationHistoryLimits(CopilotProfileConfig? profile)
+        private int ResolveContextWindowTokens(
+            CopilotProjectInstructionDiscoveryOptions? codexConfigOptions = null)
+        {
+            return codexConfigOptions?.ResolveContextWindowTokens(
+                    _config.AgentDefaults.ContextWindowTokens)
+                ?? Math.Clamp(
+                    _config.AgentDefaults.ContextWindowTokens,
+                    CopilotAgentTokenBudget.MinimumContextWindowTokens,
+                    CopilotAgentTokenBudget.MaximumContextWindowTokens);
+        }
+
+        private CopilotConversationHistoryLimits ResolveConversationHistoryLimits(
+            CopilotProfileConfig? profile,
+            CopilotProjectInstructionDiscoveryOptions? codexConfigOptions = null)
         {
             return CopilotConversationRequestBuilder.ResolveHistoryLimits(
-                _config.AgentDefaults.ContextWindowTokens,
+                ResolveContextWindowTokens(codexConfigOptions),
                 profile?.MaxTokens ?? CopilotProfileConfig.DefaultMaxTokens);
         }
     }

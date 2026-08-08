@@ -427,7 +427,11 @@ namespace ColorVision.Copilot
                 conversation,
                 turnSnapshot.ProjectInstructionDiscoveryOptions);
             if (!TryValidateComposerCharacterLimit(modelPrompt)
-                || !TryValidatePromptBudget(modelPrompt, userMessage.RequestMode, requestProfile))
+                || !TryValidatePromptBudget(
+                    modelPrompt,
+                    userMessage.RequestMode,
+                    requestProfile,
+                    turnSnapshot.ProjectInstructionDiscoveryOptions))
             {
                 return;
             }

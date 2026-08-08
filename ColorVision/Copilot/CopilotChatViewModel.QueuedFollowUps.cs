@@ -71,20 +71,22 @@ namespace ColorVision.Copilot
                 ReportRequestAdmissionFailure(preflightAdmission);
                 return false;
             }
-            if (!TryValidateComposerCharacterLimit(prompt)
-                || !TryValidatePromptBudget(prompt, activeRun.Mode, profile))
-            {
-                return false;
-            }
-
             var agentSkillReference = ResolvePendingAgentSkillReference(prompt);
             var submissionContext = CaptureHostedTurnSnapshot(conversation, attachmentOverride: conversation.Attachments);
             var requestProfile = CreateConversationRequestProfile(
                 profile,
                 conversation,
                 submissionContext.ProjectInstructionDiscoveryOptions);
-            if (!TryValidateComposerAttachments(submissionContext.Attachments))
+            if (!TryValidateComposerCharacterLimit(prompt)
+                || !TryValidatePromptBudget(
+                    prompt,
+                    activeRun.Mode,
+                    requestProfile,
+                    submissionContext.ProjectInstructionDiscoveryOptions)
+                || !TryValidateComposerAttachments(submissionContext.Attachments))
+            {
                 return false;
+            }
 
             var itemReady = new TaskCompletionSource<CopilotQueuedFollowUp>(TaskCreationOptions.RunContinuationsAsynchronously);
             async Task ExecuteFollowUpAsync(CopilotHostedAgentRun run)

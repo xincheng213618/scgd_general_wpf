@@ -66,9 +66,6 @@ namespace ColorVision.Copilot
                 return;
             }
 
-            var requestProfile = CreateCurrentConversationRequestProfile(selectedProfile, SelectedConversation);
-            if (!TryValidatePromptBudget(modelPrompt, requestMode, requestProfile))
-                return;
             var requestAttachments = isDirectSubmission
                 ? Array.Empty<CopilotAttachmentItem>()
                 : Attachments.ToArray();
@@ -76,15 +73,6 @@ namespace ColorVision.Copilot
                 return;
 
             var conversation = EnsureConversation();
-            var automaticCompaction = await TryAutoCompactConversationAsync(
-                conversation,
-                requestProfile,
-                modelPrompt);
-            if (automaticCompaction == CopilotAutomaticCompactionOutcome.Failed)
-                return;
-
-            conversation.ProfileId = requestProfile.Id;
-            conversation.ProfileDisplayName = requestProfile.DisplayLabel;
             var replacedUserIndex = -1;
             CopilotChatMessage replacedUserMessage = null!;
             CopilotChatMessage? replacedAssistantMessage = null;
@@ -102,10 +90,35 @@ namespace ColorVision.Copilot
             var turnSnapshot = isReplacingTurn
                 ? CaptureHostedTurnSnapshot(conversation, replacedUserMessage, conversation.Attachments)
                 : CaptureHostedTurnSnapshot(conversation, attachmentOverride: requestAttachments);
-            requestProfile = CreateConversationRequestProfile(
+            var requestProfile = CreateConversationRequestProfile(
                 selectedProfile,
                 conversation,
                 turnSnapshot.ProjectInstructionDiscoveryOptions);
+            if (!TryValidatePromptBudget(
+                modelPrompt,
+                requestMode,
+                requestProfile,
+                turnSnapshot.ProjectInstructionDiscoveryOptions))
+            {
+                return;
+            }
+            var automaticCompaction = await TryAutoCompactConversationAsync(
+                conversation,
+                requestProfile,
+                modelPrompt,
+                turnSnapshot.ProjectInstructionDiscoveryOptions);
+            if (automaticCompaction == CopilotAutomaticCompactionOutcome.Failed)
+                return;
+            if (automaticCompaction == CopilotAutomaticCompactionOutcome.Applied)
+            {
+                turnSnapshot = turnSnapshot.WithConversationHistory(
+                    CopilotConversationRequestBuilder.CaptureHistorySnapshot(
+                        conversation,
+                        isReplacingTurn ? replacedUserMessage : null));
+            }
+
+            conversation.ProfileId = requestProfile.Id;
+            conversation.ProfileDisplayName = requestProfile.DisplayLabel;
             var recoveryRequest = isDirectSubmission ? null : ConsumePendingAgentRecoveryRequest();
             if (!isDirectSubmission)
                 requestMode = ConsumeRequestModeOverride();
@@ -446,7 +459,9 @@ namespace ColorVision.Copilot
                 userMessage.ChatAttachmentContextCaptured,
                 refreshExternalContext,
                 turnSnapshot,
-                ResolveConversationHistoryLimits(requestProfile),
+                ResolveConversationHistoryLimits(
+                    requestProfile,
+                    turnSnapshot.ProjectInstructionDiscoveryOptions),
                 sessionCheckpoint,
                 userMessage.RecoveryRequest,
                 hostedRun.RunControl,

@@ -267,7 +267,9 @@ namespace ColorVision.Copilot
                 return;
             }
 
-            var summaryMaximumWeight = ResolveConversationHistoryLimits(profile).MaximumContentCharacters;
+            var summaryMaximumWeight = ResolveConversationHistoryLimits(
+                profile,
+                compactionConfig).MaximumContentCharacters;
             var compactProfile = profile.Clone();
             compactProfile.UseSystemPromptOverride(CopilotConversationCompactionPrompt.SystemPrompt);
             compactProfile.MaxTokens = Math.Min(compactProfile.MaxTokens, CompactSummaryOutputTokens);
@@ -276,7 +278,7 @@ namespace ColorVision.Copilot
             var compactRequest = CopilotConversationCompactionPrompt.BuildRequest(
                 focusInstructions,
                 compactionConfig.CompactPrompt);
-            var historyLimits = ResolveConversationHistoryLimits(compactProfile);
+            var historyLimits = ResolveConversationHistoryLimits(compactProfile, compactionConfig);
             compactProfile.MaxTokens = Math.Min(
                 compactProfile.MaxTokens,
                 ResolveCompactSummaryOutputTokens(summaryMaximumWeight));
@@ -367,7 +369,8 @@ namespace ColorVision.Copilot
         private async Task<CopilotAutomaticCompactionOutcome> TryAutoCompactConversationAsync(
             CopilotConversationRecord conversation,
             CopilotProfileConfig requestProfile,
-            string pendingPrompt)
+            string pendingPrompt,
+            CopilotProjectInstructionDiscoveryOptions codexConfigOptions)
         {
             if (IsBusy || _taskHost.IsActive || _isCompactingConversation || IsEditingMessage)
                 return CopilotAutomaticCompactionOutcome.NotNeeded;
@@ -381,7 +384,7 @@ namespace ColorVision.Copilot
 
             var decision = CopilotConversationAutoCompactionPolicy.Evaluate(
                 conversation,
-                ResolveConversationHistoryLimits(requestProfile),
+                ResolveConversationHistoryLimits(requestProfile, codexConfigOptions),
                 pendingPrompt,
                 _config.AgentDefaults.AutoCompactConversationHistory,
                 _config.AgentDefaults.AutoCompactThresholdPercent);

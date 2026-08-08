@@ -114,6 +114,50 @@ namespace ColorVision.Copilot
             }
         }
 
+        internal CopilotAgentHostContextSnapshot WithConversationHistory(
+            CopilotConversationHistorySnapshot? conversationHistory)
+        {
+            return new CopilotAgentHostContextSnapshot(
+                ActiveDocumentPath,
+                SolutionDirectoryPath,
+                Attachments,
+                LiveContext,
+                conversationHistory,
+                AdditionalReadRootPaths,
+                GlobalInstructionRootPath,
+                PrimaryTrustedProjectRootPath,
+                ProjectConfigWorkingDirectoryPath,
+                ProjectInstructionDiscoveryOptions);
+        }
+
+        private CopilotAgentHostContextSnapshot(
+            string activeDocumentPath,
+            string solutionDirectoryPath,
+            IEnumerable<CopilotAttachmentItem> attachments,
+            CopilotLiveContext? liveContext,
+            CopilotConversationHistorySnapshot? conversationHistory,
+            IEnumerable<string> additionalReadRootPaths,
+            string globalInstructionRootPath,
+            string primaryTrustedProjectRootPath,
+            string projectConfigWorkingDirectoryPath,
+            CopilotProjectInstructionDiscoveryOptions projectInstructionDiscoveryOptions)
+        {
+            ActiveDocumentPath = activeDocumentPath;
+            SolutionDirectoryPath = solutionDirectoryPath;
+            LiveContext = CloneLiveContext(liveContext);
+            Attachments = attachments.Select(attachment => attachment.CreateSnapshot()).ToArray();
+            ConversationHistory = conversationHistory == null
+                ? CopilotConversationHistorySnapshot.Empty
+                : new CopilotConversationHistorySnapshot(
+                    conversationHistory.ModelMessages,
+                    conversationHistory.VisibleMessages);
+            AdditionalReadRootPaths = additionalReadRootPaths.ToArray();
+            GlobalInstructionRootPath = globalInstructionRootPath;
+            PrimaryTrustedProjectRootPath = primaryTrustedProjectRootPath;
+            ProjectConfigWorkingDirectoryPath = projectConfigWorkingDirectoryPath;
+            ProjectInstructionDiscoveryOptions = projectInstructionDiscoveryOptions;
+        }
+
         private static CopilotLiveContext? CloneLiveContext(CopilotLiveContext? source)
         {
             if (source == null)
@@ -183,6 +227,8 @@ namespace ColorVision.Copilot
 
         internal CopilotCodexWebSearchMode CodexWebSearchMode { get; init; } =
             CopilotCodexWebSearchMode.Unspecified;
+
+        internal int? ModelContextWindowTokensOverride { get; init; }
 
         public IReadOnlyList<CopilotProjectInstructionDocument> ProjectInstructions { get; init; } = Array.Empty<CopilotProjectInstructionDocument>();
 
@@ -310,6 +356,9 @@ namespace ColorVision.Copilot
                 ActiveDocumentPath = hostContext.ActiveDocumentPath,
                 ConfiguredDeveloperInstructions = hostContext.ProjectInstructionDiscoveryOptions.DeveloperInstructions,
                 CodexWebSearchMode = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredWebSearchMode,
+                ModelContextWindowTokensOverride = hostContext.ProjectInstructionDiscoveryOptions.HasModelContextWindowOverride
+                    ? hostContext.ProjectInstructionDiscoveryOptions.ConfiguredModelContextWindowTokens
+                    : null,
                 ProjectInstructions = projectInstructions,
                 ReadableLocalFilePaths = explicitLocalFilePaths,
                 ReadableLocalDirectoryPaths = readableLocalDirectoryPaths,
@@ -328,6 +377,8 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(input.AgentDefaults);
 
             var agentDefaults = input.AgentDefaults.Clone();
+            if (plan.ModelContextWindowTokensOverride.HasValue)
+                agentDefaults.ContextWindowTokens = plan.ModelContextWindowTokensOverride.Value;
             return new CopilotAgentRequest
             {
                 ConversationId = (input.ConversationId ?? string.Empty).Trim(),

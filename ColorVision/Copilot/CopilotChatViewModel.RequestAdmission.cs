@@ -193,22 +193,23 @@ namespace ColorVision.Copilot
             return false;
         }
 
-        private bool TryValidatePromptBudget(string prompt, CopilotAgentMode mode, CopilotProfileConfig profile)
+        private bool TryValidatePromptBudget(
+            string prompt,
+            CopilotAgentMode mode,
+            CopilotProfileConfig profile,
+            CopilotProjectInstructionDiscoveryOptions? codexConfigOptions = null)
         {
             long maximumWeight;
             int maximumTokens;
             if (mode == CopilotAgentMode.Chat)
             {
-                var historyLimits = ResolveConversationHistoryLimits(profile);
+                var historyLimits = ResolveConversationHistoryLimits(profile, codexConfigOptions);
                 maximumWeight = historyLimits.MaximumContentCharacters;
                 maximumTokens = CopilotTokenEstimator.WeightToTokenEstimate(maximumWeight);
             }
             else
             {
-                var contextWindowTokens = Math.Clamp(
-                    _config.AgentDefaults.ContextWindowTokens,
-                    CopilotAgentTokenBudget.MinimumContextWindowTokens,
-                    CopilotAgentTokenBudget.MaximumContextWindowTokens);
+                var contextWindowTokens = ResolveContextWindowTokens(codexConfigOptions);
                 var outputTokens = Math.Clamp(profile.MaxTokens, 32, CopilotProfileConfig.DefaultMaxTokens);
                 var inputBudgetTokens = Math.Max(1, contextWindowTokens - outputTokens);
                 var requestBudgetTokens = Math.Clamp(

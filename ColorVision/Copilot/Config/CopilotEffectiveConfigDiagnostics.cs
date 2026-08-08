@@ -337,6 +337,23 @@ namespace ColorVision.Copilot
                 .Append(FormatDuration(TimeSpan.FromSeconds(defaults.TimeoutSeconds)))
                 .Append(" · 来源 ")
                 .AppendLine(source)
+                .Append("- Codex model_context_window：");
+            if (!codexConfigOptions.HasModelContextWindowOverride)
+            {
+                builder.Append("未配置 · 有效 ")
+                    .Append(FormatNumber(defaults.ContextWindowTokens))
+                    .AppendLine(" tokens · 使用应用 AgentDefaults");
+            }
+            else
+            {
+                builder.Append(FormatNumber(codexConfigOptions.ConfiguredModelContextWindowTokens))
+                    .Append(" tokens · 来源 ")
+                    .Append(codexConfigOptions.ModelContextWindowSourceLabel.Length == 0
+                        ? "Codex config.toml"
+                        : codexConfigOptions.ModelContextWindowSourceLabel)
+                    .AppendLine(" · 请求快照覆盖应用默认值");
+            }
+            builder
                 .Append("- Shell：")
                 .Append(defaults.PreferredShell)
                 .Append(" · 自动压缩 ")
