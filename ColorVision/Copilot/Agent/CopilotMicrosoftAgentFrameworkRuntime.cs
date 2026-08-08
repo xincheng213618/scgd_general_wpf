@@ -40,6 +40,7 @@ namespace ColorVision.Copilot
         private readonly CopilotAgentSkillUsageStore _skillUsageStore;
         private readonly CopilotFrameworkApprovalCoordinator _approvalCoordinator;
         private readonly ICopilotAutomaticApprovalReviewer _automaticApprovalReviewer;
+        private readonly CopilotAutomaticApprovalOverrideStore _automaticApprovalOverrideStore;
         private readonly CopilotUserQuestionCoordinator _userQuestionCoordinator = new();
         private readonly CopilotBackgroundShellOutputEventInbox
             _backgroundShellOutputEventInbox = new();
@@ -108,7 +109,8 @@ namespace ColorVision.Copilot
             ICopilotExternalToolProvider externalToolProvider,
             CopilotCapabilityCatalog? capabilityCatalog,
             CopilotAgentSkillUsageStore? skillUsageStore,
-            ICopilotAutomaticApprovalReviewer automaticApprovalReviewer)
+            ICopilotAutomaticApprovalReviewer automaticApprovalReviewer,
+            CopilotAutomaticApprovalOverrideStore? automaticApprovalOverrideStore = null)
         {
             _toolRegistry = toolRegistry ?? throw new ArgumentNullException(nameof(toolRegistry));
             _contextBuilder = contextBuilder ?? throw new ArgumentNullException(nameof(contextBuilder));
@@ -120,6 +122,8 @@ namespace ColorVision.Copilot
             _approvalCoordinator = new CopilotFrameworkApprovalCoordinator();
             _automaticApprovalReviewer = automaticApprovalReviewer
                 ?? throw new ArgumentNullException(nameof(automaticApprovalReviewer));
+            _automaticApprovalOverrideStore = automaticApprovalOverrideStore
+                ?? CopilotAutomaticApprovalOverrideStore.Shared;
         }
 
 
@@ -342,6 +346,8 @@ namespace ColorVision.Copilot
                     "\n\nThis final-answer-only recovery request was not accepted and must not be converted into an executable task replay.",
                 CopilotAgentRecoveryMode.RetryRead =>
                     $"\n\nThis is a structured recovery turn. Re-check whether the prior failed read is still necessary. You may issue a fresh current call to the read-only tool {recovery.ToolName} only if the current executor permits retry. Never reuse stored arguments, replay any write, or reuse an earlier approval. Continue the remaining todo items after obtaining current evidence.",
+                CopilotAgentRecoveryMode.RetryDeniedAction =>
+                    $"\n\nThis is a user-requested retry of one exact action previously denied by automatic review. The host holds a one-time ticket bound to the original tool and exact arguments for {recovery.ToolName}. Issue one fresh call with those same arguments only if the original task still requires it. Do not alter, broaden, approximate, or work around the denied action; do not replay completed writes or reuse an earlier approval. The fresh call still requires current automatic review and may be denied again.",
                 CopilotAgentRecoveryMode.Replan =>
                     "\n\nThis is a structured recovery turn after runtime context changed. Create a fresh plan from the current conversation and capabilities. Historical todo items and approvals are context only; never replay a write or reuse an earlier approval.",
                 _ =>

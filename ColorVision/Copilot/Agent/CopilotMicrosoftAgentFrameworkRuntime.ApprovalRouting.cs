@@ -96,8 +96,15 @@ namespace ColorVision.Copilot
                                 if (useAutomaticReview)
                                 {
                                     var isExplicitAutoReview = useConfiguredAutomaticReview;
+                                    var hasExplicitRetryOverride = isExplicitAutoReview
+                                        && _automaticApprovalOverrideStore.TryConsume(
+                                            request,
+                                            reservation.Tool,
+                                            handle.Action);
                                     emit(CopilotAgentEvent.Status(
-                                        isExplicitAutoReview
+                                        hasExplicitRetryOverride
+                                            ? $"{reservation.Tool.Name} is being checked again after the ColorVision user authorized one exact retry; automatic review still decides whether it may run."
+                                            : isExplicitAutoReview
                                             ? $"{reservation.Tool.Name} is being checked by the configured automatic permission reviewer."
                                             : $"{reservation.Tool.Name} is being checked by the task-scoped automatic permission reviewer."));
                                     var automaticReview = await _automaticApprovalReviewer.ReviewAsync(
@@ -144,6 +151,8 @@ namespace ColorVision.Copilot
                                         emit(CopilotAgentEvent.Status(rejected
                                             ? $"{reservation.Tool.Name} was denied by automatic permission review ({automaticReview.RiskLevel}): {automaticReviewReason}. Use a materially safer path or stop and ask the user."
                                             : $"{reservation.Tool.Name} automatic denial could not be recorded ({CopilotAgentTraceEntry.Sanitize(rejectionMessage)}); execution was closed."));
+                                        if (rejected)
+                                            _automaticApprovalOverrideStore.RecordDenial(handle.Action);
                                         if (!rejected)
                                             _approvalCoordinator.Cancel(handle);
                                     }

@@ -142,7 +142,7 @@ namespace ColorVision.Copilot
                 new("delete", "取消 #N；若为自动续作，同时暂停对应持续目标", AcceptsArguments: true),
             ]),
             new("/stop", "停止当前任务；有安全 checkpoint 时优先暂停，否则取消当前轮次", CopilotLocalCommandKind.StopTask, AvailableWhileAgentRuns: true, Usage: "/stop"),
-            new("/approve", "查看待确认操作，或打开指定操作的原生审查窗口", CopilotLocalCommandKind.Approve, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/approve [N]"),
+            new("/approve", "审核待确认操作，或为自动审查拒绝授权一次精确重试", CopilotLocalCommandKind.Approve, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/approve [N]"),
             new("/usage", "查看当前会话或本地每日、每周与累计 Token 活动", CopilotLocalCommandKind.Usage, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: CopilotUsageCommand.Usage, Arguments:
             [
                 new("session", "当前会话 Token、Agent 时延与最新供应商限额"),

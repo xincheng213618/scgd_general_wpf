@@ -130,7 +130,9 @@ namespace ColorVision.Copilot
                     ],
                     new ChatOptions
                     {
-                        Instructions = BuildSystemPrompt(request),
+                        Instructions = BuildSystemPrompt(
+                            request,
+                            action.HasAutomaticReviewRetryOverride),
                         MaxOutputTokens = MaximumOutputTokens,
                         Temperature = CopilotReasoningRequestMapper.ShouldIncludeTemperature(request.Profile)
                             ? 0
@@ -250,7 +252,9 @@ namespace ColorVision.Copilot
             return builder.ToString().TrimEnd();
         }
 
-        internal static string BuildSystemPrompt(CopilotAgentRequest request)
+        internal static string BuildSystemPrompt(
+            CopilotAgentRequest request,
+            bool hasExplicitUserRetryOverride = false)
         {
             var authorizationBoundary =
                 CopilotCodexApprovalsReviewerSelection.IsExplicitAutoReview(request)
@@ -262,13 +266,23 @@ namespace ColorVision.Copilot
                 && configuredPolicy.IndexOf('\0') < 0
                     ? configuredPolicy
                     : DefaultReviewPolicy;
-            return string.Join(
-                Environment.NewLine,
+            var sections = new List<string>
+            {
                 authorizationBoundary,
                 "# Reviewer policy",
                 reviewerPolicy,
-                "# Immutable reviewer protocol",
-                ImmutableReviewProtocol);
+            };
+            if (hasExplicitUserRetryOverride)
+            {
+                sections.Add("# Explicit user retry override");
+                sections.Add(
+                    "The ColorVision user selected /approve for one retry of this exact previously denied action."
+                    + " Treat that as trusted reviewer context for this action only, not as automatic approval, standing authorization, permission expansion, or authorization for a similar action."
+                    + " Continue applying policy and deny again when policy says the user cannot override this class of denial.");
+            }
+            sections.Add("# Immutable reviewer protocol");
+            sections.Add(ImmutableReviewProtocol);
+            return string.Join(Environment.NewLine, sections);
         }
 
         private static string FormatClosedOrUserReviewReason(
