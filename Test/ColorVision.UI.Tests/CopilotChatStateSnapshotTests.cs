@@ -533,15 +533,19 @@ public class CopilotChatStateSnapshotTests
         }
     }
 
-    [Fact]
-    public async Task FutureSchemaStateBlocksFallbackAndAllWrites()
+    [Theory]
+    [InlineData(CopilotChatState.CurrentSchemaVersion + 1L, CopilotChatState.CurrentSchemaVersion + 1)]
+    [InlineData((long)int.MaxValue + 1, int.MaxValue)]
+    public async Task FutureSchemaStateBlocksFallbackAndAllWrites(
+        long futureSchemaVersion,
+        int reportedSchemaVersion)
     {
         var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
         try
         {
             var store = new CopilotChatStateStore(root);
             Directory.CreateDirectory(store.StateDirectoryPath);
-            var futureDocument = CreateStateDocument(CopilotChatState.CurrentSchemaVersion + 1, "Future history");
+            var futureDocument = CreateStateDocument(futureSchemaVersion, "Future history");
             var backupDocument = CreateStateDocument(CopilotChatState.CurrentSchemaVersion, "Older backup");
             File.WriteAllText(store.StateFilePath, futureDocument.ToString(Formatting.None));
             File.WriteAllText(store.BackupStateFilePath, backupDocument.ToString(Formatting.None));
@@ -553,7 +557,7 @@ public class CopilotChatStateSnapshotTests
             var serializedReplacement = store.Serialize(replacement);
 
             Assert.Equal(CopilotChatStateLoadSource.FutureVersion, store.LastLoadStatus.Source);
-            Assert.Equal(CopilotChatState.CurrentSchemaVersion + 1, store.LastLoadStatus.SchemaVersion);
+            Assert.Equal(reportedSchemaVersion, store.LastLoadStatus.SchemaVersion);
             Assert.True(store.IsStatePersistenceBlocked);
             Assert.Empty(loaded.Conversations);
             Assert.Throws<CopilotChatStateFutureVersionException>(() => store.Save(replacement));
@@ -701,7 +705,7 @@ public class CopilotChatStateSnapshotTests
             });
     }
 
-    private static JObject CreateStateDocument(int schemaVersion, string title)
+    private static JObject CreateStateDocument(long schemaVersion, string title)
     {
         return new JObject
         {

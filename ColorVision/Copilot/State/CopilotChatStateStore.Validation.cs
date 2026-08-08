@@ -47,11 +47,18 @@ namespace ColorVision.Copilot
                     if (schemaToken.Type != JTokenType.Integer)
                         return StateFileReadStatus.Invalid;
 
-                    schemaVersion = schemaToken.Value<int>();
+                    var parsedSchemaVersion = schemaToken.Value<long>();
+                    if (parsedSchemaVersion > int.MaxValue)
+                    {
+                        schemaVersion = int.MaxValue;
+                        return StateFileReadStatus.FutureVersion;
+                    }
+                    if (parsedSchemaVersion < 1)
+                        return StateFileReadStatus.Invalid;
+
+                    schemaVersion = (int)parsedSchemaVersion;
                     if (schemaVersion > CopilotChatState.CurrentSchemaVersion)
                         return StateFileReadStatus.FutureVersion;
-                    if (schemaVersion < 1)
-                        return StateFileReadStatus.Invalid;
                 }
 
                 if (!HasTrustedDocumentShape(document))
