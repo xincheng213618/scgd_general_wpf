@@ -208,6 +208,20 @@ namespace ColorVision.Copilot
                 .Select(step => step.Execution.ToolName)
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
             var untriedNames = missingGroup.Where(name => !attemptedAfterCursor.Contains(name)).ToArray();
+            var latestMissingGroupAttempt = relevant
+                .Skip(cursor + 1)
+                .LastOrDefault(step => missingGroup.Contains(
+                    step.Execution.ToolName,
+                    StringComparer.OrdinalIgnoreCase));
+            var canRetryLatestReadFailure = latestMissingGroupAttempt?.Execution is
+            {
+                RetryEligible: true,
+                Access: CopilotToolAccess.ReadOnly,
+                Idempotency: CopilotToolIdempotency.Idempotent,
+                State: CopilotToolExecutionState.Failed or CopilotToolExecutionState.TimedOut,
+            } retryExecution
+                && retryExecution.Attempt >= 1
+                && retryExecution.Attempt < retryExecution.MaxAttempts;
             var hasUnattemptedFilePath = missingAttachedFilePaths
                 .Concat(missingLocalFilePaths)
                 .Any(path => !attemptedFilePaths.Contains(path, StringComparer.OrdinalIgnoreCase));
@@ -227,7 +241,10 @@ namespace ColorVision.Copilot
             {
                 IsRequired = true,
                 IsSatisfied = false,
-                ShouldReinvoke = untriedNames.Length > 0 || hasUnattemptedFilePath || hasReviewTargetMismatch,
+                ShouldReinvoke = untriedNames.Length > 0
+                    || hasUnattemptedFilePath
+                    || hasReviewTargetMismatch
+                    || canRetryLatestReadFailure,
                 Feedback = BuildFeedback(missingGroup, untriedNames, missingAttachedFilePaths, missingLocalFilePaths),
                 LastRelevantStep = relevant.LastOrDefault(),
                 MissingToolNames = missingGroup,
