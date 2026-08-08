@@ -507,6 +507,33 @@ public class CopilotChatStateSnapshotTests
     }
 
     [Fact]
+    public void LoadDiscardsOlderTemporaryStateAndKeepsNewerPrimary()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        try
+        {
+            var store = new CopilotChatStateStore(root);
+            store.Save(CreateState("Current"));
+            File.WriteAllText(store.TemporaryStateFilePath, store.Serialize(CreateState("Stale")));
+            File.SetLastWriteTimeUtc(
+                store.TemporaryStateFilePath,
+                File.GetLastWriteTimeUtc(store.StateFilePath).AddMinutes(-1));
+
+            var loadStore = new CopilotChatStateStore(root);
+            var loaded = loadStore.Load();
+
+            Assert.Equal(CopilotChatStateLoadSource.Primary, loadStore.LastLoadStatus.Source);
+            Assert.Equal("Current", Assert.Single(loaded.Conversations).Title);
+            Assert.False(File.Exists(store.TemporaryStateFilePath));
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+                Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task FutureSchemaStateBlocksFallbackAndAllWrites()
     {
         var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
