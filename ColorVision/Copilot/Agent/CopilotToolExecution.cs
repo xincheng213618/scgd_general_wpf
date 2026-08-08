@@ -158,13 +158,31 @@ namespace ColorVision.Copilot
                         "codex_read_only_sandbox"));
                 return await PublishOutcomeAsync(denied, hooks, hookRuns, onEvent);
             }
-            if (invocation.Tool.Capability.RequiresNativeApproval)
+            var requiresCodexApproval = CopilotCodexApprovalPolicySelection.RequiresNativeApproval(
+                invocation.AgentRequest.CodexApprovalPolicy,
+                invocation.Tool);
+            if (requiresCodexApproval)
             {
-                var approvalError = invocation.Tool is not ICopilotFrameworkApprovedTool
-                    ? $"{invocation.Tool.Name} requires native approval but has no approved execution path."
-                    : !invocation.FrameworkApprovalGranted
-                        ? $"{invocation.Tool.Name} requires approval for this exact call before it can execute."
-                        : string.Empty;
+                var approvalPromptDisabled = !invocation.FrameworkApprovalGranted
+                    && !CopilotCodexApprovalPolicySelection.AllowsSandboxApprovalPrompt(
+                        invocation.AgentRequest.CodexApprovalPolicy);
+                string approvalError;
+                if (approvalPromptDisabled)
+                {
+                    approvalError = CopilotCodexApprovalPolicySelection.GetSandboxApprovalDenialReason(
+                        invocation.AgentRequest.CodexApprovalPolicy);
+                }
+                else if (invocation.Tool.Capability.RequiresNativeApproval
+                    && invocation.Tool is not ICopilotFrameworkApprovedTool)
+                {
+                    approvalError = $"{invocation.Tool.Name} requires native approval but has no approved execution path.";
+                }
+                else
+                {
+                    approvalError = invocation.FrameworkApprovalGranted
+                        ? string.Empty
+                        : $"{invocation.Tool.Name} requires approval for this exact call before it can execute.";
+                }
                 if (!string.IsNullOrEmpty(approvalError))
                 {
                     var denied = CreateOutcome(
@@ -173,7 +191,14 @@ namespace ColorVision.Copilot
                         startedAt,
                         timeout,
                         stopwatch,
-                        Failure(invocation.Tool.Name, $"{invocation.Tool.Name} execution was denied.", approvalError, CopilotToolFailureKind.Authorization));
+                        Failure(
+                            invocation.Tool.Name,
+                            $"{invocation.Tool.Name} execution was denied.",
+                            approvalError,
+                            CopilotToolFailureKind.Authorization,
+                            approvalPromptDisabled
+                                ? "codex_approval_prompt_disabled"
+                                : string.Empty));
                     return await PublishOutcomeAsync(denied, hooks, hookRuns, onEvent);
                 }
             }

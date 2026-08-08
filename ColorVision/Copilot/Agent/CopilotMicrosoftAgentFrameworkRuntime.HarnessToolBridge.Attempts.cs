@@ -10,9 +10,11 @@ namespace ColorVision.Copilot
     {
         internal sealed partial class HarnessToolBridge
         {
-            private static bool RequiresNativeApproval(ICopilotTool tool)
+            private bool RequiresNativeApproval(ICopilotTool tool)
             {
-                return tool.Capability.RequiresNativeApproval;
+                return CopilotCodexApprovalPolicySelection.RequiresNativeApproval(
+                    _request.CodexApprovalPolicy,
+                    tool);
             }
 
             public static string ToFunctionName(string toolName)

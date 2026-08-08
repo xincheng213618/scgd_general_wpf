@@ -231,6 +231,9 @@ namespace ColorVision.Copilot
         internal CopilotCodexSandboxMode CodexSandboxMode { get; init; } =
             CopilotCodexSandboxMode.Unspecified;
 
+        internal CopilotCodexApprovalPolicy CodexApprovalPolicy { get; init; } =
+            CopilotCodexApprovalPolicy.Unspecified;
+
         internal bool CodexAgentsEnabled { get; init; } = true;
 
         internal int? ModelContextWindowTokensOverride { get; init; }
@@ -326,6 +329,7 @@ namespace ColorVision.Copilot
             var searchRootPaths = BuildSearchRootPaths(hostContext, explicitLocalPaths);
             var trustedProjectRootPaths = BuildTrustedProjectRootPaths(hostContext);
             var codexSandboxMode = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredSandboxMode;
+            var codexApprovalPolicy = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredApprovalPolicy;
             var codexReadOnly = CopilotCodexSandboxModeSelection.IsReadOnly(codexSandboxMode);
             var workspaceWritableLocalRootPaths = codexReadOnly
                 ? Array.Empty<string>()
@@ -342,6 +346,7 @@ namespace ColorVision.Copilot
                 UserText = normalizedUserText,
                 Mode = mode,
                 CodexSandboxMode = codexSandboxMode,
+                CodexApprovalPolicy = codexApprovalPolicy,
                 ReadableLocalFilePaths = explicitLocalFilePaths,
                 ReadableLocalDirectoryPaths = readableLocalDirectoryPaths,
                 WritableLocalRootPaths = requestedWritableLocalRootPaths,
@@ -387,6 +392,7 @@ namespace ColorVision.Copilot
                 ConfiguredDeveloperInstructions = hostContext.ProjectInstructionDiscoveryOptions.DeveloperInstructions,
                 CodexWebSearchMode = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredWebSearchMode,
                 CodexSandboxMode = codexSandboxMode,
+                CodexApprovalPolicy = codexApprovalPolicy,
                 CodexAgentsEnabled = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredAgentsEnabled,
                 ModelContextWindowTokensOverride = hostContext.ProjectInstructionDiscoveryOptions.HasModelContextWindowOverride
                     ? hostContext.ProjectInstructionDiscoveryOptions.ConfiguredModelContextWindowTokens
@@ -458,6 +464,7 @@ namespace ColorVision.Copilot
                 ConfiguredDeveloperInstructions = plan.ConfiguredDeveloperInstructions,
                 CodexWebSearchMode = plan.CodexWebSearchMode,
                 CodexSandboxMode = plan.CodexSandboxMode,
+                CodexApprovalPolicy = plan.CodexApprovalPolicy,
                 CodexAgentsEnabled = plan.CodexAgentsEnabled,
                 ToolOutputTokenLimitOverride = plan.ToolOutputTokenLimitOverride,
                 CodexReasoningEffort = plan.CodexReasoningEffort,

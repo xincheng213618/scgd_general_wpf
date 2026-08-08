@@ -75,6 +75,9 @@ namespace ColorVision.Copilot
         internal CopilotCodexSandboxMode CodexSandboxMode { get; init; } =
             CopilotCodexSandboxMode.Unspecified;
 
+        internal CopilotCodexApprovalPolicy CodexApprovalPolicy { get; init; } =
+            CopilotCodexApprovalPolicy.Unspecified;
+
         internal bool CodexAgentsEnabled { get; init; } = true;
 
         internal int? ToolOutputTokenLimitOverride { get; init; }

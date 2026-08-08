@@ -216,6 +216,10 @@ namespace ColorVision.Copilot
             builder.AppendLine("Do not end with a request for more context. If a tool failed, do not dwell on the failure unless it materially changes the answer.");
             if (CopilotCodexSandboxModeSelection.IsReadOnly(request.CodexSandboxMode))
                 builder.AppendLine("Codex sandbox_mode=read-only applies to this submitted turn. Do not claim any file, application, database, shell, or workspace change was performed.");
+            var approvalPolicyInstruction = CopilotCodexApprovalPolicySelection.GetModelInstruction(
+                request.CodexApprovalPolicy);
+            if (approvalPolicyInstruction.Length > 0)
+                builder.AppendLine(approvalPolicyInstruction);
             builder.AppendLine(BuildModeInstruction(request.Mode));
 
             return builder.ToString().TrimEnd();

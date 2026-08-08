@@ -205,6 +205,23 @@ namespace ColorVision.Copilot
             }
             builder.AppendLine(CopilotCodexSandboxModeSelection.GetEffectiveLabel(
                 effective.ConfiguredSandboxMode));
+            builder.Append("Codex approval_policy：")
+                .Append(CopilotCodexApprovalPolicySelection.GetConfigToken(
+                    effective.ConfiguredApprovalPolicy));
+            if (effective.HasApprovalPolicyOverride)
+            {
+                builder.Append(" · 来源 ")
+                    .Append(effective.ApprovalPolicySourceLabel.Length == 0
+                        ? "Codex config.toml"
+                        : effective.ApprovalPolicySourceLabel)
+                    .Append(" 请求快照；");
+            }
+            else
+            {
+                builder.Append(" · 未配置；");
+            }
+            builder.AppendLine(CopilotCodexApprovalPolicySelection.GetEffectiveLabel(
+                effective.ConfiguredApprovalPolicy));
             if (effective.HasReviewModelOverride)
             {
                 builder.Append("Codex review_model：")

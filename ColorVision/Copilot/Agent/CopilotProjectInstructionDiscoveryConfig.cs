@@ -186,6 +186,14 @@ namespace ColorVision.Copilot
         public CopilotProjectInstructionConfigSources SandboxModeSource { get; init; } =
             CopilotProjectInstructionConfigSources.None;
 
+        public CopilotCodexApprovalPolicy ConfiguredApprovalPolicy { get; init; } =
+            CopilotCodexApprovalPolicy.Unspecified;
+
+        public bool HasApprovalPolicyOverride { get; init; }
+
+        public CopilotProjectInstructionConfigSources ApprovalPolicySource { get; init; } =
+            CopilotProjectInstructionConfigSources.None;
+
         public string ConfiguredReviewModel { get; init; } = string.Empty;
 
         public bool HasReviewModelOverride { get; init; }
@@ -375,6 +383,7 @@ namespace ColorVision.Copilot
             || HasPersonalityOverride
             || HasWebSearchModeOverride
             || HasSandboxModeOverride
+            || HasApprovalPolicyOverride
             || HasReviewModelOverride
             || HasPreventIdleSleepOverride
             || HasAgentsEnabledOverride
@@ -428,6 +437,13 @@ namespace ColorVision.Copilot
         {
             CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml sandbox_mode",
             CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml sandbox_mode",
+            _ => string.Empty,
+        };
+
+        public string ApprovalPolicySourceLabel => ApprovalPolicySource switch
+        {
+            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml approval_policy",
+            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml approval_policy",
             _ => string.Empty,
         };
 
@@ -592,6 +608,7 @@ namespace ColorVision.Copilot
         private const string PersonalityKey = "personality";
         private const string WebSearchKey = "web_search";
         private const string SandboxModeKey = "sandbox_mode";
+        private const string ApprovalPolicyKey = "approval_policy";
         private const string ReviewModelKey = "review_model";
         private const string PreventIdleSleepKey = "features.prevent_idle_sleep";
         private const string PreventIdleSleepFeatureKey = "prevent_idle_sleep";
@@ -772,6 +789,14 @@ namespace ColorVision.Copilot
                 SandboxModeSource = layer.HasSandboxModeOverride
                     ? source
                     : current.SandboxModeSource,
+                ConfiguredApprovalPolicy = layer.HasApprovalPolicyOverride
+                    ? layer.ApprovalPolicy
+                    : current.ConfiguredApprovalPolicy,
+                HasApprovalPolicyOverride = current.HasApprovalPolicyOverride
+                    || layer.HasApprovalPolicyOverride,
+                ApprovalPolicySource = layer.HasApprovalPolicyOverride
+                    ? source
+                    : current.ApprovalPolicySource,
                 ConfiguredReviewModel = layer.HasReviewModelOverride
                     ? layer.ReviewModel
                     : current.ConfiguredReviewModel,
@@ -919,6 +944,7 @@ namespace ColorVision.Copilot
                 || layer.HasPersonalityOverride
                 || layer.HasWebSearchModeOverride
                 || layer.HasSandboxModeOverride
+                || layer.HasApprovalPolicyOverride
                 || layer.HasReviewModelOverride
                 || layer.HasPreventIdleSleepOverride
                 || layer.HasAgentsEnabledOverride
@@ -1196,6 +1222,7 @@ namespace ColorVision.Copilot
             var personality = CopilotResponsePersonality.None;
             var webSearchMode = CopilotCodexWebSearchMode.Unspecified;
             var sandboxMode = CopilotCodexSandboxMode.Unspecified;
+            var approvalPolicy = CopilotCodexApprovalPolicy.Unspecified;
             var reviewModel = string.Empty;
             var preventIdleSleep = false;
             var agentsEnabled = true;
@@ -1219,6 +1246,7 @@ namespace ColorVision.Copilot
             var hasPersonalityOverride = false;
             var hasWebSearchModeOverride = false;
             var hasSandboxModeOverride = false;
+            var hasApprovalPolicyOverride = false;
             var hasReviewModelOverride = false;
             var hasPreventIdleSleepOverride = false;
             var hasAgentsEnabledOverride = false;
@@ -1309,6 +1337,14 @@ namespace ColorVision.Copilot
                         continue;
                     }
                     hasSandboxModeOverride = true;
+                    continue;
+                }
+
+                if (string.Equals(assignment.Key, ApprovalPolicyKey, StringComparison.Ordinal))
+                {
+                    if (!TryParseApprovalPolicy(assignment.Value, out approvalPolicy))
+                        continue;
+                    hasApprovalPolicyOverride = true;
                     continue;
                 }
 
@@ -1566,6 +1602,8 @@ namespace ColorVision.Copilot
                 HasWebSearchModeOverride = hasWebSearchModeOverride,
                 SandboxMode = sandboxMode,
                 HasSandboxModeOverride = hasSandboxModeOverride,
+                ApprovalPolicy = approvalPolicy,
+                HasApprovalPolicyOverride = hasApprovalPolicyOverride,
                 ReviewModel = reviewModel,
                 HasReviewModelOverride = hasReviewModelOverride,
                 PreventIdleSleep = preventIdleSleep,
@@ -1602,6 +1640,7 @@ namespace ColorVision.Copilot
                 || hasPersonalityOverride
                 || hasWebSearchModeOverride
                 || hasSandboxModeOverride
+                || hasApprovalPolicyOverride
                 || hasReviewModelOverride
                 || hasPreventIdleSleepOverride
                 || hasAgentsEnabledOverride
@@ -1778,6 +1817,7 @@ namespace ColorVision.Copilot
                     && !string.Equals(key, PersonalityKey, StringComparison.Ordinal)
                     && !string.Equals(key, WebSearchKey, StringComparison.Ordinal)
                     && !string.Equals(key, SandboxModeKey, StringComparison.Ordinal)
+                    && !string.Equals(key, ApprovalPolicyKey, StringComparison.Ordinal)
                     && !string.Equals(key, ReviewModelKey, StringComparison.Ordinal)
                     && !string.Equals(key, PreventIdleSleepKey, StringComparison.Ordinal)
                     && !string.Equals(key, AgentsEnabledKey, StringComparison.Ordinal)
@@ -1814,6 +1854,24 @@ namespace ColorVision.Copilot
                         if (continuation.Length > 0)
                             builder.Append(' ').Append(continuation);
                         if (HasClosedArray(builder.ToString()))
+                            break;
+                    }
+                    value = builder.ToString();
+                }
+                else if (string.Equals(key, ApprovalPolicyKey, StringComparison.Ordinal)
+                    && value.StartsWith('{')
+                    && !HasClosedInlineTable(value))
+                {
+                    var builder = new StringBuilder(value);
+                    for (var logicalLine = 1;
+                        logicalLine < MaximumLogicalValueLines && index + 1 < lines.Length;
+                        logicalLine++)
+                    {
+                        index++;
+                        var continuation = StripComment(lines[index]).Trim();
+                        if (continuation.Length > 0)
+                            builder.Append(' ').Append(continuation);
+                        if (HasClosedInlineTable(builder.ToString()))
                             break;
                     }
                     value = builder.ToString();
@@ -1946,6 +2004,48 @@ namespace ColorVision.Copilot
             return false;
         }
 
+        private static bool HasClosedInlineTable(string value)
+        {
+            var quote = '\0';
+            var escaped = false;
+            var depth = 0;
+            foreach (var current in value)
+            {
+                if (quote == '"')
+                {
+                    if (escaped)
+                    {
+                        escaped = false;
+                        continue;
+                    }
+                    if (current == '\\')
+                    {
+                        escaped = true;
+                        continue;
+                    }
+                    if (current == quote)
+                        quote = '\0';
+                    continue;
+                }
+                if (quote == '\'')
+                {
+                    if (current == quote)
+                        quote = '\0';
+                    continue;
+                }
+                if (current is '"' or '\'')
+                {
+                    quote = current;
+                    continue;
+                }
+                if (current == '{')
+                    depth++;
+                else if (current == '}' && depth > 0 && --depth == 0)
+                    return true;
+            }
+            return false;
+        }
+
         private static bool TryParseMaximumBytes(string value, out int maximumBytes)
         {
             maximumBytes = DefaultMaximumBytes;
@@ -2023,6 +2123,145 @@ namespace ColorVision.Copilot
                     result = false;
                     return false;
             }
+        }
+
+        private static bool TryParseApprovalPolicy(
+            string value,
+            out CopilotCodexApprovalPolicy policy)
+        {
+            policy = CopilotCodexApprovalPolicy.Unspecified;
+            if (TryParseConfiguredText(
+                    value,
+                    MaximumPersonalityCharacters,
+                    out var scalar))
+            {
+                return CopilotCodexApprovalPolicySelection.TryParseScalar(scalar, out policy);
+            }
+
+            var index = 0;
+            SkipWhitespace(value, ref index);
+            if (!TryConsume(value, ref index, '{')
+                || !TryReadBareTomlKey(value, ref index, out var outerKey)
+                || !string.Equals(outerKey, "granular", StringComparison.Ordinal))
+            {
+                return false;
+            }
+            SkipWhitespace(value, ref index);
+            if (!TryConsume(value, ref index, '='))
+                return false;
+            SkipWhitespace(value, ref index);
+            if (!TryConsume(value, ref index, '{'))
+                return false;
+
+            var sandboxApproval = false;
+            var rules = false;
+            var mcpElicitations = false;
+            var requestPermissions = false;
+            var skillApproval = false;
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            while (true)
+            {
+                SkipWhitespace(value, ref index);
+                if (TryConsume(value, ref index, '}'))
+                    break;
+                if (!TryReadBareTomlKey(value, ref index, out var key)
+                    || !seen.Add(key))
+                {
+                    return false;
+                }
+                SkipWhitespace(value, ref index);
+                if (!TryConsume(value, ref index, '='))
+                    return false;
+                SkipWhitespace(value, ref index);
+                if (!TryReadTomlBoolean(value, ref index, out var enabled))
+                    return false;
+
+                switch (key)
+                {
+                    case "sandbox_approval":
+                        sandboxApproval = enabled;
+                        break;
+                    case "rules":
+                        rules = enabled;
+                        break;
+                    case "mcp_elicitations":
+                        mcpElicitations = enabled;
+                        break;
+                    case "request_permissions":
+                        requestPermissions = enabled;
+                        break;
+                    case "skill_approval":
+                        skillApproval = enabled;
+                        break;
+                    default:
+                        return false;
+                }
+
+                SkipWhitespace(value, ref index);
+                if (TryConsume(value, ref index, ','))
+                    continue;
+                if (index >= value.Length || value[index] != '}')
+                    return false;
+            }
+
+            if (!seen.Contains("sandbox_approval")
+                || !seen.Contains("rules")
+                || !seen.Contains("mcp_elicitations"))
+            {
+                return false;
+            }
+            SkipWhitespace(value, ref index);
+            if (!TryConsume(value, ref index, '}'))
+                return false;
+            SkipWhitespace(value, ref index);
+            if (index != value.Length)
+                return false;
+
+            policy = CopilotCodexApprovalPolicy.CreateGranular(
+                sandboxApproval,
+                rules,
+                mcpElicitations,
+                requestPermissions,
+                skillApproval);
+            return true;
+        }
+
+        private static bool TryReadBareTomlKey(
+            string value,
+            ref int index,
+            out string key)
+        {
+            SkipWhitespace(value, ref index);
+            var start = index;
+            while (index < value.Length
+                && (char.IsAsciiLetterOrDigit(value[index])
+                    || value[index] is '_' or '-'))
+            {
+                index++;
+            }
+            key = value[start..index];
+            return key.Length > 0;
+        }
+
+        private static bool TryReadTomlBoolean(
+            string value,
+            ref int index,
+            out bool result)
+        {
+            if (value.AsSpan(index).StartsWith("true", StringComparison.Ordinal))
+            {
+                index += 4;
+                result = true;
+                return true;
+            }
+            if (value.AsSpan(index).StartsWith("false", StringComparison.Ordinal))
+            {
+                index += 5;
+                result = false;
+                return true;
+            }
+            result = false;
+            return false;
         }
 
         private static bool TryParseFallbackFileNames(string value, out string[] fallbackFileNames)
@@ -2437,6 +2676,11 @@ namespace ColorVision.Copilot
                 CopilotCodexSandboxMode.Unspecified;
 
             public bool HasSandboxModeOverride { get; init; }
+
+            public CopilotCodexApprovalPolicy ApprovalPolicy { get; init; } =
+                CopilotCodexApprovalPolicy.Unspecified;
+
+            public bool HasApprovalPolicyOverride { get; init; }
 
             public string ReviewModel { get; init; } = string.Empty;
 
