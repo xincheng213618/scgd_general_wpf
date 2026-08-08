@@ -10,7 +10,7 @@ public sealed class CopilotVendorCatalogTests
         var models = CopilotVendorCatalog.GetModelPresets(CopilotVendorType.OpenAI);
 
         Assert.Equal(
-            ["gpt-5.6", "gpt-5.6-terra", "gpt-5.6-luna", "gpt-5.5", "gpt-4o"],
+            ["gpt-5.6", "gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna", "gpt-5.5", "gpt-4o"],
             models);
         Assert.Equal(models.Count, models.Distinct(StringComparer.OrdinalIgnoreCase).Count());
         Assert.All(

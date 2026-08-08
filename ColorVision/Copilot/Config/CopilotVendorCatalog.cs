@@ -60,7 +60,7 @@ namespace ColorVision.Copilot
                 Label = "OpenAI",
                 DefaultProviderType = CopilotProviderType.OpenAICompatible,
                 OpenAICompatibleBaseUrl = "https://api.openai.com/v1",
-                ModelPresets = new[] { "gpt-5.6", "gpt-5.6-terra", "gpt-5.6-luna", "gpt-5.5", "gpt-4o" },
+                ModelPresets = new[] { "gpt-5.6", "gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna", "gpt-5.5", "gpt-4o" },
             },
             new CopilotVendorPreset
             {
