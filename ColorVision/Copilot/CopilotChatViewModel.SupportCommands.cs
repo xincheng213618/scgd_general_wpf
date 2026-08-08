@@ -345,15 +345,15 @@ namespace ColorVision.Copilot
             var agentContextEnabled = mode != CopilotAgentMode.Chat;
             var selectedProfile = SelectedProfile;
             var conversation = SelectedConversation;
+            var turnSnapshot = CaptureHostedTurnSnapshot(Attachments);
+            var projectInstructionOptions = turnSnapshot.ProjectInstructionDiscoveryOptions;
             var requestProfile = selectedProfile == null
                 ? null
-                : CreateConversationRequestProfile(selectedProfile, conversation);
+                : CreateConversationRequestProfile(selectedProfile, conversation, projectInstructionOptions);
             var historyLimits = ResolveConversationHistoryLimits(requestProfile);
             var history = CopilotConversationRequestBuilder.CaptureHistorySelection(conversation, historyLimits);
             var projectInstructions = Array.Empty<CopilotProjectInstructionDocument>();
             var trustedProjectRoots = Array.Empty<string>();
-            var turnSnapshot = CaptureHostedTurnSnapshot(Attachments);
-            var projectInstructionOptions = turnSnapshot.ProjectInstructionDiscoveryOptions;
             CopilotAgentSkillUsageSnapshot? skillUsage = null;
             if (agentContextEnabled)
             {
@@ -382,6 +382,11 @@ namespace ColorVision.Copilot
                 Mode = mode,
                 ResponsePersonality = conversation?.ResponsePersonality ?? CopilotResponsePersonality.None,
                 SystemPromptCharacters = requestProfile?.EffectiveSystemPrompt.Length ?? 0,
+                ConfiguredModelInstructionsCharacters = projectInstructionOptions.ModelInstructions.Length,
+                ConfiguredModelInstructionsSourceLabel = projectInstructionOptions.ModelInstructionsSourceLabel,
+                HasConfiguredModelInstructionsOverride = projectInstructionOptions.HasModelInstructionsFileOverride,
+                ConfiguredModelInstructionsApplied = projectInstructionOptions.HasEffectiveModelInstructions
+                    && selectedProfile?.HasSystemPromptOverride != true,
                 SourceHistoryMessages = history.SourceMessageCount,
                 RetainedHistoryMessages = history.Messages.Length,
                 SourceHistoryCharacters = history.SourceCharacters,

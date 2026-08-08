@@ -59,13 +59,14 @@ namespace ColorVision.Copilot
             if (!CanScheduleComposerRequest(requestMode))
                 return;
 
-            if (SelectedProfile == null || !SelectedProfile.IsConfigured)
+            var selectedProfile = SelectedProfile;
+            if (selectedProfile == null || !selectedProfile.IsConfigured)
             {
                 OpenSettings();
                 return;
             }
 
-            var requestProfile = CreateConversationRequestProfile(SelectedProfile, SelectedConversation);
+            var requestProfile = CreateCurrentConversationRequestProfile(selectedProfile, SelectedConversation);
             if (!TryValidatePromptBudget(modelPrompt, requestMode, requestProfile))
                 return;
             var requestAttachments = isDirectSubmission
@@ -101,6 +102,10 @@ namespace ColorVision.Copilot
             var turnSnapshot = isReplacingTurn
                 ? CaptureHostedTurnSnapshot(conversation, replacedUserMessage, conversation.Attachments)
                 : CaptureHostedTurnSnapshot(conversation, attachmentOverride: requestAttachments);
+            requestProfile = CreateConversationRequestProfile(
+                selectedProfile,
+                conversation,
+                turnSnapshot.ProjectInstructionDiscoveryOptions);
             var recoveryRequest = isDirectSubmission ? null : ConsumePendingAgentRecoveryRequest();
             if (!isDirectSubmission)
                 requestMode = ConsumeRequestModeOverride();

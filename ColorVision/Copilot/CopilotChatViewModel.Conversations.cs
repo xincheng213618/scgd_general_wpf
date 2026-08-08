@@ -459,11 +459,22 @@ namespace ColorVision.Copilot
 
         private static CopilotProfileConfig CreateConversationRequestProfile(
             CopilotProfileConfig profile,
-            CopilotConversationRecord? conversation)
+            CopilotConversationRecord? conversation,
+            CopilotProjectInstructionDiscoveryOptions? codexConfigOptions = null)
         {
             return CopilotResponsePresentationGuidance.CreateRequestProfile(
                 profile,
-                conversation?.ResponsePersonality ?? CopilotResponsePersonality.None);
+                conversation?.ResponsePersonality ?? CopilotResponsePersonality.None,
+                codexConfigOptions?.ModelInstructions);
+        }
+
+        private CopilotProfileConfig CreateCurrentConversationRequestProfile(
+            CopilotProfileConfig profile,
+            CopilotConversationRecord? conversation)
+        {
+            var codexConfigOptions = CaptureHostedTurnSnapshot(
+                Array.Empty<CopilotAttachmentItem>()).ProjectInstructionDiscoveryOptions;
+            return CreateConversationRequestProfile(profile, conversation, codexConfigOptions);
         }
 
         private void UpdateConversationMetadata(CopilotConversationRecord conversation, bool touch)

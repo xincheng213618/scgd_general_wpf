@@ -17,6 +17,14 @@ namespace ColorVision.Copilot
 
         public int SystemPromptCharacters { get; init; }
 
+        public int ConfiguredModelInstructionsCharacters { get; init; }
+
+        public string ConfiguredModelInstructionsSourceLabel { get; init; } = string.Empty;
+
+        public bool HasConfiguredModelInstructionsOverride { get; init; }
+
+        public bool ConfiguredModelInstructionsApplied { get; init; }
+
         public int SourceHistoryMessages { get; init; }
 
         public int RetainedHistoryMessages { get; init; }
@@ -168,6 +176,20 @@ namespace ColorVision.Copilot
             builder.Append("有效系统提示：")
                 .Append(FormatCount(snapshot.SystemPromptCharacters))
                 .AppendLine(" 字符（已应用宿主响应规则）");
+            if (snapshot.HasConfiguredModelInstructionsOverride)
+            {
+                builder.Append("Codex model_instructions_file：")
+                    .Append(FormatCount(snapshot.ConfiguredModelInstructionsCharacters))
+                    .Append(" 字符（")
+                    .Append(string.IsNullOrWhiteSpace(snapshot.ConfiguredModelInstructionsSourceLabel)
+                        ? "Codex config.toml"
+                        : snapshot.ConfiguredModelInstructionsSourceLabel.Trim())
+                    .AppendLine(snapshot.ConfiguredModelInstructionsApplied
+                        ? " 请求快照；已替换内置主体，宿主安全规则仍强制保留）"
+                        : snapshot.ConfiguredModelInstructionsCharacters == 0
+                            ? " 请求快照；文件为空或未安全加载，使用 Profile/内置主体）"
+                            : " 请求快照；Profile 显式覆盖优先）");
+            }
             builder.Append("对话历史：");
             if (snapshot.SourceHistoryMessages <= 0)
             {

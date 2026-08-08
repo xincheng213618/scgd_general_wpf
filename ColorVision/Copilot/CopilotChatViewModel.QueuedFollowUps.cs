@@ -77,9 +77,12 @@ namespace ColorVision.Copilot
                 return false;
             }
 
-            var requestProfile = CreateConversationRequestProfile(profile, conversation);
             var agentSkillReference = ResolvePendingAgentSkillReference(prompt);
             var submissionContext = CaptureHostedTurnSnapshot(conversation, attachmentOverride: conversation.Attachments);
+            var requestProfile = CreateConversationRequestProfile(
+                profile,
+                conversation,
+                submissionContext.ProjectInstructionDiscoveryOptions);
             if (!TryValidateComposerAttachments(submissionContext.Attachments))
                 return false;
 

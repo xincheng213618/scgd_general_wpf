@@ -173,7 +173,13 @@ namespace ColorVision.Copilot
                 .Append(" · 权限 ")
                 .AppendLine(FormatAccessMode(conversation));
 
-            AppendProfile(builder, profile, configProbe, state, conversation);
+            AppendProfile(
+                builder,
+                profile,
+                configProbe,
+                state,
+                conversation,
+                context.CodexConfigOptions);
             AppendAgent(
                 builder,
                 defaults,
@@ -198,13 +204,15 @@ namespace ColorVision.Copilot
             CopilotProfileConfig? profile,
             CopilotConfigFileProbe configProbe,
             CopilotChatState state,
-            CopilotConversationRecord? conversation)
+            CopilotConversationRecord? conversation,
+            CopilotProjectInstructionDiscoveryOptions codexConfigOptions)
         {
             builder.AppendLine()
                 .AppendLine("模型 Profile");
             if (profile == null)
             {
                 builder.AppendLine("- 当前没有可用 Profile。");
+                AppendConfiguredModelInstructions(builder, codexConfigOptions, profileOverrideWins: false);
                 return;
             }
 
@@ -220,12 +228,16 @@ namespace ColorVision.Copilot
                     : configProbe.State == CopilotConfigFileProbeState.Loaded
                         ? "运行时默认或迁移"
                         : "已加载运行时 Profile（当前文件来源未证实）";
-            var promptSource = string.Equals(
-                profile.EffectiveSystemPrompt,
-                CopilotProfileConfig.DefaultSystemPrompt,
-                StringComparison.Ordinal)
-                ? "内置默认"
-                : "Profile 覆盖";
+            var promptSource = profile.HasSystemPromptOverride
+                ? "Profile 覆盖"
+                : codexConfigOptions.HasEffectiveModelInstructions
+                    ? codexConfigOptions.ModelInstructionsSourceLabel
+                    : "内置默认";
+            var effectiveBasePromptCharacters = profile.HasSystemPromptOverride
+                ? profile.EffectiveSystemPrompt.Length
+                : codexConfigOptions.HasEffectiveModelInstructions
+                    ? CopilotConfiguredModelInstructions.Compose(codexConfigOptions.ModelInstructions).Length
+                    : CopilotProfileConfig.DefaultSystemPrompt.Length;
             var credential = profile.CredentialNeedsReentry
                 ? "需重新输入"
                 : string.IsNullOrWhiteSpace(profile.ApiKey)
@@ -253,13 +265,47 @@ namespace ColorVision.Copilot
                 .Append(" · 系统提示 ")
                 .Append(promptSource)
                 .Append('（')
-                .Append(profile.EffectiveSystemPrompt.Length.ToString("N0", CultureInfo.CurrentCulture))
+                .Append(effectiveBasePromptCharacters.ToString("N0", CultureInfo.CurrentCulture))
                 .AppendLine(" 字符）")
                 .Append("- Provider 停顿：首内容 ")
                 .Append(profile.FirstContentTimeoutSeconds.ToString("N0", CultureInfo.CurrentCulture))
                 .Append("s · 流式静默 ")
                 .Append(profile.StreamingInactivityTimeoutSeconds.ToString("N0", CultureInfo.CurrentCulture))
                 .AppendLine("s");
+            AppendConfiguredModelInstructions(
+                builder,
+                codexConfigOptions,
+                profile.HasSystemPromptOverride);
+        }
+
+        private static void AppendConfiguredModelInstructions(
+            StringBuilder builder,
+            CopilotProjectInstructionDiscoveryOptions codexConfigOptions,
+            bool profileOverrideWins)
+        {
+            builder.Append("- Codex model_instructions_file：");
+            if (!codexConfigOptions.HasModelInstructionsFileOverride)
+            {
+                builder.AppendLine("未配置 · 使用 Profile/内置主体");
+            }
+            else
+            {
+                builder.Append(codexConfigOptions.ModelInstructions.Length.ToString("N0", CultureInfo.CurrentCulture))
+                    .Append(" 字符 · 来源 ")
+                    .Append(codexConfigOptions.ModelInstructionsSourceLabel.Length == 0
+                        ? "Codex config.toml"
+                        : codexConfigOptions.ModelInstructionsSourceLabel)
+                    .AppendLine(profileOverrideWins
+                        ? " · Profile 显式覆盖优先"
+                        : codexConfigOptions.HasEffectiveModelInstructions
+                            ? " · 宿主安全规则强制保留"
+                            : " · 文件为空或未安全加载");
+                if (codexConfigOptions.ModelInstructionsSourceFilePath.Length > 0)
+                {
+                    builder.Append("  文件：")
+                        .AppendLine(FormatPath(codexConfigOptions.ModelInstructionsSourceFilePath));
+                }
+            }
         }
 
         private static void AppendAgent(

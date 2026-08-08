@@ -393,7 +393,7 @@ namespace ColorVision.Copilot
                 && !CopilotAgentTaskContinuityPolicy.HasAvailableStructuredRecovery(
                     conversation,
                     assistantMessage,
-                    CreateConversationRequestProfile(SelectedProfile, conversation),
+                    CreateCurrentConversationRequestProfile(SelectedProfile, conversation),
                     CopilotCapabilityCatalog.Shared.GetSnapshot());
         }
 
@@ -410,7 +410,7 @@ namespace ColorVision.Copilot
             if (CopilotAgentTaskContinuityPolicy.HasAvailableStructuredRecovery(
                 conversation,
                 assistantMessage,
-                CreateConversationRequestProfile(SelectedProfile, conversation),
+                CreateCurrentConversationRequestProfile(SelectedProfile, conversation),
                 CopilotCapabilityCatalog.Shared.GetSnapshot()))
             {
                 return;
@@ -421,14 +421,16 @@ namespace ColorVision.Copilot
             if (string.IsNullOrWhiteSpace(prompt))
                 return;
 
-            var requestProfile = CreateConversationRequestProfile(SelectedProfile, conversation);
+            var turnSnapshot = CaptureHostedTurnSnapshot(conversation, userMessage);
+            var requestProfile = CreateConversationRequestProfile(
+                SelectedProfile,
+                conversation,
+                turnSnapshot.ProjectInstructionDiscoveryOptions);
             if (!TryValidateComposerCharacterLimit(modelPrompt)
                 || !TryValidatePromptBudget(modelPrompt, userMessage.RequestMode, requestProfile))
             {
                 return;
             }
-
-            var turnSnapshot = CaptureHostedTurnSnapshot(conversation, userMessage);
             if (!TryValidateComposerAttachments(turnSnapshot.Attachments))
                 return;
 

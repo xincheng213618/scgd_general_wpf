@@ -40,7 +40,7 @@ namespace ColorVision.Copilot
             return CopilotAgentRecoveryPolicy.Evaluate(
                 message,
                 SelectedConversation.AgentSessionCheckpoint,
-                CreateConversationRequestProfile(SelectedProfile, SelectedConversation),
+                CreateCurrentConversationRequestProfile(SelectedProfile, SelectedConversation),
                 CopilotCapabilityCatalog.Shared.GetSnapshot(),
                 CopilotToolExecutor.GetSharedHookSurfaceSnapshot()).IsAvailable;
         }
@@ -60,7 +60,7 @@ namespace ColorVision.Copilot
             var decision = CopilotAgentRecoveryPolicy.Evaluate(
                 message,
                 conversation.AgentSessionCheckpoint,
-                CreateConversationRequestProfile(profile, conversation),
+                CreateCurrentConversationRequestProfile(profile, conversation),
                 CopilotCapabilityCatalog.Shared.GetSnapshot(),
                 CopilotToolExecutor.GetSharedHookSurfaceSnapshot());
             if (!decision.IsAvailable)
@@ -456,7 +456,7 @@ namespace ColorVision.Copilot
             return profile?.IsConfigured == true && CopilotAgentRecoveryPolicy.Evaluate(
                 task.Message,
                 task.Conversation.AgentSessionCheckpoint,
-                CreateConversationRequestProfile(profile, task.Conversation),
+                CreateCurrentConversationRequestProfile(profile, task.Conversation),
                 CopilotCapabilityCatalog.Shared.GetSnapshot(),
                 CopilotToolExecutor.GetSharedHookSurfaceSnapshot()).IsAvailable;
         }

@@ -299,7 +299,7 @@ namespace ColorVision.Copilot
                     && CopilotAgentTaskContinuityPolicy.HasAvailableStructuredRecovery(
                         conversation,
                         assistantMessage,
-                        CreateConversationRequestProfile(SelectedProfile, conversation),
+                        CreateCurrentConversationRequestProfile(SelectedProfile, conversation),
                         CopilotCapabilityCatalog.Shared.GetSnapshot()))
                 {
                     ShowLocalCommandResult(

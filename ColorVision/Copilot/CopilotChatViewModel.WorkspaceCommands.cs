@@ -238,7 +238,7 @@ namespace ColorVision.Copilot
             }
             if (CopilotAgentTaskContinuityPolicy.HasAvailableStructuredRecovery(
                 conversation,
-                CreateConversationRequestProfile(profile, conversation),
+                CreateCurrentConversationRequestProfile(profile, conversation),
                 CopilotCapabilityCatalog.Shared.GetSnapshot()))
             {
                 var latestAssistant = conversation.Messages.LastOrDefault(message => message != null && !message.IsUser);

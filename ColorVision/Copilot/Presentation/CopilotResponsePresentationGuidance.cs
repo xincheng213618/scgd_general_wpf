@@ -10,10 +10,17 @@ namespace ColorVision.Copilot
 
         public static CopilotProfileConfig CreateRequestProfile(
             CopilotProfileConfig source,
-            CopilotResponsePersonality personality = CopilotResponsePersonality.None)
+            CopilotResponsePersonality personality = CopilotResponsePersonality.None,
+            string? configuredModelInstructions = null)
         {
             ArgumentNullException.ThrowIfNull(source);
             var profile = source.Clone();
+            if (!source.HasSystemPromptOverride)
+            {
+                var configuredBasePrompt = CopilotConfiguredModelInstructions.Compose(configuredModelInstructions);
+                if (configuredBasePrompt.Length > 0)
+                    profile.UseSystemPromptOverride(configuredBasePrompt);
+            }
             var basePrompt = profile.EffectiveSystemPrompt.Trim();
             var personalityInstruction = BuildPersonalityInstruction(personality);
             var requestInstructions = WorkspaceFileLinkInstruction
