@@ -77,7 +77,10 @@ namespace ColorVision.Copilot
                 + Environment.NewLine
                 + Goal.Objective
                 + Environment.NewLine
-                + $"{Goal.TurnCount:N0} 轮 · {Goal.EvaluationCount:N0} 次独立评估 · {Goal.TokensUsed:N0} Token"
+                + $"{Goal.TurnCount:N0} 轮 · {Goal.EvaluationCount:N0} 次独立评估 · "
+                + (Goal.HasTokenBudget
+                    ? $"{Goal.TokensUsed:N0} / {Goal.TokenBudget:N0} Token"
+                    : $"{Goal.TokensUsed:N0} Token")
                 + (string.IsNullOrWhiteSpace(Goal.LastEvaluationReason)
                     ? string.Empty
                     : Environment.NewLine + "最近判断：" + Goal.LastEvaluationReason)

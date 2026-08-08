@@ -209,7 +209,10 @@ namespace ColorVision.Copilot
                 CopilotConversationGoalState.Achieved => "Achieved",
                 _ => "Paused",
             };
-            return $"{state}, {goal.Objective.Length:N0} characters, {goal.TurnCount:N0} turn(s), {goal.TokensUsed:N0} tokens"
+            var tokenProgress = goal.HasTokenBudget
+                ? $"{goal.TokensUsed:N0} / {goal.TokenBudget:N0} tokens"
+                : $"{goal.TokensUsed:N0} tokens";
+            return $"{state}, {goal.Objective.Length:N0} characters, {goal.TurnCount:N0} turn(s), {tokenProgress}"
                 + (goal.IsActive ? " (completion constraint only)" : string.Empty);
         }
 

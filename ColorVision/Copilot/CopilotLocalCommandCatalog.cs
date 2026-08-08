@@ -204,9 +204,10 @@ namespace ColorVision.Copilot
             new("/verify", "只读审查改动并经确认运行一次受限构建或测试", CopilotLocalCommandKind.Verify, AcceptsArguments: true, Usage: "/verify [关注点]") { Aliases = ["/check-work", "/check"] },
             new("/plan", "只读分析并生成可执行计划，可在命令后直接填写任务", CopilotLocalCommandKind.Plan, AcceptsArguments: true, Usage: "/plan [任务]"),
             new("/view-plan", "定位当前会话最近一份已完成计划", CopilotLocalCommandKind.ViewPlan, AvailableWhileAgentRuns: true, Usage: "/view-plan"),
-            new("/goal", "查看或管理当前会话的持续目标", CopilotLocalCommandKind.Goal, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/goal [目标|edit <新目标>|pause|resume|clear]", Arguments:
+            new("/goal", "查看或管理当前会话的持续目标", CopilotLocalCommandKind.Goal, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/goal [目标|edit <新目标>|budget <Token|clear>|pause|resume|clear]", Arguments:
             [
                 new("edit", "修改当前持续目标", AcceptsArguments: true),
+                new("budget", "设置或清除持续目标 Token 预算", AcceptsArguments: true),
                 new("pause", "暂停当前持续目标"),
                 new("resume", "恢复已暂停的持续目标"),
                 new("clear", "清除当前持续目标"),

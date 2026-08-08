@@ -1,5 +1,6 @@
 using Newtonsoft.Json;
 using System;
+using System.Globalization;
 
 namespace ColorVision.Copilot
 {
@@ -34,6 +35,8 @@ namespace ColorVision.Copilot
 
         public long TokensUsed { get; init; }
 
+        public long TokenBudget { get; init; }
+
         public int ConsecutiveContinuationCount { get; init; }
 
         public string LastEvaluationReason { get; init; } = string.Empty;
@@ -45,6 +48,12 @@ namespace ColorVision.Copilot
 
         [JsonIgnore]
         public bool IsAchieved => State == CopilotConversationGoalState.Achieved;
+
+        [JsonIgnore]
+        public bool HasTokenBudget => TokenBudget > 0;
+
+        [JsonIgnore]
+        public bool IsTokenBudgetExhausted => HasTokenBudget && TokensUsed >= TokenBudget;
 
         public bool IsStructurallyValid()
         {
@@ -58,6 +67,7 @@ namespace ColorVision.Copilot
                 && EvaluationCount is >= 0 and <= int.MaxValue
                 && EvaluationCount <= TurnCount
                 && TokensUsed >= 0
+                && TokenBudget >= 0
                 && ConsecutiveContinuationCount is >= 0 and <= int.MaxValue
                 && ConsecutiveContinuationCount <= EvaluationCount
                 && LastEvaluationReason != null
@@ -100,6 +110,7 @@ namespace ColorVision.Copilot
                 TurnCount = TurnCount,
                 EvaluationCount = EvaluationCount,
                 TokensUsed = TokensUsed,
+                TokenBudget = TokenBudget,
                 ConsecutiveContinuationCount = state == CopilotConversationGoalState.Active
                     ? 0
                     : ConsecutiveContinuationCount,
@@ -129,11 +140,34 @@ namespace ColorVision.Copilot
                 TurnCount = Increment(TurnCount),
                 EvaluationCount = evaluated ? Increment(EvaluationCount) : EvaluationCount,
                 TokensUsed = AddTokens(TokensUsed, usage.EffectiveTotalTokens),
+                TokenBudget = TokenBudget,
                 ConsecutiveContinuationCount = continued
                     ? Increment(ConsecutiveContinuationCount)
                     : 0,
                 LastEvaluationReason = normalizedReason,
                 LastEvaluatedAtUtc = evaluated ? effectiveNow : LastEvaluatedAtUtc,
+            };
+        }
+
+        internal CopilotConversationGoal WithTokenBudget(long tokenBudget, DateTimeOffset now)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(tokenBudget);
+
+            return new CopilotConversationGoal
+            {
+                StrategyVersion = StrategyVersion,
+                Id = Id,
+                Objective = Objective,
+                State = State,
+                CreatedAtUtc = CreatedAtUtc,
+                UpdatedAtUtc = GetMonotonicUpdateTime(now),
+                TurnCount = TurnCount,
+                EvaluationCount = EvaluationCount,
+                TokensUsed = TokensUsed,
+                TokenBudget = tokenBudget,
+                ConsecutiveContinuationCount = ConsecutiveContinuationCount,
+                LastEvaluationReason = LastEvaluationReason,
+                LastEvaluatedAtUtc = LastEvaluatedAtUtc,
             };
         }
 
@@ -146,6 +180,7 @@ namespace ColorVision.Copilot
                 State = State,
                 CreatedAtUtc = now,
                 UpdatedAtUtc = now,
+                TokenBudget = TokenBudget,
                 LastEvaluationReason = State == CopilotConversationGoalState.Achieved
                     ? LastEvaluationReason
                     : string.Empty,
@@ -262,6 +297,15 @@ namespace ColorVision.Copilot
             {
                 if (current == null)
                     return MissingGoal(current, "恢复");
+                if (current.IsTokenBudgetExhausted)
+                {
+                    return new CopilotConversationGoalCommandResult(
+                        current,
+                        false,
+                        $"持续目标已使用 {current.TokensUsed:N0} / {current.TokenBudget:N0} Token；"
+                        + "请先用 /goal budget <Token> 提高预算，或用 /goal budget clear 清除预算。\n"
+                        + current.Objective);
+                }
                 if (current.State == CopilotConversationGoalState.Active)
                     return new CopilotConversationGoalCommandResult(current, false, FormatStatus(current));
 
@@ -271,6 +315,66 @@ namespace ColorVision.Copilot
                     true,
                     "持续目标已恢复；即将启动新的 Agent 轮次。\n" + resumed.Objective,
                     StartsWork: true);
+            }
+
+            if (string.Equals(normalized, "budget", StringComparison.OrdinalIgnoreCase))
+            {
+                return new CopilotConversationGoalCommandResult(
+                    current,
+                    false,
+                    current == null
+                        ? "当前会话没有可设置预算的持续目标。先用 /goal <目标> 设置一个。"
+                        : FormatStatus(current) + "\n用法：/goal budget <Token|clear>。");
+            }
+
+            if (normalized.StartsWith("budget ", StringComparison.OrdinalIgnoreCase)
+                || normalized.StartsWith("budget\t", StringComparison.OrdinalIgnoreCase)
+                || normalized.StartsWith("budget\r", StringComparison.OrdinalIgnoreCase)
+                || normalized.StartsWith("budget\n", StringComparison.OrdinalIgnoreCase))
+            {
+                if (current == null)
+                    return MissingGoal(current, "设置预算");
+
+                var budgetText = normalized["budget".Length..].Trim();
+                if (string.Equals(budgetText, "clear", StringComparison.OrdinalIgnoreCase))
+                {
+                    var unlimited = current.WithTokenBudget(0, now);
+                    return new CopilotConversationGoalCommandResult(
+                        unlimited,
+                        current.TokenBudget != 0,
+                        "持续目标 Token 预算已清除；既有用量统计保持不变。\n" + unlimited.Objective);
+                }
+
+                if (!long.TryParse(
+                        budgetText,
+                        NumberStyles.Integer | NumberStyles.AllowThousands,
+                        CultureInfo.InvariantCulture,
+                        out var tokenBudget)
+                    || tokenBudget <= 0)
+                {
+                    return new CopilotConversationGoalCommandResult(
+                        current,
+                        false,
+                        "Token 预算必须是正整数。用法：/goal budget <Token|clear>。");
+                }
+
+                var budgeted = current.WithTokenBudget(tokenBudget, now);
+                if (budgeted.IsActive && budgeted.IsTokenBudgetExhausted)
+                {
+                    budgeted = budgeted.WithState(
+                        CopilotConversationGoalState.Paused,
+                        now,
+                        $"持续目标已使用 {budgeted.TokensUsed:N0} / {budgeted.TokenBudget:N0} Token；目标已自动暂停。");
+                }
+                return new CopilotConversationGoalCommandResult(
+                    budgeted,
+                    current.TokenBudget != tokenBudget || current.State != budgeted.State,
+                    $"持续目标 Token 预算已设为 {tokenBudget:N0}；当前已使用 {budgeted.TokensUsed:N0}。"
+                    + (budgeted.IsTokenBudgetExhausted
+                        ? " 预算已经用尽，目标不会恢复自动续作；请提高或清除预算。"
+                        : string.Empty)
+                    + "\n"
+                    + budgeted.Objective);
             }
 
             if (string.Equals(normalized, "edit", StringComparison.OrdinalIgnoreCase))
@@ -311,6 +415,16 @@ namespace ColorVision.Copilot
                 && !current.IsAchieved
                 && string.Equals(current.Objective, normalizedObjective, StringComparison.Ordinal))
             {
+                if (current.IsTokenBudgetExhausted)
+                {
+                    return new CopilotConversationGoalCommandResult(
+                        current,
+                        false,
+                        $"持续目标已使用 {current.TokensUsed:N0} / {current.TokenBudget:N0} Token；"
+                        + "请先提高或清除预算，再继续同一目标。\n"
+                        + current.Objective);
+                }
+
                 var continued = current.WithState(CopilotConversationGoalState.Active, now);
                 return new CopilotConversationGoalCommandResult(
                     continued,
@@ -350,14 +464,19 @@ namespace ColorVision.Copilot
                 CopilotConversationGoalState.Achieved => "已达成",
                 _ => "已暂停",
             };
+            var tokenProgress = goal.HasTokenBudget
+                ? $"{goal.TokensUsed:N0} / {goal.TokenBudget:N0} Token"
+                : $"{goal.TokensUsed:N0} Token";
             var progress = goal.TurnCount == 0
-                ? "尚未完成首轮"
-                : $"{goal.TurnCount:N0} 轮 · {goal.EvaluationCount:N0} 次独立评估 · {goal.TokensUsed:N0} Token";
+                ? goal.HasTokenBudget
+                    ? $"尚未完成首轮 · {tokenProgress}"
+                    : "尚未完成首轮"
+                : $"{goal.TurnCount:N0} 轮 · {goal.EvaluationCount:N0} 次独立评估 · {tokenProgress}";
             var latest = string.IsNullOrWhiteSpace(goal.LastEvaluationReason)
                 ? string.Empty
                 : "\n最近判断：" + goal.LastEvaluationReason;
             return $"持续目标 · {state} · {progress}\n{goal.Objective}{latest}\n"
-                + "管理命令：/goal edit <新目标>、/goal pause、/goal resume、/goal clear。";
+                + "管理命令：/goal edit <新目标>、/goal budget <Token|clear>、/goal pause、/goal resume、/goal clear。";
         }
     }
 

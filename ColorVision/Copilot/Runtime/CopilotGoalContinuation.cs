@@ -500,14 +500,29 @@ namespace ColorVision.Copilot
                     capReason);
             }
 
-            return new CopilotGoalTurnDecision(
-                goal.WithTurnOutcome(
+            var continuedGoal = goal.WithTurnOutcome(
                     CopilotConversationGoalState.Active,
                     turnUsage,
                     evaluated: true,
                     continued: true,
                     evaluation.Reason,
-                    now),
+                    now);
+            if (continuedGoal.IsTokenBudgetExhausted)
+            {
+                var budgetReason =
+                    $"持续目标已使用 {continuedGoal.TokensUsed:N0} / {continuedGoal.TokenBudget:N0} Token；"
+                    + "目标已自动暂停，不再排入下一轮。";
+                return new CopilotGoalTurnDecision(
+                    continuedGoal.WithState(
+                        CopilotConversationGoalState.Paused,
+                        now,
+                        budgetReason),
+                    CopilotGoalTurnAction.Pause,
+                    budgetReason);
+            }
+
+            return new CopilotGoalTurnDecision(
+                continuedGoal,
                 CopilotGoalTurnAction.QueueContinuation,
                 evaluation.Reason);
         }
