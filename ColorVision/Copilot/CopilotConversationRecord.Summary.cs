@@ -7,7 +7,14 @@ namespace ColorVision.Copilot
     public sealed partial class CopilotConversationRecord
     {
         [JsonIgnore]
-        public string UpdatedLabel => UpdatedAt.Date == DateTime.Today ? UpdatedAt.ToString("HH:mm") : UpdatedAt.ToString("M/d");
+        public string UpdatedLabel
+        {
+            get
+            {
+                var recencyAt = RecencyAt == default ? UpdatedAt : RecencyAt;
+                return recencyAt.Date == DateTime.Today ? recencyAt.ToString("HH:mm") : recencyAt.ToString("M/d");
+            }
+        }
 
         [JsonIgnore]
         public bool HasDraft => !string.IsNullOrWhiteSpace(DraftText);
@@ -135,6 +142,7 @@ namespace ColorVision.Copilot
 
         public static CopilotConversationRecord CreateEmpty(string profileId, string profileDisplayName)
         {
+            var now = DateTime.Now;
             return new CopilotConversationRecord
             {
                 HasCustomTitle = false,
@@ -142,8 +150,9 @@ namespace ColorVision.Copilot
                 ProfileDisplayName = profileDisplayName,
                 Title = CopilotUiText.NewConversationTitle,
                 PreviewText = CopilotUiText.EmptyConversationPreview,
-                CreatedAt = DateTime.Now,
-                UpdatedAt = DateTime.Now,
+                CreatedAt = now,
+                UpdatedAt = now,
+                RecencyAt = now,
             };
         }
 

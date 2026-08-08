@@ -474,7 +474,6 @@ namespace ColorVision.Copilot
             }
 
             conversation.RefreshSummary();
-            BringConversationToFront(conversation);
             RefreshFilteredConversations();
             RefreshComposerTokenEstimate();
         }
@@ -536,12 +535,6 @@ namespace ColorVision.Copilot
             _auxiliaryOperationCancellations.Clear();
             foreach (var cancellation in cancellations)
                 cancellation.RequestCancellation();
-        }
-
-        private void BringConversationToFront(CopilotConversationRecord conversation)
-        {
-            CopilotConversationService.MoveToPreferredIndex(Conversations, conversation);
-            _state.ActiveConversationId = conversation.Id;
         }
 
         private void RenameConversation(CopilotConversationRecord? conversation)

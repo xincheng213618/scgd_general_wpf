@@ -28,6 +28,22 @@ namespace ColorVision.Copilot
                 UpdatedAt = CreatedAt;
                 changed = true;
             }
+            else if (UpdatedAt < CreatedAt)
+            {
+                UpdatedAt = CreatedAt;
+                changed = true;
+            }
+
+            if (RecencyAt == default || RecencyAt < CreatedAt)
+            {
+                RecencyAt = UpdatedAt;
+                changed = true;
+            }
+            if (UpdatedAt < RecencyAt)
+            {
+                UpdatedAt = RecencyAt;
+                changed = true;
+            }
 
             if (_draftText == null)
             {

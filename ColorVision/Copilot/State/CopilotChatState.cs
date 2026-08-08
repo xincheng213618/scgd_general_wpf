@@ -6,7 +6,7 @@ namespace ColorVision.Copilot
 {
     public sealed class CopilotChatState
     {
-        public const int CurrentSchemaVersion = 35;
+        public const int CurrentSchemaVersion = 36;
 
         public int SchemaVersion { get; set; } = CurrentSchemaVersion;
 
@@ -172,6 +172,8 @@ namespace ColorVision.Copilot
                     changed = true;
                 }
             }
+
+            changed |= CopilotConversationService.NormalizeOrder(Conversations);
 
             changed |= CopilotQueuedFollowUpRecovery.RestoreToDrafts(this);
 

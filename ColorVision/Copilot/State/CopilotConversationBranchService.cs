@@ -143,12 +143,13 @@ namespace ColorVision.Copilot
             bool capturesInProgressTurn)
         {
             var forkedAtUtc = DateTimeOffset.UtcNow;
+            var forkedAt = forkedAtUtc.LocalDateTime;
             var copiedGoal = source.Goal?.IsStructurallyValid() == true
                 ? source.Goal.CopyForBranch(forkedAtUtc)
                 : null;
             var branch = new CopilotConversationRecord
             {
-                CreatedAt = DateTime.Now,
+                CreatedAt = forkedAt,
                 HasCustomTitle = true,
                 IsPinned = false,
                 ProfileDisplayName = source.ProfileDisplayName,
@@ -157,7 +158,8 @@ namespace ColorVision.Copilot
                 AdditionalReadRootPaths = new ObservableCollection<string>(
                     CopilotAdditionalDirectoryCommand.NormalizeStoredPaths(source.AdditionalReadRootPaths)),
                 Title = BuildBranchTitle(source.Title, requestedTitle),
-                UpdatedAt = DateTime.Now,
+                UpdatedAt = forkedAt,
+                RecencyAt = forkedAt,
                 BranchOrigin = new CopilotConversationBranchOrigin
                 {
                     ParentConversationId = source.Id,

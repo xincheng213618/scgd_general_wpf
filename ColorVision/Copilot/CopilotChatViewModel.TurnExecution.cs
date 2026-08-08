@@ -242,12 +242,17 @@ namespace ColorVision.Copilot
         {
             CopilotUiDispatcher.Invoke(() =>
             {
-                if (!conversation.TryBeginGoalTurn(hostedRun.IsAgent, isAutomaticGoalContinuation))
-                    return;
+                CopilotConversationService.MarkTurnStarted(
+                    Conversations,
+                    conversation,
+                    DateTime.Now);
 
-                CopilotAssistantMessagePresenter.AppendExecutionTrace(
-                    assistantMessage,
-                    "Goal continuation deferral consumed · explicit Agent turn owns lifecycle.");
+                if (conversation.TryBeginGoalTurn(hostedRun.IsAgent, isAutomaticGoalContinuation))
+                {
+                    CopilotAssistantMessagePresenter.AppendExecutionTrace(
+                        assistantMessage,
+                        "Goal continuation deferral consumed · explicit Agent turn owns lifecycle.");
+                }
                 PersistState(immediate: true);
             });
             var boundGoalId = CopilotUiDispatcher.Invoke(

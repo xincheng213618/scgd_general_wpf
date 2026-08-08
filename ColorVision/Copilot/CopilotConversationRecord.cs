@@ -188,11 +188,22 @@ namespace ColorVision.Copilot
             get => _updatedAt;
             set
             {
-                if (SetProperty(ref _updatedAt, value))
+                if (SetProperty(ref _updatedAt, value) && RecencyAt == default)
                     OnPropertyChanged(nameof(UpdatedLabel));
             }
         }
         private DateTime _updatedAt = DateTime.Now;
+
+        public DateTime RecencyAt
+        {
+            get => _recencyAt;
+            set
+            {
+                if (SetProperty(ref _recencyAt, value))
+                    OnPropertyChanged(nameof(UpdatedLabel));
+            }
+        }
+        private DateTime _recencyAt;
 
         public ObservableCollection<CopilotChatMessage> Messages { get; set; } = new();
 
@@ -293,7 +304,31 @@ namespace ColorVision.Copilot
 
         public void Touch()
         {
-            UpdatedAt = DateTime.Now;
+            var now = DateTime.Now;
+            if (now > UpdatedAt)
+                UpdatedAt = now;
+        }
+
+        internal bool MarkTurnStarted(DateTime startedAt)
+        {
+            var effectiveStartedAt = startedAt == default ? DateTime.Now : startedAt;
+            if (effectiveStartedAt < CreatedAt)
+                effectiveStartedAt = CreatedAt;
+            if (effectiveStartedAt < RecencyAt)
+                effectiveStartedAt = RecencyAt;
+
+            var changed = false;
+            if (RecencyAt != effectiveStartedAt)
+            {
+                RecencyAt = effectiveStartedAt;
+                changed = true;
+            }
+            if (UpdatedAt < effectiveStartedAt)
+            {
+                UpdatedAt = effectiveStartedAt;
+                changed = true;
+            }
+            return changed;
         }
 
         internal bool MarkWorkspaceChangeSetRolledBack(string changeSetId)
