@@ -251,6 +251,9 @@ namespace ColorVision.Copilot
                 return;
             }
 
+            var compactionConfig = CaptureHostedTurnSnapshot(
+                conversation.Attachments).ProjectInstructionDiscoveryOptions;
+
             var sourceMessages = conversation.Messages
                 .Where(message => !string.IsNullOrWhiteSpace(message.ModelContent))
                 .ToArray();
@@ -270,7 +273,9 @@ namespace ColorVision.Copilot
             compactProfile.MaxTokens = Math.Min(compactProfile.MaxTokens, CompactSummaryOutputTokens);
             compactProfile.Temperature = 0.1;
 
-            var compactRequest = CopilotConversationCompactionPrompt.BuildRequest(focusInstructions);
+            var compactRequest = CopilotConversationCompactionPrompt.BuildRequest(
+                focusInstructions,
+                compactionConfig.CompactPrompt);
             var historyLimits = ResolveConversationHistoryLimits(compactProfile);
             compactProfile.MaxTokens = Math.Min(
                 compactProfile.MaxTokens,

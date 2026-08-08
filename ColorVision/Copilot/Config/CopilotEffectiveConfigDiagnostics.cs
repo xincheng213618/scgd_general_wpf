@@ -51,6 +51,9 @@ namespace ColorVision.Copilot
         public CopilotHostedRunState? ConversationRunState { get; init; }
 
         public bool McpListenerRunning { get; init; }
+
+        public CopilotProjectInstructionDiscoveryOptions CodexConfigOptions { get; init; } =
+            CopilotProjectInstructionDiscoveryConfig.CreateDefault();
     }
 
     internal static class CopilotEffectiveConfigDiagnostics
@@ -171,7 +174,12 @@ namespace ColorVision.Copilot
                 .AppendLine(FormatAccessMode(conversation));
 
             AppendProfile(builder, profile, configProbe, state, conversation);
-            AppendAgent(builder, defaults, configProbe, context.ComposerMode);
+            AppendAgent(
+                builder,
+                defaults,
+                configProbe,
+                context.ComposerMode,
+                context.CodexConfigOptions);
             AppendConversation(builder, state, conversation);
             AppendIntegrations(builder, config, configProbe, context.McpListenerRunning);
 
@@ -258,7 +266,8 @@ namespace ColorVision.Copilot
             StringBuilder builder,
             CopilotAgentDefaultsConfig defaults,
             CopilotConfigFileProbe configProbe,
-            CopilotAgentMode composerMode)
+            CopilotAgentMode composerMode,
+            CopilotProjectInstructionDiscoveryOptions codexConfigOptions)
         {
             var source = configProbe.HasAgentDefaults
                 ? "应用配置 CopilotConfig.AgentDefaults"
@@ -290,7 +299,21 @@ namespace ColorVision.Copilot
                 .Append(defaults.AutoCompactThresholdPercent.ToString(CultureInfo.CurrentCulture))
                 .Append("% · 自定义聚焦 ")
                 .Append(defaults.AutoCompactInstructions.Length.ToString("N0", CultureInfo.CurrentCulture))
-                .AppendLine(" 字符")
+                .AppendLine(" 字符");
+            builder.Append("- Codex compact_prompt：");
+            if (!codexConfigOptions.HasCompactPromptOverride)
+            {
+                builder.AppendLine("内置主体");
+            }
+            else
+            {
+                builder.Append(codexConfigOptions.CompactPrompt.Length.ToString("N0", CultureInfo.CurrentCulture))
+                    .Append(" 字符 · 来源 ")
+                    .AppendLine(codexConfigOptions.CompactPromptSourceLabel.Length == 0
+                        ? "Codex config.toml"
+                        : codexConfigOptions.CompactPromptSourceLabel);
+            }
+            builder
                 .Append("- Skill 手动覆盖：")
                 .Append(defaults.SkillOverrides?.Count.ToString("N0", CultureInfo.CurrentCulture) ?? "0")
                 .AppendLine(" 项");

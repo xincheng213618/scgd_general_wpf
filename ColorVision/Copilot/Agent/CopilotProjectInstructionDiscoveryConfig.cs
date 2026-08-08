@@ -45,11 +45,66 @@ namespace ColorVision.Copilot
         public CopilotProjectInstructionConfigSources DeveloperInstructionsSource { get; init; } =
             CopilotProjectInstructionConfigSources.None;
 
+        internal string ConfiguredCompactPrompt { get; init; } = string.Empty;
+
+        internal bool HasCompactPromptInlineOverride { get; init; }
+
+        internal CopilotProjectInstructionConfigSources CompactPromptInlineSource { get; init; } =
+            CopilotProjectInstructionConfigSources.None;
+
+        internal string ConfiguredCompactPromptFileContent { get; init; } = string.Empty;
+
+        internal bool HasCompactPromptFileOverride { get; init; }
+
+        internal CopilotProjectInstructionConfigSources CompactPromptFileSource { get; init; } =
+            CopilotProjectInstructionConfigSources.None;
+
+        internal string ConfiguredCompactPromptSourceFilePath { get; init; } = string.Empty;
+
+        public string CompactPrompt
+        {
+            get
+            {
+                var inline = ConfiguredCompactPrompt.Trim();
+                if (inline.Length > 0)
+                    return inline;
+                return ConfiguredCompactPromptFileContent.Trim();
+            }
+        }
+
+        public bool HasCompactPromptOverride => HasCompactPromptInlineOverride
+            || HasCompactPromptFileOverride;
+
+        public CopilotProjectInstructionConfigSources CompactPromptSource
+        {
+            get
+            {
+                if (ConfiguredCompactPrompt.Trim().Length > 0)
+                    return CompactPromptInlineSource;
+                if (ConfiguredCompactPromptFileContent.Trim().Length > 0)
+                    return CompactPromptFileSource;
+                if (HasCompactPromptFileOverride)
+                    return CompactPromptFileSource;
+                return HasCompactPromptInlineOverride
+                    ? CompactPromptInlineSource
+                    : CopilotProjectInstructionConfigSources.None;
+            }
+        }
+
+        public string CompactPromptSourceFilePath =>
+            CompactPromptUsesFile
+                ? ConfiguredCompactPromptSourceFilePath
+                : string.Empty;
+
+        public bool CompactPromptUsesFile => ConfiguredCompactPrompt.Trim().Length == 0
+            && HasCompactPromptFileOverride;
+
         public bool UsesCodexConfig => ConfigSources != CopilotProjectInstructionConfigSources.None
             || HasMaximumBytesOverride
             || HasFallbackFileNamesOverride
             || HasProjectRootMarkersOverride
-            || HasDeveloperInstructionsOverride;
+            || HasDeveloperInstructionsOverride
+            || HasCompactPromptOverride;
 
         public string ConfigSourceLabel => ConfigSources switch
         {
@@ -69,6 +124,24 @@ namespace ColorVision.Copilot
             CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml",
             _ => string.Empty,
         };
+
+        public string CompactPromptSourceLabel
+        {
+            get
+            {
+                var layer = CompactPromptSource switch
+                {
+                    CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml",
+                    CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml",
+                    _ => string.Empty,
+                };
+                if (layer.Length == 0)
+                    return string.Empty;
+                return layer + (CompactPromptUsesFile
+                    ? " experimental_compact_prompt_file"
+                    : " compact_prompt");
+            }
+        }
 
         public string ProjectTrustLabel => ProjectTrustLevel switch
         {
@@ -100,12 +173,17 @@ namespace ColorVision.Copilot
         private const int MaximumProjectRootMarkerCharacters = 128;
         private const int MaximumLogicalValueLines = 64;
         internal const int MaximumDeveloperInstructionCharacters = 64 * 1024;
-        private const int MaximumDeveloperInstructionLines = 512;
+        private const int MaximumConfiguredTextLines = 512;
+        internal const int MaximumCompactPromptCharacters = 32 * 1024;
+        private const int MaximumCompactPromptBytes = 128 * 1024;
+        private const int MaximumConfigReferencedPathCharacters = 2_048;
         private const string ConfigFileName = "config.toml";
         private const string MaximumBytesKey = "project_doc_max_bytes";
         private const string FallbackFileNamesKey = "project_doc_fallback_filenames";
         private const string ProjectRootMarkersKey = "project_root_markers";
         private const string DeveloperInstructionsKey = "developer_instructions";
+        private const string CompactPromptKey = "compact_prompt";
+        private const string ExperimentalCompactPromptFileKey = "experimental_compact_prompt_file";
         private const string ProjectsTablePrefix = "projects.";
         private const string TrustLevelKey = "trust_level";
 
@@ -122,13 +200,16 @@ namespace ColorVision.Copilot
             var options = CreateDefault();
             var normalizedRoot = CopilotAgentProjectInstructions.NormalizeGlobalInstructionRootPath(globalInstructionRootPath);
             var globalSource = string.Empty;
+            var globalConfigPath = Path.Combine(normalizedRoot, ConfigFileName);
             if (normalizedRoot.Length > 0
-                && TryReadConfigSource(
-                    normalizedRoot,
-                    Path.Combine(normalizedRoot, ConfigFileName),
-                    out globalSource)
+                && TryReadConfigSource(normalizedRoot, globalConfigPath, out globalSource)
                 && TryParseInstructionLayer(globalSource, out var globalLayer))
             {
+                globalLayer = ResolveCompactPromptFile(
+                    globalLayer,
+                    globalConfigPath,
+                    normalizedRoot,
+                    allowOutsideRoot: true);
                 options = ApplyLayer(
                     options,
                     globalLayer,
@@ -167,11 +248,17 @@ namespace ColorVision.Copilot
             {
                 var configPath = Path.Combine(directoryPath, ".codex", ConfigFileName);
                 if (!TryReadConfigSource(normalizedProjectRoot, configPath, out var projectSource)
-                    || !TryParseInstructionLayer(projectSource, out var projectLayer)
-                    || !HasApplicableOverrides(projectLayer, includeProjectRootMarkers: false))
+                    || !TryParseInstructionLayer(projectSource, out var projectLayer))
                 {
                     continue;
                 }
+                projectLayer = ResolveCompactPromptFile(
+                    projectLayer,
+                    configPath,
+                    normalizedProjectRoot,
+                    allowOutsideRoot: false);
+                if (!HasApplicableOverrides(projectLayer, includeProjectRootMarkers: false))
+                    continue;
 
                 options = ApplyLayer(
                     options,
@@ -225,6 +312,25 @@ namespace ColorVision.Copilot
                 DeveloperInstructionsSource = layer.HasDeveloperInstructionsOverride
                     ? source
                     : current.DeveloperInstructionsSource,
+                ConfiguredCompactPrompt = layer.HasCompactPromptOverride
+                    ? layer.CompactPrompt
+                    : current.ConfiguredCompactPrompt,
+                HasCompactPromptInlineOverride = current.HasCompactPromptInlineOverride
+                    || layer.HasCompactPromptOverride,
+                CompactPromptInlineSource = layer.HasCompactPromptOverride
+                    ? source
+                    : current.CompactPromptInlineSource,
+                ConfiguredCompactPromptFileContent = layer.HasCompactPromptFileOverride
+                    ? layer.CompactPromptFileContent
+                    : current.ConfiguredCompactPromptFileContent,
+                HasCompactPromptFileOverride = current.HasCompactPromptFileOverride
+                    || layer.HasCompactPromptFileOverride,
+                CompactPromptFileSource = layer.HasCompactPromptFileOverride
+                    ? source
+                    : current.CompactPromptFileSource,
+                ConfiguredCompactPromptSourceFilePath = layer.HasCompactPromptFileOverride
+                    ? layer.CompactPromptSourceFilePath
+                    : current.ConfiguredCompactPromptSourceFilePath,
             };
         }
 
@@ -235,6 +341,8 @@ namespace ColorVision.Copilot
             return layer.HasMaximumBytesOverride
                 || layer.HasFallbackFileNamesOverride
                 || layer.HasDeveloperInstructionsOverride
+                || layer.HasCompactPromptOverride
+                || layer.HasCompactPromptFileOverride
                 || (includeProjectRootMarkers && layer.HasProjectRootMarkersOverride);
         }
 
@@ -338,6 +446,105 @@ namespace ColorVision.Copilot
             }
         }
 
+        private static ProjectInstructionConfigLayer ResolveCompactPromptFile(
+            ProjectInstructionConfigLayer layer,
+            string configPath,
+            string allowedRootPath,
+            bool allowOutsideRoot)
+        {
+            if (!layer.HasCompactPromptFileOverride)
+                return layer;
+
+            if (!TryReadCompactPromptFile(
+                configPath,
+                layer.ConfiguredCompactPromptFilePath,
+                allowedRootPath,
+                allowOutsideRoot,
+                out var promptFilePath,
+                out var compactPrompt))
+            {
+                return layer;
+            }
+
+            return layer with
+            {
+                CompactPromptFileContent = compactPrompt,
+                CompactPromptSourceFilePath = promptFilePath,
+            };
+        }
+
+        private static bool TryReadCompactPromptFile(
+            string configPath,
+            string configuredPath,
+            string allowedRootPath,
+            bool allowOutsideRoot,
+            out string promptFilePath,
+            out string compactPrompt)
+        {
+            promptFilePath = string.Empty;
+            compactPrompt = string.Empty;
+            var normalizedConfiguredPath = (configuredPath ?? string.Empty).Trim();
+            if (normalizedConfiguredPath.Length == 0
+                || normalizedConfiguredPath.Length > MaximumConfigReferencedPathCharacters
+                || normalizedConfiguredPath.StartsWith("\\\\", StringComparison.Ordinal)
+                || normalizedConfiguredPath.StartsWith("//", StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            try
+            {
+                var configDirectory = Path.GetDirectoryName(Path.GetFullPath(configPath));
+                if (string.IsNullOrWhiteSpace(configDirectory))
+                    return false;
+                var candidatePath = Path.IsPathFullyQualified(normalizedConfiguredPath)
+                    ? Path.GetFullPath(normalizedConfiguredPath)
+                    : Path.GetFullPath(normalizedConfiguredPath, configDirectory);
+                if (!allowOutsideRoot
+                    && !CopilotWorkspaceSearchSupport.IsPathWithinRoots(candidatePath, [allowedRootPath]))
+                {
+                    return false;
+                }
+
+                var file = new FileInfo(candidatePath);
+                if (!file.Exists
+                    || file.Length < 0
+                    || file.Length > MaximumCompactPromptBytes
+                    || (file.Attributes & FileAttributes.ReparsePoint) != 0
+                    || CopilotWorkspaceSearchSupport.HasReparsePointInPath(candidatePath))
+                {
+                    return false;
+                }
+
+                using var stream = new FileStream(
+                    candidatePath,
+                    FileMode.Open,
+                    FileAccess.Read,
+                    FileShare.ReadWrite | FileShare.Delete);
+                if (stream.Length < 0 || stream.Length > MaximumCompactPromptBytes)
+                    return false;
+                using var reader = new StreamReader(
+                    stream,
+                    Encoding.UTF8,
+                    detectEncodingFromByteOrderMarks: true);
+                var buffer = new char[MaximumCompactPromptCharacters + 1];
+                var count = reader.ReadBlock(buffer, 0, buffer.Length);
+                if (count > MaximumCompactPromptCharacters || !reader.EndOfStream)
+                    return false;
+                var prompt = new string(buffer, 0, count).Trim();
+                if (prompt.IndexOf('\0') >= 0)
+                    return false;
+
+                promptFilePath = candidatePath;
+                compactPrompt = prompt;
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         private static bool TryParseInstructionLayer(
             string source,
             out ProjectInstructionConfigLayer layer)
@@ -346,10 +553,14 @@ namespace ColorVision.Copilot
             var fallbackFileNames = Array.Empty<string>();
             var projectRootMarkers = Array.Empty<string>();
             var developerInstructions = string.Empty;
+            var compactPrompt = string.Empty;
+            var compactPromptFilePath = string.Empty;
             var hasMaximumBytesOverride = false;
             var hasFallbackFileNamesOverride = false;
             var hasProjectRootMarkersOverride = false;
             var hasDeveloperInstructionsOverride = false;
+            var hasCompactPromptOverride = false;
+            var hasCompactPromptFileOverride = false;
             foreach (var assignment in EnumerateTopLevelAssignments(source))
             {
                 if (string.Equals(assignment.Key, MaximumBytesKey, StringComparison.Ordinal))
@@ -379,6 +590,35 @@ namespace ColorVision.Copilot
                     continue;
                 }
 
+                if (string.Equals(assignment.Key, CompactPromptKey, StringComparison.Ordinal))
+                {
+                    if (!TryParseConfiguredText(
+                        assignment.Value,
+                        MaximumCompactPromptCharacters,
+                        out var configuredCompactPrompt))
+                    {
+                        continue;
+                    }
+                    compactPrompt = configuredCompactPrompt;
+                    hasCompactPromptOverride = true;
+                    continue;
+                }
+
+                if (string.Equals(assignment.Key, ExperimentalCompactPromptFileKey, StringComparison.Ordinal))
+                {
+                    if (!TryParseConfiguredText(
+                        assignment.Value,
+                        MaximumConfigReferencedPathCharacters,
+                        out var configuredCompactPromptFilePath)
+                        || configuredCompactPromptFilePath.IndexOfAny(['\r', '\n', '\0']) >= 0)
+                    {
+                        continue;
+                    }
+                    compactPromptFilePath = configuredCompactPromptFilePath;
+                    hasCompactPromptFileOverride = true;
+                    continue;
+                }
+
                 if (!string.Equals(assignment.Key, ProjectRootMarkersKey, StringComparison.Ordinal)
                     || !TryParseProjectRootMarkers(assignment.Value, out var configuredProjectRootMarkers))
                 {
@@ -397,11 +637,19 @@ namespace ColorVision.Copilot
                 hasMaximumBytesOverride,
                 hasFallbackFileNamesOverride,
                 hasProjectRootMarkersOverride,
-                hasDeveloperInstructionsOverride);
+                hasDeveloperInstructionsOverride)
+            {
+                CompactPrompt = compactPrompt,
+                ConfiguredCompactPromptFilePath = compactPromptFilePath,
+                HasCompactPromptOverride = hasCompactPromptOverride,
+                HasCompactPromptFileOverride = hasCompactPromptFileOverride,
+            };
             return hasMaximumBytesOverride
                 || hasFallbackFileNamesOverride
                 || hasProjectRootMarkersOverride
-                || hasDeveloperInstructionsOverride;
+                || hasDeveloperInstructionsOverride
+                || hasCompactPromptOverride
+                || hasCompactPromptFileOverride;
         }
 
         private static CopilotCodexProjectTrustLevel ResolveProjectTrustLevel(
@@ -541,7 +789,9 @@ namespace ColorVision.Copilot
                 if (!string.Equals(key, MaximumBytesKey, StringComparison.Ordinal)
                     && !string.Equals(key, FallbackFileNamesKey, StringComparison.Ordinal)
                     && !string.Equals(key, ProjectRootMarkersKey, StringComparison.Ordinal)
-                    && !string.Equals(key, DeveloperInstructionsKey, StringComparison.Ordinal))
+                    && !string.Equals(key, DeveloperInstructionsKey, StringComparison.Ordinal)
+                    && !string.Equals(key, CompactPromptKey, StringComparison.Ordinal)
+                    && !string.Equals(key, ExperimentalCompactPromptFileKey, StringComparison.Ordinal))
                 {
                     continue;
                 }
@@ -566,13 +816,14 @@ namespace ColorVision.Copilot
                     }
                     value = builder.ToString();
                 }
-                else if (string.Equals(key, DeveloperInstructionsKey, StringComparison.Ordinal)
+                else if ((string.Equals(key, DeveloperInstructionsKey, StringComparison.Ordinal)
+                        || string.Equals(key, CompactPromptKey, StringComparison.Ordinal))
                     && TryGetMultilineStringDelimiter(value, out var delimiter)
                     && !HasClosedMultilineString(value, delimiter))
                 {
                     var builder = new StringBuilder(value);
                     for (var logicalLine = 1;
-                        logicalLine < MaximumDeveloperInstructionLines && index + 1 < lines.Length;
+                        logicalLine < MaximumConfiguredTextLines && index + 1 < lines.Length;
                         logicalLine++)
                     {
                         index++;
@@ -780,8 +1031,17 @@ namespace ColorVision.Copilot
         private static bool TryParseDeveloperInstructions(
             string value,
             out string developerInstructions)
+            => TryParseConfiguredText(
+                value,
+                MaximumDeveloperInstructionCharacters,
+                out developerInstructions);
+
+        private static bool TryParseConfiguredText(
+            string value,
+            int maximumCharacters,
+            out string configuredText)
         {
-            developerInstructions = string.Empty;
+            configuredText = string.Empty;
             var index = 0;
             SkipWhitespace(value, ref index);
             string parsed;
@@ -800,9 +1060,9 @@ namespace ColorVision.Copilot
                 return false;
 
             parsed = parsed.Trim();
-            if (parsed.Length > MaximumDeveloperInstructionCharacters)
+            if (parsed.Length > maximumCharacters || parsed.IndexOf('\0') >= 0)
                 return false;
-            developerInstructions = parsed;
+            configuredText = parsed;
             return true;
         }
 
@@ -1068,6 +1328,19 @@ namespace ColorVision.Copilot
             bool HasMaximumBytesOverride,
             bool HasFallbackFileNamesOverride,
             bool HasProjectRootMarkersOverride,
-            bool HasDeveloperInstructionsOverride);
+            bool HasDeveloperInstructionsOverride)
+        {
+            public string CompactPrompt { get; init; } = string.Empty;
+
+            public string ConfiguredCompactPromptFilePath { get; init; } = string.Empty;
+
+            public string CompactPromptFileContent { get; init; } = string.Empty;
+
+            public string CompactPromptSourceFilePath { get; init; } = string.Empty;
+
+            public bool HasCompactPromptOverride { get; init; }
+
+            public bool HasCompactPromptFileOverride { get; init; }
+        }
     }
 }

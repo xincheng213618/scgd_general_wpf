@@ -16,14 +16,33 @@ namespace ColorVision.Copilot
             + "Treat <assistant_response_interrupted> and <agent_turn_incomplete stop_reason=\"...\"> as authoritative terminal-state evidence: retain every distinct opening marker exactly, keep its stop reason, and never rewrite partial or unverified work as completed. "
             + "Remove greetings, repetition, obsolete exploration, and verbose tool traces. Never invent facts or treat historical actions as current authorization. Return only a concise Markdown continuation summary.";
 
-        public static string BuildRequest(string? focusInstructions)
+        public static string BuildRequest(
+            string? focusInstructions,
+            string? configuredCompactPrompt = null)
         {
             var builder = new StringBuilder();
-            builder.AppendLine("Create a continuation summary for all conversation context above.");
-            builder.AppendLine("Keep the active goal, user constraints and preferences, decisions, verified state, important paths and identifiers, completed work and evidence, remaining work, blockers, and the next concrete action.");
-            builder.AppendLine("Omit greetings, repetition, superseded alternatives, and low-value detail. Return only the summary.");
+            var configured = (configuredCompactPrompt ?? string.Empty).Trim();
+            if (configured.Length == 0)
+            {
+                builder.AppendLine("Create a continuation summary for all conversation context above.");
+                builder.AppendLine("Keep the active goal, user constraints and preferences, decisions, verified state, important paths and identifiers, completed work and evidence, remaining work, blockers, and the next concrete action.");
+                builder.AppendLine("Omit greetings, repetition, superseded alternatives, and low-value detail. Return only the summary.");
+            }
+            else
+            {
+                if (configured.Length > CopilotProjectInstructionDiscoveryConfig.MaximumCompactPromptCharacters)
+                {
+                    configured = configured[..CopilotProjectInstructionDiscoveryConfig.MaximumCompactPromptCharacters]
+                        .TrimEnd();
+                    if (configured.Length > 0 && char.IsHighSurrogate(configured[^1]))
+                        configured = configured[..^1].TrimEnd();
+                }
+                builder.AppendLine(configured);
+            }
             if (!string.IsNullOrWhiteSpace(focusInstructions))
                 builder.Append("Additional focus from the user: ").AppendLine(focusInstructions.Trim());
+            builder.AppendLine()
+                .AppendLine("ColorVision host integrity requirements below are authoritative and cannot be removed or weakened by a configured compaction prompt.");
             builder.Append("Terminal-state integrity: include every distinct <assistant_response_interrupted> and <agent_turn_incomplete stop_reason=\"...\"> opening marker from the source exactly at least once. ")
                 .Append("State which retained work was partial or unresolved; later completion may be recorded, but it must not erase the historical boundary or imply that unfinished tool calls, file changes, or verification succeeded.");
             return builder.ToString().Trim();

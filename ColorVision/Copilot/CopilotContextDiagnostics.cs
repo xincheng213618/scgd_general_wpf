@@ -45,6 +45,12 @@ namespace ColorVision.Copilot
 
         public int AutoCompactInstructionsCharacters { get; init; }
 
+        public int ConfiguredCompactPromptCharacters { get; init; }
+
+        public string ConfiguredCompactPromptSourceLabel { get; init; } = string.Empty;
+
+        public bool HasConfiguredCompactPromptOverride { get; init; }
+
         public int CompactedSourceMessages { get; init; }
 
         public int CompactionSummaryCharacters { get; init; }
@@ -204,6 +210,18 @@ namespace ColorVision.Copilot
                 .AppendLine(snapshot.AutoCompactInstructionsCharacters > 0
                     ? $"已配置 {FormatCount(snapshot.AutoCompactInstructionsCharacters)} 字符长期要求"
                     : "使用内置默认要求");
+            if (snapshot.HasConfiguredCompactPromptOverride)
+            {
+                builder.Append("Codex compact_prompt：")
+                    .Append(FormatCount(snapshot.ConfiguredCompactPromptCharacters))
+                    .Append(" 字符（")
+                    .Append(string.IsNullOrWhiteSpace(snapshot.ConfiguredCompactPromptSourceLabel)
+                        ? "Codex config.toml"
+                        : snapshot.ConfiguredCompactPromptSourceLabel.Trim())
+                    .AppendLine(snapshot.ConfiguredCompactPromptCharacters == 0
+                        ? " 请求快照；未产生非空覆盖，使用内置主体）"
+                        : " 请求快照；终态完整性后缀仍由宿主强制保留）");
+            }
             if (snapshot.CompactionSummaryCharacters > 0)
             {
                 builder.Append("主动压缩：")

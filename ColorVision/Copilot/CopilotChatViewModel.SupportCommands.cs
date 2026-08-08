@@ -352,12 +352,11 @@ namespace ColorVision.Copilot
             var history = CopilotConversationRequestBuilder.CaptureHistorySelection(conversation, historyLimits);
             var projectInstructions = Array.Empty<CopilotProjectInstructionDocument>();
             var trustedProjectRoots = Array.Empty<string>();
-            var projectInstructionOptions = CopilotProjectInstructionDiscoveryConfig.CreateDefault();
+            var turnSnapshot = CaptureHostedTurnSnapshot(Attachments);
+            var projectInstructionOptions = turnSnapshot.ProjectInstructionDiscoveryOptions;
             CopilotAgentSkillUsageSnapshot? skillUsage = null;
             if (agentContextEnabled)
             {
-                var turnSnapshot = CaptureHostedTurnSnapshot(Attachments);
-                projectInstructionOptions = turnSnapshot.ProjectInstructionDiscoveryOptions;
                 trustedProjectRoots = CopilotAgentRequestFactory.BuildTrustedProjectRootPaths(turnSnapshot).ToArray();
                 projectInstructions = CopilotAgentProjectInstructions.DiscoverWithGlobal(
                     trustedProjectRoots,
@@ -399,6 +398,9 @@ namespace ColorVision.Copilot
                 AutoCompactConversationHistory = agentDefaults.AutoCompactConversationHistory,
                 AutoCompactThresholdPercent = agentDefaults.AutoCompactThresholdPercent,
                 AutoCompactInstructionsCharacters = agentDefaults.AutoCompactInstructions.Length,
+                ConfiguredCompactPromptCharacters = projectInstructionOptions.CompactPrompt.Length,
+                ConfiguredCompactPromptSourceLabel = projectInstructionOptions.CompactPromptSourceLabel,
+                HasConfiguredCompactPromptOverride = projectInstructionOptions.HasCompactPromptOverride,
                 CompactedSourceMessages = compaction?.SourceMessageCount ?? 0,
                 CompactionSummaryCharacters = compaction?.Summary.Length ?? 0,
                 CompactionRequests = conversation?.CompactionUsage?.RequestCount ?? 0,

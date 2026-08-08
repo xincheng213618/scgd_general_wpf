@@ -163,6 +163,23 @@ namespace ColorVision.Copilot
                         ? " 请求快照；显式清空）"
                         : " 请求快照；独立开发者指令）");
             }
+            if (effective.HasCompactPromptOverride)
+            {
+                builder.Append("Codex compact_prompt：")
+                    .Append(effective.CompactPrompt.Length.ToString("N0", CultureInfo.CurrentCulture))
+                    .Append(" 字符（")
+                    .Append(effective.CompactPromptSourceLabel.Length == 0
+                        ? "Codex config.toml"
+                        : effective.CompactPromptSourceLabel)
+                    .AppendLine(effective.CompactPrompt.Length == 0
+                        ? " 请求快照；未产生非空覆盖，使用内置主体）"
+                        : " 请求快照；终态完整性后缀由宿主强制保留）");
+                if (effective.CompactPromptSourceFilePath.Length > 0)
+                {
+                    builder.Append("压缩提示文件：")
+                        .AppendLine(FormatPath(effective.CompactPromptSourceFilePath, workspacePath));
+                }
+            }
             builder.Append("项目根标记：");
             if (effective.ProjectRootMarkers.Count == 0)
             {

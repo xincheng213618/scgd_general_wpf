@@ -1288,6 +1288,310 @@ public sealed class CopilotAgentProjectInstructionsTests
     }
 
     [Fact]
+    public void CompactPromptUsesTheNearestTrustedLayerAndRetainsHostIntegrity()
+    {
+        string globalRoot = CreateTemporaryDirectory();
+        string projectRoot = CreateTemporaryDirectory();
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
+            File.WriteAllText(
+                Path.Combine(globalRoot, "config.toml"),
+                $"""
+                compact_prompt = "Global compact prompt."
+
+                [projects.'{projectRoot}']
+                trust_level = "trusted"
+                """);
+            string rootConfigDirectory = Path.Combine(projectRoot, ".codex");
+            Directory.CreateDirectory(rootConfigDirectory);
+            string rootConfigPath = Path.Combine(rootConfigDirectory, "config.toml");
+            File.WriteAllText(rootConfigPath, "compact_prompt = \"Root compact prompt.\"");
+            string sourceDirectory = Path.Combine(projectRoot, "src");
+            string sourceConfigDirectory = Path.Combine(sourceDirectory, ".codex");
+            Directory.CreateDirectory(sourceConfigDirectory);
+            string sourceConfigPath = Path.Combine(sourceConfigDirectory, "config.toml");
+            File.WriteAllText(
+                sourceConfigPath,
+                """"
+                compact_prompt = """
+                Preserve the nearest compact contract.
+                Keep cited verification.
+                """
+                """");
+            string activeDocument = Path.Combine(sourceDirectory, "Feature.cs");
+            File.WriteAllText(activeDocument, "namespace Feature;");
+
+            var hostContext = new CopilotAgentHostContextSnapshot(
+                activeDocument,
+                sourceDirectory,
+                attachments: null,
+                liveContext: null,
+                conversationHistory: null,
+                additionalReadRootPaths: null,
+                globalInstructionRootPath: globalRoot);
+            var options = hostContext.ProjectInstructionDiscoveryOptions;
+
+            Assert.Equal(
+                "Preserve the nearest compact contract.\nKeep cited verification.",
+                options.CompactPrompt);
+            Assert.True(options.HasCompactPromptOverride);
+            Assert.Equal(CopilotProjectInstructionConfigSources.TrustedProject, options.CompactPromptSource);
+            Assert.Empty(options.CompactPromptSourceFilePath);
+            Assert.Equal([rootConfigPath, sourceConfigPath], options.AppliedProjectConfigFilePaths, StringComparer.OrdinalIgnoreCase);
+
+            var request = CopilotConversationCompactionPrompt.BuildRequest(
+                "Keep the current user focus.",
+                options.CompactPrompt);
+            Assert.StartsWith("Preserve the nearest compact contract.", request, StringComparison.Ordinal);
+            Assert.DoesNotContain("Create a continuation summary", request, StringComparison.Ordinal);
+            Assert.Contains("Additional focus from the user: Keep the current user focus.", request, StringComparison.Ordinal);
+            Assert.Contains("ColorVision host integrity requirements", request, StringComparison.Ordinal);
+            Assert.Contains("<assistant_response_interrupted>", request, StringComparison.Ordinal);
+            Assert.Contains("<agent_turn_incomplete", request, StringComparison.Ordinal);
+
+            var memoryReport = CopilotProjectInstructionDiagnostics.Format(
+                new CopilotProjectInstructionSnapshot(
+                    projectRoot,
+                    activeDocument,
+                    globalRoot,
+                    options,
+                    Array.Empty<CopilotProjectInstructionDocument>()),
+                hasActiveAgentRun: false);
+            Assert.Contains("受信项目 .codex/config.toml compact_prompt 请求快照", memoryReport, StringComparison.Ordinal);
+            Assert.DoesNotContain("Preserve the nearest compact contract.", memoryReport, StringComparison.Ordinal);
+
+            var contextReport = CopilotContextDiagnostics.Format(new CopilotContextDiagnosticSnapshot
+            {
+                HasConfiguredCompactPromptOverride = true,
+                ConfiguredCompactPromptCharacters = options.CompactPrompt.Length,
+                ConfiguredCompactPromptSourceLabel = options.CompactPromptSourceLabel,
+            });
+            Assert.Contains("Codex compact_prompt：", contextReport, StringComparison.Ordinal);
+            Assert.Contains("终态完整性后缀仍由宿主强制保留", contextReport, StringComparison.Ordinal);
+            Assert.DoesNotContain("Preserve the nearest compact contract.", contextReport, StringComparison.Ordinal);
+
+            var debugReport = CopilotEffectiveConfigDiagnostics.Format(new CopilotEffectiveConfigDiagnosticContext
+            {
+                Config = new CopilotConfig(),
+                State = new CopilotChatState(),
+                CodexConfigOptions = options,
+            });
+            Assert.Contains("受信项目 .codex/config.toml compact_prompt", debugReport, StringComparison.Ordinal);
+            Assert.DoesNotContain("Preserve the nearest compact contract.", debugReport, StringComparison.Ordinal);
+        }
+        finally
+        {
+            Directory.Delete(globalRoot, recursive: true);
+            Directory.Delete(projectRoot, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void CompactPromptFileIsResolvedRelativeToItsOwningConfigLayer()
+    {
+        string globalRoot = CreateTemporaryDirectory();
+        string projectRoot = CreateTemporaryDirectory();
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
+            File.WriteAllText(
+                Path.Combine(globalRoot, "config.toml"),
+                $"""
+                [projects.'{projectRoot}']
+                trust_level = "trusted"
+                """);
+            string rootConfigDirectory = Path.Combine(projectRoot, ".codex");
+            string rootPromptDirectory = Path.Combine(rootConfigDirectory, "prompts");
+            Directory.CreateDirectory(rootPromptDirectory);
+            string rootPromptPath = Path.Combine(rootPromptDirectory, "compact.md");
+            File.WriteAllText(rootPromptPath, "Root file compact prompt.");
+            string rootConfigPath = Path.Combine(rootConfigDirectory, "config.toml");
+            File.WriteAllText(
+                rootConfigPath,
+                "experimental_compact_prompt_file = \"prompts/compact.md\"");
+
+            string sourceDirectory = Path.Combine(projectRoot, "src");
+            string sourceConfigDirectory = Path.Combine(sourceDirectory, ".codex");
+            Directory.CreateDirectory(sourceConfigDirectory);
+            string sourcePromptPath = Path.Combine(sourceConfigDirectory, "compact.md");
+            File.WriteAllText(sourcePromptPath, "Nearest file compact prompt.");
+            string sourceConfigPath = Path.Combine(sourceConfigDirectory, "config.toml");
+            File.WriteAllText(
+                sourceConfigPath,
+                "compact_prompt = \"\"\nexperimental_compact_prompt_file = \"compact.md\"");
+            string activeDocument = Path.Combine(sourceDirectory, "Feature.cs");
+            File.WriteAllText(activeDocument, "namespace Feature;");
+
+            var hostContext = new CopilotAgentHostContextSnapshot(
+                activeDocument,
+                sourceDirectory,
+                attachments: null,
+                liveContext: null,
+                conversationHistory: null,
+                additionalReadRootPaths: null,
+                globalInstructionRootPath: globalRoot);
+            var options = hostContext.ProjectInstructionDiscoveryOptions;
+
+            Assert.Equal("Nearest file compact prompt.", options.CompactPrompt);
+            Assert.Equal(sourcePromptPath, options.CompactPromptSourceFilePath, ignoreCase: true);
+            Assert.Equal(CopilotProjectInstructionConfigSources.TrustedProject, options.CompactPromptSource);
+            Assert.Contains("experimental_compact_prompt_file", options.CompactPromptSourceLabel, StringComparison.Ordinal);
+            Assert.Equal([rootConfigPath, sourceConfigPath], options.AppliedProjectConfigFilePaths, StringComparer.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            Directory.Delete(globalRoot, recursive: true);
+            Directory.Delete(projectRoot, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void NonEmptyInlineCompactPromptWinsOverACloserPromptFile()
+    {
+        string globalRoot = CreateTemporaryDirectory();
+        string projectRoot = CreateTemporaryDirectory();
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
+            File.WriteAllText(
+                Path.Combine(globalRoot, "config.toml"),
+                $"""
+                compact_prompt = "Global inline compact prompt."
+
+                [projects.'{projectRoot}']
+                trust_level = "trusted"
+                """);
+            string projectConfigDirectory = Path.Combine(projectRoot, ".codex");
+            Directory.CreateDirectory(projectConfigDirectory);
+            string promptPath = Path.Combine(projectConfigDirectory, "compact.md");
+            File.WriteAllText(promptPath, "Project file compact prompt.");
+            string projectConfigPath = Path.Combine(projectConfigDirectory, "config.toml");
+            File.WriteAllText(
+                projectConfigPath,
+                "experimental_compact_prompt_file = \"compact.md\"");
+
+            var options = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
+
+            Assert.Equal("Global inline compact prompt.", options.CompactPrompt);
+            Assert.Equal(CopilotProjectInstructionConfigSources.CodexHome, options.CompactPromptSource);
+            Assert.False(options.CompactPromptUsesFile);
+            Assert.Empty(options.CompactPromptSourceFilePath);
+            Assert.Equal([projectConfigPath], options.AppliedProjectConfigFilePaths, StringComparer.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            Directory.Delete(globalRoot, recursive: true);
+            Directory.Delete(projectRoot, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void CodexHomeCompactPromptFileMayUseAnExplicitAbsoluteLocalPath()
+    {
+        string globalRoot = CreateTemporaryDirectory();
+        string promptRoot = CreateTemporaryDirectory();
+        try
+        {
+            string promptPath = Path.Combine(promptRoot, "compact.md");
+            File.WriteAllText(promptPath, "Absolute Codex Home compact prompt.");
+            File.WriteAllText(
+                Path.Combine(globalRoot, "config.toml"),
+                $"experimental_compact_prompt_file = '{promptPath}'");
+
+            var options = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot);
+
+            Assert.Equal("Absolute Codex Home compact prompt.", options.CompactPrompt);
+            Assert.Equal(CopilotProjectInstructionConfigSources.CodexHome, options.CompactPromptSource);
+            Assert.True(options.CompactPromptUsesFile);
+            Assert.Equal(promptPath, options.CompactPromptSourceFilePath, ignoreCase: true);
+        }
+        finally
+        {
+            Directory.Delete(globalRoot, recursive: true);
+            Directory.Delete(promptRoot, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void EmptyCompactPromptClearsTheBroaderLayerAndUsesTheSafeDefaultBody()
+    {
+        string globalRoot = CreateTemporaryDirectory();
+        string projectRoot = CreateTemporaryDirectory();
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
+            File.WriteAllText(
+                Path.Combine(globalRoot, "config.toml"),
+                $"""
+                compact_prompt = "Global compact prompt."
+
+                [projects.'{projectRoot}']
+                trust_level = "trusted"
+                """);
+            string projectConfigDirectory = Path.Combine(projectRoot, ".codex");
+            Directory.CreateDirectory(projectConfigDirectory);
+            string projectConfigPath = Path.Combine(projectConfigDirectory, "config.toml");
+            File.WriteAllText(projectConfigPath, "compact_prompt = \"\"");
+
+            var options = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
+
+            Assert.True(options.HasCompactPromptOverride);
+            Assert.Empty(options.CompactPrompt);
+            Assert.Equal(CopilotProjectInstructionConfigSources.TrustedProject, options.CompactPromptSource);
+            Assert.Equal([projectConfigPath], options.AppliedProjectConfigFilePaths, StringComparer.OrdinalIgnoreCase);
+            var request = CopilotConversationCompactionPrompt.BuildRequest(null, options.CompactPrompt);
+            Assert.StartsWith("Create a continuation summary", request, StringComparison.Ordinal);
+            Assert.Contains("ColorVision host integrity requirements", request, StringComparison.Ordinal);
+        }
+        finally
+        {
+            Directory.Delete(globalRoot, recursive: true);
+            Directory.Delete(projectRoot, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void TrustedProjectCompactPromptFileCannotEscapeTheProjectRoot()
+    {
+        string globalRoot = CreateTemporaryDirectory();
+        string projectRoot = CreateTemporaryDirectory();
+        string outsideRoot = CreateTemporaryDirectory();
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
+            string outsidePromptPath = Path.Combine(outsideRoot, "compact.md");
+            File.WriteAllText(outsidePromptPath, "Outside project prompt.");
+            File.WriteAllText(
+                Path.Combine(globalRoot, "config.toml"),
+                $"""
+                compact_prompt = "Global safe prompt."
+
+                [projects.'{projectRoot}']
+                trust_level = "trusted"
+                """);
+            string projectConfigDirectory = Path.Combine(projectRoot, ".codex");
+            Directory.CreateDirectory(projectConfigDirectory);
+            File.WriteAllText(
+                Path.Combine(projectConfigDirectory, "config.toml"),
+                $"experimental_compact_prompt_file = '{outsidePromptPath}'");
+
+            var options = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
+
+            Assert.Equal("Global safe prompt.", options.CompactPrompt);
+            Assert.Equal(CopilotProjectInstructionConfigSources.CodexHome, options.CompactPromptSource);
+            Assert.Empty(options.CompactPromptSourceFilePath);
+            Assert.Single(options.AppliedProjectConfigFilePaths);
+        }
+        finally
+        {
+            Directory.Delete(globalRoot, recursive: true);
+            Directory.Delete(projectRoot, recursive: true);
+            Directory.Delete(outsideRoot, recursive: true);
+        }
+    }
+
+    [Fact]
     public void HostContextKeepsTheDeveloperInstructionsSnapshotTakenAtSubmission()
     {
         string globalRoot = CreateTemporaryDirectory();
@@ -1298,7 +1602,9 @@ public sealed class CopilotAgentProjectInstructionsTests
             string configDirectory = Path.Combine(projectRoot, ".codex");
             Directory.CreateDirectory(configDirectory);
             string configPath = Path.Combine(configDirectory, "config.toml");
-            File.WriteAllText(configPath, "developer_instructions = \"First guidance.\"");
+            File.WriteAllText(
+                configPath,
+                "developer_instructions = \"First guidance.\"\ncompact_prompt = \"First compact prompt.\"");
             string activeDocument = Path.Combine(projectRoot, "Feature.cs");
             File.WriteAllText(activeDocument, "namespace Feature;");
             var submittedContext = new CopilotAgentHostContextSnapshot(
@@ -1310,7 +1616,9 @@ public sealed class CopilotAgentProjectInstructionsTests
                 additionalReadRootPaths: null,
                 globalInstructionRootPath: globalRoot);
 
-            File.WriteAllText(configPath, "developer_instructions = \"Second guidance.\"");
+            File.WriteAllText(
+                configPath,
+                "developer_instructions = \"Second guidance.\"\ncompact_prompt = \"Second compact prompt.\"");
 
             var submittedPlan = CopilotAgentRequestFactory.Prepare(
                 "Inspect the local implementation.",
@@ -1331,8 +1639,10 @@ public sealed class CopilotAgentProjectInstructionsTests
 
             Assert.Equal("First guidance.", submittedContext.ProjectInstructionDiscoveryOptions.DeveloperInstructions);
             Assert.Equal("First guidance.", submittedPlan.ConfiguredDeveloperInstructions);
+            Assert.Equal("First compact prompt.", submittedContext.ProjectInstructionDiscoveryOptions.CompactPrompt);
             Assert.Equal("Second guidance.", refreshedContext.ProjectInstructionDiscoveryOptions.DeveloperInstructions);
             Assert.Equal("Second guidance.", refreshedPlan.ConfiguredDeveloperInstructions);
+            Assert.Equal("Second compact prompt.", refreshedContext.ProjectInstructionDiscoveryOptions.CompactPrompt);
         }
         finally
         {
@@ -1399,6 +1709,7 @@ public sealed class CopilotAgentProjectInstructionsTests
                 $"""
                 project_doc_fallback_filenames = ["GLOBAL_GUIDE.md"]
                 developer_instructions = "Global guidance."
+                compact_prompt = "Global compact prompt."
 
                 [projects.'{projectRoot}']
                 trust_level = "untrusted"
@@ -1406,12 +1717,12 @@ public sealed class CopilotAgentProjectInstructionsTests
             Directory.CreateDirectory(Path.Combine(projectRoot, ".codex"));
             File.WriteAllText(
                 Path.Combine(projectRoot, ".codex", "config.toml"),
-                "project_doc_fallback_filenames = [\"ROOT_GUIDE.md\"]\ndeveloper_instructions = \"Root guidance.\"");
+                "project_doc_fallback_filenames = [\"ROOT_GUIDE.md\"]\ndeveloper_instructions = \"Root guidance.\"\ncompact_prompt = \"Root compact prompt.\"");
             string sourceDirectory = Path.Combine(projectRoot, "src");
             Directory.CreateDirectory(Path.Combine(sourceDirectory, ".codex"));
             File.WriteAllText(
                 Path.Combine(sourceDirectory, ".codex", "config.toml"),
-                "project_doc_fallback_filenames = [\"SOURCE_GUIDE.md\"]\ndeveloper_instructions = \"Source guidance.\"");
+                "project_doc_fallback_filenames = [\"SOURCE_GUIDE.md\"]\ndeveloper_instructions = \"Source guidance.\"\ncompact_prompt = \"Source compact prompt.\"");
             string activeDocument = Path.Combine(sourceDirectory, "Feature.cs");
             File.WriteAllText(activeDocument, "namespace Feature;");
 
@@ -1428,6 +1739,8 @@ public sealed class CopilotAgentProjectInstructionsTests
             Assert.Equal(["GLOBAL_GUIDE.md"], hostContext.ProjectInstructionDiscoveryOptions.FallbackFileNames);
             Assert.Equal("Global guidance.", hostContext.ProjectInstructionDiscoveryOptions.DeveloperInstructions);
             Assert.Equal(CopilotProjectInstructionConfigSources.CodexHome, hostContext.ProjectInstructionDiscoveryOptions.DeveloperInstructionsSource);
+            Assert.Equal("Global compact prompt.", hostContext.ProjectInstructionDiscoveryOptions.CompactPrompt);
+            Assert.Equal(CopilotProjectInstructionConfigSources.CodexHome, hostContext.ProjectInstructionDiscoveryOptions.CompactPromptSource);
             Assert.Empty(hostContext.ProjectInstructionDiscoveryOptions.AppliedProjectConfigFilePaths);
             Assert.Equal(CopilotProjectInstructionConfigSources.CodexHome, hostContext.ProjectInstructionDiscoveryOptions.ConfigSources);
         }
