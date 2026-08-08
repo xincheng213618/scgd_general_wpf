@@ -72,6 +72,8 @@ namespace ColorVision.Copilot
         internal CopilotCodexWebSearchMode CodexWebSearchMode { get; init; } =
             CopilotCodexWebSearchMode.Unspecified;
 
+        internal int? ToolOutputTokenLimitOverride { get; init; }
+
         public IReadOnlyList<CopilotProjectInstructionDocument> ProjectInstructions { get; init; } = Array.Empty<CopilotProjectInstructionDocument>();
 
         public IReadOnlyList<string> ReadableLocalFilePaths { get; init; } = Array.Empty<string>();

@@ -353,6 +353,22 @@ namespace ColorVision.Copilot
                         : codexConfigOptions.ModelContextWindowSourceLabel)
                     .AppendLine(" · 请求快照覆盖应用默认值");
             }
+            builder.Append("- Codex tool_output_token_limit：");
+            if (!codexConfigOptions.HasToolOutputTokenLimitOverride)
+            {
+                builder.Append("未配置 · 使用 ColorVision ")
+                    .Append(FormatNumber(CopilotFrameworkToolResultFormatter.MaxSerializedCharacters))
+                    .AppendLine(" 序列化字符上限");
+            }
+            else
+            {
+                builder.Append(FormatNumber(codexConfigOptions.ConfiguredToolOutputTokenLimit))
+                    .Append(" tokens · 来源 ")
+                    .Append(codexConfigOptions.ToolOutputTokenLimitSourceLabel.Length == 0
+                        ? "Codex config.toml"
+                        : codexConfigOptions.ToolOutputTokenLimitSourceLabel)
+                    .AppendLine(" · 仅约束模型历史中的单次工具结果；本地审计与证据保持完整");
+            }
             builder.Append("- Codex model_auto_compact_token_limit：");
             if (!codexConfigOptions.HasModelAutoCompactTokenLimitOverride)
             {

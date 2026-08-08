@@ -230,6 +230,8 @@ namespace ColorVision.Copilot
 
         internal int? ModelContextWindowTokensOverride { get; init; }
 
+        internal int? ToolOutputTokenLimitOverride { get; init; }
+
         public IReadOnlyList<CopilotProjectInstructionDocument> ProjectInstructions { get; init; } = Array.Empty<CopilotProjectInstructionDocument>();
 
         public IReadOnlyList<string> ReadableLocalFilePaths { get; init; } = Array.Empty<string>();
@@ -359,6 +361,9 @@ namespace ColorVision.Copilot
                 ModelContextWindowTokensOverride = hostContext.ProjectInstructionDiscoveryOptions.HasModelContextWindowOverride
                     ? hostContext.ProjectInstructionDiscoveryOptions.ConfiguredModelContextWindowTokens
                     : null,
+                ToolOutputTokenLimitOverride = hostContext.ProjectInstructionDiscoveryOptions.HasToolOutputTokenLimitOverride
+                    ? hostContext.ProjectInstructionDiscoveryOptions.ConfiguredToolOutputTokenLimit
+                    : null,
                 ProjectInstructions = projectInstructions,
                 ReadableLocalFilePaths = explicitLocalFilePaths,
                 ReadableLocalDirectoryPaths = readableLocalDirectoryPaths,
@@ -407,6 +412,7 @@ namespace ColorVision.Copilot
                 ActiveDocumentPath = plan.ActiveDocumentPath,
                 ConfiguredDeveloperInstructions = plan.ConfiguredDeveloperInstructions,
                 CodexWebSearchMode = plan.CodexWebSearchMode,
+                ToolOutputTokenLimitOverride = plan.ToolOutputTokenLimitOverride,
                 ProjectInstructions = plan.ProjectInstructions,
                 ReadableLocalFilePaths = plan.ReadableLocalFilePaths,
                 ReadableLocalDirectoryPaths = plan.ReadableLocalDirectoryPaths,

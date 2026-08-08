@@ -198,6 +198,16 @@ namespace ColorVision.Copilot
                         : effective.ModelContextWindowSourceLabel)
                     .AppendLine(" 请求快照；覆盖应用默认上下文窗口");
             }
+            if (effective.HasToolOutputTokenLimitOverride)
+            {
+                builder.Append("Codex tool_output_token_limit：")
+                    .Append(effective.ConfiguredToolOutputTokenLimit.ToString("N0", CultureInfo.CurrentCulture))
+                    .Append(" Token · 来源 ")
+                    .Append(effective.ToolOutputTokenLimitSourceLabel.Length == 0
+                        ? "Codex config.toml"
+                        : effective.ToolOutputTokenLimitSourceLabel)
+                    .AppendLine(" 请求快照；仅约束写入模型历史的单次工具结果，完整本地审计与证据不裁剪");
+            }
             if (effective.HasModelAutoCompactTokenLimitOverride)
             {
                 builder.Append("Codex model_auto_compact_token_limit：")

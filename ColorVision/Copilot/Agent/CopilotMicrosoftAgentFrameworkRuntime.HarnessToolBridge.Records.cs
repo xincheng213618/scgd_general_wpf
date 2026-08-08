@@ -167,7 +167,7 @@ namespace ColorVision.Copilot
 
                 CopilotToolExecutionAuditLogger.Record(outcome);
                 _emit(CopilotAgentEvent.FromToolResult(outcome.Result, outcome.Execution));
-                return CopilotFrameworkToolResultFormatter.Format(outcome);
+                return FormatToolResult(outcome);
             }
 
             private string RecordGuardRejectedToolCall(
@@ -251,7 +251,7 @@ namespace ColorVision.Copilot
 
                 CopilotToolExecutionAuditLogger.Record(outcome);
                 _emit(CopilotAgentEvent.FromToolResult(outcome.Result, outcome.Execution));
-                return CopilotFrameworkToolResultFormatter.Format(outcome);
+                return FormatToolResult(outcome);
             }
         }
     }

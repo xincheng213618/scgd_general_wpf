@@ -165,10 +165,26 @@ namespace ColorVision.Copilot
                 _toolBudgetCompletionGate.CompleteRound(outcome.Invocation.Round);
             }
 
-            private static string FormatRejectedToolCall(string toolName, string error)
+            private string FormatToolResult(CopilotToolExecutionOutcome outcome)
             {
-                return CopilotFrameworkToolResultFormatter.FormatRejected(toolName, error);
-           }
+                return CopilotFrameworkToolResultFormatter.Format(
+                    outcome,
+                    _request.ToolOutputTokenLimitOverride);
+            }
+
+            private string FormatRejectedToolCall(
+                string toolName,
+                string error,
+                string failureCode = "",
+                CopilotToolFailureKind failureKind = CopilotToolFailureKind.None)
+            {
+                return CopilotFrameworkToolResultFormatter.FormatRejected(
+                    toolName,
+                    error,
+                    failureCode,
+                    failureKind,
+                    _request.ToolOutputTokenLimitOverride);
+            }
         }
     }
 }

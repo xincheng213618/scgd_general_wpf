@@ -16,7 +16,11 @@ namespace ColorVision.Copilot
         public const int MaxSummaryCharacters = 800;
         public const int MaxErrorCharacters = 1_200;
 
-        private const int MinimumContentCharacters = 256;
+        internal const int MinimumConfiguredTokenLimit = 0;
+        internal const int MaximumConfiguredTokenLimit = int.MaxValue;
+
+        private const int MaximumConfiguredSerializedCharacters = 1_048_576;
+        private const int MaximumConfiguredContentCharacters = 1_000_000;
         private const int MaxPreservedSections = 24;
         private static readonly Regex WebPageSectionRegex = new(
             @"(?m)^(?=\[Web Fetch Scope\]|\[Web Page (?:Fetched|Fetch Failed)\])",
@@ -36,52 +40,110 @@ namespace ColorVision.Copilot
         };
 
         public static string Format(CopilotToolExecutionOutcome outcome)
+            => Format(outcome, toolOutputTokenLimit: null);
+
+        public static string Format(CopilotToolExecutionOutcome outcome, int? toolOutputTokenLimit)
         {
             ArgumentNullException.ThrowIfNull(outcome);
             var result = outcome.Result ?? new CopilotToolResult();
             var execution = outcome.Execution ?? new CopilotToolExecutionInfo();
             var content = SanitizeMultiline(result.Content);
-            var contentBudget = Math.Min(MaxContentCharacters, content.Length);
+            var budget = ResolveBudget(toolOutputTokenLimit);
+            if (budget.MaximumSerializedWeight == 0)
+                return string.Empty;
+            var maximumContentBudget = Math.Min(budget.MaximumContentCharacters, content.Length);
+            var maximumContent = CompactContent(execution.ToolName, content, maximumContentBudget);
+            var maximumSerialized = Serialize(
+                outcome,
+                maximumContent,
+                content.Length,
+                maximumContent.Length < content.Length);
+            if (budget.Fits(maximumSerialized))
+                return maximumSerialized;
 
-            for (var pass = 0; pass < 8; pass++)
+            var lowerBound = 0;
+            var upperBound = maximumContentBudget - 1;
+            string? best = null;
+            while (lowerBound <= upperBound)
             {
+                var contentBudget = lowerBound + ((upperBound - lowerBound) / 2);
                 var compactedContent = CompactContent(execution.ToolName, content, contentBudget);
                 var serialized = Serialize(outcome, compactedContent, content.Length, compactedContent.Length < content.Length);
-                if (serialized.Length <= MaxSerializedCharacters)
-                    return serialized;
-
-                if (contentBudget <= MinimumContentCharacters)
-                    break;
-
-                var excess = serialized.Length - MaxSerializedCharacters;
-                contentBudget = Math.Max(MinimumContentCharacters, contentBudget - Math.Max(256, excess));
+                if (budget.Fits(serialized))
+                {
+                    best = serialized;
+                    lowerBound = contentBudget + 1;
+                }
+                else
+                {
+                    upperBound = contentBudget - 1;
+                }
             }
 
-            var minimalContent = content.Length == 0
-                ? string.Empty
-                : CompactHeadTail(content, MinimumContentCharacters, GetTailRatio(execution.ToolName));
-            var minimal = Serialize(outcome, minimalContent, content.Length, minimalContent.Length < content.Length);
-            if (minimal.Length <= MaxSerializedCharacters)
-                return minimal;
-
-            return Serialize(outcome, string.Empty, content.Length, content.Length > 0);
+            return best ?? SerializeEssential(outcome, content.Length, budget);
         }
 
         public static string FormatRejected(string toolName, string error)
         {
-            return FormatRejected(toolName, error, string.Empty, CopilotToolFailureKind.None);
+            return FormatRejected(toolName, error, string.Empty, CopilotToolFailureKind.None, toolOutputTokenLimit: null);
         }
 
         public static string FormatRejected(string toolName, string error, string failureCode, CopilotToolFailureKind failureKind)
+            => FormatRejected(toolName, error, failureCode, failureKind, toolOutputTokenLimit: null);
+
+        public static string FormatRejected(
+            string toolName,
+            string error,
+            string failureCode,
+            CopilotToolFailureKind failureKind,
+            int? toolOutputTokenLimit)
+        {
+            var budget = ResolveBudget(toolOutputTokenLimit);
+            if (budget.MaximumSerializedWeight == 0)
+                return string.Empty;
+            foreach (var textLimits in new[]
+            {
+                (Tool: 120, Summary: MaxSummaryCharacters, Error: MaxErrorCharacters),
+                (Tool: 80, Summary: 200, Error: 400),
+                (Tool: 40, Summary: 80, Error: 160),
+                (Tool: 24, Summary: 0, Error: 0),
+            })
+            {
+                var serialized = SerializeRejected(
+                    toolName,
+                    error,
+                    failureCode,
+                    failureKind,
+                    textLimits.Tool,
+                    textLimits.Summary,
+                    textLimits.Error);
+                if (budget.Fits(serialized))
+                    return serialized;
+            }
+
+            const string fallback = "{\"success\":false}";
+            return budget.Fits(fallback) ? fallback : "{}";
+        }
+
+        private static string SerializeRejected(
+            string toolName,
+            string error,
+            string failureCode,
+            CopilotToolFailureKind failureKind,
+            int maximumToolCharacters,
+            int maximumSummaryCharacters,
+            int maximumErrorCharacters)
         {
             var payload = new Dictionary<string, object?>
             {
-                ["tool"] = SanitizeInline(toolName, 120),
+                ["tool"] = SanitizeInline(toolName, maximumToolCharacters),
                 ["success"] = false,
                 ["retry_allowed"] = false,
-                ["summary"] = SanitizeInline($"{toolName} was not executed.", MaxSummaryCharacters),
-                ["error"] = SanitizeInline(error, MaxErrorCharacters),
             };
+            if (maximumSummaryCharacters > 0)
+                payload["summary"] = SanitizeInline($"{toolName} was not executed.", maximumSummaryCharacters);
+            if (maximumErrorCharacters > 0)
+                payload["error"] = SanitizeInline(error, maximumErrorCharacters);
             if (failureKind != CopilotToolFailureKind.None)
                 payload["failure_kind"] = failureKind.ToString().ToLowerInvariant();
             var normalizedFailureCode = CopilotToolFailureCode.Normalize(failureCode);
@@ -96,8 +158,8 @@ namespace ColorVision.Copilot
             int originalContentCharacters,
             bool contentTruncated)
         {
-            var result = outcome.Result;
-            var execution = outcome.Execution;
+            var result = outcome.Result ?? new CopilotToolResult();
+            var execution = outcome.Execution ?? new CopilotToolExecutionInfo();
             var payload = new Dictionary<string, object?>
             {
                 ["tool"] = SanitizeInline(execution.ToolName, 120),
@@ -167,6 +229,87 @@ namespace ColorVision.Copilot
             }
 
             return JsonSerializer.Serialize(payload, JsonOptions);
+        }
+
+        private static string SerializeEssential(
+            CopilotToolExecutionOutcome outcome,
+            int originalContentCharacters,
+            FormatterBudget budget)
+        {
+            foreach (var limits in new[]
+            {
+                (Tool: 120, ApprovalAction: 120, IncludeAttempt: true, IncludeCounts: true),
+                (Tool: 60, ApprovalAction: 60, IncludeAttempt: true, IncludeCounts: true),
+                (Tool: 32, ApprovalAction: 32, IncludeAttempt: false, IncludeCounts: false),
+            })
+            {
+                var result = outcome.Result ?? new CopilotToolResult();
+                var execution = outcome.Execution ?? new CopilotToolExecutionInfo();
+                var payload = new Dictionary<string, object?>
+                {
+                    ["tool"] = SanitizeInline(execution.ToolName, limits.Tool),
+                    ["success"] = result.Success,
+                    ["retry_allowed"] = execution.RetryEligible,
+                };
+                if (limits.IncludeAttempt)
+                {
+                    payload["attempt"] = new Dictionary<string, int>
+                    {
+                        ["current"] = Math.Max(1, execution.Attempt),
+                        ["maximum"] = Math.Max(Math.Max(1, execution.Attempt), execution.MaxAttempts),
+                    };
+                }
+                if (execution.FailureKind != CopilotToolFailureKind.None)
+                    payload["failure_kind"] = execution.FailureKind.ToString().ToLowerInvariant();
+                var failureCode = result.Success ? string.Empty : CopilotToolFailureCode.Normalize(result.FailureCode);
+                if (!string.IsNullOrWhiteSpace(failureCode))
+                    payload["failure_code"] = failureCode;
+                if (result.Approval != null)
+                {
+                    payload["status"] = "awaiting_approval";
+                    payload["approval"] = new Dictionary<string, object?>
+                    {
+                        ["action_id"] = SanitizeInline(result.Approval.ActionId, limits.ApprovalAction),
+                    };
+                }
+                if (originalContentCharacters > 0)
+                {
+                    payload["content_truncated"] = true;
+                    if (limits.IncludeCounts)
+                    {
+                        payload["content_original_characters"] = originalContentCharacters;
+                        payload["content_returned_characters"] = 0;
+                    }
+                }
+
+                var serialized = JsonSerializer.Serialize(payload, JsonOptions);
+                if (budget.Fits(serialized))
+                    return serialized;
+            }
+
+            var successFallback = JsonSerializer.Serialize(
+                new Dictionary<string, object?> { ["success"] = outcome.Result?.Success == true },
+                JsonOptions);
+            return budget.Fits(successFallback) ? successFallback : "{}";
+        }
+
+        private static FormatterBudget ResolveBudget(int? configuredTokenLimit)
+        {
+            if (!configuredTokenLimit.HasValue
+                || configuredTokenLimit.Value < MinimumConfiguredTokenLimit
+                || configuredTokenLimit.Value > MaximumConfiguredTokenLimit)
+            {
+                return new FormatterBudget(
+                    MaxContentCharacters,
+                    MaxSerializedCharacters,
+                    MaximumSerializedWeight: null);
+            }
+
+            var maximumWeight = (long)configuredTokenLimit.Value * CopilotTokenEstimator.AsciiCharactersPerToken;
+            return new FormatterBudget(
+                Math.Min(MaximumConfiguredContentCharacters, (int)Math.Min(int.MaxValue, maximumWeight)),
+                Math.Min(MaximumConfiguredSerializedCharacters, (int)Math.Min(int.MaxValue, maximumWeight)),
+                maximumWeight);
         }
 
         private static string CompactContent(string toolName, string content, int maximumCharacters)
@@ -286,12 +429,27 @@ namespace ColorVision.Copilot
 
         private static string SanitizeInline(string? value, int maximumCharacters)
         {
+            if (maximumCharacters <= 0)
+                return string.Empty;
             var text = SanitizeMultiline(value)
                 .Replace('\r', ' ')
                 .Replace('\n', ' ');
             while (text.Contains("  ", StringComparison.Ordinal))
                 text = text.Replace("  ", " ", StringComparison.Ordinal);
             return text.Length <= maximumCharacters ? text : text[..Math.Max(0, maximumCharacters - 3)] + "...";
+        }
+
+        private readonly record struct FormatterBudget(
+            int MaximumContentCharacters,
+            int MaximumSerializedCharacters,
+            long? MaximumSerializedWeight)
+        {
+            public bool Fits(string value)
+            {
+                return value.Length <= MaximumSerializedCharacters
+                    && (!MaximumSerializedWeight.HasValue
+                        || CopilotTokenEstimator.EstimateTextWeight(value) <= MaximumSerializedWeight.Value);
+            }
         }
     }
 }

@@ -554,6 +554,7 @@ namespace ColorVision.Copilot
                 ActiveDocumentPath = activeDocumentPath,
                 ConfiguredDeveloperInstructions = parentRequest.ConfiguredDeveloperInstructions,
                 CodexWebSearchMode = parentRequest.CodexWebSearchMode,
+                ToolOutputTokenLimitOverride = parentRequest.ToolOutputTokenLimitOverride,
                 ProjectInstructions = projectInstructions,
                 ReadableLocalFilePaths = preselectedFiles,
                 ReadableLocalDirectoryPaths = Array.Empty<string>(),

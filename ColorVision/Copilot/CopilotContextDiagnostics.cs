@@ -60,6 +60,12 @@ namespace ColorVision.Copilot
 
         public string ModelContextWindowSourceLabel { get; init; } = string.Empty;
 
+        public int ToolOutputTokenLimit { get; init; }
+
+        public bool HasToolOutputTokenLimitOverride { get; init; }
+
+        public string ToolOutputTokenLimitSourceLabel { get; init; } = string.Empty;
+
         public bool AutoCompactConversationHistory { get; init; }
 
         public int AutoCompactThresholdPercent { get; init; }
@@ -277,6 +283,23 @@ namespace ColorVision.Copilot
                         : snapshot.ModelContextWindowSourceLabel.Trim())
                     .AppendLine(" 请求快照；同时约束聊天历史、发送校验、自动压缩和 Agent 上下文");
             }
+            builder.Append("工具结果历史预算：");
+            if (snapshot.HasToolOutputTokenLimitOverride)
+            {
+                builder.Append("单次最多 ")
+                    .Append(FormatCount(snapshot.ToolOutputTokenLimit))
+                    .Append(" Token（混合文本保守估算） · 来源 ")
+                    .Append(string.IsNullOrWhiteSpace(snapshot.ToolOutputTokenLimitSourceLabel)
+                        ? "Codex config.toml"
+                        : snapshot.ToolOutputTokenLimitSourceLabel.Trim())
+                    .AppendLine(" 请求快照");
+            }
+            else
+            {
+                builder.Append(FormatCount(CopilotFrameworkToolResultFormatter.MaxSerializedCharacters))
+                    .AppendLine(" 序列化字符（ColorVision 默认）");
+            }
+            builder.AppendLine("范围：只压缩写入模型历史的函数结果；完整工具结果、审批记录、证据路径与审计日志保持原样。");
             builder.Append("自动压缩：");
             if (snapshot.AutoCompactConversationHistory)
             {

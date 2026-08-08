@@ -197,6 +197,7 @@ public sealed class CopilotExecutionScopeTests
             TrustedProjectRootPaths = [@"C:\ColorVision\Scope"],
             ConfiguredDeveloperInstructions = "Keep configured guidance.",
             CodexWebSearchMode = CopilotCodexWebSearchMode.Cached,
+            ToolOutputTokenLimitOverride = 12_000,
             Mode = CopilotAgentMode.Code,
         };
         var parentScope = CopilotExecutionScope.ForAgentRequest(
@@ -223,6 +224,7 @@ public sealed class CopilotExecutionScopeTests
         Assert.Same(childScope, CopilotExecutionScope.ForAgentRun(childRequest));
         Assert.Equal(parentRequest.ConfiguredDeveloperInstructions, childRequest.ConfiguredDeveloperInstructions);
         Assert.Equal(parentRequest.CodexWebSearchMode, childRequest.CodexWebSearchMode);
+        Assert.Equal(parentRequest.ToolOutputTokenLimitOverride, childRequest.ToolOutputTokenLimitOverride);
 
         var finalizationRequest = Assert.IsType<CopilotAgentRequest>(
             CopilotSubagentRunner.CreateBudgetFinalizationRequest(
@@ -262,6 +264,7 @@ public sealed class CopilotExecutionScopeTests
         Assert.Same(finalizationScope, CopilotExecutionScope.ForAgentRun(finalizationRequest));
         Assert.Equal(childRequest.ConfiguredDeveloperInstructions, finalizationRequest.ConfiguredDeveloperInstructions);
         Assert.Equal(childRequest.CodexWebSearchMode, finalizationRequest.CodexWebSearchMode);
+        Assert.Equal(childRequest.ToolOutputTokenLimitOverride, finalizationRequest.ToolOutputTokenLimitOverride);
         Assert.True(CopilotMicrosoftAgentFrameworkRuntime.CanUseMinimalDelegatedFinalizationInstructions(
             finalizationRequest,
             [],
