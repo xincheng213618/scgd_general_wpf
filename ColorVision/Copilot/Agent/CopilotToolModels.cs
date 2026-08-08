@@ -75,6 +75,8 @@ namespace ColorVision.Copilot
         internal CopilotCodexSandboxMode CodexSandboxMode { get; init; } =
             CopilotCodexSandboxMode.Unspecified;
 
+        internal bool CodexShellToolEnabled { get; init; } = true;
+
         internal CopilotCodexApprovalPolicy CodexApprovalPolicy { get; init; } =
             CopilotCodexApprovalPolicy.Unspecified;
 

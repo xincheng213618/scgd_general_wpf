@@ -140,6 +140,24 @@ namespace ColorVision.Copilot
                         "codex_agents_disabled"));
                 return await PublishOutcomeAsync(denied, hooks, hookRuns, onEvent);
             }
+            if (!CopilotToolRegistry.IsAllowedForCodexShellToolPolicy(
+                invocation.Tool,
+                invocation.AgentRequest))
+            {
+                var denied = CreateOutcome(
+                    invocation,
+                    CopilotToolExecutionState.Denied,
+                    startedAt,
+                    timeout,
+                    stopwatch,
+                    Failure(
+                        invocation.Tool.Name,
+                        $"{invocation.Tool.Name} execution was denied.",
+                        "Codex features.shell_tool=false disables shell command starts for this submitted turn.",
+                        CopilotToolFailureKind.Authorization,
+                        "codex_shell_tool_disabled"));
+                return await PublishOutcomeAsync(denied, hooks, hookRuns, onEvent);
+            }
             if (!CopilotToolRegistry.IsAllowedForCodexSandboxPolicy(
                 invocation.Tool,
                 invocation.AgentRequest))

@@ -231,6 +231,8 @@ namespace ColorVision.Copilot
         internal CopilotCodexSandboxMode CodexSandboxMode { get; init; } =
             CopilotCodexSandboxMode.Unspecified;
 
+        internal bool CodexShellToolEnabled { get; init; } = true;
+
         internal CopilotCodexApprovalPolicy CodexApprovalPolicy { get; init; } =
             CopilotCodexApprovalPolicy.Unspecified;
 
@@ -414,6 +416,7 @@ namespace ColorVision.Copilot
                 ConfiguredDeveloperInstructions = hostContext.ProjectInstructionDiscoveryOptions.DeveloperInstructions,
                 CodexWebSearchMode = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredWebSearchMode,
                 CodexSandboxMode = codexSandboxMode,
+                CodexShellToolEnabled = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredShellToolEnabled,
                 CodexApprovalPolicy = codexApprovalPolicy,
                 CodexApprovalsReviewer = codexApprovalsReviewer,
                 CodexAutoReviewPolicy = codexAutoReviewPolicy,
@@ -504,6 +507,7 @@ namespace ColorVision.Copilot
                 ConfiguredDeveloperInstructions = plan.ConfiguredDeveloperInstructions,
                 CodexWebSearchMode = plan.CodexWebSearchMode,
                 CodexSandboxMode = plan.CodexSandboxMode,
+                CodexShellToolEnabled = plan.CodexShellToolEnabled,
                 CodexApprovalPolicy = plan.CodexApprovalPolicy,
                 CodexApprovalsReviewer = plan.CodexApprovalsReviewer,
                 CodexAutoReviewPolicy = plan.CodexAutoReviewPolicy,

@@ -63,6 +63,12 @@ namespace ColorVision.Copilot
 
         public string CodexPreventIdleSleepSourceLabel { get; init; } = string.Empty;
 
+        public bool CodexShellToolEnabled { get; init; } = true;
+
+        public bool HasCodexShellToolEnabledOverride { get; init; }
+
+        public string CodexShellToolEnabledSourceLabel { get; init; } = string.Empty;
+
         public bool CodexAgentsEnabled { get; init; } = true;
 
         public bool HasCodexAgentsEnabledOverride { get; init; }
@@ -449,6 +455,24 @@ namespace ColorVision.Copilot
                     builder.AppendLine("；当前无活动轮次，排队等待不占用系统请求）");
                 }
             }
+            builder.Append("命令工具：")
+                .Append(snapshot.CodexShellToolEnabled ? "开启" : "关闭");
+            if (snapshot.HasCodexShellToolEnabledOverride)
+            {
+                builder.Append('（')
+                    .Append(string.IsNullOrWhiteSpace(snapshot.CodexShellToolEnabledSourceLabel)
+                        ? "Codex config.toml"
+                        : snapshot.CodexShellToolEnabledSourceLabel.Trim())
+                    .Append(" 提交快照")
+                    .Append(snapshot.CodexShellToolEnabled
+                        ? "；按请求意图暴露命令启动工具）"
+                        : "；命令启动工具已从目录移除，旧调用也会拒绝；已有后台命令仍可观察或停止）");
+            }
+            else
+            {
+                builder.Append("（Codex 默认开启）");
+            }
+            builder.AppendLine();
             builder.Append("子代理工具：")
                 .Append(snapshot.CodexAgentsEnabled ? "开启" : "关闭");
             if (snapshot.HasCodexAgentsEnabledOverride)

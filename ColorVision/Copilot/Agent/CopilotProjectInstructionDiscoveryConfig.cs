@@ -229,6 +229,13 @@ namespace ColorVision.Copilot
         public CopilotProjectInstructionConfigSources PreventIdleSleepSource { get; init; } =
             CopilotProjectInstructionConfigSources.None;
 
+        public bool ConfiguredShellToolEnabled { get; init; } = true;
+
+        public bool HasShellToolEnabledOverride { get; init; }
+
+        public CopilotProjectInstructionConfigSources ShellToolEnabledSource { get; init; } =
+            CopilotProjectInstructionConfigSources.None;
+
         public bool ConfiguredAgentsEnabled { get; init; } = true;
 
         public bool HasAgentsEnabledOverride { get; init; }
@@ -541,6 +548,13 @@ namespace ColorVision.Copilot
             _ => string.Empty,
         };
 
+        public string ShellToolEnabledSourceLabel => ShellToolEnabledSource switch
+        {
+            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml features.shell_tool",
+            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml features.shell_tool",
+            _ => string.Empty,
+        };
+
         public string AgentsEnabledSourceLabel => AgentsEnabledSource switch
         {
             CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml agents.enabled",
@@ -731,6 +745,8 @@ namespace ColorVision.Copilot
         private const string ReviewModelKey = "review_model";
         private const string PreventIdleSleepKey = "features.prevent_idle_sleep";
         private const string PreventIdleSleepFeatureKey = "prevent_idle_sleep";
+        private const string ShellToolEnabledKey = "features.shell_tool";
+        private const string ShellToolEnabledFeatureKey = "shell_tool";
         private const string AgentsEnabledKey = "agents.enabled";
         private const string AgentsEnabledTableKey = "enabled";
         private const string AgentsInterruptMessageKey = "agents.interrupt_message";
@@ -980,6 +996,14 @@ namespace ColorVision.Copilot
                 PreventIdleSleepSource = layer.HasPreventIdleSleepOverride
                     ? source
                     : current.PreventIdleSleepSource,
+                ConfiguredShellToolEnabled = layer.HasShellToolEnabledOverride
+                    ? layer.ShellToolEnabled
+                    : current.ConfiguredShellToolEnabled,
+                HasShellToolEnabledOverride = current.HasShellToolEnabledOverride
+                    || layer.HasShellToolEnabledOverride,
+                ShellToolEnabledSource = layer.HasShellToolEnabledOverride
+                    ? source
+                    : current.ShellToolEnabledSource,
                 ConfiguredAgentsEnabled = layer.HasAgentsEnabledOverride
                     ? layer.AgentsEnabled
                     : current.ConfiguredAgentsEnabled,
@@ -1156,6 +1180,7 @@ namespace ColorVision.Copilot
                 || layer.HasAutoReviewPolicyOverride
                 || layer.HasReviewModelOverride
                 || layer.HasPreventIdleSleepOverride
+                || layer.HasShellToolEnabledOverride
                 || layer.HasAgentsEnabledOverride
                 || layer.HasInterruptMessageOverride
                 || layer.HasMaximumConcurrentSubagentRunsOverride
@@ -1441,6 +1466,7 @@ namespace ColorVision.Copilot
             var autoReviewPolicy = string.Empty;
             var reviewModel = string.Empty;
             var preventIdleSleep = false;
+            var shellToolEnabled = true;
             var agentsEnabled = true;
             var interruptMessageEnabled = true;
             var maximumConcurrentSubagentRuns = CopilotSubagentCoordinator.DefaultMaximumConcurrentRuns;
@@ -1472,6 +1498,7 @@ namespace ColorVision.Copilot
             var hasAutoReviewPolicyOverride = false;
             var hasReviewModelOverride = false;
             var hasPreventIdleSleepOverride = false;
+            var hasShellToolEnabledOverride = false;
             var hasAgentsEnabledOverride = false;
             var hasInterruptMessageOverride = false;
             var hasMaximumConcurrentSubagentRunsOverride = false;
@@ -1633,6 +1660,18 @@ namespace ColorVision.Copilot
                         continue;
                     }
                     hasPreventIdleSleepOverride = true;
+                    continue;
+                }
+
+                if (string.Equals(assignment.Key, ShellToolEnabledKey, StringComparison.Ordinal))
+                {
+                    if (!TryParseTomlBoolean(
+                        assignment.Value,
+                        out shellToolEnabled))
+                    {
+                        continue;
+                    }
+                    hasShellToolEnabledOverride = true;
                     continue;
                 }
 
@@ -1949,6 +1988,8 @@ namespace ColorVision.Copilot
                 HasReviewModelOverride = hasReviewModelOverride,
                 PreventIdleSleep = preventIdleSleep,
                 HasPreventIdleSleepOverride = hasPreventIdleSleepOverride,
+                ShellToolEnabled = shellToolEnabled,
+                HasShellToolEnabledOverride = hasShellToolEnabledOverride,
                 AgentsEnabled = agentsEnabled,
                 HasAgentsEnabledOverride = hasAgentsEnabledOverride,
                 InterruptMessageEnabled = interruptMessageEnabled,
@@ -1996,6 +2037,7 @@ namespace ColorVision.Copilot
                 || hasAutoReviewPolicyOverride
                 || hasReviewModelOverride
                 || hasPreventIdleSleepOverride
+                || hasShellToolEnabledOverride
                 || hasAgentsEnabledOverride
                 || hasInterruptMessageOverride
                 || hasMaximumConcurrentSubagentRunsOverride
@@ -2162,8 +2204,12 @@ namespace ColorVision.Copilot
                     continue;
                 var parsedKey = line[..equalsIndex].Trim();
                 var key = inFeaturesTable
-                    && string.Equals(parsedKey, PreventIdleSleepFeatureKey, StringComparison.Ordinal)
-                        ? PreventIdleSleepKey
+                    ? parsedKey switch
+                    {
+                        PreventIdleSleepFeatureKey => PreventIdleSleepKey,
+                        ShellToolEnabledFeatureKey => ShellToolEnabledKey,
+                        _ => string.Empty,
+                    }
                         : inAgentsTable
                             ? parsedKey switch
                             {
@@ -2193,6 +2239,7 @@ namespace ColorVision.Copilot
                     && !string.Equals(key, AutoReviewPolicyKey, StringComparison.Ordinal)
                     && !string.Equals(key, ReviewModelKey, StringComparison.Ordinal)
                     && !string.Equals(key, PreventIdleSleepKey, StringComparison.Ordinal)
+                    && !string.Equals(key, ShellToolEnabledKey, StringComparison.Ordinal)
                     && !string.Equals(key, AgentsEnabledKey, StringComparison.Ordinal)
                     && !string.Equals(key, AgentsInterruptMessageKey, StringComparison.Ordinal)
                     && !string.Equals(key, AgentsMaximumConcurrentThreadsKey, StringComparison.Ordinal)
@@ -3092,6 +3139,10 @@ namespace ColorVision.Copilot
             public bool PreventIdleSleep { get; init; }
 
             public bool HasPreventIdleSleepOverride { get; init; }
+
+            public bool ShellToolEnabled { get; init; } = true;
+
+            public bool HasShellToolEnabledOverride { get; init; }
 
             public bool AgentsEnabled { get; init; } = true;
 

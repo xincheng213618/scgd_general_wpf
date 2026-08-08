@@ -474,6 +474,7 @@ namespace ColorVision.Copilot
                     .AppendLine(" · 提交快照 · 仅改变 Chat/Agent 用户可见输出；请求、Token 计量与运行事件保持完整");
             }
             AppendPreventIdleSleep(builder, codexConfigOptions);
+            AppendShellToolEnabled(builder, codexConfigOptions);
             AppendAgentsEnabled(builder, codexConfigOptions);
             builder.Append("- Codex service_tier：");
             if (!codexConfigOptions.HasServiceTierOverride)
@@ -708,6 +709,29 @@ namespace ColorVision.Copilot
             {
                 builder.AppendLine(" · 当前无活动轮次；排队等待不占用系统请求");
             }
+        }
+
+        private static void AppendShellToolEnabled(
+            StringBuilder builder,
+            CopilotProjectInstructionDiscoveryOptions codexConfigOptions)
+        {
+            builder.Append("- Codex features.shell_tool：")
+                .Append(codexConfigOptions.ConfiguredShellToolEnabled ? "true" : "false");
+            if (codexConfigOptions.HasShellToolEnabledOverride)
+            {
+                builder.Append(" · 来源 ")
+                    .Append(codexConfigOptions.ShellToolEnabledSourceLabel.Length == 0
+                        ? "Codex config.toml"
+                        : codexConfigOptions.ShellToolEnabledSourceLabel)
+                    .Append(" · 提交快照");
+            }
+            else
+            {
+                builder.Append(" · 官方默认");
+            }
+            builder.AppendLine(codexConfigOptions.ConfiguredShellToolEnabled
+                ? " · 按请求意图暴露命令启动工具"
+                : " · 命令启动工具已从目录移除，旧计划、恢复状态与注入调用也会拒绝；已有后台命令仍可观察或停止");
         }
 
         private static void AppendAgentsEnabled(
