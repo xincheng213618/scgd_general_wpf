@@ -86,6 +86,12 @@ namespace ColorVision.Copilot
 
         public string CodexModelSupportsReasoningSummariesSourceLabel { get; init; } = string.Empty;
 
+        public bool CodexHideAgentReasoning { get; init; }
+
+        public bool HasCodexHideAgentReasoningOverride { get; init; }
+
+        public string CodexHideAgentReasoningSourceLabel { get; init; } = string.Empty;
+
         public string CodexServiceTier { get; init; } = string.Empty;
 
         public bool HasCodexServiceTierOverride { get; init; }
@@ -297,6 +303,16 @@ namespace ColorVision.Copilot
                         ? " 请求快照；启用，摘要未配置时使用 auto；显式 none 仍关闭摘要"
                         : " 请求快照；阻断并覆盖 effort/summary")
                     .AppendLine("；仅 Agent 官方 OpenAI Responses 生效）");
+            }
+            if (snapshot.HasCodexHideAgentReasoningOverride)
+            {
+                builder.Append("推理事件展示：")
+                    .Append(snapshot.CodexHideAgentReasoning ? "隐藏" : "显示")
+                    .Append("（")
+                    .Append(string.IsNullOrWhiteSpace(snapshot.CodexHideAgentReasoningSourceLabel)
+                        ? "Codex config.toml"
+                        : snapshot.CodexHideAgentReasoningSourceLabel.Trim())
+                    .AppendLine(" 提交快照；同时作用于 Chat/Agent，仅改变用户可见输出，不改变请求、Token 计量或运行事件）");
             }
             if (snapshot.HasCodexServiceTierOverride)
             {

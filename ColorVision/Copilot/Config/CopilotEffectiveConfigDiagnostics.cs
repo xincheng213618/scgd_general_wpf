@@ -410,6 +410,20 @@ namespace ColorVision.Copilot
                         : " · 阻断 reasoning metadata；覆盖 effort/summary");
             }
             builder.AppendLine(" · 仅 Agent 官方 OpenAI Responses 生效");
+            builder.Append("- Codex hide_agent_reasoning：");
+            if (!codexConfigOptions.HasHideAgentReasoningOverride)
+            {
+                builder.AppendLine("未配置 · 显示 Chat/Agent reasoning 输出");
+            }
+            else
+            {
+                builder.Append(codexConfigOptions.ConfiguredHideAgentReasoning ? "true" : "false")
+                    .Append(" · 来源 ")
+                    .Append(codexConfigOptions.HideAgentReasoningSourceLabel.Length == 0
+                        ? "Codex config.toml"
+                        : codexConfigOptions.HideAgentReasoningSourceLabel)
+                    .AppendLine(" · 提交快照 · 仅改变 Chat/Agent 用户可见输出；请求、Token 计量与运行事件保持完整");
+            }
             builder.Append("- Codex service_tier：");
             if (!codexConfigOptions.HasServiceTierOverride)
             {

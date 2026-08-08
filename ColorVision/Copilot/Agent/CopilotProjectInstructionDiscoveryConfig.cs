@@ -173,6 +173,13 @@ namespace ColorVision.Copilot
         public CopilotProjectInstructionConfigSources ModelSupportsReasoningSummariesSource { get; init; } =
             CopilotProjectInstructionConfigSources.None;
 
+        public bool ConfiguredHideAgentReasoning { get; init; }
+
+        public bool HasHideAgentReasoningOverride { get; init; }
+
+        public CopilotProjectInstructionConfigSources HideAgentReasoningSource { get; init; } =
+            CopilotProjectInstructionConfigSources.None;
+
         public string ConfiguredServiceTier { get; init; } = string.Empty;
 
         public bool HasServiceTierOverride { get; init; }
@@ -301,6 +308,7 @@ namespace ColorVision.Copilot
             || HasModelReasoningEffortOverride
             || HasModelReasoningSummaryOverride
             || HasModelSupportsReasoningSummariesOverride
+            || HasHideAgentReasoningOverride
             || HasServiceTierOverride
             || HasModelVerbosityOverride
             || HasModelAutoCompactTokenLimitOverride
@@ -373,6 +381,13 @@ namespace ColorVision.Copilot
         {
             CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml model_supports_reasoning_summaries",
             CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml model_supports_reasoning_summaries",
+            _ => string.Empty,
+        };
+
+        public string HideAgentReasoningSourceLabel => HideAgentReasoningSource switch
+        {
+            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml hide_agent_reasoning",
+            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml hide_agent_reasoning",
             _ => string.Empty,
         };
 
@@ -478,6 +493,7 @@ namespace ColorVision.Copilot
         private const string ModelReasoningEffortKey = "model_reasoning_effort";
         private const string ModelReasoningSummaryKey = "model_reasoning_summary";
         private const string ModelSupportsReasoningSummariesKey = "model_supports_reasoning_summaries";
+        private const string HideAgentReasoningKey = "hide_agent_reasoning";
         private const string ServiceTierKey = "service_tier";
         private const string ModelVerbosityKey = "model_verbosity";
         private const string ModelAutoCompactTokenLimitKey = "model_auto_compact_token_limit";
@@ -679,6 +695,14 @@ namespace ColorVision.Copilot
                 ModelSupportsReasoningSummariesSource = layer.HasModelSupportsReasoningSummariesOverride
                     ? source
                     : current.ModelSupportsReasoningSummariesSource,
+                ConfiguredHideAgentReasoning = layer.HasHideAgentReasoningOverride
+                    ? layer.HideAgentReasoning
+                    : current.ConfiguredHideAgentReasoning,
+                HasHideAgentReasoningOverride = current.HasHideAgentReasoningOverride
+                    || layer.HasHideAgentReasoningOverride,
+                HideAgentReasoningSource = layer.HasHideAgentReasoningOverride
+                    ? source
+                    : current.HideAgentReasoningSource,
                 ConfiguredServiceTier = layer.HasServiceTierOverride
                     ? layer.ServiceTier
                     : current.ConfiguredServiceTier,
@@ -758,6 +782,7 @@ namespace ColorVision.Copilot
                 || layer.HasModelReasoningEffortOverride
                 || layer.HasModelReasoningSummaryOverride
                 || layer.HasModelSupportsReasoningSummariesOverride
+                || layer.HasHideAgentReasoningOverride
                 || layer.HasServiceTierOverride
                 || layer.HasModelVerbosityOverride
                 || layer.HasModelAutoCompactTokenLimitOverride
@@ -1030,6 +1055,7 @@ namespace ColorVision.Copilot
             var modelReasoningEffort = CopilotCodexReasoningEffort.Unspecified;
             var modelReasoningSummary = CopilotCodexReasoningSummary.Unspecified;
             var modelSupportsReasoningSummaries = false;
+            var hideAgentReasoning = false;
             var serviceTier = string.Empty;
             var modelVerbosity = CopilotCodexModelVerbosity.Unspecified;
             var modelAutoCompactTokenLimit = 0;
@@ -1048,6 +1074,7 @@ namespace ColorVision.Copilot
             var hasModelReasoningEffortOverride = false;
             var hasModelReasoningSummaryOverride = false;
             var hasModelSupportsReasoningSummariesOverride = false;
+            var hasHideAgentReasoningOverride = false;
             var hasServiceTierOverride = false;
             var hasModelVerbosityOverride = false;
             var hasModelAutoCompactTokenLimitOverride = false;
@@ -1181,6 +1208,18 @@ namespace ColorVision.Copilot
                         continue;
                     }
                     hasModelSupportsReasoningSummariesOverride = true;
+                    continue;
+                }
+
+                if (string.Equals(assignment.Key, HideAgentReasoningKey, StringComparison.Ordinal))
+                {
+                    if (!TryParseTomlBoolean(
+                        assignment.Value,
+                        out hideAgentReasoning))
+                    {
+                        continue;
+                    }
+                    hasHideAgentReasoningOverride = true;
                     continue;
                 }
 
@@ -1326,6 +1365,8 @@ namespace ColorVision.Copilot
                 HasModelReasoningSummaryOverride = hasModelReasoningSummaryOverride,
                 ModelSupportsReasoningSummaries = modelSupportsReasoningSummaries,
                 HasModelSupportsReasoningSummariesOverride = hasModelSupportsReasoningSummariesOverride,
+                HideAgentReasoning = hideAgentReasoning,
+                HasHideAgentReasoningOverride = hasHideAgentReasoningOverride,
                 ServiceTier = serviceTier,
                 HasServiceTierOverride = hasServiceTierOverride,
                 ModelVerbosity = modelVerbosity,
@@ -1348,6 +1389,7 @@ namespace ColorVision.Copilot
                 || hasModelReasoningEffortOverride
                 || hasModelReasoningSummaryOverride
                 || hasModelSupportsReasoningSummariesOverride
+                || hasHideAgentReasoningOverride
                 || hasServiceTierOverride
                 || hasModelVerbosityOverride
                 || hasModelAutoCompactTokenLimitOverride
@@ -1502,6 +1544,7 @@ namespace ColorVision.Copilot
                     && !string.Equals(key, ModelReasoningEffortKey, StringComparison.Ordinal)
                     && !string.Equals(key, ModelReasoningSummaryKey, StringComparison.Ordinal)
                     && !string.Equals(key, ModelSupportsReasoningSummariesKey, StringComparison.Ordinal)
+                    && !string.Equals(key, HideAgentReasoningKey, StringComparison.Ordinal)
                     && !string.Equals(key, ServiceTierKey, StringComparison.Ordinal)
                     && !string.Equals(key, ModelVerbosityKey, StringComparison.Ordinal)
                     && !string.Equals(key, ModelAutoCompactTokenLimitKey, StringComparison.Ordinal)
@@ -2151,6 +2194,10 @@ namespace ColorVision.Copilot
             public bool ModelSupportsReasoningSummaries { get; init; }
 
             public bool HasModelSupportsReasoningSummariesOverride { get; init; }
+
+            public bool HideAgentReasoning { get; init; }
+
+            public bool HasHideAgentReasoningOverride { get; init; }
 
             public string ServiceTier { get; init; } = string.Empty;
 

@@ -244,6 +244,16 @@ namespace ColorVision.Copilot
                         : " 请求快照；阻断 reasoning metadata，覆盖 model_reasoning_effort/model_reasoning_summary")
                     .AppendLine("；仅 Agent 官方 OpenAI Responses 生效");
             }
+            if (effective.HasHideAgentReasoningOverride)
+            {
+                builder.Append("Codex hide_agent_reasoning：")
+                    .Append(effective.ConfiguredHideAgentReasoning ? "true" : "false")
+                    .Append(" · 来源 ")
+                    .Append(effective.HideAgentReasoningSourceLabel.Length == 0
+                        ? "Codex config.toml"
+                        : effective.HideAgentReasoningSourceLabel)
+                    .AppendLine(" 提交快照；同时作用于 Chat/Agent，仅隐藏用户可见 reasoning，不改变请求、Token 计量或运行事件");
+            }
             if (effective.HasServiceTierOverride)
             {
                 builder.Append("Codex service_tier：")

@@ -474,6 +474,7 @@ namespace ColorVision.Copilot
                 userMessage.WorkspaceReviewTarget,
                 userMessage.AgentSkillReference);
             var eventProtocol = new CopilotTurnEventProtocol(userMessage.RequestMode, hostedRun.Id);
+            var hideAgentReasoning = turnSnapshot.ProjectInstructionDiscoveryOptions.ConfiguredHideAgentReasoning;
             try
             {
                 try
@@ -481,8 +482,13 @@ namespace ColorVision.Copilot
                     await foreach (var turnEvent in _turnRuntime.RunAsync(turnRequest, cancellationToken))
                     {
                         eventProtocol.Observe(turnEvent);
+                        var presentationEvent = CopilotReasoningVisibility.FilterForPresentation(
+                            turnEvent,
+                            hideAgentReasoning);
+                        if (presentationEvent == null)
+                            continue;
 
-                        switch (turnEvent)
+                        switch (presentationEvent)
                         {
                             case CopilotTurnStartedEvent:
                                 break;
