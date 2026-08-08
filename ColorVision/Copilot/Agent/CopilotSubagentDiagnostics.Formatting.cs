@@ -103,7 +103,10 @@ namespace ColorVision.Copilot
                 builder.Append('#')
                     .Append((index + 1).ToString(CultureInfo.InvariantCulture))
                     .Append(" · ")
-                    .Append(run.RoleId)
+                    .Append(run.RoleId);
+                if (!string.IsNullOrWhiteSpace(run.AgentName))
+                    builder.Append(" · agent=").Append(run.AgentName);
+                builder
                     .Append(" · ")
                     .Append(string.IsNullOrWhiteSpace(run.RunId) ? "ID 待回传" : run.RunId)
                     .Append(" · state=")

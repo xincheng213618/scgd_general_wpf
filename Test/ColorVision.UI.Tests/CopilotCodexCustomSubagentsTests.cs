@@ -613,6 +613,35 @@ public sealed class CopilotCodexCustomSubagentsTests
         }
     }
 
+    [Fact]
+    public void AgentRunListsAndCommandSuggestionsIncludeThePersistedCustomAgentName()
+    {
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        var assistant = new CopilotChatMessage(CopilotChatRole.Assistant, "Completed.");
+        assistant.UpsertAgentTrace(new CopilotAgentTraceEntry
+        {
+            CallId = "custom-agent-run-call",
+            ToolName = "DelegateExplore",
+            State = CopilotToolExecutionState.Completed,
+            DelegatedRoleId = CopilotSubagentRoleCatalog.ExploreRoleId,
+            DelegatedAgentName = "reviewer",
+            DelegatedRunId = "explore-custom123",
+            DelegatedStopReason = CopilotAgentStopReason.Completed,
+            StartedAtUtc = DateTimeOffset.UtcNow.AddSeconds(-1),
+            CompletedAtUtc = DateTimeOffset.UtcNow,
+        });
+        conversation.Messages.Add(assistant);
+
+        var report = CopilotSubagentDiagnostics.Format(conversation, "runs");
+        var suggestion = Assert.Single(CopilotSubagentDiagnostics.BuildRunArguments(
+            conversation,
+            "show"));
+
+        Assert.Contains("explore · agent=reviewer · explore-custom123", report, StringComparison.Ordinal);
+        Assert.Contains("explore · agent=reviewer · 已完成", suggestion.Description, StringComparison.Ordinal);
+        Assert.DoesNotContain("Completed.", suggestion.Description, StringComparison.Ordinal);
+    }
+
     private static CopilotAgentRequest CreateParentRequest(
         params CopilotCodexCustomSubagentDefinition[] definitions) => new()
         {

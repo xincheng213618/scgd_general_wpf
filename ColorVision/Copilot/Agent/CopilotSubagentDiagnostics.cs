@@ -470,7 +470,10 @@ namespace ColorVision.Copilot
             var activity = IsActive(run.State) && !string.IsNullOrWhiteSpace(run.Activity)
                 ? " · " + run.Activity.Trim()
                 : string.Empty;
-            var description = run.RoleId + " · " + state + result + activity;
+            var agent = string.IsNullOrWhiteSpace(run.AgentName)
+                ? string.Empty
+                : " · agent=" + run.AgentName;
+            var description = run.RoleId + agent + " · " + state + result + activity;
             return description.Length <= MaximumRunSuggestionCharacters
                 ? description
                 : description[..(MaximumRunSuggestionCharacters - 3)].TrimEnd() + "...";
