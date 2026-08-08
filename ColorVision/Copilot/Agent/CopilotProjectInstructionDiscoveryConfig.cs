@@ -32,6 +32,110 @@ namespace ColorVision.Copilot
         Live,
     }
 
+    internal enum CopilotCodexWebSearchConfigKey
+    {
+        None,
+        WebSearch,
+        FeaturesWebSearch,
+        FeaturesWebSearchCached,
+        FeaturesWebSearchRequest,
+    }
+
+    internal readonly record struct CopilotCodexWebSearchModeResolution(
+        CopilotCodexWebSearchMode Mode,
+        bool HasOverride,
+        CopilotCodexWebSearchConfigKey ConfigKey,
+        CopilotProjectInstructionConfigSources Source);
+
+    internal readonly record struct CopilotCodexWebSearchConfigState(
+        bool HasCanonicalModeOverride,
+        CopilotCodexWebSearchMode CanonicalMode,
+        CopilotProjectInstructionConfigSources CanonicalModeSource,
+        bool? LegacyWebSearchEnabled,
+        CopilotProjectInstructionConfigSources LegacyWebSearchSource,
+        bool? LegacyWebSearchCachedEnabled,
+        CopilotProjectInstructionConfigSources LegacyWebSearchCachedSource,
+        bool? LegacyWebSearchRequestEnabled,
+        CopilotProjectInstructionConfigSources LegacyWebSearchRequestSource)
+    {
+        public bool HasAnyAssignment => HasCanonicalModeOverride
+            || LegacyWebSearchEnabled.HasValue
+            || LegacyWebSearchCachedEnabled.HasValue
+            || LegacyWebSearchRequestEnabled.HasValue;
+
+        public CopilotCodexWebSearchConfigState Apply(
+            CopilotCodexWebSearchConfigState layer,
+            CopilotProjectInstructionConfigSources source) => this with
+        {
+            HasCanonicalModeOverride = layer.HasCanonicalModeOverride
+                || HasCanonicalModeOverride,
+            CanonicalMode = layer.HasCanonicalModeOverride
+                ? layer.CanonicalMode
+                : CanonicalMode,
+            CanonicalModeSource = layer.HasCanonicalModeOverride
+                ? source
+                : CanonicalModeSource,
+            LegacyWebSearchEnabled = layer.LegacyWebSearchEnabled.HasValue
+                ? layer.LegacyWebSearchEnabled
+                : LegacyWebSearchEnabled,
+            LegacyWebSearchSource = layer.LegacyWebSearchEnabled.HasValue
+                ? source
+                : LegacyWebSearchSource,
+            LegacyWebSearchCachedEnabled = layer.LegacyWebSearchCachedEnabled.HasValue
+                ? layer.LegacyWebSearchCachedEnabled
+                : LegacyWebSearchCachedEnabled,
+            LegacyWebSearchCachedSource = layer.LegacyWebSearchCachedEnabled.HasValue
+                ? source
+                : LegacyWebSearchCachedSource,
+            LegacyWebSearchRequestEnabled = layer.LegacyWebSearchRequestEnabled.HasValue
+                ? layer.LegacyWebSearchRequestEnabled
+                : LegacyWebSearchRequestEnabled,
+            LegacyWebSearchRequestSource = layer.LegacyWebSearchRequestEnabled.HasValue
+                ? source
+                : LegacyWebSearchRequestSource,
+        };
+
+        public CopilotCodexWebSearchModeResolution Resolve()
+        {
+            if (HasCanonicalModeOverride)
+            {
+                return new(
+                    CanonicalMode,
+                    HasOverride: true,
+                    CopilotCodexWebSearchConfigKey.WebSearch,
+                    CanonicalModeSource);
+            }
+
+            if (LegacyWebSearchCachedEnabled is true)
+            {
+                return new(
+                    CopilotCodexWebSearchMode.Cached,
+                    HasOverride: true,
+                    CopilotCodexWebSearchConfigKey.FeaturesWebSearchCached,
+                    LegacyWebSearchCachedSource);
+            }
+
+            if (LegacyWebSearchRequestEnabled.HasValue)
+            {
+                return LegacyWebSearchRequestEnabled.Value
+                    ? new(
+                        CopilotCodexWebSearchMode.Live,
+                        HasOverride: true,
+                        CopilotCodexWebSearchConfigKey.FeaturesWebSearchRequest,
+                        LegacyWebSearchRequestSource)
+                    : default;
+            }
+
+            return LegacyWebSearchEnabled is true
+                ? new(
+                    CopilotCodexWebSearchMode.Live,
+                    HasOverride: true,
+                    CopilotCodexWebSearchConfigKey.FeaturesWebSearch,
+                    LegacyWebSearchSource)
+                : default;
+        }
+    }
+
     internal enum CopilotCodexSandboxMode
     {
         Unspecified,
@@ -96,6 +200,15 @@ namespace ColorVision.Copilot
             CopilotCodexWebSearchMode.Indexed => "indexed",
             CopilotCodexWebSearchMode.Live => "live",
             _ => "未配置",
+        };
+
+        public static string GetConfigKey(CopilotCodexWebSearchConfigKey key) => key switch
+        {
+            CopilotCodexWebSearchConfigKey.WebSearch => "web_search",
+            CopilotCodexWebSearchConfigKey.FeaturesWebSearch => "features.web_search",
+            CopilotCodexWebSearchConfigKey.FeaturesWebSearchCached => "features.web_search_cached",
+            CopilotCodexWebSearchConfigKey.FeaturesWebSearchRequest => "features.web_search_request",
+            _ => "web_search",
         };
 
         public static bool AllowsLiveSearch(CopilotCodexWebSearchMode mode) => mode is
@@ -180,6 +293,11 @@ namespace ColorVision.Copilot
             CopilotCodexWebSearchMode.Unspecified;
 
         public bool HasWebSearchModeOverride { get; init; }
+
+        public CopilotCodexWebSearchConfigKey WebSearchModeConfigKey { get; init; } =
+            CopilotCodexWebSearchConfigKey.None;
+
+        internal CopilotCodexWebSearchConfigState WebSearchConfigState { get; init; }
 
         public CopilotProjectInstructionConfigSources WebSearchModeSource { get; init; } =
             CopilotProjectInstructionConfigSources.None;
@@ -499,12 +617,21 @@ namespace ColorVision.Copilot
             _ => string.Empty,
         };
 
-        public string WebSearchModeSourceLabel => WebSearchModeSource switch
+        public string WebSearchModeSourceLabel
         {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml web_search",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml web_search",
-            _ => string.Empty,
-        };
+            get
+            {
+                var configKey = CopilotCodexWebSearchModeSelection.GetConfigKey(WebSearchModeConfigKey);
+                if (configKey.Length == 0)
+                    return string.Empty;
+                return WebSearchModeSource switch
+                {
+                    CopilotProjectInstructionConfigSources.CodexHome => $"Codex Home config.toml {configKey}",
+                    CopilotProjectInstructionConfigSources.TrustedProject => $"受信项目 .codex/config.toml {configKey}",
+                    _ => string.Empty,
+                };
+            }
+        }
 
         public string SandboxModeSourceLabel => SandboxModeSource switch
         {
@@ -737,6 +864,12 @@ namespace ColorVision.Copilot
         private const string DeveloperInstructionsKey = "developer_instructions";
         private const string PersonalityKey = "personality";
         private const string WebSearchKey = "web_search";
+        private const string LegacyWebSearchKey = "features.web_search";
+        private const string LegacyWebSearchFeatureKey = "web_search";
+        private const string LegacyWebSearchCachedKey = "features.web_search_cached";
+        private const string LegacyWebSearchCachedFeatureKey = "web_search_cached";
+        private const string LegacyWebSearchRequestKey = "features.web_search_request";
+        private const string LegacyWebSearchRequestFeatureKey = "web_search_request";
         private const string SandboxModeKey = "sandbox_mode";
         private const string ApprovalPolicyKey = "approval_policy";
         private const string ApprovalsReviewerKey = "approvals_reviewer";
@@ -912,6 +1045,11 @@ namespace ColorVision.Copilot
             if (!HasApplicableOverrides(layer, includeProjectRootMarkers))
                 return current;
 
+            var webSearchConfigState = current.WebSearchConfigState.Apply(
+                layer.WebSearchConfigState,
+                source);
+            var webSearchResolution = webSearchConfigState.Resolve();
+
             return current with
             {
                 MaximumBytes = layer.HasMaximumBytesOverride ? layer.MaximumBytes : current.MaximumBytes,
@@ -940,14 +1078,11 @@ namespace ColorVision.Copilot
                 PersonalitySource = layer.HasPersonalityOverride
                     ? source
                     : current.PersonalitySource,
-                ConfiguredWebSearchMode = layer.HasWebSearchModeOverride
-                    ? layer.WebSearchMode
-                    : current.ConfiguredWebSearchMode,
-                HasWebSearchModeOverride = current.HasWebSearchModeOverride
-                    || layer.HasWebSearchModeOverride,
-                WebSearchModeSource = layer.HasWebSearchModeOverride
-                    ? source
-                    : current.WebSearchModeSource,
+                ConfiguredWebSearchMode = webSearchResolution.Mode,
+                HasWebSearchModeOverride = webSearchResolution.HasOverride,
+                WebSearchModeSource = webSearchResolution.Source,
+                WebSearchModeConfigKey = webSearchResolution.ConfigKey,
+                WebSearchConfigState = webSearchConfigState,
                 ConfiguredSandboxMode = layer.HasSandboxModeOverride
                     ? layer.SandboxMode
                     : current.ConfiguredSandboxMode,
@@ -1173,7 +1308,7 @@ namespace ColorVision.Copilot
                 || layer.HasFallbackFileNamesOverride
                 || layer.HasDeveloperInstructionsOverride
                 || layer.HasPersonalityOverride
-                || layer.HasWebSearchModeOverride
+                || layer.WebSearchConfigState.HasAnyAssignment
                 || layer.HasSandboxModeOverride
                 || layer.HasApprovalPolicyOverride
                 || layer.HasApprovalsReviewerOverride
@@ -1491,7 +1626,14 @@ namespace ColorVision.Copilot
             var hasProjectRootMarkersOverride = false;
             var hasDeveloperInstructionsOverride = false;
             var hasPersonalityOverride = false;
-            var hasWebSearchModeOverride = false;
+            var hasCanonicalWebSearchModeOverride = false;
+            var hasCanonicalWebSearchModeAssignment = false;
+            var hasLegacyWebSearchAssignment = false;
+            var legacyWebSearchEnabled = false;
+            var hasLegacyWebSearchCachedAssignment = false;
+            var legacyWebSearchCachedEnabled = false;
+            var hasLegacyWebSearchRequestAssignment = false;
+            var legacyWebSearchRequestEnabled = false;
             var hasSandboxModeOverride = false;
             var hasApprovalPolicyOverride = false;
             var hasApprovalsReviewerOverride = false;
@@ -1566,6 +1708,7 @@ namespace ColorVision.Copilot
 
                 if (string.Equals(assignment.Key, WebSearchKey, StringComparison.Ordinal))
                 {
+                    hasCanonicalWebSearchModeAssignment = true;
                     if (!TryParseConfiguredText(
                         assignment.Value,
                         MaximumPersonalityCharacters,
@@ -1576,7 +1719,37 @@ namespace ColorVision.Copilot
                     {
                         continue;
                     }
-                    hasWebSearchModeOverride = true;
+                    hasCanonicalWebSearchModeOverride = true;
+                    continue;
+                }
+
+                if (string.Equals(assignment.Key, LegacyWebSearchKey, StringComparison.Ordinal))
+                {
+                    if (TryParseTomlBoolean(assignment.Value, out var enabled))
+                    {
+                        hasLegacyWebSearchAssignment = true;
+                        legacyWebSearchEnabled = enabled;
+                    }
+                    continue;
+                }
+
+                if (string.Equals(assignment.Key, LegacyWebSearchCachedKey, StringComparison.Ordinal))
+                {
+                    if (TryParseTomlBoolean(assignment.Value, out var enabled))
+                    {
+                        hasLegacyWebSearchCachedAssignment = true;
+                        legacyWebSearchCachedEnabled = enabled;
+                    }
+                    continue;
+                }
+
+                if (string.Equals(assignment.Key, LegacyWebSearchRequestKey, StringComparison.Ordinal))
+                {
+                    if (TryParseTomlBoolean(assignment.Value, out var enabled))
+                    {
+                        hasLegacyWebSearchRequestAssignment = true;
+                        legacyWebSearchRequestEnabled = enabled;
+                    }
                     continue;
                 }
 
@@ -1958,6 +2131,25 @@ namespace ColorVision.Copilot
                 hasProjectRootMarkersOverride = true;
             }
 
+            var acceptLegacyWebSearchAssignments = !hasCanonicalWebSearchModeAssignment
+                || hasCanonicalWebSearchModeOverride;
+            var webSearchConfigState = new CopilotCodexWebSearchConfigState(
+                hasCanonicalWebSearchModeOverride,
+                webSearchMode,
+                CopilotProjectInstructionConfigSources.None,
+                acceptLegacyWebSearchAssignments && hasLegacyWebSearchAssignment
+                    ? legacyWebSearchEnabled
+                    : null,
+                CopilotProjectInstructionConfigSources.None,
+                acceptLegacyWebSearchAssignments && hasLegacyWebSearchCachedAssignment
+                    ? legacyWebSearchCachedEnabled
+                    : null,
+                CopilotProjectInstructionConfigSources.None,
+                acceptLegacyWebSearchAssignments && hasLegacyWebSearchRequestAssignment
+                    ? legacyWebSearchRequestEnabled
+                    : null,
+                CopilotProjectInstructionConfigSources.None);
+
             layer = new ProjectInstructionConfigLayer(
                 maximumBytes,
                 fallbackFileNames,
@@ -1974,8 +2166,7 @@ namespace ColorVision.Copilot
                 HasModelInstructionsFileOverride = hasModelInstructionsFileOverride,
                 Personality = personality,
                 HasPersonalityOverride = hasPersonalityOverride,
-                WebSearchMode = webSearchMode,
-                HasWebSearchModeOverride = hasWebSearchModeOverride,
+                WebSearchConfigState = webSearchConfigState,
                 SandboxMode = sandboxMode,
                 HasSandboxModeOverride = hasSandboxModeOverride,
                 ApprovalPolicy = approvalPolicy,
@@ -2030,7 +2221,7 @@ namespace ColorVision.Copilot
                 || hasProjectRootMarkersOverride
                 || hasDeveloperInstructionsOverride
                 || hasPersonalityOverride
-                || hasWebSearchModeOverride
+                || webSearchConfigState.HasAnyAssignment
                 || hasSandboxModeOverride
                 || hasApprovalPolicyOverride
                 || hasApprovalsReviewerOverride
@@ -2208,6 +2399,9 @@ namespace ColorVision.Copilot
                     {
                         PreventIdleSleepFeatureKey => PreventIdleSleepKey,
                         ShellToolEnabledFeatureKey => ShellToolEnabledKey,
+                        LegacyWebSearchFeatureKey => LegacyWebSearchKey,
+                        LegacyWebSearchCachedFeatureKey => LegacyWebSearchCachedKey,
+                        LegacyWebSearchRequestFeatureKey => LegacyWebSearchRequestKey,
                         _ => string.Empty,
                     }
                         : inAgentsTable
@@ -2233,6 +2427,9 @@ namespace ColorVision.Copilot
                     && !string.Equals(key, DeveloperInstructionsKey, StringComparison.Ordinal)
                     && !string.Equals(key, PersonalityKey, StringComparison.Ordinal)
                     && !string.Equals(key, WebSearchKey, StringComparison.Ordinal)
+                    && !string.Equals(key, LegacyWebSearchKey, StringComparison.Ordinal)
+                    && !string.Equals(key, LegacyWebSearchCachedKey, StringComparison.Ordinal)
+                    && !string.Equals(key, LegacyWebSearchRequestKey, StringComparison.Ordinal)
                     && !string.Equals(key, SandboxModeKey, StringComparison.Ordinal)
                     && !string.Equals(key, ApprovalPolicyKey, StringComparison.Ordinal)
                     && !string.Equals(key, ApprovalsReviewerKey, StringComparison.Ordinal)
@@ -3108,10 +3305,7 @@ namespace ColorVision.Copilot
 
             public bool HasPersonalityOverride { get; init; }
 
-            public CopilotCodexWebSearchMode WebSearchMode { get; init; } =
-                CopilotCodexWebSearchMode.Unspecified;
-
-            public bool HasWebSearchModeOverride { get; init; }
+            public CopilotCodexWebSearchConfigState WebSearchConfigState { get; init; }
 
             public CopilotCodexSandboxMode SandboxMode { get; init; } =
                 CopilotCodexSandboxMode.Unspecified;

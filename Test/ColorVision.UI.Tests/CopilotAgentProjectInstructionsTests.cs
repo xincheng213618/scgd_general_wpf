@@ -3197,6 +3197,177 @@ public sealed class CopilotAgentProjectInstructionsTests
     }
 
     [Fact]
+    public void LegacyWebSearchFeatureFlagsFollowCodexFallbackPrecedence()
+    {
+        string globalRoot = CreateTemporaryDirectory();
+        string configPath = Path.Combine(globalRoot, "config.toml");
+        try
+        {
+            File.WriteAllText(
+                configPath,
+                """
+                [features]
+                web_search = true
+                """);
+            var legacyAlias = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot);
+            Assert.True(legacyAlias.HasWebSearchModeOverride);
+            Assert.Equal(CopilotCodexWebSearchMode.Live, legacyAlias.ConfiguredWebSearchMode);
+            Assert.Equal(
+                CopilotCodexWebSearchConfigKey.FeaturesWebSearch,
+                legacyAlias.WebSearchModeConfigKey);
+            Assert.EndsWith(
+                "features.web_search",
+                legacyAlias.WebSearchModeSourceLabel,
+                StringComparison.Ordinal);
+
+            File.WriteAllText(
+                configPath,
+                """
+                [features]
+                web_search_request = true
+                web_search_cached = true
+                """);
+            var cachedWins = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot);
+            Assert.Equal(CopilotCodexWebSearchMode.Cached, cachedWins.ConfiguredWebSearchMode);
+            Assert.Equal(
+                CopilotCodexWebSearchConfigKey.FeaturesWebSearchCached,
+                cachedWins.WebSearchModeConfigKey);
+            Assert.EndsWith(
+                "features.web_search_cached",
+                cachedWins.WebSearchModeSourceLabel,
+                StringComparison.Ordinal);
+
+            File.WriteAllText(
+                configPath,
+                """
+                web_search = "disabled"
+
+                [features]
+                web_search = true
+                web_search_request = true
+                web_search_cached = true
+                """);
+            var canonicalWins = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot);
+            Assert.Equal(CopilotCodexWebSearchMode.Disabled, canonicalWins.ConfiguredWebSearchMode);
+            Assert.Equal(
+                CopilotCodexWebSearchConfigKey.WebSearch,
+                canonicalWins.WebSearchModeConfigKey);
+            Assert.EndsWith(
+                "config.toml web_search",
+                canonicalWins.WebSearchModeSourceLabel,
+                StringComparison.Ordinal);
+
+            File.WriteAllText(
+                configPath,
+                """
+                [features]
+                web_search = false
+                web_search_request = false
+                web_search_cached = false
+                """);
+            var disabledLegacyFlags = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot);
+            Assert.False(disabledLegacyFlags.HasWebSearchModeOverride);
+            Assert.Equal(
+                CopilotCodexWebSearchMode.Unspecified,
+                disabledLegacyFlags.ConfiguredWebSearchMode);
+        }
+        finally
+        {
+            Directory.Delete(globalRoot, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void WebSearchConfigMergesKeysAcrossTrustedLayersBeforeResolvingMode()
+    {
+        string globalRoot = CreateTemporaryDirectory();
+        string projectRoot = CreateTemporaryDirectory();
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
+            string globalConfigPath = Path.Combine(globalRoot, "config.toml");
+            string projectConfigDirectory = Path.Combine(projectRoot, ".codex");
+            Directory.CreateDirectory(projectConfigDirectory);
+            string projectConfigPath = Path.Combine(projectConfigDirectory, "config.toml");
+
+            File.WriteAllText(
+                globalConfigPath,
+                $"""
+                web_search = "disabled"
+
+                [projects.'{projectRoot}']
+                trust_level = "trusted"
+                """);
+            File.WriteAllText(
+                projectConfigPath,
+                """
+                [features]
+                web_search_cached = true
+                """);
+            var globalCanonicalWins = CopilotProjectInstructionDiscoveryConfig.Load(
+                globalRoot,
+                projectRoot);
+            Assert.Equal(
+                CopilotCodexWebSearchMode.Disabled,
+                globalCanonicalWins.ConfiguredWebSearchMode);
+            Assert.Equal(
+                CopilotProjectInstructionConfigSources.CodexHome,
+                globalCanonicalWins.WebSearchModeSource);
+            Assert.Equal(
+                CopilotCodexWebSearchConfigKey.WebSearch,
+                globalCanonicalWins.WebSearchModeConfigKey);
+
+            File.WriteAllText(
+                globalConfigPath,
+                $"""
+                [features]
+                web_search_request = true
+                web_search_cached = true
+
+                [projects.'{projectRoot}']
+                trust_level = "trusted"
+                """);
+            File.WriteAllText(
+                projectConfigPath,
+                """
+                [features]
+                web_search_cached = false
+                """);
+            var projectClearsCachedFlag = CopilotProjectInstructionDiscoveryConfig.Load(
+                globalRoot,
+                projectRoot);
+            Assert.Equal(
+                CopilotCodexWebSearchMode.Live,
+                projectClearsCachedFlag.ConfiguredWebSearchMode);
+            Assert.Equal(
+                CopilotProjectInstructionConfigSources.CodexHome,
+                projectClearsCachedFlag.WebSearchModeSource);
+            Assert.Equal(
+                CopilotCodexWebSearchConfigKey.FeaturesWebSearchRequest,
+                projectClearsCachedFlag.WebSearchModeConfigKey);
+
+            File.WriteAllText(projectConfigPath, "web_search = \"disabled\"");
+            var projectCanonicalWins = CopilotProjectInstructionDiscoveryConfig.Load(
+                globalRoot,
+                projectRoot);
+            Assert.Equal(
+                CopilotCodexWebSearchMode.Disabled,
+                projectCanonicalWins.ConfiguredWebSearchMode);
+            Assert.Equal(
+                CopilotProjectInstructionConfigSources.TrustedProject,
+                projectCanonicalWins.WebSearchModeSource);
+            Assert.Equal(
+                CopilotCodexWebSearchConfigKey.WebSearch,
+                projectCanonicalWins.WebSearchModeConfigKey);
+        }
+        finally
+        {
+            Directory.Delete(globalRoot, recursive: true);
+            Directory.Delete(projectRoot, recursive: true);
+        }
+    }
+
+    [Fact]
     public void UnsupportedOrDisabledWebSearchFailsClosedWithoutBlockingExplicitUrlFetch()
     {
         var registry = new CopilotToolRegistry(CopilotToolRegistry.CreateDefaultTools());
