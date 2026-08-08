@@ -241,6 +241,8 @@ namespace ColorVision.Copilot
 
         internal bool CodexAgentsEnabled { get; init; } = true;
 
+        internal bool CodexInterruptMessageEnabled { get; init; } = true;
+
         internal int CodexMaximumConcurrentSubagentRuns { get; init; } =
             CopilotSubagentCoordinator.DefaultMaximumConcurrentRuns;
 
@@ -413,6 +415,7 @@ namespace ColorVision.Copilot
                 CodexApprovalsReviewer = codexApprovalsReviewer,
                 CodexAutoReviewPolicy = codexAutoReviewPolicy,
                 CodexAgentsEnabled = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredAgentsEnabled,
+                CodexInterruptMessageEnabled = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredInterruptMessageEnabled,
                 CodexMaximumConcurrentSubagentRuns =
                     hostContext.ProjectInstructionDiscoveryOptions.ConfiguredMaximumConcurrentSubagentRuns,
                 CodexDefaultSubagentModel = hostContext.ProjectInstructionDiscoveryOptions.HasDefaultSubagentModelOverride
@@ -499,6 +502,7 @@ namespace ColorVision.Copilot
                 CodexApprovalsReviewer = plan.CodexApprovalsReviewer,
                 CodexAutoReviewPolicy = plan.CodexAutoReviewPolicy,
                 CodexAgentsEnabled = plan.CodexAgentsEnabled,
+                CodexInterruptMessageEnabled = plan.CodexInterruptMessageEnabled,
                 CodexMaximumConcurrentSubagentRuns = plan.CodexMaximumConcurrentSubagentRuns,
                 CodexDefaultSubagentModel = plan.CodexDefaultSubagentModel,
                 CodexDefaultSubagentReasoningEffort = plan.CodexDefaultSubagentReasoningEffort,

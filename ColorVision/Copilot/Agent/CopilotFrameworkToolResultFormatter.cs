@@ -46,6 +46,8 @@ namespace ColorVision.Copilot
         {
             ArgumentNullException.ThrowIfNull(outcome);
             var result = outcome.Result ?? new CopilotToolResult();
+            if (result.SuppressModelOutput)
+                return string.Empty;
             var execution = outcome.Execution ?? new CopilotToolExecutionInfo();
             var content = SanitizeMultiline(result.Content);
             var budget = ResolveBudget(toolOutputTokenLimit);

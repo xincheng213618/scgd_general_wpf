@@ -85,7 +85,9 @@ namespace ColorVision.Copilot
             if (stepRecords == null || stepRecords.Count == 0)
                 return "- None";
 
-            var availableSteps = stepRecords.Where(stepRecord => stepRecord != null).ToArray();
+            var availableSteps = stepRecords
+                .Where(stepRecord => stepRecord != null && !stepRecord.SuppressModelOutput)
+                .ToArray();
             if (availableSteps.Length == 0)
                 return "- None";
 
@@ -502,6 +504,7 @@ namespace ColorVision.Copilot
                         ToolName = result?.ToolName ?? string.Empty,
                     },
                     Observation = CopilotToolObservation.FromResult(result),
+                    SuppressModelOutput = result?.SuppressModelOutput == true,
                 })
                 .ToArray();
         }

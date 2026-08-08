@@ -69,6 +69,12 @@ namespace ColorVision.Copilot
 
         public string CodexAgentsEnabledSourceLabel { get; init; } = string.Empty;
 
+        public bool CodexInterruptMessageEnabled { get; init; } = true;
+
+        public bool HasCodexInterruptMessageOverride { get; init; }
+
+        public string CodexInterruptMessageSourceLabel { get; init; } = string.Empty;
+
         public int CodexMaximumConcurrentSubagentRuns { get; init; } =
             CopilotSubagentCoordinator.DefaultMaximumConcurrentRuns;
 
@@ -461,6 +467,20 @@ namespace ColorVision.Copilot
                 builder.Append("（Codex 默认开启）");
             }
             builder.AppendLine();
+            builder.Append("子代理中断消息：")
+                .Append(snapshot.CodexInterruptMessageEnabled ? "记录给父 Agent" : "仅保留本地审计");
+            if (snapshot.HasCodexInterruptMessageOverride)
+            {
+                builder.Append("（")
+                    .Append(string.IsNullOrWhiteSpace(snapshot.CodexInterruptMessageSourceLabel)
+                        ? "Codex config.toml"
+                        : snapshot.CodexInterruptMessageSourceLabel.Trim())
+                    .AppendLine(" 提交快照）");
+            }
+            else
+            {
+                builder.AppendLine("（Codex 默认开启）");
+            }
             builder.Append("子代理并发槽位：")
                 .Append(snapshot.CodexMaximumConcurrentSubagentRuns.ToString("N0", CultureInfo.CurrentCulture));
             if (snapshot.HasCodexMaximumConcurrentSubagentRunsOverride)

@@ -230,6 +230,13 @@ namespace ColorVision.Copilot
         public CopilotProjectInstructionConfigSources AgentsEnabledSource { get; init; } =
             CopilotProjectInstructionConfigSources.None;
 
+        public bool ConfiguredInterruptMessageEnabled { get; init; } = true;
+
+        public bool HasInterruptMessageOverride { get; init; }
+
+        public CopilotProjectInstructionConfigSources InterruptMessageSource { get; init; } =
+            CopilotProjectInstructionConfigSources.None;
+
         public int ConfiguredMaximumConcurrentSubagentRuns { get; init; } =
             CopilotSubagentCoordinator.DefaultMaximumConcurrentRuns;
 
@@ -435,6 +442,7 @@ namespace ColorVision.Copilot
             || HasReviewModelOverride
             || HasPreventIdleSleepOverride
             || HasAgentsEnabledOverride
+            || HasInterruptMessageOverride
             || HasMaximumConcurrentSubagentRunsOverride
             || HasDefaultSubagentModelOverride
             || HasDefaultSubagentReasoningEffortOverride
@@ -531,6 +539,13 @@ namespace ColorVision.Copilot
         {
             CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml agents.enabled",
             CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml agents.enabled",
+            _ => string.Empty,
+        };
+
+        public string InterruptMessageSourceLabel => InterruptMessageSource switch
+        {
+            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml agents.interrupt_message",
+            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml agents.interrupt_message",
             _ => string.Empty,
         };
 
@@ -712,6 +727,8 @@ namespace ColorVision.Copilot
         private const string PreventIdleSleepFeatureKey = "prevent_idle_sleep";
         private const string AgentsEnabledKey = "agents.enabled";
         private const string AgentsEnabledTableKey = "enabled";
+        private const string AgentsInterruptMessageKey = "agents.interrupt_message";
+        private const string AgentsInterruptMessageTableKey = "interrupt_message";
         private const string AgentsMaximumConcurrentThreadsKey = "agents.max_concurrent_threads_per_session";
         private const string AgentsMaximumConcurrentThreadsTableKey = "max_concurrent_threads_per_session";
         private const string AgentsMaximumThreadsKey = "agents.max_threads";
@@ -944,6 +961,14 @@ namespace ColorVision.Copilot
                 AgentsEnabledSource = layer.HasAgentsEnabledOverride
                     ? source
                     : current.AgentsEnabledSource,
+                ConfiguredInterruptMessageEnabled = layer.HasInterruptMessageOverride
+                    ? layer.InterruptMessageEnabled
+                    : current.ConfiguredInterruptMessageEnabled,
+                HasInterruptMessageOverride = current.HasInterruptMessageOverride
+                    || layer.HasInterruptMessageOverride,
+                InterruptMessageSource = layer.HasInterruptMessageOverride
+                    ? source
+                    : current.InterruptMessageSource,
                 ConfiguredMaximumConcurrentSubagentRuns = layer.HasMaximumConcurrentSubagentRunsOverride
                     ? layer.MaximumConcurrentSubagentRuns
                     : current.ConfiguredMaximumConcurrentSubagentRuns,
@@ -1105,6 +1130,7 @@ namespace ColorVision.Copilot
                 || layer.HasReviewModelOverride
                 || layer.HasPreventIdleSleepOverride
                 || layer.HasAgentsEnabledOverride
+                || layer.HasInterruptMessageOverride
                 || layer.HasMaximumConcurrentSubagentRunsOverride
                 || layer.HasDefaultSubagentModelOverride
                 || layer.HasDefaultSubagentReasoningEffortOverride
@@ -1389,6 +1415,7 @@ namespace ColorVision.Copilot
             var reviewModel = string.Empty;
             var preventIdleSleep = false;
             var agentsEnabled = true;
+            var interruptMessageEnabled = true;
             var maximumConcurrentSubagentRuns = CopilotSubagentCoordinator.DefaultMaximumConcurrentRuns;
             var defaultSubagentModel = string.Empty;
             var defaultSubagentReasoningEffort = CopilotCodexReasoningEffort.Unspecified;
@@ -1419,6 +1446,7 @@ namespace ColorVision.Copilot
             var hasReviewModelOverride = false;
             var hasPreventIdleSleepOverride = false;
             var hasAgentsEnabledOverride = false;
+            var hasInterruptMessageOverride = false;
             var hasMaximumConcurrentSubagentRunsOverride = false;
             var hasCanonicalMaximumConcurrentSubagentRunsOverride = false;
             var hasDefaultSubagentModelOverride = false;
@@ -1590,6 +1618,18 @@ namespace ColorVision.Copilot
                         continue;
                     }
                     hasAgentsEnabledOverride = true;
+                    continue;
+                }
+
+                if (string.Equals(assignment.Key, AgentsInterruptMessageKey, StringComparison.Ordinal))
+                {
+                    if (!TryParseTomlBoolean(
+                        assignment.Value,
+                        out interruptMessageEnabled))
+                    {
+                        continue;
+                    }
+                    hasInterruptMessageOverride = true;
                     continue;
                 }
 
@@ -1884,6 +1924,8 @@ namespace ColorVision.Copilot
                 HasPreventIdleSleepOverride = hasPreventIdleSleepOverride,
                 AgentsEnabled = agentsEnabled,
                 HasAgentsEnabledOverride = hasAgentsEnabledOverride,
+                InterruptMessageEnabled = interruptMessageEnabled,
+                HasInterruptMessageOverride = hasInterruptMessageOverride,
                 MaximumConcurrentSubagentRuns = maximumConcurrentSubagentRuns,
                 HasMaximumConcurrentSubagentRunsOverride = hasMaximumConcurrentSubagentRunsOverride,
                 DefaultSubagentModel = defaultSubagentModel,
@@ -1928,6 +1970,7 @@ namespace ColorVision.Copilot
                 || hasReviewModelOverride
                 || hasPreventIdleSleepOverride
                 || hasAgentsEnabledOverride
+                || hasInterruptMessageOverride
                 || hasMaximumConcurrentSubagentRunsOverride
                 || hasDefaultSubagentModelOverride
                 || hasDefaultSubagentReasoningEffortOverride
@@ -2098,6 +2141,7 @@ namespace ColorVision.Copilot
                             ? parsedKey switch
                             {
                                 AgentsEnabledTableKey => AgentsEnabledKey,
+                                AgentsInterruptMessageTableKey => AgentsInterruptMessageKey,
                                 AgentsMaximumConcurrentThreadsTableKey => AgentsMaximumConcurrentThreadsKey,
                                 AgentsMaximumThreadsTableKey => AgentsMaximumThreadsKey,
                                 AgentsDefaultSubagentModelTableKey => AgentsDefaultSubagentModelKey,
@@ -2123,6 +2167,7 @@ namespace ColorVision.Copilot
                     && !string.Equals(key, ReviewModelKey, StringComparison.Ordinal)
                     && !string.Equals(key, PreventIdleSleepKey, StringComparison.Ordinal)
                     && !string.Equals(key, AgentsEnabledKey, StringComparison.Ordinal)
+                    && !string.Equals(key, AgentsInterruptMessageKey, StringComparison.Ordinal)
                     && !string.Equals(key, AgentsMaximumConcurrentThreadsKey, StringComparison.Ordinal)
                     && !string.Equals(key, AgentsMaximumThreadsKey, StringComparison.Ordinal)
                     && !string.Equals(key, AgentsDefaultSubagentModelKey, StringComparison.Ordinal)
@@ -3024,6 +3069,10 @@ namespace ColorVision.Copilot
             public bool AgentsEnabled { get; init; } = true;
 
             public bool HasAgentsEnabledOverride { get; init; }
+
+            public bool InterruptMessageEnabled { get; init; } = true;
+
+            public bool HasInterruptMessageOverride { get; init; }
 
             public int MaximumConcurrentSubagentRuns { get; init; } =
                 CopilotSubagentCoordinator.DefaultMaximumConcurrentRuns;

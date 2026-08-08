@@ -85,6 +85,8 @@ namespace ColorVision.Copilot
 
         internal bool CodexAgentsEnabled { get; init; } = true;
 
+        internal bool CodexInterruptMessageEnabled { get; init; } = true;
+
         internal int CodexMaximumConcurrentSubagentRuns { get; init; } =
             CopilotSubagentCoordinator.DefaultMaximumConcurrentRuns;
 
@@ -276,6 +278,8 @@ namespace ColorVision.Copilot
         public string ObservationProgressSignature { get; init; } = string.Empty;
 
         internal CopilotWorkspaceMutationSnapshot? WorkspaceMutation { get; init; }
+
+        internal bool SuppressModelOutput { get; init; }
     }
 
     internal sealed record CopilotWorkspaceMutationFileSnapshot(
@@ -391,6 +395,8 @@ namespace ColorVision.Copilot
         public CopilotToolObservation Observation { get; init; } = new();
 
         public CopilotToolExecutionInfo Execution { get; init; } = new();
+
+        internal bool SuppressModelOutput { get; init; }
     }
 
     public enum CopilotToolExecutionState

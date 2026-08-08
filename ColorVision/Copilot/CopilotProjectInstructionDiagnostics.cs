@@ -288,6 +288,23 @@ namespace ColorVision.Copilot
             builder.AppendLine(effective.ConfiguredAgentsEnabled
                 ? "允许按请求意图暴露子代理工具"
                 : "隐藏子代理工具并拒绝旧计划、恢复状态或注入调用");
+            builder.Append("Codex agents.interrupt_message：")
+                .Append(effective.ConfiguredInterruptMessageEnabled ? "true" : "false");
+            if (effective.HasInterruptMessageOverride)
+            {
+                builder.Append(" · 来源 ")
+                    .Append(effective.InterruptMessageSourceLabel.Length == 0
+                        ? "Codex config.toml"
+                        : effective.InterruptMessageSourceLabel)
+                    .Append(" 提交快照");
+            }
+            else
+            {
+                builder.Append(" · 官方默认");
+            }
+            builder.AppendLine(effective.ConfiguredInterruptMessageEnabled
+                ? "；用户中断子代理后记录模型可见的取消工具结果"
+                : "；用户中断子代理后仅保留 UI、事件与审计记录，模型工具输出为空");
             builder.Append("Codex agents.max_concurrent_threads_per_session：")
                 .Append(effective.ConfiguredMaximumConcurrentSubagentRuns.ToString("N0", CultureInfo.CurrentCulture));
             if (effective.HasMaximumConcurrentSubagentRunsOverride)

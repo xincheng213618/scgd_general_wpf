@@ -731,6 +731,23 @@ namespace ColorVision.Copilot
             builder.AppendLine(codexConfigOptions.ConfiguredAgentsEnabled
                 ? " · 允许按请求意图暴露子代理工具"
                 : " · 隐藏子代理工具并拒绝旧计划、恢复状态或注入调用");
+            builder.Append("- Codex agents.interrupt_message：")
+                .Append(codexConfigOptions.ConfiguredInterruptMessageEnabled ? "true" : "false");
+            if (codexConfigOptions.HasInterruptMessageOverride)
+            {
+                builder.Append(" · 来源 ")
+                    .Append(codexConfigOptions.InterruptMessageSourceLabel.Length == 0
+                        ? "Codex config.toml"
+                        : codexConfigOptions.InterruptMessageSourceLabel)
+                    .Append(" · 提交快照");
+            }
+            else
+            {
+                builder.Append(" · 官方默认");
+            }
+            builder.AppendLine(codexConfigOptions.ConfiguredInterruptMessageEnabled
+                ? " · 中断后记录模型可见取消结果"
+                : " · 中断后模型工具输出为空；UI、事件与审计仍保留");
             builder.Append("- Codex agents.max_concurrent_threads_per_session：")
                 .Append(FormatNumber(codexConfigOptions.ConfiguredMaximumConcurrentSubagentRuns));
             if (codexConfigOptions.HasMaximumConcurrentSubagentRunsOverride)

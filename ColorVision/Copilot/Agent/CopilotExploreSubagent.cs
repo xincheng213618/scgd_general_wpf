@@ -565,6 +565,7 @@ namespace ColorVision.Copilot
                 CodexApprovalsReviewer = parentRequest.CodexApprovalsReviewer,
                 CodexAutoReviewPolicy = parentRequest.CodexAutoReviewPolicy,
                 CodexAgentsEnabled = parentRequest.CodexAgentsEnabled,
+                CodexInterruptMessageEnabled = parentRequest.CodexInterruptMessageEnabled,
                 CodexMaximumConcurrentSubagentRuns = parentRequest.CodexMaximumConcurrentSubagentRuns,
                 CodexDefaultSubagentModel = parentRequest.CodexDefaultSubagentModel,
                 CodexDefaultSubagentReasoningEffort = parentRequest.CodexDefaultSubagentReasoningEffort,

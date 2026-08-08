@@ -136,7 +136,7 @@ namespace ColorVision.Copilot
                 lease.CompleteCancellationWindow();
                 lease.Commit(Math.Max(result.Budget.ConsumedTokens, result.Usage.EffectiveTotalTokens));
                 if (lease.WasCancellationRequested && !cancellationToken.IsCancellationRequested)
-                    return Cancelled(childRun);
+                    return Cancelled(request, childRun);
                 if (childRun.ResumeCheckpoint == null || result.SessionResumed)
                     coordinator.RecordCompleted(_role.Id, childRun.RunId, result.SessionCheckpoint);
             }
@@ -145,7 +145,7 @@ namespace ColorVision.Copilot
             {
                 lease.CompleteCancellationWindow();
                 lease.Commit(lease.RequestTokenBudget);
-                return Cancelled(childRun);
+                return Cancelled(request, childRun);
             }
             catch
             {
@@ -265,7 +265,9 @@ namespace ColorVision.Copilot
             });
         }
 
-        private CopilotToolResult Cancelled(CopilotSubagentRunRequest runRequest)
+        private CopilotToolResult Cancelled(
+            CopilotAgentRequest request,
+            CopilotSubagentRunRequest runRequest)
         {
             return new CopilotToolResult
             {
@@ -287,6 +289,7 @@ namespace ColorVision.Copilot
                 {
                     StopReason = CopilotAgentStopReason.Cancelled,
                 },
+                SuppressModelOutput = !request.CodexInterruptMessageEnabled,
             };
         }
 
