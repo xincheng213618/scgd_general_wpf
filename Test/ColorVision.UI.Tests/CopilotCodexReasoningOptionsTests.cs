@@ -19,6 +19,7 @@ public sealed class CopilotCodexReasoningOptionsTests
                 $"""
                 model_reasoning_effort = "low"
                 model_reasoning_summary = "auto"
+                model_supports_reasoning_summaries = true
 
                 [projects.'{projectRoot}']
                 trust_level = "trusted"
@@ -28,7 +29,7 @@ public sealed class CopilotCodexReasoningOptionsTests
             string configPath = Path.Combine(configDirectory, "config.toml");
             File.WriteAllText(
                 configPath,
-                "model_reasoning_effort = \"xhigh\"\nmodel_reasoning_summary = \"concise\"");
+                "model_reasoning_effort = \"xhigh\"\nmodel_reasoning_summary = \"concise\"\nmodel_supports_reasoning_summaries = false");
 
             var submittedContext = new CopilotAgentHostContextSnapshot(
                 activeDocumentPath: null,
@@ -40,7 +41,7 @@ public sealed class CopilotCodexReasoningOptionsTests
                 globalInstructionRootPath: globalRoot);
             File.WriteAllText(
                 configPath,
-                "model_reasoning_effort = \"medium\"\nmodel_reasoning_summary = \"detailed\"");
+                "model_reasoning_effort = \"medium\"\nmodel_reasoning_summary = \"detailed\"\nmodel_supports_reasoning_summaries = true");
             var plan = CopilotAgentRequestFactory.Prepare(
                 "Inspect the workspace.",
                 CopilotAgentMode.Auto,
@@ -61,12 +62,17 @@ public sealed class CopilotCodexReasoningOptionsTests
             Assert.Equal(CopilotCodexReasoningSummary.Concise, submitted.ConfiguredModelReasoningSummary);
             Assert.Equal(CopilotProjectInstructionConfigSources.TrustedProject, submitted.ModelReasoningEffortSource);
             Assert.Equal(CopilotProjectInstructionConfigSources.TrustedProject, submitted.ModelReasoningSummarySource);
+            Assert.False(submitted.ConfiguredModelSupportsReasoningSummaries);
+            Assert.Equal(CopilotProjectInstructionConfigSources.TrustedProject, submitted.ModelSupportsReasoningSummariesSource);
             Assert.Equal(CopilotCodexReasoningEffort.XHigh, plan.CodexReasoningEffort);
             Assert.Equal(CopilotCodexReasoningSummary.Concise, plan.CodexReasoningSummary);
+            Assert.False(plan.CodexModelSupportsReasoningSummaries);
             Assert.Equal(CopilotCodexReasoningEffort.XHigh, request.CodexReasoningEffort);
             Assert.Equal(CopilotCodexReasoningSummary.Concise, request.CodexReasoningSummary);
+            Assert.False(request.CodexModelSupportsReasoningSummaries);
             Assert.Equal(CopilotCodexReasoningEffort.Medium, refreshed.ConfiguredModelReasoningEffort);
             Assert.Equal(CopilotCodexReasoningSummary.Detailed, refreshed.ConfiguredModelReasoningSummary);
+            Assert.True(refreshed.ConfiguredModelSupportsReasoningSummaries);
         }
         finally
         {
@@ -88,6 +94,7 @@ public sealed class CopilotCodexReasoningOptionsTests
                 $"""
                 model_reasoning_effort = "minimal"
                 model_reasoning_summary = "none"
+                model_supports_reasoning_summaries = true
 
                 [projects.'{projectRoot}']
                 trust_level = "untrusted"
@@ -96,21 +103,24 @@ public sealed class CopilotCodexReasoningOptionsTests
             Directory.CreateDirectory(configDirectory);
             File.WriteAllText(
                 Path.Combine(configDirectory, "config.toml"),
-                "model_reasoning_effort = \"xhigh\"\nmodel_reasoning_summary = \"detailed\"");
+                "model_reasoning_effort = \"xhigh\"\nmodel_reasoning_summary = \"detailed\"\nmodel_supports_reasoning_summaries = false");
 
             var untrusted = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
             Assert.Equal(CopilotCodexReasoningEffort.Minimal, untrusted.ConfiguredModelReasoningEffort);
             Assert.Equal(CopilotCodexReasoningSummary.None, untrusted.ConfiguredModelReasoningSummary);
             Assert.Equal(CopilotProjectInstructionConfigSources.CodexHome, untrusted.ModelReasoningEffortSource);
             Assert.Equal(CopilotProjectInstructionConfigSources.CodexHome, untrusted.ModelReasoningSummarySource);
+            Assert.True(untrusted.ConfiguredModelSupportsReasoningSummaries);
+            Assert.Equal(CopilotProjectInstructionConfigSources.CodexHome, untrusted.ModelSupportsReasoningSummariesSource);
             Assert.Empty(untrusted.AppliedProjectConfigFilePaths);
 
             File.WriteAllText(
                 Path.Combine(globalRoot, "config.toml"),
-                "model_reasoning_effort = \"max\"\nmodel_reasoning_summary = \"brief\"");
+                "model_reasoning_effort = \"max\"\nmodel_reasoning_summary = \"brief\"\nmodel_supports_reasoning_summaries = \"yes\"");
             var invalid = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot);
             Assert.False(invalid.HasModelReasoningEffortOverride);
             Assert.False(invalid.HasModelReasoningSummaryOverride);
+            Assert.False(invalid.HasModelSupportsReasoningSummariesOverride);
             Assert.Equal(CopilotCodexReasoningEffort.Unspecified, invalid.ConfiguredModelReasoningEffort);
             Assert.Equal(CopilotCodexReasoningSummary.Unspecified, invalid.ConfiguredModelReasoningSummary);
         }
@@ -132,6 +142,9 @@ public sealed class CopilotCodexReasoningOptionsTests
             ConfiguredModelReasoningSummary = CopilotCodexReasoningSummary.Concise,
             HasModelReasoningSummaryOverride = true,
             ModelReasoningSummarySource = CopilotProjectInstructionConfigSources.CodexHome,
+            ConfiguredModelSupportsReasoningSummaries = false,
+            HasModelSupportsReasoningSummariesOverride = true,
+            ModelSupportsReasoningSummariesSource = CopilotProjectInstructionConfigSources.CodexHome,
         };
         string memoryReport = CopilotProjectInstructionDiagnostics.Format(
             new CopilotProjectInstructionSnapshot(
@@ -149,6 +162,9 @@ public sealed class CopilotCodexReasoningOptionsTests
             CodexReasoningSummary = options.ConfiguredModelReasoningSummary,
             HasCodexReasoningSummaryOverride = true,
             CodexReasoningSummarySourceLabel = options.ModelReasoningSummarySourceLabel,
+            CodexModelSupportsReasoningSummaries = options.ConfiguredModelSupportsReasoningSummaries,
+            HasCodexModelSupportsReasoningSummariesOverride = true,
+            CodexModelSupportsReasoningSummariesSourceLabel = options.ModelSupportsReasoningSummariesSourceLabel,
         });
         string debugReport = CopilotEffectiveConfigDiagnostics.Format(
             new CopilotEffectiveConfigDiagnosticContext
@@ -160,11 +176,17 @@ public sealed class CopilotCodexReasoningOptionsTests
 
         Assert.Contains("Codex model_reasoning_effort：xhigh", memoryReport, StringComparison.Ordinal);
         Assert.Contains("Codex model_reasoning_summary：concise", memoryReport, StringComparison.Ordinal);
+        Assert.Contains("Codex model_supports_reasoning_summaries：false", memoryReport, StringComparison.Ordinal);
         Assert.Contains(options.ModelReasoningEffortSourceLabel, memoryReport, StringComparison.Ordinal);
         Assert.Contains("推理强度：xhigh", contextReport, StringComparison.Ordinal);
         Assert.Contains("推理摘要：concise", contextReport, StringComparison.Ordinal);
+        Assert.Contains("推理元数据能力：false", contextReport, StringComparison.Ordinal);
         Assert.Contains("Codex model_reasoning_effort：xhigh", debugReport, StringComparison.Ordinal);
         Assert.Contains("Codex model_reasoning_summary：concise", debugReport, StringComparison.Ordinal);
+        Assert.Contains("Codex model_supports_reasoning_summaries：false", debugReport, StringComparison.Ordinal);
+        Assert.Contains("阻断", memoryReport, StringComparison.Ordinal);
+        Assert.Contains("阻断", contextReport, StringComparison.Ordinal);
+        Assert.Contains("阻断", debugReport, StringComparison.Ordinal);
         Assert.Contains("仅 Agent 官方 OpenAI Responses 生效", memoryReport, StringComparison.Ordinal);
         Assert.Contains("仅 Agent 官方 OpenAI Responses 生效", contextReport, StringComparison.Ordinal);
         Assert.Contains("仅 Agent 官方 OpenAI Responses 生效", debugReport, StringComparison.Ordinal);

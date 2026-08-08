@@ -80,6 +80,8 @@ namespace ColorVision.Copilot
         internal CopilotCodexReasoningSummary CodexReasoningSummary { get; init; } =
             CopilotCodexReasoningSummary.Unspecified;
 
+        internal bool? CodexModelSupportsReasoningSummaries { get; init; }
+
         internal string CodexServiceTier { get; init; } = string.Empty;
 
         internal CopilotCodexModelVerbosity CodexModelVerbosity { get; init; } =

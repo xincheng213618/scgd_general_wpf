@@ -230,6 +230,20 @@ namespace ColorVision.Copilot
                         : effective.ModelReasoningSummarySourceLabel)
                     .AppendLine(" 请求快照；none 不请求摘要；仅 Agent 官方 OpenAI Responses 生效");
             }
+            if (effective.HasModelSupportsReasoningSummariesOverride)
+            {
+                builder.Append("Codex model_supports_reasoning_summaries：")
+                    .Append(CopilotCodexReasoningSummarySupportSelection.GetConfigToken(
+                        effective.ConfiguredModelSupportsReasoningSummaries))
+                    .Append(" · 来源 ")
+                    .Append(effective.ModelSupportsReasoningSummariesSourceLabel.Length == 0
+                        ? "Codex config.toml"
+                        : effective.ModelSupportsReasoningSummariesSourceLabel)
+                    .Append(effective.ConfiguredModelSupportsReasoningSummaries
+                        ? " 请求快照；启用 reasoning metadata，摘要未配置时使用 auto；显式 none 仍关闭摘要"
+                        : " 请求快照；阻断 reasoning metadata，覆盖 model_reasoning_effort/model_reasoning_summary")
+                    .AppendLine("；仅 Agent 官方 OpenAI Responses 生效");
+            }
             if (effective.HasServiceTierOverride)
             {
                 builder.Append("Codex service_tier：")

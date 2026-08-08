@@ -106,12 +106,14 @@ namespace ColorVision.Copilot
                 CopilotCodexReasoningEffort.Unspecified;
             var hasSummaryOverride = request.CodexReasoningSummary !=
                 CopilotCodexReasoningSummary.Unspecified;
+            var hasReasoningSupportOverride = request.CodexModelSupportsReasoningSummaries.HasValue;
             var serviceTier = CopilotCodexServiceTierSelection.GetRequestToken(
                 request.CodexServiceTier);
             var hasVerbosityOverride = request.CodexModelVerbosity !=
                 CopilotCodexModelVerbosity.Unspecified;
             if ((!hasEffortOverride
                     && !hasSummaryOverride
+                    && !hasReasoningSupportOverride
                     && serviceTier.Length == 0
                     && !hasVerbosityOverride)
                 || !CopilotOpenAiRequestPolicy.UsesResponsesApi(request.Profile))
@@ -119,7 +121,7 @@ namespace ColorVision.Copilot
                 return;
             }
 
-            if (hasEffortOverride || hasSummaryOverride)
+            if (hasEffortOverride || hasSummaryOverride || hasReasoningSupportOverride)
                 options.Reasoning = null;
             options.RawRepresentationFactory = _ => BuildCodexResponseOptions(
                 request,
@@ -150,6 +152,9 @@ namespace ColorVision.Copilot
         private static ResponseReasoningOptions? BuildCodexResponseReasoningOptions(
             CopilotAgentRequest request)
         {
+            if (request.CodexModelSupportsReasoningSummaries == false)
+                return null;
+
             ResponseReasoningEffortLevel? effort = request.CodexReasoningEffort switch
             {
                 CopilotCodexReasoningEffort.Minimal => ResponseReasoningEffortLevel.Minimal,
@@ -159,7 +164,10 @@ namespace ColorVision.Copilot
                 CopilotCodexReasoningEffort.XHigh => new ResponseReasoningEffortLevel("xhigh"),
                 _ => (ResponseReasoningEffortLevel?)null,
             };
-            ResponseReasoningSummaryVerbosity? summary = request.CodexReasoningSummary switch
+            var effectiveSummary = CopilotCodexReasoningSummarySupportSelection.ResolveSummary(
+                request.CodexModelSupportsReasoningSummaries,
+                request.CodexReasoningSummary);
+            ResponseReasoningSummaryVerbosity? summary = effectiveSummary switch
             {
                 CopilotCodexReasoningSummary.Auto => ResponseReasoningSummaryVerbosity.Auto,
                 CopilotCodexReasoningSummary.Concise => ResponseReasoningSummaryVerbosity.Concise,

@@ -70,4 +70,29 @@ namespace ColorVision.Copilot
             _ => "未配置",
         };
     }
+
+    internal static class CopilotCodexReasoningSummarySupportSelection
+    {
+        public static string GetConfigToken(bool? supportsReasoningSummaries) =>
+            supportsReasoningSummaries switch
+            {
+                true => "true",
+                false => "false",
+                null => "未配置",
+            };
+
+        public static CopilotCodexReasoningSummary ResolveSummary(
+            bool? supportsReasoningSummaries,
+            CopilotCodexReasoningSummary configuredSummary)
+        {
+            if (supportsReasoningSummaries == false)
+                return CopilotCodexReasoningSummary.Unspecified;
+            if (supportsReasoningSummaries == true
+                && configuredSummary == CopilotCodexReasoningSummary.Unspecified)
+            {
+                return CopilotCodexReasoningSummary.Auto;
+            }
+            return configuredSummary;
+        }
+    }
 }

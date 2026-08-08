@@ -80,6 +80,12 @@ namespace ColorVision.Copilot
 
         public string CodexReasoningSummarySourceLabel { get; init; } = string.Empty;
 
+        public bool CodexModelSupportsReasoningSummaries { get; init; }
+
+        public bool HasCodexModelSupportsReasoningSummariesOverride { get; init; }
+
+        public string CodexModelSupportsReasoningSummariesSourceLabel { get; init; } = string.Empty;
+
         public string CodexServiceTier { get; init; } = string.Empty;
 
         public bool HasCodexServiceTierOverride { get; init; }
@@ -277,6 +283,20 @@ namespace ColorVision.Copilot
                         ? "Codex config.toml"
                         : snapshot.CodexReasoningSummarySourceLabel.Trim())
                     .AppendLine(" 请求快照；仅 Agent 官方 OpenAI Responses 生效）");
+            }
+            if (snapshot.HasCodexModelSupportsReasoningSummariesOverride)
+            {
+                builder.Append("推理元数据能力：")
+                    .Append(CopilotCodexReasoningSummarySupportSelection.GetConfigToken(
+                        snapshot.CodexModelSupportsReasoningSummaries))
+                    .Append("（")
+                    .Append(string.IsNullOrWhiteSpace(snapshot.CodexModelSupportsReasoningSummariesSourceLabel)
+                        ? "Codex config.toml"
+                        : snapshot.CodexModelSupportsReasoningSummariesSourceLabel.Trim())
+                    .Append(snapshot.CodexModelSupportsReasoningSummaries
+                        ? " 请求快照；启用，摘要未配置时使用 auto；显式 none 仍关闭摘要"
+                        : " 请求快照；阻断并覆盖 effort/summary")
+                    .AppendLine("；仅 Agent 官方 OpenAI Responses 生效）");
             }
             if (snapshot.HasCodexServiceTierOverride)
             {

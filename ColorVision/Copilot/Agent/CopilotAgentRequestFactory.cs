@@ -238,6 +238,8 @@ namespace ColorVision.Copilot
         internal CopilotCodexReasoningSummary CodexReasoningSummary { get; init; } =
             CopilotCodexReasoningSummary.Unspecified;
 
+        internal bool? CodexModelSupportsReasoningSummaries { get; init; }
+
         internal string CodexServiceTier { get; init; } = string.Empty;
 
         internal CopilotCodexModelVerbosity CodexModelVerbosity { get; init; } =
@@ -381,6 +383,9 @@ namespace ColorVision.Copilot
                 CodexReasoningSummary = hostContext.ProjectInstructionDiscoveryOptions.HasModelReasoningSummaryOverride
                     ? hostContext.ProjectInstructionDiscoveryOptions.ConfiguredModelReasoningSummary
                     : CopilotCodexReasoningSummary.Unspecified,
+                CodexModelSupportsReasoningSummaries = hostContext.ProjectInstructionDiscoveryOptions.HasModelSupportsReasoningSummariesOverride
+                    ? hostContext.ProjectInstructionDiscoveryOptions.ConfiguredModelSupportsReasoningSummaries
+                    : null,
                 CodexServiceTier = hostContext.ProjectInstructionDiscoveryOptions.HasServiceTierOverride
                     ? hostContext.ProjectInstructionDiscoveryOptions.ConfiguredServiceTier
                     : string.Empty,
@@ -438,6 +443,7 @@ namespace ColorVision.Copilot
                 ToolOutputTokenLimitOverride = plan.ToolOutputTokenLimitOverride,
                 CodexReasoningEffort = plan.CodexReasoningEffort,
                 CodexReasoningSummary = plan.CodexReasoningSummary,
+                CodexModelSupportsReasoningSummaries = plan.CodexModelSupportsReasoningSummaries,
                 CodexServiceTier = plan.CodexServiceTier,
                 CodexModelVerbosity = plan.CodexModelVerbosity,
                 ProjectInstructions = plan.ProjectInstructions,

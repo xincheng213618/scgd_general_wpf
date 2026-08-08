@@ -393,6 +393,23 @@ namespace ColorVision.Copilot
                     .Append(" · 请求快照");
             }
             builder.AppendLine(" · 仅 Agent 官方 OpenAI Responses 生效");
+            builder.Append("- Codex model_supports_reasoning_summaries：")
+                .Append(CopilotCodexReasoningSummarySupportSelection.GetConfigToken(
+                    codexConfigOptions.HasModelSupportsReasoningSummariesOverride
+                        ? codexConfigOptions.ConfiguredModelSupportsReasoningSummaries
+                        : null));
+            if (codexConfigOptions.HasModelSupportsReasoningSummariesOverride)
+            {
+                builder.Append(" · 来源 ")
+                    .Append(codexConfigOptions.ModelSupportsReasoningSummariesSourceLabel.Length == 0
+                        ? "Codex config.toml"
+                        : codexConfigOptions.ModelSupportsReasoningSummariesSourceLabel)
+                    .Append(" · 请求快照")
+                    .Append(codexConfigOptions.ConfiguredModelSupportsReasoningSummaries
+                        ? " · 启用 reasoning metadata；摘要未配置时使用 auto，显式 none 仍关闭摘要"
+                        : " · 阻断 reasoning metadata；覆盖 effort/summary");
+            }
+            builder.AppendLine(" · 仅 Agent 官方 OpenAI Responses 生效");
             builder.Append("- Codex service_tier：");
             if (!codexConfigOptions.HasServiceTierOverride)
             {

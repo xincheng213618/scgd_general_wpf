@@ -200,6 +200,7 @@ public sealed class CopilotExecutionScopeTests
             ToolOutputTokenLimitOverride = 12_000,
             CodexReasoningEffort = CopilotCodexReasoningEffort.XHigh,
             CodexReasoningSummary = CopilotCodexReasoningSummary.Concise,
+            CodexModelSupportsReasoningSummaries = false,
             CodexServiceTier = "fast",
             CodexModelVerbosity = CopilotCodexModelVerbosity.High,
             Mode = CopilotAgentMode.Code,
@@ -231,6 +232,7 @@ public sealed class CopilotExecutionScopeTests
         Assert.Equal(parentRequest.ToolOutputTokenLimitOverride, childRequest.ToolOutputTokenLimitOverride);
         Assert.Equal(parentRequest.CodexReasoningEffort, childRequest.CodexReasoningEffort);
         Assert.Equal(parentRequest.CodexReasoningSummary, childRequest.CodexReasoningSummary);
+        Assert.Equal(parentRequest.CodexModelSupportsReasoningSummaries, childRequest.CodexModelSupportsReasoningSummaries);
         Assert.Equal(parentRequest.CodexServiceTier, childRequest.CodexServiceTier);
         Assert.Equal(parentRequest.CodexModelVerbosity, childRequest.CodexModelVerbosity);
 
@@ -275,6 +277,7 @@ public sealed class CopilotExecutionScopeTests
         Assert.Equal(childRequest.ToolOutputTokenLimitOverride, finalizationRequest.ToolOutputTokenLimitOverride);
         Assert.Equal(childRequest.CodexReasoningEffort, finalizationRequest.CodexReasoningEffort);
         Assert.Equal(childRequest.CodexReasoningSummary, finalizationRequest.CodexReasoningSummary);
+        Assert.Equal(childRequest.CodexModelSupportsReasoningSummaries, finalizationRequest.CodexModelSupportsReasoningSummaries);
         Assert.Equal(childRequest.CodexServiceTier, finalizationRequest.CodexServiceTier);
         Assert.Equal(childRequest.CodexModelVerbosity, finalizationRequest.CodexModelVerbosity);
         Assert.True(CopilotMicrosoftAgentFrameworkRuntime.CanUseMinimalDelegatedFinalizationInstructions(

@@ -557,6 +557,7 @@ namespace ColorVision.Copilot
                 ToolOutputTokenLimitOverride = parentRequest.ToolOutputTokenLimitOverride,
                 CodexReasoningEffort = parentRequest.CodexReasoningEffort,
                 CodexReasoningSummary = parentRequest.CodexReasoningSummary,
+                CodexModelSupportsReasoningSummaries = parentRequest.CodexModelSupportsReasoningSummaries,
                 CodexServiceTier = parentRequest.CodexServiceTier,
                 CodexModelVerbosity = parentRequest.CodexModelVerbosity,
                 ProjectInstructions = projectInstructions,

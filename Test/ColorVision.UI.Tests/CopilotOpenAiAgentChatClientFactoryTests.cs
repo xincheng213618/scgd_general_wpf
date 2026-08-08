@@ -170,12 +170,16 @@ public sealed class CopilotOpenAiAgentChatClientFactoryTests
     }
 
     [Theory]
-    [InlineData("minimal", "concise", "minimal", "concise")]
-    [InlineData("xhigh", "detailed", "xhigh", "detailed")]
-    [InlineData("high", "none", "high", null)]
-    [InlineData(null, "auto", null, "auto")]
-    [InlineData(null, "none", null, null)]
-    public async Task OfficialOpenAiAgentPreservesCodexReasoningOptionsOnTheResponsesWire(
+    [InlineData(null, "minimal", "concise", "minimal", "concise")]
+    [InlineData(null, "xhigh", "detailed", "xhigh", "detailed")]
+    [InlineData(null, "high", "none", "high", null)]
+    [InlineData(null, null, "auto", null, "auto")]
+    [InlineData(null, null, "none", null, null)]
+    [InlineData(false, "minimal", "concise", null, null)]
+    [InlineData(true, "minimal", null, "minimal", "auto")]
+    [InlineData(true, "high", "none", "high", null)]
+    public async Task OfficialOpenAiAgentHonorsCodexReasoningOptionsOnTheResponsesWire(
+        bool? supportsReasoningSummaries,
         string? configuredEffort,
         string? configuredSummary,
         string? expectedEffort,
@@ -202,6 +206,7 @@ public sealed class CopilotOpenAiAgentChatClientFactoryTests
             Profile = profile,
             CodexReasoningEffort = effort,
             CodexReasoningSummary = summary,
+            CodexModelSupportsReasoningSummaries = supportsReasoningSummaries,
         };
 
         await client.GetStreamingResponseAsync(
@@ -210,9 +215,7 @@ public sealed class CopilotOpenAiAgentChatClientFactoryTests
             .ToChatResponseAsync();
 
         using var payload = JsonDocument.Parse(handler.LastPayload);
-        if (expectedEffort == null
-            && expectedSummary == null
-            && string.Equals(configuredSummary, "none", StringComparison.Ordinal))
+        if (expectedEffort == null && expectedSummary == null)
         {
             Assert.False(payload.RootElement.TryGetProperty("reasoning", out _));
             return;
@@ -247,10 +250,18 @@ public sealed class CopilotOpenAiAgentChatClientFactoryTests
         using var client = CopilotOpenAiAgentChatClientFactory.Create(
             profile,
             httpClient);
+        var request = new CopilotAgentRequest
+        {
+            Profile = profile,
+            CodexReasoningEffort = CopilotCodexReasoningEffort.Minimal,
+            CodexReasoningSummary = CopilotCodexReasoningSummary.Concise,
+            CodexModelSupportsReasoningSummaries = false,
+        };
 
         await Assert.ThrowsAnyAsync<Exception>(
             () => client.GetResponseAsync(
-                [new ChatMessage(ChatRole.User, "Keep proxy compatibility.")]));
+                [new ChatMessage(ChatRole.User, "Keep proxy compatibility.")],
+                CopilotMicrosoftAgentFrameworkRuntime.BuildChatOptions(request, [])));
 
         Assert.Equal(
             new Uri("https://example.test/v1/chat/completions"),
