@@ -109,6 +109,38 @@ public class CopilotChatStateSnapshotTests
     }
 
     [Fact]
+    public void ExplicitNeutralPersonalityRoundTripsAndLegacySelectionsBecomeExplicit()
+    {
+        var explicitNeutral = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        explicitNeutral.ResponsePersonality = CopilotResponsePersonality.None;
+        explicitNeutral.HasResponsePersonalityOverride = true;
+
+        string json = JsonConvert.SerializeObject(explicitNeutral, SerializerSettings);
+        var restored = JsonConvert.DeserializeObject<CopilotConversationRecord>(json);
+
+        Assert.Contains(nameof(CopilotConversationRecord.HasResponsePersonalityOverride), json, StringComparison.Ordinal);
+        Assert.Null(JObject.Parse(json)[nameof(CopilotConversationRecord.ResponsePersonality)]);
+        Assert.NotNull(restored);
+        Assert.True(restored.HasResponsePersonalityOverride);
+        Assert.Equal(CopilotResponsePersonality.None, restored.ResponsePersonality);
+
+        explicitNeutral.Messages.Add(new CopilotChatMessage(CopilotChatRole.User, "Question"));
+        var assistant = new CopilotChatMessage(CopilotChatRole.Assistant, "Answer");
+        explicitNeutral.Messages.Add(assistant);
+        var branch = CopilotConversationBranchService.CreateBranch(explicitNeutral, assistant);
+        Assert.True(branch.HasResponsePersonalityOverride);
+        Assert.Equal(CopilotResponsePersonality.None, branch.ResponsePersonality);
+
+        var legacy = JsonConvert.DeserializeObject<CopilotConversationRecord>(
+            "{\"ResponsePersonality\":2}");
+        Assert.NotNull(legacy);
+        Assert.False(legacy.HasResponsePersonalityOverride);
+        Assert.True(legacy.EnsureValid());
+        Assert.True(legacy.HasResponsePersonalityOverride);
+        Assert.Equal(CopilotResponsePersonality.Pragmatic, legacy.ResponsePersonality);
+    }
+
+    [Fact]
     public void StateStoreRoundTripsACompressedCheckpointSession()
     {
         var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));

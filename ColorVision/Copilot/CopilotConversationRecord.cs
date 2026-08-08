@@ -158,6 +158,16 @@ namespace ColorVision.Copilot
         public bool ShouldSerializeResponsePersonality() =>
             ResponsePersonality != CopilotResponsePersonality.None;
 
+        public bool HasResponsePersonalityOverride
+        {
+            get => _hasResponsePersonalityOverride;
+            set => SetProperty(ref _hasResponsePersonalityOverride, value);
+        }
+        private bool _hasResponsePersonalityOverride;
+
+        public bool ShouldSerializeHasResponsePersonalityOverride() =>
+            HasResponsePersonalityOverride;
+
         public int LastUsageInputTokens
         {
             get => _lastUsageInputTokens;

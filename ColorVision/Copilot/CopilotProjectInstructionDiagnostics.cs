@@ -163,6 +163,18 @@ namespace ColorVision.Copilot
                         ? " 请求快照；显式清空）"
                         : " 请求快照；独立开发者指令）");
             }
+            if (effective.HasPersonalityOverride)
+            {
+                builder.Append("Codex personality：")
+                    .Append(CopilotResponsePersonalitySelection.GetDisplayName(effective.ConfiguredPersonality))
+                    .Append('（')
+                    .Append(CopilotResponsePersonalitySelection.GetCommandToken(effective.ConfiguredPersonality))
+                    .Append("） · 来源 ")
+                    .Append(effective.PersonalitySourceLabel.Length == 0
+                        ? "Codex config.toml"
+                        : effective.PersonalitySourceLabel)
+                    .AppendLine(" 请求快照；会话显式选择优先");
+            }
             if (effective.HasModelInstructionsFileOverride)
             {
                 builder.Append("Codex model_instructions_file：")

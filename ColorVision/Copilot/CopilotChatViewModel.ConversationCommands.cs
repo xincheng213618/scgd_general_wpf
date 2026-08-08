@@ -428,12 +428,19 @@ namespace ColorVision.Copilot
         private void SelectResponsePersonality(CopilotLocalCommand command, string query)
         {
             var conversation = EnsureConversation();
+            var codexConfigOptions = CaptureHostedTurnSnapshot(
+                Array.Empty<CopilotAttachmentItem>()).ProjectInstructionDiscoveryOptions;
+            var previousResolution = CopilotResponsePersonalitySelection.Resolve(
+                conversation,
+                codexConfigOptions);
             var normalizedQuery = query.Trim();
             if (normalizedQuery.Length == 0)
             {
                 ShowLocalCommandResult(
                     command,
-                    $"当前会话风格：{CopilotResponsePersonalitySelection.GetDisplayName(conversation.ResponsePersonality)}"
+                    $"当前会话风格：{CopilotResponsePersonalitySelection.GetDisplayName(previousResolution.Personality)}"
+                    + $"（{CopilotResponsePersonalitySelection.GetCommandToken(previousResolution.Personality)}）"
+                    + $" · 来源 {previousResolution.SourceLabel}"
                     + Environment.NewLine
                     + "可用风格：friendly、pragmatic、none。");
                 return;
@@ -448,12 +455,17 @@ namespace ColorVision.Copilot
                 return;
             }
 
-            var previousPersonality = conversation.ResponsePersonality;
+            var alreadyExplicit = conversation.HasResponsePersonalityOverride
+                || conversation.ResponsePersonality != CopilotResponsePersonality.None;
             conversation.ResponsePersonality = personality;
+            conversation.HasResponsePersonalityOverride = true;
             conversation.Touch();
             PersistState(immediate: true);
-            var changeLabel = previousPersonality == personality ? "保持" : "已设置";
-            var checkpointNote = conversation.AgentSessionCheckpoint == null || previousPersonality == personality
+            var changeLabel = alreadyExplicit && previousResolution.Personality == personality
+                ? "保持"
+                : "已设置";
+            var checkpointNote = conversation.AgentSessionCheckpoint == null
+                || previousResolution.Personality == personality
                 ? string.Empty
                 : Environment.NewLine + "已有 Agent checkpoint 会保留；继续任务时将按新风格重新规划，不会直接复用旧提示身份。";
             ShowLocalCommandResult(

@@ -376,11 +376,15 @@ namespace ColorVision.Copilot
             var agentDefaults = _config.AgentDefaults;
             var retainedHistoryWeight = history.Messages.Sum(message => CopilotTokenEstimator.EstimateTextWeight(message.Content));
             var compaction = conversation?.Compaction;
+            var personality = CopilotResponsePersonalitySelection.Resolve(
+                conversation,
+                projectInstructionOptions);
             return CopilotContextDiagnostics.Format(new CopilotContextDiagnosticSnapshot
             {
                 ProfileLabel = requestProfile?.DisplayLabel ?? string.Empty,
                 Mode = mode,
-                ResponsePersonality = conversation?.ResponsePersonality ?? CopilotResponsePersonality.None,
+                ResponsePersonality = personality.Personality,
+                ResponsePersonalitySourceLabel = personality.SourceLabel,
                 SystemPromptCharacters = requestProfile?.EffectiveSystemPrompt.Length ?? 0,
                 ConfiguredModelInstructionsCharacters = projectInstructionOptions.ModelInstructions.Length,
                 ConfiguredModelInstructionsSourceLabel = projectInstructionOptions.ModelInstructionsSourceLabel,

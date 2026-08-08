@@ -45,6 +45,14 @@ namespace ColorVision.Copilot
         public CopilotProjectInstructionConfigSources DeveloperInstructionsSource { get; init; } =
             CopilotProjectInstructionConfigSources.None;
 
+        public CopilotResponsePersonality ConfiguredPersonality { get; init; } =
+            CopilotResponsePersonality.None;
+
+        public bool HasPersonalityOverride { get; init; }
+
+        public CopilotProjectInstructionConfigSources PersonalitySource { get; init; } =
+            CopilotProjectInstructionConfigSources.None;
+
         internal string ConfiguredModelInstructionsFileContent { get; init; } = string.Empty;
 
         internal bool HasModelInstructionsFileOverride { get; init; }
@@ -121,6 +129,7 @@ namespace ColorVision.Copilot
             || HasFallbackFileNamesOverride
             || HasProjectRootMarkersOverride
             || HasDeveloperInstructionsOverride
+            || HasPersonalityOverride
             || HasModelInstructionsFileOverride
             || HasCompactPromptOverride;
 
@@ -140,6 +149,13 @@ namespace ColorVision.Copilot
         {
             CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml",
             CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml",
+            _ => string.Empty,
+        };
+
+        public string PersonalitySourceLabel => PersonalitySource switch
+        {
+            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml personality",
+            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml personality",
             _ => string.Empty,
         };
 
@@ -196,6 +212,7 @@ namespace ColorVision.Copilot
         private const int MaximumFallbackFileNameCharacters = 128;
         internal const int MaximumProjectRootMarkers = 16;
         private const int MaximumProjectRootMarkerCharacters = 128;
+        private const int MaximumPersonalityCharacters = 32;
         private const int MaximumLogicalValueLines = 64;
         internal const int MaximumDeveloperInstructionCharacters = 64 * 1024;
         private const int MaximumConfiguredTextLines = 512;
@@ -209,6 +226,7 @@ namespace ColorVision.Copilot
         private const string FallbackFileNamesKey = "project_doc_fallback_filenames";
         private const string ProjectRootMarkersKey = "project_root_markers";
         private const string DeveloperInstructionsKey = "developer_instructions";
+        private const string PersonalityKey = "personality";
         private const string ModelInstructionsFileKey = "model_instructions_file";
         private const string CompactPromptKey = "compact_prompt";
         private const string ExperimentalCompactPromptFileKey = "experimental_compact_prompt_file";
@@ -350,6 +368,14 @@ namespace ColorVision.Copilot
                 DeveloperInstructionsSource = layer.HasDeveloperInstructionsOverride
                     ? source
                     : current.DeveloperInstructionsSource,
+                ConfiguredPersonality = layer.HasPersonalityOverride
+                    ? layer.Personality
+                    : current.ConfiguredPersonality,
+                HasPersonalityOverride = current.HasPersonalityOverride
+                    || layer.HasPersonalityOverride,
+                PersonalitySource = layer.HasPersonalityOverride
+                    ? source
+                    : current.PersonalitySource,
                 ConfiguredModelInstructionsFileContent = layer.HasModelInstructionsFileOverride
                     ? layer.ModelInstructionsFileContent
                     : current.ConfiguredModelInstructionsFileContent,
@@ -390,6 +416,7 @@ namespace ColorVision.Copilot
             return layer.HasMaximumBytesOverride
                 || layer.HasFallbackFileNamesOverride
                 || layer.HasDeveloperInstructionsOverride
+                || layer.HasPersonalityOverride
                 || layer.HasModelInstructionsFileOverride
                 || layer.HasCompactPromptOverride
                 || layer.HasCompactPromptFileOverride
@@ -651,6 +678,7 @@ namespace ColorVision.Copilot
             var fallbackFileNames = Array.Empty<string>();
             var projectRootMarkers = Array.Empty<string>();
             var developerInstructions = string.Empty;
+            var personality = CopilotResponsePersonality.None;
             var modelInstructionsFilePath = string.Empty;
             var compactPrompt = string.Empty;
             var compactPromptFilePath = string.Empty;
@@ -658,6 +686,7 @@ namespace ColorVision.Copilot
             var hasFallbackFileNamesOverride = false;
             var hasProjectRootMarkersOverride = false;
             var hasDeveloperInstructionsOverride = false;
+            var hasPersonalityOverride = false;
             var hasModelInstructionsFileOverride = false;
             var hasCompactPromptOverride = false;
             var hasCompactPromptFileOverride = false;
@@ -687,6 +716,22 @@ namespace ColorVision.Copilot
                         continue;
                     developerInstructions = configuredDeveloperInstructions;
                     hasDeveloperInstructionsOverride = true;
+                    continue;
+                }
+
+                if (string.Equals(assignment.Key, PersonalityKey, StringComparison.Ordinal))
+                {
+                    if (!TryParseConfiguredText(
+                        assignment.Value,
+                        MaximumPersonalityCharacters,
+                        out var configuredPersonality)
+                        || !CopilotResponsePersonalitySelection.TryParse(
+                            configuredPersonality,
+                            out personality))
+                    {
+                        continue;
+                    }
+                    hasPersonalityOverride = true;
                     continue;
                 }
 
@@ -758,6 +803,8 @@ namespace ColorVision.Copilot
                 ConfiguredModelInstructionsFilePath = modelInstructionsFilePath,
                 ConfiguredCompactPromptFilePath = compactPromptFilePath,
                 HasModelInstructionsFileOverride = hasModelInstructionsFileOverride,
+                Personality = personality,
+                HasPersonalityOverride = hasPersonalityOverride,
                 HasCompactPromptOverride = hasCompactPromptOverride,
                 HasCompactPromptFileOverride = hasCompactPromptFileOverride,
             };
@@ -765,6 +812,7 @@ namespace ColorVision.Copilot
                 || hasFallbackFileNamesOverride
                 || hasProjectRootMarkersOverride
                 || hasDeveloperInstructionsOverride
+                || hasPersonalityOverride
                 || hasModelInstructionsFileOverride
                 || hasCompactPromptOverride
                 || hasCompactPromptFileOverride;
@@ -908,6 +956,7 @@ namespace ColorVision.Copilot
                     && !string.Equals(key, FallbackFileNamesKey, StringComparison.Ordinal)
                     && !string.Equals(key, ProjectRootMarkersKey, StringComparison.Ordinal)
                     && !string.Equals(key, DeveloperInstructionsKey, StringComparison.Ordinal)
+                    && !string.Equals(key, PersonalityKey, StringComparison.Ordinal)
                     && !string.Equals(key, ModelInstructionsFileKey, StringComparison.Ordinal)
                     && !string.Equals(key, CompactPromptKey, StringComparison.Ordinal)
                     && !string.Equals(key, ExperimentalCompactPromptFileKey, StringComparison.Ordinal))
@@ -1456,6 +1505,11 @@ namespace ColorVision.Copilot
             public string ModelInstructionsSourceFilePath { get; init; } = string.Empty;
 
             public bool HasModelInstructionsFileOverride { get; init; }
+
+            public CopilotResponsePersonality Personality { get; init; } =
+                CopilotResponsePersonality.None;
+
+            public bool HasPersonalityOverride { get; init; }
 
             public string CompactPrompt { get; init; } = string.Empty;
 

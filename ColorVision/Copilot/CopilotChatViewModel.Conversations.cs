@@ -462,9 +462,12 @@ namespace ColorVision.Copilot
             CopilotConversationRecord? conversation,
             CopilotProjectInstructionDiscoveryOptions? codexConfigOptions = null)
         {
+            var personality = CopilotResponsePersonalitySelection.Resolve(
+                conversation,
+                codexConfigOptions);
             return CopilotResponsePresentationGuidance.CreateRequestProfile(
                 profile,
-                conversation?.ResponsePersonality ?? CopilotResponsePersonality.None,
+                personality.Personality,
                 codexConfigOptions?.ModelInstructions);
         }
 

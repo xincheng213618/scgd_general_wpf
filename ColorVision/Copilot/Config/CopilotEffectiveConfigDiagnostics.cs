@@ -186,7 +186,7 @@ namespace ColorVision.Copilot
                 configProbe,
                 context.ComposerMode,
                 context.CodexConfigOptions);
-            AppendConversation(builder, state, conversation);
+            AppendConversation(builder, state, conversation, context.CodexConfigOptions);
             AppendIntegrations(builder, config, configProbe, context.McpListenerRunning);
 
             builder.AppendLine()
@@ -368,12 +368,12 @@ namespace ColorVision.Copilot
         private static void AppendConversation(
             StringBuilder builder,
             CopilotChatState state,
-            CopilotConversationRecord? conversation)
+            CopilotConversationRecord? conversation,
+            CopilotProjectInstructionDiscoveryOptions codexConfigOptions)
         {
-            var personality = conversation?.ResponsePersonality ?? CopilotResponsePersonality.None;
-            var personalitySource = personality == CopilotResponsePersonality.None
-                ? "内置默认"
-                : "会话覆盖";
+            var personality = CopilotResponsePersonalitySelection.Resolve(
+                conversation,
+                codexConfigOptions);
             var followUp = CopilotFollowUpPreference.Normalize(state.DefaultFollowUpBehavior);
             var followUpSource = followUp == CopilotFollowUpBehavior.Steer
                 ? "ChatState 默认"
@@ -382,9 +382,22 @@ namespace ColorVision.Copilot
             builder.AppendLine()
                 .AppendLine("会话与本机偏好")
                 .Append("- 回答风格：")
-                .Append(CopilotResponsePersonalitySelection.GetDisplayName(personality))
+                .Append(CopilotResponsePersonalitySelection.GetDisplayName(personality.Personality))
                 .Append(" · 来源 ")
-                .AppendLine(personalitySource)
+                .AppendLine(personality.SourceLabel);
+            if (codexConfigOptions.HasPersonalityOverride
+                && string.Equals(personality.SourceLabel, "会话覆盖", StringComparison.Ordinal))
+            {
+                builder.Append("- Codex personality 默认：")
+                    .Append(CopilotResponsePersonalitySelection.GetDisplayName(
+                        codexConfigOptions.ConfiguredPersonality))
+                    .Append(" · 来源 ")
+                    .Append(codexConfigOptions.PersonalitySourceLabel.Length == 0
+                        ? "Codex config.toml"
+                        : codexConfigOptions.PersonalitySourceLabel)
+                    .AppendLine(" · 会话覆盖优先");
+            }
+            builder
                 .Append("- 权限：")
                 .AppendLine(FormatAccessMode(conversation))
                 .Append("- 附加只读目录：")

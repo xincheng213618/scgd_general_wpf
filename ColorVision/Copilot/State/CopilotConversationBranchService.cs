@@ -155,6 +155,7 @@ namespace ColorVision.Copilot
                 ProfileDisplayName = source.ProfileDisplayName,
                 ProfileId = source.ProfileId,
                 ResponsePersonality = source.ResponsePersonality,
+                HasResponsePersonalityOverride = source.HasResponsePersonalityOverride,
                 AdditionalReadRootPaths = new ObservableCollection<string>(
                     CopilotAdditionalDirectoryCommand.NormalizeStoredPaths(source.AdditionalReadRootPaths)),
                 Title = BuildBranchTitle(source.Title, requestedTitle),

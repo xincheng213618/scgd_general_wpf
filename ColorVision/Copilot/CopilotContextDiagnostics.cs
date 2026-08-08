@@ -15,6 +15,8 @@ namespace ColorVision.Copilot
 
         public CopilotResponsePersonality ResponsePersonality { get; init; }
 
+        public string ResponsePersonalitySourceLabel { get; init; } = string.Empty;
+
         public int SystemPromptCharacters { get; init; }
 
         public int ConfiguredModelInstructionsCharacters { get; init; }
@@ -172,7 +174,10 @@ namespace ColorVision.Copilot
                 .Append(CopilotResponsePersonalitySelection.GetDisplayName(snapshot.ResponsePersonality))
                 .Append('（')
                 .Append(CopilotResponsePersonalitySelection.GetCommandToken(snapshot.ResponsePersonality))
-                .AppendLine("）");
+                .Append("） · 来源 ")
+                .AppendLine(string.IsNullOrWhiteSpace(snapshot.ResponsePersonalitySourceLabel)
+                    ? "内置默认"
+                    : snapshot.ResponsePersonalitySourceLabel.Trim());
             builder.Append("有效系统提示：")
                 .Append(FormatCount(snapshot.SystemPromptCharacters))
                 .AppendLine(" 字符（已应用宿主响应规则）");

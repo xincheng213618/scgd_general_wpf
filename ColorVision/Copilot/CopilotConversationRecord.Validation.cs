@@ -83,6 +83,12 @@ namespace ColorVision.Copilot
                 ResponsePersonality = CopilotResponsePersonality.None;
                 changed = true;
             }
+            else if (!HasResponsePersonalityOverride
+                && ResponsePersonality != CopilotResponsePersonality.None)
+            {
+                HasResponsePersonalityOverride = true;
+                changed = true;
+            }
             if (_legacyAccessModeLoaded)
             {
                 _legacyAccessModeLoaded = false;
