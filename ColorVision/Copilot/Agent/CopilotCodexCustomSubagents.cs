@@ -36,6 +36,14 @@ namespace ColorVision.Copilot
         public CopilotCodexReasoningEffort ReasoningEffort { get; init; } =
             CopilotCodexReasoningEffort.Unspecified;
 
+        public CopilotCodexReasoningSummary ReasoningSummary { get; init; } =
+            CopilotCodexReasoningSummary.Unspecified;
+
+        public string ServiceTier { get; init; } = string.Empty;
+
+        public CopilotCodexModelVerbosity ModelVerbosity { get; init; } =
+            CopilotCodexModelVerbosity.Unspecified;
+
         public CopilotProjectInstructionConfigSources Source { get; init; }
 
         public string SourceFilePath { get; init; } = string.Empty;
@@ -55,6 +63,9 @@ namespace ColorVision.Copilot
         private const string CustomAgentDeveloperInstructionsKey = "developer_instructions";
         private const string CustomAgentModelKey = "model";
         private const string CustomAgentReasoningEffortKey = "model_reasoning_effort";
+        private const string CustomAgentReasoningSummaryKey = "model_reasoning_summary";
+        private const string CustomAgentServiceTierKey = "service_tier";
+        private const string CustomAgentModelVerbosityKey = "model_verbosity";
 
         private static IReadOnlyList<CopilotCodexCustomSubagentDefinition> DiscoverCodexHomeCustomSubagents(
             string normalizedCodexHomePath,
@@ -252,6 +263,33 @@ namespace ColorVision.Copilot
                 return false;
             }
 
+            var reasoningSummary = CopilotCodexReasoningSummary.Unspecified;
+            if (assignments.TryGetValue(CustomAgentReasoningSummaryKey, out var summaryValue)
+                && (!TryParseConfiguredText(summaryValue, 32, out var configuredSummary)
+                    || !CopilotCodexReasoningSummarySelection.TryParse(configuredSummary, out reasoningSummary)))
+            {
+                return false;
+            }
+
+            var serviceTier = string.Empty;
+            if (assignments.TryGetValue(CustomAgentServiceTierKey, out var serviceTierValue)
+                && (!TryParseConfiguredText(
+                        serviceTierValue,
+                        CopilotCodexServiceTierSelection.MaximumCharacters,
+                        out var configuredServiceTier)
+                    || !CopilotCodexServiceTierSelection.TryNormalize(configuredServiceTier, out serviceTier)))
+            {
+                return false;
+            }
+
+            var modelVerbosity = CopilotCodexModelVerbosity.Unspecified;
+            if (assignments.TryGetValue(CustomAgentModelVerbosityKey, out var verbosityValue)
+                && (!TryParseConfiguredText(verbosityValue, 32, out var configuredVerbosity)
+                    || !CopilotCodexModelVerbositySelection.TryParse(configuredVerbosity, out modelVerbosity)))
+            {
+                return false;
+            }
+
             definition = new CopilotCodexCustomSubagentDefinition
             {
                 Name = name,
@@ -259,6 +297,9 @@ namespace ColorVision.Copilot
                 DeveloperInstructions = developerInstructions,
                 Model = model,
                 ReasoningEffort = reasoningEffort,
+                ReasoningSummary = reasoningSummary,
+                ServiceTier = serviceTier,
+                ModelVerbosity = modelVerbosity,
                 Source = source,
                 SourceFilePath = Path.GetFullPath(sourceFilePath),
                 HasIgnoredSettings = hasIgnoredSettings,
@@ -315,7 +356,10 @@ namespace ColorVision.Copilot
             || string.Equals(key, CustomAgentDescriptionKey, StringComparison.Ordinal)
             || string.Equals(key, CustomAgentDeveloperInstructionsKey, StringComparison.Ordinal)
             || string.Equals(key, CustomAgentModelKey, StringComparison.Ordinal)
-            || string.Equals(key, CustomAgentReasoningEffortKey, StringComparison.Ordinal);
+            || string.Equals(key, CustomAgentReasoningEffortKey, StringComparison.Ordinal)
+            || string.Equals(key, CustomAgentReasoningSummaryKey, StringComparison.Ordinal)
+            || string.Equals(key, CustomAgentServiceTierKey, StringComparison.Ordinal)
+            || string.Equals(key, CustomAgentModelVerbosityKey, StringComparison.Ordinal);
 
         private static bool IsValidCustomSubagentName(string name)
         {
@@ -400,7 +444,19 @@ namespace ColorVision.Copilot
                     .Append(" · reasoning ")
                     .Append(definition.ReasoningEffort == CopilotCodexReasoningEffort.Unspecified
                         ? "inherited"
-                        : CopilotCodexReasoningEffortSelection.GetConfigToken(definition.ReasoningEffort));
+                        : CopilotCodexReasoningEffortSelection.GetConfigToken(definition.ReasoningEffort))
+                    .Append(" · summary ")
+                    .Append(definition.ReasoningSummary == CopilotCodexReasoningSummary.Unspecified
+                        ? "inherited"
+                        : CopilotCodexReasoningSummarySelection.GetConfigToken(definition.ReasoningSummary))
+                    .Append(" · verbosity ")
+                    .Append(definition.ModelVerbosity == CopilotCodexModelVerbosity.Unspecified
+                        ? "inherited"
+                        : CopilotCodexModelVerbositySelection.GetConfigToken(definition.ModelVerbosity))
+                    .Append(" · service_tier ")
+                    .Append(string.IsNullOrWhiteSpace(definition.ServiceTier)
+                        ? "inherited"
+                        : definition.ServiceTier);
                 if (definition.HasIgnoredSettings)
                     builder.Append(" · 未支持设置已忽略");
                 builder.AppendLine();

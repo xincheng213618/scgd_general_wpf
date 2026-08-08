@@ -534,6 +534,20 @@ namespace ColorVision.Copilot
                 childProfile.Model = normalizedChildModel;
             }
             var childReasoningEffort = ResolveChildReasoningEffort(parentRequest, runRequest);
+            var customSubagent = CopilotCodexCustomSubagentSelection.Find(
+                parentRequest.CodexCustomSubagents,
+                runRequest.Agent);
+            var childReasoningSummary = customSubagent != null
+                && customSubagent.ReasoningSummary != CopilotCodexReasoningSummary.Unspecified
+                    ? customSubagent.ReasoningSummary
+                    : parentRequest.CodexReasoningSummary;
+            var childServiceTier = !string.IsNullOrWhiteSpace(customSubagent?.ServiceTier)
+                ? customSubagent.ServiceTier
+                : parentRequest.CodexServiceTier;
+            var childModelVerbosity = customSubagent != null
+                && customSubagent.ModelVerbosity != CopilotCodexModelVerbosity.Unspecified
+                    ? customSubagent.ModelVerbosity
+                    : parentRequest.CodexModelVerbosity;
             childProfile.MaxTokens = Math.Min(childProfile.MaxTokens, MaximumExplorationOutputTokens);
             var childExecutionScope = CopilotExecutionScope.ForAgentRun(parentRequest)
                 .DeriveChild(CopilotAgentTaskEventIds.CreateRunId());
@@ -571,10 +585,10 @@ namespace ColorVision.Copilot
                 CodexDefaultSubagentReasoningEffort = parentRequest.CodexDefaultSubagentReasoningEffort,
                 ToolOutputTokenLimitOverride = parentRequest.ToolOutputTokenLimitOverride,
                 CodexReasoningEffort = childReasoningEffort,
-                CodexReasoningSummary = parentRequest.CodexReasoningSummary,
+                CodexReasoningSummary = childReasoningSummary,
                 CodexModelSupportsReasoningSummaries = parentRequest.CodexModelSupportsReasoningSummaries,
-                CodexServiceTier = parentRequest.CodexServiceTier,
-                CodexModelVerbosity = parentRequest.CodexModelVerbosity,
+                CodexServiceTier = childServiceTier,
+                CodexModelVerbosity = childModelVerbosity,
                 ProjectInstructions = projectInstructions,
                 ReadableLocalFilePaths = preselectedFiles,
                 ReadableLocalDirectoryPaths = Array.Empty<string>(),

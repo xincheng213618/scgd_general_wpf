@@ -281,14 +281,29 @@ namespace ColorVision.Copilot
                 builder.Append("- ").Append(definition.Name).Append(": ")
                     .AppendLine(TruncateInlineText(definition.Description, 400));
                 if (!string.IsNullOrWhiteSpace(definition.Model)
-                    || definition.ReasoningEffort != CopilotCodexReasoningEffort.Unspecified)
+                    || definition.ReasoningEffort != CopilotCodexReasoningEffort.Unspecified
+                    || definition.ReasoningSummary != CopilotCodexReasoningSummary.Unspecified
+                    || definition.ModelVerbosity != CopilotCodexModelVerbosity.Unspecified
+                    || !string.IsNullOrWhiteSpace(definition.ServiceTier))
                 {
                     builder.Append("  configured runtime: model=")
                         .Append(string.IsNullOrWhiteSpace(definition.Model) ? "inherited" : definition.Model)
                         .Append("; reasoning_effort=")
-                        .AppendLine(definition.ReasoningEffort == CopilotCodexReasoningEffort.Unspecified
+                        .Append(definition.ReasoningEffort == CopilotCodexReasoningEffort.Unspecified
                             ? "inherited"
-                            : CopilotCodexReasoningEffortSelection.GetConfigToken(definition.ReasoningEffort));
+                            : CopilotCodexReasoningEffortSelection.GetConfigToken(definition.ReasoningEffort))
+                        .Append("; reasoning_summary=")
+                        .Append(definition.ReasoningSummary == CopilotCodexReasoningSummary.Unspecified
+                            ? "inherited"
+                            : CopilotCodexReasoningSummarySelection.GetConfigToken(definition.ReasoningSummary))
+                        .Append("; verbosity=")
+                        .Append(definition.ModelVerbosity == CopilotCodexModelVerbosity.Unspecified
+                            ? "inherited"
+                            : CopilotCodexModelVerbositySelection.GetConfigToken(definition.ModelVerbosity))
+                        .Append("; service_tier=")
+                        .AppendLine(string.IsNullOrWhiteSpace(definition.ServiceTier)
+                            ? "inherited"
+                            : definition.ServiceTier);
                 }
             }
             return builder.ToString().TrimEnd();
