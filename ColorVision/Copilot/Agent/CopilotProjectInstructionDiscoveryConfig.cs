@@ -333,6 +333,13 @@ namespace ColorVision.Copilot
         public CopilotProjectInstructionConfigSources AutoReviewPolicySource { get; init; } =
             CopilotProjectInstructionConfigSources.None;
 
+        public string ConfiguredModel { get; init; } = string.Empty;
+
+        public bool HasModelOverride { get; init; }
+
+        public CopilotProjectInstructionConfigSources ModelSource { get; init; } =
+            CopilotProjectInstructionConfigSources.None;
+
         public string ConfiguredReviewModel { get; init; } = string.Empty;
 
         public bool HasReviewModelOverride { get; init; }
@@ -617,6 +624,7 @@ namespace ColorVision.Copilot
             || HasApprovalPolicyOverride
             || HasApprovalsReviewerOverride
             || HasAutoReviewPolicyOverride
+            || HasModelOverride
             || HasReviewModelOverride
             || HasPreventIdleSleepOverride
             || HasShellToolEnabledOverride
@@ -710,6 +718,13 @@ namespace ColorVision.Copilot
         {
             CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml auto_review.policy",
             CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml auto_review.policy",
+            _ => string.Empty,
+        };
+
+        public string ModelSourceLabel => ModelSource switch
+        {
+            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml model",
+            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml model",
             _ => string.Empty,
         };
 
@@ -966,6 +981,7 @@ namespace ColorVision.Copilot
         private const string ApprovalsReviewerKey = "approvals_reviewer";
         private const string AutoReviewPolicyKey = "auto_review.policy";
         private const string AutoReviewPolicyTableKey = "policy";
+        private const string ModelKey = "model";
         private const string ReviewModelKey = "review_model";
         private const string PreventIdleSleepKey = "features.prevent_idle_sleep";
         private const string PreventIdleSleepFeatureKey = "prevent_idle_sleep";
@@ -1213,6 +1229,14 @@ namespace ColorVision.Copilot
                 AutoReviewPolicySource = layer.HasAutoReviewPolicyOverride
                     ? source
                     : current.AutoReviewPolicySource,
+                ConfiguredModel = layer.HasModelOverride
+                    ? layer.Model
+                    : current.ConfiguredModel,
+                HasModelOverride = current.HasModelOverride
+                    || layer.HasModelOverride,
+                ModelSource = layer.HasModelOverride
+                    ? source
+                    : current.ModelSource,
                 ConfiguredReviewModel = layer.HasReviewModelOverride
                     ? layer.ReviewModel
                     : current.ConfiguredReviewModel,
@@ -1451,6 +1475,7 @@ namespace ColorVision.Copilot
                 || layer.HasApprovalPolicyOverride
                 || layer.HasApprovalsReviewerOverride
                 || layer.HasAutoReviewPolicyOverride
+                || layer.HasModelOverride
                 || layer.HasReviewModelOverride
                 || layer.HasPreventIdleSleepOverride
                 || layer.HasShellToolEnabledOverride
@@ -1742,6 +1767,7 @@ namespace ColorVision.Copilot
             var approvalPolicy = CopilotCodexApprovalPolicy.Unspecified;
             var approvalsReviewer = CopilotCodexApprovalsReviewer.Unspecified;
             var autoReviewPolicy = string.Empty;
+            var model = string.Empty;
             var reviewModel = string.Empty;
             var preventIdleSleep = false;
             var shellToolEnabled = true;
@@ -1786,6 +1812,7 @@ namespace ColorVision.Copilot
             var hasApprovalPolicyOverride = false;
             var hasApprovalsReviewerOverride = false;
             var hasAutoReviewPolicyOverride = false;
+            var hasModelOverride = false;
             var hasReviewModelOverride = false;
             var hasPreventIdleSleepOverride = false;
             var hasShellToolEnabledOverride = false;
@@ -1974,6 +2001,22 @@ namespace ColorVision.Copilot
                         continue;
                     }
                     hasReviewModelOverride = true;
+                    continue;
+                }
+
+                if (string.Equals(assignment.Key, ModelKey, StringComparison.Ordinal))
+                {
+                    if (!TryParseConfiguredText(
+                        assignment.Value,
+                        CopilotConfiguredModelSelection.MaximumModelCharacters,
+                        out var configuredModel)
+                        || !CopilotConfiguredModelSelection.TryNormalize(
+                            configuredModel,
+                            out model))
+                    {
+                        continue;
+                    }
+                    hasModelOverride = true;
                     continue;
                 }
 
@@ -2392,6 +2435,8 @@ namespace ColorVision.Copilot
                 HasApprovalsReviewerOverride = hasApprovalsReviewerOverride,
                 AutoReviewPolicy = autoReviewPolicy,
                 HasAutoReviewPolicyOverride = hasAutoReviewPolicyOverride,
+                Model = model,
+                HasModelOverride = hasModelOverride,
                 ReviewModel = reviewModel,
                 HasReviewModelOverride = hasReviewModelOverride,
                 PreventIdleSleep = preventIdleSleep,
@@ -2451,6 +2496,7 @@ namespace ColorVision.Copilot
                 || hasApprovalPolicyOverride
                 || hasApprovalsReviewerOverride
                 || hasAutoReviewPolicyOverride
+                || hasModelOverride
                 || hasReviewModelOverride
                 || hasPreventIdleSleepOverride
                 || hasShellToolEnabledOverride
@@ -2681,6 +2727,7 @@ namespace ColorVision.Copilot
                     && !string.Equals(key, ApprovalPolicyKey, StringComparison.Ordinal)
                     && !string.Equals(key, ApprovalsReviewerKey, StringComparison.Ordinal)
                     && !string.Equals(key, AutoReviewPolicyKey, StringComparison.Ordinal)
+                    && !string.Equals(key, ModelKey, StringComparison.Ordinal)
                     && !string.Equals(key, ReviewModelKey, StringComparison.Ordinal)
                     && !string.Equals(key, PreventIdleSleepKey, StringComparison.Ordinal)
                     && !string.Equals(key, ShellToolEnabledKey, StringComparison.Ordinal)
@@ -3582,6 +3629,10 @@ namespace ColorVision.Copilot
             public string AutoReviewPolicy { get; init; } = string.Empty;
 
             public bool HasAutoReviewPolicyOverride { get; init; }
+
+            public string Model { get; init; } = string.Empty;
+
+            public bool HasModelOverride { get; init; }
 
             public string ReviewModel { get; init; } = string.Empty;
 

@@ -214,6 +214,7 @@ namespace ColorVision.Copilot
             if (profile == null)
             {
                 builder.AppendLine("- 当前没有可用 Profile。");
+                AppendConfiguredModel(builder, null, composerMode, codexConfigOptions);
                 AppendReviewModel(builder, null, composerMode, codexConfigOptions);
                 AppendConfiguredModelInstructions(builder, codexConfigOptions, profileOverrideWins: false);
                 return;
@@ -275,11 +276,43 @@ namespace ColorVision.Copilot
                 .Append("s · 流式静默 ")
                 .Append(profile.StreamingInactivityTimeoutSeconds.ToString("N0", CultureInfo.CurrentCulture))
                 .AppendLine("s");
+            AppendConfiguredModel(builder, profile, composerMode, codexConfigOptions);
             AppendReviewModel(builder, profile, composerMode, codexConfigOptions);
             AppendConfiguredModelInstructions(
                 builder,
                 codexConfigOptions,
                 profile.HasSystemPromptOverride);
+        }
+
+        private static void AppendConfiguredModel(
+            StringBuilder builder,
+            CopilotProfileConfig? profile,
+            CopilotAgentMode composerMode,
+            CopilotProjectInstructionDiscoveryOptions codexConfigOptions)
+        {
+            builder.Append("- Codex model：");
+            if (!codexConfigOptions.HasModelOverride)
+            {
+                builder.AppendLine("未配置 · 使用当前 Profile 模型");
+                return;
+            }
+
+            builder.Append(codexConfigOptions.ConfiguredModel)
+                .Append(" · 来源 ")
+                .Append(codexConfigOptions.ModelSourceLabel.Length == 0
+                    ? "Codex config.toml"
+                    : codexConfigOptions.ModelSourceLabel)
+                .Append(" · 提交快照 · 沿用 Profile Provider/端点/凭据");
+            if (profile != null)
+            {
+                builder.Append(" · 当前有效模型 ")
+                    .Append(CopilotReviewModelSelection.ResolveEffectiveModel(
+                        composerMode,
+                        codexConfigOptions.ConfiguredReviewModel,
+                        profile.Model,
+                        codexConfigOptions.ConfiguredModel));
+            }
+            builder.AppendLine();
         }
 
         private static void AppendReviewModel(
@@ -291,7 +324,7 @@ namespace ColorVision.Copilot
             builder.Append("- Codex review_model：");
             if (!codexConfigOptions.HasReviewModelOverride)
             {
-                builder.AppendLine("未配置 · Review 沿用当前 Profile 模型");
+                builder.AppendLine("未配置 · Review 沿用 Codex model 或当前 Profile 模型");
                 return;
             }
 
@@ -310,7 +343,8 @@ namespace ColorVision.Copilot
                     .Append(CopilotReviewModelSelection.ResolveEffectiveModel(
                         composerMode,
                         codexConfigOptions.ConfiguredReviewModel,
-                        profile.Model));
+                        profile.Model,
+                        codexConfigOptions.ConfiguredModel));
             }
             builder.AppendLine();
         }

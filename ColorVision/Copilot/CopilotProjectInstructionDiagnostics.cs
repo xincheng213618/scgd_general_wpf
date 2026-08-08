@@ -249,6 +249,16 @@ namespace ColorVision.Copilot
                         : effective.AutoReviewPolicySourceLabel)
                     .AppendLine(" 请求快照；仅注入独立 reviewer，不作为主 Agent 授权");
             }
+            if (effective.HasModelOverride)
+            {
+                builder.Append("Codex model：")
+                    .Append(effective.ConfiguredModel)
+                    .Append(" · 来源 ")
+                    .Append(effective.ModelSourceLabel.Length == 0
+                        ? "Codex config.toml"
+                        : effective.ModelSourceLabel)
+                    .AppendLine(" 请求快照；替换模型名，沿用所选 Profile 的 Provider、端点与凭据；Review 模式的 review_model 优先");
+            }
             if (effective.HasReviewModelOverride)
             {
                 builder.Append("Codex review_model：")

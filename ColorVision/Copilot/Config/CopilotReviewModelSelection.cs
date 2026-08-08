@@ -24,13 +24,18 @@ namespace ColorVision.Copilot
             CopilotAgentMode mode,
             CopilotResponsePersonality personality,
             string? configuredModelInstructions,
-            string? configuredReviewModel)
+            string? configuredReviewModel,
+            string? configuredModel = null)
         {
             ArgumentNullException.ThrowIfNull(source);
             var profile = CopilotResponsePresentationGuidance.CreateRequestProfile(
                 source,
                 personality,
                 configuredModelInstructions);
+            if (CopilotConfiguredModelSelection.TryNormalize(configuredModel, out var model))
+            {
+                profile.Model = model;
+            }
             if (mode == CopilotAgentMode.Review
                 && TryNormalize(configuredReviewModel, out var reviewModel))
             {
@@ -42,12 +47,15 @@ namespace ColorVision.Copilot
         public static string ResolveEffectiveModel(
             CopilotAgentMode mode,
             string? configuredReviewModel,
-            string? fallbackModel)
+            string? fallbackModel,
+            string? configuredModel = null)
         {
             return mode == CopilotAgentMode.Review
                 && TryNormalize(configuredReviewModel, out var reviewModel)
                     ? reviewModel
-                    : (fallbackModel ?? string.Empty).Trim();
+                    : CopilotConfiguredModelSelection.TryNormalize(configuredModel, out var model)
+                        ? model
+                        : (fallbackModel ?? string.Empty).Trim();
         }
 
         public static bool TryNormalize(string? value, out string model)

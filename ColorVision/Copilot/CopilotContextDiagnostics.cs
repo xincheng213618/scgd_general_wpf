@@ -51,6 +51,12 @@ namespace ColorVision.Copilot
 
         public bool HasCodexAutoReviewPolicyOverride { get; init; }
 
+        public string CodexModel { get; init; } = string.Empty;
+
+        public bool HasCodexModelOverride { get; init; }
+
+        public string CodexModelSourceLabel { get; init; } = string.Empty;
+
         public string CodexReviewModel { get; init; } = string.Empty;
 
         public bool HasCodexReviewModelOverride { get; init; }
@@ -431,6 +437,16 @@ namespace ColorVision.Copilot
                         ? "Codex config.toml auto_review.policy"
                         : snapshot.CodexAutoReviewPolicySourceLabel.Trim())
                     .AppendLine(" · 提交快照；仅注入独立 reviewer）");
+            }
+            if (snapshot.HasCodexModelOverride)
+            {
+                builder.Append("请求模型：")
+                    .Append(snapshot.CodexModel)
+                    .Append("（")
+                    .Append(string.IsNullOrWhiteSpace(snapshot.CodexModelSourceLabel)
+                        ? "Codex config.toml"
+                        : snapshot.CodexModelSourceLabel.Trim())
+                    .AppendLine(" 请求快照；沿用所选 Profile 的 Provider、端点与凭据；Review 模式的 review_model 优先）");
             }
             if (snapshot.HasCodexReviewModelOverride)
             {

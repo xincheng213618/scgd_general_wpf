@@ -473,6 +473,9 @@ namespace ColorVision.Copilot
                 codexConfigOptions?.ModelInstructions,
                 codexConfigOptions?.HasReviewModelOverride == true
                     ? codexConfigOptions.ConfiguredReviewModel
+                    : null,
+                codexConfigOptions?.HasModelOverride == true
+                    ? codexConfigOptions.ConfiguredModel
                     : null);
         }
 
