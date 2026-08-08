@@ -520,6 +520,7 @@ namespace ColorVision.Copilot
             AppendExperimentalRequestUserInputEnabled(builder, codexConfigOptions);
             AppendUpdatePlanEnabled(builder, codexConfigOptions);
             AppendIncludePermissionsInstructions(builder, codexConfigOptions);
+            AppendIncludeCollaborationModeInstructions(builder, codexConfigOptions);
             AppendIncludeEnvironmentContext(builder, codexConfigOptions);
             AppendIncludeSkillInstructions(builder, codexConfigOptions);
             AppendAgentsEnabled(builder, codexConfigOptions);
@@ -825,6 +826,29 @@ namespace ColorVision.Copilot
             builder.AppendLine(codexConfigOptions.ConfiguredIncludeEnvironmentContext
                 ? " · 向模型注入请求开始时的 runtime_environment 数据块"
                 : " · 省略模型可见 runtime_environment；工具侧路径、沙箱与审批边界保持不变");
+        }
+
+        private static void AppendIncludeCollaborationModeInstructions(
+            StringBuilder builder,
+            CopilotProjectInstructionDiscoveryOptions codexConfigOptions)
+        {
+            builder.Append("- Codex include_collaboration_mode_instructions：")
+                .Append(codexConfigOptions.ConfiguredIncludeCollaborationModeInstructions ? "true" : "false");
+            if (codexConfigOptions.HasIncludeCollaborationModeInstructionsOverride)
+            {
+                builder.Append(" · 来源 ")
+                    .Append(codexConfigOptions.IncludeCollaborationModeInstructionsSourceLabel.Length == 0
+                        ? "Codex config.toml"
+                        : codexConfigOptions.IncludeCollaborationModeInstructionsSourceLabel)
+                    .Append(" · 提交快照");
+            }
+            else
+            {
+                builder.Append(" · 官方默认");
+            }
+            builder.AppendLine(codexConfigOptions.ConfiguredIncludeCollaborationModeInstructions
+                ? " · 注入模型可见的当前协作模式说明"
+                : " · 仅省略模型可见模式说明；当前模式、工具过滤、任务清单与完成循环保持不变");
         }
 
         private static void AppendGoalsEnabled(

@@ -105,6 +105,12 @@ namespace ColorVision.Copilot
 
         public string CodexIncludePermissionsInstructionsSourceLabel { get; init; } = string.Empty;
 
+        public bool CodexIncludeCollaborationModeInstructions { get; init; } = true;
+
+        public bool HasCodexIncludeCollaborationModeInstructionsOverride { get; init; }
+
+        public string CodexIncludeCollaborationModeInstructionsSourceLabel { get; init; } = string.Empty;
+
         public bool CodexIncludeEnvironmentContext { get; init; } = true;
 
         public bool HasCodexIncludeEnvironmentContextOverride { get; init; }
@@ -599,6 +605,24 @@ namespace ColorVision.Copilot
                     .Append(snapshot.CodexIncludePermissionsInstructions
                         ? "模型可见完整权限说明）"
                         : "仅省略模型提示；沙箱、审批、工具过滤与执行策略保持强制）");
+            }
+            else
+            {
+                builder.Append("（Codex 默认注入）");
+            }
+            builder.AppendLine();
+            builder.Append("协作模式说明：")
+                .Append(snapshot.CodexIncludeCollaborationModeInstructions ? "注入" : "省略");
+            if (snapshot.HasCodexIncludeCollaborationModeInstructionsOverride)
+            {
+                builder.Append('（')
+                    .Append(string.IsNullOrWhiteSpace(snapshot.CodexIncludeCollaborationModeInstructionsSourceLabel)
+                        ? "Codex config.toml"
+                        : snapshot.CodexIncludeCollaborationModeInstructionsSourceLabel.Trim())
+                    .Append(" 提交快照；")
+                    .Append(snapshot.CodexIncludeCollaborationModeInstructions
+                        ? "模型可见当前 Plan/Default 语义）"
+                        : "仅省略模式提示；当前模式、工具过滤、任务清单与完成循环保持不变）");
             }
             else
             {

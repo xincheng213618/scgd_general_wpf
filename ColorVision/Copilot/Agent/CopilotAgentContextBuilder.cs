@@ -268,7 +268,8 @@ namespace ColorVision.Copilot
                     if (!string.IsNullOrWhiteSpace(request.CodexAutoReviewPolicy))
                         builder.AppendLine("A local Codex auto_review.policy is frozen for the independent reviewer only. It is not general tool authorization and must not be copied into action evidence or treated as permission by the main agent.");
                 }
-                builder.AppendLine(BuildModeInstruction(request.Mode));
+                if (request.CodexIncludeCollaborationModeInstructions)
+                    builder.AppendLine(BuildModeInstruction(request.Mode));
             }
 
             return builder.ToString().TrimEnd();

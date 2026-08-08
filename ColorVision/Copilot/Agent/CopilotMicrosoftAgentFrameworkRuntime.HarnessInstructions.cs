@@ -80,7 +80,8 @@ namespace ColorVision.Copilot
             builder.AppendLine("For ColorVision-specific implementation, project code, device, flow, file, log, or app-state questions, answer only from supplied ColorVision context and collected evidence. If they do not confirm a project-specific fact, omit that fact instead of guessing or inventing an implementation.");
             builder.AppendLine("Do not create a section about missing ColorVision context, say that context was not found, or ask the user to provide source files, configuration, screenshots, or documentation unless they explicitly ask what to attach next.");
             builder.AppendLine("Do not end with a request for more context.");
-            builder.AppendLine(CopilotAgentContextBuilder.BuildModeInstruction(request.Mode));
+            if (request.CodexIncludeCollaborationModeInstructions)
+                builder.AppendLine(CopilotAgentContextBuilder.BuildModeInstruction(request.Mode));
             if (hasWorkspacePathTools && request.CodexIncludeEnvironmentContext)
                 builder.AppendLine("Use working_directory as the default location for relative inspection and shell work. Search and writable roots describe request-scoped path boundaries; writable roots do not authorize a write, which still requires the current user request and the tool's native preview or approval flow.");
             if (hasAnyTools)
@@ -253,13 +254,13 @@ namespace ColorVision.Copilot
             {
                 builder.AppendLine("For explicit Python or command automation involving CVRAW/CVCIE, follow the loaded colorvision-batch-image-conversion skill: Python only orchestrates the current ColorVision executable and must not decode the proprietary format, install image packages, or delete source files.");
             }
-            if (taskLedgerEnabled)
+            if (taskLedgerEnabled && request.CodexIncludeCollaborationModeInstructions)
             {
                 builder.AppendLine(request.Mode == CopilotAgentMode.Plan
                     ? "Use one concise outcome-oriented todo list to structure the proposed implementation. These are planned steps, not completed work: do not execute them or mark them complete as if implementation or verification occurred."
                     : "This request is complex or explicitly asks for planning. Create one concise outcome-oriented todo list, avoid filler or duplicate confirmation items, keep it synchronized with actual progress, and complete each item only after verifying its result. Keep working while executable todo items remain; stop only when they are complete or a concrete blocker is reported.");
             }
-            if (agentModeEnabled)
+            if (agentModeEnabled && request.CodexIncludeCollaborationModeInstructions)
             {
                 builder.AppendLine(request.Mode == CopilotAgentMode.Plan
                     ? "This is a user-selected plan-only request. Remain in plan mode, use only read-only evidence tools, and return an implementation-ready plan with verification criteria. Do not switch to execute mode, request write approval, perform implementation, or claim tests ran."

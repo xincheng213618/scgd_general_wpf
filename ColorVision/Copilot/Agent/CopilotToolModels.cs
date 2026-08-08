@@ -85,6 +85,8 @@ namespace ColorVision.Copilot
 
         internal bool CodexIncludePermissionsInstructions { get; init; } = true;
 
+        internal bool CodexIncludeCollaborationModeInstructions { get; init; } = true;
+
         internal bool CodexIncludeEnvironmentContext { get; init; } = true;
 
         internal bool CodexIncludeSkillInstructions { get; init; } = true;

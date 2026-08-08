@@ -396,6 +396,13 @@ namespace ColorVision.Copilot
         public CopilotProjectInstructionConfigSources IncludePermissionsInstructionsSource { get; init; } =
             CopilotProjectInstructionConfigSources.None;
 
+        public bool ConfiguredIncludeCollaborationModeInstructions { get; init; } = true;
+
+        public bool HasIncludeCollaborationModeInstructionsOverride { get; init; }
+
+        public CopilotProjectInstructionConfigSources IncludeCollaborationModeInstructionsSource { get; init; } =
+            CopilotProjectInstructionConfigSources.None;
+
         public bool ConfiguredIncludeEnvironmentContext { get; init; } = true;
 
         public bool HasIncludeEnvironmentContextOverride { get; init; }
@@ -654,6 +661,7 @@ namespace ColorVision.Copilot
             || HasExperimentalRequestUserInputEnabledOverride
             || HasUpdatePlanEnabledOverride
             || HasIncludePermissionsInstructionsOverride
+            || HasIncludeCollaborationModeInstructionsOverride
             || HasIncludeEnvironmentContextOverride
             || HasIncludeSkillInstructionsOverride
             || HasAgentsEnabledOverride
@@ -805,6 +813,13 @@ namespace ColorVision.Copilot
         {
             CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml include_permissions_instructions",
             CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml include_permissions_instructions",
+            _ => string.Empty,
+        };
+
+        public string IncludeCollaborationModeInstructionsSourceLabel => IncludeCollaborationModeInstructionsSource switch
+        {
+            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml include_collaboration_mode_instructions",
+            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml include_collaboration_mode_instructions",
             _ => string.Empty,
         };
 
@@ -1040,6 +1055,7 @@ namespace ColorVision.Copilot
         private const string UpdatePlanEnabledKey = "tools.update_plan.enabled";
         private const string ToolsEnabledTableKey = "enabled";
         private const string IncludePermissionsInstructionsKey = "include_permissions_instructions";
+        private const string IncludeCollaborationModeInstructionsKey = "include_collaboration_mode_instructions";
         private const string IncludeEnvironmentContextKey = "include_environment_context";
         private const string SkillsIncludeInstructionsKey = "skills.include_instructions";
         private const string SkillsIncludeInstructionsTableKey = "include_instructions";
@@ -1351,6 +1367,14 @@ namespace ColorVision.Copilot
                 IncludePermissionsInstructionsSource = layer.HasIncludePermissionsInstructionsOverride
                     ? source
                     : current.IncludePermissionsInstructionsSource,
+                ConfiguredIncludeCollaborationModeInstructions = layer.HasIncludeCollaborationModeInstructionsOverride
+                    ? layer.IncludeCollaborationModeInstructions
+                    : current.ConfiguredIncludeCollaborationModeInstructions,
+                HasIncludeCollaborationModeInstructionsOverride = current.HasIncludeCollaborationModeInstructionsOverride
+                    || layer.HasIncludeCollaborationModeInstructionsOverride,
+                IncludeCollaborationModeInstructionsSource = layer.HasIncludeCollaborationModeInstructionsOverride
+                    ? source
+                    : current.IncludeCollaborationModeInstructionsSource,
                 ConfiguredIncludeEnvironmentContext = layer.HasIncludeEnvironmentContextOverride
                     ? layer.IncludeEnvironmentContext
                     : current.ConfiguredIncludeEnvironmentContext,
@@ -1558,6 +1582,7 @@ namespace ColorVision.Copilot
                 || layer.HasExperimentalRequestUserInputEnabledOverride
                 || layer.HasUpdatePlanEnabledOverride
                 || layer.HasIncludePermissionsInstructionsOverride
+                || layer.HasIncludeCollaborationModeInstructionsOverride
                 || layer.HasIncludeEnvironmentContextOverride
                 || layer.HasIncludeSkillInstructionsOverride
                 || layer.HasAgentsEnabledOverride
@@ -1853,6 +1878,7 @@ namespace ColorVision.Copilot
             var experimentalRequestUserInputEnabled = true;
             var updatePlanEnabled = true;
             var includePermissionsInstructions = true;
+            var includeCollaborationModeInstructions = true;
             var includeEnvironmentContext = true;
             var includeSkillInstructions = true;
             var agentsEnabled = true;
@@ -1901,6 +1927,7 @@ namespace ColorVision.Copilot
             var hasExperimentalRequestUserInputEnabledOverride = false;
             var hasUpdatePlanEnabledOverride = false;
             var hasIncludePermissionsInstructionsOverride = false;
+            var hasIncludeCollaborationModeInstructionsOverride = false;
             var hasIncludeEnvironmentContextOverride = false;
             var hasIncludeSkillInstructionsOverride = false;
             var hasAgentsEnabledOverride = false;
@@ -2184,6 +2211,18 @@ namespace ColorVision.Copilot
                         continue;
                     }
                     hasIncludePermissionsInstructionsOverride = true;
+                    continue;
+                }
+
+                if (string.Equals(assignment.Key, IncludeCollaborationModeInstructionsKey, StringComparison.Ordinal))
+                {
+                    if (!TryParseTomlBoolean(
+                        assignment.Value,
+                        out includeCollaborationModeInstructions))
+                    {
+                        continue;
+                    }
+                    hasIncludeCollaborationModeInstructionsOverride = true;
                     continue;
                 }
 
@@ -2572,6 +2611,8 @@ namespace ColorVision.Copilot
                 HasUpdatePlanEnabledOverride = hasUpdatePlanEnabledOverride,
                 IncludePermissionsInstructions = includePermissionsInstructions,
                 HasIncludePermissionsInstructionsOverride = hasIncludePermissionsInstructionsOverride,
+                IncludeCollaborationModeInstructions = includeCollaborationModeInstructions,
+                HasIncludeCollaborationModeInstructionsOverride = hasIncludeCollaborationModeInstructionsOverride,
                 IncludeEnvironmentContext = includeEnvironmentContext,
                 HasIncludeEnvironmentContextOverride = hasIncludeEnvironmentContextOverride,
                 IncludeSkillInstructions = includeSkillInstructions,
@@ -2630,6 +2671,7 @@ namespace ColorVision.Copilot
                 || hasExperimentalRequestUserInputEnabledOverride
                 || hasUpdatePlanEnabledOverride
                 || hasIncludePermissionsInstructionsOverride
+                || hasIncludeCollaborationModeInstructionsOverride
                 || hasIncludeEnvironmentContextOverride
                 || hasIncludeSkillInstructionsOverride
                 || hasAgentsEnabledOverride
@@ -2866,6 +2908,7 @@ namespace ColorVision.Copilot
                     && !string.Equals(key, ExperimentalRequestUserInputEnabledKey, StringComparison.Ordinal)
                     && !string.Equals(key, UpdatePlanEnabledKey, StringComparison.Ordinal)
                     && !string.Equals(key, IncludePermissionsInstructionsKey, StringComparison.Ordinal)
+                    && !string.Equals(key, IncludeCollaborationModeInstructionsKey, StringComparison.Ordinal)
                     && !string.Equals(key, IncludeEnvironmentContextKey, StringComparison.Ordinal)
                     && !string.Equals(key, SkillsIncludeInstructionsKey, StringComparison.Ordinal)
                     && !string.Equals(key, AgentsEnabledKey, StringComparison.Ordinal)
@@ -3798,6 +3841,10 @@ namespace ColorVision.Copilot
             public bool IncludePermissionsInstructions { get; init; } = true;
 
             public bool HasIncludePermissionsInstructionsOverride { get; init; }
+
+            public bool IncludeCollaborationModeInstructions { get; init; } = true;
+
+            public bool HasIncludeCollaborationModeInstructionsOverride { get; init; }
 
             public bool IncludeEnvironmentContext { get; init; } = true;
 

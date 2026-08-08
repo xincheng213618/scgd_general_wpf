@@ -365,6 +365,23 @@ namespace ColorVision.Copilot
             builder.AppendLine(effective.ConfiguredIncludePermissionsInstructions
                 ? "注入模型可见的完整权限说明"
                 : "仅省略模型可见权限说明；沙箱、审批、工具过滤与执行策略保持强制");
+            builder.Append("Codex include_collaboration_mode_instructions：")
+                .Append(effective.ConfiguredIncludeCollaborationModeInstructions ? "true" : "false");
+            if (effective.HasIncludeCollaborationModeInstructionsOverride)
+            {
+                builder.Append(" · 来源 ")
+                    .Append(effective.IncludeCollaborationModeInstructionsSourceLabel.Length == 0
+                        ? "Codex config.toml"
+                        : effective.IncludeCollaborationModeInstructionsSourceLabel)
+                    .Append(" 提交快照；");
+            }
+            else
+            {
+                builder.Append(" · 官方默认；");
+            }
+            builder.AppendLine(effective.ConfiguredIncludeCollaborationModeInstructions
+                ? "注入模型可见的当前协作模式说明"
+                : "仅省略模型可见模式说明；当前模式、工具过滤、任务清单与完成循环保持不变");
             builder.Append("Codex include_environment_context：")
                 .Append(effective.ConfiguredIncludeEnvironmentContext ? "true" : "false");
             if (effective.HasIncludeEnvironmentContextOverride)
