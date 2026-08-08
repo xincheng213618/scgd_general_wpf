@@ -261,6 +261,8 @@ public sealed class CopilotOpenAiAgentChatClientFactoryTests
     [InlineData(null, "minimal", "concise", "minimal", "concise")]
     [InlineData(null, "none", null, "none", null)]
     [InlineData(null, "xhigh", "detailed", "xhigh", "detailed")]
+    [InlineData(null, "max", "concise", "max", "concise")]
+    [InlineData(null, "ultra", "auto", "ultra", "auto")]
     [InlineData(null, "high", "none", "high", null)]
     [InlineData(null, null, "auto", null, "auto")]
     [InlineData(null, null, "none", null, null)]

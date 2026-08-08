@@ -163,6 +163,8 @@ namespace ColorVision.Copilot
                 CopilotCodexReasoningEffort.Medium => ResponseReasoningEffortLevel.Medium,
                 CopilotCodexReasoningEffort.High => ResponseReasoningEffortLevel.High,
                 CopilotCodexReasoningEffort.XHigh => new ResponseReasoningEffortLevel("xhigh"),
+                CopilotCodexReasoningEffort.Max => new ResponseReasoningEffortLevel("max"),
+                CopilotCodexReasoningEffort.Ultra => new ResponseReasoningEffortLevel("ultra"),
                 _ => (ResponseReasoningEffortLevel?)null,
             };
             var effectiveSummary = CopilotCodexReasoningSummarySupportSelection.ResolveSummary(

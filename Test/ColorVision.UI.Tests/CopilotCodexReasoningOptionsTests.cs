@@ -29,7 +29,7 @@ public sealed class CopilotCodexReasoningOptionsTests
             string configPath = Path.Combine(configDirectory, "config.toml");
             File.WriteAllText(
                 configPath,
-                "model_reasoning_effort = \"xhigh\"\nmodel_reasoning_summary = \"concise\"\nmodel_supports_reasoning_summaries = false");
+                "model_reasoning_effort = \"max\"\nmodel_reasoning_summary = \"concise\"\nmodel_supports_reasoning_summaries = false");
 
             var submittedContext = new CopilotAgentHostContextSnapshot(
                 activeDocumentPath: null,
@@ -58,16 +58,16 @@ public sealed class CopilotCodexReasoningOptionsTests
                 projectRoot);
             var submitted = submittedContext.ProjectInstructionDiscoveryOptions;
 
-            Assert.Equal(CopilotCodexReasoningEffort.XHigh, submitted.ConfiguredModelReasoningEffort);
+            Assert.Equal(CopilotCodexReasoningEffort.Max, submitted.ConfiguredModelReasoningEffort);
             Assert.Equal(CopilotCodexReasoningSummary.Concise, submitted.ConfiguredModelReasoningSummary);
             Assert.Equal(CopilotProjectInstructionConfigSources.TrustedProject, submitted.ModelReasoningEffortSource);
             Assert.Equal(CopilotProjectInstructionConfigSources.TrustedProject, submitted.ModelReasoningSummarySource);
             Assert.False(submitted.ConfiguredModelSupportsReasoningSummaries);
             Assert.Equal(CopilotProjectInstructionConfigSources.TrustedProject, submitted.ModelSupportsReasoningSummariesSource);
-            Assert.Equal(CopilotCodexReasoningEffort.XHigh, plan.CodexReasoningEffort);
+            Assert.Equal(CopilotCodexReasoningEffort.Max, plan.CodexReasoningEffort);
             Assert.Equal(CopilotCodexReasoningSummary.Concise, plan.CodexReasoningSummary);
             Assert.False(plan.CodexModelSupportsReasoningSummaries);
-            Assert.Equal(CopilotCodexReasoningEffort.XHigh, request.CodexReasoningEffort);
+            Assert.Equal(CopilotCodexReasoningEffort.Max, request.CodexReasoningEffort);
             Assert.Equal(CopilotCodexReasoningSummary.Concise, request.CodexReasoningSummary);
             Assert.False(request.CodexModelSupportsReasoningSummaries);
             Assert.Equal(CopilotCodexReasoningEffort.Medium, refreshed.ConfiguredModelReasoningEffort);
@@ -111,7 +111,7 @@ public sealed class CopilotCodexReasoningOptionsTests
                 conversationHistory: null,
                 additionalReadRootPaths: null,
                 globalInstructionRootPath: globalRoot);
-            File.WriteAllText(configPath, "plan_mode_reasoning_effort = \"xhigh\"");
+            File.WriteAllText(configPath, "plan_mode_reasoning_effort = \"ultra\"");
 
             var planModePlan = CopilotAgentRequestFactory.Prepare(
                 "Plan the workspace change.",
@@ -138,7 +138,7 @@ public sealed class CopilotCodexReasoningOptionsTests
             Assert.Equal(CopilotCodexReasoningEffort.None, planModePlan.CodexReasoningEffort);
             Assert.Equal(CopilotCodexReasoningEffort.None, planModeRequest.CodexReasoningEffort);
             Assert.Equal(CopilotCodexReasoningEffort.Low, autoModePlan.CodexReasoningEffort);
-            Assert.Equal(CopilotCodexReasoningEffort.XHigh, refreshed.ConfiguredPlanModeReasoningEffort);
+            Assert.Equal(CopilotCodexReasoningEffort.Ultra, refreshed.ConfiguredPlanModeReasoningEffort);
         }
         finally
         {
@@ -185,7 +185,7 @@ public sealed class CopilotCodexReasoningOptionsTests
 
             File.WriteAllText(
                 Path.Combine(globalRoot, "config.toml"),
-                "model_reasoning_effort = \"max\"\nplan_mode_reasoning_effort = \"max\"\nmodel_reasoning_summary = \"brief\"\nmodel_supports_reasoning_summaries = \"yes\"");
+                "model_reasoning_effort = \"extreme\"\nplan_mode_reasoning_effort = \"extreme\"\nmodel_reasoning_summary = \"brief\"\nmodel_supports_reasoning_summaries = \"yes\"");
             var invalid = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot);
             Assert.False(invalid.HasModelReasoningEffortOverride);
             Assert.False(invalid.HasPlanModeReasoningEffortOverride);

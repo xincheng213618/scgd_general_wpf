@@ -47,7 +47,7 @@ public sealed class CopilotCodexCustomSubagentsTests
                     model: "project-model",
                     contextWindowTokens: 131_072,
                     toolOutputTokenLimit: 4_096,
-                    effort: "high",
+                    effort: "ultra",
                     summary: "detailed",
                     serviceTier: "fast",
                     verbosity: "high",
@@ -62,7 +62,7 @@ public sealed class CopilotCodexCustomSubagentsTests
             Assert.Equal("project-model", reviewer.Model);
             Assert.Equal(131_072, reviewer.ContextWindowTokens);
             Assert.Equal(4_096, reviewer.ToolOutputTokenLimit);
-            Assert.Equal(CopilotCodexReasoningEffort.High, reviewer.ReasoningEffort);
+            Assert.Equal(CopilotCodexReasoningEffort.Ultra, reviewer.ReasoningEffort);
             Assert.Equal(CopilotCodexReasoningSummary.Detailed, reviewer.ReasoningSummary);
             Assert.True(reviewer.SupportsReasoningSummaries);
             Assert.Equal("fast", reviewer.ServiceTier);
@@ -206,7 +206,7 @@ public sealed class CopilotCodexCustomSubagentsTests
                 Model = "agent-model",
                 ContextWindowTokens = 131_072,
                 ToolOutputTokenLimit = 1_024,
-                ReasoningEffort = CopilotCodexReasoningEffort.High,
+                ReasoningEffort = CopilotCodexReasoningEffort.Ultra,
                 ReasoningSummary = CopilotCodexReasoningSummary.Detailed,
                 SupportsReasoningSummaries = false,
                 ServiceTier = "fast",
@@ -241,7 +241,7 @@ public sealed class CopilotCodexCustomSubagentsTests
         Assert.Equal(262_144, CopilotAgentRunBudget.Resolve(request).ContextWindowTokens);
         Assert.Equal(1_024, childRequest.ToolOutputTokenLimitOverride);
         Assert.Equal(12_000, request.ToolOutputTokenLimitOverride);
-        Assert.Equal(CopilotCodexReasoningEffort.High, childRequest.CodexReasoningEffort);
+        Assert.Equal(CopilotCodexReasoningEffort.Ultra, childRequest.CodexReasoningEffort);
         Assert.Equal(CopilotCodexReasoningSummary.Detailed, childRequest.CodexReasoningSummary);
         Assert.False(childRequest.CodexModelSupportsReasoningSummaries);
         Assert.Equal("fast", childRequest.CodexServiceTier);
@@ -260,7 +260,7 @@ public sealed class CopilotCodexCustomSubagentsTests
         var delegated = Assert.IsType<CopilotDelegatedRunUsage>(result.DelegatedRunUsage);
         Assert.Equal("reviewer", delegated.AgentName);
         Assert.Equal("agent-model", delegated.Model);
-        Assert.Equal("high", delegated.ReasoningEffort);
+        Assert.Equal("ultra", delegated.ReasoningEffort);
         Assert.Equal("reviewer", progress.LatestSnapshot?.DelegatedRun?.AgentName);
         Assert.Contains("agent: reviewer", result.Content, StringComparison.Ordinal);
 
@@ -501,7 +501,7 @@ public sealed class CopilotCodexCustomSubagentsTests
                     Model = "review-model",
                     ContextWindowTokens = 131_072,
                     ToolOutputTokenLimit = 1_024,
-                    ReasoningEffort = CopilotCodexReasoningEffort.High,
+                    ReasoningEffort = CopilotCodexReasoningEffort.Max,
                     ReasoningSummary = CopilotCodexReasoningSummary.Detailed,
                     SupportsReasoningSummaries = false,
                     ServiceTier = "fast",
@@ -535,7 +535,7 @@ public sealed class CopilotCodexCustomSubagentsTests
             Assert.Contains("Codex custom agents：1", report, StringComparison.Ordinal);
             Assert.Contains("reviewer · Review bounded workspace evidence.", report, StringComparison.Ordinal);
             Assert.Contains("来源 受信项目", report, StringComparison.Ordinal);
-            Assert.Contains("model review-model · context 131072 · tool_output 1024 · reasoning high", report, StringComparison.Ordinal);
+            Assert.Contains("model review-model · context 131072 · tool_output 1024 · reasoning max", report, StringComparison.Ordinal);
             Assert.Contains("summary detailed · summary_support false · verbosity high · service_tier fast", report, StringComparison.Ordinal);
             Assert.Contains("未支持设置已忽略", report, StringComparison.Ordinal);
             Assert.DoesNotContain("PRIVATE-INSTRUCTION-BODY", report, StringComparison.Ordinal);

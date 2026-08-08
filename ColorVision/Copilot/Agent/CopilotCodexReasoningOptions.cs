@@ -9,6 +9,8 @@ namespace ColorVision.Copilot
         Medium,
         High,
         XHigh,
+        Max,
+        Ultra,
     }
 
     internal static class CopilotCodexReasoningEffortSelection
@@ -22,6 +24,8 @@ namespace ColorVision.Copilot
                 "medium" => CopilotCodexReasoningEffort.Medium,
                 "high" => CopilotCodexReasoningEffort.High,
                 "xhigh" => CopilotCodexReasoningEffort.XHigh,
+                "max" => CopilotCodexReasoningEffort.Max,
+                "ultra" => CopilotCodexReasoningEffort.Ultra,
                 _ => CopilotCodexReasoningEffort.Unspecified,
             };
             return effort != CopilotCodexReasoningEffort.Unspecified;
@@ -48,6 +52,8 @@ namespace ColorVision.Copilot
             CopilotCodexReasoningEffort.Medium => "medium",
             CopilotCodexReasoningEffort.High => "high",
             CopilotCodexReasoningEffort.XHigh => "xhigh",
+            CopilotCodexReasoningEffort.Max => "max",
+            CopilotCodexReasoningEffort.Ultra => "ultra",
             _ => "未配置",
         };
     }

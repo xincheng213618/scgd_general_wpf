@@ -394,7 +394,7 @@ namespace ColorVision.Copilot
                     "reasoning_effort": {
                       "type": "string",
                       "description": "Optional reasoning effort for this spawned subagent. It overrides agents.default_subagent_reasoning_effort when the selected provider supports reasoning metadata.",
-                      "enum": ["minimal", "low", "medium", "high", "xhigh"]
+                      "enum": ["minimal", "low", "medium", "high", "xhigh", "max", "ultra"]
                     }
                   },
                   "required": ["task"],
@@ -538,7 +538,7 @@ namespace ColorVision.Copilot
             {
                 if (!CopilotCodexReasoningEffortSelection.TryParse(ReadString(effortPair.Value), out var parsedEffort))
                 {
-                    errorMessage = "Argument 'reasoning_effort' must be one of: minimal, low, medium, high, xhigh.";
+                    errorMessage = "Argument 'reasoning_effort' must be one of: minimal, low, medium, high, xhigh, max, ultra.";
                     return false;
                 }
                 reasoningEffort = CopilotCodexReasoningEffortSelection.GetConfigToken(parsedEffort);

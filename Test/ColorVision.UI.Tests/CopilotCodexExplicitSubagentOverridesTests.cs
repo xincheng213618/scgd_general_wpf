@@ -17,7 +17,7 @@ public sealed class CopilotCodexExplicitSubagentOverridesTests
         {
             ["task"] = "Inspect the bounded workspace evidence.",
             ["model"] = "explicit-child-model",
-            ["reasoning_effort"] = "high",
+            ["reasoning_effort"] = "ultra",
         };
         Assert.True(
             tool.InputSchema.TryBind(arguments, out var input, out var bindError),
@@ -33,34 +33,34 @@ public sealed class CopilotCodexExplicitSubagentOverridesTests
         Assert.Equal(1, runner.RunCount);
         var runRequest = Assert.IsType<CopilotSubagentRunRequest>(runner.LastRunRequest);
         Assert.Equal("explicit-child-model", runRequest.Model);
-        Assert.Equal("high", runRequest.ReasoningEffort);
+        Assert.Equal("ultra", runRequest.ReasoningEffort);
         var childRequest = CopilotSubagentRunner.CreateChildRequest(
             request,
             CopilotSubagentRoleCatalog.Default.GetRequired(CopilotSubagentRoleCatalog.ExploreRoleId),
             runRequest);
         Assert.Equal("explicit-child-model", childRequest.Profile.Model);
-        Assert.Equal(CopilotCodexReasoningEffort.High, childRequest.CodexReasoningEffort);
+        Assert.Equal(CopilotCodexReasoningEffort.Ultra, childRequest.CodexReasoningEffort);
         Assert.Equal("parent-model", request.Profile.Model);
         Assert.Equal("configured-child-model", request.CodexDefaultSubagentModel);
         Assert.Equal(CopilotCodexReasoningEffort.Low, request.CodexDefaultSubagentReasoningEffort);
 
         var delegated = Assert.IsType<CopilotDelegatedRunUsage>(result.DelegatedRunUsage);
         Assert.Equal("explicit-child-model", delegated.Model);
-        Assert.Equal("high", delegated.ReasoningEffort);
+        Assert.Equal("ultra", delegated.ReasoningEffort);
         Assert.Contains("model: explicit-child-model", result.Content, StringComparison.Ordinal);
-        Assert.Contains("reasoning_effort: high", result.Content, StringComparison.Ordinal);
+        Assert.Contains("reasoning_effort: ultra", result.Content, StringComparison.Ordinal);
         Assert.Equal("explicit-child-model", progress.LatestSnapshot?.DelegatedRun?.Model);
-        Assert.Equal("high", progress.LatestSnapshot?.DelegatedRun?.ReasoningEffort);
+        Assert.Equal("ultra", progress.LatestSnapshot?.DelegatedRun?.ReasoningEffort);
 
         var outcome = CreateOutcome(tool, request, result);
         using var formatted = JsonDocument.Parse(CopilotFrameworkToolResultFormatter.Format(outcome));
         var formattedRun = formatted.RootElement.GetProperty("delegated_run");
         Assert.Equal("explicit-child-model", formattedRun.GetProperty("model").GetString());
-        Assert.Equal("high", formattedRun.GetProperty("reasoning_effort").GetString());
+        Assert.Equal("ultra", formattedRun.GetProperty("reasoning_effort").GetString());
         var trace = CopilotAgentTraceEntry.FromResult(outcome.Execution, result);
         Assert.Equal(CopilotAgentTraceEntry.CurrentSchemaVersion, trace.SchemaVersion);
         Assert.Equal("explicit-child-model", trace.DelegatedModel);
-        Assert.Equal("high", trace.DelegatedReasoningEffort);
+        Assert.Equal("ultra", trace.DelegatedReasoningEffort);
         Assert.Contains(
             "fields=model,reasoning_effort,task",
             CopilotToolExecutionAuditLogger.CreateArgumentSummary(tool, input),
@@ -107,7 +107,7 @@ public sealed class CopilotCodexExplicitSubagentOverridesTests
         var invalidEffortArguments = new Dictionary<string, object?>
         {
             ["task"] = "Inspect the public evidence.",
-            ["reasoning_effort"] = "max",
+            ["reasoning_effort"] = "extreme",
         };
         Assert.False(tool.InputSchema.TryBind(invalidEffortArguments, out _, out _));
 
