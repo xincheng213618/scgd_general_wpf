@@ -265,6 +265,7 @@ namespace ColorVision.Copilot
         {
             using var sleepPrevention = CopilotActiveTurnSleepPrevention.Acquire(
                 turnSnapshot.ProjectInstructionDiscoveryOptions);
+            var goalsEnabled = turnSnapshot.ProjectInstructionDiscoveryOptions.ConfiguredGoalsEnabled;
             CopilotUiDispatcher.Invoke(() =>
             {
                 CopilotConversationService.MarkTurnStarted(
@@ -272,7 +273,8 @@ namespace ColorVision.Copilot
                     conversation,
                     DateTime.Now);
 
-                if (conversation.TryBeginGoalTurn(hostedRun.IsAgent, isAutomaticGoalContinuation))
+                if (goalsEnabled
+                    && conversation.TryBeginGoalTurn(hostedRun.IsAgent, isAutomaticGoalContinuation))
                 {
                     CopilotAssistantMessagePresenter.AppendExecutionTrace(
                         assistantMessage,
@@ -281,7 +283,9 @@ namespace ColorVision.Copilot
                 PersistState(immediate: true);
             });
             var boundGoalId = CopilotUiDispatcher.Invoke(
-                () => conversation.Goal?.IsActive == true ? conversation.Goal.Id : string.Empty,
+                () => goalsEnabled && conversation.Goal?.IsActive == true
+                    ? conversation.Goal.Id
+                    : string.Empty,
                 fallback: string.Empty);
             var goalOutcomeRecorded = false;
             try
@@ -473,7 +477,10 @@ namespace ColorVision.Copilot
                 conversation.Id,
                 hostedRun.Id,
                 accessContext,
-                conversation.Goal?.IsActive == true ? conversation.Goal.Objective : string.Empty,
+                turnSnapshot.ProjectInstructionDiscoveryOptions.ConfiguredGoalsEnabled
+                    && conversation.Goal?.IsActive == true
+                        ? conversation.Goal.Objective
+                        : string.Empty,
                 userMessage.WorkspaceReviewTarget,
                 userMessage.AgentSkillReference);
             var eventProtocol = new CopilotTurnEventProtocol(userMessage.RequestMode, hostedRun.Id);

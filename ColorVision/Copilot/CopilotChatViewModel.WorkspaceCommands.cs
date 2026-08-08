@@ -152,6 +152,21 @@ namespace ColorVision.Copilot
             }
 
             var normalizedArguments = (arguments ?? string.Empty).Trim();
+            var goalsEnabled = CaptureHostedTurnSnapshot(
+                conversation,
+                attachmentOverride: conversation.Attachments)
+                .ProjectInstructionDiscoveryOptions
+                .ConfiguredGoalsEnabled;
+            if (!goalsEnabled
+                && !CopilotConversationGoalFeaturePolicy.CanManageWhileDisabled(normalizedArguments))
+            {
+                ShowLocalCommandResult(
+                    command,
+                    "Codex features.goals=false 已暂停持续目标功能：不会向新请求注入目标、记录目标轮次、执行独立完成评估或自动续作。"
+                    + Environment.NewLine
+                    + "已有目标记录保持不变；仍可用 /goal 查看、/goal pause 暂停或 /goal clear 清除。修改配置后可再次恢复。");
+                return;
+            }
             if (IsBusy
                 && normalizedArguments.Length > 0
                 && !string.Equals(normalizedArguments, "pause", StringComparison.OrdinalIgnoreCase)

@@ -241,6 +241,8 @@ namespace ColorVision.Copilot
 
         internal bool CodexIncludeSkillInstructions { get; init; } = true;
 
+        internal bool CodexGoalsEnabled { get; init; } = true;
+
         internal CopilotCodexApprovalPolicy CodexApprovalPolicy { get; init; } =
             CopilotCodexApprovalPolicy.Unspecified;
 
@@ -429,6 +431,7 @@ namespace ColorVision.Copilot
                 CodexUpdatePlanEnabled = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredUpdatePlanEnabled,
                 CodexIncludeEnvironmentContext = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredIncludeEnvironmentContext,
                 CodexIncludeSkillInstructions = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredIncludeSkillInstructions,
+                CodexGoalsEnabled = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredGoalsEnabled,
                 CodexApprovalPolicy = codexApprovalPolicy,
                 CodexApprovalsReviewer = codexApprovalsReviewer,
                 CodexAutoReviewPolicy = codexAutoReviewPolicy,
@@ -499,10 +502,11 @@ namespace ColorVision.Copilot
                 TaskIntentText = string.IsNullOrWhiteSpace(input.TaskIntentText)
                     ? plan.UserText
                     : input.TaskIntentText.Trim(),
-                ActiveGoalText = CopilotConversationGoal.TryNormalizeObjective(
-                    input.ActiveGoalText,
-                    out var normalizedGoal,
-                    out _)
+                ActiveGoalText = plan.CodexGoalsEnabled
+                    && CopilotConversationGoal.TryNormalizeObjective(
+                        input.ActiveGoalText,
+                        out var normalizedGoal,
+                        out _)
                     ? normalizedGoal
                     : string.Empty,
                 WorkspaceReviewTarget = plan.Mode == CopilotAgentMode.Review

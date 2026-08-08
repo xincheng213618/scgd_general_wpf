@@ -298,6 +298,23 @@ namespace ColorVision.Copilot
             builder.AppendLine(effective.ConfiguredShellToolEnabled
                 ? "按请求意图暴露命令启动工具"
                 : "隐藏命令启动工具并拒绝旧计划、恢复状态或注入调用；已有后台命令仍可观察或停止");
+            builder.Append("Codex features.goals：")
+                .Append(effective.ConfiguredGoalsEnabled ? "true" : "false");
+            if (effective.HasGoalsEnabledOverride)
+            {
+                builder.Append(" · 来源 ")
+                    .Append(effective.GoalsEnabledSourceLabel.Length == 0
+                        ? "Codex config.toml"
+                        : effective.GoalsEnabledSourceLabel)
+                    .Append(" 提交快照；");
+            }
+            else
+            {
+                builder.Append(" · 官方默认；");
+            }
+            builder.AppendLine(effective.ConfiguredGoalsEnabled
+                ? "活动目标会绑定到 Agent 请求，并执行完成评估与自动续作"
+                : "不绑定、计数、评估或自动续作；已有目标记录保留，/goal 仍可查看、暂停或清除");
             AppendToolEnabled(
                 builder,
                 "tools.experimental_request_user_input.enabled",

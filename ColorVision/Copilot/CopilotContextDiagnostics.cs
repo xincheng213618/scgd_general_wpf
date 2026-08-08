@@ -75,6 +75,12 @@ namespace ColorVision.Copilot
 
         public string CodexShellToolEnabledSourceLabel { get; init; } = string.Empty;
 
+        public bool CodexGoalsEnabled { get; init; } = true;
+
+        public bool HasCodexGoalsEnabledOverride { get; init; }
+
+        public string CodexGoalsEnabledSourceLabel { get; init; } = string.Empty;
+
         public bool CodexExperimentalRequestUserInputEnabled { get; init; } = true;
 
         public bool HasCodexExperimentalRequestUserInputEnabledOverride { get; init; }
@@ -509,6 +515,24 @@ namespace ColorVision.Copilot
                     .Append(snapshot.CodexShellToolEnabled
                         ? "；按请求意图暴露命令启动工具）"
                         : "；命令启动工具已从目录移除，旧调用也会拒绝；已有后台命令仍可观察或停止）");
+            }
+            else
+            {
+                builder.Append("（Codex 默认开启）");
+            }
+            builder.AppendLine();
+            builder.Append("持续目标：")
+                .Append(snapshot.CodexGoalsEnabled ? "开启" : "暂停");
+            if (snapshot.HasCodexGoalsEnabledOverride)
+            {
+                builder.Append('（')
+                    .Append(string.IsNullOrWhiteSpace(snapshot.CodexGoalsEnabledSourceLabel)
+                        ? "Codex config.toml"
+                        : snapshot.CodexGoalsEnabledSourceLabel.Trim())
+                    .Append(" 提交快照；")
+                    .Append(snapshot.CodexGoalsEnabled
+                        ? "活动目标会绑定、计数、评估并按需自动续作）"
+                        : "不绑定、计数、评估或自动续作；已有记录保留，仍可查看、暂停或清除）");
             }
             else
             {

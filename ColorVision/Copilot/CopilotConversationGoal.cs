@@ -355,6 +355,17 @@ namespace ColorVision.Copilot
         string Message,
         bool StartsWork = false);
 
+    internal static class CopilotConversationGoalFeaturePolicy
+    {
+        public static bool CanManageWhileDisabled(string? arguments)
+        {
+            var normalized = (arguments ?? string.Empty).Trim();
+            return normalized.Length == 0
+                || string.Equals(normalized, "pause", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(normalized, "clear", StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
     internal static class CopilotConversationGoalCommand
     {
         public static CopilotConversationGoalCommandResult Execute(

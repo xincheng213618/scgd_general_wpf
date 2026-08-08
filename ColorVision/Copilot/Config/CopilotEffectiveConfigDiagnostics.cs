@@ -515,6 +515,7 @@ namespace ColorVision.Copilot
             }
             AppendPreventIdleSleep(builder, codexConfigOptions);
             AppendShellToolEnabled(builder, codexConfigOptions);
+            AppendGoalsEnabled(builder, codexConfigOptions);
             AppendExperimentalRequestUserInputEnabled(builder, codexConfigOptions);
             AppendUpdatePlanEnabled(builder, codexConfigOptions);
             AppendIncludeEnvironmentContext(builder, codexConfigOptions);
@@ -799,6 +800,29 @@ namespace ColorVision.Copilot
             builder.AppendLine(codexConfigOptions.ConfiguredIncludeEnvironmentContext
                 ? " · 向模型注入请求开始时的 runtime_environment 数据块"
                 : " · 省略模型可见 runtime_environment；工具侧路径、沙箱与审批边界保持不变");
+        }
+
+        private static void AppendGoalsEnabled(
+            StringBuilder builder,
+            CopilotProjectInstructionDiscoveryOptions codexConfigOptions)
+        {
+            builder.Append("- Codex features.goals：")
+                .Append(codexConfigOptions.ConfiguredGoalsEnabled ? "true" : "false");
+            if (codexConfigOptions.HasGoalsEnabledOverride)
+            {
+                builder.Append(" · 来源 ")
+                    .Append(codexConfigOptions.GoalsEnabledSourceLabel.Length == 0
+                        ? "Codex config.toml"
+                        : codexConfigOptions.GoalsEnabledSourceLabel)
+                    .Append(" · 提交快照");
+            }
+            else
+            {
+                builder.Append(" · 官方默认");
+            }
+            builder.AppendLine(codexConfigOptions.ConfiguredGoalsEnabled
+                ? " · 活动目标会绑定到 Agent 请求，并执行完成评估与自动续作"
+                : " · 不绑定、计数、评估或自动续作；已有目标记录保留，/goal 仍可查看、暂停或清除");
         }
 
         private static void AppendIncludeSkillInstructions(
