@@ -230,6 +230,14 @@ namespace ColorVision.Copilot
         public CopilotProjectInstructionConfigSources AgentsEnabledSource { get; init; } =
             CopilotProjectInstructionConfigSources.None;
 
+        public int ConfiguredMaximumConcurrentSubagentRuns { get; init; } =
+            CopilotSubagentCoordinator.DefaultMaximumConcurrentRuns;
+
+        public bool HasMaximumConcurrentSubagentRunsOverride { get; init; }
+
+        public CopilotProjectInstructionConfigSources MaximumConcurrentSubagentRunsSource { get; init; } =
+            CopilotProjectInstructionConfigSources.None;
+
         public int ConfiguredModelContextWindowTokens { get; init; }
 
         public bool HasModelContextWindowOverride { get; init; }
@@ -412,6 +420,7 @@ namespace ColorVision.Copilot
             || HasReviewModelOverride
             || HasPreventIdleSleepOverride
             || HasAgentsEnabledOverride
+            || HasMaximumConcurrentSubagentRunsOverride
             || HasModelContextWindowOverride
             || HasToolOutputTokenLimitOverride
             || HasModelReasoningEffortOverride
@@ -505,6 +514,13 @@ namespace ColorVision.Copilot
         {
             CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml agents.enabled",
             CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml agents.enabled",
+            _ => string.Empty,
+        };
+
+        public string MaximumConcurrentSubagentRunsSourceLabel => MaximumConcurrentSubagentRunsSource switch
+        {
+            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml agents concurrency",
+            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml agents concurrency",
             _ => string.Empty,
         };
 
@@ -665,6 +681,10 @@ namespace ColorVision.Copilot
         private const string PreventIdleSleepFeatureKey = "prevent_idle_sleep";
         private const string AgentsEnabledKey = "agents.enabled";
         private const string AgentsEnabledTableKey = "enabled";
+        private const string AgentsMaximumConcurrentThreadsKey = "agents.max_concurrent_threads_per_session";
+        private const string AgentsMaximumConcurrentThreadsTableKey = "max_concurrent_threads_per_session";
+        private const string AgentsMaximumThreadsKey = "agents.max_threads";
+        private const string AgentsMaximumThreadsTableKey = "max_threads";
         private const string ModelContextWindowKey = "model_context_window";
         private const string ToolOutputTokenLimitKey = "tool_output_token_limit";
         private const string ModelReasoningEffortKey = "model_reasoning_effort";
@@ -889,6 +909,14 @@ namespace ColorVision.Copilot
                 AgentsEnabledSource = layer.HasAgentsEnabledOverride
                     ? source
                     : current.AgentsEnabledSource,
+                ConfiguredMaximumConcurrentSubagentRuns = layer.HasMaximumConcurrentSubagentRunsOverride
+                    ? layer.MaximumConcurrentSubagentRuns
+                    : current.ConfiguredMaximumConcurrentSubagentRuns,
+                HasMaximumConcurrentSubagentRunsOverride = current.HasMaximumConcurrentSubagentRunsOverride
+                    || layer.HasMaximumConcurrentSubagentRunsOverride,
+                MaximumConcurrentSubagentRunsSource = layer.HasMaximumConcurrentSubagentRunsOverride
+                    ? source
+                    : current.MaximumConcurrentSubagentRunsSource,
                 ConfiguredModelContextWindowTokens = layer.HasModelContextWindowOverride
                     ? layer.ModelContextWindowTokens
                     : current.ConfiguredModelContextWindowTokens,
@@ -1026,6 +1054,7 @@ namespace ColorVision.Copilot
                 || layer.HasReviewModelOverride
                 || layer.HasPreventIdleSleepOverride
                 || layer.HasAgentsEnabledOverride
+                || layer.HasMaximumConcurrentSubagentRunsOverride
                 || layer.HasModelContextWindowOverride
                 || layer.HasToolOutputTokenLimitOverride
                 || layer.HasModelReasoningEffortOverride
@@ -1307,6 +1336,7 @@ namespace ColorVision.Copilot
             var reviewModel = string.Empty;
             var preventIdleSleep = false;
             var agentsEnabled = true;
+            var maximumConcurrentSubagentRuns = CopilotSubagentCoordinator.DefaultMaximumConcurrentRuns;
             var modelContextWindowTokens = 0;
             var toolOutputTokenLimit = 0;
             var modelReasoningEffort = CopilotCodexReasoningEffort.Unspecified;
@@ -1334,6 +1364,8 @@ namespace ColorVision.Copilot
             var hasReviewModelOverride = false;
             var hasPreventIdleSleepOverride = false;
             var hasAgentsEnabledOverride = false;
+            var hasMaximumConcurrentSubagentRunsOverride = false;
+            var hasCanonicalMaximumConcurrentSubagentRunsOverride = false;
             var hasModelContextWindowOverride = false;
             var hasToolOutputTokenLimitOverride = false;
             var hasModelReasoningEffortOverride = false;
@@ -1501,6 +1533,23 @@ namespace ColorVision.Copilot
                         continue;
                     }
                     hasAgentsEnabledOverride = true;
+                    continue;
+                }
+
+                if (string.Equals(assignment.Key, AgentsMaximumConcurrentThreadsKey, StringComparison.Ordinal)
+                    || string.Equals(assignment.Key, AgentsMaximumThreadsKey, StringComparison.Ordinal))
+                {
+                    var isCanonical = string.Equals(
+                        assignment.Key,
+                        AgentsMaximumConcurrentThreadsKey,
+                        StringComparison.Ordinal);
+                    if (!isCanonical && hasCanonicalMaximumConcurrentSubagentRunsOverride)
+                        continue;
+                    if (!TryParsePositiveInteger(assignment.Value, out var configuredMaximumConcurrentSubagentRuns))
+                        continue;
+                    maximumConcurrentSubagentRuns = configuredMaximumConcurrentSubagentRuns;
+                    hasMaximumConcurrentSubagentRunsOverride = true;
+                    hasCanonicalMaximumConcurrentSubagentRunsOverride |= isCanonical;
                     continue;
                 }
 
@@ -1746,6 +1795,8 @@ namespace ColorVision.Copilot
                 HasPreventIdleSleepOverride = hasPreventIdleSleepOverride,
                 AgentsEnabled = agentsEnabled,
                 HasAgentsEnabledOverride = hasAgentsEnabledOverride,
+                MaximumConcurrentSubagentRuns = maximumConcurrentSubagentRuns,
+                HasMaximumConcurrentSubagentRunsOverride = hasMaximumConcurrentSubagentRunsOverride,
                 ModelContextWindowTokens = modelContextWindowTokens,
                 HasModelContextWindowOverride = hasModelContextWindowOverride,
                 ToolOutputTokenLimit = toolOutputTokenLimit,
@@ -1784,6 +1835,7 @@ namespace ColorVision.Copilot
                 || hasReviewModelOverride
                 || hasPreventIdleSleepOverride
                 || hasAgentsEnabledOverride
+                || hasMaximumConcurrentSubagentRunsOverride
                 || hasModelContextWindowOverride
                 || hasToolOutputTokenLimitOverride
                 || hasModelReasoningEffortOverride
@@ -1948,8 +2000,13 @@ namespace ColorVision.Copilot
                     && string.Equals(parsedKey, PreventIdleSleepFeatureKey, StringComparison.Ordinal)
                         ? PreventIdleSleepKey
                         : inAgentsTable
-                            && string.Equals(parsedKey, AgentsEnabledTableKey, StringComparison.Ordinal)
-                                ? AgentsEnabledKey
+                            ? parsedKey switch
+                            {
+                                AgentsEnabledTableKey => AgentsEnabledKey,
+                                AgentsMaximumConcurrentThreadsTableKey => AgentsMaximumConcurrentThreadsKey,
+                                AgentsMaximumThreadsTableKey => AgentsMaximumThreadsKey,
+                                _ => string.Empty,
+                            }
                         : inAutoReviewTable
                             && string.Equals(parsedKey, AutoReviewPolicyTableKey, StringComparison.Ordinal)
                                 ? AutoReviewPolicyKey
@@ -1969,6 +2026,8 @@ namespace ColorVision.Copilot
                     && !string.Equals(key, ReviewModelKey, StringComparison.Ordinal)
                     && !string.Equals(key, PreventIdleSleepKey, StringComparison.Ordinal)
                     && !string.Equals(key, AgentsEnabledKey, StringComparison.Ordinal)
+                    && !string.Equals(key, AgentsMaximumConcurrentThreadsKey, StringComparison.Ordinal)
+                    && !string.Equals(key, AgentsMaximumThreadsKey, StringComparison.Ordinal)
                     && !string.Equals(key, ModelContextWindowKey, StringComparison.Ordinal)
                     && !string.Equals(key, ToolOutputTokenLimitKey, StringComparison.Ordinal)
                     && !string.Equals(key, ModelReasoningEffortKey, StringComparison.Ordinal)
@@ -2241,6 +2300,20 @@ namespace ColorVision.Copilot
                     CultureInfo.InvariantCulture,
                     out tokenLimit)
                 && tokenLimit > 0;
+        }
+
+        private static bool TryParsePositiveInteger(string value, out int result)
+        {
+            result = 0;
+            var normalized = (value ?? string.Empty)
+                .Replace("_", string.Empty, StringComparison.Ordinal)
+                .Trim();
+            return int.TryParse(
+                    normalized,
+                    NumberStyles.None,
+                    CultureInfo.InvariantCulture,
+                    out result)
+                && result > 0;
         }
 
         private static bool TryParseToolOutputTokenLimit(
@@ -2852,6 +2925,11 @@ namespace ColorVision.Copilot
             public bool AgentsEnabled { get; init; } = true;
 
             public bool HasAgentsEnabledOverride { get; init; }
+
+            public int MaximumConcurrentSubagentRuns { get; init; } =
+                CopilotSubagentCoordinator.DefaultMaximumConcurrentRuns;
+
+            public bool HasMaximumConcurrentSubagentRunsOverride { get; init; }
 
             public int ModelContextWindowTokens { get; init; }
 

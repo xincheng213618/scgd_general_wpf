@@ -288,6 +288,21 @@ namespace ColorVision.Copilot
             builder.AppendLine(effective.ConfiguredAgentsEnabled
                 ? "允许按请求意图暴露子代理工具"
                 : "隐藏子代理工具并拒绝旧计划、恢复状态或注入调用");
+            builder.Append("Codex agents.max_concurrent_threads_per_session：")
+                .Append(effective.ConfiguredMaximumConcurrentSubagentRuns.ToString("N0", CultureInfo.CurrentCulture));
+            if (effective.HasMaximumConcurrentSubagentRunsOverride)
+            {
+                builder.Append(" · 来源 ")
+                    .Append(effective.MaximumConcurrentSubagentRunsSourceLabel.Length == 0
+                        ? "Codex config.toml"
+                        : effective.MaximumConcurrentSubagentRunsSourceLabel)
+                    .Append(" 提交快照");
+            }
+            else
+            {
+                builder.Append(" · ColorVision 默认");
+            }
+            builder.AppendLine("；限制单个父请求的并行子代理槽位，不扩大请求级 Token 总预算");
             if (effective.HasModelContextWindowOverride)
             {
                 builder.Append("Codex model_context_window：")

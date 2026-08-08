@@ -241,6 +241,9 @@ namespace ColorVision.Copilot
 
         internal bool CodexAgentsEnabled { get; init; } = true;
 
+        internal int CodexMaximumConcurrentSubagentRuns { get; init; } =
+            CopilotSubagentCoordinator.DefaultMaximumConcurrentRuns;
+
         internal int? ModelContextWindowTokensOverride { get; init; }
 
         internal int? ToolOutputTokenLimitOverride { get; init; }
@@ -405,6 +408,8 @@ namespace ColorVision.Copilot
                 CodexApprovalsReviewer = codexApprovalsReviewer,
                 CodexAutoReviewPolicy = codexAutoReviewPolicy,
                 CodexAgentsEnabled = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredAgentsEnabled,
+                CodexMaximumConcurrentSubagentRuns =
+                    hostContext.ProjectInstructionDiscoveryOptions.ConfiguredMaximumConcurrentSubagentRuns,
                 ModelContextWindowTokensOverride = hostContext.ProjectInstructionDiscoveryOptions.HasModelContextWindowOverride
                     ? hostContext.ProjectInstructionDiscoveryOptions.ConfiguredModelContextWindowTokens
                     : null,
@@ -482,6 +487,7 @@ namespace ColorVision.Copilot
                 CodexApprovalsReviewer = plan.CodexApprovalsReviewer,
                 CodexAutoReviewPolicy = plan.CodexAutoReviewPolicy,
                 CodexAgentsEnabled = plan.CodexAgentsEnabled,
+                CodexMaximumConcurrentSubagentRuns = plan.CodexMaximumConcurrentSubagentRuns,
                 ToolOutputTokenLimitOverride = plan.ToolOutputTokenLimitOverride,
                 CodexReasoningEffort = plan.CodexReasoningEffort,
                 CodexReasoningSummary = plan.CodexReasoningSummary,

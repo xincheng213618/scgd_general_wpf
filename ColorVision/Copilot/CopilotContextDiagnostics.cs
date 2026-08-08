@@ -69,6 +69,13 @@ namespace ColorVision.Copilot
 
         public string CodexAgentsEnabledSourceLabel { get; init; } = string.Empty;
 
+        public int CodexMaximumConcurrentSubagentRuns { get; init; } =
+            CopilotSubagentCoordinator.DefaultMaximumConcurrentRuns;
+
+        public bool HasCodexMaximumConcurrentSubagentRunsOverride { get; init; }
+
+        public string CodexMaximumConcurrentSubagentRunsSourceLabel { get; init; } = string.Empty;
+
         public int ActiveSleepPreventionLeaseCount { get; init; }
 
         public int? SleepPreventionLastErrorCode { get; init; }
@@ -441,6 +448,21 @@ namespace ColorVision.Copilot
                 builder.Append("（Codex 默认开启）");
             }
             builder.AppendLine();
+            builder.Append("子代理并发槽位：")
+                .Append(snapshot.CodexMaximumConcurrentSubagentRuns.ToString("N0", CultureInfo.CurrentCulture));
+            if (snapshot.HasCodexMaximumConcurrentSubagentRunsOverride)
+            {
+                builder.Append('（')
+                    .Append(string.IsNullOrWhiteSpace(snapshot.CodexMaximumConcurrentSubagentRunsSourceLabel)
+                        ? "Codex config.toml"
+                        : snapshot.CodexMaximumConcurrentSubagentRunsSourceLabel.Trim())
+                    .Append(" 提交快照）");
+            }
+            else
+            {
+                builder.Append("（ColorVision 默认）");
+            }
+            builder.AppendLine("；请求级 Token 总预算独立限制");
             if (snapshot.HasCodexReasoningEffortOverride)
             {
                 builder.Append("推理强度：")

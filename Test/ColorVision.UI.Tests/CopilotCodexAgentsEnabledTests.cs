@@ -23,6 +23,7 @@ public sealed class CopilotCodexAgentsEnabledTests
                 $"""
                 [agents]
                 enabled = true
+                max_threads = 3
 
                 [projects.'{projectRoot}']
                 trust_level = "trusted"
@@ -30,7 +31,9 @@ public sealed class CopilotCodexAgentsEnabledTests
             string projectConfigDirectory = Path.Combine(projectRoot, ".codex");
             Directory.CreateDirectory(projectConfigDirectory);
             string projectConfigPath = Path.Combine(projectConfigDirectory, "config.toml");
-            File.WriteAllText(projectConfigPath, "agents.enabled = false");
+            File.WriteAllText(
+                projectConfigPath,
+                "agents.enabled = false\nagents.max_concurrent_threads_per_session = 1");
 
             var submittedContext = new CopilotAgentHostContextSnapshot(
                 activeDocumentPath: null,
@@ -44,7 +47,16 @@ public sealed class CopilotCodexAgentsEnabledTests
                 "Use only DelegateExplore; do not use parent agent file tools.",
                 CopilotAgentMode.Auto,
                 submittedContext);
-            File.WriteAllText(projectConfigPath, "agents.enabled = true");
+            var submittedRequest = CopilotAgentRequestFactory.Create(
+                submittedPlan,
+                new CopilotAgentRequestBuildInput
+                {
+                    Profile = CopilotProfileConfig.CreateDefault(),
+                    AgentDefaults = new CopilotAgentDefaultsConfig(),
+                });
+            File.WriteAllText(
+                projectConfigPath,
+                "agents.enabled = true\nagents.max_concurrent_threads_per_session = 2");
             var refreshed = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
             var refreshedContext = new CopilotAgentHostContextSnapshot(
                 activeDocumentPath: null,
@@ -75,11 +87,19 @@ public sealed class CopilotCodexAgentsEnabledTests
                 CopilotProjectInstructionConfigSources.TrustedProject,
                 submittedContext.ProjectInstructionDiscoveryOptions.AgentsEnabledSource);
             Assert.False(submittedPlan.CodexAgentsEnabled);
+            Assert.Equal(1, submittedPlan.CodexMaximumConcurrentSubagentRuns);
+            Assert.Equal(1, submittedRequest.CodexMaximumConcurrentSubagentRuns);
             Assert.False(submittedPlan.RequiresDelegatedWorkspaceEvidence);
             Assert.True(refreshed.ConfiguredAgentsEnabled);
+            Assert.Equal(2, refreshed.ConfiguredMaximumConcurrentSubagentRuns);
             Assert.True(refreshedPlan.CodexAgentsEnabled);
+            Assert.Equal(2, refreshedPlan.CodexMaximumConcurrentSubagentRuns);
             Assert.True(refreshedPlan.RequiresDelegatedWorkspaceEvidence);
             Assert.False(queuedContext.ProjectInstructionDiscoveryOptions.ConfiguredAgentsEnabled);
+            Assert.Equal(1, queuedContext.ProjectInstructionDiscoveryOptions.ConfiguredMaximumConcurrentSubagentRuns);
+            Assert.Equal(
+                CopilotProjectInstructionConfigSources.TrustedProject,
+                submittedContext.ProjectInstructionDiscoveryOptions.MaximumConcurrentSubagentRunsSource);
         }
         finally
         {
@@ -101,6 +121,7 @@ public sealed class CopilotCodexAgentsEnabledTests
                 $"""
                 [agents]
                 enabled = false
+                max_concurrent_threads_per_session = 1
 
                 [projects.'{projectRoot}']
                 trust_level = "untrusted"
@@ -109,30 +130,78 @@ public sealed class CopilotCodexAgentsEnabledTests
             Directory.CreateDirectory(projectConfigDirectory);
             File.WriteAllText(
                 Path.Combine(projectConfigDirectory, "config.toml"),
-                "[agents]\nenabled = true");
+                "[agents]\nenabled = true\nmax_threads = 3");
 
             var untrusted = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
 
             Assert.False(untrusted.ConfiguredAgentsEnabled);
+            Assert.Equal(1, untrusted.ConfiguredMaximumConcurrentSubagentRuns);
             Assert.True(untrusted.HasAgentsEnabledOverride);
             Assert.Equal(
                 CopilotProjectInstructionConfigSources.CodexHome,
                 untrusted.AgentsEnabledSource);
+            Assert.Equal(
+                CopilotProjectInstructionConfigSources.CodexHome,
+                untrusted.MaximumConcurrentSubagentRunsSource);
             Assert.Empty(untrusted.AppliedProjectConfigFilePaths);
 
             File.WriteAllText(
                 Path.Combine(globalRoot, "config.toml"),
-                "[agents]\nenabled = \"false\"");
+                "[agents]\nenabled = \"false\"\nmax_concurrent_threads_per_session = 0\nmax_threads = -1");
             var invalid = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot);
 
             Assert.False(invalid.HasAgentsEnabledOverride);
+            Assert.False(invalid.HasMaximumConcurrentSubagentRunsOverride);
             Assert.True(invalid.ConfiguredAgentsEnabled);
+            Assert.Equal(
+                CopilotSubagentCoordinator.DefaultMaximumConcurrentRuns,
+                invalid.ConfiguredMaximumConcurrentSubagentRuns);
         }
         finally
         {
             Directory.Delete(globalRoot, recursive: true);
             Directory.Delete(projectRoot, recursive: true);
         }
+    }
+
+    [Fact]
+    public void CanonicalConcurrencyKeyWinsOverTheLegacyAlias()
+    {
+        string globalRoot = CreateTemporaryDirectory();
+        try
+        {
+            File.WriteAllText(
+                Path.Combine(globalRoot, "config.toml"),
+                "[agents]\nmax_concurrent_threads_per_session = 3\nmax_threads = 4");
+
+            var options = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot);
+
+            Assert.True(options.HasMaximumConcurrentSubagentRunsOverride);
+            Assert.Equal(3, options.ConfiguredMaximumConcurrentSubagentRuns);
+        }
+        finally
+        {
+            Directory.Delete(globalRoot, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task ConfiguredConcurrencyLimitQueuesTheNextSubagentLease()
+    {
+        var coordinator = new CopilotSubagentCoordinator(new CopilotAgentRequest
+        {
+            CodexMaximumConcurrentSubagentRuns = 1,
+        });
+        using var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        var first = await coordinator.TryAcquireAsync("explore", cancellation.Token);
+        Assert.NotNull(first);
+
+        var secondTask = coordinator.TryAcquireAsync("scout", cancellation.Token);
+        Assert.False(secondTask.IsCompleted);
+
+        first.Dispose();
+        using var second = await secondTask;
+        Assert.NotNull(second);
     }
 
     [Fact]
@@ -197,6 +266,9 @@ public sealed class CopilotCodexAgentsEnabledTests
             ConfiguredAgentsEnabled = false,
             HasAgentsEnabledOverride = true,
             AgentsEnabledSource = CopilotProjectInstructionConfigSources.CodexHome,
+            ConfiguredMaximumConcurrentSubagentRuns = 1,
+            HasMaximumConcurrentSubagentRunsOverride = true,
+            MaximumConcurrentSubagentRunsSource = CopilotProjectInstructionConfigSources.TrustedProject,
         };
         string memoryReport = CopilotProjectInstructionDiagnostics.Format(
             new CopilotProjectInstructionSnapshot(
@@ -213,6 +285,9 @@ public sealed class CopilotCodexAgentsEnabledTests
             CodexAgentsEnabled = false,
             HasCodexAgentsEnabledOverride = true,
             CodexAgentsEnabledSourceLabel = options.AgentsEnabledSourceLabel,
+            CodexMaximumConcurrentSubagentRuns = 1,
+            HasCodexMaximumConcurrentSubagentRunsOverride = true,
+            CodexMaximumConcurrentSubagentRunsSourceLabel = options.MaximumConcurrentSubagentRunsSourceLabel,
         });
         string debugReport = CopilotEffectiveConfigDiagnostics.Format(
             new CopilotEffectiveConfigDiagnosticContext
@@ -225,10 +300,14 @@ public sealed class CopilotCodexAgentsEnabledTests
 
         Assert.Contains("Codex agents.enabled：false", memoryReport, StringComparison.Ordinal);
         Assert.Contains(options.AgentsEnabledSourceLabel, memoryReport, StringComparison.Ordinal);
+        Assert.Contains("Codex agents.max_concurrent_threads_per_session：1", memoryReport, StringComparison.Ordinal);
+        Assert.Contains(options.MaximumConcurrentSubagentRunsSourceLabel, memoryReport, StringComparison.Ordinal);
         Assert.Contains("拒绝旧计划", memoryReport, StringComparison.Ordinal);
         Assert.Contains("子代理工具：关闭", contextReport, StringComparison.Ordinal);
+        Assert.Contains("子代理并发槽位：1", contextReport, StringComparison.Ordinal);
         Assert.Contains("旧调用也会拒绝", contextReport, StringComparison.Ordinal);
         Assert.Contains("Codex agents.enabled：false", debugReport, StringComparison.Ordinal);
+        Assert.Contains("Codex agents.max_concurrent_threads_per_session：1", debugReport, StringComparison.Ordinal);
         Assert.Contains("注入调用", debugReport, StringComparison.Ordinal);
     }
 

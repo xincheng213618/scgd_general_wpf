@@ -254,18 +254,19 @@ namespace ColorVision.Copilot
 
     internal sealed class CopilotSubagentCoordinator
     {
-        public const int MaximumConcurrentRuns = 2;
+        public const int DefaultMaximumConcurrentRuns = 2;
         public const int MaximumRunTokenBudget = 16_384;
-        public const int MaximumTotalTokenBudget = MaximumConcurrentRuns * MaximumRunTokenBudget;
+        public const int MaximumTotalTokenBudget = DefaultMaximumConcurrentRuns * MaximumRunTokenBudget;
         public const int MaximumTrackedCompletedRuns = 8;
 
         private readonly object _syncRoot = new();
-        private readonly SemaphoreSlim _slots = new(MaximumConcurrentRuns, MaximumConcurrentRuns);
+        private readonly SemaphoreSlim _slots;
         private readonly HashSet<string> _activeRunIds = new(StringComparer.Ordinal);
         private readonly Dictionary<string, CompletedSubagentRun> _completedRuns = new(StringComparer.Ordinal);
         private readonly Queue<string> _completedRunOrder = new();
         private readonly int _totalTokenBudget;
         private readonly int _perRunTokenBudget;
+        private readonly int _maximumConcurrentRuns;
         private readonly string _conversationId;
         private long _committedTokens;
         private int _reservedTokens;
@@ -274,12 +275,14 @@ namespace ColorVision.Copilot
         {
             ArgumentNullException.ThrowIfNull(parentRequest);
             _conversationId = (parentRequest.ConversationId ?? string.Empty).Trim();
+            _maximumConcurrentRuns = Math.Max(1, parentRequest.CodexMaximumConcurrentSubagentRuns);
+            _slots = new SemaphoreSlim(_maximumConcurrentRuns, _maximumConcurrentRuns);
             var parentTokenBudget = CopilotAgentRunBudget.Resolve(parentRequest).RequestTokenBudget;
             _totalTokenBudget = Math.Max(
                 CopilotAgentRunBudget.MinimumRequestTokenBudget,
                 Math.Min(MaximumTotalTokenBudget, parentTokenBudget / 2));
-            _perRunTokenBudget = _totalTokenBudget >= CopilotAgentRunBudget.MinimumRequestTokenBudget * MaximumConcurrentRuns
-                ? Math.Min(MaximumRunTokenBudget, _totalTokenBudget / MaximumConcurrentRuns)
+            _perRunTokenBudget = _totalTokenBudget >= (long)CopilotAgentRunBudget.MinimumRequestTokenBudget * _maximumConcurrentRuns
+                ? Math.Min(MaximumRunTokenBudget, _totalTokenBudget / _maximumConcurrentRuns)
                 : CopilotAgentRunBudget.MinimumRequestTokenBudget;
         }
 

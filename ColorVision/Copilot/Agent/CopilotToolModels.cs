@@ -85,6 +85,9 @@ namespace ColorVision.Copilot
 
         internal bool CodexAgentsEnabled { get; init; } = true;
 
+        internal int CodexMaximumConcurrentSubagentRuns { get; init; } =
+            CopilotSubagentCoordinator.DefaultMaximumConcurrentRuns;
+
         internal int? ToolOutputTokenLimitOverride { get; init; }
 
         internal CopilotCodexReasoningEffort CodexReasoningEffort { get; init; } =
