@@ -280,7 +280,7 @@ namespace ColorVision.Copilot
                     }
                     : null,
                 DisableOpenTelemetry = true,
-                ChatOptions = BuildChatOptions(request.Profile, frameworkTools),
+                ChatOptions = BuildChatOptions(request, frameworkTools),
             });
             TodoProvider? todoProvider = null;
             if (taskLedgerEnabled)

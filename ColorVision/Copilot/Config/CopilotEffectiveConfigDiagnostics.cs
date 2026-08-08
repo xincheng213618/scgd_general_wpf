@@ -369,6 +369,30 @@ namespace ColorVision.Copilot
                         : codexConfigOptions.ToolOutputTokenLimitSourceLabel)
                     .AppendLine(" · 仅约束模型历史中的单次工具结果；本地审计与证据保持完整");
             }
+            builder.Append("- Codex model_reasoning_effort：")
+                .Append(CopilotCodexReasoningEffortSelection.GetConfigToken(
+                    codexConfigOptions.ConfiguredModelReasoningEffort));
+            if (codexConfigOptions.HasModelReasoningEffortOverride)
+            {
+                builder.Append(" · 来源 ")
+                    .Append(codexConfigOptions.ModelReasoningEffortSourceLabel.Length == 0
+                        ? "Codex config.toml"
+                        : codexConfigOptions.ModelReasoningEffortSourceLabel)
+                    .Append(" · 请求快照");
+            }
+            builder.AppendLine(" · 仅 Agent 官方 OpenAI Responses 生效");
+            builder.Append("- Codex model_reasoning_summary：")
+                .Append(CopilotCodexReasoningSummarySelection.GetConfigToken(
+                    codexConfigOptions.ConfiguredModelReasoningSummary));
+            if (codexConfigOptions.HasModelReasoningSummaryOverride)
+            {
+                builder.Append(" · 来源 ")
+                    .Append(codexConfigOptions.ModelReasoningSummarySourceLabel.Length == 0
+                        ? "Codex config.toml"
+                        : codexConfigOptions.ModelReasoningSummarySourceLabel)
+                    .Append(" · 请求快照");
+            }
+            builder.AppendLine(" · 仅 Agent 官方 OpenAI Responses 生效");
             builder.Append("- Codex model_auto_compact_token_limit：");
             if (!codexConfigOptions.HasModelAutoCompactTokenLimitOverride)
             {

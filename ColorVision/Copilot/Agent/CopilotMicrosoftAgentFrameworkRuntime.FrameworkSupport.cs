@@ -1,5 +1,6 @@
 #pragma warning disable MAAI001
 #pragma warning disable CA1859
+#pragma warning disable OPENAI001
 using Anthropic;
 using Anthropic.Core;
 using ColorVision.Copilot.Mcp;
@@ -7,6 +8,7 @@ using ColorVision.Solution;
 using Microsoft.Agents.AI;
 using Microsoft.Agents.AI.Compaction;
 using Microsoft.Extensions.AI;
+using OpenAI.Responses;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -40,9 +42,12 @@ namespace ColorVision.Copilot
                 CopilotProviderHttpTransport.CreateClient(profile.Id));
         }
 
-        private static ChatOptions BuildChatOptions(CopilotProfileConfig profile, IList<AITool> tools)
+        internal static ChatOptions BuildChatOptions(CopilotAgentRequest request, IList<AITool> tools)
         {
-            return new ChatOptions
+            ArgumentNullException.ThrowIfNull(request);
+            ArgumentNullException.ThrowIfNull(request.Profile);
+            var profile = request.Profile;
+            var options = new ChatOptions
             {
                 Instructions = profile.EffectiveSystemPrompt,
                 MaxOutputTokens = profile.MaxTokens,
@@ -50,11 +55,16 @@ namespace ColorVision.Copilot
                 Reasoning = BuildReasoningOptions(profile),
                 Tools = tools,
             };
+            ApplyCodexReasoningOptions(request, options);
+            return options;
         }
 
-        private static ChatOptions BuildFinalAnswerOptions(CopilotProfileConfig profile)
+        internal static ChatOptions BuildFinalAnswerOptions(CopilotAgentRequest request)
         {
-            return new ChatOptions
+            ArgumentNullException.ThrowIfNull(request);
+            ArgumentNullException.ThrowIfNull(request.Profile);
+            var profile = request.Profile;
+            var options = new ChatOptions
             {
                 Instructions = profile.EffectiveSystemPrompt
                     + "\n\nYou are the final-answer stage of ColorVision Agent. Business and framework tools are unavailable in this stage. Return only a supported user-facing answer based on the supplied evidence, and explicitly identify incomplete work instead of claiming success.",
@@ -63,6 +73,8 @@ namespace ColorVision.Copilot
                 Reasoning = BuildReasoningOptions(profile),
                 Tools = Array.Empty<AITool>(),
             };
+            ApplyCodexReasoningOptions(request, options);
+            return options;
         }
 
         private static string ExtractFinalAnswerText(ChatResponse response)
@@ -83,6 +95,55 @@ namespace ColorVision.Copilot
                 CopilotReasoningMode.Max => new ReasoningOptions { Effort = ReasoningEffort.ExtraHigh, Output = ReasoningOutput.Full },
                 _ => null,
             };
+        }
+
+        private static void ApplyCodexReasoningOptions(
+            CopilotAgentRequest request,
+            ChatOptions options)
+        {
+            var hasEffortOverride = request.CodexReasoningEffort !=
+                CopilotCodexReasoningEffort.Unspecified;
+            var hasSummaryOverride = request.CodexReasoningSummary !=
+                CopilotCodexReasoningSummary.Unspecified;
+            if ((!hasEffortOverride && !hasSummaryOverride)
+                || !CopilotOpenAiRequestPolicy.UsesResponsesApi(request.Profile))
+            {
+                return;
+            }
+
+            options.Reasoning = null;
+            options.RawRepresentationFactory = _ => new CreateResponseOptions
+            {
+                ReasoningOptions = BuildCodexResponseReasoningOptions(request),
+            };
+        }
+
+        private static ResponseReasoningOptions? BuildCodexResponseReasoningOptions(
+            CopilotAgentRequest request)
+        {
+            ResponseReasoningEffortLevel? effort = request.CodexReasoningEffort switch
+            {
+                CopilotCodexReasoningEffort.Minimal => ResponseReasoningEffortLevel.Minimal,
+                CopilotCodexReasoningEffort.Low => ResponseReasoningEffortLevel.Low,
+                CopilotCodexReasoningEffort.Medium => ResponseReasoningEffortLevel.Medium,
+                CopilotCodexReasoningEffort.High => ResponseReasoningEffortLevel.High,
+                CopilotCodexReasoningEffort.XHigh => new ResponseReasoningEffortLevel("xhigh"),
+                _ => (ResponseReasoningEffortLevel?)null,
+            };
+            ResponseReasoningSummaryVerbosity? summary = request.CodexReasoningSummary switch
+            {
+                CopilotCodexReasoningSummary.Auto => ResponseReasoningSummaryVerbosity.Auto,
+                CopilotCodexReasoningSummary.Concise => ResponseReasoningSummaryVerbosity.Concise,
+                CopilotCodexReasoningSummary.Detailed => ResponseReasoningSummaryVerbosity.Detailed,
+                _ => (ResponseReasoningSummaryVerbosity?)null,
+            };
+            return effort.HasValue || summary.HasValue
+                ? new ResponseReasoningOptions
+                {
+                    ReasoningEffortLevel = effort,
+                    ReasoningSummaryVerbosity = summary,
+                }
+                : null;
         }
 
         private static Microsoft.Extensions.AI.ChatMessage ToFrameworkMessage(CopilotRequestMessage message)

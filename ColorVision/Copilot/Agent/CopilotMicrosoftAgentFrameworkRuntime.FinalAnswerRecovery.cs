@@ -59,7 +59,7 @@ namespace ColorVision.Copilot
             {
                 var repairResponse = await contextRecoveryChatClient.GetResponseAsync(
                     repairMessages,
-                    BuildFinalAnswerOptions(request.Profile),
+                    BuildFinalAnswerOptions(request),
                     cancellationToken);
                 foreach (var usageContent in repairResponse.Messages.SelectMany(message => message.Contents).OfType<UsageContent>())
                     usage = usage.Add(ToCopilotUsage(usageContent.Details));

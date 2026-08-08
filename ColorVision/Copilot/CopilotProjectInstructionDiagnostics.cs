@@ -208,6 +208,28 @@ namespace ColorVision.Copilot
                         : effective.ToolOutputTokenLimitSourceLabel)
                     .AppendLine(" 请求快照；仅约束写入模型历史的单次工具结果，完整本地审计与证据不裁剪");
             }
+            if (effective.HasModelReasoningEffortOverride)
+            {
+                builder.Append("Codex model_reasoning_effort：")
+                    .Append(CopilotCodexReasoningEffortSelection.GetConfigToken(
+                        effective.ConfiguredModelReasoningEffort))
+                    .Append(" · 来源 ")
+                    .Append(effective.ModelReasoningEffortSourceLabel.Length == 0
+                        ? "Codex config.toml"
+                        : effective.ModelReasoningEffortSourceLabel)
+                    .AppendLine(" 请求快照；仅 Agent 官方 OpenAI Responses 生效");
+            }
+            if (effective.HasModelReasoningSummaryOverride)
+            {
+                builder.Append("Codex model_reasoning_summary：")
+                    .Append(CopilotCodexReasoningSummarySelection.GetConfigToken(
+                        effective.ConfiguredModelReasoningSummary))
+                    .Append(" · 来源 ")
+                    .Append(effective.ModelReasoningSummarySourceLabel.Length == 0
+                        ? "Codex config.toml"
+                        : effective.ModelReasoningSummarySourceLabel)
+                    .AppendLine(" 请求快照；none 不请求摘要；仅 Agent 官方 OpenAI Responses 生效");
+            }
             if (effective.HasModelAutoCompactTokenLimitOverride)
             {
                 builder.Append("Codex model_auto_compact_token_limit：")

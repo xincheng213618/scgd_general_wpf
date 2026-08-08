@@ -198,6 +198,8 @@ public sealed class CopilotExecutionScopeTests
             ConfiguredDeveloperInstructions = "Keep configured guidance.",
             CodexWebSearchMode = CopilotCodexWebSearchMode.Cached,
             ToolOutputTokenLimitOverride = 12_000,
+            CodexReasoningEffort = CopilotCodexReasoningEffort.XHigh,
+            CodexReasoningSummary = CopilotCodexReasoningSummary.Concise,
             Mode = CopilotAgentMode.Code,
         };
         var parentScope = CopilotExecutionScope.ForAgentRequest(
@@ -225,6 +227,8 @@ public sealed class CopilotExecutionScopeTests
         Assert.Equal(parentRequest.ConfiguredDeveloperInstructions, childRequest.ConfiguredDeveloperInstructions);
         Assert.Equal(parentRequest.CodexWebSearchMode, childRequest.CodexWebSearchMode);
         Assert.Equal(parentRequest.ToolOutputTokenLimitOverride, childRequest.ToolOutputTokenLimitOverride);
+        Assert.Equal(parentRequest.CodexReasoningEffort, childRequest.CodexReasoningEffort);
+        Assert.Equal(parentRequest.CodexReasoningSummary, childRequest.CodexReasoningSummary);
 
         var finalizationRequest = Assert.IsType<CopilotAgentRequest>(
             CopilotSubagentRunner.CreateBudgetFinalizationRequest(
@@ -265,6 +269,8 @@ public sealed class CopilotExecutionScopeTests
         Assert.Equal(childRequest.ConfiguredDeveloperInstructions, finalizationRequest.ConfiguredDeveloperInstructions);
         Assert.Equal(childRequest.CodexWebSearchMode, finalizationRequest.CodexWebSearchMode);
         Assert.Equal(childRequest.ToolOutputTokenLimitOverride, finalizationRequest.ToolOutputTokenLimitOverride);
+        Assert.Equal(childRequest.CodexReasoningEffort, finalizationRequest.CodexReasoningEffort);
+        Assert.Equal(childRequest.CodexReasoningSummary, finalizationRequest.CodexReasoningSummary);
         Assert.True(CopilotMicrosoftAgentFrameworkRuntime.CanUseMinimalDelegatedFinalizationInstructions(
             finalizationRequest,
             [],

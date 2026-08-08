@@ -66,6 +66,20 @@ namespace ColorVision.Copilot
 
         public string ToolOutputTokenLimitSourceLabel { get; init; } = string.Empty;
 
+        internal CopilotCodexReasoningEffort CodexReasoningEffort { get; init; } =
+            CopilotCodexReasoningEffort.Unspecified;
+
+        public bool HasCodexReasoningEffortOverride { get; init; }
+
+        public string CodexReasoningEffortSourceLabel { get; init; } = string.Empty;
+
+        internal CopilotCodexReasoningSummary CodexReasoningSummary { get; init; } =
+            CopilotCodexReasoningSummary.Unspecified;
+
+        public bool HasCodexReasoningSummaryOverride { get; init; }
+
+        public string CodexReasoningSummarySourceLabel { get; init; } = string.Empty;
+
         public bool AutoCompactConversationHistory { get; init; }
 
         public int AutoCompactThresholdPercent { get; init; }
@@ -229,6 +243,28 @@ namespace ColorVision.Copilot
                     .Append('）');
             }
             builder.AppendLine();
+            if (snapshot.HasCodexReasoningEffortOverride)
+            {
+                builder.Append("推理强度：")
+                    .Append(CopilotCodexReasoningEffortSelection.GetConfigToken(
+                        snapshot.CodexReasoningEffort))
+                    .Append("（")
+                    .Append(string.IsNullOrWhiteSpace(snapshot.CodexReasoningEffortSourceLabel)
+                        ? "Codex config.toml"
+                        : snapshot.CodexReasoningEffortSourceLabel.Trim())
+                    .AppendLine(" 请求快照；仅 Agent 官方 OpenAI Responses 生效）");
+            }
+            if (snapshot.HasCodexReasoningSummaryOverride)
+            {
+                builder.Append("推理摘要：")
+                    .Append(CopilotCodexReasoningSummarySelection.GetConfigToken(
+                        snapshot.CodexReasoningSummary))
+                    .Append("（")
+                    .Append(string.IsNullOrWhiteSpace(snapshot.CodexReasoningSummarySourceLabel)
+                        ? "Codex config.toml"
+                        : snapshot.CodexReasoningSummarySourceLabel.Trim())
+                    .AppendLine(" 请求快照；仅 Agent 官方 OpenAI Responses 生效）");
+            }
             builder.Append("有效系统提示：")
                 .Append(FormatCount(snapshot.SystemPromptCharacters))
                 .AppendLine(" 字符（已应用宿主响应规则）");

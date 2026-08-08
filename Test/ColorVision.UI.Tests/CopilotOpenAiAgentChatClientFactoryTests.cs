@@ -119,6 +119,66 @@ public sealed class CopilotOpenAiAgentChatClientFactoryTests
             functionCall.Arguments?["path"]?.ToString());
     }
 
+    [Theory]
+    [InlineData("minimal", "concise", "minimal", "concise")]
+    [InlineData("xhigh", "detailed", "xhigh", "detailed")]
+    [InlineData("high", "none", "high", null)]
+    [InlineData(null, "auto", null, "auto")]
+    [InlineData(null, "none", null, null)]
+    public async Task OfficialOpenAiAgentPreservesCodexReasoningOptionsOnTheResponsesWire(
+        string? configuredEffort,
+        string? configuredSummary,
+        string? expectedEffort,
+        string? expectedSummary)
+    {
+        var effort = CopilotCodexReasoningEffort.Unspecified;
+        var summary = CopilotCodexReasoningSummary.Unspecified;
+        if (configuredEffort != null)
+            Assert.True(CopilotCodexReasoningEffortSelection.TryParse(configuredEffort, out effort));
+        if (configuredSummary != null)
+            Assert.True(CopilotCodexReasoningSummarySelection.TryParse(configuredSummary, out summary));
+        using var handler = new CapturingHandler(
+            HttpStatusCode.OK,
+            TextResponseStream,
+            "text/event-stream");
+        using var httpClient = new HttpClient(handler);
+        var profile = CreateProfile(
+            CopilotVendorType.OpenAI,
+            "https://api.openai.com/v1",
+            "gpt-5.5");
+        using var client = CopilotOpenAiAgentChatClientFactory.Create(profile, httpClient);
+        var request = new CopilotAgentRequest
+        {
+            Profile = profile,
+            CodexReasoningEffort = effort,
+            CodexReasoningSummary = summary,
+        };
+
+        await client.GetStreamingResponseAsync(
+                [new ChatMessage(ChatRole.User, "Use the configured reasoning contract.")],
+                CopilotMicrosoftAgentFrameworkRuntime.BuildChatOptions(request, []))
+            .ToChatResponseAsync();
+
+        using var payload = JsonDocument.Parse(handler.LastPayload);
+        if (expectedEffort == null
+            && expectedSummary == null
+            && string.Equals(configuredSummary, "none", StringComparison.Ordinal))
+        {
+            Assert.False(payload.RootElement.TryGetProperty("reasoning", out _));
+            return;
+        }
+
+        var reasoning = payload.RootElement.GetProperty("reasoning");
+        if (expectedEffort == null)
+            Assert.False(reasoning.TryGetProperty("effort", out _));
+        else
+            Assert.Equal(expectedEffort, reasoning.GetProperty("effort").GetString());
+        if (expectedSummary == null)
+            Assert.False(reasoning.TryGetProperty("summary", out _));
+        else
+            Assert.Equal(expectedSummary, reasoning.GetProperty("summary").GetString());
+    }
+
     [Fact]
     public async Task ThirdPartyCompatibleAgentKeepsChatCompletionsTransport()
     {

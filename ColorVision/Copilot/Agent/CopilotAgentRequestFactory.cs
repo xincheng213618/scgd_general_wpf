@@ -232,6 +232,12 @@ namespace ColorVision.Copilot
 
         internal int? ToolOutputTokenLimitOverride { get; init; }
 
+        internal CopilotCodexReasoningEffort CodexReasoningEffort { get; init; } =
+            CopilotCodexReasoningEffort.Unspecified;
+
+        internal CopilotCodexReasoningSummary CodexReasoningSummary { get; init; } =
+            CopilotCodexReasoningSummary.Unspecified;
+
         public IReadOnlyList<CopilotProjectInstructionDocument> ProjectInstructions { get; init; } = Array.Empty<CopilotProjectInstructionDocument>();
 
         public IReadOnlyList<string> ReadableLocalFilePaths { get; init; } = Array.Empty<string>();
@@ -364,6 +370,12 @@ namespace ColorVision.Copilot
                 ToolOutputTokenLimitOverride = hostContext.ProjectInstructionDiscoveryOptions.HasToolOutputTokenLimitOverride
                     ? hostContext.ProjectInstructionDiscoveryOptions.ConfiguredToolOutputTokenLimit
                     : null,
+                CodexReasoningEffort = hostContext.ProjectInstructionDiscoveryOptions.HasModelReasoningEffortOverride
+                    ? hostContext.ProjectInstructionDiscoveryOptions.ConfiguredModelReasoningEffort
+                    : CopilotCodexReasoningEffort.Unspecified,
+                CodexReasoningSummary = hostContext.ProjectInstructionDiscoveryOptions.HasModelReasoningSummaryOverride
+                    ? hostContext.ProjectInstructionDiscoveryOptions.ConfiguredModelReasoningSummary
+                    : CopilotCodexReasoningSummary.Unspecified,
                 ProjectInstructions = projectInstructions,
                 ReadableLocalFilePaths = explicitLocalFilePaths,
                 ReadableLocalDirectoryPaths = readableLocalDirectoryPaths,
@@ -413,6 +425,8 @@ namespace ColorVision.Copilot
                 ConfiguredDeveloperInstructions = plan.ConfiguredDeveloperInstructions,
                 CodexWebSearchMode = plan.CodexWebSearchMode,
                 ToolOutputTokenLimitOverride = plan.ToolOutputTokenLimitOverride,
+                CodexReasoningEffort = plan.CodexReasoningEffort,
+                CodexReasoningSummary = plan.CodexReasoningSummary,
                 ProjectInstructions = plan.ProjectInstructions,
                 ReadableLocalFilePaths = plan.ReadableLocalFilePaths,
                 ReadableLocalDirectoryPaths = plan.ReadableLocalDirectoryPaths,

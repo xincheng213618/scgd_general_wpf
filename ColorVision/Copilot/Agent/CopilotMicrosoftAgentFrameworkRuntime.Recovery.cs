@@ -101,7 +101,7 @@ namespace ColorVision.Copilot
             {
                 var response = await contextRecoveryChatClient.GetResponseAsync(
                     messages,
-                    BuildFinalAnswerOptions(request.Profile),
+                    BuildFinalAnswerOptions(request),
                     cancellationToken);
                 foreach (var usageContent in response.Messages.SelectMany(message => message.Contents).OfType<UsageContent>())
                     usage = usage.Add(ToCopilotUsage(usageContent.Details));
