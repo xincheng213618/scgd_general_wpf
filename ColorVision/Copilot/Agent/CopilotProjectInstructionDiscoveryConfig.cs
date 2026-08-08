@@ -23,6 +23,52 @@ namespace ColorVision.Copilot
         Invalid,
     }
 
+    internal enum CopilotCodexWebSearchMode
+    {
+        Unspecified,
+        Disabled,
+        Cached,
+        Indexed,
+        Live,
+    }
+
+    internal static class CopilotCodexWebSearchModeSelection
+    {
+        public static bool TryParse(string? value, out CopilotCodexWebSearchMode mode)
+        {
+            mode = (value ?? string.Empty).Trim().ToLowerInvariant() switch
+            {
+                "disabled" => CopilotCodexWebSearchMode.Disabled,
+                "cached" => CopilotCodexWebSearchMode.Cached,
+                "indexed" => CopilotCodexWebSearchMode.Indexed,
+                "live" => CopilotCodexWebSearchMode.Live,
+                _ => CopilotCodexWebSearchMode.Unspecified,
+            };
+            return mode != CopilotCodexWebSearchMode.Unspecified;
+        }
+
+        public static string GetConfigToken(CopilotCodexWebSearchMode mode) => mode switch
+        {
+            CopilotCodexWebSearchMode.Disabled => "disabled",
+            CopilotCodexWebSearchMode.Cached => "cached",
+            CopilotCodexWebSearchMode.Indexed => "indexed",
+            CopilotCodexWebSearchMode.Live => "live",
+            _ => "未配置",
+        };
+
+        public static bool AllowsLiveSearch(CopilotCodexWebSearchMode mode) => mode is
+            CopilotCodexWebSearchMode.Unspecified or CopilotCodexWebSearchMode.Live;
+
+        public static string GetEffectiveLabel(CopilotCodexWebSearchMode mode) => mode switch
+        {
+            CopilotCodexWebSearchMode.Disabled => "已禁用实时公网检索",
+            CopilotCodexWebSearchMode.Cached => "不支持 cached 后端；已保守禁用实时公网检索",
+            CopilotCodexWebSearchMode.Indexed => "不支持 indexed 后端；已保守禁用实时公网检索",
+            CopilotCodexWebSearchMode.Live => "已允许按请求意图实时公网检索",
+            _ => "未配置；保留 ColorVision 按请求意图实时检索",
+        };
+    }
+
     internal sealed record CopilotProjectInstructionDiscoveryOptions(
         int MaximumBytes,
         IReadOnlyList<string> FallbackFileNames,
@@ -51,6 +97,14 @@ namespace ColorVision.Copilot
         public bool HasPersonalityOverride { get; init; }
 
         public CopilotProjectInstructionConfigSources PersonalitySource { get; init; } =
+            CopilotProjectInstructionConfigSources.None;
+
+        public CopilotCodexWebSearchMode ConfiguredWebSearchMode { get; init; } =
+            CopilotCodexWebSearchMode.Unspecified;
+
+        public bool HasWebSearchModeOverride { get; init; }
+
+        public CopilotProjectInstructionConfigSources WebSearchModeSource { get; init; } =
             CopilotProjectInstructionConfigSources.None;
 
         internal string ConfiguredModelInstructionsFileContent { get; init; } = string.Empty;
@@ -130,6 +184,7 @@ namespace ColorVision.Copilot
             || HasProjectRootMarkersOverride
             || HasDeveloperInstructionsOverride
             || HasPersonalityOverride
+            || HasWebSearchModeOverride
             || HasModelInstructionsFileOverride
             || HasCompactPromptOverride;
 
@@ -156,6 +211,13 @@ namespace ColorVision.Copilot
         {
             CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml personality",
             CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml personality",
+            _ => string.Empty,
+        };
+
+        public string WebSearchModeSourceLabel => WebSearchModeSource switch
+        {
+            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml web_search",
+            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml web_search",
             _ => string.Empty,
         };
 
@@ -227,6 +289,7 @@ namespace ColorVision.Copilot
         private const string ProjectRootMarkersKey = "project_root_markers";
         private const string DeveloperInstructionsKey = "developer_instructions";
         private const string PersonalityKey = "personality";
+        private const string WebSearchKey = "web_search";
         private const string ModelInstructionsFileKey = "model_instructions_file";
         private const string CompactPromptKey = "compact_prompt";
         private const string ExperimentalCompactPromptFileKey = "experimental_compact_prompt_file";
@@ -376,6 +439,14 @@ namespace ColorVision.Copilot
                 PersonalitySource = layer.HasPersonalityOverride
                     ? source
                     : current.PersonalitySource,
+                ConfiguredWebSearchMode = layer.HasWebSearchModeOverride
+                    ? layer.WebSearchMode
+                    : current.ConfiguredWebSearchMode,
+                HasWebSearchModeOverride = current.HasWebSearchModeOverride
+                    || layer.HasWebSearchModeOverride,
+                WebSearchModeSource = layer.HasWebSearchModeOverride
+                    ? source
+                    : current.WebSearchModeSource,
                 ConfiguredModelInstructionsFileContent = layer.HasModelInstructionsFileOverride
                     ? layer.ModelInstructionsFileContent
                     : current.ConfiguredModelInstructionsFileContent,
@@ -417,6 +488,7 @@ namespace ColorVision.Copilot
                 || layer.HasFallbackFileNamesOverride
                 || layer.HasDeveloperInstructionsOverride
                 || layer.HasPersonalityOverride
+                || layer.HasWebSearchModeOverride
                 || layer.HasModelInstructionsFileOverride
                 || layer.HasCompactPromptOverride
                 || layer.HasCompactPromptFileOverride
@@ -679,6 +751,7 @@ namespace ColorVision.Copilot
             var projectRootMarkers = Array.Empty<string>();
             var developerInstructions = string.Empty;
             var personality = CopilotResponsePersonality.None;
+            var webSearchMode = CopilotCodexWebSearchMode.Unspecified;
             var modelInstructionsFilePath = string.Empty;
             var compactPrompt = string.Empty;
             var compactPromptFilePath = string.Empty;
@@ -687,6 +760,7 @@ namespace ColorVision.Copilot
             var hasProjectRootMarkersOverride = false;
             var hasDeveloperInstructionsOverride = false;
             var hasPersonalityOverride = false;
+            var hasWebSearchModeOverride = false;
             var hasModelInstructionsFileOverride = false;
             var hasCompactPromptOverride = false;
             var hasCompactPromptFileOverride = false;
@@ -732,6 +806,22 @@ namespace ColorVision.Copilot
                         continue;
                     }
                     hasPersonalityOverride = true;
+                    continue;
+                }
+
+                if (string.Equals(assignment.Key, WebSearchKey, StringComparison.Ordinal))
+                {
+                    if (!TryParseConfiguredText(
+                        assignment.Value,
+                        MaximumPersonalityCharacters,
+                        out var configuredWebSearchMode)
+                        || !CopilotCodexWebSearchModeSelection.TryParse(
+                            configuredWebSearchMode,
+                            out webSearchMode))
+                    {
+                        continue;
+                    }
+                    hasWebSearchModeOverride = true;
                     continue;
                 }
 
@@ -805,6 +895,8 @@ namespace ColorVision.Copilot
                 HasModelInstructionsFileOverride = hasModelInstructionsFileOverride,
                 Personality = personality,
                 HasPersonalityOverride = hasPersonalityOverride,
+                WebSearchMode = webSearchMode,
+                HasWebSearchModeOverride = hasWebSearchModeOverride,
                 HasCompactPromptOverride = hasCompactPromptOverride,
                 HasCompactPromptFileOverride = hasCompactPromptFileOverride,
             };
@@ -813,6 +905,7 @@ namespace ColorVision.Copilot
                 || hasProjectRootMarkersOverride
                 || hasDeveloperInstructionsOverride
                 || hasPersonalityOverride
+                || hasWebSearchModeOverride
                 || hasModelInstructionsFileOverride
                 || hasCompactPromptOverride
                 || hasCompactPromptFileOverride;
@@ -957,6 +1050,7 @@ namespace ColorVision.Copilot
                     && !string.Equals(key, ProjectRootMarkersKey, StringComparison.Ordinal)
                     && !string.Equals(key, DeveloperInstructionsKey, StringComparison.Ordinal)
                     && !string.Equals(key, PersonalityKey, StringComparison.Ordinal)
+                    && !string.Equals(key, WebSearchKey, StringComparison.Ordinal)
                     && !string.Equals(key, ModelInstructionsFileKey, StringComparison.Ordinal)
                     && !string.Equals(key, CompactPromptKey, StringComparison.Ordinal)
                     && !string.Equals(key, ExperimentalCompactPromptFileKey, StringComparison.Ordinal))
@@ -1510,6 +1604,11 @@ namespace ColorVision.Copilot
                 CopilotResponsePersonality.None;
 
             public bool HasPersonalityOverride { get; init; }
+
+            public CopilotCodexWebSearchMode WebSearchMode { get; init; } =
+                CopilotCodexWebSearchMode.Unspecified;
+
+            public bool HasWebSearchModeOverride { get; init; }
 
             public string CompactPrompt { get; init; } = string.Empty;
 

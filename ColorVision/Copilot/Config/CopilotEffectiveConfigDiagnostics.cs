@@ -359,6 +359,20 @@ namespace ColorVision.Copilot
                         ? "Codex config.toml"
                         : codexConfigOptions.CompactPromptSourceLabel);
             }
+            builder.Append("- Codex web_search：")
+                .Append(CopilotCodexWebSearchModeSelection.GetConfigToken(
+                    codexConfigOptions.ConfiguredWebSearchMode))
+                .Append(" · ")
+                .Append(CopilotCodexWebSearchModeSelection.GetEffectiveLabel(
+                    codexConfigOptions.ConfiguredWebSearchMode));
+            if (codexConfigOptions.HasWebSearchModeOverride)
+            {
+                builder.Append(" · 来源 ")
+                    .Append(codexConfigOptions.WebSearchModeSourceLabel.Length == 0
+                        ? "Codex config.toml"
+                        : codexConfigOptions.WebSearchModeSourceLabel);
+            }
+            builder.AppendLine();
             builder
                 .Append("- Skill 手动覆盖：")
                 .Append(defaults.SkillOverrides?.Count.ToString("N0", CultureInfo.CurrentCulture) ?? "0")

@@ -17,6 +17,13 @@ namespace ColorVision.Copilot
 
         public string ResponsePersonalitySourceLabel { get; init; } = string.Empty;
 
+        internal CopilotCodexWebSearchMode CodexWebSearchMode { get; init; } =
+            CopilotCodexWebSearchMode.Unspecified;
+
+        public string CodexWebSearchModeSourceLabel { get; init; } = string.Empty;
+
+        public bool HasCodexWebSearchModeOverride { get; init; }
+
         public int SystemPromptCharacters { get; init; }
 
         public int ConfiguredModelInstructionsCharacters { get; init; }
@@ -178,6 +185,21 @@ namespace ColorVision.Copilot
                 .AppendLine(string.IsNullOrWhiteSpace(snapshot.ResponsePersonalitySourceLabel)
                     ? "内置默认"
                     : snapshot.ResponsePersonalitySourceLabel.Trim());
+            builder.Append("公网检索：")
+                .Append(CopilotCodexWebSearchModeSelection.GetEffectiveLabel(
+                    snapshot.CodexWebSearchMode));
+            if (snapshot.HasCodexWebSearchModeOverride)
+            {
+                builder.Append('（')
+                    .Append(CopilotCodexWebSearchModeSelection.GetConfigToken(
+                        snapshot.CodexWebSearchMode))
+                    .Append(" · 来源 ")
+                    .Append(string.IsNullOrWhiteSpace(snapshot.CodexWebSearchModeSourceLabel)
+                        ? "Codex config.toml"
+                        : snapshot.CodexWebSearchModeSourceLabel.Trim())
+                    .Append('）');
+            }
+            builder.AppendLine();
             builder.Append("有效系统提示：")
                 .Append(FormatCount(snapshot.SystemPromptCharacters))
                 .AppendLine(" 字符（已应用宿主响应规则）");

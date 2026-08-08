@@ -181,6 +181,9 @@ namespace ColorVision.Copilot
 
         public string ConfiguredDeveloperInstructions { get; init; } = string.Empty;
 
+        internal CopilotCodexWebSearchMode CodexWebSearchMode { get; init; } =
+            CopilotCodexWebSearchMode.Unspecified;
+
         public IReadOnlyList<CopilotProjectInstructionDocument> ProjectInstructions { get; init; } = Array.Empty<CopilotProjectInstructionDocument>();
 
         public IReadOnlyList<string> ReadableLocalFilePaths { get; init; } = Array.Empty<string>();
@@ -306,6 +309,7 @@ namespace ColorVision.Copilot
                 TrustedProjectRootPaths = trustedProjectRootPaths,
                 ActiveDocumentPath = hostContext.ActiveDocumentPath,
                 ConfiguredDeveloperInstructions = hostContext.ProjectInstructionDiscoveryOptions.DeveloperInstructions,
+                CodexWebSearchMode = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredWebSearchMode,
                 ProjectInstructions = projectInstructions,
                 ReadableLocalFilePaths = explicitLocalFilePaths,
                 ReadableLocalDirectoryPaths = readableLocalDirectoryPaths,
@@ -351,6 +355,7 @@ namespace ColorVision.Copilot
                 TrustedProjectRootPaths = plan.TrustedProjectRootPaths,
                 ActiveDocumentPath = plan.ActiveDocumentPath,
                 ConfiguredDeveloperInstructions = plan.ConfiguredDeveloperInstructions,
+                CodexWebSearchMode = plan.CodexWebSearchMode,
                 ProjectInstructions = plan.ProjectInstructions,
                 ReadableLocalFilePaths = plan.ReadableLocalFilePaths,
                 ReadableLocalDirectoryPaths = plan.ReadableLocalDirectoryPaths,

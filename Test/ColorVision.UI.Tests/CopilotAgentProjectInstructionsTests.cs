@@ -3091,6 +3091,243 @@ public sealed class CopilotAgentProjectInstructionsTests
         Assert.Contains("会话覆盖优先", debugReport, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void WebSearchModeUsesTheClosestTrustedLayerAndKeepsItsRequestSnapshot()
+    {
+        string globalRoot = CreateTemporaryDirectory();
+        string projectRoot = CreateTemporaryDirectory();
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
+            File.WriteAllText(
+                Path.Combine(globalRoot, "config.toml"),
+                $"""
+                web_search = "live"
+
+                [projects.'{projectRoot}']
+                trust_level = "trusted"
+                """);
+            string sourceDirectory = Path.Combine(projectRoot, "src");
+            string configDirectory = Path.Combine(sourceDirectory, ".codex");
+            Directory.CreateDirectory(configDirectory);
+            string configPath = Path.Combine(configDirectory, "config.toml");
+            File.WriteAllText(configPath, "web_search = \"cached\"");
+
+            var submittedContext = new CopilotAgentHostContextSnapshot(
+                activeDocumentPath: null,
+                sourceDirectory,
+                attachments: null,
+                liveContext: null,
+                conversationHistory: null,
+                additionalReadRootPaths: null,
+                globalInstructionRootPath: globalRoot);
+            File.WriteAllText(configPath, "web_search = \"live\"");
+            var submittedPlan = CopilotAgentRequestFactory.Prepare(
+                "search the web for current documentation",
+                CopilotAgentMode.Auto,
+                submittedContext);
+            var submittedRequest = CopilotAgentRequestFactory.Create(
+                submittedPlan,
+                new CopilotAgentRequestBuildInput
+                {
+                    Profile = CopilotProfileConfig.CreateDefault(),
+                    AgentDefaults = new CopilotAgentDefaultsConfig(),
+                });
+            var refreshedContext = new CopilotAgentHostContextSnapshot(
+                activeDocumentPath: null,
+                sourceDirectory,
+                attachments: null,
+                liveContext: null,
+                conversationHistory: null,
+                additionalReadRootPaths: null,
+                globalInstructionRootPath: globalRoot);
+
+            var submittedOptions = submittedContext.ProjectInstructionDiscoveryOptions;
+            Assert.True(submittedOptions.HasWebSearchModeOverride);
+            Assert.Equal(CopilotCodexWebSearchMode.Cached, submittedOptions.ConfiguredWebSearchMode);
+            Assert.Equal(CopilotProjectInstructionConfigSources.TrustedProject, submittedOptions.WebSearchModeSource);
+            Assert.Equal(CopilotCodexWebSearchMode.Cached, submittedPlan.CodexWebSearchMode);
+            Assert.Equal(CopilotCodexWebSearchMode.Cached, submittedRequest.CodexWebSearchMode);
+            Assert.Equal(
+                CopilotCodexWebSearchMode.Live,
+                refreshedContext.ProjectInstructionDiscoveryOptions.ConfiguredWebSearchMode);
+        }
+        finally
+        {
+            Directory.Delete(globalRoot, recursive: true);
+            Directory.Delete(projectRoot, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void UntrustedOrInvalidProjectWebSearchModeCannotOverrideTheCodexHomeValue()
+    {
+        string globalRoot = CreateTemporaryDirectory();
+        string projectRoot = CreateTemporaryDirectory();
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
+            File.WriteAllText(
+                Path.Combine(globalRoot, "config.toml"),
+                $"""
+                web_search = "live"
+
+                [projects.'{projectRoot}']
+                trust_level = "untrusted"
+                """);
+            string configDirectory = Path.Combine(projectRoot, ".codex");
+            Directory.CreateDirectory(configDirectory);
+            File.WriteAllText(Path.Combine(configDirectory, "config.toml"), "web_search = \"disabled\"");
+
+            var untrusted = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
+            Assert.Equal(CopilotCodexWebSearchMode.Live, untrusted.ConfiguredWebSearchMode);
+            Assert.Equal(CopilotProjectInstructionConfigSources.CodexHome, untrusted.WebSearchModeSource);
+            Assert.Empty(untrusted.AppliedProjectConfigFilePaths);
+
+            File.WriteAllText(Path.Combine(globalRoot, "config.toml"), "web_search = \"unknown\"");
+            var invalid = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot);
+            Assert.False(invalid.HasWebSearchModeOverride);
+            Assert.Equal(CopilotCodexWebSearchMode.Unspecified, invalid.ConfiguredWebSearchMode);
+        }
+        finally
+        {
+            Directory.Delete(globalRoot, recursive: true);
+            Directory.Delete(projectRoot, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void UnsupportedOrDisabledWebSearchFailsClosedWithoutBlockingExplicitUrlFetch()
+    {
+        var registry = new CopilotToolRegistry(CopilotToolRegistry.CreateDefaultTools());
+        foreach (var configuredMode in new[]
+        {
+            CopilotCodexWebSearchMode.Disabled,
+            CopilotCodexWebSearchMode.Cached,
+            CopilotCodexWebSearchMode.Indexed,
+        })
+        {
+            var searchRequest = new CopilotAgentRequest
+            {
+                UserText = "search the web for current documentation",
+                Mode = CopilotAgentMode.Auto,
+                CodexWebSearchMode = configuredMode,
+            };
+            var searchTools = registry.FindTools(searchRequest).Select(tool => tool.Name).ToArray();
+
+            Assert.DoesNotContain("WebSearch", searchTools, StringComparer.OrdinalIgnoreCase);
+            Assert.DoesNotContain("DelegateScout", searchTools, StringComparer.OrdinalIgnoreCase);
+            Assert.False(CopilotToolIntentPolicy.CanExposeExternalTool(
+                searchRequest,
+                "web_search",
+                "search the public web"));
+            var followUpRequest = new CopilotAgentRequest
+            {
+                UserText = "continue",
+                Mode = CopilotAgentMode.Auto,
+                History = [new CopilotRequestMessage("assistant", "https://example.com")],
+                CodexWebSearchMode = configuredMode,
+            };
+            Assert.False(CopilotToolIntentPolicy.CanRetainForFollowUp(
+                followUpRequest,
+                new CopilotWebSearchTool()));
+            string harness = CopilotMicrosoftAgentFrameworkRuntime.BuildHarnessInstructions(
+                searchRequest,
+                registry.FindTools(searchRequest),
+                CopilotAgentEnvironmentContext.Capture(searchRequest),
+                taskLedgerEnabled: false,
+                agentModeEnabled: false);
+            Assert.Contains(
+                $"Codex web_search={CopilotCodexWebSearchModeSelection.GetConfigToken(configuredMode)}",
+                harness,
+                StringComparison.Ordinal);
+            Assert.Contains("claim that a search ran", harness, StringComparison.Ordinal);
+
+            var urlRequest = new CopilotAgentRequest
+            {
+                UserText = "read https://example.com/reference",
+                Mode = CopilotAgentMode.Auto,
+                CodexWebSearchMode = configuredMode,
+            };
+            var urlTools = registry.FindTools(urlRequest).Select(tool => tool.Name).ToArray();
+
+            Assert.Contains("FetchUrl", urlTools, StringComparer.OrdinalIgnoreCase);
+            Assert.Contains("DelegateScout", urlTools, StringComparer.OrdinalIgnoreCase);
+            Assert.DoesNotContain("WebSearch", urlTools, StringComparer.OrdinalIgnoreCase);
+            Assert.True(CopilotToolIntentPolicy.CanExposeExternalTool(
+                urlRequest,
+                "fetch_url",
+                "read web page"));
+        }
+    }
+
+    [Fact]
+    public void LiveOrUnspecifiedWebSearchPreservesIntentGatedSearchTools()
+    {
+        var registry = new CopilotToolRegistry(CopilotToolRegistry.CreateDefaultTools());
+        foreach (var configuredMode in new[]
+        {
+            CopilotCodexWebSearchMode.Unspecified,
+            CopilotCodexWebSearchMode.Live,
+        })
+        {
+            var request = new CopilotAgentRequest
+            {
+                UserText = "search the web for current documentation",
+                Mode = CopilotAgentMode.Auto,
+                CodexWebSearchMode = configuredMode,
+            };
+            var toolNames = registry.FindTools(request).Select(tool => tool.Name).ToArray();
+
+            Assert.Contains("WebSearch", toolNames, StringComparer.OrdinalIgnoreCase);
+            Assert.Contains("DelegateScout", toolNames, StringComparer.OrdinalIgnoreCase);
+            Assert.True(CopilotToolIntentPolicy.CanExposeExternalTool(
+                request,
+                "web_search",
+                "search the public web"));
+        }
+    }
+
+    [Fact]
+    public void WebSearchDiagnosticsExposeUnsupportedModesWithoutClaimingLiveAccess()
+    {
+        var options = CopilotProjectInstructionDiscoveryConfig.CreateDefault() with
+        {
+            ConfiguredWebSearchMode = CopilotCodexWebSearchMode.Cached,
+            HasWebSearchModeOverride = true,
+            WebSearchModeSource = CopilotProjectInstructionConfigSources.CodexHome,
+        };
+        string memoryReport = CopilotProjectInstructionDiagnostics.Format(
+            new CopilotProjectInstructionSnapshot(
+                string.Empty,
+                string.Empty,
+                string.Empty,
+                options,
+                Array.Empty<CopilotProjectInstructionDocument>()),
+            hasActiveAgentRun: false);
+        string contextReport = CopilotContextDiagnostics.Format(new CopilotContextDiagnosticSnapshot
+        {
+            CodexWebSearchMode = options.ConfiguredWebSearchMode,
+            CodexWebSearchModeSourceLabel = options.WebSearchModeSourceLabel,
+            HasCodexWebSearchModeOverride = true,
+        });
+        string debugReport = CopilotEffectiveConfigDiagnostics.Format(new CopilotEffectiveConfigDiagnosticContext
+        {
+            Config = new CopilotConfig(),
+            State = new CopilotChatState(),
+            CodexConfigOptions = options,
+        });
+
+        Assert.Contains("Codex web_search：cached", memoryReport, StringComparison.Ordinal);
+        Assert.Contains("不支持 cached 后端", memoryReport, StringComparison.Ordinal);
+        Assert.Contains("不支持 cached 后端", contextReport, StringComparison.Ordinal);
+        Assert.Contains(options.WebSearchModeSourceLabel, contextReport, StringComparison.Ordinal);
+        Assert.Contains("Codex web_search：cached", debugReport, StringComparison.Ordinal);
+        Assert.DoesNotContain("已允许按请求意图实时公网检索", memoryReport, StringComparison.Ordinal);
+        Assert.DoesNotContain("已允许按请求意图实时公网检索", contextReport, StringComparison.Ordinal);
+        Assert.DoesNotContain("已允许按请求意图实时公网检索", debugReport, StringComparison.Ordinal);
+    }
+
     private static string CreateTemporaryDirectory()
     {
         string path = Path.Combine(Path.GetTempPath(), $"copilot-instructions-{Guid.NewGuid():N}");

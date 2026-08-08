@@ -196,6 +196,7 @@ public sealed class CopilotExecutionScopeTests
             SearchRootPaths = [@"C:\ColorVision\Scope"],
             TrustedProjectRootPaths = [@"C:\ColorVision\Scope"],
             ConfiguredDeveloperInstructions = "Keep configured guidance.",
+            CodexWebSearchMode = CopilotCodexWebSearchMode.Cached,
             Mode = CopilotAgentMode.Code,
         };
         var parentScope = CopilotExecutionScope.ForAgentRequest(
@@ -221,6 +222,7 @@ public sealed class CopilotExecutionScopeTests
         AssertDerivedRunScope(parentScope, childScope);
         Assert.Same(childScope, CopilotExecutionScope.ForAgentRun(childRequest));
         Assert.Equal(parentRequest.ConfiguredDeveloperInstructions, childRequest.ConfiguredDeveloperInstructions);
+        Assert.Equal(parentRequest.CodexWebSearchMode, childRequest.CodexWebSearchMode);
 
         var finalizationRequest = Assert.IsType<CopilotAgentRequest>(
             CopilotSubagentRunner.CreateBudgetFinalizationRequest(
@@ -259,6 +261,7 @@ public sealed class CopilotExecutionScopeTests
         AssertDerivedRunScope(childScope, finalizationScope);
         Assert.Same(finalizationScope, CopilotExecutionScope.ForAgentRun(finalizationRequest));
         Assert.Equal(childRequest.ConfiguredDeveloperInstructions, finalizationRequest.ConfiguredDeveloperInstructions);
+        Assert.Equal(childRequest.CodexWebSearchMode, finalizationRequest.CodexWebSearchMode);
         Assert.True(CopilotMicrosoftAgentFrameworkRuntime.CanUseMinimalDelegatedFinalizationInstructions(
             finalizationRequest,
             [],

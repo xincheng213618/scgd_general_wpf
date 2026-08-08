@@ -553,6 +553,7 @@ namespace ColorVision.Copilot
                     : Array.Empty<string>(),
                 ActiveDocumentPath = activeDocumentPath,
                 ConfiguredDeveloperInstructions = parentRequest.ConfiguredDeveloperInstructions,
+                CodexWebSearchMode = parentRequest.CodexWebSearchMode,
                 ProjectInstructions = projectInstructions,
                 ReadableLocalFilePaths = preselectedFiles,
                 ReadableLocalDirectoryPaths = Array.Empty<string>(),

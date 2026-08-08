@@ -175,6 +175,19 @@ namespace ColorVision.Copilot
                         : effective.PersonalitySourceLabel)
                     .AppendLine(" 请求快照；会话显式选择优先");
             }
+            if (effective.HasWebSearchModeOverride)
+            {
+                builder.Append("Codex web_search：")
+                    .Append(CopilotCodexWebSearchModeSelection.GetConfigToken(
+                        effective.ConfiguredWebSearchMode))
+                    .Append(" · 来源 ")
+                    .Append(effective.WebSearchModeSourceLabel.Length == 0
+                        ? "Codex config.toml"
+                        : effective.WebSearchModeSourceLabel)
+                    .Append(" 请求快照；")
+                    .AppendLine(CopilotCodexWebSearchModeSelection.GetEffectiveLabel(
+                        effective.ConfiguredWebSearchMode));
+            }
             if (effective.HasModelInstructionsFileOverride)
             {
                 builder.Append("Codex model_instructions_file：")

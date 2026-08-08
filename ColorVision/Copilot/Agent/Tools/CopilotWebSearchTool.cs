@@ -37,7 +37,8 @@ namespace ColorVision.Copilot
 
         public bool CanHandle(CopilotAgentRequest request)
         {
-            return CopilotToolIntentPolicy.NeedsPublicWebSearch(request);
+            return CopilotToolIntentPolicy.AllowsLiveWebSearch(request)
+                && CopilotToolIntentPolicy.NeedsPublicWebSearch(request);
         }
 
         public async Task<CopilotToolResult> ExecuteAsync(

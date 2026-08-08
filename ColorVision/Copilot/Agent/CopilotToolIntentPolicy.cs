@@ -8,6 +8,12 @@ namespace ColorVision.Copilot
 {
     internal static partial class CopilotToolIntentPolicy
     {
+        public static bool AllowsLiveWebSearch(CopilotAgentRequest? request)
+        {
+            return request != null
+                && CopilotCodexWebSearchModeSelection.AllowsLiveSearch(request.CodexWebSearchMode);
+        }
+
         public static bool NeedsPublicWebSearch(CopilotAgentRequest? request)
         {
             if (request == null || request.Mode == CopilotAgentMode.Chat || ExplicitlyDisallowsPublicWebAccess(request))
@@ -340,7 +346,7 @@ namespace ColorVision.Copilot
 
             var identity = $"{toolName} {description}";
             if (ContainsAny(identity, ExternalWebSearchMarkers))
-                return NeedsPublicWebSearch(request);
+                return AllowsLiveWebSearch(request) && NeedsPublicWebSearch(request);
             if (ContainsAny(identity, ExternalUrlFetchMarkers))
                 return NeedsUrlFetch(request);
             if (ContainsAny(identity, ExternalLocalSearchMarkers))
@@ -352,6 +358,8 @@ namespace ColorVision.Copilot
         public static bool CanRetainForFollowUp(CopilotAgentRequest? request, ICopilotTool? tool)
         {
             if (request == null || tool == null || request.Mode != CopilotAgentMode.Auto)
+                return false;
+            if (IsPublicWebSearchTool(tool) && !AllowsLiveWebSearch(request))
                 return false;
             if (request.History.Count == 0
                 || string.IsNullOrWhiteSpace(request.UserText)
