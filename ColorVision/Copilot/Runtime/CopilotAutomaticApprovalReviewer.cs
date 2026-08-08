@@ -178,9 +178,17 @@ namespace ColorVision.Copilot
 
                 return result;
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
                 throw;
+            }
+            catch (OperationCanceledException ex)
+            {
+                return CopilotAutomaticApprovalReviewResult.Unavailable(
+                    FormatClosedOrUserReviewReason(
+                        request,
+                        "自动复核超时或被提供商提前取消："
+                        + CopilotUserFacingErrorFormatter.Sanitize(ex.Message, request.Profile.ApiKey)));
             }
             catch (Exception ex)
             {

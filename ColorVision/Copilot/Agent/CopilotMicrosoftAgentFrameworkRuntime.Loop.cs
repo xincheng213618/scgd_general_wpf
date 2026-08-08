@@ -413,6 +413,8 @@ namespace ColorVision.Copilot
             var contextWindowExceeded = loopResult.ContextWindowExceeded;
             var toolBudgetForcedFinalization = loopResult.ToolBudgetForcedFinalization;
             var providerFinishReason = loopResult.ProviderFinishReason;
+            var automaticReviewCircuitBreaker = loopResult.AutomaticReviewCircuitBreaker;
+            var automaticReviewCircuitBreakerTripped = automaticReviewCircuitBreaker?.IsTripped == true;
             var outputLengthLimitReached = IsLengthLimitedOutput(providerFinishReason);
             var outputContentFiltered = IsContentFilteredOutput(providerFinishReason);
             var outputFinishReasonIncomplete = IsUnexpectedIncompleteOutput(providerFinishReason);
@@ -432,6 +434,7 @@ namespace ColorVision.Copilot
                     "The provider ended the Agent answer with an explicit non-success finish reason; starting one bounded no-tools finalization call instead of accepting partial text."));
             }
             var hasModelFinalAnswer = !providerInterrupted
+                && !automaticReviewCircuitBreakerTripped
                 && !outputLengthLimitReached
                 && !outputContentFiltered
                 && !outputFinishReasonIncomplete
@@ -440,6 +443,7 @@ namespace ColorVision.Copilot
                 && !timeBudgetExhausted
                 && !providerInterrupted
                 && !contextWindowExceeded
+                && !automaticReviewCircuitBreakerTripped
                 && !outputContentFiltered
                 && (!hasModelFinalAnswer || toolBudgetForcedFinalization))
             {
@@ -475,6 +479,7 @@ namespace ColorVision.Copilot
                 timeBudgetExhausted,
                 providerInterrupted,
                 contextWindowExceeded,
+                automaticReviewCircuitBreakerTripped,
                 hasModelFinalAnswer,
                 outputLengthLimitReached,
                 outputContentFiltered,
@@ -564,12 +569,14 @@ namespace ColorVision.Copilot
                 _ when timeBudgetExhausted => CopilotAgentStopReason.BudgetExhausted,
                 _ when contextWindowExceeded => CopilotAgentStopReason.ProviderFailure,
                 _ when providerInterrupted => CopilotAgentStopReason.ProviderFailure,
+                _ when automaticReviewCircuitBreakerTripped => CopilotAgentStopReason.ApprovalDenied,
                 _ => DetermineStopReason(taskLedger, budgetSnapshot, bridge.StepRecords, hasModelFinalAnswer, request.Mode),
             };
             if (controlIntent == CopilotAgentControlIntent.None
                 && !timeBudgetExhausted
                 && !providerInterrupted
                 && !contextWindowExceeded
+                && !automaticReviewCircuitBreakerTripped
                 && executionContractEvaluation.IsRequired
                 && !executionContractEvaluation.IsSatisfied)
             {
@@ -582,12 +589,33 @@ namespace ColorVision.Copilot
                 && !timeBudgetExhausted
                 && !providerInterrupted
                 && !contextWindowExceeded
+                && !automaticReviewCircuitBreakerTripped
                 && !blockers.Any(blocker => string.Equals(blocker.Code, executionContractBlocker.Code, StringComparison.Ordinal)))
             {
                 blockers = blockers.Append(executionContractBlocker).ToArray();
             }
             if (providerInterrupted)
                 blockers = blockers.Prepend(CreateProviderInterruptionBlocker()).ToArray();
+            if (automaticReviewCircuitBreaker is { IsTripped: true } circuitBreaker)
+            {
+                var deniedStep = bridge.StepRecords.LastOrDefault(
+                    step => step.Execution.State == CopilotToolExecutionState.Denied);
+                blockers = blockers
+                    .Where(blocker => !string.Equals(blocker.Code, "approval_denied", StringComparison.Ordinal))
+                    .Prepend(new CopilotAgentBlockerSnapshot
+                    {
+                        Kind = CopilotAgentBlockerKind.Approval,
+                        Code = "auto_review_denial_limit",
+                        Summary = circuitBreaker.FormatUserMessage(),
+                        ToolName = deniedStep?.Execution.ToolName ?? string.Empty,
+                        SourceCallKey = deniedStep == null
+                            ? string.Empty
+                            : CopilotAgentTaskEventIds.ForCall(deniedStep.Execution.CallId),
+                        RetryEligible = false,
+                        RequiresUserInput = true,
+                    })
+                    .ToArray();
+            }
             if (contextWindowExceeded
                 && !blockers.Any(blocker => string.Equals(blocker.Code, "provider_context_window", StringComparison.Ordinal)))
             {

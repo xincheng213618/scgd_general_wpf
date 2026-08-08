@@ -342,6 +342,18 @@ namespace ColorVision.Copilot.Mcp
                 decisionReason,
                 out message);
 
+        internal bool CloseAfterAutomaticReviewUnavailable(
+            string actionId,
+            CopilotConfirmationReviewContext reviewContext,
+            string decisionReason,
+            out string message) =>
+            RejectCore(
+                actionId,
+                reviewContext,
+                decisionSource: "automatic-review-unavailable",
+                decisionReason,
+                out message);
+
         private bool RejectCore(
             string actionId,
             CopilotConfirmationReviewContext reviewContext,
@@ -382,6 +394,11 @@ namespace ColorVision.Copilot.Mcp
                 "automatic-review",
                 StringComparison.Ordinal)
                 ? "The action was denied by the automatic permission reviewer."
+                : string.Equals(
+                    action.ApprovalDecisionSource,
+                    "automatic-review-unavailable",
+                    StringComparison.Ordinal)
+                    ? "Automatic permission review was unavailable, so the action stayed closed."
                 : "The action was rejected.";
             return true;
         }

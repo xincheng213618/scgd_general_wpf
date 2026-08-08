@@ -155,6 +155,8 @@ namespace ColorVision.Copilot.Mcp
             false,
             string.Equals(action.ApprovalDecisionSource, "automatic-review", StringComparison.Ordinal)
                 ? "Denied by the automatic permission reviewer."
+                : string.Equals(action.ApprovalDecisionSource, "automatic-review-unavailable", StringComparison.Ordinal)
+                    ? "Automatic permission review was unavailable, so the action stayed closed."
                 : "Rejected by the ColorVision user.");
 
         public static void ActionCancelled(ConfirmableAction action) => RecordActionEvent("action_cancelled", action, false, "Cancelled before the approved action completed.");

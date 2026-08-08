@@ -1,5 +1,6 @@
 using ColorVision.Copilot;
 using ColorVision.Copilot.Mcp;
+using Microsoft.Extensions.AI;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -349,6 +350,105 @@ public sealed class CopilotCodexApprovalsReviewerTests
     }
 
     [Fact]
+    public async Task UnavailableAutomaticReviewClosesWithoutRecordingAPolicyDenial()
+    {
+        string workspacePath = Path.GetFullPath(Path.GetTempPath());
+        var tool = new CopilotShellCommandTool();
+        var request = CreateRequest(
+            workspacePath,
+            CopilotCodexApprovalsReviewer.AutoReview,
+            CopilotCodexApprovalPolicy.CreateScalar(CopilotCodexApprovalPolicyMode.OnRequest));
+        var coordinator = new CopilotFrameworkApprovalCoordinator();
+        var handle = coordinator.RequestApproval(
+            tool,
+            request,
+            CreateShellInput(workspacePath),
+            $"call-{Guid.NewGuid():N}",
+            CancellationToken.None,
+            userReviewVisible: false);
+
+        try
+        {
+            Assert.True(coordinator.CloseAfterAutomaticReviewUnavailable(
+                handle,
+                request,
+                tool,
+                workspacePath,
+                "The reviewer timed out before returning a decision.",
+                out var message), message);
+            var decision = await handle.Decision.WaitAsync(TimeSpan.FromSeconds(2));
+
+            Assert.Equal(CopilotFrameworkApprovalDecisionKind.Rejected, decision.Kind);
+            Assert.Equal(CopilotFrameworkApprovalDecisionSource.AutomaticReview, decision.Source);
+            Assert.Equal("automatic_review_unavailable", decision.FailureCode);
+            Assert.Contains("does not establish that the action is unsafe", decision.Reason, StringComparison.Ordinal);
+            Assert.Contains("unavailable", decision.FormatStatus(tool.Name), StringComparison.OrdinalIgnoreCase);
+            Assert.Equal("automatic-review-unavailable", handle.Action.ApprovalDecisionSource);
+            Assert.Equal(ConfirmableActionStatus.Rejected, handle.Action.Status);
+            var auditEntry = Assert.Single(CopilotMcpAuditLogger.GetRecentEntries(200), entry =>
+                string.Equals(entry.ActionId, handle.Action.ActionId, StringComparison.Ordinal)
+                && string.Equals(entry.ToolName, "action_rejected", StringComparison.Ordinal));
+            Assert.Equal("automatic-review-unavailable", auditEntry.ApprovalDecisionSource);
+            Assert.Contains("unavailable", auditEntry.ErrorMessage, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain(
+                handle.Action,
+                CopilotMcpConfirmationStore.Instance.GetPendingActions());
+        }
+        finally
+        {
+            coordinator.Cancel(handle);
+        }
+    }
+
+    [Fact]
+    public async Task ReviewerProviderTimeoutIsUnavailableButCallerCancellationStillPropagates()
+    {
+        string workspacePath = Path.GetFullPath(Path.GetTempPath());
+        var tool = new CopilotShellCommandTool();
+        var request = CreateRequest(
+            workspacePath,
+            CopilotCodexApprovalsReviewer.AutoReview,
+            CopilotCodexApprovalPolicy.CreateScalar(CopilotCodexApprovalPolicyMode.OnRequest));
+        var coordinator = new CopilotFrameworkApprovalCoordinator();
+        var handle = coordinator.RequestApproval(
+            tool,
+            request,
+            CreateShellInput(workspacePath),
+            $"call-{Guid.NewGuid():N}",
+            CancellationToken.None,
+            userReviewVisible: false);
+        using var client = new ProviderTimeoutChatClient();
+
+        try
+        {
+            var unavailable = await new CopilotAutomaticApprovalReviewer().ReviewAsync(
+                client,
+                request,
+                tool,
+                handle.Action,
+                CancellationToken.None);
+
+            Assert.Equal(CopilotAutomaticApprovalReviewVerdict.Unavailable, unavailable.Verdict);
+            Assert.Contains("超时", unavailable.Reason, StringComparison.Ordinal);
+            Assert.Contains("执行保持关闭", unavailable.Reason, StringComparison.Ordinal);
+
+            using var cancellation = new CancellationTokenSource();
+            cancellation.Cancel();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+                new CopilotAutomaticApprovalReviewer().ReviewAsync(
+                    client,
+                    request,
+                    tool,
+                    handle.Action,
+                    cancellation.Token));
+        }
+        finally
+        {
+            coordinator.Cancel(handle);
+        }
+    }
+
+    [Fact]
     public void ReviewerDiagnosticsAndInstructionsExposeFrozenRouting()
     {
         const string privatePolicy = "PRIVATE-POLICY-SENTINEL: approve only signed local validation.";
@@ -432,6 +532,66 @@ public sealed class CopilotCodexApprovalsReviewerTests
         Assert.DoesNotContain("PRIVATE\0POLICY", invalidReviewerPrompt, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void AutomaticReviewCircuitBreakerTripsAfterThreeConsecutiveDenials()
+    {
+        var circuitBreaker = new CopilotAutomaticApprovalDenialCircuitBreaker();
+
+        var first = circuitBreaker.Observe(CopilotAutomaticApprovalReviewVerdict.Deny);
+        var second = circuitBreaker.Observe(CopilotAutomaticApprovalReviewVerdict.Deny);
+        var third = circuitBreaker.Observe(CopilotAutomaticApprovalReviewVerdict.Deny);
+
+        Assert.False(first.IsTripped);
+        Assert.False(second.IsTripped);
+        Assert.True(third.IsTripped);
+        Assert.Equal(3, third.ConsecutiveDenials);
+        Assert.Equal(3, third.DenialsInWindow);
+        Assert.Equal(3, third.ReviewsInWindow);
+        Assert.Contains("本轮已中断", third.FormatUserMessage(), StringComparison.Ordinal);
+        Assert.Contains("no denied action was executed or retried", third.FormatDiagnostic(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void NonDenialsResetTheConsecutiveCountButRollingTenDenialsStillTrip()
+    {
+        var circuitBreaker = new CopilotAutomaticApprovalDenialCircuitBreaker();
+        for (var index = 0; index < 9; index++)
+        {
+            Assert.False(circuitBreaker.Observe(CopilotAutomaticApprovalReviewVerdict.Deny).IsTripped);
+            Assert.False(circuitBreaker.Observe(
+                index % 2 == 0
+                    ? CopilotAutomaticApprovalReviewVerdict.Approve
+                    : CopilotAutomaticApprovalReviewVerdict.Unavailable).IsTripped);
+        }
+
+        var tripped = circuitBreaker.Observe(CopilotAutomaticApprovalReviewVerdict.Deny);
+
+        Assert.True(tripped.IsTripped);
+        Assert.Equal(1, tripped.ConsecutiveDenials);
+        Assert.Equal(10, tripped.DenialsInWindow);
+        Assert.Equal(19, tripped.ReviewsInWindow);
+    }
+
+    [Fact]
+    public void RollingReviewWindowEvictsOldDenialsAndUnavailableIsNotADenial()
+    {
+        var circuitBreaker = new CopilotAutomaticApprovalDenialCircuitBreaker();
+        for (var index = 0; index < 9; index++)
+        {
+            circuitBreaker.Observe(CopilotAutomaticApprovalReviewVerdict.Deny);
+            circuitBreaker.Observe(CopilotAutomaticApprovalReviewVerdict.Approve);
+        }
+        for (var index = 0; index < 33; index++)
+            circuitBreaker.Observe(CopilotAutomaticApprovalReviewVerdict.Unavailable);
+
+        var snapshot = circuitBreaker.Observe(CopilotAutomaticApprovalReviewVerdict.Deny);
+
+        Assert.False(snapshot.IsTripped);
+        Assert.Equal(1, snapshot.ConsecutiveDenials);
+        Assert.Equal(9, snapshot.DenialsInWindow);
+        Assert.Equal(CopilotAutomaticApprovalDenialCircuitBreaker.ReviewWindowSize, snapshot.ReviewsInWindow);
+    }
+
     private static CopilotAgentHostContextSnapshot CreateHostContext(
         string globalRoot,
         string projectRoot) => new(
@@ -452,6 +612,7 @@ public sealed class CopilotCodexApprovalsReviewerTests
         ConversationId = "approvals-reviewer-conversation",
         TaskId = "approvals-reviewer-task",
         WorkspacePath = workspacePath,
+        Profile = CopilotProfileConfig.CreateDefault(),
         UserText = "Run the requested shell command.",
         TaskIntentText = "Run and verify the requested shell command.",
         Mode = CopilotAgentMode.Code,
@@ -481,5 +642,30 @@ public sealed class CopilotCodexApprovalsReviewerTests
             $"copilot-approvals-reviewer-{Guid.NewGuid():N}");
         Directory.CreateDirectory(path);
         return path;
+    }
+
+    private sealed class ProviderTimeoutChatClient : IChatClient
+    {
+        public Task<ChatResponse> GetResponseAsync(
+            IEnumerable<Microsoft.Extensions.AI.ChatMessage> messages,
+            ChatOptions? options = null,
+            CancellationToken cancellationToken = default) =>
+            Task.FromException<ChatResponse>(
+                new OperationCanceledException("The reviewer provider timed out."));
+
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(
+            IEnumerable<Microsoft.Extensions.AI.ChatMessage> messages,
+            ChatOptions? options = null,
+            CancellationToken cancellationToken = default)
+        {
+            await Task.CompletedTask;
+            yield break;
+        }
+
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+
+        public void Dispose()
+        {
+        }
     }
 }

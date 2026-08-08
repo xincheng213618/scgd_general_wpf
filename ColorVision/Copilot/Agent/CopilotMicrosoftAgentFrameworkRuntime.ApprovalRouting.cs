@@ -15,6 +15,7 @@ namespace ColorVision.Copilot
             CopilotAgentRequest request,
             HarnessToolBridge bridge,
             IChatClient contextRecoveryChatClient,
+            CopilotAutomaticApprovalDenialCircuitBreaker automaticReviewCircuitBreaker,
             CopilotAgentTaskEventJournalBuilder taskEventJournalBuilder,
             Action<CopilotAgentEvent> emit,
             CopilotTokenUsage usage,
@@ -36,6 +37,7 @@ namespace ColorVision.Copilot
                     }
 
                     var currentWorkspacePath = GetCurrentWorkspacePath();
+                    var circuitBreakerSnapshot = default(CopilotAutomaticApprovalDenialCircuitBreakerSnapshot);
                     CopilotFrameworkApprovalDecision decision;
                     if (CopilotAgentAccessPolicy.CanAutoApprove(
                         request,
@@ -105,6 +107,9 @@ namespace ColorVision.Copilot
                                         handle.Action,
                                         cancellationToken);
                                     usage = usage.Add(automaticReview.Usage);
+                                    circuitBreakerSnapshot = isExplicitAutoReview
+                                        ? automaticReviewCircuitBreaker.Observe(automaticReview.Verdict)
+                                        : default;
                                     var automaticReviewReason = CopilotAgentTraceEntry.Sanitize(
                                         automaticReview.Reason);
                                     if (automaticReview.Verdict == CopilotAutomaticApprovalReviewVerdict.Approve)
@@ -125,7 +130,8 @@ namespace ColorVision.Copilot
                                         if (!approved && isExplicitAutoReview)
                                             _approvalCoordinator.Cancel(handle);
                                     }
-                                    else if (isExplicitAutoReview)
+                                    else if (isExplicitAutoReview
+                                        && automaticReview.Verdict == CopilotAutomaticApprovalReviewVerdict.Deny)
                                     {
                                         var reviewWorkspacePath = GetCurrentWorkspacePath();
                                         var rejected = _approvalCoordinator.RejectAfterAutomaticReview(
@@ -139,6 +145,22 @@ namespace ColorVision.Copilot
                                             ? $"{reservation.Tool.Name} was denied by automatic permission review ({automaticReview.RiskLevel}): {automaticReviewReason}. Use a materially safer path or stop and ask the user."
                                             : $"{reservation.Tool.Name} automatic denial could not be recorded ({CopilotAgentTraceEntry.Sanitize(rejectionMessage)}); execution was closed."));
                                         if (!rejected)
+                                            _approvalCoordinator.Cancel(handle);
+                                    }
+                                    else if (isExplicitAutoReview)
+                                    {
+                                        var reviewWorkspacePath = GetCurrentWorkspacePath();
+                                        var closed = _approvalCoordinator.CloseAfterAutomaticReviewUnavailable(
+                                            handle,
+                                            request,
+                                            reservation.Tool,
+                                            reviewWorkspacePath,
+                                            automaticReview.Reason,
+                                            out var closeMessage);
+                                        emit(CopilotAgentEvent.Status(closed
+                                            ? $"{reservation.Tool.Name} automatic permission review was unavailable: {automaticReviewReason}. Execution stayed closed; this alone does not establish that the action is unsafe."
+                                            : $"{reservation.Tool.Name} could not be closed after automatic review became unavailable ({CopilotAgentTraceEntry.Sanitize(closeMessage)}); execution was cancelled."));
+                                        if (!closed)
                                             _approvalCoordinator.Cancel(handle);
                                     }
                                     else
@@ -185,10 +207,18 @@ namespace ColorVision.Copilot
                     }
 
                     responses.Add(approvalRequest.CreateResponse(decision.IsApproved, decision.Reason));
+                    if (circuitBreakerSnapshot.IsTripped)
+                    {
+                        approvalRoutingCompleted = true;
+                        return new CopilotFrameworkApprovalRoutingResult(
+                            responses,
+                            usage,
+                            circuitBreakerSnapshot);
+                    }
                 }
 
                 approvalRoutingCompleted = true;
-                return new CopilotFrameworkApprovalRoutingResult(responses, usage);
+                return new CopilotFrameworkApprovalRoutingResult(responses, usage, null);
             }
             finally
             {
@@ -199,6 +229,7 @@ namespace ColorVision.Copilot
 
         private sealed record CopilotFrameworkApprovalRoutingResult(
             List<AIContent> Responses,
-            CopilotTokenUsage Usage);
+            CopilotTokenUsage Usage,
+            CopilotAutomaticApprovalDenialCircuitBreakerSnapshot? CircuitBreakerSnapshot);
     }
 }
