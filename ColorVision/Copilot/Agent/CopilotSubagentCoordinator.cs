@@ -322,6 +322,9 @@ namespace ColorVision.Copilot
         public bool TryResolveCompletedRun(
             string roleId,
             string runId,
+            string agentName,
+            string model,
+            string reasoningEffort,
             out CopilotAgentSessionCheckpoint? checkpoint,
             out CopilotToolFailureKind failureKind,
             out string errorMessage)
@@ -349,6 +352,13 @@ namespace ColorVision.Copilot
                     errorMessage = $"Subagent run '{normalizedRunId}' belongs to role '{completed.RoleId}', not '{normalizedRoleId}'.";
                     return false;
                 }
+                if (!string.Equals(completed.AgentName, (agentName ?? string.Empty).Trim(), StringComparison.OrdinalIgnoreCase)
+                    || !string.Equals(completed.Model, (model ?? string.Empty).Trim(), StringComparison.OrdinalIgnoreCase)
+                    || !string.Equals(completed.ReasoningEffort, (reasoningEffort ?? string.Empty).Trim(), StringComparison.Ordinal))
+                {
+                    errorMessage = $"Subagent run '{normalizedRunId}' was completed with a different agent/model/reasoning profile. Start a fresh run instead of resuming its checkpoint.";
+                    return false;
+                }
                 if (completed.Checkpoint?.IsStructurallyValid() != true)
                 {
                     errorMessage = $"Subagent run '{normalizedRunId}' did not produce a structurally valid resumable checkpoint.";
@@ -364,6 +374,9 @@ namespace ColorVision.Copilot
         public void RecordCompleted(
             string roleId,
             string runId,
+            string agentName,
+            string model,
+            string reasoningEffort,
             CopilotAgentSessionCheckpoint? checkpoint)
         {
             var normalizedRoleId = NormalizeRoleId(roleId);
@@ -378,7 +391,12 @@ namespace ColorVision.Copilot
 
                 _completedRuns.Add(
                     normalizedRunId,
-                    new CompletedSubagentRun(normalizedRoleId, checkpoint));
+                    new CompletedSubagentRun(
+                        normalizedRoleId,
+                        (agentName ?? string.Empty).Trim(),
+                        (model ?? string.Empty).Trim(),
+                        (reasoningEffort ?? string.Empty).Trim(),
+                        checkpoint));
                 _completedRunOrder.Enqueue(normalizedRunId);
                 while (_completedRunOrder.Count > MaximumTrackedCompletedRuns)
                 {
@@ -419,6 +437,9 @@ namespace ColorVision.Copilot
 
         private sealed record CompletedSubagentRun(
             string RoleId,
+            string AgentName,
+            string Model,
+            string ReasoningEffort,
             CopilotAgentSessionCheckpoint? Checkpoint);
 
         internal sealed class CopilotSubagentLease : IDisposable

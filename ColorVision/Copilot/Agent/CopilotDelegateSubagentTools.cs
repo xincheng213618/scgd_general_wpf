@@ -121,12 +121,25 @@ namespace ColorVision.Copilot
                 agent = customSubagent.Name;
             }
 
+            var requestedProfile = new CopilotSubagentRunRequest
+            {
+                Agent = agent,
+                Model = model,
+                ReasoningEffort = reasoningEffort,
+            };
+            var effectiveModel = CopilotSubagentRunner.ResolveChildModel(request, requestedProfile);
+            var effectiveReasoningEffort = CopilotSubagentRunner.ResolveChildReasoningEffort(request, requestedProfile);
+            var effectiveReasoningEffortToken = FormatEffectiveReasoningEffort(effectiveReasoningEffort);
+
             var coordinator = CopilotSubagentCoordination.GetCoordinator(request);
             CopilotAgentSessionCheckpoint? resumeCheckpoint = null;
             if (resumeFromRunId.Length > 0
                 && !coordinator.TryResolveCompletedRun(
                     _role.Id,
                     resumeFromRunId,
+                    agent,
+                    effectiveModel,
+                    effectiveReasoningEffortToken,
                     out resumeCheckpoint,
                     out var resumeFailureKind,
                     out var resumeError))
@@ -149,9 +162,6 @@ namespace ColorVision.Copilot
                 RequestTokenBudget = lease.RequestTokenBudget,
                 QueueDurationMs = lease.QueueDurationMs,
             };
-            var effectiveModel = CopilotSubagentRunner.ResolveChildModel(request, childRun);
-            var effectiveReasoningEffort = CopilotSubagentRunner.ResolveChildReasoningEffort(request, childRun);
-            var effectiveReasoningEffortToken = FormatEffectiveReasoningEffort(effectiveReasoningEffort);
             if (progress != null)
             {
                 childRun.ProgressUpdated = (phase, budget, activeToolName) =>
@@ -170,7 +180,15 @@ namespace ColorVision.Copilot
                 if (lease.WasCancellationRequested && !cancellationToken.IsCancellationRequested)
                     return Cancelled(request, childRun);
                 if (childRun.ResumeCheckpoint == null || result.SessionResumed)
-                    coordinator.RecordCompleted(_role.Id, childRun.RunId, result.SessionCheckpoint);
+                {
+                    coordinator.RecordCompleted(
+                        _role.Id,
+                        childRun.RunId,
+                        childRun.Agent,
+                        effectiveModel,
+                        effectiveReasoningEffortToken,
+                        result.SessionCheckpoint);
+                }
             }
             catch (OperationCanceledException) when (lease.WasCancellationRequested
                 && !cancellationToken.IsCancellationRequested)

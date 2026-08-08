@@ -280,14 +280,150 @@ public sealed class CopilotCodexCustomSubagentsTests
         Assert.Contains("Argument 'agent'", invalid.ErrorMessage, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task CompletedRunResumeRequiresTheSameEffectiveRuntimeProfile()
+    {
+        var request = CreateParentRequest(
+            new CopilotCodexCustomSubagentDefinition
+            {
+                Name = "reviewer",
+                Description = "Review bounded workspace evidence.",
+                DeveloperInstructions = "Review the evidence.",
+                Model = "agent-model",
+                ReasoningEffort = CopilotCodexReasoningEffort.High,
+            });
+        var coordinator = new CopilotSubagentCoordinator(request);
+        var lease = await coordinator.TryAcquireAsync(
+            CopilotSubagentRoleCatalog.ExploreRoleId,
+            CancellationToken.None);
+        Assert.NotNull(lease);
+        var runId = lease!.RunId;
+        using (lease)
+        {
+            coordinator.RecordCompleted(
+                CopilotSubagentRoleCatalog.ExploreRoleId,
+                runId,
+                "reviewer",
+                "agent-model",
+                "high",
+                CreateStructurallyValidCheckpoint());
+            lease.Commit(0);
+        }
+
+        Assert.True(coordinator.TryResolveCompletedRun(
+            CopilotSubagentRoleCatalog.ExploreRoleId,
+            runId,
+            "reviewer",
+            "agent-model",
+            "high",
+            out var checkpoint,
+            out var successFailureKind,
+            out var successError));
+        Assert.NotNull(checkpoint);
+        Assert.Equal(CopilotToolFailureKind.None, successFailureKind);
+        Assert.Empty(successError);
+
+        Assert.False(coordinator.TryResolveCompletedRun(
+            CopilotSubagentRoleCatalog.ExploreRoleId,
+            runId,
+            "docs",
+            "agent-model",
+            "high",
+            out _,
+            out var agentFailureKind,
+            out var agentError));
+        Assert.Equal(CopilotToolFailureKind.Validation, agentFailureKind);
+        Assert.Contains("different agent/model/reasoning profile", agentError, StringComparison.Ordinal);
+
+        Assert.False(coordinator.TryResolveCompletedRun(
+            CopilotSubagentRoleCatalog.ExploreRoleId,
+            runId,
+            "reviewer",
+            "different-model",
+            "high",
+            out _,
+            out _,
+            out _));
+        Assert.False(coordinator.TryResolveCompletedRun(
+            CopilotSubagentRoleCatalog.ExploreRoleId,
+            runId,
+            "reviewer",
+            "agent-model",
+            "low",
+            out _,
+            out _,
+            out _));
+    }
+
+    [Fact]
+    public async Task DelegateToolRejectsCrossAgentResumeBeforeStartingAnotherRunner()
+    {
+        var runner = new RecordingSubagentRunner(new CopilotSubagentResult
+        {
+            Answer = "Bounded result.",
+            StopReason = CopilotAgentStopReason.Completed,
+            HasSuccessfulEvidence = true,
+            SessionCheckpoint = CreateStructurallyValidCheckpoint(),
+        });
+        var tool = new CopilotDelegateExploreTool(runner);
+        var request = CreateParentRequest(
+            new CopilotCodexCustomSubagentDefinition
+            {
+                Name = "reviewer",
+                Description = "Review evidence.",
+                DeveloperInstructions = "Review the evidence.",
+                Model = "review-model",
+                ReasoningEffort = CopilotCodexReasoningEffort.High,
+            },
+            new CopilotCodexCustomSubagentDefinition
+            {
+                Name = "docs",
+                Description = "Document evidence.",
+                DeveloperInstructions = "Document the evidence.",
+                Model = "docs-model",
+                ReasoningEffort = CopilotCodexReasoningEffort.Low,
+            });
+        var first = await tool.ExecuteAsync(
+            request,
+            new CopilotAgentToolInput
+            {
+                Arguments = new Dictionary<string, object?>
+                {
+                    ["task"] = "Review bounded evidence.",
+                    ["agent"] = "reviewer",
+                },
+            },
+            CancellationToken.None);
+        var firstUsage = Assert.IsType<CopilotDelegatedRunUsage>(first.DelegatedRunUsage);
+
+        var resumed = await tool.ExecuteAsync(
+            request,
+            new CopilotAgentToolInput
+            {
+                Arguments = new Dictionary<string, object?>
+                {
+                    ["task"] = "Continue the bounded investigation.",
+                    ["agent"] = "docs",
+                    ["resume_from"] = firstUsage.RunId,
+                },
+            },
+            CancellationToken.None);
+
+        Assert.True(first.Success);
+        Assert.Equal(1, runner.RunCount);
+        Assert.False(resumed.Success);
+        Assert.Equal(CopilotToolFailureKind.Validation, resumed.FailureKind);
+        Assert.Contains("different agent/model/reasoning profile", resumed.ErrorMessage, StringComparison.Ordinal);
+    }
+
     private static CopilotAgentRequest CreateParentRequest(
-        CopilotCodexCustomSubagentDefinition definition) => new()
+        params CopilotCodexCustomSubagentDefinition[] definitions) => new()
         {
             ConversationId = "custom-subagent-" + Guid.NewGuid().ToString("N"),
             UserText = "Delegate a bounded investigation.",
             TaskIntentText = "Delegate a bounded investigation.",
             Profile = CreateProfile(),
-            CodexCustomSubagents = [definition],
+            CodexCustomSubagents = definitions,
             CodexReasoningEffort = CopilotCodexReasoningEffort.Medium,
         };
 
@@ -335,6 +471,12 @@ public sealed class CopilotCodexCustomSubagentsTests
         return path;
     }
 
+    private static CopilotAgentSessionCheckpoint CreateStructurallyValidCheckpoint() => new()
+    {
+        ProfileKey = "test-profile",
+        SerializedSessionJson = "{}",
+    };
+
     private static CopilotToolExecutionOutcome CreateOutcome(
         ICopilotTool tool,
         CopilotAgentRequest request,
@@ -361,6 +503,13 @@ public sealed class CopilotCodexCustomSubagentsTests
 
     private sealed class RecordingSubagentRunner : ICopilotSubagentRunner
     {
+        private readonly CopilotSubagentResult _result;
+
+        public RecordingSubagentRunner(CopilotSubagentResult? result = null)
+        {
+            _result = result ?? new CopilotSubagentResult();
+        }
+
         public int RunCount { get; private set; }
 
         public CopilotSubagentRunRequest? LastRunRequest { get; private set; }
@@ -373,7 +522,7 @@ public sealed class CopilotCodexCustomSubagentsTests
         {
             RunCount++;
             LastRunRequest = runRequest;
-            return Task.FromResult(new CopilotSubagentResult());
+            return Task.FromResult(_result);
         }
     }
 }
