@@ -765,6 +765,273 @@ public sealed class CopilotAgentProjectInstructionsTests
     }
 
     [Fact]
+    public void ConfiguredProjectRootMarkersControlProjectRootDiscovery()
+    {
+        string globalRoot = CreateTemporaryDirectory();
+        string projectRoot = CreateTemporaryDirectory();
+        try
+        {
+            File.WriteAllText(
+                Path.Combine(globalRoot, "config.toml"),
+                """
+                project_root_markers = [
+                  ".workspace",
+                  ".hg",
+                ]
+                """);
+            File.WriteAllText(Path.Combine(projectRoot, ".workspace"), string.Empty);
+            string sourceDirectory = Path.Combine(projectRoot, "src");
+            Directory.CreateDirectory(Path.Combine(sourceDirectory, ".git"));
+            string activeDirectory = Path.Combine(sourceDirectory, "feature");
+            Directory.CreateDirectory(activeDirectory);
+            string activeDocument = Path.Combine(activeDirectory, "Feature.cs");
+            File.WriteAllText(activeDocument, "namespace Feature;");
+            string projectConfigDirectory = Path.Combine(projectRoot, ".codex");
+            Directory.CreateDirectory(projectConfigDirectory);
+            File.WriteAllText(
+                Path.Combine(projectConfigDirectory, "config.toml"),
+                "project_doc_fallback_filenames = [\"ROOT_GUIDE.md\"]");
+            string rootInstructions = Path.Combine(projectRoot, "ROOT_GUIDE.md");
+            File.WriteAllText(rootInstructions, "# Repository instructions");
+
+            var hostContext = new CopilotAgentHostContextSnapshot(
+                activeDocument,
+                solutionDirectoryPath: null,
+                attachments: null,
+                liveContext: null,
+                conversationHistory: null,
+                additionalReadRootPaths: null,
+                globalInstructionRootPath: globalRoot);
+            var plan = CopilotAgentRequestFactory.Prepare(
+                $"Inspect the local implementation in {activeDocument}",
+                CopilotAgentMode.Auto,
+                hostContext);
+
+            Assert.Equal(projectRoot, hostContext.PrimaryTrustedProjectRootPath, ignoreCase: true);
+            Assert.Equal([".workspace", ".hg"], hostContext.ProjectInstructionDiscoveryOptions.ProjectRootMarkers);
+            Assert.True(hostContext.ProjectInstructionDiscoveryOptions.HasProjectRootMarkersOverride);
+            Assert.Equal(
+                CopilotProjectInstructionConfigSources.CodexHome
+                    | CopilotProjectInstructionConfigSources.TrustedProject,
+                hostContext.ProjectInstructionDiscoveryOptions.ConfigSources);
+            Assert.Contains(plan.ProjectInstructions, document =>
+                string.Equals(document.Path, rootInstructions, StringComparison.OrdinalIgnoreCase));
+            var report = CopilotProjectInstructionDiagnostics.Format(
+                new CopilotProjectInstructionSnapshot(
+                    projectRoot,
+                    activeDocument,
+                    globalRoot,
+                    hostContext.ProjectInstructionDiscoveryOptions,
+                    plan.ProjectInstructions),
+                hasActiveAgentRun: false);
+            Assert.Contains("项目根标记：.workspace、.hg", report, StringComparison.Ordinal);
+            Assert.Contains("Codex Home 请求快照", report, StringComparison.Ordinal);
+            var contextReport = CopilotContextDiagnostics.Format(new CopilotContextDiagnosticSnapshot
+            {
+                AgentContextEnabled = true,
+                ProjectInstructionUsesCodexConfig = true,
+                ProjectInstructionConfigSourceLabel =
+                    hostContext.ProjectInstructionDiscoveryOptions.ConfigSourceLabel,
+                ProjectInstructionRootMarkers =
+                    hostContext.ProjectInstructionDiscoveryOptions.ProjectRootMarkers,
+                ProjectInstructionHasRootMarkersOverride = true,
+                TrustedProjectRootPaths = plan.TrustedProjectRootPaths,
+            });
+            Assert.Contains(
+                "项目根标记：.workspace、.hg（Codex Home 请求快照）",
+                contextReport,
+                StringComparison.Ordinal);
+        }
+        finally
+        {
+            Directory.Delete(globalRoot, recursive: true);
+            Directory.Delete(projectRoot, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void EmptyProjectRootMarkersKeepTheCurrentWorkingDirectoryAsRoot()
+    {
+        string globalRoot = CreateTemporaryDirectory();
+        string projectRoot = CreateTemporaryDirectory();
+        try
+        {
+            File.WriteAllText(Path.Combine(globalRoot, "config.toml"), "project_root_markers = []");
+            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
+            string sourceDirectory = Path.Combine(projectRoot, "src", "feature");
+            Directory.CreateDirectory(sourceDirectory);
+            string activeDocument = Path.Combine(sourceDirectory, "Feature.cs");
+            File.WriteAllText(activeDocument, "namespace Feature;");
+            var hostContext = new CopilotAgentHostContextSnapshot(
+                activeDocument,
+                solutionDirectoryPath: null,
+                attachments: null,
+                liveContext: null,
+                conversationHistory: null,
+                additionalReadRootPaths: null,
+                globalInstructionRootPath: globalRoot);
+
+            Assert.Equal(sourceDirectory, hostContext.PrimaryTrustedProjectRootPath, ignoreCase: true);
+            Assert.Empty(hostContext.ProjectInstructionDiscoveryOptions.ProjectRootMarkers);
+            Assert.True(hostContext.ProjectInstructionDiscoveryOptions.HasProjectRootMarkersOverride);
+            Assert.Equal(
+                CopilotProjectInstructionConfigSources.CodexHome,
+                hostContext.ProjectInstructionDiscoveryOptions.ConfigSources);
+            var report = CopilotProjectInstructionDiagnostics.Format(
+                new CopilotProjectInstructionSnapshot(
+                    sourceDirectory,
+                    activeDocument,
+                    globalRoot,
+                    hostContext.ProjectInstructionDiscoveryOptions,
+                    Array.Empty<CopilotProjectInstructionDocument>()),
+                hasActiveAgentRun: false);
+            Assert.Contains(
+                "项目根标记：[]（Codex Home 请求快照；不向上搜索）",
+                report,
+                StringComparison.Ordinal);
+        }
+        finally
+        {
+            Directory.Delete(globalRoot, recursive: true);
+            Directory.Delete(projectRoot, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void ProjectConfigCannotChangeTheMarkersUsedToDiscoverItsOwnRoot()
+    {
+        string globalRoot = CreateTemporaryDirectory();
+        string projectRoot = CreateTemporaryDirectory();
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
+            string projectConfigDirectory = Path.Combine(projectRoot, ".codex");
+            Directory.CreateDirectory(projectConfigDirectory);
+            File.WriteAllText(
+                Path.Combine(projectConfigDirectory, "config.toml"),
+                "project_root_markers = [\".workspace\"]");
+            string sourceDirectory = Path.Combine(projectRoot, "src", "feature");
+            Directory.CreateDirectory(sourceDirectory);
+            string activeDocument = Path.Combine(sourceDirectory, "Feature.cs");
+            File.WriteAllText(activeDocument, "namespace Feature;");
+
+            var hostContext = new CopilotAgentHostContextSnapshot(
+                activeDocument,
+                solutionDirectoryPath: null,
+                attachments: null,
+                liveContext: null,
+                conversationHistory: null,
+                additionalReadRootPaths: null,
+                globalInstructionRootPath: globalRoot);
+
+            Assert.Equal(projectRoot, hostContext.PrimaryTrustedProjectRootPath, ignoreCase: true);
+            Assert.Equal([".git"], hostContext.ProjectInstructionDiscoveryOptions.ProjectRootMarkers);
+            Assert.False(hostContext.ProjectInstructionDiscoveryOptions.HasProjectRootMarkersOverride);
+            Assert.Equal(
+                CopilotProjectInstructionConfigSources.None,
+                hostContext.ProjectInstructionDiscoveryOptions.ConfigSources);
+        }
+        finally
+        {
+            Directory.Delete(globalRoot, recursive: true);
+            Directory.Delete(projectRoot, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void InvalidProjectRootMarkersFallBackToTheDefaultGitMarker()
+    {
+        string globalRoot = CreateTemporaryDirectory();
+        string projectRoot = CreateTemporaryDirectory();
+        try
+        {
+            File.WriteAllText(
+                Path.Combine(globalRoot, "config.toml"),
+                "project_root_markers = [\"../escape\"]");
+            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
+            string sourceDirectory = Path.Combine(projectRoot, "src", "feature");
+            Directory.CreateDirectory(sourceDirectory);
+            string activeDocument = Path.Combine(sourceDirectory, "Feature.cs");
+            File.WriteAllText(activeDocument, "namespace Feature;");
+
+            var hostContext = new CopilotAgentHostContextSnapshot(
+                activeDocument,
+                solutionDirectoryPath: null,
+                attachments: null,
+                liveContext: null,
+                conversationHistory: null,
+                additionalReadRootPaths: null,
+                globalInstructionRootPath: globalRoot);
+
+            Assert.Equal(projectRoot, hostContext.PrimaryTrustedProjectRootPath, ignoreCase: true);
+            Assert.Equal([".git"], hostContext.ProjectInstructionDiscoveryOptions.ProjectRootMarkers);
+            Assert.False(hostContext.ProjectInstructionDiscoveryOptions.HasProjectRootMarkersOverride);
+            Assert.False(hostContext.ProjectInstructionDiscoveryOptions.UsesCodexConfig);
+        }
+        finally
+        {
+            Directory.Delete(globalRoot, recursive: true);
+            Directory.Delete(projectRoot, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void HostContextKeepsTheProjectRootMarkerConfigTakenAtSubmission()
+    {
+        string globalRoot = CreateTemporaryDirectory();
+        string projectRoot = CreateTemporaryDirectory();
+        try
+        {
+            string globalConfigPath = Path.Combine(globalRoot, "config.toml");
+            File.WriteAllText(globalConfigPath, "project_root_markers = [\".workspace\"]");
+            File.WriteAllText(Path.Combine(projectRoot, ".workspace"), string.Empty);
+            string sourceDirectory = Path.Combine(projectRoot, "src", "feature");
+            Directory.CreateDirectory(sourceDirectory);
+            string activeDocument = Path.Combine(sourceDirectory, "Feature.cs");
+            File.WriteAllText(activeDocument, "namespace Feature;");
+            var submittedContext = new CopilotAgentHostContextSnapshot(
+                activeDocument,
+                solutionDirectoryPath: null,
+                attachments: null,
+                liveContext: null,
+                conversationHistory: null,
+                additionalReadRootPaths: null,
+                globalInstructionRootPath: globalRoot);
+
+            File.WriteAllText(globalConfigPath, "project_root_markers = []");
+
+            var submittedPlan = CopilotAgentRequestFactory.Prepare(
+                $"Inspect the local implementation in {activeDocument}",
+                CopilotAgentMode.Auto,
+                submittedContext);
+            var refreshedContext = new CopilotAgentHostContextSnapshot(
+                activeDocument,
+                solutionDirectoryPath: null,
+                attachments: null,
+                liveContext: null,
+                conversationHistory: null,
+                additionalReadRootPaths: null,
+                globalInstructionRootPath: globalRoot);
+            var refreshedPlan = CopilotAgentRequestFactory.Prepare(
+                $"Inspect the local implementation in {activeDocument}",
+                CopilotAgentMode.Auto,
+                refreshedContext);
+
+            Assert.Equal([".workspace"], submittedContext.ProjectInstructionDiscoveryOptions.ProjectRootMarkers);
+            Assert.Equal(projectRoot, submittedContext.PrimaryTrustedProjectRootPath, ignoreCase: true);
+            Assert.Equal([projectRoot], submittedPlan.TrustedProjectRootPaths, StringComparer.OrdinalIgnoreCase);
+            Assert.Empty(refreshedContext.ProjectInstructionDiscoveryOptions.ProjectRootMarkers);
+            Assert.Equal(sourceDirectory, refreshedContext.PrimaryTrustedProjectRootPath, ignoreCase: true);
+            Assert.Equal([sourceDirectory], refreshedPlan.TrustedProjectRootPaths, StringComparer.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            Directory.Delete(globalRoot, recursive: true);
+            Directory.Delete(projectRoot, recursive: true);
+        }
+    }
+
+    [Fact]
     public void RequestFactoryKeepsTheInstructionConfigSnapshotTakenAtSubmission()
     {
         string globalRoot = CreateTemporaryDirectory();

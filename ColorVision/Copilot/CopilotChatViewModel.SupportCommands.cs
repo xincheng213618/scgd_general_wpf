@@ -422,6 +422,8 @@ namespace ColorVision.Copilot
                 ProjectInstructionConfigSourceLabel = projectInstructionOptions.ConfigSourceLabel,
                 ProjectInstructionProjectTrustLabel = projectInstructionOptions.ProjectTrustLabel,
                 ProjectInstructionFallbackFileNames = projectInstructionOptions.FallbackFileNames,
+                ProjectInstructionRootMarkers = projectInstructionOptions.ProjectRootMarkers,
+                ProjectInstructionHasRootMarkersOverride = projectInstructionOptions.HasProjectRootMarkersOverride,
                 TrustedProjectRootPaths = trustedProjectRoots,
                 ProjectInstructions = projectInstructions,
                 RecordedSkillRuns = skillUsage?.RecordedRuns ?? 0,

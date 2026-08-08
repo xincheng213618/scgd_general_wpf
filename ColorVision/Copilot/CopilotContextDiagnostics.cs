@@ -91,6 +91,11 @@ namespace ColorVision.Copilot
 
         public IReadOnlyList<string> ProjectInstructionFallbackFileNames { get; init; } = Array.Empty<string>();
 
+        public IReadOnlyList<string> ProjectInstructionRootMarkers { get; init; } =
+            CopilotProjectInstructionDiscoveryConfig.DefaultProjectRootMarkers;
+
+        public bool ProjectInstructionHasRootMarkersOverride { get; init; }
+
         public IReadOnlyList<string> TrustedProjectRootPaths { get; init; } = Array.Empty<string>();
 
         public IReadOnlyList<CopilotProjectInstructionDocument> ProjectInstructions { get; init; } = Array.Empty<CopilotProjectInstructionDocument>();
@@ -271,6 +276,20 @@ namespace ColorVision.Copilot
             {
                 builder.Append("项目配置信任：")
                     .AppendLine(snapshot.ProjectInstructionProjectTrustLabel);
+            }
+            builder.Append("项目根标记：");
+            if (snapshot.ProjectInstructionRootMarkers.Count == 0)
+            {
+                builder.AppendLine(snapshot.ProjectInstructionHasRootMarkersOverride
+                    ? "[]（Codex Home 请求快照；不向上搜索）"
+                    : "[]（默认；不向上搜索）");
+            }
+            else
+            {
+                builder.Append(string.Join("、", snapshot.ProjectInstructionRootMarkers))
+                    .AppendLine(snapshot.ProjectInstructionHasRootMarkersOverride
+                        ? "（Codex Home 请求快照）"
+                        : "（默认）");
             }
             AppendTrustedProjectRoots(builder, snapshot.TrustedProjectRootPaths);
             AppendProjectInstructionDetails(builder, snapshot.ProjectInstructions);

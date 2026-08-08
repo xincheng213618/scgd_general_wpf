@@ -31,9 +31,15 @@ namespace ColorVision.Copilot
         CopilotProjectInstructionConfigSources ConfigSources = CopilotProjectInstructionConfigSources.None,
         CopilotCodexProjectTrustLevel ProjectTrustLevel = CopilotCodexProjectTrustLevel.Unspecified)
     {
+        public IReadOnlyList<string> ProjectRootMarkers { get; init; } =
+            CopilotProjectInstructionDiscoveryConfig.DefaultProjectRootMarkers;
+
+        public bool HasProjectRootMarkersOverride { get; init; }
+
         public bool UsesCodexConfig => ConfigSources != CopilotProjectInstructionConfigSources.None
             || HasMaximumBytesOverride
-            || HasFallbackFileNamesOverride;
+            || HasFallbackFileNamesOverride
+            || HasProjectRootMarkersOverride;
 
         public string ConfigSourceLabel => ConfigSources switch
         {
@@ -58,28 +64,40 @@ namespace ColorVision.Copilot
         };
     }
 
+    internal sealed record CopilotCodexHomeConfigSnapshot(
+        string Source,
+        CopilotProjectInstructionDiscoveryOptions Options);
+
     internal static class CopilotProjectInstructionDiscoveryConfig
     {
         internal const int DefaultMaximumBytes = 32 * 1024;
         internal const int MinimumMaximumBytes = 0;
         internal const int MaximumMaximumBytes = 64 * 1024;
+        internal static IReadOnlyList<string> DefaultProjectRootMarkers { get; } =
+            Array.AsReadOnly([".git"]);
 
         private const int MaximumConfigBytes = 256 * 1024;
         private const int MaximumFallbackFileNames = 16;
         private const int MaximumFallbackFileNameCharacters = 128;
+        internal const int MaximumProjectRootMarkers = 16;
+        private const int MaximumProjectRootMarkerCharacters = 128;
         private const int MaximumLogicalValueLines = 64;
         private const string ConfigFileName = "config.toml";
         private const string MaximumBytesKey = "project_doc_max_bytes";
         private const string FallbackFileNamesKey = "project_doc_fallback_filenames";
+        private const string ProjectRootMarkersKey = "project_root_markers";
         private const string ProjectsTablePrefix = "projects.";
         private const string TrustLevelKey = "trust_level";
 
         public static CopilotProjectInstructionDiscoveryOptions Load(string? globalInstructionRootPath)
-            => Load(globalInstructionRootPath, trustedProjectRootPath: null);
+            => LoadCodexHome(globalInstructionRootPath).Options;
 
         public static CopilotProjectInstructionDiscoveryOptions Load(
             string? globalInstructionRootPath,
             string? trustedProjectRootPath)
+            => LoadTrustedProjectLayer(LoadCodexHome(globalInstructionRootPath), trustedProjectRootPath);
+
+        internal static CopilotCodexHomeConfigSnapshot LoadCodexHome(string? globalInstructionRootPath)
         {
             var options = CreateDefault();
             var normalizedRoot = CopilotAgentProjectInstructions.NormalizeGlobalInstructionRootPath(globalInstructionRootPath);
@@ -94,14 +112,24 @@ namespace ColorVision.Copilot
                 options = ApplyLayer(
                     options,
                     globalLayer,
-                    CopilotProjectInstructionConfigSources.CodexHome);
+                    CopilotProjectInstructionConfigSources.CodexHome,
+                    includeProjectRootMarkers: true);
             }
 
+            return new CopilotCodexHomeConfigSnapshot(globalSource, options);
+        }
+
+        internal static CopilotProjectInstructionDiscoveryOptions LoadTrustedProjectLayer(
+            CopilotCodexHomeConfigSnapshot codexHome,
+            string? trustedProjectRootPath)
+        {
+            ArgumentNullException.ThrowIfNull(codexHome);
+            var options = codexHome.Options;
             var normalizedProjectRoot = NormalizeTrustedProjectRootPath(trustedProjectRootPath);
             if (normalizedProjectRoot.Length == 0)
                 return options;
 
-            var projectTrustLevel = ResolveProjectTrustLevel(globalSource, normalizedProjectRoot);
+            var projectTrustLevel = ResolveProjectTrustLevel(codexHome.Source, normalizedProjectRoot);
             options = options with { ProjectTrustLevel = projectTrustLevel };
             if (options.AllowsProjectCodexConfig
                 && TryReadConfigSource(
@@ -113,7 +141,8 @@ namespace ColorVision.Copilot
                 options = ApplyLayer(
                     options,
                     projectLayer,
-                    CopilotProjectInstructionConfigSources.TrustedProject);
+                    CopilotProjectInstructionConfigSources.TrustedProject,
+                    includeProjectRootMarkers: false);
             }
 
             return options;
@@ -129,15 +158,31 @@ namespace ColorVision.Copilot
         private static CopilotProjectInstructionDiscoveryOptions ApplyLayer(
             CopilotProjectInstructionDiscoveryOptions current,
             ProjectInstructionConfigLayer layer,
-            CopilotProjectInstructionConfigSources source)
+            CopilotProjectInstructionConfigSources source,
+            bool includeProjectRootMarkers)
         {
-            return new CopilotProjectInstructionDiscoveryOptions(
-                layer.HasMaximumBytesOverride ? layer.MaximumBytes : current.MaximumBytes,
-                layer.HasFallbackFileNamesOverride ? layer.FallbackFileNames : current.FallbackFileNames,
-                current.HasMaximumBytesOverride || layer.HasMaximumBytesOverride,
-                current.HasFallbackFileNamesOverride || layer.HasFallbackFileNamesOverride,
-                current.ConfigSources | source,
-                current.ProjectTrustLevel);
+            var hasProjectRootMarkersOverride = includeProjectRootMarkers
+                && layer.HasProjectRootMarkersOverride;
+            if (!layer.HasMaximumBytesOverride
+                && !layer.HasFallbackFileNamesOverride
+                && !hasProjectRootMarkersOverride)
+            {
+                return current;
+            }
+
+            return current with
+            {
+                MaximumBytes = layer.HasMaximumBytesOverride ? layer.MaximumBytes : current.MaximumBytes,
+                FallbackFileNames = layer.HasFallbackFileNamesOverride ? layer.FallbackFileNames : current.FallbackFileNames,
+                HasMaximumBytesOverride = current.HasMaximumBytesOverride || layer.HasMaximumBytesOverride,
+                HasFallbackFileNamesOverride = current.HasFallbackFileNamesOverride || layer.HasFallbackFileNamesOverride,
+                ConfigSources = current.ConfigSources | source,
+                ProjectRootMarkers = hasProjectRootMarkersOverride
+                    ? layer.ProjectRootMarkers
+                    : current.ProjectRootMarkers,
+                HasProjectRootMarkersOverride = current.HasProjectRootMarkersOverride
+                    || hasProjectRootMarkersOverride,
+            };
         }
 
         private static bool TryReadConfigSource(
@@ -185,8 +230,10 @@ namespace ColorVision.Copilot
         {
             var maximumBytes = DefaultMaximumBytes;
             var fallbackFileNames = Array.Empty<string>();
+            var projectRootMarkers = Array.Empty<string>();
             var hasMaximumBytesOverride = false;
             var hasFallbackFileNamesOverride = false;
+            var hasProjectRootMarkersOverride = false;
             foreach (var assignment in EnumerateTopLevelAssignments(source))
             {
                 if (string.Equals(assignment.Key, MaximumBytesKey, StringComparison.Ordinal))
@@ -198,22 +245,35 @@ namespace ColorVision.Copilot
                     continue;
                 }
 
-                if (!string.Equals(assignment.Key, FallbackFileNamesKey, StringComparison.Ordinal)
-                    || !TryParseFallbackFileNames(assignment.Value, out var configuredFallbackFileNames))
+                if (string.Equals(assignment.Key, FallbackFileNamesKey, StringComparison.Ordinal))
+                {
+                    if (!TryParseFallbackFileNames(assignment.Value, out var configuredFallbackFileNames))
+                        continue;
+                    fallbackFileNames = configuredFallbackFileNames;
+                    hasFallbackFileNamesOverride = true;
+                    continue;
+                }
+
+                if (!string.Equals(assignment.Key, ProjectRootMarkersKey, StringComparison.Ordinal)
+                    || !TryParseProjectRootMarkers(assignment.Value, out var configuredProjectRootMarkers))
                 {
                     continue;
                 }
 
-                fallbackFileNames = configuredFallbackFileNames;
-                hasFallbackFileNamesOverride = true;
+                projectRootMarkers = configuredProjectRootMarkers;
+                hasProjectRootMarkersOverride = true;
             }
 
             layer = new ProjectInstructionConfigLayer(
                 maximumBytes,
                 fallbackFileNames,
+                projectRootMarkers,
                 hasMaximumBytesOverride,
-                hasFallbackFileNamesOverride);
-            return hasMaximumBytesOverride || hasFallbackFileNamesOverride;
+                hasFallbackFileNamesOverride,
+                hasProjectRootMarkersOverride);
+            return hasMaximumBytesOverride
+                || hasFallbackFileNamesOverride
+                || hasProjectRootMarkersOverride;
         }
 
         private static CopilotCodexProjectTrustLevel ResolveProjectTrustLevel(
@@ -351,13 +411,15 @@ namespace ColorVision.Copilot
                     continue;
                 var key = line[..equalsIndex].Trim();
                 if (!string.Equals(key, MaximumBytesKey, StringComparison.Ordinal)
-                    && !string.Equals(key, FallbackFileNamesKey, StringComparison.Ordinal))
+                    && !string.Equals(key, FallbackFileNamesKey, StringComparison.Ordinal)
+                    && !string.Equals(key, ProjectRootMarkersKey, StringComparison.Ordinal))
                 {
                     continue;
                 }
 
                 var value = line[(equalsIndex + 1)..].Trim();
-                if (string.Equals(key, FallbackFileNamesKey, StringComparison.Ordinal)
+                if ((string.Equals(key, FallbackFileNamesKey, StringComparison.Ordinal)
+                        || string.Equals(key, ProjectRootMarkersKey, StringComparison.Ordinal))
                     && value.StartsWith('[')
                     && !HasClosedArray(value))
                 {
@@ -525,6 +587,51 @@ namespace ColorVision.Copilot
             return false;
         }
 
+        private static bool TryParseProjectRootMarkers(string value, out string[] projectRootMarkers)
+        {
+            projectRootMarkers = Array.Empty<string>();
+            var index = 0;
+            SkipWhitespace(value, ref index);
+            if (!TryConsume(value, ref index, '['))
+                return false;
+
+            var results = new List<string>();
+            var expectValue = true;
+            while (index < value.Length)
+            {
+                SkipWhitespace(value, ref index);
+                if (TryConsume(value, ref index, ']'))
+                {
+                    SkipWhitespace(value, ref index);
+                    if (index != value.Length)
+                        return false;
+                    projectRootMarkers = results.ToArray();
+                    return true;
+                }
+                if (!expectValue
+                    || !TryReadTomlString(value, ref index, out var candidate)
+                    || results.Count >= MaximumProjectRootMarkers)
+                {
+                    return false;
+                }
+
+                var normalized = NormalizeProjectRootMarker(candidate);
+                if (normalized.Length == 0)
+                    return false;
+                if (!results.Contains(normalized, StringComparer.OrdinalIgnoreCase))
+                    results.Add(normalized);
+
+                SkipWhitespace(value, ref index);
+                if (TryConsume(value, ref index, ','))
+                {
+                    expectValue = true;
+                    continue;
+                }
+                expectValue = false;
+            }
+            return false;
+        }
+
         private static bool TryReadTomlString(string value, ref int index, out string result)
         {
             result = string.Empty;
@@ -603,6 +710,22 @@ namespace ColorVision.Copilot
             return normalized;
         }
 
+        internal static string NormalizeProjectRootMarker(string? value)
+        {
+            var normalized = (value ?? string.Empty).Trim();
+            if (normalized.Length == 0
+                || normalized.Length > MaximumProjectRootMarkerCharacters
+                || normalized is "." or ".."
+                || Path.IsPathRooted(normalized)
+                || normalized.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0
+                || normalized.Contains(Path.DirectorySeparatorChar)
+                || normalized.Contains(Path.AltDirectorySeparatorChar))
+            {
+                return string.Empty;
+            }
+            return normalized;
+        }
+
         private static void SkipWhitespace(string value, ref int index)
         {
             while (index < value.Length && char.IsWhiteSpace(value[index]))
@@ -622,7 +745,9 @@ namespace ColorVision.Copilot
         private sealed record ProjectInstructionConfigLayer(
             int MaximumBytes,
             IReadOnlyList<string> FallbackFileNames,
+            IReadOnlyList<string> ProjectRootMarkers,
             bool HasMaximumBytesOverride,
-            bool HasFallbackFileNamesOverride);
+            bool HasFallbackFileNamesOverride,
+            bool HasProjectRootMarkersOverride);
     }
 }

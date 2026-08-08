@@ -150,6 +150,20 @@ namespace ColorVision.Copilot
                 builder.Append("项目配置信任：")
                     .AppendLine(effective.ProjectTrustLabel);
             }
+            builder.Append("项目根标记：");
+            if (effective.ProjectRootMarkers.Count == 0)
+            {
+                builder.AppendLine(effective.HasProjectRootMarkersOverride
+                    ? "[]（Codex Home 请求快照；不向上搜索）"
+                    : "[]（默认；不向上搜索）");
+            }
+            else
+            {
+                builder.Append(string.Join("、", effective.ProjectRootMarkers))
+                    .AppendLine(effective.HasProjectRootMarkersOverride
+                        ? "（Codex Home 请求快照）"
+                        : "（默认）");
+            }
         }
 
         private static void AppendTarget(

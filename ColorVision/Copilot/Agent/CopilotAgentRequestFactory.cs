@@ -87,12 +87,25 @@ namespace ColorVision.Copilot
                 : new CopilotConversationHistorySnapshot(conversationHistory.ModelMessages, conversationHistory.VisibleMessages);
             AdditionalReadRootPaths = CopilotAdditionalDirectoryCommand.NormalizeStoredPaths(additionalReadRootPaths);
             GlobalInstructionRootPath = CopilotAgentProjectInstructions.NormalizeGlobalInstructionRootPath(globalInstructionRootPath);
-            PrimaryTrustedProjectRootPath = CopilotAgentRequestFactory.ResolvePrimaryTrustedProjectRootPath(
-                SolutionDirectoryPath,
-                ActiveDocumentPath);
-            ProjectInstructionDiscoveryOptions = loadCodexConfigLayers
-                ? CopilotProjectInstructionDiscoveryConfig.Load(GlobalInstructionRootPath, PrimaryTrustedProjectRootPath)
-                : CopilotProjectInstructionDiscoveryConfig.CreateDefault();
+            if (loadCodexConfigLayers)
+            {
+                var codexHome = CopilotProjectInstructionDiscoveryConfig.LoadCodexHome(GlobalInstructionRootPath);
+                PrimaryTrustedProjectRootPath = CopilotAgentRequestFactory.ResolvePrimaryTrustedProjectRootPath(
+                    SolutionDirectoryPath,
+                    ActiveDocumentPath,
+                    codexHome.Options.ProjectRootMarkers);
+                ProjectInstructionDiscoveryOptions = CopilotProjectInstructionDiscoveryConfig.LoadTrustedProjectLayer(
+                    codexHome,
+                    PrimaryTrustedProjectRootPath);
+            }
+            else
+            {
+                ProjectInstructionDiscoveryOptions = CopilotProjectInstructionDiscoveryConfig.CreateDefault();
+                PrimaryTrustedProjectRootPath = CopilotAgentRequestFactory.ResolvePrimaryTrustedProjectRootPath(
+                    SolutionDirectoryPath,
+                    ActiveDocumentPath,
+                    ProjectInstructionDiscoveryOptions.ProjectRootMarkers);
+            }
         }
 
         private static CopilotLiveContext? CloneLiveContext(CopilotLiveContext? source)
@@ -212,8 +225,6 @@ namespace ColorVision.Copilot
 
     public static class CopilotAgentRequestFactory
     {
-        private const string DefaultProjectRootMarker = ".git";
-
         public static CopilotAgentRequestPlan Prepare(
             string? userText,
             CopilotAgentMode mode,
@@ -394,6 +405,15 @@ namespace ColorVision.Copilot
         internal static string ResolvePrimaryTrustedProjectRootPath(
             string? solutionDirectoryPath,
             string? activeDocumentPath)
+            => ResolvePrimaryTrustedProjectRootPath(
+                solutionDirectoryPath,
+                activeDocumentPath,
+                CopilotProjectInstructionDiscoveryConfig.DefaultProjectRootMarkers);
+
+        internal static string ResolvePrimaryTrustedProjectRootPath(
+            string? solutionDirectoryPath,
+            string? activeDocumentPath,
+            IEnumerable<string>? projectRootMarkers)
         {
             var roots = new List<string>();
             AddSearchCandidate(roots, solutionDirectoryPath);
@@ -407,14 +427,26 @@ namespace ColorVision.Copilot
             if (CopilotWorkspaceSearchSupport.HasReparsePointInPath(workingDirectory))
                 return workingDirectory;
 
+            var normalizedMarkers = (projectRootMarkers ?? Array.Empty<string>())
+                .Select(CopilotProjectInstructionDiscoveryConfig.NormalizeProjectRootMarker)
+                .Where(marker => marker.Length > 0)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Take(CopilotProjectInstructionDiscoveryConfig.MaximumProjectRootMarkers)
+                .ToArray();
+            if (normalizedMarkers.Length == 0)
+                return workingDirectory;
+
             try
             {
                 var current = new DirectoryInfo(workingDirectory);
                 while (current != null)
                 {
-                    var markerPath = Path.Combine(current.FullName, DefaultProjectRootMarker);
-                    if (Directory.Exists(markerPath) || File.Exists(markerPath))
-                        return Path.TrimEndingDirectorySeparator(current.FullName);
+                    foreach (var marker in normalizedMarkers)
+                    {
+                        var markerPath = Path.Combine(current.FullName, marker);
+                        if (Directory.Exists(markerPath) || File.Exists(markerPath))
+                            return Path.TrimEndingDirectorySeparator(current.FullName);
+                    }
                     current = current.Parent;
                 }
             }
