@@ -102,6 +102,9 @@ namespace ColorVision.Copilot
             CopilotAgentRequest request,
             ChatOptions options)
         {
+            if (!CopilotOpenAiRequestPolicy.UsesResponsesApi(request.Profile))
+                return;
+
             var hasEffortOverride = request.CodexReasoningEffort !=
                 CopilotCodexReasoningEffort.Unspecified;
             var hasSummaryOverride = request.CodexReasoningSummary !=
@@ -111,12 +114,13 @@ namespace ColorVision.Copilot
                 request.CodexServiceTier);
             var hasVerbosityOverride = request.CodexModelVerbosity !=
                 CopilotCodexModelVerbosity.Unspecified;
-            if ((!hasEffortOverride
+            var safetyIdentifier = CopilotOpenAiSafetyIdentifier.GetCurrent();
+            if (!hasEffortOverride
                     && !hasSummaryOverride
                     && !hasReasoningSupportOverride
                     && serviceTier.Length == 0
-                    && !hasVerbosityOverride)
-                || !CopilotOpenAiRequestPolicy.UsesResponsesApi(request.Profile))
+                    && !hasVerbosityOverride
+                    && safetyIdentifier.Length == 0)
             {
                 return;
             }
@@ -125,17 +129,21 @@ namespace ColorVision.Copilot
                 options.Reasoning = null;
             options.RawRepresentationFactory = _ => BuildCodexResponseOptions(
                 request,
-                serviceTier);
+                serviceTier,
+                safetyIdentifier);
         }
 
         private static CreateResponseOptions BuildCodexResponseOptions(
             CopilotAgentRequest request,
-            string serviceTier)
+            string serviceTier,
+            string safetyIdentifier)
         {
             var responseOptions = new CreateResponseOptions
             {
                 ReasoningOptions = BuildCodexResponseReasoningOptions(request),
             };
+            if (safetyIdentifier.Length > 0)
+                responseOptions.Patch.Set("$.safety_identifier"u8, safetyIdentifier);
             if (serviceTier.Length > 0)
                 responseOptions.ServiceTier = new ResponseServiceTier(serviceTier);
             if (request.CodexModelVerbosity != CopilotCodexModelVerbosity.Unspecified)

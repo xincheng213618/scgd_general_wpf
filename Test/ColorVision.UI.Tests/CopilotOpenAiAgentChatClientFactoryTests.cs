@@ -108,6 +108,48 @@ public sealed class CopilotOpenAiAgentChatClientFactoryTests
     }
 
     [Fact]
+    public async Task OfficialOpenAiAgentAddsAStableHashedSafetyIdentifier()
+    {
+        using var handler = new CapturingHandler(
+            HttpStatusCode.OK,
+            TextResponseStream,
+            "text/event-stream");
+        using var httpClient = new HttpClient(handler);
+        var profile = CreateProfile(
+            CopilotVendorType.OpenAI,
+            "https://api.openai.com/v1",
+            "gpt-5.6");
+        using var client = CopilotOpenAiAgentChatClientFactory.Create(profile, httpClient);
+        var request = new CopilotAgentRequest { Profile = profile };
+
+        await client.GetStreamingResponseAsync(
+                [new ChatMessage(ChatRole.User, "Use the official Responses contract.")],
+                CopilotMicrosoftAgentFrameworkRuntime.BuildChatOptions(request, []))
+            .ToChatResponseAsync();
+
+        using var payload = JsonDocument.Parse(handler.LastPayload);
+        var safetyIdentifier = payload.RootElement
+            .GetProperty("safety_identifier")
+            .GetString();
+        Assert.NotNull(safetyIdentifier);
+        Assert.Matches("^[0-9a-f]{64}$", safetyIdentifier);
+        Assert.Equal(CopilotOpenAiSafetyIdentifier.GetCurrent(), safetyIdentifier);
+    }
+
+    [Fact]
+    public void SafetyIdentifierHashesAStableNormalizedAccountKey()
+    {
+        var first = CopilotOpenAiSafetyIdentifier.Create(@"DOMAIN\Example.User");
+        var second = CopilotOpenAiSafetyIdentifier.Create(@"domain\example.user");
+
+        Assert.Equal(first, second);
+        Assert.Matches("^[0-9a-f]{64}$", first);
+        Assert.DoesNotContain("example", first, StringComparison.OrdinalIgnoreCase);
+        Assert.NotEqual(first, CopilotOpenAiSafetyIdentifier.Create(@"DOMAIN\Other.User"));
+        Assert.Equal(string.Empty, CopilotOpenAiSafetyIdentifier.Create(" "));
+    }
+
+    [Fact]
     public async Task OfficialOpenAiAgentMapsResponsesFunctionCallsForHarnessExecution()
     {
         using var handler = new CapturingHandler(
@@ -413,6 +455,7 @@ public sealed class CopilotOpenAiAgentChatClientFactoryTests
             handler.LastRequestUri);
         using var payload = JsonDocument.Parse(handler.LastPayload);
         Assert.False(payload.RootElement.TryGetProperty("store", out _));
+        Assert.False(payload.RootElement.TryGetProperty("safety_identifier", out _));
     }
 
     private static ChatOptions CreateToolOptions()
