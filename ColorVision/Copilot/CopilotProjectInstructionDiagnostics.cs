@@ -349,6 +349,10 @@ namespace ColorVision.Copilot
             {
                 builder.AppendLine(" · 未配置；子代理继承父请求推理强度");
             }
+            var customSubagentDiagnostics = CopilotCodexCustomSubagentDiagnostics.Format(
+                effective.CustomSubagents);
+            if (customSubagentDiagnostics.Length > 0)
+                builder.AppendLine(customSubagentDiagnostics);
             if (effective.HasModelContextWindowOverride)
             {
                 builder.Append("Codex model_context_window：")

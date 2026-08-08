@@ -416,6 +416,57 @@ public sealed class CopilotCodexCustomSubagentsTests
         Assert.Contains("different agent/model/reasoning profile", resumed.ErrorMessage, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void LocalDiagnosticsExposeSafeAgentMetadataWithoutInstructionBodiesOrPaths()
+    {
+        var privatePath = @"C:\private\.codex\agents\reviewer.toml";
+        var options = CopilotProjectInstructionDiscoveryConfig.CreateDefault() with
+        {
+            CustomSubagents =
+            [
+                new CopilotCodexCustomSubagentDefinition
+                {
+                    Name = "reviewer",
+                    Description = "Review bounded workspace evidence.",
+                    DeveloperInstructions = "PRIVATE-INSTRUCTION-BODY",
+                    Model = "review-model",
+                    ReasoningEffort = CopilotCodexReasoningEffort.High,
+                    Source = CopilotProjectInstructionConfigSources.TrustedProject,
+                    SourceFilePath = privatePath,
+                    HasIgnoredSettings = true,
+                },
+            ],
+        };
+
+        var memoryReport = CopilotProjectInstructionDiagnostics.Format(
+            new CopilotProjectInstructionSnapshot(
+                string.Empty,
+                string.Empty,
+                string.Empty,
+                options,
+                Array.Empty<CopilotProjectInstructionDocument>()),
+            hasActiveAgentRun: false);
+        var debugReport = CopilotEffectiveConfigDiagnostics.Format(
+            new CopilotEffectiveConfigDiagnosticContext
+            {
+                Config = new CopilotConfig(),
+                State = new CopilotChatState(),
+                ComposerMode = CopilotAgentMode.Code,
+                CodexConfigOptions = options,
+            });
+
+        foreach (var report in new[] { memoryReport, debugReport })
+        {
+            Assert.Contains("Codex custom agents：1", report, StringComparison.Ordinal);
+            Assert.Contains("reviewer · Review bounded workspace evidence.", report, StringComparison.Ordinal);
+            Assert.Contains("来源 受信项目", report, StringComparison.Ordinal);
+            Assert.Contains("model review-model · reasoning high", report, StringComparison.Ordinal);
+            Assert.Contains("未支持设置已忽略", report, StringComparison.Ordinal);
+            Assert.DoesNotContain("PRIVATE-INSTRUCTION-BODY", report, StringComparison.Ordinal);
+            Assert.DoesNotContain(privatePath, report, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
     private static CopilotAgentRequest CreateParentRequest(
         params CopilotCodexCustomSubagentDefinition[] definitions) => new()
         {

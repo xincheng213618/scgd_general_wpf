@@ -295,4 +295,57 @@ namespace ColorVision.Copilot
                     && string.Equals(definition.Name, normalizedName, StringComparison.OrdinalIgnoreCase));
         }
     }
+
+    internal static class CopilotCodexCustomSubagentDiagnostics
+    {
+        public static string Format(
+            IReadOnlyList<CopilotCodexCustomSubagentDefinition>? definitions)
+        {
+            var available = (definitions ?? Array.Empty<CopilotCodexCustomSubagentDefinition>())
+                .Where(definition => definition != null)
+                .Take(24)
+                .ToArray();
+            if (available.Length == 0)
+                return string.Empty;
+
+            var builder = new StringBuilder()
+                .Append("Codex custom agents：")
+                .Append(available.Length)
+                .AppendLine(" · 提交快照；只附加指令与运行默认值，不扩大 Explore/Scout 的只读工具和权限边界");
+            foreach (var definition in available)
+            {
+                builder.Append("  - ")
+                    .Append(definition.Name)
+                    .Append(" · ")
+                    .Append(CollapseDiagnosticText(definition.Description, 160))
+                    .Append(" · 来源 ")
+                    .Append(definition.Source == CopilotProjectInstructionConfigSources.TrustedProject
+                        ? "受信项目"
+                        : "Codex Home")
+                    .Append(" · model ")
+                    .Append(string.IsNullOrWhiteSpace(definition.Model) ? "inherited" : definition.Model)
+                    .Append(" · reasoning ")
+                    .Append(definition.ReasoningEffort == CopilotCodexReasoningEffort.Unspecified
+                        ? "inherited"
+                        : CopilotCodexReasoningEffortSelection.GetConfigToken(definition.ReasoningEffort));
+                if (definition.HasIgnoredSettings)
+                    builder.Append(" · 未支持设置已忽略");
+                builder.AppendLine();
+            }
+            return builder.ToString().TrimEnd();
+        }
+
+        private static string CollapseDiagnosticText(string? value, int maximumCharacters)
+        {
+            var normalized = string.Join(" ", (value ?? string.Empty).Split(
+                (char[]?)null,
+                StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+            normalized = new string(normalized
+                .Select(character => char.IsControl(character) ? ' ' : character)
+                .ToArray());
+            return normalized.Length <= maximumCharacters
+                ? normalized
+                : normalized[..maximumCharacters] + "…";
+        }
+    }
 }
