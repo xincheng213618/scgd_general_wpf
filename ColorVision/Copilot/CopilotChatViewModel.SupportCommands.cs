@@ -300,6 +300,7 @@ namespace ColorVision.Copilot
                 CompactionUsage = conversation?.CompactionUsage?.Usage ?? CopilotTokenUsage.Empty,
                 ConversationGoalCharacters = conversation?.Goal?.Objective.Length ?? 0,
                 ConversationGoalState = conversation?.Goal?.State,
+                ConversationGoalContinuationDeferred = conversation?.IsGoalContinuationDeferred == true,
                 ConversationGoalActive = conversation?.Goal?.IsActive == true,
                 ConversationGoalAchieved = conversation?.Goal?.IsAchieved == true,
                 AttachmentCount = Attachments.Count,

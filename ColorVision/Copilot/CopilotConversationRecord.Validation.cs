@@ -143,6 +143,12 @@ namespace ColorVision.Copilot
                 Goal = null;
                 changed = true;
             }
+            if (IsGoalContinuationDeferred
+                && (Goal?.IsActive != true || BranchOrigin?.IsStructurallyValid(Id) != true))
+            {
+                IsGoalContinuationDeferred = false;
+                changed = true;
+            }
 
             var lastUserRequestMode = CopilotAgentMode.Chat;
             foreach (var message in Messages)

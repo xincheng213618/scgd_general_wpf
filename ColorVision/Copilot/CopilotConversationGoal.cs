@@ -543,7 +543,8 @@ namespace ColorVision.Copilot
             var changed = false;
             foreach (var conversation in state.Conversations ?? [])
             {
-                if (conversation?.Goal?.IsActive != true)
+                if (conversation?.Goal?.IsActive != true
+                    || conversation.IsGoalContinuationDeferred)
                     continue;
 
                 conversation.Goal = conversation.Goal.WithState(

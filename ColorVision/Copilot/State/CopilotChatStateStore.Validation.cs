@@ -113,6 +113,7 @@ namespace ColorVision.Copilot
                     || !IsOptionalComposerStash(conversation.GetValue(nameof(CopilotConversationRecord.ComposerStash), StringComparison.OrdinalIgnoreCase))
                     || !IsOptionalPendingSteeringRecoveries(conversation.GetValue(nameof(CopilotConversationRecord.PendingSteeringRecoveries), StringComparison.OrdinalIgnoreCase))
                     || !IsOptionalObject(conversation.GetValue(nameof(CopilotConversationRecord.BranchOrigin), StringComparison.OrdinalIgnoreCase))
+                    || !IsOptionalBoolean(conversation.GetValue(nameof(CopilotConversationRecord.IsGoalContinuationDeferred), StringComparison.OrdinalIgnoreCase))
                     || !IsOptionalBoolean(conversation.GetValue(nameof(CopilotConversationRecord.IsArchived), StringComparison.OrdinalIgnoreCase))
                     || messages.Any(item => item is not JObject)
                     || attachments.Any(item => item is not JObject))

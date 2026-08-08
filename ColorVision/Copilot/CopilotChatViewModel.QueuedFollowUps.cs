@@ -197,7 +197,8 @@ namespace ColorVision.Copilot
                 preparedTurn.UserMessage,
                 preparedTurn.AssistantMessage,
                 preparedTurn.TurnSnapshot,
-                refreshExternalContext: true).ConfigureAwait(false);
+                refreshExternalContext: true,
+                isAutomaticGoalContinuation: queuedFollowUp.IsAutomaticGoalContinuation).ConfigureAwait(false);
         }
 
         private CopilotPreparedQueuedFollowUpTurn? PrepareQueuedFollowUpTurn(CopilotQueuedFollowUp queuedFollowUp)

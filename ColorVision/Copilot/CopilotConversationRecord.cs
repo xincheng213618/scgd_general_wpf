@@ -242,6 +242,8 @@ namespace ColorVision.Copilot
             {
                 if (SetProperty(ref _goal, value))
                 {
+                    if (IsGoalContinuationDeferred && value?.IsActive != true)
+                        IsGoalContinuationDeferred = false;
                     OnPropertyChanged(nameof(HasGoal));
                     OnPropertyChanged(nameof(GoalDisplayText));
                     OnPropertyChanged(nameof(GoalToolTip));
@@ -251,6 +253,36 @@ namespace ColorVision.Copilot
         private CopilotConversationGoal? _goal;
 
         public bool ShouldSerializeGoal() => Goal != null;
+
+        public bool IsGoalContinuationDeferred
+        {
+            get => _isGoalContinuationDeferred;
+            set
+            {
+                if (SetProperty(ref _isGoalContinuationDeferred, value))
+                {
+                    OnPropertyChanged(nameof(GoalDisplayText));
+                    OnPropertyChanged(nameof(GoalToolTip));
+                }
+            }
+        }
+        private bool _isGoalContinuationDeferred;
+
+        public bool ShouldSerializeIsGoalContinuationDeferred() => IsGoalContinuationDeferred;
+
+        internal bool TryBeginGoalTurn(
+            bool isAgentTurn,
+            bool isAutomaticGoalContinuation)
+        {
+            if (!isAgentTurn
+                || isAutomaticGoalContinuation
+                || !IsGoalContinuationDeferred
+                || Goal?.IsActive != true)
+                return false;
+
+            IsGoalContinuationDeferred = false;
+            return true;
+        }
 
         [JsonIgnore]
         public CopilotTokenUsage LastUsage => new(

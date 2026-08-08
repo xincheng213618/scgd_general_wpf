@@ -343,4 +343,82 @@ public sealed class CopilotConversationGoalTests
         Assert.Equal(0, branch.TokensUsed);
         Assert.True(branch.IsStructurallyValid());
     }
+
+    [Fact]
+    public void BranchDefersCopiedActiveGoalUntilExplicitAgentTurn()
+    {
+        var createdAt = new DateTimeOffset(2026, 8, 8, 8, 0, 0, TimeSpan.Zero);
+        var source = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        source.Goal = CopilotConversationGoal.Create("持续改进 Copilot", createdAt);
+        source.Messages.Add(new CopilotChatMessage(CopilotChatRole.User, "开始目标"));
+        var assistant = new CopilotChatMessage(CopilotChatRole.Assistant, "已经完成第一项工作");
+        source.Messages.Add(assistant);
+
+        var branch = CopilotConversationBranchService.CreateBranch(source, assistant);
+
+        Assert.NotNull(branch.Goal);
+        Assert.True(branch.Goal.IsActive);
+        Assert.True(branch.IsGoalContinuationDeferred);
+        Assert.Contains("目标待接管", branch.GoalDisplayText, StringComparison.Ordinal);
+        Assert.Contains("下一条显式 Agent 任务", branch.GoalToolTip, StringComparison.Ordinal);
+        Assert.False(branch.TryBeginGoalTurn(isAgentTurn: false, isAutomaticGoalContinuation: false));
+        Assert.False(branch.TryBeginGoalTurn(isAgentTurn: true, isAutomaticGoalContinuation: true));
+        Assert.True(branch.IsGoalContinuationDeferred);
+
+        Assert.True(branch.TryBeginGoalTurn(isAgentTurn: true, isAutomaticGoalContinuation: false));
+
+        Assert.False(branch.IsGoalContinuationDeferred);
+        Assert.False(branch.TryBeginGoalTurn(isAgentTurn: true, isAutomaticGoalContinuation: false));
+        Assert.StartsWith("持续目标", branch.GoalDisplayText, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void DeferredBranchGoalSurvivesSerializationAndProcessRestartRecovery()
+    {
+        var createdAt = new DateTimeOffset(2026, 8, 8, 8, 0, 0, TimeSpan.Zero);
+        var source = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        source.Goal = CopilotConversationGoal.Create("持续改进 Copilot", createdAt);
+        source.Messages.Add(new CopilotChatMessage(CopilotChatRole.User, "开始目标"));
+        var assistant = new CopilotChatMessage(CopilotChatRole.Assistant, "已经完成第一项工作");
+        source.Messages.Add(assistant);
+        var deferred = CopilotConversationBranchService.CreateBranch(source, assistant);
+        var regular = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        regular.Goal = CopilotConversationGoal.Create("继续普通目标", createdAt);
+        var state = new CopilotChatState();
+        state.Conversations.Add(deferred);
+        state.Conversations.Add(regular);
+
+        var json = JsonConvert.SerializeObject(state);
+        var restored = JsonConvert.DeserializeObject<CopilotChatState>(json);
+
+        Assert.NotNull(restored);
+        var restoredDeferred = restored.Conversations[0];
+        var restoredRegular = restored.Conversations[1];
+        Assert.True(restoredDeferred.IsGoalContinuationDeferred);
+        Assert.True(CopilotConversationGoalRecovery.PauseActiveGoalsAfterProcessRestart(
+            restored,
+            createdAt.AddMinutes(1)));
+        Assert.True(restoredDeferred.Goal?.IsActive);
+        Assert.True(restoredDeferred.IsGoalContinuationDeferred);
+        Assert.Equal(CopilotConversationGoalState.Paused, restoredRegular.Goal?.State);
+    }
+
+    [Fact]
+    public void ValidationClearsDeferredMarkerOutsideActiveBranchGoal()
+    {
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        conversation.IsGoalContinuationDeferred = true;
+
+        Assert.True(conversation.EnsureValid());
+
+        Assert.False(conversation.IsGoalContinuationDeferred);
+
+        conversation.Goal = CopilotConversationGoal.Create(
+            "普通会话目标",
+            new DateTimeOffset(2026, 8, 8, 8, 0, 0, TimeSpan.Zero));
+        conversation.IsGoalContinuationDeferred = true;
+
+        Assert.True(conversation.EnsureValid());
+        Assert.False(conversation.IsGoalContinuationDeferred);
+    }
 }

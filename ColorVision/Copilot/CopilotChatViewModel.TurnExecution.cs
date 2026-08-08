@@ -227,7 +227,8 @@ namespace ColorVision.Copilot
                 userMessage,
                 assistantMessage,
                 turnSnapshot,
-                refreshExternalContext: true);
+                refreshExternalContext: true,
+                isAutomaticGoalContinuation: false);
 
         private async Task ExecuteHostedPreparedTurnAsync(
             CopilotHostedAgentRun hostedRun,
@@ -236,8 +237,19 @@ namespace ColorVision.Copilot
             CopilotChatMessage userMessage,
             CopilotChatMessage assistantMessage,
             CopilotAgentHostContextSnapshot turnSnapshot,
-            bool refreshExternalContext)
+            bool refreshExternalContext,
+            bool isAutomaticGoalContinuation)
         {
+            CopilotUiDispatcher.Invoke(() =>
+            {
+                if (!conversation.TryBeginGoalTurn(hostedRun.IsAgent, isAutomaticGoalContinuation))
+                    return;
+
+                CopilotAssistantMessagePresenter.AppendExecutionTrace(
+                    assistantMessage,
+                    "Goal continuation deferral consumed · explicit Agent turn owns lifecycle.");
+                PersistState(immediate: true);
+            });
             var boundGoalId = CopilotUiDispatcher.Invoke(
                 () => conversation.Goal?.IsActive == true ? conversation.Goal.Id : string.Empty,
                 fallback: string.Empty);

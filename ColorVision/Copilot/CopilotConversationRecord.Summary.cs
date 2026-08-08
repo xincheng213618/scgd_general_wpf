@@ -58,12 +58,16 @@ namespace ColorVision.Copilot
         [JsonIgnore]
         public string GoalDisplayText => Goal == null
             ? string.Empty
-            : $"{CopilotConversationGoalStateText.FormatDisplayLabel(Goal.State)} · {BuildPreview(Goal.Objective, 120)}";
+            : $"{(IsGoalContinuationDeferred
+                ? "目标待接管"
+                : CopilotConversationGoalStateText.FormatDisplayLabel(Goal.State))} · {BuildPreview(Goal.Objective, 120)}";
 
         [JsonIgnore]
         public string GoalToolTip => Goal == null
             ? string.Empty
-            : CopilotConversationGoalStateText.FormatDescription(Goal.State)
+            : (IsGoalContinuationDeferred
+                    ? "活动目标已从源会话带入分支；下一条显式 Agent 任务将接管目标生命周期，完成后恢复正常自动续作。"
+                    : CopilotConversationGoalStateText.FormatDescription(Goal.State))
                 + Environment.NewLine
                 + Goal.Objective
                 + Environment.NewLine

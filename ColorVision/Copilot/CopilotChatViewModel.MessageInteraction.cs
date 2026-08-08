@@ -135,7 +135,10 @@ namespace ColorVision.Copilot
                         ? "源会话中的 Agent 仍会继续运行；分支已将当前回答标记为运行中快照，未完成工具不会在分支中继续。"
                         : "原会话保持不变；这里只分叉聊天历史，不会创建 Git 分支或回滚当前工作区。")
                     + Environment.NewLine
-                    + "未发送草稿、编辑区附件、Agent checkpoint 与会话级授权不会继承。");
+                    + "未发送草稿、编辑区附件、Agent checkpoint 与会话级授权不会继承。"
+                    + (branch.IsGoalContinuationDeferred
+                        ? Environment.NewLine + "活动持续目标已带入分支；下一条显式 Agent 任务接管后，才会恢复正常自动续作。"
+                        : string.Empty));
             }
             catch (Exception ex)
             {
@@ -476,7 +479,8 @@ namespace ColorVision.Copilot
                 userMessage,
                 replacementAssistantMessage,
                 turnSnapshot,
-                refreshExternalContext);
+                refreshExternalContext,
+                isAutomaticGoalContinuation: false);
         }
 
         private bool TryResolveLatestTurn(CopilotChatMessage? message, out CopilotConversationRecord conversation, out CopilotChatMessage userMessage, out CopilotChatMessage? assistantMessage)

@@ -204,6 +204,8 @@ namespace ColorVision.Copilot
                 return "None";
 
             var state = CopilotConversationGoalStateText.FormatEnglish(goal.State);
+            if (SelectedConversation?.IsGoalContinuationDeferred == true)
+                state += " (deferred until explicit Agent turn)";
             var tokenProgress = goal.HasTokenBudget
                 ? $"{goal.TokensUsed:N0} / {goal.TokenBudget:N0} tokens"
                 : $"{goal.TokensUsed:N0} tokens";

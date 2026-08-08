@@ -57,6 +57,8 @@ namespace ColorVision.Copilot
 
         public CopilotConversationGoalState? ConversationGoalState { get; init; }
 
+        public bool ConversationGoalContinuationDeferred { get; init; }
+
         public bool ConversationGoalActive { get; init; }
 
         public bool ConversationGoalAchieved { get; init; }
@@ -218,7 +220,9 @@ namespace ColorVision.Copilot
                         : snapshot.ConversationGoalAchieved
                             ? CopilotConversationGoalState.Achieved
                             : CopilotConversationGoalState.Paused);
-                builder.Append(CopilotConversationGoalStateText.Format(goalState))
+                builder.Append(snapshot.ConversationGoalContinuationDeferred
+                        ? "待显式 Agent 任务接管"
+                        : CopilotConversationGoalStateText.Format(goalState))
                     .Append(" · ")
                     .Append(FormatCount(snapshot.ConversationGoalCharacters))
                     .AppendLine(" 字符；仅约束完成判定，不授予操作权限");

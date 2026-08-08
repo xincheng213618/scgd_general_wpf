@@ -41,7 +41,7 @@ namespace ColorVision.Copilot
                 .Append(messages.Length)
                 .AppendLine(" 条消息");
             builder.Append("持续目标：")
-                .AppendLine(FormatGoal(conversation.Goal));
+                .AppendLine(FormatGoal(conversation));
             builder.Append("最近请求：")
                 .AppendLine(latestUser == null
                     ? "尚无可见请求"
@@ -66,12 +66,15 @@ namespace ColorVision.Copilot
             return builder.ToString();
         }
 
-        private static string FormatGoal(CopilotConversationGoal? goal)
+        private static string FormatGoal(CopilotConversationRecord conversation)
         {
+            var goal = conversation.Goal;
             if (goal == null)
                 return "未设置";
 
-            var state = CopilotConversationGoalStateText.Format(goal.State);
+            var state = conversation.IsGoalContinuationDeferred
+                ? "待显式 Agent 任务接管"
+                : CopilotConversationGoalStateText.Format(goal.State);
             return $"{state} · {Preview(goal.Objective, MaximumGoalCharacters)}";
         }
 

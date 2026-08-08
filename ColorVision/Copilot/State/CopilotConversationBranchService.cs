@@ -143,6 +143,9 @@ namespace ColorVision.Copilot
             bool capturesInProgressTurn)
         {
             var forkedAtUtc = DateTimeOffset.UtcNow;
+            var copiedGoal = source.Goal?.IsStructurallyValid() == true
+                ? source.Goal.CopyForBranch(forkedAtUtc)
+                : null;
             var branch = new CopilotConversationRecord
             {
                 CreatedAt = DateTime.Now,
@@ -164,9 +167,8 @@ namespace ColorVision.Copilot
                     ThroughMessageId = originThroughMessageId,
                     ForkedAtUtc = forkedAtUtc,
                 },
-                Goal = source.Goal?.IsStructurallyValid() == true
-                    ? source.Goal.CopyForBranch(forkedAtUtc)
-                    : null,
+                Goal = copiedGoal,
+                IsGoalContinuationDeferred = copiedGoal?.IsActive == true,
             };
             var messageIdMap = new Dictionary<string, string>(StringComparer.Ordinal);
             var lastUserMode = CopilotAgentMode.Chat;
