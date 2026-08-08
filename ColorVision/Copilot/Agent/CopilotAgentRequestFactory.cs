@@ -244,6 +244,11 @@ namespace ColorVision.Copilot
         internal int CodexMaximumConcurrentSubagentRuns { get; init; } =
             CopilotSubagentCoordinator.DefaultMaximumConcurrentRuns;
 
+        internal string CodexDefaultSubagentModel { get; init; } = string.Empty;
+
+        internal CopilotCodexReasoningEffort CodexDefaultSubagentReasoningEffort { get; init; } =
+            CopilotCodexReasoningEffort.Unspecified;
+
         internal int? ModelContextWindowTokensOverride { get; init; }
 
         internal int? ToolOutputTokenLimitOverride { get; init; }
@@ -410,6 +415,13 @@ namespace ColorVision.Copilot
                 CodexAgentsEnabled = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredAgentsEnabled,
                 CodexMaximumConcurrentSubagentRuns =
                     hostContext.ProjectInstructionDiscoveryOptions.ConfiguredMaximumConcurrentSubagentRuns,
+                CodexDefaultSubagentModel = hostContext.ProjectInstructionDiscoveryOptions.HasDefaultSubagentModelOverride
+                    ? hostContext.ProjectInstructionDiscoveryOptions.ConfiguredDefaultSubagentModel
+                    : string.Empty,
+                CodexDefaultSubagentReasoningEffort =
+                    hostContext.ProjectInstructionDiscoveryOptions.HasDefaultSubagentReasoningEffortOverride
+                        ? hostContext.ProjectInstructionDiscoveryOptions.ConfiguredDefaultSubagentReasoningEffort
+                        : CopilotCodexReasoningEffort.Unspecified,
                 ModelContextWindowTokensOverride = hostContext.ProjectInstructionDiscoveryOptions.HasModelContextWindowOverride
                     ? hostContext.ProjectInstructionDiscoveryOptions.ConfiguredModelContextWindowTokens
                     : null,
@@ -488,6 +500,8 @@ namespace ColorVision.Copilot
                 CodexAutoReviewPolicy = plan.CodexAutoReviewPolicy,
                 CodexAgentsEnabled = plan.CodexAgentsEnabled,
                 CodexMaximumConcurrentSubagentRuns = plan.CodexMaximumConcurrentSubagentRuns,
+                CodexDefaultSubagentModel = plan.CodexDefaultSubagentModel,
+                CodexDefaultSubagentReasoningEffort = plan.CodexDefaultSubagentReasoningEffort,
                 ToolOutputTokenLimitOverride = plan.ToolOutputTokenLimitOverride,
                 CodexReasoningEffort = plan.CodexReasoningEffort,
                 CodexReasoningSummary = plan.CodexReasoningSummary,

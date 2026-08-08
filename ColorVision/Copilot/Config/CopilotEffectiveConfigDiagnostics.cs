@@ -746,6 +746,35 @@ namespace ColorVision.Copilot
                 builder.Append(" · ColorVision 默认");
             }
             builder.AppendLine(" · 限制单个父请求的并行子代理槽位，不扩大请求级 Token 总预算");
+            builder.Append("- Codex agents.default_subagent_model：");
+            if (codexConfigOptions.HasDefaultSubagentModelOverride)
+            {
+                builder.Append(codexConfigOptions.ConfiguredDefaultSubagentModel)
+                    .Append(" · 来源 ")
+                    .Append(codexConfigOptions.DefaultSubagentModelSourceLabel.Length == 0
+                        ? "Codex config.toml"
+                        : codexConfigOptions.DefaultSubagentModelSourceLabel)
+                    .AppendLine(" · 提交快照 · 子代理沿用父 Profile Provider/端点/凭据");
+            }
+            else
+            {
+                builder.AppendLine("未配置 · 子代理沿用父 Profile 模型");
+            }
+            builder.Append("- Codex agents.default_subagent_reasoning_effort：")
+                .Append(CopilotCodexReasoningEffortSelection.GetConfigToken(
+                    codexConfigOptions.ConfiguredDefaultSubagentReasoningEffort));
+            if (codexConfigOptions.HasDefaultSubagentReasoningEffortOverride)
+            {
+                builder.Append(" · 来源 ")
+                    .Append(codexConfigOptions.DefaultSubagentReasoningEffortSourceLabel.Length == 0
+                        ? "Codex config.toml"
+                        : codexConfigOptions.DefaultSubagentReasoningEffortSourceLabel)
+                    .AppendLine(" · 提交快照 · 子代理官方 OpenAI Responses 生效");
+            }
+            else
+            {
+                builder.AppendLine(" · 未配置 · 子代理继承父请求推理强度");
+            }
         }
 
         private static void AppendConversation(

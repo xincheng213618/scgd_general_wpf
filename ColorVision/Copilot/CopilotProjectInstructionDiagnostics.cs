@@ -303,6 +303,35 @@ namespace ColorVision.Copilot
                 builder.Append(" · ColorVision 默认");
             }
             builder.AppendLine("；限制单个父请求的并行子代理槽位，不扩大请求级 Token 总预算");
+            builder.Append("Codex agents.default_subagent_model：");
+            if (effective.HasDefaultSubagentModelOverride)
+            {
+                builder.Append(effective.ConfiguredDefaultSubagentModel)
+                    .Append(" · 来源 ")
+                    .Append(effective.DefaultSubagentModelSourceLabel.Length == 0
+                        ? "Codex config.toml"
+                        : effective.DefaultSubagentModelSourceLabel)
+                    .AppendLine(" 提交快照；子代理替换模型名并沿用父 Profile 的 Provider、端点与凭据");
+            }
+            else
+            {
+                builder.AppendLine("未配置；子代理沿用父 Profile 模型");
+            }
+            builder.Append("Codex agents.default_subagent_reasoning_effort：")
+                .Append(CopilotCodexReasoningEffortSelection.GetConfigToken(
+                    effective.ConfiguredDefaultSubagentReasoningEffort));
+            if (effective.HasDefaultSubagentReasoningEffortOverride)
+            {
+                builder.Append(" · 来源 ")
+                    .Append(effective.DefaultSubagentReasoningEffortSourceLabel.Length == 0
+                        ? "Codex config.toml"
+                        : effective.DefaultSubagentReasoningEffortSourceLabel)
+                    .AppendLine(" 提交快照；覆盖子代理推理强度，仅官方 OpenAI Responses 生效");
+            }
+            else
+            {
+                builder.AppendLine(" · 未配置；子代理继承父请求推理强度");
+            }
             if (effective.HasModelContextWindowOverride)
             {
                 builder.Append("Codex model_context_window：")

@@ -238,6 +238,21 @@ namespace ColorVision.Copilot
         public CopilotProjectInstructionConfigSources MaximumConcurrentSubagentRunsSource { get; init; } =
             CopilotProjectInstructionConfigSources.None;
 
+        public string ConfiguredDefaultSubagentModel { get; init; } = string.Empty;
+
+        public bool HasDefaultSubagentModelOverride { get; init; }
+
+        public CopilotProjectInstructionConfigSources DefaultSubagentModelSource { get; init; } =
+            CopilotProjectInstructionConfigSources.None;
+
+        public CopilotCodexReasoningEffort ConfiguredDefaultSubagentReasoningEffort { get; init; } =
+            CopilotCodexReasoningEffort.Unspecified;
+
+        public bool HasDefaultSubagentReasoningEffortOverride { get; init; }
+
+        public CopilotProjectInstructionConfigSources DefaultSubagentReasoningEffortSource { get; init; } =
+            CopilotProjectInstructionConfigSources.None;
+
         public int ConfiguredModelContextWindowTokens { get; init; }
 
         public bool HasModelContextWindowOverride { get; init; }
@@ -421,6 +436,8 @@ namespace ColorVision.Copilot
             || HasPreventIdleSleepOverride
             || HasAgentsEnabledOverride
             || HasMaximumConcurrentSubagentRunsOverride
+            || HasDefaultSubagentModelOverride
+            || HasDefaultSubagentReasoningEffortOverride
             || HasModelContextWindowOverride
             || HasToolOutputTokenLimitOverride
             || HasModelReasoningEffortOverride
@@ -521,6 +538,20 @@ namespace ColorVision.Copilot
         {
             CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml agents concurrency",
             CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml agents concurrency",
+            _ => string.Empty,
+        };
+
+        public string DefaultSubagentModelSourceLabel => DefaultSubagentModelSource switch
+        {
+            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml agents.default_subagent_model",
+            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml agents.default_subagent_model",
+            _ => string.Empty,
+        };
+
+        public string DefaultSubagentReasoningEffortSourceLabel => DefaultSubagentReasoningEffortSource switch
+        {
+            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml agents.default_subagent_reasoning_effort",
+            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml agents.default_subagent_reasoning_effort",
             _ => string.Empty,
         };
 
@@ -685,6 +716,10 @@ namespace ColorVision.Copilot
         private const string AgentsMaximumConcurrentThreadsTableKey = "max_concurrent_threads_per_session";
         private const string AgentsMaximumThreadsKey = "agents.max_threads";
         private const string AgentsMaximumThreadsTableKey = "max_threads";
+        private const string AgentsDefaultSubagentModelKey = "agents.default_subagent_model";
+        private const string AgentsDefaultSubagentModelTableKey = "default_subagent_model";
+        private const string AgentsDefaultSubagentReasoningEffortKey = "agents.default_subagent_reasoning_effort";
+        private const string AgentsDefaultSubagentReasoningEffortTableKey = "default_subagent_reasoning_effort";
         private const string ModelContextWindowKey = "model_context_window";
         private const string ToolOutputTokenLimitKey = "tool_output_token_limit";
         private const string ModelReasoningEffortKey = "model_reasoning_effort";
@@ -917,6 +952,22 @@ namespace ColorVision.Copilot
                 MaximumConcurrentSubagentRunsSource = layer.HasMaximumConcurrentSubagentRunsOverride
                     ? source
                     : current.MaximumConcurrentSubagentRunsSource,
+                ConfiguredDefaultSubagentModel = layer.HasDefaultSubagentModelOverride
+                    ? layer.DefaultSubagentModel
+                    : current.ConfiguredDefaultSubagentModel,
+                HasDefaultSubagentModelOverride = current.HasDefaultSubagentModelOverride
+                    || layer.HasDefaultSubagentModelOverride,
+                DefaultSubagentModelSource = layer.HasDefaultSubagentModelOverride
+                    ? source
+                    : current.DefaultSubagentModelSource,
+                ConfiguredDefaultSubagentReasoningEffort = layer.HasDefaultSubagentReasoningEffortOverride
+                    ? layer.DefaultSubagentReasoningEffort
+                    : current.ConfiguredDefaultSubagentReasoningEffort,
+                HasDefaultSubagentReasoningEffortOverride = current.HasDefaultSubagentReasoningEffortOverride
+                    || layer.HasDefaultSubagentReasoningEffortOverride,
+                DefaultSubagentReasoningEffortSource = layer.HasDefaultSubagentReasoningEffortOverride
+                    ? source
+                    : current.DefaultSubagentReasoningEffortSource,
                 ConfiguredModelContextWindowTokens = layer.HasModelContextWindowOverride
                     ? layer.ModelContextWindowTokens
                     : current.ConfiguredModelContextWindowTokens,
@@ -1055,6 +1106,8 @@ namespace ColorVision.Copilot
                 || layer.HasPreventIdleSleepOverride
                 || layer.HasAgentsEnabledOverride
                 || layer.HasMaximumConcurrentSubagentRunsOverride
+                || layer.HasDefaultSubagentModelOverride
+                || layer.HasDefaultSubagentReasoningEffortOverride
                 || layer.HasModelContextWindowOverride
                 || layer.HasToolOutputTokenLimitOverride
                 || layer.HasModelReasoningEffortOverride
@@ -1337,6 +1390,8 @@ namespace ColorVision.Copilot
             var preventIdleSleep = false;
             var agentsEnabled = true;
             var maximumConcurrentSubagentRuns = CopilotSubagentCoordinator.DefaultMaximumConcurrentRuns;
+            var defaultSubagentModel = string.Empty;
+            var defaultSubagentReasoningEffort = CopilotCodexReasoningEffort.Unspecified;
             var modelContextWindowTokens = 0;
             var toolOutputTokenLimit = 0;
             var modelReasoningEffort = CopilotCodexReasoningEffort.Unspecified;
@@ -1366,6 +1421,8 @@ namespace ColorVision.Copilot
             var hasAgentsEnabledOverride = false;
             var hasMaximumConcurrentSubagentRunsOverride = false;
             var hasCanonicalMaximumConcurrentSubagentRunsOverride = false;
+            var hasDefaultSubagentModelOverride = false;
+            var hasDefaultSubagentReasoningEffortOverride = false;
             var hasModelContextWindowOverride = false;
             var hasToolOutputTokenLimitOverride = false;
             var hasModelReasoningEffortOverride = false;
@@ -1550,6 +1607,38 @@ namespace ColorVision.Copilot
                     maximumConcurrentSubagentRuns = configuredMaximumConcurrentSubagentRuns;
                     hasMaximumConcurrentSubagentRunsOverride = true;
                     hasCanonicalMaximumConcurrentSubagentRunsOverride |= isCanonical;
+                    continue;
+                }
+
+                if (string.Equals(assignment.Key, AgentsDefaultSubagentModelKey, StringComparison.Ordinal))
+                {
+                    if (!TryParseConfiguredText(
+                        assignment.Value,
+                        CopilotConfiguredModelSelection.MaximumModelCharacters,
+                        out var configuredDefaultSubagentModel)
+                        || !CopilotConfiguredModelSelection.TryNormalize(
+                            configuredDefaultSubagentModel,
+                            out defaultSubagentModel))
+                    {
+                        continue;
+                    }
+                    hasDefaultSubagentModelOverride = true;
+                    continue;
+                }
+
+                if (string.Equals(assignment.Key, AgentsDefaultSubagentReasoningEffortKey, StringComparison.Ordinal))
+                {
+                    if (!TryParseConfiguredText(
+                        assignment.Value,
+                        maximumCharacters: 32,
+                        out var configuredDefaultSubagentReasoningEffort)
+                        || !CopilotCodexReasoningEffortSelection.TryParse(
+                            configuredDefaultSubagentReasoningEffort,
+                            out defaultSubagentReasoningEffort))
+                    {
+                        continue;
+                    }
+                    hasDefaultSubagentReasoningEffortOverride = true;
                     continue;
                 }
 
@@ -1797,6 +1886,10 @@ namespace ColorVision.Copilot
                 HasAgentsEnabledOverride = hasAgentsEnabledOverride,
                 MaximumConcurrentSubagentRuns = maximumConcurrentSubagentRuns,
                 HasMaximumConcurrentSubagentRunsOverride = hasMaximumConcurrentSubagentRunsOverride,
+                DefaultSubagentModel = defaultSubagentModel,
+                HasDefaultSubagentModelOverride = hasDefaultSubagentModelOverride,
+                DefaultSubagentReasoningEffort = defaultSubagentReasoningEffort,
+                HasDefaultSubagentReasoningEffortOverride = hasDefaultSubagentReasoningEffortOverride,
                 ModelContextWindowTokens = modelContextWindowTokens,
                 HasModelContextWindowOverride = hasModelContextWindowOverride,
                 ToolOutputTokenLimit = toolOutputTokenLimit,
@@ -1836,6 +1929,8 @@ namespace ColorVision.Copilot
                 || hasPreventIdleSleepOverride
                 || hasAgentsEnabledOverride
                 || hasMaximumConcurrentSubagentRunsOverride
+                || hasDefaultSubagentModelOverride
+                || hasDefaultSubagentReasoningEffortOverride
                 || hasModelContextWindowOverride
                 || hasToolOutputTokenLimitOverride
                 || hasModelReasoningEffortOverride
@@ -2005,6 +2100,8 @@ namespace ColorVision.Copilot
                                 AgentsEnabledTableKey => AgentsEnabledKey,
                                 AgentsMaximumConcurrentThreadsTableKey => AgentsMaximumConcurrentThreadsKey,
                                 AgentsMaximumThreadsTableKey => AgentsMaximumThreadsKey,
+                                AgentsDefaultSubagentModelTableKey => AgentsDefaultSubagentModelKey,
+                                AgentsDefaultSubagentReasoningEffortTableKey => AgentsDefaultSubagentReasoningEffortKey,
                                 _ => string.Empty,
                             }
                         : inAutoReviewTable
@@ -2028,6 +2125,8 @@ namespace ColorVision.Copilot
                     && !string.Equals(key, AgentsEnabledKey, StringComparison.Ordinal)
                     && !string.Equals(key, AgentsMaximumConcurrentThreadsKey, StringComparison.Ordinal)
                     && !string.Equals(key, AgentsMaximumThreadsKey, StringComparison.Ordinal)
+                    && !string.Equals(key, AgentsDefaultSubagentModelKey, StringComparison.Ordinal)
+                    && !string.Equals(key, AgentsDefaultSubagentReasoningEffortKey, StringComparison.Ordinal)
                     && !string.Equals(key, ModelContextWindowKey, StringComparison.Ordinal)
                     && !string.Equals(key, ToolOutputTokenLimitKey, StringComparison.Ordinal)
                     && !string.Equals(key, ModelReasoningEffortKey, StringComparison.Ordinal)
@@ -2930,6 +3029,15 @@ namespace ColorVision.Copilot
                 CopilotSubagentCoordinator.DefaultMaximumConcurrentRuns;
 
             public bool HasMaximumConcurrentSubagentRunsOverride { get; init; }
+
+            public string DefaultSubagentModel { get; init; } = string.Empty;
+
+            public bool HasDefaultSubagentModelOverride { get; init; }
+
+            public CopilotCodexReasoningEffort DefaultSubagentReasoningEffort { get; init; } =
+                CopilotCodexReasoningEffort.Unspecified;
+
+            public bool HasDefaultSubagentReasoningEffortOverride { get; init; }
 
             public int ModelContextWindowTokens { get; init; }
 

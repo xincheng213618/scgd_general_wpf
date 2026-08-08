@@ -528,6 +528,12 @@ namespace ColorVision.Copilot
                 : Array.Empty<string>();
             var parentBudget = CopilotAgentRunBudget.Resolve(parentRequest);
             var childProfile = parentRequest.Profile.Clone();
+            if (CopilotConfiguredModelSelection.TryNormalize(
+                parentRequest.CodexDefaultSubagentModel,
+                out var defaultSubagentModel))
+            {
+                childProfile.Model = defaultSubagentModel;
+            }
             childProfile.MaxTokens = Math.Min(childProfile.MaxTokens, MaximumExplorationOutputTokens);
             var childExecutionScope = CopilotExecutionScope.ForAgentRun(parentRequest)
                 .DeriveChild(CopilotAgentTaskEventIds.CreateRunId());
@@ -560,8 +566,13 @@ namespace ColorVision.Copilot
                 CodexAutoReviewPolicy = parentRequest.CodexAutoReviewPolicy,
                 CodexAgentsEnabled = parentRequest.CodexAgentsEnabled,
                 CodexMaximumConcurrentSubagentRuns = parentRequest.CodexMaximumConcurrentSubagentRuns,
+                CodexDefaultSubagentModel = parentRequest.CodexDefaultSubagentModel,
+                CodexDefaultSubagentReasoningEffort = parentRequest.CodexDefaultSubagentReasoningEffort,
                 ToolOutputTokenLimitOverride = parentRequest.ToolOutputTokenLimitOverride,
-                CodexReasoningEffort = parentRequest.CodexReasoningEffort,
+                CodexReasoningEffort = parentRequest.CodexDefaultSubagentReasoningEffort !=
+                    CopilotCodexReasoningEffort.Unspecified
+                        ? parentRequest.CodexDefaultSubagentReasoningEffort
+                        : parentRequest.CodexReasoningEffort,
                 CodexReasoningSummary = parentRequest.CodexReasoningSummary,
                 CodexModelSupportsReasoningSummaries = parentRequest.CodexModelSupportsReasoningSummaries,
                 CodexServiceTier = parentRequest.CodexServiceTier,

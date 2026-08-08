@@ -163,6 +163,8 @@ namespace ColorVision.Copilot
                 CodexAutoReviewPolicy = explorationRequest.CodexAutoReviewPolicy,
                 CodexAgentsEnabled = explorationRequest.CodexAgentsEnabled,
                 CodexMaximumConcurrentSubagentRuns = explorationRequest.CodexMaximumConcurrentSubagentRuns,
+                CodexDefaultSubagentModel = explorationRequest.CodexDefaultSubagentModel,
+                CodexDefaultSubagentReasoningEffort = explorationRequest.CodexDefaultSubagentReasoningEffort,
                 ToolOutputTokenLimitOverride = explorationRequest.ToolOutputTokenLimitOverride,
                 CodexReasoningEffort = explorationRequest.CodexReasoningEffort,
                 CodexReasoningSummary = explorationRequest.CodexReasoningSummary,

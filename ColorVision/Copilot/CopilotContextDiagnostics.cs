@@ -76,6 +76,19 @@ namespace ColorVision.Copilot
 
         public string CodexMaximumConcurrentSubagentRunsSourceLabel { get; init; } = string.Empty;
 
+        public string CodexDefaultSubagentModel { get; init; } = string.Empty;
+
+        public bool HasCodexDefaultSubagentModelOverride { get; init; }
+
+        public string CodexDefaultSubagentModelSourceLabel { get; init; } = string.Empty;
+
+        internal CopilotCodexReasoningEffort CodexDefaultSubagentReasoningEffort { get; init; } =
+            CopilotCodexReasoningEffort.Unspecified;
+
+        public bool HasCodexDefaultSubagentReasoningEffortOverride { get; init; }
+
+        public string CodexDefaultSubagentReasoningEffortSourceLabel { get; init; } = string.Empty;
+
         public int ActiveSleepPreventionLeaseCount { get; init; }
 
         public int? SleepPreventionLastErrorCode { get; init; }
@@ -463,6 +476,35 @@ namespace ColorVision.Copilot
                 builder.Append("（ColorVision 默认）");
             }
             builder.AppendLine("；请求级 Token 总预算独立限制");
+            builder.Append("子代理默认模型：");
+            if (snapshot.HasCodexDefaultSubagentModelOverride)
+            {
+                builder.Append(snapshot.CodexDefaultSubagentModel)
+                    .Append("（")
+                    .Append(string.IsNullOrWhiteSpace(snapshot.CodexDefaultSubagentModelSourceLabel)
+                        ? "Codex config.toml"
+                        : snapshot.CodexDefaultSubagentModelSourceLabel.Trim())
+                    .AppendLine(" 提交快照；沿用父 Profile 的 Provider、端点与凭据）");
+            }
+            else
+            {
+                builder.AppendLine("沿用父 Profile 模型");
+            }
+            builder.Append("子代理默认推理强度：")
+                .Append(CopilotCodexReasoningEffortSelection.GetConfigToken(
+                    snapshot.CodexDefaultSubagentReasoningEffort));
+            if (snapshot.HasCodexDefaultSubagentReasoningEffortOverride)
+            {
+                builder.Append("（")
+                    .Append(string.IsNullOrWhiteSpace(snapshot.CodexDefaultSubagentReasoningEffortSourceLabel)
+                        ? "Codex config.toml"
+                        : snapshot.CodexDefaultSubagentReasoningEffortSourceLabel.Trim())
+                    .AppendLine(" 提交快照；子代理官方 OpenAI Responses 生效）");
+            }
+            else
+            {
+                builder.AppendLine("（未配置；继承父请求推理强度）");
+            }
             if (snapshot.HasCodexReasoningEffortOverride)
             {
                 builder.Append("推理强度：")
