@@ -24,6 +24,8 @@ namespace ColorVision.Copilot
 
         internal string PrimaryTrustedProjectRootPath { get; }
 
+        internal string ProjectConfigWorkingDirectoryPath { get; }
+
         internal CopilotProjectInstructionDiscoveryOptions ProjectInstructionDiscoveryOptions { get; }
 
         public CopilotAgentHostContextSnapshot(
@@ -87,6 +89,9 @@ namespace ColorVision.Copilot
                 : new CopilotConversationHistorySnapshot(conversationHistory.ModelMessages, conversationHistory.VisibleMessages);
             AdditionalReadRootPaths = CopilotAdditionalDirectoryCommand.NormalizeStoredPaths(additionalReadRootPaths);
             GlobalInstructionRootPath = CopilotAgentProjectInstructions.NormalizeGlobalInstructionRootPath(globalInstructionRootPath);
+            ProjectConfigWorkingDirectoryPath = CopilotAgentRequestFactory.ResolvePrimaryProjectWorkingDirectoryPath(
+                SolutionDirectoryPath,
+                ActiveDocumentPath);
             if (loadCodexConfigLayers)
             {
                 var codexHome = CopilotProjectInstructionDiscoveryConfig.LoadCodexHome(GlobalInstructionRootPath);
@@ -94,9 +99,10 @@ namespace ColorVision.Copilot
                     SolutionDirectoryPath,
                     ActiveDocumentPath,
                     codexHome.Options.ProjectRootMarkers);
-                ProjectInstructionDiscoveryOptions = CopilotProjectInstructionDiscoveryConfig.LoadTrustedProjectLayer(
+                ProjectInstructionDiscoveryOptions = CopilotProjectInstructionDiscoveryConfig.LoadTrustedProjectLayers(
                     codexHome,
-                    PrimaryTrustedProjectRootPath);
+                    PrimaryTrustedProjectRootPath,
+                    ProjectConfigWorkingDirectoryPath);
             }
             else
             {
@@ -415,15 +421,12 @@ namespace ColorVision.Copilot
             string? activeDocumentPath,
             IEnumerable<string>? projectRootMarkers)
         {
-            var roots = new List<string>();
-            AddSearchCandidate(roots, solutionDirectoryPath);
-            if (roots.Count == 0)
-                AddSearchCandidate(roots, activeDocumentPath);
-            var normalizedRoots = CopilotWorkspaceSearchSupport.NormalizeSearchRoots(roots);
-            if (normalizedRoots.Count == 0)
+            var workingDirectory = ResolvePrimaryProjectWorkingDirectoryPath(
+                solutionDirectoryPath,
+                activeDocumentPath);
+            if (workingDirectory.Length == 0)
                 return string.Empty;
 
-            var workingDirectory = normalizedRoots[0];
             if (CopilotWorkspaceSearchSupport.HasReparsePointInPath(workingDirectory))
                 return workingDirectory;
 
@@ -455,6 +458,18 @@ namespace ColorVision.Copilot
             }
 
             return workingDirectory;
+        }
+
+        internal static string ResolvePrimaryProjectWorkingDirectoryPath(
+            string? solutionDirectoryPath,
+            string? activeDocumentPath)
+        {
+            var roots = new List<string>();
+            AddSearchCandidate(roots, solutionDirectoryPath);
+            if (roots.Count == 0)
+                AddSearchCandidate(roots, activeDocumentPath);
+            var normalizedRoots = CopilotWorkspaceSearchSupport.NormalizeSearchRoots(roots);
+            return normalizedRoots.Count == 0 ? string.Empty : normalizedRoots[0];
         }
 
         private static string[] BuildWritableLocalFilePaths(

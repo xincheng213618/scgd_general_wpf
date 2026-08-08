@@ -96,6 +96,8 @@ namespace ColorVision.Copilot
 
         public bool ProjectInstructionHasRootMarkersOverride { get; init; }
 
+        public IReadOnlyList<string> ProjectInstructionAppliedProjectConfigFilePaths { get; init; } = Array.Empty<string>();
+
         public IReadOnlyList<string> TrustedProjectRootPaths { get; init; } = Array.Empty<string>();
 
         public IReadOnlyList<CopilotProjectInstructionDocument> ProjectInstructions { get; init; } = Array.Empty<CopilotProjectInstructionDocument>();
@@ -291,6 +293,9 @@ namespace ColorVision.Copilot
                         ? "（Codex Home 请求快照）"
                         : "（默认）");
             }
+            AppendAppliedProjectConfigLayers(
+                builder,
+                snapshot.ProjectInstructionAppliedProjectConfigFilePaths);
             AppendTrustedProjectRoots(builder, snapshot.TrustedProjectRootPaths);
             AppendProjectInstructionDetails(builder, snapshot.ProjectInstructions);
             builder.Append("Agent 预算：上下文 ")
@@ -351,6 +356,27 @@ namespace ColorVision.Copilot
                     builder.Append(" · 已截断");
                 builder.AppendLine();
             }
+        }
+
+        private static void AppendAppliedProjectConfigLayers(
+            StringBuilder builder,
+            IReadOnlyList<string>? configFilePaths)
+        {
+            var paths = (configFilePaths ?? Array.Empty<string>())
+                .Where(path => !string.IsNullOrWhiteSpace(path))
+                .Select(FormatProjectRootLabel)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+            if (paths.Length == 0)
+                return;
+
+            builder.Append("项目配置层：")
+                .Append(FormatCount(paths.Length))
+                .AppendLine(" 个（项目根 → 工作目录，后者优先）");
+            foreach (var path in paths.Take(8))
+                builder.Append("  - ").AppendLine(path);
+            if (paths.Length > 8)
+                builder.Append("  - ...另有 ").Append(FormatCount(paths.Length - 8)).AppendLine(" 个配置层未展开");
         }
 
         private static void AppendTrustedProjectRoots(StringBuilder builder, IReadOnlyList<string>? roots)

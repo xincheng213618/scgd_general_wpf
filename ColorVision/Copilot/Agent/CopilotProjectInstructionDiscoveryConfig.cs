@@ -36,6 +36,8 @@ namespace ColorVision.Copilot
 
         public bool HasProjectRootMarkersOverride { get; init; }
 
+        public IReadOnlyList<string> AppliedProjectConfigFilePaths { get; init; } = Array.Empty<string>();
+
         public bool UsesCodexConfig => ConfigSources != CopilotProjectInstructionConfigSources.None
             || HasMaximumBytesOverride
             || HasFallbackFileNamesOverride
@@ -122,6 +124,12 @@ namespace ColorVision.Copilot
         internal static CopilotProjectInstructionDiscoveryOptions LoadTrustedProjectLayer(
             CopilotCodexHomeConfigSnapshot codexHome,
             string? trustedProjectRootPath)
+            => LoadTrustedProjectLayers(codexHome, trustedProjectRootPath, trustedProjectRootPath);
+
+        internal static CopilotProjectInstructionDiscoveryOptions LoadTrustedProjectLayers(
+            CopilotCodexHomeConfigSnapshot codexHome,
+            string? trustedProjectRootPath,
+            string? workingDirectoryPath)
         {
             ArgumentNullException.ThrowIfNull(codexHome);
             var options = codexHome.Options;
@@ -131,21 +139,34 @@ namespace ColorVision.Copilot
 
             var projectTrustLevel = ResolveProjectTrustLevel(codexHome.Source, normalizedProjectRoot);
             options = options with { ProjectTrustLevel = projectTrustLevel };
-            if (options.AllowsProjectCodexConfig
-                && TryReadConfigSource(
-                    normalizedProjectRoot,
-                    Path.Combine(normalizedProjectRoot, ".codex", ConfigFileName),
-                    out var projectSource)
-                && TryParseInstructionLayer(projectSource, out var projectLayer))
+            if (!options.AllowsProjectCodexConfig)
+                return options;
+
+            var appliedConfigFilePaths = new List<string>();
+            foreach (var directoryPath in EnumerateProjectConfigDirectories(
+                normalizedProjectRoot,
+                workingDirectoryPath))
             {
+                var configPath = Path.Combine(directoryPath, ".codex", ConfigFileName);
+                if (!TryReadConfigSource(normalizedProjectRoot, configPath, out var projectSource)
+                    || !TryParseInstructionLayer(projectSource, out var projectLayer)
+                    || !HasApplicableOverrides(projectLayer, includeProjectRootMarkers: false))
+                {
+                    continue;
+                }
+
                 options = ApplyLayer(
                     options,
                     projectLayer,
                     CopilotProjectInstructionConfigSources.TrustedProject,
                     includeProjectRootMarkers: false);
+                appliedConfigFilePaths.Add(Path.GetFullPath(configPath));
             }
 
-            return options;
+            return options with
+            {
+                AppliedProjectConfigFilePaths = appliedConfigFilePaths.ToArray(),
+            };
         }
 
         public static CopilotProjectInstructionDiscoveryOptions CreateDefault() =>
@@ -163,12 +184,8 @@ namespace ColorVision.Copilot
         {
             var hasProjectRootMarkersOverride = includeProjectRootMarkers
                 && layer.HasProjectRootMarkersOverride;
-            if (!layer.HasMaximumBytesOverride
-                && !layer.HasFallbackFileNamesOverride
-                && !hasProjectRootMarkersOverride)
-            {
+            if (!HasApplicableOverrides(layer, includeProjectRootMarkers))
                 return current;
-            }
 
             return current with
             {
@@ -183,6 +200,76 @@ namespace ColorVision.Copilot
                 HasProjectRootMarkersOverride = current.HasProjectRootMarkersOverride
                     || hasProjectRootMarkersOverride,
             };
+        }
+
+        private static bool HasApplicableOverrides(
+            ProjectInstructionConfigLayer layer,
+            bool includeProjectRootMarkers)
+        {
+            return layer.HasMaximumBytesOverride
+                || layer.HasFallbackFileNamesOverride
+                || (includeProjectRootMarkers && layer.HasProjectRootMarkersOverride);
+        }
+
+        private static IReadOnlyList<string> EnumerateProjectConfigDirectories(
+            string normalizedProjectRoot,
+            string? workingDirectoryPath)
+        {
+            var normalizedWorkingDirectory = NormalizeProjectWorkingDirectoryPath(
+                workingDirectoryPath,
+                normalizedProjectRoot);
+            var directories = new List<string>();
+            try
+            {
+                var current = new DirectoryInfo(normalizedWorkingDirectory);
+                while (current != null)
+                {
+                    var currentPath = Path.TrimEndingDirectorySeparator(current.FullName);
+                    if (!CopilotWorkspaceSearchSupport.IsPathWithinRoots(currentPath, [normalizedProjectRoot]))
+                        return [normalizedProjectRoot];
+
+                    directories.Add(currentPath);
+                    if (string.Equals(currentPath, normalizedProjectRoot, StringComparison.OrdinalIgnoreCase))
+                        break;
+                    current = current.Parent;
+                }
+            }
+            catch
+            {
+                return [normalizedProjectRoot];
+            }
+
+            if (directories.Count == 0
+                || !string.Equals(directories[^1], normalizedProjectRoot, StringComparison.OrdinalIgnoreCase))
+            {
+                return [normalizedProjectRoot];
+            }
+
+            directories.Reverse();
+            return directories;
+        }
+
+        private static string NormalizeProjectWorkingDirectoryPath(
+            string? path,
+            string normalizedProjectRoot)
+        {
+            if (string.IsNullOrWhiteSpace(path) || path.Length > 2_048)
+                return normalizedProjectRoot;
+
+            try
+            {
+                var fullPath = Path.TrimEndingDirectorySeparator(Path.GetFullPath(path.Trim()));
+                return fullPath.Length <= 2_048
+                    && Directory.Exists(fullPath)
+                    && !CopilotWorkspaceSearchSupport.HasReparsePointInPath(fullPath)
+                    && CopilotWorkspaceSearchSupport.IsPathWithinRoots(fullPath, [normalizedProjectRoot])
+                        ? fullPath
+                        : normalizedProjectRoot;
+            }
+            catch
+            {
+                return normalizedProjectRoot;
+            }
         }
 
         private static bool TryReadConfigSource(

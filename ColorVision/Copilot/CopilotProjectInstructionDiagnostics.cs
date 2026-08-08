@@ -91,7 +91,7 @@ namespace ColorVision.Copilot
                 builder.AppendLine()
                     .AppendLine("当前 Codex Home、受信项目根和目标文件没有发现会被工作区型 Agent 请求加载的指令。")
                     .AppendLine("使用 /init 可在项目根创建 AGENTS.md；现有文件不会被覆盖。");
-                AppendDiscoveryOptions(builder, snapshot?.DiscoveryOptions);
+                AppendDiscoveryOptions(builder, snapshot?.DiscoveryOptions, snapshot?.WorkspacePath);
                 builder
                     .Append("这里展示的是个人与工作区指令，不是自动生成的跨会话记忆；/memory 不会写入文件。");
                 return builder.ToString();
@@ -122,7 +122,7 @@ namespace ColorVision.Copilot
             builder.AppendLine()
                 .AppendLine("选择规则：Codex Home 先选首个非空 AGENTS.override.md/AGENTS.md；项目同目录优先 AGENTS.override.md、AGENTS.md，再尝试配置备用名与 CLAUDE.md 兼容回退；.claude/rules 为附加规则，CLAUDE.local.md 为私有局部覆盖。")
                 .AppendLine("使用 /memory open N 打开文件。报告不包含指令正文，也不会自动修改任何指令。");
-            AppendDiscoveryOptions(builder, snapshot?.DiscoveryOptions);
+            AppendDiscoveryOptions(builder, snapshot?.DiscoveryOptions, snapshot?.WorkspacePath);
             if (hasActiveAgentRun)
                 builder.AppendLine("当前运行中的任务已固定请求启动时的指令快照；现在编辑只影响后续请求。");
             builder.Append("这里展示的是个人与工作区指令，不是自动生成的跨会话记忆；Codex Home 不会因此成为通用文件或写入权限根。");
@@ -131,7 +131,8 @@ namespace ColorVision.Copilot
 
         private static void AppendDiscoveryOptions(
             StringBuilder builder,
-            CopilotProjectInstructionDiscoveryOptions? options)
+            CopilotProjectInstructionDiscoveryOptions? options,
+            string? workspacePath)
         {
             var effective = options ?? CopilotProjectInstructionDiscoveryConfig.CreateDefault();
             builder.Append("发现预算：")
@@ -163,6 +164,14 @@ namespace ColorVision.Copilot
                     .AppendLine(effective.HasProjectRootMarkersOverride
                         ? "（Codex Home 请求快照）"
                         : "（默认）");
+            }
+            if (effective.AppliedProjectConfigFilePaths.Count > 0)
+            {
+                builder.Append("项目配置层：")
+                    .Append(effective.AppliedProjectConfigFilePaths.Count.ToString("N0", CultureInfo.CurrentCulture))
+                    .AppendLine(" 个（项目根 → 工作目录，后者优先）");
+                foreach (var configPath in effective.AppliedProjectConfigFilePaths)
+                    builder.Append("  - ").AppendLine(FormatPath(configPath, workspacePath));
             }
         }
 

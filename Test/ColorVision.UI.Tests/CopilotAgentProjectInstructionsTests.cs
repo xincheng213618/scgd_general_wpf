@@ -1032,6 +1032,246 @@ public sealed class CopilotAgentProjectInstructionsTests
     }
 
     [Fact]
+    public void NestedProjectConfigLayersApplyFromTheProjectRootToTheWorkingDirectory()
+    {
+        string globalRoot = CreateTemporaryDirectory();
+        string projectRoot = CreateTemporaryDirectory();
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
+            File.WriteAllText(
+                Path.Combine(globalRoot, "config.toml"),
+                $"""
+                [projects.'{projectRoot}']
+                trust_level = "trusted"
+                """);
+            string rootConfigDirectory = Path.Combine(projectRoot, ".codex");
+            Directory.CreateDirectory(rootConfigDirectory);
+            string rootConfigPath = Path.Combine(rootConfigDirectory, "config.toml");
+            File.WriteAllText(
+                rootConfigPath,
+                "project_doc_max_bytes = 8192\nproject_doc_fallback_filenames = [\"ROOT_GUIDE.md\"]");
+            string sourceDirectory = Path.Combine(projectRoot, "src");
+            string sourceConfigDirectory = Path.Combine(sourceDirectory, ".codex");
+            Directory.CreateDirectory(sourceConfigDirectory);
+            string sourceConfigPath = Path.Combine(sourceConfigDirectory, "config.toml");
+            File.WriteAllText(
+                sourceConfigPath,
+                "project_doc_max_bytes = 4096\nproject_doc_fallback_filenames = [\"SOURCE_GUIDE.md\"]");
+            string featureDirectory = Path.Combine(sourceDirectory, "feature");
+            string featureConfigDirectory = Path.Combine(featureDirectory, ".codex");
+            Directory.CreateDirectory(featureConfigDirectory);
+            string featureConfigPath = Path.Combine(featureConfigDirectory, "config.toml");
+            File.WriteAllText(
+                featureConfigPath,
+                "project_doc_max_bytes = 2048\nproject_doc_fallback_filenames = [\"FEATURE_GUIDE.md\"]");
+            string activeDocument = Path.Combine(featureDirectory, "Feature.cs");
+            File.WriteAllText(activeDocument, "namespace Feature;");
+
+            var hostContext = new CopilotAgentHostContextSnapshot(
+                activeDocument,
+                sourceDirectory,
+                attachments: null,
+                liveContext: null,
+                conversationHistory: null,
+                additionalReadRootPaths: null,
+                globalInstructionRootPath: globalRoot);
+
+            Assert.Equal(projectRoot, hostContext.PrimaryTrustedProjectRootPath, ignoreCase: true);
+            Assert.Equal(sourceDirectory, hostContext.ProjectConfigWorkingDirectoryPath, ignoreCase: true);
+            Assert.Equal(4096, hostContext.ProjectInstructionDiscoveryOptions.MaximumBytes);
+            Assert.Equal(["SOURCE_GUIDE.md"], hostContext.ProjectInstructionDiscoveryOptions.FallbackFileNames);
+            Assert.Equal(
+                [rootConfigPath, sourceConfigPath],
+                hostContext.ProjectInstructionDiscoveryOptions.AppliedProjectConfigFilePaths,
+                StringComparer.OrdinalIgnoreCase);
+            Assert.DoesNotContain(
+                hostContext.ProjectInstructionDiscoveryOptions.AppliedProjectConfigFilePaths,
+                path => string.Equals(path, featureConfigPath, StringComparison.OrdinalIgnoreCase));
+            var report = CopilotProjectInstructionDiagnostics.Format(
+                new CopilotProjectInstructionSnapshot(
+                    projectRoot,
+                    activeDocument,
+                    globalRoot,
+                    hostContext.ProjectInstructionDiscoveryOptions,
+                    Array.Empty<CopilotProjectInstructionDocument>()),
+                hasActiveAgentRun: false);
+            Assert.Contains("项目配置层：2 个（项目根 → 工作目录，后者优先）", report, StringComparison.Ordinal);
+            Assert.Contains(Path.Combine("src", ".codex", "config.toml"), report, StringComparison.OrdinalIgnoreCase);
+            var contextReport = CopilotContextDiagnostics.Format(new CopilotContextDiagnosticSnapshot
+            {
+                AgentContextEnabled = true,
+                ProjectInstructionAppliedProjectConfigFilePaths =
+                    hostContext.ProjectInstructionDiscoveryOptions.AppliedProjectConfigFilePaths,
+            });
+            Assert.Contains("项目配置层：2 个（项目根 → 工作目录，后者优先）", contextReport, StringComparison.Ordinal);
+            Assert.Contains(sourceConfigPath, contextReport, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            Directory.Delete(globalRoot, recursive: true);
+            Directory.Delete(projectRoot, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void StandaloneDocumentUsesItsDirectoryForNestedProjectConfigLayers()
+    {
+        string globalRoot = CreateTemporaryDirectory();
+        string projectRoot = CreateTemporaryDirectory();
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
+            string sourceDirectory = Path.Combine(projectRoot, "src");
+            string featureDirectory = Path.Combine(sourceDirectory, "feature");
+            Directory.CreateDirectory(Path.Combine(projectRoot, ".codex"));
+            Directory.CreateDirectory(Path.Combine(sourceDirectory, ".codex"));
+            Directory.CreateDirectory(Path.Combine(featureDirectory, ".codex"));
+            string rootConfigPath = Path.Combine(projectRoot, ".codex", "config.toml");
+            string sourceConfigPath = Path.Combine(sourceDirectory, ".codex", "config.toml");
+            string featureConfigPath = Path.Combine(featureDirectory, ".codex", "config.toml");
+            File.WriteAllText(rootConfigPath, "project_doc_max_bytes = 8192");
+            File.WriteAllText(sourceConfigPath, "project_doc_max_bytes = 4096");
+            File.WriteAllText(featureConfigPath, "project_doc_max_bytes = 2048");
+            string activeDocument = Path.Combine(featureDirectory, "Feature.cs");
+            File.WriteAllText(activeDocument, "namespace Feature;");
+
+            var hostContext = new CopilotAgentHostContextSnapshot(
+                activeDocument,
+                solutionDirectoryPath: null,
+                attachments: null,
+                liveContext: null,
+                conversationHistory: null,
+                additionalReadRootPaths: null,
+                globalInstructionRootPath: globalRoot);
+
+            Assert.Equal(featureDirectory, hostContext.ProjectConfigWorkingDirectoryPath, ignoreCase: true);
+            Assert.Equal(2048, hostContext.ProjectInstructionDiscoveryOptions.MaximumBytes);
+            Assert.Equal(
+                [rootConfigPath, sourceConfigPath, featureConfigPath],
+                hostContext.ProjectInstructionDiscoveryOptions.AppliedProjectConfigFilePaths,
+                StringComparer.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            Directory.Delete(globalRoot, recursive: true);
+            Directory.Delete(projectRoot, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void ExplicitlyUntrustedProjectSkipsEveryNestedProjectConfigLayer()
+    {
+        string globalRoot = CreateTemporaryDirectory();
+        string projectRoot = CreateTemporaryDirectory();
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
+            File.WriteAllText(
+                Path.Combine(globalRoot, "config.toml"),
+                $"""
+                project_doc_fallback_filenames = ["GLOBAL_GUIDE.md"]
+
+                [projects.'{projectRoot}']
+                trust_level = "untrusted"
+                """);
+            Directory.CreateDirectory(Path.Combine(projectRoot, ".codex"));
+            File.WriteAllText(
+                Path.Combine(projectRoot, ".codex", "config.toml"),
+                "project_doc_fallback_filenames = [\"ROOT_GUIDE.md\"]");
+            string sourceDirectory = Path.Combine(projectRoot, "src");
+            Directory.CreateDirectory(Path.Combine(sourceDirectory, ".codex"));
+            File.WriteAllText(
+                Path.Combine(sourceDirectory, ".codex", "config.toml"),
+                "project_doc_fallback_filenames = [\"SOURCE_GUIDE.md\"]");
+            string activeDocument = Path.Combine(sourceDirectory, "Feature.cs");
+            File.WriteAllText(activeDocument, "namespace Feature;");
+
+            var hostContext = new CopilotAgentHostContextSnapshot(
+                activeDocument,
+                sourceDirectory,
+                attachments: null,
+                liveContext: null,
+                conversationHistory: null,
+                additionalReadRootPaths: null,
+                globalInstructionRootPath: globalRoot);
+
+            Assert.Equal(CopilotCodexProjectTrustLevel.Untrusted, hostContext.ProjectInstructionDiscoveryOptions.ProjectTrustLevel);
+            Assert.Equal(["GLOBAL_GUIDE.md"], hostContext.ProjectInstructionDiscoveryOptions.FallbackFileNames);
+            Assert.Empty(hostContext.ProjectInstructionDiscoveryOptions.AppliedProjectConfigFilePaths);
+            Assert.Equal(CopilotProjectInstructionConfigSources.CodexHome, hostContext.ProjectInstructionDiscoveryOptions.ConfigSources);
+        }
+        finally
+        {
+            Directory.Delete(globalRoot, recursive: true);
+            Directory.Delete(projectRoot, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void HostContextKeepsTheNestedProjectConfigStackTakenAtSubmission()
+    {
+        string globalRoot = CreateTemporaryDirectory();
+        string projectRoot = CreateTemporaryDirectory();
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
+            string sourceDirectory = Path.Combine(projectRoot, "src");
+            string configDirectory = Path.Combine(sourceDirectory, ".codex");
+            Directory.CreateDirectory(configDirectory);
+            string configPath = Path.Combine(configDirectory, "config.toml");
+            File.WriteAllText(configPath, "project_doc_fallback_filenames = [\"FIRST.md\"]");
+            string firstPath = Path.Combine(projectRoot, "FIRST.md");
+            string secondPath = Path.Combine(projectRoot, "SECOND.md");
+            File.WriteAllText(firstPath, "# First project instructions");
+            File.WriteAllText(secondPath, "# Second project instructions");
+            string activeDocument = Path.Combine(sourceDirectory, "Feature.cs");
+            File.WriteAllText(activeDocument, "namespace Feature;");
+            var submittedContext = new CopilotAgentHostContextSnapshot(
+                activeDocument,
+                sourceDirectory,
+                attachments: null,
+                liveContext: null,
+                conversationHistory: null,
+                additionalReadRootPaths: null,
+                globalInstructionRootPath: globalRoot);
+
+            File.WriteAllText(configPath, "project_doc_fallback_filenames = [\"SECOND.md\"]");
+
+            var submittedPlan = CopilotAgentRequestFactory.Prepare(
+                $"Inspect the local implementation in {activeDocument}",
+                CopilotAgentMode.Auto,
+                submittedContext);
+            var refreshedContext = new CopilotAgentHostContextSnapshot(
+                activeDocument,
+                sourceDirectory,
+                attachments: null,
+                liveContext: null,
+                conversationHistory: null,
+                additionalReadRootPaths: null,
+                globalInstructionRootPath: globalRoot);
+            var refreshedPlan = CopilotAgentRequestFactory.Prepare(
+                $"Inspect the local implementation in {activeDocument}",
+                CopilotAgentMode.Auto,
+                refreshedContext);
+
+            Assert.Equal(["FIRST.md"], submittedContext.ProjectInstructionDiscoveryOptions.FallbackFileNames);
+            Assert.Equal(["SECOND.md"], refreshedContext.ProjectInstructionDiscoveryOptions.FallbackFileNames);
+            Assert.Contains(submittedPlan.ProjectInstructions, document =>
+                string.Equals(document.Path, firstPath, StringComparison.OrdinalIgnoreCase));
+            Assert.DoesNotContain(submittedPlan.ProjectInstructions, document =>
+                string.Equals(document.Path, secondPath, StringComparison.OrdinalIgnoreCase));
+            Assert.Contains(refreshedPlan.ProjectInstructions, document =>
+                string.Equals(document.Path, secondPath, StringComparison.OrdinalIgnoreCase));
+        }
+        finally
+        {
+            Directory.Delete(globalRoot, recursive: true);
+            Directory.Delete(projectRoot, recursive: true);
+        }
+    }
+
+    [Fact]
     public void RequestFactoryKeepsTheInstructionConfigSnapshotTakenAtSubmission()
     {
         string globalRoot = CreateTemporaryDirectory();
