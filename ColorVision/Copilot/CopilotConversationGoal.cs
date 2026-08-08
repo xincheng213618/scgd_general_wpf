@@ -301,10 +301,27 @@ namespace ColorVision.Copilot
                     StartsWork: true);
             }
 
-            if (!CopilotConversationGoal.TryNormalizeObjective(normalized, out _, out var errorMessage))
+            if (!CopilotConversationGoal.TryNormalizeObjective(
+                    normalized,
+                    out var normalizedObjective,
+                    out var errorMessage))
                 return new CopilotConversationGoalCommandResult(current, false, errorMessage);
 
-            var created = CopilotConversationGoal.Create(normalized, now);
+            if (current?.IsStructurallyValid() == true
+                && !current.IsAchieved
+                && string.Equals(current.Objective, normalizedObjective, StringComparison.Ordinal))
+            {
+                var continued = current.WithState(CopilotConversationGoalState.Active, now);
+                return new CopilotConversationGoalCommandResult(
+                    continued,
+                    true,
+                    "已继续当前持续目标并保留既有轮次、评估和 Token 统计；即将启动新的 Agent 轮次。"
+                    + "\n"
+                    + continued.Objective,
+                    StartsWork: true);
+            }
+
+            var created = CopilotConversationGoal.Create(normalizedObjective, now);
             return new CopilotConversationGoalCommandResult(
                 created,
                 true,

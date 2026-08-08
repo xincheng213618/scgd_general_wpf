@@ -66,4 +66,62 @@ public sealed class CopilotConversationGoalTests
         Assert.Equal(firstUpdate, resumed.UpdatedAtUtc);
         Assert.True(resumed.IsStructurallyValid());
     }
+
+    [Fact]
+    public void ReenteringSameNonTerminalGoalPreservesUsageAndStartsWork()
+    {
+        var createdAt = new DateTimeOffset(2026, 8, 8, 8, 0, 0, TimeSpan.Zero);
+        var current = CopilotConversationGoal.Create("持续改进 Copilot", createdAt)
+            .WithTurnOutcome(
+                CopilotConversationGoalState.Paused,
+                new CopilotTokenUsage(10, 5, 15),
+                evaluated: true,
+                continued: true,
+                "等待下一轮",
+                createdAt.AddMinutes(1));
+
+        var result = CopilotConversationGoalCommand.Execute(
+            current,
+            "  持续改进 Copilot  ",
+            createdAt.AddMinutes(2));
+
+        Assert.True(result.Changed);
+        Assert.True(result.StartsWork);
+        Assert.NotNull(result.Goal);
+        Assert.Equal(current.Id, result.Goal.Id);
+        Assert.Equal(current.TurnCount, result.Goal.TurnCount);
+        Assert.Equal(current.EvaluationCount, result.Goal.EvaluationCount);
+        Assert.Equal(current.TokensUsed, result.Goal.TokensUsed);
+        Assert.Equal(CopilotConversationGoalState.Active, result.Goal.State);
+        Assert.Equal(0, result.Goal.ConsecutiveContinuationCount);
+        Assert.Contains("保留", result.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ReenteringAchievedGoalStartsFreshUsageAccounting()
+    {
+        var createdAt = new DateTimeOffset(2026, 8, 8, 8, 0, 0, TimeSpan.Zero);
+        var current = CopilotConversationGoal.Create("持续改进 Copilot", createdAt)
+            .WithTurnOutcome(
+                CopilotConversationGoalState.Achieved,
+                new CopilotTokenUsage(10, 5, 15),
+                evaluated: true,
+                continued: false,
+                "目标已达成",
+                createdAt.AddMinutes(1));
+
+        var result = CopilotConversationGoalCommand.Execute(
+            current,
+            current.Objective,
+            createdAt.AddMinutes(2));
+
+        Assert.True(result.Changed);
+        Assert.True(result.StartsWork);
+        Assert.NotNull(result.Goal);
+        Assert.NotEqual(current.Id, result.Goal.Id);
+        Assert.Equal(0, result.Goal.TurnCount);
+        Assert.Equal(0, result.Goal.EvaluationCount);
+        Assert.Equal(0, result.Goal.TokensUsed);
+        Assert.Equal(CopilotConversationGoalState.Active, result.Goal.State);
+    }
 }
