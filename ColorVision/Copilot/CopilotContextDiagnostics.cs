@@ -87,6 +87,8 @@ namespace ColorVision.Copilot
 
         public string ProjectInstructionConfigSourceLabel { get; init; } = string.Empty;
 
+        public string ProjectInstructionProjectTrustLabel { get; init; } = string.Empty;
+
         public IReadOnlyList<string> ProjectInstructionFallbackFileNames { get; init; } = Array.Empty<string>();
 
         public IReadOnlyList<string> TrustedProjectRootPaths { get; init; } = Array.Empty<string>();
@@ -264,6 +266,11 @@ namespace ColorVision.Copilot
             {
                 builder.Append("配置备用名：")
                     .AppendLine(string.Join("、", snapshot.ProjectInstructionFallbackFileNames));
+            }
+            if (!string.IsNullOrWhiteSpace(snapshot.ProjectInstructionProjectTrustLabel))
+            {
+                builder.Append("项目配置信任：")
+                    .AppendLine(snapshot.ProjectInstructionProjectTrustLabel);
             }
             AppendTrustedProjectRoots(builder, snapshot.TrustedProjectRootPaths);
             AppendProjectInstructionDetails(builder, snapshot.ProjectInstructions);

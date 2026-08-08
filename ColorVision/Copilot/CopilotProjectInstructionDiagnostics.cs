@@ -145,6 +145,11 @@ namespace ColorVision.Copilot
                 builder.Append("配置备用名：")
                     .AppendLine(string.Join("、", effective.FallbackFileNames));
             }
+            if (effective.ProjectTrustLabel.Length > 0)
+            {
+                builder.Append("项目配置信任：")
+                    .AppendLine(effective.ProjectTrustLabel);
+            }
         }
 
         private static void AppendTarget(

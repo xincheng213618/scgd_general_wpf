@@ -420,6 +420,7 @@ namespace ColorVision.Copilot
                 ProjectInstructionMaximumBytes = projectInstructionOptions.MaximumBytes,
                 ProjectInstructionUsesCodexConfig = projectInstructionOptions.UsesCodexConfig,
                 ProjectInstructionConfigSourceLabel = projectInstructionOptions.ConfigSourceLabel,
+                ProjectInstructionProjectTrustLabel = projectInstructionOptions.ProjectTrustLabel,
                 ProjectInstructionFallbackFileNames = projectInstructionOptions.FallbackFileNames,
                 TrustedProjectRootPaths = trustedProjectRoots,
                 ProjectInstructions = projectInstructions,

@@ -15,12 +15,21 @@ namespace ColorVision.Copilot
         TrustedProject = 2,
     }
 
+    internal enum CopilotCodexProjectTrustLevel
+    {
+        Unspecified,
+        Trusted,
+        Untrusted,
+        Invalid,
+    }
+
     internal sealed record CopilotProjectInstructionDiscoveryOptions(
         int MaximumBytes,
         IReadOnlyList<string> FallbackFileNames,
         bool HasMaximumBytesOverride,
         bool HasFallbackFileNamesOverride,
-        CopilotProjectInstructionConfigSources ConfigSources = CopilotProjectInstructionConfigSources.None)
+        CopilotProjectInstructionConfigSources ConfigSources = CopilotProjectInstructionConfigSources.None,
+        CopilotCodexProjectTrustLevel ProjectTrustLevel = CopilotCodexProjectTrustLevel.Unspecified)
     {
         public bool UsesCodexConfig => ConfigSources != CopilotProjectInstructionConfigSources.None
             || HasMaximumBytesOverride
@@ -33,6 +42,19 @@ namespace ColorVision.Copilot
             CopilotProjectInstructionConfigSources.CodexHome | CopilotProjectInstructionConfigSources.TrustedProject =>
                 "Codex Home + 受信项目 .codex/config.toml",
             _ => UsesCodexConfig ? "Codex config.toml" : "ColorVision 默认",
+        };
+
+        public bool AllowsProjectCodexConfig => ProjectTrustLevel is not (
+            CopilotCodexProjectTrustLevel.Untrusted or CopilotCodexProjectTrustLevel.Invalid);
+
+        public string ProjectTrustLabel => ProjectTrustLevel switch
+        {
+            CopilotCodexProjectTrustLevel.Trusted => "Codex Home trust_level=trusted",
+            CopilotCodexProjectTrustLevel.Untrusted =>
+                "Codex Home trust_level=untrusted；已跳过项目 .codex/config.toml",
+            CopilotCodexProjectTrustLevel.Invalid =>
+                "Codex Home trust_level 无效；已保守跳过项目 .codex/config.toml",
+            _ => string.Empty,
         };
     }
 
@@ -49,6 +71,8 @@ namespace ColorVision.Copilot
         private const string ConfigFileName = "config.toml";
         private const string MaximumBytesKey = "project_doc_max_bytes";
         private const string FallbackFileNamesKey = "project_doc_fallback_filenames";
+        private const string ProjectsTablePrefix = "projects.";
+        private const string TrustLevelKey = "trust_level";
 
         public static CopilotProjectInstructionDiscoveryOptions Load(string? globalInstructionRootPath)
             => Load(globalInstructionRootPath, trustedProjectRootPath: null);
@@ -59,22 +83,36 @@ namespace ColorVision.Copilot
         {
             var options = CreateDefault();
             var normalizedRoot = CopilotAgentProjectInstructions.NormalizeGlobalInstructionRootPath(globalInstructionRootPath);
-            if (normalizedRoot.Length > 0)
+            var globalSource = string.Empty;
+            if (normalizedRoot.Length > 0
+                && TryReadConfigSource(
+                    normalizedRoot,
+                    Path.Combine(normalizedRoot, ConfigFileName),
+                    out globalSource)
+                && TryParseInstructionLayer(globalSource, out var globalLayer))
             {
                 options = ApplyLayer(
                     options,
-                    normalizedRoot,
-                    Path.Combine(normalizedRoot, ConfigFileName),
+                    globalLayer,
                     CopilotProjectInstructionConfigSources.CodexHome);
             }
 
             var normalizedProjectRoot = NormalizeTrustedProjectRootPath(trustedProjectRootPath);
-            if (normalizedProjectRoot.Length > 0)
+            if (normalizedProjectRoot.Length == 0)
+                return options;
+
+            var projectTrustLevel = ResolveProjectTrustLevel(globalSource, normalizedProjectRoot);
+            options = options with { ProjectTrustLevel = projectTrustLevel };
+            if (options.AllowsProjectCodexConfig
+                && TryReadConfigSource(
+                    normalizedProjectRoot,
+                    Path.Combine(normalizedProjectRoot, ".codex", ConfigFileName),
+                    out var projectSource)
+                && TryParseInstructionLayer(projectSource, out var projectLayer))
             {
                 options = ApplyLayer(
                     options,
-                    normalizedProjectRoot,
-                    Path.Combine(normalizedProjectRoot, ".codex", ConfigFileName),
+                    projectLayer,
                     CopilotProjectInstructionConfigSources.TrustedProject);
             }
 
@@ -90,27 +128,24 @@ namespace ColorVision.Copilot
 
         private static CopilotProjectInstructionDiscoveryOptions ApplyLayer(
             CopilotProjectInstructionDiscoveryOptions current,
-            string allowedRootPath,
-            string configPath,
+            ProjectInstructionConfigLayer layer,
             CopilotProjectInstructionConfigSources source)
         {
-            if (!TryLoadLayer(allowedRootPath, configPath, out var layer))
-                return current;
-
             return new CopilotProjectInstructionDiscoveryOptions(
                 layer.HasMaximumBytesOverride ? layer.MaximumBytes : current.MaximumBytes,
                 layer.HasFallbackFileNamesOverride ? layer.FallbackFileNames : current.FallbackFileNames,
                 current.HasMaximumBytesOverride || layer.HasMaximumBytesOverride,
                 current.HasFallbackFileNamesOverride || layer.HasFallbackFileNamesOverride,
-                current.ConfigSources | source);
+                current.ConfigSources | source,
+                current.ProjectTrustLevel);
         }
 
-        private static bool TryLoadLayer(
+        private static bool TryReadConfigSource(
             string allowedRootPath,
             string configPath,
-            out ProjectInstructionConfigLayer layer)
+            out string source)
         {
-            layer = ProjectInstructionConfigLayer.Empty;
+            source = string.Empty;
             try
             {
                 configPath = Path.GetFullPath(configPath);
@@ -125,7 +160,6 @@ namespace ColorVision.Copilot
                     return false;
                 }
 
-                string source;
                 using (var stream = new FileStream(configPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete))
                 using (var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true))
                 {
@@ -137,45 +171,144 @@ namespace ColorVision.Copilot
                         return false;
                     source = new string(buffer, 0, count);
                 }
-
-                var maximumBytes = DefaultMaximumBytes;
-                var fallbackFileNames = Array.Empty<string>();
-                var hasMaximumBytesOverride = false;
-                var hasFallbackFileNamesOverride = false;
-                foreach (var assignment in EnumerateTopLevelAssignments(source))
-                {
-                    if (string.Equals(assignment.Key, MaximumBytesKey, StringComparison.Ordinal))
-                    {
-                        if (!TryParseMaximumBytes(assignment.Value, out var configuredMaximumBytes))
-                            continue;
-                        maximumBytes = configuredMaximumBytes;
-                        hasMaximumBytesOverride = true;
-                        continue;
-                    }
-
-                    if (!string.Equals(assignment.Key, FallbackFileNamesKey, StringComparison.Ordinal)
-                        || !TryParseFallbackFileNames(assignment.Value, out var configuredFallbackFileNames))
-                    {
-                        continue;
-                    }
-
-                    fallbackFileNames = configuredFallbackFileNames;
-                    hasFallbackFileNamesOverride = true;
-                }
-
-                if (!hasMaximumBytesOverride && !hasFallbackFileNamesOverride)
-                    return false;
-
-                layer = new ProjectInstructionConfigLayer(
-                    maximumBytes,
-                    fallbackFileNames,
-                    hasMaximumBytesOverride,
-                    hasFallbackFileNamesOverride);
                 return true;
             }
             catch
             {
                 return false;
+            }
+        }
+
+        private static bool TryParseInstructionLayer(
+            string source,
+            out ProjectInstructionConfigLayer layer)
+        {
+            var maximumBytes = DefaultMaximumBytes;
+            var fallbackFileNames = Array.Empty<string>();
+            var hasMaximumBytesOverride = false;
+            var hasFallbackFileNamesOverride = false;
+            foreach (var assignment in EnumerateTopLevelAssignments(source))
+            {
+                if (string.Equals(assignment.Key, MaximumBytesKey, StringComparison.Ordinal))
+                {
+                    if (!TryParseMaximumBytes(assignment.Value, out var configuredMaximumBytes))
+                        continue;
+                    maximumBytes = configuredMaximumBytes;
+                    hasMaximumBytesOverride = true;
+                    continue;
+                }
+
+                if (!string.Equals(assignment.Key, FallbackFileNamesKey, StringComparison.Ordinal)
+                    || !TryParseFallbackFileNames(assignment.Value, out var configuredFallbackFileNames))
+                {
+                    continue;
+                }
+
+                fallbackFileNames = configuredFallbackFileNames;
+                hasFallbackFileNamesOverride = true;
+            }
+
+            layer = new ProjectInstructionConfigLayer(
+                maximumBytes,
+                fallbackFileNames,
+                hasMaximumBytesOverride,
+                hasFallbackFileNamesOverride);
+            return hasMaximumBytesOverride || hasFallbackFileNamesOverride;
+        }
+
+        private static CopilotCodexProjectTrustLevel ResolveProjectTrustLevel(
+            string source,
+            string normalizedProjectRoot)
+        {
+            var currentTableMatches = false;
+            var hasTrustLevel = false;
+            var result = CopilotCodexProjectTrustLevel.Unspecified;
+            foreach (var rawLine in NormalizeLines(source))
+            {
+                var line = StripComment(rawLine).Trim();
+                if (line.Length == 0)
+                    continue;
+                if (line[0] == '[')
+                {
+                    currentTableMatches = TryParseProjectTableHeader(line, out var configuredProjectPath)
+                        && string.Equals(configuredProjectPath, normalizedProjectRoot, StringComparison.OrdinalIgnoreCase);
+                    continue;
+                }
+                if (!currentTableMatches)
+                    continue;
+
+                var equalsIndex = line.IndexOf('=');
+                if (equalsIndex <= 0
+                    || !string.Equals(line[..equalsIndex].Trim(), TrustLevelKey, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+                if (hasTrustLevel)
+                    return CopilotCodexProjectTrustLevel.Invalid;
+                hasTrustLevel = true;
+
+                var value = line[(equalsIndex + 1)..].Trim();
+                var index = 0;
+                if (!TryReadTomlString(value, ref index, out var trustLevel))
+                    return CopilotCodexProjectTrustLevel.Invalid;
+                SkipWhitespace(value, ref index);
+                if (index != value.Length)
+                    return CopilotCodexProjectTrustLevel.Invalid;
+
+                result = trustLevel switch
+                {
+                    "trusted" => CopilotCodexProjectTrustLevel.Trusted,
+                    "untrusted" => CopilotCodexProjectTrustLevel.Untrusted,
+                    _ => CopilotCodexProjectTrustLevel.Invalid,
+                };
+                if (result == CopilotCodexProjectTrustLevel.Invalid)
+                    return result;
+            }
+
+            return result;
+        }
+
+        private static bool TryParseProjectTableHeader(string line, out string normalizedProjectPath)
+        {
+            normalizedProjectPath = string.Empty;
+            if (line.Length < 4
+                || line[0] != '['
+                || line[^1] != ']'
+                || line[1] == '[')
+            {
+                return false;
+            }
+
+            var tableName = line[1..^1].Trim();
+            if (!tableName.StartsWith(ProjectsTablePrefix, StringComparison.Ordinal))
+                return false;
+
+            var index = ProjectsTablePrefix.Length;
+            if (!TryReadTomlString(tableName, ref index, out var configuredProjectPath))
+                return false;
+            SkipWhitespace(tableName, ref index);
+            if (index != tableName.Length)
+                return false;
+
+            normalizedProjectPath = NormalizeConfiguredProjectPath(configuredProjectPath);
+            return normalizedProjectPath.Length > 0;
+        }
+
+        private static string NormalizeConfiguredProjectPath(string? path)
+        {
+            if (string.IsNullOrWhiteSpace(path) || path.Length > 2_048)
+                return string.Empty;
+
+            try
+            {
+                var trimmed = path.Trim();
+                if (!Path.IsPathFullyQualified(trimmed))
+                    return string.Empty;
+                return Path.TrimEndingDirectorySeparator(Path.GetFullPath(trimmed));
+            }
+            catch
+            {
+                return string.Empty;
             }
         }
 
@@ -189,7 +322,7 @@ namespace ColorVision.Copilot
                 var trimmed = path.Trim();
                 if (!Path.IsPathFullyQualified(trimmed))
                     return string.Empty;
-                var fullPath = Path.GetFullPath(trimmed);
+                var fullPath = Path.TrimEndingDirectorySeparator(Path.GetFullPath(trimmed));
                 return fullPath.Length <= 2_048
                     && Directory.Exists(fullPath)
                     && !CopilotWorkspaceSearchSupport.HasReparsePointInPath(fullPath)
@@ -204,10 +337,7 @@ namespace ColorVision.Copilot
 
         private static IEnumerable<TomlAssignment> EnumerateTopLevelAssignments(string source)
         {
-            var lines = (source ?? string.Empty)
-                .Replace("\r\n", "\n", StringComparison.Ordinal)
-                .Replace('\r', '\n')
-                .Split('\n');
+            var lines = NormalizeLines(source);
             for (var index = 0; index < lines.Length; index++)
             {
                 var line = StripComment(lines[index]).Trim();
@@ -249,6 +379,12 @@ namespace ColorVision.Copilot
                 yield return new TomlAssignment(key, value);
             }
         }
+
+        private static string[] NormalizeLines(string source) =>
+            (source ?? string.Empty)
+                .Replace("\r\n", "\n", StringComparison.Ordinal)
+                .Replace('\r', '\n')
+                .Split('\n');
 
         private static string StripComment(string line)
         {
@@ -487,10 +623,6 @@ namespace ColorVision.Copilot
             int MaximumBytes,
             IReadOnlyList<string> FallbackFileNames,
             bool HasMaximumBytesOverride,
-            bool HasFallbackFileNamesOverride)
-        {
-            public static ProjectInstructionConfigLayer Empty { get; } =
-                new(DefaultMaximumBytes, Array.Empty<string>(), false, false);
-        }
+            bool HasFallbackFileNamesOverride);
     }
 }

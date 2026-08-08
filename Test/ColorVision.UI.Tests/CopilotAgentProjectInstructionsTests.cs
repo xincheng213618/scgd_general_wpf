@@ -247,9 +247,18 @@ public sealed class CopilotAgentProjectInstructionsTests
         string projectRoot = CreateTemporaryDirectory();
         try
         {
+            string configuredProjectPath = projectRoot
+                .ToUpperInvariant()
+                .Replace("\\", "\\\\", StringComparison.Ordinal);
             File.WriteAllText(
                 Path.Combine(globalRoot, "config.toml"),
-                "project_doc_max_bytes = 4096\nproject_doc_fallback_filenames = [\"GLOBAL_GUIDE.md\"]");
+                $"""
+                project_doc_max_bytes = 4096
+                project_doc_fallback_filenames = ["GLOBAL_GUIDE.md"]
+
+                [projects."{configuredProjectPath}"]
+                trust_level = "trusted"
+                """);
             string projectConfigDirectory = Path.Combine(projectRoot, ".codex");
             Directory.CreateDirectory(projectConfigDirectory);
             File.WriteAllText(
@@ -272,6 +281,7 @@ public sealed class CopilotAgentProjectInstructionsTests
                 CopilotProjectInstructionConfigSources.CodexHome
                     | CopilotProjectInstructionConfigSources.TrustedProject,
                 options.ConfigSources);
+            Assert.Equal(CopilotCodexProjectTrustLevel.Trusted, options.ProjectTrustLevel);
             Assert.Equal(configuredPath, document.Path, ignoreCase: true);
             var report = CopilotProjectInstructionDiagnostics.Format(
                 new CopilotProjectInstructionSnapshot(
@@ -282,6 +292,191 @@ public sealed class CopilotAgentProjectInstructionsTests
                     [document]),
                 hasActiveAgentRun: false);
             Assert.Contains("Codex Home + 受信项目 .codex/config.toml 请求快照", report, StringComparison.Ordinal);
+            Assert.Contains("Codex Home trust_level=trusted", report, StringComparison.Ordinal);
+        }
+        finally
+        {
+            Directory.Delete(globalRoot, recursive: true);
+            Directory.Delete(projectRoot, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void ExplicitlyUntrustedProjectSkipsProjectConfigAndReportsIt()
+    {
+        string globalRoot = CreateTemporaryDirectory();
+        string projectRoot = CreateTemporaryDirectory();
+        try
+        {
+            File.WriteAllText(
+                Path.Combine(globalRoot, "config.toml"),
+                $"""
+                project_doc_fallback_filenames = ["GLOBAL_GUIDE.md"]
+
+                [projects.'{projectRoot}']
+                trust_level = "untrusted"
+                """);
+            string projectConfigDirectory = Path.Combine(projectRoot, ".codex");
+            Directory.CreateDirectory(projectConfigDirectory);
+            File.WriteAllText(
+                Path.Combine(projectConfigDirectory, "config.toml"),
+                "project_doc_fallback_filenames = [\"PROJECT_GUIDE.md\"]");
+            string globalGuidePath = Path.Combine(projectRoot, "GLOBAL_GUIDE.md");
+            File.WriteAllText(globalGuidePath, "# Global fallback instructions");
+            File.WriteAllText(Path.Combine(projectRoot, "PROJECT_GUIDE.md"), "# Project instructions");
+
+            var options = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
+            var document = Assert.Single(CopilotAgentProjectInstructions.DiscoverWithGlobal(
+                [projectRoot],
+                activeDocumentPath: null,
+                additionalTargetFilePaths: null,
+                globalInstructionRootPath: globalRoot,
+                discoveryOptions: options));
+
+            Assert.Equal(CopilotCodexProjectTrustLevel.Untrusted, options.ProjectTrustLevel);
+            Assert.False(options.AllowsProjectCodexConfig);
+            Assert.Equal(["GLOBAL_GUIDE.md"], options.FallbackFileNames);
+            Assert.Equal(CopilotProjectInstructionConfigSources.CodexHome, options.ConfigSources);
+            Assert.Equal(globalGuidePath, document.Path, ignoreCase: true);
+            var report = CopilotProjectInstructionDiagnostics.Format(
+                new CopilotProjectInstructionSnapshot(
+                    projectRoot,
+                    string.Empty,
+                    globalRoot,
+                    options,
+                    [document]),
+                hasActiveAgentRun: false);
+            Assert.Contains("trust_level=untrusted", report, StringComparison.Ordinal);
+            Assert.Contains("已跳过项目 .codex/config.toml", report, StringComparison.Ordinal);
+        }
+        finally
+        {
+            Directory.Delete(globalRoot, recursive: true);
+            Directory.Delete(projectRoot, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void InvalidProjectTrustLevelFailsClosedForProjectConfig()
+    {
+        string globalRoot = CreateTemporaryDirectory();
+        string projectRoot = CreateTemporaryDirectory();
+        try
+        {
+            File.WriteAllText(
+                Path.Combine(globalRoot, "config.toml"),
+                $"""
+                project_doc_fallback_filenames = ["GLOBAL_GUIDE.md"]
+
+                [projects.'{projectRoot}']
+                trust_level = "maybe"
+                """);
+            string projectConfigDirectory = Path.Combine(projectRoot, ".codex");
+            Directory.CreateDirectory(projectConfigDirectory);
+            File.WriteAllText(
+                Path.Combine(projectConfigDirectory, "config.toml"),
+                "project_doc_fallback_filenames = [\"PROJECT_GUIDE.md\"]");
+
+            var options = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
+
+            Assert.Equal(CopilotCodexProjectTrustLevel.Invalid, options.ProjectTrustLevel);
+            Assert.False(options.AllowsProjectCodexConfig);
+            Assert.Equal(["GLOBAL_GUIDE.md"], options.FallbackFileNames);
+            Assert.Equal(CopilotProjectInstructionConfigSources.CodexHome, options.ConfigSources);
+            Assert.Contains("trust_level 无效", options.ProjectTrustLabel, StringComparison.Ordinal);
+        }
+        finally
+        {
+            Directory.Delete(globalRoot, recursive: true);
+            Directory.Delete(projectRoot, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void DuplicateProjectTrustLevelFailsClosedForProjectConfig()
+    {
+        string globalRoot = CreateTemporaryDirectory();
+        string projectRoot = CreateTemporaryDirectory();
+        try
+        {
+            File.WriteAllText(
+                Path.Combine(globalRoot, "config.toml"),
+                $"[projects.'{projectRoot}']\ntrust_level = \"untrusted\"\ntrust_level = \"trusted\"");
+            string projectConfigDirectory = Path.Combine(projectRoot, ".codex");
+            Directory.CreateDirectory(projectConfigDirectory);
+            File.WriteAllText(
+                Path.Combine(projectConfigDirectory, "config.toml"),
+                "project_doc_fallback_filenames = [\"PROJECT_GUIDE.md\"]");
+
+            var options = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
+
+            Assert.Equal(CopilotCodexProjectTrustLevel.Invalid, options.ProjectTrustLevel);
+            Assert.False(options.AllowsProjectCodexConfig);
+            Assert.Equal(CopilotProjectInstructionConfigSources.None, options.ConfigSources);
+        }
+        finally
+        {
+            Directory.Delete(globalRoot, recursive: true);
+            Directory.Delete(projectRoot, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void RequestFactoryKeepsTheProjectTrustDecisionTakenAtSubmission()
+    {
+        string globalRoot = CreateTemporaryDirectory();
+        string projectRoot = CreateTemporaryDirectory();
+        try
+        {
+            string globalConfigPath = Path.Combine(globalRoot, "config.toml");
+            File.WriteAllText(
+                globalConfigPath,
+                $"[projects.'{projectRoot}']\ntrust_level = \"trusted\"");
+            string projectConfigDirectory = Path.Combine(projectRoot, ".codex");
+            Directory.CreateDirectory(projectConfigDirectory);
+            File.WriteAllText(
+                Path.Combine(projectConfigDirectory, "config.toml"),
+                "project_doc_fallback_filenames = [\"PROJECT_GUIDE.md\"]");
+            string guidePath = Path.Combine(projectRoot, "PROJECT_GUIDE.md");
+            string activeDocument = Path.Combine(projectRoot, "Feature.cs");
+            File.WriteAllText(guidePath, "# Trusted project instructions");
+            File.WriteAllText(activeDocument, "namespace Feature;");
+            var submittedContext = new CopilotAgentHostContextSnapshot(
+                activeDocument,
+                projectRoot,
+                attachments: null,
+                liveContext: null,
+                conversationHistory: null,
+                additionalReadRootPaths: null,
+                globalInstructionRootPath: globalRoot);
+
+            File.WriteAllText(
+                globalConfigPath,
+                $"[projects.'{projectRoot}']\ntrust_level = \"untrusted\"");
+
+            var submittedPlan = CopilotAgentRequestFactory.Prepare(
+                $"Inspect the local implementation in {activeDocument}",
+                CopilotAgentMode.Auto,
+                submittedContext);
+            var refreshedContext = new CopilotAgentHostContextSnapshot(
+                activeDocument,
+                projectRoot,
+                attachments: null,
+                liveContext: null,
+                conversationHistory: null,
+                additionalReadRootPaths: null,
+                globalInstructionRootPath: globalRoot);
+            var refreshedPlan = CopilotAgentRequestFactory.Prepare(
+                $"Inspect the local implementation in {activeDocument}",
+                CopilotAgentMode.Auto,
+                refreshedContext);
+
+            Assert.Equal(CopilotCodexProjectTrustLevel.Trusted, submittedContext.ProjectInstructionDiscoveryOptions.ProjectTrustLevel);
+            Assert.Contains(submittedPlan.ProjectInstructions, document =>
+                string.Equals(document.Path, guidePath, StringComparison.OrdinalIgnoreCase));
+            Assert.Equal(CopilotCodexProjectTrustLevel.Untrusted, refreshedContext.ProjectInstructionDiscoveryOptions.ProjectTrustLevel);
+            Assert.DoesNotContain(refreshedPlan.ProjectInstructions, document =>
+                string.Equals(document.Path, guidePath, StringComparison.OrdinalIgnoreCase));
         }
         finally
         {
