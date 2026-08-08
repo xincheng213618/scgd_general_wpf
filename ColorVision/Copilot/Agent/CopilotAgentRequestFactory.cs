@@ -179,6 +179,8 @@ namespace ColorVision.Copilot
 
         public string ActiveDocumentPath { get; init; } = string.Empty;
 
+        public string ConfiguredDeveloperInstructions { get; init; } = string.Empty;
+
         public IReadOnlyList<CopilotProjectInstructionDocument> ProjectInstructions { get; init; } = Array.Empty<CopilotProjectInstructionDocument>();
 
         public IReadOnlyList<string> ReadableLocalFilePaths { get; init; } = Array.Empty<string>();
@@ -303,6 +305,7 @@ namespace ColorVision.Copilot
                 SearchRootPaths = searchRootPaths,
                 TrustedProjectRootPaths = trustedProjectRootPaths,
                 ActiveDocumentPath = hostContext.ActiveDocumentPath,
+                ConfiguredDeveloperInstructions = hostContext.ProjectInstructionDiscoveryOptions.DeveloperInstructions,
                 ProjectInstructions = projectInstructions,
                 ReadableLocalFilePaths = explicitLocalFilePaths,
                 ReadableLocalDirectoryPaths = readableLocalDirectoryPaths,
@@ -347,6 +350,7 @@ namespace ColorVision.Copilot
                 SearchRootPaths = plan.SearchRootPaths,
                 TrustedProjectRootPaths = plan.TrustedProjectRootPaths,
                 ActiveDocumentPath = plan.ActiveDocumentPath,
+                ConfiguredDeveloperInstructions = plan.ConfiguredDeveloperInstructions,
                 ProjectInstructions = plan.ProjectInstructions,
                 ReadableLocalFilePaths = plan.ReadableLocalFilePaths,
                 ReadableLocalDirectoryPaths = plan.ReadableLocalDirectoryPaths,

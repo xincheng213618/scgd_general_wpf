@@ -89,6 +89,12 @@ namespace ColorVision.Copilot
 
         public string ProjectInstructionProjectTrustLabel { get; init; } = string.Empty;
 
+        public int ProjectInstructionDeveloperInstructionsCharacters { get; init; }
+
+        public string ProjectInstructionDeveloperInstructionsSourceLabel { get; init; } = string.Empty;
+
+        public bool ProjectInstructionHasDeveloperInstructionsOverride { get; init; }
+
         public IReadOnlyList<string> ProjectInstructionFallbackFileNames { get; init; } = Array.Empty<string>();
 
         public IReadOnlyList<string> ProjectInstructionRootMarkers { get; init; } =
@@ -279,6 +285,11 @@ namespace ColorVision.Copilot
                 builder.Append("项目配置信任：")
                     .AppendLine(snapshot.ProjectInstructionProjectTrustLabel);
             }
+            AppendDeveloperInstructionsSnapshot(
+                builder,
+                snapshot.ProjectInstructionDeveloperInstructionsCharacters,
+                snapshot.ProjectInstructionDeveloperInstructionsSourceLabel,
+                snapshot.ProjectInstructionHasDeveloperInstructionsOverride);
             builder.Append("项目根标记：");
             if (snapshot.ProjectInstructionRootMarkers.Count == 0)
             {
@@ -337,6 +348,28 @@ namespace ColorVision.Copilot
             AppendAgentExtensionDetails(builder, snapshot.AgentExtensions, snapshot.AgentExtensionIssues);
             AppendOptimizationSuggestions(builder, snapshot);
             return builder.ToString().TrimEnd();
+        }
+
+        private static void AppendDeveloperInstructionsSnapshot(
+            StringBuilder builder,
+            int characters,
+            string? sourceLabel,
+            bool hasOverride)
+        {
+            if (!hasOverride)
+                return;
+
+            var normalizedCharacters = Math.Max(0, characters);
+            var source = string.IsNullOrWhiteSpace(sourceLabel)
+                ? "Codex config.toml"
+                : sourceLabel.Trim();
+            builder.Append("Codex developer_instructions：")
+                .Append(FormatCount(normalizedCharacters))
+                .Append(" 字符（")
+                .Append(source)
+                .AppendLine(normalizedCharacters == 0
+                    ? " 请求快照；显式清空）"
+                    : " 请求快照；独立开发者指令）");
         }
 
         private static void AppendProjectInstructionDetails(

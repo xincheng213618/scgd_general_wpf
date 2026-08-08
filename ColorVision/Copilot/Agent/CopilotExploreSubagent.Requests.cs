@@ -155,6 +155,7 @@ namespace ColorVision.Copilot
                 SearchRootPaths = Array.Empty<string>(),
                 TrustedProjectRootPaths = Array.Empty<string>(),
                 ActiveDocumentPath = string.Empty,
+                ConfiguredDeveloperInstructions = explorationRequest.ConfiguredDeveloperInstructions,
                 ProjectInstructions = preserveProjectInstructions
                     ? explorationRequest.ProjectInstructions
                     : Array.Empty<CopilotProjectInstructionDocument>(),

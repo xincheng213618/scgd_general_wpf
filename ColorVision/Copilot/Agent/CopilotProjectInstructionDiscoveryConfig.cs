@@ -38,10 +38,18 @@ namespace ColorVision.Copilot
 
         public IReadOnlyList<string> AppliedProjectConfigFilePaths { get; init; } = Array.Empty<string>();
 
+        public string DeveloperInstructions { get; init; } = string.Empty;
+
+        public bool HasDeveloperInstructionsOverride { get; init; }
+
+        public CopilotProjectInstructionConfigSources DeveloperInstructionsSource { get; init; } =
+            CopilotProjectInstructionConfigSources.None;
+
         public bool UsesCodexConfig => ConfigSources != CopilotProjectInstructionConfigSources.None
             || HasMaximumBytesOverride
             || HasFallbackFileNamesOverride
-            || HasProjectRootMarkersOverride;
+            || HasProjectRootMarkersOverride
+            || HasDeveloperInstructionsOverride;
 
         public string ConfigSourceLabel => ConfigSources switch
         {
@@ -54,6 +62,13 @@ namespace ColorVision.Copilot
 
         public bool AllowsProjectCodexConfig => ProjectTrustLevel is not (
             CopilotCodexProjectTrustLevel.Untrusted or CopilotCodexProjectTrustLevel.Invalid);
+
+        public string DeveloperInstructionsSourceLabel => DeveloperInstructionsSource switch
+        {
+            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml",
+            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml",
+            _ => string.Empty,
+        };
 
         public string ProjectTrustLabel => ProjectTrustLevel switch
         {
@@ -84,10 +99,13 @@ namespace ColorVision.Copilot
         internal const int MaximumProjectRootMarkers = 16;
         private const int MaximumProjectRootMarkerCharacters = 128;
         private const int MaximumLogicalValueLines = 64;
+        internal const int MaximumDeveloperInstructionCharacters = 64 * 1024;
+        private const int MaximumDeveloperInstructionLines = 512;
         private const string ConfigFileName = "config.toml";
         private const string MaximumBytesKey = "project_doc_max_bytes";
         private const string FallbackFileNamesKey = "project_doc_fallback_filenames";
         private const string ProjectRootMarkersKey = "project_root_markers";
+        private const string DeveloperInstructionsKey = "developer_instructions";
         private const string ProjectsTablePrefix = "projects.";
         private const string TrustLevelKey = "trust_level";
 
@@ -199,6 +217,14 @@ namespace ColorVision.Copilot
                     : current.ProjectRootMarkers,
                 HasProjectRootMarkersOverride = current.HasProjectRootMarkersOverride
                     || hasProjectRootMarkersOverride,
+                DeveloperInstructions = layer.HasDeveloperInstructionsOverride
+                    ? layer.DeveloperInstructions
+                    : current.DeveloperInstructions,
+                HasDeveloperInstructionsOverride = current.HasDeveloperInstructionsOverride
+                    || layer.HasDeveloperInstructionsOverride,
+                DeveloperInstructionsSource = layer.HasDeveloperInstructionsOverride
+                    ? source
+                    : current.DeveloperInstructionsSource,
             };
         }
 
@@ -208,6 +234,7 @@ namespace ColorVision.Copilot
         {
             return layer.HasMaximumBytesOverride
                 || layer.HasFallbackFileNamesOverride
+                || layer.HasDeveloperInstructionsOverride
                 || (includeProjectRootMarkers && layer.HasProjectRootMarkersOverride);
         }
 
@@ -318,9 +345,11 @@ namespace ColorVision.Copilot
             var maximumBytes = DefaultMaximumBytes;
             var fallbackFileNames = Array.Empty<string>();
             var projectRootMarkers = Array.Empty<string>();
+            var developerInstructions = string.Empty;
             var hasMaximumBytesOverride = false;
             var hasFallbackFileNamesOverride = false;
             var hasProjectRootMarkersOverride = false;
+            var hasDeveloperInstructionsOverride = false;
             foreach (var assignment in EnumerateTopLevelAssignments(source))
             {
                 if (string.Equals(assignment.Key, MaximumBytesKey, StringComparison.Ordinal))
@@ -341,6 +370,15 @@ namespace ColorVision.Copilot
                     continue;
                 }
 
+                if (string.Equals(assignment.Key, DeveloperInstructionsKey, StringComparison.Ordinal))
+                {
+                    if (!TryParseDeveloperInstructions(assignment.Value, out var configuredDeveloperInstructions))
+                        continue;
+                    developerInstructions = configuredDeveloperInstructions;
+                    hasDeveloperInstructionsOverride = true;
+                    continue;
+                }
+
                 if (!string.Equals(assignment.Key, ProjectRootMarkersKey, StringComparison.Ordinal)
                     || !TryParseProjectRootMarkers(assignment.Value, out var configuredProjectRootMarkers))
                 {
@@ -355,12 +393,15 @@ namespace ColorVision.Copilot
                 maximumBytes,
                 fallbackFileNames,
                 projectRootMarkers,
+                developerInstructions,
                 hasMaximumBytesOverride,
                 hasFallbackFileNamesOverride,
-                hasProjectRootMarkersOverride);
+                hasProjectRootMarkersOverride,
+                hasDeveloperInstructionsOverride);
             return hasMaximumBytesOverride
                 || hasFallbackFileNamesOverride
-                || hasProjectRootMarkersOverride;
+                || hasProjectRootMarkersOverride
+                || hasDeveloperInstructionsOverride;
         }
 
         private static CopilotCodexProjectTrustLevel ResolveProjectTrustLevel(
@@ -499,7 +540,8 @@ namespace ColorVision.Copilot
                 var key = line[..equalsIndex].Trim();
                 if (!string.Equals(key, MaximumBytesKey, StringComparison.Ordinal)
                     && !string.Equals(key, FallbackFileNamesKey, StringComparison.Ordinal)
-                    && !string.Equals(key, ProjectRootMarkersKey, StringComparison.Ordinal))
+                    && !string.Equals(key, ProjectRootMarkersKey, StringComparison.Ordinal)
+                    && !string.Equals(key, DeveloperInstructionsKey, StringComparison.Ordinal))
                 {
                     continue;
                 }
@@ -520,6 +562,22 @@ namespace ColorVision.Copilot
                         if (continuation.Length > 0)
                             builder.Append(' ').Append(continuation);
                         if (HasClosedArray(builder.ToString()))
+                            break;
+                    }
+                    value = builder.ToString();
+                }
+                else if (string.Equals(key, DeveloperInstructionsKey, StringComparison.Ordinal)
+                    && TryGetMultilineStringDelimiter(value, out var delimiter)
+                    && !HasClosedMultilineString(value, delimiter))
+                {
+                    var builder = new StringBuilder(value);
+                    for (var logicalLine = 1;
+                        logicalLine < MaximumDeveloperInstructionLines && index + 1 < lines.Length;
+                        logicalLine++)
+                    {
+                        index++;
+                        builder.Append('\n').Append(lines[index]);
+                        if (HasClosedMultilineString(builder.ToString(), delimiter))
                             break;
                     }
                     value = builder.ToString();
@@ -719,6 +777,179 @@ namespace ColorVision.Copilot
             return false;
         }
 
+        private static bool TryParseDeveloperInstructions(
+            string value,
+            out string developerInstructions)
+        {
+            developerInstructions = string.Empty;
+            var index = 0;
+            SkipWhitespace(value, ref index);
+            string parsed;
+            if (TryGetMultilineStringDelimiter(value[index..], out var delimiter))
+            {
+                if (!TryReadTomlMultilineString(value, ref index, delimiter, out parsed))
+                    return false;
+            }
+            else if (!TryReadTomlString(value, ref index, out parsed))
+            {
+                return false;
+            }
+
+            var trailing = StripComment(value[index..]).Trim();
+            if (trailing.Length > 0)
+                return false;
+
+            parsed = parsed.Trim();
+            if (parsed.Length > MaximumDeveloperInstructionCharacters)
+                return false;
+            developerInstructions = parsed;
+            return true;
+        }
+
+        private static bool TryGetMultilineStringDelimiter(string value, out string delimiter)
+        {
+            delimiter = string.Empty;
+            var normalized = value.AsSpan().TrimStart();
+            if (normalized.StartsWith("\"\"\"", StringComparison.Ordinal))
+            {
+                delimiter = "\"\"\"";
+                return true;
+            }
+            if (normalized.StartsWith("'''", StringComparison.Ordinal))
+            {
+                delimiter = "'''";
+                return true;
+            }
+            return false;
+        }
+
+        private static bool HasClosedMultilineString(string value, string delimiter)
+        {
+            var start = value.IndexOf(delimiter, StringComparison.Ordinal);
+            return start >= 0
+                && FindClosingMultilineString(value, delimiter, start + delimiter.Length) >= 0;
+        }
+
+        private static bool TryReadTomlMultilineString(
+            string value,
+            ref int index,
+            string delimiter,
+            out string result)
+        {
+            result = string.Empty;
+            if (!value.AsSpan(index).StartsWith(delimiter, StringComparison.Ordinal))
+                return false;
+
+            index += delimiter.Length;
+            var closingIndex = FindClosingMultilineString(value, delimiter, index);
+            if (closingIndex < 0)
+                return false;
+
+            var content = value[index..closingIndex];
+            if (content.StartsWith('\n'))
+                content = content[1..];
+            if (delimiter[0] == '\'')
+            {
+                result = content;
+            }
+            else if (!TryDecodeTomlBasicMultilineString(content, out result))
+            {
+                return false;
+            }
+
+            index = closingIndex + delimiter.Length;
+            return true;
+        }
+
+        private static int FindClosingMultilineString(
+            string value,
+            string delimiter,
+            int startIndex)
+        {
+            for (var index = startIndex; index <= value.Length - delimiter.Length; index++)
+            {
+                if (!value.AsSpan(index).StartsWith(delimiter, StringComparison.Ordinal))
+                    continue;
+                if (delimiter[0] == '\'' || CountPrecedingBackslashes(value, index) % 2 == 0)
+                    return index;
+            }
+            return -1;
+        }
+
+        private static int CountPrecedingBackslashes(string value, int index)
+        {
+            var count = 0;
+            while (index > 0 && value[--index] == '\\')
+                count++;
+            return count;
+        }
+
+        private static bool TryDecodeTomlBasicMultilineString(string value, out string result)
+        {
+            var builder = new StringBuilder(value.Length);
+            for (var index = 0; index < value.Length; index++)
+            {
+                var current = value[index];
+                if (current != '\\')
+                {
+                    if (current == '\0')
+                    {
+                        result = string.Empty;
+                        return false;
+                    }
+                    builder.Append(current);
+                    continue;
+                }
+
+                if (++index >= value.Length)
+                {
+                    result = string.Empty;
+                    return false;
+                }
+                var escaped = value[index];
+                if (escaped == '\n')
+                {
+                    while (index + 1 < value.Length && char.IsWhiteSpace(value[index + 1]))
+                        index++;
+                    continue;
+                }
+
+                switch (escaped)
+                {
+                    case 'b': builder.Append('\b'); break;
+                    case 't': builder.Append('\t'); break;
+                    case 'n': builder.Append('\n'); break;
+                    case 'f': builder.Append('\f'); break;
+                    case 'r': builder.Append('\r'); break;
+                    case '"': builder.Append('"'); break;
+                    case '\\': builder.Append('\\'); break;
+                    case 'u':
+                        index++;
+                        if (!TryReadUnicodeEscape(value, ref index, 4, builder))
+                        {
+                            result = string.Empty;
+                            return false;
+                        }
+                        index--;
+                        break;
+                    case 'U':
+                        index++;
+                        if (!TryReadUnicodeEscape(value, ref index, 8, builder))
+                        {
+                            result = string.Empty;
+                            return false;
+                        }
+                        index--;
+                        break;
+                    default:
+                        result = string.Empty;
+                        return false;
+                }
+            }
+            result = builder.ToString();
+            return true;
+        }
+
         private static bool TryReadTomlString(string value, ref int index, out string result)
         {
             result = string.Empty;
@@ -833,8 +1064,10 @@ namespace ColorVision.Copilot
             int MaximumBytes,
             IReadOnlyList<string> FallbackFileNames,
             IReadOnlyList<string> ProjectRootMarkers,
+            string DeveloperInstructions,
             bool HasMaximumBytesOverride,
             bool HasFallbackFileNamesOverride,
-            bool HasProjectRootMarkersOverride);
+            bool HasProjectRootMarkersOverride,
+            bool HasDeveloperInstructionsOverride);
     }
 }

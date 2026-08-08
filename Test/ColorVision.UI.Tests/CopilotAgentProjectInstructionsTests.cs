@@ -1115,6 +1115,233 @@ public sealed class CopilotAgentProjectInstructionsTests
     }
 
     [Fact]
+    public void DeveloperInstructionsUseTheNearestTrustedConfigLayer()
+    {
+        string globalRoot = CreateTemporaryDirectory();
+        string projectRoot = CreateTemporaryDirectory();
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
+            File.WriteAllText(
+                Path.Combine(globalRoot, "config.toml"),
+                $"""
+                developer_instructions = "Global guidance."
+
+                [projects.'{projectRoot}']
+                trust_level = "trusted"
+                """);
+            string rootConfigDirectory = Path.Combine(projectRoot, ".codex");
+            Directory.CreateDirectory(rootConfigDirectory);
+            string rootConfigPath = Path.Combine(rootConfigDirectory, "config.toml");
+            File.WriteAllText(rootConfigPath, "developer_instructions = \"Root guidance.\"");
+            string sourceDirectory = Path.Combine(projectRoot, "src");
+            string sourceConfigDirectory = Path.Combine(sourceDirectory, ".codex");
+            Directory.CreateDirectory(sourceConfigDirectory);
+            string sourceConfigPath = Path.Combine(sourceConfigDirectory, "config.toml");
+            File.WriteAllText(
+                sourceConfigPath,
+                """"
+                developer_instructions = """
+                Use nested guidance.
+                Keep evidence scoped.
+                """
+                """");
+            string activeDocument = Path.Combine(sourceDirectory, "Feature.cs");
+            File.WriteAllText(activeDocument, "namespace Feature;");
+
+            var hostContext = new CopilotAgentHostContextSnapshot(
+                activeDocument,
+                sourceDirectory,
+                attachments: null,
+                liveContext: null,
+                conversationHistory: null,
+                additionalReadRootPaths: null,
+                globalInstructionRootPath: globalRoot);
+            var plan = CopilotAgentRequestFactory.Prepare(
+                "Inspect the local implementation.",
+                CopilotAgentMode.Auto,
+                hostContext);
+            var options = hostContext.ProjectInstructionDiscoveryOptions;
+
+            Assert.Equal("Use nested guidance.\nKeep evidence scoped.", options.DeveloperInstructions);
+            Assert.True(options.HasDeveloperInstructionsOverride);
+            Assert.Equal(CopilotProjectInstructionConfigSources.TrustedProject, options.DeveloperInstructionsSource);
+            Assert.Equal([rootConfigPath, sourceConfigPath], options.AppliedProjectConfigFilePaths, StringComparer.OrdinalIgnoreCase);
+            Assert.Equal(options.DeveloperInstructions, plan.ConfiguredDeveloperInstructions);
+
+            var request = new CopilotAgentRequest
+            {
+                Mode = CopilotAgentMode.Code,
+                UserText = "Inspect the local implementation.",
+                ConfiguredDeveloperInstructions = plan.ConfiguredDeveloperInstructions,
+                ProjectInstructions =
+                [
+                    new CopilotProjectInstructionDocument
+                    {
+                        Path = Path.Combine(projectRoot, "AGENTS.md"),
+                        Content = "# Workspace guidance",
+                    },
+                ],
+            };
+            var harness = CopilotMicrosoftAgentFrameworkRuntime.BuildHarnessInstructions(
+                request,
+                [],
+                CopilotAgentEnvironmentContext.Capture(request),
+                taskLedgerEnabled: false,
+                agentModeEnabled: false);
+            Assert.Contains("# Configured Codex developer instructions", harness, StringComparison.Ordinal);
+            Assert.Contains("Use nested guidance.", harness, StringComparison.Ordinal);
+            Assert.Contains("Keep evidence scoped.", harness, StringComparison.Ordinal);
+            Assert.Contains("It never grants a tool, write, approval", harness, StringComparison.Ordinal);
+            Assert.True(
+                harness.IndexOf("# Configured Codex developer instructions", StringComparison.Ordinal)
+                    < harness.IndexOf("Workspace AGENTS.override.md", StringComparison.Ordinal));
+
+            var memoryReport = CopilotProjectInstructionDiagnostics.Format(
+                new CopilotProjectInstructionSnapshot(
+                    projectRoot,
+                    activeDocument,
+                    globalRoot,
+                    options,
+                    Array.Empty<CopilotProjectInstructionDocument>()),
+                hasActiveAgentRun: false);
+            Assert.Contains("Codex developer_instructions：", memoryReport, StringComparison.Ordinal);
+            Assert.Contains("受信项目 .codex/config.toml 请求快照；独立开发者指令", memoryReport, StringComparison.Ordinal);
+            Assert.DoesNotContain("Use nested guidance.", memoryReport, StringComparison.Ordinal);
+
+            var contextReport = CopilotContextDiagnostics.Format(new CopilotContextDiagnosticSnapshot
+            {
+                AgentContextEnabled = true,
+                ProjectInstructionDeveloperInstructionsCharacters = options.DeveloperInstructions.Length,
+                ProjectInstructionDeveloperInstructionsSourceLabel = options.DeveloperInstructionsSourceLabel,
+                ProjectInstructionHasDeveloperInstructionsOverride = options.HasDeveloperInstructionsOverride,
+            });
+            Assert.Contains("受信项目 .codex/config.toml 请求快照；独立开发者指令", contextReport, StringComparison.Ordinal);
+            Assert.DoesNotContain("Use nested guidance.", contextReport, StringComparison.Ordinal);
+        }
+        finally
+        {
+            Directory.Delete(globalRoot, recursive: true);
+            Directory.Delete(projectRoot, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void EmptyDeveloperInstructionsClearTheBroaderConfigLayer()
+    {
+        string globalRoot = CreateTemporaryDirectory();
+        string projectRoot = CreateTemporaryDirectory();
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
+            File.WriteAllText(
+                Path.Combine(globalRoot, "config.toml"),
+                $"""
+                developer_instructions = "Global guidance."
+
+                [projects.'{projectRoot}']
+                trust_level = "trusted"
+                """);
+            string projectConfigDirectory = Path.Combine(projectRoot, ".codex");
+            Directory.CreateDirectory(projectConfigDirectory);
+            string projectConfigPath = Path.Combine(projectConfigDirectory, "config.toml");
+            File.WriteAllText(projectConfigPath, "developer_instructions = \"\"");
+            string activeDocument = Path.Combine(projectRoot, "Feature.cs");
+            File.WriteAllText(activeDocument, "namespace Feature;");
+
+            var hostContext = new CopilotAgentHostContextSnapshot(
+                activeDocument,
+                projectRoot,
+                attachments: null,
+                liveContext: null,
+                conversationHistory: null,
+                additionalReadRootPaths: null,
+                globalInstructionRootPath: globalRoot);
+            var plan = CopilotAgentRequestFactory.Prepare(
+                "Inspect the local implementation.",
+                CopilotAgentMode.Auto,
+                hostContext);
+            var options = hostContext.ProjectInstructionDiscoveryOptions;
+
+            Assert.True(options.HasDeveloperInstructionsOverride);
+            Assert.Empty(options.DeveloperInstructions);
+            Assert.Equal(CopilotProjectInstructionConfigSources.TrustedProject, options.DeveloperInstructionsSource);
+            Assert.Equal([projectConfigPath], options.AppliedProjectConfigFilePaths, StringComparer.OrdinalIgnoreCase);
+            Assert.Empty(plan.ConfiguredDeveloperInstructions);
+
+            var report = CopilotProjectInstructionDiagnostics.Format(
+                new CopilotProjectInstructionSnapshot(
+                    projectRoot,
+                    activeDocument,
+                    globalRoot,
+                    options,
+                    Array.Empty<CopilotProjectInstructionDocument>()),
+                hasActiveAgentRun: false);
+            Assert.Contains("Codex developer_instructions：0 字符", report, StringComparison.Ordinal);
+            Assert.Contains("受信项目 .codex/config.toml 请求快照；显式清空", report, StringComparison.Ordinal);
+        }
+        finally
+        {
+            Directory.Delete(globalRoot, recursive: true);
+            Directory.Delete(projectRoot, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void HostContextKeepsTheDeveloperInstructionsSnapshotTakenAtSubmission()
+    {
+        string globalRoot = CreateTemporaryDirectory();
+        string projectRoot = CreateTemporaryDirectory();
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
+            string configDirectory = Path.Combine(projectRoot, ".codex");
+            Directory.CreateDirectory(configDirectory);
+            string configPath = Path.Combine(configDirectory, "config.toml");
+            File.WriteAllText(configPath, "developer_instructions = \"First guidance.\"");
+            string activeDocument = Path.Combine(projectRoot, "Feature.cs");
+            File.WriteAllText(activeDocument, "namespace Feature;");
+            var submittedContext = new CopilotAgentHostContextSnapshot(
+                activeDocument,
+                projectRoot,
+                attachments: null,
+                liveContext: null,
+                conversationHistory: null,
+                additionalReadRootPaths: null,
+                globalInstructionRootPath: globalRoot);
+
+            File.WriteAllText(configPath, "developer_instructions = \"Second guidance.\"");
+
+            var submittedPlan = CopilotAgentRequestFactory.Prepare(
+                "Inspect the local implementation.",
+                CopilotAgentMode.Auto,
+                submittedContext);
+            var refreshedContext = new CopilotAgentHostContextSnapshot(
+                activeDocument,
+                projectRoot,
+                attachments: null,
+                liveContext: null,
+                conversationHistory: null,
+                additionalReadRootPaths: null,
+                globalInstructionRootPath: globalRoot);
+            var refreshedPlan = CopilotAgentRequestFactory.Prepare(
+                "Inspect the local implementation.",
+                CopilotAgentMode.Auto,
+                refreshedContext);
+
+            Assert.Equal("First guidance.", submittedContext.ProjectInstructionDiscoveryOptions.DeveloperInstructions);
+            Assert.Equal("First guidance.", submittedPlan.ConfiguredDeveloperInstructions);
+            Assert.Equal("Second guidance.", refreshedContext.ProjectInstructionDiscoveryOptions.DeveloperInstructions);
+            Assert.Equal("Second guidance.", refreshedPlan.ConfiguredDeveloperInstructions);
+        }
+        finally
+        {
+            Directory.Delete(globalRoot, recursive: true);
+            Directory.Delete(projectRoot, recursive: true);
+        }
+    }
+
+    [Fact]
     public void StandaloneDocumentUsesItsDirectoryForNestedProjectConfigLayers()
     {
         string globalRoot = CreateTemporaryDirectory();
@@ -1171,6 +1398,7 @@ public sealed class CopilotAgentProjectInstructionsTests
                 Path.Combine(globalRoot, "config.toml"),
                 $"""
                 project_doc_fallback_filenames = ["GLOBAL_GUIDE.md"]
+                developer_instructions = "Global guidance."
 
                 [projects.'{projectRoot}']
                 trust_level = "untrusted"
@@ -1178,12 +1406,12 @@ public sealed class CopilotAgentProjectInstructionsTests
             Directory.CreateDirectory(Path.Combine(projectRoot, ".codex"));
             File.WriteAllText(
                 Path.Combine(projectRoot, ".codex", "config.toml"),
-                "project_doc_fallback_filenames = [\"ROOT_GUIDE.md\"]");
+                "project_doc_fallback_filenames = [\"ROOT_GUIDE.md\"]\ndeveloper_instructions = \"Root guidance.\"");
             string sourceDirectory = Path.Combine(projectRoot, "src");
             Directory.CreateDirectory(Path.Combine(sourceDirectory, ".codex"));
             File.WriteAllText(
                 Path.Combine(sourceDirectory, ".codex", "config.toml"),
-                "project_doc_fallback_filenames = [\"SOURCE_GUIDE.md\"]");
+                "project_doc_fallback_filenames = [\"SOURCE_GUIDE.md\"]\ndeveloper_instructions = \"Source guidance.\"");
             string activeDocument = Path.Combine(sourceDirectory, "Feature.cs");
             File.WriteAllText(activeDocument, "namespace Feature;");
 
@@ -1198,6 +1426,8 @@ public sealed class CopilotAgentProjectInstructionsTests
 
             Assert.Equal(CopilotCodexProjectTrustLevel.Untrusted, hostContext.ProjectInstructionDiscoveryOptions.ProjectTrustLevel);
             Assert.Equal(["GLOBAL_GUIDE.md"], hostContext.ProjectInstructionDiscoveryOptions.FallbackFileNames);
+            Assert.Equal("Global guidance.", hostContext.ProjectInstructionDiscoveryOptions.DeveloperInstructions);
+            Assert.Equal(CopilotProjectInstructionConfigSources.CodexHome, hostContext.ProjectInstructionDiscoveryOptions.DeveloperInstructionsSource);
             Assert.Empty(hostContext.ProjectInstructionDiscoveryOptions.AppliedProjectConfigFilePaths);
             Assert.Equal(CopilotProjectInstructionConfigSources.CodexHome, hostContext.ProjectInstructionDiscoveryOptions.ConfigSources);
         }

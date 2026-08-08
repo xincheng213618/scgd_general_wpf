@@ -195,6 +195,7 @@ public sealed class CopilotExecutionScopeTests
             },
             SearchRootPaths = [@"C:\ColorVision\Scope"],
             TrustedProjectRootPaths = [@"C:\ColorVision\Scope"],
+            ConfiguredDeveloperInstructions = "Keep configured guidance.",
             Mode = CopilotAgentMode.Code,
         };
         var parentScope = CopilotExecutionScope.ForAgentRequest(
@@ -219,6 +220,7 @@ public sealed class CopilotExecutionScopeTests
 
         AssertDerivedRunScope(parentScope, childScope);
         Assert.Same(childScope, CopilotExecutionScope.ForAgentRun(childRequest));
+        Assert.Equal(parentRequest.ConfiguredDeveloperInstructions, childRequest.ConfiguredDeveloperInstructions);
 
         var finalizationRequest = Assert.IsType<CopilotAgentRequest>(
             CopilotSubagentRunner.CreateBudgetFinalizationRequest(
@@ -256,6 +258,24 @@ public sealed class CopilotExecutionScopeTests
 
         AssertDerivedRunScope(childScope, finalizationScope);
         Assert.Same(finalizationScope, CopilotExecutionScope.ForAgentRun(finalizationRequest));
+        Assert.Equal(childRequest.ConfiguredDeveloperInstructions, finalizationRequest.ConfiguredDeveloperInstructions);
+        Assert.True(CopilotMicrosoftAgentFrameworkRuntime.CanUseMinimalDelegatedFinalizationInstructions(
+            finalizationRequest,
+            [],
+            taskLedgerEnabled: false,
+            agentModeEnabled: false));
+        var finalizationHarness = CopilotMicrosoftAgentFrameworkRuntime.BuildHarnessInstructions(
+            finalizationRequest,
+            [],
+            CopilotAgentEnvironmentContext.Capture(finalizationRequest),
+            taskLedgerEnabled: false,
+            agentModeEnabled: false);
+        Assert.Contains("Keep configured guidance.", finalizationHarness, StringComparison.Ordinal);
+        Assert.True(
+            finalizationHarness.IndexOf("# Configured Codex developer instructions", StringComparison.Ordinal)
+                < finalizationHarness.IndexOf(
+                    "The no-tools role boundary and evidence-only finalization contract remain authoritative.",
+                    StringComparison.Ordinal));
     }
 
     private static void AssertDerivedRunScope(

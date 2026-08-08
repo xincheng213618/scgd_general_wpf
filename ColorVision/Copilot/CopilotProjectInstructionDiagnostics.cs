@@ -151,6 +151,18 @@ namespace ColorVision.Copilot
                 builder.Append("项目配置信任：")
                     .AppendLine(effective.ProjectTrustLabel);
             }
+            if (effective.HasDeveloperInstructionsOverride)
+            {
+                builder.Append("Codex developer_instructions：")
+                    .Append(effective.DeveloperInstructions.Length.ToString("N0", CultureInfo.CurrentCulture))
+                    .Append(" 字符（")
+                    .Append(effective.DeveloperInstructionsSourceLabel.Length == 0
+                        ? "Codex config.toml"
+                        : effective.DeveloperInstructionsSourceLabel)
+                    .AppendLine(effective.DeveloperInstructions.Length == 0
+                        ? " 请求快照；显式清空）"
+                        : " 请求快照；独立开发者指令）");
+            }
             builder.Append("项目根标记：");
             if (effective.ProjectRootMarkers.Count == 0)
             {

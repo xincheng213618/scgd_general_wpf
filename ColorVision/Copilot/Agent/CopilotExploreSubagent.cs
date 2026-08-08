@@ -552,6 +552,7 @@ namespace ColorVision.Copilot
                         .ToArray()
                     : Array.Empty<string>(),
                 ActiveDocumentPath = activeDocumentPath,
+                ConfiguredDeveloperInstructions = parentRequest.ConfiguredDeveloperInstructions,
                 ProjectInstructions = projectInstructions,
                 ReadableLocalFilePaths = preselectedFiles,
                 ReadableLocalDirectoryPaths = Array.Empty<string>(),
