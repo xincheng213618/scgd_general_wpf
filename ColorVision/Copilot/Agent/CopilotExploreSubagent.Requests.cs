@@ -169,6 +169,7 @@ namespace ColorVision.Copilot
                 Recovery = null,
                 RunControl = null,
                 SkillOverrides = explorationRequest.SkillOverrides,
+                SkillPathOverrides = explorationRequest.SkillPathOverrides,
                 RunBudgetOverride = new CopilotAgentRunBudgetOverride
                 {
                     ContextWindowTokens = contextWindowTokens,

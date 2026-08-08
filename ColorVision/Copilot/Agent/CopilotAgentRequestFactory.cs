@@ -285,6 +285,7 @@ namespace ColorVision.Copilot
                 RunControl = input.RunControl,
                 RunBudgetDefaults = agentDefaults.CreateRunBudgetDefaults(),
                 SkillOverrides = agentDefaults.CreateSkillOverrideSnapshot(),
+                SkillPathOverrides = agentDefaults.CreateSkillPathOverrideSnapshot(),
                 AgentSkillReference = input.AgentSkillReference?.IsStructurallyValid() == true
                     && input.AgentSkillReference.IsExplicitlyInvokedBy(plan.UserText)
                         ? input.AgentSkillReference.CreateSnapshot()

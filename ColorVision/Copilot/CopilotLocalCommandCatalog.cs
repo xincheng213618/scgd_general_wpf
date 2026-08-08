@@ -188,9 +188,11 @@ namespace ColorVision.Copilot
             ]) { Aliases = ["/config", "/preferences", "/prefs"] },
             new("/init", "为当前项目生成根级 AGENTS.md，不覆盖已有项目指令", CopilotLocalCommandKind.InitializeProject, Usage: "/init"),
             new("/hooks", "查看生效 Hook、模块来源与最近运行健康度", CopilotLocalCommandKind.Hooks, AvailableWhileAgentRuns: true, Usage: "/hooks"),
-            new("/skills", "列出当前工作区 Skill、使用证据；reload 强制重扫磁盘", CopilotLocalCommandKind.Skills, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: CopilotAgentSkillCommand.Usage, Arguments:
+            new("/skills", "列出当前工作区 Skill、使用证据；支持按 SKILL.md 路径启停", CopilotLocalCommandKind.Skills, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: CopilotAgentSkillCommand.Usage, Arguments:
             [
                 new("reload", "强制从磁盘重扫当前工作区与内置 Skill 目录"),
+                new("off", "按列表编号关闭一个精确 Skill 路径", AcceptsArguments: true),
+                new("enable", "按列表编号恢复一个精确 Skill 路径", AcceptsArguments: true),
             ]),
             new("/mcp", "查看本机与外部 MCP 状态；verbose 展开脱敏诊断", CopilotLocalCommandKind.Mcp, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/mcp [verbose]", Arguments:
             [

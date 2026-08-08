@@ -1,6 +1,7 @@
 using Microsoft.Agents.AI;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -24,7 +25,9 @@ namespace ColorVision.Copilot
             IReadOnlySet<string> historicalExplicitOnlySkillNames,
             IReadOnlyDictionary<string, CopilotAgentSkillOverrideState>? skillOverrides,
             int maximumCount,
-            int maximumMetadataCharacters)
+            int maximumMetadataCharacters,
+            IReadOnlyDictionary<string, CopilotAgentSkillOverrideState>? skillPathOverrides = null,
+            Func<AgentSkill, string?>? skillFilePathResolver = null)
         {
             var query = userText?.Trim() ?? string.Empty;
             var queryWords = ExtractAsciiWords(query);
@@ -45,9 +48,12 @@ namespace ColorVision.Copilot
                 var skill = skills[index];
                 var skillName = skill.Frontmatter.Name;
                 var explicitlyInvoked = explicitlyInvokedNames.Contains(skillName);
-                var overrideState = skillOverrides?.TryGetValue(skillName, out var configuredState) == true && Enum.IsDefined(configuredState)
-                    ? configuredState
-                    : CopilotAgentSkillOverrideState.Auto;
+                var skillFilePath = (skillFilePathResolver ?? ResolveSkillFilePath)(skill);
+                var overrideState = CopilotAgentSkillOverrideConfig.ResolveState(
+                    skillName,
+                    skillFilePath,
+                    skillOverrides,
+                    skillPathOverrides);
                 if (overrideState == CopilotAgentSkillOverrideState.Off)
                 {
                     manualOffNames.Add(skillName);
@@ -144,6 +150,21 @@ namespace ColorVision.Copilot
                 manualOffNames.ToArray(),
                 irrelevantNames.ToArray(),
                 shortenedDescriptionNames.ToArray());
+        }
+
+        private static string? ResolveSkillFilePath(AgentSkill skill)
+        {
+            if (skill is not AgentFileSkill fileSkill)
+                return null;
+
+            try
+            {
+                return Path.Combine(fileSkill.Path, "SKILL.md");
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         private static string Shorten(string value, int maximumCharacters)

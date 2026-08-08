@@ -55,27 +55,15 @@ namespace ColorVision.Copilot
         public static IReadOnlyList<CopilotAgentSkillCatalogItem> DiscoverCached(
             IEnumerable<string>? trustedProjectRootPaths,
             IReadOnlyDictionary<string, CopilotAgentSkillOverrideState>? overrides,
-            string? applicationBaseDirectory = null)
+            string? applicationBaseDirectory = null,
+            IReadOnlyDictionary<string, CopilotAgentSkillOverrideState>? pathOverrides = null)
         {
             return DiscoverCached(
                 trustedProjectRootPaths,
                 overrides,
                 applicationBaseDirectory,
-                userProfileDirectory: null);
-        }
-
-        internal static IReadOnlyList<CopilotAgentSkillCatalogItem> DiscoverCached(
-            IEnumerable<string>? trustedProjectRootPaths,
-            IReadOnlyDictionary<string, CopilotAgentSkillOverrideState>? overrides,
-            string? applicationBaseDirectory,
-            string? userProfileDirectory)
-        {
-            return DiscoverCached(
-                trustedProjectRootPaths,
-                overrides,
-                applicationBaseDirectory,
-                userProfileDirectory,
-                activeDocumentPath: null);
+                userProfileDirectory: null,
+                pathOverrides: pathOverrides);
         }
 
         internal static IReadOnlyList<CopilotAgentSkillCatalogItem> DiscoverCached(
@@ -83,7 +71,24 @@ namespace ColorVision.Copilot
             IReadOnlyDictionary<string, CopilotAgentSkillOverrideState>? overrides,
             string? applicationBaseDirectory,
             string? userProfileDirectory,
-            string? activeDocumentPath)
+            IReadOnlyDictionary<string, CopilotAgentSkillOverrideState>? pathOverrides = null)
+        {
+            return DiscoverCached(
+                trustedProjectRootPaths,
+                overrides,
+                applicationBaseDirectory,
+                userProfileDirectory,
+                activeDocumentPath: null,
+                pathOverrides: pathOverrides);
+        }
+
+        internal static IReadOnlyList<CopilotAgentSkillCatalogItem> DiscoverCached(
+            IEnumerable<string>? trustedProjectRootPaths,
+            IReadOnlyDictionary<string, CopilotAgentSkillOverrideState>? overrides,
+            string? applicationBaseDirectory,
+            string? userProfileDirectory,
+            string? activeDocumentPath,
+            IReadOnlyDictionary<string, CopilotAgentSkillOverrideState>? pathOverrides = null)
         {
             var searchRequest = CreateSearchRequest(trustedProjectRootPaths, activeDocumentPath);
             ChangeMonitor.UpdateRoots(CopilotAgentSkills.ResolveSearchPathCandidates(
@@ -96,7 +101,7 @@ namespace ColorVision.Copilot
                 userProfileDirectory);
             var builtInSkillRoot = ResolveBuiltInSkillRoot(applicationBaseDirectory);
             var userSkillRoot = CopilotAgentSkills.ResolveUserSkillRoot(userProfileDirectory);
-            var cacheKey = BuildCacheKey(skillRoots, overrides, builtInSkillRoot);
+            var cacheKey = BuildCacheKey(skillRoots, overrides, pathOverrides, builtInSkillRoot);
             var now = DateTimeOffset.UtcNow;
             long revision;
             lock (CacheSync)
@@ -109,7 +114,7 @@ namespace ColorVision.Copilot
                 revision = _cacheRevision;
             }
 
-            var discovered = DiscoverFromSkillRoots(skillRoots, overrides, builtInSkillRoot, userSkillRoot);
+            var discovered = DiscoverFromSkillRoots(skillRoots, overrides, pathOverrides, builtInSkillRoot, userSkillRoot);
             lock (CacheSync)
             {
                 if (revision != _cacheRevision)
@@ -125,27 +130,15 @@ namespace ColorVision.Copilot
         public static IReadOnlyList<CopilotAgentSkillCatalogItem> Discover(
             IEnumerable<string>? trustedProjectRootPaths,
             IReadOnlyDictionary<string, CopilotAgentSkillOverrideState>? overrides,
-            string? applicationBaseDirectory = null)
+            string? applicationBaseDirectory = null,
+            IReadOnlyDictionary<string, CopilotAgentSkillOverrideState>? pathOverrides = null)
         {
             return Discover(
                 trustedProjectRootPaths,
                 overrides,
                 applicationBaseDirectory,
-                userProfileDirectory: null);
-        }
-
-        internal static IReadOnlyList<CopilotAgentSkillCatalogItem> Discover(
-            IEnumerable<string>? trustedProjectRootPaths,
-            IReadOnlyDictionary<string, CopilotAgentSkillOverrideState>? overrides,
-            string? applicationBaseDirectory,
-            string? userProfileDirectory)
-        {
-            return Discover(
-                trustedProjectRootPaths,
-                overrides,
-                applicationBaseDirectory,
-                userProfileDirectory,
-                activeDocumentPath: null);
+                userProfileDirectory: null,
+                pathOverrides: pathOverrides);
         }
 
         internal static IReadOnlyList<CopilotAgentSkillCatalogItem> Discover(
@@ -153,7 +146,24 @@ namespace ColorVision.Copilot
             IReadOnlyDictionary<string, CopilotAgentSkillOverrideState>? overrides,
             string? applicationBaseDirectory,
             string? userProfileDirectory,
-            string? activeDocumentPath)
+            IReadOnlyDictionary<string, CopilotAgentSkillOverrideState>? pathOverrides = null)
+        {
+            return Discover(
+                trustedProjectRootPaths,
+                overrides,
+                applicationBaseDirectory,
+                userProfileDirectory,
+                activeDocumentPath: null,
+                pathOverrides: pathOverrides);
+        }
+
+        internal static IReadOnlyList<CopilotAgentSkillCatalogItem> Discover(
+            IEnumerable<string>? trustedProjectRootPaths,
+            IReadOnlyDictionary<string, CopilotAgentSkillOverrideState>? overrides,
+            string? applicationBaseDirectory,
+            string? userProfileDirectory,
+            string? activeDocumentPath,
+            IReadOnlyDictionary<string, CopilotAgentSkillOverrideState>? pathOverrides = null)
         {
             return DiscoverFromSkillRoots(
                 ResolveSkillRoots(
@@ -162,6 +172,7 @@ namespace ColorVision.Copilot
                     userProfileDirectory,
                     activeDocumentPath),
                 overrides,
+                pathOverrides,
                 ResolveBuiltInSkillRoot(applicationBaseDirectory),
                 CopilotAgentSkills.ResolveUserSkillRoot(userProfileDirectory));
         }
@@ -180,6 +191,7 @@ namespace ColorVision.Copilot
         private static CopilotAgentSkillCatalogItem[] DiscoverFromSkillRoots(
             IReadOnlyList<string> skillRoots,
             IReadOnlyDictionary<string, CopilotAgentSkillOverrideState>? overrides,
+            IReadOnlyDictionary<string, CopilotAgentSkillOverrideState>? pathOverrides,
             string builtInSkillRoot,
             string userSkillRoot)
         {
@@ -197,7 +209,11 @@ namespace ColorVision.Copilot
                         root,
                         ResolveSourceKind(root, builtInSkillRoot, userSkillRoot));
                     if (item == null
-                        || overrides?.TryGetValue(item.Name, out var state) == true && state == CopilotAgentSkillOverrideState.Off)
+                        || CopilotAgentSkillOverrideConfig.ResolveState(
+                            item.Name,
+                            item.SkillFilePath,
+                            overrides,
+                            pathOverrides) == CopilotAgentSkillOverrideState.Off)
                     {
                         continue;
                     }
@@ -445,6 +461,7 @@ namespace ColorVision.Copilot
         private static string BuildCacheKey(
             IReadOnlyList<string> skillRoots,
             IReadOnlyDictionary<string, CopilotAgentSkillOverrideState>? overrides,
+            IReadOnlyDictionary<string, CopilotAgentSkillOverrideState>? pathOverrides,
             string builtInSkillRoot)
         {
             var builder = new StringBuilder();
@@ -454,6 +471,9 @@ namespace ColorVision.Copilot
             foreach (var item in (overrides ?? new Dictionary<string, CopilotAgentSkillOverrideState>())
                 .OrderBy(item => item.Key, StringComparer.OrdinalIgnoreCase))
                 builder.Append(item.Key.ToLowerInvariant()).Append('=').Append((int)item.Value).Append('\n');
+            foreach (var item in (pathOverrides ?? new Dictionary<string, CopilotAgentSkillOverrideState>())
+                .OrderBy(item => item.Key, StringComparer.OrdinalIgnoreCase))
+                builder.Append("path:").Append(item.Key.ToLowerInvariant()).Append('=').Append((int)item.Value).Append('\n');
             return builder.ToString();
         }
     }

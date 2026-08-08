@@ -28,38 +28,112 @@ namespace ColorVision.Copilot
     {
         private void HandleAgentSkillsCommand(CopilotLocalCommand command, string arguments)
         {
-            var action = CopilotAgentSkillCommand.Resolve(arguments);
-            if (action == CopilotAgentSkillCommandAction.Invalid)
+            var request = CopilotAgentSkillCommand.Parse(arguments);
+            if (request.Action == CopilotAgentSkillCommandAction.Invalid)
             {
                 ShowLocalCommandResult(command, CopilotAgentSkillCommand.Usage);
                 return;
             }
 
+            var resultPrefix = string.Empty;
+            if (request.Action is CopilotAgentSkillCommandAction.Disable or CopilotAgentSkillCommandAction.Enable)
+            {
+                var catalog = DiscoverAgentSkillCatalog(includeDisabled: true, forceReload: false);
+                if (request.CatalogIndex > catalog.Count)
+                {
+                    ShowLocalCommandResult(
+                        command,
+                        $"Skill 编号超出范围；当前目录共有 {catalog.Count} 项。{Environment.NewLine}{CopilotAgentSkillCommand.Usage}");
+                    return;
+                }
+
+                var item = catalog[request.CatalogIndex - 1];
+                var disabled = request.Action == CopilotAgentSkillCommandAction.Disable;
+                var changed = SetAgentSkillPathState(
+                    item,
+                    disabled ? CopilotAgentSkillOverrideState.Off : CopilotAgentSkillOverrideState.On);
+                resultPrefix = changed
+                    ? $"已按精确路径{(disabled ? "关闭" : "启用")} #{request.CatalogIndex} ${item.Name}；从下一次请求开始生效。"
+                    : $"#{request.CatalogIndex} ${item.Name} 的精确路径已经处于请求状态。";
+            }
+
             ShowLocalCommandResult(
                 command,
-                BuildAgentSkillDiagnosticsReport(action == CopilotAgentSkillCommandAction.Reload));
+                (resultPrefix.Length == 0 ? string.Empty : resultPrefix + Environment.NewLine + Environment.NewLine)
+                + BuildAgentSkillDiagnosticsReport(request.Action == CopilotAgentSkillCommandAction.Reload));
         }
 
         private string BuildAgentSkillDiagnosticsReport(bool forceReload)
         {
             var agentDefaults = _config.AgentDefaults;
             var overrides = agentDefaults.CreateSkillOverrideSnapshot();
-            var turnSnapshot = CaptureHostedTurnSnapshot(Attachments);
-            var trustedProjectRoots = CopilotAgentRequestFactory.BuildTrustedProjectRootPaths(turnSnapshot);
-            if (forceReload)
-                CopilotAgentSkillCatalog.Invalidate();
-            var availableSkills = CopilotAgentSkillCatalog.DiscoverCached(
-                trustedProjectRoots,
-                overrides,
-                applicationBaseDirectory: null,
-                userProfileDirectory: null,
-                activeDocumentPath: turnSnapshot.ActiveDocumentPath);
+            var pathOverrides = agentDefaults.CreateSkillPathOverrideSnapshot();
+            var availableSkills = DiscoverAgentSkillCatalog(includeDisabled: true, forceReload);
             return CopilotAgentSkillDiagnostics.FormatReport(
                 CopilotAgentSkillUsageStore.Shared.GetSnapshot(),
                 CopilotAgentSkills.ResolveMetadataCharacterBudget(agentDefaults.ContextWindowTokens),
                 overrides,
                 availableSkills,
-                forceReload);
+                forceReload,
+                pathOverrides);
+        }
+
+        private IReadOnlyList<CopilotAgentSkillCatalogItem> DiscoverAgentSkillCatalog(
+            bool includeDisabled,
+            bool forceReload)
+        {
+            var turnSnapshot = CaptureHostedTurnSnapshot(Attachments);
+            var trustedProjectRoots = CopilotAgentRequestFactory.BuildTrustedProjectRootPaths(turnSnapshot);
+            if (forceReload)
+                CopilotAgentSkillCatalog.Invalidate();
+
+            var agentDefaults = _config.AgentDefaults;
+            return CopilotAgentSkillCatalog.DiscoverCached(
+                    trustedProjectRoots,
+                    includeDisabled ? null : agentDefaults.CreateSkillOverrideSnapshot(),
+                    applicationBaseDirectory: null,
+                    userProfileDirectory: null,
+                    activeDocumentPath: turnSnapshot.ActiveDocumentPath,
+                    pathOverrides: includeDisabled ? null : agentDefaults.CreateSkillPathOverrideSnapshot())
+                .OrderBy(item => item.Name, StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+        }
+
+        private bool SetAgentSkillPathState(
+            CopilotAgentSkillCatalogItem item,
+            CopilotAgentSkillOverrideState state)
+        {
+            var agentDefaults = _config.AgentDefaults;
+            var skillFilePath = CopilotAgentSkillOverrideConfig.NormalizeSkillFilePath(item.SkillFilePath);
+            if (skillFilePath.Length == 0
+                || state is not (CopilotAgentSkillOverrideState.On or CopilotAgentSkillOverrideState.Off))
+                return false;
+
+            var entries = CopilotAgentSkillOverrideConfig.Normalize(agentDefaults.SkillOverrides)
+                .Where(entry => !string.Equals(entry.SkillFilePath, skillFilePath, StringComparison.OrdinalIgnoreCase))
+                .Select(entry => entry.Clone())
+                .ToList();
+            entries.Add(new CopilotAgentSkillOverrideConfig
+            {
+                Name = item.Name,
+                SkillFilePath = skillFilePath,
+                State = state,
+            });
+
+            var normalized = CopilotAgentSkillOverrideConfig.Normalize(entries);
+            var before = CopilotAgentSkillOverrideConfig.Normalize(agentDefaults.SkillOverrides);
+            var changed = !before
+                .Select(entry => (entry.Name, entry.SkillFilePath, entry.State))
+                .SequenceEqual(normalized.Select(entry => (entry.Name, entry.SkillFilePath, entry.State)));
+            if (!changed)
+                return false;
+
+            agentDefaults.SkillOverrides.Clear();
+            foreach (var entry in normalized)
+                agentDefaults.SkillOverrides.Add(entry);
+            CopilotAgentSkillCatalog.Invalidate();
+            PersistConfig();
+            return true;
         }
 
         private string BuildPermissionDiagnosticsReport()

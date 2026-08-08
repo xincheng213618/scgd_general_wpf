@@ -67,7 +67,8 @@ namespace ColorVision.Copilot
                 historicalExplicitOnlySkillNames,
                 request.SkillOverrides,
                 MaxActiveSkills,
-                metadataCharacterBudget);
+                metadataCharacterBudget,
+                request.SkillPathOverrides);
             source = new CachingAgentSkillsSource(budgetedSource, new CachingAgentSkillsSourceOptions());
             return new CopilotAgentSkills(searchPaths, budgetedSource, source, metadataCharacterBudget);
         }
@@ -348,6 +349,7 @@ namespace ColorVision.Copilot
             private readonly int _maximumMetadataCharacters;
             private readonly HashSet<string> _historicalExplicitOnlySkillNames;
             private readonly IReadOnlyDictionary<string, CopilotAgentSkillOverrideState> _skillOverrides;
+            private readonly IReadOnlyDictionary<string, CopilotAgentSkillOverrideState> _skillPathOverrides;
             private readonly HashSet<string> _loadedNames = new(StringComparer.OrdinalIgnoreCase);
             private SkillSelectionSnapshot _snapshot = SkillSelectionSnapshot.Empty;
 
@@ -357,7 +359,8 @@ namespace ColorVision.Copilot
                 IEnumerable<string>? historicalExplicitOnlySkillNames,
                 IReadOnlyDictionary<string, CopilotAgentSkillOverrideState>? skillOverrides,
                 int maximumCount,
-                int maximumMetadataCharacters)
+                int maximumMetadataCharacters,
+                IReadOnlyDictionary<string, CopilotAgentSkillOverrideState>? skillPathOverrides)
                 : base(innerSource)
             {
                 _userText = userText ?? string.Empty;
@@ -366,6 +369,9 @@ namespace ColorVision.Copilot
                 _skillOverrides = skillOverrides == null
                     ? new Dictionary<string, CopilotAgentSkillOverrideState>(StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, CopilotAgentSkillOverrideState>(skillOverrides, StringComparer.OrdinalIgnoreCase);
+                _skillPathOverrides = skillPathOverrides == null
+                    ? new Dictionary<string, CopilotAgentSkillOverrideState>(StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, CopilotAgentSkillOverrideState>(skillPathOverrides, StringComparer.OrdinalIgnoreCase);
                 _maximumCount = maximumCount;
                 _maximumMetadataCharacters = maximumMetadataCharacters;
             }
@@ -381,7 +387,8 @@ namespace ColorVision.Copilot
                     _historicalExplicitOnlySkillNames,
                     _skillOverrides,
                     _maximumCount,
-                    _maximumMetadataCharacters);
+                    _maximumMetadataCharacters,
+                    _skillPathOverrides);
                 var selectedNames = selection.SelectedSkills.Select(skill => skill.Frontmatter.Name).ToArray();
                 lock (_sync)
                 {

@@ -564,6 +564,7 @@ namespace ColorVision.Copilot
                 Recovery = null,
                 RunControl = null,
                 SkillOverrides = parentRequest.SkillOverrides,
+                SkillPathOverrides = parentRequest.SkillPathOverrides,
                 RunBudgetOverride = new CopilotAgentRunBudgetOverride
                 {
                     RequestTokenBudget = ResolveExplorationRequestTokenBudget(runRequest.RequestTokenBudget),

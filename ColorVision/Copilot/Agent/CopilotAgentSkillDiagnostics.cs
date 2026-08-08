@@ -31,12 +31,13 @@ namespace ColorVision.Copilot
             int metadataCharacterBudget,
             IReadOnlyDictionary<string, CopilotAgentSkillOverrideState>? overrides = null,
             IReadOnlyList<CopilotAgentSkillCatalogItem>? availableSkills = null,
-            bool catalogReloaded = false)
+            bool catalogReloaded = false,
+            IReadOnlyDictionary<string, CopilotAgentSkillOverrideState>? pathOverrides = null)
         {
             ArgumentNullException.ThrowIfNull(snapshot);
             var builder = new StringBuilder();
             builder.AppendLine("/skills · Agent Skill 目录与使用快照");
-            AppendCatalog(builder, availableSkills, catalogReloaded);
+            AppendCatalog(builder, availableSkills, overrides, pathOverrides, catalogReloaded);
             builder.AppendLine()
                 .AppendLine("本地使用证据")
                 .AppendLine(FormatSummary(snapshot));
@@ -49,7 +50,7 @@ namespace ColorVision.Copilot
                 .AppendLine("）。")
                 .AppendLine("低使用率 Skill 不会被删除；连续多次选中但未加载后仅限显式调用。使用 $skill-name 或 /skill-name 点名并实际加载后，可恢复隐式匹配资格。")
                 .Append("手动覆盖：")
-                .AppendLine(FormatOverrides(overrides))
+                .AppendLine(FormatOverrides(overrides, pathOverrides))
                 .AppendLine()
                 .Append(FormatEntries(snapshot));
             return builder.ToString();
@@ -58,12 +59,20 @@ namespace ColorVision.Copilot
         private static void AppendCatalog(
             StringBuilder builder,
             IReadOnlyList<CopilotAgentSkillCatalogItem>? availableSkills,
+            IReadOnlyDictionary<string, CopilotAgentSkillOverrideState>? overrides,
+            IReadOnlyDictionary<string, CopilotAgentSkillOverrideState>? pathOverrides,
             bool catalogReloaded)
         {
             var items = availableSkills ?? Array.Empty<CopilotAgentSkillCatalogItem>();
+            var enabledCount = items.Count(item => CopilotAgentSkillOverrideConfig.ResolveState(
+                item.Name,
+                item.SkillFilePath,
+                overrides,
+                pathOverrides) != CopilotAgentSkillOverrideState.Off);
             builder.Append("当前可调用：")
-                .Append(items.Count)
-                .Append(" 个 Skill；")
+                .Append(enabledCount)
+                .Append('/').Append(items.Count)
+                .Append(" 个 Skill 路径；")
                 .AppendLine(catalogReloaded
                     ? "已强制从磁盘重扫目录。"
                     : "本地 SKILL.md 与界面元数据变更会自动使目录缓存失效。")
@@ -74,13 +83,26 @@ namespace ColorVision.Copilot
                 return;
             }
 
-            foreach (var item in items.OrderBy(item => item.Name, StringComparer.OrdinalIgnoreCase))
+            var orderedItems = items.OrderBy(item => item.Name, StringComparer.OrdinalIgnoreCase).ToArray();
+            for (var index = 0; index < orderedItems.Length; index++)
             {
-                builder.Append("- $")
+                var item = orderedItems[index];
+                var state = CopilotAgentSkillOverrideConfig.ResolveState(
+                    item.Name,
+                    item.SkillFilePath,
+                    overrides,
+                    pathOverrides);
+                builder.Append("- ")
+                    .Append(index + 1)
+                    .Append(". $")
                     .Append(item.Name)
                     .Append(FormatSource(item.SourceKind))
                     .Append(FormatDisplayName(item.DisplayName))
-                    .AppendLine(item.EffectiveDescription);
+                    .Append(item.EffectiveDescription)
+                    .Append(" [")
+                    .Append(FormatState(state))
+                    .AppendLine("]");
+                builder.Append("  路径：").AppendLine(item.SkillFilePath);
                 if (item.Dependencies.Count > 0)
                 {
                     builder.Append("  依赖：")
@@ -110,15 +132,22 @@ namespace ColorVision.Copilot
             };
         }
 
-        public static string FormatOverrides(IReadOnlyDictionary<string, CopilotAgentSkillOverrideState>? overrides)
+        public static string FormatOverrides(
+            IReadOnlyDictionary<string, CopilotAgentSkillOverrideState>? overrides,
+            IReadOnlyDictionary<string, CopilotAgentSkillOverrideState>? pathOverrides = null)
         {
-            if (overrides == null || overrides.Count == 0)
+            if ((overrides == null || overrides.Count == 0)
+                && (pathOverrides == null || pathOverrides.Count == 0))
                 return "无（所有 Skill 均为自动）。";
 
-            var visibleOverrides = overrides
+            var visibleOverrides = (overrides ?? new Dictionary<string, CopilotAgentSkillOverrideState>())
                 .Where(item => item.Value != CopilotAgentSkillOverrideState.Auto)
                 .OrderBy(item => item.Key, StringComparer.OrdinalIgnoreCase)
                 .Select(item => $"{item.Key}={FormatState(item.Value)}")
+                .Concat((pathOverrides ?? new Dictionary<string, CopilotAgentSkillOverrideState>())
+                    .Where(item => item.Value != CopilotAgentSkillOverrideState.Auto)
+                    .OrderBy(item => item.Key, StringComparer.OrdinalIgnoreCase)
+                    .Select(item => $"{item.Key}={FormatState(item.Value)}"))
                 .ToArray();
             return visibleOverrides.Length == 0
                 ? "无（所有 Skill 均为自动）。"
@@ -132,6 +161,7 @@ namespace ColorVision.Copilot
                 CopilotAgentSkillOverrideState.NameOnly => "仅名称",
                 CopilotAgentSkillOverrideState.UserInvocableOnly => "仅显式调用",
                 CopilotAgentSkillOverrideState.Off => "关闭",
+                CopilotAgentSkillOverrideState.On => "启用",
                 _ => "自动",
             };
         }

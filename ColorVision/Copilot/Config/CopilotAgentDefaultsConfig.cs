@@ -112,8 +112,11 @@ namespace ColorVision.Copilot
             SkillOverrides ??= new ObservableCollection<CopilotAgentSkillOverrideConfig>();
             var normalizedSkillOverrides = CopilotAgentSkillOverrideConfig.Normalize(SkillOverrides);
             var skillOverridesChanged = !SkillOverrides
-                .Select(item => (item?.Name ?? string.Empty, item?.State ?? CopilotAgentSkillOverrideState.Auto))
-                .SequenceEqual(normalizedSkillOverrides.Select(item => (item.Name, item.State)));
+                .Select(item => (
+                    item?.Name ?? string.Empty,
+                    item?.SkillFilePath ?? string.Empty,
+                    item?.State ?? CopilotAgentSkillOverrideState.Auto))
+                .SequenceEqual(normalizedSkillOverrides.Select(item => (item.Name, item.SkillFilePath, item.State)));
             var changed = normalizedContextWindowTokens != ContextWindowTokens
                 || normalizedAutoCompactThresholdPercent != AutoCompactThresholdPercent
                 || !string.Equals(normalizedAutoCompactInstructions, AutoCompactInstructions, StringComparison.Ordinal)
@@ -172,7 +175,15 @@ namespace ColorVision.Copilot
         public IReadOnlyDictionary<string, CopilotAgentSkillOverrideState> CreateSkillOverrideSnapshot()
         {
             return CopilotAgentSkillOverrideConfig.Normalize(SkillOverrides)
+                .Where(item => item.SkillFilePath.Length == 0)
                 .ToDictionary(item => item.Name, item => item.State, StringComparer.OrdinalIgnoreCase);
+        }
+
+        public IReadOnlyDictionary<string, CopilotAgentSkillOverrideState> CreateSkillPathOverrideSnapshot()
+        {
+            return CopilotAgentSkillOverrideConfig.Normalize(SkillOverrides)
+                .Where(item => item.SkillFilePath.Length > 0)
+                .ToDictionary(item => item.SkillFilePath, item => item.State, StringComparer.OrdinalIgnoreCase);
         }
 
         public static string NormalizeAutoCompactInstructions(string? value)

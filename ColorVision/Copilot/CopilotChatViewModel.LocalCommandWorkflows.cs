@@ -243,7 +243,8 @@ namespace ColorVision.Copilot
                 _config.AgentDefaults.CreateSkillOverrideSnapshot(),
                 applicationBaseDirectory: null,
                 userProfileDirectory: null,
-                activeDocumentPath: turnSnapshot.ActiveDocumentPath);
+                activeDocumentPath: turnSnapshot.ActiveDocumentPath,
+                pathOverrides: _config.AgentDefaults.CreateSkillPathOverrideSnapshot());
         }
 
         private bool TryReportCommandInputRecovery(string prompt)

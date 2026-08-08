@@ -158,6 +158,7 @@ namespace ColorVision.Copilot
                 new CopilotAgentSkillOverrideOption(CopilotAgentSkillOverrideState.NameOnly, "Name only"),
                 new CopilotAgentSkillOverrideOption(CopilotAgentSkillOverrideState.UserInvocableOnly, "Explicit only"),
                 new CopilotAgentSkillOverrideOption(CopilotAgentSkillOverrideState.Off, "Off"),
+                new CopilotAgentSkillOverrideOption(CopilotAgentSkillOverrideState.On, "On"),
             });
             VendorOptions = CopilotVendorCatalog.VendorOptions;
             QuickAddVendorOptions = VendorOptions

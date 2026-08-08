@@ -95,6 +95,8 @@ namespace ColorVision.Copilot
 
         public IReadOnlyDictionary<string, CopilotAgentSkillOverrideState> SkillOverrides { get; init; } = new Dictionary<string, CopilotAgentSkillOverrideState>(StringComparer.OrdinalIgnoreCase);
 
+        public IReadOnlyDictionary<string, CopilotAgentSkillOverrideState> SkillPathOverrides { get; init; } = new Dictionary<string, CopilotAgentSkillOverrideState>(StringComparer.OrdinalIgnoreCase);
+
         public CopilotAgentSkillReference? AgentSkillReference { get; init; }
 
         public IReadOnlyList<CopilotMcpClientServerConfig> ExternalMcpServers { get; init; } = Array.Empty<CopilotMcpClientServerConfig>();
