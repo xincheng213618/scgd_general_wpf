@@ -780,20 +780,110 @@ namespace ColorVision.ImageEditor
             string fileName,
             CancellationToken cancellationToken = default)
         {
+            SaveSnapshot(
+                snapshot,
+                fileName,
+                ImageViewSnapshotSaveOptions.Default,
+                cancellationToken);
+        }
+
+        private static void SaveSnapshot(
+            BitmapSource snapshot,
+            string fileName,
+            ImageViewSnapshotSaveOptions options,
+            CancellationToken cancellationToken = default)
+        {
             cancellationToken.ThrowIfCancellationRequested();
             string? directory = Path.GetDirectoryName(fileName);
             if (!string.IsNullOrWhiteSpace(directory) && !Directory.Exists(directory))
                 Directory.CreateDirectory(directory);
 
-            PngBitmapEncoder pngEncoder = new();
-            pngEncoder.Frames.Add(BitmapFrame.Create(snapshot));
+            BitmapEncoder encoder = options.Format switch
+            {
+                ImageViewSnapshotFormat.Png => new PngBitmapEncoder(),
+                ImageViewSnapshotFormat.Jpeg => new JpegBitmapEncoder
+                {
+                    QualityLevel = Math.Clamp(options.JpegQuality, 1, 100),
+                },
+                _ => throw new ArgumentOutOfRangeException(nameof(options), options.Format, "Unsupported snapshot format."),
+            };
+            encoder.Frames.Add(BitmapFrame.Create(snapshot));
+            SaveEncoderAtomically(encoder, fileName, cancellationToken);
+        }
 
-            using FileStream fileStream = new(
-                fileName,
-                FileMode.Create,
-                FileAccess.Write,
-                FileShare.None);
-            pngEncoder.Save(fileStream);
+        private static void SaveSourceSnapshot(
+            BitmapSource source,
+            string fileName,
+            ImageViewSourceSaveOptions options,
+            CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (options.Format == ImageViewSourceFormat.Bmp
+                && !CanBmpPreserveSourceBitDepth(source.Format))
+            {
+                throw new NotSupportedException(
+                    $"BMP cannot preserve source pixel format {source.Format} ({source.Format.BitsPerPixel} bits per pixel). "
+                    + "Use PNG or TIFF for 16-bit source images.");
+            }
+
+            string? directory = Path.GetDirectoryName(fileName);
+            if (!string.IsNullOrWhiteSpace(directory) && !Directory.Exists(directory))
+                Directory.CreateDirectory(directory);
+
+            BitmapEncoder encoder = options.Format switch
+            {
+                ImageViewSourceFormat.Png => new PngBitmapEncoder(),
+                ImageViewSourceFormat.Tiff => new TiffBitmapEncoder
+                {
+                    Compression = options.TiffCompression == ImageViewTiffCompression.Zip
+                        ? TiffCompressOption.Zip
+                        : TiffCompressOption.Lzw,
+                },
+                ImageViewSourceFormat.Bmp => new BmpBitmapEncoder(),
+                _ => throw new ArgumentOutOfRangeException(nameof(options), options.Format, "Unsupported source image format."),
+            };
+            encoder.Frames.Add(BitmapFrame.Create(source));
+            SaveEncoderAtomically(encoder, fileName, cancellationToken);
+        }
+
+        public static bool CanBmpPreserveSourceBitDepth(PixelFormat format)
+        {
+            return format == PixelFormats.Bgr24
+                || format == PixelFormats.Rgb24
+                || format == PixelFormats.Bgr32
+                || format == PixelFormats.Gray8
+                || format == PixelFormats.Indexed8;
+        }
+
+        private static void SaveEncoderAtomically(
+            BitmapEncoder encoder,
+            string fileName,
+            CancellationToken cancellationToken)
+        {
+            string? directory = Path.GetDirectoryName(fileName);
+            if (!string.IsNullOrWhiteSpace(directory) && !Directory.Exists(directory))
+                Directory.CreateDirectory(directory);
+
+            string temporaryFile = fileName + "." + Guid.NewGuid().ToString("N") + ".tmp";
+            try
+            {
+                using (FileStream fileStream = new(
+                    temporaryFile,
+                    FileMode.CreateNew,
+                    FileAccess.Write,
+                    FileShare.None))
+                {
+                    encoder.Save(fileStream);
+                }
+
+                cancellationToken.ThrowIfCancellationRequested();
+                File.Move(temporaryFile, fileName, overwrite: true);
+            }
+            finally
+            {
+                if (File.Exists(temporaryFile))
+                    File.Delete(temporaryFile);
+            }
         }
 
         private static int GetRenderPixelLength(params double[] values)

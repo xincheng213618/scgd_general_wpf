@@ -8,7 +8,8 @@ namespace ProjectARVRPro
 {
     public sealed class ArvrSqliteCleanupProvider : IDatabaseCleanupSourceProvider
     {
-        private const string CleanupTableName = "ARVRReuslt";
+        private const string ResultTableName = "ARVRReuslt";
+        private const string ObjectiveResultTableName = "ObjectiveTestResultRecord";
 
         public string Id => "projectarvrpro-sqlite";
         public string DisplayName => "ARVRPro SQLite";
@@ -17,19 +18,25 @@ namespace ProjectARVRPro
 
         public IReadOnlyList<DatabaseCleanupTableInfo> LoadTables()
         {
-            var tableInfo = new DatabaseCleanupTableInfo
+            var resultTable = new DatabaseCleanupTableInfo
             {
-                TableName = CleanupTableName,
+                TableName = ResultTableName,
                 Exists = File.Exists(ViewResultManager.SqliteDbPath),
             };
+            var objectiveTable = new DatabaseCleanupTableInfo
+            {
+                TableName = ObjectiveResultTableName,
+                Exists = resultTable.Exists,
+            };
 
-            if (!tableInfo.Exists)
-                return new[] { tableInfo };
+            if (!resultTable.Exists)
+                return new[] { resultTable, objectiveTable };
 
             using var db = CreateDbClient();
-            tableInfo.RowCount = db.Queryable<ProjectARVRReuslt>().Count();
-            tableInfo.SizeBytes = new FileInfo(ViewResultManager.SqliteDbPath).Length;
-            return new[] { tableInfo };
+            resultTable.RowCount = db.Queryable<ProjectARVRReuslt>().Count();
+            objectiveTable.RowCount = db.Queryable<ObjectiveTestResultRecord>().Count();
+            resultTable.SizeBytes = new FileInfo(ViewResultManager.SqliteDbPath).Length;
+            return new[] { resultTable, objectiveTable };
         }
 
         public DatabaseCleanupExecutionResult CleanupHistory(int keepMonths)
@@ -44,7 +51,20 @@ namespace ProjectARVRPro
 
             DateTime cutoffDate = DateTime.Now.AddMonths(-keepMonths);
             using var db = CreateDbClient();
-            int deletedRows = db.Deleteable<ProjectARVRReuslt>().Where(item => item.CreateTime < cutoffDate).ExecuteCommand();
+            int deletedResultRows;
+            int deletedObjectiveRows;
+            db.Ado.BeginTran();
+            try
+            {
+                deletedResultRows = db.Deleteable<ProjectARVRReuslt>().Where(item => item.CreateTime < cutoffDate).ExecuteCommand();
+                deletedObjectiveRows = db.Deleteable<ObjectiveTestResultRecord>().Where(item => item.UpdateTime < cutoffDate).ExecuteCommand();
+                db.Ado.CommitTran();
+            }
+            catch
+            {
+                db.Ado.RollbackTran();
+                throw;
+            }
             TryVacuum(db);
             RefreshArvrWindowIfOpen();
 
@@ -52,7 +72,8 @@ namespace ProjectARVRPro
             {
                 StatusMessage = $"已保留最近 {keepMonths} 个月的 ARVRPro 数据。"
             };
-            result.SummaryLines.Add($"{CleanupTableName}: 删除 {deletedRows:N0} 行");
+            result.SummaryLines.Add($"{ResultTableName}: 删除 {deletedResultRows:N0} 行");
+            result.SummaryLines.Add($"{ObjectiveResultTableName}: 删除 {deletedObjectiveRows:N0} 行");
             return result;
         }
 
@@ -67,8 +88,21 @@ namespace ProjectARVRPro
             }
 
             using var db = CreateDbClient();
-            int deletedRows = db.Deleteable<ProjectARVRReuslt>().ExecuteCommand();
-            TryResetIdentity(db);
+            int deletedResultRows;
+            int deletedObjectiveRows;
+            db.Ado.BeginTran();
+            try
+            {
+                deletedResultRows = db.Deleteable<ProjectARVRReuslt>().ExecuteCommand();
+                deletedObjectiveRows = db.Deleteable<ObjectiveTestResultRecord>().ExecuteCommand();
+                TryResetIdentity(db);
+                db.Ado.CommitTran();
+            }
+            catch
+            {
+                db.Ado.RollbackTran();
+                throw;
+            }
             TryVacuum(db);
             RefreshArvrWindowIfOpen();
 
@@ -76,7 +110,8 @@ namespace ProjectARVRPro
             {
                 StatusMessage = "已清空 ARVRPro SQLite 结果表。"
             };
-            result.SummaryLines.Add($"{CleanupTableName}: 删除 {deletedRows:N0} 行");
+            result.SummaryLines.Add($"{ResultTableName}: 删除 {deletedResultRows:N0} 行");
+            result.SummaryLines.Add($"{ObjectiveResultTableName}: 删除 {deletedObjectiveRows:N0} 行");
             return result;
         }
 
@@ -84,7 +119,7 @@ namespace ProjectARVRPro
         {
             return new SqlSugarClient(new ConnectionConfig
             {
-                ConnectionString = $"Data Source={ViewResultManager.SqliteDbPath}",
+                ConnectionString = $"Data Source={ViewResultManager.SqliteDbPath};Default Timeout=5",
                 DbType = DbType.Sqlite,
                 IsAutoCloseConnection = true,
                 InitKeyType = InitKeyType.Attribute,
@@ -95,7 +130,8 @@ namespace ProjectARVRPro
         {
             try
             {
-                db.Ado.ExecuteCommand($"DELETE FROM sqlite_sequence WHERE name = '{CleanupTableName}';");
+                db.Ado.ExecuteCommand(
+                    $"DELETE FROM sqlite_sequence WHERE name IN ('{ResultTableName}', '{ObjectiveResultTableName}');");
             }
             catch
             {

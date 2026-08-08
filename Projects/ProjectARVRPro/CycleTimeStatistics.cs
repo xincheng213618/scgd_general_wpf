@@ -5,6 +5,7 @@ namespace ProjectARVRPro
         public int Id { get; set; }
         public string SN { get; set; } = string.Empty;
         public int TestType { get; set; }
+        public bool Result { get; set; }
         public long RunTime { get; set; }
         public DateTime CreateTime { get; set; }
     }
@@ -14,6 +15,7 @@ namespace ProjectARVRPro
         public string SN { get; init; } = string.Empty;
         public int ExecutionIndex { get; init; }
         public int ResultCount { get; init; }
+        public bool Result { get; init; }
         public long TotalRunTime { get; init; }
         public DateTime FirstTime { get; init; }
         public DateTime LastTime { get; init; }
@@ -21,6 +23,7 @@ namespace ProjectARVRPro
         public int LatestId { get; init; }
 
         public string ExecutionText => $"第 {ExecutionIndex} 次";
+        public string ResultText => Result ? "PASS" : "FAIL";
         public string TotalRunTimeText => CycleTimeCalculator.FormatMilliseconds(TotalRunTime);
     }
 
@@ -67,6 +70,7 @@ namespace ProjectARVRPro
                 SN = sn,
                 ExecutionIndex = executionIndex,
                 ResultCount = samples.Count,
+                Result = samples.All(sample => sample.Result),
                 TotalRunTime = samples.Sum(sample => sample.RunTime),
                 FirstTime = samples.Min(sample => sample.CreateTime),
                 LastTime = samples.Max(sample => sample.CreateTime),

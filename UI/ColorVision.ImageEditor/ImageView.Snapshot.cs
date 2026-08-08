@@ -1,6 +1,9 @@
 using ColorVision.Core;
 using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Runtime.InteropServices;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -9,6 +12,50 @@ using System.Windows.Media.Imaging;
 
 namespace ColorVision.ImageEditor
 {
+    public enum ImageViewSnapshotFormat
+    {
+        Png = 0,
+        Jpeg = 1,
+    }
+
+    public sealed class ImageViewSnapshotSaveOptions
+    {
+        public static ImageViewSnapshotSaveOptions Default { get; } = new();
+
+        public ImageViewSnapshotFormat Format { get; init; } = ImageViewSnapshotFormat.Png;
+        public int ScaleDivisor { get; init; } = 1;
+        public int JpegQuality { get; init; } = 100;
+    }
+
+    public enum ImageViewSourceFormat
+    {
+        Png = 0,
+        Tiff = 1,
+        Bmp = 2,
+    }
+
+    public enum ImageViewTiffCompression
+    {
+        Lzw = 0,
+        Zip = 1,
+    }
+
+    public sealed class ImageViewSourceSaveOptions
+    {
+        public static ImageViewSourceSaveOptions Default { get; } = new();
+
+        public ImageViewSourceFormat Format { get; init; } = ImageViewSourceFormat.Png;
+        public ImageViewTiffCompression TiffCompression { get; init; } = ImageViewTiffCompression.Lzw;
+    }
+
+    public sealed class ImageViewSnapshotExportOptions
+    {
+        public string? RenderedFileName { get; init; }
+        public ImageViewSnapshotSaveOptions RenderedOptions { get; init; } = ImageViewSnapshotSaveOptions.Default;
+        public string? SourceFileName { get; init; }
+        public ImageViewSourceSaveOptions SourceOptions { get; init; } = ImageViewSourceSaveOptions.Default;
+    }
+
     /// <summary>
     /// Owns the immutable image data and drawings required for a background save.
     /// </summary>
@@ -18,6 +65,7 @@ namespace ColorVision.ImageEditor
         private SnapshotImageBufferLease? imageBuffer;
 
         internal DrawingGroup Scene { get; }
+        internal BitmapSource? FrozenSource { get; }
         public int PixelWidth { get; }
         public int PixelHeight { get; }
         internal double DpiX { get; }
@@ -29,6 +77,7 @@ namespace ColorVision.ImageEditor
             int pixelHeight,
             double dpiX,
             double dpiY,
+            BitmapSource? frozenSource = null,
             SnapshotImageBufferLease? imageBuffer = null)
         {
             Scene = scene;
@@ -36,6 +85,7 @@ namespace ColorVision.ImageEditor
             PixelHeight = pixelHeight;
             DpiX = dpiX;
             DpiY = dpiY;
+            FrozenSource = frozenSource;
             this.imageBuffer = imageBuffer;
         }
 
@@ -75,7 +125,29 @@ namespace ColorVision.ImageEditor
                 pixelHeight,
                 dpiX,
                 dpiY,
+                null,
                 imageBuffer);
+        }
+
+        internal static ImageViewSnapshot Create(
+            DrawingGroup overlays,
+            BitmapSource frozenSource,
+            int pixelWidth,
+            int pixelHeight,
+            double dpiX,
+            double dpiY)
+        {
+            if (!overlays.IsFrozen)
+                overlays.Freeze();
+            if (!frozenSource.IsFrozen)
+                frozenSource.Freeze();
+            return new ImageViewSnapshot(
+                overlays,
+                pixelWidth,
+                pixelHeight,
+                dpiX,
+                dpiY,
+                frozenSource);
         }
 
         internal SnapshotImageBufferLease? TakeImageBuffer()
@@ -101,6 +173,7 @@ namespace ColorVision.ImageEditor
     {
         private readonly SnapshotImageBufferPool owner;
         private readonly PixelFormat format;
+        private readonly Color[]? paletteColors;
         private readonly int generation;
         private HImage? image;
 
@@ -108,15 +181,56 @@ namespace ColorVision.ImageEditor
             SnapshotImageBufferPool owner,
             HImage image,
             PixelFormat format,
+            Color[]? paletteColors,
             int generation)
         {
             this.owner = owner;
             this.image = image;
             this.format = format;
+            this.paletteColors = paletteColors;
             this.generation = generation;
         }
 
         internal HImage Image => image ?? throw new ObjectDisposedException(nameof(SnapshotImageBufferLease));
+
+        internal WriteableBitmap ToWriteableBitmap(double dpiX, double dpiY)
+        {
+            HImage buffer = Image;
+            BitmapPalette? palette = paletteColors == null ? null : new BitmapPalette(paletteColors);
+            WriteableBitmap bitmap = new(
+                buffer.cols,
+                buffer.rows,
+                dpiX,
+                dpiY,
+                format,
+                palette);
+            int bytesPerRow = GetPackedRowBytes(buffer.cols, format.BitsPerPixel);
+            if (buffer.stride < bytesPerRow || bitmap.BackBufferStride < bytesPerRow)
+                throw new InvalidOperationException("Snapshot image buffer stride is invalid.");
+
+            bitmap.Lock();
+            try
+            {
+                for (int y = 0; y < buffer.rows; y++)
+                {
+                    SnapshotImageBufferPool.CopyMemory(
+                        IntPtr.Add(bitmap.BackBuffer, y * bitmap.BackBufferStride),
+                        IntPtr.Add(buffer.pData, y * buffer.stride),
+                        (uint)bytesPerRow);
+                }
+                bitmap.AddDirtyRect(new Int32Rect(0, 0, bitmap.PixelWidth, bitmap.PixelHeight));
+            }
+            finally
+            {
+                bitmap.Unlock();
+            }
+            return bitmap;
+        }
+
+        private static int GetPackedRowBytes(int width, int bitsPerPixel)
+        {
+            return checked((width * bitsPerPixel + 7) / 8);
+        }
 
         public void Dispose()
         {
@@ -133,7 +247,7 @@ namespace ColorVision.ImageEditor
     internal sealed class SnapshotImageBufferPool
     {
         [DllImport("kernel32.dll", EntryPoint = "RtlMoveMemory")]
-        private static extern void CopyMemory(IntPtr destination, IntPtr source, uint length);
+        internal static extern void CopyMemory(IntPtr destination, IntPtr source, uint length);
 
         private readonly object sync = new();
         private HImage? cachedImage;
@@ -143,6 +257,7 @@ namespace ColorVision.ImageEditor
         internal SnapshotImageBufferLease Capture(WriteableBitmap source)
         {
             HImage? buffer = null;
+            Color[]? paletteColors = source.Palette == null ? null : [.. source.Palette.Colors];
             int leaseGeneration;
             lock (sync)
             {
@@ -161,13 +276,35 @@ namespace ColorVision.ImageEditor
             }
 
             if (!buffer.HasValue)
-                return new SnapshotImageBufferLease(this, source.ToHImage(), source.Format, leaseGeneration);
+            {
+                HImage allocatedImage = AllocateBuffer(source);
+                try
+                {
+                    CopyToBuffer(source, allocatedImage);
+                    return new SnapshotImageBufferLease(
+                        this,
+                        allocatedImage,
+                        source.Format,
+                        paletteColors,
+                        leaseGeneration);
+                }
+                catch
+                {
+                    allocatedImage.Dispose();
+                    throw;
+                }
+            }
 
             HImage image = buffer.Value;
             try
             {
                 CopyToBuffer(source, image);
-                return new SnapshotImageBufferLease(this, image, source.Format, leaseGeneration);
+                return new SnapshotImageBufferLease(
+                    this,
+                    image,
+                    source.Format,
+                    paletteColors,
+                    leaseGeneration);
             }
             catch
             {
@@ -210,13 +347,28 @@ namespace ColorVision.ImageEditor
         {
             return image.rows == source.PixelHeight
                 && image.cols == source.PixelWidth
-                && image.stride == source.PixelWidth * source.Format.BitsPerPixel / 8
+                && image.stride == GetPackedRowBytes(source.PixelWidth, source.Format.BitsPerPixel)
                 && format.Equals(source.Format);
+        }
+
+        private static HImage AllocateBuffer(WriteableBitmap source)
+        {
+            int stride = GetPackedRowBytes(source.PixelWidth, source.Format.BitsPerPixel);
+            int length = checked(stride * source.PixelHeight);
+            return new HImage
+            {
+                rows = source.PixelHeight,
+                cols = source.PixelWidth,
+                channels = 1,
+                depth = 8,
+                stride = stride,
+                pData = Marshal.AllocCoTaskMem(length),
+            };
         }
 
         private static void CopyToBuffer(WriteableBitmap source, HImage image)
         {
-            int bytesPerRow = image.cols * image.channels * (image.depth / 8);
+            int bytesPerRow = GetPackedRowBytes(source.PixelWidth, source.Format.BitsPerPixel);
             if (source.BackBufferStride < bytesPerRow || image.stride < bytesPerRow)
                 throw new InvalidOperationException("Snapshot image buffer stride is invalid.");
 
@@ -236,6 +388,11 @@ namespace ColorVision.ImageEditor
                 source.Unlock();
             }
         }
+
+        private static int GetPackedRowBytes(int width, int bitsPerPixel)
+        {
+            return checked((width * bitsPerPixel + 7) / 8);
+        }
     }
 
     public partial class ImageView
@@ -249,11 +406,19 @@ namespace ColorVision.ImageEditor
         /// </summary>
         public ImageViewSnapshot? CaptureSnapshotForBackgroundSave()
         {
+            return CaptureSnapshotForBackgroundSave(includeOverlays: true);
+        }
+
+        public ImageViewSnapshot? CaptureSnapshotForBackgroundSave(bool includeOverlays)
+        {
             Dispatcher.VerifyAccess();
-            if (ImageShow.Source is not BitmapSource source)
+            BitmapSource? source = ViewBitmapSource as BitmapSource
+                ?? ImageShow.Source as BitmapSource;
+            if (source == null)
                 return null;
 
             SnapshotImageBufferLease? imageBuffer = null;
+            BitmapSource? frozenSource = null;
             try
             {
                 DrawingGroup scene = new();
@@ -263,25 +428,25 @@ namespace ColorVision.ImageEditor
                 }
                 else
                 {
-                    BitmapSource frozenSource = source.IsFrozen ? source : source.CloneCurrentValue();
+                    frozenSource = source.IsFrozen ? source : source.CloneCurrentValue();
                     if (!frozenSource.IsFrozen)
                         frozenSource.Freeze();
-                    scene.Children.Add(new ImageDrawing(
-                        frozenSource,
-                        new Rect(0, 0, source.PixelWidth, source.PixelHeight)));
                 }
 
-                foreach (Visual visual in ImageShow.Visuals)
+                if (includeOverlays)
                 {
-                    DrawingGroup? drawing = CloneVisualDrawing(visual);
-                    if (drawing == null)
+                    foreach (Visual visual in ImageShow.Visuals)
                     {
-                        log.WarnFormat(
-                            "ImageView background snapshot does not support visual type {0}.",
-                            visual.GetType().FullName);
-                        return null;
+                        DrawingGroup? drawing = CloneVisualDrawing(visual);
+                        if (drawing == null)
+                        {
+                            log.WarnFormat(
+                                "ImageView background snapshot does not support visual type {0}.",
+                                visual.GetType().FullName);
+                            return null;
+                        }
+                        scene.Children.Add(drawing);
                     }
-                    scene.Children.Add(drawing);
                 }
 
                 double dpiX = GetPositiveDpi(Config.GetProperties<double>("DpiX"));
@@ -301,6 +466,7 @@ namespace ColorVision.ImageEditor
 
                 return ImageViewSnapshot.Create(
                     scene,
+                    frozenSource!,
                     source.PixelWidth,
                     source.PixelHeight,
                     dpiX,
@@ -320,22 +486,69 @@ namespace ColorVision.ImageEditor
         /// <summary>
         /// Consumes, composes, and encodes a snapshot on a serialized STA worker.
         /// </summary>
-        public static async Task SaveSnapshotAsync(
+        public static Task SaveSnapshotAsync(
             ImageViewSnapshot snapshot,
             string fileName,
             CancellationToken cancellationToken = default)
         {
+            return SaveSnapshotWithOptionsAsync(
+                snapshot,
+                fileName,
+                ImageViewSnapshotSaveOptions.Default,
+                cancellationToken);
+        }
+
+        public static async Task SaveSnapshotWithOptionsAsync(
+            ImageViewSnapshot snapshot,
+            string fileName,
+            ImageViewSnapshotSaveOptions options,
+            CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(options);
+            await SaveSnapshotExportsAsync(
+                snapshot,
+                new ImageViewSnapshotExportOptions
+                {
+                    RenderedFileName = fileName,
+                    RenderedOptions = options,
+                },
+                cancellationToken).ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Saves the rendered 8-bit scene, the original loaded pixels, or both from one captured snapshot.
+        /// The source branch bypasses WPF scene rendering so its original pixel format and bit depth are retained.
+        /// </summary>
+        public static async Task SaveSnapshotExportsAsync(
+            ImageViewSnapshot snapshot,
+            ImageViewSnapshotExportOptions options,
+            CancellationToken cancellationToken = default)
+        {
             ArgumentNullException.ThrowIfNull(snapshot);
+            ArgumentNullException.ThrowIfNull(options);
             try
             {
-                if (string.IsNullOrWhiteSpace(fileName))
+                bool saveRendered = !string.IsNullOrWhiteSpace(options.RenderedFileName);
+                bool saveSource = !string.IsNullOrWhiteSpace(options.SourceFileName);
+                if (!saveRendered && !saveSource)
                     return;
+                ArgumentNullException.ThrowIfNull(options.RenderedOptions);
+                ArgumentNullException.ThrowIfNull(options.SourceOptions);
+                if (saveRendered
+                    && saveSource
+                    && string.Equals(
+                        Path.GetFullPath(options.RenderedFileName!),
+                        Path.GetFullPath(options.SourceFileName!),
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new ArgumentException("Rendered and source image exports must use different file paths.", nameof(options));
+                }
 
                 await SnapshotSaveGate.WaitAsync(cancellationToken).ConfigureAwait(false);
                 try
                 {
                     await RunOnSnapshotStaThreadAsync(
-                        () => RenderAndSaveSnapshot(snapshot, fileName, cancellationToken),
+                        () => RenderAndSaveSnapshotExports(snapshot, options, cancellationToken),
                         cancellationToken).ConfigureAwait(false);
                 }
                 finally
@@ -378,49 +591,143 @@ namespace ColorVision.ImageEditor
             return drawing;
         }
 
-        private static void RenderAndSaveSnapshot(
+        private static void RenderAndSaveSnapshotExports(
             ImageViewSnapshot snapshot,
-            string fileName,
+            ImageViewSnapshotExportOptions options,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            DrawingGroup scene = snapshot.Scene;
+            BitmapSource? source = MaterializeSnapshotSource(snapshot);
+            List<Exception>? failures = null;
+
+            if (!string.IsNullOrWhiteSpace(options.RenderedFileName))
+            {
+                try
+                {
+                    DrawingGroup scene = ComposeSnapshotScene(snapshot, source);
+                    RenderAndSaveSnapshot(
+                        snapshot,
+                        scene,
+                        options.RenderedFileName,
+                        options.RenderedOptions,
+                        cancellationToken);
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    failures = [ex];
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(options.SourceFileName))
+            {
+                try
+                {
+                    if (source == null)
+                        throw new InvalidOperationException("This snapshot does not contain original source pixels.");
+                    SaveSourceSnapshot(source, options.SourceFileName, options.SourceOptions, cancellationToken);
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    (failures ??= []).Add(ex);
+                }
+            }
+
+            if (failures is { Count: 1 })
+                ExceptionDispatchInfo.Capture(failures[0]).Throw();
+            if (failures is { Count: > 1 })
+                throw new AggregateException("One or more image exports failed.", failures);
+        }
+
+        private static BitmapSource? MaterializeSnapshotSource(ImageViewSnapshot snapshot)
+        {
             SnapshotImageBufferLease? buffer = snapshot.TakeImageBuffer();
             if (buffer != null)
             {
                 WriteableBitmap source;
                 try
                 {
-                    source = buffer.Image.ToWriteableBitmap(snapshot.DpiX, snapshot.DpiY);
+                    source = buffer.ToWriteableBitmap(snapshot.DpiX, snapshot.DpiY);
                     source.Freeze();
                 }
                 finally
                 {
                     buffer.Dispose();
                 }
-
-                DrawingGroup composedScene = new();
-                composedScene.Children.Add(new ImageDrawing(
-                    source,
-                    new Rect(0, 0, snapshot.PixelWidth, snapshot.PixelHeight)));
-                composedScene.Children.Add(scene);
-                composedScene.Freeze();
-                scene = composedScene;
+                return source;
             }
+            return snapshot.FrozenSource;
+        }
 
+        private static DrawingGroup ComposeSnapshotScene(ImageViewSnapshot snapshot, BitmapSource? source)
+        {
+            if (source == null)
+                return snapshot.Scene;
+
+            DrawingGroup composedScene = new();
+            composedScene.Children.Add(new ImageDrawing(
+                source,
+                new Rect(0, 0, snapshot.PixelWidth, snapshot.PixelHeight)));
+            composedScene.Children.Add(snapshot.Scene);
+            composedScene.Freeze();
+            return composedScene;
+        }
+
+        private static void RenderAndSaveSnapshot(
+            ImageViewSnapshot snapshot,
+            DrawingGroup scene,
+            string fileName,
+            ImageViewSnapshotSaveOptions options,
+            CancellationToken cancellationToken)
+        {
+
+            (int outputWidth, int outputHeight) = GetSnapshotOutputSize(snapshot, options.ScaleDivisor);
             DrawingVisual visual = new();
             using (DrawingContext context = visual.RenderOpen())
-                context.DrawDrawing(scene);
+            {
+                if (outputWidth != snapshot.PixelWidth || outputHeight != snapshot.PixelHeight)
+                {
+                    context.PushTransform(new ScaleTransform(
+                        outputWidth / (double)snapshot.PixelWidth,
+                        outputHeight / (double)snapshot.PixelHeight));
+                    context.DrawDrawing(scene);
+                    context.Pop();
+                }
+                else
+                {
+                    context.DrawDrawing(scene);
+                }
+            }
 
             RenderTargetBitmap renderedBitmap = new(
-                snapshot.PixelWidth,
-                snapshot.PixelHeight,
+                outputWidth,
+                outputHeight,
                 snapshot.DpiX,
                 snapshot.DpiY,
                 PixelFormats.Pbgra32);
             renderedBitmap.Render(visual);
             cancellationToken.ThrowIfCancellationRequested();
-            SaveSnapshot(renderedBitmap, fileName, cancellationToken);
+            SaveSnapshot(renderedBitmap, fileName, options, cancellationToken);
+        }
+
+        private static (int Width, int Height) GetSnapshotOutputSize(
+            ImageViewSnapshot snapshot,
+            int scaleDivisor)
+        {
+            int normalizedDivisor = scaleDivisor is 2 or 4 ? scaleDivisor : 1;
+            if (normalizedDivisor == 1)
+                return (snapshot.PixelWidth, snapshot.PixelHeight);
+
+            return (
+                Math.Max(1, (int)Math.Round(snapshot.PixelWidth / (double)normalizedDivisor, MidpointRounding.AwayFromZero)),
+                Math.Max(1, (int)Math.Round(snapshot.PixelHeight / (double)normalizedDivisor, MidpointRounding.AwayFromZero)));
         }
 
         private static Task RunOnSnapshotStaThreadAsync(

@@ -35,30 +35,48 @@ namespace ProjectARVRPro.Services
 
             }
 
-            string resolvedSerialNumber = Application.Current.Dispatcher.Invoke(() =>
+            (bool initialized, string resolvedSerialNumber, int firstEnabledIndex) = Application.Current.Dispatcher.Invoke(() =>
             {
-                return ProjectWindowInstance.WindowInstance.InitTest(request.SerialNumber);
-            });
-            // Find first enabled ProcessMeta index
-            int firstEnabledIndex = -1;
-            var processMetas = Process.ProcessManager.GetInstance().ProcessMetas;
-            for (int i = 0; i < processMetas.Count; i++)
-            {
-                if (processMetas[i].IsEnabled)
+                var processMetas = Process.ProcessManager.GetInstance().ProcessMetas;
+                int firstEnabledInternalIndex = -1;
+                for (int i = 0; i < processMetas.Count; i++)
                 {
-                    firstEnabledIndex = i;
-                    break;
+                    if (processMetas[i].IsEnabled)
+                    {
+                        firstEnabledInternalIndex = i;
+                        break;
+                    }
                 }
-            }
+                if (firstEnabledInternalIndex < 0)
+                    return (false, request.SerialNumber?.Trim() ?? string.Empty, firstEnabledInternalIndex);
 
-            //现在先切换PG
-
-            //如果开启了UseLegacyARVROutput，则说明第一个ProcessMeta是LegacyARVROutput，不参与测试流程，所以需要+1
-            if (ViewResultManager.GetInstance().Config.UseLegacyARVROutput)
+                bool initialized = ProjectWindowInstance.WindowInstance.TryInitTest(request.SerialNumber, out string resolvedSerialNumber);
+                int externalIndex = firstEnabledInternalIndex + GetProcessEnableSocket.GetIndexOffset();
+                return (initialized, resolvedSerialNumber, externalIndex);
+            });
+            if (firstEnabledIndex < 0)
             {
-                firstEnabledIndex = firstEnabledIndex + 1;
+                return new SocketResponse
+                {
+                    MsgID = request.MsgID,
+                    EventName = EventName,
+                    Code = -2,
+                    Msg = "No enabled ARVR flow",
+                    SerialNumber = resolvedSerialNumber,
+                };
             }
-            
+            if (!initialized)
+            {
+                return new SocketResponse
+                {
+                    MsgID = request.MsgID,
+                    EventName = EventName,
+                    Code = -4,
+                    Msg = "ARVR test is busy",
+                    SerialNumber = resolvedSerialNumber,
+                };
+            }
+            //现在先切换PG
 
             return new SocketResponse() { MsgID = request.MsgID, EventName = "SwitchPG", SerialNumber = resolvedSerialNumber, Data = new SwitchPG() { ARVRTestType = firstEnabledIndex } };
         }
