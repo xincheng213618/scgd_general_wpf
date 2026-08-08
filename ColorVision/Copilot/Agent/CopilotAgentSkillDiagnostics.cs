@@ -66,7 +66,7 @@ namespace ColorVision.Copilot
                 .Append(" 个 Skill；")
                 .AppendLine(catalogReloaded
                     ? "已强制从磁盘重扫目录。"
-                    : "本地 SKILL.md 变更会自动使目录缓存失效。")
+                    : "本地 SKILL.md 与界面元数据变更会自动使目录缓存失效。")
                 .AppendLine("正在运行的 Agent 保留启动时的 Skill 快照；新目录从下一次请求开始生效。");
             if (items.Count == 0)
             {
@@ -79,8 +79,25 @@ namespace ColorVision.Copilot
                 builder.Append("- $")
                     .Append(item.Name)
                     .Append(FormatSource(item.SourceKind))
-                    .AppendLine(item.Description);
+                    .Append(FormatDisplayName(item.DisplayName))
+                    .AppendLine(item.EffectiveDescription);
+                if (item.Dependencies.Count > 0)
+                {
+                    builder.Append("  依赖：")
+                        .AppendLine(string.Join("；", item.Dependencies.Select(FormatDependency)));
+                }
             }
+        }
+
+        private static string FormatDisplayName(string displayName) =>
+            string.IsNullOrWhiteSpace(displayName) ? string.Empty : displayName + " · ";
+
+        private static string FormatDependency(CopilotAgentSkillDependency dependency)
+        {
+            var description = string.IsNullOrWhiteSpace(dependency.Description)
+                ? string.Empty
+                : $"（{dependency.Description}）";
+            return $"{dependency.Type}:{dependency.Value}{description}";
         }
 
         private static string FormatSource(CopilotAgentSkillSourceKind sourceKind)

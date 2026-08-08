@@ -79,9 +79,13 @@ namespace ColorVision.Copilot
         IReadOnlyList<CopilotLocalCommandArgument>? Arguments = null,
         bool RequiresMoreInputAfterCompletion = false)
     {
-        public string CompletionText => Name + (AcceptsArguments ? " " : string.Empty);
+        public string CompletionText => CompletionTextOverride.Length > 0
+            ? CompletionTextOverride
+            : Name + (AcceptsArguments ? " " : string.Empty);
 
         public IReadOnlyList<string> Aliases { get; init; } = Array.Empty<string>();
+
+        internal string CompletionTextOverride { get; init; } = string.Empty;
     }
 
     public sealed record CopilotLocalCommandArgument(
@@ -341,10 +345,13 @@ namespace ColorVision.Copilot
             var skillSuggestions = (skills ?? Array.Empty<CopilotAgentSkillCatalogItem>())
                 .Select(skill => new CopilotLocalCommand(
                     normalized[0] + skill.Name,
-                    "Skill · " + skill.Description,
+                    BuildSkillSuggestionDescription(skill),
                     CopilotLocalCommandKind.Skill,
                     AcceptsArguments: true,
-                    Usage: normalized[0] + skill.Name + " [参数]"))
+                    Usage: normalized[0] + skill.Name + " [参数]")
+                {
+                    CompletionTextOverride = BuildSkillCompletionText(normalized[0], skill),
+                })
                 .Where(command => command.Name.StartsWith(normalized, StringComparison.OrdinalIgnoreCase)
                     && !string.Equals(command.Name, normalized, StringComparison.OrdinalIgnoreCase));
             return suggestions
@@ -352,6 +359,46 @@ namespace ColorVision.Copilot
                 .DistinctBy(command => command.Name, StringComparer.OrdinalIgnoreCase)
                 .Take(MaximumSuggestions)
                 .ToArray();
+        }
+
+        private static string BuildSkillSuggestionDescription(CopilotAgentSkillCatalogItem skill)
+        {
+            var displayName = string.IsNullOrWhiteSpace(skill.DisplayName) ? string.Empty : skill.DisplayName + " · ";
+            var dependencies = skill.Dependencies.Count == 0 ? string.Empty : $" · 依赖 {skill.Dependencies.Count}";
+            return "Skill · " + displayName + skill.EffectiveDescription + dependencies;
+        }
+
+        private static string BuildSkillCompletionText(char prefix, CopilotAgentSkillCatalogItem skill)
+        {
+            var invocation = prefix + skill.Name;
+            if (string.IsNullOrWhiteSpace(skill.DefaultPrompt))
+                return invocation + " ";
+            if (ContainsSkillInvocation(skill.DefaultPrompt, skill.Name))
+                return skill.DefaultPrompt;
+            return invocation + " " + skill.DefaultPrompt;
+        }
+
+        private static bool ContainsSkillInvocation(string text, string skillName)
+        {
+            return ContainsSkillInvocation(text, '$', skillName)
+                || ContainsSkillInvocation(text, '/', skillName);
+        }
+
+        private static bool ContainsSkillInvocation(string text, char prefix, string skillName)
+        {
+            var invocation = prefix + skillName;
+            var startIndex = 0;
+            while (startIndex < text.Length)
+            {
+                var index = text.IndexOf(invocation, startIndex, StringComparison.OrdinalIgnoreCase);
+                if (index < 0)
+                    return false;
+                var endIndex = index + invocation.Length;
+                if (endIndex == text.Length || text[endIndex] is not (>= 'a' and <= 'z' or >= 'A' and <= 'Z' or >= '0' and <= '9' or '-'))
+                    return true;
+                startIndex = index + 1;
+            }
+            return false;
         }
 
         private static CopilotLocalCommand[] SuggestArguments(

@@ -365,6 +365,118 @@ public sealed class CopilotAgentSkillCatalogTests
         Assert.Contains("本地使用证据", report, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void DiscoveryReadsOpenAiInterfaceDependenciesAndDefaultPrompt()
+    {
+        var projectRoot = CreateTemporaryDirectory();
+        var applicationBaseDirectory = CreateTemporaryDirectory();
+        var userProfileDirectory = CreateTemporaryDirectory();
+        try
+        {
+            var skillDirectory = Path.Combine(projectRoot, ".agents", "skills", "document-review");
+            WriteSkill(skillDirectory, "document-review", "Long discovery description");
+            var agentsDirectory = Path.Combine(skillDirectory, "agents");
+            Directory.CreateDirectory(agentsDirectory);
+            File.WriteAllText(Path.Combine(agentsDirectory, "openai.yaml"), """
+                interface:
+                  display_name: "Document Review"
+                  short_description: "Review the current document"
+                  default_prompt: "Use $document-review to review the selected document for correctness."
+                policy:
+                  allow_implicit_invocation: false # explicit only
+                dependencies:
+                  tools:
+                    - type: "mcp"
+                      value: "openaiDeveloperDocs"
+                      description: "OpenAI Docs MCP server"
+                      transport: "streamable_http"
+                      url: "https://developers.openai.com/mcp"
+                """);
+
+            var skill = Assert.Single(CopilotAgentSkillCatalog.Discover(
+                [projectRoot],
+                overrides: null,
+                applicationBaseDirectory,
+                userProfileDirectory));
+
+            Assert.Equal("Document Review", skill.DisplayName);
+            Assert.Equal("Review the current document", skill.ShortDescription);
+            Assert.Equal("Use $document-review to review the selected document for correctness.", skill.DefaultPrompt);
+            Assert.False(CopilotAgentSkillMetadata.Read(skillDirectory).AllowImplicitInvocation);
+            var dependency = Assert.Single(skill.Dependencies);
+            Assert.Equal("mcp", dependency.Type);
+            Assert.Equal("openaiDeveloperDocs", dependency.Value);
+            Assert.Equal("OpenAI Docs MCP server", dependency.Description);
+
+            var suggestion = Assert.Single(CopilotLocalCommandCatalog.Suggest("$document", [skill]));
+            Assert.Contains("Document Review · Review the current document · 依赖 1", suggestion.Description, StringComparison.Ordinal);
+            Assert.Equal("Use $document-review to review the selected document for correctness.", suggestion.CompletionText);
+
+            var report = CopilotAgentSkillDiagnostics.FormatReport(
+                new CopilotAgentSkillUsageSnapshot(),
+                metadataCharacterBudget: 1_024,
+                availableSkills: [skill]);
+            Assert.Contains("$document-review [项目] — Document Review · Review the current document", report, StringComparison.Ordinal);
+            Assert.Contains("依赖：mcp:openaiDeveloperDocs（OpenAI Docs MCP server）", report, StringComparison.Ordinal);
+        }
+        finally
+        {
+            DeleteTemporaryDirectory(projectRoot);
+            DeleteTemporaryDirectory(applicationBaseDirectory);
+            DeleteTemporaryDirectory(userProfileDirectory);
+        }
+    }
+
+    [Fact]
+    public void DiscoveryReadsSkillJsonMetadataAsFallback()
+    {
+        var projectRoot = CreateTemporaryDirectory();
+        var applicationBaseDirectory = CreateTemporaryDirectory();
+        var userProfileDirectory = CreateTemporaryDirectory();
+        try
+        {
+            var skillDirectory = Path.Combine(projectRoot, ".agents", "skills", "json-skill");
+            WriteSkill(skillDirectory, "json-skill", "Frontmatter description");
+            File.WriteAllText(Path.Combine(skillDirectory, "SKILL.json"), """
+                {
+                  "interface": {
+                    "displayName": "JSON Skill",
+                    "shortDescription": "Metadata from SKILL.json",
+                    "defaultPrompt": "Use the JSON metadata."
+                  },
+                  "dependencies": {
+                    "tools": [
+                      {
+                        "type": "env_var",
+                        "value": "SAMPLE_TOKEN",
+                        "description": "Sample token"
+                      }
+                    ]
+                  }
+                }
+                """);
+
+            var skill = Assert.Single(CopilotAgentSkillCatalog.Discover(
+                [projectRoot],
+                overrides: null,
+                applicationBaseDirectory,
+                userProfileDirectory));
+
+            Assert.Equal("JSON Skill", skill.DisplayName);
+            Assert.Equal("Metadata from SKILL.json", skill.EffectiveDescription);
+            Assert.Equal("Use the JSON metadata.", skill.DefaultPrompt);
+            var dependency = Assert.Single(skill.Dependencies);
+            Assert.Equal("env_var", dependency.Type);
+            Assert.Equal("SAMPLE_TOKEN", dependency.Value);
+        }
+        finally
+        {
+            DeleteTemporaryDirectory(projectRoot);
+            DeleteTemporaryDirectory(applicationBaseDirectory);
+            DeleteTemporaryDirectory(userProfileDirectory);
+        }
+    }
+
     [Theory]
     [InlineData("", "Show")]
     [InlineData("reload", "Reload")]
@@ -402,6 +514,37 @@ public sealed class CopilotAgentSkillCatalogTests
             var insideDirectory = Path.Combine(skillRoot, "inside");
             Directory.CreateDirectory(insideDirectory);
             File.WriteAllText(Path.Combine(insideDirectory, "SKILL.md"), CreateSkill("inside", "inside root"));
+
+            Assert.True(await changed.WaitAsync(TimeSpan.FromSeconds(5)));
+        }
+        finally
+        {
+            DeleteTemporaryDirectory(parentDirectory);
+        }
+    }
+
+    [Fact]
+    public async Task MonitorInvalidatesWhenSkillInterfaceMetadataChanges()
+    {
+        var parentDirectory = CreateTemporaryDirectory();
+        try
+        {
+            var skillRoot = Path.Combine(parentDirectory, ".agents", "skills");
+            var skillDirectory = Path.Combine(skillRoot, "watched-skill");
+            WriteSkill(skillDirectory, "watched-skill", "Watched skill");
+            using var changed = new SemaphoreSlim(0);
+            using var monitor = new CopilotAgentSkillCatalogMonitor(
+                () => changed.Release(),
+                TimeSpan.FromMilliseconds(50));
+            monitor.UpdateRoots([skillRoot]);
+
+            File.WriteAllText(Path.Combine(skillDirectory, "SKILL.json"), """
+                {
+                  "interface": {
+                    "displayName": "Watched Skill"
+                  }
+                }
+                """);
 
             Assert.True(await changed.WaitAsync(TimeSpan.FromSeconds(5)));
         }

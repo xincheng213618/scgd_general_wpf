@@ -1,7 +1,6 @@
 using Microsoft.Agents.AI;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -11,7 +10,6 @@ namespace ColorVision.Copilot
 {
     internal static class CopilotAgentSkillSelectionPolicy
     {
-        private const int MaxInvocationPolicyFileBytes = 32_768;
         private const string NameOnlyDescription = "\u200B";
         private static readonly HashSet<string> RelevanceStopWords = new(StringComparer.OrdinalIgnoreCase)
         {
@@ -188,64 +186,8 @@ namespace ColorVision.Copilot
 
         private static bool DisallowsImplicitInvocation(AgentSkill skill)
         {
-            if (skill is not AgentFileSkill fileSkill)
-                return false;
-
-            try
-            {
-                var skillDirectoryPath = Path.GetFullPath(fileSkill.Path);
-                var agentsDirectoryPath = Path.GetFullPath(Path.Combine(skillDirectoryPath, "agents"));
-                var policyFilePath = Path.GetFullPath(Path.Combine(agentsDirectoryPath, "openai.yaml"));
-                if (!IsDescendantPath(skillDirectoryPath, policyFilePath)
-                    || !Directory.Exists(agentsDirectoryPath)
-                    || (File.GetAttributes(agentsDirectoryPath) & FileAttributes.ReparsePoint) != 0)
-                {
-                    return false;
-                }
-
-                var file = new FileInfo(policyFilePath);
-                if (!file.Exists
-                    || file.Length <= 0
-                    || file.Length > MaxInvocationPolicyFileBytes
-                    || (file.Attributes & FileAttributes.ReparsePoint) != 0)
-                {
-                    return false;
-                }
-
-                var inPolicy = false;
-                foreach (var rawLine in File.ReadLines(policyFilePath))
-                {
-                    var commentIndex = rawLine.IndexOf('#');
-                    var normalizedLine = (commentIndex < 0 ? rawLine : rawLine[..commentIndex]).Trim();
-                    if (normalizedLine.Length == 0)
-                        continue;
-
-                    var indentation = rawLine.Length - rawLine.TrimStart().Length;
-                    if (indentation == 0)
-                    {
-                        inPolicy = string.Equals(normalizedLine, "policy:", StringComparison.OrdinalIgnoreCase);
-                        continue;
-                    }
-                    if (!inPolicy)
-                        continue;
-
-                    const string key = "allow_implicit_invocation:";
-                    if (!normalizedLine.StartsWith(key, StringComparison.OrdinalIgnoreCase))
-                        continue;
-                    var value = normalizedLine[key.Length..].Trim().Trim('\'', '"');
-                    return string.Equals(value, "false", StringComparison.OrdinalIgnoreCase);
-                }
-            }
-            catch
-            {
-            }
-            return false;
-        }
-
-        private static bool IsDescendantPath(string parentPath, string candidatePath)
-        {
-            var normalizedParent = Path.TrimEndingDirectorySeparator(Path.GetFullPath(parentPath)) + Path.DirectorySeparatorChar;
-            return Path.GetFullPath(candidatePath).StartsWith(normalizedParent, StringComparison.OrdinalIgnoreCase);
+            return skill is AgentFileSkill fileSkill
+                && CopilotAgentSkillMetadata.Read(fileSkill.Path).AllowImplicitInvocation == false;
         }
 
         private static int CalculateRelevanceScore(

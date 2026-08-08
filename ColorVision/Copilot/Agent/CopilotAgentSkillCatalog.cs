@@ -16,6 +16,16 @@ namespace ColorVision.Copilot
 
     public sealed record CopilotAgentSkillCatalogItem(string Name, string Description)
     {
+        internal string DisplayName { get; init; } = string.Empty;
+
+        internal string ShortDescription { get; init; } = string.Empty;
+
+        internal string DefaultPrompt { get; init; } = string.Empty;
+
+        internal IReadOnlyList<CopilotAgentSkillDependency> Dependencies { get; init; } = Array.Empty<CopilotAgentSkillDependency>();
+
+        internal string EffectiveDescription => string.IsNullOrWhiteSpace(ShortDescription) ? Description : ShortDescription;
+
         internal string SkillFilePath { get; init; } = string.Empty;
 
         internal string SearchRootPath { get; init; } = string.Empty;
@@ -365,14 +375,20 @@ namespace ColorVision.Copilot
                         description = NormalizeDescription(value);
                 }
 
-                return frontmatterClosed && name.Length > 0 && description.Length > 0
-                    ? new CopilotAgentSkillCatalogItem(name, description)
-                    {
-                        SkillFilePath = skillFilePath,
-                        SearchRootPath = searchRootPath,
-                        SourceKind = sourceKind,
-                    }
-                    : null;
+                if (!frontmatterClosed || name.Length == 0 || description.Length == 0)
+                    return null;
+
+                var metadata = CopilotAgentSkillMetadata.Read(Path.GetDirectoryName(skillFilePath));
+                return new CopilotAgentSkillCatalogItem(name, description)
+                {
+                    DisplayName = metadata.DisplayName,
+                    ShortDescription = metadata.ShortDescription,
+                    DefaultPrompt = metadata.DefaultPrompt,
+                    Dependencies = metadata.Dependencies,
+                    SkillFilePath = skillFilePath,
+                    SearchRootPath = searchRootPath,
+                    SourceKind = sourceKind,
+                };
             }
             catch
             {

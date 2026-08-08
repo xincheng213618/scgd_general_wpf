@@ -85,7 +85,7 @@ namespace ColorVision.Copilot
 
                 var watcher = new FileSystemWatcher(watchDirectory)
                 {
-                    Filter = "SKILL.md",
+                    Filter = "*",
                     IncludeSubdirectories = true,
                     NotifyFilter = NotifyFilters.FileName
                         | NotifyFilters.LastWrite
@@ -112,8 +112,16 @@ namespace ColorVision.Copilot
 
         private void OnPathChanged(string skillRootPath, string changedPath)
         {
-            if (IsPathWithinRoot(changedPath, skillRootPath))
+            if (IsSkillMetadataFile(changedPath) && IsPathWithinRoot(changedPath, skillRootPath))
                 ScheduleChanged();
+        }
+
+        private static bool IsSkillMetadataFile(string path)
+        {
+            var fileName = Path.GetFileName(path);
+            return string.Equals(fileName, "SKILL.md", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(fileName, "SKILL.json", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(fileName, "openai.yaml", StringComparison.OrdinalIgnoreCase);
         }
 
         private void ScheduleChanged()
