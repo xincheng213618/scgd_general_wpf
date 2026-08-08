@@ -6,7 +6,7 @@ namespace ColorVision.Copilot
         string TurnId,
         CopilotAgentMode Mode,
         bool Started,
-        bool ChatRequestPrepared,
+        CopilotPreparedTurnRequest? PreparedChatRequest,
         bool ReviewEntered,
         CopilotWorkspaceReviewTargetContext? ReviewTarget,
         string ReviewText,
@@ -30,6 +30,8 @@ namespace ColorVision.Copilot
         CopilotTurnError? TerminalError,
         CopilotTurnResult? Completion)
     {
+        public bool ChatRequestPrepared => PreparedChatRequest.HasValue;
+
         public static CopilotTurnEventState Create(
             CopilotAgentMode mode,
             string turnId = CopilotTurnStartedEvent.DefaultTurnId)
@@ -41,7 +43,7 @@ namespace ColorVision.Copilot
                 CopilotTurnStartedEvent.NormalizeTurnId(turnId),
                 mode,
                 false,
-                false,
+                null,
                 false,
                 null,
                 string.Empty,
@@ -85,7 +87,7 @@ namespace ColorVision.Copilot
             {
                 CopilotTurnStartedEvent started => ReduceStarted(state, started),
                 CopilotTurnErrorEvent error => ReduceError(state, error),
-                CopilotTurnRequestPreparedEvent => ReduceRequestPrepared(state, turnEvent),
+                CopilotTurnRequestPreparedEvent prepared => ReduceRequestPrepared(state, prepared),
                 CopilotTurnChatDeltaEvent => ReduceChatProgress(state, turnEvent),
                 CopilotTurnProviderRetryEvent providerRetry => ReduceProviderRetry(state, providerRetry),
                 CopilotTurnReviewEnteredEvent reviewEntered => ReduceReviewEntered(state, reviewEntered),
@@ -135,13 +137,15 @@ namespace ColorVision.Copilot
 
         private static CopilotTurnEventState ReduceRequestPrepared(
             CopilotTurnEventState state,
-            CopilotTurnEvent turnEvent)
+            CopilotTurnRequestPreparedEvent prepared)
         {
-            RequireChatMode(state, turnEvent);
+            RequireChatMode(state, prepared);
             if (state.ChatRequestPrepared)
                 throw new InvalidOperationException("Copilot chat turn prepared its request more than once.");
+            if (prepared.Request.Content == null)
+                throw new InvalidOperationException("Copilot chat turn prepared an invalid request snapshot.");
 
-            return state with { ChatRequestPrepared = true };
+            return state with { PreparedChatRequest = prepared.Request };
         }
 
         private static CopilotTurnEventState ReduceChatProgress(
@@ -384,8 +388,20 @@ namespace ColorVision.Copilot
                 throw new InvalidOperationException(
                     "Copilot turn completed with token usage that did not match its latest update.");
             }
-            if (state.Mode == CopilotAgentMode.Chat && !state.ChatRequestPrepared)
-                throw new InvalidOperationException("Copilot chat turn completed before its request was prepared.");
+            if (state.Mode == CopilotAgentMode.Chat)
+            {
+                if (state.PreparedChatRequest is not CopilotPreparedTurnRequest preparedRequest)
+                    throw new InvalidOperationException("Copilot chat turn completed before its request was prepared.");
+                if (!string.Equals(
+                        preparedRequest.Content,
+                        result.PreparedUserMessageContent,
+                        StringComparison.Ordinal)
+                    || preparedRequest.ChatAttachmentContextCaptured != result.ChatAttachmentContextCaptured)
+                {
+                    throw new InvalidOperationException(
+                        "Copilot chat turn completed with a request snapshot that did not match its prepared request.");
+                }
+            }
             if (state.Mode != CopilotAgentMode.Chat && !state.AgentCompleted)
                 throw new InvalidOperationException("Copilot Agent turn completed before its completed item was emitted.");
             if (state.WorkspaceDiffExpected)

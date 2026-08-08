@@ -25,7 +25,7 @@ public sealed class CopilotTurnEventReducerTests
         var result = CreateChatResult();
         var trace = new CopilotTurnEvent[]
         {
-            new CopilotTurnRequestPreparedEvent(new CopilotPreparedTurnRequest("prepared", true)),
+            new CopilotTurnRequestPreparedEvent(new CopilotPreparedTurnRequest("prepared", false)),
             new CopilotTurnChatDeltaEvent(new CopilotStreamDelta(string.Empty, "partial")),
             new CopilotTurnProviderRetryEvent(
                 new CopilotProviderRetryInfo(1, 2, 3, TimeSpan.Zero, "timeout", null)),

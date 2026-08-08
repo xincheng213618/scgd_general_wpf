@@ -42,7 +42,7 @@ public sealed class CopilotTurnEventProtocolTests
     public void AcceptsPreparedChatProgressAndMatchingCompletion()
     {
         var protocol = CreateStartedProtocol(CopilotAgentMode.Chat);
-        var result = CreateChatResult();
+        var result = CreateChatResult(chatAttachmentContextCaptured: true);
 
         protocol.Observe(new CopilotTurnRequestPreparedEvent(
             new CopilotPreparedTurnRequest("prepared", true)));
@@ -53,6 +53,35 @@ public sealed class CopilotTurnEventProtocolTests
         protocol.Observe(new CopilotTurnCompletedEvent(result));
 
         Assert.Same(result, protocol.RequireCompletion());
+    }
+
+    [Theory]
+    [InlineData("different", false)]
+    [InlineData("prepared", true)]
+    public void RejectsChatCompletionWithDifferentPreparedRequestSnapshot(
+        string resultContent,
+        bool resultAttachmentContextCaptured)
+    {
+        var protocol = CreateStartedProtocol(CopilotAgentMode.Chat);
+        protocol.Observe(new CopilotTurnRequestPreparedEvent(
+            new CopilotPreparedTurnRequest("prepared", false)));
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            protocol.Observe(new CopilotTurnCompletedEvent(
+                CreateChatResult(resultContent, resultAttachmentContextCaptured))));
+
+        Assert.Contains("did not match its prepared request", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RejectsPreparedChatRequestWithoutContentSnapshot()
+    {
+        var protocol = CreateStartedProtocol(CopilotAgentMode.Chat);
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            protocol.Observe(new CopilotTurnRequestPreparedEvent(default)));
+
+        Assert.Contains("invalid request snapshot", exception.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -366,12 +395,14 @@ public sealed class CopilotTurnEventProtocolTests
         Assert.Contains("without a completion event", exception.Message);
     }
 
-    private static CopilotTurnResult CreateChatResult()
+    private static CopilotTurnResult CreateChatResult(
+        string preparedUserMessageContent = "prepared",
+        bool chatAttachmentContextCaptured = false)
     {
         return CopilotTurnResult.FromChat(
             CopilotTokenUsage.Empty,
-            "prepared",
-            chatAttachmentContextCaptured: false,
+            preparedUserMessageContent,
+            chatAttachmentContextCaptured,
             new CopilotChatStreamResult(
                 CopilotTokenUsage.Empty,
                 CopilotChatFinishKind.Complete,
