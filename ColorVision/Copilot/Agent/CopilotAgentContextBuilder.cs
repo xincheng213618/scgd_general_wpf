@@ -283,6 +283,7 @@ namespace ColorVision.Copilot
                 if (!string.IsNullOrWhiteSpace(definition.Model)
                     || definition.ContextWindowTokens.HasValue
                     || definition.ToolOutputTokenLimit.HasValue
+                    || definition.SandboxMode != CopilotCodexSandboxMode.Unspecified
                     || definition.ReasoningEffort != CopilotCodexReasoningEffort.Unspecified
                     || definition.ReasoningSummary != CopilotCodexReasoningSummary.Unspecified
                     || definition.SupportsReasoningSummaries.HasValue
@@ -295,6 +296,11 @@ namespace ColorVision.Copilot
                         .Append(definition.ContextWindowTokens?.ToString() ?? "inherited")
                         .Append("; tool_output_token_limit=")
                         .Append(definition.ToolOutputTokenLimit?.ToString() ?? "inherited")
+                        .Append("; sandbox_mode=")
+                        .Append(definition.SandboxMode == CopilotCodexSandboxMode.Unspecified
+                            ? "inherited"
+                            : CopilotCodexSandboxModeSelection.GetConfigToken(definition.SandboxMode))
+                        .Append("; sandbox_effective=read-only")
                         .Append("; reasoning_effort=")
                         .Append(definition.ReasoningEffort == CopilotCodexReasoningEffort.Unspecified
                             ? "inherited"

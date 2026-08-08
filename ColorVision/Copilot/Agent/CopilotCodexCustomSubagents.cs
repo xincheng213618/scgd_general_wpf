@@ -37,6 +37,9 @@ namespace ColorVision.Copilot
 
         public int? ToolOutputTokenLimit { get; init; }
 
+        public CopilotCodexSandboxMode SandboxMode { get; init; } =
+            CopilotCodexSandboxMode.Unspecified;
+
         public CopilotCodexReasoningEffort ReasoningEffort { get; init; } =
             CopilotCodexReasoningEffort.Unspecified;
 
@@ -70,6 +73,7 @@ namespace ColorVision.Copilot
         private const string CustomAgentModelKey = "model";
         private const string CustomAgentContextWindowKey = "model_context_window";
         private const string CustomAgentToolOutputTokenLimitKey = "tool_output_token_limit";
+        private const string CustomAgentSandboxModeKey = "sandbox_mode";
         private const string CustomAgentReasoningEffortKey = "model_reasoning_effort";
         private const string CustomAgentReasoningSummaryKey = "model_reasoning_summary";
         private const string CustomAgentSupportsReasoningSummariesKey = "model_supports_reasoning_summaries";
@@ -288,6 +292,16 @@ namespace ColorVision.Copilot
                 toolOutputTokenLimit = configuredToolOutputTokenLimit;
             }
 
+            var sandboxMode = CopilotCodexSandboxMode.Unspecified;
+            if (assignments.TryGetValue(CustomAgentSandboxModeKey, out var sandboxModeValue)
+                && (!TryParseConfiguredText(sandboxModeValue, 32, out var configuredSandboxMode)
+                    || !CopilotCodexSandboxModeSelection.TryParse(configuredSandboxMode, out sandboxMode)))
+            {
+                return false;
+            }
+            if (sandboxMode is CopilotCodexSandboxMode.WorkspaceWrite or CopilotCodexSandboxMode.DangerFullAccess)
+                hasIgnoredSettings = true;
+
             var reasoningSummary = CopilotCodexReasoningSummary.Unspecified;
             if (assignments.TryGetValue(CustomAgentReasoningSummaryKey, out var summaryValue)
                 && (!TryParseConfiguredText(summaryValue, 32, out var configuredSummary)
@@ -331,6 +345,7 @@ namespace ColorVision.Copilot
                 Model = model,
                 ContextWindowTokens = contextWindowTokens,
                 ToolOutputTokenLimit = toolOutputTokenLimit,
+                SandboxMode = sandboxMode,
                 ReasoningEffort = reasoningEffort,
                 ReasoningSummary = reasoningSummary,
                 SupportsReasoningSummaries = supportsReasoningSummaries,
@@ -394,6 +409,7 @@ namespace ColorVision.Copilot
             || string.Equals(key, CustomAgentModelKey, StringComparison.Ordinal)
             || string.Equals(key, CustomAgentContextWindowKey, StringComparison.Ordinal)
             || string.Equals(key, CustomAgentToolOutputTokenLimitKey, StringComparison.Ordinal)
+            || string.Equals(key, CustomAgentSandboxModeKey, StringComparison.Ordinal)
             || string.Equals(key, CustomAgentReasoningEffortKey, StringComparison.Ordinal)
             || string.Equals(key, CustomAgentReasoningSummaryKey, StringComparison.Ordinal)
             || string.Equals(key, CustomAgentSupportsReasoningSummariesKey, StringComparison.Ordinal)
@@ -484,6 +500,11 @@ namespace ColorVision.Copilot
                     .Append(definition.ContextWindowTokens?.ToString() ?? "inherited")
                     .Append(" · tool_output ")
                     .Append(definition.ToolOutputTokenLimit?.ToString() ?? "inherited")
+                    .Append(" · sandbox ")
+                    .Append(definition.SandboxMode == CopilotCodexSandboxMode.Unspecified
+                        ? "inherited"
+                        : CopilotCodexSandboxModeSelection.GetConfigToken(definition.SandboxMode))
+                    .Append("→read-only")
                     .Append(" · reasoning ")
                     .Append(definition.ReasoningEffort == CopilotCodexReasoningEffort.Unspecified
                         ? "inherited"

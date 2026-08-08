@@ -576,7 +576,7 @@ namespace ColorVision.Copilot
                 ActiveDocumentPath = activeDocumentPath,
                 ConfiguredDeveloperInstructions = parentRequest.ConfiguredDeveloperInstructions,
                 CodexWebSearchMode = parentRequest.CodexWebSearchMode,
-                CodexSandboxMode = parentRequest.CodexSandboxMode,
+                CodexSandboxMode = CopilotCodexSandboxMode.ReadOnly,
                 CodexApprovalPolicy = parentRequest.CodexApprovalPolicy,
                 CodexApprovalsReviewer = parentRequest.CodexApprovalsReviewer,
                 CodexAutoReviewPolicy = parentRequest.CodexAutoReviewPolicy,
