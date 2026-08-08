@@ -348,6 +348,23 @@ namespace ColorVision.Copilot
                 effective.UpdatePlanEnabledSourceLabel,
                 "复杂请求可启用任务清单与 plan/execute 完成循环",
                 "任务清单与 plan/execute 完成循环已移除");
+            builder.Append("Codex include_permissions_instructions：")
+                .Append(effective.ConfiguredIncludePermissionsInstructions ? "true" : "false");
+            if (effective.HasIncludePermissionsInstructionsOverride)
+            {
+                builder.Append(" · 来源 ")
+                    .Append(effective.IncludePermissionsInstructionsSourceLabel.Length == 0
+                        ? "Codex config.toml"
+                        : effective.IncludePermissionsInstructionsSourceLabel)
+                    .Append(" 提交快照；");
+            }
+            else
+            {
+                builder.Append(" · 官方默认；");
+            }
+            builder.AppendLine(effective.ConfiguredIncludePermissionsInstructions
+                ? "注入模型可见的完整权限说明"
+                : "仅省略模型可见权限说明；沙箱、审批、工具过滤与执行策略保持强制");
             builder.Append("Codex include_environment_context：")
                 .Append(effective.ConfiguredIncludeEnvironmentContext ? "true" : "false");
             if (effective.HasIncludeEnvironmentContextOverride)

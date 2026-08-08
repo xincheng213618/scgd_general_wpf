@@ -239,6 +239,8 @@ namespace ColorVision.Copilot
 
         internal bool CodexUpdatePlanEnabled { get; init; } = true;
 
+        internal bool CodexIncludePermissionsInstructions { get; init; } = true;
+
         internal bool CodexIncludeEnvironmentContext { get; init; } = true;
 
         internal bool CodexIncludeSkillInstructions { get; init; } = true;
@@ -432,6 +434,7 @@ namespace ColorVision.Copilot
                 CodexExperimentalRequestUserInputEnabled = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredExperimentalRequestUserInputEnabled,
                 CodexDefaultModeRequestUserInputEnabled = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredDefaultModeRequestUserInputEnabled,
                 CodexUpdatePlanEnabled = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredUpdatePlanEnabled,
+                CodexIncludePermissionsInstructions = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredIncludePermissionsInstructions,
                 CodexIncludeEnvironmentContext = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredIncludeEnvironmentContext,
                 CodexIncludeSkillInstructions = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredIncludeSkillInstructions,
                 CodexGoalsEnabled = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredGoalsEnabled,
@@ -530,6 +533,7 @@ namespace ColorVision.Copilot
                 CodexExperimentalRequestUserInputEnabled = plan.CodexExperimentalRequestUserInputEnabled,
                 CodexDefaultModeRequestUserInputEnabled = plan.CodexDefaultModeRequestUserInputEnabled,
                 CodexUpdatePlanEnabled = plan.CodexUpdatePlanEnabled,
+                CodexIncludePermissionsInstructions = plan.CodexIncludePermissionsInstructions,
                 CodexIncludeEnvironmentContext = plan.CodexIncludeEnvironmentContext,
                 CodexIncludeSkillInstructions = plan.CodexIncludeSkillInstructions,
                 CodexApprovalPolicy = plan.CodexApprovalPolicy,

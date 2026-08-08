@@ -83,6 +83,8 @@ namespace ColorVision.Copilot
 
         internal bool CodexUpdatePlanEnabled { get; init; } = true;
 
+        internal bool CodexIncludePermissionsInstructions { get; init; } = true;
+
         internal bool CodexIncludeEnvironmentContext { get; init; } = true;
 
         internal bool CodexIncludeSkillInstructions { get; init; } = true;

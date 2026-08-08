@@ -200,6 +200,7 @@ public sealed class CopilotExecutionScopeTests
             CodexExperimentalRequestUserInputEnabled = false,
             CodexDefaultModeRequestUserInputEnabled = true,
             CodexUpdatePlanEnabled = false,
+            CodexIncludePermissionsInstructions = false,
             CodexIncludeSkillInstructions = false,
             ToolOutputTokenLimitOverride = 12_000,
             CodexReasoningEffort = CopilotCodexReasoningEffort.XHigh,
@@ -236,6 +237,7 @@ public sealed class CopilotExecutionScopeTests
         Assert.Equal(parentRequest.CodexExperimentalRequestUserInputEnabled, childRequest.CodexExperimentalRequestUserInputEnabled);
         Assert.Equal(parentRequest.CodexDefaultModeRequestUserInputEnabled, childRequest.CodexDefaultModeRequestUserInputEnabled);
         Assert.Equal(parentRequest.CodexUpdatePlanEnabled, childRequest.CodexUpdatePlanEnabled);
+        Assert.Equal(parentRequest.CodexIncludePermissionsInstructions, childRequest.CodexIncludePermissionsInstructions);
         Assert.Equal(parentRequest.CodexIncludeSkillInstructions, childRequest.CodexIncludeSkillInstructions);
         Assert.Equal(parentRequest.ToolOutputTokenLimitOverride, childRequest.ToolOutputTokenLimitOverride);
         Assert.Equal(parentRequest.CodexReasoningEffort, childRequest.CodexReasoningEffort);
@@ -285,6 +287,7 @@ public sealed class CopilotExecutionScopeTests
         Assert.Equal(childRequest.CodexExperimentalRequestUserInputEnabled, finalizationRequest.CodexExperimentalRequestUserInputEnabled);
         Assert.Equal(childRequest.CodexDefaultModeRequestUserInputEnabled, finalizationRequest.CodexDefaultModeRequestUserInputEnabled);
         Assert.Equal(childRequest.CodexUpdatePlanEnabled, finalizationRequest.CodexUpdatePlanEnabled);
+        Assert.Equal(childRequest.CodexIncludePermissionsInstructions, finalizationRequest.CodexIncludePermissionsInstructions);
         Assert.Equal(childRequest.CodexIncludeSkillInstructions, finalizationRequest.CodexIncludeSkillInstructions);
         Assert.Equal(childRequest.ToolOutputTokenLimitOverride, finalizationRequest.ToolOutputTokenLimitOverride);
         Assert.Equal(childRequest.CodexReasoningEffort, finalizationRequest.CodexReasoningEffort);

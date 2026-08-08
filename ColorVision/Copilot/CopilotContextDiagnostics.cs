@@ -99,6 +99,12 @@ namespace ColorVision.Copilot
 
         public string CodexUpdatePlanEnabledSourceLabel { get; init; } = string.Empty;
 
+        public bool CodexIncludePermissionsInstructions { get; init; } = true;
+
+        public bool HasCodexIncludePermissionsInstructionsOverride { get; init; }
+
+        public string CodexIncludePermissionsInstructionsSourceLabel { get; init; } = string.Empty;
+
         public bool CodexIncludeEnvironmentContext { get; init; } = true;
 
         public bool HasCodexIncludeEnvironmentContextOverride { get; init; }
@@ -581,6 +587,24 @@ namespace ColorVision.Copilot
                 snapshot.CodexUpdatePlanEnabledSourceLabel,
                 "复杂请求可启用任务清单与完成循环",
                 "任务清单与 plan/execute 完成循环已移除");
+            builder.Append("权限说明：")
+                .Append(snapshot.CodexIncludePermissionsInstructions ? "注入" : "省略");
+            if (snapshot.HasCodexIncludePermissionsInstructionsOverride)
+            {
+                builder.Append('（')
+                    .Append(string.IsNullOrWhiteSpace(snapshot.CodexIncludePermissionsInstructionsSourceLabel)
+                        ? "Codex config.toml"
+                        : snapshot.CodexIncludePermissionsInstructionsSourceLabel.Trim())
+                    .Append(" 提交快照；")
+                    .Append(snapshot.CodexIncludePermissionsInstructions
+                        ? "模型可见完整权限说明）"
+                        : "仅省略模型提示；沙箱、审批、工具过滤与执行策略保持强制）");
+            }
+            else
+            {
+                builder.Append("（Codex 默认注入）");
+            }
+            builder.AppendLine();
             builder.Append("运行环境上下文：")
                 .Append(snapshot.CodexIncludeEnvironmentContext ? "注入" : "省略");
             if (snapshot.HasCodexIncludeEnvironmentContextOverride)

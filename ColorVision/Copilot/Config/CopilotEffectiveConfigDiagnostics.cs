@@ -519,6 +519,7 @@ namespace ColorVision.Copilot
             AppendDefaultModeRequestUserInputEnabled(builder, codexConfigOptions);
             AppendExperimentalRequestUserInputEnabled(builder, codexConfigOptions);
             AppendUpdatePlanEnabled(builder, codexConfigOptions);
+            AppendIncludePermissionsInstructions(builder, codexConfigOptions);
             AppendIncludeEnvironmentContext(builder, codexConfigOptions);
             AppendIncludeSkillInstructions(builder, codexConfigOptions);
             AppendAgentsEnabled(builder, codexConfigOptions);
@@ -778,6 +779,29 @@ namespace ColorVision.Copilot
             builder.AppendLine(codexConfigOptions.ConfiguredShellToolEnabled
                 ? " · 按请求意图暴露命令启动工具"
                 : " · 命令启动工具已从目录移除，旧计划、恢复状态与注入调用也会拒绝；已有后台命令仍可观察或停止");
+        }
+
+        private static void AppendIncludePermissionsInstructions(
+            StringBuilder builder,
+            CopilotProjectInstructionDiscoveryOptions codexConfigOptions)
+        {
+            builder.Append("- Codex include_permissions_instructions：")
+                .Append(codexConfigOptions.ConfiguredIncludePermissionsInstructions ? "true" : "false");
+            if (codexConfigOptions.HasIncludePermissionsInstructionsOverride)
+            {
+                builder.Append(" · 来源 ")
+                    .Append(codexConfigOptions.IncludePermissionsInstructionsSourceLabel.Length == 0
+                        ? "Codex config.toml"
+                        : codexConfigOptions.IncludePermissionsInstructionsSourceLabel)
+                    .Append(" · 提交快照");
+            }
+            else
+            {
+                builder.Append(" · 官方默认");
+            }
+            builder.AppendLine(codexConfigOptions.ConfiguredIncludePermissionsInstructions
+                ? " · 注入模型可见的完整权限说明"
+                : " · 仅省略模型可见权限说明；沙箱、审批、工具过滤与执行策略保持强制");
         }
 
         private static void AppendIncludeEnvironmentContext(

@@ -389,6 +389,13 @@ namespace ColorVision.Copilot
         public CopilotProjectInstructionConfigSources UpdatePlanEnabledSource { get; init; } =
             CopilotProjectInstructionConfigSources.None;
 
+        public bool ConfiguredIncludePermissionsInstructions { get; init; } = true;
+
+        public bool HasIncludePermissionsInstructionsOverride { get; init; }
+
+        public CopilotProjectInstructionConfigSources IncludePermissionsInstructionsSource { get; init; } =
+            CopilotProjectInstructionConfigSources.None;
+
         public bool ConfiguredIncludeEnvironmentContext { get; init; } = true;
 
         public bool HasIncludeEnvironmentContextOverride { get; init; }
@@ -646,6 +653,7 @@ namespace ColorVision.Copilot
             || HasDefaultModeRequestUserInputEnabledOverride
             || HasExperimentalRequestUserInputEnabledOverride
             || HasUpdatePlanEnabledOverride
+            || HasIncludePermissionsInstructionsOverride
             || HasIncludeEnvironmentContextOverride
             || HasIncludeSkillInstructionsOverride
             || HasAgentsEnabledOverride
@@ -790,6 +798,13 @@ namespace ColorVision.Copilot
         {
             CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml tools.update_plan.enabled",
             CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml tools.update_plan.enabled",
+            _ => string.Empty,
+        };
+
+        public string IncludePermissionsInstructionsSourceLabel => IncludePermissionsInstructionsSource switch
+        {
+            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml include_permissions_instructions",
+            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml include_permissions_instructions",
             _ => string.Empty,
         };
 
@@ -1024,6 +1039,7 @@ namespace ColorVision.Copilot
         private const string ExperimentalRequestUserInputEnabledKey = "tools.experimental_request_user_input.enabled";
         private const string UpdatePlanEnabledKey = "tools.update_plan.enabled";
         private const string ToolsEnabledTableKey = "enabled";
+        private const string IncludePermissionsInstructionsKey = "include_permissions_instructions";
         private const string IncludeEnvironmentContextKey = "include_environment_context";
         private const string SkillsIncludeInstructionsKey = "skills.include_instructions";
         private const string SkillsIncludeInstructionsTableKey = "include_instructions";
@@ -1327,6 +1343,14 @@ namespace ColorVision.Copilot
                 UpdatePlanEnabledSource = layer.HasUpdatePlanEnabledOverride
                     ? source
                     : current.UpdatePlanEnabledSource,
+                ConfiguredIncludePermissionsInstructions = layer.HasIncludePermissionsInstructionsOverride
+                    ? layer.IncludePermissionsInstructions
+                    : current.ConfiguredIncludePermissionsInstructions,
+                HasIncludePermissionsInstructionsOverride = current.HasIncludePermissionsInstructionsOverride
+                    || layer.HasIncludePermissionsInstructionsOverride,
+                IncludePermissionsInstructionsSource = layer.HasIncludePermissionsInstructionsOverride
+                    ? source
+                    : current.IncludePermissionsInstructionsSource,
                 ConfiguredIncludeEnvironmentContext = layer.HasIncludeEnvironmentContextOverride
                     ? layer.IncludeEnvironmentContext
                     : current.ConfiguredIncludeEnvironmentContext,
@@ -1533,6 +1557,7 @@ namespace ColorVision.Copilot
                 || layer.HasDefaultModeRequestUserInputEnabledOverride
                 || layer.HasExperimentalRequestUserInputEnabledOverride
                 || layer.HasUpdatePlanEnabledOverride
+                || layer.HasIncludePermissionsInstructionsOverride
                 || layer.HasIncludeEnvironmentContextOverride
                 || layer.HasIncludeSkillInstructionsOverride
                 || layer.HasAgentsEnabledOverride
@@ -1827,6 +1852,7 @@ namespace ColorVision.Copilot
             var defaultModeRequestUserInputEnabled = false;
             var experimentalRequestUserInputEnabled = true;
             var updatePlanEnabled = true;
+            var includePermissionsInstructions = true;
             var includeEnvironmentContext = true;
             var includeSkillInstructions = true;
             var agentsEnabled = true;
@@ -1874,6 +1900,7 @@ namespace ColorVision.Copilot
             var hasDefaultModeRequestUserInputEnabledOverride = false;
             var hasExperimentalRequestUserInputEnabledOverride = false;
             var hasUpdatePlanEnabledOverride = false;
+            var hasIncludePermissionsInstructionsOverride = false;
             var hasIncludeEnvironmentContextOverride = false;
             var hasIncludeSkillInstructionsOverride = false;
             var hasAgentsEnabledOverride = false;
@@ -2145,6 +2172,18 @@ namespace ColorVision.Copilot
                         continue;
                     }
                     hasUpdatePlanEnabledOverride = true;
+                    continue;
+                }
+
+                if (string.Equals(assignment.Key, IncludePermissionsInstructionsKey, StringComparison.Ordinal))
+                {
+                    if (!TryParseTomlBoolean(
+                        assignment.Value,
+                        out includePermissionsInstructions))
+                    {
+                        continue;
+                    }
+                    hasIncludePermissionsInstructionsOverride = true;
                     continue;
                 }
 
@@ -2531,6 +2570,8 @@ namespace ColorVision.Copilot
                 HasExperimentalRequestUserInputEnabledOverride = hasExperimentalRequestUserInputEnabledOverride,
                 UpdatePlanEnabled = updatePlanEnabled,
                 HasUpdatePlanEnabledOverride = hasUpdatePlanEnabledOverride,
+                IncludePermissionsInstructions = includePermissionsInstructions,
+                HasIncludePermissionsInstructionsOverride = hasIncludePermissionsInstructionsOverride,
                 IncludeEnvironmentContext = includeEnvironmentContext,
                 HasIncludeEnvironmentContextOverride = hasIncludeEnvironmentContextOverride,
                 IncludeSkillInstructions = includeSkillInstructions,
@@ -2588,6 +2629,7 @@ namespace ColorVision.Copilot
                 || hasDefaultModeRequestUserInputEnabledOverride
                 || hasExperimentalRequestUserInputEnabledOverride
                 || hasUpdatePlanEnabledOverride
+                || hasIncludePermissionsInstructionsOverride
                 || hasIncludeEnvironmentContextOverride
                 || hasIncludeSkillInstructionsOverride
                 || hasAgentsEnabledOverride
@@ -2823,6 +2865,7 @@ namespace ColorVision.Copilot
                     && !string.Equals(key, DefaultModeRequestUserInputEnabledKey, StringComparison.Ordinal)
                     && !string.Equals(key, ExperimentalRequestUserInputEnabledKey, StringComparison.Ordinal)
                     && !string.Equals(key, UpdatePlanEnabledKey, StringComparison.Ordinal)
+                    && !string.Equals(key, IncludePermissionsInstructionsKey, StringComparison.Ordinal)
                     && !string.Equals(key, IncludeEnvironmentContextKey, StringComparison.Ordinal)
                     && !string.Equals(key, SkillsIncludeInstructionsKey, StringComparison.Ordinal)
                     && !string.Equals(key, AgentsEnabledKey, StringComparison.Ordinal)
@@ -3751,6 +3794,10 @@ namespace ColorVision.Copilot
             public bool UpdatePlanEnabled { get; init; } = true;
 
             public bool HasUpdatePlanEnabledOverride { get; init; }
+
+            public bool IncludePermissionsInstructions { get; init; } = true;
+
+            public bool HasIncludePermissionsInstructionsOverride { get; init; }
 
             public bool IncludeEnvironmentContext { get; init; } = true;
 
