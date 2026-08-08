@@ -259,6 +259,7 @@ public sealed class CopilotOpenAiAgentChatClientFactoryTests
 
     [Theory]
     [InlineData(null, "minimal", "concise", "minimal", "concise")]
+    [InlineData(null, "none", null, "none", null)]
     [InlineData(null, "xhigh", "detailed", "xhigh", "detailed")]
     [InlineData(null, "high", "none", "high", null)]
     [InlineData(null, null, "auto", null, "auto")]
@@ -276,7 +277,7 @@ public sealed class CopilotOpenAiAgentChatClientFactoryTests
         var effort = CopilotCodexReasoningEffort.Unspecified;
         var summary = CopilotCodexReasoningSummary.Unspecified;
         if (configuredEffort != null)
-            Assert.True(CopilotCodexReasoningEffortSelection.TryParse(configuredEffort, out effort));
+            Assert.True(CopilotCodexReasoningEffortSelection.TryParsePlanMode(configuredEffort, out effort));
         if (configuredSummary != null)
             Assert.True(CopilotCodexReasoningSummarySelection.TryParse(configuredSummary, out summary));
         using var handler = new CapturingHandler(

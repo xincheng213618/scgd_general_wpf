@@ -418,6 +418,18 @@ namespace ColorVision.Copilot
                     .Append(" · 请求快照");
             }
             builder.AppendLine(" · 仅 Agent 官方 OpenAI Responses 生效");
+            builder.Append("- Codex plan_mode_reasoning_effort：")
+                .Append(CopilotCodexReasoningEffortSelection.GetConfigToken(
+                    codexConfigOptions.ConfiguredPlanModeReasoningEffort));
+            if (codexConfigOptions.HasPlanModeReasoningEffortOverride)
+            {
+                builder.Append(" · 来源 ")
+                    .Append(codexConfigOptions.PlanModeReasoningEffortSourceLabel.Length == 0
+                        ? "Codex config.toml"
+                        : codexConfigOptions.PlanModeReasoningEffortSourceLabel)
+                    .Append(" · 请求快照");
+            }
+            builder.AppendLine(" · 仅覆盖 Plan 模式的 Agent 官方 OpenAI Responses 推理强度");
             builder.Append("- Codex model_reasoning_summary：")
                 .Append(CopilotCodexReasoningSummarySelection.GetConfigToken(
                     codexConfigOptions.ConfiguredModelReasoningSummary));

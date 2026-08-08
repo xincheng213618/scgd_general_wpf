@@ -3,6 +3,7 @@ namespace ColorVision.Copilot
     internal enum CopilotCodexReasoningEffort
     {
         Unspecified,
+        None,
         Minimal,
         Low,
         Medium,
@@ -26,8 +27,22 @@ namespace ColorVision.Copilot
             return effort != CopilotCodexReasoningEffort.Unspecified;
         }
 
+        public static bool TryParsePlanMode(string? value, out CopilotCodexReasoningEffort effort)
+        {
+            if (string.Equals(
+                (value ?? string.Empty).Trim(),
+                "none",
+                System.StringComparison.OrdinalIgnoreCase))
+            {
+                effort = CopilotCodexReasoningEffort.None;
+                return true;
+            }
+            return TryParse(value, out effort);
+        }
+
         public static string GetConfigToken(CopilotCodexReasoningEffort effort) => effort switch
         {
+            CopilotCodexReasoningEffort.None => "none",
             CopilotCodexReasoningEffort.Minimal => "minimal",
             CopilotCodexReasoningEffort.Low => "low",
             CopilotCodexReasoningEffort.Medium => "medium",

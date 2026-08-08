@@ -82,6 +82,72 @@ public sealed class CopilotCodexReasoningOptionsTests
     }
 
     [Fact]
+    public void PlanModeReasoningEffortOverridesOnlyPlanRequestsAndUsesTheSubmittedSnapshot()
+    {
+        string globalRoot = CreateTemporaryDirectory();
+        string projectRoot = CreateTemporaryDirectory();
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
+            File.WriteAllText(
+                Path.Combine(globalRoot, "config.toml"),
+                $"""
+                model_reasoning_effort = "low"
+                plan_mode_reasoning_effort = "minimal"
+
+                [projects.'{projectRoot}']
+                trust_level = "trusted"
+                """);
+            string configDirectory = Path.Combine(projectRoot, ".codex");
+            Directory.CreateDirectory(configDirectory);
+            string configPath = Path.Combine(configDirectory, "config.toml");
+            File.WriteAllText(configPath, "plan_mode_reasoning_effort = \"none\"");
+
+            var submittedContext = new CopilotAgentHostContextSnapshot(
+                activeDocumentPath: null,
+                projectRoot,
+                attachments: null,
+                liveContext: null,
+                conversationHistory: null,
+                additionalReadRootPaths: null,
+                globalInstructionRootPath: globalRoot);
+            File.WriteAllText(configPath, "plan_mode_reasoning_effort = \"xhigh\"");
+
+            var planModePlan = CopilotAgentRequestFactory.Prepare(
+                "Plan the workspace change.",
+                CopilotAgentMode.Plan,
+                submittedContext);
+            var autoModePlan = CopilotAgentRequestFactory.Prepare(
+                "Inspect the workspace.",
+                CopilotAgentMode.Auto,
+                submittedContext);
+            var planModeRequest = CopilotAgentRequestFactory.Create(
+                planModePlan,
+                new CopilotAgentRequestBuildInput
+                {
+                    Profile = CreateOfficialOpenAiProfile(),
+                    AgentDefaults = new CopilotAgentDefaultsConfig(),
+                });
+            var refreshed = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
+            var submitted = submittedContext.ProjectInstructionDiscoveryOptions;
+
+            Assert.Equal(CopilotCodexReasoningEffort.Low, submitted.ConfiguredModelReasoningEffort);
+            Assert.Equal(CopilotProjectInstructionConfigSources.CodexHome, submitted.ModelReasoningEffortSource);
+            Assert.Equal(CopilotCodexReasoningEffort.None, submitted.ConfiguredPlanModeReasoningEffort);
+            Assert.Equal(CopilotProjectInstructionConfigSources.TrustedProject, submitted.PlanModeReasoningEffortSource);
+            Assert.Equal(CopilotCodexReasoningEffort.None, planModePlan.CodexReasoningEffort);
+            Assert.Equal(CopilotCodexReasoningEffort.None, planModeRequest.CodexReasoningEffort);
+            Assert.Equal(CopilotCodexReasoningEffort.Low, autoModePlan.CodexReasoningEffort);
+            Assert.Equal(CopilotCodexReasoningEffort.XHigh, refreshed.ConfiguredPlanModeReasoningEffort);
+        }
+        finally
+        {
+            Directory.Delete(globalRoot, recursive: true);
+            Directory.Delete(projectRoot, recursive: true);
+        }
+    }
+
+    [Fact]
     public void UntrustedOrInvalidReasoningValuesCannotReplaceTheCodexHomeContract()
     {
         string globalRoot = CreateTemporaryDirectory();
@@ -93,6 +159,7 @@ public sealed class CopilotCodexReasoningOptionsTests
                 Path.Combine(globalRoot, "config.toml"),
                 $"""
                 model_reasoning_effort = "minimal"
+                plan_mode_reasoning_effort = "minimal"
                 model_reasoning_summary = "none"
                 model_supports_reasoning_summaries = true
 
@@ -103,12 +170,14 @@ public sealed class CopilotCodexReasoningOptionsTests
             Directory.CreateDirectory(configDirectory);
             File.WriteAllText(
                 Path.Combine(configDirectory, "config.toml"),
-                "model_reasoning_effort = \"xhigh\"\nmodel_reasoning_summary = \"detailed\"\nmodel_supports_reasoning_summaries = false");
+                "model_reasoning_effort = \"xhigh\"\nplan_mode_reasoning_effort = \"none\"\nmodel_reasoning_summary = \"detailed\"\nmodel_supports_reasoning_summaries = false");
 
             var untrusted = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
             Assert.Equal(CopilotCodexReasoningEffort.Minimal, untrusted.ConfiguredModelReasoningEffort);
+            Assert.Equal(CopilotCodexReasoningEffort.Minimal, untrusted.ConfiguredPlanModeReasoningEffort);
             Assert.Equal(CopilotCodexReasoningSummary.None, untrusted.ConfiguredModelReasoningSummary);
             Assert.Equal(CopilotProjectInstructionConfigSources.CodexHome, untrusted.ModelReasoningEffortSource);
+            Assert.Equal(CopilotProjectInstructionConfigSources.CodexHome, untrusted.PlanModeReasoningEffortSource);
             Assert.Equal(CopilotProjectInstructionConfigSources.CodexHome, untrusted.ModelReasoningSummarySource);
             Assert.True(untrusted.ConfiguredModelSupportsReasoningSummaries);
             Assert.Equal(CopilotProjectInstructionConfigSources.CodexHome, untrusted.ModelSupportsReasoningSummariesSource);
@@ -116,13 +185,16 @@ public sealed class CopilotCodexReasoningOptionsTests
 
             File.WriteAllText(
                 Path.Combine(globalRoot, "config.toml"),
-                "model_reasoning_effort = \"max\"\nmodel_reasoning_summary = \"brief\"\nmodel_supports_reasoning_summaries = \"yes\"");
+                "model_reasoning_effort = \"max\"\nplan_mode_reasoning_effort = \"max\"\nmodel_reasoning_summary = \"brief\"\nmodel_supports_reasoning_summaries = \"yes\"");
             var invalid = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot);
             Assert.False(invalid.HasModelReasoningEffortOverride);
+            Assert.False(invalid.HasPlanModeReasoningEffortOverride);
             Assert.False(invalid.HasModelReasoningSummaryOverride);
             Assert.False(invalid.HasModelSupportsReasoningSummariesOverride);
             Assert.Equal(CopilotCodexReasoningEffort.Unspecified, invalid.ConfiguredModelReasoningEffort);
+            Assert.Equal(CopilotCodexReasoningEffort.Unspecified, invalid.ConfiguredPlanModeReasoningEffort);
             Assert.Equal(CopilotCodexReasoningSummary.Unspecified, invalid.ConfiguredModelReasoningSummary);
+            Assert.False(CopilotCodexReasoningEffortSelection.TryParse("none", out _));
         }
         finally
         {
@@ -139,6 +211,9 @@ public sealed class CopilotCodexReasoningOptionsTests
             ConfiguredModelReasoningEffort = CopilotCodexReasoningEffort.XHigh,
             HasModelReasoningEffortOverride = true,
             ModelReasoningEffortSource = CopilotProjectInstructionConfigSources.CodexHome,
+            ConfiguredPlanModeReasoningEffort = CopilotCodexReasoningEffort.None,
+            HasPlanModeReasoningEffortOverride = true,
+            PlanModeReasoningEffortSource = CopilotProjectInstructionConfigSources.TrustedProject,
             ConfiguredModelReasoningSummary = CopilotCodexReasoningSummary.Concise,
             HasModelReasoningSummaryOverride = true,
             ModelReasoningSummarySource = CopilotProjectInstructionConfigSources.CodexHome,
@@ -175,13 +250,16 @@ public sealed class CopilotCodexReasoningOptionsTests
             });
 
         Assert.Contains("Codex model_reasoning_effort：xhigh", memoryReport, StringComparison.Ordinal);
+        Assert.Contains("Codex plan_mode_reasoning_effort：none", memoryReport, StringComparison.Ordinal);
         Assert.Contains("Codex model_reasoning_summary：concise", memoryReport, StringComparison.Ordinal);
         Assert.Contains("Codex model_supports_reasoning_summaries：false", memoryReport, StringComparison.Ordinal);
         Assert.Contains(options.ModelReasoningEffortSourceLabel, memoryReport, StringComparison.Ordinal);
+        Assert.Contains(options.PlanModeReasoningEffortSourceLabel, memoryReport, StringComparison.Ordinal);
         Assert.Contains("推理强度：xhigh", contextReport, StringComparison.Ordinal);
         Assert.Contains("推理摘要：concise", contextReport, StringComparison.Ordinal);
         Assert.Contains("推理元数据能力：false", contextReport, StringComparison.Ordinal);
         Assert.Contains("Codex model_reasoning_effort：xhigh", debugReport, StringComparison.Ordinal);
+        Assert.Contains("Codex plan_mode_reasoning_effort：none", debugReport, StringComparison.Ordinal);
         Assert.Contains("Codex model_reasoning_summary：concise", debugReport, StringComparison.Ordinal);
         Assert.Contains("Codex model_supports_reasoning_summaries：false", debugReport, StringComparison.Ordinal);
         Assert.Contains("阻断", memoryReport, StringComparison.Ordinal);

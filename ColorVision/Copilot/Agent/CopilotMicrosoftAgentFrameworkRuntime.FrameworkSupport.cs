@@ -157,6 +157,7 @@ namespace ColorVision.Copilot
 
             ResponseReasoningEffortLevel? effort = request.CodexReasoningEffort switch
             {
+                CopilotCodexReasoningEffort.None => new ResponseReasoningEffortLevel("none"),
                 CopilotCodexReasoningEffort.Minimal => ResponseReasoningEffortLevel.Minimal,
                 CopilotCodexReasoningEffort.Low => ResponseReasoningEffortLevel.Low,
                 CopilotCodexReasoningEffort.Medium => ResponseReasoningEffortLevel.Medium,

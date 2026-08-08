@@ -319,6 +319,17 @@ namespace ColorVision.Copilot
                         : effective.ModelReasoningEffortSourceLabel)
                     .AppendLine(" 请求快照；仅 Agent 官方 OpenAI Responses 生效");
             }
+            if (effective.HasPlanModeReasoningEffortOverride)
+            {
+                builder.Append("Codex plan_mode_reasoning_effort：")
+                    .Append(CopilotCodexReasoningEffortSelection.GetConfigToken(
+                        effective.ConfiguredPlanModeReasoningEffort))
+                    .Append(" · 来源 ")
+                    .Append(effective.PlanModeReasoningEffortSourceLabel.Length == 0
+                        ? "Codex config.toml"
+                        : effective.PlanModeReasoningEffortSourceLabel)
+                    .AppendLine(" 请求快照；仅覆盖 Plan 模式的 Agent 官方 OpenAI Responses 推理强度");
+            }
             if (effective.HasModelReasoningSummaryOverride)
             {
                 builder.Append("Codex model_reasoning_summary：")

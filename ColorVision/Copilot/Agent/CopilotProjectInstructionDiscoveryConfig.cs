@@ -252,6 +252,14 @@ namespace ColorVision.Copilot
         public CopilotProjectInstructionConfigSources ModelReasoningEffortSource { get; init; } =
             CopilotProjectInstructionConfigSources.None;
 
+        public CopilotCodexReasoningEffort ConfiguredPlanModeReasoningEffort { get; init; } =
+            CopilotCodexReasoningEffort.Unspecified;
+
+        public bool HasPlanModeReasoningEffortOverride { get; init; }
+
+        public CopilotProjectInstructionConfigSources PlanModeReasoningEffortSource { get; init; } =
+            CopilotProjectInstructionConfigSources.None;
+
         public CopilotCodexReasoningSummary ConfiguredModelReasoningSummary { get; init; } =
             CopilotCodexReasoningSummary.Unspecified;
 
@@ -407,6 +415,7 @@ namespace ColorVision.Copilot
             || HasModelContextWindowOverride
             || HasToolOutputTokenLimitOverride
             || HasModelReasoningEffortOverride
+            || HasPlanModeReasoningEffortOverride
             || HasModelReasoningSummaryOverride
             || HasModelSupportsReasoningSummariesOverride
             || HasHideAgentReasoningOverride
@@ -517,6 +526,13 @@ namespace ColorVision.Copilot
         {
             CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml model_reasoning_effort",
             CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml model_reasoning_effort",
+            _ => string.Empty,
+        };
+
+        public string PlanModeReasoningEffortSourceLabel => PlanModeReasoningEffortSource switch
+        {
+            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml plan_mode_reasoning_effort",
+            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml plan_mode_reasoning_effort",
             _ => string.Empty,
         };
 
@@ -652,6 +668,7 @@ namespace ColorVision.Copilot
         private const string ModelContextWindowKey = "model_context_window";
         private const string ToolOutputTokenLimitKey = "tool_output_token_limit";
         private const string ModelReasoningEffortKey = "model_reasoning_effort";
+        private const string PlanModeReasoningEffortKey = "plan_mode_reasoning_effort";
         private const string ModelReasoningSummaryKey = "model_reasoning_summary";
         private const string ModelSupportsReasoningSummariesKey = "model_supports_reasoning_summaries";
         private const string HideAgentReasoningKey = "hide_agent_reasoning";
@@ -896,6 +913,14 @@ namespace ColorVision.Copilot
                 ModelReasoningEffortSource = layer.HasModelReasoningEffortOverride
                     ? source
                     : current.ModelReasoningEffortSource,
+                ConfiguredPlanModeReasoningEffort = layer.HasPlanModeReasoningEffortOverride
+                    ? layer.PlanModeReasoningEffort
+                    : current.ConfiguredPlanModeReasoningEffort,
+                HasPlanModeReasoningEffortOverride = current.HasPlanModeReasoningEffortOverride
+                    || layer.HasPlanModeReasoningEffortOverride,
+                PlanModeReasoningEffortSource = layer.HasPlanModeReasoningEffortOverride
+                    ? source
+                    : current.PlanModeReasoningEffortSource,
                 ConfiguredModelReasoningSummary = layer.HasModelReasoningSummaryOverride
                     ? layer.ModelReasoningSummary
                     : current.ConfiguredModelReasoningSummary,
@@ -1004,6 +1029,7 @@ namespace ColorVision.Copilot
                 || layer.HasModelContextWindowOverride
                 || layer.HasToolOutputTokenLimitOverride
                 || layer.HasModelReasoningEffortOverride
+                || layer.HasPlanModeReasoningEffortOverride
                 || layer.HasModelReasoningSummaryOverride
                 || layer.HasModelSupportsReasoningSummariesOverride
                 || layer.HasHideAgentReasoningOverride
@@ -1284,6 +1310,7 @@ namespace ColorVision.Copilot
             var modelContextWindowTokens = 0;
             var toolOutputTokenLimit = 0;
             var modelReasoningEffort = CopilotCodexReasoningEffort.Unspecified;
+            var planModeReasoningEffort = CopilotCodexReasoningEffort.Unspecified;
             var modelReasoningSummary = CopilotCodexReasoningSummary.Unspecified;
             var modelSupportsReasoningSummaries = false;
             var hideAgentReasoning = false;
@@ -1310,6 +1337,7 @@ namespace ColorVision.Copilot
             var hasModelContextWindowOverride = false;
             var hasToolOutputTokenLimitOverride = false;
             var hasModelReasoningEffortOverride = false;
+            var hasPlanModeReasoningEffortOverride = false;
             var hasModelReasoningSummaryOverride = false;
             var hasModelSupportsReasoningSummariesOverride = false;
             var hasHideAgentReasoningOverride = false;
@@ -1516,6 +1544,22 @@ namespace ColorVision.Copilot
                     continue;
                 }
 
+                if (string.Equals(assignment.Key, PlanModeReasoningEffortKey, StringComparison.Ordinal))
+                {
+                    if (!TryParseConfiguredText(
+                        assignment.Value,
+                        MaximumPersonalityCharacters,
+                        out var configuredPlanModeReasoningEffort)
+                        || !CopilotCodexReasoningEffortSelection.TryParsePlanMode(
+                            configuredPlanModeReasoningEffort,
+                            out planModeReasoningEffort))
+                    {
+                        continue;
+                    }
+                    hasPlanModeReasoningEffortOverride = true;
+                    continue;
+                }
+
                 if (string.Equals(assignment.Key, ModelReasoningSummaryKey, StringComparison.Ordinal))
                 {
                     if (!TryParseConfiguredText(
@@ -1708,6 +1752,8 @@ namespace ColorVision.Copilot
                 HasToolOutputTokenLimitOverride = hasToolOutputTokenLimitOverride,
                 ModelReasoningEffort = modelReasoningEffort,
                 HasModelReasoningEffortOverride = hasModelReasoningEffortOverride,
+                PlanModeReasoningEffort = planModeReasoningEffort,
+                HasPlanModeReasoningEffortOverride = hasPlanModeReasoningEffortOverride,
                 ModelReasoningSummary = modelReasoningSummary,
                 HasModelReasoningSummaryOverride = hasModelReasoningSummaryOverride,
                 ModelSupportsReasoningSummaries = modelSupportsReasoningSummaries,
@@ -1741,6 +1787,7 @@ namespace ColorVision.Copilot
                 || hasModelContextWindowOverride
                 || hasToolOutputTokenLimitOverride
                 || hasModelReasoningEffortOverride
+                || hasPlanModeReasoningEffortOverride
                 || hasModelReasoningSummaryOverride
                 || hasModelSupportsReasoningSummariesOverride
                 || hasHideAgentReasoningOverride
@@ -1925,6 +1972,7 @@ namespace ColorVision.Copilot
                     && !string.Equals(key, ModelContextWindowKey, StringComparison.Ordinal)
                     && !string.Equals(key, ToolOutputTokenLimitKey, StringComparison.Ordinal)
                     && !string.Equals(key, ModelReasoningEffortKey, StringComparison.Ordinal)
+                    && !string.Equals(key, PlanModeReasoningEffortKey, StringComparison.Ordinal)
                     && !string.Equals(key, ModelReasoningSummaryKey, StringComparison.Ordinal)
                     && !string.Equals(key, ModelSupportsReasoningSummariesKey, StringComparison.Ordinal)
                     && !string.Equals(key, HideAgentReasoningKey, StringComparison.Ordinal)
@@ -2817,6 +2865,11 @@ namespace ColorVision.Copilot
                 CopilotCodexReasoningEffort.Unspecified;
 
             public bool HasModelReasoningEffortOverride { get; init; }
+
+            public CopilotCodexReasoningEffort PlanModeReasoningEffort { get; init; } =
+                CopilotCodexReasoningEffort.Unspecified;
+
+            public bool HasPlanModeReasoningEffortOverride { get; init; }
 
             public CopilotCodexReasoningSummary ModelReasoningSummary { get; init; } =
                 CopilotCodexReasoningSummary.Unspecified;

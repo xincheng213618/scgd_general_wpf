@@ -411,9 +411,12 @@ namespace ColorVision.Copilot
                 ToolOutputTokenLimitOverride = hostContext.ProjectInstructionDiscoveryOptions.HasToolOutputTokenLimitOverride
                     ? hostContext.ProjectInstructionDiscoveryOptions.ConfiguredToolOutputTokenLimit
                     : null,
-                CodexReasoningEffort = hostContext.ProjectInstructionDiscoveryOptions.HasModelReasoningEffortOverride
-                    ? hostContext.ProjectInstructionDiscoveryOptions.ConfiguredModelReasoningEffort
-                    : CopilotCodexReasoningEffort.Unspecified,
+                CodexReasoningEffort = mode == CopilotAgentMode.Plan
+                    && hostContext.ProjectInstructionDiscoveryOptions.HasPlanModeReasoningEffortOverride
+                        ? hostContext.ProjectInstructionDiscoveryOptions.ConfiguredPlanModeReasoningEffort
+                        : hostContext.ProjectInstructionDiscoveryOptions.HasModelReasoningEffortOverride
+                            ? hostContext.ProjectInstructionDiscoveryOptions.ConfiguredModelReasoningEffort
+                            : CopilotCodexReasoningEffort.Unspecified,
                 CodexReasoningSummary = hostContext.ProjectInstructionDiscoveryOptions.HasModelReasoningSummaryOverride
                     ? hostContext.ProjectInstructionDiscoveryOptions.ConfiguredModelReasoningSummary
                     : CopilotCodexReasoningSummary.Unspecified,
