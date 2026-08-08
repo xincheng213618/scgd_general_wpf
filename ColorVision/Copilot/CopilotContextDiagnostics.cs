@@ -237,12 +237,12 @@ namespace ColorVision.Copilot
 
             if (!snapshot.AgentContextEnabled)
             {
-                builder.AppendLine("Agent 扩展：当前 Chat 模式不注入项目指令、Skills 或 MCP 工具。");
+                builder.AppendLine("Agent 扩展：当前 Chat 模式不注入个人/项目指令、Skills 或 MCP 工具。");
                 AppendOptimizationSuggestions(builder, snapshot);
                 return builder.ToString().TrimEnd();
             }
 
-            builder.Append("项目指令：")
+            builder.Append("个人/项目指令：")
                 .Append(FormatCount(snapshot.ProjectInstructionDocuments))
                 .Append(" 个文档，序列化提示 ")
                 .Append(FormatCount(snapshot.ProjectInstructionPromptCharacters))
@@ -472,7 +472,7 @@ namespace ColorVision.Copilot
             var truncatedInstructions = snapshot.ProjectInstructions.Count(document => document?.IsTruncated == true);
             if (truncatedInstructions > 0)
             {
-                suggestions.Add($"{FormatCount(truncatedInstructions)} 个项目指令文档已截断；请精简通用规则，或把局部规则放到更靠近目标代码的 AGENTS.md/CLAUDE.md。");
+                suggestions.Add($"{FormatCount(truncatedInstructions)} 个个人/项目指令文档已截断；请精简通用规则，或把局部规则放到更靠近目标代码的 AGENTS.md/CLAUDE.md。");
             }
 
             if (snapshot.AgentContextEnabled

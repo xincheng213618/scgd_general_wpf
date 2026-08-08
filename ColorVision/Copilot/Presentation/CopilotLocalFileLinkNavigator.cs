@@ -4,6 +4,7 @@ using ColorVision.Solution.Editor.AvalonEditor;
 using ColorVision.Solution.Workspace;
 using ColorVision.Common.Utilities;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
 
@@ -17,6 +18,14 @@ namespace ColorVision.Copilot
         private static readonly Regex TargetRegex = new(@"^(?<path>.+?)(?:(?:#L|:)(?<line>\d+)(?:(?:C|:)(?<column>\d+))?)?$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
         public static bool TryResolve(string? value, out CopilotLocalFileLinkTarget target)
+        {
+            return TryResolve(value, additionalAllowedRootPaths: null, out target);
+        }
+
+        internal static bool TryResolve(
+            string? value,
+            IEnumerable<string>? additionalAllowedRootPaths,
+            out CopilotLocalFileLinkTarget target)
         {
             target = null!;
             var candidate = (value ?? string.Empty).Trim();
@@ -45,7 +54,7 @@ namespace ColorVision.Copilot
                         : Path.GetFullPath(pathValue, workspaceRoot);
                 }
 
-                if (!IsCurrentWorkspaceFile(fullPath, workspaceRoot))
+                if (!IsAllowedFile(fullPath, workspaceRoot, additionalAllowedRootPaths))
                     return false;
 
                 target = new CopilotLocalFileLinkTarget(
@@ -72,11 +81,22 @@ namespace ColorVision.Copilot
 
         public static bool TryOpen(CopilotLocalFileLinkTarget target, out string errorMessage)
         {
+            return TryOpen(target, additionalAllowedRootPaths: null, out errorMessage);
+        }
+
+        internal static bool TryOpen(
+            CopilotLocalFileLinkTarget target,
+            IEnumerable<string>? additionalAllowedRootPaths,
+            out string errorMessage)
+        {
             errorMessage = string.Empty;
             try
             {
-                if (!TryGetWorkspaceRoot(out var workspaceRoot) || !IsCurrentWorkspaceFile(target.FilePath, workspaceRoot))
-                    throw new InvalidOperationException("文件已不存在或不在当前工作区内。");
+                if (!TryGetWorkspaceRoot(out var workspaceRoot)
+                    || !IsAllowedFile(target.FilePath, workspaceRoot, additionalAllowedRootPaths))
+                {
+                    throw new InvalidOperationException("文件已不存在或不在当前工作区或受信指令目录内。");
+                }
 
                 if (!ResourceOpenService.Instance.TryOpen(target.FilePath))
                     throw new InvalidOperationException("当前没有可用于打开此文件的编辑器。");
@@ -122,6 +142,20 @@ namespace ColorVision.Copilot
 
         private static bool IsCurrentWorkspaceFile(string filePath, string workspaceRoot) =>
             File.Exists(filePath) && CopilotWorkspaceSearchSupport.IsPathWithinRoots(filePath, new[] { workspaceRoot });
+
+        internal static bool IsAllowedFile(
+            string filePath,
+            string workspaceRoot,
+            IEnumerable<string>? additionalAllowedRootPaths)
+        {
+            if (!File.Exists(filePath))
+                return false;
+
+            var allowedRoots = new List<string> { workspaceRoot };
+            if (additionalAllowedRootPaths != null)
+                allowedRoots.AddRange(additionalAllowedRootPaths);
+            return CopilotWorkspaceSearchSupport.IsPathWithinRoots(filePath, allowedRoots);
+        }
 
         private static int? TryParsePositiveNumber(string value) =>
             int.TryParse(value, out var number) && number > 0 ? number : null;

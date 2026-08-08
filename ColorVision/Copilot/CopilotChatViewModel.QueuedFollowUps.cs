@@ -224,7 +224,8 @@ namespace ColorVision.Copilot
                 submittedContext.Attachments,
                 submittedContext.LiveContext,
                 CopilotConversationRequestBuilder.CaptureHistorySnapshot(conversation),
-                submittedContext.AdditionalReadRootPaths);
+                submittedContext.AdditionalReadRootPaths,
+                CopilotAgentProjectInstructions.ResolveGlobalInstructionRootPath());
             var userMessage = new CopilotChatMessage(CopilotChatRole.User, queuedFollowUp.Prompt)
             {
                 RequestMode = queuedFollowUp.Mode,

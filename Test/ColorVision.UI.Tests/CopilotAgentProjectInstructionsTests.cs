@@ -118,6 +118,148 @@ public sealed class CopilotAgentProjectInstructionsTests
     }
 
     [Fact]
+    public void GlobalAgentsInstructionsPrecedeTheProjectInstructionChain()
+    {
+        string globalRoot = CreateTemporaryDirectory();
+        string projectRoot = CreateTemporaryDirectory();
+        string nested = Path.Combine(projectRoot, "src");
+        Directory.CreateDirectory(nested);
+        string activeDocument = Path.Combine(nested, "Feature.cs");
+        File.WriteAllText(activeDocument, "namespace Feature;");
+        try
+        {
+            string globalPath = Path.Combine(globalRoot, "AGENTS.md");
+            string projectPath = Path.Combine(projectRoot, "AGENTS.md");
+            string nestedPath = Path.Combine(nested, "AGENTS.override.md");
+            File.WriteAllText(globalPath, "# Personal instructions");
+            File.WriteAllText(projectPath, "# Project instructions");
+            File.WriteAllText(nestedPath, "# Nested instructions");
+
+            var documents = CopilotAgentProjectInstructions.DiscoverWithGlobal(
+                [projectRoot],
+                activeDocument,
+                additionalTargetFilePaths: null,
+                globalInstructionRootPath: globalRoot);
+
+            Assert.Equal(
+                [globalPath, projectPath, nestedPath],
+                documents.Select(document => document.Path).ToArray(),
+                StringComparer.OrdinalIgnoreCase);
+            Assert.Equal(globalRoot, CopilotAgentProjectInstructions.ResolveGlobalInstructionRootPath(globalRoot));
+            Assert.Equal(string.Empty, CopilotAgentProjectInstructions.NormalizeGlobalInstructionRootPath("relative\\.codex"));
+        }
+        finally
+        {
+            Directory.Delete(globalRoot, recursive: true);
+            Directory.Delete(projectRoot, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void EmptyGlobalOverrideFallsBackToGlobalAgentsInstructions()
+    {
+        string globalRoot = CreateTemporaryDirectory();
+        try
+        {
+            File.WriteAllText(Path.Combine(globalRoot, "AGENTS.override.md"), "<!-- empty -->");
+            string globalPath = Path.Combine(globalRoot, "AGENTS.md");
+            File.WriteAllText(globalPath, "# Personal instructions");
+
+            CopilotProjectInstructionDocument document = Assert.Single(
+                CopilotAgentProjectInstructions.DiscoverWithGlobal(
+                    searchRootPaths: null,
+                    activeDocumentPath: null,
+                    additionalTargetFilePaths: null,
+                    globalInstructionRootPath: globalRoot));
+
+            Assert.Equal(globalPath, document.Path, ignoreCase: true);
+        }
+        finally
+        {
+            Directory.Delete(globalRoot, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void RequestFactorySnapshotsGlobalInstructionsWithoutGrantingFileAccess()
+    {
+        string globalRoot = CreateTemporaryDirectory();
+        string projectRoot = CreateTemporaryDirectory();
+        try
+        {
+            string globalPath = Path.Combine(globalRoot, "AGENTS.md");
+            string activeDocument = Path.Combine(projectRoot, "Feature.cs");
+            File.WriteAllText(globalPath, "# Personal instructions");
+            File.WriteAllText(activeDocument, "namespace Feature;");
+            var hostContext = new CopilotAgentHostContextSnapshot(
+                activeDocument,
+                projectRoot,
+                attachments: null,
+                liveContext: null,
+                conversationHistory: null,
+                additionalReadRootPaths: null,
+                globalInstructionRootPath: globalRoot);
+
+            var plan = CopilotAgentRequestFactory.Prepare(
+                $"Inspect the local implementation in {activeDocument}",
+                CopilotAgentMode.Auto,
+                hostContext);
+
+            Assert.Contains(plan.ProjectInstructions, document =>
+                string.Equals(document.Path, globalPath, StringComparison.OrdinalIgnoreCase));
+            Assert.DoesNotContain(plan.SearchRootPaths, path =>
+                string.Equals(path, globalRoot, StringComparison.OrdinalIgnoreCase));
+            Assert.DoesNotContain(plan.ReadableLocalDirectoryPaths, path =>
+                string.Equals(path, globalRoot, StringComparison.OrdinalIgnoreCase));
+            Assert.DoesNotContain(plan.WritableLocalRootPaths, path =>
+                string.Equals(path, globalRoot, StringComparison.OrdinalIgnoreCase));
+        }
+        finally
+        {
+            Directory.Delete(globalRoot, recursive: true);
+            Directory.Delete(projectRoot, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void GlobalInstructionDiagnosticsIdentifyAndBoundThePersonalSource()
+    {
+        string globalRoot = CreateTemporaryDirectory();
+        string projectRoot = CreateTemporaryDirectory();
+        string outsideRoot = CreateTemporaryDirectory();
+        try
+        {
+            string globalPath = Path.Combine(globalRoot, "AGENTS.md");
+            string outsidePath = Path.Combine(outsideRoot, "AGENTS.md");
+            File.WriteAllText(globalPath, "# Personal instructions");
+            File.WriteAllText(outsidePath, "# Outside instructions");
+            var document = Assert.Single(CopilotAgentProjectInstructions.DiscoverWithGlobal(
+                [projectRoot],
+                activeDocumentPath: null,
+                additionalTargetFilePaths: null,
+                globalInstructionRootPath: globalRoot));
+
+            var report = CopilotProjectInstructionDiagnostics.Format(
+                new CopilotProjectInstructionSnapshot(
+                    projectRoot,
+                    string.Empty,
+                    globalRoot,
+                    [document]),
+                hasActiveAgentRun: false);
+
+            Assert.Contains("Codex 全局指令", report, StringComparison.Ordinal);
+            Assert.True(CopilotLocalFileLinkNavigator.IsAllowedFile(globalPath, projectRoot, [globalRoot]));
+            Assert.False(CopilotLocalFileLinkNavigator.IsAllowedFile(outsidePath, projectRoot, [globalRoot]));
+        }
+        finally
+        {
+            Directory.Delete(globalRoot, recursive: true);
+            Directory.Delete(projectRoot, recursive: true);
+            Directory.Delete(outsideRoot, recursive: true);
+        }
+    }
+
+    [Fact]
     public void EmptyAgentsInstructionsFallBackToClaudeInstructions()
     {
         string root = CreateTemporaryDirectory();
@@ -545,7 +687,7 @@ public sealed class CopilotAgentProjectInstructionsTests
     {
         string root = CreateTemporaryDirectory();
         string current = root;
-        var instructionPaths = new string[6];
+        var instructionPaths = new string[CopilotAgentProjectInstructions.MaxDocuments + 2];
         try
         {
             for (int index = 0; index < instructionPaths.Length; index++)
@@ -565,7 +707,10 @@ public sealed class CopilotAgentProjectInstructionsTests
             var documents = CopilotAgentProjectInstructions.Discover([root], activeDocument);
 
             Assert.Equal(CopilotAgentProjectInstructions.MaxDocuments, documents.Count);
-            Assert.Equal(instructionPaths[^4..], documents.Select(document => document.Path).ToArray(), StringComparer.OrdinalIgnoreCase);
+            Assert.Equal(
+                instructionPaths[^CopilotAgentProjectInstructions.MaxDocuments..],
+                documents.Select(document => document.Path).ToArray(),
+                StringComparer.OrdinalIgnoreCase);
             Assert.DoesNotContain(documents, document => string.Equals(document.Path, instructionPaths[0], StringComparison.OrdinalIgnoreCase));
             Assert.Equal(instructionPaths[^1], documents[^1].Path, ignoreCase: true);
         }
@@ -576,7 +721,7 @@ public sealed class CopilotAgentProjectInstructionsTests
     }
 
     [Fact]
-    public void DocumentLimitRetainsSpecificLocalOverlaysWithTheirSharedDocuments()
+    public void DocumentChainKeepsLocalOverlaysWithTheirSharedDocuments()
     {
         string root = CreateTemporaryDirectory();
         string nested = Path.Combine(root, "src");
@@ -594,10 +739,12 @@ public sealed class CopilotAgentProjectInstructionsTests
 
             var documents = CopilotAgentProjectInstructions.Discover([root], activeDocument);
 
-            Assert.Equal(CopilotAgentProjectInstructions.MaxDocuments, documents.Count);
+            Assert.Equal(6, documents.Count);
             Assert.Equal(
                 new[]
                 {
+                    Path.Combine(root, "AGENTS.md"),
+                    Path.Combine(root, "CLAUDE.local.md"),
                     Path.Combine(nested, "AGENTS.md"),
                     Path.Combine(nested, "CLAUDE.local.md"),
                     Path.Combine(deepest, "AGENTS.md"),
@@ -605,10 +752,6 @@ public sealed class CopilotAgentProjectInstructionsTests
                 },
                 documents.Select(document => document.Path).ToArray(),
                 StringComparer.OrdinalIgnoreCase);
-            Assert.DoesNotContain(documents, document => document.Path.StartsWith(
-                    root + Path.DirectorySeparatorChar,
-                    StringComparison.OrdinalIgnoreCase)
-                && string.Equals(Path.GetDirectoryName(document.Path), root, StringComparison.OrdinalIgnoreCase));
         }
         finally
         {

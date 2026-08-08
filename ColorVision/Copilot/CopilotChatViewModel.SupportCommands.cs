@@ -357,12 +357,13 @@ namespace ColorVision.Copilot
             {
                 var turnSnapshot = CaptureHostedTurnSnapshot(Attachments);
                 trustedProjectRoots = CopilotAgentRequestFactory.BuildTrustedProjectRootPaths(turnSnapshot).ToArray();
-                projectInstructions = CopilotAgentProjectInstructions.Discover(
+                projectInstructions = CopilotAgentProjectInstructions.DiscoverWithGlobal(
                     trustedProjectRoots,
                     turnSnapshot.ActiveDocumentPath,
                     turnSnapshot.Attachments
                         .Where(attachment => attachment.Type == CopilotAttachmentType.File)
-                        .Select(attachment => attachment.Value))
+                        .Select(attachment => attachment.Value),
+                    turnSnapshot.GlobalInstructionRootPath)
                     .ToArray();
                 skillUsage = CopilotAgentSkillUsageStore.Shared.GetSnapshot();
             }
@@ -467,8 +468,9 @@ namespace ColorVision.Copilot
             }
 
             var errorMessage = string.Empty;
-            if (!CopilotLocalFileLinkNavigator.TryResolve(document.Path, out var target)
-                || !CopilotLocalFileLinkNavigator.TryOpen(target, out errorMessage))
+            var additionalAllowedRoots = new[] { snapshot.GlobalInstructionRootPath };
+            if (!CopilotLocalFileLinkNavigator.TryResolve(document.Path, additionalAllowedRoots, out var target)
+                || !CopilotLocalFileLinkNavigator.TryOpen(target, additionalAllowedRoots, out errorMessage))
             {
                 ShowLocalCommandResult(
                     command,
@@ -491,17 +493,19 @@ namespace ColorVision.Copilot
         {
             var turnSnapshot = CaptureHostedTurnSnapshot(Attachments);
             var trustedProjectRoots = CopilotAgentRequestFactory.BuildTrustedProjectRootPaths(turnSnapshot);
-            var documents = CopilotAgentProjectInstructions.Discover(
+            var documents = CopilotAgentProjectInstructions.DiscoverWithGlobal(
                 trustedProjectRoots,
                 turnSnapshot.ActiveDocumentPath,
                 turnSnapshot.Attachments
                     .Where(attachment => attachment.Type == CopilotAttachmentType.File)
-                    .Select(attachment => attachment.Value));
+                    .Select(attachment => attachment.Value),
+                turnSnapshot.GlobalInstructionRootPath);
             return new CopilotProjectInstructionSnapshot(
                 trustedProjectRoots.Count > 0
                     ? trustedProjectRoots[0]
                     : turnSnapshot.SolutionDirectoryPath,
                 turnSnapshot.ActiveDocumentPath,
+                turnSnapshot.GlobalInstructionRootPath,
                 documents);
         }
 

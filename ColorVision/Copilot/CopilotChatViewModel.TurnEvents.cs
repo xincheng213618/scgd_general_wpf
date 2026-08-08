@@ -133,7 +133,8 @@ namespace ColorVision.Copilot
                 attachments,
                 _currentLiveContext,
                 conversationHistory,
-                additionalReadRootPaths);
+                additionalReadRootPaths,
+                CopilotAgentProjectInstructions.ResolveGlobalInstructionRootPath());
         }
 
         private void ApplyChatDeltas(CopilotChatMessage assistantMessage, IReadOnlyList<CopilotStreamDelta> deltas)

@@ -162,7 +162,7 @@ namespace ColorVision.Copilot
                 new("stop", "按 run_id 停止当前会话中的运行中子代理；父 Agent 继续", AcceptsArguments: true),
             ]) { Aliases = ["/subagents"] },
             new("/context", "查看本地上下文、预算与注入统计", CopilotLocalCommandKind.Context, AvailableWhileAgentRuns: true, Usage: "/context"),
-            new("/memory", "预览工作区型 Agent 请求会加载的项目指令，或按编号打开源文件", CopilotLocalCommandKind.ProjectInstructions, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/memory [open N]", Arguments:
+            new("/memory", "预览工作区型 Agent 请求会加载的个人与项目指令，或按编号打开源文件", CopilotLocalCommandKind.ProjectInstructions, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/memory [open N]", Arguments:
             [
                 new("open", "在内置编辑器中打开第 N 个生效指令文件", AcceptsArguments: true),
             ]) { Aliases = ["/instructions"] },

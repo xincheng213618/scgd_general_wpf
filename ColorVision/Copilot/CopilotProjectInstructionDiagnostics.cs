@@ -21,12 +21,13 @@ namespace ColorVision.Copilot
     internal sealed record CopilotProjectInstructionSnapshot(
         string WorkspacePath,
         string ActiveDocumentPath,
+        string GlobalInstructionRootPath,
         IReadOnlyList<CopilotProjectInstructionDocument> Documents);
 
     internal static class CopilotProjectInstructionDiagnostics
     {
         internal const string Usage =
-            "用法：/memory [open N]。不带参数时预览基于当前目标、会被工作区型 Agent 请求加载的项目指令；open N 在内置编辑器中打开第 N 个文件。";
+            "用法：/memory [open N]。不带参数时预览基于当前目标、会被工作区型 Agent 请求加载的个人与项目指令；open N 在内置编辑器中打开第 N 个文件。";
 
         public static CopilotProjectInstructionCommandRequest ParseCommand(string? arguments)
         {
@@ -82,19 +83,19 @@ namespace ColorVision.Copilot
         {
             var documents = GetEffectiveDocuments(snapshot?.Documents);
             var builder = new StringBuilder()
-                .Append("Copilot 项目指令 · ")
+                .Append("Copilot 个人与项目指令 · ")
                 .AppendLine(documents.Count.ToString("N0", CultureInfo.CurrentCulture));
             if (documents.Count == 0)
             {
                 builder.AppendLine()
-                    .AppendLine("当前受信项目根和目标文件没有发现会被工作区型 Agent 请求加载的项目指令。")
+                    .AppendLine("当前 Codex Home、受信项目根和目标文件没有发现会被工作区型 Agent 请求加载的指令。")
                     .AppendLine("使用 /init 可在项目根创建 AGENTS.md；现有文件不会被覆盖。")
-                    .Append("这里展示的是工作区指令，不是自动生成的跨会话记忆；/memory 不会写入文件。");
+                    .Append("这里展示的是个人与工作区指令，不是自动生成的跨会话记忆；/memory 不会写入文件。");
                 return builder.ToString();
             }
 
             builder.AppendLine()
-                .AppendLine("以下是基于当前活动文档与文件附件的注入预览：由宽到窄，后列的局部规则只在自身作用域内覆盖前列规则。")
+                .AppendLine("以下是基于当前 Codex Home、活动文档与文件附件的注入预览：个人指令在前，项目指令由宽到窄，后列的局部规则只在自身作用域内覆盖前列规则。")
                 .AppendLine("只有需要本地工作区证据的 Agent 请求才注入这些文件；下一条提示词中的显式本地路径也可能改变路径规则匹配。");
             AppendTarget(builder, snapshot);
             foreach (var document in documents.Select((value, index) => (Document: value, Position: index + 1)))
@@ -104,7 +105,7 @@ namespace ColorVision.Copilot
                     .Append(" · ")
                     .Append(Path.GetFileName(document.Document.Path))
                     .Append(" · ")
-                    .Append(GetSourceLabel(document.Document.Path))
+                    .Append(GetSourceLabel(document.Document.Path, snapshot?.GlobalInstructionRootPath))
                     .Append(" · ")
                     .Append(document.Document.Content.Length.ToString("N0", CultureInfo.CurrentCulture))
                     .Append(" 字符");
@@ -116,11 +117,11 @@ namespace ColorVision.Copilot
             }
 
             builder.AppendLine()
-                .AppendLine("选择规则：同目录优先 AGENTS.override.md、AGENTS.md，再以 CLAUDE.md 兼容回退；.claude/rules 为附加规则，CLAUDE.local.md 为私有局部覆盖。")
+                .AppendLine("选择规则：Codex Home 先选首个非空 AGENTS.override.md/AGENTS.md；项目同目录优先 AGENTS.override.md、AGENTS.md，再以 CLAUDE.md 兼容回退；.claude/rules 为附加规则，CLAUDE.local.md 为私有局部覆盖。")
                 .AppendLine("使用 /memory open N 打开文件。报告不包含指令正文，也不会自动修改任何指令。");
             if (hasActiveAgentRun)
                 builder.AppendLine("当前运行中的任务已固定请求启动时的指令快照；现在编辑只影响后续请求。");
-            builder.Append("这里展示的是工作区指令，不是自动生成的跨会话记忆。");
+            builder.Append("这里展示的是个人与工作区指令，不是自动生成的跨会话记忆；Codex Home 不会因此成为通用文件或写入权限根。");
             return builder.ToString();
         }
 
@@ -140,9 +141,14 @@ namespace ColorVision.Copilot
             }
         }
 
-        private static string GetSourceLabel(string? path)
+        private static string GetSourceLabel(string? path, string? globalInstructionRootPath)
         {
             var normalized = (path ?? string.Empty).Replace('/', '\\');
+            if (!string.IsNullOrWhiteSpace(globalInstructionRootPath)
+                && CopilotWorkspaceSearchSupport.IsPathWithinRoots(path, [globalInstructionRootPath]))
+            {
+                return "Codex 全局指令";
+            }
             var fileName = Path.GetFileName(normalized);
             if (string.Equals(fileName, "AGENTS.override.md", StringComparison.OrdinalIgnoreCase))
                 return "共享覆盖";

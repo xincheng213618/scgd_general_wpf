@@ -20,6 +20,8 @@ namespace ColorVision.Copilot
 
         public IReadOnlyList<string> AdditionalReadRootPaths { get; }
 
+        internal string GlobalInstructionRootPath { get; }
+
         public CopilotAgentHostContextSnapshot(
             string? activeDocumentPath,
             string? solutionDirectoryPath,
@@ -27,6 +29,25 @@ namespace ColorVision.Copilot
             CopilotLiveContext? liveContext = null,
             CopilotConversationHistorySnapshot? conversationHistory = null,
             IEnumerable<string>? additionalReadRootPaths = null)
+            : this(
+                activeDocumentPath,
+                solutionDirectoryPath,
+                attachments,
+                liveContext,
+                conversationHistory,
+                additionalReadRootPaths,
+                globalInstructionRootPath: null)
+        {
+        }
+
+        internal CopilotAgentHostContextSnapshot(
+            string? activeDocumentPath,
+            string? solutionDirectoryPath,
+            IEnumerable<CopilotAttachmentItem>? attachments,
+            CopilotLiveContext? liveContext,
+            CopilotConversationHistorySnapshot? conversationHistory,
+            IEnumerable<string>? additionalReadRootPaths,
+            string? globalInstructionRootPath)
         {
             ActiveDocumentPath = activeDocumentPath ?? string.Empty;
             SolutionDirectoryPath = solutionDirectoryPath ?? string.Empty;
@@ -39,6 +60,7 @@ namespace ColorVision.Copilot
                 ? CopilotConversationHistorySnapshot.Empty
                 : new CopilotConversationHistorySnapshot(conversationHistory.ModelMessages, conversationHistory.VisibleMessages);
             AdditionalReadRootPaths = CopilotAdditionalDirectoryCommand.NormalizeStoredPaths(additionalReadRootPaths);
+            GlobalInstructionRootPath = CopilotAgentProjectInstructions.NormalizeGlobalInstructionRootPath(globalInstructionRootPath);
         }
 
         private static CopilotLiveContext? CloneLiveContext(CopilotLiveContext? source)
@@ -204,12 +226,13 @@ namespace ColorVision.Copilot
             var projectInstructions = mode == CopilotAgentMode.Chat
                 || !requiresWorkspaceEvidence
                 ? Array.Empty<CopilotProjectInstructionDocument>()
-                : CopilotAgentProjectInstructions.Discover(
+                : CopilotAgentProjectInstructions.DiscoverWithGlobal(
                     trustedProjectRootPaths,
                     hostContext.ActiveDocumentPath,
                     explicitLocalFilePaths.Concat(hostContext.Attachments
                         .Where(attachment => attachment.Type == CopilotAttachmentType.File)
-                        .Select(attachment => attachment.Value)));
+                        .Select(attachment => attachment.Value)),
+                    hostContext.GlobalInstructionRootPath);
 
             return new CopilotAgentRequestPlan
             {
