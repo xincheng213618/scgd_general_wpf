@@ -88,6 +88,7 @@ namespace ColorVision.Copilot
             DateTimeOffset now,
             string? reason = null)
         {
+            var effectiveNow = GetMonotonicUpdateTime(now);
             return new CopilotConversationGoal
             {
                 StrategyVersion = StrategyVersion,
@@ -95,7 +96,7 @@ namespace ColorVision.Copilot
                 Objective = Objective,
                 State = state,
                 CreatedAtUtc = CreatedAtUtc,
-                UpdatedAtUtc = now < CreatedAtUtc ? CreatedAtUtc : now,
+                UpdatedAtUtc = effectiveNow,
                 TurnCount = TurnCount,
                 EvaluationCount = EvaluationCount,
                 TokensUsed = TokensUsed,
@@ -116,6 +117,7 @@ namespace ColorVision.Copilot
             DateTimeOffset now)
         {
             var normalizedReason = NormalizeReason(reason);
+            var effectiveNow = GetMonotonicUpdateTime(now);
             return new CopilotConversationGoal
             {
                 StrategyVersion = StrategyVersion,
@@ -123,7 +125,7 @@ namespace ColorVision.Copilot
                 Objective = Objective,
                 State = state,
                 CreatedAtUtc = CreatedAtUtc,
-                UpdatedAtUtc = now < CreatedAtUtc ? CreatedAtUtc : now,
+                UpdatedAtUtc = effectiveNow,
                 TurnCount = Increment(TurnCount),
                 EvaluationCount = evaluated ? Increment(EvaluationCount) : EvaluationCount,
                 TokensUsed = AddTokens(TokensUsed, usage.EffectiveTotalTokens),
@@ -131,7 +133,7 @@ namespace ColorVision.Copilot
                     ? Increment(ConsecutiveContinuationCount)
                     : 0,
                 LastEvaluationReason = normalizedReason,
-                LastEvaluatedAtUtc = evaluated ? now : LastEvaluatedAtUtc,
+                LastEvaluatedAtUtc = evaluated ? effectiveNow : LastEvaluatedAtUtc,
             };
         }
 
@@ -197,6 +199,9 @@ namespace ColorVision.Copilot
         }
 
         private static int Increment(int value) => value == int.MaxValue ? int.MaxValue : value + 1;
+
+        private DateTimeOffset GetMonotonicUpdateTime(DateTimeOffset now) =>
+            now < UpdatedAtUtc ? UpdatedAtUtc : now;
 
         private static long AddTokens(long current, int additional)
         {
