@@ -30,8 +30,8 @@ namespace ColorVision.Copilot
     {
         public const int MaxDocuments = 16;
         public const int MaxDocumentCharacters = 12_000;
-        public const int MaxTotalCharacters = 24_000;
-        public const int MaxPromptCharacters = 32_768;
+        public const int MaxTotalCharacters = CopilotProjectInstructionDiscoveryConfig.MaximumMaximumBytes;
+        public const int MaxPromptCharacters = 81_920;
 
         private const int MaxSourceCharacters = 32_768;
         private const int MaxRuleFiles = 64;
@@ -42,10 +42,13 @@ namespace ColorVision.Copilot
         private const int MaxRulePathPatternCharacters = 256;
         private const string TruncationSuffix = "\n...<project instructions truncated by ColorVision Copilot>.";
         private const string LocalInstructionFileName = "CLAUDE.local.md";
-        private static readonly string[] SharedInstructionFileFallbackPaths =
+        private static readonly string[] SharedInstructionFilePriorityPaths =
         [
             "AGENTS.override.md",
             "AGENTS.md",
+        ];
+        private static readonly string[] CompatibilityInstructionFileFallbackPaths =
+        [
             "CLAUDE.md",
             Path.Combine(".claude", "CLAUDE.md"),
         ];
@@ -60,19 +63,22 @@ namespace ColorVision.Copilot
             string? activeDocumentPath,
             IEnumerable<string>? additionalTargetFilePaths = null)
         {
-            var candidates = BuildCandidatePaths(searchRootPaths, activeDocumentPath, additionalTargetFilePaths);
-            return DiscoverCandidates(candidates);
+            var options = CopilotProjectInstructionDiscoveryConfig.CreateDefault();
+            var candidates = BuildCandidatePaths(searchRootPaths, activeDocumentPath, additionalTargetFilePaths, options);
+            return DiscoverCandidates(candidates, options.MaximumBytes);
         }
 
         internal static IReadOnlyList<CopilotProjectInstructionDocument> DiscoverWithGlobal(
             IEnumerable<string>? searchRootPaths,
             string? activeDocumentPath,
             IEnumerable<string>? additionalTargetFilePaths,
-            string? globalInstructionRootPath)
+            string? globalInstructionRootPath,
+            CopilotProjectInstructionDiscoveryOptions? discoveryOptions = null)
         {
-            var candidates = BuildCandidatePaths(searchRootPaths, activeDocumentPath, additionalTargetFilePaths);
+            var options = discoveryOptions ?? CopilotProjectInstructionDiscoveryConfig.Load(globalInstructionRootPath);
+            var candidates = BuildCandidatePaths(searchRootPaths, activeDocumentPath, additionalTargetFilePaths, options);
             AddGlobalCandidate(candidates, globalInstructionRootPath);
-            return DiscoverCandidates(candidates);
+            return DiscoverCandidates(candidates, options.MaximumBytes);
         }
 
         internal static string ResolveGlobalInstructionRootPath(
@@ -122,14 +128,18 @@ namespace ColorVision.Copilot
             }
         }
 
-        private static IReadOnlyList<CopilotProjectInstructionDocument> DiscoverCandidates(
-            IReadOnlyList<InstructionCandidate> candidates)
+        private static CopilotProjectInstructionDocument[] DiscoverCandidates(
+            IReadOnlyList<InstructionCandidate> candidates,
+            int maximumBytes)
         {
             if (candidates.Count == 0)
                 return Array.Empty<CopilotProjectInstructionDocument>();
 
             var selectedDocuments = new List<(InstructionCandidate Candidate, CopilotProjectInstructionDocument Document)>();
-            var remainingCharacters = MaxTotalCharacters;
+            var remainingBytes = Math.Clamp(
+                maximumBytes,
+                CopilotProjectInstructionDiscoveryConfig.MinimumMaximumBytes,
+                CopilotProjectInstructionDiscoveryConfig.MaximumMaximumBytes);
             foreach (var candidate in candidates
                 .OrderByDescending(item => item.IsGlobal)
                 .ThenByDescending(item => item.AppliesToActiveDocument)
@@ -137,10 +147,9 @@ namespace ColorVision.Copilot
                 .ThenByDescending(item => item.RetentionPriority)
                 .ThenBy(item => item.DiscoveryOrder))
             {
-                if (selectedDocuments.Count >= MaxDocuments || remainingCharacters <= 0)
+                if (selectedDocuments.Count >= MaxDocuments || remainingBytes <= 0)
                     break;
 
-                var maximumCharacters = Math.Min(MaxDocumentCharacters, remainingCharacters);
                 string? selectedPath = null;
                 string content = string.Empty;
                 bool truncated = false;
@@ -148,7 +157,7 @@ namespace ColorVision.Copilot
                 {
                     if (!TryReadDocument(
                         candidatePath,
-                        maximumCharacters,
+                        MaxDocumentCharacters,
                         candidate.StripRuleFrontmatter,
                         out content,
                         out truncated))
@@ -157,6 +166,15 @@ namespace ColorVision.Copilot
                     break;
                 }
                 if (selectedPath == null)
+                    continue;
+
+                var boundedContent = TruncateToUtf8BytesWithSuffix(content, remainingBytes);
+                if (!string.Equals(boundedContent, content, StringComparison.Ordinal))
+                {
+                    content = boundedContent;
+                    truncated = true;
+                }
+                if (string.IsNullOrWhiteSpace(content))
                     continue;
 
                 var document = new CopilotProjectInstructionDocument
@@ -169,7 +187,7 @@ namespace ColorVision.Copilot
                     continue;
 
                 selectedDocuments.Add((candidate, document));
-                remainingCharacters -= content.Length;
+                remainingBytes -= Encoding.UTF8.GetByteCount(content);
             }
 
             return selectedDocuments
@@ -214,7 +232,9 @@ namespace ColorVision.Copilot
             return builder.ToString().TrimEnd();
         }
 
-        internal static string? FindExistingSharedInstructionPath(string? rootPath)
+        internal static string? FindExistingSharedInstructionPath(
+            string? rootPath,
+            CopilotProjectInstructionDiscoveryOptions discoveryOptions)
         {
             if (string.IsNullOrWhiteSpace(rootPath))
                 return null;
@@ -225,11 +245,20 @@ namespace ColorVision.Copilot
                 if (!Directory.Exists(normalizedRoot))
                     return null;
 
-                foreach (var fallbackPath in SharedInstructionFileFallbackPaths)
+                foreach (var fallbackPath in SharedInstructionFilePriorityPaths
+                    .Concat(discoveryOptions.FallbackFileNames)
+                    .Concat(CompatibilityInstructionFileFallbackPaths)
+                    .Distinct(StringComparer.OrdinalIgnoreCase))
                 {
                     var candidatePath = Path.GetFullPath(Path.Combine(normalizedRoot, fallbackPath));
-                    if (File.Exists(candidatePath) || Directory.Exists(candidatePath))
+                    if (!IsPathWithin(candidatePath, normalizedRoot))
+                        continue;
+                    if (IsSafeInstructionFile(normalizedRoot, candidatePath)
+                        || (Directory.Exists(candidatePath)
+                            && IsSafeDirectoryChain(normalizedRoot, candidatePath)))
+                    {
                         return candidatePath;
+                    }
                 }
             }
             catch
@@ -242,7 +271,8 @@ namespace ColorVision.Copilot
         private static List<InstructionCandidate> BuildCandidatePaths(
             IEnumerable<string>? searchRootPaths,
             string? activeDocumentPath,
-            IEnumerable<string>? additionalTargetFilePaths)
+            IEnumerable<string>? additionalTargetFilePaths,
+            CopilotProjectInstructionDiscoveryOptions options)
         {
             var results = new List<InstructionCandidate>();
             var seenScopes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -288,7 +318,10 @@ namespace ColorVision.Copilot
                     return;
 
                 var sharedCandidatePaths = new List<string>();
-                foreach (var fallbackPath in SharedInstructionFileFallbackPaths)
+                foreach (var fallbackPath in SharedInstructionFilePriorityPaths
+                    .Concat(options.FallbackFileNames)
+                    .Concat(CompatibilityInstructionFileFallbackPaths)
+                    .Distinct(StringComparer.OrdinalIgnoreCase))
                 {
                     var candidatePath = Path.GetFullPath(Path.Combine(normalizedScope, fallbackPath));
                     if (!IsSafeInstructionFile(rootPath, candidatePath))
@@ -458,6 +491,40 @@ namespace ColorVision.Copilot
             if (retainedLength > 0 && retainedLength < value.Length && char.IsHighSurrogate(value[retainedLength - 1]))
                 retainedLength--;
             return value[..retainedLength].TrimEnd() + TruncationSuffix;
+        }
+
+        private static string TruncateToUtf8BytesWithSuffix(string value, int maximumBytes)
+        {
+            if (maximumBytes <= 0)
+                return string.Empty;
+            if (Encoding.UTF8.GetByteCount(value) <= maximumBytes)
+                return value;
+
+            var suffixBytes = Encoding.UTF8.GetByteCount(TruncationSuffix);
+            if (maximumBytes <= suffixBytes)
+                return GetUtf8Prefix(value, maximumBytes);
+
+            var retained = GetUtf8Prefix(value, maximumBytes - suffixBytes).TrimEnd();
+            return retained + TruncationSuffix;
+        }
+
+        private static string GetUtf8Prefix(string value, int maximumBytes)
+        {
+            var retainedCharacters = 0;
+            var retainedBytes = 0;
+            while (retainedCharacters < value.Length)
+            {
+                var characterCount = retainedCharacters + 1 < value.Length
+                    && char.IsSurrogatePair(value[retainedCharacters], value[retainedCharacters + 1])
+                        ? 2
+                        : 1;
+                var characterBytes = Encoding.UTF8.GetByteCount(value.AsSpan(retainedCharacters, characterCount));
+                if (retainedBytes + characterBytes > maximumBytes)
+                    break;
+                retainedBytes += characterBytes;
+                retainedCharacters += characterCount;
+            }
+            return value[..retainedCharacters];
         }
 
         private static SerializedInstructionLine? SerializeDocumentWithinBudget(

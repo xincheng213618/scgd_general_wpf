@@ -352,10 +352,12 @@ namespace ColorVision.Copilot
             var history = CopilotConversationRequestBuilder.CaptureHistorySelection(conversation, historyLimits);
             var projectInstructions = Array.Empty<CopilotProjectInstructionDocument>();
             var trustedProjectRoots = Array.Empty<string>();
+            var projectInstructionOptions = CopilotProjectInstructionDiscoveryConfig.CreateDefault();
             CopilotAgentSkillUsageSnapshot? skillUsage = null;
             if (agentContextEnabled)
             {
                 var turnSnapshot = CaptureHostedTurnSnapshot(Attachments);
+                projectInstructionOptions = turnSnapshot.ProjectInstructionDiscoveryOptions;
                 trustedProjectRoots = CopilotAgentRequestFactory.BuildTrustedProjectRootPaths(turnSnapshot).ToArray();
                 projectInstructions = CopilotAgentProjectInstructions.DiscoverWithGlobal(
                     trustedProjectRoots,
@@ -363,7 +365,8 @@ namespace ColorVision.Copilot
                     turnSnapshot.Attachments
                         .Where(attachment => attachment.Type == CopilotAttachmentType.File)
                         .Select(attachment => attachment.Value),
-                    turnSnapshot.GlobalInstructionRootPath)
+                    turnSnapshot.GlobalInstructionRootPath,
+                    turnSnapshot.ProjectInstructionDiscoveryOptions)
                     .ToArray();
                 skillUsage = CopilotAgentSkillUsageStore.Shared.GetSnapshot();
             }
@@ -414,6 +417,9 @@ namespace ColorVision.Copilot
                 AgentContextEnabled = agentContextEnabled,
                 ProjectInstructionDocuments = projectInstructions.Length,
                 ProjectInstructionPromptCharacters = CopilotAgentProjectInstructions.BuildPromptBlock(projectInstructions).Length,
+                ProjectInstructionMaximumBytes = projectInstructionOptions.MaximumBytes,
+                ProjectInstructionUsesCodexConfig = projectInstructionOptions.UsesCodexConfig,
+                ProjectInstructionFallbackFileNames = projectInstructionOptions.FallbackFileNames,
                 TrustedProjectRootPaths = trustedProjectRoots,
                 ProjectInstructions = projectInstructions,
                 RecordedSkillRuns = skillUsage?.RecordedRuns ?? 0,
@@ -499,13 +505,15 @@ namespace ColorVision.Copilot
                 turnSnapshot.Attachments
                     .Where(attachment => attachment.Type == CopilotAttachmentType.File)
                     .Select(attachment => attachment.Value),
-                turnSnapshot.GlobalInstructionRootPath);
+                turnSnapshot.GlobalInstructionRootPath,
+                turnSnapshot.ProjectInstructionDiscoveryOptions);
             return new CopilotProjectInstructionSnapshot(
                 trustedProjectRoots.Count > 0
                     ? trustedProjectRoots[0]
                     : turnSnapshot.SolutionDirectoryPath,
                 turnSnapshot.ActiveDocumentPath,
                 turnSnapshot.GlobalInstructionRootPath,
+                turnSnapshot.ProjectInstructionDiscoveryOptions,
                 documents);
         }
 

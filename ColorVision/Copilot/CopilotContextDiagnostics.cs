@@ -81,6 +81,12 @@ namespace ColorVision.Copilot
 
         public int ProjectInstructionPromptCharacters { get; init; }
 
+        public int ProjectInstructionMaximumBytes { get; init; } = CopilotProjectInstructionDiscoveryConfig.DefaultMaximumBytes;
+
+        public bool ProjectInstructionUsesCodexConfig { get; init; }
+
+        public IReadOnlyList<string> ProjectInstructionFallbackFileNames { get; init; } = Array.Empty<string>();
+
         public IReadOnlyList<string> TrustedProjectRootPaths { get; init; } = Array.Empty<string>();
 
         public IReadOnlyList<CopilotProjectInstructionDocument> ProjectInstructions { get; init; } = Array.Empty<CopilotProjectInstructionDocument>();
@@ -246,7 +252,15 @@ namespace ColorVision.Copilot
                 .Append(FormatCount(snapshot.ProjectInstructionDocuments))
                 .Append(" 个文档，序列化提示 ")
                 .Append(FormatCount(snapshot.ProjectInstructionPromptCharacters))
-                .AppendLine(" 字符");
+                .Append(" 字符；发现预算 ")
+                .Append(FormatCount(snapshot.ProjectInstructionMaximumBytes))
+                .Append(" UTF-8 字节")
+                .AppendLine(snapshot.ProjectInstructionUsesCodexConfig ? "（Codex Home config.toml 请求快照）" : "（默认）");
+            if (snapshot.ProjectInstructionFallbackFileNames.Count > 0)
+            {
+                builder.Append("配置备用名：")
+                    .AppendLine(string.Join("、", snapshot.ProjectInstructionFallbackFileNames));
+            }
             AppendTrustedProjectRoots(builder, snapshot.TrustedProjectRootPaths);
             AppendProjectInstructionDetails(builder, snapshot.ProjectInstructions);
             builder.Append("Agent 预算：上下文 ")

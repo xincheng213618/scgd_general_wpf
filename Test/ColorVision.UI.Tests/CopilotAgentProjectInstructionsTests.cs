@@ -181,6 +181,210 @@ public sealed class CopilotAgentProjectInstructionsTests
     }
 
     [Fact]
+    public void CodexConfigAddsSafeFallbackNamesAndUtf8Budget()
+    {
+        string globalRoot = CreateTemporaryDirectory();
+        string projectRoot = CreateTemporaryDirectory();
+        try
+        {
+            File.WriteAllText(
+                Path.Combine(globalRoot, "config.toml"),
+                """
+                project_doc_max_bytes = 4_096
+                project_doc_fallback_filenames = [
+                  "TEAM_GUIDE.md",
+                  '.agents.md',
+                  "../outside.md",
+                  "nested/guide.md",
+                  "TEAM_GUIDE.md", # duplicate
+                ]
+
+                [model]
+                name = "ignored"
+                project_doc_max_bytes = 65536
+                """);
+            string configuredPath = Path.Combine(projectRoot, "TEAM_GUIDE.md");
+            File.WriteAllText(configuredPath, "# Configured instructions");
+            File.WriteAllText(Path.Combine(projectRoot, "CLAUDE.md"), "# Compatibility instructions");
+
+            var options = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot);
+            CopilotProjectInstructionDocument document = Assert.Single(
+                CopilotAgentProjectInstructions.DiscoverWithGlobal(
+                    [projectRoot],
+                    activeDocumentPath: null,
+                    additionalTargetFilePaths: null,
+                    globalInstructionRootPath: globalRoot,
+                    discoveryOptions: options));
+
+            Assert.Equal(4_096, options.MaximumBytes);
+            Assert.Equal(["TEAM_GUIDE.md", ".agents.md"], options.FallbackFileNames);
+            Assert.True(options.HasMaximumBytesOverride);
+            Assert.True(options.HasFallbackFileNamesOverride);
+            Assert.Equal(configuredPath, document.Path, ignoreCase: true);
+            var report = CopilotProjectInstructionDiagnostics.Format(
+                new CopilotProjectInstructionSnapshot(
+                    projectRoot,
+                    string.Empty,
+                    globalRoot,
+                    options,
+                    [document]),
+                hasActiveAgentRun: false);
+            Assert.Contains("4,096 UTF-8", report, StringComparison.Ordinal);
+            Assert.Contains("TEAM_GUIDE.md", report, StringComparison.Ordinal);
+            Assert.Contains("Codex Home config.toml 请求快照", report, StringComparison.Ordinal);
+        }
+        finally
+        {
+            Directory.Delete(globalRoot, recursive: true);
+            Directory.Delete(projectRoot, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void RequestFactoryKeepsTheInstructionConfigSnapshotTakenAtSubmission()
+    {
+        string globalRoot = CreateTemporaryDirectory();
+        string projectRoot = CreateTemporaryDirectory();
+        try
+        {
+            string configPath = Path.Combine(globalRoot, "config.toml");
+            string firstPath = Path.Combine(projectRoot, "FIRST.md");
+            string secondPath = Path.Combine(projectRoot, "SECOND.md");
+            string activeDocument = Path.Combine(projectRoot, "Feature.cs");
+            File.WriteAllText(configPath, "project_doc_fallback_filenames = [\"FIRST.md\"]");
+            File.WriteAllText(firstPath, "# First instructions");
+            File.WriteAllText(secondPath, "# Second instructions");
+            File.WriteAllText(activeDocument, "namespace Feature;");
+            var submittedContext = new CopilotAgentHostContextSnapshot(
+                activeDocument,
+                projectRoot,
+                attachments: null,
+                liveContext: null,
+                conversationHistory: null,
+                additionalReadRootPaths: null,
+                globalInstructionRootPath: globalRoot);
+
+            File.WriteAllText(configPath, "project_doc_fallback_filenames = [\"SECOND.md\"]");
+
+            var submittedPlan = CopilotAgentRequestFactory.Prepare(
+                $"Inspect the local implementation in {activeDocument}",
+                CopilotAgentMode.Auto,
+                submittedContext);
+            var refreshedContext = new CopilotAgentHostContextSnapshot(
+                activeDocument,
+                projectRoot,
+                attachments: null,
+                liveContext: null,
+                conversationHistory: null,
+                additionalReadRootPaths: null,
+                globalInstructionRootPath: globalRoot);
+            var refreshedPlan = CopilotAgentRequestFactory.Prepare(
+                $"Inspect the local implementation in {activeDocument}",
+                CopilotAgentMode.Auto,
+                refreshedContext);
+
+            Assert.Contains(submittedPlan.ProjectInstructions, document =>
+                string.Equals(document.Path, firstPath, StringComparison.OrdinalIgnoreCase));
+            Assert.DoesNotContain(submittedPlan.ProjectInstructions, document =>
+                string.Equals(document.Path, secondPath, StringComparison.OrdinalIgnoreCase));
+            Assert.Contains(refreshedPlan.ProjectInstructions, document =>
+                string.Equals(document.Path, secondPath, StringComparison.OrdinalIgnoreCase));
+        }
+        finally
+        {
+            Directory.Delete(globalRoot, recursive: true);
+            Directory.Delete(projectRoot, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void Utf8InstructionBudgetDoesNotSplitUnicodeContent()
+    {
+        string globalRoot = CreateTemporaryDirectory();
+        string projectRoot = CreateTemporaryDirectory();
+        try
+        {
+            File.WriteAllText(Path.Combine(globalRoot, "config.toml"), "project_doc_max_bytes = 4096");
+            string instructionPath = Path.Combine(projectRoot, "AGENTS.md");
+            File.WriteAllText(instructionPath, "# Unicode\n" + new string('界', 3_000));
+
+            CopilotProjectInstructionDocument document = Assert.Single(
+                CopilotAgentProjectInstructions.DiscoverWithGlobal(
+                    [projectRoot],
+                    activeDocumentPath: null,
+                    additionalTargetFilePaths: null,
+                    globalInstructionRootPath: globalRoot));
+
+            Assert.Equal(instructionPath, document.Path, ignoreCase: true);
+            Assert.True(document.IsTruncated);
+            Assert.InRange(System.Text.Encoding.UTF8.GetByteCount(document.Content), 1, 4_096);
+            Assert.False(char.IsHighSurrogate(document.Content[^1]));
+        }
+        finally
+        {
+            Directory.Delete(globalRoot, recursive: true);
+            Directory.Delete(projectRoot, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void UnsafeOrOutOfRangeCodexInstructionConfigFailsClosed()
+    {
+        string globalRoot = CreateTemporaryDirectory();
+        try
+        {
+            File.WriteAllText(
+                Path.Combine(globalRoot, "config.toml"),
+                """
+                project_doc_max_bytes = 999999999
+                project_doc_fallback_filenames = ["../secret.md", "nested/guide.md", "C:\\secret.md"]
+                """);
+
+            var options = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot);
+
+            Assert.Equal(CopilotProjectInstructionDiscoveryConfig.DefaultMaximumBytes, options.MaximumBytes);
+            Assert.Empty(options.FallbackFileNames);
+            Assert.False(options.HasMaximumBytesOverride);
+            Assert.True(options.HasFallbackFileNamesOverride);
+        }
+        finally
+        {
+            Directory.Delete(globalRoot, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void ConfiguredFallbackPreventsInitFromShadowingExistingInstructions()
+    {
+        string projectRoot = CreateTemporaryDirectory();
+        try
+        {
+            string configuredPath = Path.Combine(projectRoot, "TEAM_GUIDE.md");
+            File.WriteAllText(configuredPath, "# Existing instructions");
+            var options = new CopilotProjectInstructionDiscoveryOptions(
+                CopilotProjectInstructionDiscoveryConfig.DefaultMaximumBytes,
+                ["TEAM_GUIDE.md"],
+                HasMaximumBytesOverride: false,
+                HasFallbackFileNamesOverride: true);
+
+            var plan = CopilotProjectInitialization.Create(projectRoot, options);
+
+            Assert.False(plan.CanStart);
+            Assert.Equal(configuredPath, plan.TargetPath, ignoreCase: true);
+            Assert.Contains("TEAM_GUIDE.md", plan.Message, StringComparison.Ordinal);
+
+            File.Delete(configuredPath);
+            var readyPlan = CopilotProjectInitialization.Create(projectRoot, options);
+            Assert.True(readyPlan.CanStart);
+            Assert.Contains("TEAM_GUIDE.md", readyPlan.ModelPrompt, StringComparison.Ordinal);
+        }
+        finally
+        {
+            Directory.Delete(projectRoot, recursive: true);
+        }
+    }
+
+    [Fact]
     public void RequestFactorySnapshotsGlobalInstructionsWithoutGrantingFileAccess()
     {
         string globalRoot = CreateTemporaryDirectory();
@@ -244,6 +448,7 @@ public sealed class CopilotAgentProjectInstructionsTests
                     projectRoot,
                     string.Empty,
                     globalRoot,
+                    CopilotProjectInstructionDiscoveryConfig.CreateDefault(),
                     [document]),
                 hasActiveAgentRun: false);
 
@@ -760,7 +965,7 @@ public sealed class CopilotAgentProjectInstructionsTests
     }
 
     [Fact]
-    public void CharacterBudgetRetainsTheMostSpecificInstructions()
+    public void Utf8ByteBudgetRetainsTheMostSpecificInstructions()
     {
         string root = CreateTemporaryDirectory();
         string nested = Path.Combine(root, "src");
@@ -779,10 +984,15 @@ public sealed class CopilotAgentProjectInstructionsTests
 
             var documents = CopilotAgentProjectInstructions.Discover([root], activeDocument);
 
-            Assert.Equal(2, documents.Count);
-            Assert.Equal(nestedInstructions, documents[0].Path, ignoreCase: true);
-            Assert.Equal(deepestInstructions, documents[1].Path, ignoreCase: true);
-            Assert.DoesNotContain(documents, document => string.Equals(document.Path, rootInstructions, StringComparison.OrdinalIgnoreCase));
+            Assert.Equal(3, documents.Count);
+            Assert.Equal(rootInstructions, documents[0].Path, ignoreCase: true);
+            Assert.Equal(nestedInstructions, documents[1].Path, ignoreCase: true);
+            Assert.Equal(deepestInstructions, documents[2].Path, ignoreCase: true);
+            Assert.True(documents[0].IsTruncated);
+            Assert.InRange(
+                documents.Sum(document => System.Text.Encoding.UTF8.GetByteCount(document.Content)),
+                1,
+                CopilotProjectInstructionDiscoveryConfig.DefaultMaximumBytes);
         }
         finally
         {

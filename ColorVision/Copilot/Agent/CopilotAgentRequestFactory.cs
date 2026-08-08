@@ -22,6 +22,8 @@ namespace ColorVision.Copilot
 
         internal string GlobalInstructionRootPath { get; }
 
+        internal CopilotProjectInstructionDiscoveryOptions ProjectInstructionDiscoveryOptions { get; }
+
         public CopilotAgentHostContextSnapshot(
             string? activeDocumentPath,
             string? solutionDirectoryPath,
@@ -61,6 +63,7 @@ namespace ColorVision.Copilot
                 : new CopilotConversationHistorySnapshot(conversationHistory.ModelMessages, conversationHistory.VisibleMessages);
             AdditionalReadRootPaths = CopilotAdditionalDirectoryCommand.NormalizeStoredPaths(additionalReadRootPaths);
             GlobalInstructionRootPath = CopilotAgentProjectInstructions.NormalizeGlobalInstructionRootPath(globalInstructionRootPath);
+            ProjectInstructionDiscoveryOptions = CopilotProjectInstructionDiscoveryConfig.Load(GlobalInstructionRootPath);
         }
 
         private static CopilotLiveContext? CloneLiveContext(CopilotLiveContext? source)
@@ -232,7 +235,8 @@ namespace ColorVision.Copilot
                     explicitLocalFilePaths.Concat(hostContext.Attachments
                         .Where(attachment => attachment.Type == CopilotAttachmentType.File)
                         .Select(attachment => attachment.Value)),
-                    hostContext.GlobalInstructionRootPath);
+                    hostContext.GlobalInstructionRootPath,
+                    hostContext.ProjectInstructionDiscoveryOptions);
 
             return new CopilotAgentRequestPlan
             {
