@@ -110,6 +110,7 @@ namespace ColorVision.Copilot
                     || !IsOptionalString(conversation.GetValue(nameof(CopilotConversationRecord.DraftText), StringComparison.OrdinalIgnoreCase))
                     || !IsOptionalInteger(conversation.GetValue(nameof(CopilotConversationRecord.DraftRequestMode), StringComparison.OrdinalIgnoreCase))
                     || !IsOptionalReviewTarget(conversation.GetValue(nameof(CopilotConversationRecord.DraftWorkspaceReviewTarget), StringComparison.OrdinalIgnoreCase))
+                    || !IsOptionalSkillReference(conversation.GetValue(nameof(CopilotConversationRecord.DraftAgentSkillReference), StringComparison.OrdinalIgnoreCase))
                     || !IsOptionalComposerStash(conversation.GetValue(nameof(CopilotConversationRecord.ComposerStash), StringComparison.OrdinalIgnoreCase))
                     || !IsOptionalPendingSteeringRecoveries(conversation.GetValue(nameof(CopilotConversationRecord.PendingSteeringRecoveries), StringComparison.OrdinalIgnoreCase))
                     || !IsOptionalObject(conversation.GetValue(nameof(CopilotConversationRecord.BranchOrigin), StringComparison.OrdinalIgnoreCase))
@@ -170,10 +171,12 @@ namespace ColorVision.Copilot
             var caretIndex = stash.GetValue(nameof(CopilotComposerStash.CaretIndex), StringComparison.OrdinalIgnoreCase);
             var requestMode = stash.GetValue(nameof(CopilotComposerStash.RequestMode), StringComparison.OrdinalIgnoreCase);
             var reviewTarget = stash.GetValue(nameof(CopilotComposerStash.WorkspaceReviewTarget), StringComparison.OrdinalIgnoreCase);
+            var skillReference = stash.GetValue(nameof(CopilotComposerStash.AgentSkillReference), StringComparison.OrdinalIgnoreCase);
             var attachments = stash.GetValue(nameof(CopilotComposerStash.Attachments), StringComparison.OrdinalIgnoreCase);
             return (caretIndex == null || caretIndex.Type is JTokenType.Integer or JTokenType.Null)
                 && (requestMode == null || requestMode.Type is JTokenType.Integer or JTokenType.Null)
                 && IsOptionalReviewTarget(reviewTarget)
+                && IsOptionalSkillReference(skillReference)
                 && (attachments == null
                     || attachments.Type == JTokenType.Null
                     || attachments is JArray attachmentArray
@@ -187,6 +190,15 @@ namespace ColorVision.Copilot
             return token is JObject target
                 && IsOptionalInteger(target.GetValue(nameof(CopilotWorkspaceReviewTargetContext.Target), StringComparison.OrdinalIgnoreCase))
                 && IsOptionalString(target.GetValue(nameof(CopilotWorkspaceReviewTargetContext.Revision), StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static bool IsOptionalSkillReference(JToken? token)
+        {
+            if (token == null || token.Type == JTokenType.Null)
+                return true;
+            return token is JObject reference
+                && IsOptionalString(reference.GetValue(nameof(CopilotAgentSkillReference.Name), StringComparison.OrdinalIgnoreCase))
+                && IsOptionalString(reference.GetValue(nameof(CopilotAgentSkillReference.SkillFilePath), StringComparison.OrdinalIgnoreCase));
         }
 
         private static bool IsOptionalPendingSteeringRecoveries(JToken? token)

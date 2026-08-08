@@ -200,6 +200,7 @@ namespace ColorVision.Copilot
                 TaskIntentText = recoveryTaskContext.TaskIntentText,
                 ActiveGoalText = request.ActiveGoalText,
                 WorkspaceReviewTarget = request.WorkspaceReviewTarget,
+                AgentSkillReference = request.AgentSkillReference,
             });
             var reviewTarget = request.Mode == CopilotAgentMode.Review
                 ? request.WorkspaceReviewTarget?.IsStructurallyValid() == true

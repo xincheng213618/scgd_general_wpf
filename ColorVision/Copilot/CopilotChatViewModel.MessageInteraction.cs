@@ -197,6 +197,7 @@ namespace ColorVision.Copilot
                 foreach (var attachment in restoredAttachments)
                     branch.Attachments.Add(attachment);
                 branch.DraftText = point.UserMessage.Content;
+                branch.DraftAgentSkillReference = point.UserMessage.AgentSkillReference?.CreateSnapshot();
                 InsertAndSelectConversationBranch(branch);
 
                 _pendingAgentRecoveryRequest = null;
@@ -206,6 +207,7 @@ namespace ColorVision.Copilot
                     : CopilotAgentMode.Chat);
                 SetPendingWorkspaceReviewTarget(point.UserMessage.WorkspaceReviewTarget);
                 InputText = point.UserMessage.Content;
+                SetPendingAgentSkillReference(point.UserMessage.AgentSkillReference);
                 UpdateAttachmentsState(branch);
 
                 var attachmentText = point.AttachmentCount > 0
@@ -305,6 +307,7 @@ namespace ColorVision.Copilot
                 InputText,
                 ResolveComposerRequestMode(),
                 _pendingWorkspaceReviewTarget?.CreateSnapshot(),
+                _pendingAgentSkillReference?.CreateSnapshot(),
                 conversation.Attachments.Select(attachment => attachment.CreateSnapshot()).ToArray());
             var messageAttachments = (userMessage.AttachmentSnapshotCaptured
                     ? userMessage.Attachments
@@ -321,6 +324,7 @@ namespace ColorVision.Copilot
             SetPendingRequestModeOverride(userMessage.RequestMode);
             SetPendingWorkspaceReviewTarget(userMessage.WorkspaceReviewTarget);
             InputText = userMessage.Content;
+            SetPendingAgentSkillReference(userMessage.AgentSkillReference);
             UpdateAttachmentsState(conversation);
         }
 
@@ -350,6 +354,7 @@ namespace ColorVision.Copilot
                 SetPendingRequestModeOverride(draftSnapshot.RequestMode);
                 SetPendingWorkspaceReviewTarget(draftSnapshot.WorkspaceReviewTarget);
                 InputText = draftSnapshot.Text;
+                SetPendingAgentSkillReference(draftSnapshot.AgentSkillReference);
             }
             else
             {

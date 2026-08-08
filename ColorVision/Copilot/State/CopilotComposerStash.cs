@@ -16,6 +16,8 @@ namespace ColorVision.Copilot
 
         public CopilotWorkspaceReviewTargetContext? WorkspaceReviewTarget { get; set; }
 
+        public CopilotAgentSkillReference? AgentSkillReference { get; set; }
+
         public ObservableCollection<CopilotAttachmentItem> Attachments { get; set; } = new();
 
         [JsonIgnore]
@@ -29,6 +31,8 @@ namespace ColorVision.Copilot
 
         public bool ShouldSerializeWorkspaceReviewTarget() => WorkspaceReviewTarget != null;
 
+        public bool ShouldSerializeAgentSkillReference() => AgentSkillReference != null;
+
         public bool ShouldSerializeAttachments() => Attachments?.Count > 0;
 
         internal static CopilotComposerStash Capture(
@@ -36,7 +40,8 @@ namespace ColorVision.Copilot
             int caretIndex,
             CopilotAgentMode requestMode,
             IEnumerable<CopilotAttachmentItem>? attachments,
-            CopilotWorkspaceReviewTargetContext? workspaceReviewTarget = null)
+            CopilotWorkspaceReviewTargetContext? workspaceReviewTarget = null,
+            CopilotAgentSkillReference? agentSkillReference = null)
         {
             var normalizedText = CopilotComposerTextLimits.Bound(text);
             return new CopilotComposerStash
@@ -47,6 +52,10 @@ namespace ColorVision.Copilot
                 WorkspaceReviewTarget = requestMode == CopilotAgentMode.Review
                     && workspaceReviewTarget?.IsStructurallyValid() == true
                         ? workspaceReviewTarget.CreateSnapshot()
+                        : null,
+                AgentSkillReference = agentSkillReference?.IsStructurallyValid() == true
+                    && agentSkillReference.IsExplicitlyInvokedBy(normalizedText)
+                        ? agentSkillReference.CreateSnapshot()
                         : null,
                 Attachments = new ObservableCollection<CopilotAttachmentItem>(
                     (attachments ?? Array.Empty<CopilotAttachmentItem>())
@@ -82,6 +91,13 @@ namespace ColorVision.Copilot
                     || !WorkspaceReviewTarget.IsStructurallyValid()))
             {
                 WorkspaceReviewTarget = null;
+                changed = true;
+            }
+            if (AgentSkillReference != null
+                && (!AgentSkillReference.IsStructurallyValid()
+                    || !AgentSkillReference.IsExplicitlyInvokedBy(Text)))
+            {
+                AgentSkillReference = null;
                 changed = true;
             }
 

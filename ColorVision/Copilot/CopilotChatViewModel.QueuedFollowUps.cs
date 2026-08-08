@@ -78,6 +78,7 @@ namespace ColorVision.Copilot
             }
 
             var requestProfile = CreateConversationRequestProfile(profile, conversation);
+            var agentSkillReference = ResolvePendingAgentSkillReference(prompt);
             var submissionContext = CaptureHostedTurnSnapshot(conversation, attachmentOverride: conversation.Attachments);
             if (!TryValidateComposerAttachments(submissionContext.Attachments))
                 return false;
@@ -117,7 +118,8 @@ namespace ColorVision.Copilot
                 prompt,
                 activeRun.Mode,
                 requestProfile,
-                submissionContext);
+                submissionContext,
+                agentSkillReference: agentSkillReference);
             _queuedFollowUpsByRunId.Add(queuedRun.Id, queuedFollowUp);
             QueuedFollowUps.Add(queuedFollowUp);
             AddQueuedFollowUpRecovery(queuedFollowUp);
@@ -226,6 +228,7 @@ namespace ColorVision.Copilot
             var userMessage = new CopilotChatMessage(CopilotChatRole.User, queuedFollowUp.Prompt)
             {
                 RequestMode = queuedFollowUp.Mode,
+                AgentSkillReference = queuedFollowUp.AgentSkillReference?.CreateSnapshot(),
                 Attachments = new ObservableCollection<CopilotAttachmentItem>(turnSnapshot.Attachments),
                 AttachmentSnapshotCaptured = true,
             };
@@ -311,12 +314,14 @@ namespace ColorVision.Copilot
                 queuedFollowUp.Prompt,
                 queuedFollowUp.Prompt.Length,
                 queuedFollowUp.Mode,
-                queuedFollowUp.SubmissionContext.Attachments);
+                queuedFollowUp.SubmissionContext.Attachments,
+                agentSkillReference: queuedFollowUp.AgentSkillReference);
             var previousMode = ResolveComposerRequestMode();
             foreach (var attachment in composerState.CreateAttachmentSnapshots())
                 conversation.Attachments.Add(attachment);
             SetPendingRequestModeOverride(composerState.RequestMode);
             InputText = composerState.Text;
+            SetPendingAgentSkillReference(composerState.AgentSkillReference);
             UpdateAttachmentsState(conversation);
             if (!_taskHost.RequestCancel(queuedFollowUp.RunId))
             {
@@ -412,7 +417,8 @@ namespace ColorVision.Copilot
                     queuedFollowUp.Prompt,
                     queuedFollowUp.Prompt.Length,
                     queuedFollowUp.Mode,
-                    queuedFollowUp.SubmissionContext.Attachments),
+                    queuedFollowUp.SubmissionContext.Attachments,
+                    agentSkillReference: queuedFollowUp.AgentSkillReference),
             });
         }
 

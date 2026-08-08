@@ -107,6 +107,9 @@ namespace ColorVision.Copilot
             var workspaceReviewTarget = isDirectSubmission
                 ? null
                 : ConsumePendingWorkspaceReviewTarget(requestMode);
+            var agentSkillReference = isDirectSubmission
+                ? null
+                : ResolvePendingAgentSkillReference(prompt);
             if (workspaceReviewTarget == null
                 && isReplacingTurn
                 && requestMode == CopilotAgentMode.Review
@@ -119,6 +122,7 @@ namespace ColorVision.Copilot
             {
                 RequestMode = requestMode,
                 WorkspaceReviewTarget = workspaceReviewTarget,
+                AgentSkillReference = agentSkillReference,
                 RequestContent = directRequestContent ?? string.Empty,
                 RecoveryRequest = recoveryRequest,
                 Attachments = new ObservableCollection<CopilotAttachmentItem>(turnSnapshot.Attachments),
@@ -447,7 +451,8 @@ namespace ColorVision.Copilot
                 hostedRun.Id,
                 accessContext,
                 conversation.Goal?.IsActive == true ? conversation.Goal.Objective : string.Empty,
-                userMessage.WorkspaceReviewTarget);
+                userMessage.WorkspaceReviewTarget,
+                userMessage.AgentSkillReference);
             var eventProtocol = new CopilotTurnEventProtocol(userMessage.RequestMode, hostedRun.Id);
             try
             {

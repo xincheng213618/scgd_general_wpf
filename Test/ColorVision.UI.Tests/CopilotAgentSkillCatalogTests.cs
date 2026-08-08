@@ -1,4 +1,6 @@
 using ColorVision.Copilot;
+using Microsoft.Agents.AI;
+using Newtonsoft.Json;
 using System.IO;
 
 namespace ColorVision.UI.Tests;
@@ -204,7 +206,7 @@ public sealed class CopilotAgentSkillCatalogTests
     }
 
     [Fact]
-    public void ProjectSkillOverridesUserAndBuiltInSkillsWithTheSameName()
+    public void CatalogRetainsProjectUserAndBuiltInSkillsWithTheSameNameInPrecedenceOrder()
     {
         var projectRoot = CreateTemporaryDirectory();
         var applicationBaseDirectory = CreateTemporaryDirectory();
@@ -215,15 +217,31 @@ public sealed class CopilotAgentSkillCatalogTests
             WriteSkill(Path.Combine(userProfileDirectory, ".agents", "skills", "shared-skill"), "shared-skill", "user description");
             WriteSkill(Path.Combine(applicationBaseDirectory, "Copilot", "Skills", "shared-skill"), "shared-skill", "built-in description");
 
-            var skill = Assert.Single(CopilotAgentSkillCatalog.Discover(
+            var skills = CopilotAgentSkillCatalog.Discover(
                 [projectRoot],
                 overrides: null,
                 applicationBaseDirectory,
-                userProfileDirectory));
+                userProfileDirectory);
 
-            Assert.Equal("project description", skill.Description);
-            Assert.Equal(CopilotAgentSkillSourceKind.Project, skill.SourceKind);
-            Assert.StartsWith(projectRoot, skill.SkillFilePath, StringComparison.OrdinalIgnoreCase);
+            Assert.Collection(
+                skills,
+                project =>
+                {
+                    Assert.Equal("project description", project.Description);
+                    Assert.Equal(CopilotAgentSkillSourceKind.Project, project.SourceKind);
+                },
+                user => Assert.Equal(CopilotAgentSkillSourceKind.User, user.SourceKind),
+                builtIn => Assert.Equal(CopilotAgentSkillSourceKind.BuiltIn, builtIn.SourceKind));
+
+            var suggestions = CopilotLocalCommandCatalog.Suggest("$shared", skills);
+            Assert.Equal(3, suggestions.Count);
+            Assert.All(suggestions, suggestion =>
+            {
+                Assert.NotNull(suggestion.AgentSkillReference);
+                Assert.Equal("$shared-skill", suggestion.Name);
+                Assert.Contains("来源", suggestion.Description, StringComparison.Ordinal);
+            });
+            Assert.Equal(3, suggestions.Select(suggestion => suggestion.AgentSkillReference!.SkillFilePath).Distinct(StringComparer.OrdinalIgnoreCase).Count());
         }
         finally
         {
@@ -234,7 +252,7 @@ public sealed class CopilotAgentSkillCatalogTests
     }
 
     [Fact]
-    public void NestedProjectSkillOverridesRootUserAndBuiltInSkillsWithTheSameName()
+    public void CatalogRetainsNestedProjectRootUserAndBuiltInSkillsWithTheSameName()
     {
         var projectRoot = CreateTemporaryDirectory();
         var applicationBaseDirectory = CreateTemporaryDirectory();
@@ -251,22 +269,177 @@ public sealed class CopilotAgentSkillCatalogTests
             WriteSkill(Path.Combine(userProfileDirectory, ".agents", "skills", "shared-skill"), "shared-skill", "user description");
             WriteSkill(Path.Combine(applicationBaseDirectory, "Copilot", "Skills", "shared-skill"), "shared-skill", "built-in description");
 
-            var skill = Assert.Single(CopilotAgentSkillCatalog.Discover(
+            var skills = CopilotAgentSkillCatalog.Discover(
                 [projectRoot],
                 overrides: null,
                 applicationBaseDirectory,
                 userProfileDirectory,
-                activeDocumentPath));
+                activeDocumentPath);
 
-            Assert.Equal("module description", skill.Description);
-            Assert.Equal(CopilotAgentSkillSourceKind.Project, skill.SourceKind);
-            Assert.Equal(moduleSkillRoot, skill.SearchRootPath);
+            Assert.Equal(
+                ["module description", "project description", "user description", "built-in description"],
+                skills.Select(skill => skill.Description));
+            Assert.Equal(moduleSkillRoot, skills[0].SearchRootPath);
         }
         finally
         {
             DeleteTemporaryDirectory(projectRoot);
             DeleteTemporaryDirectory(applicationBaseDirectory);
             DeleteTemporaryDirectory(userProfileDirectory);
+        }
+    }
+
+    [Fact]
+    public void RuntimeUsesExactDiscoveredPathForASelectedDuplicateSkill()
+    {
+        var projectDirectory = CreateTemporaryDirectory();
+        var userDirectory = CreateTemporaryDirectory();
+        try
+        {
+            var projectSkill = new TestAgentSkill("shared-skill", "project");
+            var userSkill = new TestAgentSkill("shared-skill", "user");
+            var unrelated = new TestAgentSkill("other-skill", "other");
+            var projectSkillPath = Path.Combine(projectDirectory, "SKILL.md");
+            var userSkillPath = Path.Combine(userDirectory, "SKILL.md");
+            var reference = new CopilotAgentSkillReference
+            {
+                Name = "shared-skill",
+                SkillFilePath = userSkillPath,
+            };
+
+            var selected = CopilotAgentSkills.SelectPreferredSkills(
+                [projectSkill, userSkill, unrelated],
+                reference,
+                skill => ReferenceEquals(skill, userSkill) ? userSkillPath : projectSkillPath);
+
+            Assert.Collection(
+                selected,
+                shared => Assert.Same(userSkill, shared),
+                other => Assert.Same(unrelated, other));
+
+            reference.SkillFilePath = Path.Combine(projectDirectory, "missing", "SKILL.md");
+            selected = CopilotAgentSkills.SelectPreferredSkills(
+                [projectSkill, userSkill, unrelated],
+                reference,
+                skill => ReferenceEquals(skill, userSkill) ? userSkillPath : projectSkillPath);
+            Assert.Same(projectSkill, selected[0]);
+        }
+        finally
+        {
+            DeleteTemporaryDirectory(projectDirectory);
+            DeleteTemporaryDirectory(userDirectory);
+        }
+    }
+
+    [Fact]
+    public void SkillReferencePersistsOnUserMessagesAndRejectsMismatchedPrompts()
+    {
+        var skillDirectory = CreateTemporaryDirectory();
+        try
+        {
+            var message = new CopilotChatMessage(CopilotChatRole.User, "$shared-skill inspect this")
+            {
+                AgentSkillReference = new CopilotAgentSkillReference
+                {
+                    Name = "shared-skill",
+                    SkillFilePath = Path.Combine(skillDirectory, "SKILL.md"),
+                },
+            };
+
+            var json = JsonConvert.SerializeObject(message);
+            var restored = JsonConvert.DeserializeObject<CopilotChatMessage>(json)!;
+            restored.EnsureValid();
+            Assert.NotNull(restored.AgentSkillReference);
+
+            restored.Content = "$another-skill inspect this";
+            Assert.True(restored.EnsureValid());
+            Assert.Null(restored.AgentSkillReference);
+        }
+        finally
+        {
+            DeleteTemporaryDirectory(skillDirectory);
+        }
+    }
+
+    [Fact]
+    public void RequestFactorySnapshotsOnlyAnExplicitlyInvokedSkillReference()
+    {
+        var skillDirectory = CreateTemporaryDirectory();
+        try
+        {
+            var source = new CopilotAgentSkillReference
+            {
+                Name = "shared-skill",
+                SkillFilePath = Path.Combine(skillDirectory, "SKILL.md"),
+            };
+            var input = new CopilotAgentRequestBuildInput
+            {
+                Profile = new CopilotProfileConfig(),
+                AgentDefaults = new CopilotAgentDefaultsConfig(),
+                AgentSkillReference = source,
+            };
+
+            var request = CopilotAgentRequestFactory.Create(
+                new CopilotAgentRequestPlan { UserText = "Use `$shared-skill` for this review." },
+                input);
+
+            Assert.NotSame(source, request.AgentSkillReference);
+            Assert.Equal(source.SkillFilePath, request.AgentSkillReference?.SkillFilePath);
+
+            source.SkillFilePath = Path.Combine(skillDirectory, "changed", "SKILL.md");
+            Assert.NotEqual(source.SkillFilePath, request.AgentSkillReference?.SkillFilePath);
+
+            request = CopilotAgentRequestFactory.Create(
+                new CopilotAgentRequestPlan { UserText = "Do not invoke a skill." },
+                input);
+            Assert.Null(request.AgentSkillReference);
+        }
+        finally
+        {
+            DeleteTemporaryDirectory(skillDirectory);
+        }
+    }
+
+    [Fact]
+    public void QueuedFollowUpRecoveryRestoresTheSelectedSkillReferenceToTheDraft()
+    {
+        var skillDirectory = CreateTemporaryDirectory();
+        try
+        {
+            var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+            var reference = new CopilotAgentSkillReference
+            {
+                Name = "shared-skill",
+                SkillFilePath = Path.Combine(skillDirectory, "SKILL.md"),
+            };
+            var state = new CopilotChatState
+            {
+                Conversations = [conversation],
+                QueuedFollowUpRecoveries =
+                [
+                    new CopilotQueuedFollowUpRecoveryRecord
+                    {
+                        RunId = "run-1",
+                        ConversationId = conversation.Id,
+                        ComposerState = CopilotComposerStash.Capture(
+                            "$shared-skill continue",
+                            0,
+                            CopilotAgentMode.Auto,
+                            Array.Empty<CopilotAttachmentItem>(),
+                            agentSkillReference: reference),
+                    },
+                ],
+            };
+
+            Assert.True(CopilotQueuedFollowUpRecovery.RestoreToDrafts(state));
+
+            Assert.Equal("$shared-skill continue", conversation.DraftText);
+            Assert.Equal(reference.SkillFilePath, conversation.DraftAgentSkillReference?.SkillFilePath);
+            Assert.Empty(state.QueuedFollowUpRecoveries);
+        }
+        finally
+        {
+            DeleteTemporaryDirectory(skillDirectory);
         }
     }
 
@@ -561,6 +734,24 @@ public sealed class CopilotAgentSkillCatalogTests
     {
         Directory.CreateDirectory(directoryPath);
         File.WriteAllText(Path.Combine(directoryPath, "SKILL.md"), CreateSkill(name, description));
+    }
+
+    private sealed class TestAgentSkill(string name, string description) : AgentSkill
+    {
+        public override AgentSkillFrontmatter Frontmatter { get; } = new(name, description);
+
+        public override ValueTask<string> GetContentAsync(CancellationToken cancellationToken = default) =>
+            ValueTask.FromResult(string.Empty);
+
+        public override ValueTask<AgentSkillResource?> GetResourceAsync(
+            string name,
+            CancellationToken cancellationToken = default) =>
+            ValueTask.FromResult<AgentSkillResource?>(null);
+
+        public override ValueTask<AgentSkillScript?> GetScriptAsync(
+            string name,
+            CancellationToken cancellationToken = default) =>
+            ValueTask.FromResult<AgentSkillScript?>(null);
     }
 
     private static string CreateTemporaryDirectory()

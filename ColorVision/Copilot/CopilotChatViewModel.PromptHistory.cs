@@ -240,7 +240,8 @@ namespace ColorVision.Copilot
                     caretIndex,
                     ResolveComposerRequestMode(),
                     conversation.Attachments,
-                    _pendingWorkspaceReviewTarget);
+                    _pendingWorkspaceReviewTarget,
+                    _pendingAgentSkillReference);
                 conversation.ComposerStash = capturedStash;
                 conversation.Attachments.Clear();
                 InputText = string.Empty;
@@ -267,6 +268,7 @@ namespace ColorVision.Copilot
             InputText = stash.Text;
             SetPendingRequestModeOverride(stash.RequestMode);
             SetPendingWorkspaceReviewTarget(stash.WorkspaceReviewTarget);
+            SetPendingAgentSkillReference(stash.AgentSkillReference);
             restoredCaretIndex = Math.Clamp(stash.CaretIndex, 0, InputText.Length);
             UpdateAttachmentsState(conversation);
             NotifyComposerStashChanged();

@@ -108,6 +108,16 @@ namespace ColorVision.Copilot
         public bool ShouldSerializeDraftWorkspaceReviewTarget() =>
             DraftWorkspaceReviewTarget != null;
 
+        public CopilotAgentSkillReference? DraftAgentSkillReference
+        {
+            get => _draftAgentSkillReference;
+            set => SetProperty(ref _draftAgentSkillReference, value);
+        }
+        private CopilotAgentSkillReference? _draftAgentSkillReference;
+
+        public bool ShouldSerializeDraftAgentSkillReference() =>
+            DraftAgentSkillReference != null;
+
         public CopilotComposerStash? ComposerStash
         {
             get => _composerStash;

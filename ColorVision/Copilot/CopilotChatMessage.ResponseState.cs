@@ -34,6 +34,10 @@ namespace ColorVision.Copilot
 
         public bool ShouldSerializeWorkspaceReviewTarget() => WorkspaceReviewTarget != null;
 
+        public CopilotAgentSkillReference? AgentSkillReference { get; set; }
+
+        public bool ShouldSerializeAgentSkillReference() => AgentSkillReference != null;
+
         [JsonIgnore]
         public string RetryActionLabel => RequestMode == CopilotAgentMode.Chat
             ? Properties.Resources.CopilotRetry

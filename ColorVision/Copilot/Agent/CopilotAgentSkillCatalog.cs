@@ -183,7 +183,7 @@ namespace ColorVision.Copilot
             string builtInSkillRoot,
             string userSkillRoot)
         {
-            var discovered = new Dictionary<string, CopilotAgentSkillCatalogItem>(StringComparer.OrdinalIgnoreCase);
+            var discovered = new List<CopilotAgentSkillCatalogItem>();
             var candidateCount = 0;
             foreach (var root in skillRoots)
             {
@@ -201,13 +201,13 @@ namespace ColorVision.Copilot
                     {
                         continue;
                     }
-                    discovered.TryAdd(item.Name, item);
+                    discovered.Add(item);
                 }
                 if (candidateCount > MaxCandidateFiles)
                     break;
             }
 
-            return discovered.Values
+            return discovered
                 .OrderBy(item => item.Name, StringComparer.OrdinalIgnoreCase)
                 .Take(MaxCatalogEntries)
                 .ToArray();

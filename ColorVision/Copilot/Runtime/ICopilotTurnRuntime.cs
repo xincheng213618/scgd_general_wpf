@@ -372,7 +372,8 @@ namespace ColorVision.Copilot
             string? taskId,
             CopilotAgentAccessContext? accessContext = null,
             string? activeGoalText = null,
-            CopilotWorkspaceReviewTargetContext? workspaceReviewTarget = null)
+            CopilotWorkspaceReviewTargetContext? workspaceReviewTarget = null,
+            CopilotAgentSkillReference? agentSkillReference = null)
         {
             Profile = profile ?? throw new ArgumentNullException(nameof(profile));
             Mode = mode;
@@ -398,6 +399,10 @@ namespace ColorVision.Copilot
             WorkspaceReviewTarget = Mode == CopilotAgentMode.Review
                 && workspaceReviewTarget?.IsStructurallyValid() == true
                     ? workspaceReviewTarget.CreateSnapshot()
+                    : null;
+            AgentSkillReference = agentSkillReference?.IsStructurallyValid() == true
+                && agentSkillReference.IsExplicitlyInvokedBy(UserText)
+                    ? agentSkillReference.CreateSnapshot()
                     : null;
             ExternalMcpServers = (externalMcpServers ?? Array.Empty<CopilotMcpClientServerConfig>())
                 .Where(server => server != null)
@@ -438,6 +443,8 @@ namespace ColorVision.Copilot
         public string ActiveGoalText { get; }
 
         public CopilotWorkspaceReviewTargetContext? WorkspaceReviewTarget { get; }
+
+        public CopilotAgentSkillReference? AgentSkillReference { get; }
 
         public IReadOnlyList<CopilotMcpClientServerConfig> ExternalMcpServers { get; }
     }

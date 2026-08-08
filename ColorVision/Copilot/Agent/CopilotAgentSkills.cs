@@ -59,7 +59,7 @@ namespace ColorVision.Copilot
                     ScriptFilter = _ => false,
                 },
                 loggerFactory: null);
-            source = new DeduplicatingAgentSkillsSource(source, loggerFactory: null);
+            source = new PathAwareDeduplicatingAgentSkillsSource(source, request.AgentSkillReference);
             var metadataCharacterBudget = ResolveMetadataCharacterBudget(contextWindowTokens);
             var budgetedSource = new BudgetedAgentSkillsSource(
                 source,
@@ -242,6 +242,58 @@ namespace ColorVision.Copilot
             Source?.Dispose();
         }
 
+        internal static IReadOnlyList<AgentSkill> SelectPreferredSkills(
+            IReadOnlyList<AgentSkill> discovered,
+            CopilotAgentSkillReference? preferredReference)
+        {
+            return SelectPreferredSkills(discovered, preferredReference, ResolveSkillFilePath);
+        }
+
+        internal static IReadOnlyList<AgentSkill> SelectPreferredSkills(
+            IReadOnlyList<AgentSkill> discovered,
+            CopilotAgentSkillReference? preferredReference,
+            Func<AgentSkill, string?> skillFilePathResolver)
+        {
+            ArgumentNullException.ThrowIfNull(discovered);
+            ArgumentNullException.ThrowIfNull(skillFilePathResolver);
+
+            var selected = new List<AgentSkill>();
+            var handledNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var skill in discovered)
+            {
+                var name = skill.Frontmatter.Name;
+                if (!handledNames.Add(name))
+                    continue;
+
+                AgentSkill? preferred = null;
+                if (preferredReference?.IsStructurallyValid() == true
+                    && string.Equals(preferredReference.Name, name, StringComparison.OrdinalIgnoreCase))
+                {
+                    preferred = discovered.FirstOrDefault(candidate =>
+                        preferredReference.Matches(
+                            candidate.Frontmatter.Name,
+                            skillFilePathResolver(candidate)));
+                }
+                selected.Add(preferred ?? skill);
+            }
+            return selected;
+        }
+
+        private static string? ResolveSkillFilePath(AgentSkill skill)
+        {
+            if (skill is not AgentFileSkill fileSkill)
+                return null;
+
+            try
+            {
+                return Path.Combine(fileSkill.Path, "SKILL.md");
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
         private static string? TryGetDirectory(string? path)
         {
             if (string.IsNullOrWhiteSpace(path))
@@ -368,6 +420,29 @@ namespace ColorVision.Copilot
             private string[] GetLoadedNames(IReadOnlyList<string> selectedNames)
             {
                 return selectedNames.Where(_loadedNames.Contains).ToArray();
+            }
+        }
+
+        private sealed class PathAwareDeduplicatingAgentSkillsSource : DelegatingAgentSkillsSource
+        {
+            private readonly CopilotAgentSkillReference? _preferredReference;
+
+            public PathAwareDeduplicatingAgentSkillsSource(
+                AgentSkillsSource innerSource,
+                CopilotAgentSkillReference? preferredReference)
+                : base(innerSource)
+            {
+                _preferredReference = preferredReference?.IsStructurallyValid() == true
+                    ? preferredReference.CreateSnapshot()
+                    : null;
+            }
+
+            public override async Task<IList<AgentSkill>> GetSkillsAsync(
+                AgentSkillsSourceContext context,
+                CancellationToken cancellationToken = default)
+            {
+                var discovered = await InnerSource.GetSkillsAsync(context, cancellationToken).ConfigureAwait(false);
+                return SelectPreferredSkills(discovered.ToArray(), _preferredReference).ToArray();
             }
         }
 

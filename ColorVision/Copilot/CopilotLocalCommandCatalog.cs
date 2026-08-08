@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 namespace ColorVision.Copilot
@@ -86,6 +87,8 @@ namespace ColorVision.Copilot
         public IReadOnlyList<string> Aliases { get; init; } = Array.Empty<string>();
 
         internal string CompletionTextOverride { get; init; } = string.Empty;
+
+        internal CopilotAgentSkillReference? AgentSkillReference { get; init; }
     }
 
     public sealed record CopilotLocalCommandArgument(
@@ -342,30 +345,72 @@ namespace ColorVision.Copilot
                     CopilotLocalCommandAvailabilityPolicy.CanSuggest(command, composerContext)
                     && command.Name.StartsWith(normalized, StringComparison.OrdinalIgnoreCase))
                 : Enumerable.Empty<CopilotLocalCommand>();
-            var skillSuggestions = (skills ?? Array.Empty<CopilotAgentSkillCatalogItem>())
+            var availableSkills = (skills ?? Array.Empty<CopilotAgentSkillCatalogItem>()).ToArray();
+            var duplicateSkillNames = availableSkills
+                .GroupBy(skill => skill.Name, StringComparer.OrdinalIgnoreCase)
+                .Where(group => group.Count() > 1)
+                .Select(group => group.Key)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var skillSuggestions = availableSkills
                 .Select(skill => new CopilotLocalCommand(
                     normalized[0] + skill.Name,
-                    BuildSkillSuggestionDescription(skill),
+                    BuildSkillSuggestionDescription(skill, duplicateSkillNames.Contains(skill.Name)),
                     CopilotLocalCommandKind.Skill,
                     AcceptsArguments: true,
                     Usage: normalized[0] + skill.Name + " [参数]")
                 {
                     CompletionTextOverride = BuildSkillCompletionText(normalized[0], skill),
+                    AgentSkillReference = CopilotAgentSkillReference.FromCatalogItem(skill),
                 })
                 .Where(command => command.Name.StartsWith(normalized, StringComparison.OrdinalIgnoreCase)
                     && !string.Equals(command.Name, normalized, StringComparison.OrdinalIgnoreCase));
             return suggestions
                 .Concat(skillSuggestions)
-                .DistinctBy(command => command.Name, StringComparer.OrdinalIgnoreCase)
+                .DistinctBy(BuildSuggestionIdentity, StringComparer.OrdinalIgnoreCase)
                 .Take(MaximumSuggestions)
                 .ToArray();
         }
 
-        private static string BuildSkillSuggestionDescription(CopilotAgentSkillCatalogItem skill)
+        private static string BuildSuggestionIdentity(CopilotLocalCommand command)
+        {
+            return command.Kind == CopilotLocalCommandKind.Skill
+                && command.AgentSkillReference?.IsStructurallyValid() == true
+                    ? command.Name + "\0" + command.AgentSkillReference.SkillFilePath
+                    : command.Name;
+        }
+
+        private static string BuildSkillSuggestionDescription(
+            CopilotAgentSkillCatalogItem skill,
+            bool includeSource)
         {
             var displayName = string.IsNullOrWhiteSpace(skill.DisplayName) ? string.Empty : skill.DisplayName + " · ";
             var dependencies = skill.Dependencies.Count == 0 ? string.Empty : $" · 依赖 {skill.Dependencies.Count}";
-            return "Skill · " + displayName + skill.EffectiveDescription + dependencies;
+            var source = includeSource ? " · 来源 " + BuildSkillSourceLabel(skill) : string.Empty;
+            return "Skill · " + displayName + skill.EffectiveDescription + dependencies + source;
+        }
+
+        private static string BuildSkillSourceLabel(CopilotAgentSkillCatalogItem skill)
+        {
+            if (skill.SourceKind == CopilotAgentSkillSourceKind.User)
+                return "用户";
+            if (skill.SourceKind == CopilotAgentSkillSourceKind.BuiltIn)
+                return "内置";
+
+            try
+            {
+                var agentsDirectory = Directory.GetParent(skill.SearchRootPath)?.FullName;
+                var projectDirectory = string.IsNullOrWhiteSpace(agentsDirectory)
+                    ? null
+                    : Directory.GetParent(agentsDirectory)?.FullName;
+                var directoryName = string.IsNullOrWhiteSpace(projectDirectory)
+                    ? string.Empty
+                    : Path.GetFileName(projectDirectory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+                return string.IsNullOrWhiteSpace(directoryName) ? "项目" : "项目:" + directoryName;
+            }
+            catch
+            {
+                return "项目";
+            }
         }
 
         private static string BuildSkillCompletionText(char prefix, CopilotAgentSkillCatalogItem skill)

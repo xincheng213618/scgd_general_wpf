@@ -65,6 +65,14 @@ namespace ColorVision.Copilot
                 WorkspaceReviewTarget = null;
                 changed = true;
             }
+            if (AgentSkillReference != null
+                && (!IsUser
+                    || !AgentSkillReference.IsStructurallyValid()
+                    || !AgentSkillReference.IsExplicitlyInvokedBy(Content)))
+            {
+                AgentSkillReference = null;
+                changed = true;
+            }
 
             if (_reasoningContent == null)
             {

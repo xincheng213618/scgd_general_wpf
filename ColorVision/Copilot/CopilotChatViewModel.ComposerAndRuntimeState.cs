@@ -360,6 +360,7 @@ namespace ColorVision.Copilot
                 var normalizedValue = value ?? string.Empty;
                 if (SetProperty(ref _inputText, normalizedValue))
                 {
+                    RefreshPendingAgentSkillReference(normalizedValue);
                     if (!_isApplyingPromptHistory)
                         _promptHistoryNavigator.Reset();
                     if (IsPromptHistorySearchOpen)

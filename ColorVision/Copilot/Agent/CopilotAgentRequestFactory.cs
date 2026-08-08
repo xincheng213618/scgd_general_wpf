@@ -152,6 +152,8 @@ namespace ColorVision.Copilot
         public string ActiveGoalText { get; init; } = string.Empty;
 
         public CopilotWorkspaceReviewTargetContext? WorkspaceReviewTarget { get; init; }
+
+        public CopilotAgentSkillReference? AgentSkillReference { get; init; }
     }
 
     public static class CopilotAgentRequestFactory
@@ -283,6 +285,10 @@ namespace ColorVision.Copilot
                 RunControl = input.RunControl,
                 RunBudgetDefaults = agentDefaults.CreateRunBudgetDefaults(),
                 SkillOverrides = agentDefaults.CreateSkillOverrideSnapshot(),
+                AgentSkillReference = input.AgentSkillReference?.IsStructurallyValid() == true
+                    && input.AgentSkillReference.IsExplicitlyInvokedBy(plan.UserText)
+                        ? input.AgentSkillReference.CreateSnapshot()
+                        : null,
                 AccessContext = input.AccessContext,
                 ExternalMcpServers = input.ExternalMcpServers
                     .Where(server => server?.Enabled == true)

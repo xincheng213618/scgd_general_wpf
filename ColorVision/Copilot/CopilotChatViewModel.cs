@@ -344,6 +344,7 @@ namespace ColorVision.Copilot
             string Text,
             CopilotAgentMode RequestMode,
             CopilotWorkspaceReviewTargetContext? WorkspaceReviewTarget,
+            CopilotAgentSkillReference? AgentSkillReference,
             IReadOnlyList<CopilotAttachmentItem> Attachments);
 
         private sealed record CopilotPreparedQueuedFollowUpTurn(

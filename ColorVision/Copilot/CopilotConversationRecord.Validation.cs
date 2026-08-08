@@ -62,6 +62,13 @@ namespace ColorVision.Copilot
                 DraftWorkspaceReviewTarget = null;
                 changed = true;
             }
+            if (DraftAgentSkillReference != null
+                && (!DraftAgentSkillReference.IsStructurallyValid()
+                    || !DraftAgentSkillReference.IsExplicitlyInvokedBy(DraftText)))
+            {
+                DraftAgentSkillReference = null;
+                changed = true;
+            }
             if (ComposerStash != null)
             {
                 changed |= ComposerStash.EnsureValid();

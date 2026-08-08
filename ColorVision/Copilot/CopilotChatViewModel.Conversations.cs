@@ -295,6 +295,7 @@ namespace ColorVision.Copilot
 
             CopilotConversationFindSession.ClearHighlights(_selectedConversation?.Messages);
             _selectedConversation = conversation;
+            _pendingAgentSkillReference = null;
             _pendingRequestModeOverride = conversation?.DraftRequestMode is { } restoredMode
                 && restoredMode != CopilotAgentMode.Auto
                     ? restoredMode
@@ -312,6 +313,9 @@ namespace ColorVision.Copilot
                 _selectedConversation.Messages.CollectionChanged += Messages_CollectionChanged;
 
             InputText = _selectedConversation?.DraftText ?? string.Empty;
+            SetPendingAgentSkillReference(
+                _selectedConversation?.DraftAgentSkillReference,
+                synchronizeDraft: false);
 
             OnPropertyChanged(nameof(SelectedConversation));
             OnPropertyChanged(nameof(Messages));
