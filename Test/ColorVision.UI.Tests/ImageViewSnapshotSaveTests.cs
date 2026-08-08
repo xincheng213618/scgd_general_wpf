@@ -743,6 +743,54 @@ public sealed class ImageViewSnapshotSaveTests
         return frame;
     }
 
+    [Fact]
+    public void LifecycleEvents_RaiseLoadedBeforeExplicitExternalRenderCompleted()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            EnsureImageViewTestResources();
+            ImageView imageView = new();
+            try
+            {
+                List<string> events = [];
+                object renderContext = new();
+                ImageViewImageSourceLoadedEventArgs? loaded = null;
+                ImageViewExternalRenderCompletedEventArgs? rendered = null;
+                imageView.ImageSourceLoaded += (_, e) =>
+                {
+                    loaded = e;
+                    events.Add("loaded");
+                };
+                imageView.ExternalRenderCompleted += (_, e) =>
+                {
+                    rendered = e;
+                    events.Add("rendered");
+                };
+
+                WriteableBitmap source = new(2, 2, 96, 96, PixelFormats.Bgra32, null);
+                imageView.SetImageSource(source);
+
+                Assert.Equal(["loaded"], events);
+                Assert.NotNull(loaded);
+                Assert.Same(source, loaded.Source);
+                Assert.Equal(imageView.ImageRevision, loaded.ImageRevision);
+
+                imageView.NotifyExternalRenderCompleted(renderContext);
+
+                Assert.Equal(["loaded", "rendered"], events);
+                Assert.NotNull(rendered);
+                Assert.Same(source, rendered.Source);
+                Assert.Same(renderContext, rendered.Context);
+                Assert.True(rendered.Succeeded);
+                Assert.Equal(imageView.ImageRevision, rendered.ImageRevision);
+            }
+            finally
+            {
+                imageView.Dispose();
+            }
+        });
+    }
+
     private static T RunOnSta<T>(Func<T> action)
     {
         return WpfTestHost.Invoke(action);

@@ -718,7 +718,7 @@ namespace ColorVision.Engine.Media
                             //这里需要强制切换过来
                             context.ImageView.ImageShow.Source = writeableBitmap;
                             context.ImageView.NotifySourcePixelsChanged();
-                            context.ImageView.ImageShow.RaiseImageInitialized();
+                            context.ImageView.NotifyImageSourceLoaded();
                             mat.Dispose();
                         }
                     }

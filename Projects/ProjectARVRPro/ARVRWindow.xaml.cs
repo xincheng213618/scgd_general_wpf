@@ -301,6 +301,7 @@ namespace ProjectARVRPro
 
 
             ViewResultManager.ListView = listView1;
+            ImageView.ExternalRenderCompleted += ImageView_ExternalRenderCompleted;
             _sourceBmpAvailabilityProvider = CanCurrentSourceExportBmp;
             ViewResultManager.SourceBmpAvailabilityProvider = _sourceBmpAvailabilityProvider;
             listView1.ItemsSource = ViewResluts;
@@ -1299,7 +1300,11 @@ namespace ProjectARVRPro
                     }
                     if (executed)
                     {
-                        await StartImageExportFromLoadedImageAsync(result);
+                        ViewResultManagerConfig exportConfig = ViewResultManager.Config;
+                        if (exportConfig.IsSaveImageReuslt || exportConfig.IsSaveSourceImage)
+                        {
+                            _automaticImageExportResults.Add(result);
+                        }
                         ViewResultManager.Save(result);
                         ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && result.Result;
                         SaveObjectiveTestResultRecord(result);
@@ -1770,9 +1775,8 @@ namespace ProjectARVRPro
             if (_isDisposed)
                 return;
 
-            if (sender is ListView listView && listView.SelectedIndex > -1)
+            if (sender is ListView listView && listView.SelectedItem is ProjectARVRReuslt result)
             {
-                var result = ViewResluts[listView.SelectedIndex];
                 try
                 {
                     if (result.FlowStatus == FlowStatus.Completed)
@@ -1794,25 +1798,35 @@ namespace ProjectARVRPro
                 string? filePath = result.FileName;
                 _ = Application.Current.Dispatcher.BeginInvoke(async () =>
                 {
+                    await _resultImagePresentationGate.WaitAsync();
                     try
                     {
+                        if (_isDisposed)
+                            return;
+
                         if (!string.IsNullOrWhiteSpace(filePath) && File.Exists(filePath))
                         {
                             await OpenResultImageAsync(filePath);
-                            RenderResultImage(result);
                         }
-                        else if (ImageView.ImageShow.Source is BitmapSource)
+
+                        if (GetLoadedImageSource() != null)
                         {
                             RenderResultImage(result);
                         }
                         else
                         {
+                            ImageView.NotifyExternalRenderCompleted(result, succeeded: false);
                             ImageView.Clear();
                         }
                     }
                     catch (Exception ex)
                     {
+                        ImageView.NotifyExternalRenderCompleted(result, succeeded: false);
                         log.Error("加载结果图片失败", ex);
+                    }
+                    finally
+                    {
+                        _resultImagePresentationGate.Release();
                     }
                 });
 
@@ -1824,17 +1838,19 @@ namespace ProjectARVRPro
 
         private void RenderResultImage(ProjectARVRReuslt result)
         {
-            ImageView.ImageShow.Clear();
-            ApplyResultOverlayConfig();
-
-            if (result.FlowStatus != FlowStatus.Completed)
-                return;
-
-            IProcess? process = ResultProcessResolver.Resolve(result, ProcessManager.Processes, ProcessManager.GetResultProcessMappings());
-            if (process == null) return;
-
+            bool succeeded = false;
             try
             {
+                ImageView.ImageShow.Clear();
+                ApplyResultOverlayConfig();
+
+                if (result.FlowStatus != FlowStatus.Completed)
+                    return;
+
+                IProcess? process = ResultProcessResolver.Resolve(result, ProcessManager.Processes, ProcessManager.GetResultProcessMappings());
+                if (process == null)
+                    return;
+
                 var ctx = new IProcessExecutionContext
                 {
                     Result = result,
@@ -1842,10 +1858,15 @@ namespace ProjectARVRPro
                     ImageView = ImageView,
                 };
                 process.Render(ctx);
+                succeeded = GetLoadedImageSource() != null;
             }
             catch (Exception ex)
             {
                 log.Error("自定义 IProcess 执行异常", ex);
+            }
+            finally
+            {
+                ImageView.NotifyExternalRenderCompleted(result, succeeded);
             }
         }
 
@@ -1856,8 +1877,8 @@ namespace ProjectARVRPro
                 return;
 
             TaskCompletionSource<object?> imageLoaded = new(TaskCreationOptions.RunContinuationsAsynchronously);
-            EventHandler imageInitialized = (_, _) => imageLoaded.TrySetResult(null);
-            ImageView.ImageShow.ImageInitialized += imageInitialized;
+            EventHandler<ImageViewImageSourceLoadedEventArgs> imageSourceLoaded = (_, _) => imageLoaded.TrySetResult(null);
+            ImageView.ImageSourceLoaded += imageSourceLoaded;
             try
             {
                 ImageView.OpenImage(filePath);
@@ -1865,27 +1886,52 @@ namespace ProjectARVRPro
             }
             finally
             {
-                ImageView.ImageShow.ImageInitialized -= imageInitialized;
+                ImageView.ImageSourceLoaded -= imageSourceLoaded;
             }
         }
 
         private readonly SemaphoreSlim _imageExportCapacity = new(1, 1);
+        private readonly SemaphoreSlim _resultImagePresentationGate = new(1, 1);
+        private readonly HashSet<ProjectARVRReuslt> _automaticImageExportResults = new(ReferenceEqualityComparer.Instance);
+
+        private BitmapSource? GetLoadedImageSource()
+        {
+            return ImageView.ViewBitmapSource as BitmapSource
+                ?? ImageView.ImageShow.Source as BitmapSource;
+        }
+
+        private void ImageView_ExternalRenderCompleted(
+            object? sender,
+            ImageViewExternalRenderCompletedEventArgs e)
+        {
+            if (e.Context is not ProjectARVRReuslt result
+                || !_automaticImageExportResults.Remove(result))
+                return;
+
+            if (_isDisposed
+                || !e.Succeeded
+                || e.Source == null
+                || !ImageView.IsCurrentImageRevision(e.ImageRevision))
+            {
+                log.Warn("图像导出已取消：本次结果的图像加载或外部渲染未成功完成。");
+                return;
+            }
+
+            log.Info("ImageEditor图像加载及外部点位渲染已完成，开始捕获本次结果快照。");
+            _ = StartImageExportFromLoadedImageAsync(result);
+        }
 
         private bool CanCurrentSourceExportBmp()
         {
             if (!ImageView.Dispatcher.CheckAccess())
                 return ImageView.Dispatcher.Invoke(CanCurrentSourceExportBmp);
 
-            BitmapSource? source = ImageView.ViewBitmapSource as BitmapSource
-                ?? ImageView.ImageShow.Source as BitmapSource;
+            BitmapSource? source = GetLoadedImageSource();
             return source != null && ColorVision.ImageEditor.ImageView.CanBmpPreserveSourceBitDepth(source.Format);
         }
 
         private async Task StartImageExportFromLoadedImageAsync(ProjectARVRReuslt result)
         {
-            if (_isDisposed)
-                return;
-
             ViewResultManagerConfig config = ViewResultManager.Config;
             bool saveResultImage = config.IsSaveImageReuslt;
             bool saveSourceImage = config.IsSaveSourceImage;
@@ -1897,8 +1943,6 @@ namespace ProjectARVRPro
             string outputRoot = config.CsvSavePath;
             bool saveByDate = config.SaveByDate;
             DateTime requestedAt = result.CreateTime == default ? DateTime.Now : result.CreateTime;
-            if (!saveResultImage && !saveSourceImage)
-                return;
 
             ImageViewSnapshot? snapshot = null;
             bool capacityAcquired = false;
@@ -1907,15 +1951,16 @@ namespace ProjectARVRPro
             {
                 if (_isDisposed)
                     return;
+                if (!saveResultImage && !saveSourceImage)
+                    return;
                 ImageView.Dispatcher.VerifyAccess();
 
                 log.Info($"准备图像导出：8位标记图={saveResultImage}，保留位深原图={saveSourceImage}");
 
-                BitmapSource? loadedSource = ImageView.ViewBitmapSource as BitmapSource
-                    ?? ImageView.ImageShow.Source as BitmapSource;
+                BitmapSource? loadedSource = GetLoadedImageSource();
                 if (loadedSource == null)
                 {
-                    log.Warn("图像导出失败：ImageEditor当前没有已加载的原始图像；不会回读CVRAW或其他磁盘文件。");
+                    log.Warn("图像导出失败：渲染完成后ImageEditor仍没有有效像素源；不会回读CVRAW或其他磁盘文件。");
                     return;
                 }
 
@@ -1931,9 +1976,6 @@ namespace ProjectARVRPro
 
                 if (!saveResultImage && !saveSourceImage)
                     return;
-
-                if (includeOverlays)
-                    RenderResultImage(result);
 
                 Stopwatch snapshotStopwatch = Stopwatch.StartNew();
                 snapshot = ImageView.CaptureSnapshotForBackgroundSave(includeOverlays);
@@ -2687,6 +2729,8 @@ namespace ProjectARVRPro
 
             _isDisposed = true;
             _continuousTestCancellation?.Cancel();
+            _automaticImageExportResults.Clear();
+            ImageView.ExternalRenderCompleted -= ImageView_ExternalRenderCompleted;
             ViewResluts.CollectionChanged -= ViewResults_CollectionChanged;
             var wasCurrentCopilotSession = _copilotContextSession?.IsCurrent == true;
             _copilotContextSession?.Dispose();

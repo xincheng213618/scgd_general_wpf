@@ -72,6 +72,42 @@ namespace ColorVision.ImageEditor
         public event EventHandler StatusBarItemsChanged;
         public event EventHandler<ImageViewImageChangedEventArgs>? SelectedImageChanged;
 
+        /// <summary>Raised after a new pixel source is assigned to this view.</summary>
+        public event EventHandler<ImageViewImageSourceLoadedEventArgs>? ImageSourceLoaded;
+
+        /// <summary>
+        /// Raised only when an external renderer explicitly reports that it has finished updating the scene.
+        /// </summary>
+        public event EventHandler<ImageViewExternalRenderCompletedEventArgs>? ExternalRenderCompleted;
+
+        /// <summary>Publishes that the current pixel source was loaded or updated in place.</summary>
+        public void NotifyImageSourceLoaded()
+        {
+            Dispatcher.VerifyAccess();
+            ImageSource? source = ViewBitmapSource ?? ImageShow.Source;
+            if (source == null)
+                return;
+
+            ImageShow.RaiseImageInitialized();
+            ImageSourceLoaded?.Invoke(
+                this,
+                new ImageViewImageSourceLoadedEventArgs(source, ImageRevision));
+        }
+
+        /// <summary>Notifies listeners that external scene rendering for the current image has finished.</summary>
+        public void NotifyExternalRenderCompleted(object? context = null, bool succeeded = true)
+        {
+            Dispatcher.VerifyAccess();
+            ImageSource? source = ViewBitmapSource ?? ImageShow.Source;
+            ExternalRenderCompleted?.Invoke(
+                this,
+                new ImageViewExternalRenderCompletedEventArgs(
+                    source,
+                    ImageRevision,
+                    context,
+                    succeeded));
+        }
+
         public EditorContext EditorContext { get; private set; } = null!;
 
         [DisplayName("最大缩放")]
@@ -1451,7 +1487,7 @@ namespace ColorVision.ImageEditor
             {
                 UpdateLayerSelectorVisibility();
             }
-            ImageShow.RaiseImageInitialized();
+            NotifyImageSourceLoaded();
             CommandManager.InvalidateRequerySuggested();
 
             // 图像加载完成后通知状态栏刷新
