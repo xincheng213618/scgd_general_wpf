@@ -71,12 +71,7 @@ namespace ColorVision.Copilot
             if (goal == null)
                 return "未设置";
 
-            var state = goal.State switch
-            {
-                CopilotConversationGoalState.Active => "活动",
-                CopilotConversationGoalState.Achieved => "已达成",
-                _ => "已暂停",
-            };
+            var state = CopilotConversationGoalStateText.Format(goal.State);
             return $"{state} · {Preview(goal.Objective, MaximumGoalCharacters)}";
         }
 

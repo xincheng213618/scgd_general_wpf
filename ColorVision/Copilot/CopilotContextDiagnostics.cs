@@ -55,6 +55,8 @@ namespace ColorVision.Copilot
 
         public int ConversationGoalCharacters { get; init; }
 
+        public CopilotConversationGoalState? ConversationGoalState { get; init; }
+
         public bool ConversationGoalActive { get; init; }
 
         public bool ConversationGoalAchieved { get; init; }
@@ -210,11 +212,13 @@ namespace ColorVision.Copilot
             }
             else
             {
-                builder.Append(snapshot.ConversationGoalActive
-                        ? "活动"
+                var goalState = snapshot.ConversationGoalState
+                    ?? (snapshot.ConversationGoalActive
+                        ? CopilotConversationGoalState.Active
                         : snapshot.ConversationGoalAchieved
-                            ? "已达成"
-                            : "已暂停")
+                            ? CopilotConversationGoalState.Achieved
+                            : CopilotConversationGoalState.Paused);
+                builder.Append(CopilotConversationGoalStateText.Format(goalState))
                     .Append(" · ")
                     .Append(FormatCount(snapshot.ConversationGoalCharacters))
                     .AppendLine(" 字符；仅约束完成判定，不授予操作权限");

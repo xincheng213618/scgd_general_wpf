@@ -6,9 +6,55 @@ namespace ColorVision.Copilot
 {
     public enum CopilotConversationGoalState
     {
-        Active,
-        Paused,
-        Achieved,
+        Active = 0,
+        Paused = 1,
+        Achieved = 2,
+        Blocked = 3,
+        UsageLimited = 4,
+        BudgetLimited = 5,
+    }
+
+    internal static class CopilotConversationGoalStateText
+    {
+        public static string Format(CopilotConversationGoalState state) => state switch
+        {
+            CopilotConversationGoalState.Active => "活动",
+            CopilotConversationGoalState.Achieved => "已达成",
+            CopilotConversationGoalState.Blocked => "受阻",
+            CopilotConversationGoalState.UsageLimited => "用量受限",
+            CopilotConversationGoalState.BudgetLimited => "预算受限",
+            _ => "已暂停",
+        };
+
+        public static string FormatEnglish(CopilotConversationGoalState state) => state switch
+        {
+            CopilotConversationGoalState.Active => "Active",
+            CopilotConversationGoalState.Achieved => "Achieved",
+            CopilotConversationGoalState.Blocked => "Blocked",
+            CopilotConversationGoalState.UsageLimited => "Usage limited",
+            CopilotConversationGoalState.BudgetLimited => "Budget limited",
+            _ => "Paused",
+        };
+
+        public static string FormatDisplayLabel(CopilotConversationGoalState state) => state switch
+        {
+            CopilotConversationGoalState.Active => "持续目标",
+            CopilotConversationGoalState.Achieved => "目标已达成",
+            CopilotConversationGoalState.Blocked => "目标受阻",
+            CopilotConversationGoalState.UsageLimited => "目标用量受限",
+            CopilotConversationGoalState.BudgetLimited => "目标预算受限",
+            _ => "目标已暂停",
+        };
+
+        public static string FormatDescription(CopilotConversationGoalState state) => state switch
+        {
+            CopilotConversationGoalState.Active => "活动目标会绑定到后续新 Agent 任务，并在每轮后独立评估。",
+            CopilotConversationGoalState.Achieved => "独立完成评估已确认该目标达成。",
+            CopilotConversationGoalState.Blocked => "该目标正在等待阻塞条件解除，不会自动启动新任务。",
+            CopilotConversationGoalState.UsageLimited => "该目标因模型用量限制停止，不会自动启动新任务。",
+            CopilotConversationGoalState.BudgetLimited => "该目标因 Token 预算限制停止，不会自动启动新任务。",
+            _ => "该目标已暂停，不会自动启动新任务。",
+        };
     }
 
     public sealed class CopilotConversationGoal
@@ -181,7 +227,9 @@ namespace ColorVision.Copilot
                 CreatedAtUtc = now,
                 UpdatedAtUtc = now,
                 TokenBudget = TokenBudget,
-                LastEvaluationReason = State == CopilotConversationGoalState.Achieved
+                LastEvaluationReason = State is CopilotConversationGoalState.Achieved
+                    or CopilotConversationGoalState.Blocked
+                    or CopilotConversationGoalState.UsageLimited
                     ? LastEvaluationReason
                     : string.Empty,
             };
@@ -283,6 +331,8 @@ namespace ColorVision.Copilot
             {
                 if (current == null)
                     return MissingGoal(current, "暂停");
+                if (current.IsAchieved)
+                    return new CopilotConversationGoalCommandResult(current, false, FormatStatus(current));
                 if (current.State == CopilotConversationGoalState.Paused)
                     return new CopilotConversationGoalCommandResult(current, false, FormatStatus(current));
 
@@ -297,6 +347,14 @@ namespace ColorVision.Copilot
             {
                 if (current == null)
                     return MissingGoal(current, "恢复");
+                if (current.IsAchieved)
+                {
+                    return new CopilotConversationGoalCommandResult(
+                        current,
+                        false,
+                        "已达成目标不能原地恢复；重新输入同一目标可以创建一份新的目标与用量统计。\n"
+                        + current.Objective);
+                }
                 if (current.IsTokenBudgetExhausted)
                 {
                     return new CopilotConversationGoalCommandResult(
@@ -362,9 +420,9 @@ namespace ColorVision.Copilot
                 if (budgeted.IsActive && budgeted.IsTokenBudgetExhausted)
                 {
                     budgeted = budgeted.WithState(
-                        CopilotConversationGoalState.Paused,
+                        CopilotConversationGoalState.BudgetLimited,
                         now,
-                        $"持续目标已使用 {budgeted.TokensUsed:N0} / {budgeted.TokenBudget:N0} Token；目标已自动暂停。");
+                        $"持续目标已使用 {budgeted.TokensUsed:N0} / {budgeted.TokenBudget:N0} Token；目标已进入预算受限状态。");
                 }
                 return new CopilotConversationGoalCommandResult(
                     budgeted,
@@ -458,12 +516,7 @@ namespace ColorVision.Copilot
 
         private static string FormatStatus(CopilotConversationGoal goal)
         {
-            var state = goal.State switch
-            {
-                CopilotConversationGoalState.Active => "活动",
-                CopilotConversationGoalState.Achieved => "已达成",
-                _ => "已暂停",
-            };
+            var state = CopilotConversationGoalStateText.Format(goal.State);
             var tokenProgress = goal.HasTokenBudget
                 ? $"{goal.TokensUsed:N0} / {goal.TokenBudget:N0} Token"
                 : $"{goal.TokensUsed:N0} Token";

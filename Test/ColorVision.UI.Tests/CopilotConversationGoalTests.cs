@@ -154,14 +154,18 @@ public sealed class CopilotConversationGoalTests
         Assert.Equal(CopilotConversationGoalState.Paused, result.Goal.State);
     }
 
-    [Fact]
-    public void TokenBudgetAndUsageSurviveSerialization()
+    [Theory]
+    [InlineData(CopilotConversationGoalState.Paused)]
+    [InlineData(CopilotConversationGoalState.Blocked)]
+    [InlineData(CopilotConversationGoalState.UsageLimited)]
+    [InlineData(CopilotConversationGoalState.BudgetLimited)]
+    public void GoalStateBudgetAndUsageSurviveSerialization(CopilotConversationGoalState state)
     {
         var createdAt = new DateTimeOffset(2026, 8, 8, 8, 0, 0, TimeSpan.Zero);
         var original = CopilotConversationGoal.Create("持续改进 Copilot", createdAt)
             .WithTokenBudget(40_000, createdAt)
             .WithTurnOutcome(
-                CopilotConversationGoalState.Paused,
+                state,
                 new CopilotTokenUsage(10, 5, 15),
                 evaluated: true,
                 continued: false,
@@ -173,6 +177,7 @@ public sealed class CopilotConversationGoalTests
 
         Assert.NotNull(restored);
         Assert.True(restored.IsStructurallyValid());
+        Assert.Equal(state, restored.State);
         Assert.Equal(original.TokenBudget, restored.TokenBudget);
         Assert.Equal(original.TokensUsed, restored.TokensUsed);
     }
@@ -203,7 +208,7 @@ public sealed class CopilotConversationGoalTests
     }
 
     [Fact]
-    public void SettingExhaustedBudgetPausesActiveGoal()
+    public void SettingExhaustedBudgetLimitsActiveGoal()
     {
         var createdAt = new DateTimeOffset(2026, 8, 8, 8, 0, 0, TimeSpan.Zero);
         var current = CopilotConversationGoal.Create("持续改进 Copilot", createdAt)
@@ -223,14 +228,14 @@ public sealed class CopilotConversationGoalTests
         Assert.True(result.Changed);
         Assert.False(result.StartsWork);
         Assert.NotNull(result.Goal);
-        Assert.Equal(CopilotConversationGoalState.Paused, result.Goal.State);
+        Assert.Equal(CopilotConversationGoalState.BudgetLimited, result.Goal.State);
         Assert.Equal(80, result.Goal.TokenBudget);
         Assert.True(result.Goal.IsTokenBudgetExhausted);
-        Assert.Contains("自动暂停", result.Goal.LastEvaluationReason, StringComparison.Ordinal);
+        Assert.Contains("预算受限", result.Goal.LastEvaluationReason, StringComparison.Ordinal);
     }
 
     [Fact]
-    public void ContinuationPausesWhenTurnReachesGoalTokenBudget()
+    public void ContinuationBecomesBudgetLimitedWhenTurnReachesGoalTokenBudget()
     {
         var createdAt = new DateTimeOffset(2026, 8, 8, 8, 0, 0, TimeSpan.Zero);
         var goal = CopilotConversationGoal.Create("持续改进 Copilot", createdAt)
@@ -250,8 +255,92 @@ public sealed class CopilotConversationGoalTests
             createdAt.AddMinutes(1));
 
         Assert.Equal(CopilotGoalTurnAction.Pause, decision.Action);
-        Assert.Equal(CopilotConversationGoalState.Paused, decision.Goal.State);
+        Assert.Equal(CopilotConversationGoalState.BudgetLimited, decision.Goal.State);
         Assert.Equal(100, decision.Goal.TokensUsed);
         Assert.Contains("不再排入下一轮", decision.Reason, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void BlockedAgentStopUsesBlockedGoalState()
+    {
+        var createdAt = new DateTimeOffset(2026, 8, 8, 8, 0, 0, TimeSpan.Zero);
+        var goal = CopilotConversationGoal.Create("持续改进 Copilot", createdAt);
+
+        var decision = CopilotGoalContinuationPolicy.Evaluate(
+            goal,
+            CopilotAgentMode.Auto,
+            CopilotAgentStopReason.Blocked,
+            wasResponseInterrupted: false,
+            CopilotTokenUsage.Empty,
+            evaluation: null,
+            createdAt.AddMinutes(1));
+
+        Assert.Equal(CopilotGoalTurnAction.Pause, decision.Action);
+        Assert.Equal(CopilotConversationGoalState.Blocked, decision.Goal.State);
+        Assert.Contains("标记为受阻", decision.Reason, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void TokenBudgetCrossingTakesPriorityOverBlockedState()
+    {
+        var createdAt = new DateTimeOffset(2026, 8, 8, 8, 0, 0, TimeSpan.Zero);
+        var goal = CopilotConversationGoal.Create("持续改进 Copilot", createdAt)
+            .WithTokenBudget(10, createdAt);
+
+        var decision = CopilotGoalContinuationPolicy.Evaluate(
+            goal,
+            CopilotAgentMode.Auto,
+            CopilotAgentStopReason.Blocked,
+            wasResponseInterrupted: false,
+            new CopilotTokenUsage(7, 3, 10),
+            evaluation: null,
+            createdAt.AddMinutes(1));
+
+        Assert.Equal(CopilotGoalTurnAction.Pause, decision.Action);
+        Assert.Equal(CopilotConversationGoalState.BudgetLimited, decision.Goal.State);
+        Assert.Contains("预算受限", decision.Reason, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void AchievedGoalCannotResumeInPlace()
+    {
+        var createdAt = new DateTimeOffset(2026, 8, 8, 8, 0, 0, TimeSpan.Zero);
+        var current = CopilotConversationGoal.Create("持续改进 Copilot", createdAt)
+            .WithState(CopilotConversationGoalState.Achieved, createdAt.AddMinutes(1), "目标已达成");
+
+        var result = CopilotConversationGoalCommand.Execute(
+            current,
+            "resume",
+            createdAt.AddMinutes(2));
+
+        Assert.False(result.Changed);
+        Assert.False(result.StartsWork);
+        Assert.Same(current, result.Goal);
+        Assert.Contains("不能原地恢复", result.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void BranchCopyPreservesBlockedReasonWithFreshAccounting()
+    {
+        var createdAt = new DateTimeOffset(2026, 8, 8, 8, 0, 0, TimeSpan.Zero);
+        var source = CopilotConversationGoal.Create("持续改进 Copilot", createdAt)
+            .WithTokenBudget(40_000, createdAt)
+            .WithTurnOutcome(
+                CopilotConversationGoalState.Blocked,
+                new CopilotTokenUsage(10, 5, 15),
+                evaluated: false,
+                continued: false,
+                "等待外部依赖",
+                createdAt.AddMinutes(1));
+
+        var branch = source.CopyForBranch(createdAt.AddMinutes(2));
+
+        Assert.NotEqual(source.Id, branch.Id);
+        Assert.Equal(CopilotConversationGoalState.Blocked, branch.State);
+        Assert.Equal(source.TokenBudget, branch.TokenBudget);
+        Assert.Equal("等待外部依赖", branch.LastEvaluationReason);
+        Assert.Equal(0, branch.TurnCount);
+        Assert.Equal(0, branch.TokensUsed);
+        Assert.True(branch.IsStructurallyValid());
     }
 }

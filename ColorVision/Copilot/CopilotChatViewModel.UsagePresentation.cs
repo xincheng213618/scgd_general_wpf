@@ -203,12 +203,7 @@ namespace ColorVision.Copilot
             if (goal?.IsStructurallyValid() != true)
                 return "None";
 
-            var state = goal.State switch
-            {
-                CopilotConversationGoalState.Active => "Active",
-                CopilotConversationGoalState.Achieved => "Achieved",
-                _ => "Paused",
-            };
+            var state = CopilotConversationGoalStateText.FormatEnglish(goal.State);
             var tokenProgress = goal.HasTokenBudget
                 ? $"{goal.TokensUsed:N0} / {goal.TokenBudget:N0} tokens"
                 : $"{goal.TokensUsed:N0} tokens";
