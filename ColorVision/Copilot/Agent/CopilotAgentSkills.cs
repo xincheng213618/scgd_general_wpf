@@ -145,14 +145,30 @@ namespace ColorVision.Copilot
 
         internal static IReadOnlyList<string> ResolveSearchPaths(CopilotAgentRequest request, string? applicationBaseDirectory = null)
         {
+            return ResolveSearchPaths(request, applicationBaseDirectory, userProfileDirectory: null);
+        }
+
+        internal static IReadOnlyList<string> ResolveSearchPaths(
+            CopilotAgentRequest request,
+            string? applicationBaseDirectory,
+            string? userProfileDirectory)
+        {
             ArgumentNullException.ThrowIfNull(request);
 
-            return ResolveSearchPathCandidates(request, applicationBaseDirectory)
+            return ResolveSearchPathCandidates(request, applicationBaseDirectory, userProfileDirectory)
                 .Where(path => Directory.Exists(path) && !CopilotWorkspaceSearchSupport.HasReparsePointInPath(path))
                 .ToArray();
         }
 
         internal static IReadOnlyList<string> ResolveSearchPathCandidates(CopilotAgentRequest request, string? applicationBaseDirectory = null)
+        {
+            return ResolveSearchPathCandidates(request, applicationBaseDirectory, userProfileDirectory: null);
+        }
+
+        internal static IReadOnlyList<string> ResolveSearchPathCandidates(
+            CopilotAgentRequest request,
+            string? applicationBaseDirectory,
+            string? userProfileDirectory)
         {
             ArgumentNullException.ThrowIfNull(request);
 
@@ -160,11 +176,29 @@ namespace ColorVision.Copilot
             foreach (var root in request.TrustedProjectRootPaths ?? Array.Empty<string>())
                 AddSkillRootCandidate(paths, TryGetDirectory(root), Path.Combine(".agents", "skills"));
 
+            AddSkillRootCandidate(paths, ResolveUserProfileDirectory(userProfileDirectory), Path.Combine(".agents", "skills"));
+
             var baseDirectory = string.IsNullOrWhiteSpace(applicationBaseDirectory)
                 ? AppContext.BaseDirectory
                 : applicationBaseDirectory;
             AddSkillRootCandidate(paths, baseDirectory, Path.Combine("Copilot", "Skills"));
             return paths;
+        }
+
+        internal static string ResolveUserSkillRoot(string? userProfileDirectory = null)
+        {
+            var profileDirectory = ResolveUserProfileDirectory(userProfileDirectory);
+            if (string.IsNullOrWhiteSpace(profileDirectory))
+                return string.Empty;
+
+            try
+            {
+                return Path.GetFullPath(Path.Combine(profileDirectory, ".agents", "skills"));
+            }
+            catch
+            {
+                return string.Empty;
+            }
         }
 
         public void Dispose()
@@ -188,6 +222,14 @@ namespace ColorVision.Copilot
             {
                 return null;
             }
+        }
+
+        private static string? ResolveUserProfileDirectory(string? userProfileDirectory)
+        {
+            var candidate = string.IsNullOrWhiteSpace(userProfileDirectory)
+                ? Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)
+                : userProfileDirectory;
+            return TryGetDirectory(candidate);
         }
 
         private static void AddSkillRootCandidate(List<string> paths, string? parentDirectory, string relativePath)

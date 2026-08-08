@@ -15,7 +15,11 @@ public sealed class CopilotAgentSkillCatalogTests
         try
         {
             CopilotAgentSkillCatalog.Invalidate();
-            Assert.Empty(CopilotAgentSkillCatalog.DiscoverCached([], overrides: null, applicationBaseDirectory));
+            Assert.Empty(CopilotAgentSkillCatalog.DiscoverCached(
+                [],
+                overrides: null,
+                applicationBaseDirectory,
+                userProfileDirectory: applicationBaseDirectory));
 
             var skillDirectory = Path.Combine(applicationBaseDirectory, "Copilot", "Skills", "live-skill");
             Directory.CreateDirectory(skillDirectory);
@@ -23,7 +27,11 @@ public sealed class CopilotAgentSkillCatalogTests
             File.WriteAllText(skillFilePath, CreateSkill("live-skill", "version one"));
 
             Assert.True(await changed.WaitAsync(TimeSpan.FromSeconds(5)));
-            var added = Assert.Single(CopilotAgentSkillCatalog.DiscoverCached([], overrides: null, applicationBaseDirectory));
+            var added = Assert.Single(CopilotAgentSkillCatalog.DiscoverCached(
+                [],
+                overrides: null,
+                applicationBaseDirectory,
+                userProfileDirectory: applicationBaseDirectory));
             Assert.Equal("version one", added.Description);
             Assert.True(added.IsBuiltIn);
             Assert.Equal(skillFilePath, added.SkillFilePath);
@@ -33,14 +41,22 @@ public sealed class CopilotAgentSkillCatalogTests
             File.WriteAllText(skillFilePath, CreateSkill("live-skill", "version two"));
 
             Assert.True(await changed.WaitAsync(TimeSpan.FromSeconds(5)));
-            var updated = Assert.Single(CopilotAgentSkillCatalog.DiscoverCached([], overrides: null, applicationBaseDirectory));
+            var updated = Assert.Single(CopilotAgentSkillCatalog.DiscoverCached(
+                [],
+                overrides: null,
+                applicationBaseDirectory,
+                userProfileDirectory: applicationBaseDirectory));
             Assert.Equal("version two", updated.Description);
             Drain(changed);
 
             Directory.Delete(skillDirectory, recursive: true);
 
             Assert.True(await changed.WaitAsync(TimeSpan.FromSeconds(5)));
-            Assert.Empty(CopilotAgentSkillCatalog.DiscoverCached([], overrides: null, applicationBaseDirectory));
+            Assert.Empty(CopilotAgentSkillCatalog.DiscoverCached(
+                [],
+                overrides: null,
+                applicationBaseDirectory,
+                userProfileDirectory: applicationBaseDirectory));
         }
         finally
         {
@@ -51,16 +67,62 @@ public sealed class CopilotAgentSkillCatalogTests
     }
 
     [Fact]
-    public void DiscoveryTracksProjectAndBuiltInSkillSources()
+    public async Task CachedCatalogReloadsWhenPersonalSkillRootAppears()
+    {
+        var applicationBaseDirectory = CreateTemporaryDirectory();
+        var userProfileDirectory = CreateTemporaryDirectory();
+        using var changed = new SemaphoreSlim(0);
+        EventHandler handler = (_, _) => changed.Release();
+        CopilotAgentSkillCatalog.CatalogChanged += handler;
+        try
+        {
+            CopilotAgentSkillCatalog.Invalidate();
+            Assert.Empty(CopilotAgentSkillCatalog.DiscoverCached(
+                [],
+                overrides: null,
+                applicationBaseDirectory,
+                userProfileDirectory));
+
+            WriteSkill(
+                Path.Combine(userProfileDirectory, ".agents", "skills", "personal-skill"),
+                "personal-skill",
+                "personal description");
+
+            Assert.True(await changed.WaitAsync(TimeSpan.FromSeconds(5)));
+            var skill = Assert.Single(CopilotAgentSkillCatalog.DiscoverCached(
+                [],
+                overrides: null,
+                applicationBaseDirectory,
+                userProfileDirectory));
+            Assert.Equal(CopilotAgentSkillSourceKind.User, skill.SourceKind);
+            Assert.Equal(Path.Combine(userProfileDirectory, ".agents", "skills"), skill.SearchRootPath);
+        }
+        finally
+        {
+            CopilotAgentSkillCatalog.CatalogChanged -= handler;
+            CopilotAgentSkillCatalog.Invalidate();
+            DeleteTemporaryDirectory(applicationBaseDirectory);
+            DeleteTemporaryDirectory(userProfileDirectory);
+        }
+    }
+
+    [Fact]
+    public void DiscoveryTracksProjectUserAndBuiltInSkillSources()
     {
         var projectRoot = CreateTemporaryDirectory();
         var applicationBaseDirectory = CreateTemporaryDirectory();
+        var userProfileDirectory = CreateTemporaryDirectory();
         try
         {
             WriteSkill(Path.Combine(projectRoot, ".agents", "skills", "project-skill"), "project-skill", "project description");
+            WriteSkill(Path.Combine(userProfileDirectory, ".agents", "skills", "user-skill"), "user-skill", "user description");
             WriteSkill(Path.Combine(applicationBaseDirectory, "Copilot", "Skills", "built-in-skill"), "built-in-skill", "built-in description");
 
-            var skills = CopilotAgentSkillCatalog.Discover([projectRoot], overrides: null, applicationBaseDirectory);
+            var skills = CopilotAgentSkillCatalog.Discover(
+                [projectRoot],
+                overrides: null,
+                applicationBaseDirectory,
+                userProfileDirectory);
 
             Assert.Collection(
                 skills,
@@ -74,13 +136,21 @@ public sealed class CopilotAgentSkillCatalogTests
                 {
                     Assert.Equal("project-skill", project.Name);
                     Assert.False(project.IsBuiltIn);
+                    Assert.Equal(CopilotAgentSkillSourceKind.Project, project.SourceKind);
                     Assert.StartsWith(projectRoot, project.SkillFilePath, StringComparison.OrdinalIgnoreCase);
+                },
+                user =>
+                {
+                    Assert.Equal("user-skill", user.Name);
+                    Assert.Equal(CopilotAgentSkillSourceKind.User, user.SourceKind);
+                    Assert.StartsWith(userProfileDirectory, user.SkillFilePath, StringComparison.OrdinalIgnoreCase);
                 });
         }
         finally
         {
             DeleteTemporaryDirectory(projectRoot);
             DeleteTemporaryDirectory(applicationBaseDirectory);
+            DeleteTemporaryDirectory(userProfileDirectory);
         }
     }
 
@@ -89,21 +159,58 @@ public sealed class CopilotAgentSkillCatalogTests
     {
         var projectRoot = CreateTemporaryDirectory();
         var applicationBaseDirectory = CreateTemporaryDirectory();
+        var userProfileDirectory = CreateTemporaryDirectory();
         try
         {
             WriteSkill(Path.Combine(projectRoot, ".agents", "skills", "shared-skill"), "shared-skill", "project description");
+            WriteSkill(Path.Combine(userProfileDirectory, ".agents", "skills", "shared-skill"), "shared-skill", "user description");
             WriteSkill(Path.Combine(applicationBaseDirectory, "Copilot", "Skills", "shared-skill"), "shared-skill", "built-in description");
 
-            var skill = Assert.Single(CopilotAgentSkillCatalog.Discover([projectRoot], overrides: null, applicationBaseDirectory));
+            var skill = Assert.Single(CopilotAgentSkillCatalog.Discover(
+                [projectRoot],
+                overrides: null,
+                applicationBaseDirectory,
+                userProfileDirectory));
 
             Assert.Equal("project description", skill.Description);
-            Assert.False(skill.IsBuiltIn);
+            Assert.Equal(CopilotAgentSkillSourceKind.Project, skill.SourceKind);
             Assert.StartsWith(projectRoot, skill.SkillFilePath, StringComparison.OrdinalIgnoreCase);
         }
         finally
         {
             DeleteTemporaryDirectory(projectRoot);
             DeleteTemporaryDirectory(applicationBaseDirectory);
+            DeleteTemporaryDirectory(userProfileDirectory);
+        }
+    }
+
+    [Fact]
+    public void RuntimeSearchPathsUseProjectUserAndBuiltInPrecedence()
+    {
+        var projectRoot = CreateTemporaryDirectory();
+        var applicationBaseDirectory = CreateTemporaryDirectory();
+        var userProfileDirectory = CreateTemporaryDirectory();
+        try
+        {
+            var projectSkillRoot = Path.Combine(projectRoot, ".agents", "skills");
+            var userSkillRoot = Path.Combine(userProfileDirectory, ".agents", "skills");
+            var builtInSkillRoot = Path.Combine(applicationBaseDirectory, "Copilot", "Skills");
+            Directory.CreateDirectory(projectSkillRoot);
+            Directory.CreateDirectory(userSkillRoot);
+            Directory.CreateDirectory(builtInSkillRoot);
+
+            var paths = CopilotAgentSkills.ResolveSearchPaths(
+                new CopilotAgentRequest { TrustedProjectRootPaths = [projectRoot] },
+                applicationBaseDirectory,
+                userProfileDirectory);
+
+            Assert.Equal([projectSkillRoot, userSkillRoot, builtInSkillRoot], paths);
+        }
+        finally
+        {
+            DeleteTemporaryDirectory(projectRoot);
+            DeleteTemporaryDirectory(applicationBaseDirectory);
+            DeleteTemporaryDirectory(userProfileDirectory);
         }
     }
 
@@ -117,13 +224,15 @@ public sealed class CopilotAgentSkillCatalogTests
             availableSkills:
             [
                 new CopilotAgentSkillCatalogItem("project-skill", "Project description"),
-                new CopilotAgentSkillCatalogItem("built-in-skill", "Built-in description") { IsBuiltIn = true },
+                new CopilotAgentSkillCatalogItem("user-skill", "User description") { SourceKind = CopilotAgentSkillSourceKind.User },
+                new CopilotAgentSkillCatalogItem("built-in-skill", "Built-in description") { SourceKind = CopilotAgentSkillSourceKind.BuiltIn },
             ],
             catalogReloaded: true);
 
-        Assert.Contains("当前可调用：2 个 Skill；已强制从磁盘重扫目录。", report, StringComparison.Ordinal);
+        Assert.Contains("当前可调用：3 个 Skill；已强制从磁盘重扫目录。", report, StringComparison.Ordinal);
         Assert.Contains("$built-in-skill [内置] — Built-in description", report, StringComparison.Ordinal);
         Assert.Contains("$project-skill [项目] — Project description", report, StringComparison.Ordinal);
+        Assert.Contains("$user-skill [用户] — User description", report, StringComparison.Ordinal);
         Assert.Contains("本地使用证据", report, StringComparison.Ordinal);
     }
 

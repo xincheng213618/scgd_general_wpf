@@ -7,13 +7,22 @@ using System.Text;
 
 namespace ColorVision.Copilot
 {
+    internal enum CopilotAgentSkillSourceKind
+    {
+        Project,
+        User,
+        BuiltIn,
+    }
+
     public sealed record CopilotAgentSkillCatalogItem(string Name, string Description)
     {
         internal string SkillFilePath { get; init; } = string.Empty;
 
         internal string SearchRootPath { get; init; } = string.Empty;
 
-        internal bool IsBuiltIn { get; init; }
+        internal CopilotAgentSkillSourceKind SourceKind { get; init; }
+
+        internal bool IsBuiltIn => SourceKind == CopilotAgentSkillSourceKind.BuiltIn;
     }
 
     public static class CopilotAgentSkillCatalog
@@ -38,10 +47,30 @@ namespace ColorVision.Copilot
             IReadOnlyDictionary<string, CopilotAgentSkillOverrideState>? overrides,
             string? applicationBaseDirectory = null)
         {
+            return DiscoverCached(
+                trustedProjectRootPaths,
+                overrides,
+                applicationBaseDirectory,
+                userProfileDirectory: null);
+        }
+
+        internal static IReadOnlyList<CopilotAgentSkillCatalogItem> DiscoverCached(
+            IEnumerable<string>? trustedProjectRootPaths,
+            IReadOnlyDictionary<string, CopilotAgentSkillOverrideState>? overrides,
+            string? applicationBaseDirectory,
+            string? userProfileDirectory)
+        {
             var searchRequest = CreateSearchRequest(trustedProjectRootPaths);
-            ChangeMonitor.UpdateRoots(CopilotAgentSkills.ResolveSearchPathCandidates(searchRequest, applicationBaseDirectory));
-            var skillRoots = CopilotAgentSkills.ResolveSearchPaths(searchRequest, applicationBaseDirectory);
+            ChangeMonitor.UpdateRoots(CopilotAgentSkills.ResolveSearchPathCandidates(
+                searchRequest,
+                applicationBaseDirectory,
+                userProfileDirectory));
+            var skillRoots = CopilotAgentSkills.ResolveSearchPaths(
+                searchRequest,
+                applicationBaseDirectory,
+                userProfileDirectory);
             var builtInSkillRoot = ResolveBuiltInSkillRoot(applicationBaseDirectory);
+            var userSkillRoot = CopilotAgentSkills.ResolveUserSkillRoot(userProfileDirectory);
             var cacheKey = BuildCacheKey(skillRoots, overrides, builtInSkillRoot);
             var now = DateTimeOffset.UtcNow;
             long revision;
@@ -55,7 +84,7 @@ namespace ColorVision.Copilot
                 revision = _cacheRevision;
             }
 
-            var discovered = DiscoverFromSkillRoots(skillRoots, overrides, builtInSkillRoot);
+            var discovered = DiscoverFromSkillRoots(skillRoots, overrides, builtInSkillRoot, userSkillRoot);
             lock (CacheSync)
             {
                 if (revision != _cacheRevision)
@@ -73,10 +102,24 @@ namespace ColorVision.Copilot
             IReadOnlyDictionary<string, CopilotAgentSkillOverrideState>? overrides,
             string? applicationBaseDirectory = null)
         {
-            return DiscoverFromSkillRoots(
-                ResolveSkillRoots(trustedProjectRootPaths, applicationBaseDirectory),
+            return Discover(
+                trustedProjectRootPaths,
                 overrides,
-                ResolveBuiltInSkillRoot(applicationBaseDirectory));
+                applicationBaseDirectory,
+                userProfileDirectory: null);
+        }
+
+        internal static IReadOnlyList<CopilotAgentSkillCatalogItem> Discover(
+            IEnumerable<string>? trustedProjectRootPaths,
+            IReadOnlyDictionary<string, CopilotAgentSkillOverrideState>? overrides,
+            string? applicationBaseDirectory,
+            string? userProfileDirectory)
+        {
+            return DiscoverFromSkillRoots(
+                ResolveSkillRoots(trustedProjectRootPaths, applicationBaseDirectory, userProfileDirectory),
+                overrides,
+                ResolveBuiltInSkillRoot(applicationBaseDirectory),
+                CopilotAgentSkills.ResolveUserSkillRoot(userProfileDirectory));
         }
 
         internal static void Invalidate()
@@ -93,7 +136,8 @@ namespace ColorVision.Copilot
         private static CopilotAgentSkillCatalogItem[] DiscoverFromSkillRoots(
             IReadOnlyList<string> skillRoots,
             IReadOnlyDictionary<string, CopilotAgentSkillOverrideState>? overrides,
-            string builtInSkillRoot)
+            string builtInSkillRoot,
+            string userSkillRoot)
         {
             var discovered = new Dictionary<string, CopilotAgentSkillCatalogItem>(StringComparer.OrdinalIgnoreCase);
             var candidateCount = 0;
@@ -107,7 +151,7 @@ namespace ColorVision.Copilot
                     var item = TryReadItem(
                         skillFilePath,
                         root,
-                        string.Equals(root, builtInSkillRoot, StringComparison.OrdinalIgnoreCase));
+                        ResolveSourceKind(root, builtInSkillRoot, userSkillRoot));
                     if (item == null
                         || overrides?.TryGetValue(item.Name, out var state) == true && state == CopilotAgentSkillOverrideState.Off)
                     {
@@ -125,9 +169,27 @@ namespace ColorVision.Copilot
                 .ToArray();
         }
 
-        private static IReadOnlyList<string> ResolveSkillRoots(IEnumerable<string>? trustedProjectRootPaths, string? applicationBaseDirectory)
+        private static IReadOnlyList<string> ResolveSkillRoots(
+            IEnumerable<string>? trustedProjectRootPaths,
+            string? applicationBaseDirectory,
+            string? userProfileDirectory)
         {
-            return CopilotAgentSkills.ResolveSearchPaths(CreateSearchRequest(trustedProjectRootPaths), applicationBaseDirectory);
+            return CopilotAgentSkills.ResolveSearchPaths(
+                CreateSearchRequest(trustedProjectRootPaths),
+                applicationBaseDirectory,
+                userProfileDirectory);
+        }
+
+        private static CopilotAgentSkillSourceKind ResolveSourceKind(
+            string root,
+            string builtInSkillRoot,
+            string userSkillRoot)
+        {
+            if (string.Equals(root, builtInSkillRoot, StringComparison.OrdinalIgnoreCase))
+                return CopilotAgentSkillSourceKind.BuiltIn;
+            if (string.Equals(root, userSkillRoot, StringComparison.OrdinalIgnoreCase))
+                return CopilotAgentSkillSourceKind.User;
+            return CopilotAgentSkillSourceKind.Project;
         }
 
         private static CopilotAgentRequest CreateSearchRequest(IEnumerable<string>? trustedProjectRootPaths)
@@ -231,7 +293,7 @@ namespace ColorVision.Copilot
         private static CopilotAgentSkillCatalogItem? TryReadItem(
             string skillFilePath,
             string searchRootPath,
-            bool isBuiltIn)
+            CopilotAgentSkillSourceKind sourceKind)
         {
             try
             {
@@ -270,7 +332,7 @@ namespace ColorVision.Copilot
                     {
                         SkillFilePath = skillFilePath,
                         SearchRootPath = searchRootPath,
-                        IsBuiltIn = isBuiltIn,
+                        SourceKind = sourceKind,
                     }
                     : null;
             }

@@ -78,9 +78,19 @@ namespace ColorVision.Copilot
             {
                 builder.Append("- $")
                     .Append(item.Name)
-                    .Append(item.IsBuiltIn ? " [内置] — " : " [项目] — ")
+                    .Append(FormatSource(item.SourceKind))
                     .AppendLine(item.Description);
             }
+        }
+
+        private static string FormatSource(CopilotAgentSkillSourceKind sourceKind)
+        {
+            return sourceKind switch
+            {
+                CopilotAgentSkillSourceKind.User => " [用户] — ",
+                CopilotAgentSkillSourceKind.BuiltIn => " [内置] — ",
+                _ => " [项目] — ",
+            };
         }
 
         public static string FormatOverrides(IReadOnlyDictionary<string, CopilotAgentSkillOverrideState>? overrides)
