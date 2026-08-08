@@ -509,6 +509,13 @@ namespace ColorVision.Copilot
                 ? ConfiguredModelAutoCompactTokenLimitScope
                 : CopilotModelAutoCompactTokenLimitScope.Total;
 
+        internal string ConfiguredModelInstructions { get; init; } = string.Empty;
+
+        internal bool HasModelInstructionsInlineOverride { get; init; }
+
+        internal CopilotProjectInstructionConfigSources ModelInstructionsInlineSource { get; init; } =
+            CopilotProjectInstructionConfigSources.None;
+
         internal string ConfiguredModelInstructionsFileContent { get; init; } = string.Empty;
 
         internal bool HasModelInstructionsFileOverride { get; init; }
@@ -518,11 +525,23 @@ namespace ColorVision.Copilot
 
         internal string ConfiguredModelInstructionsSourceFilePath { get; init; } = string.Empty;
 
-        public string ModelInstructions => ConfiguredModelInstructionsFileContent.Trim();
+        public string ModelInstructions => HasModelInstructionsFileOverride
+            ? ConfiguredModelInstructionsFileContent.Trim()
+            : ConfiguredModelInstructions.Trim();
+
+        public bool HasModelInstructionsOverride => HasModelInstructionsInlineOverride
+            || HasModelInstructionsFileOverride;
 
         public bool HasEffectiveModelInstructions => ModelInstructions.Length > 0;
 
-        public string ModelInstructionsSourceFilePath => HasEffectiveModelInstructions
+        public bool ModelInstructionsUsesFile => HasModelInstructionsFileOverride;
+
+        public CopilotProjectInstructionConfigSources ModelInstructionsSource => ModelInstructionsUsesFile
+            ? ModelInstructionsFileSource
+            : ModelInstructionsInlineSource;
+
+        public string ModelInstructionsSourceFilePath => ModelInstructionsUsesFile
+            && HasEffectiveModelInstructions
             ? ConfiguredModelInstructionsSourceFilePath
             : string.Empty;
 
@@ -613,7 +632,7 @@ namespace ColorVision.Copilot
             || HasModelVerbosityOverride
             || HasModelAutoCompactTokenLimitOverride
             || HasModelAutoCompactTokenLimitScopeOverride
-            || HasModelInstructionsFileOverride
+            || HasModelInstructionsOverride
             || HasCompactPromptOverride;
 
         public string ConfigSourceLabel => ConfigSources switch
@@ -840,12 +859,23 @@ namespace ColorVision.Copilot
             _ => string.Empty,
         };
 
-        public string ModelInstructionsSourceLabel => ModelInstructionsFileSource switch
+        public string ModelInstructionsSourceLabel
         {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml model_instructions_file",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml model_instructions_file",
-            _ => string.Empty,
-        };
+            get
+            {
+                var layer = ModelInstructionsSource switch
+                {
+                    CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml",
+                    CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml",
+                    _ => string.Empty,
+                };
+                if (layer.Length == 0)
+                    return string.Empty;
+                return layer + (ModelInstructionsUsesFile
+                    ? " model_instructions_file"
+                    : " instructions");
+            }
+        }
 
         public string CompactPromptSourceLabel
         {
@@ -953,6 +983,7 @@ namespace ColorVision.Copilot
         private const string ModelVerbosityKey = "model_verbosity";
         private const string ModelAutoCompactTokenLimitKey = "model_auto_compact_token_limit";
         private const string ModelAutoCompactTokenLimitScopeKey = "model_auto_compact_token_limit_scope";
+        private const string ModelInstructionsKey = "instructions";
         private const string ModelInstructionsFileKey = "model_instructions_file";
         private const string CompactPromptKey = "compact_prompt";
         private const string ExperimentalCompactPromptFileKey = "experimental_compact_prompt_file";
@@ -1341,6 +1372,14 @@ namespace ColorVision.Copilot
                 ModelAutoCompactTokenLimitScopeSource = layer.HasModelAutoCompactTokenLimitScopeOverride
                     ? source
                     : current.ModelAutoCompactTokenLimitScopeSource,
+                ConfiguredModelInstructions = layer.HasModelInstructionsInlineOverride
+                    ? layer.ModelInstructions
+                    : current.ConfiguredModelInstructions,
+                HasModelInstructionsInlineOverride = current.HasModelInstructionsInlineOverride
+                    || layer.HasModelInstructionsInlineOverride,
+                ModelInstructionsInlineSource = layer.HasModelInstructionsInlineOverride
+                    ? source
+                    : current.ModelInstructionsInlineSource,
                 ConfiguredModelInstructionsFileContent = layer.HasModelInstructionsFileOverride
                     ? layer.ModelInstructionsFileContent
                     : current.ConfiguredModelInstructionsFileContent,
@@ -1409,6 +1448,7 @@ namespace ColorVision.Copilot
                 || layer.HasModelVerbosityOverride
                 || layer.HasModelAutoCompactTokenLimitOverride
                 || layer.HasModelAutoCompactTokenLimitScopeOverride
+                || layer.HasModelInstructionsInlineOverride
                 || layer.HasModelInstructionsFileOverride
                 || layer.HasCompactPromptOverride
                 || layer.HasCompactPromptFileOverride
@@ -1698,6 +1738,7 @@ namespace ColorVision.Copilot
             var modelVerbosity = CopilotCodexModelVerbosity.Unspecified;
             var modelAutoCompactTokenLimit = 0;
             var modelAutoCompactTokenLimitScope = CopilotModelAutoCompactTokenLimitScope.Unspecified;
+            var modelInstructions = string.Empty;
             var modelInstructionsFilePath = string.Empty;
             var compactPrompt = string.Empty;
             var compactPromptFilePath = string.Empty;
@@ -1741,6 +1782,7 @@ namespace ColorVision.Copilot
             var hasModelVerbosityOverride = false;
             var hasModelAutoCompactTokenLimitOverride = false;
             var hasModelAutoCompactTokenLimitScopeOverride = false;
+            var hasModelInstructionsInlineOverride = false;
             var hasModelInstructionsFileOverride = false;
             var hasCompactPromptOverride = false;
             var hasCompactPromptFileOverride = false;
@@ -2196,6 +2238,20 @@ namespace ColorVision.Copilot
                     continue;
                 }
 
+                if (string.Equals(assignment.Key, ModelInstructionsKey, StringComparison.Ordinal))
+                {
+                    if (!TryParseConfiguredText(
+                        assignment.Value,
+                        MaximumModelInstructionCharacters,
+                        out var configuredModelInstructions))
+                    {
+                        continue;
+                    }
+                    modelInstructions = configuredModelInstructions;
+                    hasModelInstructionsInlineOverride = true;
+                    continue;
+                }
+
                 if (string.Equals(assignment.Key, CompactPromptKey, StringComparison.Ordinal))
                 {
                     if (!TryParseConfiguredText(
@@ -2279,9 +2335,11 @@ namespace ColorVision.Copilot
                 hasProjectRootMarkersOverride,
                 hasDeveloperInstructionsOverride)
             {
+                ModelInstructions = modelInstructions,
                 CompactPrompt = compactPrompt,
                 ConfiguredModelInstructionsFilePath = modelInstructionsFilePath,
                 ConfiguredCompactPromptFilePath = compactPromptFilePath,
+                HasModelInstructionsInlineOverride = hasModelInstructionsInlineOverride,
                 HasModelInstructionsFileOverride = hasModelInstructionsFileOverride,
                 Personality = personality,
                 HasPersonalityOverride = hasPersonalityOverride,
@@ -2373,6 +2431,7 @@ namespace ColorVision.Copilot
                 || hasModelVerbosityOverride
                 || hasModelAutoCompactTokenLimitOverride
                 || hasModelAutoCompactTokenLimitScopeOverride
+                || hasModelInstructionsInlineOverride
                 || hasModelInstructionsFileOverride
                 || hasCompactPromptOverride
                 || hasCompactPromptFileOverride;
@@ -2597,6 +2656,7 @@ namespace ColorVision.Copilot
                     && !string.Equals(key, ModelVerbosityKey, StringComparison.Ordinal)
                     && !string.Equals(key, ModelAutoCompactTokenLimitKey, StringComparison.Ordinal)
                     && !string.Equals(key, ModelAutoCompactTokenLimitScopeKey, StringComparison.Ordinal)
+                    && !string.Equals(key, ModelInstructionsKey, StringComparison.Ordinal)
                     && !string.Equals(key, ModelInstructionsFileKey, StringComparison.Ordinal)
                     && !string.Equals(key, CompactPromptKey, StringComparison.Ordinal)
                     && !string.Equals(key, ExperimentalCompactPromptFileKey, StringComparison.Ordinal))
@@ -2643,6 +2703,7 @@ namespace ColorVision.Copilot
                     value = builder.ToString();
                 }
                 else if ((string.Equals(key, DeveloperInstructionsKey, StringComparison.Ordinal)
+                        || string.Equals(key, ModelInstructionsKey, StringComparison.Ordinal)
                         || string.Equals(key, CompactPromptKey, StringComparison.Ordinal)
                         || string.Equals(key, AutoReviewPolicyKey, StringComparison.Ordinal))
                     && TryGetMultilineStringDelimiter(value, out var delimiter)
@@ -3435,6 +3496,10 @@ namespace ColorVision.Copilot
             bool HasProjectRootMarkersOverride,
             bool HasDeveloperInstructionsOverride)
         {
+            public string ModelInstructions { get; init; } = string.Empty;
+
+            public bool HasModelInstructionsInlineOverride { get; init; }
+
             public string ConfiguredModelInstructionsFilePath { get; init; } = string.Empty;
 
             public string ModelInstructionsFileContent { get; init; } = string.Empty;

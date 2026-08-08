@@ -446,7 +446,8 @@ namespace ColorVision.Copilot
                 SystemPromptCharacters = requestProfile?.EffectiveSystemPrompt.Length ?? 0,
                 ConfiguredModelInstructionsCharacters = projectInstructionOptions.ModelInstructions.Length,
                 ConfiguredModelInstructionsSourceLabel = projectInstructionOptions.ModelInstructionsSourceLabel,
-                HasConfiguredModelInstructionsOverride = projectInstructionOptions.HasModelInstructionsFileOverride,
+                HasConfiguredModelInstructionsOverride = projectInstructionOptions.HasModelInstructionsOverride,
+                ConfiguredModelInstructionsUsesFile = projectInstructionOptions.ModelInstructionsUsesFile,
                 ConfiguredModelInstructionsApplied = projectInstructionOptions.HasEffectiveModelInstructions
                     && selectedProfile?.HasSystemPromptOverride != true,
                 SourceHistoryMessages = history.SourceMessageCount,

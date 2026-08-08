@@ -529,9 +529,13 @@ namespace ColorVision.Copilot
                         : effective.ModelAutoCompactTokenLimitScopeSourceLabel)
                     .AppendLine(" 请求快照");
             }
-            if (effective.HasModelInstructionsFileOverride)
+            if (effective.HasModelInstructionsOverride)
             {
-                builder.Append("Codex model_instructions_file：")
+                builder.Append("Codex ")
+                    .Append(effective.ModelInstructionsUsesFile
+                        ? "model_instructions_file"
+                        : "instructions")
+                    .Append('：')
                     .Append(effective.ModelInstructions.Length.ToString("N0", CultureInfo.CurrentCulture))
                     .Append(" 字符（")
                     .Append(effective.ModelInstructionsSourceLabel.Length == 0
@@ -539,7 +543,9 @@ namespace ColorVision.Copilot
                         : effective.ModelInstructionsSourceLabel)
                     .AppendLine(effective.HasEffectiveModelInstructions
                         ? " 请求快照；替换会话内置主体，宿主安全规则强制保留）"
-                        : " 请求快照；文件为空或未安全加载，使用 Profile/内置主体）");
+                        : effective.ModelInstructionsUsesFile
+                            ? " 请求快照；文件为空或未安全加载，使用 Profile/内置主体）"
+                            : " 请求快照；内联值为空或无效，使用 Profile/内置主体）");
                 if (effective.ModelInstructionsSourceFilePath.Length > 0)
                 {
                     builder.Append("模型指令文件：")

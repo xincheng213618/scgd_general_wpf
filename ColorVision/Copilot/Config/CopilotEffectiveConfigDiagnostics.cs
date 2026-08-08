@@ -320,8 +320,12 @@ namespace ColorVision.Copilot
             CopilotProjectInstructionDiscoveryOptions codexConfigOptions,
             bool profileOverrideWins)
         {
-            builder.Append("- Codex model_instructions_file：");
-            if (!codexConfigOptions.HasModelInstructionsFileOverride)
+            builder.Append("- Codex ")
+                .Append(codexConfigOptions.ModelInstructionsUsesFile
+                    ? "model_instructions_file"
+                    : "instructions")
+                .Append('：');
+            if (!codexConfigOptions.HasModelInstructionsOverride)
             {
                 builder.AppendLine("未配置 · 使用 Profile/内置主体");
             }
@@ -336,7 +340,9 @@ namespace ColorVision.Copilot
                         ? " · Profile 显式覆盖优先"
                         : codexConfigOptions.HasEffectiveModelInstructions
                             ? " · 宿主安全规则强制保留"
-                            : " · 文件为空或未安全加载");
+                            : codexConfigOptions.ModelInstructionsUsesFile
+                                ? " · 文件为空或未安全加载"
+                                : " · 内联值为空或无效");
                 if (codexConfigOptions.ModelInstructionsSourceFilePath.Length > 0)
                 {
                     builder.Append("  文件：")
