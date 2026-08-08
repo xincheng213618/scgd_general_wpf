@@ -281,6 +281,7 @@ namespace ColorVision.Copilot
                 builder.Append("- ").Append(definition.Name).Append(": ")
                     .AppendLine(TruncateInlineText(definition.Description, 400));
                 if (!string.IsNullOrWhiteSpace(definition.Model)
+                    || definition.ContextWindowTokens.HasValue
                     || definition.ReasoningEffort != CopilotCodexReasoningEffort.Unspecified
                     || definition.ReasoningSummary != CopilotCodexReasoningSummary.Unspecified
                     || definition.SupportsReasoningSummaries.HasValue
@@ -289,6 +290,8 @@ namespace ColorVision.Copilot
                 {
                     builder.Append("  configured runtime: model=")
                         .Append(string.IsNullOrWhiteSpace(definition.Model) ? "inherited" : definition.Model)
+                        .Append("; context_window=")
+                        .Append(definition.ContextWindowTokens?.ToString() ?? "inherited")
                         .Append("; reasoning_effort=")
                         .Append(definition.ReasoningEffort == CopilotCodexReasoningEffort.Unspecified
                             ? "inherited"

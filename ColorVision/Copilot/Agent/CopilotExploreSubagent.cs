@@ -606,6 +606,8 @@ namespace ColorVision.Copilot
                 SkillPathOverrides = parentRequest.SkillPathOverrides,
                 RunBudgetOverride = new CopilotAgentRunBudgetOverride
                 {
+                    ContextWindowTokens = customSubagent?.ContextWindowTokens
+                        ?? parentBudget.ContextWindowTokens,
                     RequestTokenBudget = ResolveExplorationRequestTokenBudget(runRequest.RequestTokenBudget),
                     MaxToolCalls = Math.Min(role.MaximumToolCalls, parentBudget.MaxToolCalls),
                     MaxAgentPasses = Math.Min(role.MaximumAgentPasses, parentBudget.MaxAgentPasses),

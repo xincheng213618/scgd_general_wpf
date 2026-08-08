@@ -33,6 +33,8 @@ namespace ColorVision.Copilot
 
         public string Model { get; init; } = string.Empty;
 
+        public int? ContextWindowTokens { get; init; }
+
         public CopilotCodexReasoningEffort ReasoningEffort { get; init; } =
             CopilotCodexReasoningEffort.Unspecified;
 
@@ -64,6 +66,7 @@ namespace ColorVision.Copilot
         private const string CustomAgentDescriptionKey = "description";
         private const string CustomAgentDeveloperInstructionsKey = "developer_instructions";
         private const string CustomAgentModelKey = "model";
+        private const string CustomAgentContextWindowKey = "model_context_window";
         private const string CustomAgentReasoningEffortKey = "model_reasoning_effort";
         private const string CustomAgentReasoningSummaryKey = "model_reasoning_summary";
         private const string CustomAgentSupportsReasoningSummariesKey = "model_supports_reasoning_summaries";
@@ -266,6 +269,14 @@ namespace ColorVision.Copilot
                 return false;
             }
 
+            int? contextWindowTokens = null;
+            if (assignments.TryGetValue(CustomAgentContextWindowKey, out var contextWindowValue))
+            {
+                if (!TryParseModelContextWindowTokens(contextWindowValue, out var configuredContextWindowTokens))
+                    return false;
+                contextWindowTokens = configuredContextWindowTokens;
+            }
+
             var reasoningSummary = CopilotCodexReasoningSummary.Unspecified;
             if (assignments.TryGetValue(CustomAgentReasoningSummaryKey, out var summaryValue)
                 && (!TryParseConfiguredText(summaryValue, 32, out var configuredSummary)
@@ -307,6 +318,7 @@ namespace ColorVision.Copilot
                 Description = description,
                 DeveloperInstructions = developerInstructions,
                 Model = model,
+                ContextWindowTokens = contextWindowTokens,
                 ReasoningEffort = reasoningEffort,
                 ReasoningSummary = reasoningSummary,
                 SupportsReasoningSummaries = supportsReasoningSummaries,
@@ -368,6 +380,7 @@ namespace ColorVision.Copilot
             || string.Equals(key, CustomAgentDescriptionKey, StringComparison.Ordinal)
             || string.Equals(key, CustomAgentDeveloperInstructionsKey, StringComparison.Ordinal)
             || string.Equals(key, CustomAgentModelKey, StringComparison.Ordinal)
+            || string.Equals(key, CustomAgentContextWindowKey, StringComparison.Ordinal)
             || string.Equals(key, CustomAgentReasoningEffortKey, StringComparison.Ordinal)
             || string.Equals(key, CustomAgentReasoningSummaryKey, StringComparison.Ordinal)
             || string.Equals(key, CustomAgentSupportsReasoningSummariesKey, StringComparison.Ordinal)
@@ -454,6 +467,8 @@ namespace ColorVision.Copilot
                         : "Codex Home")
                     .Append(" · model ")
                     .Append(string.IsNullOrWhiteSpace(definition.Model) ? "inherited" : definition.Model)
+                    .Append(" · context ")
+                    .Append(definition.ContextWindowTokens?.ToString() ?? "inherited")
                     .Append(" · reasoning ")
                     .Append(definition.ReasoningEffort == CopilotCodexReasoningEffort.Unspecified
                         ? "inherited"
