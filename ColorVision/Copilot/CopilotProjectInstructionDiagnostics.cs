@@ -239,6 +239,16 @@ namespace ColorVision.Copilot
             }
             builder.AppendLine(CopilotCodexApprovalsReviewerSelection.GetEffectiveLabel(
                 effective.ConfiguredApprovalsReviewer));
+            if (effective.HasAutoReviewPolicyOverride)
+            {
+                builder.Append("Codex auto_review.policy：")
+                    .Append(effective.ConfiguredAutoReviewPolicy.Length.ToString("N0", CultureInfo.CurrentCulture))
+                    .Append(" 字符 · 来源 ")
+                    .Append(effective.AutoReviewPolicySourceLabel.Length == 0
+                        ? "Codex config.toml auto_review.policy"
+                        : effective.AutoReviewPolicySourceLabel)
+                    .AppendLine(" 请求快照；仅注入独立 reviewer，不作为主 Agent 授权");
+            }
             if (effective.HasReviewModelOverride)
             {
                 builder.Append("Codex review_model：")

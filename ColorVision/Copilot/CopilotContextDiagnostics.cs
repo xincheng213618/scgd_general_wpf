@@ -45,6 +45,12 @@ namespace ColorVision.Copilot
 
         public bool HasCodexApprovalsReviewerOverride { get; init; }
 
+        public int CodexAutoReviewPolicyCharacters { get; init; }
+
+        public string CodexAutoReviewPolicySourceLabel { get; init; } = string.Empty;
+
+        public bool HasCodexAutoReviewPolicyOverride { get; init; }
+
         public string CodexReviewModel { get; init; } = string.Empty;
 
         public bool HasCodexReviewModelOverride { get; init; }
@@ -358,6 +364,16 @@ namespace ColorVision.Copilot
                     .Append(" · 提交快照）");
             }
             builder.AppendLine();
+            if (snapshot.HasCodexAutoReviewPolicyOverride)
+            {
+                builder.Append("自动审查策略：")
+                    .Append(FormatCount(snapshot.CodexAutoReviewPolicyCharacters))
+                    .Append(" 字符（来源 ")
+                    .Append(string.IsNullOrWhiteSpace(snapshot.CodexAutoReviewPolicySourceLabel)
+                        ? "Codex config.toml auto_review.policy"
+                        : snapshot.CodexAutoReviewPolicySourceLabel.Trim())
+                    .AppendLine(" · 提交快照；仅注入独立 reviewer）");
+            }
             if (snapshot.HasCodexReviewModelOverride)
             {
                 builder.Append("Review 模型：")

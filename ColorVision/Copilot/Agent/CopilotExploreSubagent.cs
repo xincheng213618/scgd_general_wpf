@@ -557,6 +557,7 @@ namespace ColorVision.Copilot
                 CodexSandboxMode = parentRequest.CodexSandboxMode,
                 CodexApprovalPolicy = parentRequest.CodexApprovalPolicy,
                 CodexApprovalsReviewer = parentRequest.CodexApprovalsReviewer,
+                CodexAutoReviewPolicy = parentRequest.CodexAutoReviewPolicy,
                 CodexAgentsEnabled = parentRequest.CodexAgentsEnabled,
                 ToolOutputTokenLimitOverride = parentRequest.ToolOutputTokenLimitOverride,
                 CodexReasoningEffort = parentRequest.CodexReasoningEffort,

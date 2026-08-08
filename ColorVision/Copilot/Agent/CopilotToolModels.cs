@@ -81,6 +81,8 @@ namespace ColorVision.Copilot
         internal CopilotCodexApprovalsReviewer CodexApprovalsReviewer { get; init; } =
             CopilotCodexApprovalsReviewer.Unspecified;
 
+        internal string CodexAutoReviewPolicy { get; init; } = string.Empty;
+
         internal bool CodexAgentsEnabled { get; init; } = true;
 
         internal int? ToolOutputTokenLimitOverride { get; init; }

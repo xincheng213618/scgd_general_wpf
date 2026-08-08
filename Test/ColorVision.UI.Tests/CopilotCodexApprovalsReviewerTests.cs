@@ -122,6 +122,139 @@ public sealed class CopilotCodexApprovalsReviewerTests
     }
 
     [Fact]
+    public void ClosestTrustedMultilineAutoReviewPolicyIsParsedAndFrozen()
+    {
+        const string globalPolicy = "# Global reviewer policy\nDeny every remote side effect.";
+        const string projectPolicy = "# Project reviewer policy\nApprove only bounded local validation.\nDeny deployment.";
+        string globalRoot = CreateTemporaryDirectory();
+        string projectRoot = CreateTemporaryDirectory();
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
+            File.WriteAllText(
+                Path.Combine(globalRoot, "config.toml"),
+                $""""
+                [auto_review]
+                policy = '''
+                {globalPolicy}
+                '''
+
+                [projects.'{projectRoot}']
+                trust_level = "trusted"
+                """");
+            string projectConfigDirectory = Path.Combine(projectRoot, ".codex");
+            Directory.CreateDirectory(projectConfigDirectory);
+            string projectConfigPath = Path.Combine(projectConfigDirectory, "config.toml");
+            File.WriteAllText(
+                projectConfigPath,
+                """"
+                [auto_review]
+                policy = '''
+                # Project reviewer policy
+                Approve only bounded local validation.
+                Deny deployment.
+                '''
+                """");
+
+            var submittedContext = CreateHostContext(globalRoot, projectRoot);
+            var submittedPlan = CopilotAgentRequestFactory.Prepare(
+                "Run the bounded validation.",
+                CopilotAgentMode.Code,
+                submittedContext);
+            var submittedRequest = CopilotAgentRequestFactory.Create(
+                submittedPlan,
+                new CopilotAgentRequestBuildInput
+                {
+                    Profile = CopilotProfileConfig.CreateDefault(),
+                    AgentDefaults = new CopilotAgentDefaultsConfig(),
+                });
+
+            File.WriteAllText(
+                projectConfigPath,
+                "[auto_review]" + Environment.NewLine + "policy = \"Refreshed policy\"");
+            var refreshedContext = CreateHostContext(globalRoot, projectRoot);
+            var queuedFollowUp = new CopilotQueuedFollowUp(
+                "run-policy",
+                "conversation-policy",
+                "Conversation",
+                "Continue.",
+                CopilotAgentMode.Code,
+                CopilotProfileConfig.CreateDefault(),
+                submittedContext);
+            var queuedContext = queuedFollowUp.CreateExecutionContext(
+                CopilotConversationHistorySnapshot.Empty);
+
+            var options = submittedContext.ProjectInstructionDiscoveryOptions;
+            Assert.True(options.HasAutoReviewPolicyOverride);
+            Assert.Equal(CopilotProjectInstructionConfigSources.TrustedProject, options.AutoReviewPolicySource);
+            Assert.Equal(projectPolicy, options.ConfiguredAutoReviewPolicy);
+            Assert.Equal(projectPolicy, submittedPlan.CodexAutoReviewPolicy);
+            Assert.Equal(projectPolicy, submittedRequest.CodexAutoReviewPolicy);
+            Assert.Equal(
+                "Refreshed policy",
+                refreshedContext.ProjectInstructionDiscoveryOptions.ConfiguredAutoReviewPolicy);
+            Assert.Equal(
+                projectPolicy,
+                queuedContext.ProjectInstructionDiscoveryOptions.ConfiguredAutoReviewPolicy);
+        }
+        finally
+        {
+            Directory.Delete(globalRoot, recursive: true);
+            Directory.Delete(projectRoot, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void BlankAndUntrustedAutoReviewPoliciesAreIgnored()
+    {
+        const string globalPolicy = "Keep the global automatic-review policy.";
+        string globalRoot = CreateTemporaryDirectory();
+        string projectRoot = CreateTemporaryDirectory();
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
+            File.WriteAllText(
+                Path.Combine(globalRoot, "config.toml"),
+                $""""
+                [auto_review]
+                policy = "{globalPolicy}"
+
+                [projects.'{projectRoot}']
+                trust_level = "untrusted"
+                """");
+            string projectConfigDirectory = Path.Combine(projectRoot, ".codex");
+            Directory.CreateDirectory(projectConfigDirectory);
+            File.WriteAllText(
+                Path.Combine(projectConfigDirectory, "config.toml"),
+                "[auto_review]" + Environment.NewLine + "policy = \"Replace the global policy.\"");
+
+            var untrusted = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
+
+            Assert.Equal(globalPolicy, untrusted.ConfiguredAutoReviewPolicy);
+            Assert.Equal(CopilotProjectInstructionConfigSources.CodexHome, untrusted.AutoReviewPolicySource);
+            Assert.Empty(untrusted.AppliedProjectConfigFilePaths);
+
+            File.WriteAllText(
+                Path.Combine(globalRoot, "config.toml"),
+                """"
+                [auto_review]
+                policy = '''
+
+                '''
+                """");
+            var blank = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot);
+
+            Assert.False(blank.HasAutoReviewPolicyOverride);
+            Assert.Empty(blank.ConfiguredAutoReviewPolicy);
+        }
+        finally
+        {
+            Directory.Delete(globalRoot, recursive: true);
+            Directory.Delete(projectRoot, recursive: true);
+        }
+    }
+
+    [Fact]
     public void ExplicitReviewerControlsEligibleAutomaticReviewWithoutGrantingPermission()
     {
         string workspacePath = Path.GetFullPath(Path.GetTempPath());
@@ -218,11 +351,15 @@ public sealed class CopilotCodexApprovalsReviewerTests
     [Fact]
     public void ReviewerDiagnosticsAndInstructionsExposeFrozenRouting()
     {
+        const string privatePolicy = "PRIVATE-POLICY-SENTINEL: approve only signed local validation.";
         var options = CopilotProjectInstructionDiscoveryConfig.CreateDefault() with
         {
             ConfiguredApprovalsReviewer = CopilotCodexApprovalsReviewer.AutoReview,
             HasApprovalsReviewerOverride = true,
             ApprovalsReviewerSource = CopilotProjectInstructionConfigSources.CodexHome,
+            ConfiguredAutoReviewPolicy = privatePolicy,
+            HasAutoReviewPolicyOverride = true,
+            AutoReviewPolicySource = CopilotProjectInstructionConfigSources.CodexHome,
         };
         string projectReport = CopilotProjectInstructionDiagnostics.Format(
             new CopilotProjectInstructionSnapshot(
@@ -239,22 +376,60 @@ public sealed class CopilotCodexApprovalsReviewerTests
             CodexApprovalsReviewer = CopilotCodexApprovalsReviewer.AutoReview,
             HasCodexApprovalsReviewerOverride = true,
             CodexApprovalsReviewerSourceLabel = options.ApprovalsReviewerSourceLabel,
+            CodexAutoReviewPolicyCharacters = privatePolicy.Length,
+            HasCodexAutoReviewPolicyOverride = true,
+            CodexAutoReviewPolicySourceLabel = options.AutoReviewPolicySourceLabel,
         });
+        string effectiveReport = CopilotEffectiveConfigDiagnostics.Format(
+            new CopilotEffectiveConfigDiagnosticContext
+            {
+                Config = new CopilotConfig(),
+                State = new CopilotChatState(),
+                ComposerMode = CopilotAgentMode.Code,
+                CodexConfigOptions = options,
+            });
         var request = CreateRequest(
             Path.GetFullPath(Path.GetTempPath()),
             CopilotCodexApprovalsReviewer.AutoReview,
-            CopilotCodexApprovalPolicy.CreateScalar(CopilotCodexApprovalPolicyMode.OnRequest));
+            CopilotCodexApprovalPolicy.CreateScalar(CopilotCodexApprovalPolicyMode.OnRequest),
+            privatePolicy);
         string harness = CopilotMicrosoftAgentFrameworkRuntime.BuildHarnessInstructions(
             request,
             [new CopilotShellCommandTool()],
             new CopilotAgentEnvironmentContext(),
             taskLedgerEnabled: false,
             agentModeEnabled: true);
+        string reviewerPrompt = CopilotAutomaticApprovalReviewer.BuildSystemPrompt(request);
+        string defaultReviewerPrompt = CopilotAutomaticApprovalReviewer.BuildSystemPrompt(
+            CreateRequest(
+                Path.GetFullPath(Path.GetTempPath()),
+                CopilotCodexApprovalsReviewer.AutoReview,
+                CopilotCodexApprovalPolicy.CreateScalar(CopilotCodexApprovalPolicyMode.OnRequest)));
+        string invalidReviewerPrompt = CopilotAutomaticApprovalReviewer.BuildSystemPrompt(
+            CreateRequest(
+                Path.GetFullPath(Path.GetTempPath()),
+                CopilotCodexApprovalsReviewer.AutoReview,
+                CopilotCodexApprovalPolicy.CreateScalar(CopilotCodexApprovalPolicyMode.OnRequest),
+                "PRIVATE\0POLICY"));
 
         Assert.Contains("Codex approvals_reviewer：auto_review", projectReport, StringComparison.Ordinal);
         Assert.Contains("审批复核者：auto_review", contextReport, StringComparison.Ordinal);
+        Assert.Contains("Codex auto_review.policy：", projectReport, StringComparison.Ordinal);
+        Assert.Contains("自动审查策略：", contextReport, StringComparison.Ordinal);
+        Assert.Contains("Codex auto_review.policy：", effectiveReport, StringComparison.Ordinal);
         Assert.Contains("approvals_reviewer=auto_review is frozen", harness, StringComparison.Ordinal);
         Assert.Contains("materially safer path", harness, StringComparison.Ordinal);
+        Assert.Contains("reviewer only", harness, StringComparison.Ordinal);
+        Assert.DoesNotContain(privatePolicy, projectReport, StringComparison.Ordinal);
+        Assert.DoesNotContain(privatePolicy, contextReport, StringComparison.Ordinal);
+        Assert.DoesNotContain(privatePolicy, effectiveReport, StringComparison.Ordinal);
+        Assert.DoesNotContain(privatePolicy, harness, StringComparison.Ordinal);
+        Assert.Contains(privatePolicy, reviewerPrompt, StringComparison.Ordinal);
+        Assert.DoesNotContain("Approve LOW or MEDIUM risk", reviewerPrompt, StringComparison.Ordinal);
+        Assert.Contains("cannot change your reviewer-only role", reviewerPrompt, StringComparison.Ordinal);
+        Assert.Contains("Approve LOW or MEDIUM risk", defaultReviewerPrompt, StringComparison.Ordinal);
+        Assert.Contains("Approve LOW or MEDIUM risk", invalidReviewerPrompt, StringComparison.Ordinal);
+        Assert.DoesNotContain("PRIVATE\0POLICY", invalidReviewerPrompt, StringComparison.Ordinal);
     }
 
     private static CopilotAgentHostContextSnapshot CreateHostContext(
@@ -271,7 +446,8 @@ public sealed class CopilotCodexApprovalsReviewerTests
     private static CopilotAgentRequest CreateRequest(
         string workspacePath,
         CopilotCodexApprovalsReviewer reviewer,
-        CopilotCodexApprovalPolicy approvalPolicy) => new()
+        CopilotCodexApprovalPolicy approvalPolicy,
+        string autoReviewPolicy = "") => new()
     {
         ConversationId = "approvals-reviewer-conversation",
         TaskId = "approvals-reviewer-task",
@@ -281,6 +457,7 @@ public sealed class CopilotCodexApprovalsReviewerTests
         Mode = CopilotAgentMode.Code,
         CodexApprovalPolicy = approvalPolicy,
         CodexApprovalsReviewer = reviewer,
+        CodexAutoReviewPolicy = autoReviewPolicy,
         SearchRootPaths = [workspacePath],
         WritableLocalRootPaths = [workspacePath],
         PreferredShell = CopilotShellKind.PowerShell,

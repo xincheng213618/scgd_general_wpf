@@ -564,6 +564,7 @@ namespace ColorVision.Copilot
             AppendSandboxMode(builder, codexConfigOptions);
             AppendApprovalPolicy(builder, codexConfigOptions);
             AppendApprovalsReviewer(builder, codexConfigOptions);
+            AppendAutoReviewPolicy(builder, codexConfigOptions);
             builder
                 .Append("- Skill 手动覆盖：")
                 .Append(defaults.SkillOverrides?.Count.ToString("N0", CultureInfo.CurrentCulture) ?? "0")
@@ -631,6 +632,22 @@ namespace ColorVision.Copilot
                     .Append(" · 提交快照");
             }
             builder.AppendLine();
+        }
+
+        private static void AppendAutoReviewPolicy(
+            StringBuilder builder,
+            CopilotProjectInstructionDiscoveryOptions codexConfigOptions)
+        {
+            if (!codexConfigOptions.HasAutoReviewPolicyOverride)
+                return;
+
+            builder.Append("- Codex auto_review.policy：")
+                .Append(codexConfigOptions.ConfiguredAutoReviewPolicy.Length.ToString("N0", CultureInfo.CurrentCulture))
+                .Append(" 字符 · 仅注入独立 reviewer，不作为主 Agent 授权 · 来源 ")
+                .Append(codexConfigOptions.AutoReviewPolicySourceLabel.Length == 0
+                    ? "Codex config.toml auto_review.policy"
+                    : codexConfigOptions.AutoReviewPolicySourceLabel)
+                .AppendLine(" · 提交快照");
         }
 
         private static void AppendPreventIdleSleep(

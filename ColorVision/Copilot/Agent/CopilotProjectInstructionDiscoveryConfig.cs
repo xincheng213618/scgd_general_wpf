@@ -202,6 +202,13 @@ namespace ColorVision.Copilot
         public CopilotProjectInstructionConfigSources ApprovalsReviewerSource { get; init; } =
             CopilotProjectInstructionConfigSources.None;
 
+        public string ConfiguredAutoReviewPolicy { get; init; } = string.Empty;
+
+        public bool HasAutoReviewPolicyOverride { get; init; }
+
+        public CopilotProjectInstructionConfigSources AutoReviewPolicySource { get; init; } =
+            CopilotProjectInstructionConfigSources.None;
+
         public string ConfiguredReviewModel { get; init; } = string.Empty;
 
         public bool HasReviewModelOverride { get; init; }
@@ -393,6 +400,7 @@ namespace ColorVision.Copilot
             || HasSandboxModeOverride
             || HasApprovalPolicyOverride
             || HasApprovalsReviewerOverride
+            || HasAutoReviewPolicyOverride
             || HasReviewModelOverride
             || HasPreventIdleSleepOverride
             || HasAgentsEnabledOverride
@@ -460,6 +468,13 @@ namespace ColorVision.Copilot
         {
             CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml approvals_reviewer",
             CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml approvals_reviewer",
+            _ => string.Empty,
+        };
+
+        public string AutoReviewPolicySourceLabel => AutoReviewPolicySource switch
+        {
+            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml auto_review.policy",
+            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml auto_review.policy",
             _ => string.Empty,
         };
 
@@ -610,6 +625,7 @@ namespace ColorVision.Copilot
         private const int MaximumPersonalityCharacters = 32;
         private const int MaximumLogicalValueLines = 64;
         internal const int MaximumDeveloperInstructionCharacters = 64 * 1024;
+        internal const int MaximumAutoReviewPolicyCharacters = 64 * 1024;
         private const int MaximumConfiguredTextLines = 512;
         internal const int MaximumModelInstructionCharacters = 64 * 1024;
         private const int MaximumModelInstructionBytes = 256 * 1024;
@@ -626,6 +642,8 @@ namespace ColorVision.Copilot
         private const string SandboxModeKey = "sandbox_mode";
         private const string ApprovalPolicyKey = "approval_policy";
         private const string ApprovalsReviewerKey = "approvals_reviewer";
+        private const string AutoReviewPolicyKey = "auto_review.policy";
+        private const string AutoReviewPolicyTableKey = "policy";
         private const string ReviewModelKey = "review_model";
         private const string PreventIdleSleepKey = "features.prevent_idle_sleep";
         private const string PreventIdleSleepFeatureKey = "prevent_idle_sleep";
@@ -822,6 +840,14 @@ namespace ColorVision.Copilot
                 ApprovalsReviewerSource = layer.HasApprovalsReviewerOverride
                     ? source
                     : current.ApprovalsReviewerSource,
+                ConfiguredAutoReviewPolicy = layer.HasAutoReviewPolicyOverride
+                    ? layer.AutoReviewPolicy
+                    : current.ConfiguredAutoReviewPolicy,
+                HasAutoReviewPolicyOverride = current.HasAutoReviewPolicyOverride
+                    || layer.HasAutoReviewPolicyOverride,
+                AutoReviewPolicySource = layer.HasAutoReviewPolicyOverride
+                    ? source
+                    : current.AutoReviewPolicySource,
                 ConfiguredReviewModel = layer.HasReviewModelOverride
                     ? layer.ReviewModel
                     : current.ConfiguredReviewModel,
@@ -971,6 +997,7 @@ namespace ColorVision.Copilot
                 || layer.HasSandboxModeOverride
                 || layer.HasApprovalPolicyOverride
                 || layer.HasApprovalsReviewerOverride
+                || layer.HasAutoReviewPolicyOverride
                 || layer.HasReviewModelOverride
                 || layer.HasPreventIdleSleepOverride
                 || layer.HasAgentsEnabledOverride
@@ -1250,6 +1277,7 @@ namespace ColorVision.Copilot
             var sandboxMode = CopilotCodexSandboxMode.Unspecified;
             var approvalPolicy = CopilotCodexApprovalPolicy.Unspecified;
             var approvalsReviewer = CopilotCodexApprovalsReviewer.Unspecified;
+            var autoReviewPolicy = string.Empty;
             var reviewModel = string.Empty;
             var preventIdleSleep = false;
             var agentsEnabled = true;
@@ -1275,6 +1303,7 @@ namespace ColorVision.Copilot
             var hasSandboxModeOverride = false;
             var hasApprovalPolicyOverride = false;
             var hasApprovalsReviewerOverride = false;
+            var hasAutoReviewPolicyOverride = false;
             var hasReviewModelOverride = false;
             var hasPreventIdleSleepOverride = false;
             var hasAgentsEnabledOverride = false;
@@ -1389,6 +1418,21 @@ namespace ColorVision.Copilot
                         continue;
                     }
                     hasApprovalsReviewerOverride = true;
+                    continue;
+                }
+
+                if (string.Equals(assignment.Key, AutoReviewPolicyKey, StringComparison.Ordinal))
+                {
+                    if (!TryParseConfiguredText(
+                            assignment.Value,
+                            MaximumAutoReviewPolicyCharacters,
+                            out autoReviewPolicy)
+                        || string.IsNullOrWhiteSpace(autoReviewPolicy))
+                    {
+                        autoReviewPolicy = string.Empty;
+                        continue;
+                    }
+                    hasAutoReviewPolicyOverride = true;
                     continue;
                 }
 
@@ -1650,6 +1694,8 @@ namespace ColorVision.Copilot
                 HasApprovalPolicyOverride = hasApprovalPolicyOverride,
                 ApprovalsReviewer = approvalsReviewer,
                 HasApprovalsReviewerOverride = hasApprovalsReviewerOverride,
+                AutoReviewPolicy = autoReviewPolicy,
+                HasAutoReviewPolicyOverride = hasAutoReviewPolicyOverride,
                 ReviewModel = reviewModel,
                 HasReviewModelOverride = hasReviewModelOverride,
                 PreventIdleSleep = preventIdleSleep,
@@ -1688,6 +1734,7 @@ namespace ColorVision.Copilot
                 || hasSandboxModeOverride
                 || hasApprovalPolicyOverride
                 || hasApprovalsReviewerOverride
+                || hasAutoReviewPolicyOverride
                 || hasReviewModelOverride
                 || hasPreventIdleSleepOverride
                 || hasAgentsEnabledOverride
@@ -1831,6 +1878,7 @@ namespace ColorVision.Copilot
             var inRootTable = true;
             var inFeaturesTable = false;
             var inAgentsTable = false;
+            var inAutoReviewTable = false;
             for (var index = 0; index < lines.Length; index++)
             {
                 var line = StripComment(lines[index]).Trim();
@@ -1841,6 +1889,7 @@ namespace ColorVision.Copilot
                     inRootTable = false;
                     inFeaturesTable = IsExactTableHeader(line, "features");
                     inAgentsTable = IsExactTableHeader(line, "agents");
+                    inAutoReviewTable = IsExactTableHeader(line, "auto_review");
                     continue;
                 }
 
@@ -1854,6 +1903,9 @@ namespace ColorVision.Copilot
                         : inAgentsTable
                             && string.Equals(parsedKey, AgentsEnabledTableKey, StringComparison.Ordinal)
                                 ? AgentsEnabledKey
+                        : inAutoReviewTable
+                            && string.Equals(parsedKey, AutoReviewPolicyTableKey, StringComparison.Ordinal)
+                                ? AutoReviewPolicyKey
                         : inRootTable
                             ? parsedKey
                             : string.Empty;
@@ -1866,6 +1918,7 @@ namespace ColorVision.Copilot
                     && !string.Equals(key, SandboxModeKey, StringComparison.Ordinal)
                     && !string.Equals(key, ApprovalPolicyKey, StringComparison.Ordinal)
                     && !string.Equals(key, ApprovalsReviewerKey, StringComparison.Ordinal)
+                    && !string.Equals(key, AutoReviewPolicyKey, StringComparison.Ordinal)
                     && !string.Equals(key, ReviewModelKey, StringComparison.Ordinal)
                     && !string.Equals(key, PreventIdleSleepKey, StringComparison.Ordinal)
                     && !string.Equals(key, AgentsEnabledKey, StringComparison.Ordinal)
@@ -1925,7 +1978,8 @@ namespace ColorVision.Copilot
                     value = builder.ToString();
                 }
                 else if ((string.Equals(key, DeveloperInstructionsKey, StringComparison.Ordinal)
-                        || string.Equals(key, CompactPromptKey, StringComparison.Ordinal))
+                        || string.Equals(key, CompactPromptKey, StringComparison.Ordinal)
+                        || string.Equals(key, AutoReviewPolicyKey, StringComparison.Ordinal))
                     && TryGetMultilineStringDelimiter(value, out var delimiter)
                     && !HasClosedMultilineString(value, delimiter))
                 {
@@ -2734,6 +2788,10 @@ namespace ColorVision.Copilot
                 CopilotCodexApprovalsReviewer.Unspecified;
 
             public bool HasApprovalsReviewerOverride { get; init; }
+
+            public string AutoReviewPolicy { get; init; } = string.Empty;
+
+            public bool HasAutoReviewPolicyOverride { get; init; }
 
             public string ReviewModel { get; init; } = string.Empty;
 
