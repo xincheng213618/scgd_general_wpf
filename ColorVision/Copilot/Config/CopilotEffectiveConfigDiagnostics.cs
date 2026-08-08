@@ -484,6 +484,7 @@ namespace ColorVision.Copilot
             AppendExperimentalRequestUserInputEnabled(builder, codexConfigOptions);
             AppendUpdatePlanEnabled(builder, codexConfigOptions);
             AppendIncludeEnvironmentContext(builder, codexConfigOptions);
+            AppendIncludeSkillInstructions(builder, codexConfigOptions);
             AppendAgentsEnabled(builder, codexConfigOptions);
             builder.Append("- Codex service_tier：");
             if (!codexConfigOptions.HasServiceTierOverride)
@@ -764,6 +765,29 @@ namespace ColorVision.Copilot
             builder.AppendLine(codexConfigOptions.ConfiguredIncludeEnvironmentContext
                 ? " · 向模型注入请求开始时的 runtime_environment 数据块"
                 : " · 省略模型可见 runtime_environment；工具侧路径、沙箱与审批边界保持不变");
+        }
+
+        private static void AppendIncludeSkillInstructions(
+            StringBuilder builder,
+            CopilotProjectInstructionDiscoveryOptions codexConfigOptions)
+        {
+            builder.Append("- Codex skills.include_instructions：")
+                .Append(codexConfigOptions.ConfiguredIncludeSkillInstructions ? "true" : "false");
+            if (codexConfigOptions.HasIncludeSkillInstructionsOverride)
+            {
+                builder.Append(" · 来源 ")
+                    .Append(codexConfigOptions.IncludeSkillInstructionsSourceLabel.Length == 0
+                        ? "Codex config.toml"
+                        : codexConfigOptions.IncludeSkillInstructionsSourceLabel)
+                    .Append(" · 提交快照");
+            }
+            else
+            {
+                builder.Append(" · 官方默认");
+            }
+            builder.AppendLine(codexConfigOptions.ConfiguredIncludeSkillInstructions
+                ? " · 允许按请求相关性自动注入 Skill 元数据"
+                : " · 省略自动 Skill 说明；显式 $name 或 /name 调用仍可加载匹配 Skill");
         }
 
         private static void AppendExperimentalRequestUserInputEnabled(

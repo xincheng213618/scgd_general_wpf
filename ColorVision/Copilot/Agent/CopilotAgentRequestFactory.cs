@@ -239,6 +239,8 @@ namespace ColorVision.Copilot
 
         internal bool CodexIncludeEnvironmentContext { get; init; } = true;
 
+        internal bool CodexIncludeSkillInstructions { get; init; } = true;
+
         internal CopilotCodexApprovalPolicy CodexApprovalPolicy { get; init; } =
             CopilotCodexApprovalPolicy.Unspecified;
 
@@ -426,6 +428,7 @@ namespace ColorVision.Copilot
                 CodexExperimentalRequestUserInputEnabled = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredExperimentalRequestUserInputEnabled,
                 CodexUpdatePlanEnabled = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredUpdatePlanEnabled,
                 CodexIncludeEnvironmentContext = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredIncludeEnvironmentContext,
+                CodexIncludeSkillInstructions = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredIncludeSkillInstructions,
                 CodexApprovalPolicy = codexApprovalPolicy,
                 CodexApprovalsReviewer = codexApprovalsReviewer,
                 CodexAutoReviewPolicy = codexAutoReviewPolicy,
@@ -520,6 +523,7 @@ namespace ColorVision.Copilot
                 CodexExperimentalRequestUserInputEnabled = plan.CodexExperimentalRequestUserInputEnabled,
                 CodexUpdatePlanEnabled = plan.CodexUpdatePlanEnabled,
                 CodexIncludeEnvironmentContext = plan.CodexIncludeEnvironmentContext,
+                CodexIncludeSkillInstructions = plan.CodexIncludeSkillInstructions,
                 CodexApprovalPolicy = plan.CodexApprovalPolicy,
                 CodexApprovalsReviewer = plan.CodexApprovalsReviewer,
                 CodexAutoReviewPolicy = plan.CodexAutoReviewPolicy,

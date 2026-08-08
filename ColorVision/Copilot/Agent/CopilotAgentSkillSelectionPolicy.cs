@@ -27,7 +27,8 @@ namespace ColorVision.Copilot
             int maximumCount,
             int maximumMetadataCharacters,
             IReadOnlyDictionary<string, CopilotAgentSkillOverrideState>? skillPathOverrides = null,
-            Func<AgentSkill, string?>? skillFilePathResolver = null)
+            Func<AgentSkill, string?>? skillFilePathResolver = null,
+            bool allowImplicitSelection = true)
         {
             var query = userText?.Trim() ?? string.Empty;
             var queryWords = ExtractAsciiWords(query);
@@ -41,6 +42,7 @@ namespace ColorVision.Copilot
             var manualNameOnlyNames = new List<string>();
             var manualExplicitOnlyNames = new List<string>();
             var manualOffNames = new List<string>();
+            var automaticInstructionsDisabledNames = new List<string>();
             var irrelevantNames = new List<string>();
             var candidates = new List<SkillCandidate>(skills.Count);
             for (var index = 0; index < skills.Count; index++)
@@ -57,6 +59,12 @@ namespace ColorVision.Copilot
                 if (overrideState == CopilotAgentSkillOverrideState.Off)
                 {
                     manualOffNames.Add(skillName);
+                    continue;
+                }
+
+                if (!explicitlyInvoked && !allowImplicitSelection)
+                {
+                    automaticInstructionsDisabledNames.Add(skillName);
                     continue;
                 }
 
@@ -148,6 +156,7 @@ namespace ColorVision.Copilot
                 manualNameOnlyNames.ToArray(),
                 manualExplicitOnlyNames.ToArray(),
                 manualOffNames.ToArray(),
+                automaticInstructionsDisabledNames.ToArray(),
                 irrelevantNames.ToArray(),
                 shortenedDescriptionNames.ToArray());
         }
@@ -332,6 +341,7 @@ namespace ColorVision.Copilot
         IReadOnlyList<string> ManualNameOnlyNames,
         IReadOnlyList<string> ManualExplicitOnlyNames,
         IReadOnlyList<string> ManualOffNames,
+        IReadOnlyList<string> AutomaticInstructionsDisabledNames,
         IReadOnlyList<string> IrrelevantNames,
         IReadOnlyList<string> ShortenedDescriptionNames);
 }

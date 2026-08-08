@@ -74,7 +74,11 @@ namespace ColorVision.Copilot
                 ? _skillUsageStore.GetSnapshot().HistoricalExplicitOnlySkills.Select(entry => entry.Name).ToArray()
                 : Array.Empty<string>();
             var agentSkills = skillsFeatureEnabled
-                ? CopilotAgentSkills.Create(request, historicalExplicitOnlySkillNames, tokenBudget.ContextWindowTokens)
+                ? CopilotAgentSkills.Create(
+                    request,
+                    historicalExplicitOnlySkillNames,
+                    tokenBudget.ContextWindowTokens,
+                    includeAutomaticInstructions: request.CodexIncludeSkillInstructions)
                 : CopilotAgentSkills.Disabled();
             try
             {

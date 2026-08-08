@@ -87,6 +87,12 @@ namespace ColorVision.Copilot
 
         public string CodexIncludeEnvironmentContextSourceLabel { get; init; } = string.Empty;
 
+        public bool CodexIncludeSkillInstructions { get; init; } = true;
+
+        public bool HasCodexIncludeSkillInstructionsOverride { get; init; }
+
+        public string CodexIncludeSkillInstructionsSourceLabel { get; init; } = string.Empty;
+
         public bool CodexAgentsEnabled { get; init; } = true;
 
         public bool HasCodexAgentsEnabledOverride { get; init; }
@@ -523,6 +529,24 @@ namespace ColorVision.Copilot
                     .Append(snapshot.CodexIncludeEnvironmentContext
                         ? "模型可见请求开始时的工作目录、平台、日期、时区、路径边界与 Git 摘要）"
                         : "不向模型注入 runtime_environment；工具侧路径、沙箱与审批边界保持不变）");
+            }
+            else
+            {
+                builder.Append("（Codex 默认注入）");
+            }
+            builder.AppendLine();
+            builder.Append("自动 Skill 说明：")
+                .Append(snapshot.CodexIncludeSkillInstructions ? "注入" : "省略");
+            if (snapshot.HasCodexIncludeSkillInstructionsOverride)
+            {
+                builder.Append('（')
+                    .Append(string.IsNullOrWhiteSpace(snapshot.CodexIncludeSkillInstructionsSourceLabel)
+                        ? "Codex config.toml"
+                        : snapshot.CodexIncludeSkillInstructionsSourceLabel.Trim())
+                    .Append(" 提交快照；")
+                    .Append(snapshot.CodexIncludeSkillInstructions
+                        ? "可按请求相关性自动选择 Skill）"
+                        : "仅显式 $name 或 /name 调用可加载匹配 Skill）");
             }
             else
             {

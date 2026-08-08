@@ -375,6 +375,13 @@ namespace ColorVision.Copilot
         public CopilotProjectInstructionConfigSources IncludeEnvironmentContextSource { get; init; } =
             CopilotProjectInstructionConfigSources.None;
 
+        public bool ConfiguredIncludeSkillInstructions { get; init; } = true;
+
+        public bool HasIncludeSkillInstructionsOverride { get; init; }
+
+        public CopilotProjectInstructionConfigSources IncludeSkillInstructionsSource { get; init; } =
+            CopilotProjectInstructionConfigSources.None;
+
         public bool ConfiguredAgentsEnabled { get; init; } = true;
 
         public bool HasAgentsEnabledOverride { get; init; }
@@ -616,6 +623,7 @@ namespace ColorVision.Copilot
             || HasExperimentalRequestUserInputEnabledOverride
             || HasUpdatePlanEnabledOverride
             || HasIncludeEnvironmentContextOverride
+            || HasIncludeSkillInstructionsOverride
             || HasAgentsEnabledOverride
             || HasInterruptMessageOverride
             || HasMaximumConcurrentSubagentRunsOverride
@@ -744,6 +752,13 @@ namespace ColorVision.Copilot
         {
             CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml include_environment_context",
             CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml include_environment_context",
+            _ => string.Empty,
+        };
+
+        public string IncludeSkillInstructionsSourceLabel => IncludeSkillInstructionsSource switch
+        {
+            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml skills.include_instructions",
+            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml skills.include_instructions",
             _ => string.Empty,
         };
 
@@ -960,6 +975,8 @@ namespace ColorVision.Copilot
         private const string UpdatePlanEnabledKey = "tools.update_plan.enabled";
         private const string ToolsEnabledTableKey = "enabled";
         private const string IncludeEnvironmentContextKey = "include_environment_context";
+        private const string SkillsIncludeInstructionsKey = "skills.include_instructions";
+        private const string SkillsIncludeInstructionsTableKey = "include_instructions";
         private const string AgentsEnabledKey = "agents.enabled";
         private const string AgentsEnabledTableKey = "enabled";
         private const string AgentsInterruptMessageKey = "agents.interrupt_message";
@@ -1244,6 +1261,14 @@ namespace ColorVision.Copilot
                 IncludeEnvironmentContextSource = layer.HasIncludeEnvironmentContextOverride
                     ? source
                     : current.IncludeEnvironmentContextSource,
+                ConfiguredIncludeSkillInstructions = layer.HasIncludeSkillInstructionsOverride
+                    ? layer.IncludeSkillInstructions
+                    : current.ConfiguredIncludeSkillInstructions,
+                HasIncludeSkillInstructionsOverride = current.HasIncludeSkillInstructionsOverride
+                    || layer.HasIncludeSkillInstructionsOverride,
+                IncludeSkillInstructionsSource = layer.HasIncludeSkillInstructionsOverride
+                    ? source
+                    : current.IncludeSkillInstructionsSource,
                 ConfiguredAgentsEnabled = layer.HasAgentsEnabledOverride
                     ? layer.AgentsEnabled
                     : current.ConfiguredAgentsEnabled,
@@ -1432,6 +1457,7 @@ namespace ColorVision.Copilot
                 || layer.HasExperimentalRequestUserInputEnabledOverride
                 || layer.HasUpdatePlanEnabledOverride
                 || layer.HasIncludeEnvironmentContextOverride
+                || layer.HasIncludeSkillInstructionsOverride
                 || layer.HasAgentsEnabledOverride
                 || layer.HasInterruptMessageOverride
                 || layer.HasMaximumConcurrentSubagentRunsOverride
@@ -1722,6 +1748,7 @@ namespace ColorVision.Copilot
             var experimentalRequestUserInputEnabled = true;
             var updatePlanEnabled = true;
             var includeEnvironmentContext = true;
+            var includeSkillInstructions = true;
             var agentsEnabled = true;
             var interruptMessageEnabled = true;
             var maximumConcurrentSubagentRuns = CopilotSubagentCoordinator.DefaultMaximumConcurrentRuns;
@@ -1765,6 +1792,7 @@ namespace ColorVision.Copilot
             var hasExperimentalRequestUserInputEnabledOverride = false;
             var hasUpdatePlanEnabledOverride = false;
             var hasIncludeEnvironmentContextOverride = false;
+            var hasIncludeSkillInstructionsOverride = false;
             var hasAgentsEnabledOverride = false;
             var hasInterruptMessageOverride = false;
             var hasMaximumConcurrentSubagentRunsOverride = false;
@@ -2006,6 +2034,18 @@ namespace ColorVision.Copilot
                         continue;
                     }
                     hasIncludeEnvironmentContextOverride = true;
+                    continue;
+                }
+
+                if (string.Equals(assignment.Key, SkillsIncludeInstructionsKey, StringComparison.Ordinal))
+                {
+                    if (!TryParseTomlBoolean(
+                        assignment.Value,
+                        out includeSkillInstructions))
+                    {
+                        continue;
+                    }
+                    hasIncludeSkillInstructionsOverride = true;
                     continue;
                 }
 
@@ -2364,6 +2404,8 @@ namespace ColorVision.Copilot
                 HasUpdatePlanEnabledOverride = hasUpdatePlanEnabledOverride,
                 IncludeEnvironmentContext = includeEnvironmentContext,
                 HasIncludeEnvironmentContextOverride = hasIncludeEnvironmentContextOverride,
+                IncludeSkillInstructions = includeSkillInstructions,
+                HasIncludeSkillInstructionsOverride = hasIncludeSkillInstructionsOverride,
                 AgentsEnabled = agentsEnabled,
                 HasAgentsEnabledOverride = hasAgentsEnabledOverride,
                 InterruptMessageEnabled = interruptMessageEnabled,
@@ -2415,6 +2457,7 @@ namespace ColorVision.Copilot
                 || hasExperimentalRequestUserInputEnabledOverride
                 || hasUpdatePlanEnabledOverride
                 || hasIncludeEnvironmentContextOverride
+                || hasIncludeSkillInstructionsOverride
                 || hasAgentsEnabledOverride
                 || hasInterruptMessageOverride
                 || hasMaximumConcurrentSubagentRunsOverride
@@ -2565,6 +2608,7 @@ namespace ColorVision.Copilot
             var inAutoReviewTable = false;
             var inExperimentalRequestUserInputTable = false;
             var inUpdatePlanTable = false;
+            var inSkillsTable = false;
             for (var index = 0; index < lines.Length; index++)
             {
                 var line = StripComment(lines[index]).Trim();
@@ -2580,6 +2624,7 @@ namespace ColorVision.Copilot
                         line,
                         "tools.experimental_request_user_input");
                     inUpdatePlanTable = IsExactTableHeader(line, "tools.update_plan");
+                    inSkillsTable = IsExactTableHeader(line, "skills");
                     continue;
                 }
 
@@ -2617,6 +2662,9 @@ namespace ColorVision.Copilot
                         : inUpdatePlanTable
                             && string.Equals(parsedKey, ToolsEnabledTableKey, StringComparison.Ordinal)
                                 ? UpdatePlanEnabledKey
+                        : inSkillsTable
+                            && string.Equals(parsedKey, SkillsIncludeInstructionsTableKey, StringComparison.Ordinal)
+                                ? SkillsIncludeInstructionsKey
                         : inRootTable
                             ? parsedKey
                             : string.Empty;
@@ -2639,6 +2687,7 @@ namespace ColorVision.Copilot
                     && !string.Equals(key, ExperimentalRequestUserInputEnabledKey, StringComparison.Ordinal)
                     && !string.Equals(key, UpdatePlanEnabledKey, StringComparison.Ordinal)
                     && !string.Equals(key, IncludeEnvironmentContextKey, StringComparison.Ordinal)
+                    && !string.Equals(key, SkillsIncludeInstructionsKey, StringComparison.Ordinal)
                     && !string.Equals(key, AgentsEnabledKey, StringComparison.Ordinal)
                     && !string.Equals(key, AgentsInterruptMessageKey, StringComparison.Ordinal)
                     && !string.Equals(key, AgentsMaximumConcurrentThreadsKey, StringComparison.Ordinal)
@@ -3557,6 +3606,10 @@ namespace ColorVision.Copilot
             public bool IncludeEnvironmentContext { get; init; } = true;
 
             public bool HasIncludeEnvironmentContextOverride { get; init; }
+
+            public bool IncludeSkillInstructions { get; init; } = true;
+
+            public bool HasIncludeSkillInstructionsOverride { get; init; }
 
             public bool AgentsEnabled { get; init; } = true;
 

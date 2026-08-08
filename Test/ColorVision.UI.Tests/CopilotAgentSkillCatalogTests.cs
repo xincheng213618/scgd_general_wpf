@@ -447,6 +447,41 @@ public sealed class CopilotAgentSkillCatalogTests
     }
 
     [Fact]
+    public void DisabledAutomaticInstructionsStillAllowAnExplicitSkillInvocation()
+    {
+        var documentSkill = new TestAgentSkill("document-review", "Review documents");
+        var unrelatedSkill = new TestAgentSkill("workspace-audit", "Audit workspaces");
+        var historicalExplicitOnlyNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var overrides = new Dictionary<string, CopilotAgentSkillOverrideState>(StringComparer.OrdinalIgnoreCase);
+
+        var implicitSelection = CopilotAgentSkillSelectionPolicy.Select(
+            [documentSkill, unrelatedSkill],
+            "Review this document.",
+            historicalExplicitOnlyNames,
+            overrides,
+            maximumCount: 4,
+            maximumMetadataCharacters: 1_024,
+            allowImplicitSelection: false);
+        var explicitSelection = CopilotAgentSkillSelectionPolicy.Select(
+            [documentSkill, unrelatedSkill],
+            "$document-review review this document.",
+            historicalExplicitOnlyNames,
+            overrides,
+            maximumCount: 4,
+            maximumMetadataCharacters: 1_024,
+            allowImplicitSelection: false);
+
+        Assert.Empty(implicitSelection.SelectedSkills);
+        Assert.Equal(
+            ["document-review", "workspace-audit"],
+            implicitSelection.AutomaticInstructionsDisabledNames);
+        Assert.Same(documentSkill, Assert.Single(explicitSelection.SelectedSkills));
+        Assert.Equal(
+            ["workspace-audit"],
+            explicitSelection.AutomaticInstructionsDisabledNames);
+    }
+
+    [Fact]
     public void SkillReferencePersistsOnUserMessagesAndRejectsMismatchedPrompts()
     {
         var skillDirectory = CreateTemporaryDirectory();

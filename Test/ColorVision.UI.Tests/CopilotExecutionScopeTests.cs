@@ -199,6 +199,7 @@ public sealed class CopilotExecutionScopeTests
             CodexWebSearchMode = CopilotCodexWebSearchMode.Cached,
             CodexExperimentalRequestUserInputEnabled = false,
             CodexUpdatePlanEnabled = false,
+            CodexIncludeSkillInstructions = false,
             ToolOutputTokenLimitOverride = 12_000,
             CodexReasoningEffort = CopilotCodexReasoningEffort.XHigh,
             CodexReasoningSummary = CopilotCodexReasoningSummary.Concise,
@@ -233,6 +234,7 @@ public sealed class CopilotExecutionScopeTests
         Assert.Equal(parentRequest.CodexWebSearchMode, childRequest.CodexWebSearchMode);
         Assert.Equal(parentRequest.CodexExperimentalRequestUserInputEnabled, childRequest.CodexExperimentalRequestUserInputEnabled);
         Assert.Equal(parentRequest.CodexUpdatePlanEnabled, childRequest.CodexUpdatePlanEnabled);
+        Assert.Equal(parentRequest.CodexIncludeSkillInstructions, childRequest.CodexIncludeSkillInstructions);
         Assert.Equal(parentRequest.ToolOutputTokenLimitOverride, childRequest.ToolOutputTokenLimitOverride);
         Assert.Equal(parentRequest.CodexReasoningEffort, childRequest.CodexReasoningEffort);
         Assert.Equal(parentRequest.CodexReasoningSummary, childRequest.CodexReasoningSummary);
@@ -280,6 +282,7 @@ public sealed class CopilotExecutionScopeTests
         Assert.Equal(childRequest.CodexWebSearchMode, finalizationRequest.CodexWebSearchMode);
         Assert.Equal(childRequest.CodexExperimentalRequestUserInputEnabled, finalizationRequest.CodexExperimentalRequestUserInputEnabled);
         Assert.Equal(childRequest.CodexUpdatePlanEnabled, finalizationRequest.CodexUpdatePlanEnabled);
+        Assert.Equal(childRequest.CodexIncludeSkillInstructions, finalizationRequest.CodexIncludeSkillInstructions);
         Assert.Equal(childRequest.ToolOutputTokenLimitOverride, finalizationRequest.ToolOutputTokenLimitOverride);
         Assert.Equal(childRequest.CodexReasoningEffort, finalizationRequest.CodexReasoningEffort);
         Assert.Equal(childRequest.CodexReasoningSummary, finalizationRequest.CodexReasoningSummary);

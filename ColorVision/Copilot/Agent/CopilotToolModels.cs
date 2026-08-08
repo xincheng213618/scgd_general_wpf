@@ -83,6 +83,8 @@ namespace ColorVision.Copilot
 
         internal bool CodexIncludeEnvironmentContext { get; init; } = true;
 
+        internal bool CodexIncludeSkillInstructions { get; init; } = true;
+
         internal CopilotCodexApprovalPolicy CodexApprovalPolicy { get; init; } =
             CopilotCodexApprovalPolicy.Unspecified;
 

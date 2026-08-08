@@ -162,6 +162,7 @@ namespace ColorVision.Copilot
                 CodexExperimentalRequestUserInputEnabled = explorationRequest.CodexExperimentalRequestUserInputEnabled,
                 CodexUpdatePlanEnabled = explorationRequest.CodexUpdatePlanEnabled,
                 CodexIncludeEnvironmentContext = explorationRequest.CodexIncludeEnvironmentContext,
+                CodexIncludeSkillInstructions = explorationRequest.CodexIncludeSkillInstructions,
                 CodexApprovalPolicy = explorationRequest.CodexApprovalPolicy,
                 CodexApprovalsReviewer = explorationRequest.CodexApprovalsReviewer,
                 CodexAutoReviewPolicy = explorationRequest.CodexAutoReviewPolicy,
