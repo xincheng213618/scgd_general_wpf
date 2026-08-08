@@ -475,6 +475,7 @@ namespace ColorVision.Copilot
             }
             AppendPreventIdleSleep(builder, codexConfigOptions);
             AppendShellToolEnabled(builder, codexConfigOptions);
+            AppendIncludeEnvironmentContext(builder, codexConfigOptions);
             AppendAgentsEnabled(builder, codexConfigOptions);
             builder.Append("- Codex service_tier：");
             if (!codexConfigOptions.HasServiceTierOverride)
@@ -732,6 +733,29 @@ namespace ColorVision.Copilot
             builder.AppendLine(codexConfigOptions.ConfiguredShellToolEnabled
                 ? " · 按请求意图暴露命令启动工具"
                 : " · 命令启动工具已从目录移除，旧计划、恢复状态与注入调用也会拒绝；已有后台命令仍可观察或停止");
+        }
+
+        private static void AppendIncludeEnvironmentContext(
+            StringBuilder builder,
+            CopilotProjectInstructionDiscoveryOptions codexConfigOptions)
+        {
+            builder.Append("- Codex include_environment_context：")
+                .Append(codexConfigOptions.ConfiguredIncludeEnvironmentContext ? "true" : "false");
+            if (codexConfigOptions.HasIncludeEnvironmentContextOverride)
+            {
+                builder.Append(" · 来源 ")
+                    .Append(codexConfigOptions.IncludeEnvironmentContextSourceLabel.Length == 0
+                        ? "Codex config.toml"
+                        : codexConfigOptions.IncludeEnvironmentContextSourceLabel)
+                    .Append(" · 提交快照");
+            }
+            else
+            {
+                builder.Append(" · 官方默认");
+            }
+            builder.AppendLine(codexConfigOptions.ConfiguredIncludeEnvironmentContext
+                ? " · 向模型注入请求开始时的 runtime_environment 数据块"
+                : " · 省略模型可见 runtime_environment；工具侧路径、沙箱与审批边界保持不变");
         }
 
         private static void AppendAgentsEnabled(

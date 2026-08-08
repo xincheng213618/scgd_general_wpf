@@ -120,6 +120,9 @@ namespace ColorVision.Copilot
                         .ToArray()
                     : Array.Empty<CopilotBackgroundShellCommandSnapshot>();
             var environmentContext = CopilotAgentEnvironmentContext.Capture(request);
+            var checkpointEnvironmentContext = request.CodexIncludeEnvironmentContext
+                ? environmentContext
+                : null;
             var hookSurfaceSnapshot = _toolExecutor.GetHookSurfaceSnapshot();
             var executionScope = baseExecutionScope.WithRuntimeSnapshot(
                 environmentContext.Fingerprint,
@@ -129,8 +132,9 @@ namespace ColorVision.Copilot
                 request.Profile,
                 capabilitySnapshot,
                 availableToolNames,
-                environmentContext,
-                hookSurfaceSnapshot);
+                checkpointEnvironmentContext,
+                hookSurfaceSnapshot,
+                requireEnvironmentContextMatch: true);
             var requiresCheckpointReplan = checkpointCompatibility?.Kind == CopilotAgentCheckpointCompatibilityKind.ProfileChanged
                 || checkpointCompatibility?.RequiresReplan == true;
             var recovery = NormalizeRecoveryRequest(request.Recovery, requestedCheckpoint, availableTools, requiresCheckpointReplan);
@@ -313,7 +317,7 @@ namespace ColorVision.Copilot
                 requiresCheckpointReplan,
                 capabilitySnapshot,
                 availableToolNames,
-                environmentContext,
+                checkpointEnvironmentContext,
                 hookSurfaceSnapshot,
                 previousEvidenceArtifacts,
                 agent,
@@ -678,7 +682,7 @@ namespace ColorVision.Copilot
                 evidenceArtifacts,
                 taskEventJournal,
                 availableToolNames,
-                environmentContext,
+                checkpointEnvironmentContext,
                 hookSurfaceSnapshot,
                 steeringRegistration,
                 liveCheckpointPublisher,

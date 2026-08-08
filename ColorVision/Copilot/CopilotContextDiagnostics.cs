@@ -69,6 +69,12 @@ namespace ColorVision.Copilot
 
         public string CodexShellToolEnabledSourceLabel { get; init; } = string.Empty;
 
+        public bool CodexIncludeEnvironmentContext { get; init; } = true;
+
+        public bool HasCodexIncludeEnvironmentContextOverride { get; init; }
+
+        public string CodexIncludeEnvironmentContextSourceLabel { get; init; } = string.Empty;
+
         public bool CodexAgentsEnabled { get; init; } = true;
 
         public bool HasCodexAgentsEnabledOverride { get; init; }
@@ -471,6 +477,24 @@ namespace ColorVision.Copilot
             else
             {
                 builder.Append("（Codex 默认开启）");
+            }
+            builder.AppendLine();
+            builder.Append("运行环境上下文：")
+                .Append(snapshot.CodexIncludeEnvironmentContext ? "注入" : "省略");
+            if (snapshot.HasCodexIncludeEnvironmentContextOverride)
+            {
+                builder.Append('（')
+                    .Append(string.IsNullOrWhiteSpace(snapshot.CodexIncludeEnvironmentContextSourceLabel)
+                        ? "Codex config.toml"
+                        : snapshot.CodexIncludeEnvironmentContextSourceLabel.Trim())
+                    .Append(" 提交快照；")
+                    .Append(snapshot.CodexIncludeEnvironmentContext
+                        ? "模型可见请求开始时的工作目录、平台、日期、时区、路径边界与 Git 摘要）"
+                        : "不向模型注入 runtime_environment；工具侧路径、沙箱与审批边界保持不变）");
+            }
+            else
+            {
+                builder.Append("（Codex 默认注入）");
             }
             builder.AppendLine();
             builder.Append("子代理工具：")

@@ -18,7 +18,7 @@ namespace ColorVision.Copilot
             IReadOnlyList<CopilotAgentEvidenceArtifact> evidenceArtifacts,
             CopilotAgentTaskEventJournalSnapshot taskEventJournal,
             IReadOnlyList<string> availableToolNames,
-            CopilotAgentEnvironmentContext environmentContext,
+            CopilotAgentEnvironmentContext? checkpointEnvironmentContext,
             CopilotToolExecutionHookRegistrySnapshot hookSurfaceSnapshot,
             SteeringRegistration steeringRegistration,
             LiveCheckpointPublisher liveCheckpointPublisher,
@@ -48,7 +48,7 @@ namespace ColorVision.Copilot
                         taskEventJournal,
                         availableToolNames,
                         conversationMemory,
-                        environmentContext,
+                        checkpointEnvironmentContext,
                         request.TaskIntentText,
                         hookSurfaceSnapshot);
                     if (sessionCheckpoint == null)
