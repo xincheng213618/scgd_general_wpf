@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -17,18 +18,25 @@ namespace ColorVision.Copilot
         private const int MaxDescriptionCharacters = 180;
         private static readonly TimeSpan CacheDuration = TimeSpan.FromSeconds(5);
         private static readonly object CacheSync = new();
+        private static readonly CopilotAgentSkillCatalogMonitor ChangeMonitor = new(HandleWatchedSkillChange);
         private static string _cacheKey = string.Empty;
         private static DateTimeOffset _cacheExpiresAtUtc;
         private static IReadOnlyList<CopilotAgentSkillCatalogItem> _cachedItems = Array.Empty<CopilotAgentSkillCatalogItem>();
+        private static long _cacheRevision;
+
+        internal static event EventHandler? CatalogChanged;
 
         public static IReadOnlyList<CopilotAgentSkillCatalogItem> DiscoverCached(
             IEnumerable<string>? trustedProjectRootPaths,
             IReadOnlyDictionary<string, CopilotAgentSkillOverrideState>? overrides,
             string? applicationBaseDirectory = null)
         {
-            var skillRoots = ResolveSkillRoots(trustedProjectRootPaths, applicationBaseDirectory);
+            var searchRequest = CreateSearchRequest(trustedProjectRootPaths);
+            ChangeMonitor.UpdateRoots(CopilotAgentSkills.ResolveSearchPathCandidates(searchRequest, applicationBaseDirectory));
+            var skillRoots = CopilotAgentSkills.ResolveSearchPaths(searchRequest, applicationBaseDirectory);
             var cacheKey = BuildCacheKey(skillRoots, overrides);
             var now = DateTimeOffset.UtcNow;
+            long revision;
             lock (CacheSync)
             {
                 if (string.Equals(_cacheKey, cacheKey, StringComparison.Ordinal)
@@ -36,13 +44,17 @@ namespace ColorVision.Copilot
                 {
                     return _cachedItems;
                 }
+                revision = _cacheRevision;
             }
 
             var discovered = DiscoverFromSkillRoots(skillRoots, overrides);
             lock (CacheSync)
             {
+                if (revision != _cacheRevision)
+                    return discovered;
+
                 _cacheKey = cacheKey;
-                _cacheExpiresAtUtc = now.Add(CacheDuration);
+                _cacheExpiresAtUtc = DateTimeOffset.UtcNow.Add(CacheDuration);
                 _cachedItems = discovered;
                 return _cachedItems;
             }
@@ -54,6 +66,17 @@ namespace ColorVision.Copilot
             string? applicationBaseDirectory = null)
         {
             return DiscoverFromSkillRoots(ResolveSkillRoots(trustedProjectRootPaths, applicationBaseDirectory), overrides);
+        }
+
+        internal static void Invalidate()
+        {
+            lock (CacheSync)
+            {
+                _cacheRevision++;
+                _cacheKey = string.Empty;
+                _cacheExpiresAtUtc = DateTimeOffset.MinValue;
+                _cachedItems = Array.Empty<CopilotAgentSkillCatalogItem>();
+            }
         }
 
         private static CopilotAgentSkillCatalogItem[] DiscoverFromSkillRoots(
@@ -89,12 +112,35 @@ namespace ColorVision.Copilot
 
         private static IReadOnlyList<string> ResolveSkillRoots(IEnumerable<string>? trustedProjectRootPaths, string? applicationBaseDirectory)
         {
-            return CopilotAgentSkills.ResolveSearchPaths(
-                new CopilotAgentRequest
+            return CopilotAgentSkills.ResolveSearchPaths(CreateSearchRequest(trustedProjectRootPaths), applicationBaseDirectory);
+        }
+
+        private static CopilotAgentRequest CreateSearchRequest(IEnumerable<string>? trustedProjectRootPaths)
+        {
+            return new CopilotAgentRequest
+            {
+                TrustedProjectRootPaths = (trustedProjectRootPaths ?? Array.Empty<string>()).ToArray(),
+            };
+        }
+
+        private static void HandleWatchedSkillChange()
+        {
+            Invalidate();
+            var handlers = CatalogChanged;
+            if (handlers == null)
+                return;
+
+            foreach (EventHandler handler in handlers.GetInvocationList())
+            {
+                try
                 {
-                    TrustedProjectRootPaths = (trustedProjectRootPaths ?? Array.Empty<string>()).ToArray(),
-                },
-                applicationBaseDirectory);
+                    handler(null, EventArgs.Empty);
+                }
+                catch (Exception exception)
+                {
+                    Trace.TraceError($"Copilot Agent Skill catalog subscriber failed: {exception}");
+                }
+            }
         }
 
         private static IEnumerable<string> EnumerateSkillFiles(string root)

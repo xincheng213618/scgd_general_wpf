@@ -187,5 +187,27 @@ namespace ColorVision.Copilot
             SelectedLocalCommandSuggestionIndex = selectedIndex;
             OnPropertyChanged(nameof(HasLocalCommandSuggestions));
         }
+
+        private void AgentSkillCatalog_CatalogChanged(object? sender, EventArgs e)
+        {
+            if (Volatile.Read(ref _disposeState) == 1
+                || !(InputText ?? string.Empty).TrimStart().StartsWith('$'))
+            {
+                return;
+            }
+
+            var dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher != null && !dispatcher.CheckAccess())
+            {
+                _ = dispatcher.BeginInvoke(() =>
+                {
+                    if (Volatile.Read(ref _disposeState) == 0)
+                        RefreshLocalCommandSuggestions();
+                }, DispatcherPriority.Background);
+                return;
+            }
+
+            RefreshLocalCommandSuggestions();
+        }
     }
 }

@@ -147,14 +147,23 @@ namespace ColorVision.Copilot
         {
             ArgumentNullException.ThrowIfNull(request);
 
+            return ResolveSearchPathCandidates(request, applicationBaseDirectory)
+                .Where(path => Directory.Exists(path) && !CopilotWorkspaceSearchSupport.HasReparsePointInPath(path))
+                .ToArray();
+        }
+
+        internal static IReadOnlyList<string> ResolveSearchPathCandidates(CopilotAgentRequest request, string? applicationBaseDirectory = null)
+        {
+            ArgumentNullException.ThrowIfNull(request);
+
             var paths = new List<string>();
             foreach (var root in request.TrustedProjectRootPaths ?? Array.Empty<string>())
-                AddExistingSkillRoot(paths, TryGetDirectory(root), Path.Combine(".agents", "skills"));
+                AddSkillRootCandidate(paths, TryGetDirectory(root), Path.Combine(".agents", "skills"));
 
             var baseDirectory = string.IsNullOrWhiteSpace(applicationBaseDirectory)
                 ? AppContext.BaseDirectory
                 : applicationBaseDirectory;
-            AddExistingSkillRoot(paths, baseDirectory, Path.Combine("Copilot", "Skills"));
+            AddSkillRootCandidate(paths, baseDirectory, Path.Combine("Copilot", "Skills"));
             return paths;
         }
 
@@ -181,16 +190,15 @@ namespace ColorVision.Copilot
             }
         }
 
-        private static void AddExistingSkillRoot(List<string> paths, string? parentDirectory, string relativePath)
+        private static void AddSkillRootCandidate(List<string> paths, string? parentDirectory, string relativePath)
         {
-            if (string.IsNullOrWhiteSpace(parentDirectory))
+            if (string.IsNullOrWhiteSpace(parentDirectory) || !Directory.Exists(parentDirectory))
                 return;
 
             try
             {
                 var candidate = Path.GetFullPath(Path.Combine(parentDirectory, relativePath));
-                if (!Directory.Exists(candidate)
-                    || CopilotWorkspaceSearchSupport.HasReparsePointInPath(candidate)
+                if (CopilotWorkspaceSearchSupport.HasReparsePointInPath(parentDirectory)
                     || paths.Contains(candidate, StringComparer.OrdinalIgnoreCase))
                 {
                     return;
