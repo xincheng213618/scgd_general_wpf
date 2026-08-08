@@ -30,6 +30,18 @@ namespace ColorVision.Copilot
 
         public string CodexReviewModelSourceLabel { get; init; } = string.Empty;
 
+        public bool CodexPreventIdleSleep { get; init; }
+
+        public bool HasCodexPreventIdleSleepOverride { get; init; }
+
+        public string CodexPreventIdleSleepSourceLabel { get; init; } = string.Empty;
+
+        public int ActiveSleepPreventionLeaseCount { get; init; }
+
+        public int? SleepPreventionLastErrorCode { get; init; }
+
+        public string SleepPreventionLastFailure { get; init; } = string.Empty;
+
         public int SystemPromptCharacters { get; init; }
 
         public int ConfiguredModelInstructionsCharacters { get; init; }
@@ -286,6 +298,42 @@ namespace ColorVision.Copilot
                         ? " 请求快照；当前 Review 模式生效"
                         : " 请求快照；仅 Review 模式生效，当前模式不替换")
                     .AppendLine("；沿用所选 Profile 的 Provider、端点与凭据）");
+            }
+            if (snapshot.HasCodexPreventIdleSleepOverride)
+            {
+                builder.Append("活动轮次防休眠：")
+                    .Append(snapshot.CodexPreventIdleSleep ? "开启" : "关闭")
+                    .Append('（')
+                    .Append(string.IsNullOrWhiteSpace(snapshot.CodexPreventIdleSleepSourceLabel)
+                        ? "Codex config.toml"
+                        : snapshot.CodexPreventIdleSleepSourceLabel.Trim())
+                    .Append(" 提交快照");
+                if (!snapshot.CodexPreventIdleSleep)
+                {
+                    builder.AppendLine("；不阻止系统空闲休眠）");
+                }
+                else if (snapshot.ActiveSleepPreventionLeaseCount > 0)
+                {
+                    builder.Append("；Windows Power Request 活动 ")
+                        .Append(snapshot.ActiveSleepPreventionLeaseCount.ToString("N0", CultureInfo.CurrentCulture))
+                        .AppendLine(" 个）");
+                }
+                else if (!string.IsNullOrWhiteSpace(snapshot.SleepPreventionLastFailure))
+                {
+                    builder.Append("；最近一次系统请求失败：")
+                        .Append(snapshot.SleepPreventionLastFailure.Trim());
+                    if (snapshot.SleepPreventionLastErrorCode.HasValue)
+                    {
+                        builder.Append("（Win32 ")
+                            .Append(snapshot.SleepPreventionLastErrorCode.Value.ToString(CultureInfo.InvariantCulture))
+                            .Append('）');
+                    }
+                    builder.AppendLine("）");
+                }
+                else
+                {
+                    builder.AppendLine("；当前无活动轮次，排队等待不占用系统请求）");
+                }
             }
             if (snapshot.HasCodexReasoningEffortOverride)
             {

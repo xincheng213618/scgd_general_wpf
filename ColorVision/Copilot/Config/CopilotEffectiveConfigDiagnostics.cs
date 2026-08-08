@@ -461,6 +461,7 @@ namespace ColorVision.Copilot
                         : codexConfigOptions.HideAgentReasoningSourceLabel)
                     .AppendLine(" · 提交快照 · 仅改变 Chat/Agent 用户可见输出；请求、Token 计量与运行事件保持完整");
             }
+            AppendPreventIdleSleep(builder, codexConfigOptions);
             builder.Append("- Codex service_tier：");
             if (!codexConfigOptions.HasServiceTierOverride)
             {
@@ -563,6 +564,54 @@ namespace ColorVision.Copilot
                 .Append("- Skill 手动覆盖：")
                 .Append(defaults.SkillOverrides?.Count.ToString("N0", CultureInfo.CurrentCulture) ?? "0")
                 .AppendLine(" 项");
+        }
+
+        private static void AppendPreventIdleSleep(
+            StringBuilder builder,
+            CopilotProjectInstructionDiscoveryOptions codexConfigOptions)
+        {
+            builder.Append("- Codex features.prevent_idle_sleep：");
+            if (!codexConfigOptions.HasPreventIdleSleepOverride)
+            {
+                builder.AppendLine("未配置 · 默认关闭");
+                return;
+            }
+
+            builder.Append(codexConfigOptions.ConfiguredPreventIdleSleep ? "true" : "false")
+                .Append(" · 来源 ")
+                .Append(codexConfigOptions.PreventIdleSleepSourceLabel.Length == 0
+                    ? "Codex config.toml"
+                    : codexConfigOptions.PreventIdleSleepSourceLabel)
+                .Append(" · 提交快照");
+            if (!codexConfigOptions.ConfiguredPreventIdleSleep)
+            {
+                builder.AppendLine(" · 不阻止系统空闲休眠");
+                return;
+            }
+
+            var runtime = CopilotActiveTurnSleepPrevention.CaptureRuntimeSnapshot();
+            if (runtime.IsActive)
+            {
+                builder.Append(" · Windows Power Request 活动 ")
+                    .Append(runtime.ActiveLeaseCount.ToString(CultureInfo.CurrentCulture))
+                    .AppendLine(" 个");
+            }
+            else if (runtime.LastFailure.Length > 0)
+            {
+                builder.Append(" · 最近一次系统请求失败：")
+                    .Append(runtime.LastFailure);
+                if (runtime.LastErrorCode.HasValue)
+                {
+                    builder.Append("（Win32 ")
+                        .Append(runtime.LastErrorCode.Value.ToString(CultureInfo.InvariantCulture))
+                        .Append('）');
+                }
+                builder.AppendLine();
+            }
+            else
+            {
+                builder.AppendLine(" · 当前无活动轮次；排队等待不占用系统请求");
+            }
         }
 
         private static void AppendConversation(

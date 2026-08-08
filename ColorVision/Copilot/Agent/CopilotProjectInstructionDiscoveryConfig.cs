@@ -143,6 +143,13 @@ namespace ColorVision.Copilot
         public CopilotProjectInstructionConfigSources ReviewModelSource { get; init; } =
             CopilotProjectInstructionConfigSources.None;
 
+        public bool ConfiguredPreventIdleSleep { get; init; }
+
+        public bool HasPreventIdleSleepOverride { get; init; }
+
+        public CopilotProjectInstructionConfigSources PreventIdleSleepSource { get; init; } =
+            CopilotProjectInstructionConfigSources.None;
+
         public int ConfiguredModelContextWindowTokens { get; init; }
 
         public bool HasModelContextWindowOverride { get; init; }
@@ -311,6 +318,7 @@ namespace ColorVision.Copilot
             || HasPersonalityOverride
             || HasWebSearchModeOverride
             || HasReviewModelOverride
+            || HasPreventIdleSleepOverride
             || HasModelContextWindowOverride
             || HasToolOutputTokenLimitOverride
             || HasModelReasoningEffortOverride
@@ -361,6 +369,13 @@ namespace ColorVision.Copilot
         {
             CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml review_model",
             CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml review_model",
+            _ => string.Empty,
+        };
+
+        public string PreventIdleSleepSourceLabel => PreventIdleSleepSource switch
+        {
+            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml features.prevent_idle_sleep",
+            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml features.prevent_idle_sleep",
             _ => string.Empty,
         };
 
@@ -504,6 +519,8 @@ namespace ColorVision.Copilot
         private const string PersonalityKey = "personality";
         private const string WebSearchKey = "web_search";
         private const string ReviewModelKey = "review_model";
+        private const string PreventIdleSleepKey = "features.prevent_idle_sleep";
+        private const string PreventIdleSleepFeatureKey = "prevent_idle_sleep";
         private const string ModelContextWindowKey = "model_context_window";
         private const string ToolOutputTokenLimitKey = "tool_output_token_limit";
         private const string ModelReasoningEffortKey = "model_reasoning_effort";
@@ -679,6 +696,14 @@ namespace ColorVision.Copilot
                 ReviewModelSource = layer.HasReviewModelOverride
                     ? source
                     : current.ReviewModelSource,
+                ConfiguredPreventIdleSleep = layer.HasPreventIdleSleepOverride
+                    ? layer.PreventIdleSleep
+                    : current.ConfiguredPreventIdleSleep,
+                HasPreventIdleSleepOverride = current.HasPreventIdleSleepOverride
+                    || layer.HasPreventIdleSleepOverride,
+                PreventIdleSleepSource = layer.HasPreventIdleSleepOverride
+                    ? source
+                    : current.PreventIdleSleepSource,
                 ConfiguredModelContextWindowTokens = layer.HasModelContextWindowOverride
                     ? layer.ModelContextWindowTokens
                     : current.ConfiguredModelContextWindowTokens,
@@ -802,6 +827,7 @@ namespace ColorVision.Copilot
                 || layer.HasPersonalityOverride
                 || layer.HasWebSearchModeOverride
                 || layer.HasReviewModelOverride
+                || layer.HasPreventIdleSleepOverride
                 || layer.HasModelContextWindowOverride
                 || layer.HasToolOutputTokenLimitOverride
                 || layer.HasModelReasoningEffortOverride
@@ -1076,6 +1102,7 @@ namespace ColorVision.Copilot
             var personality = CopilotResponsePersonality.None;
             var webSearchMode = CopilotCodexWebSearchMode.Unspecified;
             var reviewModel = string.Empty;
+            var preventIdleSleep = false;
             var modelContextWindowTokens = 0;
             var toolOutputTokenLimit = 0;
             var modelReasoningEffort = CopilotCodexReasoningEffort.Unspecified;
@@ -1096,6 +1123,7 @@ namespace ColorVision.Copilot
             var hasPersonalityOverride = false;
             var hasWebSearchModeOverride = false;
             var hasReviewModelOverride = false;
+            var hasPreventIdleSleepOverride = false;
             var hasModelContextWindowOverride = false;
             var hasToolOutputTokenLimitOverride = false;
             var hasModelReasoningEffortOverride = false;
@@ -1109,7 +1137,7 @@ namespace ColorVision.Copilot
             var hasModelInstructionsFileOverride = false;
             var hasCompactPromptOverride = false;
             var hasCompactPromptFileOverride = false;
-            foreach (var assignment in EnumerateTopLevelAssignments(source))
+            foreach (var assignment in EnumerateSupportedAssignments(source))
             {
                 if (string.Equals(assignment.Key, MaximumBytesKey, StringComparison.Ordinal))
                 {
@@ -1183,6 +1211,18 @@ namespace ColorVision.Copilot
                         continue;
                     }
                     hasReviewModelOverride = true;
+                    continue;
+                }
+
+                if (string.Equals(assignment.Key, PreventIdleSleepKey, StringComparison.Ordinal))
+                {
+                    if (!TryParseTomlBoolean(
+                        assignment.Value,
+                        out preventIdleSleep))
+                    {
+                        continue;
+                    }
+                    hasPreventIdleSleepOverride = true;
                     continue;
                 }
 
@@ -1400,6 +1440,8 @@ namespace ColorVision.Copilot
                 HasWebSearchModeOverride = hasWebSearchModeOverride,
                 ReviewModel = reviewModel,
                 HasReviewModelOverride = hasReviewModelOverride,
+                PreventIdleSleep = preventIdleSleep,
+                HasPreventIdleSleepOverride = hasPreventIdleSleepOverride,
                 ModelContextWindowTokens = modelContextWindowTokens,
                 HasModelContextWindowOverride = hasModelContextWindowOverride,
                 ToolOutputTokenLimit = toolOutputTokenLimit,
@@ -1430,6 +1472,7 @@ namespace ColorVision.Copilot
                 || hasPersonalityOverride
                 || hasWebSearchModeOverride
                 || hasReviewModelOverride
+                || hasPreventIdleSleepOverride
                 || hasModelContextWindowOverride
                 || hasToolOutputTokenLimitOverride
                 || hasModelReasoningEffortOverride
@@ -1564,21 +1607,33 @@ namespace ColorVision.Copilot
             }
         }
 
-        private static IEnumerable<TomlAssignment> EnumerateTopLevelAssignments(string source)
+        private static IEnumerable<TomlAssignment> EnumerateSupportedAssignments(string source)
         {
             var lines = NormalizeLines(source);
+            var inRootTable = true;
+            var inFeaturesTable = false;
             for (var index = 0; index < lines.Length; index++)
             {
                 var line = StripComment(lines[index]).Trim();
                 if (line.Length == 0)
                     continue;
                 if (line[0] == '[')
-                    yield break;
+                {
+                    inRootTable = false;
+                    inFeaturesTable = IsExactTableHeader(line, "features");
+                    continue;
+                }
 
                 var equalsIndex = line.IndexOf('=');
                 if (equalsIndex <= 0)
                     continue;
-                var key = line[..equalsIndex].Trim();
+                var parsedKey = line[..equalsIndex].Trim();
+                var key = inFeaturesTable
+                    && string.Equals(parsedKey, PreventIdleSleepFeatureKey, StringComparison.Ordinal)
+                        ? PreventIdleSleepKey
+                        : inRootTable
+                            ? parsedKey
+                            : string.Empty;
                 if (!string.Equals(key, MaximumBytesKey, StringComparison.Ordinal)
                     && !string.Equals(key, FallbackFileNamesKey, StringComparison.Ordinal)
                     && !string.Equals(key, ProjectRootMarkersKey, StringComparison.Ordinal)
@@ -1586,6 +1641,7 @@ namespace ColorVision.Copilot
                     && !string.Equals(key, PersonalityKey, StringComparison.Ordinal)
                     && !string.Equals(key, WebSearchKey, StringComparison.Ordinal)
                     && !string.Equals(key, ReviewModelKey, StringComparison.Ordinal)
+                    && !string.Equals(key, PreventIdleSleepKey, StringComparison.Ordinal)
                     && !string.Equals(key, ModelContextWindowKey, StringComparison.Ordinal)
                     && !string.Equals(key, ToolOutputTokenLimitKey, StringComparison.Ordinal)
                     && !string.Equals(key, ModelReasoningEffortKey, StringComparison.Ordinal)
@@ -1643,6 +1699,24 @@ namespace ColorVision.Copilot
 
                 yield return new TomlAssignment(key, value);
             }
+        }
+
+        private static bool IsExactTableHeader(string line, string tableName)
+        {
+            if (string.IsNullOrWhiteSpace(line)
+                || string.IsNullOrWhiteSpace(tableName)
+                || line.Length < 3
+                || line[0] != '['
+                || line[1] == '['
+                || line[^1] != ']')
+            {
+                return false;
+            }
+
+            return string.Equals(
+                line[1..^1].Trim(),
+                tableName,
+                StringComparison.Ordinal);
         }
 
         private static string[] NormalizeLines(string source) =>
@@ -2223,6 +2297,10 @@ namespace ColorVision.Copilot
             public string ReviewModel { get; init; } = string.Empty;
 
             public bool HasReviewModelOverride { get; init; }
+
+            public bool PreventIdleSleep { get; init; }
+
+            public bool HasPreventIdleSleepOverride { get; init; }
 
             public int ModelContextWindowTokens { get; init; }
 

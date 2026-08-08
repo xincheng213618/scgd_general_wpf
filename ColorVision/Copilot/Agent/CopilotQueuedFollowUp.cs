@@ -89,6 +89,10 @@ namespace ColorVision.Copilot
 
         internal CopilotAgentHostContextSnapshot SubmissionContext { get; }
 
+        internal CopilotAgentHostContextSnapshot CreateExecutionContext(
+            CopilotConversationHistorySnapshot conversationHistory) =>
+            SubmissionContext.WithConversationHistory(conversationHistory);
+
         internal void UpdateQueuePosition(int position, int totalCount)
         {
             QueuePosition = position;

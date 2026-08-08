@@ -198,6 +198,18 @@ namespace ColorVision.Copilot
                         : effective.ReviewModelSourceLabel)
                     .AppendLine(" 请求快照；仅 Review 模式替换模型名，沿用所选 Profile 的 Provider、端点与凭据");
             }
+            if (effective.HasPreventIdleSleepOverride)
+            {
+                builder.Append("Codex features.prevent_idle_sleep：")
+                    .Append(effective.ConfiguredPreventIdleSleep ? "true" : "false")
+                    .Append(" · 来源 ")
+                    .Append(effective.PreventIdleSleepSourceLabel.Length == 0
+                        ? "Codex config.toml"
+                        : effective.PreventIdleSleepSourceLabel)
+                    .AppendLine(effective.ConfiguredPreventIdleSleep
+                        ? " 提交快照；仅活动轮次持有 Windows Power Request，排队等待不占用"
+                        : " 提交快照；不阻止系统空闲休眠");
+            }
             if (effective.HasModelContextWindowOverride)
             {
                 builder.Append("Codex model_context_window：")

@@ -263,6 +263,8 @@ namespace ColorVision.Copilot
             bool refreshExternalContext,
             bool isAutomaticGoalContinuation)
         {
+            using var sleepPrevention = CopilotActiveTurnSleepPrevention.Acquire(
+                turnSnapshot.ProjectInstructionDiscoveryOptions);
             CopilotUiDispatcher.Invoke(() =>
             {
                 CopilotConversationService.MarkTurnStarted(

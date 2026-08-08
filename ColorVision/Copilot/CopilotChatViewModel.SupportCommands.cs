@@ -385,6 +385,7 @@ namespace ColorVision.Copilot
             var personality = CopilotResponsePersonalitySelection.Resolve(
                 conversation,
                 projectInstructionOptions);
+            var sleepPrevention = CopilotActiveTurnSleepPrevention.CaptureRuntimeSnapshot();
             return CopilotContextDiagnostics.Format(new CopilotContextDiagnosticSnapshot
             {
                 ProfileLabel = requestProfile?.DisplayLabel ?? string.Empty,
@@ -397,6 +398,12 @@ namespace ColorVision.Copilot
                 CodexReviewModel = projectInstructionOptions.ConfiguredReviewModel,
                 HasCodexReviewModelOverride = projectInstructionOptions.HasReviewModelOverride,
                 CodexReviewModelSourceLabel = projectInstructionOptions.ReviewModelSourceLabel,
+                CodexPreventIdleSleep = projectInstructionOptions.ConfiguredPreventIdleSleep,
+                HasCodexPreventIdleSleepOverride = projectInstructionOptions.HasPreventIdleSleepOverride,
+                CodexPreventIdleSleepSourceLabel = projectInstructionOptions.PreventIdleSleepSourceLabel,
+                ActiveSleepPreventionLeaseCount = sleepPrevention.ActiveLeaseCount,
+                SleepPreventionLastErrorCode = sleepPrevention.LastErrorCode,
+                SleepPreventionLastFailure = sleepPrevention.LastFailure,
                 SystemPromptCharacters = requestProfile?.EffectiveSystemPrompt.Length ?? 0,
                 ConfiguredModelInstructionsCharacters = projectInstructionOptions.ModelInstructions.Length,
                 ConfiguredModelInstructionsSourceLabel = projectInstructionOptions.ModelInstructionsSourceLabel,

@@ -223,15 +223,8 @@ namespace ColorVision.Copilot
                 PersistState(immediate: true);
                 return null;
             }
-            var submittedContext = queuedFollowUp.SubmissionContext;
-            var turnSnapshot = new CopilotAgentHostContextSnapshot(
-                submittedContext.ActiveDocumentPath,
-                submittedContext.SolutionDirectoryPath,
-                submittedContext.Attachments,
-                submittedContext.LiveContext,
-                CopilotConversationRequestBuilder.CaptureHistorySnapshot(conversation),
-                submittedContext.AdditionalReadRootPaths,
-                CopilotAgentProjectInstructions.ResolveGlobalInstructionRootPath());
+            var turnSnapshot = queuedFollowUp.CreateExecutionContext(
+                CopilotConversationRequestBuilder.CaptureHistorySnapshot(conversation));
             var userMessage = new CopilotChatMessage(CopilotChatRole.User, queuedFollowUp.Prompt)
             {
                 RequestMode = queuedFollowUp.Mode,
