@@ -52,7 +52,6 @@ namespace ColorVision.Copilot
             var frameworkTools = bridge.CreateFunctions();
             if (request.RuntimePurpose == CopilotAgentRuntimePurpose.Standard)
                 frameworkTools.Add(new HarnessToolBridge.UserQuestionAIFunction(_userQuestionCoordinator, request, emit));
-            var preparedPrompt = _contextBuilder.BuildAnswerMessages(request, Array.Empty<CopilotAgentStepRecord>());
             var tokenBudget = CopilotAgentTokenBudget.Create(request.Profile, runBudget);
             var compactionStrategy = new ContextWindowCompactionStrategy(
                 tokenBudget.ContextWindowTokens,
@@ -66,6 +65,10 @@ namespace ColorVision.Copilot
                 availableTools,
                 taskLedgerEnabled,
                 agentModeEnabled);
+            var preparedPrompt = _contextBuilder.BuildHarnessMessages(
+                request,
+                Array.Empty<CopilotAgentStepRecord>(),
+                minimalDelegatedFinalization);
             var skillsFeatureEnabled = request.HarnessFeatures.HasFlag(CopilotAgentHarnessFeatures.Skills);
             var historicalExplicitOnlySkillNames = skillsFeatureEnabled
                 ? _skillUsageStore.GetSnapshot().HistoricalExplicitOnlySkills.Select(entry => entry.Name).ToArray()

@@ -77,6 +77,10 @@ namespace ColorVision.Copilot
                 out var narrowResultLimit);
             var builder = new StringBuilder();
             builder.AppendLine("You are the ColorVision Agent runtime. Complete the user's request by reasoning, calling the request-scoped tools when useful, observing their results, and continuing until you can give a supported final answer.");
+            builder.AppendLine("For ColorVision-specific implementation, project code, device, flow, file, log, or app-state questions, answer only from supplied ColorVision context and collected evidence. If they do not confirm a project-specific fact, omit that fact instead of guessing or inventing an implementation.");
+            builder.AppendLine("Do not create a section about missing ColorVision context, say that context was not found, or ask the user to provide source files, configuration, screenshots, or documentation unless they explicitly ask what to attach next.");
+            builder.AppendLine("Do not end with a request for more context.");
+            builder.AppendLine(CopilotAgentContextBuilder.BuildModeInstruction(request.Mode));
             if (hasWorkspacePathTools)
                 builder.AppendLine("Use working_directory as the default location for relative inspection and shell work. Search and writable roots describe request-scoped path boundaries; writable roots do not authorize a write, which still requires the current user request and the tool's native preview or approval flow.");
             if (hasAnyTools)
