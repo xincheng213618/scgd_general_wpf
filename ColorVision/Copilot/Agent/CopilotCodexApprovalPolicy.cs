@@ -99,32 +99,35 @@ namespace ColorVision.Copilot
                     "保留 ColorVision 原生逐调用审批、临时授权与自动审查边界",
                 CopilotCodexApprovalPolicyMode.Never =>
                     "不创建新审批提示；需要新审批的调用会自动拒绝，现有沙箱与本机权限不会扩大",
-                CopilotCodexApprovalPolicyMode.Granular => policy.SandboxApproval
-                    ? "允许 ColorVision 原生工具审批；其余 granular 标志已保留，但当前没有对应的独立运行时审批通道"
-                    : "自动拒绝 ColorVision 原生工具审批；其余 granular 标志已保留，但当前没有对应的独立运行时审批通道",
+                CopilotCodexApprovalPolicyMode.Granular =>
+                    $"按工具能力类别执行 granular 审批；交互类别：{GetGranularCategoryList(policy, enabled: true)}；自动拒绝：{GetGranularCategoryList(policy, enabled: false)}",
                 _ => "未配置；保留 ColorVision 原生审批策略",
             };
         }
 
-        public static bool AllowsSandboxApprovalPrompt(CopilotCodexApprovalPolicy? policy)
+        public static bool AllowsApprovalPrompt(
+            CopilotCodexApprovalPolicy? policy,
+            CopilotApprovalPromptCategory category)
         {
             policy ??= CopilotCodexApprovalPolicy.Unspecified;
             return policy.Mode switch
             {
                 CopilotCodexApprovalPolicyMode.Never => false,
-                CopilotCodexApprovalPolicyMode.Granular => policy.SandboxApproval,
+                CopilotCodexApprovalPolicyMode.Granular => IsGranularCategoryEnabled(policy, category),
                 _ => true,
             };
         }
 
-        public static bool AllowsAutomaticReview(CopilotCodexApprovalPolicy? policy)
+        public static bool AllowsAutomaticReview(
+            CopilotCodexApprovalPolicy? policy,
+            CopilotApprovalPromptCategory category)
         {
             policy ??= CopilotCodexApprovalPolicy.Unspecified;
             return policy.Mode switch
             {
                 CopilotCodexApprovalPolicyMode.Unspecified => true,
                 CopilotCodexApprovalPolicyMode.OnRequest => true,
-                CopilotCodexApprovalPolicyMode.Granular => policy.SandboxApproval,
+                CopilotCodexApprovalPolicyMode.Granular => IsGranularCategoryEnabled(policy, category),
                 _ => false,
             };
         }
@@ -140,12 +143,14 @@ namespace ColorVision.Copilot
                     && tool.Capability.Access == CopilotToolAccess.Write;
         }
 
-        public static string GetSandboxApprovalDenialReason(CopilotCodexApprovalPolicy? policy)
+        public static string GetApprovalDenialReason(
+            CopilotCodexApprovalPolicy? policy,
+            CopilotApprovalPromptCategory category)
         {
             policy ??= CopilotCodexApprovalPolicy.Unspecified;
             return policy.Mode == CopilotCodexApprovalPolicyMode.Never
                 ? "Codex approval_policy=never disables new approval prompts for this submitted turn; the protected tool call was not authorized."
-                : "Codex granular approval_policy disables sandbox_approval prompts for this submitted turn; the protected tool call was not authorized.";
+                : $"Codex granular approval_policy disables {GetConfigCategoryName(category)} prompts for this submitted turn; the protected tool call was not authorized.";
         }
 
         public static string GetModelInstruction(CopilotCodexApprovalPolicy? policy)
@@ -159,11 +164,57 @@ namespace ColorVision.Copilot
                     "Codex approval_policy=on-request is frozen for this submitted turn. Request approval only when the ColorVision tool boundary requires it, and never treat the current request itself as approval.",
                 CopilotCodexApprovalPolicyMode.Never =>
                     "Codex approval_policy=never is frozen for this submitted turn. Never request or claim a new approval; if a protected tool is unavailable, continue with operations already permitted by the sandbox and ColorVision native policy.",
-                CopilotCodexApprovalPolicyMode.Granular when policy.SandboxApproval =>
-                    "Codex granular approval_policy is frozen for this submitted turn and permits ColorVision native sandbox approval prompts. Request approval only for an exact protected call and never treat the current request itself as approval.",
                 CopilotCodexApprovalPolicyMode.Granular =>
-                    "Codex granular approval_policy is frozen for this submitted turn and disables sandbox_approval. Never request or claim a ColorVision native tool approval; continue with operations that do not require one.",
+                    $"Codex granular approval_policy is frozen for this submitted turn. The host routes exact protected calls by approval category; enabled categories are {GetGranularCategoryList(policy, enabled: true)}, and disabled categories are automatically denied ({GetGranularCategoryList(policy, enabled: false)}). Never treat the current request itself as approval or claim that a denied category ran.",
                 _ => string.Empty,
+            };
+        }
+
+        private static bool IsGranularCategoryEnabled(
+            CopilotCodexApprovalPolicy policy,
+            CopilotApprovalPromptCategory category)
+        {
+            return category switch
+            {
+                CopilotApprovalPromptCategory.SandboxApproval => policy.SandboxApproval,
+                CopilotApprovalPromptCategory.Rules => policy.Rules,
+                CopilotApprovalPromptCategory.McpElicitations => policy.McpElicitations,
+                CopilotApprovalPromptCategory.RequestPermissions => policy.RequestPermissions,
+                CopilotApprovalPromptCategory.SkillApproval => policy.SkillApproval,
+                _ => false,
+            };
+        }
+
+        private static string GetGranularCategoryList(
+            CopilotCodexApprovalPolicy policy,
+            bool enabled)
+        {
+            var categories = new[]
+            {
+                CopilotApprovalPromptCategory.SandboxApproval,
+                CopilotApprovalPromptCategory.Rules,
+                CopilotApprovalPromptCategory.McpElicitations,
+                CopilotApprovalPromptCategory.RequestPermissions,
+                CopilotApprovalPromptCategory.SkillApproval,
+            };
+            var selected = Array.FindAll(
+                categories,
+                category => IsGranularCategoryEnabled(policy, category) == enabled);
+            return selected.Length == 0
+                ? "none"
+                : string.Join(", ", Array.ConvertAll(selected, GetConfigCategoryName));
+        }
+
+        private static string GetConfigCategoryName(CopilotApprovalPromptCategory category)
+        {
+            return category switch
+            {
+                CopilotApprovalPromptCategory.SandboxApproval => "sandbox_approval",
+                CopilotApprovalPromptCategory.Rules => "rules",
+                CopilotApprovalPromptCategory.McpElicitations => "mcp_elicitations",
+                CopilotApprovalPromptCategory.RequestPermissions => "request_permissions",
+                CopilotApprovalPromptCategory.SkillApproval => "skill_approval",
+                _ => "unknown",
             };
         }
 

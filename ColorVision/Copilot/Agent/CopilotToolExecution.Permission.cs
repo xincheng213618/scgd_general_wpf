@@ -40,15 +40,17 @@ namespace ColorVision.Copilot
                     WasCancelled = true,
                 };
             }
-            if (!CopilotCodexApprovalPolicySelection.AllowsSandboxApprovalPrompt(
-                invocation.AgentRequest.CodexApprovalPolicy))
+            if (!CopilotCodexApprovalPolicySelection.AllowsApprovalPrompt(
+                invocation.AgentRequest.CodexApprovalPolicy,
+                invocation.Tool.Capability.ApprovalPromptCategory))
             {
                 return CreatePermissionRequestOutcome(
                     hooks,
                     hookRuns,
                     CopilotToolPermissionRequestDecision.Deny(
-                        CopilotCodexApprovalPolicySelection.GetSandboxApprovalDenialReason(
-                            invocation.AgentRequest.CodexApprovalPolicy),
+                        CopilotCodexApprovalPolicySelection.GetApprovalDenialReason(
+                            invocation.AgentRequest.CodexApprovalPolicy,
+                            invocation.Tool.Capability.ApprovalPromptCategory),
                         "codex_approval_prompt_disabled"));
             }
 

@@ -1,4 +1,5 @@
 using ColorVision.Copilot;
+using ModelContextProtocol.Protocol;
 using System;
 using System.IO;
 using System.Threading;
@@ -275,9 +276,112 @@ public sealed class CopilotCodexApprovalPolicyTests
             });
 
         Assert.Contains("Codex approval_policy：granular(sandbox_approval=true", memoryReport, StringComparison.Ordinal);
-        Assert.Contains("其余 granular 标志已保留", memoryReport, StringComparison.Ordinal);
+        Assert.Contains("交互类别：sandbox_approval, mcp_elicitations", memoryReport, StringComparison.Ordinal);
+        Assert.Contains("自动拒绝：rules, request_permissions, skill_approval", memoryReport, StringComparison.Ordinal);
         Assert.Contains("审批策略：granular(sandbox_approval=true", contextReport, StringComparison.Ordinal);
         Assert.Contains("Codex approval_policy：granular(sandbox_approval=true", debugReport, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task GranularPromptCategoriesAreEnforcedIndependently()
+    {
+        var categories = Enum.GetValues<CopilotApprovalPromptCategory>();
+        foreach (var enabledCategory in categories)
+        {
+            var policy = CreateSingleCategoryPolicy(enabledCategory);
+            var request = CreateRequest(policy);
+            var hook = new RecordingPermissionHook();
+            var executor = new CopilotToolExecutor([hook]);
+            var allowedTool = new RecordingProtectedWriteTool(
+                $"Allowed{enabledCategory}",
+                enabledCategory);
+            var disabledCategory = categories[(Array.IndexOf(categories, enabledCategory) + 1) % categories.Length];
+            var deniedTool = new RecordingProtectedWriteTool(
+                $"Denied{disabledCategory}",
+                disabledCategory);
+
+            var allowed = await executor.EvaluatePermissionRequestAsync(
+                CreateInvocation(allowedTool, request, $"allowed-{enabledCategory}", false),
+                CancellationToken.None);
+            var denied = await executor.EvaluatePermissionRequestAsync(
+                CreateInvocation(deniedTool, request, $"denied-{disabledCategory}", false),
+                CancellationToken.None);
+
+            Assert.True(allowed.Decision.ShouldPrompt);
+            Assert.True(CopilotCodexApprovalPolicySelection.AllowsAutomaticReview(
+                policy,
+                enabledCategory));
+            Assert.False(denied.Decision.ShouldPrompt);
+            Assert.Equal("codex_approval_prompt_disabled", denied.Decision.FailureCode);
+            Assert.Contains(GetConfigCategoryName(disabledCategory), denied.Decision.Reason, StringComparison.Ordinal);
+            Assert.False(CopilotCodexApprovalPolicySelection.AllowsAutomaticReview(
+                policy,
+                disabledCategory));
+            Assert.Equal(1, hook.PermissionRequestCount);
+        }
+    }
+
+    [Fact]
+    public void ExternalMcpApprovalUsesMcpElicitationsCategory()
+    {
+        var protectedCapability = CopilotMcpClientCapabilityPolicy.Create(
+            CopilotMcpClientAccessPolicy.RequireApproval,
+            TimeSpan.FromSeconds(15));
+        var readOnlyCapability = CopilotMcpClientCapabilityPolicy.Create(
+            CopilotMcpClientAccessPolicy.ReadOnly,
+            TimeSpan.FromSeconds(15));
+
+        Assert.True(protectedCapability.RequiresNativeApproval);
+        Assert.Equal(
+            CopilotApprovalPromptCategory.McpElicitations,
+            protectedCapability.ApprovalPromptCategory);
+        Assert.False(readOnlyCapability.RequiresNativeApproval);
+    }
+
+    [Fact]
+    public void DestructiveMcpAnnotationAlwaysRequiresApproval()
+    {
+        var capability = CopilotMcpClientCapabilityPolicy.Create(
+            CopilotMcpClientAccessPolicy.ReadOnly,
+            TimeSpan.FromSeconds(15),
+            new ToolAnnotations
+            {
+                DestructiveHint = true,
+                ReadOnlyHint = true,
+            });
+
+        Assert.True(capability.RequiresNativeApproval);
+        Assert.Equal(CopilotToolAccess.Write, capability.Access);
+        Assert.Equal(
+            CopilotApprovalPromptCategory.McpElicitations,
+            capability.ApprovalPromptCategory);
+    }
+
+    [Fact]
+    public void ApprovalCategoryChangesCapabilityRevision()
+    {
+        var catalog = new CopilotCapabilityCatalog();
+        var sandboxSnapshot = catalog.PublishSource(
+            CopilotCapabilitySourceKind.Plugin,
+            "approval-category-test",
+            "Approval category test",
+            [new RecordingProtectedWriteTool(
+                "CategorizedProbe",
+                CopilotApprovalPromptCategory.SandboxApproval)]);
+        var mcpSnapshot = catalog.PublishSource(
+            CopilotCapabilitySourceKind.Plugin,
+            "approval-category-test",
+            "Approval category test",
+            [new RecordingProtectedWriteTool(
+                "CategorizedProbe",
+                CopilotApprovalPromptCategory.McpElicitations)]);
+
+        var sandboxEntry = Assert.Single(sandboxSnapshot.Capabilities);
+        var mcpEntry = Assert.Single(mcpSnapshot.Capabilities);
+        Assert.Equal(CopilotApprovalPromptCategory.SandboxApproval, sandboxEntry.ApprovalPromptCategory);
+        Assert.Equal(CopilotApprovalPromptCategory.McpElicitations, mcpEntry.ApprovalPromptCategory);
+        Assert.NotEqual(sandboxEntry.Fingerprint, mcpEntry.Fingerprint);
+        Assert.Equal(sandboxEntry.Revision + 1, mcpEntry.Revision);
     }
 
     private sealed class RecordingWriteTool : ICopilotTool
@@ -327,9 +431,14 @@ public sealed class CopilotCodexApprovalPolicyTests
     {
         private int _executionCount;
 
-        public RecordingProtectedWriteTool(string name)
+        public RecordingProtectedWriteTool(
+            string name,
+            CopilotApprovalPromptCategory approvalPromptCategory = CopilotApprovalPromptCategory.SandboxApproval)
         {
             Name = name;
+            Capability = CopilotToolCapabilityDescriptor.ProtectedWrite(
+                CopilotToolIdempotency.NonIdempotent,
+                approvalPromptCategory: approvalPromptCategory);
         }
 
         public int ExecutionCount => Volatile.Read(ref _executionCount);
@@ -338,9 +447,7 @@ public sealed class CopilotCodexApprovalPolicyTests
 
         public string Description => "Records exact protected approval-policy execution.";
 
-        public CopilotToolCapabilityDescriptor Capability { get; } =
-            CopilotToolCapabilityDescriptor.ProtectedWrite(
-                CopilotToolIdempotency.NonIdempotent);
+        public CopilotToolCapabilityDescriptor Capability { get; }
 
         public bool CanHandle(CopilotAgentRequest request) => true;
 
@@ -415,6 +522,25 @@ public sealed class CopilotCodexApprovalPolicyTests
         Mode = CopilotAgentMode.Code,
         CodexApprovalPolicy = policy,
         WritableLocalRootPaths = [Path.GetTempPath()],
+    };
+
+    private static CopilotCodexApprovalPolicy CreateSingleCategoryPolicy(
+        CopilotApprovalPromptCategory category) =>
+        CopilotCodexApprovalPolicy.CreateGranular(
+            sandboxApproval: category == CopilotApprovalPromptCategory.SandboxApproval,
+            rules: category == CopilotApprovalPromptCategory.Rules,
+            mcpElicitations: category == CopilotApprovalPromptCategory.McpElicitations,
+            requestPermissions: category == CopilotApprovalPromptCategory.RequestPermissions,
+            skillApproval: category == CopilotApprovalPromptCategory.SkillApproval);
+
+    private static string GetConfigCategoryName(CopilotApprovalPromptCategory category) => category switch
+    {
+        CopilotApprovalPromptCategory.SandboxApproval => "sandbox_approval",
+        CopilotApprovalPromptCategory.Rules => "rules",
+        CopilotApprovalPromptCategory.McpElicitations => "mcp_elicitations",
+        CopilotApprovalPromptCategory.RequestPermissions => "request_permissions",
+        CopilotApprovalPromptCategory.SkillApproval => "skill_approval",
+        _ => string.Empty,
     };
 
     private static CopilotToolInvocation CreateInvocation(

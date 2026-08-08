@@ -48,6 +48,8 @@ namespace ColorVision.Copilot
 
         public CopilotToolApprovalMode ApprovalMode { get; init; }
 
+        public CopilotApprovalPromptCategory ApprovalPromptCategory { get; init; }
+
         public CopilotToolIdempotency Idempotency { get; init; }
 
         public CopilotToolConcurrencyMode ConcurrencyMode { get; init; }
@@ -291,6 +293,7 @@ namespace ColorVision.Copilot
                 Access = candidate.Capability.Access,
                 RiskLevel = candidate.Capability.RiskLevel,
                 ApprovalMode = candidate.Capability.ApprovalMode,
+                ApprovalPromptCategory = candidate.Capability.ApprovalPromptCategory,
                 Idempotency = candidate.Capability.Idempotency,
                 ConcurrencyMode = candidate.Capability.EffectiveConcurrencyMode,
                 ExecutionTimeoutMs = Math.Max(1, (long)candidate.Capability.EffectiveExecutionTimeout.TotalMilliseconds),
@@ -362,6 +365,7 @@ namespace ColorVision.Copilot
                 ((int)capability.Access).ToString(),
                 ((int)capability.RiskLevel).ToString(),
                 ((int)capability.ApprovalMode).ToString(),
+                ((int)capability.ApprovalPromptCategory).ToString(),
                 ((int)capability.Idempotency).ToString(),
                 ((int)capability.EffectiveConcurrencyMode).ToString(),
                 capability.EffectiveExecutionTimeout.Ticks.ToString(),

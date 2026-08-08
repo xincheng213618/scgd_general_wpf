@@ -311,7 +311,8 @@ namespace ColorVision.Copilot
             if (request.CodexApprovalsReviewer == CopilotCodexApprovalsReviewer.AutoReview)
             {
                 return CopilotCodexApprovalPolicySelection.AllowsAutomaticReview(
-                        request.CodexApprovalPolicy)
+                        request.CodexApprovalPolicy,
+                        tool.Capability.ApprovalPromptCategory)
                     && !CopilotToolIntentPolicy.IsReadOnlyMode(request.Mode)
                     && tool.Capability.RequiresNativeApproval;
             }
