@@ -29,12 +29,17 @@ namespace ColorVision.Copilot
         public static string FormatReport(
             CopilotAgentSkillUsageSnapshot snapshot,
             int metadataCharacterBudget,
-            IReadOnlyDictionary<string, CopilotAgentSkillOverrideState>? overrides = null)
+            IReadOnlyDictionary<string, CopilotAgentSkillOverrideState>? overrides = null,
+            IReadOnlyList<CopilotAgentSkillCatalogItem>? availableSkills = null,
+            bool catalogReloaded = false)
         {
             ArgumentNullException.ThrowIfNull(snapshot);
             var builder = new StringBuilder();
-            builder.AppendLine("/skills · Agent Skill 使用快照");
-            builder.AppendLine(FormatSummary(snapshot));
+            builder.AppendLine("/skills · Agent Skill 目录与使用快照");
+            AppendCatalog(builder, availableSkills, catalogReloaded);
+            builder.AppendLine()
+                .AppendLine("本地使用证据")
+                .AppendLine(FormatSummary(snapshot));
             builder.Append("元数据预算：")
                 .Append(metadataCharacterBudget.ToString("N0"))
                 .Append(" 字符（上下文 ")
@@ -48,6 +53,34 @@ namespace ColorVision.Copilot
                 .AppendLine()
                 .Append(FormatEntries(snapshot));
             return builder.ToString();
+        }
+
+        private static void AppendCatalog(
+            StringBuilder builder,
+            IReadOnlyList<CopilotAgentSkillCatalogItem>? availableSkills,
+            bool catalogReloaded)
+        {
+            var items = availableSkills ?? Array.Empty<CopilotAgentSkillCatalogItem>();
+            builder.Append("当前可调用：")
+                .Append(items.Count)
+                .Append(" 个 Skill；")
+                .AppendLine(catalogReloaded
+                    ? "已强制从磁盘重扫目录。"
+                    : "本地 SKILL.md 变更会自动使目录缓存失效。")
+                .AppendLine("正在运行的 Agent 保留启动时的 Skill 快照；新目录从下一次请求开始生效。");
+            if (items.Count == 0)
+            {
+                builder.AppendLine("当前可信项目与内置目录中未发现有效 Skill。");
+                return;
+            }
+
+            foreach (var item in items.OrderBy(item => item.Name, StringComparer.OrdinalIgnoreCase))
+            {
+                builder.Append("- $")
+                    .Append(item.Name)
+                    .Append(item.IsBuiltIn ? " [内置] — " : " [项目] — ")
+                    .AppendLine(item.Description);
+            }
         }
 
         public static string FormatOverrides(IReadOnlyDictionary<string, CopilotAgentSkillOverrideState>? overrides)

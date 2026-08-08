@@ -26,13 +26,35 @@ namespace ColorVision.Copilot
 {
     public partial class CopilotChatViewModel
     {
-        private string BuildAgentSkillDiagnosticsReport()
+        private void HandleAgentSkillsCommand(CopilotLocalCommand command, string arguments)
+        {
+            var action = CopilotAgentSkillCommand.Resolve(arguments);
+            if (action == CopilotAgentSkillCommandAction.Invalid)
+            {
+                ShowLocalCommandResult(command, CopilotAgentSkillCommand.Usage);
+                return;
+            }
+
+            ShowLocalCommandResult(
+                command,
+                BuildAgentSkillDiagnosticsReport(action == CopilotAgentSkillCommandAction.Reload));
+        }
+
+        private string BuildAgentSkillDiagnosticsReport(bool forceReload)
         {
             var agentDefaults = _config.AgentDefaults;
+            var overrides = agentDefaults.CreateSkillOverrideSnapshot();
+            var turnSnapshot = CaptureHostedTurnSnapshot(Attachments);
+            var trustedProjectRoots = CopilotAgentRequestFactory.BuildTrustedProjectRootPaths(turnSnapshot);
+            if (forceReload)
+                CopilotAgentSkillCatalog.Invalidate();
+            var availableSkills = CopilotAgentSkillCatalog.DiscoverCached(trustedProjectRoots, overrides);
             return CopilotAgentSkillDiagnostics.FormatReport(
                 CopilotAgentSkillUsageStore.Shared.GetSnapshot(),
                 CopilotAgentSkills.ResolveMetadataCharacterBudget(agentDefaults.ContextWindowTokens),
-                agentDefaults.CreateSkillOverrideSnapshot());
+                overrides,
+                availableSkills,
+                forceReload);
         }
 
         private string BuildPermissionDiagnosticsReport()

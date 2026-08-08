@@ -122,7 +122,7 @@ namespace ColorVision.Copilot
                     ShowLocalCommandResult(command, BuildHookDiagnosticsReport());
                     break;
                 case CopilotLocalCommandKind.Skills:
-                    ShowLocalCommandResult(command, BuildAgentSkillDiagnosticsReport());
+                    HandleAgentSkillsCommand(command, invocation.Arguments);
                     break;
                 case CopilotLocalCommandKind.Mcp:
                     HandleMcpCommand(command, invocation.Arguments);
