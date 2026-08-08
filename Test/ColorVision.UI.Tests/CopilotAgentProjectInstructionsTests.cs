@@ -641,6 +641,129 @@ public sealed class CopilotAgentProjectInstructionsTests
         }
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void StandaloneFileUsesNearestGitRootForProjectContext(bool markerIsFile)
+    {
+        string globalRoot = CreateTemporaryDirectory();
+        string projectRoot = CreateTemporaryDirectory();
+        try
+        {
+            string gitMarkerPath = Path.Combine(projectRoot, ".git");
+            if (markerIsFile)
+                File.WriteAllText(gitMarkerPath, "gitdir: worktree-metadata");
+            else
+                Directory.CreateDirectory(gitMarkerPath);
+            string projectConfigDirectory = Path.Combine(projectRoot, ".codex");
+            Directory.CreateDirectory(projectConfigDirectory);
+            File.WriteAllText(
+                Path.Combine(projectConfigDirectory, "config.toml"),
+                "project_doc_fallback_filenames = [\"ROOT_GUIDE.md\"]");
+            string rootInstructions = Path.Combine(projectRoot, "ROOT_GUIDE.md");
+            File.WriteAllText(rootInstructions, "# Repository instructions");
+            string sourceDirectory = Path.Combine(projectRoot, "src", "feature");
+            Directory.CreateDirectory(sourceDirectory);
+            string nestedInstructions = Path.Combine(sourceDirectory, "AGENTS.md");
+            string activeDocument = Path.Combine(sourceDirectory, "Feature.cs");
+            File.WriteAllText(nestedInstructions, "# Feature instructions");
+            File.WriteAllText(activeDocument, "namespace Feature;");
+            var hostContext = new CopilotAgentHostContextSnapshot(
+                activeDocument,
+                solutionDirectoryPath: null,
+                attachments: null,
+                liveContext: null,
+                conversationHistory: null,
+                additionalReadRootPaths: null,
+                globalInstructionRootPath: globalRoot);
+
+            var plan = CopilotAgentRequestFactory.Prepare(
+                $"Inspect the local implementation in {activeDocument}",
+                CopilotAgentMode.Auto,
+                hostContext);
+
+            Assert.Equal(projectRoot, hostContext.PrimaryTrustedProjectRootPath, ignoreCase: true);
+            Assert.Equal([projectRoot], plan.TrustedProjectRootPaths, StringComparer.OrdinalIgnoreCase);
+            Assert.Equal(
+                CopilotProjectInstructionConfigSources.TrustedProject,
+                hostContext.ProjectInstructionDiscoveryOptions.ConfigSources);
+            Assert.Equal(
+                [rootInstructions, nestedInstructions],
+                plan.ProjectInstructions.Select(document => document.Path).ToArray(),
+                StringComparer.OrdinalIgnoreCase);
+            Assert.Empty(plan.WritableLocalRootPaths);
+            Assert.DoesNotContain(plan.SearchRootPaths, path =>
+                string.Equals(path, projectRoot, StringComparison.OrdinalIgnoreCase));
+        }
+        finally
+        {
+            Directory.Delete(globalRoot, recursive: true);
+            Directory.Delete(projectRoot, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void HostContextKeepsTheProjectRootDecisionTakenAtSubmission()
+    {
+        string globalRoot = CreateTemporaryDirectory();
+        string projectRoot = CreateTemporaryDirectory();
+        try
+        {
+            string projectConfigDirectory = Path.Combine(projectRoot, ".codex");
+            Directory.CreateDirectory(projectConfigDirectory);
+            File.WriteAllText(
+                Path.Combine(projectConfigDirectory, "config.toml"),
+                "project_doc_fallback_filenames = [\"ROOT_GUIDE.md\"]");
+            string rootInstructions = Path.Combine(projectRoot, "ROOT_GUIDE.md");
+            File.WriteAllText(rootInstructions, "# Repository instructions");
+            string sourceDirectory = Path.Combine(projectRoot, "src", "feature");
+            Directory.CreateDirectory(sourceDirectory);
+            string activeDocument = Path.Combine(sourceDirectory, "Feature.cs");
+            File.WriteAllText(activeDocument, "namespace Feature;");
+            var submittedContext = new CopilotAgentHostContextSnapshot(
+                activeDocument,
+                solutionDirectoryPath: null,
+                attachments: null,
+                liveContext: null,
+                conversationHistory: null,
+                additionalReadRootPaths: null,
+                globalInstructionRootPath: globalRoot);
+
+            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
+
+            var submittedPlan = CopilotAgentRequestFactory.Prepare(
+                $"Inspect the local implementation in {activeDocument}",
+                CopilotAgentMode.Auto,
+                submittedContext);
+            var refreshedContext = new CopilotAgentHostContextSnapshot(
+                activeDocument,
+                solutionDirectoryPath: null,
+                attachments: null,
+                liveContext: null,
+                conversationHistory: null,
+                additionalReadRootPaths: null,
+                globalInstructionRootPath: globalRoot);
+            var refreshedPlan = CopilotAgentRequestFactory.Prepare(
+                $"Inspect the local implementation in {activeDocument}",
+                CopilotAgentMode.Auto,
+                refreshedContext);
+
+            Assert.Equal(sourceDirectory, submittedContext.PrimaryTrustedProjectRootPath, ignoreCase: true);
+            Assert.Equal([sourceDirectory], submittedPlan.TrustedProjectRootPaths, StringComparer.OrdinalIgnoreCase);
+            Assert.DoesNotContain(submittedPlan.ProjectInstructions, document =>
+                string.Equals(document.Path, rootInstructions, StringComparison.OrdinalIgnoreCase));
+            Assert.Equal(projectRoot, refreshedContext.PrimaryTrustedProjectRootPath, ignoreCase: true);
+            Assert.Equal([projectRoot], refreshedPlan.TrustedProjectRootPaths, StringComparer.OrdinalIgnoreCase);
+            Assert.Contains(refreshedPlan.ProjectInstructions, document =>
+                string.Equals(document.Path, rootInstructions, StringComparison.OrdinalIgnoreCase));
+        }
+        finally
+        {
+            Directory.Delete(globalRoot, recursive: true);
+            Directory.Delete(projectRoot, recursive: true);
+        }
+    }
+
     [Fact]
     public void RequestFactoryKeepsTheInstructionConfigSnapshotTakenAtSubmission()
     {

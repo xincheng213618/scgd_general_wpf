@@ -22,6 +22,8 @@ namespace ColorVision.Copilot
 
         internal string GlobalInstructionRootPath { get; }
 
+        internal string PrimaryTrustedProjectRootPath { get; }
+
         internal CopilotProjectInstructionDiscoveryOptions ProjectInstructionDiscoveryOptions { get; }
 
         public CopilotAgentHostContextSnapshot(
@@ -85,11 +87,11 @@ namespace ColorVision.Copilot
                 : new CopilotConversationHistorySnapshot(conversationHistory.ModelMessages, conversationHistory.VisibleMessages);
             AdditionalReadRootPaths = CopilotAdditionalDirectoryCommand.NormalizeStoredPaths(additionalReadRootPaths);
             GlobalInstructionRootPath = CopilotAgentProjectInstructions.NormalizeGlobalInstructionRootPath(globalInstructionRootPath);
-            var trustedProjectRootPath = CopilotAgentRequestFactory.ResolvePrimaryTrustedProjectRootPath(
+            PrimaryTrustedProjectRootPath = CopilotAgentRequestFactory.ResolvePrimaryTrustedProjectRootPath(
                 SolutionDirectoryPath,
                 ActiveDocumentPath);
             ProjectInstructionDiscoveryOptions = loadCodexConfigLayers
-                ? CopilotProjectInstructionDiscoveryConfig.Load(GlobalInstructionRootPath, trustedProjectRootPath)
+                ? CopilotProjectInstructionDiscoveryConfig.Load(GlobalInstructionRootPath, PrimaryTrustedProjectRootPath)
                 : CopilotProjectInstructionDiscoveryConfig.CreateDefault();
         }
 
@@ -210,6 +212,8 @@ namespace ColorVision.Copilot
 
     public static class CopilotAgentRequestFactory
     {
+        private const string DefaultProjectRootMarker = ".git";
+
         public static CopilotAgentRequestPlan Prepare(
             string? userText,
             CopilotAgentMode mode,
@@ -383,9 +387,7 @@ namespace ColorVision.Copilot
         {
             ArgumentNullException.ThrowIfNull(hostContext);
 
-            var root = ResolvePrimaryTrustedProjectRootPath(
-                hostContext.SolutionDirectoryPath,
-                hostContext.ActiveDocumentPath);
+            var root = hostContext.PrimaryTrustedProjectRootPath;
             return root.Length == 0 ? Array.Empty<string>() : [root];
         }
 
@@ -398,7 +400,29 @@ namespace ColorVision.Copilot
             if (roots.Count == 0)
                 AddSearchCandidate(roots, activeDocumentPath);
             var normalizedRoots = CopilotWorkspaceSearchSupport.NormalizeSearchRoots(roots);
-            return normalizedRoots.Count == 0 ? string.Empty : normalizedRoots[0];
+            if (normalizedRoots.Count == 0)
+                return string.Empty;
+
+            var workingDirectory = normalizedRoots[0];
+            if (CopilotWorkspaceSearchSupport.HasReparsePointInPath(workingDirectory))
+                return workingDirectory;
+
+            try
+            {
+                var current = new DirectoryInfo(workingDirectory);
+                while (current != null)
+                {
+                    var markerPath = Path.Combine(current.FullName, DefaultProjectRootMarker);
+                    if (Directory.Exists(markerPath) || File.Exists(markerPath))
+                        return Path.TrimEndingDirectorySeparator(current.FullName);
+                    current = current.Parent;
+                }
+            }
+            catch
+            {
+            }
+
+            return workingDirectory;
         }
 
         private static string[] BuildWritableLocalFilePaths(
