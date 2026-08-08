@@ -30,9 +30,10 @@ namespace ColorVision.Copilot
             {
                 var client = new OpenAIClient(credential, options)
                     .GetResponsesClient();
-                return client.AsIChatClientWithStoredOutputDisabled(
-                    profile.Model,
-                    includeReasoningEncryptedContent: true);
+                return new CopilotStatelessResponsesHistoryChatClient(
+                    client.AsIChatClientWithStoredOutputDisabled(
+                        profile.Model,
+                        includeReasoningEncryptedContent: true));
             }
 
             return new ChatClient(profile.Model, credential, options)

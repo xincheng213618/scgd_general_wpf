@@ -4,7 +4,7 @@ namespace ColorVision.Copilot
 {
     internal static class CopilotOpenAiRequestPolicy
     {
-        public const string ResponsesAgentSessionTransportVersion = "openai-responses-stateless-v1";
+        public const string ResponsesAgentSessionTransportVersion = "openai-responses-stateless-v2";
 
         public static string GetMaximumOutputTokensPropertyName(
             CopilotProfileConfig profile)
