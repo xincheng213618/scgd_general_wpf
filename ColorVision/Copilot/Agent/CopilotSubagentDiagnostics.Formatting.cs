@@ -48,6 +48,30 @@ namespace ColorVision.Copilot
             }
         }
 
+        private static void AppendCustomSubagents(
+            StringBuilder builder,
+            IReadOnlyList<CopilotCodexCustomSubagentDefinition>? customSubagents,
+            bool customAgentsEnabled,
+            string snapshotLabel)
+        {
+            var diagnostics = CopilotCodexCustomSubagentDiagnostics.Format(customSubagents);
+            builder.AppendLine()
+                .AppendLine("自定义 Agent 配置");
+            if (!string.IsNullOrWhiteSpace(snapshotLabel))
+                builder.Append("快照：").AppendLine(snapshotLabel.Trim());
+            if (diagnostics.Length == 0)
+            {
+                builder.AppendLine("当前快照没有可用的自定义 Agent；可在 Codex Home 或受信项目的 .codex/agents/*.toml 中配置。")
+                    .AppendLine("使用 /memory 查看配置发现与信任诊断。");
+                return;
+            }
+
+            builder.AppendLine(diagnostics)
+                .AppendLine(customAgentsEnabled
+                    ? "选择方式：父 Agent 可在 DelegateExplore 或 DelegateScout 的 agent 参数中选择；配置不会创建新的 RoleCatalog 工具。"
+                    : "可用性：agents.enabled=false；这些配置已发现但本次快照不会暴露或执行子代理工具。");
+        }
+
         private static void AppendRuns(
             StringBuilder builder,
             IReadOnlyList<CopilotSubagentRunDiagnostic> runs,

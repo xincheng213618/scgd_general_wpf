@@ -467,6 +467,39 @@ public sealed class CopilotCodexCustomSubagentsTests
         }
     }
 
+    [Fact]
+    public void AgentsRolesDistinguishesCustomProfilesFromFixedRoleCatalogTools()
+    {
+        var definition = new CopilotCodexCustomSubagentDefinition
+        {
+            Name = "reviewer",
+            Description = "Review bounded workspace evidence.",
+            DeveloperInstructions = "PRIVATE-ROLE-INSTRUCTION",
+            Source = CopilotProjectInstructionConfigSources.CodexHome,
+        };
+
+        var enabledReport = CopilotSubagentDiagnostics.Format(
+            conversation: null,
+            arguments: "roles",
+            customSubagents: [definition],
+            customAgentsEnabled: true,
+            customAgentSnapshotLabel: "当前活动 Agent 请求的提交快照");
+        var disabledReport = CopilotSubagentDiagnostics.Format(
+            conversation: null,
+            arguments: "roles",
+            customSubagents: [definition],
+            customAgentsEnabled: false,
+            customAgentSnapshotLabel: "下一次 Agent 请求的当前配置快照");
+
+        Assert.Contains("自定义 Agent 配置", enabledReport, StringComparison.Ordinal);
+        Assert.Contains("当前活动 Agent 请求的提交快照", enabledReport, StringComparison.Ordinal);
+        Assert.Contains("reviewer · Review bounded workspace evidence.", enabledReport, StringComparison.Ordinal);
+        Assert.Contains("不会创建新的 RoleCatalog 工具", enabledReport, StringComparison.Ordinal);
+        Assert.DoesNotContain("PRIVATE-ROLE-INSTRUCTION", enabledReport, StringComparison.Ordinal);
+        Assert.Contains("agents.enabled=false", disabledReport, StringComparison.Ordinal);
+        Assert.Contains("下一次 Agent 请求的当前配置快照", disabledReport, StringComparison.Ordinal);
+    }
+
     private static CopilotAgentRequest CreateParentRequest(
         params CopilotCodexCustomSubagentDefinition[] definitions) => new()
         {

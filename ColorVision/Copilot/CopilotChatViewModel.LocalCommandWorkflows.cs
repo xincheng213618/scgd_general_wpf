@@ -419,9 +419,24 @@ namespace ColorVision.Copilot
                         SelectedConversation?.Id,
                         request.RunId);
                 }
+                var showsRoles = request.Action is CopilotSubagentDiagnosticAction.Overview
+                    or CopilotSubagentDiagnosticAction.Roles;
+                var usesActiveRequestSnapshot = showsRoles && ActiveHostedRun?.IsAgent == true;
+                var customAgentOptions = showsRoles
+                    ? usesActiveRequestSnapshot
+                        ? _currentCodexConfigOptions
+                        : CaptureHostedTurnSnapshot(Attachments).ProjectInstructionDiscoveryOptions
+                    : CopilotProjectInstructionDiscoveryConfig.CreateDefault();
                 ShowLocalCommandResult(
                     command,
-                    CopilotSubagentDiagnostics.Format(SelectedConversation, arguments));
+                    CopilotSubagentDiagnostics.Format(
+                        SelectedConversation,
+                        arguments,
+                        customSubagents: customAgentOptions.CustomSubagents,
+                        customAgentsEnabled: customAgentOptions.ConfiguredAgentsEnabled,
+                        customAgentSnapshotLabel: usesActiveRequestSnapshot
+                            ? "当前活动 Agent 请求的提交快照"
+                            : "下一次 Agent 请求的当前配置快照"));
                 return;
             }
 
