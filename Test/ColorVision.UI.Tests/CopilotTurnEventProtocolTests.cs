@@ -312,6 +312,7 @@ public sealed class CopilotTurnEventProtocolTests
             CopilotTurnStartedEvent.DefaultTurnId,
             result));
 
+        Assert.Equal(CopilotTurnStatus.Interrupted, protocol.TerminalStatus);
         Assert.Same(result, protocol.RequireCompletion());
     }
 

@@ -543,6 +543,8 @@ namespace ColorVision.Copilot
                     });
                 }
 
+                if (eventProtocol.TerminalStatus == CopilotTurnStatus.Interrupted)
+                    throw new OperationCanceledException(cancellationToken);
                 return result.Usage;
             }
 
@@ -567,6 +569,8 @@ namespace ColorVision.Copilot
                 });
             }
             PersistState(immediate: true);
+            if (eventProtocol.TerminalStatus == CopilotTurnStatus.Interrupted)
+                throw new OperationCanceledException(cancellationToken);
             return result.Usage;
         }
 

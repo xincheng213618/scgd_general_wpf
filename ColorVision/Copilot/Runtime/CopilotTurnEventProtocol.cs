@@ -14,6 +14,8 @@ namespace ColorVision.Copilot
         public void Observe(CopilotTurnEvent turnEvent) =>
             _state = CopilotTurnEventReducer.Reduce(_state, turnEvent);
 
+        public CopilotTurnStatus? TerminalStatus => _state.TerminalStatus;
+
         public CopilotTurnResult RequireCompletion() =>
             CopilotTurnEventReducer.RequireCompletion(_state);
     }
