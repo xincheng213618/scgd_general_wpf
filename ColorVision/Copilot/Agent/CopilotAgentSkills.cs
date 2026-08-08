@@ -174,7 +174,7 @@ namespace ColorVision.Copilot
 
             var paths = new List<string>();
             foreach (var root in request.TrustedProjectRootPaths ?? Array.Empty<string>())
-                AddSkillRootCandidate(paths, TryGetDirectory(root), Path.Combine(".agents", "skills"));
+                AddProjectSkillRootCandidates(paths, root, request.ActiveDocumentPath);
 
             AddSkillRootCandidate(paths, ResolveUserProfileDirectory(userProfileDirectory), Path.Combine(".agents", "skills"));
 
@@ -183,6 +183,42 @@ namespace ColorVision.Copilot
                 : applicationBaseDirectory;
             AddSkillRootCandidate(paths, baseDirectory, Path.Combine("Copilot", "Skills"));
             return paths;
+        }
+
+        private static void AddProjectSkillRootCandidates(
+            List<string> paths,
+            string? trustedProjectRootPath,
+            string? activeDocumentPath)
+        {
+            var projectRoot = TryGetDirectory(trustedProjectRootPath);
+            if (string.IsNullOrWhiteSpace(projectRoot))
+                return;
+
+            var currentDirectory = TryGetDirectory(activeDocumentPath);
+            if (string.IsNullOrWhiteSpace(currentDirectory)
+                || !CopilotWorkspaceSearchSupport.IsPathWithinRoots(currentDirectory, [projectRoot]))
+            {
+                AddSkillRootCandidate(paths, projectRoot, Path.Combine(".agents", "skills"));
+                return;
+            }
+
+            while (true)
+            {
+                AddSkillRootCandidate(paths, currentDirectory, Path.Combine(".agents", "skills"));
+                if (string.Equals(currentDirectory, projectRoot, StringComparison.OrdinalIgnoreCase))
+                    return;
+
+                var parentDirectory = Directory.GetParent(currentDirectory)?.FullName;
+                if (string.IsNullOrWhiteSpace(parentDirectory)
+                    || string.Equals(parentDirectory, currentDirectory, StringComparison.OrdinalIgnoreCase)
+                    || !CopilotWorkspaceSearchSupport.IsPathWithinRoots(parentDirectory, [projectRoot]))
+                {
+                    break;
+                }
+                currentDirectory = parentDirectory;
+            }
+
+            AddSkillRootCandidate(paths, projectRoot, Path.Combine(".agents", "skills"));
         }
 
         internal static string ResolveUserSkillRoot(string? userProfileDirectory = null)

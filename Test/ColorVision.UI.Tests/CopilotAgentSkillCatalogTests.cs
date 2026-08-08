@@ -107,6 +107,55 @@ public sealed class CopilotAgentSkillCatalogTests
     }
 
     [Fact]
+    public async Task CachedCatalogReloadsWhenNestedProjectSkillRootAppears()
+    {
+        var projectRoot = CreateTemporaryDirectory();
+        var applicationBaseDirectory = CreateTemporaryDirectory();
+        var userProfileDirectory = CreateTemporaryDirectory();
+        var moduleDirectory = Path.Combine(projectRoot, "src", "module");
+        Directory.CreateDirectory(moduleDirectory);
+        var activeDocumentPath = Path.Combine(moduleDirectory, "Widget.cs");
+        File.WriteAllText(activeDocumentPath, string.Empty);
+        using var changed = new SemaphoreSlim(0);
+        EventHandler handler = (_, _) => changed.Release();
+        CopilotAgentSkillCatalog.CatalogChanged += handler;
+        try
+        {
+            CopilotAgentSkillCatalog.Invalidate();
+            Assert.Empty(CopilotAgentSkillCatalog.DiscoverCached(
+                [projectRoot],
+                overrides: null,
+                applicationBaseDirectory,
+                userProfileDirectory,
+                activeDocumentPath));
+
+            var moduleSkillRoot = Path.Combine(moduleDirectory, ".agents", "skills");
+            WriteSkill(
+                Path.Combine(moduleSkillRoot, "module-skill"),
+                "module-skill",
+                "module description");
+
+            Assert.True(await changed.WaitAsync(TimeSpan.FromSeconds(5)));
+            var skill = Assert.Single(CopilotAgentSkillCatalog.DiscoverCached(
+                [projectRoot],
+                overrides: null,
+                applicationBaseDirectory,
+                userProfileDirectory,
+                activeDocumentPath));
+            Assert.Equal(CopilotAgentSkillSourceKind.Project, skill.SourceKind);
+            Assert.Equal(moduleSkillRoot, skill.SearchRootPath);
+        }
+        finally
+        {
+            CopilotAgentSkillCatalog.CatalogChanged -= handler;
+            CopilotAgentSkillCatalog.Invalidate();
+            DeleteTemporaryDirectory(projectRoot);
+            DeleteTemporaryDirectory(applicationBaseDirectory);
+            DeleteTemporaryDirectory(userProfileDirectory);
+        }
+    }
+
+    [Fact]
     public void DiscoveryTracksProjectUserAndBuiltInSkillSources()
     {
         var projectRoot = CreateTemporaryDirectory();
@@ -155,7 +204,7 @@ public sealed class CopilotAgentSkillCatalogTests
     }
 
     [Fact]
-    public void ProjectSkillOverridesBuiltInSkillWithTheSameName()
+    public void ProjectSkillOverridesUserAndBuiltInSkillsWithTheSameName()
     {
         var projectRoot = CreateTemporaryDirectory();
         var applicationBaseDirectory = CreateTemporaryDirectory();
@@ -185,30 +234,110 @@ public sealed class CopilotAgentSkillCatalogTests
     }
 
     [Fact]
-    public void RuntimeSearchPathsUseProjectUserAndBuiltInPrecedence()
+    public void NestedProjectSkillOverridesRootUserAndBuiltInSkillsWithTheSameName()
+    {
+        var projectRoot = CreateTemporaryDirectory();
+        var applicationBaseDirectory = CreateTemporaryDirectory();
+        var userProfileDirectory = CreateTemporaryDirectory();
+        var moduleDirectory = Path.Combine(projectRoot, "src", "module");
+        Directory.CreateDirectory(moduleDirectory);
+        var activeDocumentPath = Path.Combine(moduleDirectory, "Widget.cs");
+        File.WriteAllText(activeDocumentPath, string.Empty);
+        try
+        {
+            var moduleSkillRoot = Path.Combine(moduleDirectory, ".agents", "skills");
+            WriteSkill(Path.Combine(moduleSkillRoot, "shared-skill"), "shared-skill", "module description");
+            WriteSkill(Path.Combine(projectRoot, ".agents", "skills", "shared-skill"), "shared-skill", "project description");
+            WriteSkill(Path.Combine(userProfileDirectory, ".agents", "skills", "shared-skill"), "shared-skill", "user description");
+            WriteSkill(Path.Combine(applicationBaseDirectory, "Copilot", "Skills", "shared-skill"), "shared-skill", "built-in description");
+
+            var skill = Assert.Single(CopilotAgentSkillCatalog.Discover(
+                [projectRoot],
+                overrides: null,
+                applicationBaseDirectory,
+                userProfileDirectory,
+                activeDocumentPath));
+
+            Assert.Equal("module description", skill.Description);
+            Assert.Equal(CopilotAgentSkillSourceKind.Project, skill.SourceKind);
+            Assert.Equal(moduleSkillRoot, skill.SearchRootPath);
+        }
+        finally
+        {
+            DeleteTemporaryDirectory(projectRoot);
+            DeleteTemporaryDirectory(applicationBaseDirectory);
+            DeleteTemporaryDirectory(userProfileDirectory);
+        }
+    }
+
+    [Fact]
+    public void RuntimeSearchPathsUseNestedProjectUserAndBuiltInPrecedence()
     {
         var projectRoot = CreateTemporaryDirectory();
         var applicationBaseDirectory = CreateTemporaryDirectory();
         var userProfileDirectory = CreateTemporaryDirectory();
         try
         {
+            var moduleDirectory = Path.Combine(projectRoot, "src", "module");
+            Directory.CreateDirectory(moduleDirectory);
+            var activeDocumentPath = Path.Combine(moduleDirectory, "Widget.cs");
+            File.WriteAllText(activeDocumentPath, string.Empty);
+            var moduleSkillRoot = Path.Combine(moduleDirectory, ".agents", "skills");
             var projectSkillRoot = Path.Combine(projectRoot, ".agents", "skills");
             var userSkillRoot = Path.Combine(userProfileDirectory, ".agents", "skills");
             var builtInSkillRoot = Path.Combine(applicationBaseDirectory, "Copilot", "Skills");
+            Directory.CreateDirectory(moduleSkillRoot);
             Directory.CreateDirectory(projectSkillRoot);
             Directory.CreateDirectory(userSkillRoot);
             Directory.CreateDirectory(builtInSkillRoot);
 
             var paths = CopilotAgentSkills.ResolveSearchPaths(
-                new CopilotAgentRequest { TrustedProjectRootPaths = [projectRoot] },
+                new CopilotAgentRequest
+                {
+                    TrustedProjectRootPaths = [projectRoot],
+                    ActiveDocumentPath = activeDocumentPath,
+                },
                 applicationBaseDirectory,
                 userProfileDirectory);
 
-            Assert.Equal([projectSkillRoot, userSkillRoot, builtInSkillRoot], paths);
+            Assert.Equal([moduleSkillRoot, projectSkillRoot, userSkillRoot, builtInSkillRoot], paths);
         }
         finally
         {
             DeleteTemporaryDirectory(projectRoot);
+            DeleteTemporaryDirectory(applicationBaseDirectory);
+            DeleteTemporaryDirectory(userProfileDirectory);
+        }
+    }
+
+    [Fact]
+    public void ActiveDocumentOutsideTrustedProjectCannotContributeSkillRoots()
+    {
+        var projectRoot = CreateTemporaryDirectory();
+        var outsideRoot = CreateTemporaryDirectory();
+        var applicationBaseDirectory = CreateTemporaryDirectory();
+        var userProfileDirectory = CreateTemporaryDirectory();
+        try
+        {
+            WriteSkill(Path.Combine(projectRoot, ".agents", "skills", "project-skill"), "project-skill", "project description");
+            WriteSkill(Path.Combine(outsideRoot, ".agents", "skills", "outside-skill"), "outside-skill", "outside description");
+            var activeDocumentPath = Path.Combine(outsideRoot, "Outside.cs");
+            File.WriteAllText(activeDocumentPath, string.Empty);
+
+            var skill = Assert.Single(CopilotAgentSkillCatalog.Discover(
+                [projectRoot],
+                overrides: null,
+                applicationBaseDirectory,
+                userProfileDirectory,
+                activeDocumentPath));
+
+            Assert.Equal("project-skill", skill.Name);
+            Assert.StartsWith(projectRoot, skill.SkillFilePath, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            DeleteTemporaryDirectory(projectRoot);
+            DeleteTemporaryDirectory(outsideRoot);
             DeleteTemporaryDirectory(applicationBaseDirectory);
             DeleteTemporaryDirectory(userProfileDirectory);
         }

@@ -48,7 +48,12 @@ namespace ColorVision.Copilot
             var trustedProjectRoots = CopilotAgentRequestFactory.BuildTrustedProjectRootPaths(turnSnapshot);
             if (forceReload)
                 CopilotAgentSkillCatalog.Invalidate();
-            var availableSkills = CopilotAgentSkillCatalog.DiscoverCached(trustedProjectRoots, overrides);
+            var availableSkills = CopilotAgentSkillCatalog.DiscoverCached(
+                trustedProjectRoots,
+                overrides,
+                applicationBaseDirectory: null,
+                userProfileDirectory: null,
+                activeDocumentPath: turnSnapshot.ActiveDocumentPath);
             return CopilotAgentSkillDiagnostics.FormatReport(
                 CopilotAgentSkillUsageStore.Shared.GetSnapshot(),
                 CopilotAgentSkills.ResolveMetadataCharacterBudget(agentDefaults.ContextWindowTokens),

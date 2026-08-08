@@ -240,7 +240,10 @@ namespace ColorVision.Copilot
             var trustedProjectRoots = CopilotAgentRequestFactory.BuildTrustedProjectRootPaths(turnSnapshot);
             return CopilotAgentSkillCatalog.DiscoverCached(
                 trustedProjectRoots,
-                _config.AgentDefaults.CreateSkillOverrideSnapshot());
+                _config.AgentDefaults.CreateSkillOverrideSnapshot(),
+                applicationBaseDirectory: null,
+                userProfileDirectory: null,
+                activeDocumentPath: turnSnapshot.ActiveDocumentPath);
         }
 
         private bool TryReportCommandInputRecovery(string prompt)

@@ -76,6 +76,7 @@ namespace ColorVision.Copilot
             OnPropertyChanged(nameof(IsActiveDocumentAttached));
             OnPropertyChanged(nameof(CanAttachActiveDocument));
             OnPropertyChanged(nameof(ActiveDocumentAttachmentMenuText));
+            RefreshLocalCommandSuggestions();
             if (CopilotComposerReferenceCatalog.TryParseMention(InputText, out _))
                 RefreshComposerReferenceSuggestions();
             CommandManager.InvalidateRequerySuggested();

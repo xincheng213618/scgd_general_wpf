@@ -60,7 +60,22 @@ namespace ColorVision.Copilot
             string? applicationBaseDirectory,
             string? userProfileDirectory)
         {
-            var searchRequest = CreateSearchRequest(trustedProjectRootPaths);
+            return DiscoverCached(
+                trustedProjectRootPaths,
+                overrides,
+                applicationBaseDirectory,
+                userProfileDirectory,
+                activeDocumentPath: null);
+        }
+
+        internal static IReadOnlyList<CopilotAgentSkillCatalogItem> DiscoverCached(
+            IEnumerable<string>? trustedProjectRootPaths,
+            IReadOnlyDictionary<string, CopilotAgentSkillOverrideState>? overrides,
+            string? applicationBaseDirectory,
+            string? userProfileDirectory,
+            string? activeDocumentPath)
+        {
+            var searchRequest = CreateSearchRequest(trustedProjectRootPaths, activeDocumentPath);
             ChangeMonitor.UpdateRoots(CopilotAgentSkills.ResolveSearchPathCandidates(
                 searchRequest,
                 applicationBaseDirectory,
@@ -115,8 +130,27 @@ namespace ColorVision.Copilot
             string? applicationBaseDirectory,
             string? userProfileDirectory)
         {
+            return Discover(
+                trustedProjectRootPaths,
+                overrides,
+                applicationBaseDirectory,
+                userProfileDirectory,
+                activeDocumentPath: null);
+        }
+
+        internal static IReadOnlyList<CopilotAgentSkillCatalogItem> Discover(
+            IEnumerable<string>? trustedProjectRootPaths,
+            IReadOnlyDictionary<string, CopilotAgentSkillOverrideState>? overrides,
+            string? applicationBaseDirectory,
+            string? userProfileDirectory,
+            string? activeDocumentPath)
+        {
             return DiscoverFromSkillRoots(
-                ResolveSkillRoots(trustedProjectRootPaths, applicationBaseDirectory, userProfileDirectory),
+                ResolveSkillRoots(
+                    trustedProjectRootPaths,
+                    applicationBaseDirectory,
+                    userProfileDirectory,
+                    activeDocumentPath),
                 overrides,
                 ResolveBuiltInSkillRoot(applicationBaseDirectory),
                 CopilotAgentSkills.ResolveUserSkillRoot(userProfileDirectory));
@@ -172,10 +206,11 @@ namespace ColorVision.Copilot
         private static IReadOnlyList<string> ResolveSkillRoots(
             IEnumerable<string>? trustedProjectRootPaths,
             string? applicationBaseDirectory,
-            string? userProfileDirectory)
+            string? userProfileDirectory,
+            string? activeDocumentPath)
         {
             return CopilotAgentSkills.ResolveSearchPaths(
-                CreateSearchRequest(trustedProjectRootPaths),
+                CreateSearchRequest(trustedProjectRootPaths, activeDocumentPath),
                 applicationBaseDirectory,
                 userProfileDirectory);
         }
@@ -192,11 +227,14 @@ namespace ColorVision.Copilot
             return CopilotAgentSkillSourceKind.Project;
         }
 
-        private static CopilotAgentRequest CreateSearchRequest(IEnumerable<string>? trustedProjectRootPaths)
+        private static CopilotAgentRequest CreateSearchRequest(
+            IEnumerable<string>? trustedProjectRootPaths,
+            string? activeDocumentPath = null)
         {
             return new CopilotAgentRequest
             {
                 TrustedProjectRootPaths = (trustedProjectRootPaths ?? Array.Empty<string>()).ToArray(),
+                ActiveDocumentPath = activeDocumentPath ?? string.Empty,
             };
         }
 
