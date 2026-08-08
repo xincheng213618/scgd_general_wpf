@@ -57,6 +57,8 @@ namespace ColorVision.Copilot
 
         public CopilotConversationGoalState? ConversationGoalState { get; init; }
 
+        public long ConversationGoalTimeUsedSeconds { get; init; }
+
         public bool ConversationGoalContinuationDeferred { get; init; }
 
         public bool ConversationGoalActive { get; init; }
@@ -225,7 +227,9 @@ namespace ColorVision.Copilot
                         : CopilotConversationGoalStateText.Format(goalState))
                     .Append(" · ")
                     .Append(FormatCount(snapshot.ConversationGoalCharacters))
-                    .AppendLine(" 字符；仅约束完成判定，不授予操作权限");
+                    .Append(" 字符 · 累计执行 ")
+                    .Append(CopilotConversationGoalUsageText.FormatElapsed(snapshot.ConversationGoalTimeUsedSeconds))
+                    .AppendLine("；仅约束完成判定，不授予操作权限");
             }
             builder.Append("附件：").AppendLine(FormatAttachments(snapshot));
             builder.Append("窗口上下文：").AppendLine(snapshot.HasLiveWindowContext ? "已提供" : "无");

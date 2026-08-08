@@ -14,6 +14,7 @@ public sealed class CopilotConversationGoalTests
         var updated = goal.WithTurnOutcome(
             CopilotConversationGoalState.Active,
             new CopilotTokenUsage(10, 5, 15),
+            elapsedSeconds: 15,
             evaluated: true,
             continued: true,
             "继续验证恢复路径",
@@ -33,6 +34,7 @@ public sealed class CopilotConversationGoalTests
             .WithTurnOutcome(
                 CopilotConversationGoalState.Active,
                 CopilotTokenUsage.Empty,
+                elapsedSeconds: 120,
                 evaluated: true,
                 continued: true,
                 "继续第一轮",
@@ -41,6 +43,7 @@ public sealed class CopilotConversationGoalTests
         var updated = goal.WithTurnOutcome(
             CopilotConversationGoalState.Achieved,
             CopilotTokenUsage.Empty,
+            elapsedSeconds: 30,
             evaluated: true,
             continued: false,
             "目标已达成",
@@ -49,6 +52,53 @@ public sealed class CopilotConversationGoalTests
         Assert.Equal(firstUpdate, updated.UpdatedAtUtc);
         Assert.Equal(firstUpdate, updated.LastEvaluatedAtUtc);
         Assert.True(updated.IsStructurallyValid());
+    }
+
+    [Fact]
+    public void TurnOutcomeAccumulatesElapsedSecondsSafely()
+    {
+        var createdAt = new DateTimeOffset(2026, 8, 8, 8, 0, 0, TimeSpan.Zero);
+        var goal = CopilotConversationGoal.Create("持续改进 Copilot", createdAt)
+            .WithTurnOutcome(
+                CopilotConversationGoalState.Active,
+                CopilotTokenUsage.Empty,
+                elapsedSeconds: long.MaxValue,
+                evaluated: false,
+                continued: true,
+                "继续",
+                createdAt.AddSeconds(1));
+
+        var saturated = goal.WithTurnOutcome(
+            CopilotConversationGoalState.Active,
+            CopilotTokenUsage.Empty,
+            elapsedSeconds: 10,
+            evaluated: false,
+            continued: true,
+            "继续",
+            createdAt.AddSeconds(2));
+        var ignoredNegative = saturated.WithTurnOutcome(
+            CopilotConversationGoalState.Paused,
+            CopilotTokenUsage.Empty,
+            elapsedSeconds: -10,
+            evaluated: false,
+            continued: false,
+            "暂停",
+            createdAt.AddSeconds(3));
+
+        Assert.Equal(long.MaxValue, saturated.TimeUsedSeconds);
+        Assert.Equal(long.MaxValue, ignoredNegative.TimeUsedSeconds);
+        Assert.True(ignoredNegative.IsStructurallyValid());
+    }
+
+    [Theory]
+    [InlineData(0, "0 秒", "0s")]
+    [InlineData(65, "1 分钟 5 秒", "1m 5s")]
+    [InlineData(3_660, "1 小时 1 分钟", "1h 1m")]
+    [InlineData(90_000, "1 天 1 小时", "1d 1h")]
+    public void ElapsedUsageFormattingIsConcise(long seconds, string chinese, string english)
+    {
+        Assert.Equal(chinese, CopilotConversationGoalUsageText.FormatElapsed(seconds));
+        Assert.Equal(english, CopilotConversationGoalUsageText.FormatElapsedEnglish(seconds));
     }
 
     [Fact]
@@ -76,6 +126,7 @@ public sealed class CopilotConversationGoalTests
             .WithTurnOutcome(
                 CopilotConversationGoalState.Paused,
                 new CopilotTokenUsage(10, 5, 15),
+                elapsedSeconds: 65,
                 evaluated: true,
                 continued: true,
                 "等待下一轮",
@@ -93,6 +144,7 @@ public sealed class CopilotConversationGoalTests
         Assert.Equal(current.TurnCount, result.Goal.TurnCount);
         Assert.Equal(current.EvaluationCount, result.Goal.EvaluationCount);
         Assert.Equal(current.TokensUsed, result.Goal.TokensUsed);
+        Assert.Equal(current.TimeUsedSeconds, result.Goal.TimeUsedSeconds);
         Assert.Equal(CopilotConversationGoalState.Active, result.Goal.State);
         Assert.Equal(0, result.Goal.ConsecutiveContinuationCount);
         Assert.Contains("保留", result.Message, StringComparison.Ordinal);
@@ -106,6 +158,7 @@ public sealed class CopilotConversationGoalTests
             .WithTurnOutcome(
                 CopilotConversationGoalState.Achieved,
                 new CopilotTokenUsage(10, 5, 15),
+                elapsedSeconds: 42,
                 evaluated: true,
                 continued: false,
                 "目标已达成",
@@ -123,6 +176,7 @@ public sealed class CopilotConversationGoalTests
         Assert.Equal(0, result.Goal.TurnCount);
         Assert.Equal(0, result.Goal.EvaluationCount);
         Assert.Equal(0, result.Goal.TokensUsed);
+        Assert.Equal(0, result.Goal.TimeUsedSeconds);
         Assert.Equal(CopilotConversationGoalState.Active, result.Goal.State);
     }
 
@@ -134,6 +188,7 @@ public sealed class CopilotConversationGoalTests
             .WithTurnOutcome(
                 CopilotConversationGoalState.Paused,
                 new CopilotTokenUsage(10, 5, 15),
+                elapsedSeconds: 61,
                 evaluated: true,
                 continued: false,
                 "等待预算",
@@ -150,6 +205,7 @@ public sealed class CopilotConversationGoalTests
         Assert.Equal(current.Id, result.Goal.Id);
         Assert.Equal(current.TurnCount, result.Goal.TurnCount);
         Assert.Equal(current.TokensUsed, result.Goal.TokensUsed);
+        Assert.Equal(current.TimeUsedSeconds, result.Goal.TimeUsedSeconds);
         Assert.Equal(40_000, result.Goal.TokenBudget);
         Assert.Equal(CopilotConversationGoalState.Paused, result.Goal.State);
     }
@@ -167,6 +223,7 @@ public sealed class CopilotConversationGoalTests
             .WithTurnOutcome(
                 state,
                 new CopilotTokenUsage(10, 5, 15),
+                elapsedSeconds: 125,
                 evaluated: true,
                 continued: false,
                 "等待下一轮",
@@ -180,6 +237,7 @@ public sealed class CopilotConversationGoalTests
         Assert.Equal(state, restored.State);
         Assert.Equal(original.TokenBudget, restored.TokenBudget);
         Assert.Equal(original.TokensUsed, restored.TokensUsed);
+        Assert.Equal(original.TimeUsedSeconds, restored.TimeUsedSeconds);
     }
 
     [Fact]
@@ -191,6 +249,7 @@ public sealed class CopilotConversationGoalTests
             .WithTurnOutcome(
                 CopilotConversationGoalState.Paused,
                 new CopilotTokenUsage(7, 3, 10),
+                elapsedSeconds: 10,
                 evaluated: true,
                 continued: false,
                 "预算已用尽",
@@ -215,6 +274,7 @@ public sealed class CopilotConversationGoalTests
             .WithTurnOutcome(
                 CopilotConversationGoalState.Active,
                 new CopilotTokenUsage(60, 40, 100),
+                elapsedSeconds: 10,
                 evaluated: true,
                 continued: true,
                 "继续迭代",
@@ -251,12 +311,14 @@ public sealed class CopilotConversationGoalTests
             CopilotAgentStopReason.Completed,
             wasResponseInterrupted: false,
             new CopilotTokenUsage(60, 40, 100),
+            elapsedSeconds: 90,
             evaluation,
             createdAt.AddMinutes(1));
 
         Assert.Equal(CopilotGoalTurnAction.Pause, decision.Action);
         Assert.Equal(CopilotConversationGoalState.BudgetLimited, decision.Goal.State);
         Assert.Equal(100, decision.Goal.TokensUsed);
+        Assert.Equal(90, decision.Goal.TimeUsedSeconds);
         Assert.Contains("不再排入下一轮", decision.Reason, StringComparison.Ordinal);
     }
 
@@ -272,11 +334,13 @@ public sealed class CopilotConversationGoalTests
             CopilotAgentStopReason.Blocked,
             wasResponseInterrupted: false,
             CopilotTokenUsage.Empty,
+            elapsedSeconds: 12,
             evaluation: null,
             createdAt.AddMinutes(1));
 
         Assert.Equal(CopilotGoalTurnAction.Pause, decision.Action);
         Assert.Equal(CopilotConversationGoalState.Blocked, decision.Goal.State);
+        Assert.Equal(12, decision.Goal.TimeUsedSeconds);
         Assert.Contains("标记为受阻", decision.Reason, StringComparison.Ordinal);
     }
 
@@ -293,6 +357,7 @@ public sealed class CopilotConversationGoalTests
             CopilotAgentStopReason.Blocked,
             wasResponseInterrupted: false,
             new CopilotTokenUsage(7, 3, 10),
+            elapsedSeconds: 15,
             evaluation: null,
             createdAt.AddMinutes(1));
 
@@ -328,6 +393,7 @@ public sealed class CopilotConversationGoalTests
             .WithTurnOutcome(
                 CopilotConversationGoalState.Blocked,
                 new CopilotTokenUsage(10, 5, 15),
+                elapsedSeconds: 3_600,
                 evaluated: false,
                 continued: false,
                 "等待外部依赖",
@@ -341,6 +407,7 @@ public sealed class CopilotConversationGoalTests
         Assert.Equal("等待外部依赖", branch.LastEvaluationReason);
         Assert.Equal(0, branch.TurnCount);
         Assert.Equal(0, branch.TokensUsed);
+        Assert.Equal(0, branch.TimeUsedSeconds);
         Assert.True(branch.IsStructurallyValid());
     }
 

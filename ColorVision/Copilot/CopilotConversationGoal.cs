@@ -57,6 +57,45 @@ namespace ColorVision.Copilot
         };
     }
 
+    internal static class CopilotConversationGoalUsageText
+    {
+        public static string FormatElapsed(long totalSeconds)
+        {
+            var (days, hours, minutes, seconds) = SplitElapsed(totalSeconds);
+            if (days > 0)
+                return hours > 0 ? $"{days:N0} 天 {hours} 小时" : $"{days:N0} 天";
+            if (hours > 0)
+                return minutes > 0 ? $"{hours:N0} 小时 {minutes} 分钟" : $"{hours:N0} 小时";
+            if (minutes > 0)
+                return seconds > 0 ? $"{minutes:N0} 分钟 {seconds} 秒" : $"{minutes:N0} 分钟";
+            return $"{seconds:N0} 秒";
+        }
+
+        public static string FormatElapsedEnglish(long totalSeconds)
+        {
+            var (days, hours, minutes, seconds) = SplitElapsed(totalSeconds);
+            if (days > 0)
+                return hours > 0 ? $"{days:N0}d {hours}h" : $"{days:N0}d";
+            if (hours > 0)
+                return minutes > 0 ? $"{hours:N0}h {minutes}m" : $"{hours:N0}h";
+            if (minutes > 0)
+                return seconds > 0 ? $"{minutes:N0}m {seconds}s" : $"{minutes:N0}m";
+            return $"{seconds:N0}s";
+        }
+
+        private static (long Days, long Hours, long Minutes, long Seconds) SplitElapsed(long totalSeconds)
+        {
+            var remaining = Math.Max(0, totalSeconds);
+            var days = remaining / 86_400;
+            remaining %= 86_400;
+            var hours = remaining / 3_600;
+            remaining %= 3_600;
+            var minutes = remaining / 60;
+            var seconds = remaining % 60;
+            return (days, hours, minutes, seconds);
+        }
+    }
+
     public sealed class CopilotConversationGoal
     {
         public const int MaximumObjectiveCharacters = 4_000;
@@ -80,6 +119,8 @@ namespace ColorVision.Copilot
         public int EvaluationCount { get; init; }
 
         public long TokensUsed { get; init; }
+
+        public long TimeUsedSeconds { get; init; }
 
         public long TokenBudget { get; init; }
 
@@ -113,6 +154,7 @@ namespace ColorVision.Copilot
                 && EvaluationCount is >= 0 and <= int.MaxValue
                 && EvaluationCount <= TurnCount
                 && TokensUsed >= 0
+                && TimeUsedSeconds >= 0
                 && TokenBudget >= 0
                 && ConsecutiveContinuationCount is >= 0 and <= int.MaxValue
                 && ConsecutiveContinuationCount <= EvaluationCount
@@ -156,6 +198,7 @@ namespace ColorVision.Copilot
                 TurnCount = TurnCount,
                 EvaluationCount = EvaluationCount,
                 TokensUsed = TokensUsed,
+                TimeUsedSeconds = TimeUsedSeconds,
                 TokenBudget = TokenBudget,
                 ConsecutiveContinuationCount = state == CopilotConversationGoalState.Active
                     ? 0
@@ -168,6 +211,7 @@ namespace ColorVision.Copilot
         internal CopilotConversationGoal WithTurnOutcome(
             CopilotConversationGoalState state,
             CopilotTokenUsage usage,
+            long elapsedSeconds,
             bool evaluated,
             bool continued,
             string? reason,
@@ -186,6 +230,7 @@ namespace ColorVision.Copilot
                 TurnCount = Increment(TurnCount),
                 EvaluationCount = evaluated ? Increment(EvaluationCount) : EvaluationCount,
                 TokensUsed = AddTokens(TokensUsed, usage.EffectiveTotalTokens),
+                TimeUsedSeconds = AddTime(TimeUsedSeconds, elapsedSeconds),
                 TokenBudget = TokenBudget,
                 ConsecutiveContinuationCount = continued
                     ? Increment(ConsecutiveContinuationCount)
@@ -210,6 +255,7 @@ namespace ColorVision.Copilot
                 TurnCount = TurnCount,
                 EvaluationCount = EvaluationCount,
                 TokensUsed = TokensUsed,
+                TimeUsedSeconds = TimeUsedSeconds,
                 TokenBudget = tokenBudget,
                 ConsecutiveContinuationCount = ConsecutiveContinuationCount,
                 LastEvaluationReason = LastEvaluationReason,
@@ -287,6 +333,14 @@ namespace ColorVision.Copilot
             now < UpdatedAtUtc ? UpdatedAtUtc : now;
 
         private static long AddTokens(long current, int additional)
+        {
+            var boundedAdditional = Math.Max(0, additional);
+            return current > long.MaxValue - boundedAdditional
+                ? long.MaxValue
+                : current + boundedAdditional;
+        }
+
+        private static long AddTime(long current, long additional)
         {
             var boundedAdditional = Math.Max(0, additional);
             return current > long.MaxValue - boundedAdditional
@@ -487,7 +541,7 @@ namespace ColorVision.Copilot
                 return new CopilotConversationGoalCommandResult(
                     continued,
                     true,
-                    "已继续当前持续目标并保留既有轮次、评估和 Token 统计；即将启动新的 Agent 轮次。"
+                    "已继续当前持续目标并保留既有轮次、评估、Token 和耗时统计；即将启动新的 Agent 轮次。"
                     + "\n"
                     + continued.Objective,
                     StartsWork: true);
@@ -520,11 +574,12 @@ namespace ColorVision.Copilot
             var tokenProgress = goal.HasTokenBudget
                 ? $"{goal.TokensUsed:N0} / {goal.TokenBudget:N0} Token"
                 : $"{goal.TokensUsed:N0} Token";
+            var elapsed = "累计 " + CopilotConversationGoalUsageText.FormatElapsed(goal.TimeUsedSeconds);
             var progress = goal.TurnCount == 0
                 ? goal.HasTokenBudget
                     ? $"尚未完成首轮 · {tokenProgress}"
                     : "尚未完成首轮"
-                : $"{goal.TurnCount:N0} 轮 · {goal.EvaluationCount:N0} 次独立评估 · {tokenProgress}";
+                : $"{goal.TurnCount:N0} 轮 · {goal.EvaluationCount:N0} 次独立评估 · {tokenProgress} · {elapsed}";
             var latest = string.IsNullOrWhiteSpace(goal.LastEvaluationReason)
                 ? string.Empty
                 : "\n最近判断：" + goal.LastEvaluationReason;

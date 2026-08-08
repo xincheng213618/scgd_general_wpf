@@ -82,6 +82,8 @@ namespace ColorVision.Copilot
                 + (Goal.HasTokenBudget
                     ? $"{Goal.TokensUsed:N0} / {Goal.TokenBudget:N0} Token"
                     : $"{Goal.TokensUsed:N0} Token")
+                + " · 累计 "
+                + CopilotConversationGoalUsageText.FormatElapsed(Goal.TimeUsedSeconds)
                 + (string.IsNullOrWhiteSpace(Goal.LastEvaluationReason)
                     ? string.Empty
                     : Environment.NewLine + "最近判断：" + Goal.LastEvaluationReason)

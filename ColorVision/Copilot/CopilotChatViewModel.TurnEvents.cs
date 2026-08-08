@@ -396,6 +396,7 @@ namespace ColorVision.Copilot
                 context.TurnEvidence.StopReason,
                 context.TurnEvidence.WasResponseInterrupted,
                 turnUsage.Add(evaluationUsage),
+                hostedRun.ElapsedSeconds,
                 evaluation,
                 DateTimeOffset.UtcNow);
             var applied = CopilotUiDispatcher.Invoke(

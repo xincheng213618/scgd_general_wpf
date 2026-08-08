@@ -301,6 +301,7 @@ namespace ColorVision.Copilot
                 if (!goalOutcomeRecorded)
                 {
                     PauseBoundGoalAfterHostedTurnFailure(
+                        hostedRun,
                         conversation,
                         assistantMessage,
                         boundGoalId,
@@ -317,6 +318,7 @@ namespace ColorVision.Copilot
                 if (!goalOutcomeRecorded)
                 {
                     PauseBoundGoalAfterHostedTurnFailure(
+                        hostedRun,
                         conversation,
                         assistantMessage,
                         boundGoalId,
@@ -341,6 +343,7 @@ namespace ColorVision.Copilot
         }
 
         private static void PauseBoundGoalAfterHostedTurnFailure(
+            CopilotHostedAgentRun hostedRun,
             CopilotConversationRecord conversation,
             CopilotChatMessage assistantMessage,
             string boundGoalId,
@@ -361,6 +364,7 @@ namespace ColorVision.Copilot
                 conversation.Goal = goal.WithTurnOutcome(
                     CopilotConversationGoalState.Paused,
                     CopilotTokenUsage.Empty,
+                    hostedRun.ElapsedSeconds,
                     evaluated: false,
                     continued: false,
                     reason,

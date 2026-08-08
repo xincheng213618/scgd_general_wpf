@@ -209,7 +209,8 @@ namespace ColorVision.Copilot
             var tokenProgress = goal.HasTokenBudget
                 ? $"{goal.TokensUsed:N0} / {goal.TokenBudget:N0} tokens"
                 : $"{goal.TokensUsed:N0} tokens";
-            return $"{state}, {goal.Objective.Length:N0} characters, {goal.TurnCount:N0} turn(s), {tokenProgress}"
+            var elapsed = CopilotConversationGoalUsageText.FormatElapsedEnglish(goal.TimeUsedSeconds);
+            return $"{state}, {goal.Objective.Length:N0} characters, {goal.TurnCount:N0} turn(s), {tokenProgress}, {elapsed} elapsed"
                 + (goal.IsActive ? " (completion constraint only)" : string.Empty);
         }
 

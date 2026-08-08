@@ -75,7 +75,8 @@ namespace ColorVision.Copilot
             var state = conversation.IsGoalContinuationDeferred
                 ? "待显式 Agent 任务接管"
                 : CopilotConversationGoalStateText.Format(goal.State);
-            return $"{state} · {Preview(goal.Objective, MaximumGoalCharacters)}";
+            return $"{state} · {goal.TurnCount:N0} 轮 · 累计 {CopilotConversationGoalUsageText.FormatElapsed(goal.TimeUsedSeconds)} · "
+                + Preview(goal.Objective, MaximumGoalCharacters);
         }
 
         private static string FormatTurnStatus(

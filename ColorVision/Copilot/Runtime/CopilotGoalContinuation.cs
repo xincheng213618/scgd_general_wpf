@@ -414,6 +414,7 @@ namespace ColorVision.Copilot
             CopilotAgentStopReason stopReason,
             bool wasResponseInterrupted,
             CopilotTokenUsage turnUsage,
+            long elapsedSeconds,
             CopilotGoalEvaluationResult? evaluation,
             DateTimeOffset now)
         {
@@ -428,7 +429,7 @@ namespace ColorVision.Copilot
             {
                 var modeReason =
                     $"当前轮次使用 {mode} 模式；为避免自动续作扩大到执行权限，持续目标已暂停。";
-                return Pause(goal, turnUsage, modeReason, now);
+                return Pause(goal, turnUsage, elapsedSeconds, modeReason, now);
             }
 
             if (stopReason != CopilotAgentStopReason.Completed)
@@ -453,6 +454,7 @@ namespace ColorVision.Copilot
                         ? CopilotConversationGoalState.Blocked
                         : CopilotConversationGoalState.Paused,
                     turnUsage,
+                    elapsedSeconds,
                     evaluated: false,
                     continued: false,
                     stopReasonText,
@@ -467,6 +469,7 @@ namespace ColorVision.Copilot
                     goal,
                     CopilotConversationGoalState.Paused,
                     turnUsage,
+                    elapsedSeconds,
                     evaluated: evaluation != null,
                     continued: false,
                     unavailableReason,
@@ -479,6 +482,7 @@ namespace ColorVision.Copilot
                     goal.WithTurnOutcome(
                         CopilotConversationGoalState.Achieved,
                         turnUsage,
+                        elapsedSeconds,
                         evaluated: true,
                         continued: false,
                         evaluation.Reason,
@@ -499,6 +503,7 @@ namespace ColorVision.Copilot
                     goal,
                     CopilotConversationGoalState.Paused,
                     turnUsage,
+                    elapsedSeconds,
                     evaluated: true,
                     continued: true,
                     capReason,
@@ -508,6 +513,7 @@ namespace ColorVision.Copilot
             var continuedGoal = goal.WithTurnOutcome(
                     CopilotConversationGoalState.Active,
                     turnUsage,
+                    elapsedSeconds,
                     evaluated: true,
                     continued: true,
                     evaluation.Reason,
@@ -533,12 +539,14 @@ namespace ColorVision.Copilot
         private static CopilotGoalTurnDecision Pause(
             CopilotConversationGoal goal,
             CopilotTokenUsage usage,
+            long elapsedSeconds,
             string reason,
             DateTimeOffset now) =>
             Stop(
                 goal,
                 CopilotConversationGoalState.Paused,
                 usage,
+                elapsedSeconds,
                 evaluated: false,
                 continued: false,
                 reason,
@@ -548,6 +556,7 @@ namespace ColorVision.Copilot
             CopilotConversationGoal goal,
             CopilotConversationGoalState state,
             CopilotTokenUsage usage,
+            long elapsedSeconds,
             bool evaluated,
             bool continued,
             string reason,
@@ -556,6 +565,7 @@ namespace ColorVision.Copilot
             var stoppedGoal = goal.WithTurnOutcome(
                 state,
                 usage,
+                elapsedSeconds,
                 evaluated,
                 continued,
                 reason,
@@ -577,6 +587,7 @@ namespace ColorVision.Copilot
 
         private static string BuildBudgetReason(CopilotConversationGoal goal) =>
             $"持续目标已使用 {goal.TokensUsed:N0} / {goal.TokenBudget:N0} Token；"
+            + $"累计执行 {CopilotConversationGoalUsageText.FormatElapsed(goal.TimeUsedSeconds)}；"
             + "目标已进入预算受限状态，不再排入下一轮。";
     }
 }

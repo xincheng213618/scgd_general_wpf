@@ -16,6 +16,8 @@ namespace ColorVision.Copilot
         private int _checkpointReady;
         private int _disposed;
         private int _state = (int)CopilotHostedRunState.Queued;
+        private long _startedTimestamp = long.MinValue;
+        private long _completedTimestamp = long.MinValue;
         private CopilotHostedProviderRetrySnapshot _providerRetrySnapshot =
             CopilotHostedProviderRetrySnapshot.Empty;
 
@@ -65,17 +67,31 @@ namespace ColorVision.Copilot
         internal CopilotHostedProviderRetrySnapshot ProviderRetrySnapshot =>
             Volatile.Read(ref _providerRetrySnapshot);
 
+        internal long ElapsedSeconds
+        {
+            get
+            {
+                var startedTimestamp = Volatile.Read(ref _startedTimestamp);
+                if (startedTimestamp == long.MinValue)
+                    return 0;
+
+                var completedTimestamp = Volatile.Read(ref _completedTimestamp);
+                var endTimestamp = completedTimestamp == long.MinValue
+                    ? Stopwatch.GetTimestamp()
+                    : completedTimestamp;
+                return Math.Max(0, (long)Stopwatch.GetElapsedTime(startedTimestamp, endTimestamp).TotalSeconds);
+            }
+        }
+
         internal bool TryStart()
         {
-            StartedAtUtc = DateTimeOffset.UtcNow;
             if (Interlocked.CompareExchange(ref _state, (int)CopilotHostedRunState.Running, (int)CopilotHostedRunState.Queued)
-                == (int)CopilotHostedRunState.Queued)
-            {
-                return true;
-            }
+                != (int)CopilotHostedRunState.Queued)
+                return false;
 
-            StartedAtUtc = null;
-            return false;
+            StartedAtUtc = DateTimeOffset.UtcNow;
+            Volatile.Write(ref _startedTimestamp, Stopwatch.GetTimestamp());
+            return true;
         }
 
         internal bool TryMarkCheckpointReady()
@@ -164,6 +180,13 @@ namespace ColorVision.Copilot
 
         internal void Complete(Exception? error)
         {
+            if (Volatile.Read(ref _startedTimestamp) != long.MinValue)
+            {
+                Interlocked.CompareExchange(
+                    ref _completedTimestamp,
+                    Stopwatch.GetTimestamp(),
+                    long.MinValue);
+            }
             var previousState = (CopilotHostedRunState)Interlocked.Exchange(ref _state, (int)CopilotHostedRunState.Completed);
             if (previousState is CopilotHostedRunState.PauseRequested or CopilotHostedRunState.CancelRequested
                 || _cancellationToken.IsCancellationRequested)
