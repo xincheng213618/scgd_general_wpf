@@ -228,6 +228,9 @@ namespace ColorVision.Copilot
         internal CopilotCodexWebSearchMode CodexWebSearchMode { get; init; } =
             CopilotCodexWebSearchMode.Unspecified;
 
+        internal CopilotCodexSandboxMode CodexSandboxMode { get; init; } =
+            CopilotCodexSandboxMode.Unspecified;
+
         internal bool CodexAgentsEnabled { get; init; } = true;
 
         internal int? ModelContextWindowTokensOverride { get; init; }
@@ -322,14 +325,23 @@ namespace ColorVision.Copilot
                 .ToArray();
             var searchRootPaths = BuildSearchRootPaths(hostContext, explicitLocalPaths);
             var trustedProjectRootPaths = BuildTrustedProjectRootPaths(hostContext);
-            var workspaceWritableLocalRootPaths = CopilotWorkspaceSearchSupport.NormalizeSearchRoots([hostContext.SolutionDirectoryPath]);
-            var requestedWritableLocalRootPaths = CopilotWorkspaceSearchSupport.NormalizeSearchRoots(
-                workspaceWritableLocalRootPaths.Concat(explicitLocalDirectoryPaths));
-            var writableLocalFilePaths = BuildWritableLocalFilePaths(hostContext, explicitLocalFilePaths);
+            var codexSandboxMode = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredSandboxMode;
+            var codexReadOnly = CopilotCodexSandboxModeSelection.IsReadOnly(codexSandboxMode);
+            var workspaceWritableLocalRootPaths = codexReadOnly
+                ? Array.Empty<string>()
+                : CopilotWorkspaceSearchSupport.NormalizeSearchRoots([hostContext.SolutionDirectoryPath]);
+            var requestedWritableLocalRootPaths = codexReadOnly
+                ? Array.Empty<string>()
+                : CopilotWorkspaceSearchSupport.NormalizeSearchRoots(
+                    workspaceWritableLocalRootPaths.Concat(explicitLocalDirectoryPaths));
+            var writableLocalFilePaths = codexReadOnly
+                ? Array.Empty<string>()
+                : BuildWritableLocalFilePaths(hostContext, explicitLocalFilePaths);
             var intentProbe = new CopilotAgentRequest
             {
                 UserText = normalizedUserText,
                 Mode = mode,
+                CodexSandboxMode = codexSandboxMode,
                 ReadableLocalFilePaths = explicitLocalFilePaths,
                 ReadableLocalDirectoryPaths = readableLocalDirectoryPaths,
                 WritableLocalRootPaths = requestedWritableLocalRootPaths,
@@ -374,6 +386,7 @@ namespace ColorVision.Copilot
                 ActiveDocumentPath = hostContext.ActiveDocumentPath,
                 ConfiguredDeveloperInstructions = hostContext.ProjectInstructionDiscoveryOptions.DeveloperInstructions,
                 CodexWebSearchMode = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredWebSearchMode,
+                CodexSandboxMode = codexSandboxMode,
                 CodexAgentsEnabled = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredAgentsEnabled,
                 ModelContextWindowTokensOverride = hostContext.ProjectInstructionDiscoveryOptions.HasModelContextWindowOverride
                     ? hostContext.ProjectInstructionDiscoveryOptions.ConfiguredModelContextWindowTokens
@@ -444,6 +457,7 @@ namespace ColorVision.Copilot
                 ActiveDocumentPath = plan.ActiveDocumentPath,
                 ConfiguredDeveloperInstructions = plan.ConfiguredDeveloperInstructions,
                 CodexWebSearchMode = plan.CodexWebSearchMode,
+                CodexSandboxMode = plan.CodexSandboxMode,
                 CodexAgentsEnabled = plan.CodexAgentsEnabled,
                 ToolOutputTokenLimitOverride = plan.ToolOutputTokenLimitOverride,
                 CodexReasoningEffort = plan.CodexReasoningEffort,

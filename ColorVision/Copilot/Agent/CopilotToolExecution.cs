@@ -140,6 +140,24 @@ namespace ColorVision.Copilot
                         "codex_agents_disabled"));
                 return await PublishOutcomeAsync(denied, hooks, hookRuns, onEvent);
             }
+            if (!CopilotToolRegistry.IsAllowedForCodexSandboxPolicy(
+                invocation.Tool,
+                invocation.AgentRequest))
+            {
+                var denied = CreateOutcome(
+                    invocation,
+                    CopilotToolExecutionState.Denied,
+                    startedAt,
+                    timeout,
+                    stopwatch,
+                    Failure(
+                        invocation.Tool.Name,
+                        $"{invocation.Tool.Name} execution was denied.",
+                        "Codex sandbox_mode=read-only disables write-capable tools for this submitted turn.",
+                        CopilotToolFailureKind.Authorization,
+                        "codex_read_only_sandbox"));
+                return await PublishOutcomeAsync(denied, hooks, hookRuns, onEvent);
+            }
             if (invocation.Tool.Capability.RequiresNativeApproval)
             {
                 var approvalError = invocation.Tool is not ICopilotFrameworkApprovedTool

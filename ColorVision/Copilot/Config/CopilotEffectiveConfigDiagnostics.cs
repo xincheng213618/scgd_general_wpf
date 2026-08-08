@@ -561,10 +561,32 @@ namespace ColorVision.Copilot
                         : codexConfigOptions.WebSearchModeSourceLabel);
             }
             builder.AppendLine();
+            AppendSandboxMode(builder, codexConfigOptions);
             builder
                 .Append("- Skill 手动覆盖：")
                 .Append(defaults.SkillOverrides?.Count.ToString("N0", CultureInfo.CurrentCulture) ?? "0")
                 .AppendLine(" 项");
+        }
+
+        private static void AppendSandboxMode(
+            StringBuilder builder,
+            CopilotProjectInstructionDiscoveryOptions codexConfigOptions)
+        {
+            builder.Append("- Codex sandbox_mode：")
+                .Append(CopilotCodexSandboxModeSelection.GetConfigToken(
+                    codexConfigOptions.ConfiguredSandboxMode))
+                .Append(" · ")
+                .Append(CopilotCodexSandboxModeSelection.GetEffectiveLabel(
+                    codexConfigOptions.ConfiguredSandboxMode));
+            if (codexConfigOptions.HasSandboxModeOverride)
+            {
+                builder.Append(" · 来源 ")
+                    .Append(codexConfigOptions.SandboxModeSourceLabel.Length == 0
+                        ? "Codex config.toml"
+                        : codexConfigOptions.SandboxModeSourceLabel)
+                    .Append(" · 提交快照");
+            }
+            builder.AppendLine();
         }
 
         private static void AppendPreventIdleSleep(

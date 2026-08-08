@@ -55,6 +55,7 @@ namespace ColorVision.Copilot
 
             return GetCurrentTools()
                 .Where(tool => IsAllowedForCodexAgentPolicy(tool, request)
+                    && IsAllowedForCodexSandboxPolicy(tool, request)
                     && IsAllowedForMode(tool, request)
                     && (IsAvailableForAgent(tool, request)
                         || tool is not ICopilotAgentDrivenTool && CopilotToolIntentPolicy.CanRetainForFollowUp(request, tool)))
@@ -68,6 +69,16 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(tool);
             ArgumentNullException.ThrowIfNull(request);
             return request.CodexAgentsEnabled || tool is not CopilotDelegateSubagentTool;
+        }
+
+        internal static bool IsAllowedForCodexSandboxPolicy(
+            ICopilotTool tool,
+            CopilotAgentRequest request)
+        {
+            ArgumentNullException.ThrowIfNull(tool);
+            ArgumentNullException.ThrowIfNull(request);
+            return !CopilotCodexSandboxModeSelection.IsReadOnly(request.CodexSandboxMode)
+                || tool.Capability.Access == CopilotToolAccess.ReadOnly;
         }
 
         internal static bool IsAllowedForMode(ICopilotTool tool, CopilotAgentRequest request)

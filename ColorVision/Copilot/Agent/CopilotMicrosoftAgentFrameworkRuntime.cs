@@ -361,6 +361,8 @@ namespace ColorVision.Copilot
             {
                 if (tool == null || string.IsNullOrWhiteSpace(tool.Name))
                     continue;
+                if (!CopilotToolRegistry.IsAllowedForCodexSandboxPolicy(tool, request))
+                    continue;
                 if (!CopilotToolRegistry.IsAllowedForMode(tool, request))
                     continue;
                 var directlyAvailable = CopilotToolRegistry.IsAvailableForAgent(tool, request);

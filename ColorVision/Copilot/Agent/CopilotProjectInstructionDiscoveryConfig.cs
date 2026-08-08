@@ -32,6 +32,48 @@ namespace ColorVision.Copilot
         Live,
     }
 
+    internal enum CopilotCodexSandboxMode
+    {
+        Unspecified,
+        ReadOnly,
+        WorkspaceWrite,
+        DangerFullAccess,
+    }
+
+    internal static class CopilotCodexSandboxModeSelection
+    {
+        public static bool TryParse(string? value, out CopilotCodexSandboxMode mode)
+        {
+            mode = (value ?? string.Empty).Trim().ToLowerInvariant() switch
+            {
+                "read-only" => CopilotCodexSandboxMode.ReadOnly,
+                "workspace-write" => CopilotCodexSandboxMode.WorkspaceWrite,
+                "danger-full-access" => CopilotCodexSandboxMode.DangerFullAccess,
+                _ => CopilotCodexSandboxMode.Unspecified,
+            };
+            return mode != CopilotCodexSandboxMode.Unspecified;
+        }
+
+        public static string GetConfigToken(CopilotCodexSandboxMode mode) => mode switch
+        {
+            CopilotCodexSandboxMode.ReadOnly => "read-only",
+            CopilotCodexSandboxMode.WorkspaceWrite => "workspace-write",
+            CopilotCodexSandboxMode.DangerFullAccess => "danger-full-access",
+            _ => "未配置",
+        };
+
+        public static bool IsReadOnly(CopilotCodexSandboxMode mode) =>
+            mode == CopilotCodexSandboxMode.ReadOnly;
+
+        public static string GetEffectiveLabel(CopilotCodexSandboxMode mode) => mode switch
+        {
+            CopilotCodexSandboxMode.ReadOnly => "只读能力上限；写工具不暴露，旧计划或注入写调用也会拒绝",
+            CopilotCodexSandboxMode.WorkspaceWrite => "不扩大 ColorVision 原生可写根、访问模式或审批权限",
+            CopilotCodexSandboxMode.DangerFullAccess => "不映射为提权；仍受 ColorVision 原生访问与审批边界约束",
+            _ => "未配置；保留 ColorVision 原生访问与审批边界",
+        };
+    }
+
     internal static class CopilotCodexWebSearchModeSelection
     {
         public static bool TryParse(string? value, out CopilotCodexWebSearchMode mode)
@@ -134,6 +176,14 @@ namespace ColorVision.Copilot
         public bool HasWebSearchModeOverride { get; init; }
 
         public CopilotProjectInstructionConfigSources WebSearchModeSource { get; init; } =
+            CopilotProjectInstructionConfigSources.None;
+
+        public CopilotCodexSandboxMode ConfiguredSandboxMode { get; init; } =
+            CopilotCodexSandboxMode.Unspecified;
+
+        public bool HasSandboxModeOverride { get; init; }
+
+        public CopilotProjectInstructionConfigSources SandboxModeSource { get; init; } =
             CopilotProjectInstructionConfigSources.None;
 
         public string ConfiguredReviewModel { get; init; } = string.Empty;
@@ -324,6 +374,7 @@ namespace ColorVision.Copilot
             || HasDeveloperInstructionsOverride
             || HasPersonalityOverride
             || HasWebSearchModeOverride
+            || HasSandboxModeOverride
             || HasReviewModelOverride
             || HasPreventIdleSleepOverride
             || HasAgentsEnabledOverride
@@ -370,6 +421,13 @@ namespace ColorVision.Copilot
         {
             CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml web_search",
             CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml web_search",
+            _ => string.Empty,
+        };
+
+        public string SandboxModeSourceLabel => SandboxModeSource switch
+        {
+            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml sandbox_mode",
+            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml sandbox_mode",
             _ => string.Empty,
         };
 
@@ -533,6 +591,7 @@ namespace ColorVision.Copilot
         private const string DeveloperInstructionsKey = "developer_instructions";
         private const string PersonalityKey = "personality";
         private const string WebSearchKey = "web_search";
+        private const string SandboxModeKey = "sandbox_mode";
         private const string ReviewModelKey = "review_model";
         private const string PreventIdleSleepKey = "features.prevent_idle_sleep";
         private const string PreventIdleSleepFeatureKey = "prevent_idle_sleep";
@@ -705,6 +764,14 @@ namespace ColorVision.Copilot
                 WebSearchModeSource = layer.HasWebSearchModeOverride
                     ? source
                     : current.WebSearchModeSource,
+                ConfiguredSandboxMode = layer.HasSandboxModeOverride
+                    ? layer.SandboxMode
+                    : current.ConfiguredSandboxMode,
+                HasSandboxModeOverride = current.HasSandboxModeOverride
+                    || layer.HasSandboxModeOverride,
+                SandboxModeSource = layer.HasSandboxModeOverride
+                    ? source
+                    : current.SandboxModeSource,
                 ConfiguredReviewModel = layer.HasReviewModelOverride
                     ? layer.ReviewModel
                     : current.ConfiguredReviewModel,
@@ -851,6 +918,7 @@ namespace ColorVision.Copilot
                 || layer.HasDeveloperInstructionsOverride
                 || layer.HasPersonalityOverride
                 || layer.HasWebSearchModeOverride
+                || layer.HasSandboxModeOverride
                 || layer.HasReviewModelOverride
                 || layer.HasPreventIdleSleepOverride
                 || layer.HasAgentsEnabledOverride
@@ -1127,6 +1195,7 @@ namespace ColorVision.Copilot
             var developerInstructions = string.Empty;
             var personality = CopilotResponsePersonality.None;
             var webSearchMode = CopilotCodexWebSearchMode.Unspecified;
+            var sandboxMode = CopilotCodexSandboxMode.Unspecified;
             var reviewModel = string.Empty;
             var preventIdleSleep = false;
             var agentsEnabled = true;
@@ -1149,6 +1218,7 @@ namespace ColorVision.Copilot
             var hasDeveloperInstructionsOverride = false;
             var hasPersonalityOverride = false;
             var hasWebSearchModeOverride = false;
+            var hasSandboxModeOverride = false;
             var hasReviewModelOverride = false;
             var hasPreventIdleSleepOverride = false;
             var hasAgentsEnabledOverride = false;
@@ -1223,6 +1293,22 @@ namespace ColorVision.Copilot
                         continue;
                     }
                     hasWebSearchModeOverride = true;
+                    continue;
+                }
+
+                if (string.Equals(assignment.Key, SandboxModeKey, StringComparison.Ordinal))
+                {
+                    if (!TryParseConfiguredText(
+                        assignment.Value,
+                        MaximumPersonalityCharacters,
+                        out var configuredSandboxMode)
+                        || !CopilotCodexSandboxModeSelection.TryParse(
+                            configuredSandboxMode,
+                            out sandboxMode))
+                    {
+                        continue;
+                    }
+                    hasSandboxModeOverride = true;
                     continue;
                 }
 
@@ -1478,6 +1564,8 @@ namespace ColorVision.Copilot
                 HasPersonalityOverride = hasPersonalityOverride,
                 WebSearchMode = webSearchMode,
                 HasWebSearchModeOverride = hasWebSearchModeOverride,
+                SandboxMode = sandboxMode,
+                HasSandboxModeOverride = hasSandboxModeOverride,
                 ReviewModel = reviewModel,
                 HasReviewModelOverride = hasReviewModelOverride,
                 PreventIdleSleep = preventIdleSleep,
@@ -1513,6 +1601,7 @@ namespace ColorVision.Copilot
                 || hasDeveloperInstructionsOverride
                 || hasPersonalityOverride
                 || hasWebSearchModeOverride
+                || hasSandboxModeOverride
                 || hasReviewModelOverride
                 || hasPreventIdleSleepOverride
                 || hasAgentsEnabledOverride
@@ -1688,6 +1777,7 @@ namespace ColorVision.Copilot
                     && !string.Equals(key, DeveloperInstructionsKey, StringComparison.Ordinal)
                     && !string.Equals(key, PersonalityKey, StringComparison.Ordinal)
                     && !string.Equals(key, WebSearchKey, StringComparison.Ordinal)
+                    && !string.Equals(key, SandboxModeKey, StringComparison.Ordinal)
                     && !string.Equals(key, ReviewModelKey, StringComparison.Ordinal)
                     && !string.Equals(key, PreventIdleSleepKey, StringComparison.Ordinal)
                     && !string.Equals(key, AgentsEnabledKey, StringComparison.Ordinal)
@@ -2342,6 +2432,11 @@ namespace ColorVision.Copilot
                 CopilotCodexWebSearchMode.Unspecified;
 
             public bool HasWebSearchModeOverride { get; init; }
+
+            public CopilotCodexSandboxMode SandboxMode { get; init; } =
+                CopilotCodexSandboxMode.Unspecified;
+
+            public bool HasSandboxModeOverride { get; init; }
 
             public string ReviewModel { get; init; } = string.Empty;
 

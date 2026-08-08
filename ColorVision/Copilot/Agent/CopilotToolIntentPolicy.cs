@@ -237,6 +237,7 @@ namespace ColorVision.Copilot
         {
             return request != null
                 && (IsReadOnlyMode(request.Mode)
+                    || CopilotCodexSandboxModeSelection.IsReadOnly(request.CodexSandboxMode)
                     || ContainsAny(request.UserText, ExplicitReadOnlyRequestMarkers));
         }
 

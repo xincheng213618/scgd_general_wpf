@@ -24,6 +24,13 @@ namespace ColorVision.Copilot
 
         public bool HasCodexWebSearchModeOverride { get; init; }
 
+        internal CopilotCodexSandboxMode CodexSandboxMode { get; init; } =
+            CopilotCodexSandboxMode.Unspecified;
+
+        public string CodexSandboxModeSourceLabel { get; init; } = string.Empty;
+
+        public bool HasCodexSandboxModeOverride { get; init; }
+
         public string CodexReviewModel { get; init; } = string.Empty;
 
         public bool HasCodexReviewModelOverride { get; init; }
@@ -290,6 +297,21 @@ namespace ColorVision.Copilot
                         ? "Codex config.toml"
                         : snapshot.CodexWebSearchModeSourceLabel.Trim())
                     .Append('）');
+            }
+            builder.AppendLine();
+            builder.Append("执行沙箱：")
+                .Append(CopilotCodexSandboxModeSelection.GetConfigToken(
+                    snapshot.CodexSandboxMode))
+                .Append(" · ")
+                .Append(CopilotCodexSandboxModeSelection.GetEffectiveLabel(
+                    snapshot.CodexSandboxMode));
+            if (snapshot.HasCodexSandboxModeOverride)
+            {
+                builder.Append("（来源 ")
+                    .Append(string.IsNullOrWhiteSpace(snapshot.CodexSandboxModeSourceLabel)
+                        ? "Codex config.toml"
+                        : snapshot.CodexSandboxModeSourceLabel.Trim())
+                    .Append(" · 提交快照）");
             }
             builder.AppendLine();
             if (snapshot.HasCodexReviewModelOverride)

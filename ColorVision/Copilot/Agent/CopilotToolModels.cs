@@ -72,6 +72,9 @@ namespace ColorVision.Copilot
         internal CopilotCodexWebSearchMode CodexWebSearchMode { get; init; } =
             CopilotCodexWebSearchMode.Unspecified;
 
+        internal CopilotCodexSandboxMode CodexSandboxMode { get; init; } =
+            CopilotCodexSandboxMode.Unspecified;
+
         internal bool CodexAgentsEnabled { get; init; } = true;
 
         internal int? ToolOutputTokenLimitOverride { get; init; }
