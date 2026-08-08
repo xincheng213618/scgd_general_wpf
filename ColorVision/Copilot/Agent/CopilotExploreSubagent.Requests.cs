@@ -160,6 +160,8 @@ namespace ColorVision.Copilot
                 ToolOutputTokenLimitOverride = explorationRequest.ToolOutputTokenLimitOverride,
                 CodexReasoningEffort = explorationRequest.CodexReasoningEffort,
                 CodexReasoningSummary = explorationRequest.CodexReasoningSummary,
+                CodexServiceTier = explorationRequest.CodexServiceTier,
+                CodexModelVerbosity = explorationRequest.CodexModelVerbosity,
                 ProjectInstructions = preserveProjectInstructions
                     ? explorationRequest.ProjectInstructions
                     : Array.Empty<CopilotProjectInstructionDocument>(),

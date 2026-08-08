@@ -120,6 +120,56 @@ public sealed class CopilotOpenAiAgentChatClientFactoryTests
     }
 
     [Theory]
+    [InlineData("fast", "high", "priority", "high")]
+    [InlineData("flex", "medium", "flex", "medium")]
+    [InlineData("scale", "low", "scale", "low")]
+    public async Task OfficialOpenAiAgentPreservesCodexResponsePreferencesOnTheWire(
+        string configuredServiceTier,
+        string configuredVerbosity,
+        string expectedServiceTier,
+        string expectedVerbosity)
+    {
+        Assert.True(CopilotCodexModelVerbositySelection.TryParse(
+            configuredVerbosity,
+            out var verbosity));
+        using var handler = new CapturingHandler(
+            HttpStatusCode.OK,
+            TextResponseStream,
+            "text/event-stream");
+        using var httpClient = new HttpClient(handler);
+        var profile = CreateProfile(
+            CopilotVendorType.OpenAI,
+            "https://api.openai.com/v1",
+            "gpt-5.5");
+        using var client = CopilotOpenAiAgentChatClientFactory.Create(profile, httpClient);
+        var request = new CopilotAgentRequest
+        {
+            Profile = profile,
+            CodexReasoningEffort = CopilotCodexReasoningEffort.Minimal,
+            CodexReasoningSummary = CopilotCodexReasoningSummary.Concise,
+            CodexServiceTier = configuredServiceTier,
+            CodexModelVerbosity = verbosity,
+        };
+
+        await client.GetStreamingResponseAsync(
+                [new ChatMessage(ChatRole.User, "Use the configured response preferences.")],
+                CopilotMicrosoftAgentFrameworkRuntime.BuildChatOptions(request, []))
+            .ToChatResponseAsync();
+
+        using var payload = JsonDocument.Parse(handler.LastPayload);
+        var root = payload.RootElement;
+        Assert.False(root.GetProperty("store").GetBoolean());
+        Assert.Equal(
+            expectedServiceTier,
+            root.GetProperty("service_tier").GetString());
+        Assert.Equal(
+            expectedVerbosity,
+            root.GetProperty("text").GetProperty("verbosity").GetString());
+        Assert.Equal("minimal", root.GetProperty("reasoning").GetProperty("effort").GetString());
+        Assert.Equal("concise", root.GetProperty("reasoning").GetProperty("summary").GetString());
+    }
+
+    [Theory]
     [InlineData("minimal", "concise", "minimal", "concise")]
     [InlineData("xhigh", "detailed", "xhigh", "detailed")]
     [InlineData("high", "none", "high", null)]

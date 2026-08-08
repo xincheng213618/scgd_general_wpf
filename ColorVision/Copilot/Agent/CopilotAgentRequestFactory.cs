@@ -238,6 +238,11 @@ namespace ColorVision.Copilot
         internal CopilotCodexReasoningSummary CodexReasoningSummary { get; init; } =
             CopilotCodexReasoningSummary.Unspecified;
 
+        internal string CodexServiceTier { get; init; } = string.Empty;
+
+        internal CopilotCodexModelVerbosity CodexModelVerbosity { get; init; } =
+            CopilotCodexModelVerbosity.Unspecified;
+
         public IReadOnlyList<CopilotProjectInstructionDocument> ProjectInstructions { get; init; } = Array.Empty<CopilotProjectInstructionDocument>();
 
         public IReadOnlyList<string> ReadableLocalFilePaths { get; init; } = Array.Empty<string>();
@@ -376,6 +381,12 @@ namespace ColorVision.Copilot
                 CodexReasoningSummary = hostContext.ProjectInstructionDiscoveryOptions.HasModelReasoningSummaryOverride
                     ? hostContext.ProjectInstructionDiscoveryOptions.ConfiguredModelReasoningSummary
                     : CopilotCodexReasoningSummary.Unspecified,
+                CodexServiceTier = hostContext.ProjectInstructionDiscoveryOptions.HasServiceTierOverride
+                    ? hostContext.ProjectInstructionDiscoveryOptions.ConfiguredServiceTier
+                    : string.Empty,
+                CodexModelVerbosity = hostContext.ProjectInstructionDiscoveryOptions.HasModelVerbosityOverride
+                    ? hostContext.ProjectInstructionDiscoveryOptions.ConfiguredModelVerbosity
+                    : CopilotCodexModelVerbosity.Unspecified,
                 ProjectInstructions = projectInstructions,
                 ReadableLocalFilePaths = explicitLocalFilePaths,
                 ReadableLocalDirectoryPaths = readableLocalDirectoryPaths,
@@ -427,6 +438,8 @@ namespace ColorVision.Copilot
                 ToolOutputTokenLimitOverride = plan.ToolOutputTokenLimitOverride,
                 CodexReasoningEffort = plan.CodexReasoningEffort,
                 CodexReasoningSummary = plan.CodexReasoningSummary,
+                CodexServiceTier = plan.CodexServiceTier,
+                CodexModelVerbosity = plan.CodexModelVerbosity,
                 ProjectInstructions = plan.ProjectInstructions,
                 ReadableLocalFilePaths = plan.ReadableLocalFilePaths,
                 ReadableLocalDirectoryPaths = plan.ReadableLocalDirectoryPaths,

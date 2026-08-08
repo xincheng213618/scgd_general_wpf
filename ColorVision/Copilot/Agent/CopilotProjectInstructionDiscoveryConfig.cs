@@ -166,6 +166,21 @@ namespace ColorVision.Copilot
         public CopilotProjectInstructionConfigSources ModelReasoningSummarySource { get; init; } =
             CopilotProjectInstructionConfigSources.None;
 
+        public string ConfiguredServiceTier { get; init; } = string.Empty;
+
+        public bool HasServiceTierOverride { get; init; }
+
+        public CopilotProjectInstructionConfigSources ServiceTierSource { get; init; } =
+            CopilotProjectInstructionConfigSources.None;
+
+        public CopilotCodexModelVerbosity ConfiguredModelVerbosity { get; init; } =
+            CopilotCodexModelVerbosity.Unspecified;
+
+        public bool HasModelVerbosityOverride { get; init; }
+
+        public CopilotProjectInstructionConfigSources ModelVerbositySource { get; init; } =
+            CopilotProjectInstructionConfigSources.None;
+
         public int ResolveContextWindowTokens(int fallbackTokens)
         {
             return HasModelContextWindowOverride
@@ -278,6 +293,8 @@ namespace ColorVision.Copilot
             || HasToolOutputTokenLimitOverride
             || HasModelReasoningEffortOverride
             || HasModelReasoningSummaryOverride
+            || HasServiceTierOverride
+            || HasModelVerbosityOverride
             || HasModelAutoCompactTokenLimitOverride
             || HasModelAutoCompactTokenLimitScopeOverride
             || HasModelInstructionsFileOverride
@@ -341,6 +358,20 @@ namespace ColorVision.Copilot
         {
             CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml model_reasoning_summary",
             CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml model_reasoning_summary",
+            _ => string.Empty,
+        };
+
+        public string ServiceTierSourceLabel => ServiceTierSource switch
+        {
+            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml service_tier",
+            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml service_tier",
+            _ => string.Empty,
+        };
+
+        public string ModelVerbositySourceLabel => ModelVerbositySource switch
+        {
+            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml model_verbosity",
+            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml model_verbosity",
             _ => string.Empty,
         };
 
@@ -431,6 +462,8 @@ namespace ColorVision.Copilot
         private const string ToolOutputTokenLimitKey = "tool_output_token_limit";
         private const string ModelReasoningEffortKey = "model_reasoning_effort";
         private const string ModelReasoningSummaryKey = "model_reasoning_summary";
+        private const string ServiceTierKey = "service_tier";
+        private const string ModelVerbosityKey = "model_verbosity";
         private const string ModelAutoCompactTokenLimitKey = "model_auto_compact_token_limit";
         private const string ModelAutoCompactTokenLimitScopeKey = "model_auto_compact_token_limit_scope";
         private const string ModelInstructionsFileKey = "model_instructions_file";
@@ -622,6 +655,22 @@ namespace ColorVision.Copilot
                 ModelReasoningSummarySource = layer.HasModelReasoningSummaryOverride
                     ? source
                     : current.ModelReasoningSummarySource,
+                ConfiguredServiceTier = layer.HasServiceTierOverride
+                    ? layer.ServiceTier
+                    : current.ConfiguredServiceTier,
+                HasServiceTierOverride = current.HasServiceTierOverride
+                    || layer.HasServiceTierOverride,
+                ServiceTierSource = layer.HasServiceTierOverride
+                    ? source
+                    : current.ServiceTierSource,
+                ConfiguredModelVerbosity = layer.HasModelVerbosityOverride
+                    ? layer.ModelVerbosity
+                    : current.ConfiguredModelVerbosity,
+                HasModelVerbosityOverride = current.HasModelVerbosityOverride
+                    || layer.HasModelVerbosityOverride,
+                ModelVerbositySource = layer.HasModelVerbosityOverride
+                    ? source
+                    : current.ModelVerbositySource,
                 ConfiguredModelAutoCompactTokenLimit = layer.HasModelAutoCompactTokenLimitOverride
                     ? layer.ModelAutoCompactTokenLimit
                     : current.ConfiguredModelAutoCompactTokenLimit,
@@ -684,6 +733,8 @@ namespace ColorVision.Copilot
                 || layer.HasToolOutputTokenLimitOverride
                 || layer.HasModelReasoningEffortOverride
                 || layer.HasModelReasoningSummaryOverride
+                || layer.HasServiceTierOverride
+                || layer.HasModelVerbosityOverride
                 || layer.HasModelAutoCompactTokenLimitOverride
                 || layer.HasModelAutoCompactTokenLimitScopeOverride
                 || layer.HasModelInstructionsFileOverride
@@ -953,6 +1004,8 @@ namespace ColorVision.Copilot
             var toolOutputTokenLimit = 0;
             var modelReasoningEffort = CopilotCodexReasoningEffort.Unspecified;
             var modelReasoningSummary = CopilotCodexReasoningSummary.Unspecified;
+            var serviceTier = string.Empty;
+            var modelVerbosity = CopilotCodexModelVerbosity.Unspecified;
             var modelAutoCompactTokenLimit = 0;
             var modelAutoCompactTokenLimitScope = CopilotModelAutoCompactTokenLimitScope.Unspecified;
             var modelInstructionsFilePath = string.Empty;
@@ -968,6 +1021,8 @@ namespace ColorVision.Copilot
             var hasToolOutputTokenLimitOverride = false;
             var hasModelReasoningEffortOverride = false;
             var hasModelReasoningSummaryOverride = false;
+            var hasServiceTierOverride = false;
+            var hasModelVerbosityOverride = false;
             var hasModelAutoCompactTokenLimitOverride = false;
             var hasModelAutoCompactTokenLimitScopeOverride = false;
             var hasModelInstructionsFileOverride = false;
@@ -1090,6 +1145,38 @@ namespace ColorVision.Copilot
                     continue;
                 }
 
+                if (string.Equals(assignment.Key, ServiceTierKey, StringComparison.Ordinal))
+                {
+                    if (!TryParseConfiguredText(
+                        assignment.Value,
+                        CopilotCodexServiceTierSelection.MaximumCharacters,
+                        out var configuredServiceTier)
+                        || !CopilotCodexServiceTierSelection.TryNormalize(
+                            configuredServiceTier,
+                            out serviceTier))
+                    {
+                        continue;
+                    }
+                    hasServiceTierOverride = true;
+                    continue;
+                }
+
+                if (string.Equals(assignment.Key, ModelVerbosityKey, StringComparison.Ordinal))
+                {
+                    if (!TryParseConfiguredText(
+                        assignment.Value,
+                        MaximumPersonalityCharacters,
+                        out var configuredModelVerbosity)
+                        || !CopilotCodexModelVerbositySelection.TryParse(
+                            configuredModelVerbosity,
+                            out modelVerbosity))
+                    {
+                        continue;
+                    }
+                    hasModelVerbosityOverride = true;
+                    continue;
+                }
+
                 if (string.Equals(assignment.Key, ModelAutoCompactTokenLimitKey, StringComparison.Ordinal))
                 {
                     if (!TryParsePositiveTokenLimit(
@@ -1198,6 +1285,10 @@ namespace ColorVision.Copilot
                 HasModelReasoningEffortOverride = hasModelReasoningEffortOverride,
                 ModelReasoningSummary = modelReasoningSummary,
                 HasModelReasoningSummaryOverride = hasModelReasoningSummaryOverride,
+                ServiceTier = serviceTier,
+                HasServiceTierOverride = hasServiceTierOverride,
+                ModelVerbosity = modelVerbosity,
+                HasModelVerbosityOverride = hasModelVerbosityOverride,
                 ModelAutoCompactTokenLimit = modelAutoCompactTokenLimit,
                 HasModelAutoCompactTokenLimitOverride = hasModelAutoCompactTokenLimitOverride,
                 ModelAutoCompactTokenLimitScope = modelAutoCompactTokenLimitScope,
@@ -1215,6 +1306,8 @@ namespace ColorVision.Copilot
                 || hasToolOutputTokenLimitOverride
                 || hasModelReasoningEffortOverride
                 || hasModelReasoningSummaryOverride
+                || hasServiceTierOverride
+                || hasModelVerbosityOverride
                 || hasModelAutoCompactTokenLimitOverride
                 || hasModelAutoCompactTokenLimitScopeOverride
                 || hasModelInstructionsFileOverride
@@ -1366,6 +1459,8 @@ namespace ColorVision.Copilot
                     && !string.Equals(key, ToolOutputTokenLimitKey, StringComparison.Ordinal)
                     && !string.Equals(key, ModelReasoningEffortKey, StringComparison.Ordinal)
                     && !string.Equals(key, ModelReasoningSummaryKey, StringComparison.Ordinal)
+                    && !string.Equals(key, ServiceTierKey, StringComparison.Ordinal)
+                    && !string.Equals(key, ModelVerbosityKey, StringComparison.Ordinal)
                     && !string.Equals(key, ModelAutoCompactTokenLimitKey, StringComparison.Ordinal)
                     && !string.Equals(key, ModelAutoCompactTokenLimitScopeKey, StringComparison.Ordinal)
                     && !string.Equals(key, ModelInstructionsFileKey, StringComparison.Ordinal)
@@ -1993,6 +2088,15 @@ namespace ColorVision.Copilot
                 CopilotCodexReasoningSummary.Unspecified;
 
             public bool HasModelReasoningSummaryOverride { get; init; }
+
+            public string ServiceTier { get; init; } = string.Empty;
+
+            public bool HasServiceTierOverride { get; init; }
+
+            public CopilotCodexModelVerbosity ModelVerbosity { get; init; } =
+                CopilotCodexModelVerbosity.Unspecified;
+
+            public bool HasModelVerbosityOverride { get; init; }
 
             public int ModelAutoCompactTokenLimit { get; init; }
 

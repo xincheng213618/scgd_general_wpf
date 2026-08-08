@@ -393,6 +393,35 @@ namespace ColorVision.Copilot
                     .Append(" · 请求快照");
             }
             builder.AppendLine(" · 仅 Agent 官方 OpenAI Responses 生效");
+            builder.Append("- Codex service_tier：");
+            if (!codexConfigOptions.HasServiceTierOverride)
+            {
+                builder.AppendLine("未配置 · 使用模型/Provider 默认");
+            }
+            else
+            {
+                builder.Append(codexConfigOptions.ConfiguredServiceTier)
+                    .Append(" → 请求 ")
+                    .Append(CopilotCodexServiceTierSelection.GetRequestToken(
+                        codexConfigOptions.ConfiguredServiceTier))
+                    .Append(" · 来源 ")
+                    .Append(codexConfigOptions.ServiceTierSourceLabel.Length == 0
+                        ? "Codex config.toml"
+                        : codexConfigOptions.ServiceTierSourceLabel)
+                    .AppendLine(" · 请求快照 · 仅 Agent 官方 OpenAI Responses 生效");
+            }
+            builder.Append("- Codex model_verbosity：")
+                .Append(CopilotCodexModelVerbositySelection.GetConfigToken(
+                    codexConfigOptions.ConfiguredModelVerbosity));
+            if (codexConfigOptions.HasModelVerbosityOverride)
+            {
+                builder.Append(" · 来源 ")
+                    .Append(codexConfigOptions.ModelVerbositySourceLabel.Length == 0
+                        ? "Codex config.toml"
+                        : codexConfigOptions.ModelVerbositySourceLabel)
+                    .Append(" · 请求快照");
+            }
+            builder.AppendLine(" · 仅 Agent 官方 OpenAI Responses 生效");
             builder.Append("- Codex model_auto_compact_token_limit：");
             if (!codexConfigOptions.HasModelAutoCompactTokenLimitOverride)
             {

@@ -230,6 +230,30 @@ namespace ColorVision.Copilot
                         : effective.ModelReasoningSummarySourceLabel)
                     .AppendLine(" 请求快照；none 不请求摘要；仅 Agent 官方 OpenAI Responses 生效");
             }
+            if (effective.HasServiceTierOverride)
+            {
+                builder.Append("Codex service_tier：")
+                    .Append(effective.ConfiguredServiceTier)
+                    .Append(" → 请求 ")
+                    .Append(CopilotCodexServiceTierSelection.GetRequestToken(
+                        effective.ConfiguredServiceTier))
+                    .Append(" · 来源 ")
+                    .Append(effective.ServiceTierSourceLabel.Length == 0
+                        ? "Codex config.toml"
+                        : effective.ServiceTierSourceLabel)
+                    .AppendLine(" 请求快照；仅 Agent 官方 OpenAI Responses 生效");
+            }
+            if (effective.HasModelVerbosityOverride)
+            {
+                builder.Append("Codex model_verbosity：")
+                    .Append(CopilotCodexModelVerbositySelection.GetConfigToken(
+                        effective.ConfiguredModelVerbosity))
+                    .Append(" · 来源 ")
+                    .Append(effective.ModelVerbositySourceLabel.Length == 0
+                        ? "Codex config.toml"
+                        : effective.ModelVerbositySourceLabel)
+                    .AppendLine(" 请求快照；仅 Agent 官方 OpenAI Responses 生效");
+            }
             if (effective.HasModelAutoCompactTokenLimitOverride)
             {
                 builder.Append("Codex model_auto_compact_token_limit：")

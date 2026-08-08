@@ -1,6 +1,7 @@
 #pragma warning disable MAAI001
 #pragma warning disable CA1859
 #pragma warning disable OPENAI001
+#pragma warning disable SCME0001
 using Anthropic;
 using Anthropic.Core;
 using ColorVision.Copilot.Mcp;
@@ -55,7 +56,7 @@ namespace ColorVision.Copilot
                 Reasoning = BuildReasoningOptions(profile),
                 Tools = tools,
             };
-            ApplyCodexReasoningOptions(request, options);
+            ApplyCodexResponseOptions(request, options);
             return options;
         }
 
@@ -73,7 +74,7 @@ namespace ColorVision.Copilot
                 Reasoning = BuildReasoningOptions(profile),
                 Tools = Array.Empty<AITool>(),
             };
-            ApplyCodexReasoningOptions(request, options);
+            ApplyCodexResponseOptions(request, options);
             return options;
         }
 
@@ -97,7 +98,7 @@ namespace ColorVision.Copilot
             };
         }
 
-        private static void ApplyCodexReasoningOptions(
+        private static void ApplyCodexResponseOptions(
             CopilotAgentRequest request,
             ChatOptions options)
         {
@@ -105,17 +106,45 @@ namespace ColorVision.Copilot
                 CopilotCodexReasoningEffort.Unspecified;
             var hasSummaryOverride = request.CodexReasoningSummary !=
                 CopilotCodexReasoningSummary.Unspecified;
-            if ((!hasEffortOverride && !hasSummaryOverride)
+            var serviceTier = CopilotCodexServiceTierSelection.GetRequestToken(
+                request.CodexServiceTier);
+            var hasVerbosityOverride = request.CodexModelVerbosity !=
+                CopilotCodexModelVerbosity.Unspecified;
+            if ((!hasEffortOverride
+                    && !hasSummaryOverride
+                    && serviceTier.Length == 0
+                    && !hasVerbosityOverride)
                 || !CopilotOpenAiRequestPolicy.UsesResponsesApi(request.Profile))
             {
                 return;
             }
 
-            options.Reasoning = null;
-            options.RawRepresentationFactory = _ => new CreateResponseOptions
+            if (hasEffortOverride || hasSummaryOverride)
+                options.Reasoning = null;
+            options.RawRepresentationFactory = _ => BuildCodexResponseOptions(
+                request,
+                serviceTier);
+        }
+
+        private static CreateResponseOptions BuildCodexResponseOptions(
+            CopilotAgentRequest request,
+            string serviceTier)
+        {
+            var responseOptions = new CreateResponseOptions
             {
                 ReasoningOptions = BuildCodexResponseReasoningOptions(request),
             };
+            if (serviceTier.Length > 0)
+                responseOptions.ServiceTier = new ResponseServiceTier(serviceTier);
+            if (request.CodexModelVerbosity != CopilotCodexModelVerbosity.Unspecified)
+            {
+                responseOptions.TextOptions = new ResponseTextOptions();
+                responseOptions.TextOptions.Patch.Set(
+                    "$.verbosity"u8,
+                    CopilotCodexModelVerbositySelection.GetConfigToken(
+                        request.CodexModelVerbosity));
+            }
+            return responseOptions;
         }
 
         private static ResponseReasoningOptions? BuildCodexResponseReasoningOptions(

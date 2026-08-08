@@ -557,6 +557,8 @@ namespace ColorVision.Copilot
                 ToolOutputTokenLimitOverride = parentRequest.ToolOutputTokenLimitOverride,
                 CodexReasoningEffort = parentRequest.CodexReasoningEffort,
                 CodexReasoningSummary = parentRequest.CodexReasoningSummary,
+                CodexServiceTier = parentRequest.CodexServiceTier,
+                CodexModelVerbosity = parentRequest.CodexModelVerbosity,
                 ProjectInstructions = projectInstructions,
                 ReadableLocalFilePaths = preselectedFiles,
                 ReadableLocalDirectoryPaths = Array.Empty<string>(),

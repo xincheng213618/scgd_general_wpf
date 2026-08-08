@@ -80,6 +80,19 @@ namespace ColorVision.Copilot
 
         public string CodexReasoningSummarySourceLabel { get; init; } = string.Empty;
 
+        public string CodexServiceTier { get; init; } = string.Empty;
+
+        public bool HasCodexServiceTierOverride { get; init; }
+
+        public string CodexServiceTierSourceLabel { get; init; } = string.Empty;
+
+        internal CopilotCodexModelVerbosity CodexModelVerbosity { get; init; } =
+            CopilotCodexModelVerbosity.Unspecified;
+
+        public bool HasCodexModelVerbosityOverride { get; init; }
+
+        public string CodexModelVerbositySourceLabel { get; init; } = string.Empty;
+
         public bool AutoCompactConversationHistory { get; init; }
 
         public int AutoCompactThresholdPercent { get; init; }
@@ -263,6 +276,30 @@ namespace ColorVision.Copilot
                     .Append(string.IsNullOrWhiteSpace(snapshot.CodexReasoningSummarySourceLabel)
                         ? "Codex config.toml"
                         : snapshot.CodexReasoningSummarySourceLabel.Trim())
+                    .AppendLine(" 请求快照；仅 Agent 官方 OpenAI Responses 生效）");
+            }
+            if (snapshot.HasCodexServiceTierOverride)
+            {
+                builder.Append("服务等级：")
+                    .Append(snapshot.CodexServiceTier)
+                    .Append(" → 请求 ")
+                    .Append(CopilotCodexServiceTierSelection.GetRequestToken(
+                        snapshot.CodexServiceTier))
+                    .Append("（")
+                    .Append(string.IsNullOrWhiteSpace(snapshot.CodexServiceTierSourceLabel)
+                        ? "Codex config.toml"
+                        : snapshot.CodexServiceTierSourceLabel.Trim())
+                    .AppendLine(" 请求快照；仅 Agent 官方 OpenAI Responses 生效）");
+            }
+            if (snapshot.HasCodexModelVerbosityOverride)
+            {
+                builder.Append("回答详细度：")
+                    .Append(CopilotCodexModelVerbositySelection.GetConfigToken(
+                        snapshot.CodexModelVerbosity))
+                    .Append("（")
+                    .Append(string.IsNullOrWhiteSpace(snapshot.CodexModelVerbositySourceLabel)
+                        ? "Codex config.toml"
+                        : snapshot.CodexModelVerbositySourceLabel.Trim())
                     .AppendLine(" 请求快照；仅 Agent 官方 OpenAI Responses 生效）");
             }
             builder.Append("有效系统提示：")

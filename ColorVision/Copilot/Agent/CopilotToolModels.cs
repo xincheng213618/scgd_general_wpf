@@ -80,6 +80,11 @@ namespace ColorVision.Copilot
         internal CopilotCodexReasoningSummary CodexReasoningSummary { get; init; } =
             CopilotCodexReasoningSummary.Unspecified;
 
+        internal string CodexServiceTier { get; init; } = string.Empty;
+
+        internal CopilotCodexModelVerbosity CodexModelVerbosity { get; init; } =
+            CopilotCodexModelVerbosity.Unspecified;
+
         public IReadOnlyList<CopilotProjectInstructionDocument> ProjectInstructions { get; init; } = Array.Empty<CopilotProjectInstructionDocument>();
 
         public IReadOnlyList<string> ReadableLocalFilePaths { get; init; } = Array.Empty<string>();
