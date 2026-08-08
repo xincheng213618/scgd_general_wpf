@@ -298,13 +298,25 @@ namespace ColorVision.Copilot
         {
             ArgumentNullException.ThrowIfNull(request);
             ArgumentNullException.ThrowIfNull(tool);
-            if (request.AccessContext.RevokeIfWorkspaceChanged(currentWorkspacePath))
-                return false;
+            var revokedMismatchedGrant = request.AccessContext.RevokeIfWorkspaceChanged(
+                currentWorkspacePath);
             if (string.IsNullOrWhiteSpace(currentWorkspacePath)
                 || !WorkspacePathsMatch(request.WorkspacePath, currentWorkspacePath))
             {
                 return false;
             }
+
+            if (request.CodexApprovalsReviewer == CopilotCodexApprovalsReviewer.User)
+                return false;
+            if (request.CodexApprovalsReviewer == CopilotCodexApprovalsReviewer.AutoReview)
+            {
+                return CopilotCodexApprovalPolicySelection.AllowsAutomaticReview(
+                        request.CodexApprovalPolicy)
+                    && !CopilotToolIntentPolicy.IsReadOnlyMode(request.Mode)
+                    && tool.Capability.RequiresNativeApproval;
+            }
+            if (revokedMismatchedGrant)
+                return false;
 
             return request.AccessContext.AllowsUnattendedProtectedActionsFor(
                     request.ConversationId,

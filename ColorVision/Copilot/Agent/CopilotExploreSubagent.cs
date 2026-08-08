@@ -556,6 +556,7 @@ namespace ColorVision.Copilot
                 CodexWebSearchMode = parentRequest.CodexWebSearchMode,
                 CodexSandboxMode = parentRequest.CodexSandboxMode,
                 CodexApprovalPolicy = parentRequest.CodexApprovalPolicy,
+                CodexApprovalsReviewer = parentRequest.CodexApprovalsReviewer,
                 CodexAgentsEnabled = parentRequest.CodexAgentsEnabled,
                 ToolOutputTokenLimitOverride = parentRequest.ToolOutputTokenLimitOverride,
                 CodexReasoningEffort = parentRequest.CodexReasoningEffort,

@@ -71,23 +71,33 @@ namespace ColorVision.Copilot
                         }
                         else
                         {
+                            var useAutomaticReview = CopilotAgentAccessPolicy.CanAutoReview(
+                                request,
+                                reservation.Tool,
+                                currentWorkspacePath);
+                            var useConfiguredAutomaticReview = useAutomaticReview
+                                && CopilotCodexApprovalsReviewerSelection.IsExplicitAutoReview(request);
                             var handle = _approvalCoordinator.RequestApproval(
                                 reservation.Tool,
                                 request,
                                 reservation.ToolInput,
                                 reservation.CallId,
                                 cancellationToken,
-                                reservation.ExecutionScope);
-                            bridge.PublishAwaitingApproval(reservation, handle.Action);
+                                reservation.ExecutionScope,
+                                userReviewVisible: !useConfiguredAutomaticReview);
+                            bridge.PublishAwaitingApproval(
+                                reservation,
+                                handle.Action,
+                                useConfiguredAutomaticReview);
                             try
                             {
-                                if (CopilotAgentAccessPolicy.CanAutoReview(
-                                    request,
-                                    reservation.Tool,
-                                    currentWorkspacePath))
+                                if (useAutomaticReview)
                                 {
+                                    var isExplicitAutoReview = useConfiguredAutomaticReview;
                                     emit(CopilotAgentEvent.Status(
-                                        $"{reservation.Tool.Name} is being checked by the task-scoped automatic permission reviewer."));
+                                        isExplicitAutoReview
+                                            ? $"{reservation.Tool.Name} is being checked by the configured automatic permission reviewer."
+                                            : $"{reservation.Tool.Name} is being checked by the task-scoped automatic permission reviewer."));
                                     var automaticReview = await _automaticApprovalReviewer.ReviewAsync(
                                         contextRecoveryChatClient,
                                         request,
@@ -109,7 +119,27 @@ namespace ColorVision.Copilot
                                             out var approvalMessage);
                                         emit(CopilotAgentEvent.Status(approved
                                             ? $"{reservation.Tool.Name} passed automatic permission review ({automaticReview.RiskLevel}): {automaticReviewReason}"
-                                            : $"{reservation.Tool.Name} automatic approval could not be applied ({CopilotAgentTraceEntry.Sanitize(approvalMessage)}); the action still requires explicit user approval."));
+                                            : isExplicitAutoReview
+                                                ? $"{reservation.Tool.Name} automatic approval could not be applied ({CopilotAgentTraceEntry.Sanitize(approvalMessage)}); execution was closed without falling back to a user approval prompt."
+                                                : $"{reservation.Tool.Name} automatic approval could not be applied ({CopilotAgentTraceEntry.Sanitize(approvalMessage)}); the action still requires explicit user approval."));
+                                        if (!approved && isExplicitAutoReview)
+                                            _approvalCoordinator.Cancel(handle);
+                                    }
+                                    else if (isExplicitAutoReview)
+                                    {
+                                        var reviewWorkspacePath = GetCurrentWorkspacePath();
+                                        var rejected = _approvalCoordinator.RejectAfterAutomaticReview(
+                                            handle,
+                                            request,
+                                            reservation.Tool,
+                                            reviewWorkspacePath,
+                                            automaticReview.Reason,
+                                            out var rejectionMessage);
+                                        emit(CopilotAgentEvent.Status(rejected
+                                            ? $"{reservation.Tool.Name} was denied by automatic permission review ({automaticReview.RiskLevel}): {automaticReviewReason}. Use a materially safer path or stop and ask the user."
+                                            : $"{reservation.Tool.Name} automatic denial could not be recorded ({CopilotAgentTraceEntry.Sanitize(rejectionMessage)}); execution was closed."));
+                                        if (!rejected)
+                                            _approvalCoordinator.Cancel(handle);
                                     }
                                     else
                                     {

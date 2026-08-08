@@ -119,7 +119,10 @@ namespace ColorVision.Copilot
                 return outcome;
             }
 
-            public void PublishAwaitingApproval(FrameworkApprovalReservation reservation, Mcp.ConfirmableAction action)
+            public void PublishAwaitingApproval(
+                FrameworkApprovalReservation reservation,
+                Mcp.ConfirmableAction action,
+                bool automaticReview)
             {
                 reservation.ApprovalActionId = action.ActionId;
                 reservation.ApprovalArgumentsDigest = action.ArgumentsDigest;
@@ -127,7 +130,9 @@ namespace ColorVision.Copilot
                 {
                     ToolName = reservation.Tool.Name,
                     Success = true,
-                    Summary = $"{reservation.Tool.Name} is waiting for explicit ColorVision approval.",
+                    Summary = automaticReview
+                        ? $"{reservation.Tool.Name} is waiting for the configured automatic permission reviewer."
+                        : $"{reservation.Tool.Name} is waiting for explicit ColorVision approval.",
                     Approval = new CopilotToolApprovalInfo
                     {
                         ActionId = action.ActionId,

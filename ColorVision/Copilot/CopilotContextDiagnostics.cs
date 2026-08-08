@@ -38,6 +38,13 @@ namespace ColorVision.Copilot
 
         public bool HasCodexApprovalPolicyOverride { get; init; }
 
+        internal CopilotCodexApprovalsReviewer CodexApprovalsReviewer { get; init; } =
+            CopilotCodexApprovalsReviewer.Unspecified;
+
+        public string CodexApprovalsReviewerSourceLabel { get; init; } = string.Empty;
+
+        public bool HasCodexApprovalsReviewerOverride { get; init; }
+
         public string CodexReviewModel { get; init; } = string.Empty;
 
         public bool HasCodexReviewModelOverride { get; init; }
@@ -333,6 +340,21 @@ namespace ColorVision.Copilot
                     .Append(string.IsNullOrWhiteSpace(snapshot.CodexApprovalPolicySourceLabel)
                         ? "Codex config.toml"
                         : snapshot.CodexApprovalPolicySourceLabel.Trim())
+                    .Append(" · 提交快照）");
+            }
+            builder.AppendLine();
+            builder.Append("审批复核者：")
+                .Append(CopilotCodexApprovalsReviewerSelection.GetConfigToken(
+                    snapshot.CodexApprovalsReviewer))
+                .Append(" · ")
+                .Append(CopilotCodexApprovalsReviewerSelection.GetEffectiveLabel(
+                    snapshot.CodexApprovalsReviewer));
+            if (snapshot.HasCodexApprovalsReviewerOverride)
+            {
+                builder.Append("（来源 ")
+                    .Append(string.IsNullOrWhiteSpace(snapshot.CodexApprovalsReviewerSourceLabel)
+                        ? "Codex config.toml"
+                        : snapshot.CodexApprovalsReviewerSourceLabel.Trim())
                     .Append(" · 提交快照）");
             }
             builder.AppendLine();

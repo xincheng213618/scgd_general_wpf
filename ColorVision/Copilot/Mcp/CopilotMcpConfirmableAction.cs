@@ -97,7 +97,8 @@ namespace ColorVision.Copilot.Mcp
             string agentCallId,
             CopilotConfirmationRequestContext requestContext,
             Action<ConfirmableAction> beforePublish,
-            string? reviewDetails = null)
+            string? reviewDetails = null,
+            bool userReviewVisible = true)
         {
             return CreateCore(
                 title,
@@ -112,7 +113,8 @@ namespace ColorVision.Copilot.Mcp
                 requestContext,
                 exactArgumentsBinding,
                 beforePublish,
-                reviewDetails);
+                reviewDetails,
+                userReviewVisible);
         }
 
         private ConfirmableAction CreateCore(
@@ -128,7 +130,8 @@ namespace ColorVision.Copilot.Mcp
             CopilotConfirmationRequestContext? requestContext,
             string? exactArgumentsBinding,
             Action<ConfirmableAction>? beforePublish,
-            string? reviewDetails)
+            string? reviewDetails,
+            bool userReviewVisible = true)
         {
             ArgumentNullException.ThrowIfNull(executor);
             var normalizedReviewDetails = NormalizeReviewDetails(reviewDetails);
@@ -148,6 +151,7 @@ namespace ColorVision.Copilot.Mcp
                 ReviewDetails = normalizedReviewDetails,
                 ExecuteOnApproval = executeOnApproval,
                 ResumesAgentOnApproval = resumesAgentOnApproval,
+                IsUserReviewVisible = userReviewVisible,
                 AgentCallId = Sanitize(agentCallId),
                 RequestContext = NormalizeRequestContext(requestContext),
                 CreatedAt = now,
@@ -318,6 +322,31 @@ namespace ColorVision.Copilot.Mcp
         public bool Reject(
             string actionId,
             CopilotConfirmationReviewContext reviewContext,
+            out string message) =>
+            RejectCore(
+                actionId,
+                reviewContext,
+                decisionSource: "user",
+                decisionReason: string.Empty,
+                out message);
+
+        internal bool RejectAutomatically(
+            string actionId,
+            CopilotConfirmationReviewContext reviewContext,
+            string decisionReason,
+            out string message) =>
+            RejectCore(
+                actionId,
+                reviewContext,
+                decisionSource: "automatic-review",
+                decisionReason,
+                out message);
+
+        private bool RejectCore(
+            string actionId,
+            CopilotConfirmationReviewContext reviewContext,
+            string decisionSource,
+            string decisionReason,
             out string message)
         {
             var action = Find(actionId);
@@ -338,6 +367,8 @@ namespace ColorVision.Copilot.Mcp
                     return false;
                 }
 
+                action.ApprovalDecisionSource = Sanitize(decisionSource);
+                action.ApprovalDecisionReason = Sanitize(decisionReason);
                 action.Status = ConfirmableActionStatus.Rejected;
                 action.CompletedAt = DateTimeOffset.UtcNow;
                 action.ReleaseExecutor();
@@ -346,14 +377,20 @@ namespace ColorVision.Copilot.Mcp
             CopilotMcpAuditLogger.ActionRejected(action);
             RaiseActionStatusChanged(action);
             RaiseActionsChanged();
-            message = "The action was rejected.";
+            message = string.Equals(
+                action.ApprovalDecisionSource,
+                "automatic-review",
+                StringComparison.Ordinal)
+                ? "The action was denied by the automatic permission reviewer."
+                : "The action was rejected.";
             return true;
         }
 
         public IReadOnlyList<ConfirmableAction> GetPendingActionsForConversation(string? conversationId)
         {
             return GetPendingActions()
-                .Where(action => action.CanReviewFromConversation(conversationId))
+                .Where(action => action.IsUserReviewVisible
+                    && action.CanReviewFromConversation(conversationId))
                 .ToArray();
         }
 

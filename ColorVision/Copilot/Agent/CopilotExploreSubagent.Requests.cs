@@ -159,6 +159,7 @@ namespace ColorVision.Copilot
                 CodexWebSearchMode = explorationRequest.CodexWebSearchMode,
                 CodexSandboxMode = explorationRequest.CodexSandboxMode,
                 CodexApprovalPolicy = explorationRequest.CodexApprovalPolicy,
+                CodexApprovalsReviewer = explorationRequest.CodexApprovalsReviewer,
                 CodexAgentsEnabled = explorationRequest.CodexAgentsEnabled,
                 ToolOutputTokenLimitOverride = explorationRequest.ToolOutputTokenLimitOverride,
                 CodexReasoningEffort = explorationRequest.CodexReasoningEffort,

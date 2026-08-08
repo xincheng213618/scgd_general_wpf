@@ -220,6 +220,10 @@ namespace ColorVision.Copilot
                 request.CodexApprovalPolicy);
             if (approvalPolicyInstruction.Length > 0)
                 builder.AppendLine(approvalPolicyInstruction);
+            var approvalsReviewerInstruction = CopilotCodexApprovalsReviewerSelection.GetModelInstruction(
+                request.CodexApprovalsReviewer);
+            if (approvalsReviewerInstruction.Length > 0)
+                builder.AppendLine(approvalsReviewerInstruction);
             builder.AppendLine(BuildModeInstruction(request.Mode));
 
             return builder.ToString().TrimEnd();

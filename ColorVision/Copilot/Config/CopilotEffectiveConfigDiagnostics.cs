@@ -563,6 +563,7 @@ namespace ColorVision.Copilot
             builder.AppendLine();
             AppendSandboxMode(builder, codexConfigOptions);
             AppendApprovalPolicy(builder, codexConfigOptions);
+            AppendApprovalsReviewer(builder, codexConfigOptions);
             builder
                 .Append("- Skill 手动覆盖：")
                 .Append(defaults.SkillOverrides?.Count.ToString("N0", CultureInfo.CurrentCulture) ?? "0")
@@ -606,6 +607,27 @@ namespace ColorVision.Copilot
                     .Append(codexConfigOptions.ApprovalPolicySourceLabel.Length == 0
                         ? "Codex config.toml"
                         : codexConfigOptions.ApprovalPolicySourceLabel)
+                    .Append(" · 提交快照");
+            }
+            builder.AppendLine();
+        }
+
+        private static void AppendApprovalsReviewer(
+            StringBuilder builder,
+            CopilotProjectInstructionDiscoveryOptions codexConfigOptions)
+        {
+            builder.Append("- Codex approvals_reviewer：")
+                .Append(CopilotCodexApprovalsReviewerSelection.GetConfigToken(
+                    codexConfigOptions.ConfiguredApprovalsReviewer))
+                .Append(" · ")
+                .Append(CopilotCodexApprovalsReviewerSelection.GetEffectiveLabel(
+                    codexConfigOptions.ConfiguredApprovalsReviewer));
+            if (codexConfigOptions.HasApprovalsReviewerOverride)
+            {
+                builder.Append(" · 来源 ")
+                    .Append(codexConfigOptions.ApprovalsReviewerSourceLabel.Length == 0
+                        ? "Codex config.toml"
+                        : codexConfigOptions.ApprovalsReviewerSourceLabel)
                     .Append(" · 提交快照");
             }
             builder.AppendLine();

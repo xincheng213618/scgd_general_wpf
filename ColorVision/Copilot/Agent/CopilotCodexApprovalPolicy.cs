@@ -117,6 +117,18 @@ namespace ColorVision.Copilot
             };
         }
 
+        public static bool AllowsAutomaticReview(CopilotCodexApprovalPolicy? policy)
+        {
+            policy ??= CopilotCodexApprovalPolicy.Unspecified;
+            return policy.Mode switch
+            {
+                CopilotCodexApprovalPolicyMode.Unspecified => true,
+                CopilotCodexApprovalPolicyMode.OnRequest => true,
+                CopilotCodexApprovalPolicyMode.Granular => policy.SandboxApproval,
+                _ => false,
+            };
+        }
+
         public static bool RequiresNativeApproval(
             CopilotCodexApprovalPolicy? policy,
             ICopilotTool tool)

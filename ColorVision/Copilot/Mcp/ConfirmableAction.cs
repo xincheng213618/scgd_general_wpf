@@ -48,6 +48,8 @@ namespace ColorVision.Copilot.Mcp
 
         public bool ResumesAgentOnApproval { get; init; }
 
+        public bool IsUserReviewVisible { get; init; } = true;
+
         public string AgentCallId { get; internal set; } = string.Empty;
 
         internal CopilotConfirmationRequestContext RequestContext { get; set; } = new();
