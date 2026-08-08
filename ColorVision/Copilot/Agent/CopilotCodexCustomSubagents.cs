@@ -35,6 +35,8 @@ namespace ColorVision.Copilot
 
         public int? ContextWindowTokens { get; init; }
 
+        public int? ToolOutputTokenLimit { get; init; }
+
         public CopilotCodexReasoningEffort ReasoningEffort { get; init; } =
             CopilotCodexReasoningEffort.Unspecified;
 
@@ -67,6 +69,7 @@ namespace ColorVision.Copilot
         private const string CustomAgentDeveloperInstructionsKey = "developer_instructions";
         private const string CustomAgentModelKey = "model";
         private const string CustomAgentContextWindowKey = "model_context_window";
+        private const string CustomAgentToolOutputTokenLimitKey = "tool_output_token_limit";
         private const string CustomAgentReasoningEffortKey = "model_reasoning_effort";
         private const string CustomAgentReasoningSummaryKey = "model_reasoning_summary";
         private const string CustomAgentSupportsReasoningSummariesKey = "model_supports_reasoning_summaries";
@@ -277,6 +280,14 @@ namespace ColorVision.Copilot
                 contextWindowTokens = configuredContextWindowTokens;
             }
 
+            int? toolOutputTokenLimit = null;
+            if (assignments.TryGetValue(CustomAgentToolOutputTokenLimitKey, out var toolOutputTokenLimitValue))
+            {
+                if (!TryParseToolOutputTokenLimit(toolOutputTokenLimitValue, out var configuredToolOutputTokenLimit))
+                    return false;
+                toolOutputTokenLimit = configuredToolOutputTokenLimit;
+            }
+
             var reasoningSummary = CopilotCodexReasoningSummary.Unspecified;
             if (assignments.TryGetValue(CustomAgentReasoningSummaryKey, out var summaryValue)
                 && (!TryParseConfiguredText(summaryValue, 32, out var configuredSummary)
@@ -319,6 +330,7 @@ namespace ColorVision.Copilot
                 DeveloperInstructions = developerInstructions,
                 Model = model,
                 ContextWindowTokens = contextWindowTokens,
+                ToolOutputTokenLimit = toolOutputTokenLimit,
                 ReasoningEffort = reasoningEffort,
                 ReasoningSummary = reasoningSummary,
                 SupportsReasoningSummaries = supportsReasoningSummaries,
@@ -381,6 +393,7 @@ namespace ColorVision.Copilot
             || string.Equals(key, CustomAgentDeveloperInstructionsKey, StringComparison.Ordinal)
             || string.Equals(key, CustomAgentModelKey, StringComparison.Ordinal)
             || string.Equals(key, CustomAgentContextWindowKey, StringComparison.Ordinal)
+            || string.Equals(key, CustomAgentToolOutputTokenLimitKey, StringComparison.Ordinal)
             || string.Equals(key, CustomAgentReasoningEffortKey, StringComparison.Ordinal)
             || string.Equals(key, CustomAgentReasoningSummaryKey, StringComparison.Ordinal)
             || string.Equals(key, CustomAgentSupportsReasoningSummariesKey, StringComparison.Ordinal)
@@ -469,6 +482,8 @@ namespace ColorVision.Copilot
                     .Append(string.IsNullOrWhiteSpace(definition.Model) ? "inherited" : definition.Model)
                     .Append(" · context ")
                     .Append(definition.ContextWindowTokens?.ToString() ?? "inherited")
+                    .Append(" · tool_output ")
+                    .Append(definition.ToolOutputTokenLimit?.ToString() ?? "inherited")
                     .Append(" · reasoning ")
                     .Append(definition.ReasoningEffort == CopilotCodexReasoningEffort.Unspecified
                         ? "inherited"

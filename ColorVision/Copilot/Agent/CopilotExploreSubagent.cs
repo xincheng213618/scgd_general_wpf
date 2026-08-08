@@ -585,7 +585,8 @@ namespace ColorVision.Copilot
                 CodexMaximumConcurrentSubagentRuns = parentRequest.CodexMaximumConcurrentSubagentRuns,
                 CodexDefaultSubagentModel = parentRequest.CodexDefaultSubagentModel,
                 CodexDefaultSubagentReasoningEffort = parentRequest.CodexDefaultSubagentReasoningEffort,
-                ToolOutputTokenLimitOverride = parentRequest.ToolOutputTokenLimitOverride,
+                ToolOutputTokenLimitOverride = customSubagent?.ToolOutputTokenLimit
+                    ?? parentRequest.ToolOutputTokenLimitOverride,
                 CodexReasoningEffort = childReasoningEffort,
                 CodexReasoningSummary = childReasoningSummary,
                 CodexModelSupportsReasoningSummaries = childSupportsReasoningSummaries,

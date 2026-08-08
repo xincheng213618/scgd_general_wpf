@@ -282,6 +282,7 @@ namespace ColorVision.Copilot
                     .AppendLine(TruncateInlineText(definition.Description, 400));
                 if (!string.IsNullOrWhiteSpace(definition.Model)
                     || definition.ContextWindowTokens.HasValue
+                    || definition.ToolOutputTokenLimit.HasValue
                     || definition.ReasoningEffort != CopilotCodexReasoningEffort.Unspecified
                     || definition.ReasoningSummary != CopilotCodexReasoningSummary.Unspecified
                     || definition.SupportsReasoningSummaries.HasValue
@@ -292,6 +293,8 @@ namespace ColorVision.Copilot
                         .Append(string.IsNullOrWhiteSpace(definition.Model) ? "inherited" : definition.Model)
                         .Append("; context_window=")
                         .Append(definition.ContextWindowTokens?.ToString() ?? "inherited")
+                        .Append("; tool_output_token_limit=")
+                        .Append(definition.ToolOutputTokenLimit?.ToString() ?? "inherited")
                         .Append("; reasoning_effort=")
                         .Append(definition.ReasoningEffort == CopilotCodexReasoningEffort.Unspecified
                             ? "inherited"
