@@ -322,6 +322,60 @@ public sealed class CopilotOpenAiAgentChatClientFactoryTests
     }
 
     [Fact]
+    public async Task CustomSubagentReasoningSummarySupportFlowsToTheResponsesWire()
+    {
+        using var handler = new CapturingHandler(
+            HttpStatusCode.OK,
+            TextResponseStream,
+            "text/event-stream");
+        using var httpClient = new HttpClient(handler);
+        var profile = CreateProfile(
+            CopilotVendorType.OpenAI,
+            "https://api.openai.com/v1",
+            "gpt-5.5");
+        var parentRequest = new CopilotAgentRequest
+        {
+            ConversationId = "custom-summary-support",
+            UserText = "Delegate a bounded investigation.",
+            TaskIntentText = "Delegate a bounded investigation.",
+            Profile = profile,
+            CodexReasoningEffort = CopilotCodexReasoningEffort.High,
+            CodexReasoningSummary = CopilotCodexReasoningSummary.Detailed,
+            CodexModelSupportsReasoningSummaries = true,
+            CodexCustomSubagents =
+            [
+                new CopilotCodexCustomSubagentDefinition
+                {
+                    Name = "no-summary",
+                    Description = "Use a model without reasoning summaries.",
+                    DeveloperInstructions = "Inspect only bounded evidence.",
+                    SupportsReasoningSummaries = false,
+                },
+            ],
+        };
+        var childRequest = CopilotSubagentRunner.CreateChildRequest(
+            parentRequest,
+            CopilotSubagentRoleCatalog.Default.GetRequired(CopilotSubagentRoleCatalog.ExploreRoleId),
+            new CopilotSubagentRunRequest
+            {
+                RunId = "custom-summary-wire",
+                Task = "Inspect bounded evidence.",
+                Agent = "no-summary",
+                RequestTokenBudget = 16_384,
+            });
+        using var client = CopilotOpenAiAgentChatClientFactory.Create(childRequest.Profile, httpClient);
+
+        await client.GetStreamingResponseAsync(
+                [new ChatMessage(ChatRole.User, "Use the selected custom agent contract.")],
+                CopilotMicrosoftAgentFrameworkRuntime.BuildChatOptions(childRequest, []))
+            .ToChatResponseAsync();
+
+        Assert.False(childRequest.CodexModelSupportsReasoningSummaries);
+        using var payload = JsonDocument.Parse(handler.LastPayload);
+        Assert.False(payload.RootElement.TryGetProperty("reasoning", out _));
+    }
+
+    [Fact]
     public async Task ThirdPartyCompatibleAgentKeepsChatCompletionsTransport()
     {
         using var handler = new CapturingHandler(

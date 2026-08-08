@@ -24,7 +24,8 @@ public sealed class CopilotCodexCustomSubagentsTests
                     effort: "low",
                     summary: "auto",
                     serviceTier: "flex",
-                    verbosity: "medium") + "\n[mcp_servers.extra]\ncommand = \"ignored\"");
+                    verbosity: "medium",
+                    supportsSummaries: false) + "\n[mcp_servers.extra]\ncommand = \"ignored\"");
             File.WriteAllText(
                 Path.Combine(globalRoot, "agents", "docs.toml"),
                 CreateAgentConfig("docs", "Docs research", "Find exact public documentation."));
@@ -45,7 +46,8 @@ public sealed class CopilotCodexCustomSubagentsTests
                     effort: "high",
                     summary: "detailed",
                     serviceTier: "fast",
-                    verbosity: "high"));
+                    verbosity: "high",
+                    supportsSummaries: true));
 
             var trusted = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
 
@@ -56,6 +58,7 @@ public sealed class CopilotCodexCustomSubagentsTests
             Assert.Equal("project-model", reviewer.Model);
             Assert.Equal(CopilotCodexReasoningEffort.High, reviewer.ReasoningEffort);
             Assert.Equal(CopilotCodexReasoningSummary.Detailed, reviewer.ReasoningSummary);
+            Assert.True(reviewer.SupportsReasoningSummaries);
             Assert.Equal("fast", reviewer.ServiceTier);
             Assert.Equal(CopilotCodexModelVerbosity.High, reviewer.ModelVerbosity);
             Assert.Equal(CopilotProjectInstructionConfigSources.TrustedProject, reviewer.Source);
@@ -73,6 +76,7 @@ public sealed class CopilotCodexCustomSubagentsTests
             Assert.Equal("Global review agent", globalReviewer.Description);
             Assert.Equal("global-model", globalReviewer.Model);
             Assert.Equal(CopilotCodexReasoningSummary.Auto, globalReviewer.ReasoningSummary);
+            Assert.False(globalReviewer.SupportsReasoningSummaries);
             Assert.Equal("flex", globalReviewer.ServiceTier);
             Assert.Equal(CopilotCodexModelVerbosity.Medium, globalReviewer.ModelVerbosity);
             Assert.True(globalReviewer.HasIgnoredSettings);
@@ -103,7 +107,8 @@ public sealed class CopilotCodexCustomSubagentsTests
                     model: "first-model",
                     summary: "concise",
                     serviceTier: "fast",
-                    verbosity: "high"));
+                    verbosity: "high",
+                    supportsSummaries: false));
             var activeDocumentPath = Path.Combine(projectRoot, "Feature.cs");
             File.WriteAllText(activeDocumentPath, "namespace Feature;");
             var submittedContext = new CopilotAgentHostContextSnapshot(
@@ -124,7 +129,8 @@ public sealed class CopilotCodexCustomSubagentsTests
                     model: "second-model",
                     summary: "detailed",
                     serviceTier: "flex",
-                    verbosity: "low"));
+                    verbosity: "low",
+                    supportsSummaries: true));
 
             var submittedPlan = CopilotAgentRequestFactory.Prepare(
                 "Inspect Feature.cs with a specialist.",
@@ -150,6 +156,7 @@ public sealed class CopilotCodexCustomSubagentsTests
             var submittedAgent = Assert.Single(submittedRequest.CodexCustomSubagents);
             Assert.Equal("first-model", submittedAgent.Model);
             Assert.Equal(CopilotCodexReasoningSummary.Concise, submittedAgent.ReasoningSummary);
+            Assert.False(submittedAgent.SupportsReasoningSummaries);
             Assert.Equal("fast", submittedAgent.ServiceTier);
             Assert.Equal(CopilotCodexModelVerbosity.High, submittedAgent.ModelVerbosity);
             Assert.Equal("Second safe description", Assert.Single(refreshedPlan.CodexCustomSubagents).Description);
@@ -158,7 +165,7 @@ public sealed class CopilotCodexCustomSubagentsTests
                 submittedRequest,
                 Array.Empty<CopilotToolResult>());
             Assert.Contains("reviewer: First safe description", prompt, StringComparison.Ordinal);
-            Assert.Contains("reasoning_summary=concise; verbosity=high; service_tier=fast", prompt, StringComparison.Ordinal);
+            Assert.Contains("reasoning_summary=concise; reasoning_summaries=false; verbosity=high; service_tier=fast", prompt, StringComparison.Ordinal);
             Assert.Contains("fixed read-only capability boundary", prompt, StringComparison.Ordinal);
             Assert.DoesNotContain("FIRST-PRIVATE-INSTRUCTION", prompt, StringComparison.Ordinal);
             Assert.DoesNotContain(agentPath, prompt, StringComparison.OrdinalIgnoreCase);
@@ -184,6 +191,7 @@ public sealed class CopilotCodexCustomSubagentsTests
                 Model = "agent-model",
                 ReasoningEffort = CopilotCodexReasoningEffort.High,
                 ReasoningSummary = CopilotCodexReasoningSummary.Detailed,
+                SupportsReasoningSummaries = false,
                 ServiceTier = "fast",
                 ModelVerbosity = CopilotCodexModelVerbosity.High,
                 Source = CopilotProjectInstructionConfigSources.TrustedProject,
@@ -214,9 +222,11 @@ public sealed class CopilotCodexCustomSubagentsTests
         Assert.Equal("agent-model", childRequest.Profile.Model);
         Assert.Equal(CopilotCodexReasoningEffort.High, childRequest.CodexReasoningEffort);
         Assert.Equal(CopilotCodexReasoningSummary.Detailed, childRequest.CodexReasoningSummary);
+        Assert.False(childRequest.CodexModelSupportsReasoningSummaries);
         Assert.Equal("fast", childRequest.CodexServiceTier);
         Assert.Equal(CopilotCodexModelVerbosity.High, childRequest.CodexModelVerbosity);
         Assert.Equal(CopilotCodexReasoningSummary.Concise, request.CodexReasoningSummary);
+        Assert.True(request.CodexModelSupportsReasoningSummaries);
         Assert.Equal("scale", request.CodexServiceTier);
         Assert.Equal(CopilotCodexModelVerbosity.Low, request.CodexModelVerbosity);
         Assert.Contains("Prioritize authorization boundary defects.", childRequest.RuntimeRoleInstructions, StringComparison.Ordinal);
@@ -269,6 +279,7 @@ public sealed class CopilotCodexCustomSubagentsTests
         Assert.Equal("different-model", child.Profile.Model);
         Assert.Equal(CopilotCodexReasoningEffort.Unspecified, child.CodexReasoningEffort);
         Assert.Equal(CopilotCodexReasoningSummary.Concise, child.CodexReasoningSummary);
+        Assert.True(child.CodexModelSupportsReasoningSummaries);
         Assert.Equal("scale", child.CodexServiceTier);
         Assert.Equal(CopilotCodexModelVerbosity.Low, child.CodexModelVerbosity);
     }
@@ -467,6 +478,7 @@ public sealed class CopilotCodexCustomSubagentsTests
                     Model = "review-model",
                     ReasoningEffort = CopilotCodexReasoningEffort.High,
                     ReasoningSummary = CopilotCodexReasoningSummary.Detailed,
+                    SupportsReasoningSummaries = false,
                     ServiceTier = "fast",
                     ModelVerbosity = CopilotCodexModelVerbosity.High,
                     Source = CopilotProjectInstructionConfigSources.TrustedProject,
@@ -499,7 +511,7 @@ public sealed class CopilotCodexCustomSubagentsTests
             Assert.Contains("reviewer · Review bounded workspace evidence.", report, StringComparison.Ordinal);
             Assert.Contains("来源 受信项目", report, StringComparison.Ordinal);
             Assert.Contains("model review-model · reasoning high", report, StringComparison.Ordinal);
-            Assert.Contains("summary detailed · verbosity high · service_tier fast", report, StringComparison.Ordinal);
+            Assert.Contains("summary detailed · summary_support false · verbosity high · service_tier fast", report, StringComparison.Ordinal);
             Assert.Contains("未支持设置已忽略", report, StringComparison.Ordinal);
             Assert.DoesNotContain("PRIVATE-INSTRUCTION-BODY", report, StringComparison.Ordinal);
             Assert.DoesNotContain(privatePath, report, StringComparison.OrdinalIgnoreCase);
@@ -541,6 +553,7 @@ public sealed class CopilotCodexCustomSubagentsTests
 
     [Theory]
     [InlineData("model_reasoning_summary = \"brief\"")]
+    [InlineData("model_supports_reasoning_summaries = \"yes\"")]
     [InlineData("service_tier = \"priority tier\"")]
     [InlineData("model_verbosity = \"detailed\"")]
     public void InvalidRuntimePreferenceRejectsTheCustomAgentDefinition(string invalidAssignment)
@@ -721,6 +734,7 @@ public sealed class CopilotCodexCustomSubagentsTests
             CodexCustomSubagents = definitions,
             CodexReasoningEffort = CopilotCodexReasoningEffort.Medium,
             CodexReasoningSummary = CopilotCodexReasoningSummary.Concise,
+            CodexModelSupportsReasoningSummaries = true,
             CodexServiceTier = "scale",
             CodexModelVerbosity = CopilotCodexModelVerbosity.Low,
         };
@@ -750,7 +764,8 @@ public sealed class CopilotCodexCustomSubagentsTests
         string effort = "",
         string summary = "",
         string serviceTier = "",
-        string verbosity = "")
+        string verbosity = "",
+        bool? supportsSummaries = null)
     {
         var lines = new List<string>
         {
@@ -764,6 +779,8 @@ public sealed class CopilotCodexCustomSubagentsTests
             lines.Add($"model_reasoning_effort = \"{effort}\"");
         if (summary.Length > 0)
             lines.Add($"model_reasoning_summary = \"{summary}\"");
+        if (supportsSummaries.HasValue)
+            lines.Add($"model_supports_reasoning_summaries = {supportsSummaries.Value.ToString().ToLowerInvariant()}");
         if (serviceTier.Length > 0)
             lines.Add($"service_tier = \"{serviceTier}\"");
         if (verbosity.Length > 0)

@@ -283,6 +283,7 @@ namespace ColorVision.Copilot
                 if (!string.IsNullOrWhiteSpace(definition.Model)
                     || definition.ReasoningEffort != CopilotCodexReasoningEffort.Unspecified
                     || definition.ReasoningSummary != CopilotCodexReasoningSummary.Unspecified
+                    || definition.SupportsReasoningSummaries.HasValue
                     || definition.ModelVerbosity != CopilotCodexModelVerbosity.Unspecified
                     || !string.IsNullOrWhiteSpace(definition.ServiceTier))
                 {
@@ -296,6 +297,9 @@ namespace ColorVision.Copilot
                         .Append(definition.ReasoningSummary == CopilotCodexReasoningSummary.Unspecified
                             ? "inherited"
                             : CopilotCodexReasoningSummarySelection.GetConfigToken(definition.ReasoningSummary))
+                        .Append("; reasoning_summaries=")
+                        .Append(CopilotCodexReasoningSummarySupportSelection.GetConfigToken(
+                            definition.SupportsReasoningSummaries))
                         .Append("; verbosity=")
                         .Append(definition.ModelVerbosity == CopilotCodexModelVerbosity.Unspecified
                             ? "inherited"

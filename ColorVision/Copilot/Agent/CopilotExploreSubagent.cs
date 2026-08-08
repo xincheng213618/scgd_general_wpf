@@ -541,6 +541,8 @@ namespace ColorVision.Copilot
                 && customSubagent.ReasoningSummary != CopilotCodexReasoningSummary.Unspecified
                     ? customSubagent.ReasoningSummary
                     : parentRequest.CodexReasoningSummary;
+            var childSupportsReasoningSummaries = customSubagent?.SupportsReasoningSummaries
+                ?? parentRequest.CodexModelSupportsReasoningSummaries;
             var childServiceTier = !string.IsNullOrWhiteSpace(customSubagent?.ServiceTier)
                 ? customSubagent.ServiceTier
                 : parentRequest.CodexServiceTier;
@@ -586,7 +588,7 @@ namespace ColorVision.Copilot
                 ToolOutputTokenLimitOverride = parentRequest.ToolOutputTokenLimitOverride,
                 CodexReasoningEffort = childReasoningEffort,
                 CodexReasoningSummary = childReasoningSummary,
-                CodexModelSupportsReasoningSummaries = parentRequest.CodexModelSupportsReasoningSummaries,
+                CodexModelSupportsReasoningSummaries = childSupportsReasoningSummaries,
                 CodexServiceTier = childServiceTier,
                 CodexModelVerbosity = childModelVerbosity,
                 ProjectInstructions = projectInstructions,

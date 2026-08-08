@@ -39,6 +39,8 @@ namespace ColorVision.Copilot
         public CopilotCodexReasoningSummary ReasoningSummary { get; init; } =
             CopilotCodexReasoningSummary.Unspecified;
 
+        public bool? SupportsReasoningSummaries { get; init; }
+
         public string ServiceTier { get; init; } = string.Empty;
 
         public CopilotCodexModelVerbosity ModelVerbosity { get; init; } =
@@ -64,6 +66,7 @@ namespace ColorVision.Copilot
         private const string CustomAgentModelKey = "model";
         private const string CustomAgentReasoningEffortKey = "model_reasoning_effort";
         private const string CustomAgentReasoningSummaryKey = "model_reasoning_summary";
+        private const string CustomAgentSupportsReasoningSummariesKey = "model_supports_reasoning_summaries";
         private const string CustomAgentServiceTierKey = "service_tier";
         private const string CustomAgentModelVerbosityKey = "model_verbosity";
 
@@ -271,6 +274,14 @@ namespace ColorVision.Copilot
                 return false;
             }
 
+            bool? supportsReasoningSummaries = null;
+            if (assignments.TryGetValue(CustomAgentSupportsReasoningSummariesKey, out var supportsSummaryValue))
+            {
+                if (!TryParseTomlBoolean(supportsSummaryValue, out var configuredSupportsReasoningSummaries))
+                    return false;
+                supportsReasoningSummaries = configuredSupportsReasoningSummaries;
+            }
+
             var serviceTier = string.Empty;
             if (assignments.TryGetValue(CustomAgentServiceTierKey, out var serviceTierValue)
                 && (!TryParseConfiguredText(
@@ -298,6 +309,7 @@ namespace ColorVision.Copilot
                 Model = model,
                 ReasoningEffort = reasoningEffort,
                 ReasoningSummary = reasoningSummary,
+                SupportsReasoningSummaries = supportsReasoningSummaries,
                 ServiceTier = serviceTier,
                 ModelVerbosity = modelVerbosity,
                 Source = source,
@@ -358,6 +370,7 @@ namespace ColorVision.Copilot
             || string.Equals(key, CustomAgentModelKey, StringComparison.Ordinal)
             || string.Equals(key, CustomAgentReasoningEffortKey, StringComparison.Ordinal)
             || string.Equals(key, CustomAgentReasoningSummaryKey, StringComparison.Ordinal)
+            || string.Equals(key, CustomAgentSupportsReasoningSummariesKey, StringComparison.Ordinal)
             || string.Equals(key, CustomAgentServiceTierKey, StringComparison.Ordinal)
             || string.Equals(key, CustomAgentModelVerbosityKey, StringComparison.Ordinal);
 
@@ -449,6 +462,9 @@ namespace ColorVision.Copilot
                     .Append(definition.ReasoningSummary == CopilotCodexReasoningSummary.Unspecified
                         ? "inherited"
                         : CopilotCodexReasoningSummarySelection.GetConfigToken(definition.ReasoningSummary))
+                    .Append(" · summary_support ")
+                    .Append(CopilotCodexReasoningSummarySupportSelection.GetConfigToken(
+                        definition.SupportsReasoningSummaries))
                     .Append(" · verbosity ")
                     .Append(definition.ModelVerbosity == CopilotCodexModelVerbosity.Unspecified
                         ? "inherited"
