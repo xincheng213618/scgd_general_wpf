@@ -500,6 +500,119 @@ public sealed class CopilotCodexCustomSubagentsTests
         Assert.Contains("下一次 Agent 请求的当前配置快照", disabledReport, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void InvalidAndDuplicateAgentFilesProducePathSafeLocalDiagnostics()
+    {
+        var globalRoot = CreateTemporaryDirectory();
+        try
+        {
+            var agentsDirectory = Path.Combine(globalRoot, "agents");
+            Directory.CreateDirectory(agentsDirectory);
+            File.WriteAllText(
+                Path.Combine(agentsDirectory, "01-reviewer.toml"),
+                CreateAgentConfig(
+                    "reviewer",
+                    "First deterministic definition",
+                    "FIRST-PRIVATE-INSTRUCTION"));
+            File.WriteAllText(
+                Path.Combine(agentsDirectory, "02-reviewer.toml"),
+                CreateAgentConfig(
+                    "reviewer",
+                    "Duplicate definition",
+                    "SECOND-PRIVATE-INSTRUCTION"));
+            File.WriteAllText(
+                Path.Combine(agentsDirectory, "broken.toml"),
+                "name = \"broken\"\ndeveloper_instructions = \"Missing description.\"");
+            File.WriteAllText(
+                Path.Combine(agentsDirectory, "oversized.toml"),
+                new string('x', 256 * 1024 + 1));
+
+            var options = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot);
+
+            var reviewer = Assert.Single(options.CustomSubagents);
+            Assert.Equal("First deterministic definition", reviewer.Description);
+            Assert.Contains(options.CustomSubagentDiscoveryIssues, issue =>
+                issue.FileName == "02-reviewer.toml"
+                && issue.Kind == CopilotCodexCustomSubagentDiscoveryIssueKind.DuplicateName);
+            Assert.Contains(options.CustomSubagentDiscoveryIssues, issue =>
+                issue.FileName == "broken.toml"
+                && issue.Kind == CopilotCodexCustomSubagentDiscoveryIssueKind.InvalidDefinition);
+            Assert.Contains(options.CustomSubagentDiscoveryIssues, issue =>
+                issue.FileName == "oversized.toml"
+                && issue.Kind == CopilotCodexCustomSubagentDiscoveryIssueKind.UnreadableOrUnsafe);
+
+            var memoryReport = CopilotProjectInstructionDiagnostics.Format(
+                new CopilotProjectInstructionSnapshot(
+                    string.Empty,
+                    string.Empty,
+                    string.Empty,
+                    options,
+                    Array.Empty<CopilotProjectInstructionDocument>()),
+                hasActiveAgentRun: false);
+            var debugReport = CopilotEffectiveConfigDiagnostics.Format(
+                new CopilotEffectiveConfigDiagnosticContext
+                {
+                    Config = new CopilotConfig(),
+                    State = new CopilotChatState(),
+                    ComposerMode = CopilotAgentMode.Code,
+                    CodexConfigOptions = options,
+                });
+
+            foreach (var report in new[] { memoryReport, debugReport })
+            {
+                Assert.Contains("Codex custom agent 发现问题：3", report, StringComparison.Ordinal);
+                Assert.Contains("02-reviewer.toml", report, StringComparison.Ordinal);
+                Assert.Contains("broken.toml", report, StringComparison.Ordinal);
+                Assert.Contains("oversized.toml", report, StringComparison.Ordinal);
+                Assert.Contains("仅本地诊断；不会注入模型提示", report, StringComparison.Ordinal);
+                Assert.DoesNotContain(globalRoot, report, StringComparison.OrdinalIgnoreCase);
+                Assert.DoesNotContain("FIRST-PRIVATE-INSTRUCTION", report, StringComparison.Ordinal);
+                Assert.DoesNotContain("SECOND-PRIVATE-INSTRUCTION", report, StringComparison.Ordinal);
+            }
+
+            var parentPrompt = new CopilotAgentContextBuilder().BuildPreparedUserMessageContent(
+                CreateParentRequest(reviewer),
+                Array.Empty<CopilotToolResult>());
+            Assert.DoesNotContain("broken.toml", parentPrompt, StringComparison.Ordinal);
+            Assert.DoesNotContain("发现问题", parentPrompt, StringComparison.Ordinal);
+        }
+        finally
+        {
+            Directory.Delete(globalRoot, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void AgentDiscoveryReportsDefinitionsBeyondTheBoundedLimit()
+    {
+        var globalRoot = CreateTemporaryDirectory();
+        try
+        {
+            var agentsDirectory = Path.Combine(globalRoot, "agents");
+            Directory.CreateDirectory(agentsDirectory);
+            for (var index = 0; index < 25; index++)
+            {
+                File.WriteAllText(
+                    Path.Combine(agentsDirectory, $"{index:D2}-agent.toml"),
+                    CreateAgentConfig(
+                        $"agent{index:D2}",
+                        $"Agent {index:D2}",
+                        $"Handle bounded task {index:D2}."));
+            }
+
+            var options = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot);
+
+            Assert.Equal(24, options.CustomSubagents.Count);
+            var issue = Assert.Single(options.CustomSubagentDiscoveryIssues);
+            Assert.Equal("24-agent.toml", issue.FileName);
+            Assert.Equal(CopilotCodexCustomSubagentDiscoveryIssueKind.LimitExceeded, issue.Kind);
+        }
+        finally
+        {
+            Directory.Delete(globalRoot, recursive: true);
+        }
+    }
+
     private static CopilotAgentRequest CreateParentRequest(
         params CopilotCodexCustomSubagentDefinition[] definitions) => new()
         {

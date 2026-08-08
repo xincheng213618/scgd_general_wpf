@@ -6,6 +6,19 @@ using System.Text;
 
 namespace ColorVision.Copilot
 {
+    internal enum CopilotCodexCustomSubagentDiscoveryIssueKind
+    {
+        UnreadableOrUnsafe,
+        InvalidDefinition,
+        DuplicateName,
+        LimitExceeded,
+    }
+
+    internal sealed record CopilotCodexCustomSubagentDiscoveryIssue(
+        string FileName,
+        CopilotProjectInstructionConfigSources Source,
+        CopilotCodexCustomSubagentDiscoveryIssueKind Kind);
+
     internal sealed record CopilotCodexCustomSubagentDefinition
     {
         internal const int MaximumNameCharacters = 64;
@@ -35,6 +48,7 @@ namespace ColorVision.Copilot
     internal static partial class CopilotProjectInstructionDiscoveryConfig
     {
         private const int MaximumCustomSubagents = 24;
+        private const int MaximumCustomSubagentDiscoveryIssues = 32;
         private const string CustomAgentsDirectoryName = "agents";
         private const string CustomAgentNameKey = "name";
         private const string CustomAgentDescriptionKey = "description";
@@ -43,8 +57,11 @@ namespace ColorVision.Copilot
         private const string CustomAgentReasoningEffortKey = "model_reasoning_effort";
 
         private static IReadOnlyList<CopilotCodexCustomSubagentDefinition> DiscoverCodexHomeCustomSubagents(
-            string normalizedCodexHomePath)
+            string normalizedCodexHomePath,
+            out IReadOnlyList<CopilotCodexCustomSubagentDiscoveryIssue> discoveryIssues)
         {
+            var issues = new List<CopilotCodexCustomSubagentDiscoveryIssue>();
+            discoveryIssues = Array.Empty<CopilotCodexCustomSubagentDiscoveryIssue>();
             if (normalizedCodexHomePath.Length == 0)
                 return Array.Empty<CopilotCodexCustomSubagentDefinition>();
 
@@ -54,14 +71,18 @@ namespace ColorVision.Copilot
                 definitions,
                 normalizedCodexHomePath,
                 Path.Combine(normalizedCodexHomePath, CustomAgentsDirectoryName),
-                CopilotProjectInstructionConfigSources.CodexHome);
+                CopilotProjectInstructionConfigSources.CodexHome,
+                issues);
+            discoveryIssues = issues.ToArray();
             return CreateCustomSubagentSnapshot(definitions);
         }
 
         private static IReadOnlyList<CopilotCodexCustomSubagentDefinition> ApplyTrustedProjectCustomSubagents(
             IReadOnlyList<CopilotCodexCustomSubagentDefinition> current,
+            IReadOnlyList<CopilotCodexCustomSubagentDiscoveryIssue> currentIssues,
             string normalizedProjectRoot,
-            IReadOnlyList<string> projectConfigDirectories)
+            IReadOnlyList<string> projectConfigDirectories,
+            out IReadOnlyList<CopilotCodexCustomSubagentDiscoveryIssue> discoveryIssues)
         {
             var definitions = (current ?? Array.Empty<CopilotCodexCustomSubagentDefinition>())
                 .Where(definition => definition != null)
@@ -69,14 +90,20 @@ namespace ColorVision.Copilot
                     definition => definition.Name,
                     definition => definition.CreateSnapshot(),
                     StringComparer.OrdinalIgnoreCase);
+            var issues = (currentIssues ?? Array.Empty<CopilotCodexCustomSubagentDiscoveryIssue>())
+                .Where(issue => issue != null)
+                .Take(MaximumCustomSubagentDiscoveryIssues)
+                .ToList();
             foreach (var directoryPath in projectConfigDirectories ?? Array.Empty<string>())
             {
                 ApplyCustomSubagentDirectory(
                     definitions,
                     normalizedProjectRoot,
                     Path.Combine(directoryPath, ".codex", CustomAgentsDirectoryName),
-                    CopilotProjectInstructionConfigSources.TrustedProject);
+                    CopilotProjectInstructionConfigSources.TrustedProject,
+                    issues);
             }
+            discoveryIssues = issues.ToArray();
             return CreateCustomSubagentSnapshot(definitions);
         }
 
@@ -84,23 +111,69 @@ namespace ColorVision.Copilot
             Dictionary<string, CopilotCodexCustomSubagentDefinition> definitions,
             string allowedRootPath,
             string directoryPath,
-            CopilotProjectInstructionConfigSources source)
+            CopilotProjectInstructionConfigSources source,
+            List<CopilotCodexCustomSubagentDiscoveryIssue> issues)
         {
+            var namesInDirectory = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var filePath in EnumerateCustomSubagentFiles(allowedRootPath, directoryPath))
             {
-                if (!TryReadConfigSource(allowedRootPath, filePath, out var configSource)
-                    || !TryParseCustomSubagent(configSource, source, filePath, out var definition))
+                if (!TryReadConfigSource(allowedRootPath, filePath, out var configSource))
                 {
+                    AddCustomSubagentDiscoveryIssue(
+                        issues,
+                        filePath,
+                        source,
+                        CopilotCodexCustomSubagentDiscoveryIssueKind.UnreadableOrUnsafe);
+                    continue;
+                }
+                if (!TryParseCustomSubagent(configSource, source, filePath, out var definition))
+                {
+                    AddCustomSubagentDiscoveryIssue(
+                        issues,
+                        filePath,
+                        source,
+                        CopilotCodexCustomSubagentDiscoveryIssueKind.InvalidDefinition);
+                    continue;
+                }
+                if (!namesInDirectory.Add(definition.Name))
+                {
+                    AddCustomSubagentDiscoveryIssue(
+                        issues,
+                        filePath,
+                        source,
+                        CopilotCodexCustomSubagentDiscoveryIssueKind.DuplicateName);
                     continue;
                 }
 
                 if (!definitions.ContainsKey(definition.Name)
                     && definitions.Count >= MaximumCustomSubagents)
                 {
+                    AddCustomSubagentDiscoveryIssue(
+                        issues,
+                        filePath,
+                        source,
+                        CopilotCodexCustomSubagentDiscoveryIssueKind.LimitExceeded);
                     continue;
                 }
                 definitions[definition.Name] = definition;
             }
+        }
+
+        private static void AddCustomSubagentDiscoveryIssue(
+            List<CopilotCodexCustomSubagentDiscoveryIssue> issues,
+            string filePath,
+            CopilotProjectInstructionConfigSources source,
+            CopilotCodexCustomSubagentDiscoveryIssueKind kind)
+        {
+            if (issues.Count >= MaximumCustomSubagentDiscoveryIssues)
+                return;
+            var fileName = Path.GetFileName(filePath);
+            if (string.IsNullOrWhiteSpace(fileName))
+                fileName = "unknown.toml";
+            issues.Add(new CopilotCodexCustomSubagentDiscoveryIssue(
+                fileName.Length <= 160 ? fileName : fileName[..160],
+                source,
+                kind));
         }
 
         private static IReadOnlyList<string> EnumerateCustomSubagentFiles(
@@ -121,7 +194,7 @@ namespace ColorVision.Copilot
 
                 return Directory.EnumerateFiles(fullDirectoryPath, "*.toml", SearchOption.TopDirectoryOnly)
                     .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
-                    .Take(MaximumCustomSubagents)
+                    .Take(MaximumCustomSubagents + MaximumCustomSubagentDiscoveryIssues)
                     .ToArray();
             }
             catch
@@ -331,6 +404,40 @@ namespace ColorVision.Copilot
                 if (definition.HasIgnoredSettings)
                     builder.Append(" · 未支持设置已忽略");
                 builder.AppendLine();
+            }
+            return builder.ToString().TrimEnd();
+        }
+
+        public static string FormatDiscoveryIssues(
+            IReadOnlyList<CopilotCodexCustomSubagentDiscoveryIssue>? issues)
+        {
+            var available = (issues ?? Array.Empty<CopilotCodexCustomSubagentDiscoveryIssue>())
+                .Where(issue => issue != null)
+                .Take(32)
+                .ToArray();
+            if (available.Length == 0)
+                return string.Empty;
+
+            var builder = new StringBuilder()
+                .Append("Codex custom agent 发现问题：")
+                .Append(available.Length)
+                .AppendLine(" · 仅本地诊断；不会注入模型提示");
+            foreach (var issue in available)
+            {
+                builder.Append("  - ")
+                    .Append(CollapseDiagnosticText(issue.FileName, 160))
+                    .Append(" · 来源 ")
+                    .Append(issue.Source == CopilotProjectInstructionConfigSources.TrustedProject
+                        ? "受信项目"
+                        : "Codex Home")
+                    .Append(" · ")
+                    .AppendLine(issue.Kind switch
+                    {
+                        CopilotCodexCustomSubagentDiscoveryIssueKind.UnreadableOrUnsafe => "文件不可读、过大或不满足安全路径约束，已跳过",
+                        CopilotCodexCustomSubagentDiscoveryIssueKind.DuplicateName => "同目录已有同名 Agent，保留按文件名排序后的首个定义",
+                        CopilotCodexCustomSubagentDiscoveryIssueKind.LimitExceeded => "超过 24 个有效 Agent 上限，已跳过",
+                        _ => "定义无效或缺少必填字段，已跳过",
+                    });
             }
             return builder.ToString().TrimEnd();
         }

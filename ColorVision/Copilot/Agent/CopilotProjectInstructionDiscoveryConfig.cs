@@ -158,6 +158,9 @@ namespace ColorVision.Copilot
         internal IReadOnlyList<CopilotCodexCustomSubagentDefinition> CustomSubagents { get; init; } =
             Array.Empty<CopilotCodexCustomSubagentDefinition>();
 
+        internal IReadOnlyList<CopilotCodexCustomSubagentDiscoveryIssue> CustomSubagentDiscoveryIssues { get; init; } =
+            Array.Empty<CopilotCodexCustomSubagentDiscoveryIssue>();
+
         public string DeveloperInstructions { get; init; } = string.Empty;
 
         public bool HasDeveloperInstructionsOverride { get; init; }
@@ -792,9 +795,13 @@ namespace ColorVision.Copilot
                     includeProjectRootMarkers: true);
             }
 
+            var customSubagents = DiscoverCodexHomeCustomSubagents(
+                normalizedRoot,
+                out var customSubagentDiscoveryIssues);
             options = options with
             {
-                CustomSubagents = DiscoverCodexHomeCustomSubagents(normalizedRoot),
+                CustomSubagents = customSubagents,
+                CustomSubagentDiscoveryIssues = customSubagentDiscoveryIssues,
             };
 
             return new CopilotCodexHomeConfigSnapshot(globalSource, options);
@@ -853,12 +860,16 @@ namespace ColorVision.Copilot
                 appliedConfigFilePaths.Add(Path.GetFullPath(configPath));
             }
 
+            var customSubagents = ApplyTrustedProjectCustomSubagents(
+                options.CustomSubagents,
+                options.CustomSubagentDiscoveryIssues,
+                normalizedProjectRoot,
+                EnumerateProjectConfigDirectories(normalizedProjectRoot, workingDirectoryPath),
+                out var customSubagentDiscoveryIssues);
             options = options with
             {
-                CustomSubagents = ApplyTrustedProjectCustomSubagents(
-                    options.CustomSubagents,
-                    normalizedProjectRoot,
-                    EnumerateProjectConfigDirectories(normalizedProjectRoot, workingDirectoryPath)),
+                CustomSubagents = customSubagents,
+                CustomSubagentDiscoveryIssues = customSubagentDiscoveryIssues,
             };
 
             return options with

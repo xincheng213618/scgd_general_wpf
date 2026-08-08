@@ -353,6 +353,10 @@ namespace ColorVision.Copilot
                 effective.CustomSubagents);
             if (customSubagentDiagnostics.Length > 0)
                 builder.AppendLine(customSubagentDiagnostics);
+            var customSubagentDiscoveryIssues = CopilotCodexCustomSubagentDiagnostics.FormatDiscoveryIssues(
+                effective.CustomSubagentDiscoveryIssues);
+            if (customSubagentDiscoveryIssues.Length > 0)
+                builder.AppendLine(customSubagentDiscoveryIssues);
             if (effective.HasModelContextWindowOverride)
             {
                 builder.Append("Codex model_context_window：")

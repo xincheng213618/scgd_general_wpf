@@ -796,6 +796,10 @@ namespace ColorVision.Copilot
                 codexConfigOptions.CustomSubagents);
             if (customSubagentDiagnostics.Length > 0)
                 builder.AppendLine(customSubagentDiagnostics);
+            var customSubagentDiscoveryIssues = CopilotCodexCustomSubagentDiagnostics.FormatDiscoveryIssues(
+                codexConfigOptions.CustomSubagentDiscoveryIssues);
+            if (customSubagentDiscoveryIssues.Length > 0)
+                builder.AppendLine(customSubagentDiscoveryIssues);
         }
 
         private static void AppendConversation(
