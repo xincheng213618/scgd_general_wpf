@@ -9,13 +9,13 @@ using System.Text;
 
 namespace ProjectARVRPro.Process.OpticCenter
 {
-    public class OpticCenterDynamicProcess : ProcessBase<OpticCenterDynamicProcessConfig, OpticCenterRecipeConfig>
+    public class OpticCenterDynamicProcess : ProcessWithRecipeBase<OpticCenterDynamicProcessConfig, OpticCenterRecipeConfig>
     {
         public override async Task<bool> Execute(IProcessExecutionContext ctx)
         {
             if (ctx?.Batch == null || ctx.Result == null) return false;
             var log = ctx.Log;
-            OpticCenterRecipeConfig recipeConfig = ctx.RecipeConfig.GetRequiredService<OpticCenterRecipeConfig>();
+            OpticCenterRecipeConfig recipeConfig = Config.RecipeConfig;
             OpticCenterDynamicViewTestResult testResult = new OpticCenterDynamicViewTestResult();
             OpticCenterTestResult opticCenterResult = testResult.OpticCenterTestResult;
 

@@ -1,7 +1,7 @@
 #pragma warning disable CA1707
 namespace ProjectARVRPro.Process.Black
 {
-    public class BlackProcessConfig : ProcessConfigBase
+    public class BlackProcessConfig : ProcessConfigBase<BlackRecipeConfig>
     {
         public bool IsUsingNing { get => _IsUsingNing; set { _IsUsingNing = value; OnPropertyChanged(); } }
         private bool _IsUsingNing ;

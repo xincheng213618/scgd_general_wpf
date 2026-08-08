@@ -14,6 +14,8 @@ namespace ColorVision.Copilot
         BudgetUpdated,
         ToolStarted,
         ToolProgress,
+        HookStarted,
+        HookCompleted,
         ToolResult,
         ReasoningDelta,
         AnswerDelta,
@@ -24,6 +26,7 @@ namespace ColorVision.Copilot
         Completed,
         CheckpointReady,
         CheckpointUpdated,
+        PlanUpdated,
         UserQuestionRequested,
         UserQuestionResolved,
     }
@@ -41,6 +44,8 @@ namespace ColorVision.Copilot
         public IReadOnlyList<CopilotToolExecutionHookRun> ToolExecutionHookRuns { get; init; } =
             Array.Empty<CopilotToolExecutionHookRun>();
 
+        public CopilotToolExecutionHookLifecycle? ToolExecutionHook { get; init; }
+
         public CopilotToolProgressUpdate? Progress { get; init; }
 
         public CopilotAgentBudgetSnapshot? Budget { get; init; }
@@ -48,6 +53,8 @@ namespace ColorVision.Copilot
         public CopilotAgentSessionCheckpoint? SessionCheckpoint { get; init; }
 
         public CopilotAgentTaskLedgerSnapshot? TaskLedger { get; init; }
+
+        internal CopilotTurnPlanSnapshot? TurnPlan { get; init; }
 
         public CopilotUserQuestionSnapshot? UserQuestion { get; init; }
 
@@ -135,6 +142,41 @@ namespace ColorVision.Copilot
             };
         }
 
+        public static CopilotAgentEvent HookStarted(
+            CopilotToolExecutionInfo execution,
+            string sourceId,
+            CopilotToolExecutionHookPhase phase)
+        {
+            ArgumentNullException.ThrowIfNull(execution);
+            var hook = CopilotToolExecutionHookLifecycle.Started(sourceId, phase);
+            if (!hook.IsStructurallyValid(requireCompleted: false))
+                throw new ArgumentException("The tool hook start is not structurally valid.", nameof(sourceId));
+            return new CopilotAgentEvent
+            {
+                Type = CopilotAgentEventType.HookStarted,
+                Text = hook.SourceId,
+                ToolExecution = execution,
+                ToolExecutionHook = hook,
+            };
+        }
+
+        public static CopilotAgentEvent HookCompleted(
+            CopilotToolExecutionInfo execution,
+            CopilotToolExecutionHookRun result)
+        {
+            ArgumentNullException.ThrowIfNull(execution);
+            var hook = CopilotToolExecutionHookLifecycle.Completed(result);
+            if (!hook.IsStructurallyValid(requireCompleted: true))
+                throw new ArgumentException("The completed tool hook is not structurally valid.", nameof(result));
+            return new CopilotAgentEvent
+            {
+                Type = CopilotAgentEventType.HookCompleted,
+                Text = hook.SourceId,
+                ToolExecution = execution,
+                ToolExecutionHook = hook,
+            };
+        }
+
         public static CopilotAgentEvent ReasoningDelta(string text)
         {
             return new CopilotAgentEvent
@@ -197,6 +239,18 @@ namespace ColorVision.Copilot
                 Type = CopilotAgentEventType.CheckpointUpdated,
                 SessionCheckpoint = sessionCheckpoint,
                 TaskLedger = taskLedger,
+            };
+        }
+
+        internal static CopilotAgentEvent PlanUpdated(CopilotTurnPlanSnapshot plan)
+        {
+            ArgumentNullException.ThrowIfNull(plan);
+            if (!plan.IsStructurallyValid())
+                throw new ArgumentException("Turn plan snapshot is invalid.", nameof(plan));
+            return new CopilotAgentEvent
+            {
+                Type = CopilotAgentEventType.PlanUpdated,
+                TurnPlan = plan,
             };
         }
 

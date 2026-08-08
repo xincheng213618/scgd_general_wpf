@@ -69,6 +69,7 @@ namespace ColorVision.Copilot
                     }
                 },
                 onRetry: null,
+                onUsageChanged: null,
                 imageAttachments: imageAttachments,
                 cancellationToken: cancellationToken).ConfigureAwait(false);
 
@@ -108,7 +109,30 @@ namespace ColorVision.Copilot
             Action<CopilotStreamDelta> onDelta,
             Action<CopilotProviderRetryInfo>? onRetry,
             CancellationToken cancellationToken) =>
-            StreamReplyCoreAsync(config, messages, onDelta, onRetry, imageAttachments: null, cancellationToken);
+            StreamReplyCoreAsync(
+                config,
+                messages,
+                onDelta,
+                onRetry,
+                onUsageChanged: null,
+                imageAttachments: null,
+                cancellationToken);
+
+        internal Task<CopilotChatStreamResult> StreamReplyAsync(
+            CopilotProfileConfig config,
+            IReadOnlyList<CopilotRequestMessage> messages,
+            Action<CopilotStreamDelta> onDelta,
+            Action<CopilotProviderRetryInfo>? onRetry,
+            Action<CopilotTokenUsage>? onUsageChanged,
+            CancellationToken cancellationToken) =>
+            StreamReplyCoreAsync(
+                config,
+                messages,
+                onDelta,
+                onRetry,
+                onUsageChanged,
+                imageAttachments: null,
+                cancellationToken);
 
         internal async Task<CopilotTokenUsage> StreamReplyAsync(
             CopilotProfileConfig config,
@@ -123,6 +147,7 @@ namespace ColorVision.Copilot
                 messages,
                 onDelta,
                 onRetry,
+                onUsageChanged: null,
                 imageAttachments,
                 cancellationToken).ConfigureAwait(false);
             return result.Usage;
@@ -133,6 +158,7 @@ namespace ColorVision.Copilot
             IReadOnlyList<CopilotRequestMessage> messages,
             Action<CopilotStreamDelta> onDelta,
             Action<CopilotProviderRetryInfo>? onRetry,
+            Action<CopilotTokenUsage>? onUsageChanged,
             IReadOnlyList<CopilotAttachmentItem>? imageAttachments,
             CancellationToken cancellationToken)
         {
@@ -162,6 +188,11 @@ namespace ColorVision.Copilot
                             responseStarted = true;
                             onDelta(delta);
                         },
+                        usage =>
+                        {
+                            responseStarted = true;
+                            onUsageChanged?.Invoke(usage);
+                        },
                         inactivityTimeouts,
                         cancellationToken).ConfigureAwait(false);
                 }
@@ -178,6 +209,7 @@ namespace ColorVision.Copilot
             IReadOnlyList<CopilotRequestMessage> messages,
             IReadOnlyList<CopilotImagePayload> imagePayloads,
             Action<CopilotStreamDelta> onDelta,
+            Action<CopilotTokenUsage> onUsageChanged,
             CopilotProviderInactivityTimeouts inactivityTimeouts,
             CancellationToken cancellationToken)
         {
@@ -270,6 +302,7 @@ namespace ColorVision.Copilot
                         config,
                         response,
                         onDelta,
+                        onUsageChanged,
                         remainingFirstResponseTimeout,
                         inactivityTimeouts,
                         providerRequestId,
@@ -323,6 +356,8 @@ namespace ColorVision.Copilot
             }
 
             onDelta(reply.Delta);
+            if (reply.Usage.HasAny)
+                onUsageChanged(reply.Usage);
             var finishReason = ExtractProviderFinishReason(config.ProviderType, body);
             return CreateStreamResult(reply.Usage, finishReason);
         }

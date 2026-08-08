@@ -82,6 +82,167 @@ namespace ColorVision.UI.Tests
             Assert.False(otherInstallationProcess.HasExited);
         }
 
+        [Fact]
+        public void StartupReplacementTargetsOnlyEarlierProcessesFromTheSameInstallationAndSession()
+        {
+            string installationA = Path.Combine(_rootDirectory, "InstallationA");
+            string installationB = Path.Combine(_rootDirectory, "InstallationB");
+            Directory.CreateDirectory(installationA);
+            Directory.CreateDirectory(installationB);
+
+            string executablePath = Path.Combine(installationA, "ColorVisionProcessProbe.exe");
+            string otherExecutablePath = Path.Combine(installationB, "ColorVisionProcessProbe.exe");
+            File.Copy(Path.Combine(Environment.SystemDirectory, "ping.exe"), executablePath);
+            File.Copy(Path.Combine(Environment.SystemDirectory, "ping.exe"), otherExecutablePath);
+
+            Process firstEarlierProcess = StartProbe(executablePath);
+            Thread.Sleep(100);
+            Process secondEarlierProcess = StartProbe(executablePath);
+            Thread.Sleep(100);
+            Process otherInstallationProcess = StartProbe(otherExecutablePath);
+            Thread.Sleep(100);
+            Process currentProcess = StartProbe(executablePath);
+            Thread.Sleep(100);
+            Process laterProcess = StartProbe(executablePath);
+            Assert.True(SpinWait.SpinUntil(
+                () => !firstEarlierProcess.HasExited
+                    && !secondEarlierProcess.HasExited
+                    && !otherInstallationProcess.HasExited
+                    && !currentProcess.HasExited
+                    && !laterProcess.HasExited,
+                TimeSpan.FromSeconds(2)));
+            Assert.True(firstEarlierProcess.StartTime < secondEarlierProcess.StartTime);
+            Assert.True(secondEarlierProcess.StartTime < currentProcess.StartTime);
+            Assert.True(currentProcess.StartTime < laterProcess.StartTime);
+
+            Assert.Equal(0, ApplicationUpdateProcessCoordinator.CloseEarlierApplicationProcesses(
+                executablePath,
+                currentProcess.Id,
+                currentProcess.SessionId + 1,
+                currentProcess.StartTime.ToUniversalTime(),
+                gracefulShutdownTimeout: TimeSpan.Zero,
+                requestClose: _ => throw new InvalidOperationException("No process should match another session.")));
+
+            var requestedProcessIds = new List<int>();
+            int closedCount = ApplicationUpdateProcessCoordinator.CloseEarlierApplicationProcesses(
+                executablePath,
+                currentProcess.Id,
+                currentProcess.SessionId,
+                currentProcess.StartTime.ToUniversalTime(),
+                gracefulShutdownTimeout: TimeSpan.FromMilliseconds(100),
+                requestClose: processId =>
+                {
+                    Assert.True(ApplicationUpdateProcessCoordinator.IsSingleInstanceReplacementRequested(processId));
+                    if (requestedProcessIds.Count > 0)
+                    {
+                        Process previousProcess = _processes.Single(item => item.Id == requestedProcessIds[^1]);
+                        Assert.True(previousProcess.HasExited);
+                    }
+                    requestedProcessIds.Add(processId);
+                    Process process = _processes.Single(item => item.Id == processId);
+                    process.Kill(entireProcessTree: true);
+                    return SingleInstanceCloseRequestResult.Accepted;
+                });
+
+            Assert.Equal(2, closedCount);
+            Assert.Equal([firstEarlierProcess.Id, secondEarlierProcess.Id], requestedProcessIds);
+            Assert.True(firstEarlierProcess.WaitForExit(5000));
+            Assert.True(secondEarlierProcess.WaitForExit(5000));
+            Assert.False(currentProcess.HasExited);
+            Assert.False(laterProcess.HasExited);
+            Assert.False(otherInstallationProcess.HasExited);
+        }
+
+        [Fact]
+        public void StartupReplacementRejectionPreservesEarlierProcess()
+        {
+            string installationPath = Path.Combine(_rootDirectory, "InstallationA");
+            Directory.CreateDirectory(installationPath);
+
+            string executablePath = Path.Combine(installationPath, "ColorVisionProcessProbe.exe");
+            File.Copy(Path.Combine(Environment.SystemDirectory, "ping.exe"), executablePath);
+
+            Process earlierProcess = StartProbe(executablePath);
+            Thread.Sleep(100);
+            Process currentProcess = StartProbe(executablePath);
+            Assert.True(SpinWait.SpinUntil(
+                () => !earlierProcess.HasExited && !currentProcess.HasExited,
+                TimeSpan.FromSeconds(2)));
+            Assert.True(earlierProcess.StartTime < currentProcess.StartTime);
+
+            InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() =>
+                ApplicationUpdateProcessCoordinator.CloseEarlierApplicationProcesses(
+                    executablePath,
+                    currentProcess.Id,
+                    currentProcess.SessionId,
+                    currentProcess.StartTime.ToUniversalTime(),
+                    gracefulShutdownTimeout: TimeSpan.Zero,
+                    requestClose: _ => SingleInstanceCloseRequestResult.Rejected));
+
+            Assert.Contains("declined", exception.Message);
+            Assert.False(earlierProcess.HasExited);
+            Assert.False(currentProcess.HasExited);
+        }
+
+        [Fact]
+        public void StartupReplacementAcceptedButNotExitedTimesOutWithoutKilling()
+        {
+            string installationPath = Path.Combine(_rootDirectory, "InstallationA");
+            Directory.CreateDirectory(installationPath);
+
+            string executablePath = Path.Combine(installationPath, "ColorVisionProcessProbe.exe");
+            File.Copy(Path.Combine(Environment.SystemDirectory, "ping.exe"), executablePath);
+
+            Process earlierProcess = StartProbe(executablePath);
+            Thread.Sleep(100);
+            Process currentProcess = StartProbe(executablePath);
+            Assert.True(SpinWait.SpinUntil(
+                () => !earlierProcess.HasExited && !currentProcess.HasExited,
+                TimeSpan.FromSeconds(2)));
+            Assert.True(earlierProcess.StartTime < currentProcess.StartTime);
+
+            InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() =>
+                ApplicationUpdateProcessCoordinator.CloseEarlierApplicationProcesses(
+                    executablePath,
+                    currentProcess.Id,
+                    currentProcess.SessionId,
+                    currentProcess.StartTime.ToUniversalTime(),
+                    gracefulShutdownTimeout: TimeSpan.FromMilliseconds(100),
+                    requestClose: _ => SingleInstanceCloseRequestResult.Accepted));
+
+            Assert.Contains("did not exit", exception.Message);
+            Assert.False(earlierProcess.HasExited);
+            Assert.False(currentProcess.HasExited);
+        }
+
+        [Fact]
+        public void StartupReplacementWithoutListenerOrWindowPreservesEarlierProcess()
+        {
+            string installationPath = Path.Combine(_rootDirectory, "InstallationA");
+            Directory.CreateDirectory(installationPath);
+
+            string executablePath = Path.Combine(installationPath, "ColorVisionProcessProbe.exe");
+            File.Copy(Path.Combine(Environment.SystemDirectory, "ping.exe"), executablePath);
+
+            Process earlierProcess = StartProbe(executablePath);
+            Thread.Sleep(100);
+            Process currentProcess = StartProbe(executablePath);
+            Assert.True(earlierProcess.StartTime < currentProcess.StartTime);
+
+            InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() =>
+                ApplicationUpdateProcessCoordinator.CloseEarlierApplicationProcesses(
+                    executablePath,
+                    currentProcess.Id,
+                    currentProcess.SessionId,
+                    currentProcess.StartTime.ToUniversalTime(),
+                    gracefulShutdownTimeout: TimeSpan.Zero,
+                    requestClose: _ => SingleInstanceCloseRequestResult.Unavailable));
+
+            Assert.Contains("no safe close endpoint", exception.Message);
+            Assert.False(earlierProcess.HasExited);
+            Assert.False(currentProcess.HasExited);
+        }
+
         private Process StartProbe(string executablePath)
         {
             Process process = Process.Start(new ProcessStartInfo

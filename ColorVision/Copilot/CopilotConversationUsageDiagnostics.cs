@@ -26,6 +26,10 @@ namespace ColorVision.Copilot
     internal sealed record CopilotConversationUsageSnapshot(
         CopilotTokenUsage TotalUsage,
         CopilotTokenUsage LastUsage,
+        CopilotTokenUsage CompactionUsage,
+        int CompactionRequests,
+        CopilotTokenUsage TitleGenerationUsage,
+        int TitleGenerationRequests,
         int TrackedResponses,
         int InterruptedResponses,
         int UnreportedResponses,
@@ -41,6 +45,10 @@ namespace ColorVision.Copilot
                 return new CopilotConversationUsageSnapshot(
                     CopilotTokenUsage.Empty,
                     CopilotTokenUsage.Empty,
+                    CopilotTokenUsage.Empty,
+                    0,
+                    CopilotTokenUsage.Empty,
+                    0,
                     0,
                     0,
                     0,
@@ -65,13 +73,20 @@ namespace ColorVision.Copilot
                 .Where(message => message.ReportedUsage.HasAny)
                 .ToArray();
             var interruptedResponses = completedResponses.Count(message => message.WasResponseInterrupted);
-            var totalUsage = trackedResponses.Aggregate(
+            var responseUsage = trackedResponses.Aggregate(
                 CopilotTokenUsage.Empty,
                 (total, message) => total.Add(message.ReportedUsage));
+            var compactionUsage = conversation.CompactionUsage?.Usage ?? CopilotTokenUsage.Empty;
+            var titleGenerationUsage = conversation.TitleGenerationUsage?.Usage ?? CopilotTokenUsage.Empty;
+            var totalUsage = responseUsage.Add(compactionUsage).Add(titleGenerationUsage);
             var lastUsage = trackedResponses.LastOrDefault()?.ReportedUsage ?? CopilotTokenUsage.Empty;
             return new CopilotConversationUsageSnapshot(
                 totalUsage,
                 lastUsage,
+                compactionUsage,
+                Math.Max(0, conversation.CompactionUsage?.RequestCount ?? 0),
+                titleGenerationUsage,
+                Math.Max(0, conversation.TitleGenerationUsage?.RequestCount ?? 0),
                 trackedResponses.Length,
                 interruptedResponses,
                 completedResponses.Length - trackedResponses.Length,
@@ -107,7 +122,7 @@ namespace ColorVision.Copilot
             else
             {
                 builder
-                    .Append("已记录轮次：")
+                    .Append("已记录回答：")
                     .Append(snapshot.TrackedResponses.ToString("N0", CultureInfo.CurrentCulture))
                     .AppendLine()
                     .Append("累计输入：")
@@ -125,14 +140,27 @@ namespace ColorVision.Copilot
                         .Append(snapshot.TotalUsage.CachedInputPercentage.ToString("0.#", CultureInfo.CurrentCulture))
                         .AppendLine("%）");
                 }
-                builder
-                    .Append("最近一轮：输入 ")
-                    .Append(FormatTokens(snapshot.LastUsage.InputTokens))
-                    .Append(" · 输出 ")
-                    .Append(FormatTokens(snapshot.LastUsage.OutputTokens))
-                    .Append(" · 总计 ")
-                    .AppendLine(FormatTokens(snapshot.LastUsage.EffectiveTotalTokens));
+                if (snapshot.LastUsage.HasAny)
+                {
+                    builder
+                        .Append("最近一轮回答：输入 ")
+                        .Append(FormatTokens(snapshot.LastUsage.InputTokens))
+                        .Append(" · 输出 ")
+                        .Append(FormatTokens(snapshot.LastUsage.OutputTokens))
+                        .Append(" · 总计 ")
+                        .AppendLine(FormatTokens(snapshot.LastUsage.EffectiveTotalTokens));
+                }
             }
+            AppendAuxiliaryUsage(
+                builder,
+                "压缩模型调用",
+                snapshot.CompactionRequests,
+                snapshot.CompactionUsage);
+            AppendAuxiliaryUsage(
+                builder,
+                "标题模型调用",
+                snapshot.TitleGenerationRequests,
+                snapshot.TitleGenerationUsage);
 
             if (snapshot.InterruptedResponses > 0)
             {
@@ -158,8 +186,41 @@ namespace ColorVision.Copilot
             AppendAgentUsage(builder, snapshot.AgentUsage);
             builder.AppendLine(CopilotProviderRateLimitDiagnostics.Format(providerRateLimits));
 
-            builder.Append("范围：Token 仅统计当前会话消息中由 Provider 返回并由应用保存的元数据；Agent 指标来自本地保存的任务快照。这些会话统计不代表账户账单或费用。供应商限额仅为当前模型 Profile 最近一次可识别的响应头快照，可能随时间过期，不代表账户套餐余额。");
+            builder.Append("范围：Token 统计当前会话回答、压缩和标题模型调用中由 Provider 返回并由应用保存的元数据；Agent 指标来自本地保存的任务快照。这些会话统计不代表账户账单或费用。供应商限额仅为当前模型 Profile 最近一次可识别的响应头快照，可能随时间过期，不代表账户套餐余额。");
             return builder.ToString();
+        }
+
+        private static void AppendAuxiliaryUsage(
+            StringBuilder builder,
+            string label,
+            int requests,
+            CopilotTokenUsage usage)
+        {
+            if (requests <= 0)
+                return;
+
+            builder.Append(label)
+                .Append('：')
+                .Append(requests.ToString("N0", CultureInfo.CurrentCulture))
+                .Append(" 次");
+            if (!usage.HasAny)
+            {
+                builder.AppendLine("；Provider 未返回可累计 Token 元数据。");
+                return;
+            }
+
+            builder.Append(" · 已返回用量累计输入 ")
+                .Append(FormatTokens(usage.InputTokens))
+                .Append(" · 输出 ")
+                .Append(FormatTokens(usage.OutputTokens))
+                .Append(" · 总计 ")
+                .Append(FormatTokens(usage.EffectiveTotalTokens));
+            if (usage.CachedInputTokens.HasValue)
+            {
+                builder.Append(" · 缓存输入 ")
+                    .Append(FormatTokens(usage.EffectiveCachedInputTokens));
+            }
+            builder.AppendLine();
         }
 
         private static CopilotConversationAgentUsageSnapshot EmptyAgentUsage => new(

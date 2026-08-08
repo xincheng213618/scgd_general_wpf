@@ -31,6 +31,32 @@ public sealed class CopilotDatabaseSqlPolicyTests
     }
 
     [Theory]
+    [InlineData("EXPLAIN ANALYZE SELECT * FROM users")]
+    [InlineData("DESCRIBE ANALYZE UPDATE users SET enabled = 0")]
+    [InlineData("DESC ANALYZE DELETE FROM users")]
+    public void ReadOnlyQueriesRejectExplainAnalyzeBecauseItExecutesTheTarget(string sql)
+    {
+        var accepted = CopilotDatabaseSqlPolicy.TryAnalyze(sql, out var analysis, out var error);
+
+        Assert.False(accepted);
+        Assert.Null(analysis);
+        Assert.Contains("executes its target statement", error, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ExplainStillAllowsAColumnNamedAnalyze()
+    {
+        var accepted = CopilotDatabaseSqlPolicy.TryAnalyze(
+            "EXPLAIN SELECT analyze FROM users",
+            out var analysis,
+            out var error);
+
+        Assert.True(accepted, error);
+        Assert.NotNull(analysis);
+        Assert.Equal(CopilotDatabaseSqlStatementKind.Query, analysis.Kind);
+    }
+
+    [Theory]
     [InlineData("SELECT @user_id := id FROM users")]
     [InlineData("SELECT id FROM users WHERE id = GET_LOCK('copilot', 1)")]
     [InlineData("SELECT LAST_INSERT_ID(42)")]

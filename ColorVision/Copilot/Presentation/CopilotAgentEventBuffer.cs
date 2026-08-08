@@ -52,6 +52,8 @@ namespace ColorVision.Copilot
                 Size += Math.Max(
                     1,
                     (agentEvent.Text?.Length ?? 0)
+                    + (agentEvent.ToolExecutionHook?.Result?.FailureCode.Length ?? 0)
+                    + (agentEvent.TurnPlan?.Items.Sum(item => item.Step.Length + item.Description.Length) ?? 0)
                     + agentEvent.SteeringMessages.Sum(message =>
                         (message?.MessageId?.Length ?? 0)
                         + (message?.Text?.Length ?? 0)));

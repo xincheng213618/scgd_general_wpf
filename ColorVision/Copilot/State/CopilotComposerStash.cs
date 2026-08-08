@@ -14,6 +14,8 @@ namespace ColorVision.Copilot
 
         public CopilotAgentMode RequestMode { get; set; } = CopilotAgentMode.Auto;
 
+        public CopilotWorkspaceReviewTargetContext? WorkspaceReviewTarget { get; set; }
+
         public ObservableCollection<CopilotAttachmentItem> Attachments { get; set; } = new();
 
         [JsonIgnore]
@@ -25,13 +27,16 @@ namespace ColorVision.Copilot
 
         public bool ShouldSerializeRequestMode() => RequestMode != CopilotAgentMode.Auto;
 
+        public bool ShouldSerializeWorkspaceReviewTarget() => WorkspaceReviewTarget != null;
+
         public bool ShouldSerializeAttachments() => Attachments?.Count > 0;
 
         internal static CopilotComposerStash Capture(
             string? text,
             int caretIndex,
             CopilotAgentMode requestMode,
-            IEnumerable<CopilotAttachmentItem>? attachments)
+            IEnumerable<CopilotAttachmentItem>? attachments,
+            CopilotWorkspaceReviewTargetContext? workspaceReviewTarget = null)
         {
             var normalizedText = CopilotComposerTextLimits.Bound(text);
             return new CopilotComposerStash
@@ -39,6 +44,10 @@ namespace ColorVision.Copilot
                 Text = normalizedText,
                 CaretIndex = Math.Clamp(caretIndex, 0, normalizedText.Length),
                 RequestMode = Enum.IsDefined(requestMode) ? requestMode : CopilotAgentMode.Auto,
+                WorkspaceReviewTarget = requestMode == CopilotAgentMode.Review
+                    && workspaceReviewTarget?.IsStructurallyValid() == true
+                        ? workspaceReviewTarget.CreateSnapshot()
+                        : null,
                 Attachments = new ObservableCollection<CopilotAttachmentItem>(
                     (attachments ?? Array.Empty<CopilotAttachmentItem>())
                         .Where(attachment => attachment != null)
@@ -66,6 +75,13 @@ namespace ColorVision.Copilot
             if (!Enum.IsDefined(RequestMode))
             {
                 RequestMode = CopilotAgentMode.Auto;
+                changed = true;
+            }
+            if (WorkspaceReviewTarget != null
+                && (RequestMode != CopilotAgentMode.Review
+                    || !WorkspaceReviewTarget.IsStructurallyValid()))
+            {
+                WorkspaceReviewTarget = null;
                 changed = true;
             }
 

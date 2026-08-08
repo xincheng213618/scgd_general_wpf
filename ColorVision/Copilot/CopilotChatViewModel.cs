@@ -63,6 +63,7 @@ namespace ColorVision.Copilot
         private CopilotConversationRecord? _selectedConversation;
         private CopilotProfileConfig? _selectedProfile;
         private CopilotAgentMode? _pendingRequestModeOverride;
+        private CopilotWorkspaceReviewTargetContext? _pendingWorkspaceReviewTarget;
         private CopilotAgentRecoveryRequest? _pendingAgentRecoveryRequest;
         private string _activeDocumentPath = string.Empty;
         private string _pendingActionFeedbackText = string.Empty;
@@ -340,6 +341,7 @@ namespace ColorVision.Copilot
             string ConversationId,
             string Text,
             CopilotAgentMode RequestMode,
+            CopilotWorkspaceReviewTargetContext? WorkspaceReviewTarget,
             IReadOnlyList<CopilotAttachmentItem> Attachments);
 
         private sealed record CopilotPreparedQueuedFollowUpTurn(

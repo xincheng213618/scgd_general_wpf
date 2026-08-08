@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Text;
 
 namespace ColorVision.Copilot
@@ -22,6 +23,53 @@ namespace ColorVision.Copilot
 
     public static class CopilotAssistantMessagePresenter
     {
+        public static CopilotAgentEventPresentationResult ApplyReviewEntered(
+            CopilotChatMessage assistantMessage,
+            CopilotWorkspaceReviewTargetContext target)
+        {
+            ArgumentNullException.ThrowIfNull(assistantMessage);
+            ArgumentNullException.ThrowIfNull(target);
+            if (!target.IsStructurallyValid())
+                throw new ArgumentException("Review target is invalid.", nameof(target));
+
+            assistantMessage.MarkThinkingStarted();
+            AppendExecutionTrace(assistantMessage, "Review started · " + FormatReviewTarget(target));
+            assistantMessage.IsExecutionInProgress = true;
+            assistantMessage.IsExecutionExpanded = true;
+            return CopilotAgentEventPresentationResult.Handled(CopilotAgentEventPersistenceMode.Immediate);
+        }
+
+        public static CopilotAgentEventPresentationResult ApplyReviewExited(
+            CopilotChatMessage assistantMessage,
+            CopilotWorkspaceReviewTargetContext target,
+            string reviewText,
+            bool reviewTextTruncated)
+        {
+            ArgumentNullException.ThrowIfNull(assistantMessage);
+            ArgumentNullException.ThrowIfNull(target);
+            if (!target.IsStructurallyValid())
+                throw new ArgumentException("Review target is invalid.", nameof(target));
+            if (!CopilotTurnAnswerLifecycleState.IsValidSnapshot(reviewText, reviewTextTruncated))
+                throw new ArgumentException("Final review text snapshot is invalid.", nameof(reviewText));
+
+            SynchronizeFinalReviewText(assistantMessage, reviewText, reviewTextTruncated);
+            AppendExecutionTrace(assistantMessage, "Review completed · " + FormatReviewTarget(target));
+            return CopilotAgentEventPresentationResult.Handled(CopilotAgentEventPersistenceMode.Immediate);
+        }
+
+        internal static CopilotAgentEventPresentationResult ApplyWorkspaceDiffUpdated(
+            CopilotChatMessage assistantMessage,
+            CopilotTurnWorkspaceDiffSnapshot snapshot)
+        {
+            ArgumentNullException.ThrowIfNull(assistantMessage);
+            ArgumentNullException.ThrowIfNull(snapshot);
+            if (!snapshot.IsStructurallyValid())
+                throw new ArgumentException("Workspace diff snapshot is invalid.", nameof(snapshot));
+
+            assistantMessage.ApplyWorkspaceDiff(snapshot);
+            return CopilotAgentEventPresentationResult.Handled(CopilotAgentEventPersistenceMode.Immediate);
+        }
+
         public static CopilotAgentEventPresentationResult ApplyAgentEvent(CopilotChatMessage assistantMessage, CopilotAgentEvent agentEvent)
         {
             ArgumentNullException.ThrowIfNull(assistantMessage);
@@ -45,12 +93,23 @@ namespace ColorVision.Copilot
                     if (agentEvent.Budget != null)
                         assistantMessage.AgentRunBudget = agentEvent.Budget;
                     return CopilotAgentEventPresentationResult.Handled();
+                case CopilotAgentEventType.PlanUpdated:
+                    if (agentEvent.TurnPlan?.IsStructurallyValid() != true)
+                        throw new InvalidOperationException("Copilot plan update has no valid snapshot.");
+                    assistantMessage.AgentTaskLedger = agentEvent.TurnPlan.ToTaskLedgerSnapshot();
+                    return CopilotAgentEventPresentationResult.Handled(CopilotAgentEventPersistenceMode.Immediate);
                 case CopilotAgentEventType.ToolStarted:
                     ApplyToolStarted(assistantMessage, agentEvent);
                     return CopilotAgentEventPresentationResult.Handled(CopilotAgentEventPersistenceMode.Deferred);
                 case CopilotAgentEventType.ToolProgress:
                     ApplyToolProgress(assistantMessage, agentEvent);
                     return CopilotAgentEventPresentationResult.Handled();
+                case CopilotAgentEventType.HookStarted:
+                    ApplyHookStarted(assistantMessage, agentEvent);
+                    return CopilotAgentEventPresentationResult.Handled(CopilotAgentEventPersistenceMode.Deferred);
+                case CopilotAgentEventType.HookCompleted:
+                    ApplyHookCompleted(assistantMessage, agentEvent);
+                    return CopilotAgentEventPresentationResult.Handled(CopilotAgentEventPersistenceMode.Deferred);
                 case CopilotAgentEventType.ToolResult:
                     ApplyToolResult(assistantMessage, agentEvent);
                     return CopilotAgentEventPresentationResult.Handled(CopilotAgentEventPersistenceMode.Deferred);
@@ -193,7 +252,9 @@ namespace ColorVision.Copilot
             var execution = agentEvent.ToolExecution;
             if (execution != null)
             {
-                assistantMessage.UpsertAgentTrace(CopilotAgentTraceEntry.FromStarted(execution));
+                var trace = CopilotAgentTraceEntry.FromStarted(execution);
+                CopyObservedHookRuns(FindTrace(assistantMessage, execution.CallId), trace);
+                assistantMessage.UpsertAgentTrace(trace);
                 assistantMessage.RecordResponseTimelineTool(execution.CallId);
             }
             else
@@ -201,6 +262,43 @@ namespace ColorVision.Copilot
                 AppendExecutionTrace(assistantMessage, CopilotAgentTraceEntry.Sanitize(agentEvent.Text));
             }
 
+            assistantMessage.IsExecutionInProgress = true;
+            assistantMessage.IsExecutionExpanded = true;
+        }
+
+        private static void ApplyHookStarted(CopilotChatMessage assistantMessage, CopilotAgentEvent agentEvent)
+        {
+            var execution = agentEvent.ToolExecution
+                ?? throw new InvalidOperationException("Copilot hook start has no tool execution metadata.");
+            var hook = agentEvent.ToolExecutionHook;
+            if (hook?.IsStructurallyValid(requireCompleted: false) != true)
+                throw new InvalidOperationException("Copilot hook start has no valid lifecycle metadata.");
+
+            assistantMessage.MarkThinkingStarted();
+            var trace = CopilotAgentTraceEntry.FromProgress(
+                execution,
+                $"Running {FormatHookPhase(hook.Phase)} hook {hook.SourceId}...");
+            CopyObservedHookRuns(FindTrace(assistantMessage, execution.CallId), trace);
+            assistantMessage.UpsertAgentTrace(trace);
+            assistantMessage.RecordResponseTimelineTool(execution.CallId);
+            assistantMessage.IsExecutionInProgress = true;
+            assistantMessage.IsExecutionExpanded = true;
+        }
+
+        private static void ApplyHookCompleted(CopilotChatMessage assistantMessage, CopilotAgentEvent agentEvent)
+        {
+            var execution = agentEvent.ToolExecution
+                ?? throw new InvalidOperationException("Copilot hook completion has no tool execution metadata.");
+            var hook = agentEvent.ToolExecutionHook;
+            if (hook?.IsStructurallyValid(requireCompleted: true) != true)
+                throw new InvalidOperationException("Copilot hook completion has no valid lifecycle metadata.");
+
+            assistantMessage.MarkThinkingStarted();
+            var trace = CopilotAgentTraceEntry.FromStarted(execution);
+            CopyObservedHookRuns(FindTrace(assistantMessage, execution.CallId), trace);
+            UpsertObservedHookRun(trace, hook.Result!);
+            assistantMessage.UpsertAgentTrace(trace);
+            assistantMessage.RecordResponseTimelineTool(execution.CallId);
             assistantMessage.IsExecutionInProgress = true;
             assistantMessage.IsExecutionExpanded = true;
         }
@@ -229,13 +327,71 @@ namespace ColorVision.Copilot
         {
             assistantMessage.MarkThinkingStarted();
             if (agentEvent.ToolExecution != null)
-                assistantMessage.UpsertAgentTrace(CopilotAgentTraceEntry.FromProgress(
+            {
+                var trace = CopilotAgentTraceEntry.FromProgress(
                     agentEvent.ToolExecution,
                     agentEvent.Text,
-                    agentEvent.Progress));
+                    agentEvent.Progress);
+                CopyObservedHookRuns(
+                    FindTrace(assistantMessage, agentEvent.ToolExecution.CallId),
+                    trace);
+                assistantMessage.UpsertAgentTrace(trace);
+            }
             assistantMessage.IsExecutionInProgress = true;
             assistantMessage.IsExecutionExpanded = true;
         }
+
+        private static CopilotAgentTraceEntry? FindTrace(
+            CopilotChatMessage assistantMessage,
+            string callId)
+        {
+            return assistantMessage.AgentTraceEntries?.FirstOrDefault(trace =>
+                trace != null
+                && !string.IsNullOrWhiteSpace(callId)
+                && string.Equals(trace.CallId, callId, StringComparison.Ordinal));
+        }
+
+        private static void CopyObservedHookRuns(
+            CopilotAgentTraceEntry? source,
+            CopilotAgentTraceEntry target)
+        {
+            if (source?.HookRuns == null)
+                return;
+
+            foreach (var hookRun in source.HookRuns)
+            {
+                if (target.HookRuns.Count >= CopilotAgentTraceEntry.MaxPersistedHookRuns)
+                    break;
+                if (hookRun?.IsStructurallyValid() == true)
+                    target.HookRuns.Add(hookRun.CreateSnapshot());
+            }
+        }
+
+        private static void UpsertObservedHookRun(
+            CopilotAgentTraceEntry trace,
+            CopilotToolExecutionHookRun hookRun)
+        {
+            var index = trace.HookRuns.FindIndex(item =>
+                item != null
+                && item.Phase == hookRun.Phase
+                && string.Equals(item.SourceId, hookRun.SourceId, StringComparison.Ordinal));
+            if (index >= 0)
+            {
+                trace.HookRuns[index] = hookRun.CreateSnapshot();
+            }
+            else if (trace.HookRuns.Count < CopilotAgentTraceEntry.MaxPersistedHookRuns)
+            {
+                trace.HookRuns.Add(hookRun.CreateSnapshot());
+            }
+        }
+
+        private static string FormatHookPhase(CopilotToolExecutionHookPhase phase) => phase switch
+        {
+            CopilotToolExecutionHookPhase.BeforeExecute => "pre-execution",
+            CopilotToolExecutionHookPhase.AfterExecute => "post-execution",
+            CopilotToolExecutionHookPhase.PermissionRequest => "permission",
+            _ => "tool",
+        };
 
         private static void CompleteThinking(CopilotChatMessage assistantMessage)
         {
@@ -299,5 +455,34 @@ namespace ColorVision.Copilot
         private static string FormatToolDuration(long durationMs) => durationMs < 1000
             ? $"{Math.Max(0, durationMs)} ms"
             : $"{durationMs / 1000d:0.#} s";
+
+        private static string FormatReviewTarget(CopilotWorkspaceReviewTargetContext target) => target.Target switch
+        {
+            CopilotWorkspaceReviewTarget.BaseBranch => "base branch " + target.Revision,
+            CopilotWorkspaceReviewTarget.Commit => "commit " + target.Revision,
+            _ => "working tree (staged + unstaged)",
+        };
+
+        private static void SynchronizeFinalReviewText(
+            CopilotChatMessage assistantMessage,
+            string reviewText,
+            bool reviewTextTruncated)
+        {
+            if (!string.Equals(assistantMessage.Content, reviewText, StringComparison.Ordinal))
+            {
+                if (assistantMessage.UsesResponseTimeline)
+                {
+                    assistantMessage.ResetResponseTimelineText();
+                    assistantMessage.AppendResponseTimelineText(reviewText);
+                }
+                else
+                {
+                    assistantMessage.Content = reviewText;
+                    assistantMessage.IsContentDisplayOnly = false;
+                }
+            }
+
+            assistantMessage.IsResponseContentTruncated = reviewTextTruncated;
+        }
     }
 }

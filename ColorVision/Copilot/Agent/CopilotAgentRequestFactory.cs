@@ -150,6 +150,8 @@ namespace ColorVision.Copilot
         public string TaskIntentText { get; init; } = string.Empty;
 
         public string ActiveGoalText { get; init; } = string.Empty;
+
+        public CopilotWorkspaceReviewTargetContext? WorkspaceReviewTarget { get; init; }
     }
 
     public static class CopilotAgentRequestFactory
@@ -257,6 +259,10 @@ namespace ColorVision.Copilot
                     out _)
                     ? normalizedGoal
                     : string.Empty,
+                WorkspaceReviewTarget = plan.Mode == CopilotAgentMode.Review
+                    && input.WorkspaceReviewTarget?.IsStructurallyValid() == true
+                        ? input.WorkspaceReviewTarget.CreateSnapshot()
+                        : null,
                 Profile = input.Profile,
                 History = input.History.ToArray(),
                 Attachments = plan.Attachments,

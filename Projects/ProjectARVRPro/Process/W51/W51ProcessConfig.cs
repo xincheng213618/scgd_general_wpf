@@ -3,7 +3,7 @@ using System.ComponentModel;
 
 namespace ProjectARVRPro.Process.W51
 {
-    public class W51ProcessConfig : ProcessConfigBase
+    public class W51ProcessConfig : ProcessConfigBase<W51RecipeConfig>
     {
         [Category("解析配置")]
         [DisplayName("Center解析Key")]

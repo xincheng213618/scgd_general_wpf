@@ -78,6 +78,8 @@ namespace ColorVision.Copilot.Mcp
 
         public bool ExecuteOnApproval { get; init; }
 
+        public bool ResumesAgentOnApproval { get; init; }
+
         public static CopilotMcpToolCallResult Ok(string text) => new()
         {
             Success = true,
@@ -108,6 +110,7 @@ namespace ColorVision.Copilot.Mcp
             ApprovalRiskLevel = action?.RiskLevel ?? string.Empty,
             ApprovalExpiresAtUtc = action?.ExpiresAt ?? default,
             ExecuteOnApproval = action?.ExecuteOnApproval ?? false,
+            ResumesAgentOnApproval = action?.ResumesAgentOnApproval ?? false,
         };
     }
 

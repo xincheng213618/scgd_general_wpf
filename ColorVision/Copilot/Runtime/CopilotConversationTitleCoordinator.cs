@@ -8,7 +8,7 @@ namespace ColorVision.Copilot
 {
     internal delegate Task CopilotConversationTitleApplication(
         CopilotConversationRecord conversation,
-        string generatedTitle,
+        CopilotConversationTitleGenerationResult result,
         Func<bool> isCurrentGeneration,
         CancellationToken cancellationToken);
 
@@ -93,17 +93,13 @@ namespace ColorVision.Copilot
             try
             {
                 var cancellationToken = generation.Token;
-                var generatedTitle = await _generator.GenerateAsync(request, cancellationToken).ConfigureAwait(false);
-                if (string.IsNullOrWhiteSpace(generatedTitle)
-                    || cancellationToken.IsCancellationRequested
-                    || !IsCurrentGeneration(conversation.Id, generation))
-                {
+                var result = await _generator.GenerateAsync(request, cancellationToken).ConfigureAwait(false);
+                if (IsDisposed())
                     return;
-                }
 
                 await _applyTitleAsync(
                     conversation,
-                    generatedTitle,
+                    result,
                     () => IsCurrentGeneration(conversation.Id, generation),
                     cancellationToken).ConfigureAwait(false);
             }
@@ -129,6 +125,12 @@ namespace ColorVision.Copilot
                     && _generations.TryGetValue(conversationId, out var current)
                     && ReferenceEquals(current, generation);
             }
+        }
+
+        private bool IsDisposed()
+        {
+            lock (_gate)
+                return _disposed;
         }
 
         private void Complete(

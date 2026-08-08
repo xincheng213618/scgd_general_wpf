@@ -11,7 +11,8 @@ namespace ColorVision.Copilot
     {
         internal async Task<CopilotToolPermissionRequestOutcome> EvaluatePermissionRequestAsync(
             CopilotToolInvocation invocation,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            Action<CopilotAgentEvent>? onEvent = null)
         {
             ArgumentNullException.ThrowIfNull(invocation);
             ArgumentNullException.ThrowIfNull(invocation.Tool);
@@ -46,8 +47,22 @@ namespace ColorVision.Copilot
                 RequestedAtUtc = _utcNow(),
             };
             var phaseStopwatch = Stopwatch.StartNew();
+            var hookEvents = new CopilotToolExecutionHookEventPublisher(
+                onEvent,
+                () => CreateExecutionInfo(
+                    invocation,
+                    CopilotToolExecutionState.Pending,
+                    context.RequestedAtUtc,
+                    completedAt: null,
+                    phaseStopwatch.ElapsedMilliseconds,
+                    _hookPhaseTimeout));
             foreach (var binding in permissionHooks)
             {
+                BeginHookRun(
+                    hookRuns,
+                    hookEvents,
+                    binding.SourceId,
+                    CopilotToolExecutionHookPhase.PermissionRequest);
                 var remaining = _hookPhaseTimeout - phaseStopwatch.Elapsed;
                 if (remaining <= TimeSpan.Zero)
                 {
@@ -57,7 +72,8 @@ namespace ColorVision.Copilot
                         CopilotToolExecutionHookPhase.PermissionRequest,
                         CopilotToolExecutionHookState.Skipped,
                         0,
-                        "permission_hook_phase_timeout");
+                        "permission_hook_phase_timeout",
+                        hookEvents);
                     return CreatePermissionRequestOutcome(
                         hooks,
                         hookRuns,
@@ -87,7 +103,8 @@ namespace ColorVision.Copilot
                             CopilotToolExecutionHookPhase.PermissionRequest,
                             CopilotToolExecutionHookState.Denied,
                             hookStopwatch.ElapsedMilliseconds,
-                            failureCode);
+                            failureCode,
+                            hookEvents);
                         return CreatePermissionRequestOutcome(
                             hooks,
                             hookRuns,
@@ -103,7 +120,8 @@ namespace ColorVision.Copilot
                         binding.SourceId,
                         CopilotToolExecutionHookPhase.PermissionRequest,
                         CopilotToolExecutionHookState.Completed,
-                        hookStopwatch.ElapsedMilliseconds);
+                        hookStopwatch.ElapsedMilliseconds,
+                        hookEvents: hookEvents);
                 }
                 catch (TimeoutException)
                 {
@@ -115,7 +133,8 @@ namespace ColorVision.Copilot
                         CopilotToolExecutionHookPhase.PermissionRequest,
                         CopilotToolExecutionHookState.TimedOut,
                         hookStopwatch.ElapsedMilliseconds,
-                        "permission_hook_timeout");
+                        "permission_hook_timeout",
+                        hookEvents);
                     return CreatePermissionRequestOutcome(
                         hooks,
                         hookRuns,
@@ -133,7 +152,8 @@ namespace ColorVision.Copilot
                         CopilotToolExecutionHookPhase.PermissionRequest,
                         CopilotToolExecutionHookState.Cancelled,
                         hookStopwatch.ElapsedMilliseconds,
-                        "permission_hook_cancelled");
+                        "permission_hook_cancelled",
+                        hookEvents);
                     Log.Warn(
                         $"Copilot permission-request hook cancelled itself. Tool={invocation.Tool.Name} CallId={invocation.CallId} HookSource={binding.SourceId} Hook={binding.Hook.GetType().FullName}");
                     return CreatePermissionRequestOutcome(
@@ -153,7 +173,8 @@ namespace ColorVision.Copilot
                         CopilotToolExecutionHookPhase.PermissionRequest,
                         CopilotToolExecutionHookState.Cancelled,
                         hookStopwatch.ElapsedMilliseconds,
-                        "approval_cancelled");
+                        "approval_cancelled",
+                        hookEvents);
                     return new CopilotToolPermissionRequestOutcome
                     {
                         Decision = CopilotToolPermissionRequestDecision.Deny(
@@ -164,7 +185,7 @@ namespace ColorVision.Copilot
                         WasCancelled = true,
                     };
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (ex is not CopilotToolExecutionHookEventDispatchException)
                 {
                     RecordHookRun(
                         hookRuns,
@@ -172,7 +193,8 @@ namespace ColorVision.Copilot
                         CopilotToolExecutionHookPhase.PermissionRequest,
                         CopilotToolExecutionHookState.Failed,
                         hookStopwatch.ElapsedMilliseconds,
-                        "permission_hook_failed");
+                        "permission_hook_failed",
+                        hookEvents);
                     Log.Warn(
                         $"Copilot permission-request hook failed. Tool={invocation.Tool.Name} CallId={invocation.CallId} HookSource={binding.SourceId} Hook={binding.Hook.GetType().FullName} ErrorType={ex.GetType().FullName}");
                     return CreatePermissionRequestOutcome(

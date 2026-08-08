@@ -6,7 +6,7 @@ namespace ProjectARVRPro.Process.MTF.MTFH
     /// <summary>
     /// 旧版MTFH解析配置 - 使用 MTFResult.result + mtfValue（旧版解析）
     /// </summary>
-    public class MTFHProcessConfig : ProcessConfigBase
+    public class MTFHProcessConfig : ProcessConfigBase<MTFHRecipeConfig>
     {
         public string ShowConfig { get => _ShowConfig; set { _ShowConfig = value; OnPropertyChanged(); } }
         private string _ShowConfig = "F3";

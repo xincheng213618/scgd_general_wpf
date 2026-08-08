@@ -14,4 +14,14 @@ namespace ProjectARVRPro.Process
         public bool SaveCsv { get => _SaveCsv; set { _SaveCsv = value; OnPropertyChanged(); } }
         private bool _SaveCsv = false;
     }
+
+    /// <summary>
+    /// Base class for process configurations that own an independent recipe.
+    /// </summary>
+    public abstract class ProcessConfigBase<TRecipeConfig> : ProcessConfigBase
+        where TRecipeConfig : class, IRecipeConfig, new()
+    {
+        public TRecipeConfig RecipeConfig { get => _RecipeConfig; set { _RecipeConfig = value ?? new(); OnPropertyChanged(); } }
+        private TRecipeConfig _RecipeConfig = new();
+    }
 }

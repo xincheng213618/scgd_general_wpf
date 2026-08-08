@@ -15,13 +15,13 @@ using System.Windows.Media;
 
 namespace ProjectARVRPro.Process.Chessboard
 {
-    public class ChessboardProcess : ProcessBase<ChessboardProcessConfig, ChessboardRecipeConfig>
+    public class ChessboardProcess : ProcessWithRecipeBase<ChessboardProcessConfig, ChessboardRecipeConfig>
     {
         public override async Task<bool> Execute(IProcessExecutionContext ctx)
         {
             if (ctx?.Batch == null || ctx.Result == null) return false;
             var log = ctx.Log;
-            ChessboardRecipeConfig recipeConfig = ctx.RecipeConfig.GetRequiredService<ChessboardRecipeConfig>();
+            ChessboardRecipeConfig recipeConfig = Config.RecipeConfig;
             ChessboardViewTestResult testResult = new ChessboardViewTestResult();
             string contrastResultName = string.IsNullOrWhiteSpace(Config.ChessboardContrastResultName)
                 ? "Chessboard_Contrast"

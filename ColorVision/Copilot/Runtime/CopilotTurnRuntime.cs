@@ -39,6 +39,8 @@ namespace ColorVision.Copilot
         {
             ArgumentNullException.ThrowIfNull(request);
             return CopilotTurnEventStream.RunAsync(
+                request.TaskId,
+                request.Mode,
                 (eventSink, turnCancellationToken) => RunCoreAsync(
                     request,
                     eventSink,
@@ -125,6 +127,7 @@ namespace ColorVision.Copilot
             }
 
             eventSink.OnRequestPrepared(new CopilotPreparedTurnRequest(requestContent, attachmentContextCaptured));
+            eventSink.OnTokenUsageUpdated(imageUnderstanding.Usage);
             var history = await CopilotConversationRequestBuilder.BuildChatHistoryAsync(
                 request.HostContext.ConversationHistory,
                 requestContent,
@@ -137,9 +140,12 @@ namespace ColorVision.Copilot
                 history,
                 eventSink.OnChatDelta,
                 eventSink.OnProviderRetry,
+                usage => eventSink.OnTokenUsageUpdated(imageUnderstanding.Usage.Add(usage)),
                 cancellationToken).ConfigureAwait(false);
+            var turnUsage = imageUnderstanding.Usage.Add(streamResult.Usage);
+            eventSink.OnTokenUsageUpdated(turnUsage);
             return CopilotTurnResult.FromChat(
-                imageUnderstanding.Usage.Add(streamResult.Usage),
+                turnUsage,
                 requestContent,
                 attachmentContextCaptured,
                 streamResult);
@@ -193,9 +199,63 @@ namespace ColorVision.Copilot
                 ExternalMcpServers = request.ExternalMcpServers,
                 TaskIntentText = recoveryTaskContext.TaskIntentText,
                 ActiveGoalText = request.ActiveGoalText,
+                WorkspaceReviewTarget = request.WorkspaceReviewTarget,
             });
-            var result = await _agentRuntime.RunAsync(agentRequest, eventSink.OnAgentEvent, cancellationToken).ConfigureAwait(false);
-            return CopilotTurnResult.FromAgent(request.Mode, imageUnderstanding.Usage.Add(result.Usage), result);
+            var reviewTarget = request.Mode == CopilotAgentMode.Review
+                ? request.WorkspaceReviewTarget?.IsStructurallyValid() == true
+                    ? request.WorkspaceReviewTarget.CreateSnapshot()
+                    : CopilotWorkspaceReviewTargetContext.WorkingTree()
+                : null;
+            if (reviewTarget != null)
+                eventSink.OnReviewEntered(reviewTarget);
+            eventSink.OnTokenUsageUpdated(imageUnderstanding.Usage);
+
+            CopilotTurnAnswerLifecycleState? reviewAnswer = reviewTarget != null
+                ? CopilotTurnAnswerLifecycleState.Empty
+                : null;
+            var workspaceDiff = new CopilotTurnWorkspaceDiffAccumulator(agentRequest.WorkspacePath);
+            var turnPlan = new CopilotTurnPlanAccumulator();
+            void PublishAgentEvent(CopilotAgentEvent agentEvent)
+            {
+                if (reviewAnswer.HasValue)
+                    reviewAnswer = reviewAnswer.Value.Observe(agentEvent);
+                eventSink.OnAgentEvent(agentEvent);
+                if (agentEvent.Type == CopilotAgentEventType.BudgetUpdated
+                    && agentEvent.Budget != null)
+                {
+                    eventSink.OnTokenUsageUpdated(
+                        imageUnderstanding.Usage.Add(GetReportedTokenUsage(agentEvent.Budget)));
+                }
+                if (workspaceDiff.Observe(agentEvent, out var snapshot))
+                    eventSink.OnWorkspaceDiffUpdated(snapshot);
+                if (turnPlan.Observe(agentEvent, out var planSnapshot))
+                    eventSink.OnPlanUpdated(planSnapshot);
+            }
+
+            var result = await _agentRuntime.RunAsync(agentRequest, PublishAgentEvent, cancellationToken).ConfigureAwait(false);
+            if (turnPlan.Observe(result.TaskLedger, out var finalPlanSnapshot))
+                eventSink.OnPlanUpdated(finalPlanSnapshot);
+            var turnUsage = imageUnderstanding.Usage.Add(result.Usage);
+            eventSink.OnTokenUsageUpdated(turnUsage);
+            if (reviewTarget != null)
+            {
+                var finalReviewAnswer = reviewAnswer!.Value;
+                eventSink.OnReviewExited(
+                    reviewTarget,
+                    finalReviewAnswer.Text,
+                    finalReviewAnswer.IsTruncated);
+            }
+            return CopilotTurnResult.FromAgent(request.Mode, turnUsage, result);
+        }
+
+        internal static CopilotTokenUsage GetReportedTokenUsage(CopilotAgentBudgetSnapshot budget)
+        {
+            ArgumentNullException.ThrowIfNull(budget);
+            return new CopilotTokenUsage(
+                Math.Max(0, budget.ReportedInputTokens),
+                Math.Max(0, budget.ReportedOutputTokens),
+                Math.Max(0, budget.ReportedTotalTokens),
+                budget.ReportedCachedInputTokens);
         }
 
         private static string InsertImageUnderstandingContext(

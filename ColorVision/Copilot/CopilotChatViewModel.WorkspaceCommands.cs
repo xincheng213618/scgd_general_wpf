@@ -51,13 +51,18 @@ namespace ColorVision.Copilot
                 return;
             }
 
-            var prompt = new StringBuilder("Review the current uncommitted workspace changes. Do not modify files or apply fixes.");
-            if (!string.IsNullOrWhiteSpace(focusInstructions))
-                prompt.Append(" Focus: ").Append(focusInstructions.Trim());
+            if (!CopilotWorkspaceReviewRequest.TryParse(focusInstructions, out var reviewRequest, out var error))
+            {
+                ShowLocalCommandResult(
+                    command,
+                    $"{error}{Environment.NewLine}用法：{command.Usage}");
+                return;
+            }
 
             DismissLocalCommandResult();
             SetPendingRequestModeOverride(CopilotAgentMode.Review);
-            InputText = prompt.ToString();
+            SetPendingWorkspaceReviewTarget(reviewRequest.CreateTargetContext());
+            InputText = reviewRequest.BuildPrompt();
             RunUiOperation(SendAsync, "开始工作区审查");
         }
 
@@ -71,6 +76,7 @@ namespace ColorVision.Copilot
 
             DismissLocalCommandResult();
             SetPendingRequestModeOverride(CopilotAgentMode.Review);
+            SetPendingWorkspaceReviewTarget(CopilotWorkspaceReviewTargetContext.WorkingTree());
             InputText = CopilotWorkspaceVerification.BuildPrompt(focusInstructions);
             RunUiOperation(SendAsync, "验证工作区改动");
         }
@@ -289,6 +295,15 @@ namespace ColorVision.Copilot
             try
             {
                 var reply = await _chatService.CompleteReplyDetailedAsync(compactProfile, request, cancellation.Token);
+                if (CanApplyAuxiliaryConversationResult(conversation))
+                {
+                    conversation.RecordCompactionUsage(reply.Usage, DateTimeOffset.UtcNow);
+                    PersistState();
+                }
+                else if (Volatile.Read(ref _disposeState) == 1)
+                {
+                    return;
+                }
                 cancellation.Token.ThrowIfCancellationRequested();
                 if (reply.IsIncomplete)
                     throw new InvalidOperationException(BuildIncompleteCompactionMessage(reply));
@@ -316,7 +331,8 @@ namespace ColorVision.Copilot
                 ShowLocalCommandResult(
                     command,
                     $"已将最早 {compactionPlan.NewSourceMessageCount:N0} 条完整上下文、{compactionPlan.NewSourceCharacters:N0} 个字符合并进延续摘要。\n"
-                    + $"后续请求将使用 {summary.Length:N0} 字符摘要，并保留边界后的 {retainedAfterBoundary:N0} 条新消息；界面中的完整对话未删除。"
+                    + $"后续请求将使用 {summary.Length:N0} 字符摘要，并保留边界后的 {retainedAfterBoundary:N0} 条新消息；界面中的完整对话未删除。\n"
+                    + FormatCompactionUsage(reply.Usage)
                     + (!includeFocusInResult || string.IsNullOrWhiteSpace(focusInstructions)
                         ? string.Empty
                         : "\n聚焦要求：" + focusInstructions.Trim()));
@@ -324,7 +340,9 @@ namespace ColorVision.Copilot
             }
             catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
             {
-                ShowLocalCommandResult(command, "上下文压缩已取消，原有对话和压缩状态均未改变。");
+                ShowLocalCommandResult(
+                    command,
+                    "上下文压缩已取消，原有对话和压缩摘要均未改变；若 Provider 已完成响应，其 Token 元数据仍会计入本会话用量。");
             }
             catch (Exception ex)
             {
@@ -445,6 +463,17 @@ namespace ColorVision.Copilot
                 CopilotChatFinishKind.ToolRequested => "模型在压缩过程中请求了工具，未应用不完整摘要。",
                 _ => "提供商未正常完成压缩，未应用不完整摘要。",
             };
+        }
+
+        private static string FormatCompactionUsage(CopilotTokenUsage usage)
+        {
+            if (!usage.HasAny)
+                return "本次压缩模型用量：Provider 未返回 Token 元数据。";
+
+            var cache = usage.CachedInputTokens.HasValue
+                ? $" · 缓存输入 {usage.EffectiveCachedInputTokens:N0}"
+                : string.Empty;
+            return $"本次压缩模型用量：输入 {Math.Max(0, usage.InputTokens):N0} · 输出 {Math.Max(0, usage.OutputTokens):N0} · 总计 {usage.EffectiveTotalTokens:N0}{cache}";
         }
 
     }

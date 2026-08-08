@@ -147,6 +147,36 @@ public sealed class CopilotConversationCompactionIntegrityTests
     }
 
     [Fact]
+    public void InterruptedAgentTurnPreservesBothTerminalMarkers()
+    {
+        var paused = new CopilotChatMessage(CopilotChatRole.Assistant, "Partial Agent answer.")
+        {
+            RequestMode = CopilotAgentMode.Auto,
+            AgentStopReason = CopilotAgentStopReason.Paused,
+        };
+        paused.MarkResponseInterrupted("paused after checkpoint");
+        var agentMarker = CopilotConversationCompactionTerminalEvidence.FormatAgentMarker(
+            CopilotAgentStopReason.Paused);
+
+        Assert.Contains(
+            CopilotConversationCompactionTerminalEvidence.ResponseInterruptedMarker,
+            paused.ModelContent,
+            StringComparison.Ordinal);
+        Assert.Contains(agentMarker, paused.ModelContent, StringComparison.Ordinal);
+
+        var evidence = CopilotConversationCompactionTerminalEvidence.Capture([paused]);
+
+        Assert.True(evidence.HasResponseInterruption);
+        Assert.Equal([CopilotAgentStopReason.Paused], evidence.IncompleteAgentStopReasons);
+        Assert.Throws<InvalidOperationException>(() => evidence.EnsurePreserved(
+            CopilotConversationCompactionTerminalEvidence.ResponseInterruptedMarker));
+        evidence.EnsurePreserved(
+            CopilotConversationCompactionTerminalEvidence.ResponseInterruptedMarker
+            + Environment.NewLine
+            + agentMarker);
+    }
+
+    [Fact]
     public void PromptPlacesTerminalIntegrityAfterOptionalUserFocus()
     {
         var request = CopilotConversationCompactionPrompt.BuildRequest(

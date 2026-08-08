@@ -3,7 +3,7 @@ using System.ComponentModel;
 
 namespace ProjectARVRPro.Process.MTF.MTFHV048
 {
-    public class MTFHV048ProcessConfig : ProcessConfigBase
+    public class MTFHV048ProcessConfig : ProcessConfigBase<MTFHV048RecipeConfig>
     {
         public string ShowConfig { get => _ShowConfig; set { _ShowConfig = value; OnPropertyChanged(); } }
         private string _ShowConfig = "F3";

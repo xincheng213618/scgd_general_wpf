@@ -3,7 +3,7 @@ using Newtonsoft.Json;
 
 namespace ProjectARVRPro.Process.Chessboard
 {
-    public class ChessboardDynamicProcessConfig : ProcessConfigBase
+    public class ChessboardDynamicProcessConfig : ProcessConfigBase<ChessboardRecipeConfig>
     {
         [Category("棋盘格对比度")]
         [DisplayName("数据库结果名称")]

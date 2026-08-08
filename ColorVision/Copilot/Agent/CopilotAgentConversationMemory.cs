@@ -48,24 +48,38 @@ namespace ColorVision.Copilot
             if (visible.Length == 0 || previous.Length == 0)
                 return visible;
 
-            var commonPrefixLength = 0;
-            while (commonPrefixLength < previous.Length
-                && commonPrefixLength < visible.Length
-                && AreEqual(previous[commonPrefixLength], visible[commonPrefixLength]))
+            // Checkpoint memory is more tightly bounded than the visible request
+            // history, so it can contain the initial goal plus only a recent tail.
+            // Align both ordered sequences and resume after their last shared item.
+            var commonSuffixLengths = BuildCommonSuffixLengths(previous, visible);
+
+            var previousCursor = 0;
+            var visibleCursor = 0;
+            var lastSharedVisibleIndex = -1;
+            while (previousCursor < previous.Length && visibleCursor < visible.Length)
             {
-                commonPrefixLength++;
+                if (AreEqual(previous[previousCursor], visible[visibleCursor]))
+                {
+                    lastSharedVisibleIndex = visibleCursor;
+                    previousCursor++;
+                    visibleCursor++;
+                    continue;
+                }
+
+                if (commonSuffixLengths[previousCursor + 1, visibleCursor]
+                    >= commonSuffixLengths[previousCursor, visibleCursor + 1])
+                {
+                    // Prefer discarding checkpoint-only messages on a tie so an
+                    // identical later visible turn is not mistaken for one seen.
+                    previousCursor++;
+                }
+                else
+                {
+                    visibleCursor++;
+                }
             }
 
-            var previousTail = previous.AsSpan(commonPrefixLength);
-            var visibleTail = visible.AsSpan(commonPrefixLength);
-            var maximumOverlap = Math.Min(previousTail.Length, visibleTail.Length);
-            for (var overlap = maximumOverlap; overlap > 0; overlap--)
-            {
-                if (previousTail[^overlap..].SequenceEqual(visibleTail[..overlap], CopilotRequestMessageComparer.Instance))
-                    return visibleTail[overlap..].ToArray();
-            }
-
-            return visibleTail.ToArray();
+            return visible[(lastSharedVisibleIndex + 1)..];
         }
 
         internal static IReadOnlyList<string> SelectBoundedUserFollowUps(
@@ -120,21 +134,7 @@ namespace ColorVision.Copilot
 
             // The suffix LCS table lets the merge preserve both input orders while
             // interleaving checkpoint-only injected messages with visible-only history.
-            var commonSuffixLengths = new int[
-                previousMemory.Length + 1,
-                visibleHistory.Length + 1];
-            for (var previousIndex = previousMemory.Length - 1; previousIndex >= 0; previousIndex--)
-            {
-                for (var visibleIndex = visibleHistory.Length - 1; visibleIndex >= 0; visibleIndex--)
-                {
-                    commonSuffixLengths[previousIndex, visibleIndex] =
-                        AreEqual(previousMemory[previousIndex], visibleHistory[visibleIndex])
-                            ? commonSuffixLengths[previousIndex + 1, visibleIndex + 1] + 1
-                            : Math.Max(
-                                commonSuffixLengths[previousIndex + 1, visibleIndex],
-                                commonSuffixLengths[previousIndex, visibleIndex + 1]);
-                }
-            }
+            var commonSuffixLengths = BuildCommonSuffixLengths(previousMemory, visibleHistory);
 
             var merged = new List<CopilotRequestMessage>(
                 previousMemory.Length + visibleHistory.Length);
@@ -220,14 +220,25 @@ namespace ColorVision.Copilot
                 && left.IsSteering == right.IsSteering;
         }
 
-        private sealed class CopilotRequestMessageComparer : IEqualityComparer<CopilotRequestMessage>
+        private static int[,] BuildCommonSuffixLengths(
+            CopilotRequestMessage[] previous,
+            CopilotRequestMessage[] visible)
         {
-            public static CopilotRequestMessageComparer Instance { get; } = new();
+            var commonSuffixLengths = new int[previous.Length + 1, visible.Length + 1];
+            for (var previousIndex = previous.Length - 1; previousIndex >= 0; previousIndex--)
+            {
+                for (var visibleIndex = visible.Length - 1; visibleIndex >= 0; visibleIndex--)
+                {
+                    commonSuffixLengths[previousIndex, visibleIndex] =
+                        AreEqual(previous[previousIndex], visible[visibleIndex])
+                            ? commonSuffixLengths[previousIndex + 1, visibleIndex + 1] + 1
+                            : Math.Max(
+                                commonSuffixLengths[previousIndex + 1, visibleIndex],
+                                commonSuffixLengths[previousIndex, visibleIndex + 1]);
+                }
+            }
 
-            public bool Equals(CopilotRequestMessage left, CopilotRequestMessage right) => AreEqual(left, right);
-
-            public int GetHashCode(CopilotRequestMessage message) =>
-                HashCode.Combine(message.Role, message.Content, message.IsSteering);
+            return commonSuffixLengths;
         }
     }
 }

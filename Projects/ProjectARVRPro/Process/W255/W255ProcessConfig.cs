@@ -4,7 +4,7 @@ using ProjectARVRPro.Process.Uniformity;
 
 namespace ProjectARVRPro.Process.W255
 {
-    public class W255ProcessConfig : ProcessConfigBase
+    public class W255ProcessConfig : ProcessConfigBase<W255RecipeConfig>
     {
         [Category("解析配置")]
         [DisplayName("Center解析Key")]

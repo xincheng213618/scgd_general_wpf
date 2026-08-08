@@ -31,7 +31,7 @@ namespace ProjectARVRPro.Process.MTF
         private string _Unit = "%";
 
 
-        public MTFRecipeConfig RecipeConfig { get => _RecipeConfig; set { _RecipeConfig = value; OnPropertyChanged(); } }
+        public MTFRecipeConfig RecipeConfig { get => _RecipeConfig; set { _RecipeConfig = value ?? new(); OnPropertyChanged(); } }
         private MTFRecipeConfig _RecipeConfig = new MTFRecipeConfig();
 
     }

@@ -51,6 +51,8 @@ namespace ColorVision.Copilot
 
         public string ActiveGoalText { get; init; } = string.Empty;
 
+        public CopilotWorkspaceReviewTargetContext? WorkspaceReviewTarget { get; init; }
+
         public CopilotProfileConfig Profile { get; init; } = null!;
 
         public IReadOnlyList<CopilotRequestMessage> History { get; init; } = Array.Empty<CopilotRequestMessage>();
@@ -227,7 +229,19 @@ namespace ColorVision.Copilot
         public bool ObservationCanRepeat { get; init; }
 
         public string ObservationProgressSignature { get; init; } = string.Empty;
+
+        internal CopilotWorkspaceMutationSnapshot? WorkspaceMutation { get; init; }
     }
+
+    internal sealed record CopilotWorkspaceMutationFileSnapshot(
+        string FullPath,
+        bool BeforeExists,
+        string BeforeText,
+        bool AfterExists,
+        string AfterText);
+
+    internal sealed record CopilotWorkspaceMutationSnapshot(
+        IReadOnlyList<CopilotWorkspaceMutationFileSnapshot> Files);
 
     public sealed class CopilotLocalFileReadScope
     {
@@ -259,6 +273,8 @@ namespace ColorVision.Copilot
         public DateTimeOffset ExpiresAtUtc { get; init; }
 
         public bool ExecuteOnApproval { get; init; }
+
+        public bool ResumesAgentOnApproval { get; init; }
     }
 
     public sealed class CopilotToolCall

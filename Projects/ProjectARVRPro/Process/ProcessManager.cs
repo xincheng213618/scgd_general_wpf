@@ -10,6 +10,7 @@ using System.Collections.Specialized;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.IO;
+using System.Text;
 using Microsoft.Win32;
 using ProjectARVRPro.Process.Blank;
 using ProjectARVRPro.Process.KeyedResults.LuminanceChromaticity;
@@ -36,6 +37,7 @@ namespace ProjectARVRPro.Process
 
         private static ProcessManager _instance;
         private static readonly object _locker = new();
+        private bool _suppressPersistence;
         public static ProcessManager GetInstance() { lock (_locker) { _instance ??= new ProcessManager(); return _instance; } }
 
         public ObservableCollection<IProcess> Processes { get; } = new ObservableCollection<IProcess>();
@@ -298,10 +300,11 @@ namespace ProjectARVRPro.Process
             var newGroup = new ProcessGroup { Name = newName };
             foreach (var meta in ActiveGroup.ProcessMetas)
             {
+                string configJson = GetProcessConfigJson(meta);
                 var newProc = meta.Process?.CreateInstance();
-                if (newProc != null && !string.IsNullOrEmpty(meta.ConfigJson))
+                if (newProc != null && !string.IsNullOrEmpty(configJson))
                 {
-                    newProc.SetProcessConfig(meta.ConfigJson);
+                    newProc.SetProcessConfig(configJson);
                 }
                 var newMeta = new ProcessMeta
                 {
@@ -309,7 +312,7 @@ namespace ProjectARVRPro.Process
                     FlowTemplate = meta.FlowTemplate,
                     Process = newProc,
                     IsEnabled = meta.IsEnabled,
-                    ConfigJson = meta.ConfigJson,
+                    ConfigJson = configJson,
                     PictureSwitchConfig = meta.PictureSwitchConfig.Clone()
                 };
                 newGroup.ProcessMetas.Add(newMeta);
@@ -341,7 +344,7 @@ namespace ProjectARVRPro.Process
                 return;
             }
 
-            string confirmation = $"识别到 {importResult.SourceCount} 项旧版 Recipe，其中 {importResult.SharedConfigs.Count} 项迁移到共享 Recipe";
+            string confirmation = $"识别到 {importResult.SourceCount} 项旧版 Recipe，其中 {importResult.SharedConfigs.Count} 项将应用到匹配的流程和解析实例";
             if (importResult.LuminanceConfigs.Count > 0)
                 confirmation += $"，{importResult.LuminanceConfigs.Count} 项 RGB/W25 Recipe 将按 Key 应用到当前亮色度流程";
             confirmation += "。\n导入只覆盖对应 Recipe，不会修改流程组结构。是否继续？";
@@ -349,44 +352,126 @@ namespace ProjectARVRPro.Process
             if (MessageBox.Show(Application.Current.GetActiveWindow(), confirmation, "ColorVision", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
                 return;
 
+            LegacyRecipeSnapshot snapshot;
             try
             {
-                var (updatedLuminanceProcesses, unmatchedLuminanceKeys) = ApplyLegacyRecipe(importResult);
-                SavePersistedGroups();
-                OnPropertyChanged(nameof(RecipeConfig));
-                RecipeConfigImported?.Invoke(this, EventArgs.Empty);
+                snapshot = CaptureLegacyRecipeSnapshot();
+            }
+            catch (Exception ex)
+            {
+                log.Error("准备导入旧版 Recipe 失败", ex);
+                MessageBox.Show(Application.Current.GetActiveWindow(), $"准备导入旧版 Recipe 失败:\n{ex.Message}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
 
-                string message = $"旧版 Recipe 已导入：更新 {importResult.SharedConfigs.Count} 项共享配置";
-                if (importResult.LuminanceConfigs.Count > 0)
-                    message += $"、{updatedLuminanceProcesses} 个亮色度流程项";
-                message += "。";
-
-                if (unmatchedLuminanceKeys.Count > 0)
-                    message += $"\n未找到以下亮色度 Key，对应旧配置未应用：{string.Join(", ", unmatchedLuminanceKeys)}。";
-
-                if (importResult.UnsupportedTypeNames.Count > 0)
+            (int updatedProcessRecipes, int updatedLuminanceProcesses, List<string> unmatchedLuminanceKeys) importSummary;
+            try
+            {
+                _suppressPersistence = true;
+                try
                 {
-                    string unsupportedTypes = string.Join(", ", importResult.UnsupportedTypeNames
-                        .Select(typeName => typeName.Split('.').Last())
-                        .Distinct(StringComparer.Ordinal));
-                    message += $"\n当前版本不支持以下旧类型，已跳过：{unsupportedTypes}。";
+                    importSummary = ApplyLegacyRecipe(importResult);
+                }
+                finally
+                {
+                    _suppressPersistence = false;
                 }
 
-                MessageBox.Show(Application.Current.GetActiveWindow(), message, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+                if (!SavePersistedGroups())
+                    throw new IOException("保存 ProcessGroups.json 失败。");
             }
             catch (Exception ex)
             {
                 log.Error("应用旧版 Recipe 失败", ex);
-                MessageBox.Show(Application.Current.GetActiveWindow(), $"应用旧版 Recipe 失败:\n{ex.Message}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+                string rollbackMessage;
+                try
+                {
+                    RestoreLegacyRecipeSnapshot(snapshot);
+                    rollbackMessage = "\n已恢复导入前的配置。";
+                }
+                catch (Exception rollbackException)
+                {
+                    log.Error("恢复旧版 Recipe 导入前配置失败", rollbackException);
+                    rollbackMessage = $"\n恢复导入前配置也失败，请勿关闭程序并立即导出当前配置：{rollbackException.Message}";
+                }
+
+                MessageBox.Show(Application.Current.GetActiveWindow(), $"应用旧版 Recipe 失败:\n{ex.Message}{rollbackMessage}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
             }
+
+            OnPropertyChanged(nameof(RecipeConfig));
+            RecipeConfigImported?.Invoke(this, EventArgs.Empty);
+
+            string message = $"旧版 Recipe 已导入：更新 {importSummary.updatedProcessRecipes} 个流程/解析 Recipe";
+            if (importResult.LuminanceConfigs.Count > 0)
+                message += $"、{importSummary.updatedLuminanceProcesses} 个亮色度流程项";
+            message += "。";
+
+            if (importSummary.unmatchedLuminanceKeys.Count > 0)
+                message += $"\n未找到以下亮色度 Key，对应旧配置未应用：{string.Join(", ", importSummary.unmatchedLuminanceKeys)}。";
+
+            if (importResult.UnsupportedTypeNames.Count > 0)
+            {
+                string unsupportedTypes = string.Join(", ", importResult.UnsupportedTypeNames
+                    .Select(typeName => typeName.Split('.').Last())
+                    .Distinct(StringComparer.Ordinal));
+                message += $"\n当前版本不支持以下旧类型，已跳过：{unsupportedTypes}。";
+            }
+
+            MessageBox.Show(Application.Current.GetActiveWindow(), message, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
-        private (int UpdatedLuminanceProcesses, List<string> UnmatchedLuminanceKeys) ApplyLegacyRecipe(LegacyRecipeImportResult importResult)
+        private sealed record LegacyRecipeSnapshot(
+            Dictionary<Type, IRecipeConfig>? SharedConfigs,
+            Dictionary<ProcessMeta, string> ProcessConfigs);
+
+        private LegacyRecipeSnapshot CaptureLegacyRecipeSnapshot()
+        {
+            Dictionary<Type, IRecipeConfig>? sharedConfigs = RecipeConfig.Configs == null
+                ? null
+                : new Dictionary<Type, IRecipeConfig>(RecipeConfig.Configs);
+            Dictionary<ProcessMeta, string> processConfigs = ProcessGroups
+                .SelectMany(group => group.ProcessMetas)
+                .Concat(ResultParserMetas)
+                .Distinct()
+                .ToDictionary(meta => meta, GetProcessConfigJson);
+            return new LegacyRecipeSnapshot(sharedConfigs, processConfigs);
+        }
+
+        private void RestoreLegacyRecipeSnapshot(LegacyRecipeSnapshot snapshot)
+        {
+            RecipeConfig.Configs = snapshot.SharedConfigs == null
+                ? null!
+                : new Dictionary<Type, IRecipeConfig>(snapshot.SharedConfigs);
+
+            UnhookProcessMetasEvents();
+            UnhookResultParserEvents();
+            try
+            {
+                foreach ((ProcessMeta meta, string configJson) in snapshot.ProcessConfigs)
+                {
+                    if (meta.Process != null && !string.IsNullOrWhiteSpace(configJson))
+                        meta.Process.SetProcessConfig(configJson);
+                    meta.ConfigJson = configJson;
+                }
+            }
+            finally
+            {
+                HookProcessMetasEvents();
+                HookResultParserEvents();
+            }
+
+            OnPropertyChanged(nameof(RecipeConfig));
+            RecipeConfigImported?.Invoke(this, EventArgs.Empty);
+        }
+
+        internal (int UpdatedProcessRecipes, int UpdatedLuminanceProcesses, List<string> UnmatchedLuminanceKeys) ApplyLegacyRecipe(LegacyRecipeImportResult importResult)
         {
             RecipeConfig.Configs ??= new Dictionary<Type, IRecipeConfig>();
             foreach (var (type, config) in importResult.SharedConfigs)
                 RecipeConfig.Configs[type] = config;
 
+            int updatedProcessRecipes = 0;
             int updatedLuminanceProcesses = 0;
             var appliedLuminanceKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             UnhookProcessMetasEvents();
@@ -400,6 +485,9 @@ namespace ProjectARVRPro.Process
 
                 foreach (ProcessMeta meta in metas)
                 {
+                    if (ApplyImportedRecipe(meta, importResult.SharedConfigs))
+                        updatedProcessRecipes++;
+
                     if (meta.Process is not LuminanceChromaticityProcess process)
                         continue;
 
@@ -423,7 +511,25 @@ namespace ProjectARVRPro.Process
                 .Where(key => !appliedLuminanceKeys.Contains(key))
                 .OrderBy(key => key, StringComparer.OrdinalIgnoreCase)
                 .ToList();
-            return (updatedLuminanceProcesses, unmatchedLuminanceKeys);
+            return (updatedProcessRecipes, updatedLuminanceProcesses, unmatchedLuminanceKeys);
+        }
+
+        internal static bool ApplyImportedRecipe(ProcessMeta meta, IReadOnlyDictionary<Type, IRecipeConfig> importedConfigs)
+        {
+            IRecipeConfig? targetRecipe = meta.Process?.GetRecipeConfig();
+            if (targetRecipe == null || !importedConfigs.TryGetValue(targetRecipe.GetType(), out IRecipeConfig? importedRecipe))
+                return false;
+
+            JsonConvert.PopulateObject(
+                JsonConvert.SerializeObject(importedRecipe),
+                targetRecipe,
+                new JsonSerializerSettings
+                {
+                    ObjectCreationHandling = ObjectCreationHandling.Replace,
+                    NullValueHandling = NullValueHandling.Ignore
+                });
+            meta.ConfigJson = GetProcessConfigJson(meta);
+            return true;
         }
 
         private void ExportConfig()
@@ -484,10 +590,7 @@ namespace ProjectARVRPro.Process
 
             try
             {
-                if (importedRecipe != null)
-                    RecipeConfig = importedRecipe;
-
-                ApplyImportedGroups(importedGroups);
+                ApplyImportedGroups(importedGroups, importedRecipe);
 
                 string message = $"流程配置已导入，共 {ProcessGroups.Count} 个组、{ResultParserMetas.Count} 条解析映射。";
                 if (!string.IsNullOrWhiteSpace(warningMessage))
@@ -1085,20 +1188,28 @@ namespace ProjectARVRPro.Process
             return matches.Length == 1 ? matches[0] : null;
         }
 
-        private void SavePersistedGroups()
+        private bool SavePersistedGroups()
+        {
+            if (_suppressPersistence)
+                return true;
+
+            return SavePersistedGroups(CreateProcessGroupsRoot());
+        }
+
+        private static bool SavePersistedGroups(ProcessGroupsRoot root)
         {
             try
             {
                 if (!Directory.Exists(PersistDirectory)) Directory.CreateDirectory(PersistDirectory);
 
-                var root = CreateProcessGroupsRoot();
-
                 string json = JsonConvert.SerializeObject(root, ExportJsonSerializerSettings);
-                File.WriteAllText(GroupPersistFilePath, json);
+                WriteTextAtomically(GroupPersistFilePath, json);
+                return true;
             }
             catch (Exception ex)
             {
                 log.Error("保存ProcessGroups失败", ex);
+                return false;
             }
         }
 
@@ -1107,19 +1218,69 @@ namespace ProjectARVRPro.Process
             SavePersistedGroups();
         }
 
+        internal bool TrySaveProcessGroups()
+        {
+            return SavePersistedGroups();
+        }
+
+        internal static void WriteTextAtomically(string filePath, string contents)
+        {
+            string? directory = Path.GetDirectoryName(filePath);
+            if (string.IsNullOrWhiteSpace(directory))
+                throw new ArgumentException("保存路径必须包含目录。", nameof(filePath));
+
+            Directory.CreateDirectory(directory);
+            string temporaryPath = Path.Combine(directory, $".{Path.GetFileName(filePath)}.{Guid.NewGuid():N}.tmp");
+            try
+            {
+                using (var stream = new FileStream(
+                    temporaryPath,
+                    FileMode.CreateNew,
+                    FileAccess.Write,
+                    FileShare.None,
+                    4096,
+                    FileOptions.WriteThrough))
+                using (var writer = new StreamWriter(stream, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false), 4096, leaveOpen: true))
+                {
+                    writer.Write(contents);
+                    writer.Flush();
+                    stream.Flush(flushToDisk: true);
+                }
+
+                if (File.Exists(filePath))
+                    File.Replace(temporaryPath, filePath, filePath + ".bak", ignoreMetadataErrors: true);
+                else
+                    File.Move(temporaryPath, filePath);
+            }
+            finally
+            {
+                if (File.Exists(temporaryPath))
+                    File.Delete(temporaryPath);
+            }
+        }
+
         private ProcessGroupsRoot CreateProcessGroupsRoot()
+        {
+            return CreateProcessGroupsRoot(RecipeConfig, ProcessGroups, ResultParserMetas, _ActiveGroupIndex);
+        }
+
+        private static ProcessGroupsRoot CreateProcessGroupsRoot(
+            RecipeConfig recipeConfig,
+            IEnumerable<ProcessGroup> processGroups,
+            IEnumerable<ProcessMeta> resultParsers,
+            int activeGroupIndex)
         {
             return new ProcessGroupsRoot
             {
                 Version = 3,
-                ActiveGroupIndex = _ActiveGroupIndex,
-                RecipeConfig = RecipeConfig,
-                Groups = ProcessGroups.Select(g => new ProcessGroupPersist
+                ActiveGroupIndex = activeGroupIndex,
+                RecipeConfig = recipeConfig,
+                Groups = processGroups.Select(g => new ProcessGroupPersist
                 {
                     Name = g.Name,
                     Metas = g.ProcessMetas.Select(CreateProcessMetaPersist).ToList()
                 }).ToList(),
-                ResultParsers = ResultParserMetas.Select(CreateProcessMetaPersist).ToList()
+                ResultParsers = resultParsers.Select(CreateProcessMetaPersist).ToList()
             };
         }
 
@@ -1218,7 +1379,7 @@ namespace ProjectARVRPro.Process
             return true;
         }
 
-        private void ApplyImportedGroups(ProcessGroupsRoot importedGroups)
+        internal void ApplyImportedGroups(ProcessGroupsRoot importedGroups, RecipeConfig? importedRecipe)
         {
             var importedProcessGroups = new List<ProcessGroup>();
             var importedResultParsers = new List<ProcessMeta>();
@@ -1283,6 +1444,18 @@ namespace ProjectARVRPro.Process
                 importedProcessGroups.Add(new ProcessGroup { Name = "Default" });
             }
 
+            int importedActiveGroupIndex = importedProcessGroups.Count == 0
+                ? 0
+                : Math.Max(0, Math.Min(importedGroups.ActiveGroupIndex, importedProcessGroups.Count - 1));
+            RecipeConfig candidateRecipeConfig = importedRecipe ?? RecipeConfig;
+            ProcessGroupsRoot candidateRoot = CreateProcessGroupsRoot(
+                candidateRecipeConfig,
+                importedProcessGroups,
+                importedResultParsers,
+                importedActiveGroupIndex);
+            if (!SavePersistedGroups(candidateRoot))
+                throw new IOException("保存导入的 ProcessGroups.json 失败，当前配置未被替换。");
+
             UnhookProcessMetasEvents();
             UnhookResultParserEvents();
             SelectedProcessMeta = null;
@@ -1300,11 +1473,10 @@ namespace ProjectARVRPro.Process
                 ResultParserMetas.Add(meta);
             }
 
-            if (ProcessGroups.Count == 0)
-                _ActiveGroupIndex = 0;
-            else
-                _ActiveGroupIndex = Math.Max(0, Math.Min(importedGroups.ActiveGroupIndex, ProcessGroups.Count - 1));
+            _ActiveGroupIndex = importedActiveGroupIndex;
+            RecipeConfig = candidateRecipeConfig;
 
+            OnPropertyChanged(nameof(RecipeConfig));
             OnPropertyChanged(nameof(ProcessGroups));
             OnPropertyChanged(nameof(ActiveGroupIndex));
             OnPropertyChanged(nameof(ActiveGroup));
@@ -1312,7 +1484,6 @@ namespace ProjectARVRPro.Process
             HookProcessMetasEvents();
             HookResultParserEvents();
             ActiveGroupChanged?.Invoke(this, EventArgs.Empty);
-            SavePersistedGroups();
             CommandManager.InvalidateRequerySuggested();
         }
 

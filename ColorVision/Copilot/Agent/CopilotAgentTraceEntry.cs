@@ -14,7 +14,7 @@ namespace ColorVision.Copilot
         public const int CurrentSchemaVersion = 13;
         private const int MaxSummaryLength = 800;
         private const int MaxDelegatedAnswerLength = 20_000;
-        private const int MaxPersistedHookRuns = 64;
+        internal const int MaxPersistedHookRuns = 64;
         private static readonly TimeSpan MaximumWorkspaceRollbackLifetime = TimeSpan.FromMinutes(31);
 
         public int SchemaVersion { get; set; } = CurrentSchemaVersion;

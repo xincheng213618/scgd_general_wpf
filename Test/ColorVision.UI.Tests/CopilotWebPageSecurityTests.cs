@@ -1,4 +1,9 @@
 using System;
+using System.IO;
+using System.Net;
+using System.Net.Sockets;
+using System.Threading;
+using System.Threading.Tasks;
 using ColorVision.Copilot;
 
 namespace ColorVision.UI.Tests;
@@ -71,5 +76,75 @@ public sealed class CopilotWebPageSecurityTests
 
         var hit = Assert.Single(hits);
         Assert.Equal("https://example.com/public", hit.Url);
+    }
+
+    [Fact]
+    public async Task ConnectionGuardRejectsBlockedDnsResultBeforeConnecting()
+    {
+        var connectCalls = 0;
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            await CopilotWebPageToolSupport.ConnectToAllowedWebPageHostAsync(
+                new DnsEndPoint("rebind.example", 443),
+                static (_, _) => Task.FromResult(new[]
+                {
+                    IPAddress.Parse("1.1.1.1"),
+                    IPAddress.Loopback,
+                }),
+                (_, _) =>
+                {
+                    connectCalls++;
+                    return ValueTask.FromResult<Stream>(new MemoryStream());
+                },
+                CancellationToken.None));
+
+        Assert.Contains("private", exception.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(0, connectCalls);
+    }
+
+    [Fact]
+    public async Task ConnectionGuardConnectsToTheExactValidatedAddress()
+    {
+        var expectedAddress = IPAddress.Parse("1.1.1.1");
+        IPEndPoint? connectedEndpoint = null;
+
+        await using var stream = await CopilotWebPageToolSupport.ConnectToAllowedWebPageHostAsync(
+            new DnsEndPoint("public.example", 8443),
+            (_, _) => Task.FromResult(new[] { expectedAddress }),
+            (endpoint, _) =>
+            {
+                connectedEndpoint = endpoint;
+                return ValueTask.FromResult<Stream>(new MemoryStream());
+            },
+            CancellationToken.None);
+
+        Assert.NotNull(connectedEndpoint);
+        Assert.Equal(expectedAddress, connectedEndpoint.Address);
+        Assert.Equal(8443, connectedEndpoint.Port);
+    }
+
+    [Fact]
+    public async Task ConnectionGuardRetriesOnlyValidatedPublicAddresses()
+    {
+        var firstAddress = IPAddress.Parse("1.1.1.1");
+        var secondAddress = IPAddress.Parse("8.8.8.8");
+        var attempts = new System.Collections.Generic.List<IPEndPoint>();
+
+        await using var stream = await CopilotWebPageToolSupport.ConnectToAllowedWebPageHostAsync(
+            new DnsEndPoint("public.example", 443),
+            (_, _) => Task.FromResult(new[] { firstAddress, secondAddress }),
+            (endpoint, _) =>
+            {
+                attempts.Add(endpoint);
+                if (endpoint.Address.Equals(firstAddress))
+                    throw new SocketException((int)SocketError.HostUnreachable);
+                return ValueTask.FromResult<Stream>(new MemoryStream());
+            },
+            CancellationToken.None);
+
+        Assert.Collection(
+            attempts,
+            attempt => Assert.Equal(firstAddress, attempt.Address),
+            attempt => Assert.Equal(secondAddress, attempt.Address));
     }
 }

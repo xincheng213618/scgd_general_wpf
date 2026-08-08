@@ -201,6 +201,7 @@ namespace ColorVision.Copilot
                 SetPendingRequestModeOverride(Enum.IsDefined(point.UserMessage.RequestMode)
                     ? point.UserMessage.RequestMode
                     : CopilotAgentMode.Chat);
+                SetPendingWorkspaceReviewTarget(point.UserMessage.WorkspaceReviewTarget);
                 InputText = point.UserMessage.Content;
                 UpdateAttachmentsState(branch);
 
@@ -300,6 +301,7 @@ namespace ColorVision.Copilot
                 conversation.Id,
                 InputText,
                 ResolveComposerRequestMode(),
+                _pendingWorkspaceReviewTarget?.CreateSnapshot(),
                 conversation.Attachments.Select(attachment => attachment.CreateSnapshot()).ToArray());
             var messageAttachments = (userMessage.AttachmentSnapshotCaptured
                     ? userMessage.Attachments
@@ -314,6 +316,7 @@ namespace ColorVision.Copilot
             DismissLocalCommandResult();
             SetMessageEditState(conversation.Id, userMessage.Id);
             SetPendingRequestModeOverride(userMessage.RequestMode);
+            SetPendingWorkspaceReviewTarget(userMessage.WorkspaceReviewTarget);
             InputText = userMessage.Content;
             UpdateAttachmentsState(conversation);
         }
@@ -342,6 +345,7 @@ namespace ColorVision.Copilot
                 foreach (var attachment in draftSnapshot.Attachments)
                     conversation.Attachments.Add(attachment.CreateSnapshot());
                 SetPendingRequestModeOverride(draftSnapshot.RequestMode);
+                SetPendingWorkspaceReviewTarget(draftSnapshot.WorkspaceReviewTarget);
                 InputText = draftSnapshot.Text;
             }
             else

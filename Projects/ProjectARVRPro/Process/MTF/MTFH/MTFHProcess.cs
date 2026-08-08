@@ -17,13 +17,13 @@ namespace ProjectARVRPro.Process.MTF.MTFH
     /// <summary>
     /// 旧版MTFH解析 - 使用 MTFResult.result + mtfValue
     /// </summary>
-    public class MTFHProcess : ProcessBase<MTFHProcessConfig, MTFHRecipeConfig>
+    public class MTFHProcess : ProcessWithRecipeBase<MTFHProcessConfig, MTFHRecipeConfig>
     {
         public override async Task<bool> Execute(IProcessExecutionContext ctx)
         {
             if (ctx?.Batch == null || ctx.Result == null) return false;
             var log = ctx.Log;
-            MTFHRecipeConfig recipeConfig = ctx.RecipeConfig.GetRequiredService<MTFHRecipeConfig>();
+            MTFHRecipeConfig recipeConfig = Config.RecipeConfig;
             MTFHViewTestResult testResult = new MTFHViewTestResult();
 
             try

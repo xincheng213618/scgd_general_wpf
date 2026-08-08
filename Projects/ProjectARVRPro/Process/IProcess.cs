@@ -142,4 +142,14 @@ namespace ProjectARVRPro.Process
     {
         public sealed override IRecipeConfig GetRecipeConfig() => ProcessManager.GetInstance().RecipeConfig.GetRequiredService<TRecipeConfig>();
     }
+
+    /// <summary>
+    /// Base class for processes whose recipe is stored in their process configuration.
+    /// </summary>
+    public abstract class ProcessWithRecipeBase<TConfig, TRecipeConfig> : ProcessBase<TConfig>
+        where TConfig : ProcessConfigBase<TRecipeConfig>, new()
+        where TRecipeConfig : class, IRecipeConfig, new()
+    {
+        public sealed override IRecipeConfig GetRecipeConfig() => Config.RecipeConfig;
+    }
 }

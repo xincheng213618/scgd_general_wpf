@@ -195,7 +195,12 @@ namespace ColorVision.Copilot
             ]),
             new("/rollback", "查看或安全撤销当前会话仍可回滚的精确文件修改", CopilotLocalCommandKind.RollbackWorkspace, AcceptsArguments: true, Usage: "/rollback [N]"),
             new("/compact", "压缩早期对话，可在命令后补充聚焦要求", CopilotLocalCommandKind.Compact, AcceptsArguments: true, Usage: "/compact [聚焦要求]"),
-            new("/review", "只读审查当前工作区变更，可补充关注点", CopilotLocalCommandKind.Review, AcceptsArguments: true, Usage: "/review [关注点]"),
+            new("/review", "只读审查工作区、基线分支或指定提交，可补充关注点", CopilotLocalCommandKind.Review, AcceptsArguments: true, Usage: "/review [--current|--base <分支>|--commit <提交号>] [关注点]", Arguments:
+            [
+                new("--current", "审查当前已暂存和未暂存变更", AcceptsArguments: true),
+                new("--base", "审查指定基线分支的合并基点到 HEAD", AcceptsArguments: true),
+                new("--commit", "审查指定十六进制提交号", AcceptsArguments: true),
+            ]),
             new("/verify", "只读审查改动并经确认运行一次受限构建或测试", CopilotLocalCommandKind.Verify, AcceptsArguments: true, Usage: "/verify [关注点]") { Aliases = ["/check-work", "/check"] },
             new("/plan", "只读分析并生成可执行计划，可在命令后直接填写任务", CopilotLocalCommandKind.Plan, AcceptsArguments: true, Usage: "/plan [任务]"),
             new("/view-plan", "定位当前会话最近一份已完成计划", CopilotLocalCommandKind.ViewPlan, AvailableWhileAgentRuns: true, Usage: "/view-plan"),

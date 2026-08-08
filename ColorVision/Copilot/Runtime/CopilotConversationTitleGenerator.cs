@@ -9,6 +9,11 @@ namespace ColorVision.Copilot
         CopilotProfileConfig Profile,
         string Prompt);
 
+    internal sealed record CopilotConversationTitleGenerationResult(
+        string? Title,
+        CopilotTokenUsage Usage,
+        DateTimeOffset CompletedAtUtc);
+
     internal delegate Task<CopilotCompletedReplyResult> CopilotConversationTitleCompletion(
         CopilotProfileConfig profile,
         CopilotRequestMessage[] messages,
@@ -68,7 +73,7 @@ namespace ColorVision.Copilot
             return true;
         }
 
-        public async Task<string?> GenerateAsync(
+        public async Task<CopilotConversationTitleGenerationResult> GenerateAsync(
             CopilotConversationTitleRequest request,
             CancellationToken cancellationToken)
         {
@@ -84,12 +89,15 @@ namespace ColorVision.Copilot
                 profile,
                 [new CopilotRequestMessage("user", request.Prompt)],
                 cancellationToken).ConfigureAwait(false);
-            cancellationToken.ThrowIfCancellationRequested();
+            var completedAtUtc = DateTimeOffset.UtcNow;
             if (completion.IsIncomplete)
-                return null;
+                return new CopilotConversationTitleGenerationResult(null, completion.Usage, completedAtUtc);
 
             var title = NormalizeTitle(completion.Content);
-            return title.Length == 0 ? null : title;
+            return new CopilotConversationTitleGenerationResult(
+                title.Length == 0 ? null : title,
+                completion.Usage,
+                completedAtUtc);
         }
 
         private static CopilotConversationTitleCompletion CreateCompletion(

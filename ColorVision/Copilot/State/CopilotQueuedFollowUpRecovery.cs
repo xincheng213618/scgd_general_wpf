@@ -39,7 +39,8 @@ namespace ColorVision.Copilot
                 Enum.IsDefined(ComposerState?.RequestMode ?? CopilotAgentMode.Auto)
                     ? ComposerState?.RequestMode ?? CopilotAgentMode.Auto
                     : CopilotAgentMode.Auto,
-                attachments);
+                attachments,
+                ComposerState?.WorkspaceReviewTarget);
             return runId.Length is > 0 and <= MaximumIdentifierCharacters
                 && conversationId.Length is > 0 and <= MaximumIdentifierCharacters
                 && prompt.Length is > 0 and <= MaximumPromptCharacters

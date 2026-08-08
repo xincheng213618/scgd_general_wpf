@@ -115,6 +115,9 @@ namespace ColorVision.Copilot
             }
             if (request.Mode == CopilotAgentMode.Review)
             {
+                var requiredReviewTarget = request.WorkspaceReviewTarget?.IsStructurallyValid() == true
+                    ? request.WorkspaceReviewTarget.CreateSnapshot()
+                    : CopilotWorkspaceReviewTargetContext.WorkingTree();
                 var gitWorkingTreeTools = availableTools
                     .Where(tool => string.Equals(tool.Name, "InspectGitWorkingTree", StringComparison.OrdinalIgnoreCase))
                     .Select(tool => tool.Name)
@@ -134,7 +137,8 @@ namespace ColorVision.Copilot
                             : [gitWorkingTreeTools, gitDiffTools],
                         prerequisiteToolGroups,
                         attachedFilePaths,
-                        requiredLocalFilePaths);
+                        requiredLocalFilePaths,
+                        requiredReviewTarget);
                 }
             }
             if (needsValidation)
@@ -228,10 +232,16 @@ namespace ColorVision.Copilot
             IEnumerable<IEnumerable<string>> requiredToolGroups,
             IReadOnlyList<IEnumerable<string>> prerequisiteToolGroups,
             IReadOnlyList<string> requiredAttachedFilePaths,
-            IReadOnlyList<string> requiredLocalFilePaths)
+            IReadOnlyList<string> requiredLocalFilePaths,
+            CopilotWorkspaceReviewTargetContext? requiredWorkspaceReviewTarget = null)
         {
             var groups = prerequisiteToolGroups.Concat(requiredToolGroups);
-            return new CopilotAgentExecutionContract(requirement, groups, requiredAttachedFilePaths, requiredLocalFilePaths);
+            return new CopilotAgentExecutionContract(
+                requirement,
+                groups,
+                requiredAttachedFilePaths,
+                requiredLocalFilePaths,
+                requiredWorkspaceReviewTarget);
         }
 
         private static CopilotAgentExecutionContract None() => new(

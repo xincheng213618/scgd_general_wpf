@@ -299,6 +299,10 @@ namespace ColorVision.Copilot
                 && restoredMode != CopilotAgentMode.Auto
                     ? restoredMode
                     : null;
+            _pendingWorkspaceReviewTarget = _pendingRequestModeOverride == CopilotAgentMode.Review
+                && conversation?.DraftWorkspaceReviewTarget?.IsStructurallyValid() == true
+                    ? conversation.DraftWorkspaceReviewTarget.CreateSnapshot()
+                    : null;
             _promptHistoryNavigator.Reset();
             DismissLocalCommandResult();
             if (_selectedConversation != null)
@@ -477,30 +481,41 @@ namespace ColorVision.Copilot
 
         private async Task ApplyGeneratedConversationTitleAsync(
             CopilotConversationRecord conversation,
-            string generatedTitle,
+            CopilotConversationTitleGenerationResult result,
             Func<bool> isCurrentGeneration,
             CancellationToken cancellationToken)
         {
+            if (!CanApplyAuxiliaryConversationResult(conversation))
+                return;
+
             var application = Application.Current;
             if (application == null)
                 return;
 
             await CopilotUiDispatcher.InvokeAsync(application.Dispatcher, () =>
             {
-                if (cancellationToken.IsCancellationRequested
-                    || !isCurrentGeneration()
-                    || !Conversations.Contains(conversation)
-                    || conversation.HasCustomTitle)
-                {
+                if (!CanApplyAuxiliaryConversationResult(conversation))
                     return false;
-                }
 
-                conversation.SetGeneratedTitle(generatedTitle);
-                RefreshFilteredConversations();
+                conversation.RecordTitleGenerationUsage(result.Usage, result.CompletedAtUtc);
+                var shouldApplyTitle = !cancellationToken.IsCancellationRequested
+                    && isCurrentGeneration()
+                    && !conversation.HasCustomTitle
+                    && !string.IsNullOrWhiteSpace(result.Title);
+                if (shouldApplyTitle)
+                {
+                    conversation.SetGeneratedTitle(result.Title!);
+                    RefreshFilteredConversations();
+                }
                 PersistState();
-                return true;
-            }, cancellationToken).ConfigureAwait(false);
+                return shouldApplyTitle;
+            }, CancellationToken.None).ConfigureAwait(false);
         }
+
+        private bool CanApplyAuxiliaryConversationResult(CopilotConversationRecord? conversation) =>
+            Volatile.Read(ref _disposeState) == 0
+            && conversation != null
+            && Conversations.Contains(conversation);
 
         private CopilotNonBlockingCancellationSource BeginAuxiliaryOperation()
         {

@@ -57,6 +57,14 @@ namespace ColorVision.Copilot
                 RequestMode = CopilotAgentMode.Chat;
                 changed = true;
             }
+            if (WorkspaceReviewTarget != null
+                && (!IsUser
+                    || RequestMode != CopilotAgentMode.Review
+                    || !WorkspaceReviewTarget.IsStructurallyValid()))
+            {
+                WorkspaceReviewTarget = null;
+                changed = true;
+            }
 
             if (_reasoningContent == null)
             {
@@ -251,6 +259,8 @@ namespace ColorVision.Copilot
                 RequestMode = CopilotAgentMode.Chat;
                 changed = true;
             }
+
+            changed |= EnsureWorkspaceDiffValid();
 
             OnResponseTimelineChanged();
             return changed;

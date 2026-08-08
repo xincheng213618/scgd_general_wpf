@@ -60,6 +60,8 @@ namespace ColorVision.Copilot
 
     public sealed class CopilotAgentTaskLedgerSnapshot
     {
+        public const int MaxItems = 128;
+
         public string Mode { get; set; } = string.Empty;
 
         public bool ResumedFromCheckpoint { get; set; }
@@ -79,8 +81,14 @@ namespace ColorVision.Copilot
             Mode = string.Equals(Mode, "plan", StringComparison.OrdinalIgnoreCase) ? "plan" : "execute";
             var changed = !string.Equals(originalMode, Mode, StringComparison.Ordinal) || originalItems == null;
             var normalizedItems = new List<CopilotAgentTaskItem>();
+            var observedIds = new HashSet<int>();
             foreach (var item in Items ?? Array.Empty<CopilotAgentTaskItem>())
             {
+                if (normalizedItems.Count >= MaxItems)
+                {
+                    changed = true;
+                    break;
+                }
                 if (item == null)
                 {
                     changed = true;
@@ -88,6 +96,11 @@ namespace ColorVision.Copilot
                 }
 
                 changed |= item.Normalize();
+                if (string.IsNullOrWhiteSpace(item.Title) || !observedIds.Add(item.Id))
+                {
+                    changed = true;
+                    continue;
+                }
                 normalizedItems.Add(item);
             }
 
@@ -99,6 +112,9 @@ namespace ColorVision.Copilot
 
     public sealed class CopilotAgentTaskItem
     {
+        public const int MaxTitleLength = 256;
+        public const int MaxDescriptionLength = 2_048;
+
         public int Id { get; set; }
 
         public string Title { get; set; } = string.Empty;
@@ -113,11 +129,17 @@ namespace ColorVision.Copilot
             var originalTitle = Title;
             var originalDescription = Description;
             Id = Math.Max(0, Id);
-            Title = (Title ?? string.Empty).Trim();
-            Description = (Description ?? string.Empty).Trim();
+            Title = BoundText(Title, MaxTitleLength);
+            Description = BoundText(Description, MaxDescriptionLength);
             return originalId != Id
                 || !string.Equals(originalTitle, Title, StringComparison.Ordinal)
                 || !string.Equals(originalDescription, Description, StringComparison.Ordinal);
+        }
+
+        private static string BoundText(string? value, int maximumLength)
+        {
+            var normalized = (value ?? string.Empty).Replace('\0', ' ').Trim();
+            return normalized.Length <= maximumLength ? normalized : normalized[..maximumLength].TrimEnd();
         }
     }
 

@@ -3,17 +3,67 @@ using System;
 namespace ColorVision.Copilot
 {
     internal readonly record struct CopilotTurnEventState(
+        string TurnId,
         CopilotAgentMode Mode,
+        bool Started,
         bool ChatRequestPrepared,
+        bool ReviewEntered,
+        CopilotWorkspaceReviewTargetContext? ReviewTarget,
+        string ReviewText,
+        bool ReviewTextTruncated,
+        bool ReviewExited,
+        bool WorkspaceDiffExpected,
+        CopilotTurnWorkspaceDiffSnapshot? WorkspaceDiff,
+        CopilotTurnPlanSnapshot? Plan,
+        CopilotTurnAnswerLifecycleState AnswerLifecycle,
+        CopilotTokenUsage? TokenUsage,
+        CopilotTurnProviderRetryLifecycleState ProviderRetryLifecycle,
+        CopilotTurnBudgetLifecycleState BudgetLifecycle,
+        CopilotTurnCheckpointLifecycleState CheckpointLifecycle,
+        CopilotTurnHookLifecycleState HookLifecycle,
+        CopilotTurnToolLifecycleState ToolLifecycle,
+        CopilotTurnUserQuestionLifecycleState UserQuestionLifecycle,
+        CopilotTurnSteeringLifecycleState SteeringLifecycle,
+        CopilotTurnApprovalLifecycleState ApprovalLifecycle,
         bool AgentCompleted,
+        CopilotTurnStatus? TerminalStatus,
+        CopilotTurnError? TerminalError,
         CopilotTurnResult? Completion)
     {
-        public static CopilotTurnEventState Create(CopilotAgentMode mode)
+        public static CopilotTurnEventState Create(
+            CopilotAgentMode mode,
+            string turnId = CopilotTurnStartedEvent.DefaultTurnId)
         {
             if (!Enum.IsDefined(mode))
                 throw new ArgumentOutOfRangeException(nameof(mode));
 
-            return new CopilotTurnEventState(mode, false, false, null);
+            return new CopilotTurnEventState(
+                CopilotTurnStartedEvent.NormalizeTurnId(turnId),
+                mode,
+                false,
+                false,
+                false,
+                null,
+                string.Empty,
+                false,
+                false,
+                false,
+                null,
+                null,
+                CopilotTurnAnswerLifecycleState.Empty,
+                null,
+                CopilotTurnProviderRetryLifecycleState.Empty,
+                CopilotTurnBudgetLifecycleState.Empty,
+                CopilotTurnCheckpointLifecycleState.Empty,
+                CopilotTurnHookLifecycleState.Empty,
+                CopilotTurnToolLifecycleState.Empty,
+                CopilotTurnUserQuestionLifecycleState.Empty,
+                CopilotTurnSteeringLifecycleState.Empty,
+                CopilotTurnApprovalLifecycleState.Empty,
+                false,
+                null,
+                null,
+                null);
         }
     }
 
@@ -24,24 +74,64 @@ namespace ColorVision.Copilot
             CopilotTurnEvent turnEvent)
         {
             ArgumentNullException.ThrowIfNull(turnEvent);
-            if (state.Completion != null)
+            if (state.TerminalStatus != null)
                 throw new InvalidOperationException("Copilot turn emitted an event after completion.");
+            if (turnEvent is not CopilotTurnStartedEvent && !state.Started)
+                throw new InvalidOperationException("Copilot turn emitted an event before its started event.");
+            if (state.TerminalError != null && turnEvent is not CopilotTurnCompletedEvent)
+                throw new InvalidOperationException("Copilot turn emitted an event after its error event.");
 
             return turnEvent switch
             {
+                CopilotTurnStartedEvent started => ReduceStarted(state, started),
+                CopilotTurnErrorEvent error => ReduceError(state, error),
                 CopilotTurnRequestPreparedEvent => ReduceRequestPrepared(state, turnEvent),
                 CopilotTurnChatDeltaEvent => ReduceChatProgress(state, turnEvent),
                 CopilotTurnProviderRetryEvent providerRetry => ReduceProviderRetry(state, providerRetry),
+                CopilotTurnReviewEnteredEvent reviewEntered => ReduceReviewEntered(state, reviewEntered),
+                CopilotTurnReviewExitedEvent reviewExited => ReduceReviewExited(state, reviewExited),
                 CopilotTurnAgentEvent agent => ReduceAgentEvent(state, agent),
+                CopilotTurnWorkspaceDiffUpdatedEvent workspaceDiff => ReduceWorkspaceDiffUpdated(state, workspaceDiff),
+                CopilotTurnPlanUpdatedEvent plan => ReducePlanUpdated(state, plan),
+                CopilotTurnTokenUsageUpdatedEvent tokenUsage => ReduceTokenUsageUpdated(state, tokenUsage),
                 CopilotTurnCompletedEvent completed => ReduceCompletion(state, completed),
                 _ => throw new InvalidOperationException(
                     $"Unsupported Copilot turn event: {turnEvent.GetType().Name}."),
             };
         }
 
-        public static CopilotTurnResult RequireCompletion(CopilotTurnEventState state) =>
-            state.Completion
-            ?? throw new InvalidOperationException("Copilot turn ended without a completion event.");
+        public static CopilotTurnResult RequireCompletion(CopilotTurnEventState state)
+        {
+            if (state.TerminalStatus == null)
+                throw new InvalidOperationException("Copilot turn ended without a completion event.");
+            return state.Completion
+                ?? throw new InvalidOperationException(
+                    $"Copilot turn ended as {state.TerminalStatus} without a structured result.");
+        }
+
+        private static CopilotTurnEventState ReduceStarted(
+            CopilotTurnEventState state,
+            CopilotTurnStartedEvent started)
+        {
+            if (state.Started)
+                throw new InvalidOperationException("Copilot turn emitted its started event more than once.");
+            RequireMatchingTurn(state, started.TurnId, started.Mode);
+            if (started.Status != CopilotTurnStatus.InProgress)
+                throw new InvalidOperationException("Copilot turn started with a non-running status.");
+
+            return state with { Started = true };
+        }
+
+        private static CopilotTurnEventState ReduceError(
+            CopilotTurnEventState state,
+            CopilotTurnErrorEvent error)
+        {
+            RequireMatchingTurn(state, error.TurnId, error.Mode);
+            if (error.Error?.IsStructurallyValid() != true)
+                throw new InvalidOperationException("Copilot turn emitted invalid error metadata.");
+
+            return state with { TerminalError = error.Error };
+        }
 
         private static CopilotTurnEventState ReduceRequestPrepared(
             CopilotTurnEventState state,
@@ -70,7 +160,10 @@ namespace ColorVision.Copilot
             if (providerRetry.Retry == null)
                 throw new InvalidOperationException("Copilot provider retry event has no retry metadata.");
 
-            return state;
+            return state with
+            {
+                ProviderRetryLifecycle = state.ProviderRetryLifecycle.Observe(providerRetry.Retry),
+            };
         }
 
         private static CopilotTurnEventState ReduceAgentEvent(
@@ -78,33 +171,259 @@ namespace ColorVision.Copilot
             CopilotTurnAgentEvent agent)
         {
             RequireAgentMode(state, agent);
+            if (state.Mode == CopilotAgentMode.Review && !state.ReviewEntered)
+                throw new InvalidOperationException("Copilot Review emitted an Agent event before entering review mode.");
+            if (state.ReviewExited)
+                throw new InvalidOperationException("Copilot Review emitted an Agent event after exiting review mode.");
             if (state.AgentCompleted)
                 throw new InvalidOperationException("Copilot Agent emitted an event after its completed item.");
+            if (state.WorkspaceDiffExpected)
+                throw new InvalidOperationException("Copilot Agent emitted another event before its workspace diff update.");
             if (agent.Event == null)
                 throw new InvalidOperationException("Copilot Agent event has no payload.");
 
-            return agent.Event.Type == CopilotAgentEventType.Completed
-                ? state with { AgentCompleted = true }
-                : state;
+            CopilotAgentEventProtocol.Validate(agent.Event);
+            var hookLifecycle = state.HookLifecycle.Observe(agent.Event);
+            var answerLifecycle = state.AnswerLifecycle.Observe(agent.Event);
+            var budgetLifecycle = state.BudgetLifecycle.Observe(agent.Event);
+            var checkpointLifecycle = state.CheckpointLifecycle.Observe(agent.Event);
+            var userQuestionLifecycle = state.UserQuestionLifecycle.Observe(
+                agent.Event,
+                state.TurnId);
+            var steeringLifecycle = state.SteeringLifecycle.Observe(agent.Event);
+            var approvalLifecycle = state.ApprovalLifecycle.Observe(agent.Event);
+            var toolLifecycle = state.ToolLifecycle.Observe(agent.Event);
+            var workspaceDiffExpected = agent.Event.Type == CopilotAgentEventType.ToolResult
+                && agent.Event.ToolResult?.Success == true
+                && agent.Event.ToolResult.WorkspaceMutation != null;
+            return state with
+            {
+                AgentCompleted = agent.Event.Type == CopilotAgentEventType.Completed,
+                WorkspaceDiffExpected = workspaceDiffExpected,
+                AnswerLifecycle = answerLifecycle,
+                BudgetLifecycle = budgetLifecycle,
+                CheckpointLifecycle = checkpointLifecycle,
+                HookLifecycle = hookLifecycle,
+                ToolLifecycle = toolLifecycle,
+                UserQuestionLifecycle = userQuestionLifecycle,
+                SteeringLifecycle = steeringLifecycle,
+                ApprovalLifecycle = approvalLifecycle,
+            };
+        }
+
+        private static CopilotTurnEventState ReduceWorkspaceDiffUpdated(
+            CopilotTurnEventState state,
+            CopilotTurnWorkspaceDiffUpdatedEvent workspaceDiff)
+        {
+            RequireAgentMode(state, workspaceDiff);
+            if (!state.WorkspaceDiffExpected)
+                throw new InvalidOperationException("Copilot Agent emitted a workspace diff without a matching mutation result.");
+            if (state.ReviewExited)
+                throw new InvalidOperationException("Copilot Review emitted a workspace diff after exiting review mode.");
+            if (workspaceDiff.Snapshot?.IsStructurallyValid() != true)
+                throw new InvalidOperationException("Copilot Agent emitted an invalid workspace diff snapshot.");
+
+            return state with
+            {
+                WorkspaceDiffExpected = false,
+                WorkspaceDiff = workspaceDiff.Snapshot,
+            };
+        }
+
+        private static CopilotTurnEventState ReducePlanUpdated(
+            CopilotTurnEventState state,
+            CopilotTurnPlanUpdatedEvent plan)
+        {
+            RequireAgentMode(state, plan);
+            if (state.ReviewExited)
+                throw new InvalidOperationException("Copilot Review emitted a plan update after exiting review mode.");
+            if (plan.Snapshot?.IsStructurallyValid() != true)
+                throw new InvalidOperationException("Copilot Agent emitted an invalid plan snapshot.");
+            if (CopilotTurnPlanSnapshot.AreEquivalent(state.Plan, plan.Snapshot))
+                throw new InvalidOperationException("Copilot Agent emitted a duplicate plan snapshot.");
+
+            return state with { Plan = plan.Snapshot };
+        }
+
+        private static CopilotTurnEventState ReduceTokenUsageUpdated(
+            CopilotTurnEventState state,
+            CopilotTurnTokenUsageUpdatedEvent tokenUsage)
+        {
+            var current = tokenUsage.Usage;
+            if (!current.HasAny
+                || current.InputTokens < 0
+                || current.OutputTokens < 0
+                || current.TotalTokens < current.InputTokens + (long)current.OutputTokens
+                || current.CachedInputTokens is < 0
+                || current.CachedInputTokens > current.InputTokens)
+            {
+                throw new InvalidOperationException("Copilot turn emitted an invalid token usage snapshot.");
+            }
+
+            if (state.TokenUsage is CopilotTokenUsage previous)
+            {
+                if (current == previous)
+                    throw new InvalidOperationException("Copilot turn emitted a duplicate token usage snapshot.");
+                if (current.InputTokens < previous.InputTokens
+                    || current.OutputTokens < previous.OutputTokens
+                    || current.EffectiveTotalTokens < previous.EffectiveTotalTokens
+                    || current.EffectiveCachedInputTokens < previous.EffectiveCachedInputTokens)
+                {
+                    throw new InvalidOperationException("Copilot turn token usage moved backwards.");
+                }
+            }
+
+            return state with { TokenUsage = current };
+        }
+
+        private static CopilotTurnEventState ReduceReviewEntered(
+            CopilotTurnEventState state,
+            CopilotTurnReviewEnteredEvent reviewEntered)
+        {
+            RequireReviewMode(state, reviewEntered);
+            if (state.ReviewEntered)
+                throw new InvalidOperationException("Copilot Review entered review mode more than once.");
+            if (reviewEntered.Target?.IsStructurallyValid() != true)
+                throw new InvalidOperationException("Copilot Review entered review mode without a valid target.");
+
+            return state with
+            {
+                ReviewEntered = true,
+                ReviewTarget = reviewEntered.Target.CreateSnapshot(),
+            };
+        }
+
+        private static CopilotTurnEventState ReduceReviewExited(
+            CopilotTurnEventState state,
+            CopilotTurnReviewExitedEvent reviewExited)
+        {
+            RequireReviewMode(state, reviewExited);
+            if (!state.ReviewEntered)
+                throw new InvalidOperationException("Copilot Review exited review mode before entering it.");
+            if (state.ReviewExited)
+                throw new InvalidOperationException("Copilot Review exited review mode more than once.");
+            if (!state.AgentCompleted)
+                throw new InvalidOperationException("Copilot Review exited review mode before its completed item was emitted.");
+            if (reviewExited.Target?.IsStructurallyValid() != true)
+                throw new InvalidOperationException("Copilot Review exited review mode without a valid target.");
+            if (!MatchesReviewTarget(state.ReviewTarget, reviewExited.Target))
+                throw new InvalidOperationException("Copilot Review exited review mode with a different target than it entered.");
+            state.AnswerLifecycle.ValidateSnapshot(
+                reviewExited.ReviewText,
+                reviewExited.ReviewTextTruncated);
+
+            return state with
+            {
+                ReviewText = reviewExited.ReviewText,
+                ReviewTextTruncated = reviewExited.ReviewTextTruncated,
+                ReviewExited = true,
+            };
         }
 
         private static CopilotTurnEventState ReduceCompletion(
             CopilotTurnEventState state,
             CopilotTurnCompletedEvent completed)
         {
-            if (completed.Result == null)
-                throw new InvalidOperationException("Copilot completion event has no result.");
-            if (completed.Result.Mode != state.Mode)
+            RequireMatchingTurn(state, completed.TurnId, completed.Mode);
+            if (completed.Status == CopilotTurnStatus.InProgress)
+                throw new InvalidOperationException("Copilot completion event has a non-terminal status.");
+
+            if (completed.Status == CopilotTurnStatus.Interrupted)
+            {
+                if (completed.Error != null || state.TerminalError != null)
+                    throw new InvalidOperationException("Copilot interrupted turn carried unexpected result or error metadata.");
+                if (completed.Result == null)
+                    return state with { TerminalStatus = completed.Status };
+
+                ValidateStructuredResult(state, completed.Result);
+                return state with
+                {
+                    TerminalStatus = completed.Status,
+                    Completion = completed.Result,
+                };
+            }
+            if (completed.Status == CopilotTurnStatus.Failed)
+            {
+                if (completed.Result != null
+                    || completed.Error?.IsStructurallyValid() != true
+                    || state.TerminalError == null
+                    || !Equals(state.TerminalError, completed.Error))
+                {
+                    throw new InvalidOperationException("Copilot failed turn carried invalid terminal metadata.");
+                }
+                return state with
+                {
+                    TerminalStatus = completed.Status,
+                };
+            }
+            if (completed.Status != CopilotTurnStatus.Completed)
+                throw new InvalidOperationException("Copilot completion event has an unsupported terminal status.");
+            if (completed.Result == null || completed.Error != null || state.TerminalError != null)
+                throw new InvalidOperationException("Copilot completed turn has invalid result or error metadata.");
+
+            ValidateStructuredResult(state, completed.Result);
+            return state with
+            {
+                TerminalStatus = completed.Status,
+                Completion = completed.Result,
+            };
+        }
+
+        private static void ValidateStructuredResult(
+            CopilotTurnEventState state,
+            CopilotTurnResult result)
+        {
+            if (result.Mode != state.Mode)
             {
                 throw new InvalidOperationException(
-                    $"Copilot turn completed as {completed.Result.Mode}, but {state.Mode} was requested.");
+                    $"Copilot turn completed as {result.Mode}, but {state.Mode} was requested.");
+            }
+            if (state.TokenUsage is CopilotTokenUsage reportedUsage
+                && reportedUsage != CopilotTurnTokenUsageUpdatedEvent.Normalize(result.Usage))
+            {
+                throw new InvalidOperationException(
+                    "Copilot turn completed with token usage that did not match its latest update.");
             }
             if (state.Mode == CopilotAgentMode.Chat && !state.ChatRequestPrepared)
                 throw new InvalidOperationException("Copilot chat turn completed before its request was prepared.");
             if (state.Mode != CopilotAgentMode.Chat && !state.AgentCompleted)
                 throw new InvalidOperationException("Copilot Agent turn completed before its completed item was emitted.");
+            if (state.WorkspaceDiffExpected)
+                throw new InvalidOperationException("Copilot Agent turn completed before its workspace diff update.");
+            if (state.Mode != CopilotAgentMode.Chat)
+            {
+                var agentRunResult = result.AgentRunResult
+                    ?? throw new InvalidOperationException("Copilot Agent turn completed without a structured Agent result.");
+                state.BudgetLifecycle.ValidateCompletion(agentRunResult);
+                state.CheckpointLifecycle.ValidateCompletion(agentRunResult);
+                var finalPlan = CopilotTurnPlanSnapshot.FromTaskLedger(
+                    agentRunResult.TaskLedger
+                    ?? throw new InvalidOperationException("Copilot Agent turn completed without a final task ledger."));
+                if (!CopilotTurnPlanSnapshot.AreEquivalent(state.Plan, finalPlan))
+                    throw new InvalidOperationException("Copilot Agent turn completed before its final plan update.");
+            }
+            if (state.Mode == CopilotAgentMode.Review && !state.ReviewExited)
+                throw new InvalidOperationException("Copilot Review turn completed before exiting review mode.");
+            if (state.Mode == CopilotAgentMode.Review
+                && result.AgentRunResult?.StopReason == CopilotAgentStopReason.Completed
+                && string.IsNullOrWhiteSpace(state.ReviewText))
+            {
+                throw new InvalidOperationException("Copilot Review completed without final review text.");
+            }
+        }
 
-            return state with { Completion = completed.Result };
+        private static void RequireMatchingTurn(
+            CopilotTurnEventState state,
+            string turnId,
+            CopilotAgentMode mode)
+        {
+            if (!string.Equals(state.TurnId, turnId, StringComparison.Ordinal))
+                throw new InvalidOperationException("Copilot turn lifecycle event referenced a different turn ID.");
+            if (state.Mode != mode)
+            {
+                throw new InvalidOperationException(
+                    $"Copilot turn lifecycle event used {mode}, but {state.Mode} was requested.");
+            }
         }
 
         private static void RequirePreparedChatRequest(
@@ -139,6 +458,32 @@ namespace ColorVision.Copilot
                 throw new InvalidOperationException(
                     $"Copilot chat turn cannot emit {turnEvent.GetType().Name}.");
             }
+        }
+
+        private static void RequireReviewMode(
+            CopilotTurnEventState state,
+            CopilotTurnEvent turnEvent)
+        {
+            if (state.Mode != CopilotAgentMode.Review)
+            {
+                throw new InvalidOperationException(
+                    $"Copilot {state.Mode} turn cannot emit {turnEvent.GetType().Name}.");
+            }
+        }
+
+        private static bool MatchesReviewTarget(
+            CopilotWorkspaceReviewTargetContext? expected,
+            CopilotWorkspaceReviewTargetContext actual)
+        {
+            if (expected == null || expected.Target != actual.Target)
+                return false;
+
+            return string.Equals(
+                expected.Revision,
+                actual.Revision,
+                expected.Target == CopilotWorkspaceReviewTarget.Commit
+                    ? StringComparison.OrdinalIgnoreCase
+                    : StringComparison.Ordinal);
         }
     }
 }

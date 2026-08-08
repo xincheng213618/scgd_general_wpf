@@ -69,10 +69,7 @@ namespace ColorVision.Copilot
                 if (message?.IsUser != false)
                     continue;
                 if (message.WasResponseInterrupted)
-                {
                     hasResponseInterruption = true;
-                    continue;
-                }
                 if (message.RequestMode != CopilotAgentMode.Chat
                     && message.AgentStopReason is not (CopilotAgentStopReason.None or CopilotAgentStopReason.Completed))
                 {

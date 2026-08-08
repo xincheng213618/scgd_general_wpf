@@ -11,13 +11,13 @@ using System.Windows.Media;
 
 namespace ProjectARVRPro.Process.Black
 {
-    public class BlackProcess : ProcessBase<BlackProcessConfig, BlackRecipeConfig>
+    public class BlackProcess : ProcessWithRecipeBase<BlackProcessConfig, BlackRecipeConfig>
     {
         public override async Task<bool> Execute(IProcessExecutionContext ctx)
         {
             if (ctx?.Batch == null || ctx.Result == null) return false;
             var log = ctx.Log;
-            BlackRecipeConfig recipeConfig = ctx.RecipeConfig.GetRequiredService<BlackRecipeConfig>();
+            BlackRecipeConfig recipeConfig = Config.RecipeConfig;
             BlackViewTestResult testResult = new BlackViewTestResult();
 
             try

@@ -18,13 +18,13 @@ using System.Windows.Media;
 
 namespace ProjectARVRPro.Process.W255
 {
-    public class White255Process : ProcessBase<W255ProcessConfig, W255RecipeConfig>
+    public class White255Process : ProcessWithRecipeBase<W255ProcessConfig, W255RecipeConfig>
     {
         public override async Task<bool> Execute(IProcessExecutionContext ctx)
         {
             if (ctx?.Batch == null || ctx.Result == null) return false;
             var log = ctx.Log;
-            W255RecipeConfig recipeConfig = ctx.RecipeConfig.GetRequiredService<W255RecipeConfig>();
+            W255RecipeConfig recipeConfig = Config.RecipeConfig;
             W255ViewTestResult testResult = new W255ViewTestResult();
 
             try

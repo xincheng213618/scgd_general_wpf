@@ -39,6 +39,13 @@ namespace ColorVision.Copilot
                 DraftRequestMode = CopilotAgentMode.Auto;
                 changed = true;
             }
+            if (DraftWorkspaceReviewTarget != null
+                && (DraftRequestMode != CopilotAgentMode.Review
+                    || !DraftWorkspaceReviewTarget.IsStructurallyValid()))
+            {
+                DraftWorkspaceReviewTarget = null;
+                changed = true;
+            }
             if (ComposerStash != null)
             {
                 changed |= ComposerStash.EnsureValid();
@@ -125,6 +132,7 @@ namespace ColorVision.Copilot
                 Compaction = null;
                 changed = true;
             }
+            changed |= EnsureAuxiliaryUsageValid();
             if (BranchOrigin != null && !BranchOrigin.IsStructurallyValid(Id))
             {
                 BranchOrigin = null;

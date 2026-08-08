@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.NativeMethods;
 using ColorVision.Copilot.Mcp;
 using ColorVision.Core;
 using ColorVision.Properties;
@@ -14,6 +13,7 @@ using System;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading;
@@ -50,6 +50,7 @@ namespace ColorVision
     public partial class App : Application
     {
         private bool _isSessionEnding;
+        private bool _isSingleInstanceReplacement;
         private ModuleCatalog? _moduleCatalog;
         private bool _ownsSingleInstanceMutex;
         private SingleInstanceRuntimeCoordinator? _singleInstanceRuntimeCoordinator;
@@ -123,8 +124,8 @@ namespace ColorVision
 
             _moduleCatalog = new ModuleCatalog(AssemblyHandler.GetInstance());
             BuiltInModules.Register(_moduleCatalog);
-            ConfigHandler.GetInstance();
-            ConfigHandler.GetInstance().IsAutoSave = false;
+            ConfigHandler configHandler = ConfigHandler.GetInstance();
+            configHandler.IsAutoSave = false;
             LogConfig.Instance.SetLog();
             this.ApplyTheme(ThemeConfig.Instance.Theme);
             Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(LanguageConfig.Instance.UICulture);
@@ -174,34 +175,79 @@ namespace ColorVision
                 }
             }
 
-            ConfigHandler.GetInstance().IsAutoSave = true;
-
-            mutex = new Mutex(true, "ColorVision", out bool ownsMutex);
+            string executablePath = Environment.ProcessPath
+                ?? throw new InvalidOperationException("Unable to resolve the current ColorVision executable path.");
+            mutex = new Mutex(true, SingleInstanceMutexName.Create(executablePath), out bool ownsMutex);
             _ownsSingleInstanceMutex = ownsMutex;
-            APPConfig appConfig = ConfigHandler.GetInstance().GetRequiredService<APPConfig>();
+            APPConfig appConfig = configHandler.GetRequiredService<APPConfig>();
+            _ = new SingleInstanceReplacementListener(
+                Environment.ProcessId,
+                TryCloseSingleInstanceReplacement,
+                FinalizeSingleInstanceReplacementShutdown);
+            bool enableAutoSave = true;
             bool allowMultipleInstances = appConfig.IsMute;
             if (SingleInstanceStartupPolicy.Decide(
-                ownsMutex,
                 Debugger.IsAttached,
-                allowMultipleInstances) == SingleInstanceStartupAction.ActivateExistingInstance)
+                allowMultipleInstances) == SingleInstanceStartupAction.ReplaceEarlierInstances)
             {
-                IntPtr hWnd = CheckAppRunning.Check("ColorVision");
-                if (hWnd != IntPtr.Zero)
+                int closedInstanceCount;
+                try
                 {
-                    if (ArgumentParser.GetInstance().CommandLineArgs.Length > 0)
-                    {
-                        if (!SingleInstanceCommandLineTransport.TrySend(
-                            hWnd,
-                            ArgumentParser.GetInstance().CommandLineArgs))
-                        {
-                            log.Warn("无法将启动参数转发到现有 ColorVision 实例。");
-                        }
-                    }
-                    log.Info("程序已经打开");
+                    closedInstanceCount = Update.ApplicationUpdateProcessCoordinator.CloseEarlierApplicationProcesses(
+                        SingleInstanceReplacementListener.TryRequestShutdown);
+                    if (!TryAcquireSingleInstanceMutex())
+                        throw new InvalidOperationException("Unable to acquire the single-instance mutex after closing earlier instances.");
+                }
+                catch (Exception ex)
+                {
+                    log.Error("Unable to replace the earlier ColorVision instance.", ex);
+                    Environment.Exit(-1);
+                    return;
+                }
+
+                if (Update.ExitUpdateHandoff.TryDeferLaunchForActiveUpdate(AppDomain.CurrentDomain.BaseDirectory))
+                {
                     Environment.Exit(0);
                     return;
                 }
+
+                if (closedInstanceCount > 0 || !ownsMutex)
+                {
+                    try
+                    {
+                        configHandler.ReloadFromDisk();
+                        appConfig = configHandler.GetRequiredService<APPConfig>();
+                        appConfig.IsMute = false;
+                        configHandler.Save<APPConfig>();
+                        ((log4net.Repository.Hierarchy.Hierarchy)log4net.LogManager.GetRepository()).Root.Level = LogConfig.Instance.LogLevel;
+                        this.ApplyTheme(ThemeConfig.Instance.Theme);
+                        Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(LanguageConfig.Instance.UICulture);
+                    }
+                    catch (Exception ex)
+                    {
+                        enableAutoSave = false;
+                        log.Error(
+                            "The earlier ColorVision instance exited, but its final configuration could not be fully reloaded. " +
+                            "Automatic configuration saving remains disabled.",
+                            ex);
+                        try
+                        {
+                            appConfig = configHandler.GetRequiredService<APPConfig>();
+                            appConfig.IsMute = false;
+                        }
+                        catch (Exception recoveryException)
+                        {
+                            log.Error("Unable to restore the single-instance configuration after the replacement handoff.", recoveryException);
+                        }
+                    }
+                }
+
+                log.Info(
+                    $"Multiple-instance mode is disabled. Closed {closedInstanceCount} earlier " +
+                    "ColorVision instance(s) from the current installation.");
             }
+
+            configHandler.IsAutoSave = enableAutoSave;
 
             _singleInstanceRuntimeCoordinator = new SingleInstanceRuntimeCoordinator(
                 () => Task.Run(Update.ApplicationUpdateProcessCoordinator.CloseOtherApplicationProcesses),
@@ -213,12 +259,6 @@ namespace ColorVision
 
             CopilotMcpServer.Instance.ApplyConfig();
             LanRemoteControlService.Instance.ApplyConfig();
-
-            if (!Debugger.IsAttached)
-            {
-                //杀死僵尸进程
-                KillZombieProcesses();
-            }
 
             log.Info($"程序打开{Assembly.GetExecutingAssembly().GetName().Version}");
 
@@ -271,6 +311,7 @@ namespace ColorVision
             if (e.PropertyName != nameof(APPConfig.IsMute)
                 || sender is not APPConfig appConfig
                 || appConfig.IsMute
+                || _isSingleInstanceReplacement
                 || _singleInstanceRuntimeCoordinator == null)
             {
                 return;
@@ -295,6 +336,101 @@ namespace ColorVision
                     ConfigHandler.GetInstance().Save<APPConfig>();
                 }
             }
+        }
+
+        private bool TryCloseSingleInstanceReplacement()
+        {
+            if (Dispatcher.HasShutdownStarted || Dispatcher.HasShutdownFinished)
+                return true;
+
+            try
+            {
+                return Dispatcher.Invoke(() =>
+                {
+                    if (Dispatcher.HasShutdownStarted || Dispatcher.HasShutdownFinished)
+                        return true;
+                    if (_isSingleInstanceReplacement)
+                        return true;
+
+                    System.Windows.ShutdownMode previousShutdownMode = ShutdownMode;
+                    ShutdownMode = System.Windows.ShutdownMode.OnExplicitShutdown;
+                    try
+                    {
+                        _isSingleInstanceReplacement = true;
+                        Window? primaryWindow = Windows.Cast<Window>()
+                            .FirstOrDefault(window => ReferenceEquals(window, MainWindow))
+                            ?? Windows.Cast<Window>().FirstOrDefault(window => window.IsVisible)
+                            ?? Windows.Cast<Window>().FirstOrDefault();
+                        if (primaryWindow != null)
+                        {
+                            bool windowClosed = false;
+                            void OnWindowClosed(object? sender, EventArgs e) => windowClosed = true;
+                            primaryWindow.Closed += OnWindowClosed;
+                            try
+                            {
+                                primaryWindow.Close();
+                            }
+                            catch (Exception ex) when (windowClosed)
+                            {
+                                log.Warn("The earlier ColorVision window closed with a replacement cleanup error.", ex);
+                            }
+                            finally
+                            {
+                                primaryWindow.Closed -= OnWindowClosed;
+                            }
+
+                            if (!windowClosed)
+                            {
+                                _isSingleInstanceReplacement = false;
+                                ShutdownMode = previousShutdownMode;
+                                log.Info("The earlier ColorVision instance declined the replacement shutdown request.");
+                                return false;
+                            }
+                        }
+
+                        try
+                        {
+                            APPConfig appConfig = ConfigHandler.GetInstance().GetRequiredService<APPConfig>();
+                            appConfig.IsMute = false;
+                            ConfigHandler.GetInstance().Save<APPConfig>();
+                        }
+                        catch (Exception ex)
+                        {
+                            log.Error("The earlier ColorVision instance accepted replacement, but its configuration could not be saved.", ex);
+                        }
+
+                        return true;
+                    }
+                    catch
+                    {
+                        _isSingleInstanceReplacement = false;
+                        ShutdownMode = previousShutdownMode;
+                        throw;
+                    }
+                });
+            }
+            catch (Exception) when (Dispatcher.HasShutdownStarted || Dispatcher.HasShutdownFinished)
+            {
+                return true;
+            }
+            catch (InvalidOperationException ex)
+            {
+                _isSingleInstanceReplacement = false;
+                log.Warn("Unable to close the earlier ColorVision instance for replacement.", ex);
+                return false;
+            }
+        }
+
+        private void FinalizeSingleInstanceReplacementShutdown()
+        {
+            if (Dispatcher.HasShutdownStarted || Dispatcher.HasShutdownFinished)
+                return;
+
+            _ = Dispatcher.BeginInvoke(() =>
+            {
+                if (!Dispatcher.HasShutdownStarted)
+                    Shutdown();
+            });
         }
 
         private bool TryAcquireSingleInstanceMutex()
@@ -324,8 +460,12 @@ namespace ColorVision
             Rbac.ApplicationUsageTracker.StopSession();
             log.Info(ColorVision.Properties.Resources.ApplicationExit);
             bool updateIsActive = Update.ExitUpdateHandoff.IsUpdateActive(AppDomain.CurrentDomain.BaseDirectory);
-            if (!_isSessionEnding && !updateIsActive)
+            bool replacementIsActive = _isSingleInstanceReplacement
+                || Update.ApplicationUpdateProcessCoordinator.IsSingleInstanceReplacementRequested(Environment.ProcessId);
+            if (!_isSessionEnding && !replacementIsActive && !updateIsActive)
                 Update.CombinedUpdateCoordinator.TryApplyPrefetchedUpdateOnExit();
+            else if (replacementIsActive)
+                log.Info("Skipped exit-time prefetched update because a newer ColorVision instance is taking over.");
             else if (updateIsActive)
                 log.Info("Skipped exit-time prefetched update because an external update is already active.");
             CopilotMcpServer.Instance.Stop();

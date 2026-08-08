@@ -509,20 +509,67 @@ namespace ColorVision.Copilot
 
         private static async Task EnsureAllowedWebPageUriAsync(Uri uri, CancellationToken cancellationToken)
         {
-            if (IPAddress.TryParse(uri.Host, out var parsedAddress))
-            {
-                if (IsBlockedWebPageAddress(parsedAddress))
-                    throw new InvalidOperationException("Fetching private, local, or reserved IP addresses is not allowed.");
-
-                return;
-            }
-
-            var addresses = await Dns.GetHostAddressesAsync(uri.DnsSafeHost, cancellationToken);
+            var addresses = await ResolveWebPageAddressesAsync(
+                uri.DnsSafeHost,
+                static (host, token) => Dns.GetHostAddressesAsync(host, token),
+                cancellationToken);
             if (addresses.Length == 0)
                 throw new InvalidOperationException("Could not resolve the target web page address.");
 
             if (addresses.Any(IsBlockedWebPageAddress))
                 throw new InvalidOperationException("The target web page resolved to a local, private, or reserved IP address and was rejected.");
+        }
+
+        internal static async ValueTask<Stream> ConnectToAllowedWebPageHostAsync(
+            DnsEndPoint endpoint,
+            Func<string, CancellationToken, Task<IPAddress[]>> resolveAddressesAsync,
+            Func<IPEndPoint, CancellationToken, ValueTask<Stream>> connectAsync,
+            CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(endpoint);
+            ArgumentNullException.ThrowIfNull(resolveAddressesAsync);
+            ArgumentNullException.ThrowIfNull(connectAsync);
+            if (string.IsNullOrWhiteSpace(endpoint.Host) || endpoint.Port is < 1 or > 65535)
+                throw new InvalidOperationException("The web page connection endpoint is not valid.");
+
+            var addresses = await ResolveWebPageAddressesAsync(
+                endpoint.Host,
+                resolveAddressesAsync,
+                cancellationToken);
+            if (addresses.Length == 0)
+                throw new InvalidOperationException("Could not resolve the target web page address.");
+            if (addresses.Any(IsBlockedWebPageAddress))
+                throw new InvalidOperationException("The target web page resolved to a local, private, or reserved IP address and was rejected.");
+
+            Exception? lastConnectionError = null;
+            foreach (var address in addresses)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                try
+                {
+                    return await connectAsync(
+                        new IPEndPoint(address, endpoint.Port),
+                        cancellationToken);
+                }
+                catch (Exception ex) when (ex is SocketException or IOException)
+                {
+                    lastConnectionError = ex;
+                }
+            }
+
+            throw new HttpRequestException(
+                "Could not connect to any validated target web page address.",
+                lastConnectionError);
+        }
+
+        private static Task<IPAddress[]> ResolveWebPageAddressesAsync(
+            string host,
+            Func<string, CancellationToken, Task<IPAddress[]>> resolveAddressesAsync,
+            CancellationToken cancellationToken)
+        {
+            if (IPAddress.TryParse(host, out var parsedAddress))
+                return Task.FromResult(new[] { parsedAddress });
+            return resolveAddressesAsync(host, cancellationToken);
         }
 
         private static bool IsBlockedWebPageAddress(IPAddress address)
@@ -584,16 +631,47 @@ namespace ColorVision.Copilot
 
         private static HttpClient CreateHttpClient()
         {
-            var client = new HttpClient(new HttpClientHandler
+            var handler = new SocketsHttpHandler
             {
                 AllowAutoRedirect = false,
                 AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate | DecompressionMethods.Brotli,
-            })
+                UseProxy = false,
+                ConnectCallback = ConnectToAllowedWebPageHostAsync,
+            };
+            var client = new HttpClient(handler)
             {
                 Timeout = TimeSpan.FromSeconds(20),
             };
             client.DefaultRequestHeaders.UserAgent.ParseAdd("ColorVision-Copilot-Agent/1.0");
             return client;
+        }
+
+        private static ValueTask<Stream> ConnectToAllowedWebPageHostAsync(
+            SocketsHttpConnectionContext context,
+            CancellationToken cancellationToken)
+        {
+            return ConnectToAllowedWebPageHostAsync(
+                context.DnsEndPoint,
+                static (host, token) => Dns.GetHostAddressesAsync(host, token),
+                ConnectSocketAsync,
+                cancellationToken);
+        }
+
+        private static async ValueTask<Stream> ConnectSocketAsync(
+            IPEndPoint endpoint,
+            CancellationToken cancellationToken)
+        {
+            var socket = new Socket(endpoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+            try
+            {
+                await socket.ConnectAsync(endpoint, cancellationToken);
+                return new NetworkStream(socket, ownsSocket: true);
+            }
+            catch
+            {
+                socket.Dispose();
+                throw;
+            }
         }
     }
 }

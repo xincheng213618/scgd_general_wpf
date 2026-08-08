@@ -98,6 +98,16 @@ namespace ColorVision.Copilot
         public bool ShouldSerializeDraftRequestMode() =>
             DraftRequestMode != CopilotAgentMode.Auto;
 
+        public CopilotWorkspaceReviewTargetContext? DraftWorkspaceReviewTarget
+        {
+            get => _draftWorkspaceReviewTarget;
+            set => SetProperty(ref _draftWorkspaceReviewTarget, value);
+        }
+        private CopilotWorkspaceReviewTargetContext? _draftWorkspaceReviewTarget;
+
+        public bool ShouldSerializeDraftWorkspaceReviewTarget() =>
+            DraftWorkspaceReviewTarget != null;
+
         public CopilotComposerStash? ComposerStash
         {
             get => _composerStash;

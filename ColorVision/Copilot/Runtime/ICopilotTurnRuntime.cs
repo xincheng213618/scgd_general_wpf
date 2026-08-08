@@ -32,6 +32,101 @@ namespace ColorVision.Copilot
 
     internal abstract record CopilotTurnEvent;
 
+    internal enum CopilotTurnStatus
+    {
+        InProgress,
+        Completed,
+        Interrupted,
+        Failed,
+    }
+
+    internal sealed record CopilotTurnError(string Code, string Message)
+    {
+        public const int MaximumCodeLength = 96;
+        public const int MaximumMessageLength = 512;
+
+        public bool IsStructurallyValid()
+        {
+            return !string.IsNullOrWhiteSpace(Code)
+                && Code.Length <= MaximumCodeLength
+                && !Code.Any(char.IsControl)
+                && !string.IsNullOrWhiteSpace(Message)
+                && Message.Length <= MaximumMessageLength
+                && !Message.Any(character => char.IsControl(character)
+                    && character is not '\r' and not '\n' and not '\t');
+        }
+
+        public static CopilotTurnError FromException(Exception exception)
+        {
+            ArgumentNullException.ThrowIfNull(exception);
+            return new CopilotTurnError(
+                exception is TimeoutException ? "turn_timeout" : "turn_failed",
+                "Copilot turn failed before producing a complete result.");
+        }
+    }
+
+    internal sealed record CopilotTurnStartedEvent : CopilotTurnEvent
+    {
+        internal const string DefaultTurnId = "turn:local";
+        internal const int MaximumTurnIdLength = 256;
+
+        public CopilotTurnStartedEvent(CopilotAgentMode mode)
+            : this(DefaultTurnId, mode)
+        {
+        }
+
+        public CopilotTurnStartedEvent(string turnId, CopilotAgentMode mode)
+        {
+            TurnId = NormalizeTurnId(turnId);
+            if (!Enum.IsDefined(mode))
+                throw new ArgumentOutOfRangeException(nameof(mode));
+            Mode = mode;
+        }
+
+        public string TurnId { get; }
+
+        public CopilotAgentMode Mode { get; }
+
+        public CopilotTurnStatus Status { get; } = CopilotTurnStatus.InProgress;
+
+        internal static string NormalizeTurnId(string? turnId)
+        {
+            var normalized = (turnId ?? string.Empty).Trim();
+            if (normalized.Length == 0
+                || normalized.Length > MaximumTurnIdLength
+                || normalized.Any(char.IsControl))
+            {
+                throw new ArgumentException("A bounded non-control turn ID is required.", nameof(turnId));
+            }
+
+            return normalized;
+        }
+    }
+
+    internal sealed record CopilotTurnErrorEvent : CopilotTurnEvent
+    {
+        public CopilotTurnErrorEvent(
+            string turnId,
+            CopilotAgentMode mode,
+            CopilotTurnError error)
+        {
+            TurnId = CopilotTurnStartedEvent.NormalizeTurnId(turnId);
+            if (!Enum.IsDefined(mode))
+                throw new ArgumentOutOfRangeException(nameof(mode));
+            if (error?.IsStructurallyValid() != true)
+                throw new ArgumentException("Valid bounded turn error metadata is required.", nameof(error));
+
+            Mode = mode;
+            Error = error;
+        }
+
+        public string TurnId { get; }
+
+        public CopilotAgentMode Mode { get; }
+
+        public CopilotTurnError Error { get; }
+    }
+
     internal sealed record CopilotTurnRequestPreparedEvent(
         CopilotPreparedTurnRequest Request) : CopilotTurnEvent;
 
@@ -41,15 +136,154 @@ namespace ColorVision.Copilot
     internal sealed record CopilotTurnProviderRetryEvent(
         CopilotProviderRetryInfo Retry) : CopilotTurnEvent;
 
+    internal sealed record CopilotTurnReviewEnteredEvent(
+        CopilotWorkspaceReviewTargetContext Target) : CopilotTurnEvent;
+
+    internal sealed record CopilotTurnReviewExitedEvent(
+        CopilotWorkspaceReviewTargetContext Target,
+        string ReviewText,
+        bool ReviewTextTruncated) : CopilotTurnEvent;
+
+    internal sealed record CopilotTurnWorkspaceDiffUpdatedEvent(
+        CopilotTurnWorkspaceDiffSnapshot Snapshot) : CopilotTurnEvent;
+
+    internal sealed record CopilotTurnPlanUpdatedEvent(
+        CopilotTurnPlanSnapshot Snapshot) : CopilotTurnEvent;
+
+    internal sealed record CopilotTurnTokenUsageUpdatedEvent : CopilotTurnEvent
+    {
+        public CopilotTurnTokenUsageUpdatedEvent(CopilotTokenUsage usage)
+        {
+            Usage = Normalize(usage);
+            if (!Usage.HasAny)
+                throw new ArgumentException("A non-empty token usage snapshot is required.", nameof(usage));
+        }
+
+        public CopilotTokenUsage Usage { get; }
+
+        internal static CopilotTokenUsage Normalize(CopilotTokenUsage usage)
+        {
+            var inputTokens = Math.Max(0, usage.InputTokens);
+            var outputTokens = Math.Max(0, usage.OutputTokens);
+            var totalTokens = usage.HasAny
+                ? Math.Max(usage.EffectiveTotalTokens, AddClamped(inputTokens, outputTokens))
+                : 0;
+            int? cachedInputTokens = usage.HasAny && usage.CachedInputTokens.HasValue
+                ? Math.Clamp(usage.CachedInputTokens.Value, 0, inputTokens)
+                : null;
+            return new CopilotTokenUsage(inputTokens, outputTokens, totalTokens, cachedInputTokens);
+        }
+
+        private static int AddClamped(int left, int right) =>
+            (int)Math.Clamp((long)left + right, 0, int.MaxValue);
+    }
+
     internal sealed record CopilotTurnAgentEvent(
         CopilotAgentEvent Event) : CopilotTurnEvent;
 
-    internal sealed record CopilotTurnCompletedEvent(
-        CopilotTurnResult Result) : CopilotTurnEvent;
+    internal sealed record CopilotTurnCompletedEvent : CopilotTurnEvent
+    {
+        public CopilotTurnCompletedEvent(CopilotTurnResult result)
+            : this(
+                CopilotTurnStartedEvent.DefaultTurnId,
+                result?.Mode ?? throw new ArgumentNullException(nameof(result)),
+                CopilotTurnStatus.Completed,
+                result,
+                error: null)
+        {
+        }
+
+        private CopilotTurnCompletedEvent(
+            string turnId,
+            CopilotAgentMode mode,
+            CopilotTurnStatus status,
+            CopilotTurnResult? result,
+            CopilotTurnError? error)
+        {
+            TurnId = CopilotTurnStartedEvent.NormalizeTurnId(turnId);
+            if (!Enum.IsDefined(mode))
+                throw new ArgumentOutOfRangeException(nameof(mode));
+            if (status == CopilotTurnStatus.InProgress || !Enum.IsDefined(status))
+                throw new ArgumentOutOfRangeException(nameof(status));
+
+            Mode = mode;
+            Status = status;
+            Result = result;
+            Error = error;
+        }
+
+        public string TurnId { get; }
+
+        public CopilotAgentMode Mode { get; }
+
+        public CopilotTurnStatus Status { get; }
+
+        public CopilotTurnResult? Result { get; }
+
+        public CopilotTurnError? Error { get; }
+
+        public static CopilotTurnCompletedEvent Completed(
+            string turnId,
+            CopilotTurnResult result)
+        {
+            ArgumentNullException.ThrowIfNull(result);
+            return new CopilotTurnCompletedEvent(
+                turnId,
+                result.Mode,
+                CopilotTurnStatus.Completed,
+                result,
+                error: null);
+        }
+
+        public static CopilotTurnCompletedEvent Interrupted(
+            string turnId,
+            CopilotAgentMode mode) =>
+            new(
+                turnId,
+                mode,
+                CopilotTurnStatus.Interrupted,
+                result: null,
+                error: null);
+
+        public static CopilotTurnCompletedEvent Interrupted(
+            string turnId,
+            CopilotTurnResult result)
+        {
+            ArgumentNullException.ThrowIfNull(result);
+            return new CopilotTurnCompletedEvent(
+                turnId,
+                result.Mode,
+                CopilotTurnStatus.Interrupted,
+                result,
+                error: null);
+        }
+
+        public static CopilotTurnCompletedEvent Failed(
+            string turnId,
+            CopilotAgentMode mode,
+            Exception exception)
+        {
+            ArgumentNullException.ThrowIfNull(exception);
+            return Failed(turnId, mode, CopilotTurnError.FromException(exception));
+        }
+
+        public static CopilotTurnCompletedEvent Failed(
+            string turnId,
+            CopilotAgentMode mode,
+            CopilotTurnError error) =>
+            new(
+                turnId,
+                mode,
+                CopilotTurnStatus.Failed,
+                result: null,
+                error);
+    }
 
     internal sealed class CopilotTurnEventSink
     {
         private readonly Action<CopilotTurnEvent> _publish;
+        private readonly object _tokenUsageGate = new();
+        private CopilotTokenUsage _lastTokenUsage;
 
         public CopilotTurnEventSink(Action<CopilotTurnEvent> publish)
         {
@@ -65,8 +299,53 @@ namespace ColorVision.Copilot
         public void OnProviderRetry(CopilotProviderRetryInfo retry) =>
             _publish(new CopilotTurnProviderRetryEvent(retry));
 
+        public void OnReviewEntered(CopilotWorkspaceReviewTargetContext target)
+        {
+            ArgumentNullException.ThrowIfNull(target);
+            _publish(new CopilotTurnReviewEnteredEvent(target.CreateSnapshot()));
+        }
+
+        public void OnReviewExited(
+            CopilotWorkspaceReviewTargetContext target,
+            string reviewText,
+            bool reviewTextTruncated)
+        {
+            ArgumentNullException.ThrowIfNull(target);
+            _publish(new CopilotTurnReviewExitedEvent(
+                target.CreateSnapshot(),
+                reviewText ?? string.Empty,
+                reviewTextTruncated));
+        }
+
         public void OnAgentEvent(CopilotAgentEvent agentEvent) =>
             _publish(new CopilotTurnAgentEvent(agentEvent));
+
+        public void OnWorkspaceDiffUpdated(CopilotTurnWorkspaceDiffSnapshot snapshot)
+        {
+            ArgumentNullException.ThrowIfNull(snapshot);
+            _publish(new CopilotTurnWorkspaceDiffUpdatedEvent(snapshot));
+        }
+
+        public void OnPlanUpdated(CopilotTurnPlanSnapshot snapshot)
+        {
+            ArgumentNullException.ThrowIfNull(snapshot);
+            _publish(new CopilotTurnPlanUpdatedEvent(snapshot));
+        }
+
+        public void OnTokenUsageUpdated(CopilotTokenUsage usage)
+        {
+            var snapshot = CopilotTurnTokenUsageUpdatedEvent.Normalize(usage);
+            if (!snapshot.HasAny)
+                return;
+
+            lock (_tokenUsageGate)
+            {
+                if (_lastTokenUsage == snapshot)
+                    return;
+                _lastTokenUsage = snapshot;
+                _publish(new CopilotTurnTokenUsageUpdatedEvent(snapshot));
+            }
+        }
     }
 
     internal readonly record struct CopilotPreparedTurnRequest(
@@ -92,7 +371,8 @@ namespace ColorVision.Copilot
             string? conversationId,
             string? taskId,
             CopilotAgentAccessContext? accessContext = null,
-            string? activeGoalText = null)
+            string? activeGoalText = null,
+            CopilotWorkspaceReviewTargetContext? workspaceReviewTarget = null)
         {
             Profile = profile ?? throw new ArgumentNullException(nameof(profile));
             Mode = mode;
@@ -115,6 +395,10 @@ namespace ColorVision.Copilot
                 out _)
                 ? normalizedGoal
                 : string.Empty;
+            WorkspaceReviewTarget = Mode == CopilotAgentMode.Review
+                && workspaceReviewTarget?.IsStructurallyValid() == true
+                    ? workspaceReviewTarget.CreateSnapshot()
+                    : null;
             ExternalMcpServers = (externalMcpServers ?? Array.Empty<CopilotMcpClientServerConfig>())
                 .Where(server => server != null)
                 .Select(server => server.Clone())
@@ -152,6 +436,8 @@ namespace ColorVision.Copilot
         public CopilotAgentAccessContext AccessContext { get; }
 
         public string ActiveGoalText { get; }
+
+        public CopilotWorkspaceReviewTargetContext? WorkspaceReviewTarget { get; }
 
         public IReadOnlyList<CopilotMcpClientServerConfig> ExternalMcpServers { get; }
     }

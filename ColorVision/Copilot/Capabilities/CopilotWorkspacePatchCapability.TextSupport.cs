@@ -155,6 +155,42 @@ namespace ColorVision.Copilot
 
         private static string Hash(byte[] bytes) => Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
 
+        private static CopilotWorkspaceMutationSnapshot CreateWorkspaceMutationSnapshot(
+            IEnumerable<WorkspacePatchRecord> records,
+            bool rollback)
+        {
+            var files = records.Select(record =>
+            {
+                var originalText = DecodeSnapshotText(record.OriginalBytes);
+                var patchedText = DecodeSnapshotText(record.PatchedBytes);
+                var originalExists = record.Operation != WorkspacePatchOperation.Create;
+                var patchedExists = record.Operation != WorkspacePatchOperation.Delete;
+                return rollback
+                    ? new CopilotWorkspaceMutationFileSnapshot(
+                        record.FullPath,
+                        patchedExists,
+                        patchedText,
+                        originalExists,
+                        originalText)
+                    : new CopilotWorkspaceMutationFileSnapshot(
+                        record.FullPath,
+                        originalExists,
+                        originalText,
+                        patchedExists,
+                        patchedText);
+            }).ToArray();
+            return new CopilotWorkspaceMutationSnapshot(files);
+        }
+
+        private static string DecodeSnapshotText(byte[] bytes)
+        {
+            if (bytes.Length == 0)
+                return string.Empty;
+            if (!TryDecodeText(bytes, out var text, out _, out var error))
+                throw new InvalidOperationException($"A validated workspace text snapshot could not be decoded: {error}");
+            return text;
+        }
+
         private static CopilotToolResult Failure(
             string toolName,
             CopilotToolFailureKind failureKind,

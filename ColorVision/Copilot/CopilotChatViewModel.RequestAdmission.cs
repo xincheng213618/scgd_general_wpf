@@ -98,6 +98,17 @@ namespace ColorVision.Copilot
         private void SetPendingRequestModeOverride(CopilotAgentMode mode)
         {
             var normalized = Enum.IsDefined(mode) ? mode : CopilotAgentMode.Auto;
+            var clearedReviewTarget = false;
+            if (normalized != CopilotAgentMode.Review)
+            {
+                clearedReviewTarget = _pendingWorkspaceReviewTarget != null;
+                _pendingWorkspaceReviewTarget = null;
+                if (SelectedConversation?.DraftWorkspaceReviewTarget != null)
+                {
+                    SelectedConversation.DraftWorkspaceReviewTarget = null;
+                    clearedReviewTarget = true;
+                }
+            }
             _pendingRequestModeOverride = normalized == CopilotAgentMode.Auto ? null : normalized;
             if (SelectedConversation != null
                 && SelectedConversation.DraftRequestMode != normalized)
@@ -105,23 +116,63 @@ namespace ColorVision.Copilot
                 SelectedConversation.DraftRequestMode = normalized;
                 _statePersistenceCoordinator.RequestSave();
             }
+            else if (clearedReviewTarget)
+            {
+                _statePersistenceCoordinator.RequestSave();
+            }
             OnComposerRequestModeChanged();
         }
 
         private void ClearPendingRequestModeOverride()
         {
-            var changed = _pendingRequestModeOverride != null;
+            var changed = _pendingRequestModeOverride != null
+                || _pendingWorkspaceReviewTarget != null;
             _pendingRequestModeOverride = null;
+            _pendingWorkspaceReviewTarget = null;
+            if (SelectedConversation?.DraftWorkspaceReviewTarget != null)
+            {
+                SelectedConversation.DraftWorkspaceReviewTarget = null;
+                changed = true;
+            }
             if (SelectedConversation?.DraftRequestMode != CopilotAgentMode.Auto)
             {
                 SelectedConversation!.DraftRequestMode = CopilotAgentMode.Auto;
-                _statePersistenceCoordinator.RequestSave();
                 changed = true;
             }
             if (!changed)
                 return;
 
+            _statePersistenceCoordinator.RequestSave();
             OnComposerRequestModeChanged();
+        }
+
+        private void SetPendingWorkspaceReviewTarget(CopilotWorkspaceReviewTargetContext? target)
+        {
+            _pendingWorkspaceReviewTarget = target?.IsStructurallyValid() == true
+                ? target.CreateSnapshot()
+                : null;
+            if (SelectedConversation != null)
+            {
+                SelectedConversation.DraftWorkspaceReviewTarget =
+                    _pendingWorkspaceReviewTarget?.CreateSnapshot();
+                _statePersistenceCoordinator.RequestSave();
+            }
+        }
+
+        private CopilotWorkspaceReviewTargetContext? ConsumePendingWorkspaceReviewTarget(
+            CopilotAgentMode requestMode)
+        {
+            var target = requestMode == CopilotAgentMode.Review
+                && _pendingWorkspaceReviewTarget?.IsStructurallyValid() == true
+                    ? _pendingWorkspaceReviewTarget.CreateSnapshot()
+                    : null;
+            _pendingWorkspaceReviewTarget = null;
+            if (SelectedConversation?.DraftWorkspaceReviewTarget != null)
+            {
+                SelectedConversation.DraftWorkspaceReviewTarget = null;
+                _statePersistenceCoordinator.RequestSave();
+            }
+            return target;
         }
 
         private void OnComposerRequestModeChanged()

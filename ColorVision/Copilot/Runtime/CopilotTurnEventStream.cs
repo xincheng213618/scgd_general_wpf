@@ -15,11 +15,16 @@ namespace ColorVision.Copilot
         internal const int DefaultMaximumPendingEvents = 4096;
 
         public static async IAsyncEnumerable<CopilotTurnEvent> RunAsync(
+            string turnId,
+            CopilotAgentMode mode,
             Func<CopilotTurnEventSink, CancellationToken, Task<CopilotTurnResult>> runTurn,
             [EnumeratorCancellation] CancellationToken cancellationToken,
             TimeSpan? producerShutdownTimeout = null,
             int maximumPendingEvents = DefaultMaximumPendingEvents)
         {
+            turnId = CopilotTurnStartedEvent.NormalizeTurnId(turnId);
+            if (!Enum.IsDefined(mode))
+                throw new ArgumentOutOfRangeException(nameof(mode));
             ArgumentNullException.ThrowIfNull(runTurn);
             var shutdownTimeout = producerShutdownTimeout ?? DefaultProducerShutdownTimeout;
             if (shutdownTimeout <= TimeSpan.Zero || shutdownTimeout == Timeout.InfiniteTimeSpan)
@@ -34,9 +39,11 @@ namespace ColorVision.Copilot
             // entire turn on the thread pool so provider setup and extension code cannot occupy
             // the WPF thread before yielding.
             var producer = Task.Run(
-                () => ProduceAsync(runTurn, sink, eventBuffer, lifetime.Token),
+                () => ProduceAsync(turnId, mode, runTurn, sink, eventBuffer, lifetime.Token),
                 CancellationToken.None);
             var cancellationDrain = EnforceCancellationDeadlineAsync(
+                turnId,
+                mode,
                 producer,
                 eventBuffer,
                 shutdownTimeout,
@@ -66,6 +73,8 @@ namespace ColorVision.Copilot
         }
 
         private static async Task<CancellationDrainOutcome> EnforceCancellationDeadlineAsync(
+            string turnId,
+            CopilotAgentMode mode,
             Task producer,
             CopilotTurnEventBuffer eventBuffer,
             TimeSpan shutdownTimeout,
@@ -99,9 +108,12 @@ namespace ColorVision.Copilot
                 Trace.TraceWarning(
                     "Copilot turn producer did not stop within {0}; closing the event stream.",
                     shutdownTimeout);
-                eventBuffer.TryComplete(new OperationCanceledException(
+                var cancellationException = new OperationCanceledException(
                     "Copilot turn producer did not stop within the cancellation grace period.",
-                    callerCancellationToken));
+                    callerCancellationToken);
+                eventBuffer.TryWriteTerminalAndComplete(
+                    CopilotTurnCompletedEvent.Interrupted(turnId, mode),
+                    cancellationException);
                 return CancellationDrainOutcome.TimedOut;
             }
         }
@@ -121,6 +133,8 @@ namespace ColorVision.Copilot
         }
 
         private static async Task ProduceAsync(
+            string turnId,
+            CopilotAgentMode mode,
             Func<CopilotTurnEventSink, CancellationToken, Task<CopilotTurnResult>> runTurn,
             CopilotTurnEventSink sink,
             CopilotTurnEventBuffer eventBuffer,
@@ -128,14 +142,27 @@ namespace ColorVision.Copilot
         {
             try
             {
+                if (!eventBuffer.TryWrite(new CopilotTurnStartedEvent(turnId, mode)))
+                    return;
                 var result = await runTurn(sink, cancellationToken).ConfigureAwait(false);
-                if (!eventBuffer.TryWrite(new CopilotTurnCompletedEvent(result)))
-                    throw new InvalidOperationException("Copilot turn event stream closed before completion.");
-                eventBuffer.TryComplete();
+                eventBuffer.TryWriteTerminalAndComplete(
+                    cancellationToken.IsCancellationRequested
+                        ? CopilotTurnCompletedEvent.Interrupted(turnId, result)
+                        : CopilotTurnCompletedEvent.Completed(turnId, result));
+            }
+            catch (OperationCanceledException ex)
+            {
+                eventBuffer.TryWriteTerminalAndComplete(
+                    CopilotTurnCompletedEvent.Interrupted(turnId, mode),
+                    ex);
             }
             catch (Exception ex)
             {
-                eventBuffer.TryComplete(ex);
+                var turnError = CopilotTurnError.FromException(ex);
+                eventBuffer.TryWriteFailureAndComplete(
+                    new CopilotTurnErrorEvent(turnId, mode, turnError),
+                    CopilotTurnCompletedEvent.Failed(turnId, mode, turnError),
+                    ex);
             }
         }
 
@@ -210,6 +237,66 @@ namespace ColorVision.Copilot
                 _completed = true;
                 if (error != null)
                     _completionError = ExceptionDispatchInfo.Capture(error);
+                stateChanged = _stateChanged;
+            }
+
+            stateChanged.TrySetResult();
+            return true;
+        }
+
+        public bool TryWriteTerminalAndComplete(
+            CopilotTurnCompletedEvent terminalEvent,
+            Exception? error = null)
+        {
+            ArgumentNullException.ThrowIfNull(terminalEvent);
+            TaskCompletionSource stateChanged;
+            lock (_gate)
+            {
+                if (_completed)
+                    return false;
+
+                // A terminal event is allowed one slot beyond the ordinary backlog limit so
+                // consumers always receive exactly one authoritative turn outcome before the
+                // original failure or cancellation is rethrown by the async stream.
+                _pendingEvents.AddLast(new PendingEvent(terminalEvent));
+                _completed = true;
+                if (error != null)
+                    _completionError = ExceptionDispatchInfo.Capture(error);
+                stateChanged = _stateChanged;
+            }
+
+            stateChanged.TrySetResult();
+            return true;
+        }
+
+        public bool TryWriteFailureAndComplete(
+            CopilotTurnErrorEvent errorEvent,
+            CopilotTurnCompletedEvent terminalEvent,
+            Exception error)
+        {
+            ArgumentNullException.ThrowIfNull(errorEvent);
+            ArgumentNullException.ThrowIfNull(terminalEvent);
+            ArgumentNullException.ThrowIfNull(error);
+            if (terminalEvent.Status != CopilotTurnStatus.Failed
+                || !Equals(errorEvent.Error, terminalEvent.Error)
+                || !string.Equals(errorEvent.TurnId, terminalEvent.TurnId, StringComparison.Ordinal)
+                || errorEvent.Mode != terminalEvent.Mode)
+            {
+                throw new ArgumentException("Turn error and failed terminal events must describe the same failure.");
+            }
+
+            TaskCompletionSource stateChanged;
+            lock (_gate)
+            {
+                if (_completed)
+                    return false;
+
+                // Failure is one indivisible protocol transition: consumers must observe the
+                // safe error snapshot immediately before the authoritative failed terminal.
+                _pendingEvents.AddLast(new PendingEvent(errorEvent));
+                _pendingEvents.AddLast(new PendingEvent(terminalEvent));
+                _completed = true;
+                _completionError = ExceptionDispatchInfo.Capture(error);
                 stateChanged = _stateChanged;
             }
 

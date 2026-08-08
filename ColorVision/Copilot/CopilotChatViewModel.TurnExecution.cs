@@ -104,10 +104,21 @@ namespace ColorVision.Copilot
             var recoveryRequest = isDirectSubmission ? null : ConsumePendingAgentRecoveryRequest();
             if (!isDirectSubmission)
                 requestMode = ConsumeRequestModeOverride();
+            var workspaceReviewTarget = isDirectSubmission
+                ? null
+                : ConsumePendingWorkspaceReviewTarget(requestMode);
+            if (workspaceReviewTarget == null
+                && isReplacingTurn
+                && requestMode == CopilotAgentMode.Review
+                && replacedUserMessage.WorkspaceReviewTarget?.IsStructurallyValid() == true)
+            {
+                workspaceReviewTarget = replacedUserMessage.WorkspaceReviewTarget.CreateSnapshot();
+            }
 
             var userMessage = new CopilotChatMessage(CopilotChatRole.User, prompt)
             {
                 RequestMode = requestMode,
+                WorkspaceReviewTarget = workspaceReviewTarget,
                 RequestContent = directRequestContent ?? string.Empty,
                 RecoveryRequest = recoveryRequest,
                 Attachments = new ObservableCollection<CopilotAttachmentItem>(turnSnapshot.Attachments),
@@ -154,6 +165,7 @@ namespace ColorVision.Copilot
                 {
                     _pendingAgentRecoveryRequest = recoveryRequest;
                     SetPendingRequestModeOverride(requestMode);
+                    SetPendingWorkspaceReviewTarget(workspaceReviewTarget);
                 }
                 UpdateConversationMetadata(conversation, touch: true);
                 PersistState();
@@ -413,8 +425,9 @@ namespace ColorVision.Copilot
                 conversation.Id,
                 hostedRun.Id,
                 accessContext,
-                conversation.Goal?.IsActive == true ? conversation.Goal.Objective : string.Empty);
-            var eventProtocol = new CopilotTurnEventProtocol(userMessage.RequestMode);
+                conversation.Goal?.IsActive == true ? conversation.Goal.Objective : string.Empty,
+                userMessage.WorkspaceReviewTarget);
+            var eventProtocol = new CopilotTurnEventProtocol(userMessage.RequestMode, hostedRun.Id);
             try
             {
                 try
@@ -425,6 +438,10 @@ namespace ColorVision.Copilot
 
                         switch (turnEvent)
                         {
+                            case CopilotTurnStartedEvent:
+                                break;
+                            case CopilotTurnErrorEvent:
+                                break;
                             case CopilotTurnRequestPreparedEvent prepared:
                                 ApplyPreparedTurnRequestOnUiThread(userMessage, prepared.Request);
                                 break;
@@ -435,10 +452,34 @@ namespace ColorVision.Copilot
                                 hostedRun.RecordProviderRetry(providerRetry.Retry);
                                 ApplyProviderRetryOnUiThread(assistantMessage, providerRetry.Retry);
                                 break;
+                            case CopilotTurnReviewEnteredEvent reviewEntered:
+                                ApplyReviewEnteredOnUiThread(assistantMessage, reviewEntered.Target);
+                                break;
                             case CopilotTurnAgentEvent agent:
                                 if (agent.Event.ProviderRetry != null)
                                     hostedRun.RecordProviderRetry(agent.Event.ProviderRetry);
                                 eventBuffer?.Enqueue(agent.Event);
+                                break;
+                            case CopilotTurnWorkspaceDiffUpdatedEvent workspaceDiff:
+                                ApplyWorkspaceDiffUpdatedOnUiThread(assistantMessage, workspaceDiff.Snapshot);
+                                break;
+                            case CopilotTurnPlanUpdatedEvent plan:
+                                eventBuffer?.Enqueue(CopilotAgentEvent.PlanUpdated(plan.Snapshot));
+                                break;
+                            case CopilotTurnTokenUsageUpdatedEvent tokenUsage:
+                                ApplyTokenUsageUpdatedOnUiThread(assistantMessage, tokenUsage.Usage);
+                                break;
+                            case CopilotTurnReviewExitedEvent reviewExited:
+                                if (eventBuffer != null)
+                                {
+                                    await eventBuffer.CompleteAsync();
+                                    eventBuffer = null;
+                                }
+                                ApplyReviewExitedOnUiThread(
+                                    assistantMessage,
+                                    reviewExited.Target,
+                                    reviewExited.ReviewText,
+                                    reviewExited.ReviewTextTruncated);
                                 break;
                             case CopilotTurnCompletedEvent:
                                 break;

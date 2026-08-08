@@ -112,7 +112,8 @@ namespace ColorVision.Copilot
                 ArgumentNullException.ThrowIfNull(reservation);
                 var outcome = await _toolExecutor.EvaluatePermissionRequestAsync(
                     CreateInvocation(reservation, frameworkApprovalGranted: false),
-                    cancellationToken);
+                    cancellationToken,
+                    _emit);
                 reservation.PermissionHookRuns = outcome.HookRuns;
                 reservation.HookBindings = outcome.HookBindings;
                 return outcome;
@@ -134,6 +135,7 @@ namespace ColorVision.Copilot
                         RiskLevel = action.RiskLevel,
                         ExpiresAtUtc = action.ExpiresAt,
                         ExecuteOnApproval = false,
+                        ResumesAgentOnApproval = true,
                     },
                 };
                 _emit(CopilotAgentEvent.FromToolResult(

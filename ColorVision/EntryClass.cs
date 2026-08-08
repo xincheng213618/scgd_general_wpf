@@ -49,30 +49,5 @@ namespace ColorVision
             app.Run();
         }
 
-        private static void KillZombieProcesses()
-        {
-            Process currentProcess = Process.GetCurrentProcess();
-            string processName = currentProcess.ProcessName;
-            int currentProcessId = currentProcess.Id;
-
-            Process[] processes = Process.GetProcessesByName(processName);
-            foreach (Process process in processes)
-            {
-                if (process.Id == currentProcessId)
-                    continue;
-                try
-                {
-                    if (process.MainWindowHandle == IntPtr.Zero)
-                    {
-                        log.Info(ColorVision.Properties.Resources.TerminateUnresponsiveProcess); 
-                        process.Kill();
-                        process.WaitForExit(1000); 
-                    }
-                }
-                catch (Exception)
-                {
-                }
-            }
-        }
     }
 }

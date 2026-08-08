@@ -6,7 +6,7 @@ namespace ProjectARVRPro.Process.MTF.MTFV
     /// <summary>
     /// 旧版MTFV解析配置 - 使用 MTFResult.result + mtfValue（旧版解析）
     /// </summary>
-    public class MTFVProcessConfig : ProcessConfigBase
+    public class MTFVProcessConfig : ProcessConfigBase<MTFVRecipeConfig>
     {
         public string ShowConfig { get => _ShowConfig; set { _ShowConfig = value; OnPropertyChanged(); } }
         private string _ShowConfig = "F3";

@@ -159,6 +159,14 @@ namespace ColorVision.Copilot
                 return false;
             }
 
+            if (root is "EXPLAIN" or "DESCRIBE" or "DESC"
+                && tokens.Count > 1
+                && tokens[1].Text.Equals("ANALYZE", StringComparison.OrdinalIgnoreCase))
+            {
+                error = "EXPLAIN ANALYZE executes its target statement and is not available to the read-only database tool.";
+                return false;
+            }
+
             var normalizedTokens = tokens.Select(token => token.Text.ToUpperInvariant()).ToArray();
             if (ContainsSequence(normalizedTokens, "INTO", "OUTFILE")
                 || ContainsSequence(normalizedTokens, "INTO", "DUMPFILE")
@@ -502,21 +510,31 @@ namespace ColorVision.Copilot
         {
             await using var connection = new MySqlConnection(MySqlControl.GetConnectionString());
             await connection.OpenAsync(cancellationToken);
-            await using var command = new MySqlCommand(sql, connection) { CommandTimeout = timeoutSeconds };
-            await using var reader = await command.ExecuteReaderAsync(CommandBehavior.SequentialAccess, cancellationToken);
-            var fieldCount = Math.Min(reader.FieldCount, 100);
-            var columns = Enumerable.Range(0, fieldCount).Select(reader.GetName).ToArray();
+            await using var transaction = await connection.BeginTransactionAsync(
+                IsolationLevel.RepeatableRead,
+                isReadOnly: true,
+                cancellationToken);
+            string[] columns;
             var rows = new List<IReadOnlyList<string>>();
-            var truncated = reader.FieldCount > fieldCount;
-            while (rows.Count < maxRows && await reader.ReadAsync(cancellationToken))
+            var truncated = false;
+            await using (var command = new MySqlCommand(sql, connection, transaction) { CommandTimeout = timeoutSeconds })
+            await using (var reader = await command.ExecuteReaderAsync(CommandBehavior.SequentialAccess, cancellationToken))
             {
-                var values = new string[fieldCount];
-                for (var column = 0; column < fieldCount; column++)
-                    values[column] = IsSensitiveColumn(columns[column]) ? "<redacted>" : FormatValue(reader.GetValue(column));
-                rows.Add(values);
+                var fieldCount = Math.Min(reader.FieldCount, 100);
+                columns = Enumerable.Range(0, fieldCount).Select(reader.GetName).ToArray();
+                truncated = reader.FieldCount > fieldCount;
+                while (rows.Count < maxRows && await reader.ReadAsync(cancellationToken))
+                {
+                    var values = new string[fieldCount];
+                    for (var column = 0; column < fieldCount; column++)
+                        values[column] = IsSensitiveColumn(columns[column]) ? "<redacted>" : FormatValue(reader.GetValue(column));
+                    rows.Add(values);
+                }
+                if (rows.Count == maxRows && await reader.ReadAsync(cancellationToken))
+                    truncated = true;
             }
-            if (rows.Count == maxRows && await reader.ReadAsync(cancellationToken))
-                truncated = true;
+
+            await transaction.RollbackAsync(CancellationToken.None);
             return new CopilotDatabaseQueryResult(columns, rows, truncated);
         }
 

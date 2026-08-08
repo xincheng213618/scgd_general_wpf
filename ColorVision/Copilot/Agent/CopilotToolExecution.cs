@@ -152,7 +152,21 @@ namespace ColorVision.Copilot
             CopilotToolExecutionHookDecision decision;
             try
             {
-                decision = await RunBeforeHooksAsync(hookContext, hooks, hookRuns, cancellationToken);
+                var beforeHookEvents = new CopilotToolExecutionHookEventPublisher(
+                    onEvent,
+                    () => CreateExecutionInfo(
+                        invocation,
+                        CopilotToolExecutionState.Pending,
+                        startedAt,
+                        completedAt: null,
+                        stopwatch.ElapsedMilliseconds,
+                        timeout));
+                decision = await RunBeforeHooksAsync(
+                    hookContext,
+                    hooks,
+                    hookRuns,
+                    beforeHookEvents,
+                    cancellationToken);
             }
             catch (OperationCanceledException)
             {

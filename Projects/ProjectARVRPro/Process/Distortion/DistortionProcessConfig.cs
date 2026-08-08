@@ -31,7 +31,7 @@ namespace ProjectARVRPro.Process.Distortion
         }
     }
 
-    public class DistortionProcessConfig : ProcessConfigBase
+    public class DistortionProcessConfig : ProcessConfigBase<DistortionRecipeConfig>
     {
         [Category("显示配置")]
         [DisplayName("9点来源")]

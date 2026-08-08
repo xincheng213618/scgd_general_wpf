@@ -49,6 +49,10 @@ namespace ColorVision.Copilot
 
         public int CompactionSummaryCharacters { get; init; }
 
+        public int CompactionRequests { get; init; }
+
+        public CopilotTokenUsage CompactionUsage { get; init; } = CopilotTokenUsage.Empty;
+
         public int ConversationGoalCharacters { get; init; }
 
         public bool ConversationGoalActive { get; init; }
@@ -178,6 +182,26 @@ namespace ColorVision.Copilot
                     .Append(" 条来源已归纳为 ")
                     .Append(FormatCount(snapshot.CompactionSummaryCharacters))
                     .AppendLine(" 字符摘要；完整记录仍保留在本地");
+            }
+            if (snapshot.CompactionRequests > 0)
+            {
+                builder.Append("压缩模型调用：")
+                    .Append(FormatCount(snapshot.CompactionRequests))
+                    .Append(" 次");
+                if (snapshot.CompactionUsage.HasAny)
+                {
+                    builder.Append(" · 已返回用量累计输入 ")
+                        .Append(FormatCount(snapshot.CompactionUsage.InputTokens))
+                        .Append(" / 输出 ")
+                        .Append(FormatCount(snapshot.CompactionUsage.OutputTokens))
+                        .Append(" / 总计 ")
+                        .Append(FormatCount(snapshot.CompactionUsage.EffectiveTotalTokens))
+                        .AppendLine(" Token");
+                }
+                else
+                {
+                    builder.AppendLine("；Provider 未返回 Token 元数据");
+                }
             }
             builder.Append("持续目标：");
             if (snapshot.ConversationGoalCharacters <= 0)

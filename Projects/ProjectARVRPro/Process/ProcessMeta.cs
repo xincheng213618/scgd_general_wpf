@@ -129,7 +129,15 @@ namespace ProjectARVRPro.Process
             };
 
             editor.ShowDialog();
-            ProcessManager.GetInstance().SaveProcessGroups();
+            if (!ProcessManager.GetInstance().TrySaveProcessGroups())
+            {
+                MessageBox.Show(
+                    Application.Current.GetActiveWindow(),
+                    "Recipe 已修改，但保存 ProcessGroups.json 失败。请检查磁盘空间和文件权限后重试。",
+                    "ColorVision",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
         }
 
         /// <summary>

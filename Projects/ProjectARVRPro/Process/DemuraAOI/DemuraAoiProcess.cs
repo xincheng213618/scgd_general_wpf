@@ -8,7 +8,7 @@ using System.Windows.Media;
 
 namespace ProjectARVRPro.Process.DemuraAOI
 {
-    public class DemuraAoiProcess : ProcessBase<DemuraAoiProcessConfig, DemuraAoiRecipeConfig>
+    public class DemuraAoiProcess : ProcessWithRecipeBase<DemuraAoiProcessConfig, DemuraAoiRecipeConfig>
     {
         public override async Task<bool> Execute(IProcessExecutionContext ctx)
         {
@@ -19,7 +19,7 @@ namespace ProjectARVRPro.Process.DemuraAOI
             {
                 SetPreviewFile(ctx);
                 DemuraAoiParseResult parseResult = await DemuraAoiParser.ParseAsync(ctx.Batch.Id, Config).ConfigureAwait(false);
-                DemuraAoiRecipeConfig recipe = ctx.RecipeConfig.GetRequiredService<DemuraAoiRecipeConfig>();
+                DemuraAoiRecipeConfig recipe = Config.RecipeConfig;
                 DemuraAoiEvaluationResult evaluation = DemuraAoiEvaluator.Evaluate(parseResult, recipe);
 
                 PopulateTestResult(testResult, parseResult, evaluation);

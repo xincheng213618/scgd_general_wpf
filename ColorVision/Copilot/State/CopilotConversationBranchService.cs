@@ -197,7 +197,10 @@ namespace ColorVision.Copilot
                     Summary = source.Compaction.Summary,
                     ThroughMessageId = branchBoundaryId,
                 };
+                branch.CompactionUsage = source.CompactionUsage?.Copy();
             }
+            if (copyThroughIndex >= 0)
+                branch.TitleGenerationUsage = source.TitleGenerationUsage?.Copy();
 
             branch.RefreshSummary();
             return branch;

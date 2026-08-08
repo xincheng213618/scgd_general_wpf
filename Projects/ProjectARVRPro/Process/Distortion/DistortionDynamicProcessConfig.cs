@@ -2,7 +2,7 @@ using System.ComponentModel;
 
 namespace ProjectARVRPro.Process.Distortion
 {
-    public class DistortionDynamicProcessConfig : ProcessConfigBase
+    public class DistortionDynamicProcessConfig : ProcessConfigBase<DistortionRecipeConfig>
     {
         [Category("显示配置")]
         [DisplayName("显示格式")]

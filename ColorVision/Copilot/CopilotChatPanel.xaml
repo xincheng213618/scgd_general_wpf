@@ -1441,6 +1441,34 @@
                                         <local:CopilotMarkdownView Markdown="{Binding Content, Mode=OneWay}"
                                                                    Visibility="{Binding HasLegacyResponseLayout, Converter={StaticResource bool2VisibilityConverter}}" />
 
+                                        <Expander Margin="0,8,0,0"
+                                                  Style="{StaticResource TraceExpanderStyle}"
+                                                  Visibility="{Binding HasWorkspaceDiff, Converter={StaticResource bool2VisibilityConverter}}">
+                                            <Expander.Header>
+                                                <Border Padding="0" Style="{StaticResource ExecutionSummaryPillBorderStyle}">
+                                                    <TextBlock VerticalAlignment="Center"
+                                                               FontSize="12"
+                                                               FontWeight="SemiBold"
+                                                               Foreground="{DynamicResource GlobalTextBrush}"
+                                                               Opacity="0.72"
+                                                               Text="{Binding WorkspaceDiffHeader}" />
+                                                </Border>
+                                            </Expander.Header>
+                                            <Border Margin="0,5,0,0"
+                                                    Padding="8,6"
+                                                    Background="{DynamicResource GlobalBorderBrush}"
+                                                    CornerRadius="6">
+                                                <TextBox MaxHeight="360"
+                                                         FontFamily="Consolas"
+                                                         FontSize="10"
+                                                         HorizontalScrollBarVisibility="Auto"
+                                                         Style="{StaticResource ReadOnlyMessageTextBoxStyle}"
+                                                         Text="{Binding WorkspaceDiff, Mode=OneWay}"
+                                                         TextWrapping="NoWrap"
+                                                         VerticalScrollBarVisibility="Auto" />
+                                            </Border>
+                                        </Expander>
+
                                         <Border Margin="0,8,0,0"
                                                 Padding="10,7"
                                                 Background="{DynamicResource GlobalBorderBrush}"

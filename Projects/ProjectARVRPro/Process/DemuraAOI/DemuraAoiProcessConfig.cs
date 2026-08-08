@@ -91,7 +91,7 @@ namespace ProjectARVRPro.Process.DemuraAOI
 
     }
 
-    public class DemuraAoiProcessConfig : ProcessConfigBase
+    public class DemuraAoiProcessConfig : ProcessConfigBase<DemuraAoiRecipeConfig>
     {
         [Category("结果配置")]
         [DisplayName("结果名称")]

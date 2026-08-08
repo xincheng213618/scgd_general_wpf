@@ -296,6 +296,8 @@ namespace ColorVision.Copilot
                 AutoCompactInstructionsCharacters = agentDefaults.AutoCompactInstructions.Length,
                 CompactedSourceMessages = compaction?.SourceMessageCount ?? 0,
                 CompactionSummaryCharacters = compaction?.Summary.Length ?? 0,
+                CompactionRequests = conversation?.CompactionUsage?.RequestCount ?? 0,
+                CompactionUsage = conversation?.CompactionUsage?.Usage ?? CopilotTokenUsage.Empty,
                 ConversationGoalCharacters = conversation?.Goal?.Objective.Length ?? 0,
                 ConversationGoalActive = conversation?.Goal?.IsActive == true,
                 ConversationGoalAchieved = conversation?.Goal?.IsAchieved == true,

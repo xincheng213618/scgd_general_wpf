@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 
 namespace ColorVision.Copilot
 {
@@ -40,12 +41,14 @@ namespace ColorVision.Copilot
         private readonly bool _requiresLocalFileEvidence;
         private readonly string[] _requiredAttachedFilePaths;
         private readonly string[] _requiredLocalFilePaths;
+        private readonly CopilotWorkspaceReviewTargetContext? _requiredWorkspaceReviewTarget;
 
         private CopilotAgentExecutionContract(
             CopilotAgentExecutionRequirement requirement,
             IEnumerable<IEnumerable<string>> requiredToolGroups,
             IEnumerable<string>? requiredAttachedFilePaths = null,
-            IEnumerable<string>? requiredLocalFilePaths = null)
+            IEnumerable<string>? requiredLocalFilePaths = null,
+            CopilotWorkspaceReviewTargetContext? requiredWorkspaceReviewTarget = null)
         {
             Requirement = requirement;
             _requiredToolGroups = requiredToolGroups
@@ -71,6 +74,9 @@ namespace ColorVision.Copilot
                     .Distinct(StringComparer.OrdinalIgnoreCase)
                     .ToArray()
                 : Array.Empty<string>();
+            _requiredWorkspaceReviewTarget = requiredWorkspaceReviewTarget?.IsStructurallyValid() == true
+                ? requiredWorkspaceReviewTarget.CreateSnapshot()
+                : null;
         }
 
         public CopilotAgentExecutionRequirement Requirement { get; }
@@ -100,6 +106,8 @@ namespace ColorVision.Copilot
                 instruction += "\nReadLocalFile evidence is complete only after successful results cover every explicit current-turn file. Use an exact path for any file not covered by the bounded batch result:\n"
                     + BuildBoundedPathList(_requiredLocalFilePaths);
             }
+            if (_requiredWorkspaceReviewTarget != null)
+                instruction += "\n" + BuildRequiredReviewTargetInstruction();
             return instruction;
         }
 
@@ -178,7 +186,7 @@ namespace ColorVision.Copilot
 
                 var matchedIndex = Array.FindIndex(relevant, cursor + 1, step =>
                     group.Contains(step.Execution.ToolName, StringComparer.OrdinalIgnoreCase)
-                    && IsAcceptedEvidence(step));
+                    && IsAcceptedGroupEvidence(group, step));
                 if (matchedIndex < 0)
                 {
                     missingGroup = group;
@@ -203,11 +211,23 @@ namespace ColorVision.Copilot
             var hasUnattemptedFilePath = missingAttachedFilePaths
                 .Concat(missingLocalFilePaths)
                 .Any(path => !attemptedFilePaths.Contains(path, StringComparer.OrdinalIgnoreCase));
+            var reviewDiffAttempts = missingGroup.Contains("InspectGitDiff", StringComparer.OrdinalIgnoreCase)
+                ? relevant.Skip(cursor + 1)
+                    .Where(step => string.Equals(
+                        step.Execution.ToolName,
+                        "InspectGitDiff",
+                        StringComparison.OrdinalIgnoreCase))
+                    .ToArray()
+                : Array.Empty<CopilotAgentStepRecord>();
+            var hasReviewTargetMismatch = reviewDiffAttempts.Any(step =>
+                    IsAcceptedEvidence(step)
+                    && !MatchesRequiredReviewTarget(step.ToolCall.ToolInput))
+                && !reviewDiffAttempts.Any(step => MatchesRequiredReviewTarget(step.ToolCall.ToolInput));
             return new CopilotAgentExecutionContractEvaluation
             {
                 IsRequired = true,
                 IsSatisfied = false,
-                ShouldReinvoke = untriedNames.Length > 0 || hasUnattemptedFilePath,
+                ShouldReinvoke = untriedNames.Length > 0 || hasUnattemptedFilePath || hasReviewTargetMismatch,
                 Feedback = BuildFeedback(missingGroup, untriedNames, missingAttachedFilePaths, missingLocalFilePaths),
                 LastRelevantStep = relevant.LastOrDefault(),
                 MissingToolNames = missingGroup,
@@ -265,7 +285,9 @@ namespace ColorVision.Copilot
             }
             if (missingGroup.Contains("InspectGitDiff", StringComparer.OrdinalIgnoreCase))
             {
-                return "Execution contract: Review mode has not collected the relevant staged or unstaged patch. Call InspectGitDiff now after working-tree inspection, then base findings only on the returned bounded diff. If output_complete is false, disclose the bounded scope and do not infer that omitted changes are clean.";
+                return "Execution contract: Review mode has not collected a successful Git patch for the exact structured target. "
+                    + BuildRequiredReviewTargetInstruction()
+                    + " Base findings only on that returned bounded diff. If output_complete is false, disclose the bounded scope and do not infer that omitted changes are clean.";
             }
             if (missingGroup.Contains("RunShellCommand", StringComparer.OrdinalIgnoreCase))
             {
@@ -448,6 +470,76 @@ namespace ColorVision.Copilot
                     CopilotToolFailureCode.Normalize(step.Observation.FailureCode),
                     CopilotWorkspaceValidationService.ValidationFailedFailureCode,
                     StringComparison.Ordinal);
+        }
+
+        private bool IsAcceptedGroupEvidence(string[] group, CopilotAgentStepRecord step)
+        {
+            if (!IsAcceptedEvidence(step))
+                return false;
+            return !group.Contains("InspectGitDiff", StringComparer.OrdinalIgnoreCase)
+                || !string.Equals(step.Execution.ToolName, "InspectGitDiff", StringComparison.OrdinalIgnoreCase)
+                || MatchesRequiredReviewTarget(step.ToolCall.ToolInput);
+        }
+
+        private bool MatchesRequiredReviewTarget(CopilotAgentToolInput? input)
+        {
+            if (_requiredWorkspaceReviewTarget == null)
+                return true;
+
+            input ??= CopilotAgentToolInput.Empty;
+            var target = ReadStringArgument(input, "target");
+            var revision = ReadStringArgument(input, "revision");
+            var scope = ReadStringArgument(input, "scope");
+            return _requiredWorkspaceReviewTarget.Target switch
+            {
+                CopilotWorkspaceReviewTarget.BaseBranch =>
+                    string.Equals(target, "base_branch", StringComparison.OrdinalIgnoreCase)
+                    && string.Equals(revision, _requiredWorkspaceReviewTarget.Revision, StringComparison.Ordinal)
+                    && !HasArgument(input, "scope"),
+                CopilotWorkspaceReviewTarget.Commit =>
+                    string.Equals(target, "commit", StringComparison.OrdinalIgnoreCase)
+                    && string.Equals(revision, _requiredWorkspaceReviewTarget.Revision, StringComparison.OrdinalIgnoreCase)
+                    && !HasArgument(input, "scope"),
+                _ =>
+                    string.Equals(target, "working_tree", StringComparison.OrdinalIgnoreCase)
+                    && string.Equals(scope, "both", StringComparison.OrdinalIgnoreCase)
+                    && !HasArgument(input, "revision"),
+            };
+        }
+
+        private string BuildRequiredReviewTargetInstruction()
+        {
+            if (_requiredWorkspaceReviewTarget == null)
+                return "Call InspectGitDiff with the target named by the request.";
+
+            return _requiredWorkspaceReviewTarget.Target switch
+            {
+                CopilotWorkspaceReviewTarget.BaseBranch =>
+                    "Call InspectGitDiff with exactly target=\"base_branch\" and revision="
+                    + JsonSerializer.Serialize(_requiredWorkspaceReviewTarget.Revision)
+                    + "; omit scope.",
+                CopilotWorkspaceReviewTarget.Commit =>
+                    "Call InspectGitDiff with exactly target=\"commit\" and revision="
+                    + JsonSerializer.Serialize(_requiredWorkspaceReviewTarget.Revision)
+                    + "; omit scope.",
+                _ =>
+                    "Call InspectGitDiff with exactly target=\"working_tree\" and scope=\"both\"; omit revision.",
+            };
+        }
+
+        private static bool HasArgument(CopilotAgentToolInput input, string name) =>
+            input.Arguments.Keys.Any(key => string.Equals(key, name, StringComparison.OrdinalIgnoreCase));
+
+        private static string ReadStringArgument(CopilotAgentToolInput input, string name)
+        {
+            var pair = input.Arguments.FirstOrDefault(argument =>
+                string.Equals(argument.Key, name, StringComparison.OrdinalIgnoreCase));
+            return pair.Value switch
+            {
+                string text => text.Trim(),
+                JsonElement { ValueKind: JsonValueKind.String } element => element.GetString()?.Trim() ?? string.Empty,
+                _ => string.Empty,
+            };
         }
 
         private string GetMissingEvidenceCode(CopilotAgentExecutionContractEvaluation evaluation)

@@ -9,6 +9,31 @@ namespace ColorVision.UI.Tests;
 public sealed class CopilotProviderPayloadErrorTests
 {
     [Fact]
+    public async Task StreamingUsageUpdatesArePublishedBeforeTheResultCompletes()
+    {
+        using var handler = new SequentialHandler(
+            _ => CreateStreamingResponse(
+                "data: {\"choices\":[{\"delta\":{\"content\":\"Done.\"}}]}\n\n"
+                + "data: {\"choices\":[],\"usage\":{\"prompt_tokens\":10,\"completion_tokens\":4,\"total_tokens\":14,\"prompt_tokens_details\":{\"cached_tokens\":6}}}\n\n"
+                + "data: [DONE]\n\n"));
+        using var httpClient = new HttpClient(handler);
+        var service = CreateService(httpClient, maximumAttempts: 1);
+        var usageUpdates = new List<CopilotTokenUsage>();
+
+        var result = await service.StreamReplyAsync(
+            CreateProfile(CopilotProviderType.OpenAICompatible),
+            [new CopilotRequestMessage("user", "Report usage while streaming.")],
+            _ => { },
+            onRetry: null,
+            usageUpdates.Add,
+            CancellationToken.None);
+
+        var usage = Assert.Single(usageUpdates);
+        Assert.Equal(new CopilotTokenUsage(10, 4, 14, 6), usage);
+        Assert.Equal(usage, result.Usage);
+    }
+
+    [Fact]
     public async Task AnthropicOverloadBeforeContentIsRetried()
     {
         using var handler = new SequentialHandler(call => call == 1
