@@ -475,6 +475,8 @@ namespace ColorVision.Copilot
             }
             AppendPreventIdleSleep(builder, codexConfigOptions);
             AppendShellToolEnabled(builder, codexConfigOptions);
+            AppendExperimentalRequestUserInputEnabled(builder, codexConfigOptions);
+            AppendUpdatePlanEnabled(builder, codexConfigOptions);
             AppendIncludeEnvironmentContext(builder, codexConfigOptions);
             AppendAgentsEnabled(builder, codexConfigOptions);
             builder.Append("- Codex service_tier：");
@@ -756,6 +758,61 @@ namespace ColorVision.Copilot
             builder.AppendLine(codexConfigOptions.ConfiguredIncludeEnvironmentContext
                 ? " · 向模型注入请求开始时的 runtime_environment 数据块"
                 : " · 省略模型可见 runtime_environment；工具侧路径、沙箱与审批边界保持不变");
+        }
+
+        private static void AppendExperimentalRequestUserInputEnabled(
+            StringBuilder builder,
+            CopilotProjectInstructionDiscoveryOptions codexConfigOptions)
+        {
+            AppendToolEnabled(
+                builder,
+                "tools.experimental_request_user_input.enabled",
+                codexConfigOptions.ConfiguredExperimentalRequestUserInputEnabled,
+                codexConfigOptions.HasExperimentalRequestUserInputEnabledOverride,
+                codexConfigOptions.ExperimentalRequestUserInputEnabledSourceLabel,
+                "结构化澄清工具 AskUserQuestion 已注册",
+                "结构化澄清工具 AskUserQuestion 已移除；这不授予或替代审批");
+        }
+
+        private static void AppendUpdatePlanEnabled(
+            StringBuilder builder,
+            CopilotProjectInstructionDiscoveryOptions codexConfigOptions)
+        {
+            AppendToolEnabled(
+                builder,
+                "tools.update_plan.enabled",
+                codexConfigOptions.ConfiguredUpdatePlanEnabled,
+                codexConfigOptions.HasUpdatePlanEnabledOverride,
+                codexConfigOptions.UpdatePlanEnabledSourceLabel,
+                "复杂请求可启用任务清单与 plan/execute 完成循环",
+                "任务清单与 plan/execute 完成循环已移除");
+        }
+
+        private static void AppendToolEnabled(
+            StringBuilder builder,
+            string key,
+            bool enabled,
+            bool hasOverride,
+            string sourceLabel,
+            string enabledDescription,
+            string disabledDescription)
+        {
+            builder.Append("- Codex ")
+                .Append(key)
+                .Append('：')
+                .Append(enabled ? "true" : "false");
+            if (hasOverride)
+            {
+                builder.Append(" · 来源 ")
+                    .Append(sourceLabel.Length == 0 ? "Codex config.toml" : sourceLabel)
+                    .Append(" · 提交快照");
+            }
+            else
+            {
+                builder.Append(" · 官方默认");
+            }
+            builder.Append(" · ")
+                .AppendLine(enabled ? enabledDescription : disabledDescription);
         }
 
         private static void AppendAgentsEnabled(

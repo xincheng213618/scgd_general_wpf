@@ -98,6 +98,7 @@ namespace ColorVision.Copilot
             var availableTools = MergeAvailableTools(request, _toolRegistry.FindTools(request), externalToolLease.Tools, emit);
             emit(CopilotAgentEvent.RuntimeDiagnostic($"Request tool surface · {availableTools.Length}/{registeredToolCount} candidate tool(s) selected after mode and intent filtering."));
             var availableToolNames = availableTools.Select(tool => tool.Name).ToArray();
+            var checkpointToolNames = BuildCheckpointToolNames(request, availableToolNames);
             var hasBackgroundShellObservationTool =
                 availableToolNames.Any(toolName =>
                     string.Equals(
@@ -131,7 +132,7 @@ namespace ColorVision.Copilot
             var checkpointCompatibility = requestedCheckpoint?.EvaluateFor(
                 request.Profile,
                 capabilitySnapshot,
-                availableToolNames,
+                checkpointToolNames,
                 checkpointEnvironmentContext,
                 hookSurfaceSnapshot,
                 requireEnvironmentContextMatch: true);
@@ -305,9 +306,11 @@ namespace ColorVision.Copilot
             functionInvokingClient.AllowConcurrentInvocation = true;
             emit(CopilotAgentEvent.RuntimeDiagnostic(taskLedgerEnabled && agentModeEnabled
                 ? $"Agent task ledger enabled for a complex or explicitly planned request · plan/execute modes enabled · completion loop capped at {autonomousTaskPasses} pass(es)."
-                : taskLedgerAvailable
-                    ? "Agent task ledger skipped for this direct request; the runtime will execute the requested outcome without plan-only provider turns."
-                    : "Agent control tools disabled by the isolated runtime tool surface."));
+                : !request.CodexUpdatePlanEnabled
+                    ? "Agent task ledger disabled by Codex tools.update_plan.enabled=false; no plan/execute completion loop is registered."
+                    : taskLedgerAvailable
+                        ? "Agent task ledger skipped for this direct request; the runtime will execute the requested outcome without plan-only provider turns."
+                        : "Agent control tools disabled by the isolated runtime tool surface."));
 
             var usage = CopilotTokenUsage.Empty;
             var sessionPreparation = await PrepareAgentSessionAsync(
@@ -316,7 +319,7 @@ namespace ColorVision.Copilot
                 checkpointCompatibility,
                 requiresCheckpointReplan,
                 capabilitySnapshot,
-                availableToolNames,
+                checkpointToolNames,
                 checkpointEnvironmentContext,
                 hookSurfaceSnapshot,
                 previousEvidenceArtifacts,
@@ -681,7 +684,7 @@ namespace ColorVision.Copilot
                 capabilitySnapshot,
                 evidenceArtifacts,
                 taskEventJournal,
-                availableToolNames,
+                checkpointToolNames,
                 checkpointEnvironmentContext,
                 hookSurfaceSnapshot,
                 steeringRegistration,

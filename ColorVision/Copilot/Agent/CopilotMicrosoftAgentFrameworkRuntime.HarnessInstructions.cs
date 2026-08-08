@@ -90,7 +90,7 @@ namespace ColorVision.Copilot
                 builder.AppendLine("Call a tool only when the user explicitly asks to inspect, search, fetch, diagnose, or change something, or when current, local, attached, or externally verifiable evidence is necessary for a reliable answer.");
                 builder.AppendLine("When tools are needed, do not emit plans, working notes, or progress as user-facing answer text before or between tool calls. The runtime presents tool activity separately; reserve answer text for the final response after the last tool observation.");
             }
-            if (request.RuntimePurpose == CopilotAgentRuntimePurpose.Standard)
+            if (IsRequestUserInputToolEnabled(request))
                 builder.AppendLine("AskUserQuestion is a structured clarification pause, not an approval mechanism or progress update. Use it only when materially different valid choices remain after inspecting available context and the answer changes the outcome. Ask one concise question with 2-3 mutually exclusive options, put the recommended option first and suffix its label with '(Recommended)', then continue the same task after the answer. Call AskUserQuestion alone in a provider response; do not issue another function alongside it. Never use it to confirm a protected action, which must go through native approval.");
             if (hasWorkspacePathTools)
             {

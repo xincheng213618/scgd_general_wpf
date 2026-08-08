@@ -354,6 +354,20 @@ namespace ColorVision.Copilot
         public CopilotProjectInstructionConfigSources ShellToolEnabledSource { get; init; } =
             CopilotProjectInstructionConfigSources.None;
 
+        public bool ConfiguredExperimentalRequestUserInputEnabled { get; init; } = true;
+
+        public bool HasExperimentalRequestUserInputEnabledOverride { get; init; }
+
+        public CopilotProjectInstructionConfigSources ExperimentalRequestUserInputEnabledSource { get; init; } =
+            CopilotProjectInstructionConfigSources.None;
+
+        public bool ConfiguredUpdatePlanEnabled { get; init; } = true;
+
+        public bool HasUpdatePlanEnabledOverride { get; init; }
+
+        public CopilotProjectInstructionConfigSources UpdatePlanEnabledSource { get; init; } =
+            CopilotProjectInstructionConfigSources.None;
+
         public bool ConfiguredIncludeEnvironmentContext { get; init; } = true;
 
         public bool HasIncludeEnvironmentContextOverride { get; init; }
@@ -580,6 +594,8 @@ namespace ColorVision.Copilot
             || HasReviewModelOverride
             || HasPreventIdleSleepOverride
             || HasShellToolEnabledOverride
+            || HasExperimentalRequestUserInputEnabledOverride
+            || HasUpdatePlanEnabledOverride
             || HasIncludeEnvironmentContextOverride
             || HasAgentsEnabledOverride
             || HasInterruptMessageOverride
@@ -688,6 +704,20 @@ namespace ColorVision.Copilot
         {
             CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml features.shell_tool",
             CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml features.shell_tool",
+            _ => string.Empty,
+        };
+
+        public string ExperimentalRequestUserInputEnabledSourceLabel => ExperimentalRequestUserInputEnabledSource switch
+        {
+            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml tools.experimental_request_user_input.enabled",
+            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml tools.experimental_request_user_input.enabled",
+            _ => string.Empty,
+        };
+
+        public string UpdatePlanEnabledSourceLabel => UpdatePlanEnabledSource switch
+        {
+            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml tools.update_plan.enabled",
+            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml tools.update_plan.enabled",
             _ => string.Empty,
         };
 
@@ -896,6 +926,9 @@ namespace ColorVision.Copilot
         private const string PreventIdleSleepFeatureKey = "prevent_idle_sleep";
         private const string ShellToolEnabledKey = "features.shell_tool";
         private const string ShellToolEnabledFeatureKey = "shell_tool";
+        private const string ExperimentalRequestUserInputEnabledKey = "tools.experimental_request_user_input.enabled";
+        private const string UpdatePlanEnabledKey = "tools.update_plan.enabled";
+        private const string ToolsEnabledTableKey = "enabled";
         private const string IncludeEnvironmentContextKey = "include_environment_context";
         private const string AgentsEnabledKey = "agents.enabled";
         private const string AgentsEnabledTableKey = "enabled";
@@ -1156,6 +1189,22 @@ namespace ColorVision.Copilot
                 ShellToolEnabledSource = layer.HasShellToolEnabledOverride
                     ? source
                     : current.ShellToolEnabledSource,
+                ConfiguredExperimentalRequestUserInputEnabled = layer.HasExperimentalRequestUserInputEnabledOverride
+                    ? layer.ExperimentalRequestUserInputEnabled
+                    : current.ConfiguredExperimentalRequestUserInputEnabled,
+                HasExperimentalRequestUserInputEnabledOverride = current.HasExperimentalRequestUserInputEnabledOverride
+                    || layer.HasExperimentalRequestUserInputEnabledOverride,
+                ExperimentalRequestUserInputEnabledSource = layer.HasExperimentalRequestUserInputEnabledOverride
+                    ? source
+                    : current.ExperimentalRequestUserInputEnabledSource,
+                ConfiguredUpdatePlanEnabled = layer.HasUpdatePlanEnabledOverride
+                    ? layer.UpdatePlanEnabled
+                    : current.ConfiguredUpdatePlanEnabled,
+                HasUpdatePlanEnabledOverride = current.HasUpdatePlanEnabledOverride
+                    || layer.HasUpdatePlanEnabledOverride,
+                UpdatePlanEnabledSource = layer.HasUpdatePlanEnabledOverride
+                    ? source
+                    : current.UpdatePlanEnabledSource,
                 ConfiguredIncludeEnvironmentContext = layer.HasIncludeEnvironmentContextOverride
                     ? layer.IncludeEnvironmentContext
                     : current.ConfiguredIncludeEnvironmentContext,
@@ -1341,6 +1390,8 @@ namespace ColorVision.Copilot
                 || layer.HasReviewModelOverride
                 || layer.HasPreventIdleSleepOverride
                 || layer.HasShellToolEnabledOverride
+                || layer.HasExperimentalRequestUserInputEnabledOverride
+                || layer.HasUpdatePlanEnabledOverride
                 || layer.HasIncludeEnvironmentContextOverride
                 || layer.HasAgentsEnabledOverride
                 || layer.HasInterruptMessageOverride
@@ -1628,6 +1679,8 @@ namespace ColorVision.Copilot
             var reviewModel = string.Empty;
             var preventIdleSleep = false;
             var shellToolEnabled = true;
+            var experimentalRequestUserInputEnabled = true;
+            var updatePlanEnabled = true;
             var includeEnvironmentContext = true;
             var agentsEnabled = true;
             var interruptMessageEnabled = true;
@@ -1668,6 +1721,8 @@ namespace ColorVision.Copilot
             var hasReviewModelOverride = false;
             var hasPreventIdleSleepOverride = false;
             var hasShellToolEnabledOverride = false;
+            var hasExperimentalRequestUserInputEnabledOverride = false;
+            var hasUpdatePlanEnabledOverride = false;
             var hasIncludeEnvironmentContextOverride = false;
             var hasAgentsEnabledOverride = false;
             var hasInterruptMessageOverride = false;
@@ -1873,6 +1928,30 @@ namespace ColorVision.Copilot
                         continue;
                     }
                     hasShellToolEnabledOverride = true;
+                    continue;
+                }
+
+                if (string.Equals(assignment.Key, ExperimentalRequestUserInputEnabledKey, StringComparison.Ordinal))
+                {
+                    if (!TryParseTomlBoolean(
+                        assignment.Value,
+                        out experimentalRequestUserInputEnabled))
+                    {
+                        continue;
+                    }
+                    hasExperimentalRequestUserInputEnabledOverride = true;
+                    continue;
+                }
+
+                if (string.Equals(assignment.Key, UpdatePlanEnabledKey, StringComparison.Ordinal))
+                {
+                    if (!TryParseTomlBoolean(
+                        assignment.Value,
+                        out updatePlanEnabled))
+                    {
+                        continue;
+                    }
+                    hasUpdatePlanEnabledOverride = true;
                     continue;
                 }
 
@@ -2221,6 +2300,10 @@ namespace ColorVision.Copilot
                 HasPreventIdleSleepOverride = hasPreventIdleSleepOverride,
                 ShellToolEnabled = shellToolEnabled,
                 HasShellToolEnabledOverride = hasShellToolEnabledOverride,
+                ExperimentalRequestUserInputEnabled = experimentalRequestUserInputEnabled,
+                HasExperimentalRequestUserInputEnabledOverride = hasExperimentalRequestUserInputEnabledOverride,
+                UpdatePlanEnabled = updatePlanEnabled,
+                HasUpdatePlanEnabledOverride = hasUpdatePlanEnabledOverride,
                 IncludeEnvironmentContext = includeEnvironmentContext,
                 HasIncludeEnvironmentContextOverride = hasIncludeEnvironmentContextOverride,
                 AgentsEnabled = agentsEnabled,
@@ -2271,6 +2354,8 @@ namespace ColorVision.Copilot
                 || hasReviewModelOverride
                 || hasPreventIdleSleepOverride
                 || hasShellToolEnabledOverride
+                || hasExperimentalRequestUserInputEnabledOverride
+                || hasUpdatePlanEnabledOverride
                 || hasIncludeEnvironmentContextOverride
                 || hasAgentsEnabledOverride
                 || hasInterruptMessageOverride
@@ -2419,6 +2504,8 @@ namespace ColorVision.Copilot
             var inFeaturesTable = false;
             var inAgentsTable = false;
             var inAutoReviewTable = false;
+            var inExperimentalRequestUserInputTable = false;
+            var inUpdatePlanTable = false;
             for (var index = 0; index < lines.Length; index++)
             {
                 var line = StripComment(lines[index]).Trim();
@@ -2430,6 +2517,10 @@ namespace ColorVision.Copilot
                     inFeaturesTable = IsExactTableHeader(line, "features");
                     inAgentsTable = IsExactTableHeader(line, "agents");
                     inAutoReviewTable = IsExactTableHeader(line, "auto_review");
+                    inExperimentalRequestUserInputTable = IsExactTableHeader(
+                        line,
+                        "tools.experimental_request_user_input");
+                    inUpdatePlanTable = IsExactTableHeader(line, "tools.update_plan");
                     continue;
                 }
 
@@ -2461,6 +2552,12 @@ namespace ColorVision.Copilot
                         : inAutoReviewTable
                             && string.Equals(parsedKey, AutoReviewPolicyTableKey, StringComparison.Ordinal)
                                 ? AutoReviewPolicyKey
+                        : inExperimentalRequestUserInputTable
+                            && string.Equals(parsedKey, ToolsEnabledTableKey, StringComparison.Ordinal)
+                                ? ExperimentalRequestUserInputEnabledKey
+                        : inUpdatePlanTable
+                            && string.Equals(parsedKey, ToolsEnabledTableKey, StringComparison.Ordinal)
+                                ? UpdatePlanEnabledKey
                         : inRootTable
                             ? parsedKey
                             : string.Empty;
@@ -2480,6 +2577,8 @@ namespace ColorVision.Copilot
                     && !string.Equals(key, ReviewModelKey, StringComparison.Ordinal)
                     && !string.Equals(key, PreventIdleSleepKey, StringComparison.Ordinal)
                     && !string.Equals(key, ShellToolEnabledKey, StringComparison.Ordinal)
+                    && !string.Equals(key, ExperimentalRequestUserInputEnabledKey, StringComparison.Ordinal)
+                    && !string.Equals(key, UpdatePlanEnabledKey, StringComparison.Ordinal)
                     && !string.Equals(key, IncludeEnvironmentContextKey, StringComparison.Ordinal)
                     && !string.Equals(key, AgentsEnabledKey, StringComparison.Ordinal)
                     && !string.Equals(key, AgentsInterruptMessageKey, StringComparison.Ordinal)
@@ -3381,6 +3480,14 @@ namespace ColorVision.Copilot
             public bool ShellToolEnabled { get; init; } = true;
 
             public bool HasShellToolEnabledOverride { get; init; }
+
+            public bool ExperimentalRequestUserInputEnabled { get; init; } = true;
+
+            public bool HasExperimentalRequestUserInputEnabledOverride { get; init; }
+
+            public bool UpdatePlanEnabled { get; init; } = true;
+
+            public bool HasUpdatePlanEnabledOverride { get; init; }
 
             public bool IncludeEnvironmentContext { get; init; } = true;
 

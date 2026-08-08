@@ -233,6 +233,10 @@ namespace ColorVision.Copilot
 
         internal bool CodexShellToolEnabled { get; init; } = true;
 
+        internal bool CodexExperimentalRequestUserInputEnabled { get; init; } = true;
+
+        internal bool CodexUpdatePlanEnabled { get; init; } = true;
+
         internal bool CodexIncludeEnvironmentContext { get; init; } = true;
 
         internal CopilotCodexApprovalPolicy CodexApprovalPolicy { get; init; } =
@@ -419,6 +423,8 @@ namespace ColorVision.Copilot
                 CodexWebSearchMode = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredWebSearchMode,
                 CodexSandboxMode = codexSandboxMode,
                 CodexShellToolEnabled = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredShellToolEnabled,
+                CodexExperimentalRequestUserInputEnabled = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredExperimentalRequestUserInputEnabled,
+                CodexUpdatePlanEnabled = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredUpdatePlanEnabled,
                 CodexIncludeEnvironmentContext = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredIncludeEnvironmentContext,
                 CodexApprovalPolicy = codexApprovalPolicy,
                 CodexApprovalsReviewer = codexApprovalsReviewer,
@@ -511,6 +517,8 @@ namespace ColorVision.Copilot
                 CodexWebSearchMode = plan.CodexWebSearchMode,
                 CodexSandboxMode = plan.CodexSandboxMode,
                 CodexShellToolEnabled = plan.CodexShellToolEnabled,
+                CodexExperimentalRequestUserInputEnabled = plan.CodexExperimentalRequestUserInputEnabled,
+                CodexUpdatePlanEnabled = plan.CodexUpdatePlanEnabled,
                 CodexIncludeEnvironmentContext = plan.CodexIncludeEnvironmentContext,
                 CodexApprovalPolicy = plan.CodexApprovalPolicy,
                 CodexApprovalsReviewer = plan.CodexApprovalsReviewer,

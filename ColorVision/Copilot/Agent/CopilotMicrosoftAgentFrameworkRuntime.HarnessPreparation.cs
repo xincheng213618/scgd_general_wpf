@@ -50,15 +50,15 @@ namespace ColorVision.Copilot
                     $"Agent execution contract enabled · {executionContract.Description} · accepted tools: {string.Join(", ", executionContract.AcceptedToolNames)}."));
             }
             var frameworkTools = bridge.CreateFunctions();
-            if (request.RuntimePurpose == CopilotAgentRuntimePurpose.Standard)
+            if (IsRequestUserInputToolEnabled(request))
                 frameworkTools.Add(new HarnessToolBridge.UserQuestionAIFunction(_userQuestionCoordinator, request, emit));
             var tokenBudget = CopilotAgentTokenBudget.Create(request.Profile, runBudget);
             var compactionStrategy = new ContextWindowCompactionStrategy(
                 tokenBudget.ContextWindowTokens,
                 request.Profile.MaxTokens);
             var autonomousTaskPasses = runBudget.MaxAgentPasses;
-            var taskLedgerAvailable = request.HarnessFeatures.HasFlag(CopilotAgentHarnessFeatures.TaskLedger);
-            var taskLedgerEnabled = taskLedgerAvailable && CopilotToolIntentPolicy.NeedsTaskLedger(request);
+            var taskLedgerAvailable = IsTaskLedgerAvailable(request);
+            var taskLedgerEnabled = IsUpdatePlanToolEnabled(request);
             var agentModeEnabled = taskLedgerEnabled && request.HarnessFeatures.HasFlag(CopilotAgentHarnessFeatures.AgentMode);
             var minimalDelegatedFinalization = CanUseMinimalDelegatedFinalizationInstructions(
                 request,
@@ -117,6 +117,40 @@ namespace ColorVision.Copilot
                 agentSkills.Dispose();
                 throw;
             }
+        }
+
+        internal static bool IsRequestUserInputToolEnabled(CopilotAgentRequest request)
+        {
+            ArgumentNullException.ThrowIfNull(request);
+            return request.CodexExperimentalRequestUserInputEnabled
+                && request.RuntimePurpose == CopilotAgentRuntimePurpose.Standard;
+        }
+
+        internal static bool IsTaskLedgerAvailable(CopilotAgentRequest request)
+        {
+            ArgumentNullException.ThrowIfNull(request);
+            return request.CodexUpdatePlanEnabled
+                && request.HarnessFeatures.HasFlag(CopilotAgentHarnessFeatures.TaskLedger);
+        }
+
+        internal static bool IsUpdatePlanToolEnabled(CopilotAgentRequest request) =>
+            IsTaskLedgerAvailable(request) && CopilotToolIntentPolicy.NeedsTaskLedger(request);
+
+        internal static IReadOnlyList<string> BuildCheckpointToolNames(
+            CopilotAgentRequest request,
+            IReadOnlyList<string> availableToolNames)
+        {
+            ArgumentNullException.ThrowIfNull(request);
+            ArgumentNullException.ThrowIfNull(availableToolNames);
+            var names = availableToolNames
+                .Where(name => !string.IsNullOrWhiteSpace(name))
+                .Select(name => name.Trim())
+                .ToList();
+            if (IsRequestUserInputToolEnabled(request))
+                names.Add("AskUserQuestion");
+            if (IsUpdatePlanToolEnabled(request))
+                names.Add("update_plan");
+            return names.Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
         }
     }
 }

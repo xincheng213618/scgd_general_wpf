@@ -288,6 +288,22 @@ namespace ColorVision.Copilot
             builder.AppendLine(effective.ConfiguredShellToolEnabled
                 ? "按请求意图暴露命令启动工具"
                 : "隐藏命令启动工具并拒绝旧计划、恢复状态或注入调用；已有后台命令仍可观察或停止");
+            AppendToolEnabled(
+                builder,
+                "tools.experimental_request_user_input.enabled",
+                effective.ConfiguredExperimentalRequestUserInputEnabled,
+                effective.HasExperimentalRequestUserInputEnabledOverride,
+                effective.ExperimentalRequestUserInputEnabledSourceLabel,
+                "结构化澄清工具 AskUserQuestion 已注册",
+                "结构化澄清工具 AskUserQuestion 已移除；这不授予或替代审批");
+            AppendToolEnabled(
+                builder,
+                "tools.update_plan.enabled",
+                effective.ConfiguredUpdatePlanEnabled,
+                effective.HasUpdatePlanEnabledOverride,
+                effective.UpdatePlanEnabledSourceLabel,
+                "复杂请求可启用任务清单与 plan/execute 完成循环",
+                "任务清单与 plan/execute 完成循环已移除");
             builder.Append("Codex include_environment_context：")
                 .Append(effective.ConfiguredIncludeEnvironmentContext ? "true" : "false");
             if (effective.HasIncludeEnvironmentContextOverride)
@@ -569,6 +585,32 @@ namespace ColorVision.Copilot
                 foreach (var configPath in effective.AppliedProjectConfigFilePaths)
                     builder.Append("  - ").AppendLine(FormatPath(configPath, workspacePath));
             }
+        }
+
+        private static void AppendToolEnabled(
+            StringBuilder builder,
+            string key,
+            bool enabled,
+            bool hasOverride,
+            string sourceLabel,
+            string enabledDescription,
+            string disabledDescription)
+        {
+            builder.Append("Codex ")
+                .Append(key)
+                .Append('：')
+                .Append(enabled ? "true" : "false");
+            if (hasOverride)
+            {
+                builder.Append(" · 来源 ")
+                    .Append(sourceLabel.Length == 0 ? "Codex config.toml" : sourceLabel)
+                    .Append(" 提交快照；");
+            }
+            else
+            {
+                builder.Append(" · 官方默认；");
+            }
+            builder.AppendLine(enabled ? enabledDescription : disabledDescription);
         }
 
         private static void AppendTarget(

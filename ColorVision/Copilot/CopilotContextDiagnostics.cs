@@ -69,6 +69,18 @@ namespace ColorVision.Copilot
 
         public string CodexShellToolEnabledSourceLabel { get; init; } = string.Empty;
 
+        public bool CodexExperimentalRequestUserInputEnabled { get; init; } = true;
+
+        public bool HasCodexExperimentalRequestUserInputEnabledOverride { get; init; }
+
+        public string CodexExperimentalRequestUserInputEnabledSourceLabel { get; init; } = string.Empty;
+
+        public bool CodexUpdatePlanEnabled { get; init; } = true;
+
+        public bool HasCodexUpdatePlanEnabledOverride { get; init; }
+
+        public string CodexUpdatePlanEnabledSourceLabel { get; init; } = string.Empty;
+
         public bool CodexIncludeEnvironmentContext { get; init; } = true;
 
         public bool HasCodexIncludeEnvironmentContextOverride { get; init; }
@@ -479,6 +491,24 @@ namespace ColorVision.Copilot
                 builder.Append("（Codex 默认开启）");
             }
             builder.AppendLine();
+            AppendToolEnabled(
+                builder,
+                "结构化澄清工具",
+                "tools.experimental_request_user_input.enabled",
+                snapshot.CodexExperimentalRequestUserInputEnabled,
+                snapshot.HasCodexExperimentalRequestUserInputEnabledOverride,
+                snapshot.CodexExperimentalRequestUserInputEnabledSourceLabel,
+                "AskUserQuestion 可用",
+                "AskUserQuestion 已移除；不影响原生审批");
+            AppendToolEnabled(
+                builder,
+                "任务清单工具",
+                "tools.update_plan.enabled",
+                snapshot.CodexUpdatePlanEnabled,
+                snapshot.HasCodexUpdatePlanEnabledOverride,
+                snapshot.CodexUpdatePlanEnabledSourceLabel,
+                "复杂请求可启用任务清单与完成循环",
+                "任务清单与 plan/execute 完成循环已移除");
             builder.Append("运行环境上下文：")
                 .Append(snapshot.CodexIncludeEnvironmentContext ? "注入" : "省略");
             if (snapshot.HasCodexIncludeEnvironmentContextOverride)
@@ -937,6 +967,36 @@ namespace ColorVision.Copilot
             AppendAgentExtensionDetails(builder, snapshot.AgentExtensions, snapshot.AgentExtensionIssues);
             AppendOptimizationSuggestions(builder, snapshot);
             return builder.ToString().TrimEnd();
+        }
+
+        private static void AppendToolEnabled(
+            StringBuilder builder,
+            string label,
+            string key,
+            bool enabled,
+            bool hasOverride,
+            string sourceLabel,
+            string enabledDescription,
+            string disabledDescription)
+        {
+            builder.Append(label)
+                .Append('：')
+                .Append(enabled ? "开启" : "关闭");
+            if (hasOverride)
+            {
+                builder.Append('（')
+                    .Append(string.IsNullOrWhiteSpace(sourceLabel) ? "Codex config.toml" : sourceLabel.Trim())
+                    .Append(" 提交快照；")
+                    .Append(enabled ? enabledDescription : disabledDescription)
+                    .Append('）');
+            }
+            else
+            {
+                builder.Append("（Codex 默认开启；")
+                    .Append(key)
+                    .Append("）");
+            }
+            builder.AppendLine();
         }
 
         private static void AppendDeveloperInstructionsSnapshot(

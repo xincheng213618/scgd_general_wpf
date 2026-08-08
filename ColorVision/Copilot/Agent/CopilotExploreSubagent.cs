@@ -578,6 +578,8 @@ namespace ColorVision.Copilot
                 CodexWebSearchMode = parentRequest.CodexWebSearchMode,
                 CodexSandboxMode = CopilotCodexSandboxMode.ReadOnly,
                 CodexShellToolEnabled = parentRequest.CodexShellToolEnabled,
+                CodexExperimentalRequestUserInputEnabled = parentRequest.CodexExperimentalRequestUserInputEnabled,
+                CodexUpdatePlanEnabled = parentRequest.CodexUpdatePlanEnabled,
                 CodexIncludeEnvironmentContext = parentRequest.CodexIncludeEnvironmentContext,
                 CodexApprovalPolicy = parentRequest.CodexApprovalPolicy,
                 CodexApprovalsReviewer = parentRequest.CodexApprovalsReviewer,
