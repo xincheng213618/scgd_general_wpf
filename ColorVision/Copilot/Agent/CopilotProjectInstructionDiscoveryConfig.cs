@@ -155,6 +155,9 @@ namespace ColorVision.Copilot
 
         public IReadOnlyList<string> AppliedProjectConfigFilePaths { get; init; } = Array.Empty<string>();
 
+        internal IReadOnlyList<CopilotCodexCustomSubagentDefinition> CustomSubagents { get; init; } =
+            Array.Empty<CopilotCodexCustomSubagentDefinition>();
+
         public string DeveloperInstructions { get; init; } = string.Empty;
 
         public bool HasDeveloperInstructionsOverride { get; init; }
@@ -687,7 +690,7 @@ namespace ColorVision.Copilot
         string Source,
         CopilotProjectInstructionDiscoveryOptions Options);
 
-    internal static class CopilotProjectInstructionDiscoveryConfig
+    internal static partial class CopilotProjectInstructionDiscoveryConfig
     {
         internal const int DefaultMaximumBytes = 32 * 1024;
         internal const int MinimumMaximumBytes = 0;
@@ -789,6 +792,11 @@ namespace ColorVision.Copilot
                     includeProjectRootMarkers: true);
             }
 
+            options = options with
+            {
+                CustomSubagents = DiscoverCodexHomeCustomSubagents(normalizedRoot),
+            };
+
             return new CopilotCodexHomeConfigSnapshot(globalSource, options);
         }
 
@@ -844,6 +852,14 @@ namespace ColorVision.Copilot
                     includeProjectRootMarkers: false);
                 appliedConfigFilePaths.Add(Path.GetFullPath(configPath));
             }
+
+            options = options with
+            {
+                CustomSubagents = ApplyTrustedProjectCustomSubagents(
+                    options.CustomSubagents,
+                    normalizedProjectRoot,
+                    EnumerateProjectConfigDirectories(normalizedProjectRoot, workingDirectoryPath)),
+            };
 
             return options with
             {

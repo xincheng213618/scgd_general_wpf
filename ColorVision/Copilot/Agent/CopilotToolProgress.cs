@@ -34,6 +34,8 @@ namespace ColorVision.Copilot
     {
         public string RoleId { get; init; } = string.Empty;
 
+        public string AgentName { get; init; } = string.Empty;
+
         public string RunId { get; init; } = string.Empty;
 
         public string ResumeFromRunId { get; init; } = string.Empty;
@@ -193,6 +195,7 @@ namespace ColorVision.Copilot
                 delegatedRun = new CopilotDelegatedRunProgress
                 {
                     RoleId = NormalizeIdentifier(update.DelegatedRun.RoleId),
+                    AgentName = NormalizeIdentifier(update.DelegatedRun.AgentName),
                     RunId = NormalizeIdentifier(update.DelegatedRun.RunId),
                     ResumeFromRunId = NormalizeIdentifier(update.DelegatedRun.ResumeFromRunId),
                     Model = NormalizeModel(update.DelegatedRun.Model),
@@ -251,6 +254,7 @@ namespace ColorVision.Copilot
                 return left == right;
 
             return string.Equals(left.RoleId, right.RoleId, StringComparison.Ordinal)
+                && string.Equals(left.AgentName, right.AgentName, StringComparison.Ordinal)
                 && string.Equals(left.RunId, right.RunId, StringComparison.Ordinal)
                 && string.Equals(left.ResumeFromRunId, right.ResumeFromRunId, StringComparison.Ordinal)
                 && string.Equals(left.Model, right.Model, StringComparison.Ordinal)

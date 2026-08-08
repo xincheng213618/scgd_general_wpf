@@ -212,6 +212,7 @@ namespace ColorVision.Copilot
             var originalErrorMessage = ErrorMessage;
             var originalFailureCode = FailureCode;
             var originalDelegatedRoleId = DelegatedRoleId;
+            var originalDelegatedAgentName = DelegatedAgentName;
             var originalDelegatedRunId = DelegatedRunId;
             var originalDelegatedResumeFromRunId = DelegatedResumeFromRunId;
             var originalDelegatedModel = DelegatedModel;
@@ -254,6 +255,11 @@ namespace ColorVision.Copilot
                 ? string.Empty
                 : CopilotToolFailureCode.Normalize(FailureCode);
             DelegatedRoleId = SanitizeIdentifier(DelegatedRoleId);
+            DelegatedAgentName = CopilotCodexCustomSubagentSelection.TryNormalizeName(
+                DelegatedAgentName,
+                out var delegatedAgentName)
+                    ? delegatedAgentName
+                    : string.Empty;
             DelegatedRunId = SanitizeIdentifier(DelegatedRunId);
             DelegatedResumeFromRunId = SanitizeIdentifier(DelegatedResumeFromRunId);
             DelegatedModel = CopilotConfiguredModelSelection.TryNormalize(DelegatedModel, out var delegatedModel)
@@ -314,6 +320,7 @@ namespace ColorVision.Copilot
                 || !string.Equals(originalErrorMessage, ErrorMessage, StringComparison.Ordinal)
                 || !string.Equals(originalFailureCode, FailureCode, StringComparison.Ordinal)
                 || !string.Equals(originalDelegatedRoleId, DelegatedRoleId, StringComparison.Ordinal)
+                || !string.Equals(originalDelegatedAgentName, DelegatedAgentName, StringComparison.Ordinal)
                 || !string.Equals(originalDelegatedRunId, DelegatedRunId, StringComparison.Ordinal)
                 || !string.Equals(originalDelegatedResumeFromRunId, DelegatedResumeFromRunId, StringComparison.Ordinal)
                 || !string.Equals(originalDelegatedModel, DelegatedModel, StringComparison.Ordinal)

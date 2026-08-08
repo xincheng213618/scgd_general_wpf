@@ -208,9 +208,12 @@ namespace ColorVision.Copilot
                 builder.AppendLine();
 
             if (!string.IsNullOrWhiteSpace(run.Model)
-                || !string.IsNullOrWhiteSpace(run.ReasoningEffort))
+                || !string.IsNullOrWhiteSpace(run.ReasoningEffort)
+                || !string.IsNullOrWhiteSpace(run.AgentName))
             {
-                builder.Append("配置：model ")
+                builder.Append("配置：agent ")
+                    .Append(string.IsNullOrWhiteSpace(run.AgentName) ? "none" : run.AgentName)
+                    .Append(" · model ")
                     .Append(string.IsNullOrWhiteSpace(run.Model) ? "unknown" : run.Model)
                     .Append(" · reasoning ")
                     .Append(string.IsNullOrWhiteSpace(run.ReasoningEffort) ? "unknown" : run.ReasoningEffort)

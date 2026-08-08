@@ -95,11 +95,31 @@ namespace ColorVision.Copilot
             if (!TryReadArguments(
                 toolInput?.Arguments,
                 out var task,
+                out var agent,
                 out var resumeFromRunId,
                 out var model,
                 out var reasoningEffort,
                 out var validationError))
                 return Failure(CopilotToolFailureKind.Validation, validationError);
+
+            CopilotCodexCustomSubagentDefinition? customSubagent = null;
+            if (agent.Length > 0)
+            {
+                customSubagent = CopilotCodexCustomSubagentSelection.Find(request.CodexCustomSubagents, agent);
+                if (customSubagent == null)
+                {
+                    var availableNames = request.CodexCustomSubagents
+                        .Select(definition => definition.Name)
+                        .Take(8)
+                        .ToArray();
+                    return Failure(
+                        CopilotToolFailureKind.Validation,
+                        availableNames.Length == 0
+                            ? $"Argument 'agent' names '{agent}', but this submitted request has no custom subagents."
+                            : $"Argument 'agent' names unknown custom subagent '{agent}'. Available: {string.Join(", ", availableNames)}.");
+                }
+                agent = customSubagent.Name;
+            }
 
             var coordinator = CopilotSubagentCoordination.GetCoordinator(request);
             CopilotAgentSessionCheckpoint? resumeCheckpoint = null;
@@ -123,6 +143,7 @@ namespace ColorVision.Copilot
                 ResumeFromRunId = resumeFromRunId,
                 ResumeCheckpoint = resumeCheckpoint,
                 Task = task,
+                Agent = agent,
                 Model = model,
                 ReasoningEffort = reasoningEffort,
                 RequestTokenBudget = lease.RequestTokenBudget,
@@ -203,6 +224,7 @@ namespace ColorVision.Copilot
                 DelegatedRunUsage = new CopilotDelegatedRunUsage
                 {
                     RoleId = _role.Id,
+                    AgentName = childRun.Agent,
                     RunId = childRun.RunId,
                     ResumeFromRunId = childRun.ResumeFromRunId,
                     Model = effectiveModel,
@@ -272,6 +294,7 @@ namespace ColorVision.Copilot
                 DelegatedRun = new CopilotDelegatedRunProgress
                 {
                     RoleId = _role.Id,
+                    AgentName = runRequest.Agent,
                     RunId = runRequest.RunId,
                     ResumeFromRunId = runRequest.ResumeFromRunId,
                     Model = CopilotSubagentRunner.ResolveChildModel(request, runRequest),
@@ -300,6 +323,7 @@ namespace ColorVision.Copilot
                 DelegatedRunUsage = new CopilotDelegatedRunUsage
                 {
                     RoleId = _role.Id,
+                    AgentName = runRequest.Agent,
                     RunId = runRequest.RunId,
                     ResumeFromRunId = runRequest.ResumeFromRunId,
                     Model = CopilotSubagentRunner.ResolveChildModel(request, runRequest),
@@ -336,6 +360,13 @@ namespace ColorVision.Copilot
                       "maxLength": 128,
                       "pattern": "^[A-Za-z0-9-]+$"
                     },
+                    "agent": {
+                      "type": "string",
+                      "description": "Optional custom agent name from the submitted trusted configuration snapshot. It supplies additional instructions and runtime defaults but cannot change this delegate tool's fixed read-only capabilities, sandbox, approvals, MCP servers, or skills.",
+                      "minLength": 1,
+                      "maxLength": 64,
+                      "pattern": "^[A-Za-z][A-Za-z0-9_-]*$"
+                    },
                     "model": {
                       "type": "string",
                       "description": "Optional model for this spawned subagent. It overrides agents.default_subagent_model while retaining the parent provider, endpoint, credentials, sandbox, and approval boundaries.",
@@ -364,6 +395,7 @@ namespace ColorVision.Copilot
             var builder = new StringBuilder();
             builder.Append('[').Append(_role.DisplayName).AppendLine(" subagent result]");
             builder.Append("role: ").AppendLine(_role.Id);
+            builder.Append("agent: ").AppendLine(string.IsNullOrWhiteSpace(runRequest.Agent) ? "none" : runRequest.Agent);
             builder.Append("run_id: ").AppendLine(runRequest.RunId);
             builder.Append("resumed_from: ").AppendLine(string.IsNullOrWhiteSpace(runRequest.ResumeFromRunId) ? "none" : runRequest.ResumeFromRunId);
             builder.Append("resume_succeeded: ").AppendLine(string.IsNullOrWhiteSpace(runRequest.ResumeFromRunId)
@@ -376,7 +408,7 @@ namespace ColorVision.Copilot
             {
                 builder.Append("resume_hint: use resume_from=\"")
                     .Append(runRequest.RunId)
-                    .AppendLine("\" with the same delegate tool and the same model/reasoning_effort overrides");
+                    .AppendLine("\" with the same delegate tool and the same agent/model/reasoning_effort overrides");
             }
             builder.Append("stop_reason: ").AppendLine(result.StopReason.ToString());
             builder.Append("model: ").AppendLine(effectiveModel);
@@ -423,12 +455,14 @@ namespace ColorVision.Copilot
         private static bool TryReadArguments(
             IReadOnlyDictionary<string, object?>? arguments,
             out string task,
+            out string agent,
             out string resumeFromRunId,
             out string model,
             out string reasoningEffort,
             out string errorMessage)
         {
             task = string.Empty;
+            agent = string.Empty;
             resumeFromRunId = string.Empty;
             model = string.Empty;
             reasoningEffort = string.Empty;
@@ -448,6 +482,14 @@ namespace ColorVision.Copilot
             if (task.Length is 0 or > CopilotSubagentRunner.MaximumTaskCharacters)
             {
                 errorMessage = $"Argument 'task' must contain 1 to {CopilotSubagentRunner.MaximumTaskCharacters} characters.";
+                return false;
+            }
+
+            var agentPair = arguments.FirstOrDefault(candidate => string.Equals(candidate.Key, "agent", StringComparison.OrdinalIgnoreCase));
+            if (agentPair.Key != null
+                && !CopilotCodexCustomSubagentSelection.TryNormalizeName(ReadString(agentPair.Value), out agent))
+            {
+                errorMessage = $"Argument 'agent' must be a 1 to {CopilotCodexCustomSubagentDefinition.MaximumNameCharacters} character name containing only ASCII letters, digits, '-' or '_', and must start with a letter.";
                 return false;
             }
 

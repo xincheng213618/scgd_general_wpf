@@ -95,6 +95,9 @@ namespace ColorVision.Copilot
         internal CopilotCodexReasoningEffort CodexDefaultSubagentReasoningEffort { get; init; } =
             CopilotCodexReasoningEffort.Unspecified;
 
+        internal IReadOnlyList<CopilotCodexCustomSubagentDefinition> CodexCustomSubagents { get; init; } =
+            Array.Empty<CopilotCodexCustomSubagentDefinition>();
+
         internal int? ToolOutputTokenLimitOverride { get; init; }
 
         internal CopilotCodexReasoningEffort CodexReasoningEffort { get; init; } =
@@ -164,6 +167,8 @@ namespace ColorVision.Copilot
     public sealed class CopilotDelegatedRunUsage
     {
         public string RoleId { get; init; } = string.Empty;
+
+        public string AgentName { get; init; } = string.Empty;
 
         public string RunId { get; init; } = string.Empty;
 

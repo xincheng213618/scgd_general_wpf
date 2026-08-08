@@ -11,7 +11,7 @@ namespace ColorVision.Copilot
 {
     public sealed partial class CopilotAgentTraceEntry : ViewModelBase
     {
-        public const int CurrentSchemaVersion = 14;
+        public const int CurrentSchemaVersion = 15;
         private const int MaxSummaryLength = 800;
         private const int MaxDelegatedAnswerLength = 20_000;
         internal const int MaxPersistedHookRuns = 64;
@@ -84,6 +84,8 @@ namespace ColorVision.Copilot
         public string DelegatedResumeFromRunId { get; set; } = string.Empty;
 
         public string DelegatedRoleId { get; set; } = string.Empty;
+
+        public string DelegatedAgentName { get; set; } = string.Empty;
 
         public string DelegatedModel { get; set; } = string.Empty;
 
@@ -200,6 +202,8 @@ namespace ColorVision.Copilot
         public bool ShouldSerializeDelegatedResumeFromRunId() => !string.IsNullOrEmpty(DelegatedResumeFromRunId);
 
         public bool ShouldSerializeDelegatedRoleId() => !string.IsNullOrEmpty(DelegatedRoleId);
+
+        public bool ShouldSerializeDelegatedAgentName() => !string.IsNullOrEmpty(DelegatedAgentName);
 
         public bool ShouldSerializeDelegatedModel() => !string.IsNullOrEmpty(DelegatedModel);
 
@@ -435,6 +439,7 @@ namespace ColorVision.Copilot
             if (reportedProgress?.DelegatedRun != null)
             {
                 entry.DelegatedRoleId = SanitizeIdentifier(reportedProgress.DelegatedRun.RoleId);
+                entry.DelegatedAgentName = SanitizeIdentifier(reportedProgress.DelegatedRun.AgentName);
                 entry.DelegatedRunId = SanitizeIdentifier(reportedProgress.DelegatedRun.RunId);
                 entry.DelegatedResumeFromRunId = SanitizeIdentifier(reportedProgress.DelegatedRun.ResumeFromRunId);
                 entry.DelegatedModel = Sanitize(reportedProgress.DelegatedRun.Model);
@@ -477,6 +482,7 @@ namespace ColorVision.Copilot
                 if (result.DelegatedRunUsage != null)
                 {
                     entry.DelegatedRoleId = SanitizeIdentifier(result.DelegatedRunUsage.RoleId);
+                    entry.DelegatedAgentName = SanitizeIdentifier(result.DelegatedRunUsage.AgentName);
                     entry.DelegatedRunId = SanitizeIdentifier(result.DelegatedRunUsage.RunId);
                     entry.DelegatedResumeFromRunId = SanitizeIdentifier(result.DelegatedRunUsage.ResumeFromRunId);
                     entry.DelegatedModel = Sanitize(result.DelegatedRunUsage.Model);
