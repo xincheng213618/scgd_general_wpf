@@ -228,6 +228,8 @@ namespace ColorVision.Copilot
         internal CopilotCodexWebSearchMode CodexWebSearchMode { get; init; } =
             CopilotCodexWebSearchMode.Unspecified;
 
+        internal bool CodexAgentsEnabled { get; init; } = true;
+
         internal int? ModelContextWindowTokensOverride { get; init; }
 
         internal int? ToolOutputTokenLimitOverride { get; init; }
@@ -335,7 +337,8 @@ namespace ColorVision.Copilot
             };
             var requiresWorkspaceEvidence = CopilotToolIntentPolicy.NeedsLocalEvidence(intentProbe);
             var requiresDelegatedWorkspaceEvidence =
-                CopilotToolIntentPolicy.ExplicitlyRequiresDelegatedWorkspaceEvidence(intentProbe);
+                hostContext.ProjectInstructionDiscoveryOptions.ConfiguredAgentsEnabled
+                && CopilotToolIntentPolicy.ExplicitlyRequiresDelegatedWorkspaceEvidence(intentProbe);
             var writableLocalRootPaths = CopilotToolIntentPolicy.NeedsWorkspaceCreate(intentProbe)
                 || CopilotToolIntentPolicy.NeedsWorkspaceEdit(intentProbe)
                 ? requestedWritableLocalRootPaths
@@ -371,6 +374,7 @@ namespace ColorVision.Copilot
                 ActiveDocumentPath = hostContext.ActiveDocumentPath,
                 ConfiguredDeveloperInstructions = hostContext.ProjectInstructionDiscoveryOptions.DeveloperInstructions,
                 CodexWebSearchMode = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredWebSearchMode,
+                CodexAgentsEnabled = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredAgentsEnabled,
                 ModelContextWindowTokensOverride = hostContext.ProjectInstructionDiscoveryOptions.HasModelContextWindowOverride
                     ? hostContext.ProjectInstructionDiscoveryOptions.ConfiguredModelContextWindowTokens
                     : null,
@@ -440,6 +444,7 @@ namespace ColorVision.Copilot
                 ActiveDocumentPath = plan.ActiveDocumentPath,
                 ConfiguredDeveloperInstructions = plan.ConfiguredDeveloperInstructions,
                 CodexWebSearchMode = plan.CodexWebSearchMode,
+                CodexAgentsEnabled = plan.CodexAgentsEnabled,
                 ToolOutputTokenLimitOverride = plan.ToolOutputTokenLimitOverride,
                 CodexReasoningEffort = plan.CodexReasoningEffort,
                 CodexReasoningSummary = plan.CodexReasoningSummary,

@@ -85,6 +85,13 @@ namespace ColorVision.Copilot
             CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(request);
+            if (!request.CodexAgentsEnabled)
+            {
+                return Failure(
+                    CopilotToolFailureKind.Authorization,
+                    "Codex agents.enabled=false disables subagent tools for this submitted turn.",
+                    "codex_agents_disabled");
+            }
             if (!TryReadArguments(toolInput?.Arguments, out var task, out var resumeFromRunId, out var validationError))
                 return Failure(CopilotToolFailureKind.Validation, validationError);
 
@@ -342,7 +349,10 @@ namespace ColorVision.Copilot
             return builder.ToString();
         }
 
-        private CopilotToolResult Failure(CopilotToolFailureKind failureKind, string errorMessage)
+        private CopilotToolResult Failure(
+            CopilotToolFailureKind failureKind,
+            string errorMessage,
+            string failureCode = "")
         {
             return new CopilotToolResult
             {
@@ -351,6 +361,7 @@ namespace ColorVision.Copilot
                 Summary = $"{_role.DisplayName} 子 Agent 未启动。",
                 ErrorMessage = errorMessage,
                 FailureKind = failureKind,
+                FailureCode = failureCode,
             };
         }
 

@@ -36,6 +36,12 @@ namespace ColorVision.Copilot
 
         public string CodexPreventIdleSleepSourceLabel { get; init; } = string.Empty;
 
+        public bool CodexAgentsEnabled { get; init; } = true;
+
+        public bool HasCodexAgentsEnabledOverride { get; init; }
+
+        public string CodexAgentsEnabledSourceLabel { get; init; } = string.Empty;
+
         public int ActiveSleepPreventionLeaseCount { get; init; }
 
         public int? SleepPreventionLastErrorCode { get; init; }
@@ -335,6 +341,24 @@ namespace ColorVision.Copilot
                     builder.AppendLine("；当前无活动轮次，排队等待不占用系统请求）");
                 }
             }
+            builder.Append("子代理工具：")
+                .Append(snapshot.CodexAgentsEnabled ? "开启" : "关闭");
+            if (snapshot.HasCodexAgentsEnabledOverride)
+            {
+                builder.Append('（')
+                    .Append(string.IsNullOrWhiteSpace(snapshot.CodexAgentsEnabledSourceLabel)
+                        ? "Codex config.toml"
+                        : snapshot.CodexAgentsEnabledSourceLabel.Trim())
+                    .Append(" 提交快照")
+                    .Append(snapshot.CodexAgentsEnabled
+                        ? "；允许按请求意图暴露委派工具）"
+                        : "；委派工具已从目录移除，旧调用也会拒绝）");
+            }
+            else
+            {
+                builder.Append("（Codex 默认开启）");
+            }
+            builder.AppendLine();
             if (snapshot.HasCodexReasoningEffortOverride)
             {
                 builder.Append("推理强度：")

@@ -157,6 +157,7 @@ namespace ColorVision.Copilot
                 ActiveDocumentPath = string.Empty,
                 ConfiguredDeveloperInstructions = explorationRequest.ConfiguredDeveloperInstructions,
                 CodexWebSearchMode = explorationRequest.CodexWebSearchMode,
+                CodexAgentsEnabled = explorationRequest.CodexAgentsEnabled,
                 ToolOutputTokenLimitOverride = explorationRequest.ToolOutputTokenLimitOverride,
                 CodexReasoningEffort = explorationRequest.CodexReasoningEffort,
                 CodexReasoningSummary = explorationRequest.CodexReasoningSummary,

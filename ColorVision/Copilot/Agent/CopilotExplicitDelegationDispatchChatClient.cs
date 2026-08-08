@@ -112,6 +112,7 @@ namespace ColorVision.Copilot
             task = (request.UserText ?? string.Empty).Trim();
             var taskIntent = (request.TaskIntentText ?? string.Empty).Trim();
             return !taskLedgerEnabled
+                && request.CodexAgentsEnabled
                 && string.IsNullOrWhiteSpace(request.ActiveGoalText)
                 && request.RequiresDelegatedWorkspaceEvidence
                 && CopilotToolIntentPolicy.ExplicitlyRequiresDelegatedWorkspaceEvidence(request)

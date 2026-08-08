@@ -54,10 +54,20 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(request);
 
             return GetCurrentTools()
-                .Where(tool => IsAllowedForMode(tool, request)
+                .Where(tool => IsAllowedForCodexAgentPolicy(tool, request)
+                    && IsAllowedForMode(tool, request)
                     && (IsAvailableForAgent(tool, request)
                         || tool is not ICopilotAgentDrivenTool && CopilotToolIntentPolicy.CanRetainForFollowUp(request, tool)))
                 .ToArray();
+        }
+
+        internal static bool IsAllowedForCodexAgentPolicy(
+            ICopilotTool tool,
+            CopilotAgentRequest request)
+        {
+            ArgumentNullException.ThrowIfNull(tool);
+            ArgumentNullException.ThrowIfNull(request);
+            return request.CodexAgentsEnabled || tool is not CopilotDelegateSubagentTool;
         }
 
         internal static bool IsAllowedForMode(ICopilotTool tool, CopilotAgentRequest request)

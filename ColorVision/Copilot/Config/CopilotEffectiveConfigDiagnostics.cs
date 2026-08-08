@@ -462,6 +462,7 @@ namespace ColorVision.Copilot
                     .AppendLine(" · 提交快照 · 仅改变 Chat/Agent 用户可见输出；请求、Token 计量与运行事件保持完整");
             }
             AppendPreventIdleSleep(builder, codexConfigOptions);
+            AppendAgentsEnabled(builder, codexConfigOptions);
             builder.Append("- Codex service_tier：");
             if (!codexConfigOptions.HasServiceTierOverride)
             {
@@ -612,6 +613,29 @@ namespace ColorVision.Copilot
             {
                 builder.AppendLine(" · 当前无活动轮次；排队等待不占用系统请求");
             }
+        }
+
+        private static void AppendAgentsEnabled(
+            StringBuilder builder,
+            CopilotProjectInstructionDiscoveryOptions codexConfigOptions)
+        {
+            builder.Append("- Codex agents.enabled：")
+                .Append(codexConfigOptions.ConfiguredAgentsEnabled ? "true" : "false");
+            if (codexConfigOptions.HasAgentsEnabledOverride)
+            {
+                builder.Append(" · 来源 ")
+                    .Append(codexConfigOptions.AgentsEnabledSourceLabel.Length == 0
+                        ? "Codex config.toml"
+                        : codexConfigOptions.AgentsEnabledSourceLabel)
+                    .Append(" · 提交快照");
+            }
+            else
+            {
+                builder.Append(" · 官方默认");
+            }
+            builder.AppendLine(codexConfigOptions.ConfiguredAgentsEnabled
+                ? " · 允许按请求意图暴露子代理工具"
+                : " · 隐藏子代理工具并拒绝旧计划、恢复状态或注入调用");
         }
 
         private static void AppendConversation(

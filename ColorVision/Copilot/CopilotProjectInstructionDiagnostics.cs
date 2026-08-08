@@ -210,6 +210,23 @@ namespace ColorVision.Copilot
                         ? " 提交快照；仅活动轮次持有 Windows Power Request，排队等待不占用"
                         : " 提交快照；不阻止系统空闲休眠");
             }
+            builder.Append("Codex agents.enabled：")
+                .Append(effective.ConfiguredAgentsEnabled ? "true" : "false");
+            if (effective.HasAgentsEnabledOverride)
+            {
+                builder.Append(" · 来源 ")
+                    .Append(effective.AgentsEnabledSourceLabel.Length == 0
+                        ? "Codex config.toml"
+                        : effective.AgentsEnabledSourceLabel)
+                    .Append(" 提交快照；");
+            }
+            else
+            {
+                builder.Append(" · 官方默认；");
+            }
+            builder.AppendLine(effective.ConfiguredAgentsEnabled
+                ? "允许按请求意图暴露子代理工具"
+                : "隐藏子代理工具并拒绝旧计划、恢复状态或注入调用");
             if (effective.HasModelContextWindowOverride)
             {
                 builder.Append("Codex model_context_window：")
