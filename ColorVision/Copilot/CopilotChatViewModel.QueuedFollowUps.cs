@@ -76,6 +76,7 @@ namespace ColorVision.Copilot
             var requestProfile = CreateConversationRequestProfile(
                 profile,
                 conversation,
+                activeRun.Mode,
                 submissionContext.ProjectInstructionDiscoveryOptions);
             if (!TryValidateComposerCharacterLimit(prompt)
                 || !TryValidatePromptBudget(

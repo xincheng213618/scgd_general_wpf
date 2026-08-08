@@ -425,6 +425,7 @@ namespace ColorVision.Copilot
             var requestProfile = CreateConversationRequestProfile(
                 SelectedProfile,
                 conversation,
+                userMessage.RequestMode,
                 turnSnapshot.ProjectInstructionDiscoveryOptions);
             if (!TryValidateComposerCharacterLimit(modelPrompt)
                 || !TryValidatePromptBudget(

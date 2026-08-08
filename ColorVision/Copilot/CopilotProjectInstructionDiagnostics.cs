@@ -188,6 +188,16 @@ namespace ColorVision.Copilot
                     .AppendLine(CopilotCodexWebSearchModeSelection.GetEffectiveLabel(
                         effective.ConfiguredWebSearchMode));
             }
+            if (effective.HasReviewModelOverride)
+            {
+                builder.Append("Codex review_model：")
+                    .Append(effective.ConfiguredReviewModel)
+                    .Append(" · 来源 ")
+                    .Append(effective.ReviewModelSourceLabel.Length == 0
+                        ? "Codex config.toml"
+                        : effective.ReviewModelSourceLabel)
+                    .AppendLine(" 请求快照；仅 Review 模式替换模型名，沿用所选 Profile 的 Provider、端点与凭据");
+            }
             if (effective.HasModelContextWindowOverride)
             {
                 builder.Append("Codex model_context_window：")

@@ -460,15 +460,20 @@ namespace ColorVision.Copilot
         private static CopilotProfileConfig CreateConversationRequestProfile(
             CopilotProfileConfig profile,
             CopilotConversationRecord? conversation,
+            CopilotAgentMode mode,
             CopilotProjectInstructionDiscoveryOptions? codexConfigOptions = null)
         {
             var personality = CopilotResponsePersonalitySelection.Resolve(
                 conversation,
                 codexConfigOptions);
-            return CopilotResponsePresentationGuidance.CreateRequestProfile(
+            return CopilotReviewModelSelection.CreateRequestProfile(
                 profile,
+                mode,
                 personality.Personality,
-                codexConfigOptions?.ModelInstructions);
+                codexConfigOptions?.ModelInstructions,
+                codexConfigOptions?.HasReviewModelOverride == true
+                    ? codexConfigOptions.ConfiguredReviewModel
+                    : null);
         }
 
         private CopilotProfileConfig CreateCurrentConversationRequestProfile(
@@ -477,7 +482,10 @@ namespace ColorVision.Copilot
         {
             var codexConfigOptions = CaptureHostedTurnSnapshot(
                 Array.Empty<CopilotAttachmentItem>()).ProjectInstructionDiscoveryOptions;
-            return CreateConversationRequestProfile(profile, conversation, codexConfigOptions);
+            var mode = conversation?.Messages
+                .LastOrDefault(candidate => candidate != null && candidate.IsUser)
+                ?.RequestMode ?? CopilotAgentMode.Auto;
+            return CreateConversationRequestProfile(profile, conversation, mode, codexConfigOptions);
         }
 
         private void UpdateConversationMetadata(CopilotConversationRecord conversation, bool touch)

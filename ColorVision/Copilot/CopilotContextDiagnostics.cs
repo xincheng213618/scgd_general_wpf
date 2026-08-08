@@ -24,6 +24,12 @@ namespace ColorVision.Copilot
 
         public bool HasCodexWebSearchModeOverride { get; init; }
 
+        public string CodexReviewModel { get; init; } = string.Empty;
+
+        public bool HasCodexReviewModelOverride { get; init; }
+
+        public string CodexReviewModelSourceLabel { get; init; } = string.Empty;
+
         public int SystemPromptCharacters { get; init; }
 
         public int ConfiguredModelInstructionsCharacters { get; init; }
@@ -268,6 +274,19 @@ namespace ColorVision.Copilot
                     .Append('）');
             }
             builder.AppendLine();
+            if (snapshot.HasCodexReviewModelOverride)
+            {
+                builder.Append("Review 模型：")
+                    .Append(snapshot.CodexReviewModel)
+                    .Append("（")
+                    .Append(string.IsNullOrWhiteSpace(snapshot.CodexReviewModelSourceLabel)
+                        ? "Codex config.toml"
+                        : snapshot.CodexReviewModelSourceLabel.Trim())
+                    .Append(snapshot.Mode == CopilotAgentMode.Review
+                        ? " 请求快照；当前 Review 模式生效"
+                        : " 请求快照；仅 Review 模式生效，当前模式不替换")
+                    .AppendLine("；沿用所选 Profile 的 Provider、端点与凭据）");
+            }
             if (snapshot.HasCodexReasoningEffortOverride)
             {
                 builder.Append("推理强度：")

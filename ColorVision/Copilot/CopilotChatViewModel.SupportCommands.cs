@@ -349,7 +349,7 @@ namespace ColorVision.Copilot
             var projectInstructionOptions = turnSnapshot.ProjectInstructionDiscoveryOptions;
             var requestProfile = selectedProfile == null
                 ? null
-                : CreateConversationRequestProfile(selectedProfile, conversation, projectInstructionOptions);
+                : CreateConversationRequestProfile(selectedProfile, conversation, mode, projectInstructionOptions);
             var historyLimits = ResolveConversationHistoryLimits(
                 requestProfile,
                 projectInstructionOptions);
@@ -394,6 +394,9 @@ namespace ColorVision.Copilot
                 CodexWebSearchMode = projectInstructionOptions.ConfiguredWebSearchMode,
                 CodexWebSearchModeSourceLabel = projectInstructionOptions.WebSearchModeSourceLabel,
                 HasCodexWebSearchModeOverride = projectInstructionOptions.HasWebSearchModeOverride,
+                CodexReviewModel = projectInstructionOptions.ConfiguredReviewModel,
+                HasCodexReviewModelOverride = projectInstructionOptions.HasReviewModelOverride,
+                CodexReviewModelSourceLabel = projectInstructionOptions.ReviewModelSourceLabel,
                 SystemPromptCharacters = requestProfile?.EffectiveSystemPrompt.Length ?? 0,
                 ConfiguredModelInstructionsCharacters = projectInstructionOptions.ModelInstructions.Length,
                 ConfiguredModelInstructionsSourceLabel = projectInstructionOptions.ModelInstructionsSourceLabel,

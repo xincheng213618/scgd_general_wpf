@@ -93,6 +93,7 @@ namespace ColorVision.Copilot
             var requestProfile = CreateConversationRequestProfile(
                 selectedProfile,
                 conversation,
+                requestMode,
                 turnSnapshot.ProjectInstructionDiscoveryOptions);
             if (!TryValidatePromptBudget(
                 modelPrompt,

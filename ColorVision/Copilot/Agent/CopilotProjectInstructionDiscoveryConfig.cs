@@ -136,6 +136,13 @@ namespace ColorVision.Copilot
         public CopilotProjectInstructionConfigSources WebSearchModeSource { get; init; } =
             CopilotProjectInstructionConfigSources.None;
 
+        public string ConfiguredReviewModel { get; init; } = string.Empty;
+
+        public bool HasReviewModelOverride { get; init; }
+
+        public CopilotProjectInstructionConfigSources ReviewModelSource { get; init; } =
+            CopilotProjectInstructionConfigSources.None;
+
         public int ConfiguredModelContextWindowTokens { get; init; }
 
         public bool HasModelContextWindowOverride { get; init; }
@@ -303,6 +310,7 @@ namespace ColorVision.Copilot
             || HasDeveloperInstructionsOverride
             || HasPersonalityOverride
             || HasWebSearchModeOverride
+            || HasReviewModelOverride
             || HasModelContextWindowOverride
             || HasToolOutputTokenLimitOverride
             || HasModelReasoningEffortOverride
@@ -346,6 +354,13 @@ namespace ColorVision.Copilot
         {
             CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml web_search",
             CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml web_search",
+            _ => string.Empty,
+        };
+
+        public string ReviewModelSourceLabel => ReviewModelSource switch
+        {
+            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml review_model",
+            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml review_model",
             _ => string.Empty,
         };
 
@@ -488,6 +503,7 @@ namespace ColorVision.Copilot
         private const string DeveloperInstructionsKey = "developer_instructions";
         private const string PersonalityKey = "personality";
         private const string WebSearchKey = "web_search";
+        private const string ReviewModelKey = "review_model";
         private const string ModelContextWindowKey = "model_context_window";
         private const string ToolOutputTokenLimitKey = "tool_output_token_limit";
         private const string ModelReasoningEffortKey = "model_reasoning_effort";
@@ -655,6 +671,14 @@ namespace ColorVision.Copilot
                 WebSearchModeSource = layer.HasWebSearchModeOverride
                     ? source
                     : current.WebSearchModeSource,
+                ConfiguredReviewModel = layer.HasReviewModelOverride
+                    ? layer.ReviewModel
+                    : current.ConfiguredReviewModel,
+                HasReviewModelOverride = current.HasReviewModelOverride
+                    || layer.HasReviewModelOverride,
+                ReviewModelSource = layer.HasReviewModelOverride
+                    ? source
+                    : current.ReviewModelSource,
                 ConfiguredModelContextWindowTokens = layer.HasModelContextWindowOverride
                     ? layer.ModelContextWindowTokens
                     : current.ConfiguredModelContextWindowTokens,
@@ -777,6 +801,7 @@ namespace ColorVision.Copilot
                 || layer.HasDeveloperInstructionsOverride
                 || layer.HasPersonalityOverride
                 || layer.HasWebSearchModeOverride
+                || layer.HasReviewModelOverride
                 || layer.HasModelContextWindowOverride
                 || layer.HasToolOutputTokenLimitOverride
                 || layer.HasModelReasoningEffortOverride
@@ -1050,6 +1075,7 @@ namespace ColorVision.Copilot
             var developerInstructions = string.Empty;
             var personality = CopilotResponsePersonality.None;
             var webSearchMode = CopilotCodexWebSearchMode.Unspecified;
+            var reviewModel = string.Empty;
             var modelContextWindowTokens = 0;
             var toolOutputTokenLimit = 0;
             var modelReasoningEffort = CopilotCodexReasoningEffort.Unspecified;
@@ -1069,6 +1095,7 @@ namespace ColorVision.Copilot
             var hasDeveloperInstructionsOverride = false;
             var hasPersonalityOverride = false;
             var hasWebSearchModeOverride = false;
+            var hasReviewModelOverride = false;
             var hasModelContextWindowOverride = false;
             var hasToolOutputTokenLimitOverride = false;
             var hasModelReasoningEffortOverride = false;
@@ -1140,6 +1167,22 @@ namespace ColorVision.Copilot
                         continue;
                     }
                     hasWebSearchModeOverride = true;
+                    continue;
+                }
+
+                if (string.Equals(assignment.Key, ReviewModelKey, StringComparison.Ordinal))
+                {
+                    if (!TryParseConfiguredText(
+                        assignment.Value,
+                        CopilotReviewModelSelection.MaximumModelCharacters,
+                        out var configuredReviewModel)
+                        || !CopilotReviewModelSelection.TryNormalize(
+                            configuredReviewModel,
+                            out reviewModel))
+                    {
+                        continue;
+                    }
+                    hasReviewModelOverride = true;
                     continue;
                 }
 
@@ -1355,6 +1398,8 @@ namespace ColorVision.Copilot
                 HasPersonalityOverride = hasPersonalityOverride,
                 WebSearchMode = webSearchMode,
                 HasWebSearchModeOverride = hasWebSearchModeOverride,
+                ReviewModel = reviewModel,
+                HasReviewModelOverride = hasReviewModelOverride,
                 ModelContextWindowTokens = modelContextWindowTokens,
                 HasModelContextWindowOverride = hasModelContextWindowOverride,
                 ToolOutputTokenLimit = toolOutputTokenLimit,
@@ -1384,6 +1429,7 @@ namespace ColorVision.Copilot
                 || hasDeveloperInstructionsOverride
                 || hasPersonalityOverride
                 || hasWebSearchModeOverride
+                || hasReviewModelOverride
                 || hasModelContextWindowOverride
                 || hasToolOutputTokenLimitOverride
                 || hasModelReasoningEffortOverride
@@ -1539,6 +1585,7 @@ namespace ColorVision.Copilot
                     && !string.Equals(key, DeveloperInstructionsKey, StringComparison.Ordinal)
                     && !string.Equals(key, PersonalityKey, StringComparison.Ordinal)
                     && !string.Equals(key, WebSearchKey, StringComparison.Ordinal)
+                    && !string.Equals(key, ReviewModelKey, StringComparison.Ordinal)
                     && !string.Equals(key, ModelContextWindowKey, StringComparison.Ordinal)
                     && !string.Equals(key, ToolOutputTokenLimitKey, StringComparison.Ordinal)
                     && !string.Equals(key, ModelReasoningEffortKey, StringComparison.Ordinal)
@@ -2172,6 +2219,10 @@ namespace ColorVision.Copilot
                 CopilotCodexWebSearchMode.Unspecified;
 
             public bool HasWebSearchModeOverride { get; init; }
+
+            public string ReviewModel { get; init; } = string.Empty;
+
+            public bool HasReviewModelOverride { get; init; }
 
             public int ModelContextWindowTokens { get; init; }
 
