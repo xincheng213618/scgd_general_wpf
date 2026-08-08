@@ -79,6 +79,8 @@ namespace ColorVision.Copilot
             RefreshLocalCommandSuggestions();
             if (CopilotComposerReferenceCatalog.TryParseMention(InputText, out _))
                 RefreshComposerReferenceSuggestions();
+            _ = CaptureHostedTurnSnapshot(Array.Empty<CopilotAttachmentItem>());
+            RefreshComposerTokenEstimate();
             CommandManager.InvalidateRequerySuggested();
         }
 
@@ -127,7 +129,7 @@ namespace ColorVision.Copilot
             CopilotConversationHistorySnapshot? conversationHistory = null,
             IEnumerable<string>? additionalReadRootPaths = null)
         {
-            return new CopilotAgentHostContextSnapshot(
+            var snapshot = new CopilotAgentHostContextSnapshot(
                 _activeDocumentPath,
                 SolutionManager.GetInstance().CurrentSolutionExplorer?.DirectoryInfo?.FullName ?? string.Empty,
                 attachments,
@@ -135,6 +137,8 @@ namespace ColorVision.Copilot
                 conversationHistory,
                 additionalReadRootPaths,
                 CopilotAgentProjectInstructions.ResolveGlobalInstructionRootPath());
+            _currentCodexConfigOptions = snapshot.ProjectInstructionDiscoveryOptions;
+            return snapshot;
         }
 
         private void ApplyChatDeltas(CopilotChatMessage assistantMessage, IReadOnlyList<CopilotStreamDelta> deltas)

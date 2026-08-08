@@ -198,6 +198,27 @@ namespace ColorVision.Copilot
                         : effective.ModelContextWindowSourceLabel)
                     .AppendLine(" 请求快照；覆盖应用默认上下文窗口");
             }
+            if (effective.HasModelAutoCompactTokenLimitOverride)
+            {
+                builder.Append("Codex model_auto_compact_token_limit：")
+                    .Append(effective.ConfiguredModelAutoCompactTokenLimit.ToString("N0", CultureInfo.CurrentCulture))
+                    .Append(" Token · 来源 ")
+                    .Append(effective.ModelAutoCompactTokenLimitSourceLabel.Length == 0
+                        ? "Codex config.toml"
+                        : effective.ModelAutoCompactTokenLimitSourceLabel)
+                    .AppendLine(" 请求快照；覆盖应用百分比阈值");
+            }
+            if (effective.HasModelAutoCompactTokenLimitScopeOverride)
+            {
+                builder.Append("Codex model_auto_compact_token_limit_scope：")
+                    .Append(CopilotModelAutoCompactTokenLimitScopeSelection.GetConfigToken(
+                        effective.EffectiveModelAutoCompactTokenLimitScope))
+                    .Append(" · 来源 ")
+                    .Append(effective.ModelAutoCompactTokenLimitScopeSourceLabel.Length == 0
+                        ? "Codex config.toml"
+                        : effective.ModelAutoCompactTokenLimitScopeSourceLabel)
+                    .AppendLine(" 请求快照");
+            }
             if (effective.HasModelInstructionsFileOverride)
             {
                 builder.Append("Codex model_instructions_file：")

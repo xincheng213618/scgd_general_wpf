@@ -66,6 +66,8 @@ namespace ColorVision.Copilot
         private CopilotWorkspaceReviewTargetContext? _pendingWorkspaceReviewTarget;
         private CopilotAgentRecoveryRequest? _pendingAgentRecoveryRequest;
         private string _activeDocumentPath = string.Empty;
+        private CopilotProjectInstructionDiscoveryOptions _currentCodexConfigOptions =
+            CopilotProjectInstructionDiscoveryConfig.CreateDefault();
         private string _pendingActionFeedbackText = string.Empty;
         private string _agentRunNoticeConversationId = string.Empty;
         private string _agentRunNoticeText = string.Empty;
@@ -290,6 +292,7 @@ namespace ColorVision.Copilot
             _pendingActionExpiryTimer.Tick += (_, _) => RefreshTimedAccessAndPendingActions();
             _pendingActionExpiryTimer.Start();
 
+            _ = CaptureHostedTurnSnapshot(Array.Empty<CopilotAttachmentItem>());
             RefreshPendingActions();
             RefreshComposerTokenEstimate();
             RefreshCompactHistoryConversations();

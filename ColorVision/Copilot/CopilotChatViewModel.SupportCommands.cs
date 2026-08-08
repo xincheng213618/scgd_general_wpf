@@ -377,6 +377,10 @@ namespace ColorVision.Copilot
             var toolHookSurface = CopilotToolExecutor.GetSharedHookSurfaceSnapshot();
             var agentDefaults = _config.AgentDefaults;
             var retainedHistoryWeight = history.Messages.Sum(message => CopilotTokenEstimator.EstimateTextWeight(message.Content));
+            var autoCompactionUsage = CopilotConversationAutoCompactionPolicy.Measure(
+                conversation,
+                historyLimits,
+                InputText);
             var compaction = conversation?.Compaction;
             var personality = CopilotResponsePersonalitySelection.Resolve(
                 conversation,
@@ -413,6 +417,15 @@ namespace ColorVision.Copilot
                 ModelContextWindowSourceLabel = projectInstructionOptions.ModelContextWindowSourceLabel,
                 AutoCompactConversationHistory = agentDefaults.AutoCompactConversationHistory,
                 AutoCompactThresholdPercent = agentDefaults.AutoCompactThresholdPercent,
+                ConfiguredModelAutoCompactTokenLimit = projectInstructionOptions.ConfiguredModelAutoCompactTokenLimit,
+                HasModelAutoCompactTokenLimitOverride = projectInstructionOptions.HasModelAutoCompactTokenLimitOverride,
+                ModelAutoCompactTokenLimitSourceLabel = projectInstructionOptions.ModelAutoCompactTokenLimitSourceLabel,
+                ModelAutoCompactTokenLimitScope = projectInstructionOptions.EffectiveModelAutoCompactTokenLimitScope,
+                HasModelAutoCompactTokenLimitScopeOverride = projectInstructionOptions.HasModelAutoCompactTokenLimitScopeOverride,
+                ModelAutoCompactTokenLimitScopeSourceLabel = projectInstructionOptions.ModelAutoCompactTokenLimitScopeSourceLabel,
+                AutoCompactTotalEstimatedTokens = EstimateContextTokens(autoCompactionUsage.ActiveWeight),
+                AutoCompactCarriedPrefixEstimatedTokens = EstimateContextTokens(autoCompactionUsage.CarriedPrefixWeight),
+                AutoCompactBodyAfterPrefixEstimatedTokens = EstimateContextTokens(autoCompactionUsage.BodyAfterPrefixWeight),
                 AutoCompactInstructionsCharacters = agentDefaults.AutoCompactInstructions.Length,
                 ConfiguredCompactPromptCharacters = projectInstructionOptions.CompactPrompt.Length,
                 ConfiguredCompactPromptSourceLabel = projectInstructionOptions.CompactPromptSourceLabel,
@@ -542,6 +555,10 @@ namespace ColorVision.Copilot
                 turnSnapshot.ProjectInstructionDiscoveryOptions,
                 documents);
         }
+
+        private static int EstimateContextTokens(long weight) => weight <= 0
+            ? 0
+            : CopilotTokenEstimator.WeightToTokenEstimate(weight);
 
         private void DismissLocalCommandResult()
         {

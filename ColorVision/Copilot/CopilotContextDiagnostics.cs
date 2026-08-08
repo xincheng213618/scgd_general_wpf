@@ -64,6 +64,25 @@ namespace ColorVision.Copilot
 
         public int AutoCompactThresholdPercent { get; init; }
 
+        public int ConfiguredModelAutoCompactTokenLimit { get; init; }
+
+        public bool HasModelAutoCompactTokenLimitOverride { get; init; }
+
+        public string ModelAutoCompactTokenLimitSourceLabel { get; init; } = string.Empty;
+
+        internal CopilotModelAutoCompactTokenLimitScope ModelAutoCompactTokenLimitScope { get; init; } =
+            CopilotModelAutoCompactTokenLimitScope.Total;
+
+        public bool HasModelAutoCompactTokenLimitScopeOverride { get; init; }
+
+        public string ModelAutoCompactTokenLimitScopeSourceLabel { get; init; } = string.Empty;
+
+        public int AutoCompactTotalEstimatedTokens { get; init; }
+
+        public int AutoCompactCarriedPrefixEstimatedTokens { get; init; }
+
+        public int AutoCompactBodyAfterPrefixEstimatedTokens { get; init; }
+
         public int AutoCompactInstructionsCharacters { get; init; }
 
         public int ConfiguredCompactPromptCharacters { get; init; }
@@ -261,13 +280,65 @@ namespace ColorVision.Copilot
             builder.Append("自动压缩：");
             if (snapshot.AutoCompactConversationHistory)
             {
-                builder.Append("已开启 · 活动历史达到 ")
-                    .Append(snapshot.AutoCompactThresholdPercent.ToString(CultureInfo.InvariantCulture))
-                    .AppendLine("% 时在发送前压缩；失败时保留原请求");
+                builder.Append("已开启 · ");
+                if (snapshot.HasModelAutoCompactTokenLimitOverride)
+                {
+                    var scopeToken = CopilotModelAutoCompactTokenLimitScopeSelection.GetConfigToken(
+                        snapshot.ModelAutoCompactTokenLimitScope);
+                    var activeTokens = snapshot.ModelAutoCompactTokenLimitScope ==
+                        CopilotModelAutoCompactTokenLimitScope.BodyAfterPrefix
+                            ? snapshot.AutoCompactBodyAfterPrefixEstimatedTokens
+                            : snapshot.AutoCompactTotalEstimatedTokens;
+                    builder.Append("Codex ")
+                        .Append(scopeToken)
+                        .Append(" 计量 ")
+                        .Append(FormatCount(activeTokens))
+                        .Append('/')
+                        .Append(FormatCount(snapshot.ConfiguredModelAutoCompactTokenLimit))
+                        .AppendLine(" Token；达到阈值时在发送前压缩，失败时保留原请求");
+                }
+                else
+                {
+                    builder.Append("活动历史达到 ")
+                        .Append(snapshot.AutoCompactThresholdPercent.ToString(CultureInfo.InvariantCulture))
+                        .AppendLine("% 时在发送前压缩；失败时保留原请求");
+                }
             }
             else
             {
                 builder.AppendLine("已关闭");
+            }
+            if (snapshot.HasModelAutoCompactTokenLimitOverride)
+            {
+                builder.Append("Codex model_auto_compact_token_limit：")
+                    .Append(FormatCount(snapshot.ConfiguredModelAutoCompactTokenLimit))
+                    .Append(" Token · 来源 ")
+                    .Append(string.IsNullOrWhiteSpace(snapshot.ModelAutoCompactTokenLimitSourceLabel)
+                        ? "Codex config.toml"
+                        : snapshot.ModelAutoCompactTokenLimitSourceLabel.Trim())
+                    .AppendLine(snapshot.AutoCompactConversationHistory
+                        ? " 请求快照"
+                        : " 请求快照；宿主自动压缩已关闭，当前不触发");
+            }
+            if (snapshot.HasModelAutoCompactTokenLimitScopeOverride)
+            {
+                builder.Append("Codex model_auto_compact_token_limit_scope：")
+                    .Append(CopilotModelAutoCompactTokenLimitScopeSelection.GetConfigToken(
+                        snapshot.ModelAutoCompactTokenLimitScope))
+                    .Append(" · 来源 ")
+                    .AppendLine(string.IsNullOrWhiteSpace(snapshot.ModelAutoCompactTokenLimitScopeSourceLabel)
+                        ? "Codex config.toml 请求快照"
+                        : snapshot.ModelAutoCompactTokenLimitScopeSourceLabel.Trim() + " 请求快照");
+            }
+            if (snapshot.AutoCompactCarriedPrefixEstimatedTokens > 0)
+            {
+                builder.Append("压缩窗口计量：total ")
+                    .Append(FormatCount(snapshot.AutoCompactTotalEstimatedTokens))
+                    .Append(" Token；carried prefix ")
+                    .Append(FormatCount(snapshot.AutoCompactCarriedPrefixEstimatedTokens))
+                    .Append(" Token；body_after_prefix ")
+                    .Append(FormatCount(snapshot.AutoCompactBodyAfterPrefixEstimatedTokens))
+                    .AppendLine(" Token");
             }
             builder.Append("压缩重点：")
                 .AppendLine(snapshot.AutoCompactInstructionsCharacters > 0

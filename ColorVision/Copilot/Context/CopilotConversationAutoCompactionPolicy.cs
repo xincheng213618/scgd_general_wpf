@@ -7,15 +7,25 @@ namespace ColorVision.Copilot
     {
         None,
         HistoryWeight,
+        ConfiguredTokenLimit,
         MessageCount,
     }
+
+    internal readonly record struct CopilotConversationAutoCompactionOptions(
+        bool Enabled,
+        int ThresholdPercent,
+        int? ModelTokenLimit,
+        CopilotModelAutoCompactTokenLimitScope ModelTokenLimitScope);
 
     internal readonly record struct CopilotConversationAutoCompactionDecision(
         bool ShouldCompact,
         CopilotConversationAutoCompactionTrigger Trigger,
         int UsagePercent,
         int ActiveMessageCount,
-        long ActiveWeight);
+        long ActiveWeight,
+        int EvaluatedTokens,
+        int ThresholdTokens,
+        CopilotModelAutoCompactTokenLimitScope TokenLimitScope);
 
     internal readonly record struct CopilotConversationContextUsage(
         int UsagePercent,
@@ -23,6 +33,8 @@ namespace ColorVision.Copilot
         int MessageUsagePercent,
         int ActiveMessageCount,
         long ActiveWeight,
+        long CarriedPrefixWeight,
+        long BodyAfterPrefixWeight,
         int MaximumMessages,
         long MaximumWeight);
 
@@ -48,6 +60,12 @@ namespace ColorVision.Copilot
             var activeMessageCount = history.Count + (prompt.Length == 0 ? 0 : 1);
             var activeWeight = history.Sum(message => CopilotTokenEstimator.EstimateTextWeight(message.Content));
             activeWeight = SaturatingAdd(activeWeight, CopilotTokenEstimator.EstimateTextWeight(prompt));
+            var carriedPrefixWeight = conversation == null
+                ? 0
+                : Math.Min(
+                    activeWeight,
+                    CopilotConversationCompactionContext.EstimateCarriedPrefixWeight(conversation));
+            var bodyAfterPrefixWeight = Math.Max(0, activeWeight - carriedPrefixWeight);
             var weightUsagePercent = ResolveUsagePercent(activeWeight, limits.MaximumCharacters);
             var messageUsagePercent = ResolveUsagePercent(activeMessageCount, limits.MaximumMessages);
             return new CopilotConversationContextUsage(
@@ -56,6 +74,8 @@ namespace ColorVision.Copilot
                 messageUsagePercent,
                 activeMessageCount,
                 activeWeight,
+                carriedPrefixWeight,
+                bodyAfterPrefixWeight,
                 limits.MaximumMessages,
                 limits.MaximumCharacters);
         }
@@ -64,10 +84,9 @@ namespace ColorVision.Copilot
             CopilotConversationRecord? conversation,
             CopilotConversationHistoryLimits limits,
             string? pendingPrompt,
-            bool enabled,
-            int thresholdPercent)
+            CopilotConversationAutoCompactionOptions options)
         {
-            if (!enabled
+            if (!options.Enabled
                 || conversation == null
                 || limits.MaximumMessages <= 0
                 || limits.MaximumCharacters <= 0)
@@ -76,6 +95,14 @@ namespace ColorVision.Copilot
             }
 
             var usage = Measure(conversation, limits, pendingPrompt);
+            var tokenLimitScope = options.ModelTokenLimitScope ==
+                CopilotModelAutoCompactTokenLimitScope.BodyAfterPrefix
+                    ? CopilotModelAutoCompactTokenLimitScope.BodyAfterPrefix
+                    : CopilotModelAutoCompactTokenLimitScope.Total;
+            var evaluatedWeight = tokenLimitScope == CopilotModelAutoCompactTokenLimitScope.BodyAfterPrefix
+                ? usage.BodyAfterPrefixWeight
+                : usage.ActiveWeight;
+            var evaluatedTokens = EstimateTokens(evaluatedWeight);
             var newMessageCount = CopilotConversationCompactionContext.CountMessagesAfterBoundary(conversation);
             if (newMessageCount < MinimumNewMessages)
             {
@@ -84,27 +111,38 @@ namespace ColorVision.Copilot
                     CopilotConversationAutoCompactionTrigger.None,
                     usage.UsagePercent,
                     usage.ActiveMessageCount,
-                    usage.ActiveWeight);
+                    usage.ActiveWeight,
+                    evaluatedTokens,
+                    Math.Max(0, options.ModelTokenLimit ?? 0),
+                    tokenLimitScope);
             }
 
             var normalizedThreshold = Math.Clamp(
-                thresholdPercent,
+                options.ThresholdPercent,
                 CopilotAgentDefaultsConfig.MinimumAutoCompactThresholdPercent,
                 CopilotAgentDefaultsConfig.MaximumAutoCompactThresholdPercent);
 
             var weightThreshold = ResolveThreshold(limits.MaximumCharacters, normalizedThreshold);
             var messageThreshold = ResolveThreshold(limits.MaximumMessages, normalizedThreshold);
-            var trigger = usage.ActiveWeight >= weightThreshold
-                ? CopilotConversationAutoCompactionTrigger.HistoryWeight
-                : usage.ActiveMessageCount >= messageThreshold
-                    ? CopilotConversationAutoCompactionTrigger.MessageCount
-                    : CopilotConversationAutoCompactionTrigger.None;
+            var configuredTokenLimit = Math.Max(0, options.ModelTokenLimit ?? 0);
+            var trigger = configuredTokenLimit > 0 && evaluatedTokens >= configuredTokenLimit
+                ? CopilotConversationAutoCompactionTrigger.ConfiguredTokenLimit
+                : configuredTokenLimit == 0 && usage.ActiveWeight >= weightThreshold
+                    ? CopilotConversationAutoCompactionTrigger.HistoryWeight
+                    : usage.ActiveMessageCount >= messageThreshold
+                        ? CopilotConversationAutoCompactionTrigger.MessageCount
+                        : CopilotConversationAutoCompactionTrigger.None;
             return new CopilotConversationAutoCompactionDecision(
                 trigger != CopilotConversationAutoCompactionTrigger.None,
                 trigger,
                 usage.UsagePercent,
                 usage.ActiveMessageCount,
-                usage.ActiveWeight);
+                usage.ActiveWeight,
+                evaluatedTokens,
+                configuredTokenLimit > 0
+                    ? configuredTokenLimit
+                    : EstimateTokens(weightThreshold),
+                tokenLimitScope);
         }
 
         private static long ResolveThreshold(long maximum, int percent) =>
@@ -119,6 +157,10 @@ namespace ColorVision.Copilot
 
             return (int)(used * 100 / maximum);
         }
+
+        private static int EstimateTokens(long weight) => weight <= 0
+            ? 0
+            : CopilotTokenEstimator.WeightToTokenEstimate(weight);
 
         private static long SaturatingAdd(long left, long right) =>
             long.MaxValue - left < right ? long.MaxValue : left + right;

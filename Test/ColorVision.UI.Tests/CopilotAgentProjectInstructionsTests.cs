@@ -3471,14 +3471,20 @@ public sealed class CopilotAgentProjectInstructionsTests
             conversation,
             configuredLimits,
             pendingPrompt: "continue",
-            enabled: true,
-            thresholdPercent: 85);
+            new CopilotConversationAutoCompactionOptions(
+                Enabled: true,
+                ThresholdPercent: 85,
+                ModelTokenLimit: null,
+                ModelTokenLimitScope: CopilotModelAutoCompactTokenLimitScope.Total));
         var applicationDecision = CopilotConversationAutoCompactionPolicy.Evaluate(
             conversation,
             applicationLimits,
             pendingPrompt: "continue",
-            enabled: true,
-            thresholdPercent: 85);
+            new CopilotConversationAutoCompactionOptions(
+                Enabled: true,
+                ThresholdPercent: 85,
+                ModelTokenLimit: null,
+                ModelTokenLimitScope: CopilotModelAutoCompactTokenLimitScope.Total));
 
         Assert.Equal(65_536, effectiveContextWindow);
         Assert.True(configuredLimits.MaximumCharacters < applicationLimits.MaximumCharacters);

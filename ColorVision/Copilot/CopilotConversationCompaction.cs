@@ -83,6 +83,19 @@ namespace ColorVision.Copilot
             return new CopilotRequestMessage("user", SummaryPreamble + compaction.Summary);
         }
 
+        internal static long EstimateCarriedPrefixWeight(CopilotConversationRecord conversation)
+        {
+            ArgumentNullException.ThrowIfNull(conversation);
+            var compaction = conversation.Compaction;
+            if (compaction?.IsStructurallyValid() != true
+                || FindMessageIndex(conversation, compaction.ThroughMessageId) < 0)
+            {
+                return 0;
+            }
+
+            return CopilotTokenEstimator.EstimateTextWeight(CreateSummaryMessage(compaction).Content);
+        }
+
         public static int CountMessagesAfterBoundary(CopilotConversationRecord conversation)
         {
             ArgumentNullException.ThrowIfNull(conversation);

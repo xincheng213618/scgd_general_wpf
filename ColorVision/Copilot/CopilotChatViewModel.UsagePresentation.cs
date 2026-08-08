@@ -77,7 +77,8 @@ namespace ColorVision.Copilot
 
         private void RefreshConversationContextState()
         {
-            var limits = ResolveConversationHistoryLimits(SelectedProfile);
+            var codexConfigOptions = _currentCodexConfigOptions;
+            var limits = ResolveConversationHistoryLimits(SelectedProfile, codexConfigOptions);
             var selection = CopilotConversationRequestBuilder.CaptureHistorySelection(
                 SelectedConversation,
                 limits);
@@ -95,7 +96,11 @@ namespace ColorVision.Copilot
                 usage,
                 _config.AgentDefaults.AutoCompactConversationHistory,
                 _config.AgentDefaults.AutoCompactThresholdPercent,
-                _config.AgentDefaults.AutoCompactInstructions.Length);
+                _config.AgentDefaults.AutoCompactInstructions.Length,
+                codexConfigOptions.HasModelAutoCompactTokenLimitOverride
+                    ? codexConfigOptions.ConfiguredModelAutoCompactTokenLimit
+                    : null,
+                codexConfigOptions.EffectiveModelAutoCompactTokenLimitScope);
             ConversationContextUsageLabel = presentation.Label;
             ConversationContextUsageToolTip = presentation.ToolTip;
             IsConversationContextUnderPressure = presentation.IsUnderPressure;

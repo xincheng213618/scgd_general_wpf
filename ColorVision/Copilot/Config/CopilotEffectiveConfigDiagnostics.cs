@@ -353,6 +353,38 @@ namespace ColorVision.Copilot
                         : codexConfigOptions.ModelContextWindowSourceLabel)
                     .AppendLine(" · 请求快照覆盖应用默认值");
             }
+            builder.Append("- Codex model_auto_compact_token_limit：");
+            if (!codexConfigOptions.HasModelAutoCompactTokenLimitOverride)
+            {
+                builder.Append("未配置 · 使用应用 ")
+                    .Append(defaults.AutoCompactThresholdPercent.ToString(CultureInfo.CurrentCulture))
+                    .AppendLine("% 阈值");
+            }
+            else
+            {
+                builder.Append(FormatNumber(codexConfigOptions.ConfiguredModelAutoCompactTokenLimit))
+                    .Append(" tokens @ ")
+                    .Append(CopilotModelAutoCompactTokenLimitScopeSelection.GetConfigToken(
+                        codexConfigOptions.EffectiveModelAutoCompactTokenLimitScope))
+                    .Append(" · 来源 ")
+                    .Append(codexConfigOptions.ModelAutoCompactTokenLimitSourceLabel.Length == 0
+                        ? "Codex config.toml"
+                        : codexConfigOptions.ModelAutoCompactTokenLimitSourceLabel)
+                    .AppendLine(" · 请求快照覆盖应用百分比阈值");
+            }
+            if (codexConfigOptions.HasModelAutoCompactTokenLimitScopeOverride)
+            {
+                builder.Append("- Codex model_auto_compact_token_limit_scope：")
+                    .Append(CopilotModelAutoCompactTokenLimitScopeSelection.GetConfigToken(
+                        codexConfigOptions.EffectiveModelAutoCompactTokenLimitScope))
+                    .Append(" · 来源 ")
+                    .Append(codexConfigOptions.ModelAutoCompactTokenLimitScopeSourceLabel.Length == 0
+                        ? "Codex config.toml"
+                        : codexConfigOptions.ModelAutoCompactTokenLimitScopeSourceLabel)
+                    .AppendLine(codexConfigOptions.HasModelAutoCompactTokenLimitOverride
+                        ? " · 请求快照"
+                        : " · 尚未配置 token limit，当前不影响自动压缩");
+            }
             builder
                 .Append("- Shell：")
                 .Append(defaults.PreferredShell)

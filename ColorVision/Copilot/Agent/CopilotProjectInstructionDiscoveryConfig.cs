@@ -69,6 +69,35 @@ namespace ColorVision.Copilot
         };
     }
 
+    internal enum CopilotModelAutoCompactTokenLimitScope
+    {
+        Unspecified,
+        Total,
+        BodyAfterPrefix,
+    }
+
+    internal static class CopilotModelAutoCompactTokenLimitScopeSelection
+    {
+        public static bool TryParse(
+            string? value,
+            out CopilotModelAutoCompactTokenLimitScope scope)
+        {
+            scope = (value ?? string.Empty).Trim().ToLowerInvariant() switch
+            {
+                "total" => CopilotModelAutoCompactTokenLimitScope.Total,
+                "body_after_prefix" => CopilotModelAutoCompactTokenLimitScope.BodyAfterPrefix,
+                _ => CopilotModelAutoCompactTokenLimitScope.Unspecified,
+            };
+            return scope != CopilotModelAutoCompactTokenLimitScope.Unspecified;
+        }
+
+        public static string GetConfigToken(CopilotModelAutoCompactTokenLimitScope scope) => scope switch
+        {
+            CopilotModelAutoCompactTokenLimitScope.BodyAfterPrefix => "body_after_prefix",
+            _ => "total",
+        };
+    }
+
     internal sealed record CopilotProjectInstructionDiscoveryOptions(
         int MaximumBytes,
         IReadOnlyList<string> FallbackFileNames,
@@ -123,6 +152,26 @@ namespace ColorVision.Copilot
                     CopilotAgentTokenBudget.MinimumContextWindowTokens,
                     CopilotAgentTokenBudget.MaximumContextWindowTokens);
         }
+
+        public int ConfiguredModelAutoCompactTokenLimit { get; init; }
+
+        public bool HasModelAutoCompactTokenLimitOverride { get; init; }
+
+        public CopilotProjectInstructionConfigSources ModelAutoCompactTokenLimitSource { get; init; } =
+            CopilotProjectInstructionConfigSources.None;
+
+        public CopilotModelAutoCompactTokenLimitScope ConfiguredModelAutoCompactTokenLimitScope { get; init; } =
+            CopilotModelAutoCompactTokenLimitScope.Unspecified;
+
+        public bool HasModelAutoCompactTokenLimitScopeOverride { get; init; }
+
+        public CopilotProjectInstructionConfigSources ModelAutoCompactTokenLimitScopeSource { get; init; } =
+            CopilotProjectInstructionConfigSources.None;
+
+        public CopilotModelAutoCompactTokenLimitScope EffectiveModelAutoCompactTokenLimitScope =>
+            HasModelAutoCompactTokenLimitScopeOverride
+                ? ConfiguredModelAutoCompactTokenLimitScope
+                : CopilotModelAutoCompactTokenLimitScope.Total;
 
         internal string ConfiguredModelInstructionsFileContent { get; init; } = string.Empty;
 
@@ -203,6 +252,8 @@ namespace ColorVision.Copilot
             || HasPersonalityOverride
             || HasWebSearchModeOverride
             || HasModelContextWindowOverride
+            || HasModelAutoCompactTokenLimitOverride
+            || HasModelAutoCompactTokenLimitScopeOverride
             || HasModelInstructionsFileOverride
             || HasCompactPromptOverride;
 
@@ -243,6 +294,20 @@ namespace ColorVision.Copilot
         {
             CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml model_context_window",
             CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml model_context_window",
+            _ => string.Empty,
+        };
+
+        public string ModelAutoCompactTokenLimitSourceLabel => ModelAutoCompactTokenLimitSource switch
+        {
+            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml model_auto_compact_token_limit",
+            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml model_auto_compact_token_limit",
+            _ => string.Empty,
+        };
+
+        public string ModelAutoCompactTokenLimitScopeSourceLabel => ModelAutoCompactTokenLimitScopeSource switch
+        {
+            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml model_auto_compact_token_limit_scope",
+            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml model_auto_compact_token_limit_scope",
             _ => string.Empty,
         };
 
@@ -316,6 +381,8 @@ namespace ColorVision.Copilot
         private const string PersonalityKey = "personality";
         private const string WebSearchKey = "web_search";
         private const string ModelContextWindowKey = "model_context_window";
+        private const string ModelAutoCompactTokenLimitKey = "model_auto_compact_token_limit";
+        private const string ModelAutoCompactTokenLimitScopeKey = "model_auto_compact_token_limit_scope";
         private const string ModelInstructionsFileKey = "model_instructions_file";
         private const string CompactPromptKey = "compact_prompt";
         private const string ExperimentalCompactPromptFileKey = "experimental_compact_prompt_file";
@@ -481,6 +548,22 @@ namespace ColorVision.Copilot
                 ModelContextWindowSource = layer.HasModelContextWindowOverride
                     ? source
                     : current.ModelContextWindowSource,
+                ConfiguredModelAutoCompactTokenLimit = layer.HasModelAutoCompactTokenLimitOverride
+                    ? layer.ModelAutoCompactTokenLimit
+                    : current.ConfiguredModelAutoCompactTokenLimit,
+                HasModelAutoCompactTokenLimitOverride = current.HasModelAutoCompactTokenLimitOverride
+                    || layer.HasModelAutoCompactTokenLimitOverride,
+                ModelAutoCompactTokenLimitSource = layer.HasModelAutoCompactTokenLimitOverride
+                    ? source
+                    : current.ModelAutoCompactTokenLimitSource,
+                ConfiguredModelAutoCompactTokenLimitScope = layer.HasModelAutoCompactTokenLimitScopeOverride
+                    ? layer.ModelAutoCompactTokenLimitScope
+                    : current.ConfiguredModelAutoCompactTokenLimitScope,
+                HasModelAutoCompactTokenLimitScopeOverride = current.HasModelAutoCompactTokenLimitScopeOverride
+                    || layer.HasModelAutoCompactTokenLimitScopeOverride,
+                ModelAutoCompactTokenLimitScopeSource = layer.HasModelAutoCompactTokenLimitScopeOverride
+                    ? source
+                    : current.ModelAutoCompactTokenLimitScopeSource,
                 ConfiguredModelInstructionsFileContent = layer.HasModelInstructionsFileOverride
                     ? layer.ModelInstructionsFileContent
                     : current.ConfiguredModelInstructionsFileContent,
@@ -524,6 +607,8 @@ namespace ColorVision.Copilot
                 || layer.HasPersonalityOverride
                 || layer.HasWebSearchModeOverride
                 || layer.HasModelContextWindowOverride
+                || layer.HasModelAutoCompactTokenLimitOverride
+                || layer.HasModelAutoCompactTokenLimitScopeOverride
                 || layer.HasModelInstructionsFileOverride
                 || layer.HasCompactPromptOverride
                 || layer.HasCompactPromptFileOverride
@@ -788,6 +873,8 @@ namespace ColorVision.Copilot
             var personality = CopilotResponsePersonality.None;
             var webSearchMode = CopilotCodexWebSearchMode.Unspecified;
             var modelContextWindowTokens = 0;
+            var modelAutoCompactTokenLimit = 0;
+            var modelAutoCompactTokenLimitScope = CopilotModelAutoCompactTokenLimitScope.Unspecified;
             var modelInstructionsFilePath = string.Empty;
             var compactPrompt = string.Empty;
             var compactPromptFilePath = string.Empty;
@@ -798,6 +885,8 @@ namespace ColorVision.Copilot
             var hasPersonalityOverride = false;
             var hasWebSearchModeOverride = false;
             var hasModelContextWindowOverride = false;
+            var hasModelAutoCompactTokenLimitOverride = false;
+            var hasModelAutoCompactTokenLimitScopeOverride = false;
             var hasModelInstructionsFileOverride = false;
             var hasCompactPromptOverride = false;
             var hasCompactPromptFileOverride = false;
@@ -871,6 +960,34 @@ namespace ColorVision.Copilot
                         continue;
                     }
                     hasModelContextWindowOverride = true;
+                    continue;
+                }
+
+                if (string.Equals(assignment.Key, ModelAutoCompactTokenLimitKey, StringComparison.Ordinal))
+                {
+                    if (!TryParsePositiveTokenLimit(
+                        assignment.Value,
+                        out modelAutoCompactTokenLimit))
+                    {
+                        continue;
+                    }
+                    hasModelAutoCompactTokenLimitOverride = true;
+                    continue;
+                }
+
+                if (string.Equals(assignment.Key, ModelAutoCompactTokenLimitScopeKey, StringComparison.Ordinal))
+                {
+                    if (!TryParseConfiguredText(
+                        assignment.Value,
+                        MaximumPersonalityCharacters,
+                        out var configuredModelAutoCompactTokenLimitScope)
+                        || !CopilotModelAutoCompactTokenLimitScopeSelection.TryParse(
+                            configuredModelAutoCompactTokenLimitScope,
+                            out modelAutoCompactTokenLimitScope))
+                    {
+                        continue;
+                    }
+                    hasModelAutoCompactTokenLimitScopeOverride = true;
                     continue;
                 }
 
@@ -948,6 +1065,10 @@ namespace ColorVision.Copilot
                 HasWebSearchModeOverride = hasWebSearchModeOverride,
                 ModelContextWindowTokens = modelContextWindowTokens,
                 HasModelContextWindowOverride = hasModelContextWindowOverride,
+                ModelAutoCompactTokenLimit = modelAutoCompactTokenLimit,
+                HasModelAutoCompactTokenLimitOverride = hasModelAutoCompactTokenLimitOverride,
+                ModelAutoCompactTokenLimitScope = modelAutoCompactTokenLimitScope,
+                HasModelAutoCompactTokenLimitScopeOverride = hasModelAutoCompactTokenLimitScopeOverride,
                 HasCompactPromptOverride = hasCompactPromptOverride,
                 HasCompactPromptFileOverride = hasCompactPromptFileOverride,
             };
@@ -958,6 +1079,8 @@ namespace ColorVision.Copilot
                 || hasPersonalityOverride
                 || hasWebSearchModeOverride
                 || hasModelContextWindowOverride
+                || hasModelAutoCompactTokenLimitOverride
+                || hasModelAutoCompactTokenLimitScopeOverride
                 || hasModelInstructionsFileOverride
                 || hasCompactPromptOverride
                 || hasCompactPromptFileOverride;
@@ -1104,6 +1227,8 @@ namespace ColorVision.Copilot
                     && !string.Equals(key, PersonalityKey, StringComparison.Ordinal)
                     && !string.Equals(key, WebSearchKey, StringComparison.Ordinal)
                     && !string.Equals(key, ModelContextWindowKey, StringComparison.Ordinal)
+                    && !string.Equals(key, ModelAutoCompactTokenLimitKey, StringComparison.Ordinal)
+                    && !string.Equals(key, ModelAutoCompactTokenLimitScopeKey, StringComparison.Ordinal)
                     && !string.Equals(key, ModelInstructionsFileKey, StringComparison.Ordinal)
                     && !string.Equals(key, CompactPromptKey, StringComparison.Ordinal)
                     && !string.Equals(key, ExperimentalCompactPromptFileKey, StringComparison.Ordinal))
@@ -1270,6 +1395,22 @@ namespace ColorVision.Copilot
                     out contextWindowTokens)
                 && contextWindowTokens >= CopilotAgentTokenBudget.MinimumContextWindowTokens
                 && contextWindowTokens <= CopilotAgentTokenBudget.MaximumContextWindowTokens;
+        }
+
+        private static bool TryParsePositiveTokenLimit(
+            string value,
+            out int tokenLimit)
+        {
+            tokenLimit = 0;
+            var normalized = (value ?? string.Empty)
+                .Replace("_", string.Empty, StringComparison.Ordinal)
+                .Trim();
+            return int.TryParse(
+                    normalized,
+                    NumberStyles.None,
+                    CultureInfo.InvariantCulture,
+                    out tokenLimit)
+                && tokenLimit > 0;
         }
 
         private static bool TryParseFallbackFileNames(string value, out string[] fallbackFileNames)
@@ -1683,6 +1824,15 @@ namespace ColorVision.Copilot
             public int ModelContextWindowTokens { get; init; }
 
             public bool HasModelContextWindowOverride { get; init; }
+
+            public int ModelAutoCompactTokenLimit { get; init; }
+
+            public bool HasModelAutoCompactTokenLimitOverride { get; init; }
+
+            public CopilotModelAutoCompactTokenLimitScope ModelAutoCompactTokenLimitScope { get; init; } =
+                CopilotModelAutoCompactTokenLimitScope.Unspecified;
+
+            public bool HasModelAutoCompactTokenLimitScopeOverride { get; init; }
 
             public string CompactPrompt { get; init; } = string.Empty;
 

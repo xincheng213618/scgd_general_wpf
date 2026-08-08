@@ -386,8 +386,13 @@ namespace ColorVision.Copilot
                 conversation,
                 ResolveConversationHistoryLimits(requestProfile, codexConfigOptions),
                 pendingPrompt,
-                _config.AgentDefaults.AutoCompactConversationHistory,
-                _config.AgentDefaults.AutoCompactThresholdPercent);
+                new CopilotConversationAutoCompactionOptions(
+                    _config.AgentDefaults.AutoCompactConversationHistory,
+                    _config.AgentDefaults.AutoCompactThresholdPercent,
+                    codexConfigOptions.HasModelAutoCompactTokenLimitOverride
+                        ? codexConfigOptions.ConfiguredModelAutoCompactTokenLimit
+                        : null,
+                    codexConfigOptions.EffectiveModelAutoCompactTokenLimitScope));
             if (!decision.ShouldCompact)
                 return CopilotAutomaticCompactionOutcome.NotNeeded;
 
@@ -412,9 +417,14 @@ namespace ColorVision.Copilot
                 return CopilotAutomaticCompactionOutcome.Failed;
             }
 
-            var triggerText = decision.Trigger == CopilotConversationAutoCompactionTrigger.MessageCount
-                ? $"消息数达到 {decision.UsagePercent:N0}%"
-                : $"估算上下文达到 {decision.UsagePercent:N0}%";
+            var triggerText = decision.Trigger switch
+            {
+                CopilotConversationAutoCompactionTrigger.MessageCount =>
+                    $"消息数达到 {decision.UsagePercent:N0}%",
+                CopilotConversationAutoCompactionTrigger.ConfiguredTokenLimit =>
+                    $"Codex {CopilotModelAutoCompactTokenLimitScopeSelection.GetConfigToken(decision.TokenLimitScope)} 计量达到 {decision.EvaluatedTokens:N0}/{decision.ThresholdTokens:N0} Token",
+                _ => $"估算上下文达到 {decision.UsagePercent:N0}%",
+            };
             var customFocusText = _config.AgentDefaults.AutoCompactInstructions.Length > 0
                 ? $"已应用 {_config.AgentDefaults.AutoCompactInstructions.Length:N0} 字符的自定义长期重点。"
                 : "已应用内置默认保留重点。";
