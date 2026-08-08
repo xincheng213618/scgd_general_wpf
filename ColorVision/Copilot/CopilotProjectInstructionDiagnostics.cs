@@ -137,7 +137,9 @@ namespace ColorVision.Copilot
             builder.Append("发现预算：")
                 .Append(effective.MaximumBytes.ToString("N0", CultureInfo.CurrentCulture))
                 .Append(" UTF-8 字节 · ")
-                .AppendLine(effective.UsesCodexConfig ? "Codex Home config.toml 请求快照" : "ColorVision 默认");
+                .AppendLine(effective.UsesCodexConfig
+                    ? effective.ConfigSourceLabel + " 请求快照"
+                    : "ColorVision 默认");
             if (effective.FallbackFileNames.Count > 0)
             {
                 builder.Append("配置备用名：")

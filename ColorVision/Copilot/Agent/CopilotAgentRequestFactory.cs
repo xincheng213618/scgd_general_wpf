@@ -38,7 +38,8 @@ namespace ColorVision.Copilot
                 liveContext,
                 conversationHistory,
                 additionalReadRootPaths,
-                globalInstructionRootPath: null)
+                globalInstructionRootPath: null,
+                loadCodexConfigLayers: false)
         {
         }
 
@@ -50,6 +51,27 @@ namespace ColorVision.Copilot
             CopilotConversationHistorySnapshot? conversationHistory,
             IEnumerable<string>? additionalReadRootPaths,
             string? globalInstructionRootPath)
+            : this(
+                activeDocumentPath,
+                solutionDirectoryPath,
+                attachments,
+                liveContext,
+                conversationHistory,
+                additionalReadRootPaths,
+                globalInstructionRootPath,
+                loadCodexConfigLayers: true)
+        {
+        }
+
+        private CopilotAgentHostContextSnapshot(
+            string? activeDocumentPath,
+            string? solutionDirectoryPath,
+            IEnumerable<CopilotAttachmentItem>? attachments,
+            CopilotLiveContext? liveContext,
+            CopilotConversationHistorySnapshot? conversationHistory,
+            IEnumerable<string>? additionalReadRootPaths,
+            string? globalInstructionRootPath,
+            bool loadCodexConfigLayers)
         {
             ActiveDocumentPath = activeDocumentPath ?? string.Empty;
             SolutionDirectoryPath = solutionDirectoryPath ?? string.Empty;
@@ -63,7 +85,12 @@ namespace ColorVision.Copilot
                 : new CopilotConversationHistorySnapshot(conversationHistory.ModelMessages, conversationHistory.VisibleMessages);
             AdditionalReadRootPaths = CopilotAdditionalDirectoryCommand.NormalizeStoredPaths(additionalReadRootPaths);
             GlobalInstructionRootPath = CopilotAgentProjectInstructions.NormalizeGlobalInstructionRootPath(globalInstructionRootPath);
-            ProjectInstructionDiscoveryOptions = CopilotProjectInstructionDiscoveryConfig.Load(GlobalInstructionRootPath);
+            var trustedProjectRootPath = CopilotAgentRequestFactory.ResolvePrimaryTrustedProjectRootPath(
+                SolutionDirectoryPath,
+                ActiveDocumentPath);
+            ProjectInstructionDiscoveryOptions = loadCodexConfigLayers
+                ? CopilotProjectInstructionDiscoveryConfig.Load(GlobalInstructionRootPath, trustedProjectRootPath)
+                : CopilotProjectInstructionDiscoveryConfig.CreateDefault();
         }
 
         private static CopilotLiveContext? CloneLiveContext(CopilotLiveContext? source)
@@ -356,11 +383,22 @@ namespace ColorVision.Copilot
         {
             ArgumentNullException.ThrowIfNull(hostContext);
 
+            var root = ResolvePrimaryTrustedProjectRootPath(
+                hostContext.SolutionDirectoryPath,
+                hostContext.ActiveDocumentPath);
+            return root.Length == 0 ? Array.Empty<string>() : [root];
+        }
+
+        internal static string ResolvePrimaryTrustedProjectRootPath(
+            string? solutionDirectoryPath,
+            string? activeDocumentPath)
+        {
             var roots = new List<string>();
-            AddSearchCandidate(roots, hostContext.SolutionDirectoryPath);
+            AddSearchCandidate(roots, solutionDirectoryPath);
             if (roots.Count == 0)
-                AddSearchCandidate(roots, hostContext.ActiveDocumentPath);
-            return CopilotWorkspaceSearchSupport.NormalizeSearchRoots(roots);
+                AddSearchCandidate(roots, activeDocumentPath);
+            var normalizedRoots = CopilotWorkspaceSearchSupport.NormalizeSearchRoots(roots);
+            return normalizedRoots.Count == 0 ? string.Empty : normalizedRoots[0];
         }
 
         private static string[] BuildWritableLocalFilePaths(

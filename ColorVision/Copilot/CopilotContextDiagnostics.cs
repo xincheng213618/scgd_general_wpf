@@ -85,6 +85,8 @@ namespace ColorVision.Copilot
 
         public bool ProjectInstructionUsesCodexConfig { get; init; }
 
+        public string ProjectInstructionConfigSourceLabel { get; init; } = string.Empty;
+
         public IReadOnlyList<string> ProjectInstructionFallbackFileNames { get; init; } = Array.Empty<string>();
 
         public IReadOnlyList<string> TrustedProjectRootPaths { get; init; } = Array.Empty<string>();
@@ -255,7 +257,9 @@ namespace ColorVision.Copilot
                 .Append(" 字符；发现预算 ")
                 .Append(FormatCount(snapshot.ProjectInstructionMaximumBytes))
                 .Append(" UTF-8 字节")
-                .AppendLine(snapshot.ProjectInstructionUsesCodexConfig ? "（Codex Home config.toml 请求快照）" : "（默认）");
+                .AppendLine(snapshot.ProjectInstructionUsesCodexConfig
+                    ? $"（{(string.IsNullOrWhiteSpace(snapshot.ProjectInstructionConfigSourceLabel) ? "Codex config.toml" : snapshot.ProjectInstructionConfigSourceLabel)} 请求快照）"
+                    : "（默认）");
             if (snapshot.ProjectInstructionFallbackFileNames.Count > 0)
             {
                 builder.Append("配置备用名：")

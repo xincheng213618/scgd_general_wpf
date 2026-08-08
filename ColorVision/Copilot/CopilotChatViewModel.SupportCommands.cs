@@ -419,6 +419,7 @@ namespace ColorVision.Copilot
                 ProjectInstructionPromptCharacters = CopilotAgentProjectInstructions.BuildPromptBlock(projectInstructions).Length,
                 ProjectInstructionMaximumBytes = projectInstructionOptions.MaximumBytes,
                 ProjectInstructionUsesCodexConfig = projectInstructionOptions.UsesCodexConfig,
+                ProjectInstructionConfigSourceLabel = projectInstructionOptions.ConfigSourceLabel,
                 ProjectInstructionFallbackFileNames = projectInstructionOptions.FallbackFileNames,
                 TrustedProjectRootPaths = trustedProjectRoots,
                 ProjectInstructions = projectInstructions,

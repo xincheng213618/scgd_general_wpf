@@ -241,6 +241,212 @@ public sealed class CopilotAgentProjectInstructionsTests
     }
 
     [Fact]
+    public void TrustedProjectConfigOverridesTheCodexHomeLayer()
+    {
+        string globalRoot = CreateTemporaryDirectory();
+        string projectRoot = CreateTemporaryDirectory();
+        try
+        {
+            File.WriteAllText(
+                Path.Combine(globalRoot, "config.toml"),
+                "project_doc_max_bytes = 4096\nproject_doc_fallback_filenames = [\"GLOBAL_GUIDE.md\"]");
+            string projectConfigDirectory = Path.Combine(projectRoot, ".codex");
+            Directory.CreateDirectory(projectConfigDirectory);
+            File.WriteAllText(
+                Path.Combine(projectConfigDirectory, "config.toml"),
+                "project_doc_fallback_filenames = [\"PROJECT_GUIDE.md\"]");
+            string configuredPath = Path.Combine(projectRoot, "PROJECT_GUIDE.md");
+            File.WriteAllText(configuredPath, "# Project-specific instructions");
+
+            var options = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
+            var document = Assert.Single(CopilotAgentProjectInstructions.DiscoverWithGlobal(
+                [projectRoot],
+                activeDocumentPath: null,
+                additionalTargetFilePaths: null,
+                globalInstructionRootPath: globalRoot,
+                discoveryOptions: options));
+
+            Assert.Equal(4096, options.MaximumBytes);
+            Assert.Equal(["PROJECT_GUIDE.md"], options.FallbackFileNames);
+            Assert.Equal(
+                CopilotProjectInstructionConfigSources.CodexHome
+                    | CopilotProjectInstructionConfigSources.TrustedProject,
+                options.ConfigSources);
+            Assert.Equal(configuredPath, document.Path, ignoreCase: true);
+            var report = CopilotProjectInstructionDiagnostics.Format(
+                new CopilotProjectInstructionSnapshot(
+                    projectRoot,
+                    string.Empty,
+                    globalRoot,
+                    options,
+                    [document]),
+                hasActiveAgentRun: false);
+            Assert.Contains("Codex Home + 受信项目 .codex/config.toml 请求快照", report, StringComparison.Ordinal);
+        }
+        finally
+        {
+            Directory.Delete(globalRoot, recursive: true);
+            Directory.Delete(projectRoot, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void RequestFactoryKeepsTheTrustedProjectConfigSnapshotTakenAtSubmission()
+    {
+        string globalRoot = CreateTemporaryDirectory();
+        string projectRoot = CreateTemporaryDirectory();
+        try
+        {
+            string projectConfigDirectory = Path.Combine(projectRoot, ".codex");
+            Directory.CreateDirectory(projectConfigDirectory);
+            string configPath = Path.Combine(projectConfigDirectory, "config.toml");
+            string firstPath = Path.Combine(projectRoot, "FIRST.md");
+            string secondPath = Path.Combine(projectRoot, "SECOND.md");
+            string activeDocument = Path.Combine(projectRoot, "Feature.cs");
+            File.WriteAllText(configPath, "project_doc_fallback_filenames = [\"FIRST.md\"]");
+            File.WriteAllText(firstPath, "# First instructions");
+            File.WriteAllText(secondPath, "# Second instructions");
+            File.WriteAllText(activeDocument, "namespace Feature;");
+            var submittedContext = new CopilotAgentHostContextSnapshot(
+                activeDocument,
+                projectRoot,
+                attachments: null,
+                liveContext: null,
+                conversationHistory: null,
+                additionalReadRootPaths: null,
+                globalInstructionRootPath: globalRoot);
+
+            File.WriteAllText(configPath, "project_doc_fallback_filenames = [\"SECOND.md\"]");
+
+            var submittedPlan = CopilotAgentRequestFactory.Prepare(
+                $"Inspect the local implementation in {activeDocument}",
+                CopilotAgentMode.Auto,
+                submittedContext);
+            var refreshedContext = new CopilotAgentHostContextSnapshot(
+                activeDocument,
+                projectRoot,
+                attachments: null,
+                liveContext: null,
+                conversationHistory: null,
+                additionalReadRootPaths: null,
+                globalInstructionRootPath: globalRoot);
+            var refreshedPlan = CopilotAgentRequestFactory.Prepare(
+                $"Inspect the local implementation in {activeDocument}",
+                CopilotAgentMode.Auto,
+                refreshedContext);
+
+            Assert.Contains(submittedPlan.ProjectInstructions, document =>
+                string.Equals(document.Path, firstPath, StringComparison.OrdinalIgnoreCase));
+            Assert.DoesNotContain(submittedPlan.ProjectInstructions, document =>
+                string.Equals(document.Path, secondPath, StringComparison.OrdinalIgnoreCase));
+            Assert.Contains(refreshedPlan.ProjectInstructions, document =>
+                string.Equals(document.Path, secondPath, StringComparison.OrdinalIgnoreCase));
+        }
+        finally
+        {
+            Directory.Delete(globalRoot, recursive: true);
+            Directory.Delete(projectRoot, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void AdditionalReadRootsDoNotBecomeProjectConfigRoots()
+    {
+        string globalRoot = CreateTemporaryDirectory();
+        string projectRoot = CreateTemporaryDirectory();
+        string additionalRoot = CreateTemporaryDirectory();
+        try
+        {
+            string additionalConfigDirectory = Path.Combine(additionalRoot, ".codex");
+            Directory.CreateDirectory(additionalConfigDirectory);
+            File.WriteAllText(
+                Path.Combine(additionalConfigDirectory, "config.toml"),
+                "project_doc_fallback_filenames = [\"UNTRUSTED_GUIDE.md\"]");
+            File.WriteAllText(Path.Combine(additionalRoot, "UNTRUSTED_GUIDE.md"), "# Not a project config root");
+            string activeDocument = Path.Combine(projectRoot, "Feature.cs");
+            File.WriteAllText(activeDocument, "namespace Feature;");
+
+            var hostContext = new CopilotAgentHostContextSnapshot(
+                activeDocument,
+                projectRoot,
+                attachments: null,
+                liveContext: null,
+                conversationHistory: null,
+                additionalReadRootPaths: [additionalRoot],
+                globalInstructionRootPath: globalRoot);
+            var plan = CopilotAgentRequestFactory.Prepare(
+                $"Inspect the local implementation in {activeDocument}",
+                CopilotAgentMode.Auto,
+                hostContext);
+
+            Assert.False(hostContext.ProjectInstructionDiscoveryOptions.UsesCodexConfig);
+            Assert.Equal([projectRoot], plan.TrustedProjectRootPaths, StringComparer.OrdinalIgnoreCase);
+            Assert.DoesNotContain(plan.ProjectInstructions, document =>
+                document.Path.StartsWith(additionalRoot, StringComparison.OrdinalIgnoreCase));
+        }
+        finally
+        {
+            Directory.Delete(globalRoot, recursive: true);
+            Directory.Delete(projectRoot, recursive: true);
+            Directory.Delete(additionalRoot, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void ProjectConfigThroughAReparsePointIsRejected()
+    {
+        string globalRoot = CreateTemporaryDirectory();
+        string projectRoot = CreateTemporaryDirectory();
+        string outsideRoot = CreateTemporaryDirectory();
+        try
+        {
+            File.WriteAllText(
+                Path.Combine(outsideRoot, "config.toml"),
+                "project_doc_fallback_filenames = [\"OUTSIDE.md\"]");
+            Directory.CreateSymbolicLink(Path.Combine(projectRoot, ".codex"), outsideRoot);
+
+            var options = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
+
+            Assert.False(options.UsesCodexConfig);
+            Assert.Empty(options.FallbackFileNames);
+        }
+        finally
+        {
+            Directory.Delete(projectRoot, recursive: true);
+            Directory.Delete(globalRoot, recursive: true);
+            Directory.Delete(outsideRoot, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void PublicHostContextDoesNotImplicitlyTrustProjectConfig()
+    {
+        string projectRoot = CreateTemporaryDirectory();
+        try
+        {
+            string projectConfigDirectory = Path.Combine(projectRoot, ".codex");
+            Directory.CreateDirectory(projectConfigDirectory);
+            File.WriteAllText(
+                Path.Combine(projectConfigDirectory, "config.toml"),
+                "project_doc_fallback_filenames = [\"PROJECT_GUIDE.md\"]");
+            string activeDocument = Path.Combine(projectRoot, "Feature.cs");
+            File.WriteAllText(activeDocument, "namespace Feature;");
+
+            var hostContext = new CopilotAgentHostContextSnapshot(
+                activeDocument,
+                projectRoot,
+                attachments: null);
+
+            Assert.False(hostContext.ProjectInstructionDiscoveryOptions.UsesCodexConfig);
+            Assert.Empty(hostContext.ProjectInstructionDiscoveryOptions.FallbackFileNames);
+        }
+        finally
+        {
+            Directory.Delete(projectRoot, recursive: true);
+        }
+    }
+
+    [Fact]
     public void RequestFactoryKeepsTheInstructionConfigSnapshotTakenAtSubmission()
     {
         string globalRoot = CreateTemporaryDirectory();
