@@ -38,8 +38,8 @@
 
 | 类别 | 入口 | 说明 |
 | --- | --- | --- |
-| 插件元数据 | `manifest.json` | `version=1.0`，`requires=1.3.15.8` |
-| 程序集版本 | `Spectrum.csproj` | `VersionPrefix=2.3.3.1`，发包前确认是否和 manifest 同步 |
+| 插件元数据 | [manifest.json](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Plugins/Spectrum/manifest.json) | 插件版本和最低宿主要求的事实源 |
+| 程序集版本 | [Spectrum.csproj](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Plugins/Spectrum/Spectrum.csproj) | `VersionPrefix` 的事实源，发包前与 manifest 对照 |
 | 窗口 | `MainWindow.*.cs` | 连接、测量、EQE 和导出 |
 | 设备状态 | `SpectrometerManager.cs` | 设备、Shutter、滤光轮、SMU、标定组和测量状态 |
 | 标定 | `Calibration/` | 按光谱仪 SN 管理标定分组 |

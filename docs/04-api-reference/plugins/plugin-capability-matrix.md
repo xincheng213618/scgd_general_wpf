@@ -14,17 +14,17 @@
 
 ## 当前源码插件总表
 
-| 插件 | 源码目录 | manifest 版本 | `.csproj` 版本 | 宿主入口 | 主要能力 | 关键风险 |
-| --- | --- | --- | --- | --- | --- | --- |
-| Conoscope | `Plugins/Conoscope/` | `1.4.6.1` | `1.4.6.9` | Tool 菜单 `VAM`，ImageEditor 右键打开 | 锥镜/VAM 图像观察、关注点、参考轴、预处理、色域和对比度分析、MVS 观察相机 | manifest 版本与程序集版本不同；MVS 依赖海康 `MvCameraControl.dll`；关注点逻辑是插件本地实现 |
-| Spectrum | `Plugins/Spectrum/` | `1.0` | `2.3.3.1` | Tool 菜单光谱窗口，Spectrum 窗口级菜单/状态栏，Socket JSON 指令 | 光谱仪连接、标定分组、测量、EQE、CIE、SQLite 结果、许可证、Socket 远程控制 | manifest 版本与程序集版本不同；依赖光谱仪 native DLL、OpenCV、串口、许可证；Socket 指令需要窗口和设备状态配合 |
-| SystemMonitor | `Plugins/SystemMonitor/` | `1.0.1` | `1.4.3.3` | Tool 菜单，设置页，主程序状态栏 | CPU/RAM/磁盘/网络/进程/GPU/缓存监控和状态栏投影 | 性能计数器可能初始化失败并降级；监控单例位于 `ColorVision.UI.Configs` 命名空间 |
-| WindowsServicePlugin | `Plugins/WindowsServicePlugin/` | `1.0` | `1.4.3.17` | Help 菜单服务管理器，向导入口 | CVWindowsService 安装/注册/启动停止、MySQL/MQTT 安装配置、服务目录和配置同步 | 会改 Windows 服务、MySQL、MQTT 和本机文件；需要管理员权限；不支持增量服务包 |
+| 插件 | 源码目录 | 版本事实源 | 宿主入口 | 主要能力 | 关键风险 |
+| --- | --- | --- | --- | --- | --- |
+| Conoscope | `Plugins/Conoscope/` | [manifest](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Plugins/Conoscope/manifest.json) / [csproj](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Plugins/Conoscope/Conoscope.csproj) | Tool 菜单 `VAM`，ImageEditor 右键打开 | 锥镜/VAM 图像观察、关注点、参考轴、预处理、色域和对比度分析、MVS 观察相机 | MVS 依赖海康 `MvCameraControl.dll`；关注点逻辑是插件本地实现 |
+| Spectrum | `Plugins/Spectrum/` | [manifest](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Plugins/Spectrum/manifest.json) / [csproj](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Plugins/Spectrum/Spectrum.csproj) | Tool 菜单光谱窗口，Spectrum 窗口级菜单/状态栏，Socket JSON 指令 | 光谱仪连接、标定分组、测量、EQE、CIE、SQLite 结果、许可证、Socket 远程控制 | 依赖光谱仪 native DLL、OpenCV、串口、许可证；Socket 指令需要窗口和设备状态配合 |
+| SystemMonitor | `Plugins/SystemMonitor/` | [manifest](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Plugins/SystemMonitor/manifest.json) / [csproj](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Plugins/SystemMonitor/SystemMonitor.csproj) | Tool 菜单，设置页，主程序状态栏 | CPU/RAM/磁盘/网络/进程/GPU/缓存监控和状态栏投影 | 性能计数器可能初始化失败并降级；监控单例位于 `ColorVision.UI.Configs` 命名空间 |
+| WindowsServicePlugin | `Plugins/WindowsServicePlugin/` | [manifest](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Plugins/WindowsServicePlugin/manifest.json) / [csproj](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Plugins/WindowsServicePlugin/WindowsServicePlugin.csproj) | Help 菜单服务管理器，向导入口 | CVWindowsService 安装/注册/启动停止、MySQL/MQTT 安装配置、服务目录和配置同步 | 会改 Windows 服务、MySQL、MQTT 和本机文件；需要管理员权限；不支持增量服务包 |
 
-`manifest.version` 和 `.csproj VersionPrefix` 当前并不总是相同。交付时要同时确认：
+`manifest.version`、`manifest.requires` 和 `.csproj VersionPrefix` 会随发布变化，请以表中链接的事实源为准。交付时要同时确认：
 
-- 插件管理器或市场展示用的 manifest 版本。
-- DLL 的文件版本和程序集版本。
+- 插件管理器或市场展示用的 manifest 版本和最低宿主要求。
+- `.csproj VersionPrefix`、DLL 文件版本和程序集版本。
 - `.cvxp` 文件名中由 `Scripts/package_cvxp.py` 读取到的 DLL `FileVersion`。
 - `CHANGELOG.md` 是否对应这次实际 DLL。
 

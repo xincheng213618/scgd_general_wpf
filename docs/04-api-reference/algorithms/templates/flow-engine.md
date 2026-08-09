@@ -1,6 +1,8 @@
 # 流程引擎
 
-本页描述 `Engine/ColorVision.Engine/Templates/Flow` 宿主层：流程模板如何加载、编辑、保存、导入导出，以及如何接到 `FlowEngineLib`。节点执行语义和节点基类请看 [FlowEngineLib](../../engine-components/FlowEngineLib.md)。
+本页聚焦主程序宿主层：`Engine/ColorVision.Engine/Templates/Flow/` 管理流程模板和 `.cvflow` 包，`Engine/ColorVision.Engine/FlowProcessing/` 管理编辑、运行、调度与诊断；节点执行语义与运行时基类归 `FlowEngineLib`。
+
+先看 [流程引擎架构](../../../03-architecture/components/engine/flow-engine.md)、[FlowEngineLib](../../engine-components/FlowEngineLib.md) 和 [模板到运行链](../../engine-components/template-flow-chain.md)；新增节点则从 [Flow 节点扩展](../../extensions/flow-node.md) 进入。
 
 ## 先查什么
 
@@ -8,26 +10,11 @@
 | --- | --- |
 | 流程模板列表为空 | MySQL 主表、资源表、`TemplateFlow.Load()` |
 | 打开流程后节点图为空 | `SysResourceModel.Value`、`ModDetailModel.ValueA`、Base64 数据 |
-| 保存后重开没变化 | `FlowEngineToolWindow.Save()` 路径、`DataBase64`、资源 `Type = 101` |
-| 节点属性没有设备/模板下拉 | `STNodeEditorHelper`、`NodeConfigurator/`、服务和模板列表 |
+| 保存后重开没变化 | `ViewFlow.TrySave()` / `SaveStandaloneDocument()`、`FlowValidator.Validate(...)`、`DataBase64`、资源 `Type = 101` |
+| 节点属性没有设备/模板下拉 | `FlowEditorCanvas`、`NodeConfiguratorRegistry`、`FlowProcessing/Editor/NodeConfiguration/`、服务和模板列表 |
 | `.cvflow` 导入后模板名不对 | `manifest.json`、重名映射、`ReplaceTemplateNames(...)` |
 | 调度能触发但结果没回去 | `FlowJob`、`RunFlowAndWaitAsync()`、`FlowCompleted`、项目包 `Processing` |
-| 打开新窗口后画布串流程 | `FlowTemplateWorkspaceController` 的实例选择、刷新 generation、已加载文档 |
 | 运行失败需要人工处置 | `FlowIncidentManagementWindow`、Run/Event/Attempt 关联记录 |
-
-## 当前能力
-
-| 能力 | 当前入口 | 说明 |
-| --- | --- | --- |
-| 流程模板 | `TemplateFlow` | 从数据库主表和资源表加载，管理新建、保存、删除、导入、导出 |
-| 编辑窗口 | `FlowEngineToolWindow` | 独立流程编辑窗口，不是普通模板右侧编辑区 |
-| 编辑器宿主 | `STNodeEditorHelper` | 托管节点画布、属性面板、节点树、剪贴板、右键菜单、合法性检查 |
-| 节点配置 | `NodeConfigurator/*.cs` | 把设备列表、本地图像、普通模板、JSON 模板挂进节点属性面板 |
-| 单流程包 | `.cvflow`、`FlowPackageHelper` | ZIP 包，包含 `flow.stn` 和 `manifest.json`，可携带关联模板 |
-| 旧图文件 | `.stn` | 仅保存节点图原始数据 |
-| 调度运行 | `FlowJob`、`FlowEngineManager.RunFlowAsync()` | Quartz 线程切回 UI 线程运行流程并等待结果 |
-| 裸执行器 | `FlowHeadlessExecutionService`、`HeadlessFlowJob` | 每次运行拥有独立 `FlowRuntimeHost`，不依赖 WPF 画布、当前模板或全局选择 |
-| Incident 管理 | `FlowIncidentService`、`FlowIncidentManagementWindow` | 查询、筛选、确认、关闭并关联 Run/Event/Attempt |
 
 ## 存储边界
 
@@ -35,10 +22,10 @@
 | --- | --- |
 | 主存储 | MySQL 主表 + 明细表 + `SysResourceModel.Value` 保存 Base64 节点图 |
 | 本地 `.stn` | 打开本地文件时保存只写回文件，不更新数据库模板 |
-| 数据库流程 | 保存前 `CheckFlow()`，再取画布数据、Base64、`TemplateFlow.Save2DB(...)` |
+| 数据库流程 | `ViewFlow.TrySave()` 先调用 `FlowValidator.Validate(...)`，再取画布数据、Base64、`TemplateFlow.Save2DB(...)` |
 | 资源引用 | `SysResourceModel.Type = 101`，`ModDetailModel.ValueA` 保存资源 id |
 | 多选导出 | 仍是 zip 内多个 `.stn`，不会像 `.cvflow` 一样收集关联模板 manifest |
-| 版本和搜索侧车 | 每次有效保存记录不可变 catalog revision 和语义索引 |
+| 版本和搜索侧车 | 每次有效保存由 `FlowCanvasCatalogBuilder` 生成语义投影，并记录不可变 catalog revision 和搜索索引 |
 | 历史 Artifact 表 | 当前版本不再读写或迁移，已有表和数据原样保留 |
 
 ## `.cvflow` 包
@@ -94,26 +81,13 @@ UI 手动运行始终执行当前画布加载的 STN，不再读取或校验 Art
 | 裸执行器 | 两次并行执行各自拥有 RuntimeHost；取消、超时、加载失败和启动拒绝都有明确终止状态 |
 | Incident | 确认和关闭能记录操作人、备注和时间，Run/Event/Attempt 详情可回查 |
 
-## 边界
+## 源码导航
 
-- 本页不是 `FlowEngineLib` 重复页；这里讲主程序模板管理、窗口编辑和宿主桥接。
-- 流程模板主路径是数据库 + 资源表，不是扫描磁盘目录。
-- 节点属性编辑大量依赖 `NodeConfigurator` 和 `STNodeEditorHelper`。
-- `.stn` 只含节点图，`.cvflow` 才包含 manifest 和关联模板。
+除 `FlowRuntimeHost` 外，下列路径均相对于 `Engine/ColorVision.Engine/`：
 
-## 关键文件
-
-| 任务 | 先看 |
-| --- | --- |
-| 流程模板 | `TemplateFlow.cs` |
-| 编辑窗口 | `FlowEngineToolWindow.xaml.cs` |
-| 编辑器宿主 | `STNodeEditorHelper.cs` |
-| 节点属性配置 | `NodeConfigurator/` |
-| `.cvflow` 导入导出 | `FlowPackageHelper` 相关实现 |
-| 流程工作区 | `ViewFlow.xaml.cs` |
-| 工作区生命周期 | `FlowTemplateWorkspaceController.cs` |
-| 执行会话 | `FlowExecutionSession.cs` |
-| 裸执行器 | `FlowHeadlessExecutionService.cs`、`FlowRuntimeHost.cs` |
-| 版本与搜索投影 | `FlowProcessing/Compilation/FlowCanvasCatalogBuilder.cs` |
-| Incident | `FlowProcessing/Diagnostics/FlowIncident*.cs` |
-| 主程序壳 | `DisplayFlow.xaml.cs` |
+- 模板与包：`Templates/Flow/TemplateFlow.cs`、`Templates/Flow/FlowPackageHelper.cs`。
+- 编辑与配置：`FlowProcessing/Editor/FlowEngineToolWindow.xaml.cs`、`FlowEditorCanvas.xaml.cs`、`NodeConfiguration/`。
+- 工作区与宿主：`FlowProcessing/Runtime/ViewFlow.xaml.cs`、`FlowTemplateWorkspaceController.cs`、`FlowExecutionSession.cs`、`DisplayFlow.xaml.cs`。
+- 裸执行：`FlowProcessing/Runtime/FlowHeadlessExecutionService.cs`、`Engine/FlowEngineLib/Runtime/FlowRuntimeHost.cs`。
+- 版本与搜索：`Templates/Flow/Versioning/`、`Templates/Flow/Search/`、`FlowProcessing/Compilation/FlowCanvasCatalogBuilder.cs`。
+- Incident：`FlowProcessing/Diagnostics/FlowIncident*.cs`。

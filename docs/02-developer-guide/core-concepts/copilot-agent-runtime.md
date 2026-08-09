@@ -17,6 +17,7 @@ ColorVision Copilot 使用 Microsoft Agent Framework 作为唯一 Agent 执行�
 ## 详细说明
 
 - [执行链、工具选择与子 Agent](./copilot-agent-execution.md)
+- [本地交互、会话定位与快捷键](./copilot-local-interactions.md)
 - [工具契约、任务事件、恢复和 Flow 编辑](./copilot-agent-tool-contracts.md)
 - [生命周期、预算、任务账本、项目指令和 Skills](./copilot-agent-lifecycle.md)
 - [任务 UI、检查点、重试和内置工具](./copilot-agent-session-and-tools.md)
