@@ -276,6 +276,164 @@ public sealed class CopilotCodexHooksFeatureTests
         Assert.Contains("mode sync", hooksReport, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task AsyncHooksRunAsBoundedNotificationsWithoutControllingTheToolCall()
+    {
+        const string sourceId = "extension:test:hook:async-notification";
+        var registry = new CopilotToolExecutionHookRegistry();
+        var hook = new BlockingAsyncHook();
+        using var registration = registry.Register(
+            sourceId,
+            hook,
+            "^HooksFeatureTool$",
+            executionMode: CopilotToolExecutionHookMode.Async);
+        var executor = new CopilotToolExecutor(registry);
+        var tool = new RecordingTool();
+        var events = new List<CopilotAgentEvent>();
+
+        CopilotToolExecutionOutcome outcome;
+        try
+        {
+            outcome = await executor.ExecuteAsync(
+                CreateInvocation(tool, "hooks-async-notification", codexHooksEnabled: true),
+                events.Add,
+                CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(5));
+            await hook.WaitForCallbacksStartedAsync();
+
+            Assert.True(outcome.Result.Success);
+            Assert.Equal(1, tool.ExecutionCount);
+            Assert.False(hook.BeforeCompleted);
+            Assert.False(hook.AfterCompleted);
+            Assert.DoesNotContain(
+                events,
+                agentEvent => string.Equals(
+                    agentEvent.ToolExecutionHook?.SourceId,
+                    sourceId,
+                    StringComparison.Ordinal));
+
+            var scheduled = outcome.HookRuns
+                .Where(run => run.SourceId == sourceId)
+                .ToArray();
+            Assert.Equal(2, scheduled.Length);
+            Assert.All(scheduled, run =>
+            {
+                Assert.Equal(CopilotToolExecutionHookMode.Async, run.ExecutionMode);
+                Assert.Equal(CopilotToolExecutionHookState.Scheduled, run.State);
+                Assert.Empty(run.FailureCode);
+            });
+            Assert.Equal(
+                [CopilotToolExecutionHookPhase.BeforeExecute, CopilotToolExecutionHookPhase.AfterExecute],
+                scheduled.Select(run => run.Phase));
+
+            var hookSurface = executor.GetHookSurfaceSnapshot();
+            var asyncDefinition = Assert.Single(
+                hookSurface.Entries,
+                entry => entry.SourceId == sourceId);
+            Assert.Equal(CopilotToolExecutionHookMode.Async, asyncDefinition.ExecutionMode);
+            var syncRegistry = new CopilotToolExecutionHookRegistry();
+            using var syncRegistration = syncRegistry.Register(
+                sourceId,
+                hook,
+                "^HooksFeatureTool$");
+            Assert.NotEqual(
+                syncRegistry.GetSnapshot().Fingerprint,
+                hookSurface.Fingerprint);
+            var audit = Assert.Single(
+                CopilotToolExecutionAuditLogger.GetRecentEntries(),
+                entry => entry.CallId == "hooks-async-notification");
+            Assert.Contains("@async=scheduled", audit.HookSummary, StringComparison.Ordinal);
+            string hooksReport = CopilotHookDiagnostics.Format(new CopilotHookDiagnosticSnapshot
+            {
+                HookSurface = hookSurface,
+                RecentToolExecutions = [audit],
+            });
+            Assert.Contains("mode async", hooksReport, StringComparison.Ordinal);
+            Assert.Contains("后台已调度 2", hooksReport, StringComparison.Ordinal);
+            Assert.Contains("async · scheduled", hooksReport, StringComparison.Ordinal);
+        }
+        finally
+        {
+            hook.ReleaseCallbacks();
+        }
+
+        await hook.WaitForCallbacksCompletedAsync();
+        Assert.True(hook.BeforeCompleted);
+        Assert.True(hook.AfterCompleted);
+    }
+
+    [Fact]
+    public async Task AsyncHookSchedulerRetainsTimedOutWorkAndRejectsPendingOverflow()
+    {
+        var scheduler = new CopilotToolExecutionHookBackgroundScheduler();
+        var release = new TaskCompletionSource<bool>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var firstWaveStarted = new TaskCompletionSource<bool>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var allCompleted = new TaskCompletionSource<bool>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var started = 0;
+        var completed = 0;
+
+        for (var index = 0; index < CopilotToolExecutionHookBackgroundScheduler.MaxConcurrency; index++)
+        {
+            Assert.True(scheduler.TrySchedule(
+                $"test:async:{index}",
+                CopilotToolExecutionHookPhase.AfterExecute,
+                "HooksFeatureTool",
+                $"async-capacity-{index}",
+                TimeSpan.FromMilliseconds(50),
+                async _ =>
+                {
+                    if (Interlocked.Increment(ref started)
+                        == CopilotToolExecutionHookBackgroundScheduler.MaxConcurrency)
+                    {
+                        firstWaveStarted.TrySetResult(true);
+                    }
+                    await release.Task;
+                    if (Interlocked.Increment(ref completed)
+                        == CopilotToolExecutionHookBackgroundScheduler.MaxPending)
+                    {
+                        allCompleted.TrySetResult(true);
+                    }
+                }));
+        }
+
+        await firstWaveStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await Task.Delay(200);
+        for (var index = CopilotToolExecutionHookBackgroundScheduler.MaxConcurrency;
+            index < CopilotToolExecutionHookBackgroundScheduler.MaxPending;
+            index++)
+        {
+            Assert.True(scheduler.TrySchedule(
+                $"test:async:{index}",
+                CopilotToolExecutionHookPhase.AfterExecute,
+                "HooksFeatureTool",
+                $"async-capacity-{index}",
+                TimeSpan.FromSeconds(5),
+                async cancellationToken =>
+                {
+                    await release.Task.WaitAsync(cancellationToken);
+                    if (Interlocked.Increment(ref completed)
+                        == CopilotToolExecutionHookBackgroundScheduler.MaxPending)
+                    {
+                        allCompleted.TrySetResult(true);
+                    }
+                }));
+        }
+
+        Assert.False(scheduler.TrySchedule(
+            "test:async:overflow",
+            CopilotToolExecutionHookPhase.AfterExecute,
+            "HooksFeatureTool",
+            "async-capacity-overflow",
+            TimeSpan.FromSeconds(5),
+            _ => Task.CompletedTask));
+
+        release.TrySetResult(true);
+        await allCompleted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.Equal(CopilotToolExecutionHookBackgroundScheduler.MaxPending, completed);
+    }
+
     private static CopilotToolInvocation CreateInvocation(
         ICopilotTool tool,
         string callId,
@@ -348,6 +506,65 @@ public sealed class CopilotCodexHooksFeatureTests
         {
             cancellationToken.ThrowIfCancellationRequested();
             return Task.CompletedTask;
+        }
+    }
+
+    private sealed class BlockingAsyncHook : ICopilotToolExecutionHook
+    {
+        private readonly TaskCompletionSource<bool> _beforeStarted =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource<bool> _afterStarted =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource<bool> _releaseBefore =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource<bool> _releaseAfter =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource<bool> _beforeCompleted =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource<bool> _afterCompleted =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public bool BeforeCompleted => _beforeCompleted.Task.IsCompletedSuccessfully;
+
+        public bool AfterCompleted => _afterCompleted.Task.IsCompletedSuccessfully;
+
+        public async Task<CopilotToolExecutionHookDecision> BeforeExecuteAsync(
+            CopilotToolExecutionHookContext context,
+            CancellationToken cancellationToken)
+        {
+            _beforeStarted.TrySetResult(true);
+            await _releaseBefore.Task.WaitAsync(cancellationToken);
+            _beforeCompleted.TrySetResult(true);
+            return CopilotToolExecutionHookDecision.Deny(
+                "This async decision must not control the tool call.",
+                "async_control_decision_ignored");
+        }
+
+        public async Task AfterExecuteAsync(
+            CopilotToolExecutionOutcome outcome,
+            CancellationToken cancellationToken)
+        {
+            _afterStarted.TrySetResult(true);
+            await _releaseAfter.Task.WaitAsync(cancellationToken);
+            _afterCompleted.TrySetResult(true);
+        }
+
+        public async Task WaitForCallbacksStartedAsync()
+        {
+            await Task.WhenAll(_beforeStarted.Task, _afterStarted.Task)
+                .WaitAsync(TimeSpan.FromSeconds(5));
+        }
+
+        public async Task WaitForCallbacksCompletedAsync()
+        {
+            await Task.WhenAll(_beforeCompleted.Task, _afterCompleted.Task)
+                .WaitAsync(TimeSpan.FromSeconds(5));
+        }
+
+        public void ReleaseCallbacks()
+        {
+            _releaseBefore.TrySetResult(true);
+            _releaseAfter.TrySetResult(true);
         }
     }
 

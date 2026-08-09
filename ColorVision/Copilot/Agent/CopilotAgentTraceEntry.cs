@@ -427,7 +427,10 @@ namespace ColorVision.Copilot
                             .Append("- ")
                             .Append(FormatHookPhase(hookRun.Phase))
                             .Append(' ')
-                            .Append(hookRun.SourceId)
+                            .Append(hookRun.SourceId);
+                        if (hookRun.ExecutionMode == CopilotToolExecutionHookMode.Async)
+                            builder.Append(" · async");
+                        builder
                             .Append(" · ")
                             .Append(FormatHookState(hookRun.State))
                             .Append(" · ")

@@ -33,6 +33,7 @@ namespace ColorVision.Copilot
         TimedOut,
         Cancelled,
         Skipped,
+        Scheduled,
     }
 
     public sealed class CopilotToolExecutionHookRun
@@ -44,11 +45,17 @@ namespace ColorVision.Copilot
 
         public CopilotToolExecutionHookPhase Phase { get; init; }
 
+        public CopilotToolExecutionHookMode ExecutionMode { get; init; } =
+            CopilotToolExecutionHookMode.Sync;
+
         public CopilotToolExecutionHookState State { get; init; }
 
         public long DurationMs { get; init; }
 
         public string FailureCode { get; init; } = string.Empty;
+
+        public bool ShouldSerializeExecutionMode() =>
+            ExecutionMode != CopilotToolExecutionHookMode.Sync;
 
         public bool IsStructurallyValid()
         {
@@ -58,10 +65,14 @@ namespace ColorVision.Copilot
                 && SourceId.Length <= MaxSourceIdLength
                 && !SourceId.Any(char.IsControl)
                 && Enum.IsDefined(Phase)
+                && Enum.IsDefined(ExecutionMode)
                 && Enum.IsDefined(State)
+                && (State != CopilotToolExecutionHookState.Scheduled
+                    || ExecutionMode == CopilotToolExecutionHookMode.Async)
                 && DurationMs is >= 0 and <= MaxDurationMs
                 && string.Equals(FailureCode, normalizedFailureCode, StringComparison.Ordinal)
-                && (State == CopilotToolExecutionHookState.Completed
+                && (State is CopilotToolExecutionHookState.Completed
+                    or CopilotToolExecutionHookState.Scheduled
                     ? normalizedFailureCode.Length == 0
                     : normalizedFailureCode.Length > 0);
         }
@@ -71,7 +82,8 @@ namespace ColorVision.Copilot
             CopilotToolExecutionHookPhase phase,
             CopilotToolExecutionHookState state,
             long durationMs,
-            string failureCode = "")
+            string failureCode = "",
+            CopilotToolExecutionHookMode executionMode = CopilotToolExecutionHookMode.Sync)
         {
             var normalizedFailureCode = state == CopilotToolExecutionHookState.Completed
                 ? string.Empty
@@ -80,6 +92,7 @@ namespace ColorVision.Copilot
             {
                 SourceId = NormalizeSourceId(sourceId),
                 Phase = phase,
+                ExecutionMode = executionMode,
                 State = state,
                 DurationMs = Math.Clamp(durationMs, 0, MaxDurationMs),
                 FailureCode = normalizedFailureCode,
@@ -91,7 +104,8 @@ namespace ColorVision.Copilot
             Phase,
             State,
             DurationMs,
-            FailureCode);
+            FailureCode,
+            ExecutionMode);
 
         internal static string NormalizeSourceId(string? sourceId)
         {

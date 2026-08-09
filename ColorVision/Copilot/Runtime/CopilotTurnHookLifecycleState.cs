@@ -174,6 +174,7 @@ namespace ColorVision.Copilot
         {
             return actual?.IsStructurallyValid() == true
                 && expected.Phase == actual.Phase
+                && expected.ExecutionMode == actual.ExecutionMode
                 && expected.State == actual.State
                 && expected.DurationMs == actual.DurationMs
                 && string.Equals(expected.SourceId, actual.SourceId, StringComparison.Ordinal)

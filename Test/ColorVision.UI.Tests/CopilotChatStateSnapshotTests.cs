@@ -347,6 +347,13 @@ public class CopilotChatStateSnapshotTests
                     DurationMs = 3,
                     FailureCode = "tool_hook_failed",
                 },
+                new CopilotToolExecutionHookRun
+                {
+                    SourceId = "test:async-audit",
+                    Phase = CopilotToolExecutionHookPhase.AfterExecute,
+                    ExecutionMode = CopilotToolExecutionHookMode.Async,
+                    State = CopilotToolExecutionHookState.Scheduled,
+                },
             ],
         });
         assistant.RecordResponseTimelineTool("call-1");
@@ -381,9 +388,16 @@ public class CopilotChatStateSnapshotTests
         Assert.NotNull(traceDocument[nameof(CopilotAgentTraceEntry.CompletedAtUtc)]);
         Assert.NotNull(traceDocument[nameof(CopilotAgentTraceEntry.TimeoutMs)]);
         Assert.NotNull(traceDocument[nameof(CopilotAgentTraceEntry.ResultSummary)]);
+        var hookDocuments = Assert.IsType<JArray>(
+            traceDocument[nameof(CopilotAgentTraceEntry.HookRuns)]);
+        Assert.Equal(3, hookDocuments.Count);
+        Assert.Null(hookDocuments[0]![nameof(CopilotToolExecutionHookRun.ExecutionMode)]);
         Assert.Equal(
-            2,
-            Assert.IsType<JArray>(traceDocument[nameof(CopilotAgentTraceEntry.HookRuns)]).Count);
+            (int)CopilotToolExecutionHookMode.Async,
+            hookDocuments[2]![nameof(CopilotToolExecutionHookRun.ExecutionMode)]!.Value<int>());
+        Assert.Equal(
+            (int)CopilotToolExecutionHookState.Scheduled,
+            hookDocuments[2]![nameof(CopilotToolExecutionHookRun.State)]!.Value<int>());
         Assert.Null(traceDocument[nameof(CopilotAgentTraceEntry.Attempt)]);
         Assert.Null(traceDocument[nameof(CopilotAgentTraceEntry.MaxAttempts)]);
         Assert.Null(traceDocument[nameof(CopilotAgentTraceEntry.Access)]);
@@ -439,6 +453,12 @@ public class CopilotChatStateSnapshotTests
                 Assert.Equal("test:audit", hookRun.SourceId);
                 Assert.Equal(CopilotToolExecutionHookState.Failed, hookRun.State);
                 Assert.Equal("tool_hook_failed", hookRun.FailureCode);
+            },
+            hookRun =>
+            {
+                Assert.Equal("test:async-audit", hookRun.SourceId);
+                Assert.Equal(CopilotToolExecutionHookMode.Async, hookRun.ExecutionMode);
+                Assert.Equal(CopilotToolExecutionHookState.Scheduled, hookRun.State);
             });
         Assert.Equal(2, restoredMessage.ResponseTimelineEvents.Count);
         Assert.Equal(CopilotResponseTimelineEventKind.ToolCall, restoredMessage.ResponseTimelineEvents[0].Kind);

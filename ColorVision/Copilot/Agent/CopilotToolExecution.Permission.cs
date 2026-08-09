@@ -77,6 +77,30 @@ namespace ColorVision.Copilot
                     _hookPhaseTimeout));
             foreach (var binding in permissionHooks)
             {
+                if (binding.ExecutionMode == CopilotToolExecutionHookMode.Async)
+                {
+                    var asyncPermissionHook =
+                        (ICopilotToolPermissionRequestHook)binding.Hook;
+                    ScheduleAsyncHook(
+                        binding,
+                        CopilotToolExecutionHookPhase.PermissionRequest,
+                        invocation,
+                        hookRuns,
+                        async token =>
+                        {
+                            var decision = await asyncPermissionHook.OnPermissionRequestAsync(
+                                context,
+                                token).ConfigureAwait(false);
+                            if (decision?.ShouldPrompt == false
+                                || !string.IsNullOrWhiteSpace(decision?.Reason))
+                            {
+                                Log.Warn(
+                                    $"Copilot async permission-hook control decision was ignored. Tool={invocation.Tool.Name} CallId={invocation.CallId} HookSource={binding.SourceId}");
+                            }
+                        });
+                    continue;
+                }
+
                 BeginHookRun(
                     hookRuns,
                     hookEvents,

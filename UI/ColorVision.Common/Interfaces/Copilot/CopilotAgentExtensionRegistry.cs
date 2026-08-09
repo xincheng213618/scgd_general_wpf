@@ -401,6 +401,11 @@ namespace ColorVision.UI
             }
 
             _ = hook.Order;
+            if (!Enum.IsDefined(hook.ExecutionMode))
+            {
+                throw new ArgumentException(
+                    $"Module tool execution hook '{name}' has an invalid execution mode.");
+            }
         }
 
         private static string NormalizeSourceId(string sourceId)

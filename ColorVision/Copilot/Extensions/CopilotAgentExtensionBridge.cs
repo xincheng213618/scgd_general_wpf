@@ -65,6 +65,9 @@ namespace ColorVision.Copilot
 
         public int Order { get; init; }
 
+        public CopilotToolExecutionHookMode ExecutionMode { get; init; } =
+            CopilotToolExecutionHookMode.Sync;
+
         public bool IsActive { get; init; }
     }
 
@@ -281,6 +284,7 @@ namespace ColorVision.Copilot
                             Name = hook.Name.Trim(),
                             ToolNamePattern = NormalizeHookPattern(hook.ToolNamePattern),
                             Order = hook.Order,
+                            ExecutionMode = MapExecutionMode(hook.ExecutionMode),
                             IsActive = activeHookCounts.ContainsKey(extension.SourceId),
                         }).ToArray(),
                     }).ToArray(),
@@ -309,7 +313,8 @@ namespace ColorVision.Copilot
                 adapter,
                 NormalizeHookPattern(hook.ToolNamePattern),
                 hook.Order,
-                ComputeHookConfigurationFingerprint(extension, hook));
+                ComputeHookConfigurationFingerprint(extension, hook),
+                MapExecutionMode(hook.ExecutionMode));
         }
 
         private static string BuildHookSourceId(string extensionSourceId, string hookName) =>
@@ -334,10 +339,22 @@ namespace ColorVision.Copilot
                 hook.Name.Trim(),
                 NormalizeHookPattern(hook.ToolNamePattern),
                 hook.Order.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                hook.ExecutionMode.ToString().ToLowerInvariant(),
             });
             return Convert.ToHexString(
                 SHA256.HashData(Encoding.UTF8.GetBytes(identity))).ToLowerInvariant();
         }
+
+        private static CopilotToolExecutionHookMode MapExecutionMode(
+            CopilotModuleToolExecutionHookMode executionMode) => executionMode switch
+        {
+            CopilotModuleToolExecutionHookMode.Sync => CopilotToolExecutionHookMode.Sync,
+            CopilotModuleToolExecutionHookMode.Async => CopilotToolExecutionHookMode.Async,
+            _ => throw new ArgumentOutOfRangeException(
+                nameof(executionMode),
+                executionMode,
+                "Module tool execution hook mode is invalid."),
+        };
     }
 
     internal sealed class CopilotModuleContextProviderAdapter : ICopilotContextProvider

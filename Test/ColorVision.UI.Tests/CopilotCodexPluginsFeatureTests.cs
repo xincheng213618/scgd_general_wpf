@@ -233,6 +233,34 @@ public sealed class CopilotCodexPluginsFeatureTests
     }
 
     [Fact]
+    public void ModuleAsyncHookModeFlowsThroughBridgeAndRuntimeSnapshot()
+    {
+        var extensionRegistry = new CopilotAgentExtensionRegistry();
+        var hookRegistry = new CopilotToolExecutionHookRegistry();
+        using var bridge = new CopilotAgentExtensionBridge(
+            extensionRegistry,
+            new CopilotCapabilityCatalog(),
+            reservedToolNames: [],
+            hookRegistry);
+        using var registration = extensionRegistry.Register(
+            new CopilotAgentExtensionRegistration
+            {
+                SourceId = "test.plugins-async-hook",
+                SourceName = "Async hook extension",
+                SourceVersion = "1.0.0",
+                ToolExecutionHooks = [new AsyncModuleHook()],
+            });
+
+        var source = Assert.Single(bridge.GetSnapshot().Sources);
+        var declaredHook = Assert.Single(source.Hooks);
+        Assert.True(declaredHook.IsActive);
+        Assert.Equal(CopilotToolExecutionHookMode.Async, declaredHook.ExecutionMode);
+        var runtimeHook = Assert.Single(hookRegistry.GetSnapshot().Entries);
+        Assert.Equal(declaredHook.SourceId, runtimeHook.SourceId);
+        Assert.Equal(CopilotToolExecutionHookMode.Async, runtimeHook.ExecutionMode);
+    }
+
+    [Fact]
     public void DiagnosticsAndHarnessExposeTheFrozenPluginBoundary()
     {
         var options = CopilotProjectInstructionDiscoveryConfig.CreateDefault() with
@@ -408,6 +436,19 @@ public sealed class CopilotCodexPluginsFeatureTests
             Interlocked.Increment(ref _afterCount);
             return Task.CompletedTask;
         }
+    }
+
+    private sealed class AsyncModuleHook : ICopilotModuleToolExecutionHook
+    {
+        public string Name => "Async_Module_Hook";
+
+        public CopilotModuleToolExecutionHookMode ExecutionMode =>
+            CopilotModuleToolExecutionHookMode.Async;
+
+        public Task<CopilotModuleToolExecutionHookDecision> BeforeExecuteAsync(
+            CopilotModuleToolExecutionHookContext context,
+            CancellationToken cancellationToken) =>
+            Task.FromResult(CopilotModuleToolExecutionHookDecision.Proceed);
     }
 
     private sealed class RecordingTool(string name) : ICopilotTool

@@ -74,9 +74,7 @@ namespace ColorVision.Copilot
                     .Append(" · type ")
                     .Append(FormatInline(hook.HookType, "unknown", 200))
                     .Append(" · mode ")
-                    .Append(hook.ExecutionMode == CopilotToolExecutionHookMode.Sync
-                        ? "sync"
-                        : "unknown")
+                    .Append(FormatHookMode(hook.ExecutionMode))
                     .AppendLine();
             }
             if (hookSurface.Entries.Count > MaxEffectiveHooks)
@@ -140,6 +138,8 @@ namespace ColorVision.Copilot
                         .Append(FormatInline(hook.ToolNamePattern, "*", 160))
                         .Append(" · order ")
                         .Append(hook.Order.ToString(CultureInfo.InvariantCulture))
+                        .Append(" · mode ")
+                        .Append(FormatHookMode(hook.ExecutionMode))
                         .AppendLine();
                 }
                 if (extensionHooks.Length > MaxExtensionHooks)
@@ -182,6 +182,8 @@ namespace ColorVision.Copilot
             {
                 builder.Append("（完成 ")
                     .Append(FormatCount(CountState(observations, CopilotToolExecutionHookState.Completed)))
+                    .Append("，后台已调度 ")
+                    .Append(FormatCount(CountState(observations, CopilotToolExecutionHookState.Scheduled)))
                     .Append("，拒绝 ")
                     .Append(FormatCount(CountState(observations, CopilotToolExecutionHookState.Denied)))
                     .Append("，失败 ")
@@ -218,6 +220,8 @@ namespace ColorVision.Copilot
                     .Append(" · ")
                     .Append(FormatInline(run.SourceId, "unknown", 160))
                     .Append(" · ")
+                    .Append(FormatHookMode(run.ExecutionMode))
+                    .Append(" · ")
                     .Append(FormatHookState(run.State))
                     .Append(" · ")
                     .Append(FormatCount(run.DurationMs))
@@ -241,12 +245,20 @@ namespace ColorVision.Copilot
 
         private static string FormatHookState(CopilotToolExecutionHookState state) => state switch
         {
+            CopilotToolExecutionHookState.Scheduled => "scheduled",
             CopilotToolExecutionHookState.Completed => "completed",
             CopilotToolExecutionHookState.Denied => "denied",
             CopilotToolExecutionHookState.Failed => "failed",
             CopilotToolExecutionHookState.TimedOut => "timed_out",
             CopilotToolExecutionHookState.Cancelled => "cancelled",
             CopilotToolExecutionHookState.Skipped => "skipped",
+            _ => "unknown",
+        };
+
+        private static string FormatHookMode(CopilotToolExecutionHookMode mode) => mode switch
+        {
+            CopilotToolExecutionHookMode.Sync => "sync",
+            CopilotToolExecutionHookMode.Async => "async",
             _ => "unknown",
         };
 

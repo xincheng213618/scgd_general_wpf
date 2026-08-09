@@ -19,6 +19,27 @@ namespace ColorVision.Copilot
             var phaseStopwatch = Stopwatch.StartNew();
             foreach (var binding in hooks)
             {
+                if (binding.ExecutionMode == CopilotToolExecutionHookMode.Async)
+                {
+                    ScheduleAsyncHook(
+                        binding,
+                        CopilotToolExecutionHookPhase.BeforeExecute,
+                        context.Invocation,
+                        hookRuns,
+                        async token =>
+                        {
+                            var decision = await binding.Hook.BeforeExecuteAsync(
+                                context,
+                                token).ConfigureAwait(false);
+                            if (decision?.ShouldProceed == false)
+                            {
+                                Log.Warn(
+                                    $"Copilot async pre-tool hook control decision was ignored. Tool={context.Invocation.Tool.Name} CallId={context.Invocation.CallId} HookSource={binding.SourceId}");
+                            }
+                        });
+                    continue;
+                }
+
                 BeginHookRun(
                     hookRuns,
                     hookEvents,
@@ -161,6 +182,17 @@ namespace ColorVision.Copilot
             var phaseStopwatch = Stopwatch.StartNew();
             foreach (var binding in hooks)
             {
+                if (binding.ExecutionMode == CopilotToolExecutionHookMode.Async)
+                {
+                    ScheduleAsyncHook(
+                        binding,
+                        CopilotToolExecutionHookPhase.AfterExecute,
+                        outcome.Invocation,
+                        hookRuns,
+                        token => binding.Hook.AfterExecuteAsync(outcome, token));
+                    continue;
+                }
+
                 BeginHookRun(
                     hookRuns,
                     hookEvents,
@@ -259,6 +291,37 @@ namespace ColorVision.Copilot
             return outcome;
         }
 
+        private void ScheduleAsyncHook(
+            CopilotToolExecutionHookBinding binding,
+            CopilotToolExecutionHookPhase phase,
+            CopilotToolInvocation invocation,
+            List<CopilotToolExecutionHookRun> hookRuns,
+            Func<CancellationToken, Task> callback)
+        {
+            var scheduled = CopilotToolExecutionHookBackgroundScheduler.Shared.TrySchedule(
+                binding.SourceId,
+                phase,
+                invocation.Tool.Name,
+                invocation.CallId,
+                _hookPhaseTimeout,
+                callback);
+            RecordHookRun(
+                hookRuns,
+                binding.SourceId,
+                phase,
+                scheduled
+                    ? CopilotToolExecutionHookState.Scheduled
+                    : CopilotToolExecutionHookState.Skipped,
+                durationMs: 0,
+                failureCode: scheduled ? string.Empty : "tool_hook_async_queue_full",
+                executionMode: CopilotToolExecutionHookMode.Async);
+            if (!scheduled)
+            {
+                Log.Warn(
+                    $"Copilot async tool hook queue is full. Tool={invocation.Tool.Name} CallId={invocation.CallId} HookSource={binding.SourceId} Phase={phase}");
+            }
+        }
+
         private static void BeginHookRun(
             List<CopilotToolExecutionHookRun> hookRuns,
             CopilotToolExecutionHookEventPublisher hookEvents,
@@ -276,7 +339,8 @@ namespace ColorVision.Copilot
             CopilotToolExecutionHookState state,
             long durationMs,
             string failureCode = "",
-            CopilotToolExecutionHookEventPublisher? hookEvents = null)
+            CopilotToolExecutionHookEventPublisher? hookEvents = null,
+            CopilotToolExecutionHookMode executionMode = CopilotToolExecutionHookMode.Sync)
         {
             if (hookRuns.Count >= MaxRecordedHookRuns)
                 return;
@@ -286,7 +350,8 @@ namespace ColorVision.Copilot
                 phase,
                 state,
                 durationMs,
-                failureCode);
+                failureCode,
+                executionMode);
             hookRuns.Add(hookRun);
             hookEvents?.Completed(hookRun);
         }
