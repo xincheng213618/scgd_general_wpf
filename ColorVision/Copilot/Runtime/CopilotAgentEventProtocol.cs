@@ -21,6 +21,7 @@ namespace ColorVision.Copilot
             UserQuestion = 1 << 10,
             SteeringMessages = 1 << 11,
             ProviderRetry = 1 << 12,
+            ProviderConnectionRecovery = 1 << 13,
         }
 
         public static void Validate(CopilotAgentEvent agentEvent)
@@ -76,6 +77,8 @@ namespace ColorVision.Copilot
                 payload |= PayloadKind.SteeringMessages;
             if (agentEvent.ProviderRetry != null)
                 payload |= PayloadKind.ProviderRetry;
+            if (agentEvent.ProviderConnectionRecovery != null)
+                payload |= PayloadKind.ProviderConnectionRecovery;
             return payload;
         }
 
@@ -87,7 +90,7 @@ namespace ColorVision.Copilot
             {
                 CopilotAgentEventType.Status => (text, text),
                 CopilotAgentEventType.RuntimeDiagnostic =>
-                    (text, text | PayloadKind.ProviderRetry),
+                    (text, text | PayloadKind.ProviderRetry | PayloadKind.ProviderConnectionRecovery),
                 CopilotAgentEventType.BudgetUpdated =>
                     (PayloadKind.Budget, PayloadKind.Budget),
                 CopilotAgentEventType.ToolStarted =>
@@ -152,6 +155,13 @@ namespace ColorVision.Copilot
 
         private static void ValidateCorrelatedPayload(CopilotAgentEvent agentEvent)
         {
+            if (agentEvent.ProviderRetry != null
+                && agentEvent.ProviderConnectionRecovery != null)
+            {
+                throw new InvalidOperationException(
+                    "Copilot Agent runtime diagnostic cannot describe both a bounded retry and connection recovery.");
+            }
+
             switch (agentEvent.Type)
             {
                 case CopilotAgentEventType.ToolStarted:
@@ -167,6 +177,11 @@ namespace ColorVision.Copilot
                 case CopilotAgentEventType.RuntimeDiagnostic when agentEvent.ProviderRetry != null:
                     CopilotProviderRetryProtocol.ValidateDiagnostic(
                         agentEvent.ProviderRetry,
+                        agentEvent.Text);
+                    break;
+                case CopilotAgentEventType.RuntimeDiagnostic when agentEvent.ProviderConnectionRecovery != null:
+                    CopilotProviderConnectionRecoveryProtocol.ValidateDiagnostic(
+                        agentEvent.ProviderConnectionRecovery,
                         agentEvent.Text);
                     break;
                 case CopilotAgentEventType.SteeringDelivered:

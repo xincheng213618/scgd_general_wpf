@@ -63,6 +63,8 @@ namespace ColorVision.Copilot
 
         internal CopilotProviderRetryInfo? ProviderRetry { get; init; }
 
+        internal CopilotProviderConnectionRecoveryInfo? ProviderConnectionRecovery { get; init; }
+
         public static CopilotAgentEvent Status(string text)
         {
             return new CopilotAgentEvent
@@ -124,6 +126,18 @@ namespace ColorVision.Copilot
                 Type = CopilotAgentEventType.RuntimeDiagnostic,
                 Text = retry.ToDiagnosticText(),
                 ProviderRetry = retry,
+            };
+        }
+
+        internal static CopilotAgentEvent FromProviderConnectionRecovery(
+            CopilotProviderConnectionRecoveryInfo recovery)
+        {
+            ArgumentNullException.ThrowIfNull(recovery);
+            return new CopilotAgentEvent
+            {
+                Type = CopilotAgentEventType.RuntimeDiagnostic,
+                Text = recovery.ToDiagnosticText(),
+                ProviderConnectionRecovery = recovery,
             };
         }
 

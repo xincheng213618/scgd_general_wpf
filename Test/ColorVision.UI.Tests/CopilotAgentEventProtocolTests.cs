@@ -127,6 +127,47 @@ public sealed class CopilotAgentEventProtocolTests
     }
 
     [Fact]
+    public void ProtocolAcceptsStructuredProviderConnectionRecoveryDiagnostic()
+    {
+        var recovery = new CopilotProviderConnectionRecoveryInfo(
+            1,
+            TimeSpan.FromSeconds(5),
+            "connection failure",
+            "request-1");
+
+        CopilotAgentEventProtocol.Validate(
+            CopilotAgentEvent.FromProviderConnectionRecovery(recovery));
+    }
+
+    [Fact]
+    public void ProtocolRejectsConflictingProviderRecoveryPayloads()
+    {
+        var retry = new CopilotProviderRetryInfo(
+            1,
+            2,
+            3,
+            TimeSpan.FromMilliseconds(250),
+            "timeout",
+            null);
+        var recovery = new CopilotProviderConnectionRecoveryInfo(
+            1,
+            TimeSpan.FromSeconds(5),
+            "connection failure");
+        var agentEvent = new CopilotAgentEvent
+        {
+            Type = CopilotAgentEventType.RuntimeDiagnostic,
+            Text = retry.ToDiagnosticText(),
+            ProviderRetry = retry,
+            ProviderConnectionRecovery = recovery,
+        };
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            CopilotAgentEventProtocol.Validate(agentEvent));
+
+        Assert.Contains("cannot describe both", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void ReducerRejectsProviderRetryDiagnosticThatDisagreesWithMetadata()
     {
         var agentEvent = new CopilotAgentEvent

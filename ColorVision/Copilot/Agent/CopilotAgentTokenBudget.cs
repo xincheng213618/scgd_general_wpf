@@ -317,6 +317,11 @@ namespace ColorVision.Copilot
             {
                 response = await base.GetResponseAsync(materializedMessages, options, cancellationToken);
             }
+            catch (CopilotProviderConnectionRecoveryCancelledException)
+            {
+                RecordProviderCallDuration(ToMilliseconds(providerStopwatch.Elapsed));
+                throw;
+            }
             catch (Exception exception) when (CopilotContextWindowFailureClassifier.TryClassify(exception, out _))
             {
                 RecordProviderCallDuration(ToMilliseconds(providerStopwatch.Elapsed));
@@ -360,6 +365,11 @@ namespace ColorVision.Copilot
             try
             {
                 enumerator = await OpenStreamingAttemptAsync(materializedMessages, options, cancellationToken);
+            }
+            catch (CopilotProviderConnectionRecoveryCancelledException)
+            {
+                RecordProviderCallDuration(ToMilliseconds(providerStopwatch.Elapsed));
+                throw;
             }
             catch (Exception exception) when (CopilotContextWindowFailureClassifier.TryClassify(exception, out _))
             {

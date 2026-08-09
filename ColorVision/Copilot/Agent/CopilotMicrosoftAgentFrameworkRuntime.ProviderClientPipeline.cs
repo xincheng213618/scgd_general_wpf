@@ -1,4 +1,5 @@
 #pragma warning disable MAAI001
+using Microsoft.Extensions.AI;
 using System;
 using System.Diagnostics;
 using System.Threading;
@@ -39,8 +40,15 @@ namespace ColorVision.Copilot
                     _chatClientFactory(request.Profile)),
                 providerInactivityTimeouts.FirstResponseTimeout,
                 providerInactivityTimeouts.StreamingUpdateTimeout);
+            IChatClient recoverableProviderChatClient = providerChatClient;
+            if (CopilotProviderConnectionRecoveryChatClient.IsEligibleRootRequest(request))
+            {
+                recoverableProviderChatClient = new CopilotProviderConnectionRecoveryChatClient(
+                    providerChatClient,
+                    recovery => emit(CopilotAgentEvent.FromProviderConnectionRecovery(recovery)));
+            }
             var chatClient = new CopilotTokenBudgetChatClient(
-                providerChatClient,
+                recoverableProviderChatClient,
                 tokenBudget,
                 snapshot => emit(CopilotAgentEvent.RuntimeDiagnostic(
                     $"Agent token budget exhausted after {snapshot.ProviderCalls} provider call(s); the model loop was stopped without replaying tools.")),
