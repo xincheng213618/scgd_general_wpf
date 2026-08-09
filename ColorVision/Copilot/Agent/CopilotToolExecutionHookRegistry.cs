@@ -9,6 +9,11 @@ using System.Threading;
 
 namespace ColorVision.Copilot
 {
+    public enum CopilotToolExecutionHookMode
+    {
+        Sync,
+    }
+
     internal sealed record CopilotToolExecutionHookBinding(
         string SourceId,
         ICopilotToolExecutionHook Hook);
@@ -30,6 +35,9 @@ namespace ColorVision.Copilot
 
         public string HookType { get; init; } = string.Empty;
 
+        public CopilotToolExecutionHookMode ExecutionMode { get; init; } =
+            CopilotToolExecutionHookMode.Sync;
+
         public string DefinitionFingerprint { get; init; } = string.Empty;
 
         public bool IsStructurallyValid()
@@ -46,6 +54,7 @@ namespace ColorVision.Copilot
                 && string.Equals(HookType, HookType.Trim(), StringComparison.Ordinal)
                 && HookType.Length <= 1_024
                 && !HookType.Any(char.IsControl)
+                && ExecutionMode == CopilotToolExecutionHookMode.Sync
                 && IsSha256(DefinitionFingerprint);
         }
 
@@ -208,6 +217,7 @@ namespace ColorVision.Copilot
                 ToolNamePattern = NormalizePattern(toolNamePattern),
                 Order = order,
                 HookType = hook.GetType().FullName ?? hook.GetType().Name,
+                ExecutionMode = CopilotToolExecutionHookMode.Sync,
                 DefinitionFingerprint = CreateDefinitionFingerprint(hook, configurationFingerprint),
             };
         }
@@ -236,6 +246,7 @@ namespace ColorVision.Copilot
                 entry.ToolNamePattern,
                 entry.Order,
                 entry.HookType,
+                ExecutionMode = entry.ExecutionMode.ToString().ToLowerInvariant(),
                 entry.DefinitionFingerprint,
             }));
             return Convert.ToHexString(

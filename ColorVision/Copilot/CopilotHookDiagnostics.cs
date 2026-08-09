@@ -73,6 +73,10 @@ namespace ColorVision.Copilot
                     .Append(hook.Order.ToString(CultureInfo.InvariantCulture))
                     .Append(" · type ")
                     .Append(FormatInline(hook.HookType, "unknown", 200))
+                    .Append(" · mode ")
+                    .Append(hook.ExecutionMode == CopilotToolExecutionHookMode.Sync
+                        ? "sync"
+                        : "unknown")
                     .AppendLine();
             }
             if (hookSurface.Entries.Count > MaxEffectiveHooks)
