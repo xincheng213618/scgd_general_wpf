@@ -585,6 +585,9 @@ namespace ColorVision.Copilot
             var content = new List<object>();
             if (!string.IsNullOrWhiteSpace(text))
                 content.Add(new { type = "text", text });
+            var preparationNotice = BuildImagePreparationNotice(images);
+            if (preparationNotice.Length > 0)
+                content.Add(new { type = "text", text = preparationNotice });
             foreach (var image in images)
             {
                 content.Add(new
@@ -609,6 +612,9 @@ namespace ColorVision.Copilot
             var content = new List<object>();
             if (!string.IsNullOrWhiteSpace(text))
                 content.Add(new { type = "text", text });
+            var preparationNotice = BuildImagePreparationNotice(images);
+            if (preparationNotice.Length > 0)
+                content.Add(new { type = "text", text = preparationNotice });
             foreach (var image in images)
             {
                 content.Add(new
@@ -622,6 +628,36 @@ namespace ColorVision.Copilot
                 });
             }
             return content;
+        }
+
+        internal static string BuildImagePreparationNotice(IReadOnlyList<CopilotImagePayload> images)
+        {
+            var resized = images.Where(image => image.WasResized).ToArray();
+            if (resized.Length == 0)
+                return string.Empty;
+
+            var builder = new StringBuilder();
+            builder.Append("[Image preparation] The application resized ")
+                .Append(resized.Length)
+                .Append(" image(s) to fit the ")
+                .Append(CopilotImageInputBudget.MaximumDimension)
+                .Append(" px / ")
+                .Append(CopilotImageInputBudget.MaximumPatches)
+                .AppendLine(" patch input budget. Inspect only the prepared pixels:");
+            foreach (var image in resized)
+            {
+                builder.Append("- ")
+                    .Append(image.DisplayLabel)
+                    .Append(": ")
+                    .Append(image.SourceWidth)
+                    .Append('×')
+                    .Append(image.SourceHeight)
+                    .Append(" -> ")
+                    .Append(image.PreparedWidth)
+                    .Append('×')
+                    .AppendLine(image.PreparedHeight.ToString());
+            }
+            return builder.ToString().TrimEnd();
         }
 
     }
