@@ -28,7 +28,9 @@ namespace ColorVision.Copilot
             int maximumMetadataCharacters,
             IReadOnlyDictionary<string, CopilotAgentSkillOverrideState>? skillPathOverrides = null,
             Func<AgentSkill, string?>? skillFilePathResolver = null,
-            bool allowImplicitSelection = true)
+            bool allowImplicitSelection = true,
+            IReadOnlyList<CopilotMcpClientServerConfig>? configuredMcpServers = null,
+            Func<AgentSkill, CopilotAgentSkillImplicitAvailability>? implicitAvailabilityResolver = null)
         {
             var query = userText?.Trim() ?? string.Empty;
             var queryWords = ExtractAsciiWords(query);
@@ -38,6 +40,7 @@ namespace ColorVision.Copilot
                 .Where(skillName => IsExplicitlyInvoked(query, skillName))
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
             var metadataExplicitOnlyNames = new List<string>();
+            var unavailableDependencyNames = new List<string>();
             var historicalExplicitOnlyNames = new List<string>();
             var manualNameOnlyNames = new List<string>();
             var manualExplicitOnlyNames = new List<string>();
@@ -70,9 +73,16 @@ namespace ColorVision.Copilot
 
                 if (!explicitlyInvoked)
                 {
-                    if (DisallowsImplicitInvocation(skill))
+                    var implicitAvailability = implicitAvailabilityResolver?.Invoke(skill)
+                        ?? ResolveImplicitAvailability(skill, configuredMcpServers);
+                    if (implicitAvailability == CopilotAgentSkillImplicitAvailability.ExplicitOnly)
                     {
                         metadataExplicitOnlyNames.Add(skillName);
+                        continue;
+                    }
+                    if (implicitAvailability == CopilotAgentSkillImplicitAvailability.DependencyUnavailable)
+                    {
+                        unavailableDependencyNames.Add(skillName);
                         continue;
                     }
                     if (overrideState == CopilotAgentSkillOverrideState.UserInvocableOnly)
@@ -152,6 +162,7 @@ namespace ColorVision.Copilot
             return new CopilotAgentSkillSelection(
                 selectedSkills,
                 metadataExplicitOnlyNames.ToArray(),
+                unavailableDependencyNames.ToArray(),
                 historicalExplicitOnlyNames.ToArray(),
                 manualNameOnlyNames.ToArray(),
                 manualExplicitOnlyNames.ToArray(),
@@ -214,10 +225,28 @@ namespace ColorVision.Copilot
             return character is >= 'a' and <= 'z' or >= 'A' and <= 'Z' or >= '0' and <= '9' or '-';
         }
 
-        private static bool DisallowsImplicitInvocation(AgentSkill skill)
+        internal static CopilotAgentSkillImplicitAvailability ResolveImplicitAvailability(
+            AgentSkill skill,
+            IReadOnlyList<CopilotMcpClientServerConfig>? configuredMcpServers = null)
         {
-            return skill is AgentFileSkill fileSkill
-                && CopilotAgentSkillMetadata.Read(fileSkill.Path).AllowImplicitInvocation == false;
+            if (skill is not AgentFileSkill fileSkill)
+                return CopilotAgentSkillImplicitAvailability.Available;
+
+            return ResolveImplicitAvailability(fileSkill.Path, configuredMcpServers);
+        }
+
+        internal static CopilotAgentSkillImplicitAvailability ResolveImplicitAvailability(
+            string? skillDirectoryPath,
+            IReadOnlyList<CopilotMcpClientServerConfig>? configuredMcpServers = null)
+        {
+            var metadata = CopilotAgentSkillMetadata.Read(skillDirectoryPath);
+            if (metadata.AllowImplicitInvocation == false)
+                return CopilotAgentSkillImplicitAvailability.ExplicitOnly;
+            return metadata.Dependencies.Any(dependency =>
+                    CopilotAgentSkillMcpDependencyPolicy.Evaluate(dependency, configuredMcpServers)
+                        is not (CopilotAgentSkillMcpDependencyStatus.NotMcp or CopilotAgentSkillMcpDependencyStatus.Installed))
+                ? CopilotAgentSkillImplicitAvailability.DependencyUnavailable
+                : CopilotAgentSkillImplicitAvailability.Available;
         }
 
         private static int CalculateRelevanceScore(
@@ -337,6 +366,7 @@ namespace ColorVision.Copilot
     internal sealed record CopilotAgentSkillSelection(
         IReadOnlyList<AgentSkill> SelectedSkills,
         IReadOnlyList<string> MetadataExplicitOnlyNames,
+        IReadOnlyList<string> UnavailableDependencyNames,
         IReadOnlyList<string> HistoricalExplicitOnlyNames,
         IReadOnlyList<string> ManualNameOnlyNames,
         IReadOnlyList<string> ManualExplicitOnlyNames,
@@ -344,4 +374,11 @@ namespace ColorVision.Copilot
         IReadOnlyList<string> AutomaticInstructionsDisabledNames,
         IReadOnlyList<string> IrrelevantNames,
         IReadOnlyList<string> ShortenedDescriptionNames);
+
+    internal enum CopilotAgentSkillImplicitAvailability
+    {
+        Available,
+        ExplicitOnly,
+        DependencyUnavailable,
+    }
 }

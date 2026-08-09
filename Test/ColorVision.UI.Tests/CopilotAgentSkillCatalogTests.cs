@@ -515,6 +515,85 @@ public sealed class CopilotAgentSkillCatalogTests
     }
 
     [Fact]
+    public void UnavailableMcpDependencyRequiresExplicitSkillInvocation()
+    {
+        var skillDirectory = CreateTemporaryDirectory();
+        try
+        {
+            WriteSkill(skillDirectory, "document-review", "Review documents using the docs service");
+            var agentsDirectory = Path.Combine(skillDirectory, "agents");
+            Directory.CreateDirectory(agentsDirectory);
+            File.WriteAllText(Path.Combine(agentsDirectory, "openai.yaml"), """
+                dependencies:
+                  tools:
+                    - type: "mcp"
+                      value: "docs"
+                      description: "Docs MCP server"
+                      transport: "streamable_http"
+                      url: "https://example.test/docs-mcp"
+                """);
+            var skill = new TestAgentSkill("document-review", "Review documents using the docs service");
+            var historicalExplicitOnlyNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var overrides = new Dictionary<string, CopilotAgentSkillOverrideState>(StringComparer.OrdinalIgnoreCase);
+            var configuredServer = new CopilotMcpClientServerConfig
+            {
+                Name = "docs-configured",
+                Endpoint = "https://example.test/docs-mcp",
+                Enabled = true,
+            };
+
+            var unavailable = CopilotAgentSkillSelectionPolicy.Select(
+                [skill],
+                "Review this document using the docs service.",
+                historicalExplicitOnlyNames,
+                overrides,
+                maximumCount: 4,
+                maximumMetadataCharacters: 1_024,
+                implicitAvailabilityResolver: _ =>
+                    CopilotAgentSkillSelectionPolicy.ResolveImplicitAvailability(skillDirectory));
+            var explicitSelection = CopilotAgentSkillSelectionPolicy.Select(
+                [skill],
+                "$document-review review this document.",
+                historicalExplicitOnlyNames,
+                overrides,
+                maximumCount: 4,
+                maximumMetadataCharacters: 1_024,
+                implicitAvailabilityResolver: _ =>
+                    CopilotAgentSkillSelectionPolicy.ResolveImplicitAvailability(skillDirectory));
+            var available = CopilotAgentSkillSelectionPolicy.Select(
+                [skill],
+                "Review this document using the docs service.",
+                historicalExplicitOnlyNames,
+                overrides,
+                maximumCount: 4,
+                maximumMetadataCharacters: 1_024,
+                implicitAvailabilityResolver: _ =>
+                    CopilotAgentSkillSelectionPolicy.ResolveImplicitAvailability(
+                        skillDirectory,
+                        [configuredServer]));
+
+            Assert.Empty(unavailable.SelectedSkills);
+            Assert.Equal(["document-review"], unavailable.UnavailableDependencyNames);
+            Assert.Same(skill, Assert.Single(explicitSelection.SelectedSkills));
+            Assert.Empty(explicitSelection.UnavailableDependencyNames);
+            Assert.Same(skill, Assert.Single(available.SelectedSkills));
+            Assert.Empty(available.UnavailableDependencyNames);
+            Assert.Equal(
+                CopilotAgentSkillImplicitAvailability.DependencyUnavailable,
+                CopilotAgentSkillSelectionPolicy.ResolveImplicitAvailability(skillDirectory));
+            Assert.Equal(
+                CopilotAgentSkillImplicitAvailability.Available,
+                CopilotAgentSkillSelectionPolicy.ResolveImplicitAvailability(
+                    skillDirectory,
+                    [configuredServer]));
+        }
+        finally
+        {
+            DeleteTemporaryDirectory(skillDirectory);
+        }
+    }
+
+    [Fact]
     public void SkillReferencePersistsOnUserMessagesAndRejectsMismatchedPrompts()
     {
         var skillDirectory = CreateTemporaryDirectory();
@@ -851,6 +930,26 @@ public sealed class CopilotAgentSkillCatalogTests
         Assert.Equal(
             CopilotAgentSkillMcpDependencyStatus.MissingInstallMetadata,
             CopilotAgentSkillMcpDependencyPolicy.Evaluate(missingUrl));
+        Assert.Equal(
+            CopilotAgentSkillMcpDependencyStatus.Installed,
+            CopilotAgentSkillMcpDependencyPolicy.Evaluate(
+                missingUrl,
+                [new CopilotMcpClientServerConfig
+                {
+                    Name = "openaiDeveloperDocs",
+                    Endpoint = "https://configured.test/mcp",
+                    Enabled = true,
+                }]));
+        Assert.Equal(
+            CopilotAgentSkillMcpDependencyStatus.ConfiguredDisabled,
+            CopilotAgentSkillMcpDependencyPolicy.Evaluate(
+                missingUrl,
+                [new CopilotMcpClientServerConfig
+                {
+                    Name = "openaiDeveloperDocs",
+                    Endpoint = "https://configured.test/mcp",
+                    Enabled = false,
+                }]));
 
         var unsupportedTransport = dependency with
         {

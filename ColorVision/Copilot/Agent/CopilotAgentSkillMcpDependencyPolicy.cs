@@ -27,16 +27,28 @@ namespace ColorVision.Copilot
             if (!string.Equals(dependency.Type, "mcp", StringComparison.OrdinalIgnoreCase))
                 return CopilotAgentSkillMcpDependencyStatus.NotMcp;
 
+            var servers = (configuredServers ?? Array.Empty<CopilotMcpClientServerConfig>())
+                .Where(server => server != null)
+                .ToArray();
             var transport = ResolveTransport(dependency);
             if (!string.Equals(transport, StreamableHttpTransport, StringComparison.OrdinalIgnoreCase))
                 return CopilotAgentSkillMcpDependencyStatus.UnsupportedTransport;
             if (string.IsNullOrWhiteSpace(dependency.Url))
-                return CopilotAgentSkillMcpDependencyStatus.MissingInstallMetadata;
+            {
+                var matchingNamedServers = servers
+                    .Where(server => string.Equals(server.Name, dependency.Value, StringComparison.OrdinalIgnoreCase))
+                    .ToArray();
+                if (matchingNamedServers.Any(server => server.Enabled))
+                    return CopilotAgentSkillMcpDependencyStatus.Installed;
+                return matchingNamedServers.Length > 0
+                    ? CopilotAgentSkillMcpDependencyStatus.ConfiguredDisabled
+                    : CopilotAgentSkillMcpDependencyStatus.MissingInstallMetadata;
+            }
             if (!TryCreateServerConfig(dependency, out var candidate, out _))
                 return CopilotAgentSkillMcpDependencyStatus.InvalidConfiguration;
 
-            var matchingServers = (configuredServers ?? Array.Empty<CopilotMcpClientServerConfig>())
-                .Where(server => server != null && EndpointsEqual(server.Endpoint, candidate.Endpoint))
+            var matchingServers = servers
+                .Where(server => EndpointsEqual(server.Endpoint, candidate.Endpoint))
                 .ToArray();
             if (matchingServers.Any(server => server.Enabled))
                 return CopilotAgentSkillMcpDependencyStatus.Installed;

@@ -73,7 +73,8 @@ namespace ColorVision.Copilot
                 MaxActiveSkills,
                 metadataCharacterBudget,
                 request.SkillPathOverrides,
-                includeAutomaticInstructions);
+                includeAutomaticInstructions,
+                request.ExternalMcpServers);
             source = new CachingAgentSkillsSource(budgetedSource, new CachingAgentSkillsSourceOptions());
             return new CopilotAgentSkills(
                 searchPaths,
@@ -117,6 +118,7 @@ namespace ColorVision.Copilot
                 0,
                 omittedCount
                     - explicitOnlyCount
+                    - snapshot.UnavailableDependencyNames.Count
                     - snapshot.ManualOffNames.Count
                     - snapshot.AutomaticInstructionsDisabledNames.Count
                     - snapshot.IrrelevantNames.Count);
@@ -129,6 +131,14 @@ namespace ColorVision.Copilot
                     builder.Append(" (low-use ").Append(snapshot.HistoricalExplicitOnlyNames.Count).Append(')');
                 if (snapshot.ManualExplicitOnlyNames.Count > 0)
                     builder.Append(" (manual ").Append(snapshot.ManualExplicitOnlyNames.Count).Append(')');
+            }
+            if (snapshot.UnavailableDependencyNames.Count > 0)
+            {
+                builder.Append(" · ")
+                    .Append(snapshot.UnavailableDependencyNames.Count)
+                    .Append(snapshot.UnavailableDependencyNames.Count == 1
+                        ? " unavailable dependency (explicit invocation required)"
+                        : " unavailable dependencies (explicit invocation required)");
             }
             if (snapshot.ManualNameOnlyNames.Count > 0)
                 builder.Append(" · ").Append(snapshot.ManualNameOnlyNames.Count).Append(" manual name-only");
@@ -407,6 +417,7 @@ namespace ColorVision.Copilot
             private readonly IReadOnlyDictionary<string, CopilotAgentSkillOverrideState> _skillOverrides;
             private readonly IReadOnlyDictionary<string, CopilotAgentSkillOverrideState> _skillPathOverrides;
             private readonly bool _includeAutomaticInstructions;
+            private readonly IReadOnlyList<CopilotMcpClientServerConfig> _configuredMcpServers;
             private readonly HashSet<string> _loadedNames = new(StringComparer.OrdinalIgnoreCase);
             private SkillSelectionSnapshot _snapshot = SkillSelectionSnapshot.Empty;
 
@@ -418,7 +429,8 @@ namespace ColorVision.Copilot
                 int maximumCount,
                 int maximumMetadataCharacters,
                 IReadOnlyDictionary<string, CopilotAgentSkillOverrideState>? skillPathOverrides,
-                bool includeAutomaticInstructions)
+                bool includeAutomaticInstructions,
+                IReadOnlyList<CopilotMcpClientServerConfig>? configuredMcpServers)
                 : base(innerSource)
             {
                 _userText = userText ?? string.Empty;
@@ -433,6 +445,10 @@ namespace ColorVision.Copilot
                 _maximumCount = maximumCount;
                 _maximumMetadataCharacters = maximumMetadataCharacters;
                 _includeAutomaticInstructions = includeAutomaticInstructions;
+                _configuredMcpServers = (configuredMcpServers ?? Array.Empty<CopilotMcpClientServerConfig>())
+                    .Where(server => server != null)
+                    .Select(server => server.Clone())
+                    .ToArray();
             }
 
             public override async Task<IList<AgentSkill>> GetSkillsAsync(
@@ -448,7 +464,8 @@ namespace ColorVision.Copilot
                     _maximumCount,
                     _maximumMetadataCharacters,
                     _skillPathOverrides,
-                    allowImplicitSelection: _includeAutomaticInstructions);
+                    allowImplicitSelection: _includeAutomaticInstructions,
+                    configuredMcpServers: _configuredMcpServers);
                 var selectedNames = selection.SelectedSkills.Select(skill => skill.Frontmatter.Name).ToArray();
                 lock (_sync)
                 {
@@ -458,6 +475,7 @@ namespace ColorVision.Copilot
                         selectedNames,
                         GetLoadedNames(selectedNames),
                         selection.MetadataExplicitOnlyNames,
+                        selection.UnavailableDependencyNames,
                         selection.HistoricalExplicitOnlyNames,
                         selection.ManualNameOnlyNames,
                         selection.ManualExplicitOnlyNames,
@@ -558,6 +576,7 @@ namespace ColorVision.Copilot
             IReadOnlyList<string> SelectedNames,
             string[] LoadedNames,
             IReadOnlyList<string> MetadataExplicitOnlyNames,
+            IReadOnlyList<string> UnavailableDependencyNames,
             IReadOnlyList<string> HistoricalExplicitOnlyNames,
             IReadOnlyList<string> ManualNameOnlyNames,
             IReadOnlyList<string> ManualExplicitOnlyNames,
@@ -566,7 +585,7 @@ namespace ColorVision.Copilot
             IReadOnlyList<string> IrrelevantNames,
             IReadOnlyList<string> ShortenedDescriptionNames)
         {
-            public static SkillSelectionSnapshot Empty { get; } = new(false, 0, [], [], [], [], [], [], [], [], [], []);
+            public static SkillSelectionSnapshot Empty { get; } = new(false, 0, [], [], [], [], [], [], [], [], [], [], []);
         }
 
     }
