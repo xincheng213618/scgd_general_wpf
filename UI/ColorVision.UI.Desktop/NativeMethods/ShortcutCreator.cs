@@ -46,28 +46,5 @@ namespace ColorVision.UI.Desktop.NativeMethods
                 // 可以添加日志记录错误，或者忽略
             }
         }
-
-        public static string GetShortcutTargetFile(string shortcutFilename)
-        {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                return string.Empty;
-            }
-
-            try
-            {
-                Type shellType = Type.GetTypeFromProgID("WScript.Shell");
-                if (shellType == null) return string.Empty;
-
-                dynamic shell = Activator.CreateInstance(shellType);
-                dynamic link = shell.CreateShortcut(shortcutFilename);
-
-                return link.TargetPath;
-            }
-            catch
-            {
-                return string.Empty;
-            }
-        }
     }
 }
