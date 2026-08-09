@@ -22,26 +22,27 @@ namespace ProjectARVRPro
 {
     public partial class CycleTimeStatisticsWindow : Window
     {
+        private const int RecordPageSize = 1000;
+        private const int SnSuggestionDisplayLimit = 20;
         private static readonly ILog Log = LogManager.GetLogger(typeof(CycleTimeStatisticsWindow));
         private readonly ViewResultManager _viewResultManager = ViewResultManager.GetInstance();
         private readonly ResultStatisticsDataStore _statisticsStore = ResultStatisticsDataStore.Instance;
-        private readonly ObservableCollection<ResultStatisticsHourlyRow> _hourlyRows = [];
-        private readonly ObservableCollection<ResultStatisticsDailyRow> _dailyRows = [];
         private readonly ObservableCollection<ResultStatisticsRecordRow> _recordRows = [];
-        private IReadOnlyList<ResultStatisticsSnSummary> _snRows = [];
         private string[] _snSuggestions = [];
-        private IReadOnlyList<CycleTimeGroup> _groups = [];
-        private ResultStatisticsQuery? _lastAppliedQuery;
         private readonly ObservableCollection<ProjectARVRReuslt> _details = [];
         private readonly Dictionary<int, ObjectiveTestResultRecord> _recordCache = [];
         private CopilotDynamicContextSession? _copilotContextSession;
+        private TextBox? _snEditor;
         private int _copilotPublishQueued;
         private int _loadVersion;
-        private int _cycleTimeLoadVersion;
         private int _snIndexVersion;
         private int _detailLoadVersion;
+        private int _currentPage = 1;
+        private int _totalRecordCount;
+        private bool _queryAllDates;
+        private bool _settingDateRange;
+        private bool _updatingSnSuggestions;
         private string _queryStatus = string.Empty;
-        private string _cycleTimeStatus = string.Empty;
         private string _snIndexStatus = string.Empty;
 
         public CycleTimeStatisticsWindow()
@@ -49,8 +50,6 @@ namespace ProjectARVRPro
             InitializeComponent();
             StartDatePicker.SelectedDate = DateTime.Today;
             EndDatePicker.SelectedDate = DateTime.Today;
-            HourlyGrid.ItemsSource = _hourlyRows;
-            DailyGrid.ItemsSource = _dailyRows;
             RecordDataGrid.ItemsSource = _recordRows;
             DetailList.ItemsSource = _details;
             RecordDataGrid.SelectionChanged += RecordDataGrid_SelectionChanged;
@@ -64,40 +63,75 @@ namespace ProjectARVRPro
 
         private async void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            _ = RebuildSnIndexAsync();
-            await RefreshAsync();
+            _ = LoadSnSuggestionsAsync();
+            await RefreshAsync(1);
         }
 
         private async void Refresh_Click(object sender, RoutedEventArgs e)
         {
-            await RefreshAsync();
+            await RefreshAsync(1);
         }
 
         private async void Reset_Click(object sender, RoutedEventArgs e)
         {
-            StartDatePicker.SelectedDate = DateTime.Today;
-            EndDatePicker.SelectedDate = DateTime.Today;
+            SetDateRange(DateTime.Today, DateTime.Today, queryAllDates: false);
             SnFilter.Text = string.Empty;
             ResultFilter.SelectedIndex = 0;
-            CountTextBox.Text = "100";
-            await RefreshAsync();
+            await RefreshAsync(1);
         }
 
-        private async Task RefreshAsync()
+        private async void QuickRange_Click(object sender, RoutedEventArgs e)
         {
-            if (!TryCreateQuery(out ResultStatisticsQuery query))
+            DateTime today = DateTime.Today;
+            string range = (sender as FrameworkElement)?.Tag as string ?? "Today";
+            switch (range)
+            {
+                case "Week":
+                    int daysSinceMonday = ((int)today.DayOfWeek + 6) % 7;
+                    SetDateRange(today.AddDays(-daysSinceMonday), today, queryAllDates: false);
+                    break;
+                case "Month":
+                    SetDateRange(new DateTime(today.Year, today.Month, 1), today, queryAllDates: false);
+                    break;
+                case "All":
+                    SetDateRange(null, null, queryAllDates: true);
+                    break;
+                default:
+                    SetDateRange(today, today, queryAllDates: false);
+                    break;
+            }
+
+            SnFilter.Text = string.Empty;
+            ResultFilter.SelectedIndex = 0;
+            await RefreshAsync(1);
+        }
+
+        private void SetDateRange(DateTime? start, DateTime? end, bool queryAllDates)
+        {
+            _settingDateRange = true;
+            StartDatePicker.SelectedDate = start;
+            EndDatePicker.SelectedDate = end;
+            _queryAllDates = queryAllDates;
+            _settingDateRange = false;
+        }
+
+        private void DatePicker_SelectedDateChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (!_settingDateRange)
+                _queryAllDates = false;
+        }
+
+        private async Task RefreshAsync(int pageNumber)
+        {
+            if (!TryCreateQuery(pageNumber, out ResultStatisticsQuery query))
                 return;
 
             int loadVersion = ++_loadVersion;
             RefreshButton.IsEnabled = false;
             _queryStatus = "正在查询统计和记录...";
-            _cycleTimeStatus = string.Empty;
-            ++_cycleTimeLoadVersion;
             UpdateStatusText();
-            DetailHeader.Text = "组内明细";
+            DetailHeader.Text = "流程 CT 明细";
             _details.Clear();
-            _groups = [];
-            GroupList.ItemsSource = _groups;
 
             try
             {
@@ -110,15 +144,17 @@ namespace ProjectARVRPro
                     return;
 
                 ResultStatistics statistics = await statisticsTask;
-                ReplaceItems(_hourlyRows, statistics.HourlyRows);
-                ReplaceItems(_dailyRows, statistics.DailyRows);
                 _recordCache.Clear();
                 ReplaceItems(_recordRows, await recordsTask);
+                if (_recordRows.Count > 0)
+                    RecordDataGrid.SelectedIndex = 0;
                 ApplyStatistics(statistics);
-                _lastAppliedQuery = query;
-                _queryStatus = $"已查询 {statistics.TotalCount:N0} 组产品记录，列表显示 {_recordRows.Count:N0} 条";
-                if (CycleTimeTab.IsSelected)
-                    await RefreshCycleTimeAsync(query);
+                _totalRecordCount = statistics.TotalCount;
+                _currentPage = Math.Clamp(pageNumber, 1, Math.Max(1, GetPageCount()));
+                UpdatePagination();
+                _queryStatus = _totalRecordCount > RecordPageSize
+                    ? $"已查询 {_totalRecordCount:N0} 条批次记录；第 {_currentPage:N0}/{GetPageCount():N0} 页，本页 {_recordRows.Count:N0} 条"
+                    : $"已查询 {_totalRecordCount:N0} 条批次记录";
             }
             catch (Exception ex)
             {
@@ -138,69 +174,64 @@ namespace ProjectARVRPro
             }
         }
 
-        private async void StatisticsTabs_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private int GetPageCount()
         {
-            if (!IsLoaded || e.Source != StatisticsTabs || !CycleTimeTab.IsSelected || !RefreshButton.IsEnabled)
-                return;
-
-            if (_lastAppliedQuery != null)
-                await RefreshCycleTimeAsync(_lastAppliedQuery);
+            return Math.Max(1, (int)Math.Ceiling(_totalRecordCount / (double)RecordPageSize));
         }
 
-        private async Task RefreshCycleTimeAsync(ResultStatisticsQuery query)
+        private void UpdatePagination()
         {
-            int version = ++_cycleTimeLoadVersion;
-            _cycleTimeStatus = "正在按需查询流程 CT...";
-            UpdateStatusText();
-            try
-            {
-                IReadOnlyList<CycleTimeGroup> groups = await Task.Run(() =>
-                    _viewResultManager.QueryCycleTimeGroups(
-                        query.From,
-                        query.ToExclusive,
-                        query.SN,
-                        query.Result,
-                        query.Limit));
-                if (version != _cycleTimeLoadVersion)
-                    return;
-
-                _groups = groups;
-                GroupList.ItemsSource = _groups;
-                if (_groups.Count > 0)
-                    GroupList.SelectedIndex = 0;
-                _cycleTimeStatus = $"流程 CT 显示 {_groups.Count:N0} 组";
-            }
-            catch (Exception ex)
-            {
-                if (version != _cycleTimeLoadVersion)
-                    return;
-
-                _cycleTimeStatus = "流程 CT 查询失败";
-                Log.Warn("Could not query ARVRPro cycle-time groups.", ex);
-                MessageBox.Show(this, $"读取流程 CT 失败：{ex.Message}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-            finally
-            {
-                if (version == _cycleTimeLoadVersion)
-                    UpdateStatusText();
-            }
+            int pageCount = GetPageCount();
+            PaginationPanel.Visibility = _totalRecordCount > RecordPageSize ? Visibility.Visible : Visibility.Collapsed;
+            PageStatusText.Text = $"第 {_currentPage:N0} / {pageCount:N0} 页（每页 {RecordPageSize:N0} 条）";
+            FirstPageButton.IsEnabled = _currentPage > 1;
+            PreviousPageButton.IsEnabled = _currentPage > 1;
+            NextPageButton.IsEnabled = _currentPage < pageCount;
+            LastPageButton.IsEnabled = _currentPage < pageCount;
         }
 
-        private bool TryCreateQuery(out ResultStatisticsQuery query)
+        private async void FirstPage_Click(object sender, RoutedEventArgs e)
         {
-            DateTime from = (StartDatePicker.SelectedDate ?? DateTime.Today).Date;
-            DateTime end = (EndDatePicker.SelectedDate ?? from).Date;
-            if (end < from)
-            {
-                query = null!;
-                MessageBox.Show(this, "结束日期不能早于开始日期。", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
-                return false;
-            }
+            await RefreshAsync(1);
+        }
 
-            if (!int.TryParse(CountTextBox.Text, out int limit) || limit <= 0)
+        private async void PreviousPage_Click(object sender, RoutedEventArgs e)
+        {
+            if (_currentPage > 1)
+                await RefreshAsync(_currentPage - 1);
+        }
+
+        private async void NextPage_Click(object sender, RoutedEventArgs e)
+        {
+            if (_currentPage < GetPageCount())
+                await RefreshAsync(_currentPage + 1);
+        }
+
+        private async void LastPage_Click(object sender, RoutedEventArgs e)
+        {
+            await RefreshAsync(GetPageCount());
+        }
+
+        private bool TryCreateQuery(int pageNumber, out ResultStatisticsQuery query)
+        {
+            DateTime from;
+            DateTime toExclusive;
+            if (_queryAllDates)
             {
-                limit = 100;
-                CountTextBox.Text = limit.ToString();
+                from = DateTime.MinValue;
+                toExclusive = DateTime.MaxValue;
+            }
+            else
+            {
+                from = (StartDatePicker.SelectedDate ?? DateTime.Today).Date;
+                DateTime end = (EndDatePicker.SelectedDate ?? from).Date;
+                if (end < from)
+                {
+                    query = null!;
+                    MessageBox.Show(this, "结束日期不能早于开始日期。", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return false;
+                }
+                toExclusive = end == DateTime.MaxValue.Date ? DateTime.MaxValue : end.AddDays(1);
             }
 
             bool? result = ResultFilter.SelectedIndex switch
@@ -213,18 +244,19 @@ namespace ProjectARVRPro
             query = new ResultStatisticsQuery
             {
                 From = from,
-                ToExclusive = end.AddDays(1),
+                ToExclusive = toExclusive,
                 SN = string.IsNullOrWhiteSpace(sn) ? null : sn,
                 Result = result,
-                Limit = limit,
+                PageNumber = Math.Max(1, pageNumber),
+                PageSize = RecordPageSize,
             };
             return true;
         }
 
-        private async Task RebuildSnIndexAsync()
+        private async Task LoadSnSuggestionsAsync()
         {
             int version = ++_snIndexVersion;
-            _snIndexStatus = "正在后台重建 SN 索引，可先手动输入 SN 查询";
+            _snIndexStatus = "正在加载 SN，可先手动输入查询";
             UpdateStatusText();
             try
             {
@@ -232,25 +264,84 @@ namespace ProjectARVRPro
                 if (version != _snIndexVersion)
                     return;
 
-                _snRows = summaries;
                 _snSuggestions = summaries.Select(item => item.SN).ToArray();
-                SnSummaryGrid.ItemsSource = _snRows;
-                SnFilter.ItemsSource = _snSuggestions;
-                _snIndexStatus = $"SN 索引已加载 {_snSuggestions.Length:N0} 个";
+                UpdateSnSuggestions(SnFilter.Text, openDropDown: false);
+                _snIndexStatus = $"可检索 {_snSuggestions.Length:N0} 个 SN，下拉最多显示 {SnSuggestionDisplayLimit} 个匹配项";
             }
             catch (Exception ex)
             {
                 if (version != _snIndexVersion)
                     return;
 
-                _snIndexStatus = "SN 索引重建失败，仍可手动输入";
-                Log.Warn("Could not rebuild the ARVRPro SN suggestion index.", ex);
+                _snIndexStatus = "SN 列表加载失败，仍可手动输入";
+                Log.Warn("Could not load the ARVRPro SN suggestions.", ex);
             }
             finally
             {
                 if (version == _snIndexVersion)
                     UpdateStatusText();
             }
+        }
+
+        private void SnFilter_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (_snEditor != null)
+                _snEditor.TextChanged -= SnEditor_TextChanged;
+            SnFilter.ApplyTemplate();
+            _snEditor = SnFilter.Template.FindName("PART_EditableTextBox", SnFilter) as TextBox;
+            if (_snEditor != null)
+                _snEditor.TextChanged += SnEditor_TextChanged;
+            UpdateSnSuggestions(SnFilter.Text, openDropDown: false);
+        }
+
+        private void SnEditor_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (!_updatingSnSuggestions)
+                UpdateSnSuggestions(_snEditor?.Text, openDropDown: true);
+        }
+
+        private void SnFilter_DropDownOpened(object sender, EventArgs e)
+        {
+            if (!_updatingSnSuggestions)
+                UpdateSnSuggestions(_snEditor?.Text ?? SnFilter.Text, openDropDown: false);
+        }
+
+        private void SnFilter_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_updatingSnSuggestions || SnFilter.SelectedItem is not string selected)
+                return;
+
+            _updatingSnSuggestions = true;
+            SnFilter.Text = selected;
+            if (_snEditor != null)
+            {
+                _snEditor.Text = selected;
+                _snEditor.CaretIndex = selected.Length;
+            }
+            SnFilter.IsDropDownOpen = false;
+            _updatingSnSuggestions = false;
+        }
+
+        private void UpdateSnSuggestions(string? text, bool openDropDown)
+        {
+            string input = text ?? string.Empty;
+            IReadOnlyList<string> matches = ResultStatisticsSuggestionFilter.Filter(
+                _snSuggestions,
+                input,
+                SnSuggestionDisplayLimit);
+
+            _updatingSnSuggestions = true;
+            SnFilter.ItemsSource = matches;
+            SnFilter.Text = input;
+            if (_snEditor != null)
+            {
+                _snEditor.Text = input;
+                _snEditor.CaretIndex = input.Length;
+            }
+            _updatingSnSuggestions = false;
+
+            if (openDropDown && _snEditor?.IsKeyboardFocusWithin == true)
+                SnFilter.IsDropDownOpen = matches.Count > 0;
         }
 
         private void ApplyStatistics(ResultStatistics statistics)
@@ -267,7 +358,8 @@ namespace ProjectARVRPro
 
         private void UpdateStatusText()
         {
-            SnIndexStatusText.Text = string.Join("；", new[] { _queryStatus, _cycleTimeStatus, _snIndexStatus }.Where(item => !string.IsNullOrWhiteSpace(item)));
+            HomeStatusText.Text = _queryStatus;
+            QueryStatusText.Text = string.Join("；", new[] { _queryStatus, _snIndexStatus }.Where(item => !string.IsNullOrWhiteSpace(item)));
         }
 
         private static void ReplaceItems<T>(ObservableCollection<T> target, IEnumerable<T> source)
@@ -275,6 +367,19 @@ namespace ProjectARVRPro
             target.Clear();
             foreach (T item in source)
                 target.Add(item);
+        }
+
+        private void RecordDataGrid_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            DependencyObject? element = RecordDataGrid.InputHitTest(e.GetPosition(RecordDataGrid)) as DependencyObject;
+            while (element != null && element is not DataGridRow)
+                element = VisualTreeHelper.GetParent(element);
+
+            if (element is DataGridRow row && !row.IsSelected)
+            {
+                RecordDataGrid.SelectedItems.Clear();
+                row.IsSelected = true;
+            }
         }
 
         private async void RecordDataGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
@@ -467,7 +572,17 @@ namespace ProjectARVRPro
         {
             _copilotContextSession?.Activate();
             ResultStatisticsRecordRow? selectedRow = SelectedRecordRow;
-            if (selectedRow != null && !_recordCache.ContainsKey(selectedRow.Id))
+            if (selectedRow == null)
+            {
+                ++_detailLoadVersion;
+                _details.Clear();
+                DetailHeader.Text = "流程 CT 明细";
+                QueueCopilotContextPublish();
+                return;
+            }
+
+            _ = LoadFlowDetailsAsync(selectedRow);
+            if (!_recordCache.ContainsKey(selectedRow.Id))
             {
                 try
                 {
@@ -480,6 +595,31 @@ namespace ProjectARVRPro
             }
 
             QueueCopilotContextPublish();
+        }
+
+        private async Task LoadFlowDetailsAsync(ResultStatisticsRecordRow row)
+        {
+            int loadVersion = ++_detailLoadVersion;
+            DetailHeader.Text = $"{row.SN} - 正在读取流程 CT 明细...";
+            try
+            {
+                IReadOnlyList<ProjectARVRReuslt> details = await Task.Run(() => _statisticsStore.QueryFlowDetails(row));
+                if (loadVersion != _detailLoadVersion || SelectedRecordRow != row)
+                    return;
+
+                ReplaceItems(_details, details);
+                double flowMilliseconds = details.Sum(item => Convert.ToDouble(item.RunTime));
+                DetailHeader.Text = $"{row.SN} - 整组 CT {row.CycleTimeText} - {details.Count:N0} 个流程，流程耗时合计 {ResultStatisticsCalculator.FormatMilliseconds(flowMilliseconds)}";
+            }
+            catch (Exception ex)
+            {
+                if (loadVersion != _detailLoadVersion)
+                    return;
+
+                _details.Clear();
+                DetailHeader.Text = $"{row.SN} - 流程 CT 明细读取失败";
+                MessageBox.Show(this, $"读取流程 CT 明细失败：{ex.Message}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         private void RecordRows_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -583,35 +723,6 @@ namespace ProjectARVRPro
             catch (Exception ex)
             {
                 Log.Debug($"Could not publish the active ARVRPro result-statistics context to Copilot: {ex.Message}");
-            }
-        }
-
-        private async void GroupList_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (GroupList.SelectedItem is not CycleTimeGroup group)
-            {
-                _details.Clear();
-                DetailHeader.Text = "组内明细";
-                return;
-            }
-
-            int loadVersion = ++_detailLoadVersion;
-            DetailHeader.Text = $"{group.SN} - {group.ExecutionText} - {group.ResultCount} 项 - 流程耗时 {group.TotalRunTimeText}";
-            try
-            {
-                IReadOnlyList<ProjectARVRReuslt> details = await Task.Run(() => _viewResultManager.QueryCycleTimeDetails(group));
-                if (loadVersion != _detailLoadVersion || GroupList.SelectedItem != group)
-                    return;
-
-                ReplaceItems(_details, details);
-            }
-            catch (Exception ex)
-            {
-                if (loadVersion == _detailLoadVersion)
-                {
-                    _details.Clear();
-                    MessageBox.Show(this, $"读取组内明细失败：{ex.Message}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
             }
         }
 
@@ -722,9 +833,10 @@ namespace ProjectARVRPro
         protected override void OnClosed(EventArgs e)
         {
             ++_loadVersion;
-            ++_cycleTimeLoadVersion;
             ++_snIndexVersion;
             ++_detailLoadVersion;
+            if (_snEditor != null)
+                _snEditor.TextChanged -= SnEditor_TextChanged;
             RecordDataGrid.SelectionChanged -= RecordDataGrid_SelectionChanged;
             _recordRows.CollectionChanged -= RecordRows_CollectionChanged;
             bool wasCurrent = _copilotContextSession?.IsCurrent == true;

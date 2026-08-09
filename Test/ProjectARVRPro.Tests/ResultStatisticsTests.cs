@@ -171,7 +171,19 @@ public sealed class ResultStatisticsTests
     }
 
     [Fact]
-    public void DataStoreCreatesIndexesAndSeparatesStatisticsFromLimitedRecords()
+    public void SnSuggestionFilterPrioritizesPrefixMatchesAndCapsTheDropdown()
+    {
+        string[] suggestions = ["ZZ-AB", "AB-20", "ab-10", "AB-30", "AB-20", "unrelated"];
+
+        IReadOnlyList<string> matches = ResultStatisticsSuggestionFilter.Filter(suggestions, "ab", 3);
+
+        Assert.Equal(["ab-10", "AB-20", "AB-30"], matches);
+        Assert.Equal(2, ResultStatisticsSuggestionFilter.Filter(suggestions, string.Empty, 2).Count);
+        Assert.Empty(ResultStatisticsSuggestionFilter.Filter(suggestions, "ab", 0));
+    }
+
+    [Fact]
+    public void DataStoreCreatesIndexesAndSeparatesStatisticsFromPagedRecords()
     {
         using var database = new TemporaryResultDatabase();
         ResultStatisticsDataStore store = new(database.Path);
@@ -188,7 +200,7 @@ public sealed class ResultStatisticsTests
             From = new DateTime(2026, 8, 9),
             ToExclusive = new DateTime(2026, 8, 10),
             SN = "SN-A",
-            Limit = 1,
+            PageSize = 1,
         };
 
         ResultStatistics statistics = store.QueryStatistics(query, new DateTime(2026, 8, 9, 9, 30, 0));
@@ -211,10 +223,20 @@ public sealed class ResultStatisticsTests
             ToExclusive = query.ToExclusive,
             SN = query.SN,
             Result = true,
-            Limit = 1,
+            PageSize = 1,
         }, new DateTime(2026, 8, 9, 9, 30, 0));
         Assert.Equal(1, passOnly.TotalCount);
         Assert.Equal(1, passOnly.PassCount);
+
+        IReadOnlyList<ResultStatisticsRecordRow> secondPage = store.QueryRecords(new ResultStatisticsQuery
+        {
+            From = query.From,
+            ToExclusive = query.ToExclusive,
+            SN = query.SN,
+            PageNumber = 2,
+            PageSize = 1,
+        });
+        Assert.Equal("first", Assert.Single(secondPage).LastModel);
 
         HashSet<string> indexNames = database.QueryIndexNames();
         Assert.Contains("IX_ObjectiveTestResultRecord_SN", indexNames);
@@ -224,6 +246,31 @@ public sealed class ResultStatisticsTests
         Assert.Contains("IX_ObjectiveTestResultRecord_IsFinalized_UpdateTime", indexNames);
         Assert.Contains("IX_ARVRReuslt_CreateTime", indexNames);
         Assert.Contains("IX_ARVRReuslt_SN_CreateTime", indexNames);
+    }
+
+    [Fact]
+    public void DataStoreLoadsFlowCtDetailsForTheSelectedBatchRecord()
+    {
+        using var database = new TemporaryResultDatabase();
+        ResultStatisticsDataStore store = new(database.Path);
+        store.InitializeSchema();
+        DateTime start = new(2026, 8, 9, 8, 0, 0);
+        database.InsertFlow(new ProjectARVRReuslt { SN = "SN-A", Model = "before", CreateTime = start.AddSeconds(-1), RunTime = 50 });
+        ProjectARVRReuslt first = database.InsertFlow(new ProjectARVRReuslt { SN = "SN-A", Model = "first", CreateTime = start.AddSeconds(1), RunTime = 100 });
+        ProjectARVRReuslt last = database.InsertFlow(new ProjectARVRReuslt { SN = "SN-A", Model = "last", CreateTime = start.AddSeconds(2), RunTime = 200 });
+        database.InsertFlow(new ProjectARVRReuslt { SN = "SN-A", Model = "next", CreateTime = start.AddSeconds(2), RunTime = 300 });
+        database.InsertFlow(new ProjectARVRReuslt { SN = "SN-B", Model = "other", CreateTime = start.AddSeconds(1), RunTime = 400 });
+
+        IReadOnlyList<ProjectARVRReuslt> details = store.QueryFlowDetails(new ResultStatisticsRecordRow
+        {
+            SN = "SN-A",
+            StartTime = start,
+            EndTime = start.AddSeconds(3),
+            ResultId = last.Id,
+        });
+
+        Assert.Equal([first.Id, last.Id], details.Select(item => item.Id));
+        Assert.Equal(300, details.Sum(item => item.RunTime));
     }
 
     [Fact]
@@ -319,6 +366,13 @@ public sealed class ResultStatisticsTests
         {
             using SqlSugarClient db = CreateClient();
             db.Insertable(records).ExecuteCommand();
+        }
+
+        public ProjectARVRReuslt InsertFlow(ProjectARVRReuslt result)
+        {
+            using SqlSugarClient db = CreateClient();
+            result.Id = db.Insertable(result).ExecuteReturnIdentity();
+            return result;
         }
 
         public HashSet<string> QueryIndexNames()

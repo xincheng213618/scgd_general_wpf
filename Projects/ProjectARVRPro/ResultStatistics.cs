@@ -8,7 +8,8 @@ namespace ProjectARVRPro
         public DateTime ToExclusive { get; init; } = DateTime.Today.AddDays(1);
         public string? SN { get; init; }
         public bool? Result { get; init; }
-        public int Limit { get; init; } = 100;
+        public int PageNumber { get; init; } = 1;
+        public int PageSize { get; init; } = 1000;
     }
 
     public sealed class ResultStatisticsSample
@@ -259,6 +260,31 @@ namespace ProjectARVRPro
             double MaximumCtMilliseconds);
     }
 
+    internal static class ResultStatisticsSuggestionFilter
+    {
+        public static IReadOnlyList<string> Filter(IEnumerable<string> suggestions, string? text, int limit)
+        {
+            ArgumentNullException.ThrowIfNull(suggestions);
+            if (limit <= 0)
+                return [];
+
+            string filter = text?.Trim() ?? string.Empty;
+            IEnumerable<string> candidates = suggestions
+                .Where(item => !string.IsNullOrWhiteSpace(item))
+                .Select(item => item.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase);
+            if (filter.Length == 0)
+                return candidates.Take(limit).ToList();
+
+            return candidates
+                .Where(item => item.Contains(filter, StringComparison.OrdinalIgnoreCase))
+                .OrderByDescending(item => item.StartsWith(filter, StringComparison.OrdinalIgnoreCase))
+                .ThenBy(item => item, StringComparer.OrdinalIgnoreCase)
+                .Take(limit)
+                .ToList();
+        }
+    }
+
     public sealed class ResultStatisticsDataStore
     {
         private const string TableName = "ObjectiveTestResultRecord";
@@ -326,16 +352,18 @@ namespace ProjectARVRPro
         {
             ArgumentNullException.ThrowIfNull(query);
             ResultStatisticsCalculator.ValidateRange(query.From, query.ToExclusive);
-            if (query.Limit < 0)
-                throw new ArgumentOutOfRangeException(nameof(query), query.Limit, "查询数量不能为负数。");
-            if (query.Limit == 0)
-                return [];
+            if (query.PageNumber <= 0)
+                throw new ArgumentOutOfRangeException(nameof(query), query.PageNumber, "页码必须大于零。");
+            if (query.PageSize <= 0)
+                throw new ArgumentOutOfRangeException(nameof(query), query.PageSize, "每页数量必须大于零。");
 
             InitializeSchema();
             using SqlSugarClient db = CreateClient();
+            int skip = checked((query.PageNumber - 1) * query.PageSize);
             return ApplyFilters(db.Queryable<ObjectiveTestResultRecord>(), query)
                 .OrderBy(item => item.Id, OrderByType.Desc)
-                .Take(query.Limit)
+                .Skip(skip)
+                .Take(query.PageSize)
                 .Select(item => new ResultStatisticsRecordRow
                 {
                     Id = item.Id,
@@ -349,6 +377,28 @@ namespace ProjectARVRPro
                     Msg = item.Msg,
                 })
                 .ToList();
+        }
+
+        public IReadOnlyList<ProjectARVRReuslt> QueryFlowDetails(ResultStatisticsRecordRow record)
+        {
+            ArgumentNullException.ThrowIfNull(record);
+            if (string.IsNullOrWhiteSpace(record.SN))
+                return [];
+
+            InitializeSchema();
+            using SqlSugarClient db = CreateClient();
+            string sn = record.SN;
+            DateTime startTime = record.StartTime;
+            DateTime endTime = record.EndTime >= startTime ? record.EndTime : startTime;
+            ISugarQueryable<ProjectARVRReuslt> query = db.Queryable<ProjectARVRReuslt>()
+                .Where(item => item.SN == sn && item.CreateTime >= startTime && item.CreateTime <= endTime);
+            if (record.ResultId > 0)
+            {
+                int resultId = record.ResultId;
+                query = query.Where(item => item.Id <= resultId);
+            }
+
+            return query.OrderBy(item => item.Id, OrderByType.Asc).ToList();
         }
 
         public IReadOnlyList<ResultStatisticsSnSummary> QuerySnSummaries()
