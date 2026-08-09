@@ -636,6 +636,9 @@ namespace ColorVision.Copilot
                 SessionStartAdditionalContexts = (parentRequest.SessionStartAdditionalContexts
                         ?? Array.Empty<string>())
                     .ToArray(),
+                AsyncHookAdditionalContexts = (parentRequest.AsyncHookAdditionalContexts
+                        ?? Array.Empty<string>())
+                    .ToArray(),
                 CodexWebSearchMode = parentRequest.CodexWebSearchMode,
                 CodexSandboxMode = CopilotCodexSandboxMode.ReadOnly,
                 CodexShellToolEnabled = parentRequest.CodexShellToolEnabled,

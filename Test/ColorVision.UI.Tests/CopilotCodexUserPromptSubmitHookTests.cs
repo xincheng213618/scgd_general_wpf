@@ -66,7 +66,7 @@ public sealed class CopilotCodexUserPromptSubmitHookTests
     }
 
     [Fact]
-    public void AsyncUserPromptSubmitLoadsWithSkippedOutputDiagnostic()
+    public void AsyncUserPromptSubmitLoadsWithoutCompatibilityDiagnostic()
     {
         var codexHome = CreateTemporaryDirectory();
         try
@@ -95,11 +95,7 @@ public sealed class CopilotCodexUserPromptSubmitHookTests
 
             var hook = Assert.Single(options.ConfiguredCommandHooks);
             Assert.Equal(CopilotToolExecutionHookMode.Async, hook.ExecutionMode);
-            Assert.Contains(
-                options.ConfiguredHookIssues,
-                issue => issue.Message.Contains(
-                    "parsed but skipped",
-                    StringComparison.Ordinal));
+            Assert.Empty(options.ConfiguredHookIssues);
         }
         finally
         {
@@ -328,19 +324,26 @@ public sealed class CopilotCodexUserPromptSubmitHookTests
     }
 
     [Fact]
-    public async Task AsyncHandlerIsSkippedWithoutLaunchingCommand()
+    public async Task AsyncHandlerSchedulesWithoutBlockingSubmittedPrompt()
     {
         var workspace = CreateTemporaryDirectory();
         try
         {
-            var runner = new RecordingRunner(_ => throw new InvalidOperationException());
+            var runner = new RecordingRunner(_ => new CopilotCodexCommandHookProcessResult(
+                0,
+                false,
+                "async context",
+                string.Empty));
+            var scheduler = new RecordingScheduler();
             var diagnostics = new List<string>();
             var definition = CreateDefinition(workspace, "async", 0) with
             {
                 ExecutionMode = CopilotToolExecutionHookMode.Async,
             };
 
-            var outcome = await new CopilotCodexUserPromptSubmitHookExecutor(runner).RunAsync(
+            var outcome = await new CopilotCodexUserPromptSubmitHookExecutor(
+                runner,
+                scheduler).RunAsync(
                 CreateRequest(workspace, definition),
                 "async prompt",
                 diagnostics.Add,
@@ -349,7 +352,10 @@ public sealed class CopilotCodexUserPromptSubmitHookTests
             Assert.False(outcome.ShouldStop);
             Assert.Empty(runner.Calls);
             Assert.Contains(diagnostics, item =>
-                item.Contains("async hook skipped", StringComparison.Ordinal));
+                item.Contains("async hook scheduled", StringComparison.Ordinal));
+            var output = await Assert.Single(scheduler.Callbacks)(CancellationToken.None);
+            Assert.Single(runner.Calls);
+            Assert.Equal("async context", Assert.IsType<CopilotCodexAsyncHookOutput>(output).AdditionalContext);
         }
         finally
         {
@@ -517,6 +523,25 @@ public sealed class CopilotCodexUserPromptSubmitHookTests
                 false,
                 definition.Command + " context",
                 string.Empty);
+        }
+    }
+
+    private sealed class RecordingScheduler : ICopilotCodexLifecycleHookBackgroundScheduler
+    {
+        public List<Func<CancellationToken, Task<CopilotCodexAsyncHookOutput?>>> Callbacks { get; } = [];
+
+        public bool TrySchedule(
+            string conversationId,
+            string sourceId,
+            string eventName,
+            string turnId,
+            TimeSpan timeout,
+            Func<CancellationToken, Task<CopilotCodexAsyncHookOutput?>> callback)
+        {
+            Assert.Equal("prompt-session", conversationId);
+            Assert.Equal("UserPromptSubmit", eventName);
+            Callbacks.Add(callback);
+            return true;
         }
     }
 

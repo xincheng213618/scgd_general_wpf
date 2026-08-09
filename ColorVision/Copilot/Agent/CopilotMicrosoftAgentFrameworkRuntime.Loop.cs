@@ -396,6 +396,7 @@ namespace ColorVision.Copilot
 
             var stopHookActive = false;
             var stopContinuationCount = 0;
+            var asyncHookContinuationCount = 0;
             var loopMessages = initialMessages;
             var controlIntent = CopilotAgentControlIntent.None;
             var timeBudgetExhausted = false;
@@ -521,6 +522,54 @@ namespace ColorVision.Copilot
                     outputLengthLimitReached,
                     outputContentFiltered,
                     outputFinishReasonIncomplete);
+                var completedAsyncHookResults =
+                    CopilotCodexLifecycleHookBackgroundScheduler.Shared.DrainCompleted(
+                        request.ConversationId);
+                CopilotCodexAsyncHookResultDelivery.PublishDiagnostics(
+                    completedAsyncHookResults,
+                    diagnostic => emit(CopilotAgentEvent.RuntimeDiagnostic(diagnostic)));
+                var asyncHookContinuation = CopilotCodexAsyncHookResultDelivery
+                    .BuildContinuationMessage(completedAsyncHookResults);
+                if (asyncHookContinuation.Length > 0)
+                {
+                    var asyncHookBudgetExhausted = chatClient.Snapshot.BudgetExhausted
+                        || bridge.ToolBudgetExhausted
+                        || timeBudgetCancellation.IsCancellationRequested
+                        || agentLoopCancellation.IsCancellationRequested;
+                    if (!hasModelFinalAnswer
+                        || asyncHookBudgetExhausted
+                        || asyncHookContinuationCount
+                            >= CopilotCodexAsyncHookResultDelivery.MaximumConsecutiveContinuations)
+                    {
+                        CopilotCodexLifecycleHookBackgroundScheduler.Shared.RequeueContexts(
+                            request.ConversationId,
+                            completedAsyncHookResults);
+                        emit(CopilotAgentEvent.RuntimeDiagnostic(!hasModelFinalAnswer
+                            ? "Completed async hook context was buffered for the next user request because the Agent did not reach a safe completed-answer boundary."
+                            : asyncHookBudgetExhausted
+                                ? "Completed async hook context was buffered for the next user request because the Agent run's existing time, token, or tool-call budget is exhausted."
+                                : $"Async hook continuation limit reached · {CopilotCodexAsyncHookResultDelivery.MaximumConsecutiveContinuations} continuation(s); remaining context was buffered for the next user request."));
+                    }
+                    else
+                    {
+                        asyncHookContinuationCount++;
+                        var asyncHookCompletedAnswer = answerText.ToString();
+                        emit(CopilotAgentEvent.RuntimeDiagnostic(
+                            $"Async hook continuation {asyncHookContinuationCount}/{CopilotCodexAsyncHookResultDelivery.MaximumConsecutiveContinuations} · Agent is delivering completed notification-only hook context at the post-sampling boundary."));
+                        emit(CopilotAgentEvent.AnswerReset());
+                        loopMessages = finalAnswerRecoveredOutsideSession
+                            ?
+                            [
+                                new ChatMessage(ChatRole.Assistant, asyncHookCompletedAnswer),
+                                new ChatMessage(ChatRole.User, asyncHookContinuation),
+                            ]
+                            :
+                            [
+                                new ChatMessage(ChatRole.User, asyncHookContinuation),
+                            ];
+                        continue;
+                    }
+                }
                 if (!hasModelFinalAnswer)
                     break;
 
@@ -561,11 +610,12 @@ namespace ColorVision.Copilot
                     : "SubagentStop";
                 emit(CopilotAgentEvent.RuntimeDiagnostic(
                     $"{stopEventName} hook continuation {stopContinuationCount}/{CopilotCodexStopHookExecutor.MaximumConsecutiveContinuations} · Agent is asking the current Harness session to revise the completed answer."));
+                var completedAnswer = answerText.ToString();
                 emit(CopilotAgentEvent.AnswerReset());
                 loopMessages = finalAnswerRecoveredOutsideSession
                     ?
                     [
-                        new ChatMessage(ChatRole.Assistant, answerText.ToString()),
+                        new ChatMessage(ChatRole.Assistant, completedAnswer),
                         new ChatMessage(ChatRole.User, stopOutcome.ContinuationPrompt),
                     ]
                     :

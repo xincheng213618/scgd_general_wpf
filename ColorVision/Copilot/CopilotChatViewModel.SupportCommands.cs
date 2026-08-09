@@ -302,6 +302,7 @@ namespace ColorVision.Copilot
                     _currentCodexConfigOptions.ConfiguredPluginsEnabled,
                     _currentCodexConfigOptions.ConfiguredCommandHooks),
                 BackgroundActivity = CopilotToolExecutionHookBackgroundScheduler.Shared.GetActivitySnapshot(),
+                AsyncCommandActivity = CopilotCodexLifecycleHookBackgroundScheduler.Shared.GetActivitySnapshot(),
                 ExtensionSources = extensionSnapshot.Sources,
                 ExtensionIssues = extensionSnapshot.Issues,
                 ConfiguredHookFilePaths = _currentCodexConfigOptions.AppliedHookFilePaths,

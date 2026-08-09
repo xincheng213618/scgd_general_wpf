@@ -116,11 +116,13 @@ namespace ColorVision.Copilot
                                 Log.Warn(
                                     $"Copilot async permission-hook control decision was ignored. Tool={invocation.Tool.Name} CallId={invocation.CallId} HookSource={binding.SourceId}");
                             }
-                            if (output?.HasOutput == true)
+                            if (output?.HasOutput == true
+                                && binding.Hook is not CopilotCodexCommandHook)
                             {
                                 Log.Warn(
                                     $"Copilot async permission-hook output was ignored by the notification-only execution mode. Tool={invocation.Tool.Name} CallId={invocation.CallId} HookSource={binding.SourceId}");
                             }
+                            return CopilotCodexAsyncHookOutput.From(output, decision);
                         });
                     continue;
                 }

@@ -159,6 +159,9 @@ namespace ColorVision.Copilot
                 SessionStartAdditionalContexts = (explorationRequest.SessionStartAdditionalContexts
                         ?? Array.Empty<string>())
                     .ToArray(),
+                AsyncHookAdditionalContexts = (explorationRequest.AsyncHookAdditionalContexts
+                        ?? Array.Empty<string>())
+                    .ToArray(),
                 CodexWebSearchMode = explorationRequest.CodexWebSearchMode,
                 CodexSandboxMode = explorationRequest.CodexSandboxMode,
                 CodexShellToolEnabled = explorationRequest.CodexShellToolEnabled,

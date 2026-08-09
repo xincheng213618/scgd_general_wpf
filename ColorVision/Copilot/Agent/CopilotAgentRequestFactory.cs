@@ -343,6 +343,9 @@ namespace ColorVision.Copilot
         internal IReadOnlyList<string> SessionStartAdditionalContexts { get; init; } =
             Array.Empty<string>();
 
+        internal IReadOnlyList<string> AsyncHookAdditionalContexts { get; init; } =
+            Array.Empty<string>();
+
         public CopilotAgentSessionCheckpoint? SessionCheckpoint { get; init; }
 
         public CopilotAgentRecoveryRequest? Recovery { get; init; }
@@ -576,6 +579,11 @@ namespace ColorVision.Copilot
                     .Select(context => context.Trim())
                     .ToArray(),
                 UserPromptSubmitAdditionalContexts = (input.UserPromptSubmitAdditionalContexts
+                        ?? Array.Empty<string>())
+                    .Where(context => !string.IsNullOrWhiteSpace(context))
+                    .Select(context => context.Trim())
+                    .ToArray(),
+                AsyncHookAdditionalContexts = (input.AsyncHookAdditionalContexts
                         ?? Array.Empty<string>())
                     .Where(context => !string.IsNullOrWhiteSpace(context))
                     .Select(context => context.Trim())

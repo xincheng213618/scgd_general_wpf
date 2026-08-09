@@ -76,6 +76,7 @@ namespace ColorVision.Copilot
                 definition.ExecutionMode == CopilotToolExecutionHookMode.Async))
             {
                 var scheduled = _backgroundScheduler.TrySchedule(
+                    request.ConversationId,
                     definition.SourceId,
                     "SubagentStart",
                     subagent.TurnId,
@@ -88,14 +89,13 @@ namespace ColorVision.Copilot
                                 subagent,
                                 backgroundCancellationToken)
                             .ConfigureAwait(false);
-                        if (output?.HasFailure == true)
-                            throw new InvalidOperationException(output.FailureMessage);
+                        return CopilotCodexAsyncHookOutput.From(output);
                     });
                 PublishDiagnostic(
                     onDiagnostic,
                     scheduled
                         ? $"SubagentStart async hook scheduled · {definition.SourceId}"
-                        : $"SubagentStart async hook skipped · {definition.SourceId}: the bounded lifecycle-hook queue is full.");
+                        : $"SubagentStart async hook skipped · {definition.SourceId}: the bounded per-session command-hook queue is full.");
             }
 
             var synchronousDefinitions = definitions

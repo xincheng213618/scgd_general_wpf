@@ -589,14 +589,15 @@ public sealed class CopilotCodexSessionStartHookTests
 
     private sealed class RecordingScheduler : ICopilotCodexLifecycleHookBackgroundScheduler
     {
-        public List<Func<CancellationToken, Task>> Callbacks { get; } = [];
+        public List<Func<CancellationToken, Task<CopilotCodexAsyncHookOutput?>>> Callbacks { get; } = [];
 
         public bool TrySchedule(
+            string conversationId,
             string sourceId,
             string eventName,
             string turnId,
             TimeSpan timeout,
-            Func<CancellationToken, Task> callback)
+            Func<CancellationToken, Task<CopilotCodexAsyncHookOutput?>> callback)
         {
             Assert.Equal("SessionStart", eventName);
             Callbacks.Add(callback);

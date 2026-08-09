@@ -75,6 +75,9 @@ namespace ColorVision.Copilot
         internal IReadOnlyList<string> UserPromptSubmitAdditionalContexts { get; init; } =
             Array.Empty<string>();
 
+        internal IReadOnlyList<string> AsyncHookAdditionalContexts { get; init; } =
+            Array.Empty<string>();
+
         internal CopilotCodexWebSearchMode CodexWebSearchMode { get; init; } =
             CopilotCodexWebSearchMode.Unspecified;
 

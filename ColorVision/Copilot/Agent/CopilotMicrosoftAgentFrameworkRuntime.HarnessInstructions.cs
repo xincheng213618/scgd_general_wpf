@@ -315,9 +315,12 @@ namespace ColorVision.Copilot
                 request.SessionStartAdditionalContexts ?? Array.Empty<string>());
             var promptHookContext = CopilotCodexUserPromptSubmitHookExecutor.BuildDeveloperContext(
                 request.UserPromptSubmitAdditionalContexts ?? Array.Empty<string>());
+            var asyncHookContext = CopilotCodexAsyncHookResultDelivery.BuildDeveloperContext(
+                request.AsyncHookAdditionalContexts ?? Array.Empty<string>());
             if (instructions.Length == 0
                 && sessionHookContext.Length == 0
-                && promptHookContext.Length == 0)
+                && promptHookContext.Length == 0
+                && asyncHookContext.Length == 0)
                 return;
 
             if (instructions.Length > 0)
@@ -341,6 +344,11 @@ namespace ColorVision.Copilot
             {
                 builder.AppendLine()
                     .AppendLine(promptHookContext);
+            }
+            if (asyncHookContext.Length > 0)
+            {
+                builder.AppendLine()
+                    .AppendLine(asyncHookContext);
             }
         }
 

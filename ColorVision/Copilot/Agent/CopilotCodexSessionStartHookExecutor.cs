@@ -76,6 +76,7 @@ namespace ColorVision.Copilot
                 definition.ExecutionMode == CopilotToolExecutionHookMode.Async))
             {
                 var scheduled = _backgroundScheduler.TrySchedule(
+                    request.ConversationId,
                     definition.SourceId,
                     "SessionStart",
                     request.TaskId,
@@ -88,14 +89,13 @@ namespace ColorVision.Copilot
                                 sourceValue,
                                 backgroundCancellationToken)
                             .ConfigureAwait(false);
-                        if (output?.HasFailure == true)
-                            throw new InvalidOperationException(output.FailureMessage);
+                        return CopilotCodexAsyncHookOutput.From(output);
                     });
                 PublishDiagnostic(
                     onDiagnostic,
                     scheduled
                         ? $"SessionStart async hook scheduled · {definition.SourceId}"
-                        : $"SessionStart async hook skipped · {definition.SourceId}: the bounded lifecycle-hook queue is full.");
+                        : $"SessionStart async hook skipped · {definition.SourceId}: the bounded per-session command-hook queue is full.");
             }
 
             var synchronousDefinitions = definitions
@@ -191,20 +191,34 @@ namespace ColorVision.Copilot
 
         internal static string MergeDeveloperContexts(
             IReadOnlyList<string> sessionStartContexts,
-            IReadOnlyList<string> userPromptSubmitContexts)
+            IReadOnlyList<string> userPromptSubmitContexts) =>
+            MergeDeveloperContexts(
+                sessionStartContexts,
+                userPromptSubmitContexts,
+                Array.Empty<string>());
+
+        internal static string MergeDeveloperContexts(
+            IReadOnlyList<string> sessionStartContexts,
+            IReadOnlyList<string> userPromptSubmitContexts,
+            IReadOnlyList<string> asyncHookContexts)
         {
             var sessionContext = BuildDeveloperContext(sessionStartContexts);
             var promptContext = CopilotCodexUserPromptSubmitHookExecutor.BuildDeveloperContext(
                 userPromptSubmitContexts);
-            if (sessionContext.Length == 0)
-                return promptContext;
-            if (promptContext.Length == 0)
-                return sessionContext;
+            var asyncContext = CopilotCodexAsyncHookResultDelivery.BuildDeveloperContext(
+                asyncHookContexts);
+            var contexts = new[] { sessionContext, promptContext, asyncContext }
+                .Where(context => context.Length > 0)
+                .ToArray();
+            if (contexts.Length == 0)
+                return string.Empty;
+            if (contexts.Length == 1)
+                return contexts[0];
             return CopilotToolExecutionOutcome.NormalizeModelAdditionalContext(
-                sessionContext + Environment.NewLine + Environment.NewLine + promptContext,
+                string.Join(Environment.NewLine + Environment.NewLine, contexts),
                 CopilotProjectInstructionDiscoveryConfig.MaximumDeveloperInstructionCharacters
                     / CopilotTokenEstimator.AsciiCharactersPerToken,
-                "\n...[SessionStart and UserPromptSubmit aggregate context truncated]...\n");
+                "\n...[Codex hook aggregate context truncated]...\n");
         }
 
         internal static string GetSourceValue(CopilotCodexSessionStartSource source) => source switch

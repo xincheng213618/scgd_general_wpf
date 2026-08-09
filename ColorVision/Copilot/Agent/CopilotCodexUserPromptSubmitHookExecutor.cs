@@ -32,11 +32,16 @@ namespace ColorVision.Copilot
         private const string AdditionalContextTruncationMarker =
             "\n...[UserPromptSubmit additional context truncated]...\n";
         private readonly ICopilotCodexCommandHookRunner? _runner;
+        private readonly ICopilotCodexLifecycleHookBackgroundScheduler
+            _backgroundScheduler;
 
         public CopilotCodexUserPromptSubmitHookExecutor(
-            ICopilotCodexCommandHookRunner? runner = null)
+            ICopilotCodexCommandHookRunner? runner = null,
+            ICopilotCodexLifecycleHookBackgroundScheduler? backgroundScheduler = null)
         {
             _runner = runner;
+            _backgroundScheduler = backgroundScheduler
+                ?? CopilotCodexLifecycleHookBackgroundScheduler.Shared;
         }
 
         public async Task<CopilotCodexUserPromptSubmitOutcome> RunAsync(
@@ -61,9 +66,29 @@ namespace ColorVision.Copilot
             foreach (var definition in definitions.Where(definition =>
                 definition.ExecutionMode == CopilotToolExecutionHookMode.Async))
             {
+                var scheduled = _backgroundScheduler.TrySchedule(
+                    request.ConversationId,
+                    definition.SourceId,
+                    "UserPromptSubmit",
+                    request.TaskId,
+                    TimeSpan.FromSeconds(definition.TimeoutSeconds),
+                    async backgroundCancellationToken =>
+                    {
+                        var output = await new CopilotCodexCommandHook(
+                                definition,
+                                _runner)
+                            .OnUserPromptSubmitAsync(
+                                request,
+                                prompt,
+                                backgroundCancellationToken)
+                            .ConfigureAwait(false);
+                        return CopilotCodexAsyncHookOutput.From(output);
+                    });
                 PublishDiagnostic(
                     onDiagnostic,
-                    $"UserPromptSubmit async hook skipped · {definition.SourceId}: asynchronous command output cannot affect the submitted turn.");
+                    scheduled
+                        ? $"UserPromptSubmit async hook scheduled · {definition.SourceId}"
+                        : $"UserPromptSubmit async hook skipped · {definition.SourceId}: the bounded per-session command-hook queue is full.");
             }
 
             var synchronousDefinitions = definitions

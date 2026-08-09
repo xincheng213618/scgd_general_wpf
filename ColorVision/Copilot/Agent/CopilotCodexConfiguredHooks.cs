@@ -329,12 +329,6 @@ namespace ColorVision.Copilot
                     AddIssue(
                         $"Hook event '{hookEvent}' ignores additionalContextLimit because it cannot return additional context.");
                 }
-                if (hookEvent == CopilotCodexConfiguredHookEvent.UserPromptSubmit
-                    && completed.IsAsync == true)
-                {
-                    AddIssue(
-                        "Asynchronous UserPromptSubmit command hooks are parsed but skipped because their output cannot affect the submitted turn.");
-                }
                 AddSessionEndNormalizationIssues(
                     hookEvent,
                     completed.TimeoutSeconds,
@@ -758,14 +752,6 @@ namespace ColorVision.Copilot
                         issues.Add(new CopilotCodexConfiguredHookIssue(
                             sourceFilePath,
                             $"Hook event '{hookEvent}' ignores additionalContextLimit because it cannot return additional context."));
-                    }
-                    if (hookEvent == CopilotCodexConfiguredHookEvent.UserPromptSubmit
-                        && handler.TryGetProperty("async", out var asyncElement)
-                        && asyncElement.ValueKind == JsonValueKind.True)
-                    {
-                        issues.Add(new CopilotCodexConfiguredHookIssue(
-                            sourceFilePath,
-                            "Asynchronous UserPromptSubmit command hooks are parsed but skipped because their output cannot affect the submitted turn."));
                     }
                     AddSessionEndNormalizationIssues(
                         hookEvent,

@@ -118,6 +118,9 @@ namespace ColorVision.Copilot
             CopilotTurnEventSink eventSink,
             CancellationToken cancellationToken)
         {
+            var bufferedAsyncHookResults = DrainAsyncHookResults(
+                request.ConversationId,
+                eventSink.OnRuntimeDiagnostic);
             var hookRequest = CreateUserPromptSubmitHookRequest(request);
             var sessionStartOutcome = await _sessionStartHookLifecycle.RunBeforeTurnAsync(
                 hookRequest,
@@ -138,17 +141,27 @@ namespace ColorVision.Copilot
                     promptHookOutcome.StopReason);
             }
 
+            var requestStartAsyncHookResults = DrainAsyncHookResults(
+                request.ConversationId,
+                eventSink.OnRuntimeDiagnostic);
+            var asyncHookAdditionalContexts = CopilotCodexAsyncHookResultDelivery
+                .GetAdditionalContexts(bufferedAsyncHookResults
+                    .Concat(requestStartAsyncHookResults)
+                    .ToArray());
+
             return request.Mode == CopilotAgentMode.Chat
                 ? await RunChatAsync(
                     request,
                     sessionStartOutcome.AdditionalContexts,
                     promptHookOutcome.AdditionalContexts,
+                    asyncHookAdditionalContexts,
                     eventSink,
                     cancellationToken).ConfigureAwait(false)
                 : await RunAgentAsync(
                     request,
                     sessionStartOutcome.AdditionalContexts,
                     promptHookOutcome.AdditionalContexts,
+                    asyncHookAdditionalContexts,
                     eventSink,
                     cancellationToken).ConfigureAwait(false);
         }
@@ -185,6 +198,9 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(request);
             try
             {
+                await CopilotCodexLifecycleHookBackgroundScheduler.Shared
+                    .ShutdownSessionAsync(request.ConversationId)
+                    .ConfigureAwait(false);
                 return await _sessionEndHookLifecycle.EndAsync(
                     request,
                     onDiagnostic,
@@ -207,6 +223,16 @@ namespace ColorVision.Copilot
         public bool TryAnswerUserQuestion(string taskId, string requestId, string answer) =>
             _agentRuntime.TryAnswerUserQuestion(taskId, requestId, answer);
 
+        private static IReadOnlyList<CopilotCodexAsyncHookResult> DrainAsyncHookResults(
+            string conversationId,
+            Action<string>? onDiagnostic)
+        {
+            var results = CopilotCodexLifecycleHookBackgroundScheduler.Shared
+                .DrainCompleted(conversationId);
+            CopilotCodexAsyncHookResultDelivery.PublishDiagnostics(results, onDiagnostic);
+            return results;
+        }
+
         public Task<CopilotWorkspaceRollbackActionResult> RequestWorkspaceRollbackAsync(
             CopilotWorkspaceRollbackActionRequest request,
             Action<CopilotAgentEvent> onEvent,
@@ -220,6 +246,7 @@ namespace ColorVision.Copilot
             CopilotTurnRequest request,
             IReadOnlyList<string> sessionStartAdditionalContexts,
             IReadOnlyList<string> userPromptSubmitAdditionalContexts,
+            IReadOnlyList<string> asyncHookAdditionalContexts,
             CopilotTurnEventSink eventSink,
             CancellationToken cancellationToken)
         {
@@ -273,11 +300,13 @@ namespace ColorVision.Copilot
             var hookDeveloperContext =
                 CopilotCodexSessionStartHookExecutor.MergeDeveloperContexts(
                     sessionStartAdditionalContexts,
-                    userPromptSubmitAdditionalContexts);
+                    userPromptSubmitAdditionalContexts,
+                    asyncHookAdditionalContexts);
             var hookRequest = CreateUserPromptSubmitHookRequest(request);
             var providerUsage = CopilotTokenUsage.Empty;
             var stopHookActive = false;
             var continuationCount = 0;
+            var asyncHookContinuationCount = 0;
             var currentHistory = history;
             var streamResult = default(CopilotChatStreamResult);
             while (true)
@@ -301,6 +330,37 @@ namespace ColorVision.Copilot
                 providerUsage = providerUsage.Add(streamResult.Usage);
                 streamResult = streamResult with { Usage = providerUsage };
                 eventSink.OnTokenUsageUpdated(imageUnderstanding.Usage.Add(providerUsage));
+                var completedAsyncHookResults = DrainAsyncHookResults(
+                    request.ConversationId,
+                    eventSink.OnRuntimeDiagnostic);
+                var asyncHookContinuation = CopilotCodexAsyncHookResultDelivery
+                    .BuildContinuationMessage(completedAsyncHookResults);
+                if (asyncHookContinuation.Length > 0)
+                {
+                    if (streamResult.IsIncomplete
+                        || asyncHookContinuationCount
+                            >= CopilotCodexAsyncHookResultDelivery.MaximumConsecutiveContinuations)
+                    {
+                        CopilotCodexLifecycleHookBackgroundScheduler.Shared.RequeueContexts(
+                            request.ConversationId,
+                            completedAsyncHookResults);
+                        eventSink.OnRuntimeDiagnostic(streamResult.IsIncomplete
+                            ? "Completed async hook context was buffered for the next user request because the Chat provider response was incomplete."
+                            : $"Async hook continuation limit reached · {CopilotCodexAsyncHookResultDelivery.MaximumConsecutiveContinuations} continuation(s); remaining context was buffered for the next user request.");
+                    }
+                    else
+                    {
+                        asyncHookContinuationCount++;
+                        eventSink.OnRuntimeDiagnostic(
+                            $"Async hook continuation {asyncHookContinuationCount}/{CopilotCodexAsyncHookResultDelivery.MaximumConsecutiveContinuations} · Chat is delivering completed notification-only hook context at the post-sampling boundary.");
+                        eventSink.OnChatAnswerReset();
+                        currentHistory = CopilotRequestMessageSequence.Normalize(
+                            currentHistory
+                                .Append(new CopilotRequestMessage("assistant", assistantText.ToString()))
+                                .Append(new CopilotRequestMessage("user", asyncHookContinuation)));
+                        continue;
+                    }
+                }
                 if (streamResult.IsIncomplete)
                     break;
 
@@ -342,6 +402,7 @@ namespace ColorVision.Copilot
             CopilotTurnRequest request,
             IReadOnlyList<string> sessionStartAdditionalContexts,
             IReadOnlyList<string> userPromptSubmitAdditionalContexts,
+            IReadOnlyList<string> asyncHookAdditionalContexts,
             CopilotTurnEventSink eventSink,
             CancellationToken cancellationToken)
         {
@@ -382,6 +443,7 @@ namespace ColorVision.Copilot
                 ContextItems = contextItems,
                 SessionStartAdditionalContexts = sessionStartAdditionalContexts,
                 UserPromptSubmitAdditionalContexts = userPromptSubmitAdditionalContexts,
+                AsyncHookAdditionalContexts = asyncHookAdditionalContexts,
                 SessionCheckpoint = request.SessionCheckpoint,
                 Recovery = request.Recovery,
                 RunControl = request.RunControl,

@@ -12,6 +12,8 @@ namespace ColorVision.Copilot
 
         public CopilotToolExecutionHookBackgroundActivitySnapshot? BackgroundActivity { get; init; }
 
+        public CopilotCodexAsyncHookActivitySnapshot? AsyncCommandActivity { get; init; }
+
         public IReadOnlyList<CopilotAgentExtensionSourceSnapshot> ExtensionSources { get; init; } =
             Array.Empty<CopilotAgentExtensionSourceSnapshot>();
 
@@ -46,6 +48,7 @@ namespace ColorVision.Copilot
             builder.AppendLine();
             AppendEffectiveHooks(builder, snapshot.HookSurface);
             AppendBackgroundActivity(builder, snapshot.BackgroundActivity);
+            AppendAsyncCommandActivity(builder, snapshot.AsyncCommandActivity);
             builder.AppendLine();
             AppendExtensionSources(builder, snapshot.ExtensionSources, snapshot.ExtensionIssues);
             builder.AppendLine();
@@ -118,6 +121,34 @@ namespace ColorVision.Copilot
                 .Append(FormatCount(value.MaximumPending))
                 .Append(" · 超时占槽 ")
                 .Append(FormatCount(value.TimedOutRetainedCount))
+                .AppendLine();
+        }
+
+        private static void AppendAsyncCommandActivity(
+            StringBuilder builder,
+            CopilotCodexAsyncHookActivitySnapshot? activity)
+        {
+            if (activity?.IsStructurallyValid() != true)
+            {
+                builder.AppendLine("异步命令 Hook：无有效运行时快照");
+                return;
+            }
+
+            var value = activity.Value;
+            builder.Append("异步命令 Hook：会话 ")
+                .Append(FormatCount(value.SessionCount))
+                .Append(" · 运行 ")
+                .Append(FormatCount(value.RunningCount))
+                .Append(" · 排队 ")
+                .Append(FormatCount(value.QueuedCount))
+                .Append(" · 待投递 ")
+                .Append(FormatCount(value.CompletedResultCount))
+                .Append(" · 丢弃 ")
+                .Append(FormatCount(value.DroppedResultCount))
+                .Append(" · 单会话上限 ")
+                .Append(FormatCount(value.MaximumConcurrencyPerSession))
+                .Append('/')
+                .Append(FormatCount(value.MaximumPendingPerSession))
                 .AppendLine();
         }
 
