@@ -125,7 +125,8 @@ namespace ColorVision.Copilot
                 AccessPolicy = AccessPolicy,
                 ConnectionTimeoutSeconds = ConnectionTimeoutSeconds,
                 ToolTimeoutSeconds = ToolTimeoutSeconds,
-                ToolRules = new ObservableCollection<CopilotMcpClientToolRule>(ToolRules.Select(rule => rule.Clone())),
+                ToolRules = new ObservableCollection<CopilotMcpClientToolRule>(
+                    ToolRules.Where(rule => rule != null).Select(rule => rule.Clone())),
             };
         }
     }

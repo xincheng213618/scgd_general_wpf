@@ -161,6 +161,14 @@ namespace ColorVision.Copilot
                 }
 
                 server.ToolRules ??= new ObservableCollection<CopilotMcpClientToolRule>();
+                for (var ruleIndex = server.ToolRules.Count - 1; ruleIndex >= 0; ruleIndex--)
+                {
+                    if (server.ToolRules[ruleIndex] != null)
+                        continue;
+
+                    server.ToolRules.RemoveAt(ruleIndex);
+                    changed = true;
+                }
             }
 
             OnPropertyChanged(nameof(IsConfigured));
