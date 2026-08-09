@@ -234,12 +234,13 @@ namespace ColorVision.Copilot
             }
         }
 
-        private async Task CompactConversationAsync(
+        private async Task<bool> CompactConversationAsync(
             CopilotLocalCommand command,
             string focusInstructions,
             bool includeFocusInResult = true,
             CopilotAgentDefaultsConfig? agentDefaults = null,
-            CopilotProjectInstructionDiscoveryOptions? codexConfigOptions = null)
+            CopilotProjectInstructionDiscoveryOptions? codexConfigOptions = null,
+            CopilotCodexCompactHookTrigger hookTrigger = CopilotCodexCompactHookTrigger.Manual)
         {
             agentDefaults ??= _config.AgentDefaults;
             var conversation = SelectedConversation;
@@ -247,12 +248,12 @@ namespace ColorVision.Copilot
             if (IsBusy || _isCompactingConversation)
             {
                 ShowLocalCommandResult(command, "当前有请求正在执行，请完成或停止后再压缩上下文。");
-                return;
+                return false;
             }
             if (conversation == null || profile?.IsConfigured != true)
             {
                 ShowLocalCommandResult(command, "请先选择并配置可用模型。");
-                return;
+                return false;
             }
             if (CopilotAgentTaskContinuityPolicy.HasAvailableStructuredRecovery(
                 conversation,
@@ -271,7 +272,7 @@ namespace ColorVision.Copilot
                     isFinalAnswerRecovery
                         ? "当前会话的 Agent 工作已完成，但最终回答尚未完整返回。请先使用“重试最终回答”，或在任务列表中明确放弃这条恢复项，再压缩上下文；本次压缩未开始，checkpoint 已保留。"
                         : $"当前会话还有可安全继续的 Agent 任务。请先使用“{latestAssistant?.AgentRecoveryActionLabel ?? "继续任务"}”处理它，或在任务列表中明确放弃它，再压缩上下文；本次压缩未开始，checkpoint 已保留。");
-                return;
+                return false;
             }
 
             var compactionConfig = codexConfigOptions
@@ -288,7 +289,7 @@ namespace ColorVision.Copilot
                     ? "至少需要一轮完整对话后才能压缩。"
                     : "上次压缩后还没有足够的新对话，不需要重复压缩。";
                 ShowLocalCommandResult(command, reason);
-                return;
+                return false;
             }
 
             var summaryMaximumWeight = ResolveConversationHistoryLimits(
@@ -318,7 +319,7 @@ namespace ColorVision.Copilot
             catch (Exception ex)
             {
                 ShowLocalCommandResult(command, "压缩未开始：" + CopilotUserFacingErrorFormatter.Sanitize(ex.Message));
-                return;
+                return false;
             }
             var request = compactionPlan.SourceMessages
                 .Append(new CopilotRequestMessage("user", compactRequest))
@@ -329,40 +330,76 @@ namespace ColorVision.Copilot
             _isCompactingConversation = true;
             IsBusy = true;
             ShowLocalCommandResult(command, "正在压缩当前对话…完整聊天记录会继续保留在本地。");
+            var hookDiagnostics = new List<string>();
+            var hookRequest = CreateCompactionHookRequest(
+                conversation,
+                profile,
+                compactionConfig,
+                focusInstructions);
+            var compactionApplied = false;
+            var continueAfterCompaction = false;
             try
             {
-                var reply = await _chatService.CompleteReplyDetailedAsync(compactProfile, request, cancellation.Token);
-                if (CanApplyAuxiliaryConversationResult(conversation))
-                {
-                    conversation.RecordCompactionUsage(reply.Usage, DateTimeOffset.UtcNow);
-                    PersistState();
-                }
-                else if (Volatile.Read(ref _disposeState) == 1)
-                {
-                    return;
-                }
-                cancellation.Token.ThrowIfCancellationRequested();
-                if (reply.IsIncomplete)
-                    throw new InvalidOperationException(BuildIncompleteCompactionMessage(reply));
-                var summary = NormalizeCompactSummary(reply.Content, summaryMaximumWeight);
-                if (summary.Length == 0)
-                    throw new InvalidOperationException("模型没有返回可用的压缩摘要。");
-                compactionPlan.TerminalEvidence.EnsurePreserved(summary);
-                if (!Conversations.Contains(conversation) || !conversation.Messages.Contains(compactionPlan.BoundaryMessage))
-                    throw new InvalidOperationException("压缩期间会话已发生变化，结果未应用。");
+                var reply = default(CopilotCompletedReplyResult);
+                var summary = string.Empty;
+                var lifecycle = await new CopilotCodexCompactionHookLifecycle().RunAsync(
+                    hookRequest,
+                    hookTrigger,
+                    async compactCancellationToken =>
+                    {
+                        reply = await _chatService.CompleteReplyDetailedAsync(
+                            compactProfile,
+                            request,
+                            compactCancellationToken);
+                        if (CanApplyAuxiliaryConversationResult(conversation))
+                        {
+                            conversation.RecordCompactionUsage(reply.Usage, DateTimeOffset.UtcNow);
+                            PersistState();
+                        }
+                        else if (Volatile.Read(ref _disposeState) == 1)
+                        {
+                            return false;
+                        }
+                        compactCancellationToken.ThrowIfCancellationRequested();
+                        if (reply.IsIncomplete)
+                            throw new InvalidOperationException(BuildIncompleteCompactionMessage(reply));
+                        summary = NormalizeCompactSummary(reply.Content, summaryMaximumWeight);
+                        if (summary.Length == 0)
+                            throw new InvalidOperationException("模型没有返回可用的压缩摘要。");
+                        compactionPlan.TerminalEvidence.EnsurePreserved(summary);
+                        if (!Conversations.Contains(conversation) || !conversation.Messages.Contains(compactionPlan.BoundaryMessage))
+                            throw new InvalidOperationException("压缩期间会话已发生变化，结果未应用。");
 
-                conversation.Compaction = new CopilotConversationCompaction
+                        conversation.Compaction = new CopilotConversationCompaction
+                        {
+                            StrategyVersion = CopilotConversationCompaction.CurrentStrategyVersion,
+                            Summary = summary,
+                            ThroughMessageId = compactionPlan.BoundaryMessage.Id,
+                            CreatedAtUtc = DateTimeOffset.UtcNow,
+                            SourceMessageCount = compactionPlan.TotalSourceMessageCount,
+                            SourceCharacters = compactionPlan.TotalSourceCharacters,
+                        };
+                        conversation.AgentSessionCheckpoint = null;
+                        UpdateConversationMetadata(conversation, touch: true);
+                        PersistState();
+                        compactionApplied = true;
+                        return true;
+                    },
+                    hookDiagnostics.Add,
+                    cancellation.Token);
+                if (!lifecycle.CompactionApplied)
                 {
-                    StrategyVersion = CopilotConversationCompaction.CurrentStrategyVersion,
-                    Summary = summary,
-                    ThroughMessageId = compactionPlan.BoundaryMessage.Id,
-                    CreatedAtUtc = DateTimeOffset.UtcNow,
-                    SourceMessageCount = compactionPlan.TotalSourceMessageCount,
-                    SourceCharacters = compactionPlan.TotalSourceCharacters,
-                };
-                conversation.AgentSessionCheckpoint = null;
-                UpdateConversationMetadata(conversation, touch: true);
-                PersistState();
+                    if (lifecycle.PreCompact.ShouldStop)
+                    {
+                        ShowLocalCommandResult(
+                            command,
+                            "压缩未开始：PreCompact Hook 已停止本次压缩。"
+                            + FormatCompactionHookReason(lifecycle.PreCompact.StopReason)
+                            + FormatCompactionHookDiagnostics(hookDiagnostics));
+                    }
+                    return false;
+                }
+                continueAfterCompaction = !lifecycle.PostCompact.ShouldStop;
 
                 var retainedAfterBoundary = CopilotConversationCompactionContext.CountMessagesAfterBoundary(conversation);
                 ShowLocalCommandResult(
@@ -372,14 +409,23 @@ namespace ColorVision.Copilot
                     + FormatCompactionUsage(reply.Usage)
                     + (!includeFocusInResult || string.IsNullOrWhiteSpace(focusInstructions)
                         ? string.Empty
-                        : "\n聚焦要求：" + focusInstructions.Trim()));
+                        : "\n聚焦要求：" + focusInstructions.Trim())
+                    + (lifecycle.PostCompact.ShouldStop
+                        ? "\nPostCompact Hook 已保留压缩摘要，但停止了后续请求。"
+                            + FormatCompactionHookReason(lifecycle.PostCompact.StopReason)
+                        : string.Empty)
+                    + FormatCompactionHookDiagnostics(hookDiagnostics));
                 RefreshComposerTokenEstimate();
             }
             catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
             {
                 ShowLocalCommandResult(
                     command,
-                    "上下文压缩已取消，原有对话和压缩摘要均未改变；若 Provider 已完成响应，其 Token 元数据仍会计入本会话用量。");
+                    compactionApplied
+                        ? "压缩摘要已应用；PostCompact Hook 检查被取消，后续请求未发送。"
+                            + FormatCompactionHookDiagnostics(hookDiagnostics)
+                        : "上下文压缩已取消，原有对话和压缩摘要均未改变；若 Provider 已完成响应，其 Token 元数据仍会计入本会话用量。"
+                            + FormatCompactionHookDiagnostics(hookDiagnostics));
             }
             catch (Exception ex)
             {
@@ -392,6 +438,59 @@ namespace ColorVision.Copilot
                 _isCompactingConversation = false;
                 IsBusy = _taskHost.IsActive;
             }
+            return continueAfterCompaction;
+        }
+
+        private CopilotAgentRequest CreateCompactionHookRequest(
+            CopilotConversationRecord conversation,
+            CopilotProfileConfig profile,
+            CopilotProjectInstructionDiscoveryOptions compactionConfig,
+            string focusInstructions)
+        {
+            var solutionDirectory = SolutionManager.GetInstance()
+                .CurrentSolutionExplorer?.DirectoryInfo?.FullName ?? string.Empty;
+            var workingDirectory = CopilotAgentRequestFactory.ResolvePrimaryProjectWorkingDirectoryPath(
+                solutionDirectory,
+                _activeDocumentPath);
+            return new CopilotAgentRequest
+            {
+                ConversationId = conversation.Id,
+                TaskId = "compact-" + Guid.NewGuid().ToString("N"),
+                WorkspacePath = workingDirectory,
+                UserText = focusInstructions ?? string.Empty,
+                TaskIntentText = focusInstructions ?? string.Empty,
+                Profile = profile.Clone(),
+                SearchRootPaths = string.IsNullOrWhiteSpace(workingDirectory)
+                    ? Array.Empty<string>()
+                    : [workingDirectory],
+                Mode = CopilotAgentMode.Chat,
+                CodexHooksEnabled = compactionConfig.ConfiguredHooksEnabled,
+                CodexCommandHooks = compactionConfig.ConfiguredCommandHooks
+                    .Where(definition => definition?.IsStructurallyValid() == true)
+                    .Select(definition => definition.CreateSnapshot())
+                    .ToArray(),
+                CodexPluginsEnabled = compactionConfig.ConfiguredPluginsEnabled,
+                CodexShellEnvironmentPolicy = compactionConfig
+                    .ConfiguredShellEnvironmentPolicy.CreateSnapshot(),
+                CodexApprovalPolicy = compactionConfig.ConfiguredApprovalPolicy,
+            };
+        }
+
+        private static string FormatCompactionHookReason(string reason)
+        {
+            var normalized = CopilotApprovalRequestReason.Normalize(reason);
+            return normalized.Length == 0 ? string.Empty : "\n原因：" + normalized;
+        }
+
+        private static string FormatCompactionHookDiagnostics(IReadOnlyList<string> diagnostics)
+        {
+            var visible = (diagnostics ?? Array.Empty<string>())
+                .Where(message => !string.IsNullOrWhiteSpace(message))
+                .Select(message => message.Trim())
+                .ToArray();
+            return visible.Length == 0
+                ? string.Empty
+                : "\nHook 运行：\n- " + string.Join("\n- ", visible);
         }
 
         private async Task<CopilotAutomaticCompactionOutcome> TryAutoCompactConversationAsync(
@@ -435,13 +534,14 @@ namespace ColorVision.Copilot
                 return CopilotAutomaticCompactionOutcome.Failed;
 
             var previousCompaction = conversation.Compaction;
-            await CompactConversationAsync(
+            var continueAfterCompaction = await CompactConversationAsync(
                 command,
                 CopilotConversationCompactionPrompt.BuildAutomaticFocus(
                     agentDefaults.AutoCompactInstructions),
                 includeFocusInResult: false,
                 agentDefaults,
-                codexConfigOptions);
+                codexConfigOptions,
+                CopilotCodexCompactHookTrigger.Auto);
             var applied = !ReferenceEquals(previousCompaction, conversation.Compaction)
                 && conversation.Compaction?.IsStructurallyValid() == true;
             if (!applied)
@@ -450,6 +550,14 @@ namespace ColorVision.Copilot
                 LocalCommandResultText = (LocalCommandResultText ?? string.Empty).Trim()
                     + Environment.NewLine
                     + "原请求尚未发送，输入和附件均已保留；请重试 /compact，或在设置中调整自动压缩策略。";
+                return CopilotAutomaticCompactionOutcome.Failed;
+            }
+            if (!continueAfterCompaction)
+            {
+                LocalCommandResultTitle = "/compact · Hook 已停止后续请求";
+                LocalCommandResultText = (LocalCommandResultText ?? string.Empty).Trim()
+                    + Environment.NewLine
+                    + "原请求尚未发送，输入和附件均已保留。";
                 return CopilotAutomaticCompactionOutcome.Failed;
             }
 

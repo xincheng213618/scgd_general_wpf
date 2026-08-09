@@ -37,6 +37,15 @@ namespace ColorVision.Copilot
         public bool HasFailure => !string.IsNullOrWhiteSpace(FailureCode);
     }
 
+    internal sealed record CopilotCodexCompactOutput(
+        bool ShouldStop = false,
+        string StopReason = "",
+        string SystemMessage = "",
+        string FailureCode = "")
+    {
+        public bool HasFailure => !string.IsNullOrWhiteSpace(FailureCode);
+    }
+
     internal interface ICopilotCodexCommandHookRunner
     {
         Task<CopilotCodexCommandHookProcessResult> RunAsync(
@@ -589,6 +598,92 @@ namespace ColorVision.Copilot
                 StopReason: failureMessage,
                 FailureCode: failureCode);
 
+        internal async Task<CopilotCodexCompactOutput?> OnCompactAsync(
+            CopilotAgentRequest request,
+            CopilotCodexConfiguredHookEvent hookEvent,
+            string trigger,
+            CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(request);
+            if (hookEvent is not (CopilotCodexConfiguredHookEvent.PreCompact
+                or CopilotCodexConfiguredHookEvent.PostCompact))
+            {
+                throw new ArgumentOutOfRangeException(nameof(hookEvent));
+            }
+            if (_definition.Event != hookEvent)
+                return null;
+
+            var eventName = hookEvent.ToString();
+            var result = await RunAsync(
+                request,
+                BuildCompactInputJson(request, eventName, trigger),
+                cancellationToken).ConfigureAwait(false);
+            var failure = result.TimedOut
+                ? $"A configured {eventName} hook exceeded its timeout."
+                : result.ExitCode == 0
+                    ? string.Empty
+                    : $"A configured {eventName} hook exited with code {result.ExitCode}.";
+            if (failure.Length > 0)
+                return CreateInvalidCompactOutput(string.Empty, failure, "configured_hook_failed");
+
+            if (!TryParseJsonOutput(result.StandardOutput, out var root, out var invalidJson))
+            {
+                return invalidJson
+                    ? CreateInvalidCompactOutput(
+                        string.Empty,
+                        $"A configured {eventName} hook returned invalid JSON.")
+                    : new CopilotCodexCompactOutput();
+            }
+            if (root == null)
+            {
+                return CreateInvalidCompactOutput(
+                    string.Empty,
+                    $"A configured {eventName} hook did not return a usable JSON document.");
+            }
+
+            using (root)
+            {
+                if (!HasOnlyCompactProperties(root.RootElement)
+                    || !TryReadOptionalString(root.RootElement, "systemMessage", out var systemMessage)
+                    || !TryReadOptionalString(root.RootElement, "stopReason", out var stopReason)
+                    || !TryReadOptionalBoolean(
+                        root.RootElement,
+                        "continue",
+                        defaultValue: true,
+                        out var shouldContinue)
+                    || !TryReadOptionalBoolean(
+                        root.RootElement,
+                        "suppressOutput",
+                        defaultValue: false,
+                        out _))
+                {
+                    return CreateInvalidCompactOutput(
+                        string.Empty,
+                        $"A configured {eventName} hook returned an invalid universal output field.");
+                }
+
+                if (_definition.ExecutionMode == CopilotToolExecutionHookMode.Async
+                    || shouldContinue)
+                {
+                    return new CopilotCodexCompactOutput(SystemMessage: systemMessage);
+                }
+                return new CopilotCodexCompactOutput(
+                    ShouldStop: true,
+                    StopReason: NormalizeReason(
+                        stopReason,
+                        $"A configured {eventName} hook stopped compaction."),
+                    SystemMessage: systemMessage);
+            }
+        }
+
+        private static CopilotCodexCompactOutput CreateInvalidCompactOutput(
+            string systemMessage,
+            string failureMessage,
+            string failureCode = "configured_hook_invalid_output") => new(
+                StopReason: failureMessage,
+                SystemMessage: systemMessage,
+                FailureCode: failureCode);
+
         public async Task<CopilotToolExecutionHookDecision> BeforeExecuteAsync(
             CopilotToolExecutionHookContext context,
             CancellationToken cancellationToken)
@@ -993,6 +1088,22 @@ namespace ColorVision.Copilot
             return true;
         }
 
+        private static bool HasOnlyCompactProperties(JsonElement root)
+        {
+            foreach (var property in root.EnumerateObject())
+            {
+                if (property.Name is not (
+                    "continue"
+                    or "stopReason"
+                    or "suppressOutput"
+                    or "systemMessage"))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
         private static bool HasOnlyUserPromptSubmitSpecificProperties(JsonElement specific)
         {
             foreach (var property in specific.EnumerateObject())
@@ -1160,6 +1271,24 @@ namespace ColorVision.Copilot
                 ["last_assistant_message"] = string.IsNullOrWhiteSpace(lastAssistantMessage)
                     ? null
                     : lastAssistantMessage,
+            };
+            return JsonSerializer.Serialize(input) + Environment.NewLine;
+        }
+
+        private static string BuildCompactInputJson(
+            CopilotAgentRequest request,
+            string eventName,
+            string trigger)
+        {
+            var input = new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["session_id"] = request.ConversationId,
+                ["turn_id"] = request.TaskId,
+                ["transcript_path"] = null,
+                ["cwd"] = CopilotCodexCommandHookRunner.ResolveWorkingDirectory(request),
+                ["hook_event_name"] = eventName,
+                ["model"] = request.Profile?.Model ?? string.Empty,
+                ["trigger"] = trigger ?? string.Empty,
             };
             return JsonSerializer.Serialize(input) + Environment.NewLine;
         }

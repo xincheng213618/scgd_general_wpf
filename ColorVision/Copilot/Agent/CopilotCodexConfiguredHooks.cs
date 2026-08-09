@@ -27,6 +27,8 @@ namespace ColorVision.Copilot
         PostToolUse,
         UserPromptSubmit,
         Stop,
+        PreCompact,
+        PostCompact,
     }
 
     internal sealed record CopilotCodexConfiguredHookIssue(
@@ -308,11 +310,13 @@ namespace ColorVision.Copilot
                     AddIssue(
                         "Hook event 'PermissionRequest' ignores additionalContextLimit because it cannot return additional context.");
                 }
-                if (hookEvent == CopilotCodexConfiguredHookEvent.Stop
+                if ((hookEvent is CopilotCodexConfiguredHookEvent.Stop
+                        or CopilotCodexConfiguredHookEvent.PreCompact
+                        or CopilotCodexConfiguredHookEvent.PostCompact)
                     && completed.AdditionalContextLimitTokens.HasValue)
                 {
                     AddIssue(
-                        "Hook event 'Stop' ignores additionalContextLimit because it cannot return additional context.");
+                        $"Hook event '{hookEvent}' ignores additionalContextLimit because it cannot return additional context.");
                 }
                 if (hookEvent == CopilotCodexConfiguredHookEvent.UserPromptSubmit
                     && completed.IsAsync == true)
@@ -728,12 +732,14 @@ namespace ColorVision.Copilot
                             sourceFilePath,
                             "Hook event 'PermissionRequest' ignores additionalContextLimit because it cannot return additional context."));
                     }
-                    if (hookEvent == CopilotCodexConfiguredHookEvent.Stop
+                    if ((hookEvent is CopilotCodexConfiguredHookEvent.Stop
+                            or CopilotCodexConfiguredHookEvent.PreCompact
+                            or CopilotCodexConfiguredHookEvent.PostCompact)
                         && handler.TryGetProperty("additionalContextLimit", out _))
                     {
                         issues.Add(new CopilotCodexConfiguredHookIssue(
                             sourceFilePath,
-                            "Hook event 'Stop' ignores additionalContextLimit because it cannot return additional context."));
+                            $"Hook event '{hookEvent}' ignores additionalContextLimit because it cannot return additional context."));
                     }
                     if (hookEvent == CopilotCodexConfiguredHookEvent.UserPromptSubmit
                         && handler.TryGetProperty("async", out var asyncElement)
@@ -932,11 +938,14 @@ namespace ColorVision.Copilot
                 "PermissionRequest" => CopilotCodexConfiguredHookEvent.PermissionRequest,
                 "PreToolUse" => CopilotCodexConfiguredHookEvent.PreToolUse,
                 "PostToolUse" => CopilotCodexConfiguredHookEvent.PostToolUse,
+                "PreCompact" => CopilotCodexConfiguredHookEvent.PreCompact,
+                "PostCompact" => CopilotCodexConfiguredHookEvent.PostCompact,
                 "UserPromptSubmit" => CopilotCodexConfiguredHookEvent.UserPromptSubmit,
                 "Stop" => CopilotCodexConfiguredHookEvent.Stop,
                 _ => default,
             };
-            return value is "PermissionRequest" or "PreToolUse" or "PostToolUse" or "UserPromptSubmit" or "Stop";
+            return value is "PermissionRequest" or "PreToolUse" or "PostToolUse"
+                or "PreCompact" or "PostCompact" or "UserPromptSubmit" or "Stop";
         }
 
         private static string ComputeHookFingerprint(
