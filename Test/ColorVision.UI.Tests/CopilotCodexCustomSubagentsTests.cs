@@ -917,6 +917,56 @@ public sealed class CopilotCodexCustomSubagentsTests
     }
 
     [Fact]
+    public void NestedAgentFilesAreRecursivelyDiscoveredInDeterministicPathOrder()
+    {
+        var globalRoot = CreateTemporaryDirectory();
+        try
+        {
+            var agentsDirectory = Path.Combine(globalRoot, "agents");
+            var firstDirectory = Path.Combine(agentsDirectory, "01-review");
+            var nestedDirectory = Path.Combine(firstDirectory, "docs");
+            var secondDirectory = Path.Combine(agentsDirectory, "02-review");
+            Directory.CreateDirectory(nestedDirectory);
+            Directory.CreateDirectory(secondDirectory);
+            File.WriteAllText(
+                Path.Combine(firstDirectory, "reviewer.toml"),
+                CreateAgentConfig(
+                    "reviewer",
+                    "First nested reviewer",
+                    "Use the first nested definition."));
+            File.WriteAllText(
+                Path.Combine(nestedDirectory, "docs.toml"),
+                CreateAgentConfig(
+                    "docs",
+                    "Nested documentation agent",
+                    "Inspect exact documentation."));
+            File.WriteAllText(
+                Path.Combine(secondDirectory, "duplicate.toml"),
+                CreateAgentConfig(
+                    "reviewer",
+                    "Later nested reviewer",
+                    "Use the later nested definition."));
+
+            var options = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot);
+
+            Assert.Equal(2, options.CustomSubagents.Count);
+            Assert.Equal(
+                "First nested reviewer",
+                Assert.Single(options.CustomSubagents, definition => definition.Name == "reviewer").Description);
+            Assert.Equal(
+                "Nested documentation agent",
+                Assert.Single(options.CustomSubagents, definition => definition.Name == "docs").Description);
+            var issue = Assert.Single(options.CustomSubagentDiscoveryIssues);
+            Assert.Equal("duplicate.toml", issue.FileName);
+            Assert.Equal(CopilotCodexCustomSubagentDiscoveryIssueKind.DuplicateName, issue.Kind);
+        }
+        finally
+        {
+            Directory.Delete(globalRoot, recursive: true);
+        }
+    }
+
+    [Fact]
     public void AgentDiscoveryReportsDefinitionsBeyondTheBoundedLimit()
     {
         var globalRoot = CreateTemporaryDirectory();

@@ -66,6 +66,7 @@ namespace ColorVision.Copilot
     {
         private const int MaximumCustomSubagents = 24;
         private const int MaximumCustomSubagentDiscoveryIssues = 32;
+        private const int MaximumCustomSubagentDiscoveryDirectories = 128;
         private const string CustomAgentsDirectoryName = "agents";
         private const string CustomAgentNameKey = "name";
         private const string CustomAgentDescriptionKey = "description";
@@ -458,10 +459,57 @@ namespace ColorVision.Copilot
                     return Array.Empty<string>();
                 }
 
-                return Directory.EnumerateFiles(fullDirectoryPath, "*.toml", SearchOption.TopDirectoryOnly)
-                    .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
-                    .Take(MaximumCustomSubagents + MaximumCustomSubagentDiscoveryIssues)
-                    .ToArray();
+                var maximumFiles = MaximumCustomSubagents + MaximumCustomSubagentDiscoveryIssues;
+                var files = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
+                var pendingDirectories = new Queue<string>();
+                pendingDirectories.Enqueue(fullDirectoryPath);
+                var enqueuedDirectories = 1;
+                while (pendingDirectories.Count > 0)
+                {
+                    var currentDirectoryPath = pendingDirectories.Dequeue();
+                    try
+                    {
+                        foreach (var filePath in Directory.EnumerateFiles(
+                            currentDirectoryPath,
+                            "*.toml",
+                            SearchOption.TopDirectoryOnly))
+                        {
+                            files.Add(Path.GetFullPath(filePath));
+                            if (files.Count > maximumFiles)
+                                files.Remove(files.Max!);
+                        }
+
+                        if (enqueuedDirectories >= MaximumCustomSubagentDiscoveryDirectories)
+                            continue;
+                        foreach (var childDirectoryPath in Directory.EnumerateDirectories(
+                            currentDirectoryPath,
+                            "*",
+                            SearchOption.TopDirectoryOnly)
+                            .OrderBy(path => path, StringComparer.OrdinalIgnoreCase))
+                        {
+                            if (enqueuedDirectories >= MaximumCustomSubagentDiscoveryDirectories)
+                                break;
+                            var fullChildDirectoryPath = Path.TrimEndingDirectorySeparator(
+                                Path.GetFullPath(childDirectoryPath));
+                            var childDirectory = new DirectoryInfo(fullChildDirectoryPath);
+                            if (!childDirectory.Exists
+                                || (childDirectory.Attributes & FileAttributes.ReparsePoint) != 0
+                                || CopilotWorkspaceSearchSupport.HasReparsePointInPath(fullChildDirectoryPath)
+                                || !CopilotWorkspaceSearchSupport.IsPathWithinRoots(
+                                    fullChildDirectoryPath,
+                                    [allowedRootPath]))
+                            {
+                                continue;
+                            }
+                            pendingDirectories.Enqueue(fullChildDirectoryPath);
+                            enqueuedDirectories++;
+                        }
+                    }
+                    catch
+                    {
+                    }
+                }
+                return files.ToArray();
             }
             catch
             {
