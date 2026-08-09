@@ -15,6 +15,7 @@ namespace ColorVision.Copilot
         private readonly CopilotContextRegistry _contextRegistry;
         private readonly CopilotMicrosoftAgentFrameworkRuntime _agentRuntime;
         private readonly CopilotWorkspaceRollbackCoordinator _workspaceRollbackCoordinator;
+        private readonly CopilotCodexUserPromptSubmitHookExecutor _userPromptSubmitHookExecutor;
 
         public CopilotTurnRuntime(CopilotChatService chatService)
         {
@@ -31,6 +32,7 @@ namespace ColorVision.Copilot
             _workspaceRollbackCoordinator = new CopilotWorkspaceRollbackCoordinator(
                 toolRegistry,
                 toolExecutor);
+            _userPromptSubmitHookExecutor = new CopilotCodexUserPromptSubmitHookExecutor();
         }
 
         public IAsyncEnumerable<CopilotTurnEvent> RunAsync(
@@ -48,14 +50,33 @@ namespace ColorVision.Copilot
                 cancellationToken);
         }
 
-        private Task<CopilotTurnResult> RunCoreAsync(
+        private async Task<CopilotTurnResult> RunCoreAsync(
             CopilotTurnRequest request,
             CopilotTurnEventSink eventSink,
             CancellationToken cancellationToken)
         {
+            var promptHookOutcome = await _userPromptSubmitHookExecutor.RunAsync(
+                CreateUserPromptSubmitHookRequest(request),
+                request.UserText,
+                eventSink.OnRuntimeDiagnostic,
+                cancellationToken).ConfigureAwait(false);
+            if (promptHookOutcome.ShouldStop)
+            {
+                throw new CopilotUserPromptSubmitHookBlockedException(
+                    promptHookOutcome.StopReason);
+            }
+
             return request.Mode == CopilotAgentMode.Chat
-                ? RunChatAsync(request, eventSink, cancellationToken)
-                : RunAgentAsync(request, eventSink, cancellationToken);
+                ? await RunChatAsync(
+                    request,
+                    promptHookOutcome.AdditionalContexts,
+                    eventSink,
+                    cancellationToken).ConfigureAwait(false)
+                : await RunAgentAsync(
+                    request,
+                    promptHookOutcome.AdditionalContexts,
+                    eventSink,
+                    cancellationToken).ConfigureAwait(false);
         }
 
         public CopilotSteeringAdmissionResult EnqueueSteeringMessage(
@@ -85,6 +106,7 @@ namespace ColorVision.Copilot
 
         private async Task<CopilotTurnResult> RunChatAsync(
             CopilotTurnRequest request,
+            IReadOnlyList<string> userPromptSubmitAdditionalContexts,
             CopilotTurnEventSink eventSink,
             CancellationToken cancellationToken)
         {
@@ -135,6 +157,9 @@ namespace ColorVision.Copilot
                 limits: request.HistoryLimits,
                 includeAttachmentContext: false,
                 cancellationToken: cancellationToken).ConfigureAwait(false);
+            var userPromptSubmitDeveloperContext =
+                CopilotCodexUserPromptSubmitHookExecutor.BuildDeveloperContext(
+                    userPromptSubmitAdditionalContexts);
             var streamResult = await _chatService.StreamReplyAsync(
                 request.Profile,
                 history,
@@ -142,6 +167,7 @@ namespace ColorVision.Copilot
                 eventSink.OnProviderRetry,
                 eventSink.OnProviderConnectionRecovery,
                 usage => eventSink.OnTokenUsageUpdated(imageUnderstanding.Usage.Add(usage)),
+                userPromptSubmitDeveloperContext,
                 cancellationToken).ConfigureAwait(false);
             var turnUsage = imageUnderstanding.Usage.Add(streamResult.Usage);
             eventSink.OnTokenUsageUpdated(turnUsage);
@@ -154,6 +180,7 @@ namespace ColorVision.Copilot
 
         private async Task<CopilotTurnResult> RunAgentAsync(
             CopilotTurnRequest request,
+            IReadOnlyList<string> userPromptSubmitAdditionalContexts,
             CopilotTurnEventSink eventSink,
             CancellationToken cancellationToken)
         {
@@ -192,6 +219,7 @@ namespace ColorVision.Copilot
                     request.HostContext.ConversationHistory,
                     request.HistoryLimits),
                 ContextItems = contextItems,
+                UserPromptSubmitAdditionalContexts = userPromptSubmitAdditionalContexts,
                 SessionCheckpoint = request.SessionCheckpoint,
                 Recovery = request.Recovery,
                 RunControl = request.RunControl,
@@ -248,6 +276,37 @@ namespace ColorVision.Copilot
                     finalReviewAnswer.IsTruncated);
             }
             return CopilotTurnResult.FromAgent(request.Mode, turnUsage, result);
+        }
+
+        private static CopilotAgentRequest CreateUserPromptSubmitHookRequest(
+            CopilotTurnRequest request)
+        {
+            var options = request.HostContext.ProjectInstructionDiscoveryOptions;
+            var workspacePath = string.IsNullOrWhiteSpace(request.HostContext.SolutionDirectoryPath)
+                ? request.HostContext.ProjectConfigWorkingDirectoryPath
+                : request.HostContext.SolutionDirectoryPath;
+            return new CopilotAgentRequest
+            {
+                ConversationId = request.ConversationId,
+                TaskId = request.TaskId,
+                WorkspacePath = workspacePath,
+                UserText = request.UserText,
+                TaskIntentText = request.UserText,
+                Profile = request.Profile,
+                Mode = request.Mode,
+                SearchRootPaths = request.HostContext.AdditionalReadRootPaths,
+                TrustedProjectRootPaths = string.IsNullOrWhiteSpace(
+                    request.HostContext.PrimaryTrustedProjectRootPath)
+                    ? Array.Empty<string>()
+                    : [request.HostContext.PrimaryTrustedProjectRootPath],
+                CodexSandboxMode = options.ConfiguredSandboxMode,
+                CodexApprovalPolicy = options.ConfiguredApprovalPolicy,
+                CodexHooksEnabled = options.ConfiguredHooksEnabled,
+                CodexCommandHooks = options.ConfiguredCommandHooks
+                    .Select(definition => definition.CreateSnapshot())
+                    .ToArray(),
+                CodexShellEnvironmentPolicy = options.ConfiguredShellEnvironmentPolicy.CreateSnapshot(),
+            };
         }
 
         internal static CopilotTokenUsage GetReportedTokenUsage(CopilotAgentBudgetSnapshot budget)

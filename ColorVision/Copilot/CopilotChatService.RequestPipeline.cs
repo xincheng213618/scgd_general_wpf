@@ -71,6 +71,7 @@ namespace ColorVision.Copilot
                 onRetry: null,
                 onConnectionRecovery: null,
                 onUsageChanged: null,
+                requestSystemContext: null,
                 imageAttachments: imageAttachments,
                 cancellationToken: cancellationToken).ConfigureAwait(false);
 
@@ -117,6 +118,7 @@ namespace ColorVision.Copilot
                 onRetry,
                 onConnectionRecovery: null,
                 onUsageChanged: null,
+                requestSystemContext: null,
                 imageAttachments: null,
                 cancellationToken);
 
@@ -134,6 +136,7 @@ namespace ColorVision.Copilot
                 onRetry,
                 onConnectionRecovery: null,
                 onUsageChanged,
+                requestSystemContext: null,
                 imageAttachments: null,
                 cancellationToken);
 
@@ -144,6 +147,25 @@ namespace ColorVision.Copilot
             Action<CopilotProviderRetryInfo>? onRetry,
             Action<CopilotProviderConnectionRecoveryInfo> onConnectionRecovery,
             Action<CopilotTokenUsage>? onUsageChanged,
+            CancellationToken cancellationToken) =>
+            StreamReplyAsync(
+                config,
+                messages,
+                onDelta,
+                onRetry,
+                onConnectionRecovery,
+                onUsageChanged,
+                requestSystemContext: null,
+                cancellationToken);
+
+        internal Task<CopilotChatStreamResult> StreamReplyAsync(
+            CopilotProfileConfig config,
+            IReadOnlyList<CopilotRequestMessage> messages,
+            Action<CopilotStreamDelta> onDelta,
+            Action<CopilotProviderRetryInfo>? onRetry,
+            Action<CopilotProviderConnectionRecoveryInfo> onConnectionRecovery,
+            Action<CopilotTokenUsage>? onUsageChanged,
+            string? requestSystemContext,
             CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(onConnectionRecovery);
@@ -154,6 +176,7 @@ namespace ColorVision.Copilot
                 onRetry,
                 onConnectionRecovery,
                 onUsageChanged,
+                requestSystemContext,
                 imageAttachments: null,
                 cancellationToken);
         }
@@ -173,6 +196,7 @@ namespace ColorVision.Copilot
                 onRetry,
                 onConnectionRecovery: null,
                 onUsageChanged: null,
+                requestSystemContext: null,
                 imageAttachments,
                 cancellationToken).ConfigureAwait(false);
             return result.Usage;
@@ -185,6 +209,7 @@ namespace ColorVision.Copilot
             Action<CopilotProviderRetryInfo>? onRetry,
             Action<CopilotProviderConnectionRecoveryInfo>? onConnectionRecovery,
             Action<CopilotTokenUsage>? onUsageChanged,
+            string? requestSystemContext,
             IReadOnlyList<CopilotAttachmentItem>? imageAttachments,
             CancellationToken cancellationToken)
         {
@@ -213,6 +238,7 @@ namespace ColorVision.Copilot
                         config,
                         requestMessages,
                         imagePayloads,
+                        requestSystemContext,
                         delta =>
                         {
                             responseStarted = true;
@@ -254,12 +280,17 @@ namespace ColorVision.Copilot
             CopilotProfileConfig config,
             IReadOnlyList<CopilotRequestMessage> messages,
             IReadOnlyList<CopilotImagePayload> imagePayloads,
+            string? requestSystemContext,
             Action<CopilotStreamDelta> onDelta,
             Action<CopilotTokenUsage> onUsageChanged,
             CopilotProviderInactivityTimeouts inactivityTimeouts,
             CancellationToken cancellationToken)
         {
-            using var request = CreateRequest(config, messages, imagePayloads);
+            using var request = CreateRequest(
+                config,
+                messages,
+                imagePayloads,
+                requestSystemContext);
             var firstResponseStopwatch = Stopwatch.StartNew();
             using var response = await SendResponseHeadersAsync(
                 request,
@@ -489,7 +520,8 @@ namespace ColorVision.Copilot
         private static HttpRequestMessage CreateRequest(
             CopilotProfileConfig config,
             IReadOnlyList<CopilotRequestMessage> messages,
-            IReadOnlyList<CopilotImagePayload> imagePayloads)
+            IReadOnlyList<CopilotImagePayload> imagePayloads,
+            string? requestSystemContext)
         {
             var request = new HttpRequestMessage(HttpMethod.Post, CopilotProviderEndpoint.Build(config));
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/event-stream"));
@@ -504,7 +536,9 @@ namespace ColorVision.Copilot
                 request.Headers.Add("x-api-key", config.ApiKey);
                 request.Headers.Add("anthropic-version", "2023-06-01");
 
-                var systemPrompt = config.EffectiveSystemPrompt;
+                var systemPrompt = BuildEffectiveSystemPrompt(
+                    config.EffectiveSystemPrompt,
+                    requestSystemContext);
                 payload = new Dictionary<string, object?>
                 {
                     ["model"] = config.Model,
@@ -527,7 +561,9 @@ namespace ColorVision.Copilot
             {
                 request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", config.ApiKey);
 
-                var systemPrompt = config.EffectiveSystemPrompt;
+                var systemPrompt = BuildEffectiveSystemPrompt(
+                    config.EffectiveSystemPrompt,
+                    requestSystemContext);
                 var payloadMessages = new List<object>();
                 if (!string.IsNullOrWhiteSpace(systemPrompt))
                 {
@@ -568,6 +604,19 @@ namespace ColorVision.Copilot
 
             request.Content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
             return request;
+        }
+
+        private static string BuildEffectiveSystemPrompt(
+            string? configuredSystemPrompt,
+            string? requestSystemContext)
+        {
+            var configured = configuredSystemPrompt?.Trim() ?? string.Empty;
+            var requestContext = requestSystemContext?.Trim() ?? string.Empty;
+            if (configured.Length == 0)
+                return requestContext;
+            if (requestContext.Length == 0)
+                return configured;
+            return configured + Environment.NewLine + Environment.NewLine + requestContext;
         }
 
         private static int FindLastUserMessageIndex(IReadOnlyList<CopilotRequestMessage> messages)

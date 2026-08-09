@@ -176,21 +176,29 @@ namespace ColorVision.Copilot
             int maximumTokens = DefaultAdditionalContextLimitTokens,
             bool isPreToolUse = false)
         {
-            ArgumentOutOfRangeException.ThrowIfNegative(maximumTokens);
-            var normalized = CopilotMcpAuditLogger.RedactText(context).Trim();
-            if (normalized.Length == 0)
+            var bounded = NormalizeModelAdditionalContext(
+                context,
+                maximumTokens,
+                isPreToolUse
+                    ? PreToolAdditionalContextTruncationMarker
+                    : PostToolAdditionalContextTruncationMarker);
+            if (bounded.Length == 0)
                 return;
-
-            var bounded = maximumTokens == 0
-                ? normalized
-                : BoundAdditionalContext(
-                    normalized,
-                    maximumTokens,
-                    isPreToolUse
-                        ? PreToolAdditionalContextTruncationMarker
-                        : PostToolAdditionalContextTruncationMarker);
             lock (_modelAdditionalContexts)
                 _modelAdditionalContexts.Add(bounded);
+        }
+
+        internal static string NormalizeModelAdditionalContext(
+            string? context,
+            int maximumTokens,
+            string truncationMarker)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(maximumTokens);
+            ArgumentException.ThrowIfNullOrWhiteSpace(truncationMarker);
+            var normalized = CopilotMcpAuditLogger.RedactText(context).Trim();
+            if (normalized.Length == 0 || maximumTokens == 0)
+                return normalized;
+            return BoundAdditionalContext(normalized, maximumTokens, truncationMarker);
         }
 
         private static string BoundModelFeedback(string value)

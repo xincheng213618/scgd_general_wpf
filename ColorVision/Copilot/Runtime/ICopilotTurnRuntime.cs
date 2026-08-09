@@ -59,6 +59,20 @@ namespace ColorVision.Copilot
         public static CopilotTurnError FromException(Exception exception)
         {
             ArgumentNullException.ThrowIfNull(exception);
+            if (exception is CopilotUserPromptSubmitHookBlockedException)
+            {
+                var message = CopilotApprovalRequestReason.Normalize(exception.Message);
+                if (message.Length > MaximumMessageLength)
+                {
+                    var length = MaximumMessageLength;
+                    if (char.IsHighSurrogate(message[length - 1]))
+                        length--;
+                    message = message[..length].TrimEnd();
+                }
+                return new CopilotTurnError(
+                    "user_prompt_hook_blocked",
+                    message);
+            }
             return new CopilotTurnError(
                 exception is TimeoutException ? "turn_timeout" : "turn_failed",
                 "Copilot turn failed before producing a complete result.");
@@ -129,6 +143,21 @@ namespace ColorVision.Copilot
 
     internal sealed record CopilotTurnRequestPreparedEvent(
         CopilotPreparedTurnRequest Request) : CopilotTurnEvent;
+
+    internal sealed record CopilotTurnRuntimeDiagnosticEvent : CopilotTurnEvent
+    {
+        internal const int MaximumTextLength = 2_048;
+
+        public CopilotTurnRuntimeDiagnosticEvent(string text)
+        {
+            var normalized = CopilotAgentTraceEntry.Sanitize(text);
+            Text = normalized.Length <= MaximumTextLength
+                ? normalized
+                : normalized[..MaximumTextLength].TrimEnd();
+        }
+
+        public string Text { get; }
+    }
 
     internal sealed record CopilotTurnChatDeltaEvent(
         CopilotStreamDelta Delta) : CopilotTurnEvent;
@@ -295,6 +324,13 @@ namespace ColorVision.Copilot
 
         public void OnRequestPrepared(CopilotPreparedTurnRequest request) =>
             _publish(new CopilotTurnRequestPreparedEvent(request));
+
+        public void OnRuntimeDiagnostic(string text)
+        {
+            var diagnostic = new CopilotTurnRuntimeDiagnosticEvent(text);
+            if (diagnostic.Text.Length > 0)
+                _publish(diagnostic);
+        }
 
         public void OnChatDelta(CopilotStreamDelta delta) =>
             _publish(new CopilotTurnChatDeltaEvent(delta));

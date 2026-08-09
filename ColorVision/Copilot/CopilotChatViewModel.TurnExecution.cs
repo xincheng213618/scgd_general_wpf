@@ -553,6 +553,12 @@ namespace ColorVision.Copilot
                                 break;
                             case CopilotTurnErrorEvent:
                                 break;
+                            case CopilotTurnRuntimeDiagnosticEvent diagnostic:
+                                CopilotUiDispatcher.Invoke(() =>
+                                    CopilotAssistantMessagePresenter.AppendExecutionTrace(
+                                        assistantMessage,
+                                        diagnostic.Text));
+                                break;
                             case CopilotTurnRequestPreparedEvent prepared:
                                 ApplyPreparedTurnRequestOnUiThread(userMessage, prepared.Request);
                                 break;

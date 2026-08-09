@@ -89,6 +89,7 @@ namespace ColorVision.Copilot
             {
                 CopilotTurnStartedEvent started => ReduceStarted(state, started),
                 CopilotTurnErrorEvent error => ReduceError(state, error),
+                CopilotTurnRuntimeDiagnosticEvent => state,
                 CopilotTurnRequestPreparedEvent prepared => ReduceRequestPrepared(state, prepared),
                 CopilotTurnChatDeltaEvent => ReduceChatProgress(state, turnEvent),
                 CopilotTurnProviderRetryEvent providerRetry => ReduceProviderRetry(state, providerRetry),

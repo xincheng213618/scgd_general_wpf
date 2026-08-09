@@ -66,18 +66,56 @@ public sealed class CopilotOpenAiRequestPolicyTests
             root.GetProperty("messages")[0].GetProperty("role").GetString());
     }
 
+    [Fact]
+    public async Task RequestSystemContextIsMergedIntoTheInstructionMessage()
+    {
+        using var handler = new CapturingHandler();
+        using var document = await CaptureRequestAsync(
+            CreateProfile(CopilotVendorType.OpenAI, "gpt-5.5"),
+            handler,
+            "UserPromptSubmit hook context: inspect the reproduction first.");
+        var instruction = document.RootElement
+            .GetProperty("messages")[0];
+
+        Assert.Equal("developer", instruction.GetProperty("role").GetString());
+        Assert.Contains(
+            "Follow the test instruction.",
+            instruction.GetProperty("content").GetString(),
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "UserPromptSubmit hook context",
+            instruction.GetProperty("content").GetString(),
+            StringComparison.Ordinal);
+    }
+
     private static async Task<JsonDocument> CaptureRequestAsync(
         CopilotProfileConfig profile,
-        CapturingHandler handler)
+        CapturingHandler handler,
+        string? requestSystemContext = null)
     {
         using var httpClient = new HttpClient(handler);
         var service = new CopilotChatService(httpClient);
 
-        await service.StreamReplyAsync(
-            profile,
-            [new CopilotRequestMessage("user", "Test the request shape.")],
-            _ => { },
-            CancellationToken.None);
+        if (requestSystemContext == null)
+        {
+            await service.StreamReplyAsync(
+                profile,
+                [new CopilotRequestMessage("user", "Test the request shape.")],
+                _ => { },
+                CancellationToken.None);
+        }
+        else
+        {
+            await service.StreamReplyAsync(
+                profile,
+                [new CopilotRequestMessage("user", "Test the request shape.")],
+                _ => { },
+                onRetry: null,
+                onConnectionRecovery: _ => { },
+                onUsageChanged: null,
+                requestSystemContext: requestSystemContext,
+                cancellationToken: CancellationToken.None);
+        }
 
         return JsonDocument.Parse(handler.LastPayload);
     }

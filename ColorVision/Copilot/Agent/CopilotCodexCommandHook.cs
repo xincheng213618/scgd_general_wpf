@@ -15,6 +15,17 @@ namespace ColorVision.Copilot
         string StandardOutput,
         string StandardError);
 
+    internal sealed record CopilotCodexUserPromptSubmitOutput(
+        bool ShouldStop = false,
+        string StopReason = "",
+        string SystemMessage = "",
+        string AdditionalContext = "",
+        int AdditionalContextLimitTokens = CopilotToolExecutionOutcome.DefaultAdditionalContextLimitTokens,
+        string FailureCode = "")
+    {
+        public bool HasFailure => !string.IsNullOrWhiteSpace(FailureCode);
+    }
+
     internal interface ICopilotCodexCommandHookRunner
     {
         Task<CopilotCodexCommandHookProcessResult> RunAsync(
@@ -307,6 +318,149 @@ namespace ColorVision.Copilot
         private static CopilotToolPermissionRequestOutput CreatePermissionRequestOutput(
             CopilotToolPermissionRequestDecision decision,
             string systemMessage = "") => new(decision, systemMessage);
+
+        internal async Task<CopilotCodexUserPromptSubmitOutput?> OnUserPromptSubmitAsync(
+            CopilotAgentRequest request,
+            string prompt,
+            CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(request);
+            if (_definition.Event != CopilotCodexConfiguredHookEvent.UserPromptSubmit)
+                return null;
+
+            var result = await RunAsync(
+                request,
+                BuildUserPromptSubmitInputJson(request, prompt),
+                cancellationToken).ConfigureAwait(false);
+            var failure = GetProcessFailure(result, "UserPromptSubmit");
+            if (failure != null)
+                return CreateInvalidUserPromptSubmitOutput(string.Empty, failure, "configured_hook_failed");
+            if (result.ExitCode == 2)
+            {
+                return new CopilotCodexUserPromptSubmitOutput(
+                    ShouldStop: true,
+                    StopReason: NormalizeReason(
+                        result.StandardError,
+                        "A configured UserPromptSubmit hook blocked this prompt."));
+            }
+
+            if (!TryParseJsonOutput(result.StandardOutput, out var root, out var invalidJson))
+            {
+                if (invalidJson)
+                {
+                    return CreateInvalidUserPromptSubmitOutput(
+                        string.Empty,
+                        "A configured UserPromptSubmit hook returned invalid JSON.");
+                }
+                return new CopilotCodexUserPromptSubmitOutput(
+                    AdditionalContext: result.StandardOutput?.Trim() ?? string.Empty,
+                    AdditionalContextLimitTokens: _definition.AdditionalContextLimitTokens);
+            }
+            if (root == null)
+            {
+                return CreateInvalidUserPromptSubmitOutput(
+                    string.Empty,
+                    "A configured UserPromptSubmit hook did not return a usable JSON document.");
+            }
+            using (root)
+            {
+                if (!TryReadOptionalString(root.RootElement, "systemMessage", out var systemMessage))
+                {
+                    return CreateInvalidUserPromptSubmitOutput(
+                        string.Empty,
+                        "A configured UserPromptSubmit hook returned an invalid systemMessage.");
+                }
+                if (!HasOnlyUserPromptSubmitProperties(root.RootElement)
+                    || !TryReadOptionalString(root.RootElement, "stopReason", out var stopReason)
+                    || !TryReadOptionalString(root.RootElement, "reason", out var reason)
+                    || !TryReadOptionalString(root.RootElement, "decision", out var decision)
+                    || !TryReadOptionalBoolean(
+                        root.RootElement,
+                        "continue",
+                        defaultValue: true,
+                        out var shouldContinue)
+                    || !TryReadOptionalBoolean(
+                        root.RootElement,
+                        "suppressOutput",
+                        defaultValue: false,
+                        out _))
+                {
+                    return CreateInvalidUserPromptSubmitOutput(
+                        systemMessage,
+                        "A configured UserPromptSubmit hook returned an invalid universal output field.");
+                }
+
+                if (decision.Length > 0 && !string.Equals(decision, "block", StringComparison.Ordinal))
+                {
+                    return CreateInvalidUserPromptSubmitOutput(
+                        systemMessage,
+                        "A configured UserPromptSubmit hook returned an unsupported decision.");
+                }
+
+                var additionalContext = string.Empty;
+                if (!TryReadHookSpecificOutput(
+                    root.RootElement,
+                    "UserPromptSubmit",
+                    out var specific,
+                    out var specificError))
+                {
+                    if (specificError.Length > 0)
+                    {
+                        return CreateInvalidUserPromptSubmitOutput(
+                            systemMessage,
+                            specificError);
+                    }
+                }
+                else if (!HasOnlyUserPromptSubmitSpecificProperties(specific)
+                    || !TryReadOptionalString(specific, "additionalContext", out additionalContext))
+                {
+                    return CreateInvalidUserPromptSubmitOutput(
+                        systemMessage,
+                        "A configured UserPromptSubmit hook returned an invalid hook-specific output field.");
+                }
+
+                if (!shouldContinue)
+                {
+                    return new CopilotCodexUserPromptSubmitOutput(
+                        ShouldStop: true,
+                        StopReason: NormalizeReason(
+                            stopReason,
+                            "A configured UserPromptSubmit hook stopped this prompt."),
+                        SystemMessage: systemMessage,
+                        AdditionalContext: additionalContext,
+                        AdditionalContextLimitTokens: _definition.AdditionalContextLimitTokens);
+                }
+                if (string.Equals(decision, "block", StringComparison.Ordinal))
+                {
+                    if (reason.Length == 0)
+                    {
+                        return CreateInvalidUserPromptSubmitOutput(
+                            systemMessage,
+                            "A configured UserPromptSubmit hook returned decision:block without a non-empty reason.");
+                    }
+                    return new CopilotCodexUserPromptSubmitOutput(
+                        ShouldStop: true,
+                        StopReason: reason,
+                        SystemMessage: systemMessage,
+                        AdditionalContext: additionalContext,
+                        AdditionalContextLimitTokens: _definition.AdditionalContextLimitTokens);
+                }
+
+                return new CopilotCodexUserPromptSubmitOutput(
+                    SystemMessage: systemMessage,
+                    AdditionalContext: additionalContext,
+                    AdditionalContextLimitTokens: _definition.AdditionalContextLimitTokens);
+            }
+        }
+
+        private static CopilotCodexUserPromptSubmitOutput CreateInvalidUserPromptSubmitOutput(
+            string systemMessage,
+            string failureMessage,
+            string failureCode = "configured_hook_invalid_output") => new(
+                ShouldStop: true,
+                StopReason: failureMessage,
+                SystemMessage: systemMessage,
+                FailureCode: failureCode);
 
         public async Task<CopilotToolExecutionHookDecision> BeforeExecuteAsync(
             CopilotToolExecutionHookContext context,
@@ -675,6 +829,39 @@ namespace ColorVision.Copilot
             return true;
         }
 
+        private static bool HasOnlyUserPromptSubmitProperties(JsonElement root)
+        {
+            foreach (var property in root.EnumerateObject())
+            {
+                if (property.Name is not (
+                    "continue"
+                    or "stopReason"
+                    or "suppressOutput"
+                    or "systemMessage"
+                    or "decision"
+                    or "reason"
+                    or "hookSpecificOutput"))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        private static bool HasOnlyUserPromptSubmitSpecificProperties(JsonElement specific)
+        {
+            foreach (var property in specific.EnumerateObject())
+            {
+                if (property.Name is not (
+                    "hookEventName"
+                    or "additionalContext"))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
         private static bool HasOnlyPermissionRequestSpecificProperties(JsonElement specific)
         {
             foreach (var property in specific.EnumerateObject())
@@ -764,6 +951,50 @@ namespace ColorVision.Copilot
                     + CopilotUserFacingErrorFormatter.Sanitize(ex.Message),
                     ex);
             }
+        }
+
+        private async Task<CopilotCodexCommandHookProcessResult> RunAsync(
+            CopilotAgentRequest request,
+            string standardInput,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                return await _runner.RunAsync(
+                    _definition,
+                    request,
+                    standardInput,
+                    cancellationToken).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or Win32Exception or InvalidOperationException)
+            {
+                throw new InvalidOperationException(
+                    "The configured Codex command hook could not be executed: "
+                    + CopilotUserFacingErrorFormatter.Sanitize(ex.Message),
+                    ex);
+            }
+        }
+
+        private string BuildUserPromptSubmitInputJson(
+            CopilotAgentRequest request,
+            string prompt)
+        {
+            var input = new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["session_id"] = request.ConversationId,
+                ["turn_id"] = request.TaskId,
+                ["transcript_path"] = null,
+                ["cwd"] = CopilotCodexCommandHookRunner.ResolveWorkingDirectory(request),
+                ["hook_event_name"] = "UserPromptSubmit",
+                ["model"] = request.Profile?.Model ?? string.Empty,
+                ["permission_mode"] = ResolvePermissionMode(request),
+                ["prompt"] = prompt ?? string.Empty,
+            };
+            return JsonSerializer.Serialize(input) + Environment.NewLine;
         }
 
         private string BuildInputJson(
