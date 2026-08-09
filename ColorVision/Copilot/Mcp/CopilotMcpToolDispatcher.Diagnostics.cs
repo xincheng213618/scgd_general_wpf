@@ -21,6 +21,7 @@ namespace ColorVision.Copilot.Mcp
             var settings = _environment.RuntimeSettingsProvider();
             var isRunning = SafeInvoke(_environment.ServerRunningProvider);
             var statusMessage = SafeInvoke(_environment.ServerStatusMessageProvider) ?? string.Empty;
+            var runtimeActivity = GetRuntimeActivity();
 
             var builder = new StringBuilder();
             builder.AppendLine("ColorVision MCP server status");
@@ -34,6 +35,8 @@ namespace ColorVision.Copilot.Mcp
             builder.AppendLine($"Caller/source: {EmptyLabel(executionScope.CallerIdentity)}");
             builder.AppendLine($"Execution scope: {executionScope.ScopeId}");
             builder.AppendLine($"Status message: {EmptyLabel(statusMessage)}");
+            builder.AppendLine($"Active Copilot runs: {runtimeActivity.ActiveRuns}");
+            builder.AppendLine($"Queued Copilot runs: {runtimeActivity.QueuedRuns}");
             builder.AppendLine($"Pending actions: {GetPendingActionsForScope(executionScope).Count}");
             builder.AppendLine("Safety boundary: no shell, no device control, no flow execution, no config mutation, no file deletion, and no arbitrary file read.");
             return CopilotMcpToolCallResult.Ok(builder.ToString().TrimEnd());
@@ -184,6 +187,7 @@ namespace ColorVision.Copilot.Mcp
             var configDirectory = string.IsNullOrWhiteSpace(appDataDirectory) ? string.Empty : Path.Combine(appDataDirectory, "Config");
             var logFilePath = SafeInvoke(() => Environments.DirLog) ?? string.Empty;
             var theme = SafeInvoke(() => ThemeConfig.Instance.Theme.ToString()) ?? "(unknown)";
+            var runtimeActivity = GetRuntimeActivity();
             var logDirectories = SafeInvoke(() => CopilotRecentLogSupport.GetCandidateLogDirectories()
                 .Where(directory => !string.IsNullOrWhiteSpace(directory))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
@@ -208,6 +212,8 @@ namespace ColorVision.Copilot.Mcp
             builder.AppendLine($"MCP listener running: {SafeInvoke(_environment.ServerRunningProvider)}");
             builder.AppendLine($"Endpoint: {settings.Endpoint}");
             builder.AppendLine($"MCP status message: {EmptyLabel(SafeInvoke(_environment.ServerStatusMessageProvider))}");
+            builder.AppendLine($"Active Copilot runs: {runtimeActivity.ActiveRuns}");
+            builder.AppendLine($"Queued Copilot runs: {runtimeActivity.QueuedRuns}");
             builder.AppendLine($"Workspace solution directory: {EmptyLabel(workspace.SolutionDirectoryPath)}");
             builder.AppendLine($"Active document: {EmptyLabel(workspace.ActiveDocumentPath)}");
             builder.AppendLine($"Allowed search roots: {workspace.SearchRootPaths.Count}");
@@ -223,6 +229,10 @@ namespace ColorVision.Copilot.Mcp
             builder.AppendLine($"Pending actions: {CopilotMcpConfirmationStore.Instance.PendingCount}");
             return CopilotMcpToolCallResult.Ok(builder.ToString().TrimEnd());
         }
+
+        private (int ActiveRuns, int QueuedRuns) GetRuntimeActivity() => (
+            Math.Max(0, SafeInvoke(_environment.ActiveCopilotRunCountProvider)),
+            Math.Max(0, SafeInvoke(_environment.QueuedCopilotRunCountProvider)));
 
         private async Task<CopilotMcpToolCallResult> GetDiagnosticBundleAsync(
             IReadOnlyDictionary<string, JsonElement>? arguments,

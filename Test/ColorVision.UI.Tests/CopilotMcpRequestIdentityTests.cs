@@ -110,6 +110,32 @@ public sealed class CopilotMcpRequestIdentityTests
     }
 
     [Fact]
+    public async Task ServerStatusReportsLifecycleBackedCopilotRuntimeActivity()
+    {
+        var sessionStore = new CopilotMcpClientSessionStore();
+        var dispatcher = new CopilotMcpToolDispatcher(new CopilotMcpToolEnvironment
+        {
+            ActiveCopilotRunCountProvider = () => 1,
+            QueuedCopilotRunCountProvider = () => 2,
+        });
+        var handler = CreateHandler(sessionStore, dispatcher);
+        var sessionId = GetSessionId(
+            await handler.HandleAsync(CreateInitializeRequest(), CancellationToken.None));
+
+        var response = await handler.HandleAsync(
+            CreateRequest(
+                "POST",
+                """{"jsonrpc":"2.0","id":8,"method":"tools/call","params":{"name":"get_server_status","arguments":{}}}""",
+                sessionId),
+            CancellationToken.None);
+
+        Assert.Equal(200, response.StatusCode);
+        var status = ReadToolText(response);
+        Assert.Contains("Active Copilot runs: 1", status, StringComparison.Ordinal);
+        Assert.Contains("Queued Copilot runs: 2", status, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task AuditAndPendingActionViewsAreIsolatedPerMcpSession()
     {
         CopilotMcpAuditLogger.ClearForTests();
