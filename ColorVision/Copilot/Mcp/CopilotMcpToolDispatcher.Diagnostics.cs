@@ -180,8 +180,14 @@ namespace ColorVision.Copilot.Mcp
             var settings = _environment.RuntimeSettingsProvider();
             var workspace = GetWorkspaceSnapshot();
             var liveContext = _environment.LiveContextProvider();
-            var flowSnapshot = await _environment.FlowSnapshotProvider(cancellationToken);
-            var logResult = await _environment.RecentLogProvider(null, CopilotRecentLogMode.RecentLines, 20, 4000, cancellationToken);
+            var flowCapture = await CaptureDiagnosticAsync(
+                () => _environment.FlowSnapshotProvider(cancellationToken),
+                cancellationToken);
+            var logCapture = await CaptureDiagnosticAsync(
+                () => _environment.RecentLogProvider(null, CopilotRecentLogMode.RecentLines, 20, 4000, cancellationToken),
+                cancellationToken);
+            var flowSnapshot = flowCapture.Value;
+            var logResult = logCapture.Value;
             using var process = Process.GetCurrentProcess();
             var appDataDirectory = SafeInvoke(() => Environments.DirAppData) ?? string.Empty;
             var configDirectory = string.IsNullOrWhiteSpace(appDataDirectory) ? string.Empty : Path.Combine(appDataDirectory, "Config");
@@ -226,14 +232,36 @@ namespace ColorVision.Copilot.Mcp
                 builder.AppendLine($"- {root}");
             builder.AppendLine($"Live context source: {EmptyLabel(liveContext?.SourceId)}");
             builder.AppendLine($"Live context title: {EmptyLabel(liveContext?.Title)}");
+            builder.AppendLine($"Flow snapshot collection: {(flowCapture.Failed ? "failed" : "succeeded")}");
             builder.AppendLine($"Flow snapshot available: {flowSnapshot != null}");
             builder.AppendLine($"Flow running: {flowSnapshot?.IsRunning.ToString() ?? "(unknown)"}");
             builder.AppendLine($"Selected flow nodes: {flowSnapshot?.Nodes.Count(node => node.IsSelected) ?? 0}");
-            builder.AppendLine($"Recent log available: {logResult.Success}");
+            builder.AppendLine($"Recent log collection: {(logCapture.Failed ? "failed" : "succeeded")}");
+            builder.AppendLine($"Recent log available: {logResult?.Success == true}");
             builder.AppendLine($"Recent audit entries: {CopilotMcpAuditLogger.GetRecentEntries(MaxAuditEntries).Count}");
             builder.AppendLine($"Pending actions: {CopilotMcpConfirmationStore.Instance.PendingCount}");
             return CopilotMcpToolCallResult.Ok(builder.ToString().TrimEnd());
         }
+
+        private static async Task<DiagnosticCapture<T>> CaptureDiagnosticAsync<T>(
+            Func<Task<T>> provider,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                return new DiagnosticCapture<T>(await provider().ConfigureAwait(false), false);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch
+            {
+                return new DiagnosticCapture<T>(default, true);
+            }
+        }
+
+        private readonly record struct DiagnosticCapture<T>(T? Value, bool Failed);
 
         private (int ActiveRuns, int QueuedRuns) GetRuntimeActivity() => (
             Math.Max(0, SafeInvoke(_environment.ActiveCopilotRunCountProvider)),

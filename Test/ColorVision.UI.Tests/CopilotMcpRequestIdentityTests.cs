@@ -168,6 +168,42 @@ public sealed class CopilotMcpRequestIdentityTests
     }
 
     [Fact]
+    public async Task RuntimeEnvironmentSummarySurvivesOptionalCollectorFailures()
+    {
+        var sessionStore = new CopilotMcpClientSessionStore();
+        var dispatcher = new CopilotMcpToolDispatcher(new CopilotMcpToolEnvironment
+        {
+            ResidentMemoryBytesProvider = () => throw new InvalidOperationException("memory unavailable"),
+            FlowSnapshotProvider = _ => Task.FromException<CopilotFlowContextSnapshot?>(
+                new InvalidOperationException("flow unavailable")),
+            RecentLogProvider = (_, _, _, _, _) => Task.FromException<CopilotCapabilityResult>(
+                new InvalidOperationException("log unavailable")),
+        });
+        var handler = CreateHandler(sessionStore, dispatcher);
+        var sessionId = GetSessionId(
+            await handler.HandleAsync(CreateInitializeRequest(), CancellationToken.None));
+
+        var response = await handler.HandleAsync(
+            CreateRequest(
+                "POST",
+                """{"jsonrpc":"2.0","id":10,"method":"tools/call","params":{"name":"get_runtime_environment_summary","arguments":{}}}""",
+                sessionId),
+            CancellationToken.None);
+
+        Assert.Equal(200, response.StatusCode);
+        Assert.False(ReadIsError(response));
+        var summary = ReadToolText(response);
+        Assert.Contains("Resident memory bytes: (unavailable)", summary, StringComparison.Ordinal);
+        Assert.Contains("Flow snapshot collection: failed", summary, StringComparison.Ordinal);
+        Assert.Contains("Flow snapshot available: False", summary, StringComparison.Ordinal);
+        Assert.Contains("Recent log collection: failed", summary, StringComparison.Ordinal);
+        Assert.Contains("Recent log available: False", summary, StringComparison.Ordinal);
+        Assert.DoesNotContain("memory unavailable", summary, StringComparison.Ordinal);
+        Assert.DoesNotContain("flow unavailable", summary, StringComparison.Ordinal);
+        Assert.DoesNotContain("log unavailable", summary, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task AuditAndPendingActionViewsAreIsolatedPerMcpSession()
     {
         CopilotMcpAuditLogger.ClearForTests();
