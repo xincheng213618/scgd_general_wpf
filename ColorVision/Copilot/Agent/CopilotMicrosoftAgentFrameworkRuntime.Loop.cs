@@ -340,6 +340,7 @@ namespace ColorVision.Copilot
                 cancellationToken);
             using var sessionPreparationLifetime = sessionPreparation;
             var session = sessionPreparation.Session;
+            bridge.AttachMessageInjection(messageInjector, session);
             var sessionResumed = sessionPreparation.SessionResumed;
             var steeringRegistration = sessionPreparation.SteeringRegistration;
             liveCheckpointPublisher = sessionPreparation.LiveCheckpointPublisher;

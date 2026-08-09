@@ -187,7 +187,7 @@ namespace ColorVision.Copilot
             {
                 if (!binding.Phases.HasFlag(CopilotToolExecutionHookPhases.AfterExecute))
                     continue;
-                if (binding.Hook is ICopilotToolPostExecutionFeedbackHook
+                if (binding.Hook is ICopilotToolPostExecutionOutputHook
                     && (!toolWasExecuted
                         || outcome.Execution.State == CopilotToolExecutionState.AwaitingApproval))
                 {
@@ -229,28 +229,34 @@ namespace ColorVision.Copilot
                 var hookStopwatch = Stopwatch.StartNew();
                 try
                 {
-                    CopilotToolPostExecutionFeedback? feedback = null;
-                    if (binding.Hook is ICopilotToolPostExecutionFeedbackHook feedbackHook)
+                    CopilotToolPostExecutionOutput? output = null;
+                    if (binding.Hook is ICopilotToolPostExecutionOutputHook outputHook)
                     {
-                        var feedbackTask = feedbackHook.AfterExecuteWithFeedbackAsync(
+                        var outputTask = outputHook.AfterExecuteWithOutputAsync(
                             outcome,
                             hookCancellation.Token);
-                        hookTask = feedbackTask;
-                        feedback = await feedbackTask.WaitAsync(remaining);
+                        hookTask = outputTask;
+                        output = await outputTask.WaitAsync(remaining);
                     }
                     else
                     {
                         hookTask = binding.Hook.AfterExecuteAsync(outcome, hookCancellation.Token);
                         await hookTask.WaitAsync(remaining);
                     }
-                    if (feedback != null)
-                        outcome.ApplyModelVisibleFeedback(feedback.Message);
+                    var state = ApplyPostExecutionOutput(
+                        outcome,
+                        output,
+                        binding.SourceId,
+                        onEvent);
                     RecordHookRun(
                         hookRuns,
                         binding.SourceId,
                         CopilotToolExecutionHookPhase.AfterExecute,
-                        CopilotToolExecutionHookState.Completed,
+                        state,
                         hookStopwatch.ElapsedMilliseconds,
+                        output?.HasFailure == true
+                            ? "configured_hook_invalid_output"
+                            : string.Empty,
                         hookEvents: hookEvents);
                 }
                 catch (TimeoutException)
@@ -321,20 +327,54 @@ namespace ColorVision.Copilot
             CopilotToolExecutionOutcome outcome,
             CancellationToken cancellationToken)
         {
-            if (hook is ICopilotToolPostExecutionFeedbackHook feedbackHook)
+            if (hook is ICopilotToolPostExecutionOutputHook outputHook)
             {
-                var feedback = await feedbackHook.AfterExecuteWithFeedbackAsync(
+                var output = await outputHook.AfterExecuteWithOutputAsync(
                     outcome,
                     cancellationToken).ConfigureAwait(false);
-                if (feedback != null)
+                if (output?.HasOutput == true)
                 {
                     Log.Warn(
-                        $"Copilot async post-tool hook feedback was ignored. Tool={outcome.Invocation.Tool.Name} CallId={outcome.Execution.CallId} Hook={hook.GetType().FullName}");
+                        $"Copilot async post-tool hook output was ignored by the notification-only execution mode. Tool={outcome.Invocation.Tool.Name} CallId={outcome.Execution.CallId} Hook={hook.GetType().FullName}");
                 }
                 return;
             }
 
             await hook.AfterExecuteAsync(outcome, cancellationToken).ConfigureAwait(false);
+        }
+
+        private static CopilotToolExecutionHookState ApplyPostExecutionOutput(
+            CopilotToolExecutionOutcome outcome,
+            CopilotToolPostExecutionOutput? output,
+            string sourceId,
+            Action<CopilotAgentEvent> onEvent)
+        {
+            if (output == null)
+                return CopilotToolExecutionHookState.Completed;
+
+            var systemMessage = CopilotApprovalRequestReason.Normalize(output.SystemMessage);
+            if (systemMessage.Length > 0)
+            {
+                onEvent(CopilotAgentEvent.RuntimeDiagnostic(
+                    $"PostToolUse hook warning · {sourceId}: {systemMessage}"));
+            }
+            if (output.HasFailure)
+            {
+                Log.Warn(
+                    $"Copilot post-tool hook returned invalid output. Tool={outcome.Invocation.Tool.Name} CallId={outcome.Execution.CallId} HookSource={sourceId} Detail={CopilotUserFacingErrorFormatter.Sanitize(output.FailureMessage)}");
+                return CopilotToolExecutionHookState.Failed;
+            }
+
+            outcome.ApplyModelVisibleFeedback(output.FeedbackMessage);
+            outcome.AddModelAdditionalContext(output.AdditionalContext);
+            return output.Control switch
+            {
+                CopilotToolPostExecutionControl.Blocked =>
+                    CopilotToolExecutionHookState.Blocked,
+                CopilotToolPostExecutionControl.Stopped =>
+                    CopilotToolExecutionHookState.Stopped,
+                _ => CopilotToolExecutionHookState.Completed,
+            };
         }
 
         private void ScheduleAsyncHook(

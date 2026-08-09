@@ -34,6 +34,8 @@ namespace ColorVision.Copilot
         Cancelled,
         Skipped,
         Scheduled,
+        Blocked,
+        Stopped,
     }
 
     public sealed class CopilotToolExecutionHookRun
@@ -73,6 +75,8 @@ namespace ColorVision.Copilot
                 && string.Equals(FailureCode, normalizedFailureCode, StringComparison.Ordinal)
                 && (State is CopilotToolExecutionHookState.Completed
                     or CopilotToolExecutionHookState.Scheduled
+                    or CopilotToolExecutionHookState.Blocked
+                    or CopilotToolExecutionHookState.Stopped
                     ? normalizedFailureCode.Length == 0
                     : normalizedFailureCode.Length > 0);
         }
@@ -85,7 +89,10 @@ namespace ColorVision.Copilot
             string failureCode = "",
             CopilotToolExecutionHookMode executionMode = CopilotToolExecutionHookMode.Sync)
         {
-            var normalizedFailureCode = state == CopilotToolExecutionHookState.Completed
+            var normalizedFailureCode = state is CopilotToolExecutionHookState.Completed
+                    or CopilotToolExecutionHookState.Scheduled
+                    or CopilotToolExecutionHookState.Blocked
+                    or CopilotToolExecutionHookState.Stopped
                 ? string.Empty
                 : CopilotToolFailureCode.Normalize(failureCode);
             return new CopilotToolExecutionHookRun

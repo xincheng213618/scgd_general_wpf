@@ -678,12 +678,254 @@ public sealed class CopilotCodexConfiguredCommandHookTests
             Assert.Contains(outcome.HookRuns, run =>
                 run.SourceId.StartsWith("codex-config:", StringComparison.Ordinal)
                 && run.Phase == CopilotToolExecutionHookPhase.AfterExecute
-                && run.State == CopilotToolExecutionHookState.Completed
+                && run.State == CopilotToolExecutionHookState.Blocked
                 && run.FailureCode.Length == 0);
         }
         finally
         {
             Directory.Delete(workspace, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task PostToolContinueFalseRecordsStoppedAndUsesReasonAsModelFeedback()
+    {
+        var workspace = CreateTemporaryDirectory();
+        try
+        {
+            var runner = new RecordingCommandHookRunner(new CopilotCodexCommandHookProcessResult(
+                0,
+                false,
+                """
+                {"continue":false,"stopReason":"policy stopped the hook","reason":"re-evaluate the completed output"}
+                """,
+                string.Empty));
+            var request = CreateRequest(
+                workspace,
+                CreateDefinition(CopilotCodexConfiguredHookEvent.PostToolUse, "^RecordingReadTool$"));
+
+            var outcome = await CreateExecutor(runner).ExecuteAsync(
+                CreateInvocation(new RecordingReadTool(), request, "post-stopped-call"),
+                _ => { },
+                CancellationToken.None);
+
+            Assert.True(outcome.Result.Success);
+            Assert.Equal("Recording read tool completed.", outcome.StepRecord.Observation.Summary);
+            Assert.Equal(
+                "re-evaluate the completed output",
+                outcome.StepRecord.EffectiveModelObservation.Content);
+            var run = Assert.Single(outcome.HookRuns.Where(item =>
+                item.SourceId.StartsWith("codex-config:", StringComparison.Ordinal)));
+            Assert.Equal(CopilotToolExecutionHookState.Stopped, run.State);
+            Assert.Empty(run.FailureCode);
+        }
+        finally
+        {
+            Directory.Delete(workspace, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task PostToolSystemMessageAndAdditionalContextRemainSeparateAndRedacted()
+    {
+        const string secret = "post-hook-secret";
+        var workspace = CreateTemporaryDirectory();
+        try
+        {
+            var runner = new RecordingCommandHookRunner(new CopilotCodexCommandHookProcessResult(
+                0,
+                false,
+                JsonSerializer.Serialize(new
+                {
+                    systemMessage = "review warning; api_key=" + secret,
+                    hookSpecificOutput = new
+                    {
+                        hookEventName = "PostToolUse",
+                        additionalContext = "trusted context; api_key=" + secret,
+                    },
+                }),
+                string.Empty));
+            var events = new List<CopilotAgentEvent>();
+            var request = CreateRequest(
+                workspace,
+                CreateDefinition(CopilotCodexConfiguredHookEvent.PostToolUse, "^RecordingReadTool$"));
+
+            var outcome = await CreateExecutor(runner).ExecuteAsync(
+                CreateInvocation(new RecordingReadTool(), request, "post-context-call"),
+                events.Add,
+                CancellationToken.None);
+
+            Assert.Equal("Recording read tool completed.", outcome.StepRecord.EffectiveModelObservation.Summary);
+            var context = Assert.Single(outcome.ModelAdditionalContexts);
+            Assert.Contains("trusted context", context, StringComparison.Ordinal);
+            Assert.Contains("api_key=<redacted>", context, StringComparison.Ordinal);
+            Assert.DoesNotContain(secret, context, StringComparison.Ordinal);
+            var warning = Assert.Single(events.Where(item =>
+                item.Type == CopilotAgentEventType.RuntimeDiagnostic
+                && item.Text.StartsWith("PostToolUse hook warning", StringComparison.Ordinal)));
+            Assert.Contains("api_key=<redacted>", warning.Text, StringComparison.Ordinal);
+            Assert.DoesNotContain(secret, warning.Text, StringComparison.Ordinal);
+            var run = Assert.Single(outcome.HookRuns.Where(item =>
+                item.SourceId.StartsWith("codex-config:", StringComparison.Ordinal)));
+            Assert.Equal(CopilotToolExecutionHookState.Completed, run.State);
+        }
+        finally
+        {
+            Directory.Delete(workspace, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task PostToolUnsupportedSuppressOutputFailsHookWithoutChangingModelResult()
+    {
+        var workspace = CreateTemporaryDirectory();
+        try
+        {
+            var runner = new RecordingCommandHookRunner(new CopilotCodexCommandHookProcessResult(
+                0,
+                false,
+                """
+                {"suppressOutput":true,"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":"must not be applied"}}
+                """,
+                string.Empty));
+            var request = CreateRequest(
+                workspace,
+                CreateDefinition(CopilotCodexConfiguredHookEvent.PostToolUse, "^RecordingReadTool$"));
+
+            var outcome = await CreateExecutor(runner).ExecuteAsync(
+                CreateInvocation(new RecordingReadTool(), request, "post-invalid-output-call"),
+                _ => { },
+                CancellationToken.None);
+
+            Assert.Equal("Recording read tool completed.", outcome.StepRecord.EffectiveModelObservation.Summary);
+            Assert.Empty(outcome.ModelAdditionalContexts);
+            var run = Assert.Single(outcome.HookRuns.Where(item =>
+                item.SourceId.StartsWith("codex-config:", StringComparison.Ordinal)));
+            Assert.Equal(CopilotToolExecutionHookState.Failed, run.State);
+            Assert.Equal("configured_hook_invalid_output", run.FailureCode);
+        }
+        finally
+        {
+            Directory.Delete(workspace, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void PostToolAdditionalContextMessagesUseDeveloperRoleAndPreserveOrder()
+    {
+        var messages = CopilotMicrosoftAgentFrameworkRuntime.HarnessToolBridge
+            .CreatePostToolUseContextMessages(["first context", " ", "second context"]);
+
+        Assert.Equal(2, messages.Count);
+        Assert.All(messages, message => Assert.Equal("developer", message.Role.Value));
+        Assert.Equal(["first context", "second context"], messages.Select(message => message.Text));
+    }
+
+    [Theory]
+    [InlineData("{\"systemMessage\":42}")]
+    [InlineData("{\"continue\":null}")]
+    [InlineData("{\"unexpected\":true}")]
+    public async Task PostToolInvalidOutputShapeFailsHook(string hookOutput)
+    {
+        var workspace = CreateTemporaryDirectory();
+        try
+        {
+            var runner = new RecordingCommandHookRunner(new CopilotCodexCommandHookProcessResult(
+                0,
+                false,
+                hookOutput,
+                string.Empty));
+            var request = CreateRequest(
+                workspace,
+                CreateDefinition(CopilotCodexConfiguredHookEvent.PostToolUse, "^RecordingReadTool$"));
+
+            var outcome = await CreateExecutor(runner).ExecuteAsync(
+                CreateInvocation(new RecordingReadTool(), request, "post-invalid-field-call"),
+                _ => { },
+                CancellationToken.None);
+
+            Assert.Equal("Recording read tool completed.", outcome.StepRecord.EffectiveModelObservation.Summary);
+            var run = Assert.Single(outcome.HookRuns.Where(item =>
+                item.SourceId.StartsWith("codex-config:", StringComparison.Ordinal)));
+            Assert.Equal(CopilotToolExecutionHookState.Failed, run.State);
+            Assert.Equal("configured_hook_invalid_output", run.FailureCode);
+        }
+        finally
+        {
+            Directory.Delete(workspace, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task AsyncPostToolExitTwoIsReportedAsHookFailure()
+    {
+        var workspace = CreateTemporaryDirectory();
+        try
+        {
+            var runner = new RecordingCommandHookRunner(new CopilotCodexCommandHookProcessResult(
+                2,
+                false,
+                string.Empty,
+                "control output is not valid in async mode"));
+            var definition = CreateDefinition(
+                CopilotCodexConfiguredHookEvent.PostToolUse,
+                "^RecordingReadTool$") with
+            {
+                ExecutionMode = CopilotToolExecutionHookMode.Async,
+            };
+            var request = CreateRequest(workspace, definition);
+            var outcome = new CopilotToolExecutionOutcome
+            {
+                Invocation = CreateInvocation(
+                    new RecordingReadTool(),
+                    request,
+                    "post-async-exit-two-call"),
+                Result = new CopilotToolResult
+                {
+                    ToolName = "RecordingReadTool",
+                    Success = true,
+                    Summary = "Recording read tool completed.",
+                    Content = "Recording read tool completed.",
+                },
+            };
+            var hook = new CopilotCodexCommandHook(definition, runner);
+
+            var error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                hook.AfterExecuteWithOutputAsync(outcome, CancellationToken.None));
+
+            Assert.Contains("asynchronous", error.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("code 2", error.Message, StringComparison.Ordinal);
+        }
+        finally
+        {
+            Directory.Delete(workspace, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void PostToolAdditionalContextIsBoundedWithoutSplittingSurrogatePairs()
+    {
+        var outcome = new CopilotToolExecutionOutcome();
+        outcome.AddModelAdditionalContext(
+            "start " + string.Concat(Enumerable.Repeat("\U0001F680", 3_000)) + " end");
+
+        var context = Assert.Single(outcome.ModelAdditionalContexts);
+        Assert.StartsWith("start ", context, StringComparison.Ordinal);
+        Assert.EndsWith(" end", context, StringComparison.Ordinal);
+        Assert.Contains("PostToolUse additional context truncated", context, StringComparison.Ordinal);
+        Assert.True(CopilotTokenEstimator.EstimateTextWeight(context)
+            <= 2_500L * CopilotTokenEstimator.AsciiCharactersPerToken);
+        for (var index = 0; index < context.Length; index++)
+        {
+            if (char.IsHighSurrogate(context[index]))
+            {
+                Assert.True(index + 1 < context.Length && char.IsLowSurrogate(context[index + 1]));
+                index++;
+            }
+            else
+            {
+                Assert.False(char.IsLowSurrogate(context[index]));
+            }
         }
     }
 
@@ -755,6 +997,9 @@ public sealed class CopilotCodexConfiguredCommandHookTests
                 secret,
                 CopilotFrameworkToolResultFormatter.Format(outcome),
                 StringComparison.Ordinal);
+            var run = Assert.Single(outcome.HookRuns.Where(item =>
+                item.SourceId.StartsWith("codex-config:", StringComparison.Ordinal)));
+            Assert.Equal(CopilotToolExecutionHookState.Blocked, run.State);
         }
         finally
         {

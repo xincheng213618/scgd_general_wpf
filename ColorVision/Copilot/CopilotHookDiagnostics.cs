@@ -279,6 +279,10 @@ namespace ColorVision.Copilot
                     .Append(FormatCount(CountState(observations, CopilotToolExecutionHookState.Cancelled)))
                     .Append("，跳过 ")
                     .Append(FormatCount(CountState(observations, CopilotToolExecutionHookState.Skipped)))
+                    .Append("，阻止 ")
+                    .Append(FormatCount(CountState(observations, CopilotToolExecutionHookState.Blocked)))
+                    .Append("，停止 ")
+                    .Append(FormatCount(CountState(observations, CopilotToolExecutionHookState.Stopped)))
                     .Append('）');
             }
             builder.AppendLine();
@@ -337,6 +341,8 @@ namespace ColorVision.Copilot
             CopilotToolExecutionHookState.TimedOut => "timed_out",
             CopilotToolExecutionHookState.Cancelled => "cancelled",
             CopilotToolExecutionHookState.Skipped => "skipped",
+            CopilotToolExecutionHookState.Blocked => "blocked",
+            CopilotToolExecutionHookState.Stopped => "stopped",
             _ => "unknown",
         };
 

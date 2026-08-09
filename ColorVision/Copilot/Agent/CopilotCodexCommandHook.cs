@@ -105,7 +105,7 @@ namespace ColorVision.Copilot
 
     internal sealed class CopilotCodexCommandHook :
         ICopilotToolPermissionRequestHook,
-        ICopilotToolPostExecutionFeedbackHook
+        ICopilotToolPostExecutionOutputHook
     {
         private readonly CopilotCodexCommandHookDefinition _definition;
         private readonly ICopilotCodexCommandHookRunner _runner;
@@ -305,10 +305,10 @@ namespace ColorVision.Copilot
             CopilotToolExecutionOutcome outcome,
             CancellationToken cancellationToken)
         {
-            _ = await AfterExecuteWithFeedbackAsync(outcome, cancellationToken).ConfigureAwait(false);
+            _ = await AfterExecuteWithOutputAsync(outcome, cancellationToken).ConfigureAwait(false);
         }
 
-        public async Task<CopilotToolPostExecutionFeedback?> AfterExecuteWithFeedbackAsync(
+        public async Task<CopilotToolPostExecutionOutput?> AfterExecuteWithOutputAsync(
             CopilotToolExecutionOutcome outcome,
             CancellationToken cancellationToken)
         {
@@ -325,9 +325,18 @@ namespace ColorVision.Copilot
                 throw new InvalidOperationException(failure);
             if (result.ExitCode == 2)
             {
-                return new CopilotToolPostExecutionFeedback(NormalizeReason(
-                    result.StandardError,
-                    "A configured PostToolUse hook returned feedback after execution."));
+                var feedback = CopilotApprovalRequestReason.Normalize(result.StandardError);
+                if (_definition.ExecutionMode == CopilotToolExecutionHookMode.Async)
+                {
+                    throw new InvalidOperationException(
+                        "An asynchronous configured PostToolUse hook exited with code 2.");
+                }
+                return feedback.Length == 0
+                    ? new CopilotToolPostExecutionOutput(
+                        FailureMessage: "A configured PostToolUse hook exited with code 2 without feedback.")
+                    : new CopilotToolPostExecutionOutput(
+                        FeedbackMessage: feedback,
+                        Control: CopilotToolPostExecutionControl.Blocked);
             }
             JsonDocument? root = null;
             if (LooksLikeJson(result.StandardOutput)
@@ -338,23 +347,156 @@ namespace ColorVision.Copilot
             }
             using (root)
             {
-                if (root != null
-                    && TryReadStopDecision(root.RootElement, out var feedback))
+                if (root == null)
+                    return null;
+
+                var output = ReadPostToolUseOutput(root.RootElement);
+                return output.HasOutput ? output : null;
+            }
+        }
+
+        private CopilotToolPostExecutionOutput ReadPostToolUseOutput(JsonElement root)
+        {
+            if (!HasOnlyPostToolUseProperties(root)
+                || !TryReadOptionalString(root, "systemMessage", out var systemMessage)
+                || !TryReadOptionalString(root, "stopReason", out var stopReason)
+                || !TryReadOptionalString(root, "decision", out var decision)
+                || !TryReadOptionalBoolean(root, "continue", defaultValue: true, out var shouldContinue)
+                || !TryReadOptionalBoolean(root, "suppressOutput", defaultValue: false, out var suppressOutput))
+            {
+                return new CopilotToolPostExecutionOutput(
+                    FailureMessage: "A configured PostToolUse hook returned an invalid universal output field.");
+            }
+
+            var additionalContext = string.Empty;
+            var hasSpecificOutput = TryReadHookSpecificOutput(
+                root,
+                "PostToolUse",
+                out var specific,
+                out var specificError);
+            if (!hasSpecificOutput && specificError.Length > 0)
+            {
+                return new CopilotToolPostExecutionOutput(
+                    SystemMessage: systemMessage,
+                    FailureMessage: specificError);
+            }
+            if (hasSpecificOutput)
+            {
+                if (!HasOnlyPostToolUseSpecificProperties(specific))
                 {
-                    return new CopilotToolPostExecutionFeedback(feedback);
+                    return CreateInvalidPostToolOutput(
+                        systemMessage,
+                        "A configured PostToolUse hook returned an unknown hook-specific output field.");
                 }
-                if (root != null
-                    && !TryReadHookSpecificOutput(
-                        root.RootElement,
-                        "PostToolUse",
-                        out _,
-                        out var specificError)
-                    && specificError.Length > 0)
+                if (specific.TryGetProperty("updatedMCPToolOutput", out var updatedOutput)
+                    && updatedOutput.ValueKind != JsonValueKind.Null)
                 {
-                    throw new InvalidOperationException(specificError);
+                    return CreateInvalidPostToolOutput(
+                        systemMessage,
+                        "A configured PostToolUse hook returned unsupported updatedMCPToolOutput.");
+                }
+                if (!TryReadOptionalString(specific, "additionalContext", out additionalContext))
+                {
+                    return CreateInvalidPostToolOutput(
+                        systemMessage,
+                        "A configured PostToolUse hook returned invalid additionalContext.");
                 }
             }
-            return null;
+
+            if (_definition.ExecutionMode == CopilotToolExecutionHookMode.Async)
+            {
+                return new CopilotToolPostExecutionOutput(
+                    SystemMessage: systemMessage,
+                    AdditionalContext: additionalContext);
+            }
+
+            var hasBlockDecision = string.Equals(decision, "block", StringComparison.Ordinal);
+            var reasonWasProvided = root.TryGetProperty("reason", out var reasonElement)
+                && reasonElement.ValueKind != JsonValueKind.Null;
+            if (!TryReadOptionalString(root, "reason", out var reason)
+                || decision.Length > 0 && !hasBlockDecision)
+            {
+                return CreateInvalidPostToolOutput(
+                    systemMessage,
+                    "A configured PostToolUse hook returned an invalid decision or reason.");
+            }
+
+            var invalidReason = suppressOutput
+                ? "A configured PostToolUse hook returned unsupported suppressOutput."
+                : hasBlockDecision && reason.Length == 0
+                    ? "A configured PostToolUse hook returned decision:block without a non-empty reason."
+                    : !hasBlockDecision && shouldContinue && reasonWasProvided
+                        ? "A configured PostToolUse hook returned reason without decision."
+                        : string.Empty;
+            var usableAdditionalContext = invalidReason.Length == 0
+                ? additionalContext
+                : string.Empty;
+            if (!shouldContinue)
+            {
+                var feedback = reason.Length > 0
+                    ? reason
+                    : NormalizeReason(
+                        stopReason,
+                        "PostToolUse hook stopped execution");
+                return new CopilotToolPostExecutionOutput(
+                    FeedbackMessage: feedback,
+                    SystemMessage: systemMessage,
+                    AdditionalContext: usableAdditionalContext,
+                    Control: CopilotToolPostExecutionControl.Stopped);
+            }
+            if (invalidReason.Length > 0)
+                return CreateInvalidPostToolOutput(systemMessage, invalidReason);
+            if (hasBlockDecision)
+            {
+                return new CopilotToolPostExecutionOutput(
+                    FeedbackMessage: reason,
+                    SystemMessage: systemMessage,
+                    AdditionalContext: additionalContext,
+                    Control: CopilotToolPostExecutionControl.Blocked);
+            }
+            return new CopilotToolPostExecutionOutput(
+                SystemMessage: systemMessage,
+                AdditionalContext: additionalContext);
+        }
+
+        private static CopilotToolPostExecutionOutput CreateInvalidPostToolOutput(
+            string systemMessage,
+            string failureMessage) => new(
+                SystemMessage: systemMessage,
+                FailureMessage: failureMessage);
+
+        private static bool HasOnlyPostToolUseProperties(JsonElement root)
+        {
+            foreach (var property in root.EnumerateObject())
+            {
+                if (property.Name is not (
+                    "continue"
+                    or "stopReason"
+                    or "suppressOutput"
+                    or "systemMessage"
+                    or "decision"
+                    or "reason"
+                    or "hookSpecificOutput"))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        private static bool HasOnlyPostToolUseSpecificProperties(JsonElement specific)
+        {
+            foreach (var property in specific.EnumerateObject())
+            {
+                if (property.Name is not (
+                    "hookEventName"
+                    or "additionalContext"
+                    or "updatedMCPToolOutput"))
+                {
+                    return false;
+                }
+            }
+            return true;
         }
 
         private async Task<CopilotCodexCommandHookProcessResult> RunAsync(
@@ -562,6 +704,38 @@ namespace ColorVision.Copilot
                 && property.ValueKind == JsonValueKind.String
                     ? property.GetString()?.Trim() ?? string.Empty
                     : string.Empty;
+        }
+
+        private static bool TryReadOptionalString(
+            JsonElement value,
+            string propertyName,
+            out string result)
+        {
+            result = string.Empty;
+            if (!value.TryGetProperty(propertyName, out var property)
+                || property.ValueKind == JsonValueKind.Null)
+            {
+                return true;
+            }
+            if (property.ValueKind != JsonValueKind.String)
+                return false;
+            result = property.GetString()?.Trim() ?? string.Empty;
+            return true;
+        }
+
+        private static bool TryReadOptionalBoolean(
+            JsonElement value,
+            string propertyName,
+            bool defaultValue,
+            out bool result)
+        {
+            result = defaultValue;
+            if (!value.TryGetProperty(propertyName, out var property))
+                return true;
+            if (property.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
+                return false;
+            result = property.ValueKind == JsonValueKind.True;
+            return true;
         }
 
         private static string NormalizeReason(string? value, string fallback)

@@ -79,7 +79,11 @@ namespace ColorVision.Copilot
     public sealed class CopilotToolExecutionOutcome
     {
         private const int MaximumModelFeedbackCharacters = 12_000;
+        private const int MaximumAdditionalContextTokens = 2_500;
+        private const string AdditionalContextTruncationMarker =
+            "\n...[PostToolUse additional context truncated]...\n";
         private CopilotToolResult? _modelVisibleResult;
+        private readonly List<string> _modelAdditionalContexts = [];
 
         public CopilotToolInvocation Invocation { get; init; } = null!;
 
@@ -91,6 +95,15 @@ namespace ColorVision.Copilot
             Array.Empty<CopilotToolExecutionHookRun>();
 
         internal CopilotToolResult EffectiveModelResult => _modelVisibleResult ?? Result;
+
+        internal IReadOnlyList<string> ModelAdditionalContexts
+        {
+            get
+            {
+                lock (_modelAdditionalContexts)
+                    return _modelAdditionalContexts.ToArray();
+            }
+        }
 
         public CopilotAgentStepRecord StepRecord => new()
         {
@@ -129,6 +142,17 @@ namespace ColorVision.Copilot
             };
         }
 
+        internal void AddModelAdditionalContext(string? context)
+        {
+            var normalized = CopilotMcpAuditLogger.RedactText(context).Trim();
+            if (normalized.Length == 0)
+                return;
+
+            var bounded = BoundAdditionalContext(normalized);
+            lock (_modelAdditionalContexts)
+                _modelAdditionalContexts.Add(bounded);
+        }
+
         private static string BoundModelFeedback(string value)
         {
             if (value.Length <= MaximumModelFeedbackCharacters)
@@ -138,6 +162,42 @@ namespace ColorVision.Copilot
             if (char.IsHighSurrogate(value[length - 1]))
                 length--;
             return value[..length];
+        }
+
+        private static string BoundAdditionalContext(string value)
+        {
+            var maximumWeight = (long)MaximumAdditionalContextTokens
+                * CopilotTokenEstimator.AsciiCharactersPerToken;
+            if (CopilotTokenEstimator.EstimateTextWeight(value) <= maximumWeight)
+                return value;
+
+            var previewWeight = maximumWeight
+                - CopilotTokenEstimator.EstimateTextWeight(AdditionalContextTruncationMarker);
+            var headWeight = Math.Max(1, (previewWeight + 1) / 2);
+            var tailWeight = Math.Max(1, previewWeight - headWeight);
+            var headLength = CopilotTokenEstimator.GetPrefixLengthWithinWeight(value, headWeight);
+            long retainedTailWeight = 0;
+            var tailStart = value.Length;
+            while (tailStart > headLength)
+            {
+                var characterWeight = value[tailStart - 1] <= 0x7f
+                    ? 1
+                    : CopilotTokenEstimator.AsciiCharactersPerToken;
+                if (retainedTailWeight + characterWeight > tailWeight)
+                    break;
+                retainedTailWeight += characterWeight;
+                tailStart--;
+            }
+            if (tailStart < value.Length
+                && char.IsLowSurrogate(value[tailStart])
+                && tailStart > 0
+                && char.IsHighSurrogate(value[tailStart - 1]))
+            {
+                tailStart++;
+            }
+            return value[..headLength]
+                + AdditionalContextTruncationMarker
+                + value[tailStart..];
         }
     }
 
@@ -275,11 +335,32 @@ namespace ColorVision.Copilot
         Task AfterExecuteAsync(CopilotToolExecutionOutcome outcome, CancellationToken cancellationToken);
     }
 
-    internal sealed record CopilotToolPostExecutionFeedback(string Message);
-
-    internal interface ICopilotToolPostExecutionFeedbackHook
+    internal enum CopilotToolPostExecutionControl
     {
-        Task<CopilotToolPostExecutionFeedback?> AfterExecuteWithFeedbackAsync(
+        None,
+        Blocked,
+        Stopped,
+    }
+
+    internal sealed record CopilotToolPostExecutionOutput(
+        string FeedbackMessage = "",
+        string SystemMessage = "",
+        string AdditionalContext = "",
+        CopilotToolPostExecutionControl Control = CopilotToolPostExecutionControl.None,
+        string FailureMessage = "")
+    {
+        public bool HasFailure => !string.IsNullOrWhiteSpace(FailureMessage);
+
+        public bool HasOutput => HasFailure
+            || !string.IsNullOrWhiteSpace(FeedbackMessage)
+            || !string.IsNullOrWhiteSpace(SystemMessage)
+            || !string.IsNullOrWhiteSpace(AdditionalContext)
+            || Control != CopilotToolPostExecutionControl.None;
+    }
+
+    internal interface ICopilotToolPostExecutionOutputHook
+    {
+        Task<CopilotToolPostExecutionOutput?> AfterExecuteWithOutputAsync(
             CopilotToolExecutionOutcome outcome,
             CancellationToken cancellationToken);
     }

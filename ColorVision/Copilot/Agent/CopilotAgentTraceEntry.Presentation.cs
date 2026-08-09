@@ -225,6 +225,8 @@ namespace ColorVision.Copilot
             CopilotToolExecutionHookState.TimedOut => "timed out",
             CopilotToolExecutionHookState.Cancelled => "cancelled",
             CopilotToolExecutionHookState.Skipped => "skipped",
+            CopilotToolExecutionHookState.Blocked => "blocked",
+            CopilotToolExecutionHookState.Stopped => "stopped",
             _ => "unknown",
         };
 
