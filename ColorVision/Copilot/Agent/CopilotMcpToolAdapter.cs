@@ -1,4 +1,5 @@
 using ColorVision.Copilot.Mcp;
+using ModelContextProtocol;
 using ModelContextProtocol.Client;
 using ModelContextProtocol.Protocol;
 using System;
@@ -9,6 +10,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -97,7 +99,10 @@ namespace ColorVision.Copilot
 
         private async Task<CopilotToolResult> InvokeRemoteAsync(CopilotAgentToolInput toolInput, CancellationToken cancellationToken)
         {
-            var result = await _remoteTool.CallAsync(toolInput.Arguments, cancellationToken: cancellationToken);
+            var result = await _remoteTool.CallAsync(
+                toolInput.Arguments,
+                options: CreateRequestOptionsForCurrentInvocation(),
+                cancellationToken: cancellationToken);
             var content = BuildResultContent(result);
             var isError = result.IsError == true;
             return new CopilotToolResult
@@ -110,6 +115,21 @@ namespace ColorVision.Copilot
                 Content = isError ? string.Empty : content,
                 ErrorMessage = isError ? content : string.Empty,
                 FailureKind = isError ? CopilotToolFailureKind.Unspecified : CopilotToolFailureKind.None,
+            };
+        }
+
+        internal static RequestOptions? CreateRequestOptionsForCurrentInvocation()
+        {
+            var callId = CopilotToolInvocationContext.Current?.CallId;
+            if (string.IsNullOrWhiteSpace(callId))
+                return null;
+
+            return new RequestOptions
+            {
+                Meta = new JsonObject
+                {
+                    ["callId"] = callId,
+                },
             };
         }
 
