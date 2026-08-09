@@ -213,7 +213,7 @@ namespace ColorVision.Copilot
                     request.History,
                     request.UserText,
                     finalAnswer);
-                sessionCheckpoint = CopyCheckpointWithOutcome(checkpoint, taskEventJournal, conversationMemory);
+                sessionCheckpoint = checkpoint.CopyWithOutcome(taskEventJournal, conversationMemory);
                 if (sessionCheckpoint == null)
                     emit(CopilotAgentEvent.RuntimeDiagnostic("The final-answer recovery checkpoint could not be refreshed; retry metadata was not saved."));
             }
@@ -286,29 +286,6 @@ namespace ColorVision.Copilot
                 Summary = "The provider stream ended after material Agent progress; the current session was checkpointed before any tool replay.",
                 RequiresUserInput = true,
             };
-        }
-
-        private static CopilotAgentSessionCheckpoint? CopyCheckpointWithOutcome(
-            CopilotAgentSessionCheckpoint checkpoint,
-            CopilotAgentTaskEventJournalSnapshot taskEventJournal,
-            IReadOnlyList<CopilotRequestMessage> conversationMemory)
-        {
-            var copy = new CopilotAgentSessionCheckpoint(checkpoint)
-            {
-                ProfileKey = checkpoint.ProfileKey,
-                CapabilityCatalogRevision = checkpoint.CapabilityCatalogRevision,
-                Capabilities = (checkpoint.Capabilities ?? Array.Empty<CopilotAgentCheckpointCapability>()).ToArray(),
-                ToolSurfaceVersion = checkpoint.ToolSurfaceVersion,
-                AvailableToolNames = (checkpoint.AvailableToolNames ?? Array.Empty<string>()).ToArray(),
-                EnvironmentVersion = checkpoint.EnvironmentVersion,
-                EnvironmentFingerprint = checkpoint.EnvironmentFingerprint,
-                EvidenceArtifacts = (checkpoint.EvidenceArtifacts ?? Array.Empty<CopilotAgentEvidenceArtifact>()).ToArray(),
-                ConversationMemory = conversationMemory.ToArray(),
-                TaskIntentText = checkpoint.TaskIntentText,
-                TaskEventJournal = taskEventJournal,
-                UpdatedAtUtc = DateTimeOffset.UtcNow,
-            };
-            return copy.IsStructurallyValid() ? copy : null;
         }
 
     }

@@ -388,20 +388,28 @@ namespace ColorVision.Copilot
 
         internal CopilotAgentSessionCheckpoint? CopyWithTaskEventJournal(CopilotAgentTaskEventJournalSnapshot taskEventJournal)
         {
+            return CopyWithOutcome(taskEventJournal, ConversationMemory);
+        }
+
+        internal CopilotAgentSessionCheckpoint? CopyWithOutcome(
+            CopilotAgentTaskEventJournalSnapshot taskEventJournal,
+            IReadOnlyList<CopilotRequestMessage> conversationMemory)
+        {
             ArgumentNullException.ThrowIfNull(taskEventJournal);
+            ArgumentNullException.ThrowIfNull(conversationMemory);
             var checkpoint = new CopilotAgentSessionCheckpoint(this)
             {
                 ProfileKey = ProfileKey,
                 CapabilityCatalogRevision = CapabilityCatalogRevision,
-                Capabilities = Capabilities,
+                Capabilities = (Capabilities ?? Array.Empty<CopilotAgentCheckpointCapability>()).ToArray(),
                 ToolSurfaceVersion = ToolSurfaceVersion,
-                AvailableToolNames = AvailableToolNames,
+                AvailableToolNames = (AvailableToolNames ?? Array.Empty<string>()).ToArray(),
                 EnvironmentVersion = EnvironmentVersion,
                 EnvironmentFingerprint = EnvironmentFingerprint,
                 HookSurfaceVersion = HookSurfaceVersion,
                 HookSurfaceFingerprint = HookSurfaceFingerprint,
-                EvidenceArtifacts = EvidenceArtifacts,
-                ConversationMemory = ConversationMemory,
+                EvidenceArtifacts = (EvidenceArtifacts ?? Array.Empty<CopilotAgentEvidenceArtifact>()).ToArray(),
+                ConversationMemory = conversationMemory.ToArray(),
                 TaskIntentText = TaskIntentText,
                 TaskEventJournal = taskEventJournal,
                 UpdatedAtUtc = DateTimeOffset.UtcNow,

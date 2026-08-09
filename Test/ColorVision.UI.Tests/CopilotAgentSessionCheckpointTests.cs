@@ -111,6 +111,35 @@ public sealed class CopilotAgentSessionCheckpointTests
     }
 
     [Fact]
+    public void CopyWithOutcomePreservesHookSurfaceWhileRefreshingConversationMemory()
+    {
+        var checkpoint = new CopilotAgentSessionCheckpoint
+        {
+            ProfileKey = "test-profile",
+            SerializedSessionJson = "{}",
+            HookSurfaceVersion = CopilotAgentSessionCheckpoint.CurrentHookSurfaceVersion,
+            HookSurfaceFingerprint = new string('c', 64),
+            ConversationMemory = [new CopilotRequestMessage("user", "old evidence")],
+            TaskEventJournal = new CopilotAgentTaskEventJournalSnapshot(),
+        };
+        var refreshedMemory = new[]
+        {
+            new CopilotRequestMessage("user", "original task"),
+            new CopilotRequestMessage("assistant", "partial final answer"),
+        };
+
+        var copy = checkpoint.CopyWithOutcome(
+            new CopilotAgentTaskEventJournalSnapshot(),
+            refreshedMemory);
+
+        Assert.NotNull(copy);
+        Assert.Equal(checkpoint.HookSurfaceVersion, copy.HookSurfaceVersion);
+        Assert.Equal(checkpoint.HookSurfaceFingerprint, copy.HookSurfaceFingerprint);
+        Assert.Equal(refreshedMemory, copy.ConversationMemory);
+        Assert.NotSame(refreshedMemory, copy.ConversationMemory);
+    }
+
+    [Fact]
     public void HookSurfaceDriftRequiresAReplan()
     {
         var profile = CreateOpenAiProfile(
