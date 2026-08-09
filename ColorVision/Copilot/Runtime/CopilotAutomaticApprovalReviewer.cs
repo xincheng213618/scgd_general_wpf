@@ -241,7 +241,7 @@ namespace ColorVision.Copilot
             builder.Append("Access: ").AppendLine(tool.Capability.Access.ToString());
             builder.Append("Declared risk: ").AppendLine(tool.Capability.RiskLevel.ToString());
             builder.Append("Idempotency: ").AppendLine(tool.Capability.Idempotency.ToString());
-            builder.Append("Workspace: ").AppendLine(BoundInline(request.WorkspacePath, 2_000));
+            builder.Append("Workspace: ").AppendLine(BoundInline(action.RequestContext.WorkspacePath, 2_000));
             builder.Append("Impact: ").AppendLine(BoundInline(action.RequestContext.ImpactSummary, 2_000));
             builder.Append("Reversibility: ")
                 .Append(action.RequestContext.Reversibility)

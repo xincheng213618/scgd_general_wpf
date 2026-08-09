@@ -489,6 +489,56 @@ public sealed class CopilotCodexApprovalsReviewerTests
     }
 
     [Fact]
+    public async Task AutomaticReviewUsesTheToolCallWorkspaceSnapshot()
+    {
+        string turnWorkspacePath = CreateTemporaryDirectory();
+        string stepWorkspacePath = CreateTemporaryDirectory();
+        var tool = new CopilotShellCommandTool();
+        var request = CreateRequest(
+            turnWorkspacePath,
+            CopilotCodexApprovalsReviewer.AutoReview,
+            CopilotCodexApprovalPolicy.CreateScalar(CopilotCodexApprovalPolicyMode.OnRequest));
+        var input = CreateShellInput(stepWorkspacePath);
+        var executionScope = CopilotExecutionScope.ForAgentRequest(request)
+            .WithWorkspace(stepWorkspacePath)
+            .BindToolCall(
+                tool.Name,
+                $"call-{Guid.NewGuid():N}",
+                CopilotAgentToolInputExactBinding.CreateExecutionSignature(tool.Name, input));
+        var coordinator = new CopilotFrameworkApprovalCoordinator();
+        var handle = coordinator.RequestApproval(
+            tool,
+            request,
+            input,
+            executionScope.ProviderCallId,
+            CancellationToken.None,
+            executionScope,
+            userReviewVisible: false);
+
+        try
+        {
+            string evidence = CopilotAutomaticApprovalReviewer.BuildEvidencePrompt(
+                request,
+                tool,
+                handle.Action,
+                handle.Action.ReviewDetails);
+
+            Assert.Equal(stepWorkspacePath, handle.Action.RequestContext.WorkspacePath);
+            Assert.Equal(stepWorkspacePath, handle.Action.RequestContext.Scope.WorkspacePath);
+            Assert.Contains($"Workspace: {stepWorkspacePath}", evidence, StringComparison.Ordinal);
+            Assert.DoesNotContain($"Workspace: {turnWorkspacePath}", evidence, StringComparison.Ordinal);
+        }
+        finally
+        {
+            coordinator.Cancel(handle);
+            var decision = await handle.Decision.WaitAsync(TimeSpan.FromSeconds(2));
+            Assert.Equal(CopilotFrameworkApprovalDecisionKind.Cancelled, decision.Kind);
+            Directory.Delete(turnWorkspacePath, recursive: true);
+            Directory.Delete(stepWorkspacePath, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task UnavailableAutomaticReviewClosesWithoutRecordingAPolicyDenial()
     {
         string workspacePath = Path.GetFullPath(Path.GetTempPath());
