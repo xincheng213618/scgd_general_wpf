@@ -146,7 +146,10 @@ namespace ColorVision.Copilot
                 requestProfile,
                 submissionContext,
                 agentSkillReference: agentSkillReference,
-                runtimeConfigSnapshot: runtimeConfigSnapshot);
+                runtimeConfigSnapshot: runtimeConfigSnapshot,
+                workspaceReviewTarget: ResolveQueuedFollowUpReviewTarget(
+                    conversation,
+                    activeRun.Mode));
             _queuedFollowUpsByRunId.Add(queuedRun.Id, queuedFollowUp);
             QueuedFollowUps.Add(queuedFollowUp);
             AddQueuedFollowUpRecovery(queuedFollowUp);
@@ -273,6 +276,7 @@ namespace ColorVision.Copilot
             {
                 Id = queuedFollowUp.RunId,
                 RequestMode = queuedFollowUp.Mode,
+                WorkspaceReviewTarget = queuedFollowUp.CreateWorkspaceReviewTargetSnapshot(),
                 AgentSkillReference = queuedFollowUp.AgentSkillReference?.CreateSnapshot(),
                 Attachments = new ObservableCollection<CopilotAttachmentItem>(turnSnapshot.Attachments),
                 AttachmentSnapshotCaptured = true,
@@ -387,16 +391,13 @@ namespace ColorVision.Copilot
             if (!ReferenceEquals(conversation, SelectedConversation))
                 return false;
 
-            var composerState = CopilotComposerStash.Capture(
-                queuedFollowUp.Prompt,
-                queuedFollowUp.Prompt.Length,
-                queuedFollowUp.Mode,
-                queuedFollowUp.SubmissionContext.Attachments,
-                agentSkillReference: queuedFollowUp.AgentSkillReference);
+            var composerState = queuedFollowUp.CreateComposerState();
             var previousMode = ResolveComposerRequestMode();
+            var previousReviewTarget = _pendingWorkspaceReviewTarget?.CreateSnapshot();
             foreach (var attachment in composerState.CreateAttachmentSnapshots())
                 conversation.Attachments.Add(attachment);
             SetPendingRequestModeOverride(composerState.RequestMode);
+            SetPendingWorkspaceReviewTarget(composerState.WorkspaceReviewTarget);
             InputText = composerState.Text;
             SetPendingAgentSkillReference(composerState.AgentSkillReference);
             UpdateAttachmentsState(conversation);
@@ -404,6 +405,7 @@ namespace ColorVision.Copilot
             {
                 conversation.Attachments.Clear();
                 SetPendingRequestModeOverride(previousMode);
+                SetPendingWorkspaceReviewTarget(previousReviewTarget);
                 InputText = string.Empty;
                 UpdateAttachmentsState(conversation);
                 if (previousConversation != null
@@ -490,13 +492,22 @@ namespace ColorVision.Copilot
                 RunId = queuedFollowUp.RunId,
                 ConversationId = queuedFollowUp.ConversationId,
                 Prompt = queuedFollowUp.Prompt,
-                ComposerState = CopilotComposerStash.Capture(
-                    queuedFollowUp.Prompt,
-                    queuedFollowUp.Prompt.Length,
-                    queuedFollowUp.Mode,
-                    queuedFollowUp.SubmissionContext.Attachments,
-                    agentSkillReference: queuedFollowUp.AgentSkillReference),
+                ComposerState = queuedFollowUp.CreateComposerState(),
             });
+        }
+
+        internal static CopilotWorkspaceReviewTargetContext? ResolveQueuedFollowUpReviewTarget(
+            CopilotConversationRecord conversation,
+            CopilotAgentMode mode)
+        {
+            ArgumentNullException.ThrowIfNull(conversation);
+            if (mode != CopilotAgentMode.Review)
+                return null;
+
+            return conversation.Messages
+                .LastOrDefault(message => message?.IsUser == true)
+                ?.WorkspaceReviewTarget
+                ?.CreateSnapshot();
         }
 
         private bool RemoveQueuedFollowUpRecovery(string runId)

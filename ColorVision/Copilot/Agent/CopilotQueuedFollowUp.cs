@@ -15,7 +15,8 @@ namespace ColorVision.Copilot
             CopilotAgentHostContextSnapshot submissionContext,
             string? goalId = null,
             CopilotAgentSkillReference? agentSkillReference = null,
-            CopilotTurnRuntimeConfigSnapshot? runtimeConfigSnapshot = null)
+            CopilotTurnRuntimeConfigSnapshot? runtimeConfigSnapshot = null,
+            CopilotWorkspaceReviewTargetContext? workspaceReviewTarget = null)
         {
             RunId = runId ?? throw new ArgumentNullException(nameof(runId));
             ConversationId = conversationId ?? throw new ArgumentNullException(nameof(conversationId));
@@ -28,6 +29,10 @@ namespace ColorVision.Copilot
             AgentSkillReference = agentSkillReference?.IsStructurallyValid() == true
                 && agentSkillReference.IsExplicitlyInvokedBy(Prompt)
                     ? agentSkillReference.CreateSnapshot()
+                    : null;
+            _workspaceReviewTarget = mode == CopilotAgentMode.Review
+                && workspaceReviewTarget?.IsStructurallyValid() == true
+                    ? workspaceReviewTarget.CreateSnapshot()
                     : null;
             RuntimeConfigSnapshot = runtimeConfigSnapshot?.CreateSnapshot()
                 ?? new CopilotTurnRuntimeConfigSnapshot(
@@ -63,6 +68,8 @@ namespace ColorVision.Copilot
 
         internal CopilotAgentSkillReference? AgentSkillReference { get; }
 
+        private readonly CopilotWorkspaceReviewTargetContext? _workspaceReviewTarget;
+
         public int QueuePosition
         {
             get => _queuePosition;
@@ -95,6 +102,18 @@ namespace ColorVision.Copilot
         internal CopilotAgentHostContextSnapshot SubmissionContext { get; }
 
         internal CopilotTurnRuntimeConfigSnapshot RuntimeConfigSnapshot { get; }
+
+        internal CopilotWorkspaceReviewTargetContext? CreateWorkspaceReviewTargetSnapshot() =>
+            _workspaceReviewTarget?.CreateSnapshot();
+
+        internal CopilotComposerStash CreateComposerState() =>
+            CopilotComposerStash.Capture(
+                Prompt,
+                Prompt.Length,
+                Mode,
+                SubmissionContext.Attachments,
+                _workspaceReviewTarget,
+                AgentSkillReference);
 
         internal CopilotAgentHostContextSnapshot CreateExecutionContext(
             CopilotConversationHistorySnapshot conversationHistory) =>
