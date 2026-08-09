@@ -93,6 +93,12 @@ namespace ColorVision.Copilot
 
         public string CodexHooksEnabledSourceLabel { get; init; } = string.Empty;
 
+        public bool CodexPluginsEnabled { get; init; } = true;
+
+        public bool HasCodexPluginsEnabledOverride { get; init; }
+
+        public string CodexPluginsEnabledSourceLabel { get; init; } = string.Empty;
+
         public string CodexShellEnvironmentPolicySummary { get; init; } = string.Empty;
 
         public bool HasCodexShellEnvironmentPolicyOverride { get; init; }
@@ -634,9 +640,28 @@ namespace ColorVision.Copilot
             {
                 builder.Append("（Codex 默认开启；");
             }
-            builder.AppendLine(snapshot.CodexHooksEnabled
+            builder.AppendLine(snapshot.CodexHooksEnabled && snapshot.CodexPluginsEnabled
                 ? "扩展授权与生命周期 Hook 可运行，内置写入安全策略始终保留）"
-                : "扩展授权与生命周期 Hook 已省略，内置写入安全策略仍保留）");
+                : snapshot.CodexHooksEnabled
+                    ? "features.plugins=false，扩展 Hook 已省略；内置写入安全策略仍保留）"
+                    : "扩展授权与生命周期 Hook 已省略，内置写入安全策略仍保留）");
+            builder.Append("Copilot 扩展能力：features.plugins=")
+                .Append(snapshot.CodexPluginsEnabled ? "true" : "false");
+            if (snapshot.HasCodexPluginsEnabledOverride)
+            {
+                builder.Append('（')
+                    .Append(string.IsNullOrWhiteSpace(snapshot.CodexPluginsEnabledSourceLabel)
+                        ? "Codex config.toml features.plugins"
+                        : snapshot.CodexPluginsEnabledSourceLabel.Trim())
+                    .Append(" 提交快照；");
+            }
+            else
+            {
+                builder.Append("（Codex 默认开启；");
+            }
+            builder.AppendLine(snapshot.CodexPluginsEnabled
+                ? "模块提供的 Copilot context 与 tool 可用，扩展 Hook 仍受 features.hooks 约束）"
+                : "模块提供的 Copilot context、tool 与 Hook 已排除；内置工具、外部 MCP 与主程序业务插件不受影响）");
             builder.Append("命令环境：")
                 .Append(string.IsNullOrWhiteSpace(snapshot.CodexShellEnvironmentPolicySummary)
                     ? CopilotCodexShellEnvironmentPolicy.Default.BuildRedactedSummary()
@@ -1258,7 +1283,11 @@ namespace ColorVision.Copilot
                 .Append(FormatCount(snapshot.EnabledExternalMcpServers))
                 .AppendLine(" 个启用服务；仅在 Agent 请求中发现工具");
             AppendToolHookDetails(builder, snapshot.ToolHookSurface);
-            AppendAgentExtensionDetails(builder, snapshot.AgentExtensions, snapshot.AgentExtensionIssues);
+            AppendAgentExtensionDetails(
+                builder,
+                snapshot.AgentExtensions,
+                snapshot.AgentExtensionIssues,
+                snapshot.CodexPluginsEnabled);
             AppendOptimizationSuggestions(builder, snapshot);
             return builder.ToString().TrimEnd();
         }
@@ -1392,7 +1421,8 @@ namespace ColorVision.Copilot
         private static void AppendAgentExtensionDetails(
             StringBuilder builder,
             IReadOnlyList<CopilotAgentExtensionSourceSnapshot> extensions,
-            IReadOnlyList<CopilotAgentExtensionIssue> issues)
+            IReadOnlyList<CopilotAgentExtensionIssue> issues,
+            bool pluginsEnabled)
         {
             extensions ??= Array.Empty<CopilotAgentExtensionSourceSnapshot>();
             issues ??= Array.Empty<CopilotAgentExtensionIssue>();
@@ -1408,7 +1438,10 @@ namespace ColorVision.Copilot
                 .Append(FormatCount(extensions.Sum(extension => extension.ActiveHookCount)))
                 .Append('/')
                 .Append(FormatCount(extensions.Sum(extension => extension.DeclaredHookCount)))
-                .AppendLine(" 个已激活/声明");
+                .Append(" 个已激活/声明")
+                .AppendLine(pluginsEnabled
+                    ? string.Empty
+                    : "；这些来源仍由主程序加载，但本请求已排除其 Copilot context、tool 与 Hook");
 
             foreach (var extension in extensions.Take(12))
             {

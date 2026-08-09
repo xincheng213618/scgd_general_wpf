@@ -362,7 +362,7 @@ namespace ColorVision.Copilot
 
         public async Task<CopilotContextItem?> CaptureAsync(CopilotContextRequest request, CancellationToken cancellationToken)
         {
-            if (!_isRegistrationActive())
+            if (!request.IncludeExtensionProviders || !_isRegistrationActive())
                 return null;
             var item = await _provider.CaptureAsync(request, cancellationToken);
             return _isRegistrationActive() ? item : null;
@@ -561,7 +561,7 @@ namespace ColorVision.Copilot
         public bool IsAvailable(CopilotAgentRequest request)
         {
             ArgumentNullException.ThrowIfNull(request);
-            if (!_isRegistrationActive())
+            if (!request.CodexPluginsEnabled || !_isRegistrationActive())
                 return false;
             try
             {
@@ -609,6 +609,16 @@ namespace ColorVision.Copilot
         {
             ArgumentNullException.ThrowIfNull(request);
             toolInput ??= CopilotAgentToolInput.Empty;
+            if (!request.CodexPluginsEnabled)
+            {
+                return new CopilotToolResult
+                {
+                    ToolName = Name,
+                    Summary = $"{Name} is unavailable for this submitted turn.",
+                    ErrorMessage = "Codex features.plugins=false excludes Copilot extension tools from this submitted turn.",
+                    FailureKind = CopilotToolFailureKind.Authorization,
+                };
+            }
             if (!_isRegistrationActive())
             {
                 return new CopilotToolResult

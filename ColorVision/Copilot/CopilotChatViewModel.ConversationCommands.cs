@@ -300,7 +300,11 @@ namespace ColorVision.Copilot
                         conversation,
                         assistantMessage,
                         CreateCurrentConversationRequestProfile(SelectedProfile, conversation),
-                        CopilotCapabilityCatalog.Shared.GetSnapshot()))
+                        CopilotCapabilityCatalog.Shared.GetSnapshot(
+                            _currentCodexConfigOptions.ConfiguredPluginsEnabled),
+                        CopilotToolExecutor.GetSharedHookSurfaceSnapshot(
+                            _currentCodexConfigOptions.ConfiguredHooksEnabled
+                                && _currentCodexConfigOptions.ConfiguredPluginsEnabled)))
                 {
                     ShowLocalCommandResult(
                         command,

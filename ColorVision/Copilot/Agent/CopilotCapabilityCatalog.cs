@@ -236,10 +236,30 @@ namespace ColorVision.Copilot
             return snapshot;
         }
 
-        public CopilotCapabilityCatalogSnapshot GetSnapshot()
+        public CopilotCapabilityCatalogSnapshot GetSnapshot(bool includePluginCapabilities = true)
         {
             lock (_syncRoot)
-                return CreateSnapshotLocked();
+            {
+                var snapshot = CreateSnapshotLocked();
+                if (includePluginCapabilities)
+                    return snapshot;
+
+                var capabilities = snapshot.Capabilities
+                    .Where(entry => entry.SourceKind != CopilotCapabilitySourceKind.Plugin)
+                    .ToArray();
+                return new CopilotCapabilityCatalogSnapshot
+                {
+                    Revision = capabilities.Length == 0
+                        ? 0
+                        : capabilities.Max(entry => entry.Revision),
+                    UpdatedAtUtc = snapshot.UpdatedAtUtc,
+                    SourceCount = capabilities
+                        .Select(entry => entry.SourceId)
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .Count(),
+                    Capabilities = capabilities,
+                };
+            }
         }
 
         public CopilotCapabilityCatalogSnapshot PublishExternalMcp(CopilotMcpClientServerConfig server, IEnumerable<ICopilotTool> tools)

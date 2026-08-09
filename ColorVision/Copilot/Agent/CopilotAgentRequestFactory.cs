@@ -235,6 +235,8 @@ namespace ColorVision.Copilot
 
         internal bool CodexHooksEnabled { get; init; } = true;
 
+        internal bool CodexPluginsEnabled { get; init; } = true;
+
         internal CopilotCodexShellEnvironmentPolicy CodexShellEnvironmentPolicy { get; init; } =
             CopilotCodexShellEnvironmentPolicy.Default;
 
@@ -438,6 +440,7 @@ namespace ColorVision.Copilot
                     ActiveDocumentPath = hostContext.ActiveDocumentPath,
                     SearchRootPaths = searchRootPaths,
                     RequiresWorkspaceEvidence = requiresWorkspaceEvidence,
+                    IncludeExtensionProviders = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredPluginsEnabled,
                 },
                 Attachments = hostContext.Attachments,
                 SearchRootPaths = searchRootPaths,
@@ -448,6 +451,7 @@ namespace ColorVision.Copilot
                 CodexSandboxMode = codexSandboxMode,
                 CodexShellToolEnabled = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredShellToolEnabled,
                 CodexHooksEnabled = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredHooksEnabled,
+                CodexPluginsEnabled = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredPluginsEnabled,
                 CodexShellEnvironmentPolicy = hostContext.ProjectInstructionDiscoveryOptions
                     .ConfiguredShellEnvironmentPolicy.CreateSnapshot(),
                 CodexExperimentalRequestUserInputEnabled = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredExperimentalRequestUserInputEnabled,
@@ -553,6 +557,7 @@ namespace ColorVision.Copilot
                 CodexSandboxMode = plan.CodexSandboxMode,
                 CodexShellToolEnabled = plan.CodexShellToolEnabled,
                 CodexHooksEnabled = plan.CodexHooksEnabled,
+                CodexPluginsEnabled = plan.CodexPluginsEnabled,
                 CodexShellEnvironmentPolicy = plan.CodexShellEnvironmentPolicy.CreateSnapshot(),
                 CodexExperimentalRequestUserInputEnabled = plan.CodexExperimentalRequestUserInputEnabled,
                 CodexDefaultModeRequestUserInputEnabled = plan.CodexDefaultModeRequestUserInputEnabled,

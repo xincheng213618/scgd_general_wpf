@@ -79,6 +79,10 @@ namespace ColorVision.Copilot
 
         internal bool CodexHooksEnabled { get; init; } = true;
 
+        internal bool CodexPluginsEnabled { get; init; } = true;
+
+        internal bool CodexExtensionHooksEnabled => CodexHooksEnabled && CodexPluginsEnabled;
+
         internal CopilotCodexShellEnvironmentPolicy CodexShellEnvironmentPolicy { get; init; } =
             CopilotCodexShellEnvironmentPolicy.Default;
 

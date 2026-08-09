@@ -516,6 +516,7 @@ namespace ColorVision.Copilot
             AppendPreventIdleSleep(builder, codexConfigOptions);
             AppendShellToolEnabled(builder, codexConfigOptions);
             AppendHooksEnabled(builder, codexConfigOptions);
+            AppendPluginsEnabled(builder, codexConfigOptions);
             AppendShellEnvironmentPolicy(builder, codexConfigOptions);
             AppendGoalsEnabled(builder, codexConfigOptions);
             AppendDefaultModeRequestUserInputEnabled(builder, codexConfigOptions);
@@ -850,8 +851,34 @@ namespace ColorVision.Copilot
                 builder.Append(" · 官方默认");
             }
             builder.AppendLine(codexConfigOptions.ConfiguredHooksEnabled
+                    && codexConfigOptions.ConfiguredPluginsEnabled
                 ? " · ColorVision 模块扩展授权与生命周期 Hook 可运行；内置写入安全策略始终保留"
-                : " · 模块扩展授权与生命周期 Hook 已省略；内置写入安全策略仍保留，checkpoint 按有效 Hook 面校验");
+                : codexConfigOptions.ConfiguredHooksEnabled
+                    ? " · features.plugins=false，模块扩展 Hook 已省略；内置写入安全策略仍保留"
+                    : " · 模块扩展授权与生命周期 Hook 已省略；内置写入安全策略仍保留，checkpoint 按有效 Hook 面校验");
+        }
+
+        private static void AppendPluginsEnabled(
+            StringBuilder builder,
+            CopilotProjectInstructionDiscoveryOptions codexConfigOptions)
+        {
+            builder.Append("- Codex features.plugins：")
+                .Append(codexConfigOptions.ConfiguredPluginsEnabled ? "true" : "false");
+            if (codexConfigOptions.HasPluginsEnabledOverride)
+            {
+                builder.Append(" · 来源 ")
+                    .Append(codexConfigOptions.PluginsEnabledSourceLabel.Length == 0
+                        ? "Codex config.toml features.plugins"
+                        : codexConfigOptions.PluginsEnabledSourceLabel)
+                    .Append(" · 提交快照");
+            }
+            else
+            {
+                builder.Append(" · 官方默认");
+            }
+            builder.AppendLine(codexConfigOptions.ConfiguredPluginsEnabled
+                ? " · 模块提供的 Copilot context 与 tool 可用；扩展 Hook 仍受 features.hooks 约束"
+                : " · 模块 Copilot context、tool、Hook 与 checkpoint capability 已排除；不卸载主程序业务插件，不影响内置工具或外部 MCP");
         }
 
         private static void AppendIncludePermissionsInstructions(

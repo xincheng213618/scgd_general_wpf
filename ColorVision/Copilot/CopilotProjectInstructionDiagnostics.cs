@@ -351,9 +351,28 @@ namespace ColorVision.Copilot
             {
                 builder.Append(" · 官方默认；");
             }
-            builder.AppendLine(effective.ConfiguredHooksEnabled
+            builder.AppendLine(effective.ConfiguredHooksEnabled && effective.ConfiguredPluginsEnabled
                 ? "ColorVision 模块扩展授权与生命周期 Hook 可运行，内置写入安全策略始终保留"
-                : "省略模块扩展授权与生命周期 Hook，内置写入安全策略仍保留；checkpoint 按有效 Hook 面校验");
+                : effective.ConfiguredHooksEnabled
+                    ? "features.plugins=false，省略模块扩展 Hook；内置写入安全策略仍保留"
+                    : "省略模块扩展授权与生命周期 Hook，内置写入安全策略仍保留；checkpoint 按有效 Hook 面校验");
+            builder.Append("Codex features.plugins：")
+                .Append(effective.ConfiguredPluginsEnabled ? "true" : "false");
+            if (effective.HasPluginsEnabledOverride)
+            {
+                builder.Append(" · 来源 ")
+                    .Append(effective.PluginsEnabledSourceLabel.Length == 0
+                        ? "Codex config.toml features.plugins"
+                        : effective.PluginsEnabledSourceLabel)
+                    .Append(" 提交快照；");
+            }
+            else
+            {
+                builder.Append(" · 官方默认；");
+            }
+            builder.AppendLine(effective.ConfiguredPluginsEnabled
+                ? "模块提供的 Copilot context 与 tool 可用，扩展 Hook 仍受 features.hooks 约束"
+                : "排除模块提供的 Copilot context、tool、Hook 与 checkpoint capability；不卸载主程序业务插件，不影响内置工具或外部 MCP");
             builder.Append("Codex shell_environment_policy：")
                 .Append(effective.ConfiguredShellEnvironmentPolicy.BuildRedactedSummary());
             if (effective.HasShellEnvironmentPolicyOverride)

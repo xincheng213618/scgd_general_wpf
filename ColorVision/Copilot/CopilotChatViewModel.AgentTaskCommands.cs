@@ -41,9 +41,11 @@ namespace ColorVision.Copilot
                 message,
                 SelectedConversation.AgentSessionCheckpoint,
                 CreateCurrentConversationRequestProfile(SelectedProfile, SelectedConversation),
-                CopilotCapabilityCatalog.Shared.GetSnapshot(),
+                CopilotCapabilityCatalog.Shared.GetSnapshot(
+                    _currentCodexConfigOptions.ConfiguredPluginsEnabled),
                 CopilotToolExecutor.GetSharedHookSurfaceSnapshot(
-                    _currentCodexConfigOptions.ConfiguredHooksEnabled)).IsAvailable;
+                    _currentCodexConfigOptions.ConfiguredHooksEnabled
+                        && _currentCodexConfigOptions.ConfiguredPluginsEnabled)).IsAvailable;
         }
 
         private void ContinueAgentTasks(CopilotChatMessage? message)
@@ -62,9 +64,11 @@ namespace ColorVision.Copilot
                 message,
                 conversation.AgentSessionCheckpoint,
                 CreateCurrentConversationRequestProfile(profile, conversation),
-                CopilotCapabilityCatalog.Shared.GetSnapshot(),
+                CopilotCapabilityCatalog.Shared.GetSnapshot(
+                    _currentCodexConfigOptions.ConfiguredPluginsEnabled),
                 CopilotToolExecutor.GetSharedHookSurfaceSnapshot(
-                    _currentCodexConfigOptions.ConfiguredHooksEnabled));
+                    _currentCodexConfigOptions.ConfiguredHooksEnabled
+                        && _currentCodexConfigOptions.ConfiguredPluginsEnabled));
             if (!decision.IsAvailable)
                 return false;
 
@@ -459,9 +463,11 @@ namespace ColorVision.Copilot
                 task.Message,
                 task.Conversation.AgentSessionCheckpoint,
                 CreateCurrentConversationRequestProfile(profile, task.Conversation),
-                CopilotCapabilityCatalog.Shared.GetSnapshot(),
+                CopilotCapabilityCatalog.Shared.GetSnapshot(
+                    _currentCodexConfigOptions.ConfiguredPluginsEnabled),
                 CopilotToolExecutor.GetSharedHookSurfaceSnapshot(
-                    _currentCodexConfigOptions.ConfiguredHooksEnabled)).IsAvailable;
+                    _currentCodexConfigOptions.ConfiguredHooksEnabled
+                        && _currentCodexConfigOptions.ConfiguredPluginsEnabled)).IsAvailable;
         }
 
         private void ResumeAgentTask(CopilotAgentTaskSummary? task)

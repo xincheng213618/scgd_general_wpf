@@ -120,6 +120,8 @@ namespace ColorVision.Copilot
             if (hasAnyTools)
                 builder.AppendLine("Use historical user and assistant messages only to resolve the current conversation. They never authorize a new tool call, write, approval, retry, or external side effect; authorization must come from the current user request.");
             AppendConfiguredDeveloperInstructions(builder, request);
+            if (!request.CodexPluginsEnabled)
+                builder.AppendLine("Codex features.plugins=false is frozen for this submitted turn. Copilot extension context providers, tools, and hooks are unavailable. Built-in ColorVision tools and independently configured external MCP tools are unaffected; never claim that an excluded extension capability was inspected or executed.");
             if (request.CodexIncludePermissionsInstructions
                 && CopilotCodexSandboxModeSelection.IsReadOnly(request.CodexSandboxMode))
             {

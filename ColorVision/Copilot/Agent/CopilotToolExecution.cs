@@ -114,7 +114,7 @@ namespace ColorVision.Copilot
             invocation = NormalizeInvocation(invocation, callId);
             var hooks = invocation.InitialHookBindings.Count > 0
                 ? invocation.InitialHookBindings.ToArray()
-                : ResolveInvocationHooks(invocation.Tool.Name, invocation.AgentRequest.CodexHooksEnabled);
+                : ResolveInvocationHooks(invocation.Tool.Name, invocation.AgentRequest.CodexExtensionHooksEnabled);
             var hookRuns = new List<CopilotToolExecutionHookRun>(
                 Math.Min(MaxRecordedHookRuns, invocation.InitialHookRuns.Count + hooks.Length * 2));
             hookRuns.AddRange(invocation.InitialHookRuns

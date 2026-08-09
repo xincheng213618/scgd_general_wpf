@@ -387,6 +387,13 @@ namespace ColorVision.Copilot
         public CopilotProjectInstructionConfigSources HooksEnabledSource { get; init; } =
             CopilotProjectInstructionConfigSources.None;
 
+        public bool ConfiguredPluginsEnabled { get; init; } = true;
+
+        public bool HasPluginsEnabledOverride { get; init; }
+
+        public CopilotProjectInstructionConfigSources PluginsEnabledSource { get; init; } =
+            CopilotProjectInstructionConfigSources.None;
+
         internal CopilotCodexShellEnvironmentPolicy ConfiguredShellEnvironmentPolicy { get; init; } =
             CopilotCodexShellEnvironmentPolicy.Default;
 
@@ -709,6 +716,7 @@ namespace ColorVision.Copilot
             || HasPreventIdleSleepOverride
             || HasShellToolEnabledOverride
             || HasHooksEnabledOverride
+            || HasPluginsEnabledOverride
             || HasShellEnvironmentPolicyOverride
             || HasGoalsEnabledOverride
             || HasDefaultModeRequestUserInputEnabledOverride
@@ -869,6 +877,13 @@ namespace ColorVision.Copilot
         {
             CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml features.hooks",
             CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml features.hooks",
+            _ => string.Empty,
+        };
+
+        public string PluginsEnabledSourceLabel => PluginsEnabledSource switch
+        {
+            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml features.plugins",
+            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml features.plugins",
             _ => string.Empty,
         };
 
@@ -1165,6 +1180,8 @@ namespace ColorVision.Copilot
         private const string ShellToolEnabledFeatureKey = "shell_tool";
         private const string HooksEnabledKey = "features.hooks";
         private const string HooksEnabledFeatureKey = "hooks";
+        private const string PluginsEnabledKey = "features.plugins";
+        private const string PluginsEnabledFeatureKey = "plugins";
         private const string GoalsEnabledKey = "features.goals";
         private const string GoalsEnabledFeatureKey = "goals";
         private const string DefaultModeRequestUserInputEnabledKey = "features.default_mode_request_user_input";
@@ -1473,6 +1490,14 @@ namespace ColorVision.Copilot
                 HooksEnabledSource = layer.HasHooksEnabledOverride
                     ? source
                     : current.HooksEnabledSource,
+                ConfiguredPluginsEnabled = layer.HasPluginsEnabledOverride
+                    ? layer.PluginsEnabled
+                    : current.ConfiguredPluginsEnabled,
+                HasPluginsEnabledOverride = current.HasPluginsEnabledOverride
+                    || layer.HasPluginsEnabledOverride,
+                PluginsEnabledSource = layer.HasPluginsEnabledOverride
+                    ? source
+                    : current.PluginsEnabledSource,
                 ConfiguredShellEnvironmentPolicy = layer.ShellEnvironmentPolicyLayer.HasAssignment
                     && current.ShellEnvironmentPolicyError.Length == 0
                         ? CopilotCodexShellEnvironmentPolicyMerge.Apply(
@@ -1757,6 +1782,7 @@ namespace ColorVision.Copilot
                 || layer.HasPreventIdleSleepOverride
                 || layer.HasShellToolEnabledOverride
                 || layer.HasHooksEnabledOverride
+                || layer.HasPluginsEnabledOverride
                 || layer.ShellEnvironmentPolicyLayer.HasAssignment
                 || layer.HasGoalsEnabledOverride
                 || layer.HasDefaultModeRequestUserInputEnabledOverride
@@ -2060,6 +2086,7 @@ namespace ColorVision.Copilot
             var preventIdleSleep = false;
             var shellToolEnabled = true;
             var hooksEnabled = true;
+            var pluginsEnabled = true;
             var goalsEnabled = true;
             var defaultModeRequestUserInputEnabled = false;
             var experimentalRequestUserInputEnabled = true;
@@ -2114,6 +2141,7 @@ namespace ColorVision.Copilot
             var hasPreventIdleSleepOverride = false;
             var hasShellToolEnabledOverride = false;
             var hasHooksEnabledOverride = false;
+            var hasPluginsEnabledOverride = false;
             var hasGoalsEnabledOverride = false;
             var hasDefaultModeRequestUserInputEnabledOverride = false;
             var hasExperimentalRequestUserInputEnabledOverride = false;
@@ -2381,6 +2409,18 @@ namespace ColorVision.Copilot
                         continue;
                     }
                     hasHooksEnabledOverride = true;
+                    continue;
+                }
+
+                if (string.Equals(assignment.Key, PluginsEnabledKey, StringComparison.Ordinal))
+                {
+                    if (!TryParseTomlBoolean(
+                        assignment.Value,
+                        out pluginsEnabled))
+                    {
+                        continue;
+                    }
+                    hasPluginsEnabledOverride = true;
                     continue;
                 }
 
@@ -2861,6 +2901,8 @@ namespace ColorVision.Copilot
                 HasShellToolEnabledOverride = hasShellToolEnabledOverride,
                 HooksEnabled = hooksEnabled,
                 HasHooksEnabledOverride = hasHooksEnabledOverride,
+                PluginsEnabled = pluginsEnabled,
+                HasPluginsEnabledOverride = hasPluginsEnabledOverride,
                 ShellEnvironmentPolicyLayer = shellEnvironmentPolicyLayer,
                 GoalsEnabled = goalsEnabled,
                 HasGoalsEnabledOverride = hasGoalsEnabledOverride,
@@ -2934,6 +2976,7 @@ namespace ColorVision.Copilot
                 || hasPreventIdleSleepOverride
                 || hasShellToolEnabledOverride
                 || hasHooksEnabledOverride
+                || hasPluginsEnabledOverride
                 || shellEnvironmentPolicyLayer.HasAssignment
                 || hasGoalsEnabledOverride
                 || hasDefaultModeRequestUserInputEnabledOverride
@@ -3125,6 +3168,7 @@ namespace ColorVision.Copilot
                         PreventIdleSleepFeatureKey => PreventIdleSleepKey,
                         ShellToolEnabledFeatureKey => ShellToolEnabledKey,
                         HooksEnabledFeatureKey => HooksEnabledKey,
+                        PluginsEnabledFeatureKey => PluginsEnabledKey,
                         GuardianApprovalEnabledFeatureKey => GuardianApprovalEnabledKey,
                         PersonalityEnabledFeatureKey => PersonalityEnabledKey,
                         FastModeEnabledFeatureKey => FastModeEnabledKey,
@@ -3182,6 +3226,7 @@ namespace ColorVision.Copilot
                     && !string.Equals(key, PreventIdleSleepKey, StringComparison.Ordinal)
                     && !string.Equals(key, ShellToolEnabledKey, StringComparison.Ordinal)
                     && !string.Equals(key, HooksEnabledKey, StringComparison.Ordinal)
+                    && !string.Equals(key, PluginsEnabledKey, StringComparison.Ordinal)
                     && !string.Equals(key, GoalsEnabledKey, StringComparison.Ordinal)
                     && !string.Equals(key, DefaultModeRequestUserInputEnabledKey, StringComparison.Ordinal)
                     && !string.Equals(key, ExperimentalRequestUserInputEnabledKey, StringComparison.Ordinal)
@@ -4114,6 +4159,10 @@ namespace ColorVision.Copilot
             public bool HooksEnabled { get; init; } = true;
 
             public bool HasHooksEnabledOverride { get; init; }
+
+            public bool PluginsEnabled { get; init; } = true;
+
+            public bool HasPluginsEnabledOverride { get; init; }
 
             public CopilotCodexShellEnvironmentPolicyLayer ShellEnvironmentPolicyLayer { get; init; } =
                 CopilotCodexShellEnvironmentPolicyLayer.Empty;

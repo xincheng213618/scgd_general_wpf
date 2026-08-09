@@ -255,6 +255,8 @@ namespace ColorVision.Copilot
                     builder.AppendLine("Codex sandbox_mode=read-only applies to this submitted turn. Do not claim any file, application, database, shell, or workspace change was performed.");
                 if (!request.CodexShellToolEnabled)
                     builder.AppendLine("Codex features.shell_tool=false applies to this submitted turn. Shell command starts are unavailable; do not claim that a command or script was executed. Existing application-managed background commands may still be inspected or stopped when those observation tools are available.");
+                if (!request.CodexPluginsEnabled)
+                    builder.AppendLine("Codex features.plugins=false applies to this submitted turn. Copilot extension context providers, tools, and hooks are unavailable. Built-in ColorVision tools and independently configured external MCP tools are unaffected; never claim that an excluded extension capability was inspected or executed.");
                 if (request.CodexIncludePermissionsInstructions)
                 {
                     var approvalPolicyInstruction = CopilotCodexApprovalPolicySelection.GetModelInstruction(

@@ -394,7 +394,11 @@ namespace ColorVision.Copilot
                     conversation,
                     assistantMessage,
                     CreateCurrentConversationRequestProfile(SelectedProfile, conversation),
-                    CopilotCapabilityCatalog.Shared.GetSnapshot());
+                    CopilotCapabilityCatalog.Shared.GetSnapshot(
+                        _currentCodexConfigOptions.ConfiguredPluginsEnabled),
+                    CopilotToolExecutor.GetSharedHookSurfaceSnapshot(
+                        _currentCodexConfigOptions.ConfiguredHooksEnabled
+                            && _currentCodexConfigOptions.ConfiguredPluginsEnabled));
         }
 
         private async Task RetryMessageAsync(CopilotChatMessage? message, bool refreshExternalContext)
@@ -411,7 +415,11 @@ namespace ColorVision.Copilot
                 conversation,
                 assistantMessage,
                 CreateCurrentConversationRequestProfile(SelectedProfile, conversation),
-                CopilotCapabilityCatalog.Shared.GetSnapshot()))
+                CopilotCapabilityCatalog.Shared.GetSnapshot(
+                    _currentCodexConfigOptions.ConfiguredPluginsEnabled),
+                CopilotToolExecutor.GetSharedHookSurfaceSnapshot(
+                    _currentCodexConfigOptions.ConfiguredHooksEnabled
+                        && _currentCodexConfigOptions.ConfiguredPluginsEnabled)))
             {
                 return;
             }

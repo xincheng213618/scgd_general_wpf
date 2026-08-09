@@ -53,7 +53,7 @@ namespace ColorVision.Copilot
         {
             ArgumentNullException.ThrowIfNull(request);
 
-            return GetCurrentTools()
+            return GetRegisteredTools(request)
                 .Where(tool => IsAllowedForCodexAgentPolicy(tool, request)
                     && IsAllowedForCodexShellToolPolicy(tool, request)
                     && IsAllowedForCodexSandboxPolicy(tool, request)
@@ -61,6 +61,12 @@ namespace ColorVision.Copilot
                     && (IsAvailableForAgent(tool, request)
                         || tool is not ICopilotAgentDrivenTool && CopilotToolIntentPolicy.CanRetainForFollowUp(request, tool)))
                 .ToArray();
+        }
+
+        internal IReadOnlyList<ICopilotTool> GetRegisteredTools(CopilotAgentRequest request)
+        {
+            ArgumentNullException.ThrowIfNull(request);
+            return GetCurrentTools(request.CodexPluginsEnabled);
         }
 
         internal static bool IsAllowedForCodexAgentPolicy(
@@ -199,10 +205,10 @@ namespace ColorVision.Copilot
             };
         }
 
-        private ICopilotTool[] GetCurrentTools()
+        private ICopilotTool[] GetCurrentTools(bool includeExtensionTools = true)
         {
             IEnumerable<ICopilotTool> currentTools = _tools;
-            if (_extensionBridge != null)
+            if (includeExtensionTools && _extensionBridge != null)
                 currentTools = currentTools.Concat(_extensionBridge.GetSnapshot().Tools);
 
             var tools = currentTools.ToArray();

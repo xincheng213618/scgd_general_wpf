@@ -297,7 +297,8 @@ namespace ColorVision.Copilot
             return CopilotHookDiagnostics.Format(new CopilotHookDiagnosticSnapshot
             {
                 HookSurface = CopilotToolExecutor.GetSharedHookSurfaceSnapshot(
-                    _currentCodexConfigOptions.ConfiguredHooksEnabled),
+                    _currentCodexConfigOptions.ConfiguredHooksEnabled
+                        && _currentCodexConfigOptions.ConfiguredPluginsEnabled),
                 ExtensionSources = extensionSnapshot.Sources,
                 ExtensionIssues = extensionSnapshot.Issues,
                 RecentToolExecutions = CopilotToolExecutionAuditLogger.GetRecentEntries(30),
@@ -373,10 +374,12 @@ namespace ColorVision.Copilot
                 skillUsage = CopilotAgentSkillUsageStore.Shared.GetSnapshot();
             }
 
-            var capabilitySnapshot = CopilotCapabilityCatalog.Shared.GetSnapshot();
+            var capabilitySnapshot = CopilotCapabilityCatalog.Shared.GetSnapshot(
+                projectInstructionOptions.ConfiguredPluginsEnabled);
             var agentExtensionSnapshot = CopilotAgentExtensionBridge.Shared.GetSnapshot();
             var toolHookSurface = CopilotToolExecutor.GetSharedHookSurfaceSnapshot(
-                projectInstructionOptions.ConfiguredHooksEnabled);
+                projectInstructionOptions.ConfiguredHooksEnabled
+                    && projectInstructionOptions.ConfiguredPluginsEnabled);
             var agentDefaults = _config.AgentDefaults;
             var retainedHistoryWeight = history.Messages.Sum(message => CopilotTokenEstimator.EstimateTextWeight(message.Content));
             var autoCompactionUsage = CopilotConversationAutoCompactionPolicy.Measure(
@@ -430,6 +433,9 @@ namespace ColorVision.Copilot
                 CodexHooksEnabled = projectInstructionOptions.ConfiguredHooksEnabled,
                 HasCodexHooksEnabledOverride = projectInstructionOptions.HasHooksEnabledOverride,
                 CodexHooksEnabledSourceLabel = projectInstructionOptions.HooksEnabledSourceLabel,
+                CodexPluginsEnabled = projectInstructionOptions.ConfiguredPluginsEnabled,
+                HasCodexPluginsEnabledOverride = projectInstructionOptions.HasPluginsEnabledOverride,
+                CodexPluginsEnabledSourceLabel = projectInstructionOptions.PluginsEnabledSourceLabel,
                 CodexShellEnvironmentPolicySummary = projectInstructionOptions
                     .ConfiguredShellEnvironmentPolicy.BuildRedactedSummary(),
                 HasCodexShellEnvironmentPolicyOverride = projectInstructionOptions.HasShellEnvironmentPolicyOverride,

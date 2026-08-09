@@ -64,7 +64,7 @@ namespace ColorVision.Copilot
                 onEvent(agentEvent);
             });
             taskEventJournalBuilder.RecordRunStarted();
-            var capabilitySnapshot = _capabilityCatalog.GetSnapshot();
+            var capabilitySnapshot = _capabilityCatalog.GetSnapshot(request.CodexPluginsEnabled);
             var finalAnswerRecovery = NormalizeFinalAnswerRecoveryRequest(
                 request.Recovery,
                 requestedCheckpoint,
@@ -93,8 +93,8 @@ namespace ColorVision.Copilot
             await using var externalToolLease = await _externalToolProvider.DiscoverAsync(request, cancellationToken);
             foreach (var diagnostic in externalToolLease.Diagnostics)
                 emit(CopilotAgentEvent.RuntimeDiagnostic(diagnostic));
-            capabilitySnapshot = _capabilityCatalog.GetSnapshot();
-            var registeredToolCount = _toolRegistry.Tools.Count + externalToolLease.Tools.Count;
+            capabilitySnapshot = _capabilityCatalog.GetSnapshot(request.CodexPluginsEnabled);
+            var registeredToolCount = _toolRegistry.GetRegisteredTools(request).Count + externalToolLease.Tools.Count;
             var availableTools = MergeAvailableTools(request, _toolRegistry.FindTools(request), externalToolLease.Tools, emit);
             emit(CopilotAgentEvent.RuntimeDiagnostic($"Request tool surface · {availableTools.Length}/{registeredToolCount} candidate tool(s) selected after mode and intent filtering."));
             var availableToolNames = availableTools.Select(tool => tool.Name).ToArray();
@@ -124,7 +124,7 @@ namespace ColorVision.Copilot
             var checkpointEnvironmentContext = request.CodexIncludeEnvironmentContext
                 ? environmentContext
                 : null;
-            var hookSurfaceSnapshot = _toolExecutor.GetHookSurfaceSnapshot(request.CodexHooksEnabled);
+            var hookSurfaceSnapshot = _toolExecutor.GetHookSurfaceSnapshot(request.CodexExtensionHooksEnabled);
             var executionScope = baseExecutionScope.WithRuntimeSnapshot(
                 environmentContext.Fingerprint,
                 capabilitySnapshot.Revision);
@@ -157,7 +157,7 @@ namespace ColorVision.Copilot
                 _toolExecutor,
                 _approvalCoordinator,
                 emit,
-                () => _capabilityCatalog.GetSnapshot().Revision,
+                () => _capabilityCatalog.GetSnapshot(request.CodexPluginsEnabled).Revision,
                 delegatedRun => chatClient?.RecordDelegatedRunUsage(delegatedRun),
                 toolBudgetCancellation.RequestCancellation);
             var harnessPreparation = PrepareHarnessPolicy(
