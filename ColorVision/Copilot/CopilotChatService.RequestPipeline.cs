@@ -69,6 +69,7 @@ namespace ColorVision.Copilot
                     }
                 },
                 onRetry: null,
+                onConnectionRecovery: null,
                 onUsageChanged: null,
                 imageAttachments: imageAttachments,
                 cancellationToken: cancellationToken).ConfigureAwait(false);
@@ -114,6 +115,7 @@ namespace ColorVision.Copilot
                 messages,
                 onDelta,
                 onRetry,
+                onConnectionRecovery: null,
                 onUsageChanged: null,
                 imageAttachments: null,
                 cancellationToken);
@@ -130,9 +132,31 @@ namespace ColorVision.Copilot
                 messages,
                 onDelta,
                 onRetry,
+                onConnectionRecovery: null,
                 onUsageChanged,
                 imageAttachments: null,
                 cancellationToken);
+
+        internal Task<CopilotChatStreamResult> StreamReplyAsync(
+            CopilotProfileConfig config,
+            IReadOnlyList<CopilotRequestMessage> messages,
+            Action<CopilotStreamDelta> onDelta,
+            Action<CopilotProviderRetryInfo>? onRetry,
+            Action<CopilotProviderConnectionRecoveryInfo> onConnectionRecovery,
+            Action<CopilotTokenUsage>? onUsageChanged,
+            CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(onConnectionRecovery);
+            return StreamReplyCoreAsync(
+                config,
+                messages,
+                onDelta,
+                onRetry,
+                onConnectionRecovery,
+                onUsageChanged,
+                imageAttachments: null,
+                cancellationToken);
+        }
 
         internal async Task<CopilotTokenUsage> StreamReplyAsync(
             CopilotProfileConfig config,
@@ -147,6 +171,7 @@ namespace ColorVision.Copilot
                 messages,
                 onDelta,
                 onRetry,
+                onConnectionRecovery: null,
                 onUsageChanged: null,
                 imageAttachments,
                 cancellationToken).ConfigureAwait(false);
@@ -158,6 +183,7 @@ namespace ColorVision.Copilot
             IReadOnlyList<CopilotRequestMessage> messages,
             Action<CopilotStreamDelta> onDelta,
             Action<CopilotProviderRetryInfo>? onRetry,
+            Action<CopilotProviderConnectionRecoveryInfo>? onConnectionRecovery,
             Action<CopilotTokenUsage>? onUsageChanged,
             IReadOnlyList<CopilotAttachmentItem>? imageAttachments,
             CancellationToken cancellationToken)
@@ -174,7 +200,11 @@ namespace ColorVision.Copilot
                 _firstResponseTimeoutOverride,
                 _streamingUpdateTimeoutOverride);
 
-            for (var attempt = 1; ; attempt++)
+            var attempt = 1;
+            var connectionRecoveryState = new CopilotProviderConnectionRecoveryState(
+                CopilotProviderConnectionRecoveryChatClient.DefaultInitialDelay,
+                CopilotProviderConnectionRecoveryChatClient.DefaultMaximumDelay);
+            while (true)
             {
                 var responseStarted = false;
                 try
@@ -196,10 +226,22 @@ namespace ColorVision.Copilot
                         inactivityTimeouts,
                         cancellationToken).ConfigureAwait(false);
                 }
+                catch (Exception exception) when (onConnectionRecovery != null
+                    && !responseStarted
+                    && CopilotProviderConnectionRecoveryChatClient.TryCreateRecovery(
+                        exception,
+                        connectionRecoveryState,
+                        cancellationToken,
+                        out var recovery))
+                {
+                    onConnectionRecovery(recovery);
+                    await _delayAsync(recovery.Delay, cancellationToken).ConfigureAwait(false);
+                }
                 catch (Exception exception) when (TryCreateRetry(exception, attempt, responseStarted, cancellationToken, out var retry))
                 {
                     onRetry?.Invoke(retry);
                     await _delayAsync(retry.Delay, cancellationToken).ConfigureAwait(false);
+                    attempt++;
                 }
             }
         }

@@ -169,6 +169,20 @@ namespace ColorVision.Copilot
             ApplyProviderRetry(assistantMessage, retry);
         }
 
+        private void ApplyProviderConnectionRecoveryOnUiThread(
+            CopilotChatMessage assistantMessage,
+            CopilotProviderConnectionRecoveryInfo recovery)
+        {
+            var dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher != null && !dispatcher.CheckAccess())
+            {
+                dispatcher.Invoke(() => ApplyProviderConnectionRecovery(assistantMessage, recovery));
+                return;
+            }
+
+            ApplyProviderConnectionRecovery(assistantMessage, recovery);
+        }
+
         private static void ApplyPreparedTurnRequestOnUiThread(
             CopilotChatMessage userMessage,
             CopilotPreparedTurnRequest preparedRequest)
@@ -231,6 +245,17 @@ namespace ColorVision.Copilot
             var result = CopilotAssistantMessagePresenter.ApplyAgentEvent(
                 assistantMessage,
                 CopilotAgentEvent.RuntimeDiagnostic(retry.ToDiagnosticText()));
+            if (result.PersistenceMode != CopilotAgentEventPersistenceMode.None)
+                PersistState(immediate: result.PersistenceMode == CopilotAgentEventPersistenceMode.Immediate);
+        }
+
+        private void ApplyProviderConnectionRecovery(
+            CopilotChatMessage assistantMessage,
+            CopilotProviderConnectionRecoveryInfo recovery)
+        {
+            var result = CopilotAssistantMessagePresenter.ApplyAgentEvent(
+                assistantMessage,
+                CopilotAgentEvent.FromProviderConnectionRecovery(recovery));
             if (result.PersistenceMode != CopilotAgentEventPersistenceMode.None)
                 PersistState(immediate: result.PersistenceMode == CopilotAgentEventPersistenceMode.Immediate);
         }

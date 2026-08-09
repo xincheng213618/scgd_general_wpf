@@ -522,6 +522,11 @@ namespace ColorVision.Copilot
                                 hostedRun.RecordProviderRetry(providerRetry.Retry);
                                 ApplyProviderRetryOnUiThread(assistantMessage, providerRetry.Retry);
                                 break;
+                            case CopilotTurnProviderConnectionRecoveryEvent connectionRecovery:
+                                ApplyProviderConnectionRecoveryOnUiThread(
+                                    assistantMessage,
+                                    connectionRecovery.Recovery);
+                                break;
                             case CopilotTurnReviewEnteredEvent reviewEntered:
                                 ApplyReviewEnteredOnUiThread(assistantMessage, reviewEntered.Target);
                                 break;

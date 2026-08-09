@@ -39,7 +39,7 @@ namespace ColorVision.Copilot
             var request = normalizedRequestId.Length == 0
                 ? string.Empty
                 : $" · request {normalizedRequestId}";
-            return $"Provider connection unavailable · recovery attempt {RecoveryAttempt} · {FailureKind}{request} · waiting {delay}; the ordinary request-retry budget and Agent token accounting remain unchanged. Cancel the turn to stop waiting.";
+            return $"Provider connection unavailable · recovery attempt {RecoveryAttempt} · {FailureKind}{request} · waiting {delay}; the ordinary request-retry budget and token accounting remain unchanged. Cancel the turn to stop waiting.";
         }
     }
 
@@ -76,6 +76,30 @@ namespace ColorVision.Copilot
                 throw new InvalidOperationException(
                     "Copilot Agent provider connection-recovery diagnostic has mismatched metadata.");
             }
+        }
+    }
+
+    internal sealed class CopilotProviderConnectionRecoveryState(
+        TimeSpan initialDelay,
+        TimeSpan maximumDelay)
+    {
+        private int _attempt;
+        private TimeSpan _nextDelay = initialDelay;
+
+        public CopilotProviderConnectionRecoveryInfo Next(string requestId)
+        {
+            _attempt = _attempt == int.MaxValue ? int.MaxValue : _attempt + 1;
+            var recovery = new CopilotProviderConnectionRecoveryInfo(
+                _attempt,
+                _nextDelay,
+                "connection failure",
+                CopilotProviderRequestId.Normalize(requestId));
+            _nextDelay = TimeSpan.FromTicks(Math.Min(
+                maximumDelay.Ticks,
+                _nextDelay.Ticks > long.MaxValue / 2
+                    ? long.MaxValue
+                    : _nextDelay.Ticks * 2));
+            return recovery;
         }
     }
 
@@ -124,7 +148,7 @@ namespace ColorVision.Copilot
             var materializedMessages = messages is Microsoft.Extensions.AI.ChatMessage[] array
                 ? array
                 : messages?.ToArray() ?? Array.Empty<Microsoft.Extensions.AI.ChatMessage>();
-            var state = new RecoveryState(_initialDelay, _maximumDelay);
+            var state = new CopilotProviderConnectionRecoveryState(_initialDelay, _maximumDelay);
 
             while (true)
             {
@@ -155,7 +179,7 @@ namespace ColorVision.Copilot
             var materializedMessages = messages is Microsoft.Extensions.AI.ChatMessage[] array
                 ? array
                 : messages?.ToArray() ?? Array.Empty<Microsoft.Extensions.AI.ChatMessage>();
-            var state = new RecoveryState(_initialDelay, _maximumDelay);
+            var state = new CopilotProviderConnectionRecoveryState(_initialDelay, _maximumDelay);
 
             while (true)
             {
@@ -255,9 +279,9 @@ namespace ColorVision.Copilot
             }
         }
 
-        private static bool TryCreateRecovery(
+        internal static bool TryCreateRecovery(
             Exception exception,
-            RecoveryState state,
+            CopilotProviderConnectionRecoveryState state,
             CancellationToken cancellationToken,
             out CopilotProviderConnectionRecoveryInfo recovery)
         {
@@ -303,28 +327,6 @@ namespace ColorVision.Copilot
             }
 
             return false;
-        }
-
-        private sealed class RecoveryState(TimeSpan initialDelay, TimeSpan maximumDelay)
-        {
-            private int _attempt;
-            private TimeSpan _nextDelay = initialDelay;
-
-            public CopilotProviderConnectionRecoveryInfo Next(string requestId)
-            {
-                _attempt = _attempt == int.MaxValue ? int.MaxValue : _attempt + 1;
-                var recovery = new CopilotProviderConnectionRecoveryInfo(
-                    _attempt,
-                    _nextDelay,
-                    "connection failure",
-                    CopilotProviderRequestId.Normalize(requestId));
-                _nextDelay = TimeSpan.FromTicks(Math.Min(
-                    maximumDelay.Ticks,
-                    _nextDelay.Ticks > long.MaxValue / 2
-                        ? long.MaxValue
-                        : _nextDelay.Ticks * 2));
-                return recovery;
-            }
         }
 
         private sealed class CopilotStreamingAttempt(

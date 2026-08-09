@@ -140,6 +140,7 @@ namespace ColorVision.Copilot
                 history,
                 eventSink.OnChatDelta,
                 eventSink.OnProviderRetry,
+                eventSink.OnProviderConnectionRecovery,
                 usage => eventSink.OnTokenUsageUpdated(imageUnderstanding.Usage.Add(usage)),
                 cancellationToken).ConfigureAwait(false);
             var turnUsage = imageUnderstanding.Usage.Add(streamResult.Usage);

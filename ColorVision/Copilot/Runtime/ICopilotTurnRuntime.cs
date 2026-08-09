@@ -136,6 +136,9 @@ namespace ColorVision.Copilot
     internal sealed record CopilotTurnProviderRetryEvent(
         CopilotProviderRetryInfo Retry) : CopilotTurnEvent;
 
+    internal sealed record CopilotTurnProviderConnectionRecoveryEvent(
+        CopilotProviderConnectionRecoveryInfo Recovery) : CopilotTurnEvent;
+
     internal sealed record CopilotTurnReviewEnteredEvent(
         CopilotWorkspaceReviewTargetContext Target) : CopilotTurnEvent;
 
@@ -298,6 +301,9 @@ namespace ColorVision.Copilot
 
         public void OnProviderRetry(CopilotProviderRetryInfo retry) =>
             _publish(new CopilotTurnProviderRetryEvent(retry));
+
+        public void OnProviderConnectionRecovery(CopilotProviderConnectionRecoveryInfo recovery) =>
+            _publish(new CopilotTurnProviderConnectionRecoveryEvent(recovery));
 
         public void OnReviewEntered(CopilotWorkspaceReviewTargetContext target)
         {

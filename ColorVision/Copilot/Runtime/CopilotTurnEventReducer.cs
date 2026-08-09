@@ -18,6 +18,7 @@ namespace ColorVision.Copilot
         CopilotTurnAnswerLifecycleState AnswerLifecycle,
         CopilotTokenUsage? TokenUsage,
         CopilotTurnProviderRetryLifecycleState ProviderRetryLifecycle,
+        CopilotTurnProviderConnectionRecoveryLifecycleState ProviderConnectionRecoveryLifecycle,
         CopilotTurnBudgetLifecycleState BudgetLifecycle,
         CopilotTurnCheckpointLifecycleState CheckpointLifecycle,
         CopilotTurnHookLifecycleState HookLifecycle,
@@ -55,6 +56,7 @@ namespace ColorVision.Copilot
                 CopilotTurnAnswerLifecycleState.Empty,
                 null,
                 CopilotTurnProviderRetryLifecycleState.Empty,
+                CopilotTurnProviderConnectionRecoveryLifecycleState.Empty,
                 CopilotTurnBudgetLifecycleState.Empty,
                 CopilotTurnCheckpointLifecycleState.Empty,
                 CopilotTurnHookLifecycleState.Empty,
@@ -90,6 +92,8 @@ namespace ColorVision.Copilot
                 CopilotTurnRequestPreparedEvent prepared => ReduceRequestPrepared(state, prepared),
                 CopilotTurnChatDeltaEvent => ReduceChatProgress(state, turnEvent),
                 CopilotTurnProviderRetryEvent providerRetry => ReduceProviderRetry(state, providerRetry),
+                CopilotTurnProviderConnectionRecoveryEvent connectionRecovery =>
+                    ReduceProviderConnectionRecovery(state, connectionRecovery),
                 CopilotTurnReviewEnteredEvent reviewEntered => ReduceReviewEntered(state, reviewEntered),
                 CopilotTurnReviewExitedEvent reviewExited => ReduceReviewExited(state, reviewExited),
                 CopilotTurnAgentEvent agent => ReduceAgentEvent(state, agent),
@@ -167,6 +171,24 @@ namespace ColorVision.Copilot
             return state with
             {
                 ProviderRetryLifecycle = state.ProviderRetryLifecycle.Observe(providerRetry.Retry),
+            };
+        }
+
+        private static CopilotTurnEventState ReduceProviderConnectionRecovery(
+            CopilotTurnEventState state,
+            CopilotTurnProviderConnectionRecoveryEvent connectionRecovery)
+        {
+            RequirePreparedChatRequest(state, connectionRecovery);
+            if (connectionRecovery.Recovery == null)
+            {
+                throw new InvalidOperationException(
+                    "Copilot provider connection-recovery event has no recovery metadata.");
+            }
+
+            return state with
+            {
+                ProviderConnectionRecoveryLifecycle =
+                    state.ProviderConnectionRecoveryLifecycle.Observe(connectionRecovery.Recovery),
             };
         }
 
