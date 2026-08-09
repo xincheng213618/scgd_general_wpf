@@ -144,6 +144,37 @@ public sealed class CopilotAgentTaskEventJournalIntegrityTests
         Assert.Equal(CopilotAgentStopReason.Interrupted, assistant.AgentStopReason);
     }
 
+    [Fact]
+    public void InterruptedRunRecoverySkipsNullLegacyMessagesWhenInferringMode()
+    {
+        var profile = CreateProfile();
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordRunStarted();
+        var checkpoint = CopilotAgentSessionCheckpoint.Create(
+            profile,
+            "{}",
+            CopilotCapabilityCatalog.Shared.GetSnapshot(),
+            taskEventJournal: journal.Snapshot());
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        conversation.AgentSessionCheckpoint = Assert.IsType<CopilotAgentSessionCheckpoint>(checkpoint);
+        conversation.Messages.Add(new CopilotChatMessage(CopilotChatRole.User, "Continue")
+        {
+            RequestMode = CopilotAgentMode.Auto,
+        });
+        conversation.Messages.Add(null!);
+        var assistant = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty)
+        {
+            RequestMode = CopilotAgentMode.Chat,
+            IsExecutionInProgress = true,
+        };
+        conversation.Messages.Add(assistant);
+
+        Assert.True(CopilotInterruptedAgentRunRecovery.Normalize(conversation, assistant));
+
+        Assert.Equal(CopilotAgentMode.Auto, assistant.RequestMode);
+        Assert.Equal(CopilotAgentStopReason.Interrupted, assistant.AgentStopReason);
+    }
+
     private static CopilotToolExecutionInfo CreateExecution(
         string callId,
         CopilotToolExecutionState state = CopilotToolExecutionState.Running,

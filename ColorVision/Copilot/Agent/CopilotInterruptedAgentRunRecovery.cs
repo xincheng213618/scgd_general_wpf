@@ -63,7 +63,7 @@ namespace ColorVision.Copilot
             for (var index = assistantIndex - 1; index >= 0; index--)
             {
                 var candidate = conversation.Messages[index];
-                if (!candidate.IsUser)
+                if (candidate?.IsUser != true)
                     continue;
 
                 if (Enum.IsDefined(candidate.RequestMode) && candidate.RequestMode != CopilotAgentMode.Chat)
