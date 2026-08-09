@@ -1,3 +1,4 @@
+using ColorVision.Copilot;
 using ColorVision.Copilot.Mcp;
 using System.Text.Json;
 
@@ -133,6 +134,37 @@ public sealed class CopilotMcpRequestIdentityTests
         var status = ReadToolText(response);
         Assert.Contains("Active Copilot runs: 1", status, StringComparison.Ordinal);
         Assert.Contains("Queued Copilot runs: 2", status, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task RuntimeEnvironmentSummaryReportsResidentMemorySnapshot()
+    {
+        var sessionStore = new CopilotMcpClientSessionStore();
+        var dispatcher = new CopilotMcpToolDispatcher(new CopilotMcpToolEnvironment
+        {
+            ResidentMemoryBytesProvider = () => 12_345_678,
+            FlowSnapshotProvider = _ => Task.FromResult<CopilotFlowContextSnapshot?>(null),
+            RecentLogProvider = (_, _, _, _, _) => Task.FromResult(new CopilotCapabilityResult
+            {
+                Success = true,
+            }),
+        });
+        var handler = CreateHandler(sessionStore, dispatcher);
+        var sessionId = GetSessionId(
+            await handler.HandleAsync(CreateInitializeRequest(), CancellationToken.None));
+
+        var response = await handler.HandleAsync(
+            CreateRequest(
+                "POST",
+                """{"jsonrpc":"2.0","id":9,"method":"tools/call","params":{"name":"get_runtime_environment_summary","arguments":{}}}""",
+                sessionId),
+            CancellationToken.None);
+
+        Assert.Equal(200, response.StatusCode);
+        Assert.Contains(
+            "Resident memory bytes: 12345678",
+            ReadToolText(response),
+            StringComparison.Ordinal);
     }
 
     [Fact]

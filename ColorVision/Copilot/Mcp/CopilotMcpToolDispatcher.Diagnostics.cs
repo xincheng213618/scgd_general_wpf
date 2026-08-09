@@ -188,6 +188,10 @@ namespace ColorVision.Copilot.Mcp
             var logFilePath = SafeInvoke(() => Environments.DirLog) ?? string.Empty;
             var theme = SafeInvoke(() => ThemeConfig.Instance.Theme.ToString()) ?? "(unknown)";
             var runtimeActivity = GetRuntimeActivity();
+            var residentMemoryBytes = SafeInvoke(_environment.ResidentMemoryBytesProvider);
+            var residentMemoryLabel = residentMemoryBytes is long bytes && bytes >= 0
+                ? bytes.ToString(CultureInfo.InvariantCulture)
+                : "(unavailable)";
             var logDirectories = SafeInvoke(() => CopilotRecentLogSupport.GetCandidateLogDirectories()
                 .Where(directory => !string.IsNullOrWhiteSpace(directory))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
@@ -198,6 +202,7 @@ namespace ColorVision.Copilot.Mcp
             builder.AppendLine($"ColorVision version: {EmptyLabel(typeof(CopilotMcpToolDispatcher).Assembly.GetName().Version?.ToString())}");
             builder.AppendLine($"Process: {process.ProcessName} ({process.Id})");
             builder.AppendLine($"Process start time: {EmptyLabel(SafeInvoke(() => process.StartTime.ToString("O", CultureInfo.InvariantCulture)))}");
+            builder.AppendLine($"Resident memory bytes: {residentMemoryLabel}");
             builder.AppendLine($"Base directory: {EmptyLabel(AppDomain.CurrentDomain.BaseDirectory)}");
             builder.AppendLine($"Config directory: {EmptyLabel(configDirectory)}");
             builder.AppendLine($"AppData directory: {EmptyLabel(appDataDirectory)}");

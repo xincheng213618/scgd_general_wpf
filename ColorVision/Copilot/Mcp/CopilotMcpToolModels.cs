@@ -7,6 +7,7 @@ using ColorVision.Solution.Workspace;
 using ColorVision.UI;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
@@ -223,6 +224,8 @@ namespace ColorVision.Copilot.Mcp
 
         public Func<int> QueuedCopilotRunCountProvider { get; init; } = () => CopilotAgentTaskHost.Shared.QueuedCount;
 
+        public Func<long?> ResidentMemoryBytesProvider { get; init; } = GetCurrentProcessResidentMemoryBytes;
+
         public Func<CancellationToken, Task<CopilotFlowContextSnapshot?>> FlowSnapshotProvider { get; init; } = CreateDefaultFlowSnapshotAsync;
 
         public Func<string?, int, CancellationToken, Task<CopilotFlowNodeCatalogSnapshot?>> FlowNodeCatalogProvider { get; init; } = CreateDefaultFlowNodeCatalogAsync;
@@ -244,6 +247,12 @@ namespace ColorVision.Copilot.Mcp
         public Func<string, CancellationToken, Task<CopilotMcpToolCallResult>>? SetThemeHandler { get; init; }
 
         public Func<string, CancellationToken, Task<CopilotMcpToolCallResult>>? SetLanguageHandler { get; init; }
+
+        private static long? GetCurrentProcessResidentMemoryBytes()
+        {
+            using var process = Process.GetCurrentProcess();
+            return process.WorkingSet64;
+        }
 
         private static async Task<CopilotMcpToolCallResult> ApplyTemplatePatchToActiveEditorAsync(CopilotTemplatePatchApplyRequest request, CancellationToken cancellationToken)
         {
