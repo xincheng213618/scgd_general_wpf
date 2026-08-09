@@ -780,8 +780,7 @@ namespace ColorVision.Copilot
             _ => UsesCodexConfig ? "Codex config.toml" : "ColorVision 默认",
         };
 
-        public bool AllowsProjectCodexConfig => ProjectTrustLevel is not (
-            CopilotCodexProjectTrustLevel.Untrusted or CopilotCodexProjectTrustLevel.Invalid);
+        public bool AllowsProjectCodexConfig => ProjectTrustLevel == CopilotCodexProjectTrustLevel.Trusted;
 
         public string DeveloperInstructionsSourceLabel => DeveloperInstructionsSource switch
         {
@@ -1166,7 +1165,7 @@ namespace ColorVision.Copilot
                 "Codex Home trust_level=untrusted；已跳过项目 .codex/config.toml",
             CopilotCodexProjectTrustLevel.Invalid =>
                 "Codex Home trust_level 无效；已保守跳过项目 .codex/config.toml",
-            _ => string.Empty,
+            _ => "项目目录信任未决定；已跳过项目 .codex/config.toml",
         };
     }
 
@@ -3207,7 +3206,7 @@ namespace ColorVision.Copilot
             return result;
         }
 
-        private static bool TryParseProjectTableHeader(string line, out string normalizedProjectPath)
+        internal static bool TryParseProjectTableHeader(string line, out string normalizedProjectPath)
         {
             normalizedProjectPath = string.Empty;
             if (line.Length < 4
@@ -3503,7 +3502,7 @@ namespace ColorVision.Copilot
                 .Replace('\r', '\n')
                 .Split('\n');
 
-        private static string StripComment(string line)
+        internal static string StripComment(string line)
         {
             var quote = '\0';
             var escaped = false;

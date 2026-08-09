@@ -90,6 +90,14 @@ namespace ColorVision.Copilot
             var turnSnapshot = isReplacingTurn
                 ? CaptureHostedTurnSnapshot(conversation, replacedUserMessage, conversation.Attachments)
                 : CaptureHostedTurnSnapshot(conversation, attachmentOverride: requestAttachments);
+            if (!TryConfirmProjectDirectoryTrust(turnSnapshot, out var trustPersisted))
+                return;
+            if (trustPersisted)
+            {
+                turnSnapshot = isReplacingTurn
+                    ? CaptureHostedTurnSnapshot(conversation, replacedUserMessage, conversation.Attachments)
+                    : CaptureHostedTurnSnapshot(conversation, attachmentOverride: requestAttachments);
+            }
             var agentSkillReference = isDirectSubmission
                 ? null
                 : ResolvePendingAgentSkillReference(prompt);

@@ -357,6 +357,114 @@ public sealed class CopilotAgentProjectInstructionsTests
     }
 
     [Fact]
+    public void UndecidedProjectFailsClosedUntilTrustIsPersisted()
+    {
+        string globalRoot = CreateTemporaryDirectory();
+        string projectRoot = CreateTemporaryDirectory();
+        try
+        {
+            File.WriteAllText(
+                Path.Combine(globalRoot, "config.toml"),
+                "project_doc_fallback_filenames = [\"GLOBAL_GUIDE.md\"]");
+            string projectConfigDirectory = Path.Combine(projectRoot, ".codex");
+            Directory.CreateDirectory(projectConfigDirectory);
+            File.WriteAllText(
+                Path.Combine(projectConfigDirectory, "config.toml"),
+                "project_doc_fallback_filenames = [\"PROJECT_GUIDE.md\"]");
+
+            var undecided = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
+
+            Assert.Equal(CopilotCodexProjectTrustLevel.Unspecified, undecided.ProjectTrustLevel);
+            Assert.False(undecided.AllowsProjectCodexConfig);
+            Assert.Equal(["GLOBAL_GUIDE.md"], undecided.FallbackFileNames);
+            Assert.Empty(undecided.AppliedProjectConfigFilePaths);
+            Assert.True(CopilotCodexProjectTrustPersistence.RequiresDecision(projectRoot, undecided));
+            Assert.Contains("信任未决定", undecided.ProjectTrustLabel, StringComparison.Ordinal);
+
+            Assert.True(
+                CopilotCodexProjectTrustPersistence.TryTrustProject(globalRoot, projectRoot, out var error),
+                error);
+            var trusted = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
+
+            Assert.Equal(CopilotCodexProjectTrustLevel.Trusted, trusted.ProjectTrustLevel);
+            Assert.True(trusted.AllowsProjectCodexConfig);
+            Assert.Equal(["PROJECT_GUIDE.md"], trusted.FallbackFileNames);
+            Assert.False(CopilotCodexProjectTrustPersistence.RequiresDecision(projectRoot, trusted));
+        }
+        finally
+        {
+            Directory.Delete(globalRoot, recursive: true);
+            Directory.Delete(projectRoot, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void TrustPersistencePreservesExistingProjectTableAndRefusesExplicitDecision()
+    {
+        string globalRoot = CreateTemporaryDirectory();
+        string trustedProjectRoot = CreateTemporaryDirectory();
+        string untrustedProjectRoot = CreateTemporaryDirectory();
+        string headerOnlyProjectRoot = CreateTemporaryDirectory();
+        try
+        {
+            string configPath = Path.Combine(globalRoot, "config.toml");
+            File.WriteAllText(
+                configPath,
+                $"""
+                model = "gpt-5"
+
+                [projects.'{trustedProjectRoot}']
+                custom_value = "preserved"
+
+                [projects.'{untrustedProjectRoot}']
+                trust_level = "untrusted"
+                """);
+
+            Assert.True(
+                CopilotCodexProjectTrustPersistence.TryTrustProject(
+                    globalRoot,
+                    trustedProjectRoot,
+                    out var trustError),
+                trustError);
+            string persisted = File.ReadAllText(configPath);
+            Assert.Contains("custom_value = \"preserved\"", persisted, StringComparison.Ordinal);
+            Assert.Contains("model = \"gpt-5\"", persisted, StringComparison.Ordinal);
+            Assert.Equal(
+                CopilotCodexProjectTrustLevel.Trusted,
+                CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, trustedProjectRoot).ProjectTrustLevel);
+
+            Assert.False(
+                CopilotCodexProjectTrustPersistence.TryTrustProject(
+                    globalRoot,
+                    untrustedProjectRoot,
+                    out var refusal));
+            Assert.Contains("未覆盖现有决定", refusal, StringComparison.Ordinal);
+            Assert.Equal(
+                CopilotCodexProjectTrustLevel.Untrusted,
+                CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, untrustedProjectRoot).ProjectTrustLevel);
+
+            File.WriteAllText(configPath, $"[projects.'{headerOnlyProjectRoot}']");
+            Assert.True(
+                CopilotCodexProjectTrustPersistence.TryTrustProject(
+                    globalRoot,
+                    headerOnlyProjectRoot,
+                    out var headerOnlyError),
+                headerOnlyError);
+            Assert.Contains(
+                $"[projects.'{headerOnlyProjectRoot}']{Environment.NewLine}trust_level = \"trusted\"",
+                File.ReadAllText(configPath),
+                StringComparison.Ordinal);
+        }
+        finally
+        {
+            Directory.Delete(globalRoot, recursive: true);
+            Directory.Delete(trustedProjectRoot, recursive: true);
+            Directory.Delete(untrustedProjectRoot, recursive: true);
+            Directory.Delete(headerOnlyProjectRoot, recursive: true);
+        }
+    }
+
+    [Fact]
     public void InvalidProjectTrustLevelFailsClosedForProjectConfig()
     {
         string globalRoot = CreateTemporaryDirectory();
@@ -502,6 +610,7 @@ public sealed class CopilotAgentProjectInstructionsTests
             File.WriteAllText(firstPath, "# First instructions");
             File.WriteAllText(secondPath, "# Second instructions");
             File.WriteAllText(activeDocument, "namespace Feature;");
+            TrustProject(globalRoot, projectRoot);
             var submittedContext = new CopilotAgentHostContextSnapshot(
                 activeDocument,
                 projectRoot,
@@ -668,6 +777,7 @@ public sealed class CopilotAgentProjectInstructionsTests
             string activeDocument = Path.Combine(sourceDirectory, "Feature.cs");
             File.WriteAllText(nestedInstructions, "# Feature instructions");
             File.WriteAllText(activeDocument, "namespace Feature;");
+            TrustProject(globalRoot, projectRoot);
             var hostContext = new CopilotAgentHostContextSnapshot(
                 activeDocument,
                 solutionDirectoryPath: null,
@@ -720,6 +830,7 @@ public sealed class CopilotAgentProjectInstructionsTests
             Directory.CreateDirectory(sourceDirectory);
             string activeDocument = Path.Combine(sourceDirectory, "Feature.cs");
             File.WriteAllText(activeDocument, "namespace Feature;");
+            TrustProject(globalRoot, sourceDirectory);
             var submittedContext = new CopilotAgentHostContextSnapshot(
                 activeDocument,
                 solutionDirectoryPath: null,
@@ -730,6 +841,7 @@ public sealed class CopilotAgentProjectInstructionsTests
                 globalInstructionRootPath: globalRoot);
 
             Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
+            TrustProject(globalRoot, projectRoot);
 
             var submittedPlan = CopilotAgentRequestFactory.Prepare(
                 $"Inspect the local implementation in {activeDocument}",
@@ -793,6 +905,7 @@ public sealed class CopilotAgentProjectInstructionsTests
                 "project_doc_fallback_filenames = [\"ROOT_GUIDE.md\"]");
             string rootInstructions = Path.Combine(projectRoot, "ROOT_GUIDE.md");
             File.WriteAllText(rootInstructions, "# Repository instructions");
+            TrustProject(globalRoot, projectRoot);
 
             var hostContext = new CopilotAgentHostContextSnapshot(
                 activeDocument,
@@ -1607,6 +1720,7 @@ public sealed class CopilotAgentProjectInstructionsTests
                 "developer_instructions = \"First guidance.\"\ncompact_prompt = \"First compact prompt.\"");
             string activeDocument = Path.Combine(projectRoot, "Feature.cs");
             File.WriteAllText(activeDocument, "namespace Feature;");
+            TrustProject(globalRoot, projectRoot);
             var submittedContext = new CopilotAgentHostContextSnapshot(
                 activeDocument,
                 projectRoot,
@@ -1672,6 +1786,7 @@ public sealed class CopilotAgentProjectInstructionsTests
             File.WriteAllText(featureConfigPath, "project_doc_max_bytes = 2048");
             string activeDocument = Path.Combine(featureDirectory, "Feature.cs");
             File.WriteAllText(activeDocument, "namespace Feature;");
+            TrustProject(globalRoot, projectRoot);
 
             var hostContext = new CopilotAgentHostContextSnapshot(
                 activeDocument,
@@ -1770,6 +1885,7 @@ public sealed class CopilotAgentProjectInstructionsTests
             File.WriteAllText(secondPath, "# Second project instructions");
             string activeDocument = Path.Combine(sourceDirectory, "Feature.cs");
             File.WriteAllText(activeDocument, "namespace Feature;");
+            TrustProject(globalRoot, projectRoot);
             var submittedContext = new CopilotAgentHostContextSnapshot(
                 activeDocument,
                 sourceDirectory,
@@ -4096,5 +4212,12 @@ public sealed class CopilotAgentProjectInstructionsTests
         string path = Path.Combine(Path.GetTempPath(), $"copilot-instructions-{Guid.NewGuid():N}");
         Directory.CreateDirectory(path);
         return path;
+    }
+
+    private static void TrustProject(string globalRoot, string projectRoot)
+    {
+        Assert.True(
+            CopilotCodexProjectTrustPersistence.TryTrustProject(globalRoot, projectRoot, out var error),
+            error);
     }
 }
