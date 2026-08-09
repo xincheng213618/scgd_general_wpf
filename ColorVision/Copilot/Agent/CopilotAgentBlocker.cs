@@ -32,8 +32,9 @@ namespace ColorVision.Copilot
         {
             return Enum.IsDefined(Kind)
                 && IsBoundedIdentifier(Code, 80)
-                && Summary.Length is > 0 and <= CopilotAgentTaskEventJournal.MaxSummaryLength
+                && Summary?.Length is > 0 and <= CopilotAgentTaskEventJournal.MaxSummaryLength
                 && Summary.All(character => !char.IsControl(character))
+                && ToolName != null
                 && ToolName.Length <= CopilotAgentTaskEventJournal.MaxToolNameLength
                 && ToolName.All(character => !char.IsControl(character))
                 && (string.IsNullOrWhiteSpace(SourceCallKey) || CopilotAgentTaskEventIds.IsKey(SourceCallKey, "call", 32));
