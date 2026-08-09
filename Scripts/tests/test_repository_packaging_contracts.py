@@ -1,8 +1,9 @@
-import hashlib
 import json
 import re
 import unittest
 from pathlib import Path, PurePosixPath
+
+from Scripts.generate_shared_files import load_shared_files_manifest
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -15,18 +16,13 @@ PACKAGE_ID_PATTERN = re.compile(r"^[A-Za-z][A-Za-z0-9._-]{0,63}$")
 
 
 class SharedFilesContractTests(unittest.TestCase):
-    def test_repository_and_sdk_shared_files_are_byte_identical(self) -> None:
+    def test_repository_and_sdk_shared_file_sets_are_identical(self) -> None:
         repository_path, sdk_path = (REPO_ROOT / path for path in SHARED_FILES_PATHS)
-        repository_bytes = repository_path.read_bytes()
-        sdk_bytes = sdk_path.read_bytes()
 
-        if repository_bytes != sdk_bytes:
-            repository_hash = hashlib.sha256(repository_bytes).hexdigest()
-            sdk_hash = hashlib.sha256(sdk_bytes).hexdigest()
-            self.fail(
-                f"{SHARED_FILES_PATHS[0].as_posix()} sha256={repository_hash}\n"
-                f"{SHARED_FILES_PATHS[1].as_posix()} sha256={sdk_hash}"
-            )
+        self.assertEqual(
+            load_shared_files_manifest(repository_path),
+            load_shared_files_manifest(sdk_path),
+        )
 
 
 class RepositoryManifestContractTests(unittest.TestCase):

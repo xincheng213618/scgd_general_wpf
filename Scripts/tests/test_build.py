@@ -1,3 +1,4 @@
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -9,6 +10,7 @@ from Scripts.build import (
     publish_primary_release,
     validate_installer_runtime_dlls,
     validate_runtime_copy_integrity,
+    validate_shared_files_manifests,
 )
 from Scripts.service_host_runtime import REQUIRED_SERVICE_HOST_RUNTIME_PATHS
 
@@ -43,6 +45,34 @@ class InstallerRuntimeValidationTests(unittest.TestCase):
         aip_path = self._write_aip(REQUIRED_SERVICE_HOST_RUNTIME_PATHS)
 
         self.assertFalse(validate_installer_runtime_dlls(self.runtime_directory, aip_path, report=lambda _: None))
+
+    def test_shared_files_release_gate_accepts_matching_set(self) -> None:
+        manifest_path = self.root / "shared_files.json"
+        shared_files = sorted(
+            path.relative_to(self.runtime_directory).as_posix()
+            for path in self.runtime_directory.rglob("*")
+            if path.is_file()
+        )
+        manifest_path.write_text(json.dumps({
+            "generated_at": "2000-01-01T00:00:00+00:00",
+            "shared_files": list(reversed(shared_files)),
+        }), encoding="utf-8")
+
+        self.assertTrue(validate_shared_files_manifests(
+            self.runtime_directory,
+            manifest_paths=(manifest_path,),
+            report=lambda _: None,
+        ))
+
+    def test_shared_files_release_gate_rejects_drift(self) -> None:
+        manifest_path = self.root / "shared_files.json"
+        manifest_path.write_text(json.dumps({"shared_files": ["Old.dll"]}), encoding="utf-8")
+
+        self.assertFalse(validate_shared_files_manifests(
+            self.runtime_directory,
+            manifest_paths=(manifest_path,),
+            report=lambda _: None,
+        ))
 
     def test_runtime_copy_integrity_rejects_a_mismatched_dll(self) -> None:
         solution_root = self.root / "source"

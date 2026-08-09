@@ -27,6 +27,11 @@ jobs:
       with:
         dotnet-version: 10.0.x
 
+    - name: Setup Python
+      uses: actions/setup-python@v6
+      with:
+        python-version: '3.13'
+
     - name: Restore dependencies
       run: |
         dotnet restore build.sln
@@ -38,6 +43,11 @@ jobs:
     - name: Build solution with MSBuild
       run: |
         msbuild build.sln /p:Configuration=Release /p:Platform=x64
+
+    - name: Verify host shared-file manifests
+      run: |
+        python Scripts/generate_shared_files.py --check
+        python -m unittest Scripts.tests.test_generate_shared_files Scripts.tests.test_repository_packaging_contracts -v
 
     - name: Run .NET tests
       run: dotnet test Test/ColorVision.UI.Tests/ColorVision.UI.Tests.csproj -c Release -p:Platform=x64 --no-restore --verbosity minimal --blame-hang --blame-hang-timeout 5m --blame-hang-dump-type none --results-directory TestResults --logger "trx;LogFileName=ColorVision.UI.Tests.trx"

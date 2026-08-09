@@ -12,6 +12,11 @@ from urllib.parse import quote
 
 import pefile
 
+try:
+    from .generate_shared_files import DEFAULT_ROOT_DIR as DEFAULT_HOST_ROOT, check_manifest
+except ImportError:
+    from generate_shared_files import DEFAULT_ROOT_DIR as DEFAULT_HOST_ROOT, check_manifest
+
 
 EXTRA_FILES = ["README.md", "CHANGELOG.md", "manifest.json", "PackageIcon.png"]
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -352,6 +357,32 @@ def resolve_shared_files_path(shared_files: Path | None) -> Path:
     )
 
 
+def ensure_default_shared_files_are_current(shared_files_path: Path, host_root: Path = DEFAULT_HOST_ROOT) -> None:
+    if not host_root.is_dir():
+        raise FileNotFoundError(
+            f"ColorVision host output directory not found: {host_root}\n"
+            "Build the Release x64 host before packaging, or pass --shared-files for an explicit compatibility manifest."
+        )
+
+    manifest_only, runtime_only = check_manifest(host_root, shared_files_path)
+    if manifest_only or runtime_only:
+        raise RuntimeError(
+            "The default shared_files.json does not match the current ColorVision host output "
+            f"(manifest-only={len(manifest_only)}, runtime-only={len(runtime_only)}). "
+            "Run 'py Scripts\\generate_shared_files.py', review both generated manifests, and commit them before packaging."
+        )
+
+
+def is_repository_package_project(project_file: Path | None) -> bool:
+    if not project_file:
+        return False
+    try:
+        relative_path = project_file.resolve().relative_to(REPO_ROOT.resolve())
+    except ValueError:
+        return False
+    return bool(relative_path.parts) and relative_path.parts[0].lower() in {"plugins", "projects"}
+
+
 def build_project(project_file: Path, configuration: str, framework: str, dotnet_command: str) -> None:
     command = [
         dotnet_command,
@@ -483,6 +514,8 @@ def main() -> None:
 
     if not src_dir.is_dir():
         raise FileNotFoundError(f"Plugin output directory not found: {src_dir}")
+    if not args.shared_files and is_repository_package_project(project_file):
+        ensure_default_shared_files_are_current(shared_files_path)
 
     project_name = infer_project_name(src_dir, project_file, args.plugin_name)
     package_id = manifest_summary.plugin_id or project_name

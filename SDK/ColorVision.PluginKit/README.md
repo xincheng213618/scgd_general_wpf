@@ -17,7 +17,7 @@
 - `scripts/package_cvxp.py`
   - 核心脚本。现在支持无参数交互式生成 config、自动读取当前目录 config 执行、`--config`、`--init-config` 和 `--build-only`。
 - `scripts/shared_files.json`
-  - 与平台共享 DLL/资源清单，用于瘦身 `.cvxp` 包。
+  - 与平台共享 DLL/资源清单，用于瘦身 `.cvxp` 包；它由仓库根目录的 `Scripts/generate_shared_files.py` 与仓库镜像一次扫描同步生成，不要手工编辑。
 
 ## 推荐使用流程
 
