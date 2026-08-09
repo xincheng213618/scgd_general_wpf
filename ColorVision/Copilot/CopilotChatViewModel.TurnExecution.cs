@@ -87,16 +87,17 @@ namespace ColorVision.Copilot
                 return;
             }
 
-            var turnSnapshot = isReplacingTurn
+            var initialTurnSnapshot = isReplacingTurn
                 ? CaptureHostedTurnSnapshot(conversation, replacedUserMessage, conversation.Attachments)
                 : CaptureHostedTurnSnapshot(conversation, attachmentOverride: requestAttachments);
-            if (!TryConfirmProjectDirectoryTrust(turnSnapshot, out var trustPersisted))
-                return;
-            if (trustPersisted)
-            {
-                turnSnapshot = isReplacingTurn
+            if (!TryResolveProjectTrustForSubmission(
+                initialTurnSnapshot,
+                () => isReplacingTurn
                     ? CaptureHostedTurnSnapshot(conversation, replacedUserMessage, conversation.Attachments)
-                    : CaptureHostedTurnSnapshot(conversation, attachmentOverride: requestAttachments);
+                    : CaptureHostedTurnSnapshot(conversation, attachmentOverride: requestAttachments),
+                out var turnSnapshot))
+            {
+                return;
             }
             var agentSkillReference = isDirectSubmission
                 ? null

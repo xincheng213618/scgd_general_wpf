@@ -3,8 +3,48 @@ using System.Windows;
 
 namespace ColorVision.Copilot
 {
+    internal readonly record struct CopilotProjectTrustAdmissionDecision(
+        bool IsAllowed,
+        bool TrustPersisted);
+
+    internal static class CopilotProjectTrustSubmissionAdmission
+    {
+        public static bool TryResolve(
+            CopilotAgentHostContextSnapshot initialSnapshot,
+            Func<CopilotAgentHostContextSnapshot, CopilotProjectTrustAdmissionDecision> evaluate,
+            Func<CopilotAgentHostContextSnapshot> recapture,
+            out CopilotAgentHostContextSnapshot resolvedSnapshot)
+        {
+            ArgumentNullException.ThrowIfNull(initialSnapshot);
+            ArgumentNullException.ThrowIfNull(evaluate);
+            ArgumentNullException.ThrowIfNull(recapture);
+            resolvedSnapshot = initialSnapshot;
+            var decision = evaluate(initialSnapshot);
+            if (!decision.IsAllowed)
+                return false;
+
+            if (decision.TrustPersisted)
+                resolvedSnapshot = recapture();
+            return true;
+        }
+    }
+
     public partial class CopilotChatViewModel
     {
+        private bool TryResolveProjectTrustForSubmission(
+            CopilotAgentHostContextSnapshot initialSnapshot,
+            Func<CopilotAgentHostContextSnapshot> recapture,
+            out CopilotAgentHostContextSnapshot resolvedSnapshot) =>
+            CopilotProjectTrustSubmissionAdmission.TryResolve(
+                initialSnapshot,
+                snapshot =>
+                {
+                    var isAllowed = TryConfirmProjectDirectoryTrust(snapshot, out var trustPersisted);
+                    return new CopilotProjectTrustAdmissionDecision(isAllowed, trustPersisted);
+                },
+                recapture,
+                out resolvedSnapshot);
+
         private bool TryConfirmProjectDirectoryTrust(
             CopilotAgentHostContextSnapshot turnSnapshot,
             out bool trustPersisted)

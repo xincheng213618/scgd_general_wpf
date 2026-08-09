@@ -399,6 +399,49 @@ public sealed class CopilotAgentProjectInstructionsTests
     }
 
     [Fact]
+    public void SubmissionAdmissionRecapturesOnlyAfterTrustIsPersisted()
+    {
+        var initialSnapshot = new CopilotAgentHostContextSnapshot(
+            activeDocumentPath: "initial.cs",
+            solutionDirectoryPath: "initial-workspace",
+            attachments: null);
+        var refreshedSnapshot = new CopilotAgentHostContextSnapshot(
+            activeDocumentPath: "refreshed.cs",
+            solutionDirectoryPath: "refreshed-workspace",
+            attachments: null);
+        var recaptureCount = 0;
+        CopilotAgentHostContextSnapshot Recapture()
+        {
+            recaptureCount++;
+            return refreshedSnapshot;
+        }
+
+        Assert.False(CopilotProjectTrustSubmissionAdmission.TryResolve(
+            initialSnapshot,
+            _ => new CopilotProjectTrustAdmissionDecision(IsAllowed: false, TrustPersisted: false),
+            Recapture,
+            out var rejected));
+        Assert.Same(initialSnapshot, rejected);
+        Assert.Equal(0, recaptureCount);
+
+        Assert.True(CopilotProjectTrustSubmissionAdmission.TryResolve(
+            initialSnapshot,
+            _ => new CopilotProjectTrustAdmissionDecision(IsAllowed: true, TrustPersisted: false),
+            Recapture,
+            out var alreadyDecided));
+        Assert.Same(initialSnapshot, alreadyDecided);
+        Assert.Equal(0, recaptureCount);
+
+        Assert.True(CopilotProjectTrustSubmissionAdmission.TryResolve(
+            initialSnapshot,
+            _ => new CopilotProjectTrustAdmissionDecision(IsAllowed: true, TrustPersisted: true),
+            Recapture,
+            out var trusted));
+        Assert.Same(refreshedSnapshot, trusted);
+        Assert.Equal(1, recaptureCount);
+    }
+
+    [Fact]
     public void TrustPersistencePreservesExistingProjectTableAndRefusesExplicitDecision()
     {
         string globalRoot = CreateTemporaryDirectory();
