@@ -19,6 +19,8 @@ namespace ColorVision.Copilot
         string WorkingDirectory,
         TimeSpan Timeout)
     {
+        public IReadOnlyDictionary<string, string>? EnvironmentVariables { get; init; }
+
         public Action<string>? StandardOutputReceived { get; init; }
 
         public Action<string>? StandardErrorReceived { get; init; }
@@ -161,6 +163,8 @@ namespace ColorVision.Copilot
                     workspaceRoot,
                     TimeSpan.FromSeconds(timeoutSeconds))
                 {
+                    EnvironmentVariables = request.CodexShellEnvironmentPolicy
+                        .CreateEnvironmentVariables(request.ConversationId),
                     StandardOutputReceived = chunk => CopilotProcessExecutionSupport.ReportLatestOutput(
                         progress, processLabel, chunk, isError: false),
                     StandardErrorReceived = chunk => CopilotProcessExecutionSupport.ReportLatestOutput(
@@ -436,8 +440,20 @@ namespace ColorVision.Copilot
             };
             foreach (var argument in command.Arguments)
                 startInfo.ArgumentList.Add(argument);
+            if (command.EnvironmentVariables != null)
+            {
+                startInfo.Environment.Clear();
+                foreach (var pair in command.EnvironmentVariables)
+                    startInfo.Environment[pair.Key] = pair.Value;
+            }
             startInfo.Environment["DOTNET_NOLOGO"] = "1";
             startInfo.Environment["DOTNET_CLI_TELEMETRY_OPTOUT"] = "1";
+            foreach (var name in startInfo.Environment.Keys
+                .Where(CopilotCodexShellEnvironmentPolicy.IsNonInheritableEnvironmentVariable)
+                .ToArray())
+            {
+                startInfo.Environment.Remove(name);
+            }
 
             using var process = new Process { StartInfo = startInfo, EnableRaisingEvents = true };
             var stopwatch = Stopwatch.StartNew();
