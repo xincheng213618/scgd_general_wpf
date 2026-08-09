@@ -228,6 +228,69 @@ public sealed class CopilotCodexConfiguredCommandHookTests
         }
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void PermissionRequestAdditionalContextLimitLoadsWithWarning(bool inlineToml)
+    {
+        var codexHome = CreateTemporaryDirectory();
+        try
+        {
+            if (inlineToml)
+            {
+                File.WriteAllText(
+                    Path.Combine(codexHome, "config.toml"),
+                    """
+                    [[hooks.PermissionRequest]]
+                    matcher = "^ProtectedTool$"
+
+                    [[hooks.PermissionRequest.hooks]]
+                    type = "command"
+                    commandWindows = "permission-policy"
+                    additionalContextLimit = 125
+                    """);
+            }
+            else
+            {
+                File.WriteAllText(
+                    Path.Combine(codexHome, "hooks.json"),
+                    """
+                    {
+                      "hooks": {
+                        "PermissionRequest": [
+                          {
+                            "matcher": "^ProtectedTool$",
+                            "hooks": [
+                              {
+                                "type": "command",
+                                "commandWindows": "permission-policy",
+                                "additionalContextLimit": 125
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    }
+                    """);
+            }
+
+            var options = CopilotProjectInstructionDiscoveryConfig.Load(codexHome);
+
+            var hook = Assert.Single(options.ConfiguredCommandHooks);
+            Assert.Equal(CopilotCodexConfiguredHookEvent.PermissionRequest, hook.Event);
+            Assert.Equal(125, hook.AdditionalContextLimitTokens);
+            Assert.Contains(
+                options.ConfiguredHookIssues,
+                issue => issue.Message.Contains(
+                    "PermissionRequest' ignores additionalContextLimit",
+                    StringComparison.Ordinal));
+        }
+        finally
+        {
+            Directory.Delete(codexHome, recursive: true);
+        }
+    }
+
     [Fact]
     public void ProjectInlineTomlHookLoadsOnlyFromTrustedProject()
     {
@@ -448,6 +511,109 @@ public sealed class CopilotCodexConfiguredCommandHookTests
             Assert.Contains("operator policy denied", outcome.Decision.Reason, StringComparison.Ordinal);
             var run = Assert.Single(outcome.HookRuns);
             Assert.Equal(CopilotToolExecutionHookState.Denied, run.State);
+        }
+        finally
+        {
+            Directory.Delete(workspace, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task PermissionSystemMessageIsRedactedAndReportedWithoutBypassingApproval()
+    {
+        const string secret = "permission-hook-secret";
+        var workspace = CreateTemporaryDirectory();
+        try
+        {
+            var runner = new RecordingCommandHookRunner(new CopilotCodexCommandHookProcessResult(
+                0,
+                false,
+                JsonSerializer.Serialize(new
+                {
+                    systemMessage = "permission warning; api_key=" + secret,
+                    hookSpecificOutput = new
+                    {
+                        hookEventName = "PermissionRequest",
+                        decision = new { behavior = "allow" },
+                    },
+                }),
+                string.Empty));
+            var request = CreateRequest(
+                workspace,
+                CreateDefinition(CopilotCodexConfiguredHookEvent.PermissionRequest, "^ProtectedTool$"));
+            var events = new List<CopilotAgentEvent>();
+
+            var outcome = await CreateExecutor(runner).EvaluatePermissionRequestAsync(
+                CreateInvocation(new ProtectedTool(), request, "permission-warning-call"),
+                CancellationToken.None,
+                events.Add);
+
+            Assert.True(outcome.Decision.ShouldPrompt);
+            var warning = Assert.Single(events, item =>
+                item.Type == CopilotAgentEventType.RuntimeDiagnostic
+                && item.Text.StartsWith("PermissionRequest hook warning", StringComparison.Ordinal));
+            Assert.Contains("api_key=<redacted>", warning.Text, StringComparison.Ordinal);
+            Assert.DoesNotContain(secret, warning.Text, StringComparison.Ordinal);
+        }
+        finally
+        {
+            Directory.Delete(workspace, recursive: true);
+        }
+    }
+
+    [Theory]
+    [InlineData("continue-false")]
+    [InlineData("stop-reason")]
+    [InlineData("suppress-output")]
+    [InlineData("updated-input")]
+    [InlineData("updated-permissions")]
+    [InlineData("interrupt")]
+    [InlineData("unknown-field")]
+    public async Task PermissionUnsupportedOrUnknownOutputFailsClosed(string outputKind)
+    {
+        var workspace = CreateTemporaryDirectory();
+        try
+        {
+            var hookOutput = outputKind switch
+            {
+                "continue-false" =>
+                    """{"systemMessage":"permission warning","continue":false}""",
+                "stop-reason" =>
+                    """{"systemMessage":"permission warning","stopReason":"reserved"}""",
+                "suppress-output" =>
+                    """{"systemMessage":"permission warning","suppressOutput":true}""",
+                "updated-input" =>
+                    """{"systemMessage":"permission warning","hookSpecificOutput":{"hookEventName":"PermissionRequest","decision":{"behavior":"allow","updatedInput":{}}}}""",
+                "updated-permissions" =>
+                    """{"systemMessage":"permission warning","hookSpecificOutput":{"hookEventName":"PermissionRequest","decision":{"behavior":"allow","updatedPermissions":{}}}}""",
+                "interrupt" =>
+                    """{"systemMessage":"permission warning","hookSpecificOutput":{"hookEventName":"PermissionRequest","decision":{"behavior":"allow","interrupt":true}}}""",
+                _ =>
+                    """{"systemMessage":"permission warning","unexpectedField":true}""",
+            };
+            var runner = new RecordingCommandHookRunner(new CopilotCodexCommandHookProcessResult(
+                0,
+                false,
+                hookOutput,
+                string.Empty));
+            var request = CreateRequest(
+                workspace,
+                CreateDefinition(CopilotCodexConfiguredHookEvent.PermissionRequest, "^ProtectedTool$"));
+            var events = new List<CopilotAgentEvent>();
+
+            var outcome = await CreateExecutor(runner).EvaluatePermissionRequestAsync(
+                CreateInvocation(new ProtectedTool(), request, "permission-invalid-output-call"),
+                CancellationToken.None,
+                events.Add);
+
+            Assert.False(outcome.Decision.ShouldPrompt);
+            Assert.Equal("configured_hook_invalid_output", outcome.Decision.FailureCode);
+            var run = Assert.Single(outcome.HookRuns);
+            Assert.Equal(CopilotToolExecutionHookState.Denied, run.State);
+            Assert.Equal("configured_hook_invalid_output", run.FailureCode);
+            Assert.Contains(events, item =>
+                item.Type == CopilotAgentEventType.RuntimeDiagnostic
+                && item.Text.Contains("permission warning", StringComparison.Ordinal));
         }
         finally
         {

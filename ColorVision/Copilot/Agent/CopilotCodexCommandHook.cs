@@ -105,6 +105,7 @@ namespace ColorVision.Copilot
 
     internal sealed class CopilotCodexCommandHook :
         ICopilotToolPermissionRequestHook,
+        ICopilotToolPermissionRequestOutputHook,
         ICopilotToolPreExecutionOutputHook,
         ICopilotToolPostExecutionOutputHook
     {
@@ -126,9 +127,19 @@ namespace ColorVision.Copilot
             CopilotToolPermissionRequestContext context,
             CancellationToken cancellationToken)
         {
+            var output = await OnPermissionRequestWithOutputAsync(
+                context,
+                cancellationToken).ConfigureAwait(false);
+            return output?.Decision ?? CopilotToolPermissionRequestDecision.Prompt;
+        }
+
+        public async Task<CopilotToolPermissionRequestOutput?> OnPermissionRequestWithOutputAsync(
+            CopilotToolPermissionRequestContext context,
+            CancellationToken cancellationToken)
+        {
             ArgumentNullException.ThrowIfNull(context);
             if (_definition.Event != CopilotCodexConfiguredHookEvent.PermissionRequest)
-                return CopilotToolPermissionRequestDecision.Prompt;
+                return null;
 
             var result = await RunAsync(
                 context.Invocation,
@@ -136,29 +147,79 @@ namespace ColorVision.Copilot
                 cancellationToken).ConfigureAwait(false);
             var failure = GetProcessFailure(result, "PermissionRequest");
             if (failure != null)
-                return CopilotToolPermissionRequestDecision.Deny(failure, "configured_hook_failed");
+            {
+                return CreatePermissionRequestOutput(
+                    CopilotToolPermissionRequestDecision.Deny(
+                        failure,
+                        "configured_hook_failed"));
+            }
             if (result.ExitCode == 2)
             {
-                return CopilotToolPermissionRequestDecision.Deny(
-                    NormalizeReason(result.StandardError, "A configured PermissionRequest hook denied this tool call."),
-                    "configured_hook_denied");
+                return CreatePermissionRequestOutput(
+                    CopilotToolPermissionRequestDecision.Deny(
+                        NormalizeReason(result.StandardError, "A configured PermissionRequest hook denied this tool call."),
+                        "configured_hook_denied"));
             }
 
             if (!TryParseJsonOutput(result.StandardOutput, out var root, out var invalidJson))
             {
                 return invalidJson
-                    ? CopilotToolPermissionRequestDecision.Deny(
-                        "A configured PermissionRequest hook returned invalid JSON.",
-                        "configured_hook_invalid_output")
-                    : CopilotToolPermissionRequestDecision.Prompt;
+                    ? CreatePermissionRequestOutput(
+                        CopilotToolPermissionRequestDecision.Deny(
+                            "A configured PermissionRequest hook returned invalid JSON.",
+                            "configured_hook_invalid_output"))
+                    : null;
+            }
+            if (root == null)
+            {
+                return CreatePermissionRequestOutput(
+                    CopilotToolPermissionRequestDecision.Deny(
+                        "A configured PermissionRequest hook did not return a usable JSON document.",
+                        "configured_hook_invalid_output"));
             }
             using (root)
             {
-                if (TryReadStopDecision(root.RootElement, out var stopReason))
+                if (!TryReadOptionalString(
+                    root.RootElement,
+                    "systemMessage",
+                    out var systemMessage))
                 {
-                    return CopilotToolPermissionRequestDecision.Deny(
-                        stopReason,
-                        "configured_hook_denied");
+                    return CreateInvalidPermissionRequestOutput(
+                        string.Empty,
+                        "A configured PermissionRequest hook returned an invalid systemMessage.");
+                }
+                if (!HasOnlyPermissionRequestProperties(root.RootElement)
+                    || !TryReadOptionalString(
+                        root.RootElement,
+                        "stopReason",
+                        out _)
+                    || !TryReadOptionalBoolean(
+                        root.RootElement,
+                        "continue",
+                        defaultValue: true,
+                        out var shouldContinue)
+                    || !TryReadOptionalBoolean(
+                        root.RootElement,
+                        "suppressOutput",
+                        defaultValue: false,
+                        out var suppressOutput))
+                {
+                    return CreateInvalidPermissionRequestOutput(
+                        systemMessage,
+                        "A configured PermissionRequest hook returned an invalid universal output field.");
+                }
+                if (!shouldContinue
+                    || HasNonNullProperty(root.RootElement, "stopReason")
+                    || suppressOutput)
+                {
+                    var unsupportedField = !shouldContinue
+                        ? "continue:false"
+                        : HasNonNullProperty(root.RootElement, "stopReason")
+                            ? "stopReason"
+                            : "suppressOutput";
+                    return CreateInvalidPermissionRequestOutput(
+                        systemMessage,
+                        $"A configured PermissionRequest hook returned unsupported {unsupportedField}.");
                 }
                 if (!TryReadHookSpecificOutput(
                     root.RootElement,
@@ -167,30 +228,60 @@ namespace ColorVision.Copilot
                     out var specificError))
                 {
                     return specificError.Length == 0
-                        ? CopilotToolPermissionRequestDecision.Prompt
-                        : CopilotToolPermissionRequestDecision.Deny(
-                            specificError,
-                            "configured_hook_invalid_output");
+                        ? CreatePermissionRequestOutput(
+                            CopilotToolPermissionRequestDecision.Prompt,
+                            systemMessage)
+                        : CreateInvalidPermissionRequestOutput(
+                            systemMessage,
+                            specificError);
+                }
+                if (!HasOnlyPermissionRequestSpecificProperties(specific))
+                {
+                    return CreateInvalidPermissionRequestOutput(
+                        systemMessage,
+                        "A configured PermissionRequest hook returned an invalid hook-specific output field.");
                 }
                 if (!specific.TryGetProperty("decision", out var decision)
                     || decision.ValueKind == JsonValueKind.Null)
                 {
-                    return CopilotToolPermissionRequestDecision.Prompt;
+                    return CreatePermissionRequestOutput(
+                        CopilotToolPermissionRequestDecision.Prompt,
+                        systemMessage);
                 }
                 if (decision.ValueKind != JsonValueKind.Object
+                    || !HasOnlyPermissionRequestDecisionProperties(decision)
                     || !decision.TryGetProperty("behavior", out var behavior)
-                    || behavior.ValueKind != JsonValueKind.String)
+                    || behavior.ValueKind != JsonValueKind.String
+                    || !TryReadOptionalString(decision, "message", out var message)
+                    || !TryReadOptionalBoolean(
+                        decision,
+                        "interrupt",
+                        defaultValue: false,
+                        out var interrupt))
                 {
-                    return CopilotToolPermissionRequestDecision.Deny(
-                        "A configured PermissionRequest hook returned an invalid decision.",
-                        "configured_hook_invalid_output");
+                    return CreateInvalidPermissionRequestOutput(
+                        systemMessage,
+                        "A configured PermissionRequest hook returned an invalid decision.");
+                }
+                if (HasNonNullProperty(decision, "updatedInput")
+                    || HasNonNullProperty(decision, "updatedPermissions")
+                    || interrupt)
+                {
+                    var unsupportedField = HasNonNullProperty(decision, "updatedInput")
+                        ? "updatedInput"
+                        : HasNonNullProperty(decision, "updatedPermissions")
+                            ? "updatedPermissions"
+                            : "interrupt:true";
+                    return CreateInvalidPermissionRequestOutput(
+                        systemMessage,
+                        $"A configured PermissionRequest hook returned unsupported {unsupportedField}.");
                 }
 
-                return behavior.GetString() switch
+                var permissionDecision = behavior.GetString() switch
                 {
                     "deny" => CopilotToolPermissionRequestDecision.Deny(
                         NormalizeReason(
-                            ReadOptionalString(decision, "message"),
+                            message,
                             "A configured PermissionRequest hook denied this tool call."),
                         "configured_hook_denied"),
                     // Configured hooks cannot bypass ColorVision's native approval binding.
@@ -199,8 +290,23 @@ namespace ColorVision.Copilot
                         "A configured PermissionRequest hook returned an unsupported behavior.",
                         "configured_hook_invalid_output"),
                 };
+                return CreatePermissionRequestOutput(
+                    permissionDecision,
+                    systemMessage);
             }
         }
+
+        private static CopilotToolPermissionRequestOutput CreateInvalidPermissionRequestOutput(
+            string systemMessage,
+            string failureMessage) => CreatePermissionRequestOutput(
+                CopilotToolPermissionRequestDecision.Deny(
+                    failureMessage,
+                    "configured_hook_invalid_output"),
+                systemMessage);
+
+        private static CopilotToolPermissionRequestOutput CreatePermissionRequestOutput(
+            CopilotToolPermissionRequestDecision decision,
+            string systemMessage = "") => new(decision, systemMessage);
 
         public async Task<CopilotToolExecutionHookDecision> BeforeExecuteAsync(
             CopilotToolExecutionHookContext context,
@@ -250,6 +356,14 @@ namespace ColorVision.Copilot
                             "configured_hook_invalid_output",
                             CopilotToolFailureKind.Internal))
                     : null;
+            }
+            if (root == null)
+            {
+                return CreatePreToolOutput(
+                    CopilotToolExecutionHookDecision.Deny(
+                        "A configured PreToolUse hook did not return a usable JSON document.",
+                        "configured_hook_invalid_output",
+                        CopilotToolFailureKind.Internal));
             }
             using (root)
             {
@@ -544,6 +658,54 @@ namespace ColorVision.Copilot
                 SystemMessage: systemMessage,
                 FailureMessage: failureMessage);
 
+        private static bool HasOnlyPermissionRequestProperties(JsonElement root)
+        {
+            foreach (var property in root.EnumerateObject())
+            {
+                if (property.Name is not (
+                    "continue"
+                    or "stopReason"
+                    or "suppressOutput"
+                    or "systemMessage"
+                    or "hookSpecificOutput"))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        private static bool HasOnlyPermissionRequestSpecificProperties(JsonElement specific)
+        {
+            foreach (var property in specific.EnumerateObject())
+            {
+                if (property.Name is not (
+                    "hookEventName"
+                    or "decision"))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        private static bool HasOnlyPermissionRequestDecisionProperties(JsonElement decision)
+        {
+            foreach (var property in decision.EnumerateObject())
+            {
+                if (property.Name is not (
+                    "behavior"
+                    or "updatedInput"
+                    or "updatedPermissions"
+                    or "message"
+                    or "interrupt"))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
         private static bool HasOnlyPostToolUseProperties(JsonElement root)
         {
             foreach (var property in root.EnumerateObject())
@@ -815,6 +977,12 @@ namespace ColorVision.Copilot
                 return false;
             result = property.ValueKind == JsonValueKind.True;
             return true;
+        }
+
+        private static bool HasNonNullProperty(JsonElement value, string propertyName)
+        {
+            return value.TryGetProperty(propertyName, out var property)
+                && property.ValueKind is not (JsonValueKind.Null or JsonValueKind.Undefined);
         }
 
         private static string NormalizeReason(string? value, string fallback)

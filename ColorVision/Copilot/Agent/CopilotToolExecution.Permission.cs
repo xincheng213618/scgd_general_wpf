@@ -89,14 +89,33 @@ namespace ColorVision.Copilot
                         hookRuns,
                         async token =>
                         {
-                            var decision = await asyncPermissionHook.OnPermissionRequestAsync(
-                                context,
-                                token).ConfigureAwait(false);
-                            if (decision?.ShouldPrompt == false
-                                || !string.IsNullOrWhiteSpace(decision?.Reason))
+                            CopilotToolPermissionRequestOutput? output = null;
+                            CopilotToolPermissionRequestDecision decision;
+                            if (asyncPermissionHook is ICopilotToolPermissionRequestOutputHook outputHook)
+                            {
+                                output = await outputHook.OnPermissionRequestWithOutputAsync(
+                                    context,
+                                    token).ConfigureAwait(false);
+                                decision = output?.Decision
+                                    ?? CopilotToolPermissionRequestDecision.Prompt;
+                            }
+                            else
+                            {
+                                decision = await asyncPermissionHook.OnPermissionRequestAsync(
+                                    context,
+                                    token).ConfigureAwait(false)
+                                    ?? CopilotToolPermissionRequestDecision.Prompt;
+                            }
+                            if (!decision.ShouldPrompt
+                                || !string.IsNullOrWhiteSpace(decision.Reason))
                             {
                                 Log.Warn(
                                     $"Copilot async permission-hook control decision was ignored. Tool={invocation.Tool.Name} CallId={invocation.CallId} HookSource={binding.SourceId}");
+                            }
+                            if (output?.HasOutput == true)
+                            {
+                                Log.Warn(
+                                    $"Copilot async permission-hook output was ignored by the notification-only execution mode. Tool={invocation.Tool.Name} CallId={invocation.CallId} HookSource={binding.SourceId}");
                             }
                         });
                     continue;
@@ -129,13 +148,35 @@ namespace ColorVision.Copilot
                 var hook = (ICopilotToolPermissionRequestHook)binding.Hook;
                 CancellationTokenSource? hookCancellation =
                     CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-                Task<CopilotToolPermissionRequestDecision>? hookTask = null;
+                Task? hookTask = null;
                 var hookStopwatch = Stopwatch.StartNew();
                 try
                 {
-                    hookTask = hook.OnPermissionRequestAsync(context, hookCancellation.Token);
-                    var decision = await hookTask.WaitAsync(remaining, cancellationToken)
-                        ?? CopilotToolPermissionRequestDecision.Prompt;
+                    CopilotToolPermissionRequestOutput? output = null;
+                    CopilotToolPermissionRequestDecision decision;
+                    if (hook is ICopilotToolPermissionRequestOutputHook outputHook)
+                    {
+                        var outputTask = outputHook.OnPermissionRequestWithOutputAsync(
+                            context,
+                            hookCancellation.Token);
+                        hookTask = outputTask;
+                        output = await outputTask.WaitAsync(remaining, cancellationToken);
+                        decision = output?.Decision
+                            ?? CopilotToolPermissionRequestDecision.Prompt;
+                    }
+                    else
+                    {
+                        var decisionTask = hook.OnPermissionRequestAsync(
+                            context,
+                            hookCancellation.Token);
+                        hookTask = decisionTask;
+                        decision = await decisionTask.WaitAsync(remaining, cancellationToken)
+                            ?? CopilotToolPermissionRequestDecision.Prompt;
+                    }
+                    ApplyPermissionRequestOutput(
+                        output,
+                        binding.SourceId,
+                        hookEvents);
                     if (!decision.ShouldPrompt)
                     {
                         var failureCode = string.IsNullOrWhiteSpace(decision.FailureCode)
@@ -262,6 +303,22 @@ namespace ColorVision.Copilot
                 hooks,
                 hookRuns,
                 CopilotToolPermissionRequestDecision.PromptWithReason(approvalReason));
+        }
+
+        private static void ApplyPermissionRequestOutput(
+            CopilotToolPermissionRequestOutput? output,
+            string sourceId,
+            CopilotToolExecutionHookEventPublisher hookEvents)
+        {
+            if (output == null)
+                return;
+
+            var systemMessage = CopilotApprovalRequestReason.Normalize(output.SystemMessage);
+            if (systemMessage.Length > 0)
+            {
+                hookEvents.Diagnostic(
+                    $"PermissionRequest hook warning · {sourceId}: {systemMessage}");
+            }
         }
     }
 }

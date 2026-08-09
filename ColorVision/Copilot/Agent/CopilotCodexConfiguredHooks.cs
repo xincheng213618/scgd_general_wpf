@@ -300,6 +300,12 @@ namespace ColorVision.Copilot
                     AddIssue(error);
                     return;
                 }
+                if (hookEvent == CopilotCodexConfiguredHookEvent.PermissionRequest
+                    && completed.AdditionalContextLimitTokens.HasValue)
+                {
+                    AddIssue(
+                        "Hook event 'PermissionRequest' ignores additionalContextLimit because it cannot return additional context.");
+                }
                 definitions.Add(definition!);
             }
 
@@ -700,6 +706,13 @@ namespace ColorVision.Copilot
                     {
                         issues.Add(new CopilotCodexConfiguredHookIssue(sourceFilePath, error));
                         continue;
+                    }
+                    if (hookEvent == CopilotCodexConfiguredHookEvent.PermissionRequest
+                        && handler.TryGetProperty("additionalContextLimit", out _))
+                    {
+                        issues.Add(new CopilotCodexConfiguredHookIssue(
+                            sourceFilePath,
+                            "Hook event 'PermissionRequest' ignores additionalContextLimit because it cannot return additional context."));
                     }
                     definitions.Add(definition!);
                 }

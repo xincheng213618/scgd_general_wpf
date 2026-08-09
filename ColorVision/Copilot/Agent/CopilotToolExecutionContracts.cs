@@ -335,6 +335,22 @@ namespace ColorVision.Copilot
         }
     }
 
+    internal sealed record CopilotToolPermissionRequestOutput(
+        CopilotToolPermissionRequestDecision Decision,
+        string SystemMessage = "")
+    {
+        public bool HasOutput => !Decision.ShouldPrompt
+            || !string.IsNullOrWhiteSpace(Decision.Reason)
+            || !string.IsNullOrWhiteSpace(SystemMessage);
+    }
+
+    internal interface ICopilotToolPermissionRequestOutputHook
+    {
+        Task<CopilotToolPermissionRequestOutput?> OnPermissionRequestWithOutputAsync(
+            CopilotToolPermissionRequestContext context,
+            CancellationToken cancellationToken);
+    }
+
     internal static class CopilotApprovalRequestReason
     {
         internal const int MaximumCharacters = 2_048;
