@@ -23,7 +23,7 @@ namespace ColorVision.Copilot
             var remainingCharacters = maxTotalContentChars;
             for (var index = steps.Count - 1; index >= 0 && remainingCharacters > 0; index--)
             {
-                var content = steps[index].Observation?.Content?.TrimEnd() ?? string.Empty;
+                var content = steps[index].EffectiveModelObservation.Content.TrimEnd();
                 if (content.Length == 0)
                     continue;
 
@@ -44,9 +44,8 @@ namespace ColorVision.Copilot
             if (serialized.Length <= maxCharacters)
                 return serialized;
 
-            var observation = step.Observation;
+            var observation = step.EffectiveModelObservation;
             if (!string.Equals(step.ToolCall?.ToolName, "ReadLocalFile", StringComparison.OrdinalIgnoreCase)
-                || observation == null
                 || observation.AttemptedLocalFilePaths.Count < 2
                 || !TrySplitLocalFileObservation(
                     content,

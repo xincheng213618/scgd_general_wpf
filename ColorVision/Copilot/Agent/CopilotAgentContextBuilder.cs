@@ -102,7 +102,7 @@ namespace ColorVision.Copilot
             if (omittedStepCount > 0)
             {
                 var omittedSteps = availableSteps.Take(omittedStepCount).ToArray();
-                var omittedSuccessCount = omittedSteps.Count(step => step.Observation?.Success == true);
+                var omittedSuccessCount = omittedSteps.Count(step => step.EffectiveModelObservation.Success);
                 var omittedToolNames = omittedSteps
                     .Select(step => step.ToolCall?.ToolName)
                     .Where(toolName => !string.IsNullOrWhiteSpace(toolName))
@@ -125,7 +125,7 @@ namespace ColorVision.Copilot
             {
                 var stepRecord = selectedSteps[index];
                 var toolCall = stepRecord.ToolCall ?? new CopilotToolCall();
-                var observation = stepRecord.Observation ?? new CopilotToolObservation();
+                var observation = stepRecord.EffectiveModelObservation;
                 var toolName = string.IsNullOrWhiteSpace(toolCall.ToolName) ? "Unknown tool" : toolCall.ToolName;
 
                 builder.Append("- Round ")

@@ -437,6 +437,11 @@ namespace ColorVision.Copilot
 
         public CopilotToolObservation Observation { get; init; } = new();
 
+        internal CopilotToolObservation? ModelObservation { get; init; }
+
+        internal CopilotToolObservation EffectiveModelObservation =>
+            ModelObservation ?? Observation ?? new CopilotToolObservation();
+
         public CopilotToolExecutionInfo Execution { get; init; } = new();
 
         internal bool SuppressModelOutput { get; init; }

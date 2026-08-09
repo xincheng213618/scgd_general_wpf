@@ -103,7 +103,9 @@ namespace ColorVision.Copilot
         }
     }
 
-    internal sealed class CopilotCodexCommandHook : ICopilotToolPermissionRequestHook
+    internal sealed class CopilotCodexCommandHook :
+        ICopilotToolPermissionRequestHook,
+        ICopilotToolPostExecutionFeedbackHook
     {
         private readonly CopilotCodexCommandHookDefinition _definition;
         private readonly ICopilotCodexCommandHookRunner _runner;
@@ -303,9 +305,16 @@ namespace ColorVision.Copilot
             CopilotToolExecutionOutcome outcome,
             CancellationToken cancellationToken)
         {
+            _ = await AfterExecuteWithFeedbackAsync(outcome, cancellationToken).ConfigureAwait(false);
+        }
+
+        public async Task<CopilotToolPostExecutionFeedback?> AfterExecuteWithFeedbackAsync(
+            CopilotToolExecutionOutcome outcome,
+            CancellationToken cancellationToken)
+        {
             ArgumentNullException.ThrowIfNull(outcome);
             if (_definition.Event != CopilotCodexConfiguredHookEvent.PostToolUse)
-                return;
+                return null;
 
             var result = await RunAsync(
                 outcome.Invocation,
@@ -316,11 +325,9 @@ namespace ColorVision.Copilot
                 throw new InvalidOperationException(failure);
             if (result.ExitCode == 2)
             {
-                throw new CopilotToolExecutionHookSkippedException(
-                    "configured_hook_post_feedback",
-                    NormalizeReason(
-                        result.StandardError,
-                        "A configured PostToolUse hook returned feedback after execution."));
+                return new CopilotToolPostExecutionFeedback(NormalizeReason(
+                    result.StandardError,
+                    "A configured PostToolUse hook returned feedback after execution."));
             }
             JsonDocument? root = null;
             if (LooksLikeJson(result.StandardOutput)
@@ -334,9 +341,7 @@ namespace ColorVision.Copilot
                 if (root != null
                     && TryReadStopDecision(root.RootElement, out var feedback))
                 {
-                    throw new CopilotToolExecutionHookSkippedException(
-                        "configured_hook_post_feedback",
-                        feedback);
+                    return new CopilotToolPostExecutionFeedback(feedback);
                 }
                 if (root != null
                     && !TryReadHookSpecificOutput(
@@ -349,6 +354,7 @@ namespace ColorVision.Copilot
                     throw new InvalidOperationException(specificError);
                 }
             }
+            return null;
         }
 
         private async Task<CopilotCodexCommandHookProcessResult> RunAsync(

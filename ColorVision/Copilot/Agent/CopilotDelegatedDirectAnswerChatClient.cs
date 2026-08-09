@@ -107,11 +107,14 @@ namespace ColorVision.Copilot
                 return false;
 
             var step = steps[0];
+            if (step == null)
+                return false;
+            var observation = step.EffectiveModelObservation;
             return string.Equals(step.ToolCall?.ToolName, DelegateExploreToolName, StringComparison.OrdinalIgnoreCase)
-                && step.Observation?.Success == true
-                && step.Observation.DelegatedRunUsage?.StopReason == CopilotAgentStopReason.Completed
+                && observation.Success
+                && observation.DelegatedRunUsage?.StopReason == CopilotAgentStopReason.Completed
                 && string.Equals(step.Execution?.CallId, functionResultCallIds[0], StringComparison.Ordinal)
-                && TryUseCompletedAnswer(step.Observation.DelegatedAnswer, out answer);
+                && TryUseCompletedAnswer(observation.DelegatedAnswer, out answer);
         }
 
         internal static bool TryUseCompletedAnswer(

@@ -78,6 +78,9 @@ namespace ColorVision.Copilot
 
     public sealed class CopilotToolExecutionOutcome
     {
+        private const int MaximumModelFeedbackCharacters = 12_000;
+        private CopilotToolResult? _modelVisibleResult;
+
         public CopilotToolInvocation Invocation { get; init; } = null!;
 
         public CopilotToolResult Result { get; init; } = new();
@@ -87,14 +90,55 @@ namespace ColorVision.Copilot
         public IReadOnlyList<CopilotToolExecutionHookRun> HookRuns { get; internal set; } =
             Array.Empty<CopilotToolExecutionHookRun>();
 
+        internal CopilotToolResult EffectiveModelResult => _modelVisibleResult ?? Result;
+
         public CopilotAgentStepRecord StepRecord => new()
         {
             Round = Invocation.Round,
             ToolCall = Invocation.ToolCall,
             Observation = CopilotToolObservation.FromResult(Result),
+            ModelObservation = _modelVisibleResult == null
+                ? null
+                : CopilotToolObservation.FromResult(_modelVisibleResult),
             Execution = Execution,
-            SuppressModelOutput = Result.SuppressModelOutput,
+            SuppressModelOutput = EffectiveModelResult.SuppressModelOutput,
         };
+
+        internal void ApplyModelVisibleFeedback(string? message)
+        {
+            var feedback = CopilotMcpAuditLogger.RedactText(message).Trim();
+            if (feedback.Length == 0)
+                return;
+            feedback = BoundModelFeedback(feedback);
+
+            if (_modelVisibleResult != null)
+                feedback = BoundModelFeedback(_modelVisibleResult.Content + Environment.NewLine + feedback);
+
+            // PostToolUse feedback changes only what the model observes. Keep the
+            // operational result intact for audit, approval, retry, rollback, and usage accounting.
+            var original = Result;
+            _modelVisibleResult = new CopilotToolResult
+            {
+                ToolName = original.ToolName,
+                Success = original.Success,
+                Summary = "PostToolUse hook feedback.",
+                Content = feedback,
+                FailureKind = original.FailureKind,
+                FailureCode = original.FailureCode,
+                SuppressModelOutput = false,
+            };
+        }
+
+        private static string BoundModelFeedback(string value)
+        {
+            if (value.Length <= MaximumModelFeedbackCharacters)
+                return value;
+
+            var length = MaximumModelFeedbackCharacters;
+            if (char.IsHighSurrogate(value[length - 1]))
+                length--;
+            return value[..length];
+        }
     }
 
     public sealed class CopilotToolExecutionHookContext
@@ -229,6 +273,15 @@ namespace ColorVision.Copilot
         Task<CopilotToolExecutionHookDecision> BeforeExecuteAsync(CopilotToolExecutionHookContext context, CancellationToken cancellationToken);
 
         Task AfterExecuteAsync(CopilotToolExecutionOutcome outcome, CancellationToken cancellationToken);
+    }
+
+    internal sealed record CopilotToolPostExecutionFeedback(string Message);
+
+    internal interface ICopilotToolPostExecutionFeedbackHook
+    {
+        Task<CopilotToolPostExecutionFeedback?> AfterExecuteWithFeedbackAsync(
+            CopilotToolExecutionOutcome outcome,
+            CancellationToken cancellationToken);
     }
 
     /// <summary>

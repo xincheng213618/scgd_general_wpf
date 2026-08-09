@@ -167,7 +167,8 @@ namespace ColorVision.Copilot
             CopilotToolExecutionOutcome outcome,
             IReadOnlyList<CopilotToolExecutionHookBinding> hooks,
             List<CopilotToolExecutionHookRun> hookRuns,
-            Action<CopilotAgentEvent> onEvent)
+            Action<CopilotAgentEvent> onEvent,
+            bool toolWasExecuted = false)
         {
             outcome.HookRuns = hookRuns;
             var hookEvents = new CopilotToolExecutionHookEventPublisher(
@@ -186,6 +187,12 @@ namespace ColorVision.Copilot
             {
                 if (!binding.Phases.HasFlag(CopilotToolExecutionHookPhases.AfterExecute))
                     continue;
+                if (binding.Hook is ICopilotToolPostExecutionFeedbackHook
+                    && (!toolWasExecuted
+                        || outcome.Execution.State == CopilotToolExecutionState.AwaitingApproval))
+                {
+                    continue;
+                }
                 if (binding.ExecutionMode == CopilotToolExecutionHookMode.Async)
                 {
                     ScheduleAsyncHook(
@@ -193,7 +200,7 @@ namespace ColorVision.Copilot
                         CopilotToolExecutionHookPhase.AfterExecute,
                         outcome.Invocation,
                         hookRuns,
-                        token => binding.Hook.AfterExecuteAsync(outcome, token));
+                        token => RunAsyncPostHookNotificationAsync(binding.Hook, outcome, token));
                     continue;
                 }
 
@@ -222,8 +229,22 @@ namespace ColorVision.Copilot
                 var hookStopwatch = Stopwatch.StartNew();
                 try
                 {
-                    hookTask = binding.Hook.AfterExecuteAsync(outcome, hookCancellation.Token);
-                    await hookTask.WaitAsync(remaining);
+                    CopilotToolPostExecutionFeedback? feedback = null;
+                    if (binding.Hook is ICopilotToolPostExecutionFeedbackHook feedbackHook)
+                    {
+                        var feedbackTask = feedbackHook.AfterExecuteWithFeedbackAsync(
+                            outcome,
+                            hookCancellation.Token);
+                        hookTask = feedbackTask;
+                        feedback = await feedbackTask.WaitAsync(remaining);
+                    }
+                    else
+                    {
+                        hookTask = binding.Hook.AfterExecuteAsync(outcome, hookCancellation.Token);
+                        await hookTask.WaitAsync(remaining);
+                    }
+                    if (feedback != null)
+                        outcome.ApplyModelVisibleFeedback(feedback.Message);
                     RecordHookRun(
                         hookRuns,
                         binding.SourceId,
@@ -293,6 +314,27 @@ namespace ColorVision.Copilot
             CopilotToolExecutionAuditLogger.Record(outcome);
             onEvent(CopilotAgentEvent.FromToolResult(outcome.Result, outcome.Execution, outcome.HookRuns));
             return outcome;
+        }
+
+        private static async Task RunAsyncPostHookNotificationAsync(
+            ICopilotToolExecutionHook hook,
+            CopilotToolExecutionOutcome outcome,
+            CancellationToken cancellationToken)
+        {
+            if (hook is ICopilotToolPostExecutionFeedbackHook feedbackHook)
+            {
+                var feedback = await feedbackHook.AfterExecuteWithFeedbackAsync(
+                    outcome,
+                    cancellationToken).ConfigureAwait(false);
+                if (feedback != null)
+                {
+                    Log.Warn(
+                        $"Copilot async post-tool hook feedback was ignored. Tool={outcome.Invocation.Tool.Name} CallId={outcome.Execution.CallId} Hook={hook.GetType().FullName}");
+                }
+                return;
+            }
+
+            await hook.AfterExecuteAsync(outcome, cancellationToken).ConfigureAwait(false);
         }
 
         private void ScheduleAsyncHook(

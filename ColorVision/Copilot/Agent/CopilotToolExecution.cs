@@ -379,7 +379,12 @@ namespace ColorVision.Copilot
                 {
                     executionProgress.Complete();
                     await StopProgressAsync();
-                    return await PublishOutcomeAsync(outcome, hooks, hookRuns, onEvent);
+                    return await PublishOutcomeAsync(
+                        outcome,
+                        hooks,
+                        hookRuns,
+                        onEvent,
+                        toolWasExecuted: true);
                 }
 
                 try

@@ -513,22 +513,118 @@ public sealed class CopilotCodexConfiguredCommandHookTests
                 """,
                 string.Empty));
             var tool = new RecordingReadTool();
+            var events = new List<CopilotAgentEvent>();
             var request = CreateRequest(
                 workspace,
                 CreateDefinition(CopilotCodexConfiguredHookEvent.PostToolUse, "^RecordingReadTool$"));
 
             var outcome = await CreateExecutor(runner).ExecuteAsync(
                 CreateInvocation(tool, request, "post-feedback-call"),
+                events.Add,
+                CancellationToken.None);
+
+            Assert.True(outcome.Result.Success);
+            Assert.Equal("Recording read tool completed.", outcome.Result.Summary);
+            Assert.Equal(1, tool.ExecutionCount);
+            Assert.Equal("Recording read tool completed.", outcome.StepRecord.Observation.Summary);
+            Assert.Equal("PostToolUse hook feedback.", outcome.StepRecord.EffectiveModelObservation.Summary);
+            Assert.Equal("review generated output", outcome.StepRecord.EffectiveModelObservation.Content);
+            using var formatted = JsonDocument.Parse(CopilotFrameworkToolResultFormatter.Format(outcome));
+            Assert.Equal(
+                "PostToolUse hook feedback.",
+                formatted.RootElement.GetProperty("summary").GetString());
+            Assert.Equal(
+                "review generated output",
+                formatted.RootElement.GetProperty("content").GetString());
+            var modelContext = new CopilotAgentContextBuilder().BuildObservationSummary(
+                [outcome.StepRecord],
+                maxSteps: 4,
+                maxContentChars: 2_000,
+                includeContent: true);
+            Assert.Contains("review generated output", modelContext, StringComparison.Ordinal);
+            Assert.DoesNotContain("Recording read tool completed.", modelContext, StringComparison.Ordinal);
+            var terminal = Assert.Single(events, item => item.Type == CopilotAgentEventType.ToolResult);
+            Assert.Equal("Recording read tool completed.", terminal.ToolResult?.Summary);
+            Assert.Contains(outcome.HookRuns, run =>
+                run.SourceId.StartsWith("codex-config:", StringComparison.Ordinal)
+                && run.Phase == CopilotToolExecutionHookPhase.AfterExecute
+                && run.State == CopilotToolExecutionHookState.Completed
+                && run.FailureCode.Length == 0);
+        }
+        finally
+        {
+            Directory.Delete(workspace, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task PostToolHookDoesNotRunWhenPreToolHookDeniedExecution()
+    {
+        var workspace = CreateTemporaryDirectory();
+        try
+        {
+            var runner = new RecordingCommandHookRunner(new CopilotCodexCommandHookProcessResult(
+                0,
+                false,
+                """
+                {"decision":"block","reason":"repository policy denied execution"}
+                """,
+                string.Empty));
+            var tool = new RecordingReadTool();
+            var request = CreateRequest(
+                workspace,
+                CreateDefinition(CopilotCodexConfiguredHookEvent.PreToolUse, "^RecordingReadTool$", 0),
+                CreateDefinition(CopilotCodexConfiguredHookEvent.PostToolUse, "^RecordingReadTool$", 1));
+
+            var outcome = await CreateExecutor(runner).ExecuteAsync(
+                CreateInvocation(tool, request, "pre-denied-post-hook-call"),
+                _ => { },
+                CancellationToken.None);
+
+            Assert.False(outcome.Result.Success);
+            Assert.Equal("configured_hook_denied", outcome.Result.FailureCode);
+            Assert.Equal(0, tool.ExecutionCount);
+            Assert.Single(runner.Calls);
+            Assert.DoesNotContain(outcome.HookRuns, run =>
+                run.SourceId.StartsWith("codex-config:", StringComparison.Ordinal)
+                && run.Phase == CopilotToolExecutionHookPhase.AfterExecute);
+        }
+        finally
+        {
+            Directory.Delete(workspace, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task PostToolExitTwoReturnsRedactedFeedbackToTheModel()
+    {
+        const string secret = "hook-secret-value";
+        var workspace = CreateTemporaryDirectory();
+        try
+        {
+            var runner = new RecordingCommandHookRunner(new CopilotCodexCommandHookProcessResult(
+                2,
+                false,
+                string.Empty,
+                "review this output; api_key=" + secret));
+            var tool = new RecordingReadTool();
+            var request = CreateRequest(
+                workspace,
+                CreateDefinition(CopilotCodexConfiguredHookEvent.PostToolUse, "^RecordingReadTool$"));
+
+            var outcome = await CreateExecutor(runner).ExecuteAsync(
+                CreateInvocation(tool, request, "post-exit-two-feedback-call"),
                 _ => { },
                 CancellationToken.None);
 
             Assert.True(outcome.Result.Success);
-            Assert.Equal(1, tool.ExecutionCount);
-            Assert.Contains(outcome.HookRuns, run =>
-                run.SourceId.StartsWith("codex-config:", StringComparison.Ordinal)
-                && run.Phase == CopilotToolExecutionHookPhase.AfterExecute
-                && run.State == CopilotToolExecutionHookState.Skipped
-                && run.FailureCode == "configured_hook_post_feedback");
+            Assert.Equal("Recording read tool completed.", outcome.Result.Summary);
+            Assert.Contains("api_key=<redacted>", outcome.StepRecord.EffectiveModelObservation.Content, StringComparison.Ordinal);
+            Assert.DoesNotContain(secret, outcome.StepRecord.EffectiveModelObservation.Content, StringComparison.Ordinal);
+            Assert.DoesNotContain(
+                secret,
+                CopilotFrameworkToolResultFormatter.Format(outcome),
+                StringComparison.Ordinal);
         }
         finally
         {
