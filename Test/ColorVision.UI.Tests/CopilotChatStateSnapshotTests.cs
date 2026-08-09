@@ -109,6 +109,46 @@ public class CopilotChatStateSnapshotTests
     }
 
     [Fact]
+    public void InitializationRepairsDuplicateConversationIdsWithoutChangingActiveIdentity()
+    {
+        var profile = CopilotProfileConfig.CreateDefault();
+        var config = new CopilotConfig
+        {
+            Profiles = new ObservableCollection<CopilotProfileConfig> { profile },
+        };
+        var activeConversation = CopilotConversationRecord.CreateEmpty(profile.Id, profile.DisplayLabel);
+        var duplicateConversation = CopilotConversationRecord.CreateEmpty(profile.Id, profile.DisplayLabel);
+        duplicateConversation.Id = activeConversation.Id;
+        var originalActiveId = activeConversation.Id;
+        var state = new CopilotChatState
+        {
+            ActiveConversationId = originalActiveId,
+            ActiveProfileId = profile.Id,
+            Conversations = new ObservableCollection<CopilotConversationRecord>
+            {
+                activeConversation,
+                duplicateConversation,
+            },
+        };
+
+        Assert.True(state.EnsureInitialized(config));
+
+        Assert.Equal(originalActiveId, activeConversation.Id);
+        Assert.Equal(originalActiveId, state.ActiveConversationId);
+        Assert.NotEqual(activeConversation.Id, duplicateConversation.Id);
+        Assert.Equal(2, state.Conversations.Select(conversation => conversation.Id).Distinct(StringComparer.Ordinal).Count());
+
+        CopilotAgentRunStatusSynchronizer.Refresh(
+            state.Conversations,
+            state.ActiveConversationId,
+            CopilotHostedRunState.Running,
+            Array.Empty<string>());
+
+        Assert.Equal("运行中", activeConversation.AgentRunStatusLabel);
+        Assert.Empty(duplicateConversation.AgentRunStatusLabel);
+    }
+
+    [Fact]
     public void ExplicitNeutralPersonalityRoundTripsAndLegacySelectionsBecomeExplicit()
     {
         var explicitNeutral = CopilotConversationRecord.CreateEmpty("profile", "Profile");

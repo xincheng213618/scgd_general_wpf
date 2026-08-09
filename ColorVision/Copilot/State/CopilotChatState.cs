@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 
@@ -139,6 +140,7 @@ namespace ColorVision.Copilot
                 changed = true;
             }
 
+            var conversationIds = new HashSet<string>(StringComparer.Ordinal);
             foreach (var conversation in Conversations)
             {
                 var interruptedAssistantMessage = conversation.Messages?
@@ -149,6 +151,18 @@ namespace ColorVision.Copilot
                 if (!recoveredAgentRun)
                     changed |= CopilotInterruptedResponseRecovery.Normalize(conversation, interruptedAssistantMessage);
                 changed |= conversation.EnsureValid();
+                if (!conversationIds.Add(conversation.Id))
+                {
+                    string replacementId;
+                    do
+                    {
+                        replacementId = Guid.NewGuid().ToString("N");
+                    }
+                    while (!conversationIds.Add(replacementId));
+
+                    conversation.Id = replacementId;
+                    changed = true;
+                }
 
                 if (string.IsNullOrWhiteSpace(conversation.ProfileId) || config.Profiles.All(profile => profile.Id != conversation.ProfileId))
                 {
