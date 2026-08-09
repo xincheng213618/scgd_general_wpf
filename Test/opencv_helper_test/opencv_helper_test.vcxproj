@@ -171,7 +171,6 @@
     <ClInclude Include="function.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="opencv_helper_test.vcxproj.new" />
     <None Include="data\sfrmat5\Test_edge1.tif">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
