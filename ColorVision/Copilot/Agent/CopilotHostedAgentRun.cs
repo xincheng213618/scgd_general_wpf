@@ -22,12 +22,19 @@ namespace ColorVision.Copilot
         private CopilotHostedProviderRetrySnapshot _providerRetrySnapshot =
             CopilotHostedProviderRetrySnapshot.Empty;
 
-        internal CopilotHostedAgentRun(string conversationId, CopilotAgentMode mode)
+        internal CopilotHostedAgentRun(
+            string conversationId,
+            CopilotAgentMode mode,
+            string? runId = null,
+            DateTimeOffset? enqueuedAtUtc = null)
         {
-            Id = "run:" + Guid.NewGuid().ToString("N");
+            var normalizedRunId = (runId ?? string.Empty).Trim();
+            Id = normalizedRunId.Length == 0
+                ? "run:" + Guid.NewGuid().ToString("N")
+                : normalizedRunId;
             ConversationId = conversationId;
             Mode = mode;
-            EnqueuedAtUtc = DateTimeOffset.UtcNow;
+            EnqueuedAtUtc = enqueuedAtUtc ?? DateTimeOffset.UtcNow;
             RunControl = IsAgent ? new CopilotAgentRunControl() : null;
             _cancellationToken = _cancellation.Token;
         }

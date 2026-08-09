@@ -466,12 +466,16 @@ namespace ColorVision.Copilot
             var queuedFollowUpNotice = _state.RecoveredQueuedFollowUpCount > 0
                 ? $"已将 {_state.RecoveredQueuedFollowUpCount} 条未执行的排队后续恢复到对应会话草稿。"
                 : string.Empty;
+            var resumedQueuedFollowUpNotice = _state.ResumedQueuedFollowUpCount > 0
+                ? $"已恢复 {_state.ResumedQueuedFollowUpCount} 条排队后续；空闲会话将按原顺序继续。"
+                : string.Empty;
             var steeringNotice = _state.RecoveredSteeringCount > 0
                 ? $"已将 {_state.RecoveredSteeringCount} 条进程退出前尚未确认送达的运行中指令恢复到对应会话草稿。"
                 : string.Empty;
             StateRecoveryNoticeText = string.Join(
                 Environment.NewLine,
-                new[] { loadNotice, queuedFollowUpNotice, steeringNotice }.Where(text => !string.IsNullOrWhiteSpace(text)));
+                new[] { loadNotice, queuedFollowUpNotice, resumedQueuedFollowUpNotice, steeringNotice }
+                    .Where(text => !string.IsNullOrWhiteSpace(text)));
             StateRecoveryNoticeToolTip = string.IsNullOrWhiteSpace(StateRecoveryNoticeText)
                 ? string.Empty
                 : $"{StateRecoveryNoticeText}{Environment.NewLine}{Environment.NewLine}状态目录：{stateStore.StateDirectoryPath}";

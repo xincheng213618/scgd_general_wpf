@@ -16,7 +16,8 @@ namespace ColorVision.Copilot
             string? goalId = null,
             CopilotAgentSkillReference? agentSkillReference = null,
             CopilotTurnRuntimeConfigSnapshot? runtimeConfigSnapshot = null,
-            CopilotWorkspaceReviewTargetContext? workspaceReviewTarget = null)
+            CopilotWorkspaceReviewTargetContext? workspaceReviewTarget = null,
+            DateTimeOffset? queuedAtUtc = null)
         {
             RunId = runId ?? throw new ArgumentNullException(nameof(runId));
             ConversationId = conversationId ?? throw new ArgumentNullException(nameof(conversationId));
@@ -38,7 +39,7 @@ namespace ColorVision.Copilot
                 ?? new CopilotTurnRuntimeConfigSnapshot(
                     new CopilotAgentDefaultsConfig(),
                     Array.Empty<CopilotMcpClientServerConfig>());
-            QueuedAtUtc = DateTimeOffset.UtcNow;
+            QueuedAtUtc = queuedAtUtc ?? DateTimeOffset.UtcNow;
         }
 
         public string RunId { get; }

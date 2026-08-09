@@ -39,6 +39,9 @@ public class CopilotChatStateSnapshotTests
                     RunId = "run-1",
                     ConversationId = firstConversation.Id,
                     Prompt = "Continue",
+                    ProfileId = "profile",
+                    QueuedAtUtc = new DateTimeOffset(2026, 8, 10, 8, 30, 0, TimeSpan.Zero),
+                    ResumeAfterRestart = true,
                 },
             },
         };
@@ -53,6 +56,56 @@ public class CopilotChatStateSnapshotTests
 
         Assert.True(JToken.DeepEquals(expected, actual));
         Assert.Equal(3, chunkCount);
+    }
+
+    [Fact]
+    public void StateStoreRoundTripsDurableQueuedFollowUpMetadata()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        try
+        {
+            var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+            var queuedAtUtc = new DateTimeOffset(2026, 8, 10, 8, 30, 0, TimeSpan.Zero);
+            var state = new CopilotChatState
+            {
+                ActiveConversationId = conversation.Id,
+                ActiveProfileId = "profile",
+                Conversations = [conversation],
+                QueuedFollowUpRecoveries =
+                [
+                    new CopilotQueuedFollowUpRecoveryRecord
+                    {
+                        RunId = "persisted-run",
+                        ConversationId = conversation.Id,
+                        ProfileId = "profile",
+                        QueuedAtUtc = queuedAtUtc,
+                        ResumeAfterRestart = true,
+                        ComposerState = CopilotComposerStash.Capture(
+                            "continue after restart",
+                            22,
+                            CopilotAgentMode.Code,
+                            Array.Empty<CopilotAttachmentItem>()),
+                    },
+                ],
+            };
+            var store = new CopilotChatStateStore(root);
+
+            store.Save(state);
+            var loaded = store.Load();
+
+            var queued = Assert.Single(loaded.QueuedFollowUpRecoveries);
+            Assert.Equal("persisted-run", queued.RunId);
+            Assert.Equal("profile", queued.ProfileId);
+            Assert.Equal(queuedAtUtc, queued.QueuedAtUtc);
+            Assert.True(queued.ResumeAfterRestart);
+            Assert.Equal(CopilotAgentMode.Code, queued.ComposerState?.RequestMode);
+            Assert.Equal("continue after restart", queued.ComposerState?.Text);
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+                Directory.Delete(root, recursive: true);
+        }
     }
 
     [Fact]

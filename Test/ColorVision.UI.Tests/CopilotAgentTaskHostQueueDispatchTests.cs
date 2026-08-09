@@ -221,6 +221,121 @@ public sealed class CopilotAgentTaskHostQueueDispatchTests
         await followUpRun!.Completion.WaitAsync(TestTimeout);
     }
 
+    [Fact]
+    public async Task RestoredQueueKeepsStableIdsAndDispatchesInOrderWhenWoken()
+    {
+        var host = new CopilotAgentTaskHost();
+        var firstStarted = NewSignal();
+        var releaseFirst = NewSignal();
+        var secondStarted = NewSignal();
+        var executionOrder = new List<int>();
+        var queuedAtUtc = new DateTimeOffset(2026, 8, 10, 8, 30, 0, TimeSpan.Zero);
+
+        Assert.True(host.TryRestoreQueuedFollowUp(
+            "persisted-run-1",
+            "conversation",
+            CopilotAgentMode.Auto,
+            queuedAtUtc,
+            async _ =>
+            {
+                executionOrder.Add(1);
+                firstStarted.TrySetResult();
+                await releaseFirst.Task;
+            },
+            out var firstRun));
+        Assert.True(host.TryRestoreQueuedFollowUp(
+            "persisted-run-2",
+            "conversation",
+            CopilotAgentMode.Auto,
+            queuedAtUtc.AddSeconds(1),
+            _ =>
+            {
+                executionOrder.Add(2);
+                secondStarted.TrySetResult();
+                return Task.CompletedTask;
+            },
+            out var secondRun));
+
+        Assert.Null(host.ActiveRun);
+        Assert.Equal("persisted-run-1", firstRun!.Id);
+        Assert.Equal(queuedAtUtc, firstRun.EnqueuedAtUtc);
+        Assert.Equal(["persisted-run-1", "persisted-run-2"], host.QueuedRuns.Select(run => run.Id));
+        Assert.True(host.TryStartQueuedRun(firstRun.Id));
+
+        await firstStarted.Task.WaitAsync(TestTimeout);
+        releaseFirst.TrySetResult();
+        await secondStarted.Task.WaitAsync(TestTimeout);
+        await firstRun.Completion.WaitAsync(TestTimeout);
+        await secondRun!.Completion.WaitAsync(TestTimeout);
+        Assert.Equal([1, 2], executionOrder);
+    }
+
+    [Fact]
+    public async Task FailedRestoredTurnLeavesTheNextDurableItemQueued()
+    {
+        var host = new CopilotAgentTaskHost();
+        var secondStarted = NewSignal();
+        Assert.True(host.TryRestoreQueuedFollowUp(
+            "persisted-run-1",
+            "conversation",
+            CopilotAgentMode.Auto,
+            null,
+            _ => throw new InvalidOperationException("failed restored turn"),
+            out var firstRun));
+        Assert.True(host.TryRestoreQueuedFollowUp(
+            "persisted-run-2",
+            "conversation",
+            CopilotAgentMode.Auto,
+            null,
+            _ =>
+            {
+                secondStarted.TrySetResult();
+                return Task.CompletedTask;
+            },
+            out var secondRun));
+
+        Assert.True(host.TryStartQueuedRun(firstRun!.Id));
+        await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            await firstRun.Completion.WaitAsync(TestTimeout));
+
+        Assert.False(secondStarted.Task.IsCompleted);
+        Assert.Equal(1, host.GetQueuePosition(secondRun!.Id));
+        Assert.True(host.RequestCancel(secondRun.Id));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
+            await secondRun.Completion.WaitAsync(TestTimeout));
+    }
+
+    [Fact]
+    public async Task FailedRestoredTurnDoesNotBlockAnIndependentConversation()
+    {
+        var host = new CopilotAgentTaskHost();
+        var independentStarted = NewSignal();
+        Assert.True(host.TryRestoreQueuedFollowUp(
+            "persisted-run-1",
+            "conversation",
+            CopilotAgentMode.Auto,
+            null,
+            _ => throw new InvalidOperationException("failed restored turn"),
+            out var firstRun));
+        Assert.True(host.TryRestoreQueuedFollowUp(
+            "persisted-run-2",
+            "independent-conversation",
+            CopilotAgentMode.Auto,
+            null,
+            _ =>
+            {
+                independentStarted.TrySetResult();
+                return Task.CompletedTask;
+            },
+            out var independentRun));
+
+        Assert.True(host.TryStartQueuedRun(firstRun!.Id));
+        await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            await firstRun.Completion.WaitAsync(TestTimeout));
+        await independentStarted.Task.WaitAsync(TestTimeout);
+        await independentRun!.Completion.WaitAsync(TestTimeout);
+    }
+
     private static TaskCompletionSource NewSignal() =>
         new(TaskCreationOptions.RunContinuationsAsynchronously);
 }

@@ -81,7 +81,8 @@ namespace ColorVision.Copilot
 
         private void Application_Exit(object? sender, ExitEventArgs e)
         {
-            RestoreQueuedFollowUpsToDrafts();
+            _isApplicationShutdown = true;
+            PreserveQueuedFollowUpsForRestart();
             CopilotSteeringRecovery.RestorePendingToDrafts(_state);
             var scheduledRuns = _taskHost.ScheduledRuns;
             _taskHost.Shutdown();
@@ -122,7 +123,7 @@ namespace ColorVision.Copilot
             }
         }
 
-        private void RestoreQueuedFollowUpsToDrafts()
+        private void PreserveQueuedFollowUpsForRestart()
         {
             _state.QueuedFollowUpRecoveries ??= new ObservableCollection<CopilotQueuedFollowUpRecoveryRecord>();
             var persistedRunIds = _state.QueuedFollowUpRecoveries
@@ -136,7 +137,6 @@ namespace ColorVision.Copilot
 
                 AddQueuedFollowUpRecovery(queuedFollowUp);
             }
-            CopilotQueuedFollowUpRecovery.RestoreToDrafts(_state);
         }
 
         private void FinalizeUnstartedRunsForShutdown(IReadOnlyList<CopilotHostedAgentRun> scheduledRuns)

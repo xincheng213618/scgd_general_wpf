@@ -275,6 +275,59 @@ namespace ColorVision.Copilot
                 out admission);
         }
 
+        internal bool TryRestoreQueuedFollowUp(
+            string runId,
+            string conversationId,
+            CopilotAgentMode mode,
+            DateTimeOffset? enqueuedAtUtc,
+            Func<CopilotHostedAgentRun, Task> operation,
+            out CopilotHostedAgentRun? run)
+        {
+            var normalizedRunId = (runId ?? string.Empty).Trim();
+            var normalizedConversationId = (conversationId ?? string.Empty).Trim();
+            if (normalizedRunId.Length == 0)
+                throw new ArgumentException("A run ID is required.", nameof(runId));
+            if (normalizedConversationId.Length == 0)
+                throw new ArgumentException("A conversation ID is required.", nameof(conversationId));
+            ArgumentNullException.ThrowIfNull(operation);
+
+            lock (_gate)
+            {
+                if (_isShutdown
+                    || mode == CopilotAgentMode.Chat
+                    || _queuedWorkItems.Count >= MaxQueuedRuns
+                    || string.Equals(_activeWorkItem?.Run.Id, normalizedRunId, StringComparison.Ordinal)
+                    || _queuedWorkItems.Any(item => string.Equals(item.Run.Id, normalizedRunId, StringComparison.Ordinal)))
+                {
+                    run = null;
+                    return false;
+                }
+
+                var hasScheduledConversation = string.Equals(
+                        _activeWorkItem?.Run.ConversationId,
+                        normalizedConversationId,
+                        StringComparison.Ordinal)
+                    || _queuedWorkItems.Any(item => string.Equals(
+                        item.Run.ConversationId,
+                        normalizedConversationId,
+                        StringComparison.Ordinal));
+                run = new CopilotHostedAgentRun(
+                    normalizedConversationId,
+                    mode,
+                    normalizedRunId,
+                    enqueuedAtUtc);
+                _queuedWorkItems.AddLast(new HostedRunWorkItem(
+                    run,
+                    operation,
+                    hasScheduledConversation
+                        ? QueuedRunDispatchPolicy.AfterCompletedTurn
+                        : QueuedRunDispatchPolicy.Always));
+            }
+
+            Publish(CopilotAgentTaskHostChangeKind.Queued, run);
+            return true;
+        }
+
         private bool TryScheduleFollowUp(
             string conversationId,
             CopilotAgentMode mode,

@@ -99,6 +99,7 @@ namespace ColorVision.Copilot
         private bool _isCompactingConversation;
         private bool _isEndingConversation;
         private bool _isRetryingStatePersistence;
+        private bool _isApplicationShutdown;
         private long _composerReferenceRefreshVersion;
         private int _selectedLocalCommandSuggestionIndex = -1;
         private CopilotPromptHistorySearchItem? _selectedPromptHistorySearchResult;
@@ -316,6 +317,8 @@ namespace ColorVision.Copilot
             CopilotBackgroundShellCommandRegistry.Shared.CommandCompleted += BackgroundShellCommandRegistry_CommandCompleted;
             CopilotBackgroundShellCommandRegistry.Shared.OutputMonitorEvent -= BackgroundShellCommandRegistry_OutputMonitorEvent;
             CopilotBackgroundShellCommandRegistry.Shared.OutputMonitorEvent += BackgroundShellCommandRegistry_OutputMonitorEvent;
+            RestoreDurableQueuedFollowUps();
+            InitializeStateRecoveryNotice();
         }
 
 

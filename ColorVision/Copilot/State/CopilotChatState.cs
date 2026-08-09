@@ -7,7 +7,7 @@ namespace ColorVision.Copilot
 {
     public sealed class CopilotChatState
     {
-        public const int CurrentSchemaVersion = 37;
+        public const int CurrentSchemaVersion = 38;
 
         public int SchemaVersion { get; set; } = CurrentSchemaVersion;
 
@@ -47,6 +47,8 @@ namespace ColorVision.Copilot
         public bool ShouldSerializeQueuedFollowUpRecoveries() => QueuedFollowUpRecoveries?.Count > 0;
 
         internal int RecoveredQueuedFollowUpCount { get; set; }
+
+        internal int ResumedQueuedFollowUpCount { get; set; }
 
         internal int RecoveredSteeringCount { get; set; }
 
@@ -189,7 +191,7 @@ namespace ColorVision.Copilot
 
             changed |= CopilotConversationService.NormalizeOrder(Conversations);
 
-            changed |= CopilotQueuedFollowUpRecovery.RestoreToDrafts(this);
+            changed |= CopilotQueuedFollowUpRecovery.PrepareForRestartDispatch(this);
 
             var activeConversations = Conversations
                 .Where(conversation => !conversation.IsArchived)
