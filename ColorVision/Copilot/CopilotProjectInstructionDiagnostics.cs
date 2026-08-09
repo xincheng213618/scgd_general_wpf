@@ -337,6 +337,13 @@ namespace ColorVision.Copilot
             builder.AppendLine(effective.ConfiguredShellToolEnabled
                 ? "按请求意图暴露命令启动工具"
                 : "隐藏命令启动工具并拒绝旧计划、恢复状态或注入调用；已有后台命令仍可观察或停止");
+            builder.Append("Codex exec policy：已加载规则 ")
+                .Append(effective.ConfiguredExecPolicyRules.Count)
+                .Append(" 个 / 来源文件 ")
+                .Append(effective.AppliedExecPolicyFilePaths.Count)
+                .Append(" 个 / 配置问题 ")
+                .Append(effective.ConfiguredExecPolicyIssues.Count)
+                .AppendLine(" 个；全局与受信任项目 rules/*.rules 提交时冻结，最严格决策优先");
             builder.Append("Codex features.hooks：")
                 .Append(effective.ConfiguredHooksEnabled ? "true" : "false");
             if (effective.HasHooksEnabledOverride)

@@ -515,6 +515,7 @@ namespace ColorVision.Copilot
             }
             AppendPreventIdleSleep(builder, codexConfigOptions);
             AppendShellToolEnabled(builder, codexConfigOptions);
+            AppendExecPolicy(builder, codexConfigOptions);
             AppendHooksEnabled(builder, codexConfigOptions);
             AppendPluginsEnabled(builder, codexConfigOptions);
             AppendToolRegistryCollisionPolicy(builder, codexConfigOptions);
@@ -871,6 +872,19 @@ namespace ColorVision.Copilot
                 .Append(" 个 / 配置问题 ")
                 .Append(codexConfigOptions.ConfiguredHookIssues.Count)
                 .AppendLine(" 个；内置写入安全策略仍保留，checkpoint 按有效 Hook 面校验");
+        }
+
+        private static void AppendExecPolicy(
+            StringBuilder builder,
+            CopilotProjectInstructionDiscoveryOptions codexConfigOptions)
+        {
+            builder.Append("- Codex exec policy：已加载规则 ")
+                .Append(codexConfigOptions.ConfiguredExecPolicyRules.Count)
+                .Append(" 个 / 来源文件 ")
+                .Append(codexConfigOptions.AppliedExecPolicyFilePaths.Count)
+                .Append(" 个 / 配置问题 ")
+                .Append(codexConfigOptions.ConfiguredExecPolicyIssues.Count)
+                .AppendLine(" 个 · 全局与受信任项目 rules/*.rules · 提交时冻结 · forbidden > prompt > allow");
         }
 
         private static void AppendPluginsEnabled(

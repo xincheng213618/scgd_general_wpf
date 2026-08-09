@@ -195,13 +195,13 @@ namespace ColorVision.Copilot
                 var approvalPromptDisabled = !invocation.FrameworkApprovalGranted
                     && !CopilotCodexApprovalPolicySelection.AllowsApprovalPrompt(
                         invocation.AgentRequest.CodexApprovalPolicy,
-                        invocation.Tool.Capability.ApprovalPromptCategory);
+                        invocation.EffectiveApprovalPromptCategory);
                 string approvalError;
                 if (approvalPromptDisabled)
                 {
                     approvalError = CopilotCodexApprovalPolicySelection.GetApprovalDenialReason(
                         invocation.AgentRequest.CodexApprovalPolicy,
-                        invocation.Tool.Capability.ApprovalPromptCategory);
+                        invocation.EffectiveApprovalPromptCategory);
                 }
                 else if (invocation.Tool.Capability.RequiresNativeApproval
                     && invocation.Tool is not ICopilotFrameworkApprovedTool)

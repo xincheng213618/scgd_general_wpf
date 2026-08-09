@@ -43,9 +43,10 @@ namespace ColorVision.Copilot
                     WasCancelled = true,
                 };
             }
+            var approvalPromptCategory = invocation.EffectiveApprovalPromptCategory;
             if (!CopilotCodexApprovalPolicySelection.AllowsApprovalPrompt(
                 invocation.AgentRequest.CodexApprovalPolicy,
-                invocation.Tool.Capability.ApprovalPromptCategory))
+                approvalPromptCategory))
             {
                 return CreatePermissionRequestOutcome(
                     hooks,
@@ -53,13 +54,16 @@ namespace ColorVision.Copilot
                     CopilotToolPermissionRequestDecision.Deny(
                         CopilotCodexApprovalPolicySelection.GetApprovalDenialReason(
                             invocation.AgentRequest.CodexApprovalPolicy,
-                            invocation.Tool.Capability.ApprovalPromptCategory),
+                            approvalPromptCategory),
                         "codex_approval_prompt_disabled"));
             }
 
             var approvalReason = CopilotCodexApprovalPolicySelection.GetApprovalPromptReason(
                 invocation.AgentRequest.CodexApprovalPolicy,
                 invocation.Tool);
+            approvalReason = CopilotApprovalRequestReason.Combine(
+                invocation.ApprovalPromptReasonOverride,
+                approvalReason);
 
             var context = new CopilotToolPermissionRequestContext
             {

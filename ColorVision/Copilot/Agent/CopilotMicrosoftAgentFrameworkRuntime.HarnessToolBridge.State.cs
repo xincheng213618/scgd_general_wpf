@@ -82,6 +82,15 @@ namespace ColorVision.Copilot
 
                 public bool ApprovedByFullAccess { get; set; }
 
+                public bool ApprovedByExecPolicy { get; set; }
+
+                public CopilotApprovalPromptCategory? ApprovalPromptCategoryOverride { get; set; }
+
+                public string ApprovalPromptReasonOverride { get; set; } = string.Empty;
+
+                public CopilotApprovalPromptCategory EffectiveApprovalPromptCategory =>
+                    ApprovalPromptCategoryOverride ?? Tool.Capability.ApprovalPromptCategory;
+
                 internal IReadOnlyList<CopilotToolExecutionHookRun> PermissionHookRuns { get; set; } =
                     Array.Empty<CopilotToolExecutionHookRun>();
 

@@ -38,11 +38,40 @@ namespace ColorVision.Copilot
 
                     var currentWorkspacePath = GetCurrentWorkspacePath();
                     var circuitBreakerSnapshot = default(CopilotAutomaticApprovalDenialCircuitBreakerSnapshot);
-                    CopilotFrameworkApprovalDecision decision;
-                    if (CopilotAgentAccessPolicy.CanAutoApprove(
+                    var execPolicy = CopilotCodexExecPolicyEvaluator.Evaluate(
                         request,
                         reservation.Tool,
-                        currentWorkspacePath))
+                        reservation.ToolInput);
+                    var requiresExecPolicyPrompt =
+                        execPolicy.Decision == CopilotCodexExecPolicyDecision.Prompt;
+                    if (requiresExecPolicyPrompt)
+                    {
+                        reservation.ApprovalPromptCategoryOverride =
+                            CopilotApprovalPromptCategory.Rules;
+                        reservation.ApprovalPromptReasonOverride = execPolicy.Reason;
+                    }
+                    CopilotFrameworkApprovalDecision decision;
+                    if (execPolicy.Decision == CopilotCodexExecPolicyDecision.Forbidden)
+                    {
+                        decision = CopilotFrameworkApprovalDecision.PolicyDenied(
+                            execPolicy.Reason,
+                            "codex_exec_policy_forbidden");
+                        bridge.Reject(reservation, decision);
+                    }
+                    else if (execPolicy.Decision == CopilotCodexExecPolicyDecision.Allow)
+                    {
+                        decision = CopilotFrameworkApprovalDecision.ApprovedByExecPolicy(
+                            execPolicy.Reason);
+                        reservation.ApprovedByExecPolicy = true;
+                        bridge.Approve(reservation);
+                        emit(CopilotAgentEvent.Status(
+                            $"{reservation.Tool.Name} was approved by the submitted turn's frozen Codex exec policy."));
+                    }
+                    else if (!requiresExecPolicyPrompt
+                        && CopilotAgentAccessPolicy.CanAutoApprove(
+                            request,
+                            reservation.Tool,
+                            currentWorkspacePath))
                     {
                         decision = CopilotFrameworkApprovalDecision.ApprovedByFullAccess();
                         reservation.ApprovedByFullAccess = true;
@@ -76,7 +105,8 @@ namespace ColorVision.Copilot
                             var useAutomaticReview = CopilotAgentAccessPolicy.CanAutoReview(
                                 request,
                                 reservation.Tool,
-                                currentWorkspacePath);
+                                currentWorkspacePath,
+                                reservation.EffectiveApprovalPromptCategory);
                             var useConfiguredAutomaticReview = useAutomaticReview
                                 && CopilotCodexApprovalsReviewerSelection.IsExplicitAutoReview(request);
                             var handle = _approvalCoordinator.RequestApproval(

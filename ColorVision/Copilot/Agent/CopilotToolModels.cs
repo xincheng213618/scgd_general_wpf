@@ -88,6 +88,9 @@ namespace ColorVision.Copilot
         internal IReadOnlyList<CopilotCodexCommandHookDefinition> CodexCommandHooks { get; init; } =
             Array.Empty<CopilotCodexCommandHookDefinition>();
 
+        internal IReadOnlyList<CopilotCodexExecPolicyRule> CodexExecPolicyRules { get; init; } =
+            Array.Empty<CopilotCodexExecPolicyRule>();
+
         internal CopilotCodexSubagentHookContext? CodexSubagentHookContext { get; init; }
 
         internal bool CodexPluginsEnabled { get; init; } = true;

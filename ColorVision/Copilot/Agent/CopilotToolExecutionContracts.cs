@@ -34,6 +34,13 @@ namespace ColorVision.Copilot
 
         public string ApprovalActionId { get; internal init; } = string.Empty;
 
+        internal CopilotApprovalPromptCategory? ApprovalPromptCategoryOverride { get; init; }
+
+        internal string ApprovalPromptReasonOverride { get; init; } = string.Empty;
+
+        internal CopilotApprovalPromptCategory EffectiveApprovalPromptCategory =>
+            ApprovalPromptCategoryOverride ?? Tool.Capability.ApprovalPromptCategory;
+
         public CopilotToolConcurrencyMode ConcurrencyMode { get; internal init; }
 
         public string ConcurrencyKey { get; internal init; } = string.Empty;

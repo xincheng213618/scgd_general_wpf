@@ -276,6 +276,14 @@ namespace ColorVision.Copilot
         internal IReadOnlyList<CopilotCodexConfiguredHookIssue> ConfiguredHookIssues { get; init; } =
             Array.Empty<CopilotCodexConfiguredHookIssue>();
 
+        public IReadOnlyList<string> AppliedExecPolicyFilePaths { get; init; } = Array.Empty<string>();
+
+        internal IReadOnlyList<CopilotCodexExecPolicyRule> ConfiguredExecPolicyRules { get; init; } =
+            Array.Empty<CopilotCodexExecPolicyRule>();
+
+        internal IReadOnlyList<CopilotCodexExecPolicyIssue> ConfiguredExecPolicyIssues { get; init; } =
+            Array.Empty<CopilotCodexExecPolicyIssue>();
+
         internal IReadOnlyList<CopilotCodexCustomSubagentDefinition> CustomSubagents { get; init; } =
             Array.Empty<CopilotCodexCustomSubagentDefinition>();
 
@@ -779,7 +787,9 @@ namespace ColorVision.Copilot
             || HasModelInstructionsOverride
             || HasCompactPromptOverride
             || ConfiguredCommandHooks.Count > 0
-            || ConfiguredHookIssues.Count > 0;
+            || ConfiguredHookIssues.Count > 0
+            || ConfiguredExecPolicyRules.Count > 0
+            || ConfiguredExecPolicyIssues.Count > 0;
 
         public string ConfigSourceLabel => ConfigSources switch
         {
@@ -1339,6 +1349,7 @@ namespace ColorVision.Copilot
                     Path.Combine(normalizedRoot, HooksFileName),
                     CopilotProjectInstructionConfigSources.CodexHome,
                     startingOrder: 0);
+            var execPolicy = DiscoverCodexHomeExecPolicy(normalizedRoot);
             options = options with
             {
                 CustomSubagents = customSubagents,
@@ -1346,6 +1357,9 @@ namespace ColorVision.Copilot
                 ConfiguredCommandHooks = configuredHooks.CommandHooks,
                 ConfiguredHookIssues = configuredHooks.Issues,
                 AppliedHookFilePaths = configuredHooks.SourceFilePaths,
+                ConfiguredExecPolicyRules = execPolicy.Rules,
+                ConfiguredExecPolicyIssues = execPolicy.Issues,
+                AppliedExecPolicyFilePaths = execPolicy.SourceFilePaths,
             };
 
             return new CopilotCodexHomeConfigSnapshot(globalSource, options);
@@ -1447,6 +1461,23 @@ namespace ColorVision.Copilot
                 appliedHookFilePaths.AddRange(hookDiscovery.SourceFilePaths);
             }
 
+            var projectExecPolicy = DiscoverTrustedProjectExecPolicy(
+                normalizedProjectRoot,
+                configDirectories,
+                options.ConfiguredExecPolicyRules.Count);
+            var configuredExecPolicyRules = options.ConfiguredExecPolicyRules
+                .Select(rule => rule.CreateSnapshot())
+                .Concat(projectExecPolicy.Rules)
+                .Take(MaximumConfiguredExecPolicyRules)
+                .ToArray();
+            var configuredExecPolicyIssues = options.ConfiguredExecPolicyIssues
+                .Concat(projectExecPolicy.Issues)
+                .ToArray();
+            var appliedExecPolicyFilePaths = options.AppliedExecPolicyFilePaths
+                .Concat(projectExecPolicy.SourceFilePaths)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+
             var customSubagents = ApplyTrustedProjectCustomSubagents(
                 options.CustomSubagents,
                 options.CustomSubagentDiscoveryIssues,
@@ -1462,6 +1493,9 @@ namespace ColorVision.Copilot
                 AppliedHookFilePaths = appliedHookFilePaths
                     .Distinct(StringComparer.OrdinalIgnoreCase)
                     .ToArray(),
+                ConfiguredExecPolicyRules = configuredExecPolicyRules,
+                ConfiguredExecPolicyIssues = configuredExecPolicyIssues,
+                AppliedExecPolicyFilePaths = appliedExecPolicyFilePaths,
             };
 
             return options with
