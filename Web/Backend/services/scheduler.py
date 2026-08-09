@@ -81,22 +81,7 @@ DEFAULT_JOBS = [
 
 def ensure_default_jobs(cache: CacheManager):
     """Register default scheduled jobs if they don't exist."""
-    now = _now_iso()
-    db = cache.get_db()
-    try:
-        for job in DEFAULT_JOBS:
-            db.execute(
-                """INSERT OR IGNORE INTO scheduled_jobs
-                   (id, name, job_type, enabled, interval_seconds, next_run_at, config, created_at)
-                   VALUES (?, ?, ?, 1, ?, ?, ?, ?)""",
-                (job["id"], job["name"], job["job_type"], job["interval_seconds"],
-                 now, job["config"], now),
-            )
-        db.commit()
-    except Exception as exc:
-        print(f"[scheduler] ensure_default_jobs failed: {exc}")
-    finally:
-        db.close()
+    cache.jobs.ensure_defaults(DEFAULT_JOBS, _now_iso())
 
 
 # ---------------------------------------------------------------------------
@@ -115,16 +100,7 @@ def run_job_now(
     started_at = _now_iso()
 
     # Record job run start
-    db = cache.get_db()
-    try:
-        run_row = db.execute(
-            "INSERT INTO job_runs (job_id, status, started_at) VALUES (?, 'running', ?)",
-            (job_id, started_at),
-        )
-        run_id = run_row.lastrowid
-        db.commit()
-    finally:
-        db.close()
+    run_id = cache.jobs.start_run(job_id, started_at)
 
     status = "success"
     summary = ""
@@ -158,29 +134,16 @@ def run_job_now(
     finished_at = _now_iso()
 
     # Update job run record
-    db = cache.get_db()
-    try:
-        db.execute(
-            """UPDATE job_runs SET status = ?, finished_at = ?, duration_ms = ?,
-                                     summary = ?, error = ?
-               WHERE id = ?""",
-            (status, finished_at, elapsed_ms, summary, error, run_id),
-        )
-        # Update next_run_at for recurring jobs
-        job_row = db.execute("SELECT interval_seconds FROM scheduled_jobs WHERE id = ?", (job_id,)).fetchone()
-        if job_row and job_row["interval_seconds"] and job_row["interval_seconds"] > 0:
-            next_run = datetime.fromtimestamp(
-                time.time() + job_row["interval_seconds"], tz=timezone.utc
-            ).isoformat()
-            db.execute(
-                "UPDATE scheduled_jobs SET next_run_at = ?, updated_at = ? WHERE id = ?",
-                (next_run, finished_at, job_id),
-            )
-        db.commit()
-    except Exception as exc:
-        print(f"[scheduler] failed to update job run: {exc}")
-    finally:
-        db.close()
+    cache.jobs.complete_run(
+        run_id,
+        job_id,
+        status=status,
+        finished_at=finished_at,
+        duration_ms=elapsed_ms,
+        summary=summary,
+        error=error,
+        now_epoch_seconds=time.time(),
+    )
 
     return {
         "job_id": job_id,
@@ -380,16 +343,9 @@ class SchedulerThread(threading.Thread):
 
     def _tick(self):
         now = datetime.now(timezone.utc)
-        db = self._cache.get_db()
-        try:
-            rows = db.execute(
-                "SELECT * FROM scheduled_jobs WHERE enabled = 1"
-            ).fetchall()
-        finally:
-            db.close()
+        jobs = self._cache.jobs.list_enabled()
 
-        for row in rows:
-            job = dict(row)
+        for job in jobs:
             next_run = job.get("next_run_at")
             if next_run:
                 try:
@@ -404,15 +360,8 @@ class SchedulerThread(threading.Thread):
 
             # Skip startup check after first run
             if job["id"] == "startup_index_check":
-                db2 = self._cache.get_db()
-                try:
-                    run_count = db2.execute(
-                        "SELECT COUNT(*) AS cnt FROM job_runs WHERE job_id = 'startup_index_check' AND status = 'success'"
-                    ).fetchone()
-                    if run_count and run_count["cnt"] > 0:
-                        continue
-                finally:
-                    db2.close()
+                if self._cache.jobs.has_successful_run("startup_index_check"):
+                    continue
 
             try:
                 run_job_now(

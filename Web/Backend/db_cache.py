@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any
 
 from ports.index_state import IndexStateRepository
+from ports.jobs import JobRepository
 
 
 def now_ts() -> int:
@@ -33,8 +34,10 @@ class CacheManager:
     def __init__(self, db_path: Path):
         self._db_path = db_path
         from db.repositories.index_state import SqliteIndexStateRepository
+        from db.repositories.jobs import SqliteJobRepository
 
         self._index_states: IndexStateRepository = SqliteIndexStateRepository(self.get_db)
+        self._jobs: JobRepository = SqliteJobRepository(self.get_db)
 
     @property
     def db_path(self) -> Path:
@@ -44,6 +47,11 @@ class CacheManager:
     def index_states(self) -> IndexStateRepository:
         """Index-state persistence port shared by all index services."""
         return self._index_states
+
+    @property
+    def jobs(self) -> JobRepository:
+        """Scheduled-job persistence port."""
+        return self._jobs
 
     def get_db(self) -> sqlite3.Connection:
         db = sqlite3.connect(str(self._db_path), timeout=15)

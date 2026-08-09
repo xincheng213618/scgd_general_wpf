@@ -427,7 +427,8 @@ def register_all_blueprints(app, ctx, services, helpers):
     ))
 
     register_admin_api_routes(app, AdminApiContext(
-        cache=cache, storage_getter=_dynamic_storage, config_getter=_dynamic_config,
+        cache=cache, jobs=cache.jobs,
+        storage_getter=_dynamic_storage, config_getter=_dynamic_config,
         get_db=helpers["get_db"], check_auth=_check_admin_auth,
         require_auth_decorator=helpers["require_upload_auth"],
         refresh_plugin_index=lambda c, s, pid, **kw: __import__("services.plugin_index", fromlist=["refresh_plugin_index"]).refresh_plugin_index(c, s, pid, **kw),

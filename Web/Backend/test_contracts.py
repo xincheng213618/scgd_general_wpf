@@ -757,6 +757,18 @@ class AdminApiContracts(ContractTestBase):
         data = resp.get_json()
         self.assertIsInstance(data, list)
         self.assertGreater(len(data), 0)
+        self.assertEqual([job["id"] for job in data], sorted(job["id"] for job in data))
+        self.assertIn("latest_run", data[0])
+
+    def test_jobs_missing_job_contracts_remain_404(self):
+        for action in ("run", "enable", "disable"):
+            with self.subTest(action=action):
+                resp = self.client.post(
+                    f"/api/admin/jobs/missing/{action}",
+                    headers=self.basic_auth(),
+                )
+                self.assertEqual(resp.status_code, 404)
+                self.assertEqual(resp.get_json(), {"error": "Job not found"})
 
     def test_job_run_returns_result(self):
         from services.scheduler import ensure_default_jobs

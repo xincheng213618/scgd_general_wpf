@@ -40,6 +40,7 @@ from typing import Any, Callable
 from flask import Blueprint, jsonify, request
 
 from db_cache import CacheManager, now_iso
+from ports.jobs import JobRepository
 
 
 # Per-endpoint scope requirements
@@ -80,6 +81,7 @@ ENDPOINT_SCOPES: dict[str, list[str]] = {
 @dataclass(frozen=True)
 class AdminApiContext:
     cache: CacheManager
+    jobs: JobRepository
     storage_getter: Callable[[], Path]
     config_getter: Callable[[], dict[str, Any]]
     get_db: Callable[[], Any]
@@ -513,36 +515,17 @@ def backup_db():
 @admin_api.route("/jobs", methods=["GET"])
 def list_jobs():
     ctx = _get_ctx()
-    db = ctx.get_db()
     try:
-        rows = db.execute("SELECT * FROM scheduled_jobs ORDER BY id").fetchall()
-        jobs = [dict(r) for r in rows]
-
-        # Attach latest run info
-        for job in jobs:
-            run = db.execute(
-                "SELECT * FROM job_runs WHERE job_id = ? ORDER BY id DESC LIMIT 1",
-                (job["id"],),
-            ).fetchone()
-            job["latest_run"] = dict(run) if run else None
-
-        return jsonify(jobs)
+        return jsonify(ctx.jobs.list_with_latest_runs())
     except Exception as exc:
         return jsonify({"error": str(exc)}), 500
-    finally:
-        db.close()
 
 
 @admin_api.route("/jobs/<job_id>/run", methods=["POST"])
 def run_job(job_id: str):
     ctx = _get_ctx()
-    db = ctx.get_db()
-    try:
-        row = db.execute("SELECT * FROM scheduled_jobs WHERE id = ?", (job_id,)).fetchone()
-        if not row:
-            return jsonify({"error": "Job not found"}), 404
-    finally:
-        db.close()
+    if ctx.jobs.get(job_id) is None:
+        return jsonify({"error": "Job not found"}), 404
 
     from services.scheduler import run_job_now
     result = run_job_now(ctx.cache, ctx.storage_getter(), ctx.config_getter, ctx.get_db, job_id)
@@ -564,17 +547,8 @@ def run_job(job_id: str):
 @admin_api.route("/jobs/<job_id>/enable", methods=["POST"])
 def enable_job(job_id: str):
     ctx = _get_ctx()
-    db = ctx.get_db()
-    try:
-        cursor = db.execute(
-            "UPDATE scheduled_jobs SET enabled = 1, updated_at = ? WHERE id = ?",
-            (now_iso(), job_id),
-        )
-        if cursor.rowcount == 0:
-            return jsonify({"error": "Job not found"}), 404
-        db.commit()
-    finally:
-        db.close()
+    if not ctx.jobs.set_enabled(job_id, True, now_iso()):
+        return jsonify({"error": "Job not found"}), 404
 
     ctx.cache.write_audit(
         actor_type=_actor_type(),
@@ -592,17 +566,8 @@ def enable_job(job_id: str):
 @admin_api.route("/jobs/<job_id>/disable", methods=["POST"])
 def disable_job(job_id: str):
     ctx = _get_ctx()
-    db = ctx.get_db()
-    try:
-        cursor = db.execute(
-            "UPDATE scheduled_jobs SET enabled = 0, updated_at = ? WHERE id = ?",
-            (now_iso(), job_id),
-        )
-        if cursor.rowcount == 0:
-            return jsonify({"error": "Job not found"}), 404
-        db.commit()
-    finally:
-        db.close()
+    if not ctx.jobs.set_enabled(job_id, False, now_iso()):
+        return jsonify({"error": "Job not found"}), 404
 
     ctx.cache.write_audit(
         actor_type=_actor_type(),
@@ -923,7 +888,6 @@ def _actor_id() -> str:
 @admin_api.route("/perf/summary", methods=["GET"])
 def perf_summary():
     ctx = _get_ctx()
-    db = ctx.get_db()
     try:
         # Recent slow requests from in-memory buffer
         slow_requests = []
@@ -931,12 +895,8 @@ def perf_summary():
             slow_requests = ctx.get_slow_requests()[-20:]
 
         # Recent slow job runs
-        rows = db.execute(
-            "SELECT * FROM job_runs ORDER BY id DESC LIMIT 20"
-        ).fetchall()
         slow_jobs = []
-        for row in rows:
-            r = dict(row)
+        for r in ctx.jobs.recent_runs(20):
             if r.get("duration_ms", 0) >= 1000 or r.get("status") == "error":
                 slow_jobs.append(r)
 
@@ -947,5 +907,3 @@ def perf_summary():
         })
     except Exception as exc:
         return jsonify({"error": str(exc)}), 500
-    finally:
-        db.close()
