@@ -62,8 +62,8 @@ namespace ColorVision.Copilot.Mcp
             RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         private static readonly Regex BearerRegex = new(
-            "Bearer\\s+[^,;\\s]+",
-            RegexOptions.IgnoreCase | RegexOptions.Compiled);
+            "(?i:\\bBearer)[ \\t]+[A-Za-z0-9._~+/-]{16,}=*",
+            RegexOptions.Compiled);
 
         private static readonly Regex OpenAiApiKeyRegex = new(
             "sk-[A-Za-z0-9]{20,}",

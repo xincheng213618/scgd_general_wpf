@@ -27,6 +27,39 @@ public sealed class CopilotSecretRedactionTests
         Assert.Equal(expected, CopilotMcpAuditLogger.RedactText(source));
     }
 
+    [Theory]
+    [InlineData(
+        "Bearer abcde+fghijklmnopqrstuvwxyz012345",
+        "Bearer <redacted>")]
+    [InlineData(
+        "bEaReR\tabcdefghijklmnop",
+        "Bearer <redacted>")]
+    [InlineData(
+        "Bearer   AbcdefghijklMN09._~+/-==; echo done",
+        "Bearer <redacted>; echo done")]
+    [InlineData(
+        "Bearer abcdefghijklmnop\")",
+        "Bearer <redacted>\")")]
+    public void SupportedBearerCredentialsAreFullyRedactedWithoutConsumingDelimiters(
+        string source,
+        string expected)
+    {
+        Assert.Equal(expected, CopilotMcpAuditLogger.RedactText(source));
+    }
+
+    [Theory]
+    [InlineData("Bearer of good news")]
+    [InlineData("Bearer abcdefghijklmno")]
+    [InlineData("NotABearer abcdefghijklmnop")]
+    [InlineData("Bearerabcdefghijklmnop")]
+    [InlineData("Bearer\nabcdefghijklmnop")]
+    [InlineData("Bearer\u00a0abcdefghijklmnop")]
+    [InlineData("Bearer abcdefghijklmno\u212a")]
+    public void BearerLikeTextOutsideCredentialBoundariesIsPreserved(string source)
+    {
+        Assert.Equal(source, CopilotMcpAuditLogger.RedactText(source));
+    }
+
     [Fact]
     public async Task BackgroundCommandPreviewRedactsCredentialButPreservesRawDigest()
     {
