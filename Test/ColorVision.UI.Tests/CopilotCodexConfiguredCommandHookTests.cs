@@ -62,6 +62,160 @@ public sealed class CopilotCodexConfiguredCommandHookTests
     }
 
     [Fact]
+    public void GlobalInlineTomlHookLoadsWindowsCommandAndPreservesQuotedComment()
+    {
+        var codexHome = CreateTemporaryDirectory();
+        try
+        {
+            var configPath = Path.Combine(codexHome, "config.toml");
+            File.WriteAllText(
+                configPath,
+                """
+                [[hooks.PreToolUse]]
+                matcher = '^Bash$'
+
+                [[hooks.PreToolUse.hooks]]
+                type = "command"
+                command = "fallback-command"
+                command_windows = 'windows # command'
+                timeout = 7
+                async = true
+                statusMessage = "Checking inline shell policy"
+                """);
+
+            var options = CopilotProjectInstructionDiscoveryConfig.Load(codexHome);
+
+            var hook = Assert.Single(options.ConfiguredCommandHooks);
+            Assert.Equal("windows # command", hook.Command);
+            Assert.Equal(7, hook.TimeoutSeconds);
+            Assert.Equal("Checking inline shell policy", hook.StatusMessage);
+            Assert.Equal(CopilotToolExecutionHookMode.Async, hook.ExecutionMode);
+            Assert.Equal(CopilotCodexConfiguredHookEvent.PreToolUse, hook.Event);
+            Assert.True(hook.Matches("RunShellCommand"));
+            Assert.Equal([configPath], options.AppliedHookFilePaths);
+            Assert.Empty(options.ConfiguredHookIssues);
+        }
+        finally
+        {
+            Directory.Delete(codexHome, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void ProjectInlineTomlHookLoadsOnlyFromTrustedProject()
+    {
+        var codexHome = CreateTemporaryDirectory();
+        var projectRoot = CreateTemporaryDirectory();
+        try
+        {
+            var projectConfigDirectory = Path.Combine(projectRoot, ".codex");
+            Directory.CreateDirectory(projectConfigDirectory);
+            var projectConfigPath = Path.Combine(projectConfigDirectory, "config.toml");
+            File.WriteAllText(
+                projectConfigPath,
+                """
+                [[hooks.PostToolUse]]
+                matcher = "^ReadLocalFile$"
+
+                [[hooks.PostToolUse.hooks]]
+                type = "command"
+                commandWindows = "project-inline-audit"
+                """);
+            var globalConfigPath = Path.Combine(codexHome, "config.toml");
+            File.WriteAllText(
+                globalConfigPath,
+                $"[projects.'{projectRoot}']\ntrust_level = \"untrusted\"");
+
+            var untrusted = CopilotProjectInstructionDiscoveryConfig.Load(codexHome, projectRoot);
+
+            Assert.Empty(untrusted.ConfiguredCommandHooks);
+            Assert.Empty(untrusted.AppliedHookFilePaths);
+
+            File.WriteAllText(
+                globalConfigPath,
+                $"[projects.'{projectRoot}']\ntrust_level = \"trusted\"");
+            var trusted = CopilotProjectInstructionDiscoveryConfig.Load(codexHome, projectRoot);
+
+            var hook = Assert.Single(trusted.ConfiguredCommandHooks);
+            Assert.Equal("project-inline-audit", hook.Command);
+            Assert.Equal(CopilotProjectInstructionConfigSources.TrustedProject, hook.Source);
+            Assert.Empty(trusted.AppliedProjectConfigFilePaths);
+            Assert.Equal([projectConfigPath], trusted.AppliedHookFilePaths);
+        }
+        finally
+        {
+            Directory.Delete(codexHome, recursive: true);
+            Directory.Delete(projectRoot, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void HooksJsonAndInlineTomlHooksBothLoadAndSurfaceLayerDiagnostic()
+    {
+        var codexHome = CreateTemporaryDirectory();
+        try
+        {
+            var hooksPath = Path.Combine(codexHome, "hooks.json");
+            var configPath = Path.Combine(codexHome, "config.toml");
+            File.WriteAllText(
+                hooksPath,
+                CreateSingleHookJson("PreToolUse", "^ReadLocalFile$", "json-hook"));
+            File.WriteAllText(
+                configPath,
+                """
+                [[hooks.PreToolUse]]
+                matcher = "^ReadLocalFile$"
+
+                [[hooks.PreToolUse.hooks]]
+                type = "command"
+                commandWindows = "inline-hook"
+                """);
+
+            var options = CopilotProjectInstructionDiscoveryConfig.Load(codexHome);
+
+            Assert.Equal(["json-hook", "inline-hook"], options.ConfiguredCommandHooks.Select(hook => hook.Command));
+            Assert.Equal([hooksPath, configPath], options.AppliedHookFilePaths);
+            Assert.Contains(
+                options.ConfiguredHookIssues,
+                issue => issue.SourceFilePath == configPath
+                    && issue.Message.Contains("both hooks.json and config.toml", StringComparison.Ordinal));
+        }
+        finally
+        {
+            Directory.Delete(codexHome, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void OrphanInlineTomlHandlerFailsClosedAndSurfacesDiagnostic()
+    {
+        var codexHome = CreateTemporaryDirectory();
+        try
+        {
+            var configPath = Path.Combine(codexHome, "config.toml");
+            File.WriteAllText(
+                configPath,
+                """
+                [[hooks.PermissionRequest.hooks]]
+                type = "command"
+                commandWindows = "must-not-run"
+                """);
+
+            var options = CopilotProjectInstructionDiscoveryConfig.Load(codexHome);
+
+            Assert.Empty(options.ConfiguredCommandHooks);
+            Assert.Equal([configPath], options.AppliedHookFilePaths);
+            Assert.Contains(
+                options.ConfiguredHookIssues,
+                issue => issue.Message.Contains("without a preceding matcher group", StringComparison.Ordinal));
+        }
+        finally
+        {
+            Directory.Delete(codexHome, recursive: true);
+        }
+    }
+
+    [Fact]
     public void ProjectHooksJsonLoadsOnlyFromTrustedProjectWithoutConfigToml()
     {
         var codexHome = CreateTemporaryDirectory();

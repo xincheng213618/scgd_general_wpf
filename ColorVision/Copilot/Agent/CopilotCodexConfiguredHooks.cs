@@ -69,10 +69,10 @@ namespace ColorVision.Copilot
                 && IsValidMatcher(ToolNamePattern)
                 && !string.IsNullOrWhiteSpace(Command)
                 && Command.Length <= CopilotProjectInstructionDiscoveryConfig.MaximumHookCommandCharacters
-                && Command.IndexOf('\0') < 0
+                && !Command.Contains('\0')
                 && TimeoutSeconds is >= 1 and <= CopilotProjectInstructionDiscoveryConfig.MaximumHookTimeoutSeconds
                 && StatusMessage.Length <= CopilotProjectInstructionDiscoveryConfig.MaximumHookStatusMessageCharacters
-                && StatusMessage.IndexOf('\0') < 0
+                && !StatusMessage.Contains('\0')
                 && Enum.IsDefined(ExecutionMode)
                 && Order >= 0
                 && ConfigurationFingerprint.Length == 64
@@ -108,7 +108,7 @@ namespace ColorVision.Copilot
         {
             if (string.IsNullOrWhiteSpace(value)
                 || value.Length > CopilotToolExecutionHookRegistry.MaxToolNamePatternLength
-                || value.IndexOf('\0') >= 0)
+                || value.Contains('\0'))
             {
                 return false;
             }
@@ -169,6 +169,368 @@ namespace ColorVision.Copilot
         internal const int MaximumHookTimeoutSeconds = 30;
         private const int DefaultHookTimeoutSeconds = 5;
         private const string HooksFileName = "hooks.json";
+
+        private sealed class TomlCommandHookHandler
+        {
+            public HashSet<string> AssignedKeys { get; } = new(StringComparer.Ordinal);
+            public string Type { get; set; } = string.Empty;
+            public string Command { get; set; } = string.Empty;
+            public string CommandWindows { get; set; } = string.Empty;
+            public string CommandWindowsSnake { get; set; } = string.Empty;
+            public int? TimeoutSeconds { get; set; }
+            public bool? IsAsync { get; set; }
+            public string StatusMessage { get; set; } = string.Empty;
+            public string Error { get; set; } = string.Empty;
+        }
+
+        private static CopilotCodexConfiguredHookDiscoveryResult DiscoverConfiguredHooksForLayer(
+            string allowedRootPath,
+            string configFilePath,
+            string configSource,
+            string hookFilePath,
+            CopilotProjectInstructionConfigSources source,
+            int startingOrder)
+        {
+            var json = DiscoverConfiguredHookFile(
+                allowedRootPath,
+                hookFilePath,
+                source,
+                startingOrder);
+            var inline = DiscoverConfiguredHooksInToml(
+                configFilePath,
+                configSource,
+                source,
+                startingOrder + json.CommandHooks.Count);
+            var definitions = json.CommandHooks.Concat(inline.CommandHooks).ToArray();
+            var issues = json.Issues.Concat(inline.Issues).ToList();
+            if (json.SourceFilePaths.Count > 0 && inline.SourceFilePaths.Count > 0)
+            {
+                issues.Add(new CopilotCodexConfiguredHookIssue(
+                    NormalizeHookSourcePath(configFilePath),
+                    "This configuration layer defines hooks in both hooks.json and config.toml; both sets were loaded."));
+            }
+
+            return new CopilotCodexConfiguredHookDiscoveryResult(
+                definitions,
+                issues.ToArray(),
+                json.SourceFilePaths
+                    .Concat(inline.SourceFilePaths)
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToArray());
+        }
+
+        private static CopilotCodexConfiguredHookDiscoveryResult DiscoverConfiguredHooksInToml(
+            string configFilePath,
+            string configSource,
+            CopilotProjectInstructionConfigSources source,
+            int startingOrder)
+        {
+            var normalizedPath = NormalizeHookSourcePath(configFilePath);
+            if (normalizedPath.Length == 0 || string.IsNullOrWhiteSpace(configSource))
+                return CopilotCodexConfiguredHookDiscoveryResult.Empty;
+
+            var definitions = new List<CopilotCodexCommandHookDefinition>();
+            var issues = new List<CopilotCodexConfiguredHookIssue>();
+            var unsupportedEvents = new HashSet<string>(StringComparer.Ordinal);
+            var lines = NormalizeLines(configSource);
+            var sawHookDeclaration = false;
+            var hasMatcherGroup = false;
+            var matcherEventName = string.Empty;
+            var matcher = "*";
+            var matcherIsValid = true;
+            var matcherWasAssigned = false;
+            var acceptsHandlers = false;
+            var hookEvent = default(CopilotCodexConfiguredHookEvent);
+            TomlCommandHookHandler? handler = null;
+            var handlerLimitReported = false;
+
+            void AddIssue(string message) =>
+                issues.Add(new CopilotCodexConfiguredHookIssue(normalizedPath, message));
+
+            void CompleteHandler()
+            {
+                if (handler == null)
+                    return;
+
+                var completed = handler;
+                handler = null;
+                if (!acceptsHandlers)
+                    return;
+                if (!matcherIsValid)
+                    return;
+                if (completed.Error.Length > 0)
+                {
+                    AddIssue(completed.Error);
+                    return;
+                }
+                if (startingOrder + definitions.Count >= MaximumConfiguredHookHandlers)
+                {
+                    if (!handlerLimitReported)
+                    {
+                        AddIssue($"Configured command hooks are limited to {MaximumConfiguredHookHandlers} handlers.");
+                        handlerLimitReported = true;
+                    }
+                    return;
+                }
+                if (completed.Type.Length == 0)
+                {
+                    AddIssue($"Hook event '{hookEvent}' contains a handler without a valid type.");
+                    return;
+                }
+                if (!TryCreateCommandHookDefinition(
+                    completed.Type,
+                    completed.Command,
+                    completed.CommandWindows,
+                    completed.CommandWindowsSnake,
+                    completed.TimeoutSeconds,
+                    completed.IsAsync,
+                    completed.StatusMessage,
+                    normalizedPath,
+                    source,
+                    hookEvent,
+                    matcher,
+                    startingOrder + definitions.Count,
+                    out var definition,
+                    out var error))
+                {
+                    AddIssue(error);
+                    return;
+                }
+                definitions.Add(definition!);
+            }
+
+            for (var lineIndex = 0; lineIndex < lines.Length; lineIndex++)
+            {
+                var line = StripComment(lines[lineIndex]).Trim();
+                if (line.Length == 0)
+                    continue;
+
+                if (line[0] == '[')
+                {
+                    CompleteHandler();
+                    if (!TryParseHookArrayTableHeader(
+                        line,
+                        out var eventName,
+                        out var isHandlerTable))
+                    {
+                        if (line.StartsWith("[[hooks.", StringComparison.Ordinal))
+                        {
+                            sawHookDeclaration = true;
+                            AddIssue("config.toml contains an invalid inline hook table header.");
+                        }
+                        hasMatcherGroup = false;
+                        acceptsHandlers = false;
+                        continue;
+                    }
+
+                    sawHookDeclaration = true;
+                    if (!isHandlerTable)
+                    {
+                        hasMatcherGroup = true;
+                        matcherEventName = eventName;
+                        matcher = "*";
+                        matcherIsValid = true;
+                        matcherWasAssigned = false;
+                        acceptsHandlers = TryParseSupportedHookEvent(eventName, out hookEvent);
+                        if (!acceptsHandlers && unsupportedEvents.Add(eventName))
+                        {
+                            AddIssue($"Hook event '{eventName}' is not connected to the ColorVision tool lifecycle yet.");
+                        }
+                        continue;
+                    }
+
+                    acceptsHandlers = hasMatcherGroup
+                        && string.Equals(eventName, matcherEventName, StringComparison.Ordinal)
+                        && TryParseSupportedHookEvent(eventName, out hookEvent);
+                    if (!acceptsHandlers)
+                    {
+                        if (TryParseSupportedHookEvent(eventName, out _))
+                        {
+                            AddIssue($"Hook event '{eventName}' contains a handler without a preceding matcher group.");
+                        }
+                        else if (unsupportedEvents.Add(eventName))
+                        {
+                            AddIssue($"Hook event '{eventName}' is not connected to the ColorVision tool lifecycle yet.");
+                        }
+                    }
+                    handler = new TomlCommandHookHandler();
+                    continue;
+                }
+
+                var equalsIndex = line.IndexOf('=');
+                if (equalsIndex <= 0)
+                    continue;
+                var key = line[..equalsIndex].Trim();
+                var value = ReadTomlHookAssignmentValue(
+                    lines,
+                    ref lineIndex,
+                    line[(equalsIndex + 1)..].Trim());
+                if (handler != null)
+                {
+                    ApplyTomlHookHandlerAssignment(handler, hookEvent, key, value);
+                    continue;
+                }
+                if (!hasMatcherGroup
+                    || !string.Equals(key, "matcher", StringComparison.Ordinal))
+                {
+                    continue;
+                }
+                if (matcherWasAssigned)
+                {
+                    matcherIsValid = false;
+                    AddIssue($"Hook event '{matcherEventName}' contains a duplicate matcher assignment.");
+                    continue;
+                }
+
+                matcherWasAssigned = true;
+                if (!TryParseConfiguredText(
+                        value,
+                        CopilotToolExecutionHookRegistry.MaxToolNamePatternLength,
+                        out matcher))
+                {
+                    matcherIsValid = false;
+                    AddIssue($"Hook event '{matcherEventName}' contains an invalid matcher.");
+                    continue;
+                }
+                if (matcher.Length == 0)
+                    matcher = "*";
+                matcherIsValid = CopilotCodexCommandHookDefinition.IsValidMatcher(matcher);
+                if (!matcherIsValid)
+                    AddIssue($"Hook event '{matcherEventName}' contains an invalid matcher.");
+            }
+
+            CompleteHandler();
+            return sawHookDeclaration
+                ? new CopilotCodexConfiguredHookDiscoveryResult(
+                    definitions.ToArray(),
+                    issues.ToArray(),
+                    [normalizedPath])
+                : CopilotCodexConfiguredHookDiscoveryResult.Empty;
+        }
+
+        private static bool TryParseHookArrayTableHeader(
+            string line,
+            out string eventName,
+            out bool isHandlerTable)
+        {
+            eventName = string.Empty;
+            isHandlerTable = false;
+            if (line.Length < 7
+                || !line.StartsWith("[[", StringComparison.Ordinal)
+                || !line.EndsWith("]]", StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            var segments = line[2..^2]
+                .Split('.', StringSplitOptions.TrimEntries);
+            if (segments.Length is not (2 or 3)
+                || !string.Equals(segments[0], "hooks", StringComparison.Ordinal)
+                || segments[1].Length == 0
+                || (segments.Length == 3
+                    && !string.Equals(segments[2], "hooks", StringComparison.Ordinal)))
+            {
+                return false;
+            }
+
+            eventName = segments[1];
+            isHandlerTable = segments.Length == 3;
+            return true;
+        }
+
+        private static string ReadTomlHookAssignmentValue(
+            string[] lines,
+            ref int lineIndex,
+            string value)
+        {
+            if (!TryGetMultilineStringDelimiter(value, out var delimiter)
+                || HasClosedMultilineString(value, delimiter))
+            {
+                return value;
+            }
+
+            var builder = new StringBuilder(value);
+            for (var logicalLine = 1;
+                logicalLine < MaximumConfiguredTextLines && lineIndex + 1 < lines.Length;
+                logicalLine++)
+            {
+                lineIndex++;
+                builder.Append('\n').Append(lines[lineIndex]);
+                if (HasClosedMultilineString(builder.ToString(), delimiter))
+                    break;
+            }
+            return builder.ToString();
+        }
+
+        private static void ApplyTomlHookHandlerAssignment(
+            TomlCommandHookHandler handler,
+            CopilotCodexConfiguredHookEvent hookEvent,
+            string key,
+            string value)
+        {
+            if (key is not ("type"
+                    or "command"
+                    or "commandWindows"
+                    or "command_windows"
+                    or "timeout"
+                    or "async"
+                    or "statusMessage"))
+            {
+                return;
+            }
+            if (!handler.AssignedKeys.Add(key))
+            {
+                handler.Error = $"Hook event '{hookEvent}' contains a duplicate '{key}' handler assignment.";
+                return;
+            }
+
+            switch (key)
+            {
+                case "type":
+                    if (TryParseConfiguredText(value, MaximumPersonalityCharacters, out var type))
+                        handler.Type = type;
+                    else
+                        handler.Error = $"Hook event '{hookEvent}' contains a handler without a valid type.";
+                    break;
+                case "command":
+                    AssignTomlHookText(value, MaximumHookCommandCharacters, text => handler.Command = text);
+                    break;
+                case "commandWindows":
+                    AssignTomlHookText(value, MaximumHookCommandCharacters, text => handler.CommandWindows = text);
+                    break;
+                case "command_windows":
+                    AssignTomlHookText(value, MaximumHookCommandCharacters, text => handler.CommandWindowsSnake = text);
+                    break;
+                case "timeout":
+                    if (TryParsePositiveInteger(value, out var timeoutSeconds))
+                        handler.TimeoutSeconds = timeoutSeconds;
+                    else
+                        handler.Error = $"Hook event '{hookEvent}' command timeout must be an integer.";
+                    break;
+                case "async":
+                    if (TryParseTomlBoolean(value, out var isAsync))
+                        handler.IsAsync = isAsync;
+                    else
+                        handler.Error = $"Hook event '{hookEvent}' command async flag must be a boolean.";
+                    break;
+                case "statusMessage":
+                    AssignTomlHookText(
+                        value,
+                        MaximumHookStatusMessageCharacters,
+                        text => handler.StatusMessage = text);
+                    break;
+            }
+
+            void AssignTomlHookText(string sourceText, int maximumCharacters, Action<string> assign)
+            {
+                if (TryParseConfiguredText(sourceText, maximumCharacters, out var parsed))
+                {
+                    assign(parsed);
+                    return;
+                }
+                handler.Error = $"Hook event '{hookEvent}' handler field '{key}' is invalid or oversized.";
+            }
+        }
 
         private static CopilotCodexConfiguredHookDiscoveryResult DiscoverConfiguredHookFile(
             string allowedRootPath,
@@ -261,7 +623,7 @@ namespace ColorVision.Copilot
 
             foreach (var group in groups.EnumerateArray())
             {
-                if (definitions.Count >= MaximumConfiguredHookHandlers)
+                if (startingOrder + definitions.Count >= MaximumConfiguredHookHandlers)
                 {
                     issues.Add(new CopilotCodexConfiguredHookIssue(
                         sourceFilePath,
@@ -294,7 +656,7 @@ namespace ColorVision.Copilot
 
                 foreach (var handler in handlers.EnumerateArray())
                 {
-                    if (definitions.Count >= MaximumConfiguredHookHandlers)
+                    if (startingOrder + definitions.Count >= MaximumConfiguredHookHandlers)
                     {
                         issues.Add(new CopilotCodexConfiguredHookIssue(
                             sourceFilePath,
@@ -347,47 +709,98 @@ namespace ColorVision.Copilot
                 return false;
             }
 
-            var command = ReadOptionalString(handler, "commandWindows");
-            if (command.Length == 0)
-                command = ReadOptionalString(handler, "command_windows");
-            if (command.Length == 0)
-                command = ReadOptionalString(handler, "command");
-            if (command.Length == 0
-                || command.Length > MaximumHookCommandCharacters
-                || command.IndexOf('\0') >= 0)
+            int? timeoutSeconds = null;
+            if (handler.TryGetProperty("timeout", out var timeoutElement))
+            {
+                if (timeoutElement.ValueKind != JsonValueKind.Number
+                    || !timeoutElement.TryGetInt32(out var parsedTimeoutSeconds))
+                {
+                    error = $"Hook event '{hookEvent}' command timeout must be an integer.";
+                    return false;
+                }
+                timeoutSeconds = parsedTimeoutSeconds;
+            }
+
+            bool? isAsync = null;
+            if (handler.TryGetProperty("async", out var asyncElement))
+            {
+                if (asyncElement.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
+                {
+                    error = $"Hook event '{hookEvent}' command async flag must be a boolean.";
+                    return false;
+                }
+                isAsync = asyncElement.ValueKind == JsonValueKind.True;
+            }
+
+            return TryCreateCommandHookDefinition(
+                handlerType,
+                ReadOptionalString(handler, "command"),
+                ReadOptionalString(handler, "commandWindows"),
+                ReadOptionalString(handler, "command_windows"),
+                timeoutSeconds,
+                isAsync,
+                ReadOptionalString(handler, "statusMessage"),
+                sourceFilePath,
+                source,
+                hookEvent,
+                matcher,
+                order,
+                out definition,
+                out error);
+        }
+
+        private static bool TryCreateCommandHookDefinition(
+            string handlerType,
+            string command,
+            string commandWindows,
+            string commandWindowsSnake,
+            int? configuredTimeoutSeconds,
+            bool? configuredAsync,
+            string statusMessage,
+            string sourceFilePath,
+            CopilotProjectInstructionConfigSources source,
+            CopilotCodexConfiguredHookEvent hookEvent,
+            string matcher,
+            int order,
+            out CopilotCodexCommandHookDefinition? definition,
+            out string error)
+        {
+            definition = null;
+            error = string.Empty;
+            if (!string.Equals(handlerType, "command", StringComparison.Ordinal))
+            {
+                error = $"Hook handler type '{handlerType}' is not connected to the ColorVision tool lifecycle yet.";
+                return false;
+            }
+
+            var selectedCommand = commandWindows.Length > 0
+                ? commandWindows
+                : commandWindowsSnake.Length > 0
+                    ? commandWindowsSnake
+                    : command;
+            if (selectedCommand.Length == 0
+                || selectedCommand.Length > MaximumHookCommandCharacters
+                || selectedCommand.Contains('\0'))
             {
                 error = $"Hook event '{hookEvent}' contains an empty or oversized command handler.";
                 return false;
             }
 
-            var timeoutSeconds = DefaultHookTimeoutSeconds;
-            if (handler.TryGetProperty("timeout", out var timeoutElement)
-                && (timeoutElement.ValueKind != JsonValueKind.Number
-                    || !timeoutElement.TryGetInt32(out timeoutSeconds)
-                    || timeoutSeconds is < 1 or > MaximumHookTimeoutSeconds))
+            var timeoutSeconds = configuredTimeoutSeconds ?? DefaultHookTimeoutSeconds;
+            if (timeoutSeconds is < 1 or > MaximumHookTimeoutSeconds)
             {
                 error = $"Hook event '{hookEvent}' command timeout must be between 1 and {MaximumHookTimeoutSeconds} seconds.";
                 return false;
             }
 
-            var isAsync = handler.TryGetProperty("async", out var asyncElement)
-                && asyncElement.ValueKind == JsonValueKind.True;
-            if (handler.TryGetProperty("async", out asyncElement)
-                && asyncElement.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
-            {
-                error = $"Hook event '{hookEvent}' command async flag must be a boolean.";
-                return false;
-            }
-
-            var statusMessage = ReadOptionalString(handler, "statusMessage");
             if (statusMessage.Length > MaximumHookStatusMessageCharacters
-                || statusMessage.IndexOf('\0') >= 0)
+                || statusMessage.Contains('\0'))
             {
                 error = $"Hook event '{hookEvent}' statusMessage is invalid or oversized.";
                 return false;
             }
 
-            var executionMode = isAsync
+            var executionMode = configuredAsync == true
                 ? CopilotToolExecutionHookMode.Async
                 : CopilotToolExecutionHookMode.Sync;
             var fingerprint = ComputeHookFingerprint(
@@ -395,7 +808,7 @@ namespace ColorVision.Copilot
                 source,
                 hookEvent,
                 matcher,
-                command,
+                selectedCommand,
                 timeoutSeconds,
                 statusMessage,
                 executionMode,
@@ -406,7 +819,7 @@ namespace ColorVision.Copilot
                 source,
                 hookEvent,
                 matcher,
-                command,
+                selectedCommand,
                 timeoutSeconds,
                 statusMessage,
                 executionMode,

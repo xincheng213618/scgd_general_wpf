@@ -1332,8 +1332,10 @@ namespace ColorVision.Copilot
                 out var customSubagentDiscoveryIssues);
             var configuredHooks = normalizedRoot.Length == 0
                 ? CopilotCodexConfiguredHookDiscoveryResult.Empty
-                : DiscoverConfiguredHookFile(
+                : DiscoverConfiguredHooksForLayer(
                     normalizedRoot,
+                    globalConfigPath,
+                    globalSource,
                     Path.Combine(normalizedRoot, HooksFileName),
                     CopilotProjectInstructionConfigSources.CodexHome,
                     startingOrder: 0);
@@ -1424,8 +1426,10 @@ namespace ColorVision.Copilot
                 if (hasApplicableOverrides || hasCustomSubagentDeclarations)
                     appliedConfigFilePaths.Add(Path.GetFullPath(configPath));
 
-                var hookDiscovery = DiscoverConfiguredHookFile(
+                var hookDiscovery = DiscoverConfiguredHooksForLayer(
                     normalizedProjectRoot,
+                    configPath,
+                    hasProjectConfig ? projectSource : string.Empty,
                     Path.Combine(directoryPath, ".codex", HooksFileName),
                     CopilotProjectInstructionConfigSources.TrustedProject,
                     configuredCommandHooks.Count);
