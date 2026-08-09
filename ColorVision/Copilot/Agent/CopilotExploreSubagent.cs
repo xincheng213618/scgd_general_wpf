@@ -67,7 +67,10 @@ namespace ColorVision.Copilot
                 catalog.GetSnapshot(),
                 tools.Select(tool => tool.Name).ToArray(),
                 CopilotAgentEnvironmentContext.Capture(childRequest),
-                toolExecutor.GetHookSurfaceSnapshot(childRequest.CodexExtensionHooksEnabled),
+                toolExecutor.GetHookSurfaceSnapshot(
+                    childRequest.CodexHooksEnabled,
+                    childRequest.CodexPluginsEnabled,
+                    childRequest.CodexCommandHooks),
                 projectInstructions: childRequest.ProjectInstructions,
                 configuredDeveloperInstructions: childRequest.ConfiguredDeveloperInstructions);
             if (resumeCompatibility != null && !resumeCompatibility.CanResume)
@@ -594,6 +597,9 @@ namespace ColorVision.Copilot
                 CodexSandboxMode = CopilotCodexSandboxMode.ReadOnly,
                 CodexShellToolEnabled = parentRequest.CodexShellToolEnabled,
                 CodexHooksEnabled = parentRequest.CodexHooksEnabled,
+                CodexCommandHooks = parentRequest.CodexCommandHooks
+                    .Select(definition => definition.CreateSnapshot())
+                    .ToArray(),
                 CodexPluginsEnabled = parentRequest.CodexPluginsEnabled,
                 CodexErrorOnToolCollisions = parentRequest.CodexErrorOnToolCollisions,
                 CodexShellEnvironmentPolicy = parentRequest.CodexShellEnvironmentPolicy.CreateSnapshot(),

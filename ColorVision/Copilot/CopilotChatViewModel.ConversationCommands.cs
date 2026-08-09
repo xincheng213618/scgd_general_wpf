@@ -303,8 +303,9 @@ namespace ColorVision.Copilot
                         CopilotCapabilityCatalog.Shared.GetSnapshot(
                             _currentCodexConfigOptions.ConfiguredPluginsEnabled),
                         CopilotToolExecutor.GetSharedHookSurfaceSnapshot(
-                            _currentCodexConfigOptions.ConfiguredHooksEnabled
-                                && _currentCodexConfigOptions.ConfiguredPluginsEnabled)))
+                            _currentCodexConfigOptions.ConfiguredHooksEnabled,
+                            _currentCodexConfigOptions.ConfiguredPluginsEnabled,
+                            _currentCodexConfigOptions.ConfiguredCommandHooks)))
                 {
                     ShowLocalCommandResult(
                         command,

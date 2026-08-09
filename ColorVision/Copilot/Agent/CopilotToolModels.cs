@@ -79,6 +79,9 @@ namespace ColorVision.Copilot
 
         internal bool CodexHooksEnabled { get; init; } = true;
 
+        internal IReadOnlyList<CopilotCodexCommandHookDefinition> CodexCommandHooks { get; init; } =
+            Array.Empty<CopilotCodexCommandHookDefinition>();
+
         internal bool CodexPluginsEnabled { get; init; } = true;
 
         internal bool CodexErrorOnToolCollisions { get; init; }

@@ -235,6 +235,9 @@ namespace ColorVision.Copilot
 
         internal bool CodexHooksEnabled { get; init; } = true;
 
+        internal IReadOnlyList<CopilotCodexCommandHookDefinition> CodexCommandHooks { get; init; } =
+            Array.Empty<CopilotCodexCommandHookDefinition>();
+
         internal bool CodexPluginsEnabled { get; init; } = true;
 
         internal bool CodexErrorOnToolCollisions { get; init; }
@@ -453,6 +456,9 @@ namespace ColorVision.Copilot
                 CodexSandboxMode = codexSandboxMode,
                 CodexShellToolEnabled = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredShellToolEnabled,
                 CodexHooksEnabled = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredHooksEnabled,
+                CodexCommandHooks = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredCommandHooks
+                    .Select(definition => definition.CreateSnapshot())
+                    .ToArray(),
                 CodexPluginsEnabled = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredPluginsEnabled,
                 CodexErrorOnToolCollisions = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredErrorOnToolCollisions,
                 CodexShellEnvironmentPolicy = hostContext.ProjectInstructionDiscoveryOptions
@@ -560,6 +566,10 @@ namespace ColorVision.Copilot
                 CodexSandboxMode = plan.CodexSandboxMode,
                 CodexShellToolEnabled = plan.CodexShellToolEnabled,
                 CodexHooksEnabled = plan.CodexHooksEnabled,
+                CodexCommandHooks = plan.CodexCommandHooks
+                    .Where(definition => definition?.IsStructurallyValid() == true)
+                    .Select(definition => definition.CreateSnapshot())
+                    .ToArray(),
                 CodexPluginsEnabled = plan.CodexPluginsEnabled,
                 CodexErrorOnToolCollisions = plan.CodexErrorOnToolCollisions,
                 CodexShellEnvironmentPolicy = plan.CodexShellEnvironmentPolicy.CreateSnapshot(),

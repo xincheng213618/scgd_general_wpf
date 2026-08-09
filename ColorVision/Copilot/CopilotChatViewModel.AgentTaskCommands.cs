@@ -44,8 +44,9 @@ namespace ColorVision.Copilot
                 CopilotCapabilityCatalog.Shared.GetSnapshot(
                     _currentCodexConfigOptions.ConfiguredPluginsEnabled),
                 CopilotToolExecutor.GetSharedHookSurfaceSnapshot(
-                    _currentCodexConfigOptions.ConfiguredHooksEnabled
-                        && _currentCodexConfigOptions.ConfiguredPluginsEnabled)).IsAvailable;
+                    _currentCodexConfigOptions.ConfiguredHooksEnabled,
+                    _currentCodexConfigOptions.ConfiguredPluginsEnabled,
+                    _currentCodexConfigOptions.ConfiguredCommandHooks)).IsAvailable;
         }
 
         private void ContinueAgentTasks(CopilotChatMessage? message)
@@ -67,8 +68,9 @@ namespace ColorVision.Copilot
                 CopilotCapabilityCatalog.Shared.GetSnapshot(
                     _currentCodexConfigOptions.ConfiguredPluginsEnabled),
                 CopilotToolExecutor.GetSharedHookSurfaceSnapshot(
-                    _currentCodexConfigOptions.ConfiguredHooksEnabled
-                        && _currentCodexConfigOptions.ConfiguredPluginsEnabled));
+                    _currentCodexConfigOptions.ConfiguredHooksEnabled,
+                    _currentCodexConfigOptions.ConfiguredPluginsEnabled,
+                    _currentCodexConfigOptions.ConfiguredCommandHooks));
             if (!decision.IsAvailable)
                 return false;
 
@@ -466,8 +468,9 @@ namespace ColorVision.Copilot
                 CopilotCapabilityCatalog.Shared.GetSnapshot(
                     _currentCodexConfigOptions.ConfiguredPluginsEnabled),
                 CopilotToolExecutor.GetSharedHookSurfaceSnapshot(
-                    _currentCodexConfigOptions.ConfiguredHooksEnabled
-                        && _currentCodexConfigOptions.ConfiguredPluginsEnabled)).IsAvailable;
+                    _currentCodexConfigOptions.ConfiguredHooksEnabled,
+                    _currentCodexConfigOptions.ConfiguredPluginsEnabled,
+                    _currentCodexConfigOptions.ConfiguredCommandHooks)).IsAvailable;
         }
 
         private void ResumeAgentTask(CopilotAgentTaskSummary? task)

@@ -18,6 +18,12 @@ namespace ColorVision.Copilot
         public IReadOnlyList<CopilotAgentExtensionIssue> ExtensionIssues { get; init; } =
             Array.Empty<CopilotAgentExtensionIssue>();
 
+        public IReadOnlyList<string> ConfiguredHookFilePaths { get; init; } =
+            Array.Empty<string>();
+
+        public IReadOnlyList<CopilotCodexConfiguredHookIssue> ConfiguredHookIssues { get; init; } =
+            Array.Empty<CopilotCodexConfiguredHookIssue>();
+
         public IReadOnlyList<CopilotToolExecutionAuditEntry> RecentToolExecutions { get; init; } =
             Array.Empty<CopilotToolExecutionAuditEntry>();
     }
@@ -43,10 +49,50 @@ namespace ColorVision.Copilot
             builder.AppendLine();
             AppendExtensionSources(builder, snapshot.ExtensionSources, snapshot.ExtensionIssues);
             builder.AppendLine();
+            AppendConfiguredHookSources(
+                builder,
+                snapshot.ConfiguredHookFilePaths,
+                snapshot.ConfiguredHookIssues);
+            builder.AppendLine();
             AppendRecentHealth(builder, snapshot.RecentToolExecutions);
             builder.AppendLine();
             builder.Append("安全边界：这里只显示来源、匹配器、状态、耗时与稳定失败码；不显示工具参数、结果正文或审批内容。");
             return builder.ToString().TrimEnd();
+        }
+
+        private static void AppendConfiguredHookSources(
+            StringBuilder builder,
+            IReadOnlyList<string>? sourceFilePaths,
+            IReadOnlyList<CopilotCodexConfiguredHookIssue>? issues)
+        {
+            sourceFilePaths ??= Array.Empty<string>();
+            issues ??= Array.Empty<CopilotCodexConfiguredHookIssue>();
+            builder.Append("hooks.json：")
+                .Append(FormatCount(sourceFilePaths.Count))
+                .Append(" 个受信任来源 · ")
+                .Append(FormatCount(issues.Count))
+                .AppendLine(" 个配置问题");
+            foreach (var path in sourceFilePaths.Take(8))
+                builder.Append("  - ").AppendLine(FormatInline(path, "unknown", 260));
+            if (sourceFilePaths.Count > 8)
+            {
+                builder.Append("  - ...另有 ")
+                    .Append(FormatCount(sourceFilePaths.Count - 8))
+                    .AppendLine(" 个来源未展开");
+            }
+            foreach (var issue in issues.Take(MaxExtensionIssues))
+            {
+                builder.Append("  ! ")
+                    .Append(FormatInline(issue.SourceFilePath, "unknown", 180))
+                    .Append(": ")
+                    .AppendLine(FormatInline(issue.Message, "Invalid hook configuration.", 300));
+            }
+            if (issues.Count > MaxExtensionIssues)
+            {
+                builder.Append("  ! ...另有 ")
+                    .Append(FormatCount(issues.Count - MaxExtensionIssues))
+                    .AppendLine(" 个配置问题未展开");
+            }
         }
 
         private static void AppendBackgroundActivity(

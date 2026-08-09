@@ -25,6 +25,8 @@ namespace ColorVision.Copilot
 
         public IReadOnlyDictionary<string, string?>? EnvironmentOverrides { get; init; }
 
+        public string StandardInput { get; init; } = string.Empty;
+
         public Action<string>? StandardOutputReceived { get; init; }
 
         public Action<string>? StandardErrorReceived { get; init; }
@@ -597,8 +599,6 @@ namespace ColorVision.Copilot
             if (!process.Start())
                 throw new InvalidOperationException("The shell process did not start.");
             using var processJob = CopilotWindowsProcessJob.TryAssign(process);
-            process.StandardInput.Close();
-
             using var outputReadSource = new CancellationTokenSource();
             long observedStandardOutputCharacters = 0;
             long observedStandardErrorCharacters = 0;
@@ -636,6 +636,25 @@ namespace ColorVision.Copilot
             var cancelledByCaller = false;
             try
             {
+                try
+                {
+                    if (!string.IsNullOrEmpty(command.StandardInput))
+                    {
+                        await process.StandardInput.WriteAsync(
+                            command.StandardInput.AsMemory(),
+                            timeoutSource.Token).ConfigureAwait(false);
+                        await process.StandardInput.FlushAsync(timeoutSource.Token)
+                            .ConfigureAwait(false);
+                    }
+                }
+                catch (IOException)
+                {
+                    // A hook or command may intentionally close stdin after reading a prefix.
+                }
+                finally
+                {
+                    process.StandardInput.Close();
+                }
                 await process.WaitForExitAsync(timeoutSource.Token);
             }
             catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)

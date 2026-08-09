@@ -160,6 +160,9 @@ namespace ColorVision.Copilot
                 CodexSandboxMode = explorationRequest.CodexSandboxMode,
                 CodexShellToolEnabled = explorationRequest.CodexShellToolEnabled,
                 CodexHooksEnabled = explorationRequest.CodexHooksEnabled,
+                CodexCommandHooks = explorationRequest.CodexCommandHooks
+                    .Select(definition => definition.CreateSnapshot())
+                    .ToArray(),
                 CodexPluginsEnabled = explorationRequest.CodexPluginsEnabled,
                 CodexErrorOnToolCollisions = explorationRequest.CodexErrorOnToolCollisions,
                 CodexShellEnvironmentPolicy = explorationRequest.CodexShellEnvironmentPolicy.CreateSnapshot(),

@@ -19,6 +19,8 @@ namespace ColorVision.Copilot
             var phaseStopwatch = Stopwatch.StartNew();
             foreach (var binding in hooks)
             {
+                if (!binding.Phases.HasFlag(CopilotToolExecutionHookPhases.BeforeExecute))
+                    continue;
                 if (binding.ExecutionMode == CopilotToolExecutionHookMode.Async)
                 {
                     ScheduleAsyncHook(
@@ -182,6 +184,8 @@ namespace ColorVision.Copilot
             var phaseStopwatch = Stopwatch.StartNew();
             foreach (var binding in hooks)
             {
+                if (!binding.Phases.HasFlag(CopilotToolExecutionHookPhases.AfterExecute))
+                    continue;
                 if (binding.ExecutionMode == CopilotToolExecutionHookMode.Async)
                 {
                     ScheduleAsyncHook(

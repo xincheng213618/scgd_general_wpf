@@ -853,12 +853,24 @@ namespace ColorVision.Copilot
             {
                 builder.Append(" · 官方默认");
             }
-            builder.AppendLine(codexConfigOptions.ConfiguredHooksEnabled
-                    && codexConfigOptions.ConfiguredPluginsEnabled
-                ? " · ColorVision 模块扩展授权与生命周期 Hook 可运行；内置写入安全策略始终保留"
-                : codexConfigOptions.ConfiguredHooksEnabled
-                    ? " · features.plugins=false，模块扩展 Hook 已省略；内置写入安全策略仍保留"
-                    : " · 模块扩展授权与生命周期 Hook 已省略；内置写入安全策略仍保留，checkpoint 按有效 Hook 面校验");
+            if (codexConfigOptions.ConfiguredHooksEnabled)
+            {
+                builder.Append(codexConfigOptions.ConfiguredPluginsEnabled
+                    ? " · ColorVision 模块扩展 Hook 可运行"
+                    : " · features.plugins=false，模块扩展 Hook 已省略");
+                builder.Append("；受信任 hooks.json 命令 Hook 可运行");
+            }
+            else
+            {
+                builder.Append(" · 模块扩展与 hooks.json 命令 Hook 已省略");
+            }
+            builder.Append("；已加载命令 Hook ")
+                .Append(codexConfigOptions.ConfiguredCommandHooks.Count)
+                .Append(" 个 / 来源文件 ")
+                .Append(codexConfigOptions.AppliedHookFilePaths.Count)
+                .Append(" 个 / 配置问题 ")
+                .Append(codexConfigOptions.ConfiguredHookIssues.Count)
+                .AppendLine(" 个；内置写入安全策略仍保留，checkpoint 按有效 Hook 面校验");
         }
 
         private static void AppendPluginsEnabled(

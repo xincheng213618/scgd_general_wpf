@@ -298,11 +298,14 @@ namespace ColorVision.Copilot
             return CopilotHookDiagnostics.Format(new CopilotHookDiagnosticSnapshot
             {
                 HookSurface = CopilotToolExecutor.GetSharedHookSurfaceSnapshot(
-                    _currentCodexConfigOptions.ConfiguredHooksEnabled
-                        && _currentCodexConfigOptions.ConfiguredPluginsEnabled),
+                    _currentCodexConfigOptions.ConfiguredHooksEnabled,
+                    _currentCodexConfigOptions.ConfiguredPluginsEnabled,
+                    _currentCodexConfigOptions.ConfiguredCommandHooks),
                 BackgroundActivity = CopilotToolExecutionHookBackgroundScheduler.Shared.GetActivitySnapshot(),
                 ExtensionSources = extensionSnapshot.Sources,
                 ExtensionIssues = extensionSnapshot.Issues,
+                ConfiguredHookFilePaths = _currentCodexConfigOptions.AppliedHookFilePaths,
+                ConfiguredHookIssues = _currentCodexConfigOptions.ConfiguredHookIssues,
                 RecentToolExecutions = CopilotToolExecutionAuditLogger.GetRecentEntries(30),
             });
         }
@@ -380,8 +383,9 @@ namespace ColorVision.Copilot
                 projectInstructionOptions.ConfiguredPluginsEnabled);
             var agentExtensionSnapshot = CopilotAgentExtensionBridge.Shared.GetSnapshot();
             var toolHookSurface = CopilotToolExecutor.GetSharedHookSurfaceSnapshot(
-                projectInstructionOptions.ConfiguredHooksEnabled
-                    && projectInstructionOptions.ConfiguredPluginsEnabled);
+                projectInstructionOptions.ConfiguredHooksEnabled,
+                projectInstructionOptions.ConfiguredPluginsEnabled,
+                projectInstructionOptions.ConfiguredCommandHooks);
             var agentDefaults = _config.AgentDefaults;
             var retainedHistoryWeight = history.Messages.Sum(message => CopilotTokenEstimator.EstimateTextWeight(message.Content));
             var autoCompactionUsage = CopilotConversationAutoCompactionPolicy.Measure(

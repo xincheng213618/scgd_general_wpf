@@ -433,8 +433,9 @@ namespace ColorVision.Copilot
                     CopilotCapabilityCatalog.Shared.GetSnapshot(
                         _currentCodexConfigOptions.ConfiguredPluginsEnabled),
                     CopilotToolExecutor.GetSharedHookSurfaceSnapshot(
-                        _currentCodexConfigOptions.ConfiguredHooksEnabled
-                            && _currentCodexConfigOptions.ConfiguredPluginsEnabled));
+                        _currentCodexConfigOptions.ConfiguredHooksEnabled,
+                        _currentCodexConfigOptions.ConfiguredPluginsEnabled,
+                        _currentCodexConfigOptions.ConfiguredCommandHooks));
         }
 
         private async Task RetryMessageAsync(CopilotChatMessage? message, bool refreshExternalContext)
@@ -454,8 +455,9 @@ namespace ColorVision.Copilot
                 CopilotCapabilityCatalog.Shared.GetSnapshot(
                     _currentCodexConfigOptions.ConfiguredPluginsEnabled),
                 CopilotToolExecutor.GetSharedHookSurfaceSnapshot(
-                    _currentCodexConfigOptions.ConfiguredHooksEnabled
-                        && _currentCodexConfigOptions.ConfiguredPluginsEnabled)))
+                    _currentCodexConfigOptions.ConfiguredHooksEnabled,
+                    _currentCodexConfigOptions.ConfiguredPluginsEnabled,
+                    _currentCodexConfigOptions.ConfiguredCommandHooks)))
             {
                 return;
             }

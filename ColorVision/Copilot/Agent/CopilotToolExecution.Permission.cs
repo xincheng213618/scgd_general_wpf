@@ -24,9 +24,10 @@ namespace ColorVision.Copilot
             invocation = NormalizeInvocation(invocation, callId);
             var hooks = ResolveInvocationHooks(
                 invocation.Tool.Name,
-                invocation.AgentRequest.CodexExtensionHooksEnabled);
+                invocation.AgentRequest);
             var permissionHooks = hooks
-                .Where(binding => binding.Hook is ICopilotToolPermissionRequestHook)
+                .Where(binding => binding.Hook is ICopilotToolPermissionRequestHook
+                    && binding.Phases.HasFlag(CopilotToolExecutionHookPhases.PermissionRequest))
                 .ToArray();
             var hookRuns = new List<CopilotToolExecutionHookRun>(
                 Math.Min(permissionHooks.Length, MaxRecordedHookRuns));

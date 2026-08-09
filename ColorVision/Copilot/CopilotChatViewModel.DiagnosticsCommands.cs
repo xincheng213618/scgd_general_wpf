@@ -176,7 +176,10 @@ namespace ColorVision.Copilot
                 }
             }
 
-            var hookSurface = CopilotToolExecutor.GetSharedHookSurfaceSnapshot();
+            var hookSurface = CopilotToolExecutor.GetSharedHookSurfaceSnapshot(
+                _currentCodexConfigOptions.ConfiguredHooksEnabled,
+                _currentCodexConfigOptions.ConfiguredPluginsEnabled,
+                _currentCodexConfigOptions.ConfiguredCommandHooks);
             var extensionSnapshot = CopilotAgentExtensionBridge.Shared.GetSnapshot();
             var recentHookFailureCount = CopilotToolExecutionAuditLogger.GetRecentEntries(30)
                 .SelectMany(entry => entry.HookRuns ?? Array.Empty<CopilotToolExecutionHookRun>())

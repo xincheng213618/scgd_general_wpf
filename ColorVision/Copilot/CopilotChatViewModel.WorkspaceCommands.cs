@@ -260,8 +260,9 @@ namespace ColorVision.Copilot
                 CopilotCapabilityCatalog.Shared.GetSnapshot(
                     _currentCodexConfigOptions.ConfiguredPluginsEnabled),
                 CopilotToolExecutor.GetSharedHookSurfaceSnapshot(
-                    _currentCodexConfigOptions.ConfiguredHooksEnabled
-                        && _currentCodexConfigOptions.ConfiguredPluginsEnabled)))
+                    _currentCodexConfigOptions.ConfiguredHooksEnabled,
+                    _currentCodexConfigOptions.ConfiguredPluginsEnabled,
+                    _currentCodexConfigOptions.ConfiguredCommandHooks)))
             {
                 var latestAssistant = conversation.Messages.LastOrDefault(message => message != null && !message.IsUser);
                 var isFinalAnswerRecovery = latestAssistant?.HasRecoverableFinalAnswer == true;
@@ -408,8 +409,9 @@ namespace ColorVision.Copilot
                 CopilotCapabilityCatalog.Shared.GetSnapshot(
                     codexConfigOptions.ConfiguredPluginsEnabled),
                 CopilotToolExecutor.GetSharedHookSurfaceSnapshot(
-                    codexConfigOptions.ConfiguredHooksEnabled
-                        && codexConfigOptions.ConfiguredPluginsEnabled)))
+                    codexConfigOptions.ConfiguredHooksEnabled,
+                    codexConfigOptions.ConfiguredPluginsEnabled,
+                    codexConfigOptions.ConfiguredCommandHooks)))
             {
                 return CopilotAutomaticCompactionOutcome.NotNeeded;
             }

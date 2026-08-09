@@ -351,11 +351,24 @@ namespace ColorVision.Copilot
             {
                 builder.Append(" · 官方默认；");
             }
-            builder.AppendLine(effective.ConfiguredHooksEnabled && effective.ConfiguredPluginsEnabled
-                ? "ColorVision 模块扩展授权与生命周期 Hook 可运行，内置写入安全策略始终保留"
-                : effective.ConfiguredHooksEnabled
-                    ? "features.plugins=false，省略模块扩展 Hook；内置写入安全策略仍保留"
-                    : "省略模块扩展授权与生命周期 Hook，内置写入安全策略仍保留；checkpoint 按有效 Hook 面校验");
+            if (effective.ConfiguredHooksEnabled)
+            {
+                builder.Append(effective.ConfiguredPluginsEnabled
+                    ? "ColorVision 模块扩展 Hook 可运行"
+                    : "features.plugins=false，省略模块扩展 Hook");
+                builder.Append("；受信任 hooks.json 命令 Hook 可运行");
+            }
+            else
+            {
+                builder.Append("省略模块扩展与 hooks.json 命令 Hook");
+            }
+            builder.Append("；已加载命令 Hook ")
+                .Append(effective.ConfiguredCommandHooks.Count)
+                .Append(" 个 / 来源文件 ")
+                .Append(effective.AppliedHookFilePaths.Count)
+                .Append(" 个 / 配置问题 ")
+                .Append(effective.ConfiguredHookIssues.Count)
+                .AppendLine(" 个；内置写入安全策略仍保留，checkpoint 按有效 Hook 面校验");
             builder.Append("Codex features.plugins：")
                 .Append(effective.ConfiguredPluginsEnabled ? "true" : "false");
             if (effective.HasPluginsEnabledOverride)
