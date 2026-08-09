@@ -1,5 +1,6 @@
 using ColorVision.Copilot;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -240,6 +241,57 @@ public sealed class CopilotAgentSessionCheckpointTests
     }
 
     [Fact]
+    public void ConfiguredDeveloperInstructionDriftRequiresAReplan()
+    {
+        var profile = CreateOpenAiProfile(
+            CopilotVendorType.OpenAI,
+            "https://example.test/v1");
+        var capabilitySnapshot = CopilotCapabilityCatalog.Shared.GetSnapshot();
+        var projectInstructions = CreateProjectInstructions("Keep the repository workflow stable.");
+        var checkpoint = CopilotAgentSessionCheckpoint.Create(
+            profile,
+            "{}",
+            capabilitySnapshot,
+            projectInstructions: projectInstructions,
+            configuredDeveloperInstructions: "Use the original project persona.");
+
+        var compatibility = checkpoint!.EvaluateFor(
+            profile,
+            capabilitySnapshot,
+            projectInstructions: projectInstructions,
+            configuredDeveloperInstructions: "Use the revised project persona.");
+
+        Assert.Equal(CopilotAgentCheckpointCompatibilityKind.ProjectInstructionDrift, compatibility.Kind);
+        Assert.True(compatibility.RequiresReplan);
+        Assert.False(compatibility.CanResume);
+    }
+
+    [Fact]
+    public void ConfiguredDeveloperInstructionFingerprintUsesTheEffectiveTrimmedValue()
+    {
+        var profile = CreateOpenAiProfile(
+            CopilotVendorType.OpenAI,
+            "https://example.test/v1");
+        var capabilitySnapshot = CopilotCapabilityCatalog.Shared.GetSnapshot();
+        var projectInstructions = CreateProjectInstructions("Keep the repository workflow stable.");
+        var checkpoint = CopilotAgentSessionCheckpoint.Create(
+            profile,
+            "{}",
+            capabilitySnapshot,
+            projectInstructions: projectInstructions,
+            configuredDeveloperInstructions: "  Use the configured project persona.  ");
+
+        var compatibility = checkpoint!.EvaluateFor(
+            profile,
+            capabilitySnapshot,
+            projectInstructions: projectInstructions,
+            configuredDeveloperInstructions: "Use the configured project persona.");
+
+        Assert.Equal(CopilotAgentCheckpointCompatibilityKind.Compatible, compatibility.Kind);
+        Assert.True(compatibility.CanResume);
+    }
+
+    [Fact]
     public void LegacyCheckpointWithoutProjectInstructionSnapshotRequiresAReplan()
     {
         var profile = CreateOpenAiProfile(
@@ -256,6 +308,36 @@ public sealed class CopilotAgentSessionCheckpointTests
             capabilitySnapshot,
             projectInstructions: Array.Empty<CopilotProjectInstructionDocument>());
 
+        Assert.Equal(CopilotAgentCheckpointCompatibilityKind.ProjectInstructionSnapshotMissing, compatibility.Kind);
+        Assert.True(compatibility.RequiresReplan);
+    }
+
+    [Fact]
+    public void PreviousProjectInstructionSurfaceVersionRequiresAReplan()
+    {
+        var profile = CreateOpenAiProfile(
+            CopilotVendorType.OpenAI,
+            "https://example.test/v1");
+        var capabilitySnapshot = CopilotCapabilityCatalog.Shared.GetSnapshot();
+        var projectInstructions = CreateProjectInstructions("Keep the repository workflow stable.");
+        var currentCheckpoint = CopilotAgentSessionCheckpoint.Create(
+            profile,
+            "{}",
+            capabilitySnapshot,
+            projectInstructions: projectInstructions,
+            configuredDeveloperInstructions: "Use the configured project persona.")!;
+        var persisted = JObject.Parse(JsonConvert.SerializeObject(currentCheckpoint));
+        persisted[nameof(CopilotAgentSessionCheckpoint.ProjectInstructionSurfaceVersion)] =
+            CopilotAgentSessionCheckpoint.CurrentProjectInstructionSurfaceVersion - 1;
+        var previousCheckpoint = persisted.ToObject<CopilotAgentSessionCheckpoint>()!;
+
+        var compatibility = previousCheckpoint.EvaluateFor(
+            profile,
+            capabilitySnapshot,
+            projectInstructions: projectInstructions,
+            configuredDeveloperInstructions: "Use the configured project persona.");
+
+        Assert.True(previousCheckpoint.IsStructurallyValid());
         Assert.Equal(CopilotAgentCheckpointCompatibilityKind.ProjectInstructionSnapshotMissing, compatibility.Kind);
         Assert.True(compatibility.RequiresReplan);
     }

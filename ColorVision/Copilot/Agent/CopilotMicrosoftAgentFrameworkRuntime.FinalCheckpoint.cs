@@ -51,7 +51,8 @@ namespace ColorVision.Copilot
                         checkpointEnvironmentContext,
                         request.TaskIntentText,
                         hookSurfaceSnapshot,
-                        request.ProjectInstructions);
+                        request.ProjectInstructions,
+                        request.ConfiguredDeveloperInstructions);
                     if (sessionCheckpoint == null)
                         emit(CopilotAgentEvent.RuntimeDiagnostic("Agent session checkpoint exceeded its session or capability persistence limit and was not saved."));
                 }

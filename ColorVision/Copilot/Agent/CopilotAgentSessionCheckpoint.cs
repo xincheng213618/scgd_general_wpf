@@ -77,7 +77,7 @@ namespace ColorVision.Copilot
         public const int CurrentToolSurfaceVersion = 1;
         public const int CurrentEnvironmentVersion = CopilotAgentEnvironmentContext.CurrentVersion;
         public const int CurrentHookSurfaceVersion = 1;
-        public const int CurrentProjectInstructionSurfaceVersion = 1;
+        public const int CurrentProjectInstructionSurfaceVersion = 2;
 
         private string _serializedSessionJson = string.Empty;
         private string _serializedSessionPayload = string.Empty;
@@ -183,7 +183,8 @@ namespace ColorVision.Copilot
             CopilotAgentEnvironmentContext? environmentContext = null,
             CopilotToolExecutionHookRegistrySnapshot? hookSurfaceSnapshot = null,
             bool requireEnvironmentContextMatch = false,
-            IReadOnlyList<CopilotProjectInstructionDocument>? projectInstructions = null)
+            IReadOnlyList<CopilotProjectInstructionDocument>? projectInstructions = null,
+            string? configuredDeveloperInstructions = null)
         {
             ArgumentNullException.ThrowIfNull(capabilitySnapshot);
             if (profile == null || !IsStructurallyValid())
@@ -259,7 +260,10 @@ namespace ColorVision.Copilot
 
             if (projectInstructions != null)
             {
-                if (!TryCreateProjectInstructionSurfaceFingerprint(projectInstructions, out var currentProjectInstructionFingerprint)
+                if (!TryCreateProjectInstructionSurfaceFingerprint(
+                        projectInstructions,
+                        configuredDeveloperInstructions,
+                        out var currentProjectInstructionFingerprint)
                     || ProjectInstructionSurfaceVersion != CurrentProjectInstructionSurfaceVersion
                     || !IsSha256(ProjectInstructionSurfaceFingerprint))
                 {
@@ -349,7 +353,8 @@ namespace ColorVision.Copilot
             CopilotAgentEnvironmentContext? environmentContext = null,
             string? taskIntentText = null,
             CopilotToolExecutionHookRegistrySnapshot? hookSurfaceSnapshot = null,
-            IReadOnlyList<CopilotProjectInstructionDocument>? projectInstructions = null)
+            IReadOnlyList<CopilotProjectInstructionDocument>? projectInstructions = null,
+            string? configuredDeveloperInstructions = null)
         {
             ArgumentNullException.ThrowIfNull(profile);
             var json = serializedSessionJson?.Trim() ?? string.Empty;
@@ -388,7 +393,10 @@ namespace ColorVision.Copilot
             var projectInstructionSurfaceFingerprint = string.Empty;
             if (projectInstructions != null)
             {
-                if (!TryCreateProjectInstructionSurfaceFingerprint(projectInstructions, out projectInstructionSurfaceFingerprint))
+                if (!TryCreateProjectInstructionSurfaceFingerprint(
+                        projectInstructions,
+                        configuredDeveloperInstructions,
+                        out projectInstructionSurfaceFingerprint))
                     return null;
                 projectInstructionSurfaceVersion = CurrentProjectInstructionSurfaceVersion;
             }
@@ -476,6 +484,7 @@ namespace ColorVision.Copilot
 
         private static bool TryCreateProjectInstructionSurfaceFingerprint(
             IReadOnlyList<CopilotProjectInstructionDocument> projectInstructions,
+            string? configuredDeveloperInstructions,
             out string fingerprint)
         {
             fingerprint = string.Empty;
@@ -489,6 +498,13 @@ namespace ColorVision.Copilot
             Span<byte> version = stackalloc byte[sizeof(int)];
             BinaryPrimitives.WriteInt32BigEndian(version, CurrentProjectInstructionSurfaceVersion);
             hash.AppendData(version);
+            var effectiveDeveloperInstructions = (configuredDeveloperInstructions ?? string.Empty).Trim();
+            if (effectiveDeveloperInstructions.Length > CopilotProjectInstructionDiscoveryConfig.MaximumDeveloperInstructionCharacters
+                || effectiveDeveloperInstructions.Contains('\0'))
+            {
+                return false;
+            }
+            AppendFingerprintValue(hash, effectiveDeveloperInstructions);
             foreach (var document in projectInstructions)
             {
                 AppendFingerprintValue(hash, document.Path);

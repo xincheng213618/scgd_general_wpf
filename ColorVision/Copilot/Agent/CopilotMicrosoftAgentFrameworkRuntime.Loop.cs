@@ -136,7 +136,8 @@ namespace ColorVision.Copilot
                 checkpointEnvironmentContext,
                 hookSurfaceSnapshot,
                 requireEnvironmentContextMatch: true,
-                projectInstructions: request.ProjectInstructions);
+                projectInstructions: request.ProjectInstructions,
+                configuredDeveloperInstructions: request.ConfiguredDeveloperInstructions);
             var requiresCheckpointReplan = checkpointCompatibility?.Kind == CopilotAgentCheckpointCompatibilityKind.ProfileChanged
                 || checkpointCompatibility?.RequiresReplan == true;
             var recovery = NormalizeRecoveryRequest(request.Recovery, requestedCheckpoint, availableTools, requiresCheckpointReplan);

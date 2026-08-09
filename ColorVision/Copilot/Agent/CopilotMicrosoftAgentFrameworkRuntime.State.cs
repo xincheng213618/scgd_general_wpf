@@ -120,7 +120,8 @@ namespace ColorVision.Copilot
                         _checkpointEnvironmentContext,
                         _request.TaskIntentText,
                         _hookSurfaceSnapshot,
-                        _request.ProjectInstructions);
+                        _request.ProjectInstructions,
+                        _request.ConfiguredDeveloperInstructions);
                     if (checkpoint == null)
                     {
                         _emit(CopilotAgentEvent.RuntimeDiagnostic("Incremental Agent checkpoint was rejected because the serialized state was invalid."));
