@@ -415,6 +415,39 @@ public sealed class CopilotAgentSkillCatalogTests
     }
 
     [Fact]
+    public void RuntimeSkillFilePathsMustRemainWithinTrustedNonReparseRoots()
+    {
+        var trustedRoot = CreateTemporaryDirectory();
+        var outsideRoot = CreateTemporaryDirectory();
+        var linkedSkillDirectory = Path.Combine(trustedRoot, "linked-skill");
+        try
+        {
+            var trustedSkillDirectory = Path.Combine(trustedRoot, "trusted-skill");
+            var outsideSkillDirectory = Path.Combine(outsideRoot, "outside-skill");
+            WriteSkill(trustedSkillDirectory, "trusted-skill", "trusted");
+            WriteSkill(outsideSkillDirectory, "outside-skill", "outside");
+            Directory.CreateSymbolicLink(linkedSkillDirectory, outsideSkillDirectory);
+
+            Assert.True(CopilotAgentSkills.IsTrustedSkillFilePath(
+                Path.Combine(trustedSkillDirectory, "SKILL.md"),
+                [trustedRoot]));
+            Assert.False(CopilotAgentSkills.IsTrustedSkillFilePath(
+                Path.Combine(outsideSkillDirectory, "SKILL.md"),
+                [trustedRoot]));
+            Assert.False(CopilotAgentSkills.IsTrustedSkillFilePath(
+                Path.Combine(linkedSkillDirectory, "SKILL.md"),
+                [trustedRoot]));
+        }
+        finally
+        {
+            if (Directory.Exists(linkedSkillDirectory))
+                Directory.Delete(linkedSkillDirectory);
+            DeleteTemporaryDirectory(trustedRoot);
+            DeleteTemporaryDirectory(outsideRoot);
+        }
+    }
+
+    [Fact]
     public void RuntimePathPolicyOverridesTheBroaderNamePolicy()
     {
         var skillDirectory = CreateTemporaryDirectory();

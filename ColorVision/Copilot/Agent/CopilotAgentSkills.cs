@@ -63,7 +63,7 @@ namespace ColorVision.Copilot
                     ScriptFilter = _ => false,
                 },
                 loggerFactory: null);
-            source = new PathAwareDeduplicatingAgentSkillsSource(source, request.AgentSkillReference);
+            source = new PathAwareDeduplicatingAgentSkillsSource(source, request.AgentSkillReference, searchPaths);
             var metadataCharacterBudget = ResolveMetadataCharacterBudget(contextWindowTokens);
             var budgetedSource = new BudgetedAgentSkillsSource(
                 source,
@@ -270,6 +270,42 @@ namespace ColorVision.Copilot
             return SelectPreferredSkills(discovered, preferredReference, ResolveSkillFilePath);
         }
 
+        internal static IReadOnlyList<AgentSkill> FilterTrustedFileSkills(
+            IReadOnlyList<AgentSkill> discovered,
+            IReadOnlyList<string> trustedSearchPaths)
+        {
+            ArgumentNullException.ThrowIfNull(discovered);
+            ArgumentNullException.ThrowIfNull(trustedSearchPaths);
+
+            return discovered.Where(skill =>
+            {
+                if (skill is not AgentFileSkill fileSkill)
+                    return true;
+
+                try
+                {
+                    var skillFilePath = Path.Combine(fileSkill.Path, "SKILL.md");
+                    return IsTrustedSkillFilePath(skillFilePath, trustedSearchPaths);
+                }
+                catch
+                {
+                    return false;
+                }
+            }).ToArray();
+        }
+
+        internal static bool IsTrustedSkillFilePath(string? skillFilePath, IReadOnlyList<string> trustedSearchPaths)
+        {
+            ArgumentNullException.ThrowIfNull(trustedSearchPaths);
+            return !string.IsNullOrWhiteSpace(skillFilePath)
+                && Path.IsPathFullyQualified(skillFilePath)
+                && CopilotWorkspaceSearchSupport.TryResolveExistingFileWithinRoots(
+                    skillFilePath,
+                    trustedSearchPaths,
+                    out _,
+                    out _);
+        }
+
         internal static IReadOnlyList<AgentSkill> SelectPreferredSkills(
             IReadOnlyList<AgentSkill> discovered,
             CopilotAgentSkillReference? preferredReference,
@@ -458,15 +494,18 @@ namespace ColorVision.Copilot
         private sealed class PathAwareDeduplicatingAgentSkillsSource : DelegatingAgentSkillsSource
         {
             private readonly CopilotAgentSkillReference? _preferredReference;
+            private readonly IReadOnlyList<string> _trustedSearchPaths;
 
             public PathAwareDeduplicatingAgentSkillsSource(
                 AgentSkillsSource innerSource,
-                CopilotAgentSkillReference? preferredReference)
+                CopilotAgentSkillReference? preferredReference,
+                IReadOnlyList<string> trustedSearchPaths)
                 : base(innerSource)
             {
                 _preferredReference = preferredReference?.IsStructurallyValid() == true
                     ? preferredReference.CreateSnapshot()
                     : null;
+                _trustedSearchPaths = trustedSearchPaths.ToArray();
             }
 
             public override async Task<IList<AgentSkill>> GetSkillsAsync(
@@ -474,7 +513,8 @@ namespace ColorVision.Copilot
                 CancellationToken cancellationToken = default)
             {
                 var discovered = await InnerSource.GetSkillsAsync(context, cancellationToken).ConfigureAwait(false);
-                return SelectPreferredSkills(discovered.ToArray(), _preferredReference).ToArray();
+                var trusted = FilterTrustedFileSkills(discovered.ToArray(), _trustedSearchPaths);
+                return SelectPreferredSkills(trusted, _preferredReference).ToArray();
             }
         }
 
