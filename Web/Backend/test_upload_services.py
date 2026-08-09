@@ -3,6 +3,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from werkzeug.exceptions import Forbidden
+
 from package_publish import (
     extract_package_version,
     finalize_plugin_publish,
@@ -12,6 +14,7 @@ from package_publish import (
     validate_html_upload_request,
 )
 from storage_uploads import UploadTooLargeError, UploadWorkflowError, store_legacy_upload
+from storage_paths import normalize_relative_path
 
 
 class _FakeUpload:
@@ -89,6 +92,31 @@ class UploadServiceTests(unittest.TestCase):
         self.assertEqual((plugin_dir / "LATEST_RELEASE").read_text(encoding="utf-8"), "1.2.3")
         self.assertTrue(result.save_path.exists())
         self.assertEqual(moved_plugins, ["DemoPlugin"])
+
+    def test_save_package_file_does_not_downgrade_latest_release(self):
+        plugin_dir = self.storage / "Plugins" / "DemoPlugin"
+        plugin_dir.mkdir(parents=True, exist_ok=True)
+        latest_release = plugin_dir / "LATEST_RELEASE"
+        latest_release.write_text("2.0.0", encoding="utf-8")
+
+        result = save_package_file(
+            self.storage,
+            _FakeUpload("DemoPlugin-1.9.9.cvxp", b"older-package"),
+            validate_html_upload_request(
+                _FakeUpload("DemoPlugin-1.9.9.cvxp"),
+                "DemoPlugin",
+                sanitize_filename=self._sanitize_filename,
+                validate_plugin_id=self._validate_plugin_id,
+                validate_version=self._validate_version,
+            ),
+            validate_plugin_id=self._validate_plugin_id,
+            read_text_file=lambda path: path.read_text(encoding="utf-8") if path.exists() else None,
+            version_tuple=self._version_tuple,
+            reconcile_plugin_package_history=lambda plugin_id: [],
+        )
+
+        self.assertEqual(latest_release.read_text(encoding="utf-8"), "2.0.0")
+        self.assertEqual(result.save_path.read_bytes(), b"older-package")
 
     def test_persist_plugin_metadata_writes_manifest_changelog_and_icon(self):
         plugin_dir = self.storage / "Plugins" / "MetaPlugin"
@@ -179,6 +207,47 @@ class UploadServiceTests(unittest.TestCase):
 
         self.assertEqual(context.exception.status_code, 400)
         self.assertIn("Invalid plugin package filename", context.exception.message)
+
+    def test_store_legacy_upload_rejects_case_variant_path_escape_without_side_effects(self):
+        temp_root = Path(self.temp_dir.name)
+        paths = (
+            "ColorVision/../escaped-canonical.bin",
+            r"cOlOrViSiOn\..\escaped-case-variant.bin",
+        )
+
+        for raw_filepath in paths:
+            with self.subTest(raw_filepath=raw_filepath):
+                effects: list[str] = []
+                files_before = {
+                    path.relative_to(temp_root).as_posix()
+                    for path in temp_root.rglob("*")
+                }
+
+                with self.assertRaises(Forbidden):
+                    store_legacy_upload(
+                        storage=self.storage,
+                        raw_filepath=raw_filepath,
+                        stream=io.BytesIO(b"must-not-be-written"),
+                        max_size=64,
+                        normalize_relative_path=normalize_relative_path,
+                        validate_plugin_id=self._validate_plugin_id,
+                        extract_package_version=lambda filename, plugin_id: None,
+                        is_root_release_file=lambda path: effects.append("root-release") or False,
+                        reconcile_app_release_history=lambda: effects.append("app-history") or [],
+                        reconcile_plugin_package_history=lambda plugin_id: effects.append("plugin-history") or [],
+                        prune_update_packages=lambda storage: effects.append("prune"),
+                        refresh_related_caches=lambda **kwargs: effects.append("refresh"),
+                        on_upload_complete=lambda normalized: effects.append("complete"),
+                    )
+
+                files_after = {
+                    path.relative_to(temp_root).as_posix()
+                    for path in temp_root.rglob("*")
+                }
+                escaped_name = Path(raw_filepath.replace("\\", "/")).name
+                self.assertFalse((temp_root / escaped_name).exists())
+                self.assertEqual(files_after, files_before)
+                self.assertEqual(effects, [])
 
     def test_store_legacy_upload_normalizes_windows_update_paths_and_prunes(self):
         events: list[tuple[str, object]] = []
