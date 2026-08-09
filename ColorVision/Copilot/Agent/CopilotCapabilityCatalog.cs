@@ -48,6 +48,8 @@ namespace ColorVision.Copilot
 
         public CopilotToolApprovalMode ApprovalMode { get; init; }
 
+        public CopilotApprovalPromptCategory ApprovalPromptCategory { get; init; }
+
         public CopilotToolIdempotency Idempotency { get; init; }
 
         public CopilotToolConcurrencyMode ConcurrencyMode { get; init; }
@@ -234,10 +236,30 @@ namespace ColorVision.Copilot
             return snapshot;
         }
 
-        public CopilotCapabilityCatalogSnapshot GetSnapshot()
+        public CopilotCapabilityCatalogSnapshot GetSnapshot(bool includePluginCapabilities = true)
         {
             lock (_syncRoot)
-                return CreateSnapshotLocked();
+            {
+                var snapshot = CreateSnapshotLocked();
+                if (includePluginCapabilities)
+                    return snapshot;
+
+                var capabilities = snapshot.Capabilities
+                    .Where(entry => entry.SourceKind != CopilotCapabilitySourceKind.Plugin)
+                    .ToArray();
+                return new CopilotCapabilityCatalogSnapshot
+                {
+                    Revision = capabilities.Length == 0
+                        ? 0
+                        : capabilities.Max(entry => entry.Revision),
+                    UpdatedAtUtc = snapshot.UpdatedAtUtc,
+                    SourceCount = capabilities
+                        .Select(entry => entry.SourceId)
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .Count(),
+                    Capabilities = capabilities,
+                };
+            }
         }
 
         public CopilotCapabilityCatalogSnapshot PublishExternalMcp(CopilotMcpClientServerConfig server, IEnumerable<ICopilotTool> tools)
@@ -291,6 +313,7 @@ namespace ColorVision.Copilot
                 Access = candidate.Capability.Access,
                 RiskLevel = candidate.Capability.RiskLevel,
                 ApprovalMode = candidate.Capability.ApprovalMode,
+                ApprovalPromptCategory = candidate.Capability.ApprovalPromptCategory,
                 Idempotency = candidate.Capability.Idempotency,
                 ConcurrencyMode = candidate.Capability.EffectiveConcurrencyMode,
                 ExecutionTimeoutMs = Math.Max(1, (long)candidate.Capability.EffectiveExecutionTimeout.TotalMilliseconds),
@@ -362,6 +385,7 @@ namespace ColorVision.Copilot
                 ((int)capability.Access).ToString(),
                 ((int)capability.RiskLevel).ToString(),
                 ((int)capability.ApprovalMode).ToString(),
+                ((int)capability.ApprovalPromptCategory).ToString(),
                 ((int)capability.Idempotency).ToString(),
                 ((int)capability.EffectiveConcurrencyMode).ToString(),
                 capability.EffectiveExecutionTimeout.Ticks.ToString(),

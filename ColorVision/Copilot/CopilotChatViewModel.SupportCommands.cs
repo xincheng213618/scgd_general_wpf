@@ -26,13 +26,115 @@ namespace ColorVision.Copilot
 {
     public partial class CopilotChatViewModel
     {
-        private string BuildAgentSkillDiagnosticsReport()
+        private void HandleAgentSkillsCommand(CopilotLocalCommand command, string arguments)
+        {
+            var request = CopilotAgentSkillCommand.Parse(arguments);
+            if (request.Action == CopilotAgentSkillCommandAction.Invalid)
+            {
+                ShowLocalCommandResult(command, CopilotAgentSkillCommand.Usage);
+                return;
+            }
+
+            var resultPrefix = string.Empty;
+            if (request.Action is CopilotAgentSkillCommandAction.Disable or CopilotAgentSkillCommandAction.Enable)
+            {
+                var catalog = DiscoverAgentSkillCatalog(includeDisabled: true, forceReload: false);
+                if (request.CatalogIndex > catalog.Count)
+                {
+                    ShowLocalCommandResult(
+                        command,
+                        $"Skill 编号超出范围；当前目录共有 {catalog.Count} 项。{Environment.NewLine}{CopilotAgentSkillCommand.Usage}");
+                    return;
+                }
+
+                var item = catalog[request.CatalogIndex - 1];
+                var disabled = request.Action == CopilotAgentSkillCommandAction.Disable;
+                var changed = SetAgentSkillPathState(
+                    item,
+                    disabled ? CopilotAgentSkillOverrideState.Off : CopilotAgentSkillOverrideState.On);
+                resultPrefix = changed
+                    ? $"已按精确路径{(disabled ? "关闭" : "启用")} #{request.CatalogIndex} ${item.Name}；从下一次请求开始生效。"
+                    : $"#{request.CatalogIndex} ${item.Name} 的精确路径已经处于请求状态。";
+            }
+
+            ShowLocalCommandResult(
+                command,
+                (resultPrefix.Length == 0 ? string.Empty : resultPrefix + Environment.NewLine + Environment.NewLine)
+                + BuildAgentSkillDiagnosticsReport(request.Action == CopilotAgentSkillCommandAction.Reload));
+        }
+
+        private string BuildAgentSkillDiagnosticsReport(bool forceReload)
         {
             var agentDefaults = _config.AgentDefaults;
+            var overrides = agentDefaults.CreateSkillOverrideSnapshot();
+            var pathOverrides = agentDefaults.CreateSkillPathOverrideSnapshot();
+            var availableSkills = DiscoverAgentSkillCatalog(includeDisabled: true, forceReload);
             return CopilotAgentSkillDiagnostics.FormatReport(
                 CopilotAgentSkillUsageStore.Shared.GetSnapshot(),
                 CopilotAgentSkills.ResolveMetadataCharacterBudget(agentDefaults.ContextWindowTokens),
-                agentDefaults.CreateSkillOverrideSnapshot());
+                overrides,
+                availableSkills,
+                forceReload,
+                pathOverrides,
+                _config.ExternalMcpServers.ToArray());
+        }
+
+        private IReadOnlyList<CopilotAgentSkillCatalogItem> DiscoverAgentSkillCatalog(
+            bool includeDisabled,
+            bool forceReload)
+        {
+            var turnSnapshot = CaptureHostedTurnSnapshot(Attachments);
+            var trustedProjectRoots = CopilotAgentRequestFactory.BuildTrustedProjectRootPaths(turnSnapshot);
+            if (forceReload)
+                CopilotAgentSkillCatalog.Invalidate();
+
+            var agentDefaults = _config.AgentDefaults;
+            return CopilotAgentSkillCatalog.DiscoverCached(
+                    trustedProjectRoots,
+                    includeDisabled ? null : agentDefaults.CreateSkillOverrideSnapshot(),
+                    applicationBaseDirectory: null,
+                    userProfileDirectory: null,
+                    activeDocumentPath: turnSnapshot.ActiveDocumentPath,
+                    pathOverrides: includeDisabled ? null : agentDefaults.CreateSkillPathOverrideSnapshot())
+                .OrderBy(item => item.Name, StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+        }
+
+        private bool SetAgentSkillPathState(
+            CopilotAgentSkillCatalogItem item,
+            CopilotAgentSkillOverrideState state)
+        {
+            var agentDefaults = _config.AgentDefaults;
+            var skillFilePath = CopilotAgentSkillOverrideConfig.NormalizeSkillFilePath(item.SkillFilePath);
+            if (skillFilePath.Length == 0
+                || state is not (CopilotAgentSkillOverrideState.On or CopilotAgentSkillOverrideState.Off))
+                return false;
+
+            var entries = CopilotAgentSkillOverrideConfig.Normalize(agentDefaults.SkillOverrides)
+                .Where(entry => !string.Equals(entry.SkillFilePath, skillFilePath, StringComparison.OrdinalIgnoreCase))
+                .Select(entry => entry.Clone())
+                .ToList();
+            entries.Add(new CopilotAgentSkillOverrideConfig
+            {
+                Name = item.Name,
+                SkillFilePath = skillFilePath,
+                State = state,
+            });
+
+            var normalized = CopilotAgentSkillOverrideConfig.Normalize(entries);
+            var before = CopilotAgentSkillOverrideConfig.Normalize(agentDefaults.SkillOverrides);
+            var changed = !before
+                .Select(entry => (entry.Name, entry.SkillFilePath, entry.State))
+                .SequenceEqual(normalized.Select(entry => (entry.Name, entry.SkillFilePath, entry.State)));
+            if (!changed)
+                return false;
+
+            agentDefaults.SkillOverrides.Clear();
+            foreach (var entry in normalized)
+                agentDefaults.SkillOverrides.Add(entry);
+            CopilotAgentSkillCatalog.Invalidate();
+            PersistConfig();
+            return true;
         }
 
         private string BuildPermissionDiagnosticsReport()
@@ -190,12 +292,14 @@ namespace ColorVision.Copilot
             }
         }
 
-        private static string BuildHookDiagnosticsReport()
+        private string BuildHookDiagnosticsReport()
         {
             var extensionSnapshot = CopilotAgentExtensionBridge.Shared.GetSnapshot();
             return CopilotHookDiagnostics.Format(new CopilotHookDiagnosticSnapshot
             {
-                HookSurface = CopilotToolExecutor.GetSharedHookSurfaceSnapshot(),
+                HookSurface = CopilotToolExecutor.GetSharedHookSurfaceSnapshot(
+                    _currentCodexConfigOptions.ConfiguredHooksEnabled
+                        && _currentCodexConfigOptions.ConfiguredPluginsEnabled),
                 ExtensionSources = extensionSnapshot.Sources,
                 ExtensionIssues = extensionSnapshot.Issues,
                 RecentToolExecutions = CopilotToolExecutionAuditLogger.GetRecentEntries(30),
@@ -244,40 +348,155 @@ namespace ColorVision.Copilot
             var agentContextEnabled = mode != CopilotAgentMode.Chat;
             var selectedProfile = SelectedProfile;
             var conversation = SelectedConversation;
+            var turnSnapshot = CaptureHostedTurnSnapshot(Attachments);
+            var projectInstructionOptions = turnSnapshot.ProjectInstructionDiscoveryOptions;
             var requestProfile = selectedProfile == null
                 ? null
-                : CreateConversationRequestProfile(selectedProfile, conversation);
-            var historyLimits = ResolveConversationHistoryLimits(requestProfile);
+                : CreateConversationRequestProfile(selectedProfile, conversation, mode, projectInstructionOptions);
+            var historyLimits = ResolveConversationHistoryLimits(
+                requestProfile,
+                projectInstructionOptions);
             var history = CopilotConversationRequestBuilder.CaptureHistorySelection(conversation, historyLimits);
             var projectInstructions = Array.Empty<CopilotProjectInstructionDocument>();
             var trustedProjectRoots = Array.Empty<string>();
             CopilotAgentSkillUsageSnapshot? skillUsage = null;
             if (agentContextEnabled)
             {
-                var turnSnapshot = CaptureHostedTurnSnapshot(Attachments);
                 trustedProjectRoots = CopilotAgentRequestFactory.BuildTrustedProjectRootPaths(turnSnapshot).ToArray();
-                projectInstructions = CopilotAgentProjectInstructions.Discover(
+                projectInstructions = CopilotAgentProjectInstructions.DiscoverWithGlobal(
                     trustedProjectRoots,
                     turnSnapshot.ActiveDocumentPath,
                     turnSnapshot.Attachments
                         .Where(attachment => attachment.Type == CopilotAttachmentType.File)
-                        .Select(attachment => attachment.Value))
+                        .Select(attachment => attachment.Value),
+                    turnSnapshot.GlobalInstructionRootPath,
+                    turnSnapshot.ProjectInstructionDiscoveryOptions)
                     .ToArray();
                 skillUsage = CopilotAgentSkillUsageStore.Shared.GetSnapshot();
             }
 
-            var capabilitySnapshot = CopilotCapabilityCatalog.Shared.GetSnapshot();
+            var capabilitySnapshot = CopilotCapabilityCatalog.Shared.GetSnapshot(
+                projectInstructionOptions.ConfiguredPluginsEnabled);
             var agentExtensionSnapshot = CopilotAgentExtensionBridge.Shared.GetSnapshot();
-            var toolHookSurface = CopilotToolExecutor.GetSharedHookSurfaceSnapshot();
+            var toolHookSurface = CopilotToolExecutor.GetSharedHookSurfaceSnapshot(
+                projectInstructionOptions.ConfiguredHooksEnabled
+                    && projectInstructionOptions.ConfiguredPluginsEnabled);
             var agentDefaults = _config.AgentDefaults;
             var retainedHistoryWeight = history.Messages.Sum(message => CopilotTokenEstimator.EstimateTextWeight(message.Content));
+            var autoCompactionUsage = CopilotConversationAutoCompactionPolicy.Measure(
+                conversation,
+                historyLimits,
+                InputText);
             var compaction = conversation?.Compaction;
+            var personality = CopilotResponsePersonalitySelection.Resolve(
+                conversation,
+                projectInstructionOptions);
+            var sleepPrevention = CopilotActiveTurnSleepPrevention.CaptureRuntimeSnapshot();
             return CopilotContextDiagnostics.Format(new CopilotContextDiagnosticSnapshot
             {
                 ProfileLabel = requestProfile?.DisplayLabel ?? string.Empty,
                 Mode = mode,
-                ResponsePersonality = conversation?.ResponsePersonality ?? CopilotResponsePersonality.None,
+                ResponsePersonality = personality.Personality,
+                ResponsePersonalitySourceLabel = personality.SourceLabel,
+                CodexPersonalityEnabled = projectInstructionOptions.ConfiguredPersonalityEnabled,
+                HasCodexPersonalityEnabledOverride = projectInstructionOptions.HasPersonalityEnabledOverride,
+                CodexPersonalityEnabledSourceLabel = projectInstructionOptions.PersonalityEnabledSourceLabel,
+                CodexWebSearchMode = projectInstructionOptions.ConfiguredWebSearchMode,
+                CodexWebSearchModeSourceLabel = projectInstructionOptions.WebSearchModeSourceLabel,
+                HasCodexWebSearchModeOverride = projectInstructionOptions.HasWebSearchModeOverride,
+                CodexSandboxMode = projectInstructionOptions.ConfiguredSandboxMode,
+                CodexSandboxModeSourceLabel = projectInstructionOptions.SandboxModeSourceLabel,
+                HasCodexSandboxModeOverride = projectInstructionOptions.HasSandboxModeOverride,
+                CodexApprovalPolicy = projectInstructionOptions.ConfiguredApprovalPolicy,
+                CodexApprovalPolicySourceLabel = projectInstructionOptions.ApprovalPolicySourceLabel,
+                HasCodexApprovalPolicyOverride = projectInstructionOptions.HasApprovalPolicyOverride,
+                CodexApprovalsReviewer = projectInstructionOptions.ConfiguredApprovalsReviewer,
+                CodexApprovalsReviewerSourceLabel = projectInstructionOptions.ApprovalsReviewerSourceLabel,
+                HasCodexApprovalsReviewerOverride = projectInstructionOptions.HasApprovalsReviewerOverride,
+                CodexGuardianApprovalEnabled = projectInstructionOptions.ConfiguredGuardianApprovalEnabled,
+                CodexGuardianApprovalEnabledSourceLabel = projectInstructionOptions.GuardianApprovalEnabledSourceLabel,
+                HasCodexGuardianApprovalEnabledOverride = projectInstructionOptions.HasGuardianApprovalEnabledOverride,
+                CodexAutoReviewPolicyCharacters = projectInstructionOptions.ConfiguredAutoReviewPolicy.Length,
+                CodexAutoReviewPolicySourceLabel = projectInstructionOptions.AutoReviewPolicySourceLabel,
+                HasCodexAutoReviewPolicyOverride = projectInstructionOptions.HasAutoReviewPolicyOverride,
+                CodexModel = projectInstructionOptions.ConfiguredModel,
+                HasCodexModelOverride = projectInstructionOptions.HasModelOverride,
+                CodexModelSourceLabel = projectInstructionOptions.ModelSourceLabel,
+                CodexReviewModel = projectInstructionOptions.ConfiguredReviewModel,
+                HasCodexReviewModelOverride = projectInstructionOptions.HasReviewModelOverride,
+                CodexReviewModelSourceLabel = projectInstructionOptions.ReviewModelSourceLabel,
+                CodexPreventIdleSleep = projectInstructionOptions.ConfiguredPreventIdleSleep,
+                HasCodexPreventIdleSleepOverride = projectInstructionOptions.HasPreventIdleSleepOverride,
+                CodexPreventIdleSleepSourceLabel = projectInstructionOptions.PreventIdleSleepSourceLabel,
+                CodexShellToolEnabled = projectInstructionOptions.ConfiguredShellToolEnabled,
+                HasCodexShellToolEnabledOverride = projectInstructionOptions.HasShellToolEnabledOverride,
+                CodexShellToolEnabledSourceLabel = projectInstructionOptions.ShellToolEnabledSourceLabel,
+                CodexHooksEnabled = projectInstructionOptions.ConfiguredHooksEnabled,
+                HasCodexHooksEnabledOverride = projectInstructionOptions.HasHooksEnabledOverride,
+                CodexHooksEnabledSourceLabel = projectInstructionOptions.HooksEnabledSourceLabel,
+                CodexPluginsEnabled = projectInstructionOptions.ConfiguredPluginsEnabled,
+                HasCodexPluginsEnabledOverride = projectInstructionOptions.HasPluginsEnabledOverride,
+                CodexPluginsEnabledSourceLabel = projectInstructionOptions.PluginsEnabledSourceLabel,
+                CodexMentionsV2Enabled = projectInstructionOptions.ConfiguredMentionsV2Enabled,
+                HasCodexMentionsV2EnabledOverride = projectInstructionOptions.HasMentionsV2EnabledOverride,
+                CodexMentionsV2EnabledSourceLabel = projectInstructionOptions.MentionsV2EnabledSourceLabel,
+                CodexShellEnvironmentPolicySummary = projectInstructionOptions
+                    .ConfiguredShellEnvironmentPolicy.BuildRedactedSummary(),
+                HasCodexShellEnvironmentPolicyOverride = projectInstructionOptions.HasShellEnvironmentPolicyOverride,
+                CodexShellEnvironmentPolicySourceLabel = projectInstructionOptions.ShellEnvironmentPolicySourceLabel,
+                CodexShellEnvironmentPolicyError = projectInstructionOptions.ShellEnvironmentPolicyError,
+                CodexGoalsEnabled = projectInstructionOptions.ConfiguredGoalsEnabled,
+                HasCodexGoalsEnabledOverride = projectInstructionOptions.HasGoalsEnabledOverride,
+                CodexGoalsEnabledSourceLabel = projectInstructionOptions.GoalsEnabledSourceLabel,
+                CodexDefaultModeRequestUserInputEnabled = projectInstructionOptions.ConfiguredDefaultModeRequestUserInputEnabled,
+                HasCodexDefaultModeRequestUserInputEnabledOverride = projectInstructionOptions.HasDefaultModeRequestUserInputEnabledOverride,
+                CodexDefaultModeRequestUserInputEnabledSourceLabel = projectInstructionOptions.DefaultModeRequestUserInputEnabledSourceLabel,
+                CodexExperimentalRequestUserInputEnabled = projectInstructionOptions.ConfiguredExperimentalRequestUserInputEnabled,
+                HasCodexExperimentalRequestUserInputEnabledOverride = projectInstructionOptions.HasExperimentalRequestUserInputEnabledOverride,
+                CodexExperimentalRequestUserInputEnabledSourceLabel = projectInstructionOptions.ExperimentalRequestUserInputEnabledSourceLabel,
+                CodexUpdatePlanEnabled = projectInstructionOptions.ConfiguredUpdatePlanEnabled,
+                HasCodexUpdatePlanEnabledOverride = projectInstructionOptions.HasUpdatePlanEnabledOverride,
+                CodexUpdatePlanEnabledSourceLabel = projectInstructionOptions.UpdatePlanEnabledSourceLabel,
+                CodexIncludePermissionsInstructions = projectInstructionOptions.ConfiguredIncludePermissionsInstructions,
+                HasCodexIncludePermissionsInstructionsOverride = projectInstructionOptions.HasIncludePermissionsInstructionsOverride,
+                CodexIncludePermissionsInstructionsSourceLabel = projectInstructionOptions.IncludePermissionsInstructionsSourceLabel,
+                CodexIncludeCollaborationModeInstructions = projectInstructionOptions.ConfiguredIncludeCollaborationModeInstructions,
+                HasCodexIncludeCollaborationModeInstructionsOverride = projectInstructionOptions.HasIncludeCollaborationModeInstructionsOverride,
+                CodexIncludeCollaborationModeInstructionsSourceLabel = projectInstructionOptions.IncludeCollaborationModeInstructionsSourceLabel,
+                CodexIncludeEnvironmentContext = projectInstructionOptions.ConfiguredIncludeEnvironmentContext,
+                HasCodexIncludeEnvironmentContextOverride = projectInstructionOptions.HasIncludeEnvironmentContextOverride,
+                CodexIncludeEnvironmentContextSourceLabel = projectInstructionOptions.IncludeEnvironmentContextSourceLabel,
+                CodexIncludeSkillInstructions = projectInstructionOptions.ConfiguredIncludeSkillInstructions,
+                HasCodexIncludeSkillInstructionsOverride = projectInstructionOptions.HasIncludeSkillInstructionsOverride,
+                CodexIncludeSkillInstructionsSourceLabel = projectInstructionOptions.IncludeSkillInstructionsSourceLabel,
+                CodexMultiAgentEnabled = projectInstructionOptions.ConfiguredMultiAgentEnabled,
+                HasCodexMultiAgentEnabledOverride = projectInstructionOptions.HasMultiAgentEnabledOverride,
+                CodexMultiAgentEnabledSourceLabel = projectInstructionOptions.MultiAgentEnabledSourceLabel,
+                CodexAgentsEnabled = projectInstructionOptions.ConfiguredAgentsEnabled,
+                HasCodexAgentsEnabledOverride = projectInstructionOptions.HasAgentsEnabledOverride,
+                CodexAgentsEnabledSourceLabel = projectInstructionOptions.AgentsEnabledSourceLabel,
+                CodexInterruptMessageEnabled = projectInstructionOptions.ConfiguredInterruptMessageEnabled,
+                HasCodexInterruptMessageOverride = projectInstructionOptions.HasInterruptMessageOverride,
+                CodexInterruptMessageSourceLabel = projectInstructionOptions.InterruptMessageSourceLabel,
+                CodexMaximumConcurrentSubagentRuns = projectInstructionOptions.ConfiguredMaximumConcurrentSubagentRuns,
+                HasCodexMaximumConcurrentSubagentRunsOverride = projectInstructionOptions.HasMaximumConcurrentSubagentRunsOverride,
+                CodexMaximumConcurrentSubagentRunsSourceLabel = projectInstructionOptions.MaximumConcurrentSubagentRunsSourceLabel,
+                CodexDefaultSubagentModel = projectInstructionOptions.ConfiguredDefaultSubagentModel,
+                HasCodexDefaultSubagentModelOverride = projectInstructionOptions.HasDefaultSubagentModelOverride,
+                CodexDefaultSubagentModelSourceLabel = projectInstructionOptions.DefaultSubagentModelSourceLabel,
+                CodexDefaultSubagentReasoningEffort = projectInstructionOptions.ConfiguredDefaultSubagentReasoningEffort,
+                HasCodexDefaultSubagentReasoningEffortOverride = projectInstructionOptions.HasDefaultSubagentReasoningEffortOverride,
+                CodexDefaultSubagentReasoningEffortSourceLabel = projectInstructionOptions.DefaultSubagentReasoningEffortSourceLabel,
+                ActiveSleepPreventionLeaseCount = sleepPrevention.ActiveLeaseCount,
+                SleepPreventionLastErrorCode = sleepPrevention.LastErrorCode,
+                SleepPreventionLastFailure = sleepPrevention.LastFailure,
                 SystemPromptCharacters = requestProfile?.EffectiveSystemPrompt.Length ?? 0,
+                ConfiguredModelInstructionsCharacters = projectInstructionOptions.ModelInstructions.Length,
+                ConfiguredModelInstructionsSourceLabel = projectInstructionOptions.ModelInstructionsSourceLabel,
+                HasConfiguredModelInstructionsOverride = projectInstructionOptions.HasModelInstructionsOverride,
+                ConfiguredModelInstructionsUsesFile = projectInstructionOptions.ModelInstructionsUsesFile,
+                ConfiguredModelInstructionsApplied = projectInstructionOptions.HasEffectiveModelInstructions
+                    && selectedProfile?.HasSystemPromptOverride != true,
                 SourceHistoryMessages = history.SourceMessageCount,
                 RetainedHistoryMessages = history.Messages.Length,
                 SourceHistoryCharacters = history.SourceCharacters,
@@ -290,13 +509,56 @@ namespace ColorVision.Copilot
                 HistoryMaximumContentCharacters = historyLimits.MaximumContentCharacters,
                 HistoryMaximumEstimatedTokens = CopilotTokenEstimator.WeightToTokenEstimate(historyLimits.MaximumCharacters),
                 HistoryMaximumContentEstimatedTokens = CopilotTokenEstimator.WeightToTokenEstimate(historyLimits.MaximumContentCharacters),
-                HistoryContextWindowTokens = agentDefaults.ContextWindowTokens,
+                HistoryContextWindowTokens = ResolveContextWindowTokens(projectInstructionOptions),
+                HasModelContextWindowOverride = projectInstructionOptions.HasModelContextWindowOverride,
+                ModelContextWindowSourceLabel = projectInstructionOptions.ModelContextWindowSourceLabel,
+                ToolOutputTokenLimit = projectInstructionOptions.ConfiguredToolOutputTokenLimit,
+                HasToolOutputTokenLimitOverride = projectInstructionOptions.HasToolOutputTokenLimitOverride,
+                ToolOutputTokenLimitSourceLabel = projectInstructionOptions.ToolOutputTokenLimitSourceLabel,
+                CodexReasoningEffort = projectInstructionOptions.ConfiguredModelReasoningEffort,
+                HasCodexReasoningEffortOverride = projectInstructionOptions.HasModelReasoningEffortOverride,
+                CodexReasoningEffortSourceLabel = projectInstructionOptions.ModelReasoningEffortSourceLabel,
+                CodexReasoningSummary = projectInstructionOptions.ConfiguredModelReasoningSummary,
+                HasCodexReasoningSummaryOverride = projectInstructionOptions.HasModelReasoningSummaryOverride,
+                CodexReasoningSummarySourceLabel = projectInstructionOptions.ModelReasoningSummarySourceLabel,
+                CodexModelSupportsReasoningSummaries = projectInstructionOptions.ConfiguredModelSupportsReasoningSummaries,
+                HasCodexModelSupportsReasoningSummariesOverride = projectInstructionOptions.HasModelSupportsReasoningSummariesOverride,
+                CodexModelSupportsReasoningSummariesSourceLabel = projectInstructionOptions.ModelSupportsReasoningSummariesSourceLabel,
+                CodexHideAgentReasoning = projectInstructionOptions.ConfiguredHideAgentReasoning,
+                HasCodexHideAgentReasoningOverride = projectInstructionOptions.HasHideAgentReasoningOverride,
+                CodexHideAgentReasoningSourceLabel = projectInstructionOptions.HideAgentReasoningSourceLabel,
+                CodexFastModeEnabled = projectInstructionOptions.ConfiguredFastModeEnabled,
+                HasCodexFastModeEnabledOverride = projectInstructionOptions.HasFastModeEnabledOverride,
+                CodexFastModeEnabledSourceLabel = projectInstructionOptions.FastModeEnabledSourceLabel,
+                CodexServiceTier = projectInstructionOptions.ConfiguredServiceTier,
+                HasCodexServiceTierOverride = projectInstructionOptions.HasServiceTierOverride,
+                CodexServiceTierSourceLabel = projectInstructionOptions.ServiceTierSourceLabel,
+                CodexModelVerbosity = projectInstructionOptions.ConfiguredModelVerbosity,
+                HasCodexModelVerbosityOverride = projectInstructionOptions.HasModelVerbosityOverride,
+                CodexModelVerbositySourceLabel = projectInstructionOptions.ModelVerbositySourceLabel,
                 AutoCompactConversationHistory = agentDefaults.AutoCompactConversationHistory,
                 AutoCompactThresholdPercent = agentDefaults.AutoCompactThresholdPercent,
+                ConfiguredModelAutoCompactTokenLimit = projectInstructionOptions.ConfiguredModelAutoCompactTokenLimit,
+                HasModelAutoCompactTokenLimitOverride = projectInstructionOptions.HasModelAutoCompactTokenLimitOverride,
+                ModelAutoCompactTokenLimitSourceLabel = projectInstructionOptions.ModelAutoCompactTokenLimitSourceLabel,
+                ModelAutoCompactTokenLimitScope = projectInstructionOptions.EffectiveModelAutoCompactTokenLimitScope,
+                HasModelAutoCompactTokenLimitScopeOverride = projectInstructionOptions.HasModelAutoCompactTokenLimitScopeOverride,
+                ModelAutoCompactTokenLimitScopeSourceLabel = projectInstructionOptions.ModelAutoCompactTokenLimitScopeSourceLabel,
+                AutoCompactTotalEstimatedTokens = EstimateContextTokens(autoCompactionUsage.ActiveWeight),
+                AutoCompactCarriedPrefixEstimatedTokens = EstimateContextTokens(autoCompactionUsage.CarriedPrefixWeight),
+                AutoCompactBodyAfterPrefixEstimatedTokens = EstimateContextTokens(autoCompactionUsage.BodyAfterPrefixWeight),
                 AutoCompactInstructionsCharacters = agentDefaults.AutoCompactInstructions.Length,
+                ConfiguredCompactPromptCharacters = projectInstructionOptions.CompactPrompt.Length,
+                ConfiguredCompactPromptSourceLabel = projectInstructionOptions.CompactPromptSourceLabel,
+                HasConfiguredCompactPromptOverride = projectInstructionOptions.HasCompactPromptOverride,
                 CompactedSourceMessages = compaction?.SourceMessageCount ?? 0,
                 CompactionSummaryCharacters = compaction?.Summary.Length ?? 0,
+                CompactionRequests = conversation?.CompactionUsage?.RequestCount ?? 0,
+                CompactionUsage = conversation?.CompactionUsage?.Usage ?? CopilotTokenUsage.Empty,
                 ConversationGoalCharacters = conversation?.Goal?.Objective.Length ?? 0,
+                ConversationGoalState = conversation?.Goal?.State,
+                ConversationGoalTimeUsedSeconds = conversation?.Goal?.TimeUsedSeconds ?? 0,
+                ConversationGoalContinuationDeferred = conversation?.IsGoalContinuationDeferred == true,
                 ConversationGoalActive = conversation?.Goal?.IsActive == true,
                 ConversationGoalAchieved = conversation?.Goal?.IsAchieved == true,
                 AttachmentCount = Attachments.Count,
@@ -307,6 +569,17 @@ namespace ColorVision.Copilot
                 AgentContextEnabled = agentContextEnabled,
                 ProjectInstructionDocuments = projectInstructions.Length,
                 ProjectInstructionPromptCharacters = CopilotAgentProjectInstructions.BuildPromptBlock(projectInstructions).Length,
+                ProjectInstructionMaximumBytes = projectInstructionOptions.MaximumBytes,
+                ProjectInstructionUsesCodexConfig = projectInstructionOptions.UsesCodexConfig,
+                ProjectInstructionConfigSourceLabel = projectInstructionOptions.ConfigSourceLabel,
+                ProjectInstructionProjectTrustLabel = projectInstructionOptions.ProjectTrustLabel,
+                ProjectInstructionDeveloperInstructionsCharacters = projectInstructionOptions.DeveloperInstructions.Length,
+                ProjectInstructionDeveloperInstructionsSourceLabel = projectInstructionOptions.DeveloperInstructionsSourceLabel,
+                ProjectInstructionHasDeveloperInstructionsOverride = projectInstructionOptions.HasDeveloperInstructionsOverride,
+                ProjectInstructionFallbackFileNames = projectInstructionOptions.FallbackFileNames,
+                ProjectInstructionRootMarkers = projectInstructionOptions.ProjectRootMarkers,
+                ProjectInstructionHasRootMarkersOverride = projectInstructionOptions.HasProjectRootMarkersOverride,
+                ProjectInstructionAppliedProjectConfigFilePaths = projectInstructionOptions.AppliedProjectConfigFilePaths,
                 TrustedProjectRootPaths = trustedProjectRoots,
                 ProjectInstructions = projectInstructions,
                 RecordedSkillRuns = skillUsage?.RecordedRuns ?? 0,
@@ -361,8 +634,9 @@ namespace ColorVision.Copilot
             }
 
             var errorMessage = string.Empty;
-            if (!CopilotLocalFileLinkNavigator.TryResolve(document.Path, out var target)
-                || !CopilotLocalFileLinkNavigator.TryOpen(target, out errorMessage))
+            var additionalAllowedRoots = new[] { snapshot.GlobalInstructionRootPath };
+            if (!CopilotLocalFileLinkNavigator.TryResolve(document.Path, additionalAllowedRoots, out var target)
+                || !CopilotLocalFileLinkNavigator.TryOpen(target, additionalAllowedRoots, out errorMessage))
             {
                 ShowLocalCommandResult(
                     command,
@@ -385,19 +659,27 @@ namespace ColorVision.Copilot
         {
             var turnSnapshot = CaptureHostedTurnSnapshot(Attachments);
             var trustedProjectRoots = CopilotAgentRequestFactory.BuildTrustedProjectRootPaths(turnSnapshot);
-            var documents = CopilotAgentProjectInstructions.Discover(
+            var documents = CopilotAgentProjectInstructions.DiscoverWithGlobal(
                 trustedProjectRoots,
                 turnSnapshot.ActiveDocumentPath,
                 turnSnapshot.Attachments
                     .Where(attachment => attachment.Type == CopilotAttachmentType.File)
-                    .Select(attachment => attachment.Value));
+                    .Select(attachment => attachment.Value),
+                turnSnapshot.GlobalInstructionRootPath,
+                turnSnapshot.ProjectInstructionDiscoveryOptions);
             return new CopilotProjectInstructionSnapshot(
                 trustedProjectRoots.Count > 0
                     ? trustedProjectRoots[0]
                     : turnSnapshot.SolutionDirectoryPath,
                 turnSnapshot.ActiveDocumentPath,
+                turnSnapshot.GlobalInstructionRootPath,
+                turnSnapshot.ProjectInstructionDiscoveryOptions,
                 documents);
         }
+
+        private static int EstimateContextTokens(long weight) => weight <= 0
+            ? 0
+            : CopilotTokenEstimator.WeightToTokenEstimate(weight);
 
         private void DismissLocalCommandResult()
         {

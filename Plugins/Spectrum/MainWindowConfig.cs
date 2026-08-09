@@ -8,6 +8,11 @@ using System.Windows;
 
 namespace Spectrum
 {
+    public sealed class SpectrumLogConfig : RealtimeLogViewConfig, IConfig
+    {
+        public static SpectrumLogConfig Instance => ConfigService.Instance.GetRequiredService<SpectrumLogConfig>();
+    }
+
     public class MainWindowConfig : WindowConfig,IConfig,IFullScreenState
     {
         public static MainWindowConfig Instance => ConfigService.Instance.GetRequiredService<MainWindowConfig>();

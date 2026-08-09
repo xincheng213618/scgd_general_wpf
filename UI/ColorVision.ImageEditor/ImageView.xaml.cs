@@ -44,7 +44,9 @@ namespace ColorVision.ImageEditor
         private static readonly ILog log = LogManager.GetLogger(typeof(ImageView));
         private static readonly SemaphoreSlim SnapshotSaveGate = new(1, 1);
         private readonly DefaultImageViewDisplayConfig _defaultDisplayConfig = DefaultImageViewDisplayConfig.Current;
+        private readonly ImageFrameStore _imageFrameStore = new();
         private readonly List<Func<IEnumerable<ImageViewSettingsEntry>>> _settingsEntries = new();
+        private int _disposed;
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -69,6 +71,42 @@ namespace ColorVision.ImageEditor
         public event EventHandler ClearImageEventHandler;
         public event EventHandler StatusBarItemsChanged;
         public event EventHandler<ImageViewImageChangedEventArgs>? SelectedImageChanged;
+
+        /// <summary>Raised after a new pixel source is assigned to this view.</summary>
+        public event EventHandler<ImageViewImageSourceLoadedEventArgs>? ImageSourceLoaded;
+
+        /// <summary>
+        /// Raised only when an external renderer explicitly reports that it has finished updating the scene.
+        /// </summary>
+        public event EventHandler<ImageViewExternalRenderCompletedEventArgs>? ExternalRenderCompleted;
+
+        /// <summary>Publishes that the current pixel source was loaded or updated in place.</summary>
+        public void NotifyImageSourceLoaded()
+        {
+            Dispatcher.VerifyAccess();
+            ImageSource? source = ViewBitmapSource ?? ImageShow.Source;
+            if (source == null)
+                return;
+
+            ImageShow.RaiseImageInitialized();
+            ImageSourceLoaded?.Invoke(
+                this,
+                new ImageViewImageSourceLoadedEventArgs(source, ImageRevision));
+        }
+
+        /// <summary>Notifies listeners that external scene rendering for the current image has finished.</summary>
+        public void NotifyExternalRenderCompleted(object? context = null, bool succeeded = true)
+        {
+            Dispatcher.VerifyAccess();
+            ImageSource? source = ViewBitmapSource ?? ImageShow.Source;
+            ExternalRenderCompleted?.Invoke(
+                this,
+                new ImageViewExternalRenderCompletedEventArgs(
+                    source,
+                    ImageRevision,
+                    context,
+                    succeeded));
+        }
 
         public EditorContext EditorContext { get; private set; } = null!;
 
@@ -129,10 +167,10 @@ namespace ColorVision.ImageEditor
                 new ImageProcessingContextBinding
                 {
                     IsInitialized = () => IsInitialized,
-                    GetWidth = () => Width,
-                    GetHeight = () => Height,
-                    GetHImageCache = () => HImageCache,
-                    SetHImageCache = value => HImageCache = value,
+                    GetImageRevision = () => ImageRevision,
+                    AcquireImageFrame = AcquireImageFrame,
+                    IsCurrentImageRevision = IsCurrentImageRevision,
+                    NotifySourcePixelsChanged = NotifySourcePixelsChanged,
                     GetFunctionImage = () => FunctionImage,
                     SetFunctionImage = value => FunctionImage = value!,
                     GetViewBitmapSource = () => ViewBitmapSource,
@@ -262,11 +300,7 @@ namespace ColorVision.ImageEditor
         {
             PseudoColorTool?.Reset();
             FunctionImage = null;
-            if (_hImageCache != null)
-            {
-                _hImageCache?.Dispose();
-                _hImageCache = null;
-            }
+            _imageFrameStore.Invalidate();
             GC.Collect();
         }
 
@@ -782,20 +816,110 @@ namespace ColorVision.ImageEditor
             string fileName,
             CancellationToken cancellationToken = default)
         {
+            SaveSnapshot(
+                snapshot,
+                fileName,
+                ImageViewSnapshotSaveOptions.Default,
+                cancellationToken);
+        }
+
+        private static void SaveSnapshot(
+            BitmapSource snapshot,
+            string fileName,
+            ImageViewSnapshotSaveOptions options,
+            CancellationToken cancellationToken = default)
+        {
             cancellationToken.ThrowIfCancellationRequested();
             string? directory = Path.GetDirectoryName(fileName);
             if (!string.IsNullOrWhiteSpace(directory) && !Directory.Exists(directory))
                 Directory.CreateDirectory(directory);
 
-            PngBitmapEncoder pngEncoder = new();
-            pngEncoder.Frames.Add(BitmapFrame.Create(snapshot));
+            BitmapEncoder encoder = options.Format switch
+            {
+                ImageViewSnapshotFormat.Png => new PngBitmapEncoder(),
+                ImageViewSnapshotFormat.Jpeg => new JpegBitmapEncoder
+                {
+                    QualityLevel = Math.Clamp(options.JpegQuality, 1, 100),
+                },
+                _ => throw new ArgumentOutOfRangeException(nameof(options), options.Format, "Unsupported snapshot format."),
+            };
+            encoder.Frames.Add(BitmapFrame.Create(snapshot));
+            SaveEncoderAtomically(encoder, fileName, cancellationToken);
+        }
 
-            using FileStream fileStream = new(
-                fileName,
-                FileMode.Create,
-                FileAccess.Write,
-                FileShare.None);
-            pngEncoder.Save(fileStream);
+        private static void SaveSourceSnapshot(
+            BitmapSource source,
+            string fileName,
+            ImageViewSourceSaveOptions options,
+            CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (options.Format == ImageViewSourceFormat.Bmp
+                && !CanBmpPreserveSourceBitDepth(source.Format))
+            {
+                throw new NotSupportedException(
+                    $"BMP cannot preserve source pixel format {source.Format} ({source.Format.BitsPerPixel} bits per pixel). "
+                    + "Use PNG or TIFF for 16-bit source images.");
+            }
+
+            string? directory = Path.GetDirectoryName(fileName);
+            if (!string.IsNullOrWhiteSpace(directory) && !Directory.Exists(directory))
+                Directory.CreateDirectory(directory);
+
+            BitmapEncoder encoder = options.Format switch
+            {
+                ImageViewSourceFormat.Png => new PngBitmapEncoder(),
+                ImageViewSourceFormat.Tiff => new TiffBitmapEncoder
+                {
+                    Compression = options.TiffCompression == ImageViewTiffCompression.Zip
+                        ? TiffCompressOption.Zip
+                        : TiffCompressOption.Lzw,
+                },
+                ImageViewSourceFormat.Bmp => new BmpBitmapEncoder(),
+                _ => throw new ArgumentOutOfRangeException(nameof(options), options.Format, "Unsupported source image format."),
+            };
+            encoder.Frames.Add(BitmapFrame.Create(source));
+            SaveEncoderAtomically(encoder, fileName, cancellationToken);
+        }
+
+        public static bool CanBmpPreserveSourceBitDepth(PixelFormat format)
+        {
+            return format == PixelFormats.Bgr24
+                || format == PixelFormats.Rgb24
+                || format == PixelFormats.Bgr32
+                || format == PixelFormats.Gray8
+                || format == PixelFormats.Indexed8;
+        }
+
+        private static void SaveEncoderAtomically(
+            BitmapEncoder encoder,
+            string fileName,
+            CancellationToken cancellationToken)
+        {
+            string? directory = Path.GetDirectoryName(fileName);
+            if (!string.IsNullOrWhiteSpace(directory) && !Directory.Exists(directory))
+                Directory.CreateDirectory(directory);
+
+            string temporaryFile = fileName + "." + Guid.NewGuid().ToString("N") + ".tmp";
+            try
+            {
+                using (FileStream fileStream = new(
+                    temporaryFile,
+                    FileMode.CreateNew,
+                    FileAccess.Write,
+                    FileShare.None))
+                {
+                    encoder.Save(fileStream);
+                }
+
+                cancellationToken.ThrowIfCancellationRequested();
+                File.Move(temporaryFile, fileName, overwrite: true);
+            }
+            finally
+            {
+                if (File.Exists(temporaryFile))
+                    File.Delete(temporaryFile);
+            }
         }
 
         private static int GetRenderPixelLength(params double[] values)
@@ -892,11 +1016,14 @@ namespace ColorVision.ImageEditor
 
         private void ImageShow_VisualsAdd(object? sender, VisualChangedEventArgs e)
         {
-            if (e.Visual is IDrawingVisual visual && !EditorContext.DrawEditorContext.DrawingVisualLists.Contains(visual) && sender is Visual visual1)
+            if (e.Visual is IDrawingVisual visual)
             {
                 EditorContext.DrawEditorContext.DrawingVisualLists.Add(visual);
+                return;
             }
 
+            List<IDrawingVisual> drawingVisuals = e.Visuals.OfType<IDrawingVisual>().ToList();
+            EditorContext.DrawEditorContext.AddDrawingVisuals(drawingVisuals);
         }
 
         private void ImageShow_VisualsRemove(object? sender, VisualChangedEventArgs e)
@@ -1235,39 +1362,38 @@ namespace ColorVision.ImageEditor
             UpdateImageGroupNavigator();
         }
 
+        public long ImageRevision => _imageFrameStore.Revision;
 
-        public HImage? HImageCache
+        public bool IsCurrentImageRevision(long revision)
         {
-            get
-            {
-                if (_hImageCache == null)
-                {
-                    if (ImageShow.CheckAccess())
-                    {
-                        ViewBitmapSource = ImageShow.Source;
-
-                        if (ImageShow.Source is WriteableBitmap writeableBitmap)
-                        {
-                            _hImageCache = writeableBitmap.ToHImage();
-                        }
-                    }
-                    else
-                    {
-                        ImageShow.Dispatcher.Invoke(() =>
-                        {
-                            ViewBitmapSource = ImageShow.Source;
-                            if (ImageShow.Source is WriteableBitmap writeableBitmap)
-                            {
-                                _hImageCache = writeableBitmap.ToHImage();
-                            }
-                        });
-                    }
-                }
-                return _hImageCache;
-            }
-            set { _hImageCache?.Dispose(); _hImageCache = value; }
+            return _imageFrameStore.IsCurrent(revision);
         }
-        private HImage? _hImageCache;
+
+        public void NotifySourcePixelsChanged()
+        {
+            _imageFrameStore.Invalidate();
+            InvalidatePseudoColorRender();
+        }
+
+        public ImageFrameLease? AcquireImageFrame()
+        {
+            if (Dispatcher.CheckAccess())
+            {
+                return AcquireImageFrameCore();
+            }
+
+            return Dispatcher.Invoke(AcquireImageFrameCore);
+        }
+
+        private ImageFrameLease? AcquireImageFrameCore()
+        {
+            Dispatcher.VerifyAccess();
+            return _imageFrameStore.AcquireOrCreate(() =>
+            {
+                ImageSource? source = ViewBitmapSource ?? ImageShow.Source;
+                return source is WriteableBitmap writeableBitmap ? writeableBitmap.ToHImage() : null;
+            });
+        }
 
 
         public void SetImageSource(ImageSource imageSource)
@@ -1280,13 +1406,10 @@ namespace ColorVision.ImageEditor
         {
             PseudoColorTool?.Reset();
             InvalidatePseudoColorRender();
+            _imageFrameStore.Invalidate();
             FunctionImage = null;
             ViewBitmapSource = null;
             ImageShow.Source = null;
-            if (HImageCache != null)
-            {
-                HImageCache = null;
-            }
 
             _isLayerSelectorEnabled = enableEditorImageServices;
             if (imageSource is WriteableBitmap writeableBitmap)
@@ -1364,7 +1487,7 @@ namespace ColorVision.ImageEditor
             {
                 UpdateLayerSelectorVisibility();
             }
-            ImageShow.RaiseImageInitialized();
+            NotifyImageSourceLoaded();
             CommandManager.InvalidateRequerySuggested();
 
             // 图像加载完成后通知状态栏刷新
@@ -1445,21 +1568,33 @@ namespace ColorVision.ImageEditor
                 ImageShow.Source = ViewBitmapSource;
                 return;
             }
-            if (HImageCache == null) return;
-            Task.Run(() =>
+            ImageFrameLease? lease = AcquireImageFrame();
+            if (lease == null) return;
+
+            long revision = lease.Revision;
+            _ = Task.Run(() =>
             {
-                int ret = OpenCVMediaHelper.M_ExtractChannel((HImage)HImageCache, out HImage hImageProcessed, channel);
-                Application.Current.Dispatcher.Invoke(() =>
+                int ret;
+                HImage hImageProcessed;
+                using (lease)
                 {
-                    if (ret == 0)
+                    ret = OpenCVMediaHelper.M_ExtractChannel(lease.Image, out hImageProcessed, channel);
+                }
+
+                Application.Current.Dispatcher.BeginInvoke(() =>
+                {
+                    if (ret != 0 || !IsCurrentImageRevision(revision))
                     {
-                        if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
-                        {
-                            var image = hImageProcessed.ToWriteableBitmapAndDispose();
-                            FunctionImage = image;
-                        }
-                        ImageShow.Source = FunctionImage;
+                        hImageProcessed.Dispose();
+                        return;
                     }
+
+                    if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
+                    {
+                        var image = hImageProcessed.ToWriteableBitmapAndDispose();
+                        FunctionImage = image;
+                    }
+                    ImageShow.Source = FunctionImage;
                 });
             });
 
@@ -1536,6 +1671,12 @@ namespace ColorVision.ImageEditor
 
         public void Dispose()
         {
+            if (Interlocked.Exchange(ref _disposed, 1) != 0)
+            {
+                return;
+            }
+
+            ReleaseSnapshotBuffer();
             if (EditorContext != null)
                 DebounceTimer.Cancel("ImageLayoutUpdatedRender" + EditorContext.Id);
             DebounceTimer.Cancel(_pixelValueOverlayRefreshDebounceKey);
@@ -1544,9 +1685,9 @@ namespace ColorVision.ImageEditor
             _defaultDisplayConfig.PropertyChanged -= DefaultDisplayConfig_PropertyChanged;
             Config.Cleared -= Config_Cleared;
             IEditorToolFactory.Dispose();
-            EditorContext.DrawEditorContext.MouseInfoProvider.Dispose();
-            EditorContext.CompactInspectorPresenter?.Dispose();
-            EditorContext.DrawEditorContext.DrawingVisualLists?.Clear();
+            EditorContext?.DrawEditorContext.MouseInfoProvider.Dispose();
+            EditorContext?.CompactInspectorPresenter?.Dispose();
+            EditorContext?.DrawEditorContext.DrawingVisualLists?.Clear();
             Zoombox1.ContentMatrixChanged -= Zoombox1_ContentMatrixChanged;
             Loaded -= ImageView_Loaded;
             Unloaded -= ImageView_Unloaded;
@@ -1559,6 +1700,7 @@ namespace ColorVision.ImageEditor
             ComboBoxLayers.SelectionChanged -= ComboBoxLayers_SelectionChanged;
 
             ImageShow.Dispose();
+            _imageFrameStore.Dispose();
             Drop -= ImageView_Drop;
 
             Zoombox1.Child = null;

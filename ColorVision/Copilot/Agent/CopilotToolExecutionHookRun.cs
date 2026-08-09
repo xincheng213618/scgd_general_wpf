@@ -86,7 +86,14 @@ namespace ColorVision.Copilot
             };
         }
 
-        private static string NormalizeSourceId(string? sourceId)
+        internal CopilotToolExecutionHookRun CreateSnapshot() => Create(
+            SourceId,
+            Phase,
+            State,
+            DurationMs,
+            FailureCode);
+
+        internal static string NormalizeSourceId(string? sourceId)
         {
             var normalized = (sourceId ?? string.Empty)
                 .Replace('\r', ' ')
@@ -95,6 +102,58 @@ namespace ColorVision.Copilot
             return normalized.Length <= MaxSourceIdLength
                 ? normalized
                 : normalized[..MaxSourceIdLength];
+        }
+    }
+
+    public sealed class CopilotToolExecutionHookLifecycle
+    {
+        public string SourceId { get; init; } = string.Empty;
+
+        public CopilotToolExecutionHookPhase Phase { get; init; }
+
+        public CopilotToolExecutionHookRun? Result { get; init; }
+
+        public bool IsCompleted => Result != null;
+
+        public bool IsStructurallyValid(bool requireCompleted)
+        {
+            if (string.IsNullOrWhiteSpace(SourceId)
+                || !string.Equals(SourceId, CopilotToolExecutionHookRun.NormalizeSourceId(SourceId), StringComparison.Ordinal)
+                || SourceId.Any(char.IsControl)
+                || !Enum.IsDefined(Phase)
+                || IsCompleted != requireCompleted)
+            {
+                return false;
+            }
+
+            return Result == null
+                || (Result.IsStructurallyValid()
+                    && string.Equals(Result.SourceId, SourceId, StringComparison.Ordinal)
+                    && Result.Phase == Phase);
+        }
+
+        internal static CopilotToolExecutionHookLifecycle Started(
+            string sourceId,
+            CopilotToolExecutionHookPhase phase)
+        {
+            return new CopilotToolExecutionHookLifecycle
+            {
+                SourceId = CopilotToolExecutionHookRun.NormalizeSourceId(sourceId),
+                Phase = phase,
+            };
+        }
+
+        internal static CopilotToolExecutionHookLifecycle Completed(
+            CopilotToolExecutionHookRun result)
+        {
+            ArgumentNullException.ThrowIfNull(result);
+            var snapshot = result.CreateSnapshot();
+            return new CopilotToolExecutionHookLifecycle
+            {
+                SourceId = snapshot.SourceId,
+                Phase = snapshot.Phase,
+                Result = snapshot,
+            };
         }
     }
 }

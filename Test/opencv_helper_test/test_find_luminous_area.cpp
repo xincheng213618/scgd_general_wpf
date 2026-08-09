@@ -23,7 +23,16 @@
 
 using json = nlohmann::json;
 
+bool RunCalibrationApiSmokeTests();
+bool RunCalibrationCacheSmallBudgetTests();
+bool RunCalibrationRealDataTests(const std::filesystem::path& testRoot);
+bool RunCalibrationLegacyColorComparison(
+    const std::filesystem::path& rawPath,
+    const std::filesystem::path& colorFile,
+    const std::filesystem::path& legacyDll);
+
 bool RunP2AlgorithmTests();
+bool RunNativeLoggingTests();
 
 static std::atomic<int> g_videoCallbackFrames{ 0 };
 static std::atomic<int> g_videoStatusPlaying{ 0 };
@@ -314,6 +323,26 @@ bool smokeCalArtculationUsesRawPixelScale()
         && nearlyEqual(stddev8, 127.5, 1e-9)
         && nearlyEqual(variance16, 1073709056.25, 1e-3)
         && nearlyEqual(stddev16, 32767.5, 1e-9);
+}
+
+bool smokeCalArtculationGray32FloatDoesNotMutateSource()
+{
+    cv::Mat image(2, 3, CV_32FC1);
+    image.at<float>(0, 0) = 1.0f;
+    image.at<float>(0, 1) = std::numeric_limits<float>::quiet_NaN();
+    image.at<float>(0, 2) = 3.0f;
+    image.at<float>(1, 0) = 5.0f;
+    image.at<float>(1, 1) = 7.0f;
+    image.at<float>(1, 2) = 9.0f;
+
+    HImage hImage = createHImageFromMat(image);
+    RoiRect roi = { 0, 0, 0, 0 };
+    const double result = M_CalArtculation(hImage, Variance, roi);
+
+    return result >= 0.0
+        && std::isnan(image.at<float>(0, 1))
+        && image.at<float>(0, 0) == 1.0f
+        && image.at<float>(1, 2) == 9.0f;
 }
 
 bool smokeGetMinMaxClearsOutputsOnFailure()
@@ -1741,13 +1770,36 @@ void testWithRealImage(const std::string& imagePath)
 
 int main(int argc, char* argv[])
 {
+    if (argc == 2 && std::string(argv[1]) == "--calibration-smoke") {
+        return RunCalibrationApiSmokeTests() ? 0 : 1;
+    }
+    if (argc == 2 && std::string(argv[1]) == "--calibration-cache-small-budget") {
+        return RunCalibrationCacheSmallBudgetTests() ? 0 : 1;
+    }
+    if (argc == 3 && std::string(argv[1]) == "--calibration-real-data") {
+        return RunCalibrationRealDataTests(std::filesystem::u8path(argv[2])) ? 0 : 1;
+    }
+    if (argc == 5 && std::string(argv[1]) == "--calibration-legacy-color") {
+        return RunCalibrationLegacyColorComparison(
+            std::filesystem::u8path(argv[2]),
+            std::filesystem::u8path(argv[3]),
+            std::filesystem::u8path(argv[4])) ? 0 : 1;
+    }
     if (argc == 2 && std::string(argv[1]) == "--p2-only") {
         return RunP2AlgorithmTests() ? 0 : 1;
+    }
+    if (argc == 2 && std::string(argv[1]) == "--native-log") {
+        return RunNativeLoggingTests() ? 0 : 1;
     }
 
     std::cout << "========================================" << std::endl;
     std::cout << "M_FindLuminousArea smoke test" << std::endl;
     std::cout << "========================================" << std::endl;
+
+    if (!RunCalibrationApiSmokeTests()) {
+        std::cerr << "Calibration API smoke test failed" << std::endl;
+        return 1;
+    }
 
     if (!smokeHImageHelpersValidateLayoutAndOwnership()) {
         std::cerr << "HImage helper validation test failed" << std::endl;
@@ -1781,6 +1833,11 @@ int main(int argc, char* argv[])
 
     if (!smokeCalArtculationUsesRawPixelScale()) {
         std::cerr << "M_CalArtculation raw pixel scale test failed" << std::endl;
+        return 1;
+    }
+
+    if (!smokeCalArtculationGray32FloatDoesNotMutateSource()) {
+        std::cerr << "M_CalArtculation Gray32Float source mutation test failed" << std::endl;
         return 1;
     }
 
@@ -1901,6 +1958,11 @@ int main(int argc, char* argv[])
 
     if (!RunP2AlgorithmTests()) {
         std::cerr << "P2 native algorithm regression tests failed" << std::endl;
+        return 1;
+    }
+
+    if (!RunNativeLoggingTests()) {
+        std::cerr << "Native logging tests failed" << std::endl;
         return 1;
     }
 

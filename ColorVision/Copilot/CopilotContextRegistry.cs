@@ -75,7 +75,7 @@ namespace ColorVision.Copilot
         {
             ArgumentNullException.ThrowIfNull(request);
 
-            var providers = _extensionBridge == null
+            var providers = _extensionBridge == null || !request.IncludeExtensionProviders
                 ? _providers
                 : _providers.Concat(_extensionBridge.GetSnapshot().ContextProviders).OrderBy(provider => provider.Order).ToArray();
             using var requestCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);

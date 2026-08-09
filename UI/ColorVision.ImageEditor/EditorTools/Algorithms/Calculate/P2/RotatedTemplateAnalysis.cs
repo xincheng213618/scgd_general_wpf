@@ -57,8 +57,9 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.P2
 
         public IEnumerable<MenuItem> GetContextMenuItems(object obj)
         {
-            if (obj is not IRectangle rectangle || _imageContext.HImageCache is not HImage image ||
-                !P2RoiHelper.TryFromRectangle(rectangle, image, _config, out RoiRect roi))
+            using ImageFrameLease? lease = _imageContext.AcquireImageFrame();
+            if (obj is not IRectangle rectangle || lease == null ||
+                !P2RoiHelper.TryFromRectangle(rectangle, lease.Image, _config, out RoiRect roi))
             {
                 return Array.Empty<MenuItem>();
             }
@@ -113,7 +114,8 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.P2
             ImageViewConfig config,
             RoiRect requestedRoi)
         {
-            if (imageContext.HImageCache is not HImage image)
+            using ImageFrameLease? lease = imageContext.AcquireImageFrame();
+            if (lease == null)
             {
                 MessageBox.Show("当前没有可匹配的图像。", "旋转模板本地匹配", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
@@ -130,11 +132,12 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.P2
                 return;
             }
 
-            RoiRect roi = P2RoiHelper.Normalize(requestedRoi, image);
+            RoiRect roi = P2RoiHelper.Normalize(requestedRoi, lease.Image);
             P2JsonAnalysisWindow window = new(
                 "旋转模板本地匹配",
                 $"Search ROI: {P2RoiHelper.Describe(roi)}    Template: {session.Template.PixelWidth} x {session.Template.PixelHeight} ({session.Description})",
                 CreateDefaultConfig(),
+                imageContext,
                 json => RunAsync(imageContext, session.Template, roi, json),
                 BuildSummary,
                 drawContext,
@@ -152,23 +155,23 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.P2
             RoiRect roi,
             string config)
         {
-            if (context.HImageCache is not HImage current)
+            using ImageFrameLease? lease = context.AcquireImageFrame();
+            if (lease == null)
             {
                 throw new InvalidOperationException("当前图像已经关闭或切换。");
             }
 
-            IntPtr sourcePointer = current.pData;
-            using P2ImageSnapshot sourceSnapshot = P2ImageSnapshot.Copy(current);
+            long revision = lease.Revision;
             using P2ImageSnapshot templateSnapshot = P2ImageSnapshot.FromBitmap(template);
             P2NativeResult result = await Task.Run(() => P2NativeJson.Invoke(
                 "旋转模板本地匹配",
                 (out IntPtr result) => OpenCVMediaHelper.M_MatchRotatedTemplate(
-                    sourceSnapshot.Image,
+                    lease.Image,
                     templateSnapshot.Image,
                     roi,
                     config,
                     out result)));
-            if (context.HImageCache is not HImage latest || latest.pData != sourcePointer)
+            if (!context.IsCurrentImageRevision(revision))
             {
                 throw new InvalidOperationException("计算期间当前图像发生了切换，结果已丢弃。");
             }

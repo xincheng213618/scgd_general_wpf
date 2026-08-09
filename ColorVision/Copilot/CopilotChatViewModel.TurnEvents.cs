@@ -76,8 +76,11 @@ namespace ColorVision.Copilot
             OnPropertyChanged(nameof(IsActiveDocumentAttached));
             OnPropertyChanged(nameof(CanAttachActiveDocument));
             OnPropertyChanged(nameof(ActiveDocumentAttachmentMenuText));
+            RefreshLocalCommandSuggestions();
             if (CopilotComposerReferenceCatalog.TryParseMention(InputText, out _))
                 RefreshComposerReferenceSuggestions();
+            _ = CaptureHostedTurnSnapshot(Array.Empty<CopilotAttachmentItem>());
+            RefreshComposerTokenEstimate();
             CommandManager.InvalidateRequerySuggested();
         }
 
@@ -126,13 +129,25 @@ namespace ColorVision.Copilot
             CopilotConversationHistorySnapshot? conversationHistory = null,
             IEnumerable<string>? additionalReadRootPaths = null)
         {
-            return new CopilotAgentHostContextSnapshot(
+            var snapshot = new CopilotAgentHostContextSnapshot(
                 _activeDocumentPath,
                 SolutionManager.GetInstance().CurrentSolutionExplorer?.DirectoryInfo?.FullName ?? string.Empty,
                 attachments,
                 _currentLiveContext,
                 conversationHistory,
-                additionalReadRootPaths);
+                additionalReadRootPaths,
+                CopilotAgentProjectInstructions.ResolveGlobalInstructionRootPath());
+            var previousMentionsV2Enabled = _currentCodexConfigOptions.ConfiguredMentionsV2Enabled;
+            _currentCodexConfigOptions = snapshot.ProjectInstructionDiscoveryOptions;
+            if (previousMentionsV2Enabled != _currentCodexConfigOptions.ConfiguredMentionsV2Enabled)
+            {
+                OnPropertyChanged(nameof(ComposerReferenceHeader));
+                OnPropertyChanged(nameof(ComposerReferenceMenuHeader));
+                OnPropertyChanged(nameof(ComposerReferenceMenuToolTip));
+                if (CopilotComposerReferenceCatalog.TryParseMention(InputText, out _))
+                    RefreshComposerReferenceSuggestions();
+            }
+            return snapshot;
         }
 
         private void ApplyChatDeltas(CopilotChatMessage assistantMessage, IReadOnlyList<CopilotStreamDelta> deltas)
@@ -163,6 +178,52 @@ namespace ColorVision.Copilot
                 userMessage.RequestContent = preparedRequest.Content;
                 userMessage.ChatAttachmentContextCaptured = preparedRequest.ChatAttachmentContextCaptured;
             });
+        }
+
+        private void ApplyReviewEnteredOnUiThread(
+            CopilotChatMessage assistantMessage,
+            CopilotWorkspaceReviewTargetContext target)
+        {
+            CopilotUiDispatcher.Invoke(() =>
+            {
+                var result = CopilotAssistantMessagePresenter.ApplyReviewEntered(assistantMessage, target);
+                PersistState(immediate: result.PersistenceMode == CopilotAgentEventPersistenceMode.Immediate);
+            });
+        }
+
+        private void ApplyReviewExitedOnUiThread(
+            CopilotChatMessage assistantMessage,
+            CopilotWorkspaceReviewTargetContext target,
+            string reviewText,
+            bool reviewTextTruncated)
+        {
+            CopilotUiDispatcher.Invoke(() =>
+            {
+                var result = CopilotAssistantMessagePresenter.ApplyReviewExited(
+                    assistantMessage,
+                    target,
+                    reviewText,
+                    reviewTextTruncated);
+                PersistState(immediate: result.PersistenceMode == CopilotAgentEventPersistenceMode.Immediate);
+            });
+        }
+
+        private void ApplyWorkspaceDiffUpdatedOnUiThread(
+            CopilotChatMessage assistantMessage,
+            CopilotTurnWorkspaceDiffSnapshot snapshot)
+        {
+            CopilotUiDispatcher.Invoke(() =>
+            {
+                var result = CopilotAssistantMessagePresenter.ApplyWorkspaceDiffUpdated(assistantMessage, snapshot);
+                PersistState(immediate: result.PersistenceMode == CopilotAgentEventPersistenceMode.Immediate);
+            });
+        }
+
+        private static void ApplyTokenUsageUpdatedOnUiThread(
+            CopilotChatMessage assistantMessage,
+            CopilotTokenUsage usage)
+        {
+            CopilotUiDispatcher.Invoke(() => assistantMessage.SetReportedUsage(usage));
         }
 
         private void ApplyProviderRetry(CopilotChatMessage assistantMessage, CopilotProviderRetryInfo retry)
@@ -222,14 +283,20 @@ namespace ColorVision.Copilot
 
                         conversation.AgentSessionCheckpoint = agentEvent.SessionCheckpoint;
                         conversation.UpdateLatestAgentTaskEventJournal(agentEvent.SessionCheckpoint.TaskEventJournal);
-                        assistantMessage.AgentTaskLedger = agentEvent.TaskLedger;
                         persistState = true;
                         persistImmediately = true;
-                        refreshAgentTasks |= ReferenceEquals(conversation, SelectedConversation);
+                        continue;
+                    }
+
+                    if (agentEvent.Type == CopilotAgentEventType.PlanUpdated
+                        && hostedRun.State == CopilotHostedRunState.CancelRequested)
+                    {
                         continue;
                     }
 
                     var presentationResult = CopilotAssistantMessagePresenter.ApplyAgentEvent(assistantMessage, agentEvent);
+                    refreshAgentTasks |= agentEvent.Type == CopilotAgentEventType.PlanUpdated
+                        && ReferenceEquals(conversation, SelectedConversation);
                     refreshUserQuestionState |= agentEvent.Type is CopilotAgentEventType.UserQuestionRequested
                         or CopilotAgentEventType.UserQuestionResolved
                         or CopilotAgentEventType.Error
@@ -344,6 +411,7 @@ namespace ColorVision.Copilot
                 context.TurnEvidence.StopReason,
                 context.TurnEvidence.WasResponseInterrupted,
                 turnUsage.Add(evaluationUsage),
+                hostedRun.ElapsedSeconds,
                 evaluation,
                 DateTimeOffset.UtcNow);
             var applied = CopilotUiDispatcher.Invoke(

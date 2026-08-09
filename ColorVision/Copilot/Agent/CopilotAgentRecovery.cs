@@ -9,6 +9,7 @@ namespace ColorVision.Copilot
         Replan,
         RetryRead,
         Finalize,
+        RetryDeniedAction,
     }
 
     public sealed class CopilotAgentRecoveryRequest
@@ -40,6 +41,21 @@ namespace ColorVision.Copilot
 
             if (PreviousResponseWasInterrupted)
                 return false;
+
+            if (Mode == CopilotAgentRecoveryMode.RetryDeniedAction)
+            {
+                return PreviousStopReason is (CopilotAgentStopReason.Completed
+                        or CopilotAgentStopReason.ApprovalDenied
+                        or CopilotAgentStopReason.BudgetExhausted
+                        or CopilotAgentStopReason.TaskPassLimit
+                        or CopilotAgentStopReason.Blocked
+                        or CopilotAgentStopReason.Paused
+                        or CopilotAgentStopReason.ProviderFailure
+                        or CopilotAgentStopReason.Interrupted)
+                    && !string.IsNullOrWhiteSpace(ToolName)
+                    && ToolName.Length <= CopilotAgentTaskEventJournal.MaxToolNameLength
+                    && string.IsNullOrWhiteSpace(SourceCallKey);
+            }
 
             if (PreviousStopReason is not (CopilotAgentStopReason.BudgetExhausted
                 or CopilotAgentStopReason.TaskPassLimit

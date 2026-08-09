@@ -212,8 +212,11 @@ namespace ColorVision.Copilot
             var originalErrorMessage = ErrorMessage;
             var originalFailureCode = FailureCode;
             var originalDelegatedRoleId = DelegatedRoleId;
+            var originalDelegatedAgentName = DelegatedAgentName;
             var originalDelegatedRunId = DelegatedRunId;
             var originalDelegatedResumeFromRunId = DelegatedResumeFromRunId;
+            var originalDelegatedModel = DelegatedModel;
+            var originalDelegatedReasoningEffort = DelegatedReasoningEffort;
             var originalDelegatedStopReason = DelegatedStopReason;
             var originalDelegatedRequestTokenBudget = DelegatedRequestTokenBudget;
             var originalDelegatedConsumedTokens = DelegatedConsumedTokens;
@@ -252,8 +255,17 @@ namespace ColorVision.Copilot
                 ? string.Empty
                 : CopilotToolFailureCode.Normalize(FailureCode);
             DelegatedRoleId = SanitizeIdentifier(DelegatedRoleId);
+            DelegatedAgentName = CopilotCodexCustomSubagentSelection.TryNormalizeName(
+                DelegatedAgentName,
+                out var delegatedAgentName)
+                    ? delegatedAgentName
+                    : string.Empty;
             DelegatedRunId = SanitizeIdentifier(DelegatedRunId);
             DelegatedResumeFromRunId = SanitizeIdentifier(DelegatedResumeFromRunId);
+            DelegatedModel = CopilotConfiguredModelSelection.TryNormalize(DelegatedModel, out var delegatedModel)
+                ? delegatedModel
+                : string.Empty;
+            DelegatedReasoningEffort = NormalizeDelegatedReasoningEffort(DelegatedReasoningEffort);
             DelegatedRequestTokenBudget = Math.Max(0, DelegatedRequestTokenBudget);
             DelegatedConsumedTokens = Math.Max(0, DelegatedConsumedTokens);
             DelegatedProviderCalls = Math.Max(0, DelegatedProviderCalls);
@@ -308,8 +320,11 @@ namespace ColorVision.Copilot
                 || !string.Equals(originalErrorMessage, ErrorMessage, StringComparison.Ordinal)
                 || !string.Equals(originalFailureCode, FailureCode, StringComparison.Ordinal)
                 || !string.Equals(originalDelegatedRoleId, DelegatedRoleId, StringComparison.Ordinal)
+                || !string.Equals(originalDelegatedAgentName, DelegatedAgentName, StringComparison.Ordinal)
                 || !string.Equals(originalDelegatedRunId, DelegatedRunId, StringComparison.Ordinal)
                 || !string.Equals(originalDelegatedResumeFromRunId, DelegatedResumeFromRunId, StringComparison.Ordinal)
+                || !string.Equals(originalDelegatedModel, DelegatedModel, StringComparison.Ordinal)
+                || !string.Equals(originalDelegatedReasoningEffort, DelegatedReasoningEffort, StringComparison.Ordinal)
                 || originalDelegatedStopReason != DelegatedStopReason
                 || originalDelegatedRequestTokenBudget != DelegatedRequestTokenBudget
                 || originalDelegatedConsumedTokens != DelegatedConsumedTokens
@@ -393,6 +408,16 @@ namespace ColorVision.Copilot
 
             changed |= NormalizeWorkspaceRollbackAuthority(recoveredAtUtc);
             return changed;
+        }
+
+        private static string NormalizeDelegatedReasoningEffort(string? value)
+        {
+            var normalized = (value ?? string.Empty).Trim();
+            if (string.Equals(normalized, "model_default", StringComparison.Ordinal))
+                return normalized;
+            return CopilotCodexReasoningEffortSelection.TryParse(normalized, out var effort)
+                ? CopilotCodexReasoningEffortSelection.GetConfigToken(effort)
+                : string.Empty;
         }
 
         private bool NormalizeWorkspaceRollbackAuthority(DateTimeOffset recoveredAtUtc)

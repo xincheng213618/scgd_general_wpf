@@ -109,6 +109,38 @@ public class CopilotChatStateSnapshotTests
     }
 
     [Fact]
+    public void ExplicitNeutralPersonalityRoundTripsAndLegacySelectionsBecomeExplicit()
+    {
+        var explicitNeutral = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        explicitNeutral.ResponsePersonality = CopilotResponsePersonality.None;
+        explicitNeutral.HasResponsePersonalityOverride = true;
+
+        string json = JsonConvert.SerializeObject(explicitNeutral, SerializerSettings);
+        var restored = JsonConvert.DeserializeObject<CopilotConversationRecord>(json);
+
+        Assert.Contains(nameof(CopilotConversationRecord.HasResponsePersonalityOverride), json, StringComparison.Ordinal);
+        Assert.Null(JObject.Parse(json)[nameof(CopilotConversationRecord.ResponsePersonality)]);
+        Assert.NotNull(restored);
+        Assert.True(restored.HasResponsePersonalityOverride);
+        Assert.Equal(CopilotResponsePersonality.None, restored.ResponsePersonality);
+
+        explicitNeutral.Messages.Add(new CopilotChatMessage(CopilotChatRole.User, "Question"));
+        var assistant = new CopilotChatMessage(CopilotChatRole.Assistant, "Answer");
+        explicitNeutral.Messages.Add(assistant);
+        var branch = CopilotConversationBranchService.CreateBranch(explicitNeutral, assistant);
+        Assert.True(branch.HasResponsePersonalityOverride);
+        Assert.Equal(CopilotResponsePersonality.None, branch.ResponsePersonality);
+
+        var legacy = JsonConvert.DeserializeObject<CopilotConversationRecord>(
+            "{\"ResponsePersonality\":2}");
+        Assert.NotNull(legacy);
+        Assert.False(legacy.HasResponsePersonalityOverride);
+        Assert.True(legacy.EnsureValid());
+        Assert.True(legacy.HasResponsePersonalityOverride);
+        Assert.Equal(CopilotResponsePersonality.Pragmatic, legacy.ResponsePersonality);
+    }
+
+    [Fact]
     public void StateStoreRoundTripsACompressedCheckpointSession()
     {
         var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
@@ -507,14 +539,45 @@ public class CopilotChatStateSnapshotTests
     }
 
     [Fact]
-    public async Task FutureSchemaStateBlocksFallbackAndAllWrites()
+    public void LoadDiscardsOlderTemporaryStateAndKeepsNewerPrimary()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        try
+        {
+            var store = new CopilotChatStateStore(root);
+            store.Save(CreateState("Current"));
+            File.WriteAllText(store.TemporaryStateFilePath, store.Serialize(CreateState("Stale")));
+            File.SetLastWriteTimeUtc(
+                store.TemporaryStateFilePath,
+                File.GetLastWriteTimeUtc(store.StateFilePath).AddMinutes(-1));
+
+            var loadStore = new CopilotChatStateStore(root);
+            var loaded = loadStore.Load();
+
+            Assert.Equal(CopilotChatStateLoadSource.Primary, loadStore.LastLoadStatus.Source);
+            Assert.Equal("Current", Assert.Single(loaded.Conversations).Title);
+            Assert.False(File.Exists(store.TemporaryStateFilePath));
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+                Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Theory]
+    [InlineData(CopilotChatState.CurrentSchemaVersion + 1L, CopilotChatState.CurrentSchemaVersion + 1)]
+    [InlineData((long)int.MaxValue + 1, int.MaxValue)]
+    public async Task FutureSchemaStateBlocksFallbackAndAllWrites(
+        long futureSchemaVersion,
+        int reportedSchemaVersion)
     {
         var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
         try
         {
             var store = new CopilotChatStateStore(root);
             Directory.CreateDirectory(store.StateDirectoryPath);
-            var futureDocument = CreateStateDocument(CopilotChatState.CurrentSchemaVersion + 1, "Future history");
+            var futureDocument = CreateStateDocument(futureSchemaVersion, "Future history");
             var backupDocument = CreateStateDocument(CopilotChatState.CurrentSchemaVersion, "Older backup");
             File.WriteAllText(store.StateFilePath, futureDocument.ToString(Formatting.None));
             File.WriteAllText(store.BackupStateFilePath, backupDocument.ToString(Formatting.None));
@@ -526,7 +589,7 @@ public class CopilotChatStateSnapshotTests
             var serializedReplacement = store.Serialize(replacement);
 
             Assert.Equal(CopilotChatStateLoadSource.FutureVersion, store.LastLoadStatus.Source);
-            Assert.Equal(CopilotChatState.CurrentSchemaVersion + 1, store.LastLoadStatus.SchemaVersion);
+            Assert.Equal(reportedSchemaVersion, store.LastLoadStatus.SchemaVersion);
             Assert.True(store.IsStatePersistenceBlocked);
             Assert.Empty(loaded.Conversations);
             Assert.Throws<CopilotChatStateFutureVersionException>(() => store.Save(replacement));
@@ -674,7 +737,7 @@ public class CopilotChatStateSnapshotTests
             });
     }
 
-    private static JObject CreateStateDocument(int schemaVersion, string title)
+    private static JObject CreateStateDocument(long schemaVersion, string title)
     {
         return new JObject
         {

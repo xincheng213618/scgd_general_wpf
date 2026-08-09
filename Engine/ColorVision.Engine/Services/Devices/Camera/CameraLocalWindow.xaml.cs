@@ -1,6 +1,9 @@
 #pragma warning disable CA1051,CA1805,CA1806,CA1826,CA1859,CS8625
 using ColorVision.Database;
+using ColorVision.Engine.FlowProcessing.Nodes;
 using ColorVision.Engine.Media;
+using ColorVision.Engine.Services.Devices.Camera.Local;
+using ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam;
 using ColorVision.Engine.Services.Devices.Camera.Video;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
@@ -9,6 +12,7 @@ using ColorVision.ImageEditor.Realtime;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using cvColorVision;
+using FlowEngineLib.Algorithm;
 using log4net;
 using Newtonsoft.Json;
 using System;
@@ -32,6 +36,26 @@ namespace ColorVision.Engine.Services.Devices.Camera
         private bool _isConnected;
         private bool _isRefreshingCameraIds;
         private bool _closeAfterCameraIdRefresh;
+        private readonly LocalCameraNode? _sourceNode;
+        private bool _isInitializingNodeSettings;
+        private bool _isCapturing;
+        private bool _hasDisplayedCapture;
+
+        private sealed class LocalCaptureDisplayResult
+        {
+            public required byte[] RawData { get; init; }
+            public required byte[] CieData { get; init; }
+            public required WriteableBitmap DisplayBitmap { get; init; }
+            public int Width { get; init; }
+            public int Height { get; init; }
+            public int SourceBpp { get; init; }
+            public int CieBpp { get; init; }
+            public int Channels { get; init; }
+            public int CaptureTimeMs { get; init; }
+            public int CalibrationTimeMs { get; init; }
+            public int SaveTimeMs { get; init; }
+            public int TotalTimeMs { get; init; }
+        }
 
         public byte[] rawArray;
         public byte[] srcrawArray;
@@ -48,11 +72,28 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         public DeviceCamera Device { get; set; }
 
-        public CameraLocalWindow(DeviceCamera deviceCamera)
+        public CameraLocalWindow(DeviceCamera deviceCamera, LocalCameraNode? sourceNode = null)
         {
             Device = deviceCamera;
+            _sourceNode = sourceNode;
+            _isInitializingNodeSettings = sourceNode != null;
+            ApplyNodeSettingsToWindow();
             InitializeComponent();
             DataContext = Device;
+            if (_sourceNode != null)
+            {
+                Device.DisplayConfig.PropertyChanged += CaptureSettings_PropertyChanged;
+                Device.Config.PropertyChanged += CaptureSettings_PropertyChanged;
+            }
+        }
+
+        private void CaptureSettings_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (_isInitializingNodeSettings)
+            {
+                return;
+            }
+            UpdateNodeSettingsFromWindow();
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -69,6 +110,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
             cb_get_mode.SelectedIndex = (int)m_etakeImageMode;
             cb_bpp.SelectedIndex = m_nBppIndex;
             cb_Channels.SelectedIndex = Device.Config.Channel == ImageChannel.Three ? 1 : 0;
+            CBFlip.ItemsSource = Enum.GetValues<CVImageFlipMode>()
+                .Select(value => new KeyValuePair<string, CVImageFlipMode>(value.ToString(), value));
             InitializeCameraIdFromConfig();
 
             bool isConnected = Device.LocalCameraSession.IsOpen;
@@ -78,6 +121,60 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
             UpdateConnectionState(isConnected);
             UpdateCalibrationTemplateOptions();
+            SelectNodeCalibrationTemplate();
+            _isInitializingNodeSettings = false;
+            UpdateNodeSettingsFromWindow();
+            NodeContextHint.Visibility = _sourceNode == null ? Visibility.Collapsed : Visibility.Visible;
+        }
+
+        private void ApplyNodeSettingsToWindow()
+        {
+            if (_sourceNode == null)
+            {
+                return;
+            }
+
+            Device.DisplayConfig.Gain = _sourceNode.Gain;
+            Device.DisplayConfig.AvgCount = Math.Max(1, _sourceNode.AvgCount);
+            Device.DisplayConfig.ExpTime = _sourceNode.ExpTime;
+            Device.DisplayConfig.ExpTimeR = _sourceNode.ExpTime;
+            Device.DisplayConfig.ExpTimeG = _sourceNode.ExpTime;
+            Device.DisplayConfig.ExpTimeB = _sourceNode.ExpTime;
+            Device.DisplayConfig.FlipMode = _sourceNode.FlipMode;
+            Device.Config.IsAutoExpose = _sourceNode.IsAutoExp;
+            Device.Config.UsingFileCaching = _sourceNode.SaveFiles;
+        }
+
+        private void SelectNodeCalibrationTemplate()
+        {
+            if (_sourceNode == null || ComboxCalibrationTemplate.Items.Count == 0)
+            {
+                return;
+            }
+
+            string templateName = _sourceNode.CalibTempName;
+            int selectedIndex = ComboxCalibrationTemplate.Items.Cast<TemplateModel<CalibrationParam>>()
+                .Select((item, index) => (item, index))
+                .FirstOrDefault(entry => string.Equals(entry.item.Key, templateName, StringComparison.Ordinal)).index;
+            ComboxCalibrationTemplate.SelectedIndex = string.IsNullOrWhiteSpace(templateName) ? 0 : selectedIndex;
+        }
+
+        private void UpdateNodeSettingsFromWindow()
+        {
+            if (_sourceNode == null || _isInitializingNodeSettings)
+            {
+                return;
+            }
+
+            _sourceNode.Gain = Device.DisplayConfig.Gain;
+            _sourceNode.AvgCount = Math.Max(1, Device.DisplayConfig.AvgCount);
+            _sourceNode.ExpTime = (float)Device.DisplayConfig.ExpTime;
+            _sourceNode.FlipMode = Device.DisplayConfig.FlipMode;
+            _sourceNode.IsAutoExp = Device.Config.IsAutoExpose;
+            _sourceNode.SaveFiles = Device.Config.UsingFileCaching;
+            _sourceNode.CalibTempName = ComboxCalibrationTemplate.SelectedItem is TemplateModel<CalibrationParam> template && template.Value.Id >= 0
+                ? template.Key
+                : string.Empty;
         }
 
         private bool _isInitializingCameraIdSelection;
@@ -85,10 +182,10 @@ namespace ColorVision.Engine.Services.Devices.Camera
         private void UpdateConnectionState(bool isConnected)
         {
             _isConnected = isConnected;
-            bool canConfigure = !isConnected && !_isRefreshingCameraIds;
+            bool canConfigure = !isConnected && !_isRefreshingCameraIds && !_isCapturing;
 
             btn_Connect.IsEnabled = canConfigure;
-            btn_close.IsEnabled = isConnected;
+            btn_close.IsEnabled = isConnected && !_isCapturing;
             btn_reset.IsEnabled = canConfigure;
             btn_RefreshCameraId.IsEnabled = canConfigure;
 
@@ -98,10 +195,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
             cb_get_mode.IsEnabled = canConfigure;
             cb_bpp.IsEnabled = canConfigure;
 
-            bool canCapture = isConnected && m_etakeImageMode != TakeImageMode.Live;
+            bool canCapture = isConnected && m_etakeImageMode != TakeImageMode.Live && !_isCapturing;
             btn_Meas.IsEnabled = canCapture;
-            button1.IsEnabled = canCapture;
-            btn_CalAutoExp.IsEnabled = isConnected;
+            btn_CalAutoExp.IsEnabled = isConnected && !_isCapturing;
         }
 
         private void UpdateCameraIdRefreshState(bool isRefreshing)
@@ -285,6 +381,13 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
+            if (_isCapturing)
+            {
+                e.Cancel = true;
+                CaptureStatusText.Text = "正在取图，完成后可以关闭窗口。";
+                return;
+            }
+
             if (_isRefreshingCameraIds)
             {
                 e.Cancel = true;
@@ -293,6 +396,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
 
             UpdateCurrentConfigFromUi(GetSelectedCameraId());
+            UpdateNodeSettingsFromWindow();
             _localRealtimePipeline.Stop(resetRealtime: true);
             if (m_etakeImageMode == TakeImageMode.Live)
             {
@@ -300,6 +404,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
 
             SaveLocalPreferences();
+            SaveDisplayConfig();
             Dispose();
         }
 
@@ -584,7 +689,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             GetFrameParam param = new GetFrameParam();
 
             param.channelCount = GetSelectedChannelCount();
-            param.measureCount = 1;
+            param.measureCount = Math.Max(Device.DisplayConfig.AvgCount, 1);
             param.title = "";
             param.ob = 4;
             param.obR = 0;
@@ -755,92 +860,115 @@ namespace ColorVision.Engine.Services.Devices.Camera
         UInt32 src_w = 0, src_h = 0;
         UInt32 src_bpp = 0, src_channels = 0;
 
-        private void btn_Meas_Click(object sender, RoutedEventArgs e)
+        private async void btn_Meas_Click(object sender, RoutedEventArgs e)
         {
-            lock (Device.LocalCameraSession.SyncRoot)
+            await MeasureOnceAsync();
+        }
+
+        private async Task MeasureOnceAsync()
+        {
+            if (_isCapturing)
             {
-                MeasureOnce();
+                return;
+            }
+
+            _isCapturing = true;
+            UpdateConnectionState(_isConnected);
+            CaptureStatusText.Text = "正在取图…";
+            try
+            {
+                CameraRunParam cameraParameters = BuildLocalCameraParameters();
+                CalibrationParam? calibration = GetSelectedCalibrationTemplate();
+                LocalCameraCaptureRequest request = new()
+                {
+                    Device = Device,
+                    CameraParameters = cameraParameters,
+                    Calibration = calibration,
+                    FlipMode = Device.DisplayConfig.FlipMode,
+                    IsAutoExposure = Device.Config.IsAutoExpose,
+                    SaveFiles = Device.Config.UsingFileCaching
+                };
+                LocalCaptureDisplayResult display = await Task.Run(() => CaptureAndPrepareDisplay(request));
+
+                srcrawArray = display.RawData;
+                rawArray = display.CieData;
+                src_w = checked((uint)display.Width);
+                src_h = checked((uint)display.Height);
+                src_bpp = checked((uint)display.SourceBpp);
+                src_channels = checked((uint)display.Channels);
+
+                ShowImageInView(display.DisplayBitmap);
+                if (display.CieData.Length > 0)
+                {
+                    AttachLiveCvcieResult(src_w, src_h, checked((uint)display.CieBpp), src_channels);
+                }
+                FitFirstCaptureToWindow();
+
+                CaptureStatusText.Text = $"取图 {display.CaptureTimeMs} ms · 校正 {display.CalibrationTimeMs} ms · 保存 {display.SaveTimeMs} ms · 总计 {display.TotalTimeMs} ms";
+            }
+            catch (Exception ex)
+            {
+                log.Error("Local camera capture failed.", ex);
+                CaptureStatusText.Text = ex.Message;
+                MessageBox1.Show(Application.Current.GetActiveWindow(), ex.Message, "ColorVision");
+            }
+            finally
+            {
+                _isCapturing = false;
+                UpdateConnectionState(_isConnected);
             }
         }
 
-        private void MeasureOnce()
+        private static LocalCaptureDisplayResult CaptureAndPrepareDisplay(LocalCameraCaptureRequest request)
         {
-            btn_Meas.IsEnabled = false;
-            button1.IsEnabled = false;
-            UInt32 w = 0, h = 0;
-            UInt32 channels = 0;
-            uint bpp = 0;
-            UInt32 dstbpp = 32;
+            LocalCameraCaptureResult capture = LocalCameraCaptureService.Capture(request);
+            using LocalFlowFrame frame = capture.Frame;
+            using LocalFlowFrameLease lease = frame.Acquire();
+            byte[] rawData = lease.CopyRawToArray();
+            byte[] cieData = lease.CopyCieToArray();
+            WriteableBitmap displayBitmap = CreateDisplayBitmap(rawData, lease.Metadata.SourceBpp, lease.Metadata.Channels, lease.Metadata.Width, lease.Metadata.Height);
+            displayBitmap.Freeze();
+            return new LocalCaptureDisplayResult
+            {
+                RawData = rawData,
+                CieData = cieData,
+                DisplayBitmap = displayBitmap,
+                Width = lease.Metadata.Width,
+                Height = lease.Metadata.Height,
+                SourceBpp = lease.Metadata.SourceBpp,
+                CieBpp = lease.Metadata.CieBpp,
+                Channels = lease.Metadata.Channels,
+                CaptureTimeMs = capture.CaptureTimeMs,
+                CalibrationTimeMs = capture.CalibrationTimeMs,
+                SaveTimeMs = capture.SaveTimeMs,
+                TotalTimeMs = capture.TotalTimeMs
+            };
+        }
 
-            if (cvCameraCSLib.CM_GetSrcFrameInfo(m_hCamHandle, ref w, ref h, ref bpp, ref channels) == 0
-                || w == 0 || h == 0 || bpp == 0 || channels == 0)
+        private void FitFirstCaptureToWindow()
+        {
+            if (_hasDisplayedCapture)
             {
-                log.Error("Failed to get valid source frame information before local camera capture.");
-                btn_Meas.IsEnabled = true;
-                button1.IsEnabled = true;
-                return;
-            }
-            int sourceLength = checked((int)((ulong)(bpp / 8) * w * h * channels));
-            int cieLength = checked((int)((ulong)(dstbpp / 8) * w * h * channels));
-
-            if (srcrawArray == null || srcrawArray.Length != sourceLength)
-            {
-                srcrawArray = new byte[sourceLength];
-            }
-            if (rawArray == null || rawArray.Length != cieLength)
-            {
-                rawArray = new byte[cieLength];
-            }
-
-            if (!TryBuildParam(out string json1, out IReadOnlyList<DeviceCameraCalibrationFile> calibrationFiles)
-                || !TryLoadNativeCalibrationLibrary(calibrationFiles))
-            {
-                btn_Meas.IsEnabled = true;
-                button1.IsEnabled = true;
                 return;
             }
 
-            ApplyCurrentCameraSettings();
+            _hasDisplayedCapture = true;
+            ImageView.UpdateZoomAndScale();
+        }
 
-            TimeSpan start = new TimeSpan(DateTime.Now.Ticks);
-            int nErr = cvCameraCSLib.CM_GetFrame(m_hCamHandle, json1, ref w, ref h, ref bpp, ref dstbpp, ref channels, srcrawArray, rawArray);
-
-            if (nErr != cvErrorDefine.CV_ERR_SUCCESS)
+        private CameraRunParam BuildLocalCameraParameters()
+        {
+            int averageCount = Math.Max(1, Device.DisplayConfig.AvgCount);
+            Device.DisplayConfig.AvgCount = averageCount;
+            return new CameraRunParam
             {
-                string szMsg = "";
-                cvCameraCSLib.CM_GetErrorMessage(nErr, ref szMsg);
-                MessageBox.Show(szMsg);
-                btn_Meas.IsEnabled = true;
-                button1.IsEnabled = true;
-                return;
-            }
-
-            TimeSpan end = new TimeSpan(DateTime.Now.Ticks);
-            TimeSpan abs = end.Subtract(start).Duration();
-            Console.WriteLine(string.Format("程序执行时间：{0}", abs.TotalMilliseconds));
-
-            btn_Meas.IsEnabled = true;
-            button1.IsEnabled = true;
-            src_w = w;
-            src_h = h;
-            src_bpp = bpp;
-            src_channels = channels;
-
-            bool hasColorCalibration = calibrationFiles.Any(file => IsColorCalibration(file.CalibrationType));
-            bool hasCieResult = hasColorCalibration && HasNativeCieResult(w, h, channels);
-
-            ShowImageInView(srcrawArray, (int)bpp, (int)channels, (int)w, (int)h);
-
-            if (hasCieResult)
-            {
-                AttachLiveCvcieResult(w, h, dstbpp, channels);
-            }
-            else if (hasColorCalibration)
-            {
-                ShowMissingCieResultMessage();
-            }
-
-            SaveCaptureFilesIfNeeded(hasCieResult, w, h, bpp, dstbpp, channels, srcrawArray);
+                Gain = Device.DisplayConfig.Gain,
+                ExpTime = (float)Device.DisplayConfig.ExpTime,
+                ExpTimeR = (float)Device.DisplayConfig.ExpTimeR,
+                ExpTimeG = (float)Device.DisplayConfig.ExpTimeG,
+                ExpTimeB = (float)Device.DisplayConfig.ExpTimeB,
+                AvgCount = averageCount
+            };
         }
 
         private bool HasNativeCieResult(uint width, uint height, uint channels)
@@ -864,15 +992,19 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 Properties.Resources.Engine_Msg_CalculateCieFailed.Replace("{0}", "CM_GetFrame returned no CIE buffer", StringComparison.Ordinal), "ColorVision");
         }
 
-        private unsafe void ShowImageInView(byte[] data, int bpp, int channels, int width, int height)
+        private void ShowImageInView(WriteableBitmap writeableBitmap)
         {
-            var pixelFormat = GetPixelFormat(channels, bpp);
-            int stride = width * channels * (bpp / 8);
-
             ImageView.EditorContext.IImageOpen = null;
             ImageView.IEditorToolFactory.ApplyImageOpenTools(null);
             ImageView.SetLayerController(null);
             ImageView.Config.ClearProperties();
+
+            ImageView.OpenImage(writeableBitmap);
+        }
+
+        private static unsafe WriteableBitmap CreateDisplayBitmap(byte[] data, int bpp, int channels, int width, int height)
+        {
+            var pixelFormat = GetPixelFormat(channels, bpp);
 
             WriteableBitmap writeableBitmap = new WriteableBitmap(width, height, 96, 96, pixelFormat, null);
             writeableBitmap.Lock();
@@ -916,8 +1048,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             writeableBitmap.AddDirtyRect(new Int32Rect(0, 0, width, height));
             writeableBitmap.Unlock();
-
-            ImageView.OpenImage(writeableBitmap);
+            return writeableBitmap;
         }
 
 
@@ -1105,72 +1236,10 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
         }
 
-        private void btn_Test_Click(object sender, RoutedEventArgs e)
-        {
-        }
-
-        private void button1_Click(object sender, RoutedEventArgs e)
-        {
-            button1.IsEnabled = false;
-            btn_Meas.IsEnabled = false;
-
-            rawArray = null;
-            if (rawArray == null)
-            {
-                UInt64 len = cvCameraCSLib.CM_GetFrameMaxMemLength(m_hCamHandle);
-                if (len > 0)
-                {
-                    rawArray = new byte[len];
-                    srcrawArray = new byte[len];
-                }
-            }
-
-            if (!TryBuildParam(out string json1, out IReadOnlyList<DeviceCameraCalibrationFile> calibrationFiles)
-                || !TryLoadNativeCalibrationLibrary(calibrationFiles))
-            {
-                btn_Meas.IsEnabled = true;
-                button1.IsEnabled = true;
-                return;
-            }
-
-            ApplyCurrentCameraSettings();
-
-            UInt32 w = 0, h = 0;
-            UInt32 bpp = 0, channels = 0;
-            uint srcbpp = 0;
-
-            int nErr = cvCameraCSLib.CM_GetFrame(m_hCamHandle, json1, ref w, ref h, ref srcbpp, ref bpp, ref channels, srcrawArray, rawArray);
-            if (nErr != cvErrorDefine.CV_ERR_SUCCESS)
-            {
-                string szMsg = "";
-                cvCameraCSLib.CM_GetErrorMessage(nErr, ref szMsg);
-                MessageBox.Show(szMsg);
-                btn_Meas.IsEnabled = true;
-                button1.IsEnabled = true;
-                return;
-            }
-
-            bool hasColorCalibration = calibrationFiles.Any(file => IsColorCalibration(file.CalibrationType));
-            bool hasCieResult = hasColorCalibration && HasNativeCieResult(w, h, channels);
-
-            ShowImageInView(srcrawArray, (int)srcbpp, (int)channels, (int)w, (int)h);
-
-            if (hasCieResult)
-            {
-                AttachLiveCvcieResult(w, h, bpp, channels);
-            }
-            else if (hasColorCalibration)
-            {
-                ShowMissingCieResultMessage();
-            }
-
-            btn_Meas.IsEnabled = true;
-            button1.IsEnabled = true;
-        }
-
         private void ComboxCalibrationTemplate_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             Device.DisplayConfig.CalibrationTemplateIndex = ComboxCalibrationTemplate.SelectedIndex;
+            UpdateNodeSettingsFromWindow();
             SaveDisplayConfig();
         }
 
@@ -1275,6 +1344,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
 
             _disposed = true;
+            Device.DisplayConfig.PropertyChanged -= CaptureSettings_PropertyChanged;
+            Device.Config.PropertyChanged -= CaptureSettings_PropertyChanged;
             _localRealtimePipeline.Dispose();
             GC.SuppressFinalize(this);
         }

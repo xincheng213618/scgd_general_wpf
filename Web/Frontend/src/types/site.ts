@@ -195,8 +195,27 @@ export interface UpdatesPayload {
 export interface ToolsPayload {
   items: StorageItem[]
   summary: StorageSummary
+  spectrum: SpectrumToolCard
   subpath: string
   exists: boolean
+}
+
+export interface SpectrumRelease {
+  version: string
+  publishedAtUtc: string
+  releaseNotes: string
+  fileName: string
+  size: number
+  sha256: string
+  downloadUrl: string
+}
+
+export interface SpectrumToolCard {
+  productId: 'Spectrum'
+  name: string
+  description: string
+  latest: SpectrumRelease | null
+  browseUrl: string
 }
 
 export interface PluginSummary {

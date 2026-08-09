@@ -180,6 +180,7 @@ namespace ColorVision.Copilot.Mcp
                         RiskLevel = result.ApprovalRiskLevel,
                         ExpiresAtUtc = result.ApprovalExpiresAtUtc,
                         ExecuteOnApproval = result.ExecuteOnApproval,
+                        ResumesAgentOnApproval = result.ResumesAgentOnApproval,
                     }
                     : null,
             };

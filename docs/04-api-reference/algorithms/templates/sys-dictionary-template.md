@@ -1,75 +1,53 @@
-# SysDictionary 系统字典模板
+# SysDictionary 系统字典兼容层
 
-本页说明 `Engine/ColorVision.Engine/Templates/SysDictionary/` 的职责。它维护的是算法模板默认字典，核心数据在 `t_scgd_sys_dictionary_mod_master` 和 `t_scgd_sys_dictionary_mod_item`，当前 `TemplateModParam` 只加载 `mod_type = 7` 的算法字典。
+系统字典不再提供算法、传感器或合规默认字典的通用维护窗口。相关数据库模型和读取链路继续保留，用于 JSON 模板默认参数、旧强类型模板、历史流程包和传感器运行时兼容。
 
-## 适用范围
+## 当前范围
 
 | 事项 | 当前实现 |
 | --- | --- |
-| 模板类 | `TemplateModParam : ITemplate<DicModParam>` |
-| 参数类 | `DicModParam : ParamModBase` |
-| 编辑控件 | `EditDictionaryMode.xaml(.cs)` |
-| 创建主档窗口 | `CreateDicTemplate.xaml(.cs)` |
-| 创建明细窗口 | `CreateDicModeDetail.xaml(.cs)` |
-| 菜单入口 | `MenuDefalutDicAlg` |
-| 主表 | `t_scgd_sys_dictionary_mod_master` |
-| 明细表 | `t_scgd_sys_dictionary_mod_item` |
-| 当前范围 | `tenant_id = 0`、`mod_type = 7` |
+| 通用编辑窗口 | 已移除 |
+| 算法字典菜单 | 已移除 |
+| 传感器字典菜单 | 已移除 |
+| 合规默认字典菜单 | 已移除 |
+| 字典主表 | `t_scgd_sys_dictionary_mod_master` |
+| 普通字典明细表 | `t_scgd_sys_dictionary_mod_item` |
+| 合规字典明细表 | `t_scgd_sys_dictionary_mod_item_validate` |
 
-## 源码入口
+## 仍在使用的源码入口
 
 | 文件 | 用途 |
 | --- | --- |
-| `DicModParam.cs` | 定义 `TemplateModParam` 的加载、保存、创建和模板数据结构。 |
-| `EditDictionaryMode.xaml(.cs)` | 展示字典明细，支持新增、删除、列显示配置和默认值编辑。 |
-| `CreateDicTemplate.xaml(.cs)` | 创建字典主档，生成候选 Code/Name。 |
-| `CreateDicModeDetail.xaml(.cs)` | 创建字典明细，设置 Symbol、Name、ValueType、DefaultValue。 |
-| `MenuDefalutDicAlg.cs` | 在模板算法菜单下打开默认算法字典编辑器。 |
-| `SysDictionaryModMasterDao.cs` | 主表模型和 `GetByCode(...)` 查询。 |
-| `SysDictionaryModDetaiModel.cs` | 明细表模型、值类型枚举和 DAO。 |
+| `Dao/SysDictionaryModMasterDao.cs` | 字典主档模型；JSON 模板也通过主档的 `cfg_json` 保存默认参数 |
+| `Dao/SysDictionaryModDetaiModel.cs` | 旧强类型模板和传感器命令定义使用的明细模型 |
+| `Dao/SysDictionaryModItemValidateDao.cs` | 历史合规判定模板使用的默认规则明细 |
+| `Templates/ITemplate.cs` | 创建旧强类型模板时按 `TemplateDicId` 复制默认明细 |
+| `Templates/Jsons/ITemplateJson.cs` | 创建或重置 JSON 模板时读取字典主档的 `cfg_json` |
+| `Templates/ModelBase.cs` | 通过 `SysPid` 和字典 `symbol` 恢复旧模板属性映射 |
+| `Templates/Flow/FlowPackageHelper.cs` | 导入导出历史流程包时处理字典依赖 |
+| `Services/Devices/Sensor/Templates/SensorTemplateDictionaryService.cs` | 按需创建和读取传感器命令定义 |
 
 ## 数据模型
 
 | 表 | 关键字段 | 说明 |
 | --- | --- | --- |
-| `t_scgd_sys_dictionary_mod_master` | `code`、`name`、`pid`、`p_type`、`mod_type`、`cfg_json`、`version`、`is_enable`、`is_delete`、`tenant_id` | 字典主档；算法默认字典当前是 `mod_type = 7` |
-| `t_scgd_sys_dictionary_mod_item` | `pid`、`address_code`、`symbol`、`name`、`default_val`、`val_type`、`is_enable`、`is_delete` | 字典明细；`symbol` 通常对应模板参数名，`val_type` 支持 `Integer`、`Float`、`Bool`、`String`、`Enum` |
+| `t_scgd_sys_dictionary_mod_master` | `id`、`code`、`mod_type`、`cfg_json`、`version`、`is_enable`、`is_delete` | JSON 模板使用 `cfg_json`；旧模板使用主档 ID 关联明细 |
+| `t_scgd_sys_dictionary_mod_item` | `pid`、`address_code`、`symbol`、`default_val`、`val_type` | 旧强类型模板依赖 `symbol` 完成属性映射 |
+| `t_scgd_sys_dictionary_mod_item_validate` | `pid`、规则代码、阈值和启用状态 | 早期合规模板的默认规则来源 |
 
-## 生命周期
-
-1. 菜单 `MenuDefalutDicAlg` 打开 `TemplateEditorWindow(new TemplateModParam())`。
-2. `TemplateModParam.Load()` 在 MySQL 已连接时读取 `tenant_id = 0`、`mod_type = 7` 的主档。
-3. 每个主档通过 `SysDictionaryModDetailDao.GetAllByPid(model.Id)` 读取明细。
-4. `EditDictionaryMode` 展示明细，并允许编辑默认值和启用状态。
-5. `CreateDicTemplate` 创建新主档，固定 `ModType = 7`。
-6. `CreateDicModeDetail` 创建新明细，默认 `ValueType = String`、`IsEnable = true`。
-7. `Save()` 保存每条明细。
-
-当前 `TemplateModParam.Save()` 只保存明细，没有保存主档名称、Code 或其它主表字段。当前删除路径调用的是 `SysResourceModel` 删除；如果现场发现字典主档或明细没有真正删除，优先核对这里的 DAO 和表名是否匹配。
-
-## 与其它模板的关系
+## 运行时关系
 
 | 模块 | 关系 |
 | --- | --- |
-| 普通强类型模板 | 通过 `TemplateDicId` 读取系统字典明细，生成默认参数项。 |
-| JSON 模板 | 多数 JSON 模板主档也是 `mod_type = 7`，但参数内容常放在 `cfg_json`。 |
-| Flow 模板 | `TemplateFlow` 会读取系统字典明细来构造节点参数。 |
-| Validate | Validate 的默认合规字典使用 `mod_type = 110/111/120`，不要和这里的 `mod_type = 7` 混淆。 |
+| 普通强类型模板 | 通过 `TemplateDicId` 读取字典明细，创建默认参数并恢复属性映射 |
+| JSON 模板 | 读取字典主档的 `cfg_json`；默认 JSON 通过模板编辑器的“设为默认参数”更新 |
+| Flow 模板 | 创建流程参数和导入流程包时读取字典明细 |
+| Sensor | 由专用服务维护运行所需的命令定义，不再暴露通用字典编辑窗口 |
+| Validate | 仅保留历史规则加载和执行兼容，不再暴露默认字典编辑窗口 |
 
-## 常见排查
+## 维护约束
 
-| 现象 | 优先排查 |
-| --- | --- |
-| 模板字段不显示 | 对应模板的 `TemplateDicId` 是否能在 `t_scgd_sys_dictionary_mod_master` 找到主档。 |
-| 新增字段没有进入模板 | 明细 `pid`、`symbol`、`address_code`、`is_enable` 是否正确。 |
-| 默认值不生效 | `default_val` 类型是否和 `val_type` 匹配。 |
-| 字典菜单没有入口 | `MenuDefalutDicAlg` 是否被菜单系统扫描，权限是否允许。 |
-| 删除后仍能看到字段 | 当前删除逻辑是否删到了正确表，缓存是否需要刷新。 |
-
-## 检查清单
-
-- 新增模板目录时，同步确认是否需要新的系统字典主档和明细。
-- 修改 `symbol` 时，同时检查模板参数名、导入导出、Flow 包和历史模板。
-- 迁移现场数据库时，系统字典主表和明细表必须一起迁移。
-- 不要把 `mod_type = 7` 的算法字典和 Validate 的合规判定字典混在同一页配置。
-- 如果字典字段影响客户验收，项目文档要写清字段含义和默认值。
+- 不要因为维护窗口已经移除就删除字典表或 DAO；旧模板仍依赖字典 ID 和 `symbol`。
+- 新算法参数继续使用 JSON 模板，不再新增通用字典明细编辑入口。
+- 修改旧模板字典数据应通过版本化数据库迁移或专用脚本完成，并验证历史模板和流程包。
+- 迁移现场数据库时，字典主档、明细和引用它们的模板记录必须保持 ID 一致。

@@ -1441,6 +1441,34 @@
                                         <local:CopilotMarkdownView Markdown="{Binding Content, Mode=OneWay}"
                                                                    Visibility="{Binding HasLegacyResponseLayout, Converter={StaticResource bool2VisibilityConverter}}" />
 
+                                        <Expander Margin="0,8,0,0"
+                                                  Style="{StaticResource TraceExpanderStyle}"
+                                                  Visibility="{Binding HasWorkspaceDiff, Converter={StaticResource bool2VisibilityConverter}}">
+                                            <Expander.Header>
+                                                <Border Padding="0" Style="{StaticResource ExecutionSummaryPillBorderStyle}">
+                                                    <TextBlock VerticalAlignment="Center"
+                                                               FontSize="12"
+                                                               FontWeight="SemiBold"
+                                                               Foreground="{DynamicResource GlobalTextBrush}"
+                                                               Opacity="0.72"
+                                                               Text="{Binding WorkspaceDiffHeader}" />
+                                                </Border>
+                                            </Expander.Header>
+                                            <Border Margin="0,5,0,0"
+                                                    Padding="8,6"
+                                                    Background="{DynamicResource GlobalBorderBrush}"
+                                                    CornerRadius="6">
+                                                <TextBox MaxHeight="360"
+                                                         FontFamily="Consolas"
+                                                         FontSize="10"
+                                                         HorizontalScrollBarVisibility="Auto"
+                                                         Style="{StaticResource ReadOnlyMessageTextBoxStyle}"
+                                                         Text="{Binding WorkspaceDiff, Mode=OneWay}"
+                                                         TextWrapping="NoWrap"
+                                                         VerticalScrollBarVisibility="Auto" />
+                                            </Border>
+                                        </Expander>
+
                                         <Border Margin="0,8,0,0"
                                                 Padding="10,7"
                                                 Background="{DynamicResource GlobalBorderBrush}"
@@ -2197,7 +2225,7 @@
                                            FontSize="10"
                                            FontWeight="SemiBold"
                                            Opacity="0.68"
-                                           Text="@ 关联模板、菜单或文件" />
+                                           Text="{Binding ComposerReferenceHeader}" />
                             </DockPanel>
                             <TextBlock DockPanel.Dock="Top"
                                        Margin="12,9,12,12"
@@ -2391,9 +2419,9 @@
                                               Command="{Binding AttachCurrentLiveContextCommand}"
                                               Visibility="{Binding HasCurrentLiveContext, Converter={StaticResource bool2VisibilityConverter}}" />
                                     <Separator />
-                                    <MenuItem Header="关联模板、菜单或文件（@）"
+                                    <MenuItem Header="{Binding ComposerReferenceMenuHeader}"
                                               Click="ComposerReferenceMenuItem_Click"
-                                              ToolTip="在当前光标位置插入 @ 并打开关联候选。" />
+                                              ToolTip="{Binding ComposerReferenceMenuToolTip}" />
                                     <Separator />
                                     <MenuItem Header="{x:Static properties:Resources.CopilotPasteImage}" Command="{Binding PasteImageAttachmentCommand}" />
                                     <MenuItem Header="{x:Static properties:Resources.CopilotSpecifyWebPage}" Command="{Binding AddWebPageAttachmentCommand}" />

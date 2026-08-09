@@ -3,7 +3,6 @@ using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services.RC;
 using FlowEngineLib;
 using FlowEngineLib.Base;
-using FlowEngineLib.Runtime;
 using log4net;
 using System;
 using System.Collections.Generic;
@@ -11,6 +10,7 @@ using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Threading;
 
 namespace ColorVision.Engine.FlowProcessing
 {
@@ -46,9 +46,6 @@ namespace ColorVision.Engine.FlowProcessing
         public string ErrorNodeId { get; set; }
         public string Message { get; set; }
 
-        public IReadOnlyList<FlowHandledFailure> HandledFailures { get; set; } =
-            Array.Empty<FlowHandledFailure>();
-
         public StatusTypeEnum Status { get; set; }
 
         public long TotalTime { get; set; }
@@ -82,6 +79,7 @@ namespace ColorVision.Engine.FlowProcessing
         private FlowEngineControl flowEngine;
         private readonly Func<List<MQTTServiceInfo>> serviceTokensProvider;
         private readonly object lifecycleLock = new object();
+        private readonly Dispatcher? uiDispatcher;
         public event EventHandler<FlowControlData> FlowCompleted;
 
         public string? SerialNumber { get; set; }
@@ -90,6 +88,10 @@ namespace ColorVision.Engine.FlowProcessing
         public FlowControl(MQTTControl mQTTControl)
         {
             serviceTokensProvider = () => MqttRCService.GetInstance().ServiceTokens;
+            Dispatcher? applicationDispatcher = Application.Current?.Dispatcher;
+            uiDispatcher = applicationDispatcher?.CheckAccess() == true
+                ? applicationDispatcher
+                : null;
         }
 
         public FlowControl(MQTTControl mQTTControl, FlowEngineControl flowEngine) : this(mQTTControl)
@@ -118,11 +120,10 @@ namespace ColorVision.Engine.FlowProcessing
                 if (Interlocked.Exchange(ref _isFlowRun, nextValue) == nextValue)
                     return;
 
-                var dispatcher = Application.Current?.Dispatcher;
-                if (dispatcher == null)
+                if (uiDispatcher == null)
                     OnPropertyChanged();
                 else
-                    dispatcher.BeginInvoke(() => OnPropertyChanged());
+                    uiDispatcher.BeginInvoke(() => OnPropertyChanged());
             }
         }
         public void Stop()
@@ -250,19 +251,16 @@ namespace ColorVision.Engine.FlowProcessing
                     Status = e.Status,
                     TotalTime = e.TotalTime,
                     Message = e.Message,
-                    Params = e.Message,
-                    HandledFailures =
-                        e.HandledFailures ?? Array.Empty<FlowHandledFailure>()
+                    Params = e.Message
                 };
                 completedHandlers = FlowCompleted;
             }
             try
             {
-                var dispatcher = Application.Current?.Dispatcher;
-                if (dispatcher == null || dispatcher.CheckAccess())
+                if (uiDispatcher == null || uiDispatcher.CheckAccess())
                     PublishFlowCompleted(completedHandlers, data);
                 else
-                    dispatcher.BeginInvoke(() => PublishFlowCompleted(completedHandlers, data));
+                    uiDispatcher.BeginInvoke(() => PublishFlowCompleted(completedHandlers, data));
             }
             catch (Exception ex)
             {

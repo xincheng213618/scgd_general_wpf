@@ -1,0 +1,143 @@
+<Window x:Class="ProjectKB.KBProductionStatisticsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="KB 生产统计"
+        Width="1420"
+        Height="820"
+        MinWidth="1080"
+        MinHeight="620"
+        Background="{DynamicResource GlobalBackground}"
+        Loaded="Window_Loaded">
+    <Window.Resources>
+        <Style x:Key="SummaryCard" TargetType="Border">
+            <Setter Property="Margin" Value="4"/>
+            <Setter Property="Padding" Value="12,8"/>
+            <Setter Property="Background" Value="{DynamicResource SecondaryRegionBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="5"/>
+        </Style>
+        <Style x:Key="SummaryLabel" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="Opacity" Value="0.72"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+        </Style>
+        <Style x:Key="SummaryValue" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="FontSize" Value="22"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <DockPanel Margin="0,0,0,8">
+            <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
+                <TextBlock Text="开始日期" VerticalAlignment="Center" Margin="0,0,5,0" Foreground="{DynamicResource GlobalTextBrush}"/>
+                <DatePicker x:Name="StartDatePicker" Width="130"/>
+                <TextBlock Text="结束日期" VerticalAlignment="Center" Margin="12,0,5,0" Foreground="{DynamicResource GlobalTextBrush}"/>
+                <DatePicker x:Name="EndDatePicker" Width="130"/>
+                <TextBlock Text="机种" VerticalAlignment="Center" Margin="12,0,5,0" Foreground="{DynamicResource GlobalTextBrush}"/>
+                <ComboBox x:Name="ModelFilter" Width="180"/>
+                <Button x:Name="RefreshButton" Content="刷新" Width="72" Margin="10,0,0,0" Click="Refresh_Click"/>
+                <Button Content="生产信息" Width="86" Margin="6,0,0,0" Click="EditProductionSettings_Click"/>
+            </StackPanel>
+            <TextBlock x:Name="QuerySummaryText"
+                       DockPanel.Dock="Right"
+                       VerticalAlignment="Center"
+                       Foreground="{DynamicResource GlobalTextBrush}"/>
+        </DockPanel>
+
+        <UniformGrid Grid.Row="1" Columns="5" Rows="2" Margin="-4,0,-4,8">
+            <Border Style="{StaticResource SummaryCard}">
+                <StackPanel><TextBlock Text="目标产量" Style="{StaticResource SummaryLabel}"/><TextBlock x:Name="TargetProductionText" Style="{StaticResource SummaryValue}"/></StackPanel>
+            </Border>
+            <Border Style="{StaticResource SummaryCard}">
+                <StackPanel><TextBlock Text="有效产量" Style="{StaticResource SummaryLabel}"/><TextBlock x:Name="ProductionCountText" Style="{StaticResource SummaryValue}"/></StackPanel>
+            </Border>
+            <Border Style="{StaticResource SummaryCard}">
+                <StackPanel><TextBlock Text="良品 / 不良品" Style="{StaticResource SummaryLabel}"/><TextBlock x:Name="GoodDefectiveText" Style="{StaticResource SummaryValue}"/></StackPanel>
+            </Border>
+            <Border Style="{StaticResource SummaryCard}">
+                <StackPanel><TextBlock Text="良品率" Style="{StaticResource SummaryLabel}"/><TextBlock x:Name="GoodRateText" Style="{StaticResource SummaryValue}"/></StackPanel>
+            </Border>
+            <Border Style="{StaticResource SummaryCard}">
+                <StackPanel><TextBlock Text="流程失败" Style="{StaticResource SummaryLabel}"/><TextBlock x:Name="ExecutionFailureText" Style="{StaticResource SummaryValue}"/></StackPanel>
+            </Border>
+            <Border Style="{StaticResource SummaryCard}">
+                <StackPanel><TextBlock Text="平均 CT" Style="{StaticResource SummaryLabel}"/><TextBlock x:Name="AverageCtText" Style="{StaticResource SummaryValue}"/></StackPanel>
+            </Border>
+            <Border Style="{StaticResource SummaryCard}">
+                <StackPanel><TextBlock Text="CT 范围" Style="{StaticResource SummaryLabel}"/><TextBlock x:Name="CtRangeText" FontSize="17" Style="{StaticResource SummaryValue}"/></StackPanel>
+            </Border>
+            <Border Style="{StaticResource SummaryCard}">
+                <StackPanel><TextBlock Text="本小时产量" Style="{StaticResource SummaryLabel}"/><TextBlock x:Name="CurrentHourProductionText" Style="{StaticResource SummaryValue}"/></StackPanel>
+            </Border>
+            <Border Style="{StaticResource SummaryCard}">
+                <StackPanel><TextBlock Text="今日产量" Style="{StaticResource SummaryLabel}"/><TextBlock x:Name="TodayProductionText" Style="{StaticResource SummaryValue}"/></StackPanel>
+            </Border>
+            <Border Style="{StaticResource SummaryCard}">
+                <StackPanel><TextBlock Text="总执行次数" Style="{StaticResource SummaryLabel}"/><TextBlock x:Name="TotalRunsText" Style="{StaticResource SummaryValue}"/></StackPanel>
+            </Border>
+        </UniformGrid>
+
+        <TabControl Grid.Row="2">
+            <TabItem Header="小时产量">
+                <DataGrid x:Name="HourlyGrid" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False" CanUserDeleteRows="False" HeadersVisibility="Column">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="小时" Binding="{Binding HourText}" Width="170"/>
+                        <DataGridTextColumn Header="产量" Binding="{Binding ProductionCount}" Width="90"/>
+                        <DataGridTextColumn Header="良品" Binding="{Binding GoodCount}" Width="90"/>
+                        <DataGridTextColumn Header="不良品" Binding="{Binding DefectiveCount}" Width="90"/>
+                        <DataGridTextColumn Header="流程失败" Binding="{Binding ExecutionFailureCount}" Width="100"/>
+                        <DataGridTextColumn Header="良品率" Binding="{Binding GoodRateText}" Width="100"/>
+                        <DataGridTextColumn Header="平均 CT" Binding="{Binding AverageCtText}" Width="110"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </TabItem>
+            <TabItem Header="天产量">
+                <DataGrid x:Name="DailyGrid" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False" CanUserDeleteRows="False" HeadersVisibility="Column">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="日期" Binding="{Binding DateText}" Width="130"/>
+                        <DataGridTextColumn Header="目标" Binding="{Binding TargetProduction}" Width="90"/>
+                        <DataGridTextColumn Header="产量" Binding="{Binding ProductionCount}" Width="90"/>
+                        <DataGridTextColumn Header="良品" Binding="{Binding GoodCount}" Width="90"/>
+                        <DataGridTextColumn Header="不良品" Binding="{Binding DefectiveCount}" Width="90"/>
+                        <DataGridTextColumn Header="流程失败" Binding="{Binding ExecutionFailureCount}" Width="100"/>
+                        <DataGridTextColumn Header="良品率" Binding="{Binding GoodRateText}" Width="100"/>
+                        <DataGridTextColumn Header="达成率" Binding="{Binding AchievementRateText}" Width="100"/>
+                        <DataGridTextColumn Header="平均 CT" Binding="{Binding AverageCtText}" Width="110"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </TabItem>
+            <TabItem Header="生产会话">
+                <DataGrid x:Name="SessionGrid" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False" CanUserDeleteRows="False" HeadersVisibility="Column">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="会话" Binding="{Binding SessionText}" Width="72"/>
+                        <DataGridTextColumn Header="开始时间" Binding="{Binding StartTime, StringFormat=yyyy/MM/dd HH:mm:ss}" Width="155"/>
+                        <DataGridTextColumn Header="结束时间" Binding="{Binding EndTime, StringFormat=yyyy/MM/dd HH:mm:ss}" Width="155"/>
+                        <DataGridTextColumn Header="机种" Binding="{Binding Model}" Width="120"/>
+                        <DataGridTextColumn Header="站别" Binding="{Binding Stage}" Width="90"/>
+                        <DataGridTextColumn Header="线别" Binding="{Binding LineNo}" Width="90"/>
+                        <DataGridTextColumn Header="工号" Binding="{Binding WorkerNo}" Width="90"/>
+                        <DataGridTextColumn Header="Opno" Binding="{Binding OpNo}" Width="80"/>
+                        <DataGridTextColumn Header="设备号" Binding="{Binding MachineNo}" Width="100"/>
+                        <DataGridTextColumn Header="目标" Binding="{Binding TargetProduction}" Width="75"/>
+                        <DataGridTextColumn Header="产量" Binding="{Binding ProductionCount}" Width="75"/>
+                        <DataGridTextColumn Header="良品" Binding="{Binding GoodCount}" Width="75"/>
+                        <DataGridTextColumn Header="不良品" Binding="{Binding DefectiveCount}" Width="75"/>
+                        <DataGridTextColumn Header="流程失败" Binding="{Binding ExecutionFailureCount}" Width="95"/>
+                        <DataGridTextColumn Header="良品率" Binding="{Binding GoodRateText}" Width="90"/>
+                        <DataGridTextColumn Header="平均 CT" Binding="{Binding AverageCtText}" Width="100"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </TabItem>
+        </TabControl>
+    </Grid>
+</Window>

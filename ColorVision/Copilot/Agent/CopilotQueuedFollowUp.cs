@@ -13,7 +13,8 @@ namespace ColorVision.Copilot
             CopilotAgentMode mode,
             CopilotProfileConfig profile,
             CopilotAgentHostContextSnapshot submissionContext,
-            string? goalId = null)
+            string? goalId = null,
+            CopilotAgentSkillReference? agentSkillReference = null)
         {
             RunId = runId ?? throw new ArgumentNullException(nameof(runId));
             ConversationId = conversationId ?? throw new ArgumentNullException(nameof(conversationId));
@@ -23,6 +24,10 @@ namespace ColorVision.Copilot
             Profile = profile ?? throw new ArgumentNullException(nameof(profile));
             SubmissionContext = submissionContext ?? throw new ArgumentNullException(nameof(submissionContext));
             GoalId = (goalId ?? string.Empty).Trim();
+            AgentSkillReference = agentSkillReference?.IsStructurallyValid() == true
+                && agentSkillReference.IsExplicitlyInvokedBy(Prompt)
+                    ? agentSkillReference.CreateSnapshot()
+                    : null;
             QueuedAtUtc = DateTimeOffset.UtcNow;
         }
 
@@ -50,6 +55,8 @@ namespace ColorVision.Copilot
         public string GoalId { get; }
 
         public bool IsAutomaticGoalContinuation => GoalId.Length > 0;
+
+        internal CopilotAgentSkillReference? AgentSkillReference { get; }
 
         public int QueuePosition
         {
@@ -81,6 +88,10 @@ namespace ColorVision.Copilot
         internal CopilotProfileConfig Profile { get; }
 
         internal CopilotAgentHostContextSnapshot SubmissionContext { get; }
+
+        internal CopilotAgentHostContextSnapshot CreateExecutionContext(
+            CopilotConversationHistorySnapshot conversationHistory) =>
+            SubmissionContext.WithConversationHistory(conversationHistory);
 
         internal void UpdateQueuePosition(int position, int totalCount)
         {

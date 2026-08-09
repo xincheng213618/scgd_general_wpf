@@ -16,6 +16,7 @@ namespace ColorVision.Copilot
             bool timeBudgetExhausted,
             bool providerInterrupted,
             bool contextWindowExceeded,
+            bool automaticReviewCircuitBreakerTripped,
             bool hasModelFinalAnswer,
             bool outputLengthLimitReached,
             bool outputContentFiltered,
@@ -25,6 +26,7 @@ namespace ColorVision.Copilot
                 && !timeBudgetExhausted
                 && !providerInterrupted
                 && !contextWindowExceeded
+                && !automaticReviewCircuitBreakerTripped
                 && !hasModelFinalAnswer)
             {
                 var partialAnswerPrefix = answerText().Length > 0 ? "\n\n" : string.Empty;

@@ -1,7 +1,5 @@
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Templates.POI;
-using ColorVision.Engine.Templates.POI.POIFilters;
-using ColorVision.Engine.Templates.POI.POIRevise;
 using FlowEngineLib.Base;
 using FlowEngineLib.PropertyEditor;
 using ST.Library.UI.NodeEditor;
@@ -25,8 +23,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
     [STNode("Flow_CustomNodes", "本地 POI")]
     [FlowNodePropertyEditorAttribute(nameof(POITempName), typeof(FlowPoiTemplateEditor))]
-    [FlowNodePropertyEditorAttribute(nameof(POIFilterTempName), typeof(FlowPoiFilterTemplateEditor))]
-    [FlowNodePropertyEditorAttribute(nameof(POIReviseTempName), typeof(FlowPoiReviseTemplateEditor))]
     public sealed class LocalPoiNode : LocalFlowNodeBase
     {
         private string _POITempName = string.Empty;
@@ -37,12 +33,10 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         [STNodeProperty("POI 模板", "要计算的 POI 模板", true)]
         public string POITempName { get => _POITempName; set { _POITempName = value ?? string.Empty; OnPropertyChanged(); } }
 
-        [Category("本地 POI")]
-        [STNodeProperty("POI 过滤", "可选的 POI 过滤模板", true)]
+        [Browsable(false)]
         public string POIFilterTempName { get => _POIFilterTempName; set { _POIFilterTempName = value ?? string.Empty; OnPropertyChanged(); } }
 
-        [Category("本地 POI")]
-        [STNodeProperty("POI 修正", "可选的 POI 修正模板", true)]
+        [Browsable(false)]
         public string POIReviseTempName { get => _POIReviseTempName; set { _POIReviseTempName = value ?? string.Empty; OnPropertyChanged(); } }
 
         public LocalPoiNode() : base("本地 POI", "POI", "Calculate", 60000)
@@ -54,23 +48,15 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             if (string.IsNullOrWhiteSpace(POITempName)) throw new InvalidOperationException("请选择 POI 模板。");
             PoiParam poi = TemplatePoi.Params.FirstOrDefault(item => string.Equals(item.Key, POITempName, StringComparison.Ordinal))?.Value
                 ?? throw new InvalidOperationException($"找不到 POI 模板：{POITempName}");
-            PoiFilterParam? filter = string.IsNullOrWhiteSpace(POIFilterTempName)
-                ? null
-                : TemplatePoiFilterParam.Params.FirstOrDefault(item => string.Equals(item.Key, POIFilterTempName, StringComparison.Ordinal))?.Value
-                    ?? throw new InvalidOperationException($"找不到 POI 过滤模板：{POIFilterTempName}");
-            PoiReviseParam? revise = string.IsNullOrWhiteSpace(POIReviseTempName)
-                ? null
-                : TemplatePoiReviseParam.Params.FirstOrDefault(item => string.Equals(item.Key, POIReviseTempName, StringComparison.Ordinal))?.Value
-                    ?? throw new InvalidOperationException($"找不到 POI 修正模板：{POIReviseTempName}");
 
             if (!action.TryGetCurrentFrame(out LocalFlowFrame? currentFrame) || currentFrame == null)
             {
                 throw new InvalidOperationException("流程中没有可用的本地图像内存帧。");
             }
+            Stopwatch stopwatch = Stopwatch.StartNew();
             using (LocalFlowFrameLease frame = currentFrame.Acquire())
             {
-                Stopwatch stopwatch = Stopwatch.StartNew();
-                LocalPoiResultSet result = LocalPoiCalculator.Calculate(frame, poi, filter, revise);
+                LocalPoiResultSet result = LocalPoiCalculator.Calculate(frame, poi);
                 stopwatch.Stop();
                 int totalTime = checked((int)Math.Min(stopwatch.ElapsedMilliseconds, int.MaxValue));
                 ViewResultAlgType resultType = LocalPoiCalculator.ResolveResultType(frame.Metadata.Channels);
@@ -87,8 +73,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                     {
                         CieMasterId = frame.MasterId,
                         POITemplate = poi.Name,
-                        POIFilterTemplate = filter?.Name,
-                        POIReviseTemplate = revise?.Name,
+                        FlipMode = frame.Metadata.FlipMode.ToString(),
+                        FlipApplied = frame.IsCieFlipApplied,
                         MemoryOnly = string.IsNullOrWhiteSpace(currentFrame.CvCieFilePath)
                     });
                 try

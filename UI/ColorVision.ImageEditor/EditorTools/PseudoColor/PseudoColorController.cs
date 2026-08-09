@@ -25,7 +25,7 @@ namespace ColorVision.ImageEditor.EditorTools.PseudoColor
         public bool HasValidAutoRange => IsAutoRangeEnabled && DataMin < DataMax;
     }
 
-    internal readonly record struct PseudoColorPreviewRequest(int Version, bool IsEnabled, PseudoColorFrameRequest? Request);
+    internal readonly record struct PseudoColorPreviewRequest(int Version, long ImageRevision, bool IsEnabled, PseudoColorFrameRequest? Request);
 
     internal sealed class PseudoColorController : IDisposable
     {
@@ -128,6 +128,7 @@ namespace ColorVision.ImageEditor.EditorTools.PseudoColor
 
         public void Dispose()
         {
+            Invalidate();
             _state.PropertyChanged -= State_PropertyChanged;
         }
 
@@ -212,14 +213,14 @@ namespace ColorVision.ImageEditor.EditorTools.PseudoColor
 
         private void ApplyAutoRange()
         {
-            var sourceImage = _owner.HImageCache;
-            if (sourceImage == null)
+            using ImageFrameLease? lease = _owner.AcquireImageFrame();
+            if (lease == null)
             {
                 return;
             }
 
             var channel = GetSelectedChannel();
-            var ret = OpenCVMediaHelper.M_GetMinMax((HImage)sourceImage, out uint minVal, out uint maxVal, channel);
+            var ret = OpenCVMediaHelper.M_GetMinMax(lease.Image, out uint minVal, out uint maxVal, channel);
             if (ret != 0)
             {
                 return;
@@ -255,12 +256,13 @@ namespace ColorVision.ImageEditor.EditorTools.PseudoColor
         private PseudoColorPreviewRequest CapturePreviewRequest()
         {
             var version = Interlocked.Increment(ref _renderVersion);
+            var imageRevision = _owner.ImageRevision;
             if (TryCreateRequest(out var request))
             {
-                return new PseudoColorPreviewRequest(version, true, request);
+                return new PseudoColorPreviewRequest(version, imageRevision, true, request);
             }
 
-            return new PseudoColorPreviewRequest(version, false, null);
+            return new PseudoColorPreviewRequest(version, imageRevision, false, null);
         }
 
         private PseudoColorFrameRequest CaptureFrameRequest(int channel)
@@ -289,7 +291,8 @@ namespace ColorVision.ImageEditor.EditorTools.PseudoColor
 
         private bool IsCurrentRequest(PseudoColorPreviewRequest request)
         {
-            return request.Version == Volatile.Read(ref _renderVersion);
+            return request.Version == Volatile.Read(ref _renderVersion)
+                && _owner.IsCurrentImageRevision(request.ImageRevision);
         }
 
         private async Task RenderAsync(PseudoColorPreviewRequest request)
@@ -313,9 +316,14 @@ namespace ColorVision.ImageEditor.EditorTools.PseudoColor
                 return;
             }
 
-            var sourceImage = _owner.HImageCache;
-            if (sourceImage == null)
+            ImageFrameLease? lease = _owner.AcquireImageFrame();
+            if (lease == null)
             {
+                return;
+            }
+            if (lease.Revision != request.ImageRevision)
+            {
+                lease.Dispose();
                 return;
             }
 
@@ -323,14 +331,20 @@ namespace ColorVision.ImageEditor.EditorTools.PseudoColor
             var stopwatch = Stopwatch.StartNew();
             HImage hImageProcessed = new();
             int ret;
-
-            if (frameRequest.HasValidAutoRange)
+            try
             {
-                ret = OpenCVMediaHelper.ApplyPseudoColorAutoRange((HImage)sourceImage, out hImageProcessed, frameRequest.Min, frameRequest.Max, frameRequest.ColormapTypes, frameRequest.Channel, frameRequest.DataMin, frameRequest.DataMax);
+                if (frameRequest.HasValidAutoRange)
+                {
+                    ret = OpenCVMediaHelper.ApplyPseudoColorAutoRange(lease.Image, out hImageProcessed, frameRequest.Min, frameRequest.Max, frameRequest.ColormapTypes, frameRequest.Channel, frameRequest.DataMin, frameRequest.DataMax);
+                }
+                else
+                {
+                    ret = OpenCVMediaHelper.ApplyPseudoColor(lease.Image, out hImageProcessed, frameRequest.Min, frameRequest.Max, frameRequest.ColormapTypes, frameRequest.Channel);
+                }
             }
-            else
+            finally
             {
-                ret = OpenCVMediaHelper.ApplyPseudoColor((HImage)sourceImage, out hImageProcessed, frameRequest.Min, frameRequest.Max, frameRequest.ColormapTypes, frameRequest.Channel);
+                lease.Dispose();
             }
 
             var algoMs = stopwatch.Elapsed.TotalMilliseconds;
@@ -347,7 +361,7 @@ namespace ColorVision.ImageEditor.EditorTools.PseudoColor
                 return;
             }
 
-            await Application.Current.Dispatcher.InvokeAsync(async () =>
+            Task renderTask = await Application.Current.Dispatcher.InvokeAsync(async () =>
             {
                 if (!IsCurrentRequest(request) || !IsEnabled)
                 {
@@ -361,11 +375,33 @@ namespace ColorVision.ImageEditor.EditorTools.PseudoColor
                     updateSuccess = await HImageExtension.UpdateWriteableBitmapAsync(validBitmap, hImageProcessed);
                 }
 
+                if (!IsCurrentRequest(request) || !IsEnabled)
+                {
+                    if (!updateSuccess)
+                    {
+                        hImageProcessed.Dispose();
+                    }
+                    return;
+                }
+
                 if (!updateSuccess)
                 {
-                    var newBitmap = await hImageProcessed.ToWriteableBitmapAsync();
+                    WriteableBitmap newBitmap;
+                    try
+                    {
+                        newBitmap = await hImageProcessed.ToWriteableBitmapAsync();
+                    }
+                    finally
+                    {
+                        hImageProcessed.Dispose();
+                    }
+
+                    if (!IsCurrentRequest(request) || !IsEnabled)
+                    {
+                        return;
+                    }
+
                     _owner.FunctionImage = newBitmap;
-                    hImageProcessed.Dispose();
                 }
 
                 if (_owner.ImageShow.Source != _owner.FunctionImage)
@@ -380,6 +416,7 @@ namespace ColorVision.ImageEditor.EditorTools.PseudoColor
                     log.Info($"Algo: {algoMs:F2}ms | Render: {totalMs - algoMs:F2}ms | Total: {totalMs:F2}ms | Range: {frameRequest.Min}-{frameRequest.Max}");
                 }
             });
+            await renderTask;
         }
     }
 }

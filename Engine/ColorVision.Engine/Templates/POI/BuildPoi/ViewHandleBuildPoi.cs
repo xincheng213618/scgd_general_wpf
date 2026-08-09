@@ -3,7 +3,6 @@ using ColorVision.Common.MVVM;
 using ColorVision.Database;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.Engine.Services;
-using CVCommCore.CVAlgorithm;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -38,13 +37,13 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
                 ctx.ImageView.OpenImage(result.FilePath);
 
 
-            List<POIPoint> DrawPoiPoint = new();
+            List<PoiPoint> poiPoints = new();
             foreach (var item in result.ViewResults)
             {
                 if (item is PoiResultData poiResultData)
-                    DrawPoiPoint.Add(poiResultData.Point);
+                    poiPoints.Add(poiResultData.Point);
             }
-            AddPOIPoint(ctx.ImageView, DrawPoiPoint);
+            PoiOverlayRenderer.AddRange(ctx.ImageView, poiPoints);
 
             List<string> header;
             List<string> bdHeader;

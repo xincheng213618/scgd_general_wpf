@@ -15,15 +15,23 @@
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<UseProjectReference Condition="!Exists('..\..\x64\Release\opencv_helper.dll')">true</UseProjectReference>
+		<!-- NATIVE_BUILD_POLICY: 日常托管项目/Visual Studio 构建复用已有 DLL，仅在 DLL 缺失时加入 C++ 项目引用；
+		     build.sln 和发布流程仍负责显式构建原生项目。VC++ 输出在解决方案构建时位于仓库 x64\Release，
+		     单独构建原生项目时可能位于 Native\opencv_helper\x64\Release。 -->
+		<OpenCvHelperBinary Condition="'$(SolutionDir)' != '' and '$(SolutionDir)' != '*Undefined*'">$(SolutionDir)x64\Release\opencv_helper.dll</OpenCvHelperBinary>
+		<OpenCvHelperBinary Condition="'$(OpenCvHelperBinary)' == '' and Exists('..\..\x64\Release\opencv_helper.dll')">..\..\x64\Release\opencv_helper.dll</OpenCvHelperBinary>
+		<OpenCvHelperBinary Condition="'$(OpenCvHelperBinary)' == ''">..\..\Native\opencv_helper\x64\Release\opencv_helper.dll</OpenCvHelperBinary>
+		<UseProjectReference Condition="'$(UseProjectReference)' == '' and !Exists('$(OpenCvHelperBinary)')">true</UseProjectReference>
 	</PropertyGroup>
 
 	<ItemGroup Condition="'$(UseProjectReference)'=='true'">
-		<ProjectReference Include="..\..\Native\opencv_helper\opencv_helper.vcxproj" />
+		<ProjectReference Include="..\..\Native\opencv_helper\opencv_helper.vcxproj"
+			ReferenceOutputAssembly="false"
+			AdditionalProperties="Configuration=Release;Platform=x64" />
 	</ItemGroup>
 	
 	<ItemGroup>
-		<Content Include="..\..\x64\Release\opencv_helper.dll" Link="runtimes\win-x64\native\opencv_helper.dll">
+		<Content Include="$(OpenCvHelperBinary)" Link="runtimes\win-x64\native\opencv_helper.dll">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<Pack>true</Pack>
 			<PackagePath>runtimes/win-x64/native</PackagePath>

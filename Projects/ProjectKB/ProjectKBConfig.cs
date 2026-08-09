@@ -15,19 +15,27 @@ using System.Windows;
 
 namespace ProjectKB
 {
+    public sealed class ProjectKBLogConfig : RealtimeLogViewConfig, IConfig
+    {
+        public static ProjectKBLogConfig Instance => ConfigService.Instance.GetRequiredService<ProjectKBLogConfig>();
+    }
+
     public class ProjectKBConfig: ViewModelBase, IConfig
     {
         public static ProjectKBConfig Instance => ConfigService.Instance.GetRequiredService<ProjectKBConfig>();
+        [Browsable(false)]
         [JsonIgnore]
         public RelayCommand OpenTemplateCommand { get; set; }
+        [Browsable(false)]
         [JsonIgnore]
         public RelayCommand OpenFlowEngineToolCommand { get; set; }
-        [JsonIgnore]
-        public RelayCommand OpenLogCommand { get; set; }
+        [Browsable(false)]
         [JsonIgnore]
         public RelayCommand OpenModbusCommand { get; set; }
+        [Browsable(false)]
         [JsonIgnore]
         public RelayCommand EditConfigCommand { get; set; }
+        [Browsable(false)]
         [JsonIgnore]
         public RelayCommand OpenSocketConfigCommand { get; set; }
 
@@ -40,7 +48,6 @@ namespace ProjectKB
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
             OpenFlowEngineToolCommand = new RelayCommand(a => OpenFlowEngineTool());
             TemplateItemSource = TemplateFlow.Params;
-            OpenLogCommand = new RelayCommand(a => OpenLog());
             EditConfigCommand = new RelayCommand(a => EditConfig());
             OpenModbusCommand = new RelayCommand(a => OpenModbus());
             OpenSocketConfigCommand = new RelayCommand(a => OepnSocketConfig());
@@ -55,14 +62,6 @@ namespace ProjectKB
         [Description("关闭后隐藏主界面运行日志和底部实时日志面板；仍可通过状态栏“日志”按钮打开独立日志窗口。")]
         public bool LogControlVisibility { get => _LogControlVisibility; set { _LogControlVisibility = value; OnPropertyChanged(); } }
         private bool _LogControlVisibility = true;
-
-        [DisplayName("重试次数")]
-        public int TryCountMax { get => _TryCountMax; set { _TryCountMax = value; OnPropertyChanged(); } }
-        private int _TryCountMax = 2;
-
-        [DisplayName("允许测试失败")]
-        public bool AllowTestFailures { get => _AllowTestFailures; set { _AllowTestFailures = value; OnPropertyChanged(); } }
-        private bool _AllowTestFailures = true;
 
         [DisplayName("自动触发时SN为空不检测"), Category("KB")]
         [Description("开启后，PLC自动触发时如果SN为空，只记录日志并忽略本次指令；手动检测不受影响。")]
@@ -116,18 +115,12 @@ namespace ProjectKB
             modbusConnect.ShowDialog();
         }
 
-        public static void OpenLog()
-        {
-            if (!RequireAdmin()) return;
-            WindowLog windowLog = new WindowLog() { Owner = Application.Current.GetActiveWindow() };
-            windowLog.Show();
-        }
-
         [JsonIgnore]
         [Browsable(false)]
         public ObservableCollection<TemplateModel<FlowParam>> TemplateItemSource { get => _TemplateItemSource; set { _TemplateItemSource = value; OnPropertyChanged(); } }
         private ObservableCollection<TemplateModel<FlowParam>> _TemplateItemSource;
 
+        [Browsable(false)]
         public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; OnPropertyChanged(); } }
         private int _TemplateSelectedIndex;
         public void OpenTemplate()
@@ -149,10 +142,11 @@ namespace ProjectKB
 
         public event EventHandler<string> SNChanged;
 
+        [Browsable(false)]
         [DisplayName("SN锁")]
         public bool SNlocked { get => _SNlocked; set { _SNlocked = value; OnPropertyChanged(); } }
         private bool _SNlocked;
-
+        [Browsable(false)]
         [JsonIgnore]
         public string SN { get => _SN; set { if (SNlocked) return;  _SN = value; OnPropertyChanged(); SNChanged?.Invoke(this, value); } }
         private string _SN = string.Empty;
@@ -165,9 +159,6 @@ namespace ProjectKB
         [DisplayName("KBLVSacle"), Category("KB")]
         public double KBLVSacle { get => _KBLVSacle; set { _KBLVSacle = value; OnPropertyChanged(); } }
         private double _KBLVSacle = 0.006583904;
-
-
-
 
 
     }

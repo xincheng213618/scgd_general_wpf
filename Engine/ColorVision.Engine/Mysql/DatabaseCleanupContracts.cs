@@ -1,4 +1,5 @@
 using ColorVision.Common.MVVM;
+using System;
 using System.Collections.Generic;
 
 namespace ColorVision.Database
@@ -7,6 +8,7 @@ namespace ColorVision.Database
     {
         private string _tableName = string.Empty;
         private bool _exists;
+        private bool _isSelected;
         private long _rowCount;
         private long _sizeBytes;
 
@@ -30,6 +32,26 @@ namespace ColorVision.Database
                 OnPropertyChanged(nameof(ExistsDisplay));
                 OnPropertyChanged(nameof(RowCountDisplay));
                 OnPropertyChanged(nameof(SizeDisplay));
+                OnPropertyChanged(nameof(CanSelect));
+
+                if (!value)
+                {
+                    IsSelected = false;
+                }
+            }
+        }
+
+        public bool IsSelected
+        {
+            get => _isSelected;
+            set
+            {
+                bool nextValue = value && Exists;
+                if (_isSelected == nextValue)
+                    return;
+
+                _isSelected = nextValue;
+                OnPropertyChanged();
             }
         }
 
@@ -56,6 +78,7 @@ namespace ColorVision.Database
         }
 
         public string ExistsDisplay => Exists ? "存在" : "未找到";
+        public bool CanSelect => Exists;
         public string RowCountDisplay => Exists ? RowCount.ToString("N0") : "-";
         public string SizeDisplay => Exists ? FormatSize(SizeBytes) : "-";
 
@@ -84,6 +107,18 @@ namespace ColorVision.Database
         public List<string> SummaryLines { get; } = new();
     }
 
+    public sealed class DatabaseCleanupBackupResult
+    {
+        public string StatusMessage { get; set; } = string.Empty;
+        public string FilePath { get; set; } = string.Empty;
+    }
+
+    public sealed class DatabaseCleanupMaintenanceResult
+    {
+        public DatabaseCleanupBackupResult Backup { get; set; } = new();
+        public DatabaseCleanupExecutionResult Cleanup { get; set; } = new();
+    }
+
     public interface IDatabaseCleanupSourceProvider
     {
         string Id { get; }
@@ -93,5 +128,29 @@ namespace ColorVision.Database
         IReadOnlyList<DatabaseCleanupTableInfo> LoadTables();
         DatabaseCleanupExecutionResult CleanupHistory(int keepMonths);
         DatabaseCleanupExecutionResult CleanupAll();
+    }
+
+    /// <summary>
+    /// Optional capability for cleanup sources that can clear an explicit table selection.
+    /// </summary>
+    public interface IDatabaseCleanupSelectionProvider
+    {
+        DatabaseCleanupExecutionResult CleanupTables(IReadOnlyCollection<string> tableNames);
+    }
+
+    /// <summary>
+    /// Optional capability for cleanup sources that can create a recoverable backup.
+    /// </summary>
+    public interface IDatabaseCleanupBackupProvider
+    {
+        DatabaseCleanupBackupResult CreateBackup();
+    }
+
+    /// <summary>
+    /// Optional capability for running backup and cleanup under one source-specific maintenance gate.
+    /// </summary>
+    public interface IDatabaseCleanupMaintenanceProvider
+    {
+        DatabaseCleanupMaintenanceResult ExecuteCleanupWithBackup(Func<DatabaseCleanupExecutionResult> cleanupAction);
     }
 }

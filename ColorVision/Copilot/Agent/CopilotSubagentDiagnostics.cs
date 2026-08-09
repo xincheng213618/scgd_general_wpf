@@ -38,6 +38,9 @@ namespace ColorVision.Copilot
         string RunId,
         string ResumeFromRunId,
         string RoleId,
+        string AgentName,
+        string Model,
+        string ReasoningEffort,
         bool Closed,
         CopilotToolExecutionState State,
         string Activity,
@@ -279,6 +282,9 @@ namespace ColorVision.Copilot
                         trace.DelegatedRunId,
                         trace.DelegatedResumeFromRunId,
                         roleId,
+                        trace.DelegatedAgentName,
+                        trace.DelegatedModel,
+                        trace.DelegatedReasoningEffort,
                         trace.DelegatedRunClosed,
                         trace.State,
                         trace.ProgressMessage,
@@ -339,7 +345,10 @@ namespace ColorVision.Copilot
         public static string Format(
             CopilotConversationRecord? conversation,
             string? arguments,
-            CopilotSubagentRoleCatalog? catalog = null)
+            CopilotSubagentRoleCatalog? catalog = null,
+            IReadOnlyList<CopilotCodexCustomSubagentDefinition>? customSubagents = null,
+            bool customAgentsEnabled = true,
+            string customAgentSnapshotLabel = "")
         {
             var request = ParseCommand(arguments);
             if (request.Action is CopilotSubagentDiagnosticAction.Invalid
@@ -355,8 +364,9 @@ namespace ColorVision.Copilot
             var builder = new StringBuilder()
                 .Append("子代理 · ")
                 .AppendLine(title)
-                .Append("运行模型：请求级只读委派 · 并发硬上限 ")
-                .Append(CopilotSubagentCoordinator.MaximumConcurrentRuns.ToString("N0", CultureInfo.CurrentCulture))
+                .Append("运行模型：请求级只读委派 · 默认并发上限 ")
+                .Append(CopilotSubagentCoordinator.DefaultMaximumConcurrentRuns.ToString("N0", CultureInfo.CurrentCulture))
+                .Append("（Codex config 可按请求覆盖）")
                 .Append(" · 单次硬上限 ")
                 .Append(FormatTokens(CopilotSubagentCoordinator.MaximumRunTokenBudget))
                 .Append(" tokens · 请求合计硬上限 ")
@@ -372,6 +382,11 @@ namespace ColorVision.Copilot
                 or CopilotSubagentDiagnosticAction.Roles)
             {
                 AppendRoles(builder, catalog);
+                AppendCustomSubagents(
+                    builder,
+                    customSubagents,
+                    customAgentsEnabled,
+                    customAgentSnapshotLabel);
             }
 
             if (request.Action is CopilotSubagentDiagnosticAction.Overview
@@ -455,7 +470,10 @@ namespace ColorVision.Copilot
             var activity = IsActive(run.State) && !string.IsNullOrWhiteSpace(run.Activity)
                 ? " · " + run.Activity.Trim()
                 : string.Empty;
-            var description = run.RoleId + " · " + state + result + activity;
+            var agent = string.IsNullOrWhiteSpace(run.AgentName)
+                ? string.Empty
+                : " · agent=" + run.AgentName;
+            var description = run.RoleId + agent + " · " + state + result + activity;
             return description.Length <= MaximumRunSuggestionCharacters
                 ? description
                 : description[..(MaximumRunSuggestionCharacters - 3)].TrimEnd() + "...";

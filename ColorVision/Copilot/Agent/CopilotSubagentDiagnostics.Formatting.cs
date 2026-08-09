@@ -48,6 +48,30 @@ namespace ColorVision.Copilot
             }
         }
 
+        private static void AppendCustomSubagents(
+            StringBuilder builder,
+            IReadOnlyList<CopilotCodexCustomSubagentDefinition>? customSubagents,
+            bool customAgentsEnabled,
+            string snapshotLabel)
+        {
+            var diagnostics = CopilotCodexCustomSubagentDiagnostics.Format(customSubagents);
+            builder.AppendLine()
+                .AppendLine("自定义 Agent 配置");
+            if (!string.IsNullOrWhiteSpace(snapshotLabel))
+                builder.Append("快照：").AppendLine(snapshotLabel.Trim());
+            if (diagnostics.Length == 0)
+            {
+                builder.AppendLine("当前快照没有可用的自定义 Agent；可在 Codex Home 或受信项目的 .codex/agents/*.toml 中配置。")
+                    .AppendLine("使用 /memory 查看配置发现与信任诊断。");
+                return;
+            }
+
+            builder.AppendLine(diagnostics)
+                .AppendLine(customAgentsEnabled
+                    ? "选择方式：父 Agent 可在 DelegateExplore 或 DelegateScout 的 agent 参数中选择；配置不会创建新的 RoleCatalog 工具。"
+                    : "可用性：agents.enabled=false；这些配置已发现但本次快照不会暴露或执行子代理工具。");
+        }
+
         private static void AppendRuns(
             StringBuilder builder,
             IReadOnlyList<CopilotSubagentRunDiagnostic> runs,
@@ -79,7 +103,10 @@ namespace ColorVision.Copilot
                 builder.Append('#')
                     .Append((index + 1).ToString(CultureInfo.InvariantCulture))
                     .Append(" · ")
-                    .Append(run.RoleId)
+                    .Append(run.RoleId);
+                if (!string.IsNullOrWhiteSpace(run.AgentName))
+                    builder.Append(" · agent=").Append(run.AgentName);
+                builder
                     .Append(" · ")
                     .Append(string.IsNullOrWhiteSpace(run.RunId) ? "ID 待回传" : run.RunId)
                     .Append(" · state=")
@@ -206,6 +233,19 @@ namespace ColorVision.Copilot
             }
             if (hasTiming)
                 builder.AppendLine();
+
+            if (!string.IsNullOrWhiteSpace(run.Model)
+                || !string.IsNullOrWhiteSpace(run.ReasoningEffort)
+                || !string.IsNullOrWhiteSpace(run.AgentName))
+            {
+                builder.Append("配置：agent ")
+                    .Append(string.IsNullOrWhiteSpace(run.AgentName) ? "none" : run.AgentName)
+                    .Append(" · model ")
+                    .Append(string.IsNullOrWhiteSpace(run.Model) ? "unknown" : run.Model)
+                    .Append(" · reasoning ")
+                    .Append(string.IsNullOrWhiteSpace(run.ReasoningEffort) ? "unknown" : run.ReasoningEffort)
+                    .AppendLine();
+            }
 
             builder.Append("用量：tokens ")
                 .Append(FormatTokens(run.ConsumedTokens))

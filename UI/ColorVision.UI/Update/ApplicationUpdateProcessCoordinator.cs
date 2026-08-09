@@ -7,6 +7,14 @@ using System.Runtime.InteropServices;
 
 namespace ColorVision.Update
 {
+    public enum SingleInstanceCloseRequestResult
+    {
+        Accepted,
+        Rejected,
+        Unavailable,
+        Indeterminate,
+    }
+
     /// <summary>
     /// Closes every running application process that belongs to the current installation
     /// before an external updater starts replacing files.
@@ -16,6 +24,7 @@ namespace ColorVision.Update
         private static readonly ILog log = LogManager.GetLogger(typeof(ApplicationUpdateProcessCoordinator));
         private static readonly TimeSpan DefaultGracefulShutdownTimeout = TimeSpan.FromSeconds(15);
         private static readonly TimeSpan DefaultForcedShutdownTimeout = TimeSpan.FromSeconds(5);
+        private const string ReplacementSignalPrefix = @"Local\ColorVision.SingleInstanceReplacement.";
         private const uint ProcessQueryLimitedInformation = 0x1000;
         private const int MaximumExecutablePathLength = 32768;
 
@@ -28,6 +37,22 @@ namespace ColorVision.Update
                 Environment.ProcessId,
                 DefaultGracefulShutdownTimeout,
                 DefaultForcedShutdownTimeout);
+        }
+
+        public static int CloseEarlierApplicationProcesses(
+            Func<int, SingleInstanceCloseRequestResult> requestClose)
+        {
+            ArgumentNullException.ThrowIfNull(requestClose);
+            string executablePath = Environment.ProcessPath
+                ?? throw new InvalidOperationException("Unable to resolve the current ColorVision executable path.");
+            using Process currentProcess = Process.GetCurrentProcess();
+            return CloseEarlierApplicationProcesses(
+                executablePath,
+                currentProcess.Id,
+                currentProcess.SessionId,
+                currentProcess.StartTime.ToUniversalTime(),
+                DefaultGracefulShutdownTimeout,
+                requestClose);
         }
 
         internal static int CloseOtherApplicationProcesses(
@@ -155,6 +180,191 @@ namespace ColorVision.Update
             {
                 DisposeProcesses(targetProcesses);
             }
+        }
+
+        internal static int CloseEarlierApplicationProcesses(
+            string executablePath,
+            int currentProcessId,
+            int currentProcessSessionId,
+            DateTime currentProcessStartTimeUtc,
+            TimeSpan gracefulShutdownTimeout,
+            Func<int, SingleInstanceCloseRequestResult> requestClose)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(executablePath);
+            ArgumentOutOfRangeException.ThrowIfLessThan(gracefulShutdownTimeout, TimeSpan.Zero);
+            ArgumentNullException.ThrowIfNull(requestClose);
+
+            string normalizedExecutablePath = Path.GetFullPath(executablePath);
+            string processName = Path.GetFileNameWithoutExtension(normalizedExecutablePath);
+            if (string.IsNullOrWhiteSpace(processName))
+                throw new InvalidOperationException("Unable to resolve the current ColorVision process name.");
+
+            var targetProcesses = new List<Process>();
+            var unresolvedProcessIds = new List<int>();
+            foreach (Process process in Process.GetProcessesByName(processName))
+            {
+                bool keepProcess = false;
+                try
+                {
+                    if (process.Id == currentProcessId
+                        || process.HasExited
+                        || process.SessionId != currentProcessSessionId)
+                    {
+                        continue;
+                    }
+
+                    if (!TryGetExecutablePath(process, out string candidateExecutablePath))
+                    {
+                        if (IsRunning(process))
+                            unresolvedProcessIds.Add(process.Id);
+                        continue;
+                    }
+
+                    if (!string.Equals(
+                        Path.GetFullPath(candidateExecutablePath),
+                        normalizedExecutablePath,
+                        StringComparison.OrdinalIgnoreCase)
+                        || !IsEarlierProcess(process, currentProcessStartTimeUtc, currentProcessId))
+                    {
+                        continue;
+                    }
+
+                    targetProcesses.Add(process);
+                    keepProcess = true;
+                }
+                catch (InvalidOperationException)
+                {
+                }
+                catch (ArgumentException)
+                {
+                }
+                catch (Win32Exception ex)
+                {
+                    if (IsRunning(process))
+                    {
+                        unresolvedProcessIds.Add(process.Id);
+                        log.Warn($"Unable to inspect ColorVision process {process.Id}: {ex.Message}");
+                    }
+                }
+                finally
+                {
+                    if (!keepProcess)
+                        process.Dispose();
+                }
+            }
+
+            if (unresolvedProcessIds.Count > 0)
+            {
+                DisposeProcesses(targetProcesses);
+                throw new InvalidOperationException(
+                    $"Unable to verify earlier ColorVision process(es): {string.Join(", ", unresolvedProcessIds)}. Close them manually and retry.");
+            }
+
+            try
+            {
+                if (targetProcesses.Count == 0)
+                    return 0;
+
+                targetProcesses.Sort(CompareProcessStartOrder);
+                foreach (Process process in targetProcesses)
+                {
+                    using var replacementSignal = new EventWaitHandle(
+                        initialState: false,
+                        EventResetMode.ManualReset,
+                        CreateReplacementSignalName(process.Id));
+                    SingleInstanceCloseRequestResult closeResult = requestClose(process.Id);
+                    if (closeResult == SingleInstanceCloseRequestResult.Rejected)
+                    {
+                        throw new InvalidOperationException(
+                            $"Earlier ColorVision process {process.Id} declined the shutdown request.");
+                    }
+
+                    if (closeResult == SingleInstanceCloseRequestResult.Unavailable)
+                    {
+                        bool closeRequested;
+                        try
+                        {
+                            closeRequested = process.HasExited || process.CloseMainWindow();
+                        }
+                        catch (InvalidOperationException)
+                        {
+                            closeRequested = true;
+                        }
+
+                        if (!closeRequested && IsRunning(process))
+                        {
+                            throw new InvalidOperationException(
+                                $"Earlier ColorVision process {process.Id} has no safe close endpoint.");
+                        }
+                    }
+
+                    if (WaitForExit([process], gracefulShutdownTimeout).Count > 0)
+                    {
+                        throw new InvalidOperationException(
+                            $"Earlier ColorVision process {process.Id} did not exit after the safe shutdown request.");
+                    }
+                }
+
+                log.Info(
+                    $"Closed {targetProcesses.Count} earlier ColorVision process(es) from '{normalizedExecutablePath}'.");
+                return targetProcesses.Count;
+            }
+            finally
+            {
+                DisposeProcesses(targetProcesses);
+            }
+        }
+
+        public static bool IsSingleInstanceReplacementRequested(int processId)
+        {
+            try
+            {
+                if (!EventWaitHandle.TryOpenExisting(
+                    CreateReplacementSignalName(processId),
+                    out EventWaitHandle? signal))
+                {
+                    return false;
+                }
+
+                signal.Dispose();
+                return true;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                return false;
+            }
+        }
+
+        private static string CreateReplacementSignalName(int processId) =>
+            ReplacementSignalPrefix + processId;
+
+        private static bool IsEarlierProcess(
+            Process process,
+            DateTime currentProcessStartTimeUtc,
+            int currentProcessId)
+        {
+            int startTimeComparison = DateTime.Compare(
+                process.StartTime.ToUniversalTime(),
+                currentProcessStartTimeUtc);
+            return startTimeComparison < 0
+                || (startTimeComparison == 0 && process.Id < currentProcessId);
+        }
+
+        private static int CompareProcessStartOrder(Process left, Process right)
+        {
+            try
+            {
+                int startTimeComparison = DateTime.Compare(
+                    left.StartTime.ToUniversalTime(),
+                    right.StartTime.ToUniversalTime());
+                if (startTimeComparison != 0)
+                    return startTimeComparison;
+            }
+            catch (Exception ex) when (ex is InvalidOperationException or Win32Exception)
+            {
+            }
+
+            return left.Id.CompareTo(right.Id);
         }
 
         private static bool TryGetExecutablePath(Process process, out string executablePath)

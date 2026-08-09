@@ -38,7 +38,7 @@
 | 数据库流程 | 保存前 `CheckFlow()`，再取画布数据、Base64、`TemplateFlow.Save2DB(...)` |
 | 资源引用 | `SysResourceModel.Type = 101`，`ModDetailModel.ValueA` 保存资源 id |
 | 多选导出 | 仍是 zip 内多个 `.stn`，不会像 `.cvflow` 一样收集关联模板 manifest |
-| 版本和搜索侧车 | 每次有效保存记录不可变 catalog revision、语义索引和执行策略 |
+| 版本和搜索侧车 | 每次有效保存记录不可变 catalog revision 和语义索引 |
 | 历史 Artifact 表 | 当前版本不再读写或迁移，已有表和数据原样保留 |
 
 ## `.cvflow` 包
@@ -63,18 +63,18 @@
 | 等待引擎结束 | `FlowEngineManager.RunFlowAsync()` | 只等待流程图执行结束，不代表后处理成功 |
 | 等待最终结果 | `FlowEngineManager.RunFlowAndWaitForFinalizationAsync()` | 给调度、自动化或外部调用等待引擎和全部后处理结束 |
 | Quartz 调度 | `FlowJob.Execute(...)` -> `FlowExecutionCoordinator` -> `RunSelectedFlowAndWaitForFinalizationAsync()` | 通过 `Application.Current.Dispatcher` 切回 UI，并以最终结果决定任务状态 |
-| 独立调度 | `HeadlessFlowJob` -> `RunSavedFlowHeadlessAsync(...)` | 复制当前已保存 STN 和执行策略，在隔离 RuntimeHost 中执行，不触碰编辑器 |
+| 独立调度 | `HeadlessFlowJob` -> `RunSavedFlowHeadlessAsync(...)` | 复制当前已保存 STN，在隔离 RuntimeHost 中执行，不触碰编辑器 |
 | 停止流程 | `ViewFlow` -> `FlowExecutionSession.StopFlow()` -> `FlowControl.Stop()` | 批次状态更新为 `Canceled` |
 
 `EngineExecutionCompleted` 表示“流程图引擎已结束”，此时后处理可能仍在运行；原有 `FlowExecutionCompleted` 作为它的过时兼容别名保留，不能作为整次业务运行成功的依据。引擎结束后会执行配置的后处理；后处理分为 `Warning` 和 `Required`，其中必需后处理失败会把最终结果判为失败。外部调用、Quartz 调度和自动化应等待 `RunFinalized`，或直接调用 `RunFlowAndWaitForFinalizationAsync()` 取得 `FlowRunFinalizedData.FinalOutcome`。`DisplayFlow` 只负责主程序视图注册、选中状态和服务重启。
 
-UI 手动运行始终执行当前画布加载的 STN，不再读取或校验 Artifact。独立调度按 FlowKey 取得当前已保存 STN，并在创建请求时复制二进制数据和执行策略，后续编辑不会改变已经启动的这次执行。
+UI 手动运行始终执行当前画布加载的 STN，不再读取或校验 Artifact。独立调度按 FlowKey 取得当前已保存 STN，并在创建请求时复制二进制数据，后续编辑不会改变已经启动的这次执行。
 
 ## 工作区与运行对象
 
 `FlowTemplateWorkspaceController` 只保存当前 `ViewFlow` 实例的 requested template、已加载 `FlowParam`、起点选择和刷新 generation。刷新按 latest-wins 串行加载，较早请求完成后不能覆盖较新的选择；加载失败时保留原画布。独立编辑器也不再写入主程序的全局模板选择和全局节点集合。
 
-`FlowHeadlessExecutionRequest` 在创建时复制 STN、MQTT 服务 token、错误路由和重试策略。`FlowHeadlessExecutionService` 每次执行新建并释放一个 `FlowRuntimeHost`，返回结构化的启动状态、终止原因、内容 hash、耗时和 `FlowControlData` 映射。裸执行器不自动创建批次，也不执行前后处理；这些业务语义由 UI 会话或插件调用方明确编排。
+`FlowHeadlessExecutionRequest` 在创建时复制 STN 和 MQTT 服务 token。`FlowHeadlessExecutionService` 每次执行新建并释放一个 `FlowRuntimeHost`，返回结构化的启动状态、终止原因、内容 hash、耗时和 `FlowControlData` 映射。裸执行器不自动创建批次，也不执行前后处理；这些业务语义由 UI 会话或插件调用方明确编排。
 
 ## Incident
 

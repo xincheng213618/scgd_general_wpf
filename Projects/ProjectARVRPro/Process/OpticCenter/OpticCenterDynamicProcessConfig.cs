@@ -2,7 +2,7 @@ using System.ComponentModel;
 
 namespace ProjectARVRPro.Process.OpticCenter
 {
-    public class OpticCenterDynamicProcessConfig : ProcessConfigBase
+    public class OpticCenterDynamicProcessConfig : ProcessConfigBase<OpticCenterRecipeConfig>
     {
         [Category("显示配置")]
         [DisplayName("显示格式")]

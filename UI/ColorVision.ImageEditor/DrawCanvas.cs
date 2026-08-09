@@ -13,15 +13,29 @@ using System.Windows.Media;
 namespace ColorVision.ImageEditor
 {   
     
-    public enum VisualChangeType { Add, Remove, Top, Clear }
+    public enum VisualChangeType { Add, Remove, Top, Clear, AddRange }
     public class VisualChangedEventArgs : EventArgs
     {
         public Visual? Visual { get; }
+        public IReadOnlyList<Visual> Visuals { get; }
         public VisualChangeType ChangeType { get; }
         public VisualChangedEventArgs(Visual? visual, VisualChangeType changeType)
         {
             Visual = visual;
+            Visuals = visual == null ? Array.Empty<Visual>() : new[] { visual };
             ChangeType = changeType;
+        }
+
+        private VisualChangedEventArgs(IReadOnlyList<Visual> visuals, VisualChangeType changeType)
+        {
+            Visual = null;
+            Visuals = visuals;
+            ChangeType = changeType;
+        }
+
+        internal static VisualChangedEventArgs CreateRange(IReadOnlyList<Visual> visuals)
+        {
+            return new VisualChangedEventArgs(visuals, VisualChangeType.AddRange);
         }
     }
 
@@ -29,6 +43,7 @@ namespace ColorVision.ImageEditor
     {
         // 使用只读集合，防止外部直接修改
         private readonly List<Visual> visuals = new();
+        private readonly HashSet<Visual> visualSet = new();
         private readonly List<Visual> overlayVisuals = new();
 
         public IReadOnlyList<Visual> Visuals => visuals;
@@ -127,7 +142,7 @@ namespace ColorVision.ImageEditor
                 TryRemoveVisual(item);
 
             overlayVisuals.Clear();
-            VisualsChanged?.Invoke(this, new VisualChangedEventArgs(null, VisualChangeType.Clear));
+            VisualsChanged?.Invoke(this, new VisualChangedEventArgs((Visual?)null, VisualChangeType.Clear));
         }
 
         public bool IsLayoutUpdated { get; set; } = true;
@@ -158,7 +173,7 @@ namespace ColorVision.ImageEditor
 
         private bool TryAddVisual(Visual? visual, int? index = null, bool raiseEvents = true)
         {
-            if (visual == null || visuals.Contains(visual)) return false;
+            if (visual == null || !visualSet.Add(visual)) return false;
 
             ApplyLayoutScale(visual, CreateScaleContext());
 
@@ -184,7 +199,7 @@ namespace ColorVision.ImageEditor
 
         private bool TryRemoveVisual(Visual? visual, bool raiseEvents = true)
         {
-            if (visual == null || !visuals.Contains(visual)) return false;
+            if (visual == null || !visualSet.Remove(visual)) return false;
 
             visuals.Remove(visual);
             RemoveVisualTree(visual);
@@ -212,6 +227,35 @@ namespace ColorVision.ImageEditor
         public void AddVisual(Visual visual)
         {
             TryAddVisual(visual);
+        }
+
+        public int AddVisuals(IEnumerable<Visual> items)
+        {
+            ArgumentNullException.ThrowIfNull(items);
+
+            List<Visual> addedVisuals = new();
+            DrawingVisualScaleContext context = CreateScaleContext();
+            foreach (Visual visual in items)
+            {
+                if (visual == null || !visualSet.Add(visual))
+                {
+                    continue;
+                }
+
+                ApplyLayoutScale(visual, context);
+                visuals.Add(visual);
+                AddVisualTree(visual);
+                addedVisuals.Add(visual);
+            }
+
+            if (addedVisuals.Count > 0)
+            {
+                VisualChangedEventArgs args = VisualChangedEventArgs.CreateRange(addedVisuals);
+                VisualsAdd?.Invoke(this, args);
+                VisualsChanged?.Invoke(this, args);
+            }
+
+            return addedVisuals.Count;
         }
         public void RemoveVisual(Visual visual)
         {
@@ -304,7 +348,7 @@ namespace ColorVision.ImageEditor
                 AddVisualTree(visual);
             }
 
-            VisualsChanged?.Invoke(this, new VisualChangedEventArgs(null, VisualChangeType.Top));
+            VisualsChanged?.Invoke(this, new VisualChangedEventArgs((Visual?)null, VisualChangeType.Top));
         }
 
         // 集中管理视觉树

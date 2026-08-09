@@ -185,7 +185,7 @@ namespace Conoscope
 
             drawingContext.DrawRectangle(Brushes.Transparent, null, new Rect(0, 0, ActualWidth, ActualHeight));
 
-            const double sidePadding = 38;
+            const double sidePadding = 46;
             const double topPadding = 28;
             const double bottomPadding = 28;
 
@@ -225,6 +225,7 @@ namespace Conoscope
         private void DrawGrid(DrawingContext drawingContext, Point center, double plotRadius)
         {
             const int ringCount = 6;
+            const double radialLabelAngle = 82.5;
             int angleStep = plotRadius >= 125 ? 15 : 30;
 
             for (int ringIndex = 1; ringIndex <= ringCount; ringIndex++)
@@ -234,8 +235,10 @@ namespace Conoscope
                 drawingContext.DrawEllipse(null, pen, center, radius, radius);
 
                 double value = radialMaximum * ringIndex / ringCount;
-                Point labelPoint = ToScreenPoint(center, radius, 90);
-                DrawText(drawingContext, FormatTickValue(value), new Point(labelPoint.X + 6, labelPoint.Y - 8), LabelBrush, 11, centered: false);
+                // Put radial values between the 75° and 90° spokes. Keeping them off the
+                // horizontal axis prevents the outer value from colliding with the 90° label.
+                Point labelPoint = ToScreenPoint(center, Math.Max(0, radius - 9), radialLabelAngle);
+                DrawText(drawingContext, FormatTickValue(value), labelPoint, LabelBrush, 11, centered: true);
             }
 
             DrawText(drawingContext, "0", new Point(center.X + 4, center.Y - 8), LabelBrush, 11, centered: false);
@@ -320,6 +323,13 @@ namespace Conoscope
 
         private static string FormatTickValue(double value)
         {
+            if (Math.Abs(value) >= 1000)
+            {
+                double thousands = value / 1000.0;
+                string format = Math.Abs(thousands - Math.Round(thousands)) < 0.05 ? "F0" : "F1";
+                return $"{thousands.ToString(format, CultureInfo.InvariantCulture)}k";
+            }
+
             if (Math.Abs(value) >= 100)
             {
                 return value.ToString("F0", CultureInfo.InvariantCulture);

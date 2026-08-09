@@ -40,28 +40,31 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
 
         private void AdjustWhiteBalance(double red,double green, double blue)
         {
-            if (_image.HImageCache == null) return;
+            using ImageFrameLease? lease = _image.AcquireImageFrame();
+            if (lease == null) return;
 
-            PixelFormat pixelFormat = _image.Config.GetProperties<PixelFormat>("PixelFormat");
-            
-            int ret;
-            ret = OpenCVMediaHelper.M_GetWhiteBalance((HImage)_image.HImageCache, out HImage hImageProcessed, red, green, blue);
+            long revision = lease.Revision;
+            int ret = OpenCVMediaHelper.M_GetWhiteBalance(lease.Image, out HImage hImageProcessed, red, green, blue);
 
-            if (ret == 0)
+            if (ret != 0)
             {
-                Application.Current?.Dispatcher.BeginInvoke(() =>
-                {
-                    if (!HImageExtension.UpdateWriteableBitmap(_image.FunctionImage, hImageProcessed))
-                    {
-                        double DpiX = _image.Config.GetProperties<double>("DpiX");
-                        double DpiY = _image.Config.GetProperties<double>("DpiY");
-                        var image = hImageProcessed.ToWriteableBitmapAndDispose();
-
-                        _image.FunctionImage = image;
-                    }
-                    _image.ImageShow.Source = _image.FunctionImage;
-                });
+                hImageProcessed.Dispose();
+                return;
             }
+
+            Application.Current?.Dispatcher.BeginInvoke(() =>
+            {
+                if (!_image.IsCurrentImageRevision(revision))
+                {
+                    hImageProcessed.Dispose();
+                    return;
+                }
+
+                if (!HImageExtension.UpdateWriteableBitmap(_image.FunctionImage, hImageProcessed))
+                    _image.FunctionImage = hImageProcessed.ToWriteableBitmapAndDispose();
+
+                _image.ImageShow.Source = _image.FunctionImage;
+            });
         }
 
         private void Apply_Click(object sender, RoutedEventArgs e)
@@ -71,7 +74,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
             {
                 _image.ViewBitmapSource = writeableBitmap;
                 _image.ImageShow.Source = _image.ViewBitmapSource;
-                _image.HImageCache = null;
+                _image.NotifySourcePixelsChanged();
                 _image.FunctionImage = null;
             }
             Close();

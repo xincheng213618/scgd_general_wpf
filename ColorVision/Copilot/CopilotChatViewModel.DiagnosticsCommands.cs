@@ -127,6 +127,7 @@ namespace ColorVision.Copilot
         private string BuildEffectiveConfigDiagnosticsReport()
         {
             var stateStore = _stateStore as CopilotChatStateStore;
+            var turnSnapshot = CaptureHostedTurnSnapshot(Attachments);
             return CopilotEffectiveConfigDiagnostics.Format(new CopilotEffectiveConfigDiagnosticContext
             {
                 Config = _config,
@@ -140,6 +141,7 @@ namespace ColorVision.Copilot
                     ?? new CopilotChatStateLoadStatus(CopilotChatStateLoadSource.NotAttempted),
                 ConversationRunState = SelectedHostedRun?.State,
                 McpListenerRunning = CopilotMcpServer.Instance.IsRunning,
+                CodexConfigOptions = turnSnapshot.ProjectInstructionDiscoveryOptions,
             });
         }
 

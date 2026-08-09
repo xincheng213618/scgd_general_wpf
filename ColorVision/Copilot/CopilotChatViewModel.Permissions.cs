@@ -223,6 +223,99 @@ namespace ColorVision.Copilot
             PersistState(immediate: true);
         }
 
+        private async Task RetryAutomaticallyDeniedActionAsync(
+            CopilotAutomaticApprovalDenialSnapshot denial)
+        {
+            var conversation = SelectedConversation;
+            var workspacePath = CaptureHostedTurnSnapshot(
+                conversation?.Attachments ?? Enumerable.Empty<CopilotAttachmentItem>()).SolutionDirectoryPath;
+            if (conversation == null
+                || !string.Equals(conversation.Id, denial.ConversationId, StringComparison.Ordinal)
+                || !AccessWorkspacePathsMatch(denial.WorkspacePath, workspacePath))
+            {
+                SetPendingActionFeedback("会话或工作区已变化；一次性重试票据已保留，但没有自动发起重试。");
+                return;
+            }
+
+            var retryInstruction = BuildAutomaticApprovalRetryInstruction(denial.ToolName);
+            var activeRun = ActiveHostedRun;
+            if (activeRun != null)
+            {
+                if (!string.Equals(activeRun.ConversationId, conversation.Id, StringComparison.Ordinal)
+                    || !activeRun.IsAgent)
+                {
+                    SetPendingActionFeedback("另一个任务仍在运行；一次性重试票据已保留，请回到本会话后继续。");
+                    return;
+                }
+
+                var admission = _turnRuntime.EnqueueSteeringMessage(activeRun.Id, retryInstruction);
+                if (!admission.IsAccepted)
+                {
+                    SetPendingActionFeedback(
+                        "一次性重试票据已保留，但当前 Agent 未接受重试指令："
+                        + GetSteeringAdmissionFailureText(admission));
+                    return;
+                }
+
+                var steeringSnapshot = new CopilotSteeringMessageSnapshot(
+                    admission.MessageId,
+                    retryInstruction);
+                var recoveryTracked = CopilotSteeringRecovery.TrackPending(
+                    conversation,
+                    activeRun.Id,
+                    steeringSnapshot,
+                    DateTimeOffset.UtcNow);
+                var activeAssistant = conversation.Messages.LastOrDefault(message =>
+                    !message.IsUser && message.IsThinkingInProgress);
+                if (activeAssistant != null)
+                {
+                    CopilotAssistantMessagePresenter.AppendExecutionTrace(
+                        activeAssistant,
+                        "User authorized one exact retry of an automatic-review denial for "
+                        + CopilotAgentTraceEntry.Sanitize(denial.ToolName)
+                        + "; the retry still requires automatic review.");
+                }
+
+                PersistState(immediate: true);
+                SetPendingActionFeedback(recoveryTracked
+                    ? "已向当前 Agent 发送精确重试指令；仅原工具及原参数可消费一次票据，重试仍会经过自动审查。"
+                    : "当前 Agent 已接受精确重试指令，但恢复记录未能保存；一次性票据仍只匹配原动作。请观察本轮结果。");
+                return;
+            }
+
+            if (!CanScheduleComposerRequest(CopilotAgentMode.Auto))
+            {
+                SetPendingActionFeedback("当前状态不能立即开始重试；一次性重试票据已保留。");
+                return;
+            }
+
+            var latestAssistant = conversation.Messages.LastOrDefault(message => !message.IsUser);
+            if (latestAssistant != null
+                && conversation.AgentSessionCheckpoint?.IsStructurallyValid() == true)
+            {
+                _pendingAgentRecoveryRequest = new CopilotAgentRecoveryRequest
+                {
+                    Mode = CopilotAgentRecoveryMode.RetryDeniedAction,
+                    PreviousStopReason = latestAssistant.AgentStopReason,
+                    ToolName = denial.ToolName,
+                };
+            }
+
+            SetPendingRequestModeOverride(CopilotAgentMode.Auto);
+            InputText = retryInstruction;
+            await SendAsync();
+        }
+
+        private static string BuildAutomaticApprovalRetryInstruction(string? toolName)
+        {
+            var normalizedToolName = CopilotAgentTraceEntry.Sanitize(toolName);
+            if (string.IsNullOrWhiteSpace(normalizedToolName))
+                normalizedToolName = "刚才被拒绝的受保护工具";
+            return "用户已通过 /approve 为 "
+                + normalizedToolName
+                + " 的那一次精确拒绝动作授权一次重试。仅在原任务仍需要时，使用完全相同的参数发起一次新的调用；不要改写、扩大或用相似动作代替。该调用仍必须经过自动审查，若再次拒绝就停止并说明原因。";
+        }
+
         private bool CanReviewPendingAction(ConfirmableAction? action)
         {
             if (action?.Status != ConfirmableActionStatus.Pending

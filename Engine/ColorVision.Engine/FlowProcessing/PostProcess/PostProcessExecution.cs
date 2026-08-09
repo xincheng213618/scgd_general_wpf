@@ -180,7 +180,6 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
                 return FlowFinalOutcome.Failed;
             }
             return failedResults.Length > 0
-                || engineResult.HandledFailures.Count > 0
                 ? FlowFinalOutcome.SucceededWithWarnings
                 : FlowFinalOutcome.Succeeded;
         }

@@ -31,7 +31,7 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
             poiParam.PoiPoints.Clear();
             foreach (var item in poiInfo.Positions)
             {
-                poiParam.PoiPoints.Add(new PoiPoint() { PixX = item.PixelX, PixY = item.PixelY ,PointType = (GraphicTypes)poiInfo.HeaderInfo.PointType ,PixWidth = poiInfo .HeaderInfo.Width, PixHeight = poiInfo.HeaderInfo.Height });
+                poiParam.PoiPoints.Add(new PoiPoint() { PixX = item.PixelX, PixY = item.PixelY, PointType = poiInfo.HeaderInfo.PointType.ToPoiShape(), PixWidth = poiInfo.HeaderInfo.Width, PixHeight = poiInfo.HeaderInfo.Height });
             }
             poiParam.PoiConfig.AreaRectRow = poiInfo.HeaderInfo.Rows;
             poiParam.PoiConfig.AreaRectCol = poiInfo.HeaderInfo.Cols;
@@ -42,7 +42,7 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
             poiInfo.Positions = new List<POIPointPosition>();
             if (poiParam.PoiPoints.Count <= 0)
             {
-                poiInfo.HeaderInfo = new POIHeaderInfo() { Height = (int)poiParam.PoiPoints[0].PixHeight, Width = (int)poiParam.PoiPoints[0].PixWidth, PointType = (POIPointTypes)poiParam.PoiPoints[0].PointType };
+                poiInfo.HeaderInfo = new POIHeaderInfo() { Height = (int)poiParam.PoiPoints[0].PixHeight, Width = (int)poiParam.PoiPoints[0].PixWidth, PointType = poiParam.PoiPoints[0].PointType.ToAlgorithmPoiShape() };
             }
             else
             {

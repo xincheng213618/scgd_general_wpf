@@ -109,10 +109,6 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
                 + $"属性变化：{diff.PropertyChanges.Count}\n"
                 + $"普通连接：+{diff.AddedEdges.Count} "
                 + $"-{diff.RemovedEdges.Count}\n"
-                + $"错误路由：+{diff.AddedErrorRoutes.Count} "
-                + $"-{diff.RemovedErrorRoutes.Count}\n"
-                + $"重试策略：+{diff.AddedRetryPolicies.Count} "
-                + $"-{diff.RemovedRetryPolicies.Count}\n"
                 + $"布局变化：{diff.LayoutChanges.Count}"
                 + $"{(diff.ViewportChanged ? "，视口已变化" : string.Empty)}"
                 + $"\n\n分类：{(diff.IsLayoutOnly ? "仅布局变化" : diff.HasSemanticChanges ? "语义变化" : "无变化")}";
@@ -183,11 +179,7 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
                 MessageBox.Show(
                     this,
                     "恢复版本失败："
-                    + result.FailureMessage
-                    + (result.RollbackFailure == null
-                        ? string.Empty
-                        : "\n恢复执行策略时又发生错误："
-                            + result.RollbackFailure),
+                    + result.FailureMessage,
                     "流程版本",
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
@@ -203,8 +195,8 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
                 {
                     MessageBox.Show(
                         this,
-                        "流程内容和执行策略已恢复，但本地版本目录更新失败。"
-                        + "\n请查看日志并修复本地侧车存储后重新保存。",
+                        "流程内容已恢复，但本地版本目录更新失败。"
+                        + "\n请查看日志并重新保存。",
                         "流程已恢复",
                         MessageBoxButton.OK,
                         MessageBoxImage.Warning);

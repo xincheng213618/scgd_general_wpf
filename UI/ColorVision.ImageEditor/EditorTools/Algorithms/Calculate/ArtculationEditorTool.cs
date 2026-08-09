@@ -38,7 +38,9 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate
             List<MenuItem> menuItems = new();
             if (obj is not IRectangle dvRectangle) return menuItems;
 
-            if (_imageContext.HImageCache is not HImage hImage) return menuItems;
+            using ImageFrameLease? currentLease = _imageContext.AcquireImageFrame();
+            if (currentLease == null) return menuItems;
+            HImage hImage = currentLease.Image;
 
             // 图像尺寸
             int imgWidth = hImage.cols;
@@ -77,7 +79,6 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate
             var cropSave = new MenuItem { Header = Properties.Resources.Artculation_MenuHeader };
             cropSave.Click += (s, e) =>
             {
-
                 ArtculationConfig sharpnessConfig = new ArtculationConfig();
                 PropertyEditorWindow propertyEditorWindow = new PropertyEditorWindow(sharpnessConfig)
                 {
@@ -87,20 +88,46 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate
                 };
                 propertyEditorWindow.ShowDialog();
 
-                Application.Current.Dispatcher.BeginInvoke(() =>
+                ImageFrameLease? lease = _imageContext.AcquireImageFrame();
+                if (lease == null) return;
+
+                HImage image = lease.Image;
+                int currentRoiX = Math.Max(0, x);
+                int currentRoiY = Math.Max(0, y);
+                int currentRoiX2 = Math.Min(image.cols, x + w);
+                int currentRoiY2 = Math.Min(image.rows, y + h);
+                int currentRoiW = currentRoiX2 - currentRoiX;
+                int currentRoiH = currentRoiY2 - currentRoiY;
+                if (currentRoiW <= 0 || currentRoiH <= 0)
                 {
-                    if (_imageContext.HImageCache == null) return;
-                    Task.Run(() =>
+                    lease.Dispose();
+                    return;
+                }
+
+                long revision = lease.Revision;
+                _ = Task.Run(() =>
+                {
+                    double articulation;
+                    using (lease)
                     {
-                        double articulation = OpenCVMediaHelper.M_CalArtculation((HImage)_imageContext.HImageCache, sharpnessConfig.FocusAlgorithm, new RoiRect(roiX,roiY,roiW,roiH));
-                        Application.Current.Dispatcher.Invoke(() =>
+                        articulation = OpenCVMediaHelper.M_CalArtculation(
+                            lease.Image,
+                            sharpnessConfig.FocusAlgorithm,
+                            new RoiRect(currentRoiX, currentRoiY, currentRoiW, currentRoiH));
+                    }
+
+                    Application.Current.Dispatcher.BeginInvoke(() =>
+                    {
+                        if (!_imageContext.IsCurrentImageRevision(revision))
                         {
-                            MessageBox.Show(
-                                $"{Properties.Resources.Artculation_ResultMsg} {articulation}",
-                                Properties.Resources.Artculation_ResultTitle,
-                                MessageBoxButton.OK,
-                                MessageBoxImage.Information);
-                        });
+                            return;
+                        }
+
+                        MessageBox.Show(
+                            $"{Properties.Resources.Artculation_ResultMsg} {articulation}",
+                            Properties.Resources.Artculation_ResultTitle,
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Information);
                     });
                 });
             };
@@ -126,8 +153,6 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate
 
         public void Execute()
         {
-            if (_image.HImageCache == null) return;
-
             ArtculationConfig sharpnessConfig  = new ArtculationConfig();
             PropertyEditorWindow propertyEditorWindow = new PropertyEditorWindow(sharpnessConfig)
             {
@@ -137,19 +162,33 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate
             };
             propertyEditorWindow.ShowDialog();
 
-            Application.Current.Dispatcher.BeginInvoke(() =>
+            ImageFrameLease? lease = _image.AcquireImageFrame();
+            if (lease == null) return;
+
+            long revision = lease.Revision;
+            _ = Task.Run(() =>
             {
-                Task.Run(() =>
+                double articulation;
+                using (lease)
                 {
-                    double articulation = OpenCVMediaHelper.M_CalArtculation((HImage)_image.HImageCache, sharpnessConfig.FocusAlgorithm, new RoiRect(0,0, (int)Math.Round(_image.Width), (int)Math.Round(_image.Height)));
-                    Application.Current.Dispatcher.Invoke(() =>
+                    articulation = OpenCVMediaHelper.M_CalArtculation(
+                        lease.Image,
+                        sharpnessConfig.FocusAlgorithm,
+                        new RoiRect());
+                }
+
+                Application.Current.Dispatcher.BeginInvoke(() =>
+                {
+                    if (!_image.IsCurrentImageRevision(revision))
                     {
-                        MessageBox.Show(
-                            $"{Properties.Resources.Artculation_ResultMsg} {articulation}",
-                            Properties.Resources.Artculation_ResultTitle,
-                            MessageBoxButton.OK,
-                            MessageBoxImage.Information);
-                    });
+                        return;
+                    }
+
+                    MessageBox.Show(
+                        $"{Properties.Resources.Artculation_ResultMsg} {articulation}",
+                        Properties.Resources.Artculation_ResultTitle,
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
                 });
             });
         }

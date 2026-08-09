@@ -359,25 +359,31 @@ namespace Spectrum.Configs
             }
 
             IsBusy = true;
-            StatusText = SpectrumResources.ConnectingSourceMeter;
-            LastErrorMessage = string.Empty;
-            string? version = await Task.Run(OpenCore);
-            IsBusy = false;
-            if (version is null)
+            try
             {
-                Version = string.Empty;
-                LastErrorMessage = SpectrumResources.SourceMeterConnectFailedCheckSettings;
-                StatusText = SpectrumResources.ConnectionFailedTitle;
-                RefreshStateProperties();
-                return false;
-            }
+                StatusText = SpectrumResources.ConnectingSourceMeter;
+                LastErrorMessage = string.Empty;
+                string? version = await Task.Run(OpenCore);
+                if (version is null)
+                {
+                    Version = string.Empty;
+                    LastErrorMessage = SpectrumResources.SourceMeterConnectFailedCheckSettings;
+                    StatusText = SpectrumResources.ConnectionFailedTitle;
+                    RefreshStateProperties();
+                    return false;
+                }
 
-            Version = version;
-            LastErrorMessage = string.Empty;
-            StatusText = SpectrumResources.ConnectedStatus;
-            RefreshStateProperties();
-            log.Info($"SMU opened: DevID={_deviceId}, Version={Version}");
-            return true;
+                Version = version;
+                LastErrorMessage = string.Empty;
+                StatusText = SpectrumResources.ConnectedStatus;
+                RefreshStateProperties();
+                log.Info($"SMU opened: DevID={_deviceId}, Version={Version}");
+                return true;
+            }
+            finally
+            {
+                IsBusy = false;
+            }
         }
 
         public bool Open()
@@ -408,14 +414,20 @@ namespace Spectrum.Configs
 
             IsBusy = true;
             StatusText = SpectrumResources.DisconnectingSourceMeter;
-            await Task.Run(CloseCore);
-            IsBusy = false;
-            DisplayConfig.ClearOutput();
-            Version = string.Empty;
-            LastErrorMessage = string.Empty;
-            StatusText = SpectrumResources.未连接;
-            RefreshStateProperties();
-            log.Info("SMU closed");
+            try
+            {
+                await Task.Run(CloseCore);
+                DisplayConfig.ClearOutput();
+                Version = string.Empty;
+                LastErrorMessage = string.Empty;
+                StatusText = SpectrumResources.未连接;
+                RefreshStateProperties();
+                log.Info("SMU closed");
+            }
+            finally
+            {
+                IsBusy = false;
+            }
         }
 
         public void Close()
@@ -444,21 +456,27 @@ namespace Spectrum.Configs
             if (!IsOpen || IsBusy) return false;
 
             IsBusy = true;
-            StatusText = SpectrumResources.MeasuringAndReading;
-            SmuMeasurementSnapshot? snapshot = await Task.Run(CaptureMeasurementCore);
-            IsBusy = false;
-            if (snapshot is null)
+            try
             {
-                LastErrorMessage = SpectrumResources.SourceMeterReadFailed;
-                StatusText = SpectrumResources.ReadFailedTitle;
-                return false;
-            }
+                StatusText = SpectrumResources.MeasuringAndReading;
+                SmuMeasurementSnapshot? snapshot = await Task.Run(CaptureMeasurementCore);
+                if (snapshot is null)
+                {
+                    LastErrorMessage = SpectrumResources.SourceMeterReadFailed;
+                    StatusText = SpectrumResources.ReadFailedTitle;
+                    return false;
+                }
 
-            ApplyMeasurement(snapshot.Value);
-            LastErrorMessage = string.Empty;
-            StatusText = string.Format(SpectrumResources.ReadCompletedAt, DateTime.Now.ToString("HH:mm:ss"));
-            log.Info($"SMU MeasureData: V={V}, I={I} mA");
-            return true;
+                ApplyMeasurement(snapshot.Value);
+                LastErrorMessage = string.Empty;
+                StatusText = string.Format(SpectrumResources.ReadCompletedAt, DateTime.Now.ToString("HH:mm:ss"));
+                log.Info($"SMU MeasureData: V={V}, I={I} mA");
+                return true;
+            }
+            finally
+            {
+                IsBusy = false;
+            }
         }
 
         public bool MeasureData()

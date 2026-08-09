@@ -1,6 +1,6 @@
 ﻿#pragma warning disable CA1859,CA2249,CS8602,CS8604,CS8629
 using ColorVision.Common.MVVM;
-using CVCommCore.CVAlgorithm;
+using ColorVision.Engine.Templates.POI;
 using MQTTMessageLib.Algorithm;
 using Newtonsoft.Json;
 using System;
@@ -44,7 +44,7 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
             // --------------- 数据行 ---------------
             foreach (var it in items)
             {
-                string id = it.POIPoint?.Id?.ToString(culture) ?? "";
+                string id = it.Point?.Id.ToString(culture) ?? "";
                 string name = EscapeCsv(it.Name);
                 string pos = it.Point != null ? $"{it.Point.PixelX}|{it.Point.PixelY}" : "|";
                 string size = it.Point != null ? $"{it.Point.Width}|{it.Point.Height}" : "|";
@@ -210,8 +210,8 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
             if (string.IsNullOrWhiteSpace(it.Name))
             {
                 // 尝试用 POI Id 或 P_index
-                if (it.POIPoint?.Id.HasValue == true)
-                    return $"P_{it.POIPoint.Id.Value}";
+                if (it.Point != null)
+                    return $"P_{it.Point.Id}";
                 return $"P_{index}";
             }
             return it.Name;
@@ -264,30 +264,29 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
         public PoiResultData(PoiPointResultModel pOIPointResultModel)
         {
             POIPointResultModel = pOIPointResultModel;
-            Point = new POIPoint(pOIPointResultModel.PoiId ?? -1, pOIPointResultModel.Pid ??-1, pOIPointResultModel.PoiName, pOIPointResultModel.PoiType, (int)pOIPointResultModel.PoiX, (int)pOIPointResultModel.PoiY, pOIPointResultModel.PoiWidth ?? 0, pOIPointResultModel.PoiHeight ?? 0);
+            Point = new PoiPoint(pOIPointResultModel.PoiId, pOIPointResultModel.Pid ?? -1, pOIPointResultModel.PoiName, pOIPointResultModel.PoiType.ToPoiShape(), pOIPointResultModel.PoiX ?? 0, pOIPointResultModel.PoiY ?? 0, pOIPointResultModel.PoiWidth ?? 0, pOIPointResultModel.PoiHeight ?? 0);
         }
         public int Id { get => _Id; set { _Id = value; OnPropertyChanged(); } }
         private int _Id;
 
 
-        public POIPoint Point { get { return POIPoint; } set { POIPoint = value; OnPropertyChanged(); } }
+        public PoiPoint Point { get => _point; set { _point = value; OnPropertyChanged(); } }
+        private PoiPoint _point = new();
 
         public string Name { get => Point.Name; set { Point.Name = value; OnPropertyChanged(); } }
 
-        public string PixelPos { get { return string.Format("{0},{1}", POIPoint.PixelX, POIPoint.PixelY); } }
+        public string PixelPos => string.Format("{0},{1}", Point.PixelX, Point.PixelY);
 
-        public string PixelSize { get { return string.Format("{0},{1}", POIPoint.Width, POIPoint.Height); } }
+        public string PixelSize => string.Format("{0},{1}", Point.Width, Point.Height);
 
-        public string Shapes => POIPoint.PointType switch
+        public string Shapes => Point.PointType switch
         {
-            POIPointTypes.None => "None",
-            POIPointTypes.SolidPoint => "点",
-            POIPointTypes.Rect => "矩形",
-            POIPointTypes.Polygon => "多边形",
-            POIPointTypes.PolygonFour => "四边形",
-            POIPointTypes.Circle or _ => "圆形 ",
+            PoiShape.None => "None",
+            PoiShape.Point or PoiShape.LegacySolidPoint => "点",
+            PoiShape.Rect or PoiShape.LeftTopRect => "矩形",
+            PoiShape.Polygon => "多边形",
+            PoiShape.Quadrilateral => "四边形",
+            PoiShape.Circle or _ => "圆形 ",
         };
-
-        public POIPoint POIPoint { get; set; }
     }
 }

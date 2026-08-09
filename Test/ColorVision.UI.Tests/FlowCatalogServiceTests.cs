@@ -81,7 +81,7 @@ public sealed class FlowCatalogServiceTests
             CreateDocument(
                 "node-1",
                 "Camera",
-                retryAttempts: 2),
+                modeVersion: 2),
             [CreateSearchDocument("第一版")]);
         FlowRevision semanticChange = catalog.RecordEditorSave(
             "flow:projections",
@@ -89,7 +89,7 @@ public sealed class FlowCatalogServiceTests
             CreateDocument(
                 "node-1",
                 "Camera",
-                retryAttempts: 3),
+                modeVersion: 3),
             [CreateSearchDocument("策略已更新")]);
         FlowRevision layoutChange = catalog.RecordEditorSave(
             "flow:projections",
@@ -97,7 +97,7 @@ public sealed class FlowCatalogServiceTests
             CreateDocument(
                 "node-1",
                 "Camera",
-                retryAttempts: 3,
+                modeVersion: 3,
                 layoutX: 120),
             [CreateSearchDocument("布局已更新")]);
         FlowRevision repeated = catalog.RecordEditorSave(
@@ -106,7 +106,7 @@ public sealed class FlowCatalogServiceTests
             CreateDocument(
                 "node-1",
                 "Camera",
-                retryAttempts: 3,
+                modeVersion: 3,
                 layoutX: 120),
             [CreateSearchDocument("布局已更新")]);
 
@@ -130,11 +130,11 @@ public sealed class FlowCatalogServiceTests
         FlowSemanticDocument firstDocument = CreateDocument(
             "node-1",
             "Camera",
-            retryAttempts: 2);
+            modeVersion: 2);
         FlowSemanticDocument secondDocument = CreateDocument(
             "node-1",
             "Camera",
-            retryAttempts: 3);
+            modeVersion: 3);
         catalog.RecordEditorSave(
             "flow:exact-rollback",
             [1],
@@ -195,7 +195,7 @@ public sealed class FlowCatalogServiceTests
         FlowSemanticDocument firstDocument = CreateDocument(
             "node-1",
             "Camera",
-            retryAttempts: 2);
+            modeVersion: 2);
         FlowRevision first = catalog.RecordEditorSave(
             "flow:sqlite-composite",
             [1],
@@ -207,7 +207,7 @@ public sealed class FlowCatalogServiceTests
             CreateDocument(
                 "node-1",
                 "Camera",
-                retryAttempts: 3),
+                modeVersion: 3),
             [CreateSearchDocument("第二版")]);
 
         FlowRevision found = Assert.IsType<FlowRevision>(
@@ -223,7 +223,7 @@ public sealed class FlowCatalogServiceTests
     private static FlowSemanticDocument CreateDocument(
         string nodeId,
         string typeKey,
-        int? retryAttempts = null,
+        int? modeVersion = null,
         double layoutX = 0)
     {
         var document = new FlowSemanticDocument
@@ -250,18 +250,10 @@ public sealed class FlowCatalogServiceTests
                 ],
             },
         };
-        if (retryAttempts != null)
+        if (modeVersion != null)
         {
-            document.RetryPolicies.Add(
-                new FlowRetryPolicyReference
-                {
-                    NodeId = nodeId,
-                    MaxAttempts = retryAttempts.Value,
-                    InitialDelayMs = 10,
-                    Backoff = 2,
-                    MaxDelayMs = 100,
-                    RetryableKinds = ["Timeout"],
-                });
+            document.Nodes[0].Properties["ModeVersion"] =
+                modeVersion.Value.ToString();
         }
         return document;
     }

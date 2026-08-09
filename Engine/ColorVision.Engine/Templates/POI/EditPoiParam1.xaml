@@ -375,7 +375,7 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <ListView  x:Name="ListView1"  Style="{StaticResource ListView.Small}" ScrollViewer.HorizontalScrollBarVisibility="Visible" ContextMenuOpening="ListView1_ContextMenuOpening" PreviewKeyDown="ListView1_PreviewKeyDown" ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback"  SelectionChanged="ListView1_SelectionChanged"
+                <ListView  x:Name="ListView1"  Style="{StaticResource ListView.Small}" ScrollViewer.HorizontalScrollBarVisibility="Visible" ScrollViewer.CanContentScroll="True" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling" ContextMenuOpening="ListView1_ContextMenuOpening" PreviewKeyDown="ListView1_PreviewKeyDown" ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback"  SelectionChanged="ListView1_SelectionChanged"
                            AllowDrop="True" Drop="ListView1_Drop" DragOver="ListView1_DragOver" >
                     <ListView.Resources>
                         <ContextMenu x:Key="ContextMenuItem">
@@ -412,18 +412,6 @@
                                 <TextBox Text="{Binding Attribute.Rect,StringFormat={}{0:F0}}" Width="200" Margin="5,0"/>
                             </StackPanel>
                         </DataTemplate>
-                        <DataTemplate DataType="{x:Type local:KBPoiVMParam}">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBox Width="80" Text="{Binding HaloOutMOVE}" Margin="0,0,5,0" PreviewKeyDown="TextBox_PreviewKeyDown"/>
-                                <TextBox Width="80" Text="{Binding HaloThreadV}" Margin="0,0,5,0" PreviewKeyDown="TextBox_PreviewKeyDown"/>
-                                <TextBox Width="50" Text="{Binding HaloScale}" Margin="0,0,10,0" PreviewKeyDown="TextBox_PreviewKeyDown"/>
-                                <TextBox Width="70" Text="{Binding KeyOutMOVE}" Margin="0,0,5,0" PreviewKeyDown="TextBox_PreviewKeyDown"/>
-                                <TextBox Width="70" Text="{Binding KeyThreadV}" Margin="0,0,5,0" PreviewKeyDown="TextBox_PreviewKeyDown"/>
-                                <TextBox Width="50" Text="{Binding KeyScale}" Margin="0,0,10,0" PreviewKeyDown="TextBox_PreviewKeyDown"/>
-                                <TextBox Width="50" Text="{Binding Area}" Margin="0,0,10,0" PreviewKeyDown="TextBox_PreviewKeyDown"/>
-                                <TextBox Width="50" Text="{Binding Brightness}" Margin="0,0,10,0" PreviewKeyDown="TextBox_PreviewKeyDown"/>
-                            </StackPanel>
-                        </DataTemplate>
                     </ListView.Resources>
                     <ListView.ItemContainerStyle>
                         <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
@@ -442,15 +430,64 @@
                                     <EventSetter Event="Click" Handler="GridViewColumnSort"/>
                                 </Style>
                             </GridView.ColumnHeaderContainerStyle>
-                            <GridViewColumn  Header="{x:Static properties:Resources.PointDescCoordinates}"  Width="400">
+                            <GridViewColumn Header="{x:Static properties:Resources.PoiParamHeader}" Width="330">
                                 <GridViewColumn.CellTemplateSelector>
                                     <converter:DrawCanvasTemplateSelector  DrawingVisualRectangleTemplate ="{StaticResource DrawingVisualRectangleTemplate}" DrawingVisualCircleWordTemplate="{StaticResource DrawingVisualCircleWordTemplate}"  DrawingVisualRectangleWordTemplate="{StaticResource DrawingVisualRectangleWordTemplate}" DrawingVisualCircleTemplate ="{StaticResource DrawingVisualCircleTemplate}" />
                                 </GridViewColumn.CellTemplateSelector>
                             </GridViewColumn>
-                            <GridViewColumn  Header="{x:Static properties:Resources.PoiParamHeader}" Width="650">
+                            <GridViewColumn Header="HaloOutMOVE" Width="100">
                                 <GridViewColumn.CellTemplate>
-                                    <DataTemplate DataType="{x:Type im:IDrawingVisual}">
-                                        <ContentPresenter Content="{Binding BaseAttribute.Param}" />
+                                    <DataTemplate>
+                                        <TextBox Text="{Binding BaseAttribute.Param.HaloOutMOVE}" PreviewKeyDown="TextBox_PreviewKeyDown"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn Header="HaloThreadV" Width="100">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBox Text="{Binding BaseAttribute.Param.HaloThreadV}" PreviewKeyDown="TextBox_PreviewKeyDown"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn Header="HaloScale" Width="80">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBox Text="{Binding BaseAttribute.Param.HaloScale}" PreviewKeyDown="TextBox_PreviewKeyDown"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn Header="KeyOutMOVE" Width="90">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBox Text="{Binding BaseAttribute.Param.KeyOutMOVE}" PreviewKeyDown="TextBox_PreviewKeyDown"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn Header="KeyThreadV" Width="90">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBox Text="{Binding BaseAttribute.Param.KeyThreadV}" PreviewKeyDown="TextBox_PreviewKeyDown"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn Header="KeyScale" Width="75">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBox Text="{Binding BaseAttribute.Param.KeyScale}" PreviewKeyDown="TextBox_PreviewKeyDown"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn Header="Area" Width="65">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBox Text="{Binding BaseAttribute.Param.Area}" PreviewKeyDown="TextBox_PreviewKeyDown"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn Header="Brightness" Width="90">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBox Text="{Binding BaseAttribute.Param.Brightness}" PreviewKeyDown="TextBox_PreviewKeyDown"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>

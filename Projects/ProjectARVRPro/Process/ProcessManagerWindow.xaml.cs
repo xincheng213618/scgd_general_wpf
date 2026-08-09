@@ -276,7 +276,18 @@ namespace ProjectARVRPro.Process
             // Subscribe to config changes to persist (recursively for nested objects)
             Action saveAction = configType switch
             {
-                ConfigType.Recipe => () => ProcessManager.GetInstance().SaveProcessGroups(),
+                ConfigType.Recipe => () =>
+                {
+                    if (!ProcessManager.GetInstance().TrySaveProcessGroups())
+                    {
+                        MessageBox.Show(
+                            this,
+                            "Recipe 已修改，但保存 ProcessGroups.json 失败。请检查磁盘空间和文件权限后重试。",
+                            "ColorVision",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Error);
+                    }
+                },
                 ConfigType.Process => () => { meta.ConfigJson = JsonConvert.SerializeObject(config); },
                 _ => () => { }
             };
@@ -383,6 +394,9 @@ namespace ProjectARVRPro.Process
         {
             if (config is INotifyPropertyChanged notifyObj)
             {
+                if (_configSubscriptions.Any(subscription => ReferenceEquals(subscription.obj, notifyObj)))
+                    return;
+
                 PropertyChangedEventHandler handler = (s, e) => onChanged();
                 notifyObj.PropertyChanged += handler;
                 _configSubscriptions.Add((notifyObj, handler));

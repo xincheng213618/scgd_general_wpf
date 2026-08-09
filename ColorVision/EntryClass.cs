@@ -2,7 +2,6 @@
 // // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using ColorVision.UI.Shell;
-using ColorVision.Core;
 using log4net;
 using log4net.Config;
 using System;
@@ -44,62 +43,11 @@ namespace ColorVision
                 }
             }
 
-            NativeLogBridge.Initialize((source, level, message) =>
-            {
-                string prefix = $"[Native:{source}] ";
-                switch (level)
-                {
-                    case NativeLogLevel.Trace:
-                        log.Logger.Log(typeof(App), log4net.Core.Level.Trace, prefix + message, null);
-                        break;
-                    case NativeLogLevel.Debug:
-                        log.Debug(prefix + message);
-                        break;
-                    case NativeLogLevel.Info:
-                        log.Info(prefix + message);
-                        break;
-                    case NativeLogLevel.Warn:
-                        log.Warn(prefix + message);
-                        break;
-                    case NativeLogLevel.Error:
-                        log.Error(prefix + message);
-                        break;
-                    default:
-                        log.Info(prefix + message);
-                        break;
-                }
-            }, level: NativeLogLevel.Info, enableLogs: true, enableNativeSink: false);
-
             App app;
             app = new App();
             app.InitializeComponent();
             app.Run();
         }
 
-        private static void KillZombieProcesses()
-        {
-            Process currentProcess = Process.GetCurrentProcess();
-            string processName = currentProcess.ProcessName;
-            int currentProcessId = currentProcess.Id;
-
-            Process[] processes = Process.GetProcessesByName(processName);
-            foreach (Process process in processes)
-            {
-                if (process.Id == currentProcessId)
-                    continue;
-                try
-                {
-                    if (process.MainWindowHandle == IntPtr.Zero)
-                    {
-                        log.Info(ColorVision.Properties.Resources.TerminateUnresponsiveProcess); 
-                        process.Kill();
-                        process.WaitForExit(1000); 
-                    }
-                }
-                catch (Exception)
-                {
-                }
-            }
-        }
     }
 }

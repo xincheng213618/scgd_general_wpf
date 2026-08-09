@@ -92,6 +92,7 @@ namespace ColorVision.Copilot
             ToolCall = Invocation.ToolCall,
             Observation = CopilotToolObservation.FromResult(Result),
             Execution = Execution,
+            SuppressModelOutput = Result.SuppressModelOutput,
         };
     }
 

@@ -1,7 +1,9 @@
-using System.Windows.Forms;
+using ColorVision.Themes.Controls;
 using FlowEngineLib.Base;
 using log4net;
 using ST.Library.UI.NodeEditor;
+using System;
+using System.Windows;
 
 namespace FlowEngineLib;
 
@@ -32,6 +34,21 @@ public class ManualConfirmNode : CVCommonNodeHub
 		_MessageText = "Next Step!";
 	}
 
+	private void ShowConfirmation()
+	{
+		Application application = Application.Current
+			?? throw new InvalidOperationException("Manual confirmation requires a WPF application.");
+		application.Dispatcher.Invoke(() =>
+		{
+			MessageBox1.Show(
+				application.GetActiveWindow(),
+				_MessageText,
+				Properties.Resources.手动确认,
+				MessageBoxButton.OK,
+				MessageBoxImage.Warning);
+		});
+	}
+
 	protected override void input_DataTransfer(object sender, STNodeOptionEventArgs e)
 	{
 		STNodeOption option = sender as STNodeOption;
@@ -45,11 +62,11 @@ public class ManualConfirmNode : CVCommonNodeHub
 			base.OutputOptions[index].Data = e.TargetOption.Data;
 			if (base.OutputOptions[index].Data != null)
 			{
-				if (e.TargetOption.Data.GetType() == typeof(CVStartCFC))
+				if (e.TargetOption.Data is CVStartCFC start)
 				{
-					if (((CVStartCFC)e.TargetOption.Data).FlowStatus == StatusTypeEnum.Runing)
+					if (start.FlowStatus == StatusTypeEnum.Runing)
 					{
-						MessageBox.Show(_MessageText, "手动确认", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+						ShowConfirmation();
 						if (logger.IsInfoEnabled)
 						{
 							logger.Info("Manual Next Step");
@@ -58,7 +75,7 @@ public class ManualConfirmNode : CVCommonNodeHub
 				}
 				else
 				{
-					MessageBox.Show(_MessageText, "手动确认", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+					ShowConfirmation();
 					if (logger.IsInfoEnabled)
 					{
 						logger.Info("Manual Next Step");

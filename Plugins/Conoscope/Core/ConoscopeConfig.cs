@@ -13,24 +13,6 @@ namespace Conoscope.Core
 {
     public class ConoscopeConfig : ViewModelBase, IConfig
     {
-        [JsonIgnore]
-        public ConoscopeRenderingSettings Rendering { get; }
-
-        [JsonIgnore]
-        public ConoscopePreprocessSettings Preprocess { get; }
-
-        [JsonIgnore]
-        public ConoscopeColorDifferenceSettings ColorDifference { get; }
-
-        [JsonIgnore]
-        public ConoscopeContrastSettings Contrast { get; }
-
-        [JsonIgnore]
-        public ConoscopeCaptureSettings Capture { get; }
-
-        [JsonIgnore]
-        public ConoscopeExportSettings Export { get; }
-
         // CurrentModel 作为 Key，同时触发 ModelTypeChanged
         public ConoscopeModelType CurrentModel
         {
@@ -125,7 +107,7 @@ namespace Conoscope.Core
 
         [Display(Name = "Con_Cfg_KernelSize", GroupName = "Con_Category_Filter", Description = "均值、高斯、中值滤波使用的核大小，自动修正为奇数。", ResourceType = typeof(Properties.Resources))]
         public int FilterKernelSize { get => _FilterKernelSize; set { _FilterKernelSize = NormalizeOdd(value, 1, 101); OnPropertyChanged(); } }
-        private int _FilterKernelSize = 55;
+        private int _FilterKernelSize = 7;
 
         [Display(Name = "Con_Cfg_GaussianSigma", GroupName = "Con_Category_Filter", Description = "高斯滤波使用的标准差。", ResourceType = typeof(Properties.Resources))]
         public double FilterSigma { get => _FilterSigma; set { _FilterSigma = Math.Max(0.1, value); OnPropertyChanged(); } }
@@ -208,13 +190,23 @@ namespace Conoscope.Core
         }
         private ObservableCollection<ConoscopeNdCalibrationBinding> _NdCalibrationBindings = new();
 
-        [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
-        public ConoscopeAdvancedExportState AdvancedExport
+        public AdvancedExportSettings AdvancedExport
         {
             get => _AdvancedExport;
-            set { _AdvancedExport = value ?? new ConoscopeAdvancedExportState(); OnPropertyChanged(); }
+            set
+            {
+                AdvancedExportSettings replacement = value ?? new AdvancedExportSettings();
+                if (!replacement.HasExplicitDecimalPlaces)
+                {
+                    replacement.DecimalPlaces = _AdvancedExport.DecimalPlaces;
+                }
+
+                _AdvancedExport = replacement;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(ExportDecimalPlaces));
+            }
         }
-        private ConoscopeAdvancedExportState _AdvancedExport = new();
+        private AdvancedExportSettings _AdvancedExport = new();
 
         [Display(Name = "Con_Cfg_SampleInterval", GroupName = "Con_Category_Export", Description = "当前曲线 CSV 导出的默认采样间隔，范围 0.01 到 360 度。", ResourceType = typeof(Properties.Resources))]
         public double CurrentCurveExportStepDegrees
@@ -246,26 +238,19 @@ namespace Conoscope.Core
         [Display(Name = "Con_Cfg_Decimals", GroupName = "Con_Category_Export", Description = "CSV 导出时数据值默认保留的小数位数，范围 0 到 8，默认 4。", ResourceType = typeof(Properties.Resources))]
         public int ExportDecimalPlaces
         {
-            get => _ExportDecimalPlaces;
+            get => AdvancedExport.DecimalPlaces;
             set
             {
                 int normalized = Math.Max(0, Math.Min(value, 8));
-                if (_ExportDecimalPlaces == normalized) return;
-                _ExportDecimalPlaces = normalized;
+                if (AdvancedExport.DecimalPlaces == normalized) return;
+                AdvancedExport.DecimalPlaces = normalized;
                 OnPropertyChanged();
             }
         }
-        private int _ExportDecimalPlaces = 4;
 
 
         public ConoscopeConfig()
         {
-            Rendering = new ConoscopeRenderingSettings(this);
-            Preprocess = new ConoscopePreprocessSettings(this);
-            ColorDifference = new ConoscopeColorDifferenceSettings(this);
-            Contrast = new ConoscopeContrastSettings(this);
-            Capture = new ConoscopeCaptureSettings(this);
-            Export = new ConoscopeExportSettings(this);
             EnsureProfile(ConoscopeModelType.VA60);
             EnsureProfile(ConoscopeModelType.VA80);
         }
@@ -277,223 +262,10 @@ namespace Conoscope.Core
         }
     }
 
-    public sealed class ConoscopeRenderingSettings
-    {
-        private readonly ConoscopeConfig config;
-
-        internal ConoscopeRenderingSettings(ConoscopeConfig config)
-        {
-            this.config = config;
-        }
-
-        public ExportChannel DisplayChannel
-        {
-            get => config.DisplayChannel;
-            set => config.DisplayChannel = value;
-        }
-
-        public ColormapTypes PseudoColorMap
-        {
-            get => config.PseudoColorMap;
-            set => config.PseudoColorMap = value;
-        }
-
-        public bool UsePseudoColor
-        {
-            get => config.UsePseudoColor;
-            set => config.UsePseudoColor = value;
-        }
-
-        public bool UsePseudoColorRangeLimit
-        {
-            get => config.UsePseudoColorRangeLimit;
-            set => config.UsePseudoColorRangeLimit = value;
-        }
-    }
-
-    public sealed class ConoscopePreprocessSettings
-    {
-        private readonly ConoscopeConfig config;
-
-        internal ConoscopePreprocessSettings(ConoscopeConfig config)
-        {
-            this.config = config;
-        }
-
-        public bool ApplyFilterOnOpen
-        {
-            get => config.ApplyFilterOnOpen;
-            set => config.ApplyFilterOnOpen = value;
-        }
-
-        public bool ClampNonPositiveXyzOnLoad
-        {
-            get => config.ClampNonPositiveXyzOnLoad;
-            set => config.ClampNonPositiveXyzOnLoad = value;
-        }
-
-        public ImageFilterType FilterType
-        {
-            get => config.FilterType;
-            set => config.FilterType = value;
-        }
-
-        public int FilterKernelSize
-        {
-            get => config.FilterKernelSize;
-            set => config.FilterKernelSize = value;
-        }
-
-        public double FilterSigma
-        {
-            get => config.FilterSigma;
-            set => config.FilterSigma = value;
-        }
-
-        public int FilterD
-        {
-            get => config.FilterD;
-            set => config.FilterD = value;
-        }
-
-        public double FilterSigmaColor
-        {
-            get => config.FilterSigmaColor;
-            set => config.FilterSigmaColor = value;
-        }
-
-        public double FilterSigmaSpace
-        {
-            get => config.FilterSigmaSpace;
-            set => config.FilterSigmaSpace = value;
-        }
-
-        public bool DustRemovalEnabled
-        {
-            get => config.DustRemovalEnabled;
-            set => config.DustRemovalEnabled = value;
-        }
-
-        public DustRemovalMode DustRemovalMode
-        {
-            get => config.DustRemovalMode;
-            set => config.DustRemovalMode = value;
-        }
-
-        public double DustThresholdPercent
-        {
-            get => config.DustThresholdPercent;
-            set => config.DustThresholdPercent = value;
-        }
-
-        public int DustMinArea
-        {
-            get => config.DustMinArea;
-            set => config.DustMinArea = value;
-        }
-
-        public int DustMaxArea
-        {
-            get => config.DustMaxArea;
-            set => config.DustMaxArea = value;
-        }
-
-        public int DustRepairRadius
-        {
-            get => config.DustRepairRadius;
-            set => config.DustRepairRadius = value;
-        }
-    }
-
-    public sealed class ConoscopeColorDifferenceSettings
-    {
-        private readonly ConoscopeConfig config;
-
-        internal ConoscopeColorDifferenceSettings(ConoscopeConfig config)
-        {
-            this.config = config;
-        }
-
-        public ColorDifferenceReferenceMode ReferenceMode
-        {
-            get => config.ColorDifferenceReferenceMode;
-            set => config.ColorDifferenceReferenceMode = value;
-        }
-
-        public double CustomU
-        {
-            get => config.ColorDifferenceCustomU;
-            set => config.ColorDifferenceCustomU = value;
-        }
-
-        public double CustomV
-        {
-            get => config.ColorDifferenceCustomV;
-            set => config.ColorDifferenceCustomV = value;
-        }
-    }
-
-    public sealed class ConoscopeContrastSettings
-    {
-        private readonly ConoscopeConfig config;
-
-        internal ConoscopeContrastSettings(ConoscopeConfig config)
-        {
-            this.config = config;
-        }
-
-        public ContrastReferenceKind ReferenceKind
-        {
-            get => config.ContrastReferenceKind;
-            set => config.ContrastReferenceKind = value;
-        }
-    }
-
-    public sealed class ConoscopeCaptureSettings
-    {
-        private readonly ConoscopeConfig config;
-
-        internal ConoscopeCaptureSettings(ConoscopeConfig config)
-        {
-            this.config = config;
-        }
-
-        public ObservableCollection<ConoscopeNdCalibrationBinding> NdCalibrationBindings
-        {
-            get => config.NdCalibrationBindings;
-            set => config.NdCalibrationBindings = value;
-        }
-    }
-
-    public sealed class ConoscopeExportSettings
-    {
-        private readonly ConoscopeConfig config;
-
-        internal ConoscopeExportSettings(ConoscopeConfig config)
-        {
-            this.config = config;
-        }
-
-        public double CurrentCurveStepDegrees
-        {
-            get => config.CurrentCurveExportStepDegrees;
-            set => config.CurrentCurveExportStepDegrees = value;
-        }
-
-        public bool IncludeMetadata
-        {
-            get => config.CurrentCurveExportIncludeMetadata;
-            set => config.CurrentCurveExportIncludeMetadata = value;
-        }
-
-        public int DecimalPlaces
-        {
-            get => config.ExportDecimalPlaces;
-            set => config.ExportDecimalPlaces = value;
-        }
-    }
-
-    public sealed class ConoscopeAdvancedExportState
+    /// <summary>
+    /// 高级导出设置。该类型同时作为持久化模型和对话框编辑模型，避免两套状态来回映射。
+    /// </summary>
+    public sealed class AdvancedExportSettings
     {
         public string FilePrefix { get; set; } = "Conoscope_Export";
 
@@ -506,10 +278,45 @@ namespace Conoscope.Core
         public double RadialStep { get; set; } = 1;
         public double PolarStep { get; set; } = 1;
         public double CircumferentialStep { get; set; } = 1;
+
+        public int DecimalPlaces
+        {
+            get => _DecimalPlaces ?? 4;
+            set => _DecimalPlaces = Math.Max(0, Math.Min(value, 8));
+        }
+        private int? _DecimalPlaces;
+
+        [JsonIgnore]
+        internal bool HasExplicitDecimalPlaces => _DecimalPlaces.HasValue;
+
         public bool EnableCrossSection { get; set; }
-        public bool UseAzimuthCrossSection { get; set; } = true;
+
+        [JsonIgnore]
+        public CrossSectionType CrossSectionType { get; set; } = CrossSectionType.Azimuth;
+
+        /// <summary>
+        /// 保留旧配置字段名；实际状态由 <see cref="CrossSectionType"/> 表示。
+        /// </summary>
+        [JsonProperty]
+        public bool UseAzimuthCrossSection
+        {
+            get => CrossSectionType == CrossSectionType.Azimuth;
+            set => CrossSectionType = value ? CrossSectionType.Azimuth : CrossSectionType.Polar;
+        }
+
         public double CrossSectionAzimuthAngle { get; set; }
         public double CrossSectionPolarAngle { get; set; } = 45;
+
+        [JsonIgnore]
+        public double CrossSectionAngle => CrossSectionType == CrossSectionType.Azimuth
+            ? CrossSectionAzimuthAngle
+            : CrossSectionPolarAngle;
+    }
+
+    public enum CrossSectionType
+    {
+        Azimuth,
+        Polar
     }
 
     public class ConoscopeNdCalibrationBinding : ViewModelBase

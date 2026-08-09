@@ -51,6 +51,8 @@ namespace ColorVision.Copilot
 
         public string ActiveGoalText { get; init; } = string.Empty;
 
+        public CopilotWorkspaceReviewTargetContext? WorkspaceReviewTarget { get; init; }
+
         public CopilotProfileConfig Profile { get; init; } = null!;
 
         public IReadOnlyList<CopilotRequestMessage> History { get; init; } = Array.Empty<CopilotRequestMessage>();
@@ -64,6 +66,81 @@ namespace ColorVision.Copilot
         public IReadOnlyList<string> TrustedProjectRootPaths { get; init; } = Array.Empty<string>();
 
         public string ActiveDocumentPath { get; init; } = string.Empty;
+
+        public string ConfiguredDeveloperInstructions { get; init; } = string.Empty;
+
+        internal CopilotCodexWebSearchMode CodexWebSearchMode { get; init; } =
+            CopilotCodexWebSearchMode.Unspecified;
+
+        internal CopilotCodexSandboxMode CodexSandboxMode { get; init; } =
+            CopilotCodexSandboxMode.Unspecified;
+
+        internal bool CodexShellToolEnabled { get; init; } = true;
+
+        internal bool CodexHooksEnabled { get; init; } = true;
+
+        internal bool CodexPluginsEnabled { get; init; } = true;
+
+        internal bool CodexExtensionHooksEnabled => CodexHooksEnabled && CodexPluginsEnabled;
+
+        internal CopilotCodexShellEnvironmentPolicy CodexShellEnvironmentPolicy { get; init; } =
+            CopilotCodexShellEnvironmentPolicy.Default;
+
+        internal bool CodexExperimentalRequestUserInputEnabled { get; init; } = true;
+
+        internal bool CodexDefaultModeRequestUserInputEnabled { get; init; }
+
+        internal bool CodexUpdatePlanEnabled { get; init; } = true;
+
+        internal bool CodexIncludePermissionsInstructions { get; init; } = true;
+
+        internal bool CodexIncludeCollaborationModeInstructions { get; init; } = true;
+
+        internal bool CodexIncludeEnvironmentContext { get; init; } = true;
+
+        internal bool CodexIncludeSkillInstructions { get; init; } = true;
+
+        internal CopilotCodexApprovalPolicy CodexApprovalPolicy { get; init; } =
+            CopilotCodexApprovalPolicy.Unspecified;
+
+        internal CopilotCodexApprovalsReviewer CodexApprovalsReviewer { get; init; } =
+            CopilotCodexApprovalsReviewer.Unspecified;
+
+        internal bool CodexGuardianApprovalEnabled { get; init; } = true;
+
+        internal string CodexAutoReviewPolicy { get; init; } = string.Empty;
+
+        internal bool CodexAgentsEnabled { get; init; } = true;
+
+        internal bool CodexInterruptMessageEnabled { get; init; } = true;
+
+        internal int CodexMaximumConcurrentSubagentRuns { get; init; } =
+            CopilotSubagentCoordinator.DefaultMaximumConcurrentRuns;
+
+        internal string CodexDefaultSubagentModel { get; init; } = string.Empty;
+
+        internal CopilotCodexReasoningEffort CodexDefaultSubagentReasoningEffort { get; init; } =
+            CopilotCodexReasoningEffort.Unspecified;
+
+        internal IReadOnlyList<CopilotCodexCustomSubagentDefinition> CodexCustomSubagents { get; init; } =
+            Array.Empty<CopilotCodexCustomSubagentDefinition>();
+
+        internal int? ToolOutputTokenLimitOverride { get; init; }
+
+        internal CopilotCodexReasoningEffort CodexReasoningEffort { get; init; } =
+            CopilotCodexReasoningEffort.Unspecified;
+
+        internal CopilotCodexReasoningSummary CodexReasoningSummary { get; init; } =
+            CopilotCodexReasoningSummary.Unspecified;
+
+        internal bool? CodexModelSupportsReasoningSummaries { get; init; }
+
+        internal bool CodexFastModeEnabled { get; init; } = true;
+
+        internal string CodexServiceTier { get; init; } = string.Empty;
+
+        internal CopilotCodexModelVerbosity CodexModelVerbosity { get; init; } =
+            CopilotCodexModelVerbosity.Unspecified;
 
         public IReadOnlyList<CopilotProjectInstructionDocument> ProjectInstructions { get; init; } = Array.Empty<CopilotProjectInstructionDocument>();
 
@@ -93,6 +170,10 @@ namespace ColorVision.Copilot
 
         public IReadOnlyDictionary<string, CopilotAgentSkillOverrideState> SkillOverrides { get; init; } = new Dictionary<string, CopilotAgentSkillOverrideState>(StringComparer.OrdinalIgnoreCase);
 
+        public IReadOnlyDictionary<string, CopilotAgentSkillOverrideState> SkillPathOverrides { get; init; } = new Dictionary<string, CopilotAgentSkillOverrideState>(StringComparer.OrdinalIgnoreCase);
+
+        public CopilotAgentSkillReference? AgentSkillReference { get; init; }
+
         public IReadOnlyList<CopilotMcpClientServerConfig> ExternalMcpServers { get; init; } = Array.Empty<CopilotMcpClientServerConfig>();
 
         public bool ForceExternalMcpToolRefresh { get; init; }
@@ -116,9 +197,15 @@ namespace ColorVision.Copilot
     {
         public string RoleId { get; init; } = string.Empty;
 
+        public string AgentName { get; init; } = string.Empty;
+
         public string RunId { get; init; } = string.Empty;
 
         public string ResumeFromRunId { get; init; } = string.Empty;
+
+        public string Model { get; init; } = string.Empty;
+
+        public string ReasoningEffort { get; init; } = string.Empty;
 
         public int RequestTokenBudget { get; init; }
 
@@ -227,7 +314,21 @@ namespace ColorVision.Copilot
         public bool ObservationCanRepeat { get; init; }
 
         public string ObservationProgressSignature { get; init; } = string.Empty;
+
+        internal CopilotWorkspaceMutationSnapshot? WorkspaceMutation { get; init; }
+
+        internal bool SuppressModelOutput { get; init; }
     }
+
+    internal sealed record CopilotWorkspaceMutationFileSnapshot(
+        string FullPath,
+        bool BeforeExists,
+        string BeforeText,
+        bool AfterExists,
+        string AfterText);
+
+    internal sealed record CopilotWorkspaceMutationSnapshot(
+        IReadOnlyList<CopilotWorkspaceMutationFileSnapshot> Files);
 
     public sealed class CopilotLocalFileReadScope
     {
@@ -259,6 +360,8 @@ namespace ColorVision.Copilot
         public DateTimeOffset ExpiresAtUtc { get; init; }
 
         public bool ExecuteOnApproval { get; init; }
+
+        public bool ResumesAgentOnApproval { get; init; }
     }
 
     public sealed class CopilotToolCall
@@ -330,6 +433,8 @@ namespace ColorVision.Copilot
         public CopilotToolObservation Observation { get; init; } = new();
 
         public CopilotToolExecutionInfo Execution { get; init; } = new();
+
+        internal bool SuppressModelOutput { get; init; }
     }
 
     public enum CopilotToolExecutionState

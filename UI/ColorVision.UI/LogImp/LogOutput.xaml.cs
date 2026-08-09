@@ -15,12 +15,17 @@ namespace ColorVision.UI.LogImp
         private string? Pattern;
         private bool _isAppenderAttached;
         private bool _isDisposed;
-        private bool _autoRefresh = true;
+        private readonly LogViewConfig _viewConfig;
         private LogTextViewController? _logTextView;
 
-        public LogOutput(string? pattern = null)
+        public LogOutput(string? pattern = null) : this(pattern, new RealtimeLogViewConfig())
+        {
+        }
+
+        public LogOutput(string? pattern, LogViewConfig viewConfig)
         {
             Pattern = pattern ?? LogConstants.DefaultLogPattern;
+            _viewConfig = viewConfig ?? throw new ArgumentNullException(nameof(viewConfig));
             InitializeComponent();
             Loaded += LogOutput_Loaded;
             Unloaded += LogOutput_Unloaded;
@@ -46,9 +51,9 @@ namespace ColorVision.UI.LogImp
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             Hierarchy = (Hierarchy)LogManager.GetRepository();
-            this.DataContext = LogConfig.Instance;
+            this.DataContext = _viewConfig;
             _logTextView = new LogTextViewController(this, RootGrid, SearchPanel, SearchBar1, LogViewer, CloseSearchButton);
-            _logTextView.ConfigureContextMenus(contextMenu => LogTextViewMenuFactory.AppendRealtimeLogMenuItems(contextMenu, ClearLog, SetLogLevel, GetAutoRefresh, SetAutoRefresh));
+            _logTextView.ConfigureContextMenus(contextMenu => LogTextViewMenuFactory.AppendRealtimeLogMenuItems(contextMenu, _viewConfig, ClearLog, SetLogLevel, GetAutoRefresh, SetAutoRefresh));
 
             AttachAppender();
         }
@@ -70,11 +75,9 @@ namespace ColorVision.UI.LogImp
                 return;
             }
 
-            LogViewerAppender = new LogViewerAppender(LogViewer)
+            LogViewerAppender = new LogViewerAppender(LogViewer, _viewConfig)
             {
                 Layout = new PatternLayout(Pattern),
-                IgnoreAutoRefresh = true,
-                AutoRefresh = _autoRefresh
             };
             Hierarchy.Root.AddAppender(LogViewerAppender);
             log4net.Config.BasicConfigurator.Configure(Hierarchy);
@@ -111,16 +114,12 @@ namespace ColorVision.UI.LogImp
 
         private bool GetAutoRefresh()
         {
-            return LogViewerAppender?.AutoRefresh ?? _autoRefresh;
+            return _viewConfig.AutoRefresh;
         }
 
         private void SetAutoRefresh(bool autoRefresh)
         {
-            _autoRefresh = autoRefresh;
-            if (LogViewerAppender != null)
-            {
-                LogViewerAppender.AutoRefresh = autoRefresh;
-            }
+            _viewConfig.AutoRefresh = autoRefresh;
         }
 
         private void SearchBar1_TextChanged(object sender, TextChangedEventArgs e)

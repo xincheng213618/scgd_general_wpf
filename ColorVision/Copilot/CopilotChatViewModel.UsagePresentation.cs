@@ -77,7 +77,8 @@ namespace ColorVision.Copilot
 
         private void RefreshConversationContextState()
         {
-            var limits = ResolveConversationHistoryLimits(SelectedProfile);
+            var codexConfigOptions = _currentCodexConfigOptions;
+            var limits = ResolveConversationHistoryLimits(SelectedProfile, codexConfigOptions);
             var selection = CopilotConversationRequestBuilder.CaptureHistorySelection(
                 SelectedConversation,
                 limits);
@@ -95,7 +96,11 @@ namespace ColorVision.Copilot
                 usage,
                 _config.AgentDefaults.AutoCompactConversationHistory,
                 _config.AgentDefaults.AutoCompactThresholdPercent,
-                _config.AgentDefaults.AutoCompactInstructions.Length);
+                _config.AgentDefaults.AutoCompactInstructions.Length,
+                codexConfigOptions.HasModelAutoCompactTokenLimitOverride
+                    ? codexConfigOptions.ConfiguredModelAutoCompactTokenLimit
+                    : null,
+                codexConfigOptions.EffectiveModelAutoCompactTokenLimitScope);
             ConversationContextUsageLabel = presentation.Label;
             ConversationContextUsageToolTip = presentation.ToolTip;
             IsConversationContextUnderPressure = presentation.IsUnderPressure;
@@ -203,13 +208,14 @@ namespace ColorVision.Copilot
             if (goal?.IsStructurallyValid() != true)
                 return "None";
 
-            var state = goal.State switch
-            {
-                CopilotConversationGoalState.Active => "Active",
-                CopilotConversationGoalState.Achieved => "Achieved",
-                _ => "Paused",
-            };
-            return $"{state}, {goal.Objective.Length:N0} characters, {goal.TurnCount:N0} turn(s), {goal.TokensUsed:N0} tokens"
+            var state = CopilotConversationGoalStateText.FormatEnglish(goal.State);
+            if (SelectedConversation?.IsGoalContinuationDeferred == true)
+                state += " (deferred until explicit Agent turn)";
+            var tokenProgress = goal.HasTokenBudget
+                ? $"{goal.TokensUsed:N0} / {goal.TokenBudget:N0} tokens"
+                : $"{goal.TokensUsed:N0} tokens";
+            var elapsed = CopilotConversationGoalUsageText.FormatElapsedEnglish(goal.TimeUsedSeconds);
+            return $"{state}, {goal.Objective.Length:N0} characters, {goal.TurnCount:N0} turn(s), {tokenProgress}, {elapsed} elapsed"
                 + (goal.IsActive ? " (completion constraint only)" : string.Empty);
         }
 

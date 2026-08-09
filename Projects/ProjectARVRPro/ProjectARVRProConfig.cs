@@ -14,6 +14,11 @@ using System.Windows;
 
 namespace ProjectARVRPro
 {
+    public sealed class ProjectARVRProLogConfig : RealtimeLogViewConfig, IConfig
+    {
+        public static ProjectARVRProLogConfig Instance => ConfigService.Instance.GetRequiredService<ProjectARVRProLogConfig>();
+    }
+
     public class ProjectARVRProConfig: ViewModelBase, IConfig
     {
         public static ProjectARVRProConfig Instance => ConfigService.Instance.GetRequiredService<ProjectARVRProConfig>();

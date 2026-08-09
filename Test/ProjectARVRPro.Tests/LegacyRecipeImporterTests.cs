@@ -1,4 +1,5 @@
 using Newtonsoft.Json.Linq;
+using ProjectARVRPro;
 using ProjectARVRPro.Process.Black;
 using ProjectARVRPro.Recipe;
 using Xunit;
@@ -72,6 +73,44 @@ public sealed class LegacyRecipeImporterTests
 
         Assert.False(success);
         Assert.Contains("Configs", errorMessage);
+    }
+
+    [Fact]
+    public void ImportsEveryCurrentRecipeTypeFromTheLegacyWireFormat()
+    {
+        Type[] recipeTypes = typeof(IRecipeConfig).Assembly.GetTypes()
+            .Where(type => typeof(IRecipeConfig).IsAssignableFrom(type) && !type.IsInterface && !type.IsAbstract)
+            .OrderBy(type => type.FullName, StringComparer.Ordinal)
+            .ToArray();
+        (string TypeName, JObject Value)[] entries = recipeTypes.Select(type =>
+        {
+            var value = JObject.FromObject(Activator.CreateInstance(type)!);
+            value["$type"] = $"{type.FullName}, ProjectARVRPro";
+            return (type.FullName!, value);
+        }).ToArray();
+
+        bool success = LegacyRecipeImporter.TryParse(CreateLegacyRecipeJson(entries), out var result, out string errorMessage);
+
+        Assert.True(success, errorMessage);
+        Assert.Equal(recipeTypes.Length, result.SourceCount);
+        Assert.Empty(result.UnsupportedTypeNames);
+        foreach (Type recipeType in recipeTypes)
+            Assert.IsType(recipeType, result.SharedConfigs[recipeType]);
+    }
+
+    [Fact]
+    public void RejectsAnEmptyKnownRecipeInsteadOfResettingProcessesToDefaults()
+    {
+        string typeName = typeof(BlackRecipeConfig).FullName!;
+        string json = CreateLegacyRecipeJson((typeName, new JObject
+        {
+            ["$type"] = $"{typeName}, ProjectARVRPro"
+        }));
+
+        bool success = LegacyRecipeImporter.TryParse(json, out _, out string errorMessage);
+
+        Assert.False(success);
+        Assert.Contains("配置内容为空", errorMessage);
     }
 
     private static string CreateLegacyRecipeJson(params (string TypeName, JObject Value)[] entries)

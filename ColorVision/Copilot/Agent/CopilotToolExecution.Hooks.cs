@@ -13,11 +13,17 @@ namespace ColorVision.Copilot
             CopilotToolExecutionHookContext context,
             IReadOnlyList<CopilotToolExecutionHookBinding> hooks,
             List<CopilotToolExecutionHookRun> hookRuns,
+            CopilotToolExecutionHookEventPublisher hookEvents,
             CancellationToken cancellationToken)
         {
             var phaseStopwatch = Stopwatch.StartNew();
             foreach (var binding in hooks)
             {
+                BeginHookRun(
+                    hookRuns,
+                    hookEvents,
+                    binding.SourceId,
+                    CopilotToolExecutionHookPhase.BeforeExecute);
                 var remaining = _hookPhaseTimeout - phaseStopwatch.Elapsed;
                 if (remaining <= TimeSpan.Zero)
                 {
@@ -27,7 +33,8 @@ namespace ColorVision.Copilot
                         CopilotToolExecutionHookPhase.BeforeExecute,
                         CopilotToolExecutionHookState.Skipped,
                         0,
-                        "tool_hook_phase_timeout");
+                        "tool_hook_phase_timeout",
+                        hookEvents);
                     return CreateBeforeHookTimeoutDecision();
                 }
 
@@ -48,7 +55,8 @@ namespace ColorVision.Copilot
                             hookStopwatch.ElapsedMilliseconds,
                             string.IsNullOrWhiteSpace(decision.FailureCode)
                                 ? "tool_hook_denied"
-                                : decision.FailureCode);
+                                : decision.FailureCode,
+                            hookEvents);
                         return decision;
                     }
                     RecordHookRun(
@@ -56,7 +64,8 @@ namespace ColorVision.Copilot
                         binding.SourceId,
                         CopilotToolExecutionHookPhase.BeforeExecute,
                         CopilotToolExecutionHookState.Completed,
-                        hookStopwatch.ElapsedMilliseconds);
+                        hookStopwatch.ElapsedMilliseconds,
+                        hookEvents: hookEvents);
                 }
                 catch (TimeoutException)
                 {
@@ -68,7 +77,8 @@ namespace ColorVision.Copilot
                         CopilotToolExecutionHookPhase.BeforeExecute,
                         CopilotToolExecutionHookState.TimedOut,
                         hookStopwatch.ElapsedMilliseconds,
-                        "tool_hook_timeout");
+                        "tool_hook_timeout",
+                        hookEvents);
                     return CreateBeforeHookTimeoutDecision();
                 }
                 catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
@@ -81,7 +91,8 @@ namespace ColorVision.Copilot
                         CopilotToolExecutionHookPhase.BeforeExecute,
                         CopilotToolExecutionHookState.Cancelled,
                         hookStopwatch.ElapsedMilliseconds,
-                        "tool_hook_cancelled");
+                        "tool_hook_cancelled",
+                        hookEvents);
                     Log.Warn(
                         $"Copilot pre-tool hook cancelled itself. Tool={context.Invocation.Tool.Name} CallId={context.Invocation.CallId} HookSource={binding.SourceId} Hook={binding.Hook.GetType().FullName}");
                     return CopilotToolExecutionHookDecision.Deny(
@@ -99,10 +110,11 @@ namespace ColorVision.Copilot
                         CopilotToolExecutionHookPhase.BeforeExecute,
                         CopilotToolExecutionHookState.Cancelled,
                         hookStopwatch.ElapsedMilliseconds,
-                        "tool_execution_cancelled");
+                        "tool_execution_cancelled",
+                        hookEvents);
                     throw;
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (ex is not CopilotToolExecutionHookEventDispatchException)
                 {
                     RecordHookRun(
                         hookRuns,
@@ -110,7 +122,8 @@ namespace ColorVision.Copilot
                         CopilotToolExecutionHookPhase.BeforeExecute,
                         CopilotToolExecutionHookState.Failed,
                         hookStopwatch.ElapsedMilliseconds,
-                        "tool_hook_failed");
+                        "tool_hook_failed",
+                        hookEvents);
                     Log.Warn(
                         $"Copilot pre-tool hook failed. Tool={context.Invocation.Tool.Name} CallId={context.Invocation.CallId} HookSource={binding.SourceId} Hook={binding.Hook.GetType().FullName} ErrorType={ex.GetType().FullName}");
                     return CopilotToolExecutionHookDecision.Deny(
@@ -134,9 +147,25 @@ namespace ColorVision.Copilot
             Action<CopilotAgentEvent> onEvent)
         {
             outcome.HookRuns = hookRuns;
+            var hookEvents = new CopilotToolExecutionHookEventPublisher(
+                onEvent,
+                () => CreateExecutionInfo(
+                    outcome.Invocation,
+                    CopilotToolExecutionState.Running,
+                    outcome.Execution.StartedAtUtc,
+                    completedAt: null,
+                    outcome.Execution.DurationMs,
+                    TimeSpan.FromMilliseconds(outcome.Execution.TimeoutMs),
+                    outcome.Execution.ApprovalActionId,
+                    queueDurationMs: outcome.Execution.QueueDurationMs));
             var phaseStopwatch = Stopwatch.StartNew();
             foreach (var binding in hooks)
             {
+                BeginHookRun(
+                    hookRuns,
+                    hookEvents,
+                    binding.SourceId,
+                    CopilotToolExecutionHookPhase.AfterExecute);
                 var remaining = _hookPhaseTimeout - phaseStopwatch.Elapsed;
                 if (remaining <= TimeSpan.Zero)
                 {
@@ -146,7 +175,8 @@ namespace ColorVision.Copilot
                         CopilotToolExecutionHookPhase.AfterExecute,
                         CopilotToolExecutionHookState.Skipped,
                         0,
-                        "tool_hook_phase_timeout");
+                        "tool_hook_phase_timeout",
+                        hookEvents);
                     Log.Warn($"Copilot post-tool hook phase timed out. Tool={outcome.Invocation.Tool.Name} CallId={outcome.Execution.CallId} HookSource={binding.SourceId}");
                     break;
                 }
@@ -163,7 +193,8 @@ namespace ColorVision.Copilot
                         binding.SourceId,
                         CopilotToolExecutionHookPhase.AfterExecute,
                         CopilotToolExecutionHookState.Completed,
-                        hookStopwatch.ElapsedMilliseconds);
+                        hookStopwatch.ElapsedMilliseconds,
+                        hookEvents: hookEvents);
                 }
                 catch (TimeoutException)
                 {
@@ -175,7 +206,8 @@ namespace ColorVision.Copilot
                         CopilotToolExecutionHookPhase.AfterExecute,
                         CopilotToolExecutionHookState.TimedOut,
                         hookStopwatch.ElapsedMilliseconds,
-                        "tool_hook_timeout");
+                        "tool_hook_timeout",
+                        hookEvents);
                     Log.Warn($"Copilot post-tool hook phase timed out. Tool={outcome.Invocation.Tool.Name} CallId={outcome.Execution.CallId} HookSource={binding.SourceId} Hook={binding.Hook.GetType().FullName}");
                     break;
                 }
@@ -187,7 +219,8 @@ namespace ColorVision.Copilot
                         CopilotToolExecutionHookPhase.AfterExecute,
                         CopilotToolExecutionHookState.Cancelled,
                         hookStopwatch.ElapsedMilliseconds,
-                        "tool_hook_cancelled");
+                        "tool_hook_cancelled",
+                        hookEvents);
                     Log.Warn($"Copilot post-tool hook cancelled itself. Tool={outcome.Invocation.Tool.Name} CallId={outcome.Execution.CallId} HookSource={binding.SourceId} Hook={binding.Hook.GetType().FullName}");
                 }
                 catch (CopilotToolExecutionHookSkippedException ex)
@@ -198,10 +231,11 @@ namespace ColorVision.Copilot
                         CopilotToolExecutionHookPhase.AfterExecute,
                         CopilotToolExecutionHookState.Skipped,
                         hookStopwatch.ElapsedMilliseconds,
-                        ex.FailureCode);
+                        ex.FailureCode,
+                        hookEvents);
                     Log.Info($"Copilot post-tool hook was skipped. Tool={outcome.Invocation.Tool.Name} CallId={outcome.Execution.CallId} HookSource={binding.SourceId} Hook={binding.Hook.GetType().FullName} FailureCode={ex.FailureCode}");
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (ex is not CopilotToolExecutionHookEventDispatchException)
                 {
                     RecordHookRun(
                         hookRuns,
@@ -209,7 +243,8 @@ namespace ColorVision.Copilot
                         CopilotToolExecutionHookPhase.AfterExecute,
                         CopilotToolExecutionHookState.Failed,
                         hookStopwatch.ElapsedMilliseconds,
-                        "tool_hook_failed");
+                        "tool_hook_failed",
+                        hookEvents);
                     Log.Warn($"Copilot post-tool hook failed. Tool={outcome.Invocation.Tool.Name} CallId={outcome.Execution.CallId} HookSource={binding.SourceId} Hook={binding.Hook.GetType().FullName} ErrorType={ex.GetType().FullName}");
                 }
                 finally
@@ -224,23 +259,85 @@ namespace ColorVision.Copilot
             return outcome;
         }
 
+        private static void BeginHookRun(
+            List<CopilotToolExecutionHookRun> hookRuns,
+            CopilotToolExecutionHookEventPublisher hookEvents,
+            string sourceId,
+            CopilotToolExecutionHookPhase phase)
+        {
+            if (hookRuns.Count < MaxRecordedHookRuns)
+                hookEvents.Started(sourceId, phase);
+        }
+
         private static void RecordHookRun(
             List<CopilotToolExecutionHookRun> hookRuns,
             string sourceId,
             CopilotToolExecutionHookPhase phase,
             CopilotToolExecutionHookState state,
             long durationMs,
-            string failureCode = "")
+            string failureCode = "",
+            CopilotToolExecutionHookEventPublisher? hookEvents = null)
         {
             if (hookRuns.Count >= MaxRecordedHookRuns)
                 return;
 
-            hookRuns.Add(CopilotToolExecutionHookRun.Create(
+            var hookRun = CopilotToolExecutionHookRun.Create(
                 sourceId,
                 phase,
                 state,
                 durationMs,
-                failureCode));
+                failureCode);
+            hookRuns.Add(hookRun);
+            hookEvents?.Completed(hookRun);
+        }
+
+        private sealed class CopilotToolExecutionHookEventPublisher
+        {
+            private readonly Action<CopilotAgentEvent>? _onEvent;
+            private readonly Func<CopilotToolExecutionInfo> _executionFactory;
+
+            public CopilotToolExecutionHookEventPublisher(
+                Action<CopilotAgentEvent>? onEvent,
+                Func<CopilotToolExecutionInfo> executionFactory)
+            {
+                _onEvent = onEvent;
+                _executionFactory = executionFactory ?? throw new ArgumentNullException(nameof(executionFactory));
+            }
+
+            public void Started(string sourceId, CopilotToolExecutionHookPhase phase)
+            {
+                if (_onEvent != null)
+                    Publish(CopilotAgentEvent.HookStarted(_executionFactory(), sourceId, phase));
+            }
+
+            public void Completed(CopilotToolExecutionHookRun hookRun)
+            {
+                if (_onEvent != null)
+                    Publish(CopilotAgentEvent.HookCompleted(_executionFactory(), hookRun));
+            }
+
+            private void Publish(CopilotAgentEvent agentEvent)
+            {
+                if (_onEvent == null)
+                    return;
+
+                try
+                {
+                    _onEvent(agentEvent);
+                }
+                catch (Exception ex)
+                {
+                    throw new CopilotToolExecutionHookEventDispatchException(ex);
+                }
+            }
+        }
+
+        private sealed class CopilotToolExecutionHookEventDispatchException : Exception
+        {
+            public CopilotToolExecutionHookEventDispatchException(Exception innerException)
+                : base("A Copilot tool hook lifecycle event could not be published.", innerException)
+            {
+            }
         }
 
         private static CopilotToolPermissionRequestOutcome CreatePermissionRequestOutcome(

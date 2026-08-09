@@ -157,7 +157,7 @@ namespace ColorVision
             layoutManager.RegisterPanel("ProjectPanel", ProjectPanelGrid, Properties.Resources.SolutionExplorer, PanelPosition.Left);
             layoutManager.RegisterPanel("AcquirePanel", StackPanelSPD.Parent, Properties.Resources.DeviceControl, PanelPosition.Left);
 
-            var logOutput = new LogOutput("%date{HH:mm:ss} [%thread] %-5level %message%newline");
+            var logOutput = new LogOutput("%date{HH:mm:ss} [%thread] %-5level %message%newline", LogPanelConfig.Instance);
             layoutManager.RegisterPanel("LogPanel", logOutput, Properties.Resources.Log, PanelPosition.Bottom);
             WorkspaceManager.LayoutManager = layoutManager;
 

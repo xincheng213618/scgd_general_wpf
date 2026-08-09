@@ -1,6 +1,6 @@
+using ColorVision.Engine.Services.POI;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw.Special;
-using cvColorVision;
 using System;
 using System.Windows;
 using System.Windows.Input;
@@ -21,9 +21,7 @@ namespace ColorVision.Engine.Media
     {
         private readonly EditorContext _context;
         private readonly ImageMouseInfoProvider _mouseInfoProvider;
-        private readonly Func<IntPtr> _getConvertHandle;
-        private readonly Action _ensureBufferLoaded;
-        private readonly Func<float[]?> _getExp;
+        private readonly Func<PoiMeasurementPoint, (int Channels, PoiMeasurementResult Result)> _calculatePoi;
         private readonly Func<bool> _showDateFilePath;
         private readonly Func<int, int, (int pointIndex, int listIndex)> _findNearbyPoints;
         private readonly Func<CvcieMouseProbeOptions> _getOptions;
@@ -33,18 +31,14 @@ namespace ColorVision.Engine.Media
 
         public CvcieMouseMagnifierManager(
             EditorContext editorContext,
-            Func<IntPtr> getConvertHandle,
-            Action ensureBufferLoaded,
-            Func<float[]?> getExp,
+            Func<PoiMeasurementPoint, (int Channels, PoiMeasurementResult Result)> calculatePoi,
             Func<bool> showDateFilePath,
             Func<int, int, (int pointIndex, int listIndex)> findNearbyPoints,
             Func<CvcieMouseProbeOptions> getOptions)
         {
             _context = editorContext;
             _mouseInfoProvider = editorContext.MouseInfoProvider;
-            _getConvertHandle = getConvertHandle;
-            _ensureBufferLoaded = ensureBufferLoaded;
-            _getExp = getExp;
+            _calculatePoi = calculatePoi;
             _showDateFilePath = showDateFilePath;
             _findNearbyPoints = findNearbyPoints;
             _getOptions = getOptions;
@@ -102,56 +96,45 @@ namespace ColorVision.Engine.Media
 
         private bool TryRenderOverlay(ImagePixelSample pixelSample)
         {
-            float[]? exp = _getExp();
-            if (exp == null || exp.Length == 0)
-            {
-                return false;
-            }
-
-            _ensureBufferLoaded();
-
             CvcieMouseProbeOptions options = _getOptions();
             double radius = Math.Max(1, options.Radius);
             int rectWidth = Math.Max(1, options.RectWidth);
             int rectHeight = Math.Max(1, options.RectHeight);
-
-            float dXVal = 0;
-            float dYVal = 0;
-            float dZVal = 0;
-            float dx = 0;
-            float dy = 0;
-            float du = 0;
-            float dv = 0;
-
-            switch (options.MagnigifierType)
+            PoiMeasurementPoint point = options.MagnigifierType switch
             {
-                case MagnigifierType.Circle:
-                    if (exp.Length == 1)
-                    {
-                        _ = ConvertXYZ.CM_GetYCircle(_getConvertHandle(), pixelSample.PixelX, pixelSample.PixelY, ref dYVal, radius);
-                        DrawProbeOverlay(pixelSample, $"Y:{dYVal:F4}", string.Empty, options.MagnigifierType, radius, rectWidth, rectHeight);
-                    }
-                    else
-                    {
-                        _ = ConvertXYZ.CM_GetXYZxyuvCircle(_getConvertHandle(), pixelSample.PixelX, pixelSample.PixelY, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, radius);
-                        DrawProbeOverlay(pixelSample, BuildPrimaryText(pixelSample, dXVal, dYVal, dZVal), $"x:{dx:F4},y:{dy:F4},u:{du:F2},v:{dv:F2}", options.MagnigifierType, radius, rectWidth, rectHeight);
-                    }
-                    return true;
-                case MagnigifierType.Rect:
-                    if (exp.Length == 1)
-                    {
-                        _ = ConvertXYZ.CM_GetYRect(_getConvertHandle(), pixelSample.PixelX, pixelSample.PixelY, ref dYVal, rectWidth, rectHeight);
-                        DrawProbeOverlay(pixelSample, $"Y:{dYVal:F4}", string.Empty, options.MagnigifierType, radius, rectWidth, rectHeight);
-                    }
-                    else
-                    {
-                        _ = ConvertXYZ.CM_GetXYZxyuvRect(_getConvertHandle(), pixelSample.PixelX, pixelSample.PixelY, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, rectWidth, rectHeight);
-                        DrawProbeOverlay(pixelSample, BuildPrimaryText(pixelSample, dXVal, dYVal, dZVal), $"x:{dx:F4},y:{dy:F4},u:{du:F2},v:{dv:F2}", options.MagnigifierType, radius, rectWidth, rectHeight);
-                    }
-                    return true;
-                default:
-                    return false;
+                MagnigifierType.Circle => new PoiMeasurementPoint(
+                    pixelSample.PixelX,
+                    pixelSample.PixelY,
+                    Math.Max(1, checked((int)Math.Round(radius * 2, MidpointRounding.AwayFromZero))),
+                    Math.Max(1, checked((int)Math.Round(radius * 2, MidpointRounding.AwayFromZero))),
+                    PoiMeasurementShape.Circle),
+                MagnigifierType.Rect => new PoiMeasurementPoint(
+                    pixelSample.PixelX,
+                    pixelSample.PixelY,
+                    rectWidth,
+                    rectHeight,
+                    PoiMeasurementShape.Rect),
+                _ => default
+            };
+            if (point.Width <= 0) return false;
+
+            (int channels, PoiMeasurementResult measurement) = _calculatePoi(point);
+            if (channels == 1)
+            {
+                DrawProbeOverlay(pixelSample, $"Y:{measurement.Y:F4}", string.Empty, options.MagnigifierType, radius, rectWidth, rectHeight);
             }
+            else
+            {
+                DrawProbeOverlay(
+                    pixelSample,
+                    BuildPrimaryText(pixelSample, measurement.X, measurement.Y, measurement.Z),
+                    $"x:{measurement.ChromaX:F4},y:{measurement.ChromaY:F4},u:{measurement.U:F2},v:{measurement.V:F2}",
+                    options.MagnigifierType,
+                    radius,
+                    rectWidth,
+                    rectHeight);
+            }
+            return true;
         }
 
         private void DrawProbeOverlay(ImagePixelSample pixelSample, string text1, string text2, MagnigifierType magnigifierType, double radius, double rectWidth, double rectHeight)

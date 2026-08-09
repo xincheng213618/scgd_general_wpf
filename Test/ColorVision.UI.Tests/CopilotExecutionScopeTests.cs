@@ -195,6 +195,26 @@ public sealed class CopilotExecutionScopeTests
             },
             SearchRootPaths = [@"C:\ColorVision\Scope"],
             TrustedProjectRootPaths = [@"C:\ColorVision\Scope"],
+            ConfiguredDeveloperInstructions = "Keep configured guidance.",
+            CodexWebSearchMode = CopilotCodexWebSearchMode.Cached,
+            CodexExperimentalRequestUserInputEnabled = false,
+            CodexDefaultModeRequestUserInputEnabled = true,
+            CodexUpdatePlanEnabled = false,
+            CodexIncludePermissionsInstructions = false,
+            CodexIncludeCollaborationModeInstructions = false,
+            CodexIncludeSkillInstructions = false,
+            CodexShellEnvironmentPolicy = new CopilotCodexShellEnvironmentPolicy
+            {
+                Inherit = CopilotCodexShellEnvironmentInherit.None,
+                Set = new Dictionary<string, string> { ["CV_CHILD_ENV"] = "frozen" },
+            },
+            ToolOutputTokenLimitOverride = 12_000,
+            CodexReasoningEffort = CopilotCodexReasoningEffort.XHigh,
+            CodexReasoningSummary = CopilotCodexReasoningSummary.Concise,
+            CodexModelSupportsReasoningSummaries = false,
+            CodexFastModeEnabled = false,
+            CodexServiceTier = "fast",
+            CodexModelVerbosity = CopilotCodexModelVerbosity.High,
             Mode = CopilotAgentMode.Code,
         };
         var parentScope = CopilotExecutionScope.ForAgentRequest(
@@ -219,6 +239,24 @@ public sealed class CopilotExecutionScopeTests
 
         AssertDerivedRunScope(parentScope, childScope);
         Assert.Same(childScope, CopilotExecutionScope.ForAgentRun(childRequest));
+        Assert.Equal(parentRequest.ConfiguredDeveloperInstructions, childRequest.ConfiguredDeveloperInstructions);
+        Assert.Equal(parentRequest.CodexWebSearchMode, childRequest.CodexWebSearchMode);
+        Assert.Equal(parentRequest.CodexExperimentalRequestUserInputEnabled, childRequest.CodexExperimentalRequestUserInputEnabled);
+        Assert.Equal(parentRequest.CodexDefaultModeRequestUserInputEnabled, childRequest.CodexDefaultModeRequestUserInputEnabled);
+        Assert.Equal(parentRequest.CodexUpdatePlanEnabled, childRequest.CodexUpdatePlanEnabled);
+        Assert.Equal(parentRequest.CodexIncludePermissionsInstructions, childRequest.CodexIncludePermissionsInstructions);
+        Assert.Equal(parentRequest.CodexIncludeCollaborationModeInstructions, childRequest.CodexIncludeCollaborationModeInstructions);
+        Assert.Equal(parentRequest.CodexIncludeSkillInstructions, childRequest.CodexIncludeSkillInstructions);
+        Assert.Equal(parentRequest.CodexShellEnvironmentPolicy.Inherit, childRequest.CodexShellEnvironmentPolicy.Inherit);
+        Assert.Equal("frozen", childRequest.CodexShellEnvironmentPolicy.Set["CV_CHILD_ENV"]);
+        Assert.NotSame(parentRequest.CodexShellEnvironmentPolicy, childRequest.CodexShellEnvironmentPolicy);
+        Assert.Equal(parentRequest.ToolOutputTokenLimitOverride, childRequest.ToolOutputTokenLimitOverride);
+        Assert.Equal(parentRequest.CodexReasoningEffort, childRequest.CodexReasoningEffort);
+        Assert.Equal(parentRequest.CodexReasoningSummary, childRequest.CodexReasoningSummary);
+        Assert.Equal(parentRequest.CodexModelSupportsReasoningSummaries, childRequest.CodexModelSupportsReasoningSummaries);
+        Assert.False(childRequest.CodexFastModeEnabled);
+        Assert.Equal(string.Empty, childRequest.CodexServiceTier);
+        Assert.Equal(parentRequest.CodexModelVerbosity, childRequest.CodexModelVerbosity);
 
         var finalizationRequest = Assert.IsType<CopilotAgentRequest>(
             CopilotSubagentRunner.CreateBudgetFinalizationRequest(
@@ -256,6 +294,41 @@ public sealed class CopilotExecutionScopeTests
 
         AssertDerivedRunScope(childScope, finalizationScope);
         Assert.Same(finalizationScope, CopilotExecutionScope.ForAgentRun(finalizationRequest));
+        Assert.Equal(childRequest.ConfiguredDeveloperInstructions, finalizationRequest.ConfiguredDeveloperInstructions);
+        Assert.Equal(childRequest.CodexWebSearchMode, finalizationRequest.CodexWebSearchMode);
+        Assert.Equal(childRequest.CodexExperimentalRequestUserInputEnabled, finalizationRequest.CodexExperimentalRequestUserInputEnabled);
+        Assert.Equal(childRequest.CodexDefaultModeRequestUserInputEnabled, finalizationRequest.CodexDefaultModeRequestUserInputEnabled);
+        Assert.Equal(childRequest.CodexUpdatePlanEnabled, finalizationRequest.CodexUpdatePlanEnabled);
+        Assert.Equal(childRequest.CodexIncludePermissionsInstructions, finalizationRequest.CodexIncludePermissionsInstructions);
+        Assert.Equal(childRequest.CodexIncludeCollaborationModeInstructions, finalizationRequest.CodexIncludeCollaborationModeInstructions);
+        Assert.Equal(childRequest.CodexIncludeSkillInstructions, finalizationRequest.CodexIncludeSkillInstructions);
+        Assert.Equal(childRequest.CodexShellEnvironmentPolicy.Inherit, finalizationRequest.CodexShellEnvironmentPolicy.Inherit);
+        Assert.Equal("frozen", finalizationRequest.CodexShellEnvironmentPolicy.Set["CV_CHILD_ENV"]);
+        Assert.NotSame(childRequest.CodexShellEnvironmentPolicy, finalizationRequest.CodexShellEnvironmentPolicy);
+        Assert.Equal(childRequest.ToolOutputTokenLimitOverride, finalizationRequest.ToolOutputTokenLimitOverride);
+        Assert.Equal(childRequest.CodexReasoningEffort, finalizationRequest.CodexReasoningEffort);
+        Assert.Equal(childRequest.CodexReasoningSummary, finalizationRequest.CodexReasoningSummary);
+        Assert.Equal(childRequest.CodexModelSupportsReasoningSummaries, finalizationRequest.CodexModelSupportsReasoningSummaries);
+        Assert.False(finalizationRequest.CodexFastModeEnabled);
+        Assert.Equal(childRequest.CodexServiceTier, finalizationRequest.CodexServiceTier);
+        Assert.Equal(childRequest.CodexModelVerbosity, finalizationRequest.CodexModelVerbosity);
+        Assert.True(CopilotMicrosoftAgentFrameworkRuntime.CanUseMinimalDelegatedFinalizationInstructions(
+            finalizationRequest,
+            [],
+            taskLedgerEnabled: false,
+            agentModeEnabled: false));
+        var finalizationHarness = CopilotMicrosoftAgentFrameworkRuntime.BuildHarnessInstructions(
+            finalizationRequest,
+            [],
+            CopilotAgentEnvironmentContext.Capture(finalizationRequest),
+            taskLedgerEnabled: false,
+            agentModeEnabled: false);
+        Assert.Contains("Keep configured guidance.", finalizationHarness, StringComparison.Ordinal);
+        Assert.True(
+            finalizationHarness.IndexOf("# Configured Codex developer instructions", StringComparison.Ordinal)
+                < finalizationHarness.IndexOf(
+                    "The no-tools role boundary and evidence-only finalization contract remain authoritative.",
+                    StringComparison.Ordinal));
     }
 
     private static void AssertDerivedRunScope(

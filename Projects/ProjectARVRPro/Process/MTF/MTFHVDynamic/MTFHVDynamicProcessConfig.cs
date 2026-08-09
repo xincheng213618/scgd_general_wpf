@@ -39,7 +39,7 @@ namespace ProjectARVRPro.Process.MTF.MTFHVDynamic
         public string Unit { get => _Unit; set { _Unit = value; OnPropertyChanged(); } }
         private string _Unit = "%";
 
-        public MTFHVDynamicRecipeConfig RecipeConfig { get => _RecipeConfig; set { _RecipeConfig = value; OnPropertyChanged(); } }
+        public MTFHVDynamicRecipeConfig RecipeConfig { get => _RecipeConfig; set { _RecipeConfig = value ?? new(); OnPropertyChanged(); } }
         private MTFHVDynamicRecipeConfig _RecipeConfig = new MTFHVDynamicRecipeConfig();
     }
 }

@@ -60,15 +60,23 @@ namespace ColorVision.Copilot
             CopilotAgentSkillOverrideState state,
             CopilotAgentSkillUsageEntry? usage,
             bool isHistoricalExplicitOnly,
-            Action changed)
+            Action changed,
+            string? skillFilePath = null)
         {
             Name = name;
+            SkillFilePath = CopilotAgentSkillOverrideConfig.NormalizeSkillFilePath(skillFilePath);
             _state = state;
             _changed = changed ?? throw new ArgumentNullException(nameof(changed));
             UpdateUsage(usage, isHistoricalExplicitOnly);
         }
 
         public string Name { get; }
+
+        public string SkillFilePath { get; }
+
+        public bool HasExactPath => SkillFilePath.Length > 0;
+
+        internal string Identity => HasExactPath ? "path\0" + SkillFilePath : "name\0" + Name;
 
         public CopilotAgentSkillOverrideState State
         {
@@ -101,7 +109,9 @@ namespace ColorVision.Copilot
             IsTracked = usage != null;
             if (usage == null)
             {
-                UsageSummary = "尚无本地使用证据；发现该 Skill 时仍会应用此覆盖设置。";
+                UsageSummary = HasExactPath
+                    ? "精确路径：" + SkillFilePath
+                    : "尚无本地使用证据；发现该 Skill 时仍会应用此覆盖设置。";
                 return;
             }
 

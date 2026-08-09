@@ -63,7 +63,7 @@ namespace Conoscope
                 get => azimuthDegrees;
                 set
                 {
-                    double normalized = ConoscopeCoordinateAxisParam.NormalizeAzimuthAngle(value);
+                    double normalized = FocusPointMeasurementService.NormalizeFullAzimuthAngle(value);
                     if (AreClose(azimuthDegrees, normalized))
                     {
                         return;
@@ -193,10 +193,10 @@ namespace Conoscope
                     return;
                 }
 
-                double radians = ConoscopeCoordinateAxisParam.NormalizeAzimuthAngle(azimuthDegrees) * Math.PI / 180.0;
-                circle.Attribute.Center = new Point(
-                    owner.currentImageCenter.X + Math.Cos(radians) * distancePixels,
-                    owner.currentImageCenter.Y - Math.Sin(radians) * distancePixels);
+                circle.Attribute.Center = FocusPointMeasurementService.CreatePointFromPolar(
+                    azimuthDegrees,
+                    distancePixels,
+                    owner.currentImageCenter);
                 ApplyVisualUpdate();
             }
 

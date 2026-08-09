@@ -17,17 +17,20 @@ namespace ColorVision.Copilot
         private const int EstimatedCharactersPerToken = 4;
         private readonly BudgetedAgentSkillsSource? _budgetedSource;
         private readonly int _metadataCharacterBudget;
+        private readonly bool _includeAutomaticInstructions;
 
         private CopilotAgentSkills(
             IReadOnlyList<string> searchPaths,
             BudgetedAgentSkillsSource? budgetedSource,
             AgentSkillsSource? source,
-            int metadataCharacterBudget)
+            int metadataCharacterBudget,
+            bool includeAutomaticInstructions)
         {
             SearchPaths = searchPaths;
             _budgetedSource = budgetedSource;
             Source = source;
             _metadataCharacterBudget = metadataCharacterBudget;
+            _includeAutomaticInstructions = includeAutomaticInstructions;
         }
 
         public IReadOnlyList<string> SearchPaths { get; }
@@ -36,13 +39,14 @@ namespace ColorVision.Copilot
 
         public bool IsEnabled => Source != null;
 
-        internal static CopilotAgentSkills Disabled() => new([], null, null, 0);
+        internal static CopilotAgentSkills Disabled() => new([], null, null, 0, true);
 
         public static CopilotAgentSkills Create(
             CopilotAgentRequest request,
             IEnumerable<string>? historicalExplicitOnlySkillNames = null,
             int contextWindowTokens = CopilotAgentTokenBudget.DefaultContextWindowTokens,
-            string? applicationBaseDirectory = null)
+            string? applicationBaseDirectory = null,
+            bool includeAutomaticInstructions = true)
         {
             ArgumentNullException.ThrowIfNull(request);
 
@@ -59,7 +63,7 @@ namespace ColorVision.Copilot
                     ScriptFilter = _ => false,
                 },
                 loggerFactory: null);
-            source = new DeduplicatingAgentSkillsSource(source, loggerFactory: null);
+            source = new PathAwareDeduplicatingAgentSkillsSource(source, request.AgentSkillReference);
             var metadataCharacterBudget = ResolveMetadataCharacterBudget(contextWindowTokens);
             var budgetedSource = new BudgetedAgentSkillsSource(
                 source,
@@ -67,9 +71,16 @@ namespace ColorVision.Copilot
                 historicalExplicitOnlySkillNames,
                 request.SkillOverrides,
                 MaxActiveSkills,
-                metadataCharacterBudget);
+                metadataCharacterBudget,
+                request.SkillPathOverrides,
+                includeAutomaticInstructions);
             source = new CachingAgentSkillsSource(budgetedSource, new CachingAgentSkillsSourceOptions());
-            return new CopilotAgentSkills(searchPaths, budgetedSource, source, metadataCharacterBudget);
+            return new CopilotAgentSkills(
+                searchPaths,
+                budgetedSource,
+                source,
+                metadataCharacterBudget,
+                includeAutomaticInstructions);
         }
 
         internal static int ResolveMetadataCharacterBudget(int contextWindowTokens)
@@ -81,7 +92,9 @@ namespace ColorVision.Copilot
 
         public string BuildStartupDiagnostic()
         {
-            return $"Agent Skills enabled · up to {MaxActiveSkills} relevant skill(s) and {_metadataCharacterBudget:N0} metadata characters ({SkillMetadataContextPercent}% context, {MaxAdvertisedSkillCharacters:N0} hard cap) from {SearchPaths.Count} trusted root(s) · scripts disabled.";
+            return _includeAutomaticInstructions
+                ? $"Agent Skills enabled · up to {MaxActiveSkills} relevant skill(s) and {_metadataCharacterBudget:N0} metadata characters ({SkillMetadataContextPercent}% context, {MaxAdvertisedSkillCharacters:N0} hard cap) from {SearchPaths.Count} trusted root(s) · scripts disabled."
+                : $"Agent Skills enabled · Codex skills.include_instructions=false limits advertisement to explicit $name or /name invocations from {SearchPaths.Count} trusted root(s) · scripts disabled.";
         }
 
         public string? BuildSelectionDiagnostic()
@@ -100,7 +113,13 @@ namespace ColorVision.Copilot
                 .Append(" active");
             var omittedCount = snapshot.DiscoveredCount - snapshot.SelectedNames.Count;
             var explicitOnlyCount = snapshot.MetadataExplicitOnlyNames.Count + snapshot.HistoricalExplicitOnlyNames.Count + snapshot.ManualExplicitOnlyNames.Count;
-            var budgetOmittedCount = Math.Max(0, omittedCount - explicitOnlyCount - snapshot.ManualOffNames.Count - snapshot.IrrelevantNames.Count);
+            var budgetOmittedCount = Math.Max(
+                0,
+                omittedCount
+                    - explicitOnlyCount
+                    - snapshot.ManualOffNames.Count
+                    - snapshot.AutomaticInstructionsDisabledNames.Count
+                    - snapshot.IrrelevantNames.Count);
             if (explicitOnlyCount > 0)
             {
                 builder.Append(" · ").Append(explicitOnlyCount).Append(" explicit-only");
@@ -115,6 +134,8 @@ namespace ColorVision.Copilot
                 builder.Append(" · ").Append(snapshot.ManualNameOnlyNames.Count).Append(" manual name-only");
             if (snapshot.ManualOffNames.Count > 0)
                 builder.Append(" · ").Append(snapshot.ManualOffNames.Count).Append(" manually off");
+            if (snapshot.AutomaticInstructionsDisabledNames.Count > 0)
+                builder.Append(" · ").Append(snapshot.AutomaticInstructionsDisabledNames.Count).Append(" automatic instructions disabled");
             if (snapshot.IrrelevantNames.Count > 0)
                 builder.Append(" · ").Append(snapshot.IrrelevantNames.Count).Append(" irrelevant omitted");
             if (budgetOmittedCount > 0)
@@ -145,22 +166,153 @@ namespace ColorVision.Copilot
 
         internal static IReadOnlyList<string> ResolveSearchPaths(CopilotAgentRequest request, string? applicationBaseDirectory = null)
         {
+            return ResolveSearchPaths(request, applicationBaseDirectory, userProfileDirectory: null);
+        }
+
+        internal static IReadOnlyList<string> ResolveSearchPaths(
+            CopilotAgentRequest request,
+            string? applicationBaseDirectory,
+            string? userProfileDirectory)
+        {
+            ArgumentNullException.ThrowIfNull(request);
+
+            return ResolveSearchPathCandidates(request, applicationBaseDirectory, userProfileDirectory)
+                .Where(path => Directory.Exists(path) && !CopilotWorkspaceSearchSupport.HasReparsePointInPath(path))
+                .ToArray();
+        }
+
+        internal static IReadOnlyList<string> ResolveSearchPathCandidates(CopilotAgentRequest request, string? applicationBaseDirectory = null)
+        {
+            return ResolveSearchPathCandidates(request, applicationBaseDirectory, userProfileDirectory: null);
+        }
+
+        internal static IReadOnlyList<string> ResolveSearchPathCandidates(
+            CopilotAgentRequest request,
+            string? applicationBaseDirectory,
+            string? userProfileDirectory)
+        {
             ArgumentNullException.ThrowIfNull(request);
 
             var paths = new List<string>();
             foreach (var root in request.TrustedProjectRootPaths ?? Array.Empty<string>())
-                AddExistingSkillRoot(paths, TryGetDirectory(root), Path.Combine(".agents", "skills"));
+                AddProjectSkillRootCandidates(paths, root, request.ActiveDocumentPath);
+
+            AddSkillRootCandidate(paths, ResolveUserProfileDirectory(userProfileDirectory), Path.Combine(".agents", "skills"));
 
             var baseDirectory = string.IsNullOrWhiteSpace(applicationBaseDirectory)
                 ? AppContext.BaseDirectory
                 : applicationBaseDirectory;
-            AddExistingSkillRoot(paths, baseDirectory, Path.Combine("Copilot", "Skills"));
+            AddSkillRootCandidate(paths, baseDirectory, Path.Combine("Copilot", "Skills"));
             return paths;
+        }
+
+        private static void AddProjectSkillRootCandidates(
+            List<string> paths,
+            string? trustedProjectRootPath,
+            string? activeDocumentPath)
+        {
+            var projectRoot = TryGetDirectory(trustedProjectRootPath);
+            if (string.IsNullOrWhiteSpace(projectRoot))
+                return;
+
+            var currentDirectory = TryGetDirectory(activeDocumentPath);
+            if (string.IsNullOrWhiteSpace(currentDirectory)
+                || !CopilotWorkspaceSearchSupport.IsPathWithinRoots(currentDirectory, [projectRoot]))
+            {
+                AddSkillRootCandidate(paths, projectRoot, Path.Combine(".agents", "skills"));
+                return;
+            }
+
+            while (true)
+            {
+                AddSkillRootCandidate(paths, currentDirectory, Path.Combine(".agents", "skills"));
+                if (string.Equals(currentDirectory, projectRoot, StringComparison.OrdinalIgnoreCase))
+                    return;
+
+                var parentDirectory = Directory.GetParent(currentDirectory)?.FullName;
+                if (string.IsNullOrWhiteSpace(parentDirectory)
+                    || string.Equals(parentDirectory, currentDirectory, StringComparison.OrdinalIgnoreCase)
+                    || !CopilotWorkspaceSearchSupport.IsPathWithinRoots(parentDirectory, [projectRoot]))
+                {
+                    break;
+                }
+                currentDirectory = parentDirectory;
+            }
+
+            AddSkillRootCandidate(paths, projectRoot, Path.Combine(".agents", "skills"));
+        }
+
+        internal static string ResolveUserSkillRoot(string? userProfileDirectory = null)
+        {
+            var profileDirectory = ResolveUserProfileDirectory(userProfileDirectory);
+            if (string.IsNullOrWhiteSpace(profileDirectory))
+                return string.Empty;
+
+            try
+            {
+                return Path.GetFullPath(Path.Combine(profileDirectory, ".agents", "skills"));
+            }
+            catch
+            {
+                return string.Empty;
+            }
         }
 
         public void Dispose()
         {
             Source?.Dispose();
+        }
+
+        internal static IReadOnlyList<AgentSkill> SelectPreferredSkills(
+            IReadOnlyList<AgentSkill> discovered,
+            CopilotAgentSkillReference? preferredReference)
+        {
+            return SelectPreferredSkills(discovered, preferredReference, ResolveSkillFilePath);
+        }
+
+        internal static IReadOnlyList<AgentSkill> SelectPreferredSkills(
+            IReadOnlyList<AgentSkill> discovered,
+            CopilotAgentSkillReference? preferredReference,
+            Func<AgentSkill, string?> skillFilePathResolver)
+        {
+            ArgumentNullException.ThrowIfNull(discovered);
+            ArgumentNullException.ThrowIfNull(skillFilePathResolver);
+
+            var selected = new List<AgentSkill>();
+            var handledNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var skill in discovered)
+            {
+                var name = skill.Frontmatter.Name;
+                if (!handledNames.Add(name))
+                    continue;
+
+                AgentSkill? preferred = null;
+                if (preferredReference?.IsStructurallyValid() == true
+                    && string.Equals(preferredReference.Name, name, StringComparison.OrdinalIgnoreCase))
+                {
+                    preferred = discovered.FirstOrDefault(candidate =>
+                        preferredReference.Matches(
+                            candidate.Frontmatter.Name,
+                            skillFilePathResolver(candidate)));
+                }
+                selected.Add(preferred ?? skill);
+            }
+            return selected;
+        }
+
+        private static string? ResolveSkillFilePath(AgentSkill skill)
+        {
+            if (skill is not AgentFileSkill fileSkill)
+                return null;
+
+            try
+            {
+                return Path.Combine(fileSkill.Path, "SKILL.md");
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         private static string? TryGetDirectory(string? path)
@@ -181,16 +333,23 @@ namespace ColorVision.Copilot
             }
         }
 
-        private static void AddExistingSkillRoot(List<string> paths, string? parentDirectory, string relativePath)
+        private static string? ResolveUserProfileDirectory(string? userProfileDirectory)
         {
-            if (string.IsNullOrWhiteSpace(parentDirectory))
+            var candidate = string.IsNullOrWhiteSpace(userProfileDirectory)
+                ? Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)
+                : userProfileDirectory;
+            return TryGetDirectory(candidate);
+        }
+
+        private static void AddSkillRootCandidate(List<string> paths, string? parentDirectory, string relativePath)
+        {
+            if (string.IsNullOrWhiteSpace(parentDirectory) || !Directory.Exists(parentDirectory))
                 return;
 
             try
             {
                 var candidate = Path.GetFullPath(Path.Combine(parentDirectory, relativePath));
-                if (!Directory.Exists(candidate)
-                    || CopilotWorkspaceSearchSupport.HasReparsePointInPath(candidate)
+                if (CopilotWorkspaceSearchSupport.HasReparsePointInPath(parentDirectory)
                     || paths.Contains(candidate, StringComparer.OrdinalIgnoreCase))
                 {
                     return;
@@ -210,6 +369,8 @@ namespace ColorVision.Copilot
             private readonly int _maximumMetadataCharacters;
             private readonly HashSet<string> _historicalExplicitOnlySkillNames;
             private readonly IReadOnlyDictionary<string, CopilotAgentSkillOverrideState> _skillOverrides;
+            private readonly IReadOnlyDictionary<string, CopilotAgentSkillOverrideState> _skillPathOverrides;
+            private readonly bool _includeAutomaticInstructions;
             private readonly HashSet<string> _loadedNames = new(StringComparer.OrdinalIgnoreCase);
             private SkillSelectionSnapshot _snapshot = SkillSelectionSnapshot.Empty;
 
@@ -219,7 +380,9 @@ namespace ColorVision.Copilot
                 IEnumerable<string>? historicalExplicitOnlySkillNames,
                 IReadOnlyDictionary<string, CopilotAgentSkillOverrideState>? skillOverrides,
                 int maximumCount,
-                int maximumMetadataCharacters)
+                int maximumMetadataCharacters,
+                IReadOnlyDictionary<string, CopilotAgentSkillOverrideState>? skillPathOverrides,
+                bool includeAutomaticInstructions)
                 : base(innerSource)
             {
                 _userText = userText ?? string.Empty;
@@ -228,8 +391,12 @@ namespace ColorVision.Copilot
                 _skillOverrides = skillOverrides == null
                     ? new Dictionary<string, CopilotAgentSkillOverrideState>(StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, CopilotAgentSkillOverrideState>(skillOverrides, StringComparer.OrdinalIgnoreCase);
+                _skillPathOverrides = skillPathOverrides == null
+                    ? new Dictionary<string, CopilotAgentSkillOverrideState>(StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, CopilotAgentSkillOverrideState>(skillPathOverrides, StringComparer.OrdinalIgnoreCase);
                 _maximumCount = maximumCount;
                 _maximumMetadataCharacters = maximumMetadataCharacters;
+                _includeAutomaticInstructions = includeAutomaticInstructions;
             }
 
             public override async Task<IList<AgentSkill>> GetSkillsAsync(
@@ -243,7 +410,9 @@ namespace ColorVision.Copilot
                     _historicalExplicitOnlySkillNames,
                     _skillOverrides,
                     _maximumCount,
-                    _maximumMetadataCharacters);
+                    _maximumMetadataCharacters,
+                    _skillPathOverrides,
+                    allowImplicitSelection: _includeAutomaticInstructions);
                 var selectedNames = selection.SelectedSkills.Select(skill => skill.Frontmatter.Name).ToArray();
                 lock (_sync)
                 {
@@ -257,6 +426,7 @@ namespace ColorVision.Copilot
                         selection.ManualNameOnlyNames,
                         selection.ManualExplicitOnlyNames,
                         selection.ManualOffNames,
+                        selection.AutomaticInstructionsDisabledNames,
                         selection.IrrelevantNames,
                         selection.ShortenedDescriptionNames);
                 }
@@ -282,6 +452,29 @@ namespace ColorVision.Copilot
             private string[] GetLoadedNames(IReadOnlyList<string> selectedNames)
             {
                 return selectedNames.Where(_loadedNames.Contains).ToArray();
+            }
+        }
+
+        private sealed class PathAwareDeduplicatingAgentSkillsSource : DelegatingAgentSkillsSource
+        {
+            private readonly CopilotAgentSkillReference? _preferredReference;
+
+            public PathAwareDeduplicatingAgentSkillsSource(
+                AgentSkillsSource innerSource,
+                CopilotAgentSkillReference? preferredReference)
+                : base(innerSource)
+            {
+                _preferredReference = preferredReference?.IsStructurallyValid() == true
+                    ? preferredReference.CreateSnapshot()
+                    : null;
+            }
+
+            public override async Task<IList<AgentSkill>> GetSkillsAsync(
+                AgentSkillsSourceContext context,
+                CancellationToken cancellationToken = default)
+            {
+                var discovered = await InnerSource.GetSkillsAsync(context, cancellationToken).ConfigureAwait(false);
+                return SelectPreferredSkills(discovered.ToArray(), _preferredReference).ToArray();
             }
         }
 
@@ -329,10 +522,11 @@ namespace ColorVision.Copilot
             IReadOnlyList<string> ManualNameOnlyNames,
             IReadOnlyList<string> ManualExplicitOnlyNames,
             IReadOnlyList<string> ManualOffNames,
+            IReadOnlyList<string> AutomaticInstructionsDisabledNames,
             IReadOnlyList<string> IrrelevantNames,
             IReadOnlyList<string> ShortenedDescriptionNames)
         {
-            public static SkillSelectionSnapshot Empty { get; } = new(false, 0, [], [], [], [], [], [], [], [], []);
+            public static SkillSelectionSnapshot Empty { get; } = new(false, 0, [], [], [], [], [], [], [], [], [], []);
         }
 
     }

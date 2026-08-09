@@ -120,7 +120,7 @@ namespace ColorVision.Engine.Services
                         PixY = (double)item.PoiY,
                         PixHeight = (double)item.PoiHeight,
                         PixWidth = (double)item.PoiWidth,
-                        PointType = (GraphicTypes)item.PoiType,
+                        PointType = item.PoiType.ToPoiShape(),
                         Id = -1
                     };
                     templatePoi1.ImportTemp.PoiPoints.Add(poiPoint);
@@ -151,7 +151,7 @@ namespace ColorVision.Engine.Services
                     PixY = item.Point.PixelY,
                     PixHeight = item.Point.Height,
                     PixWidth = item.Point.Width,    
-                    PointType = (GraphicTypes)item.Point.PointType,
+                    PointType = item.Point.PointType,
                     Id =-1
                 };
                 templatePoi.ImportTemp.PoiPoints.Add(poiPoint);

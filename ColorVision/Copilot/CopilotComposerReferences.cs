@@ -10,9 +10,10 @@ namespace ColorVision.Copilot
 {
     public enum CopilotComposerReferenceKind
     {
-        Template,
-        Menu,
-        File,
+        Template = 0,
+        Menu = 1,
+        File = 2,
+        Skill = 3,
     }
 
     public sealed class CopilotComposerReferenceItem
@@ -29,10 +30,13 @@ namespace ColorVision.Copilot
 
         public string ContextContent { get; init; } = string.Empty;
 
+        internal CopilotAgentSkillReference? AgentSkillReference { get; init; }
+
         public string KindLabel => Kind switch
         {
             CopilotComposerReferenceKind.Template => "模板",
             CopilotComposerReferenceKind.Menu => "菜单",
+            CopilotComposerReferenceKind.Skill => "Skill",
             _ => "文件",
         };
 
@@ -40,6 +44,7 @@ namespace ColorVision.Copilot
         {
             CopilotComposerReferenceKind.Template => "\uE8A5",
             CopilotComposerReferenceKind.Menu => "\uE700",
+            CopilotComposerReferenceKind.Skill => "\uE943",
             _ => "\uE8A5",
         };
 
@@ -143,6 +148,23 @@ namespace ColorVision.Copilot
             return text[..mention.StartIndex] + $"@[{safeTitle}] ";
         }
 
+        internal static string CompleteSkillMention(
+            string? input,
+            CopilotComposerMention mention,
+            string skillName)
+        {
+            var text = input ?? string.Empty;
+            var normalizedName = CopilotAgentSkillOverrideConfig.NormalizeName(skillName);
+            if (mention.StartIndex < 0
+                || mention.StartIndex > text.Length
+                || normalizedName.Length == 0)
+            {
+                return text;
+            }
+
+            return text[..mention.StartIndex] + '$' + normalizedName + ' ';
+        }
+
         internal static string InsertMention(
             string? input,
             int selectionStart,
@@ -181,15 +203,26 @@ namespace ColorVision.Copilot
 
         internal static IReadOnlyList<CopilotComposerReferenceItem> SearchImmediate(
             string? query,
-            string? activeDocumentPath)
+            string? activeDocumentPath,
+            bool includeUnifiedReferences = true,
+            IEnumerable<CopilotAgentSkillCatalogItem>? skills = null)
         {
             var normalizedQuery = (query ?? string.Empty).Trim();
             var candidates = new List<CopilotComposerReferenceItem>();
             AddActiveDocument(candidates, activeDocumentPath);
-            AddTemplates(candidates, normalizedQuery);
-            AddMenus(candidates, normalizedQuery);
+            if (CanIncludeReferenceKind(CopilotComposerReferenceKind.Template, includeUnifiedReferences))
+                AddTemplates(candidates, normalizedQuery);
+            if (CanIncludeReferenceKind(CopilotComposerReferenceKind.Menu, includeUnifiedReferences))
+                AddMenus(candidates, normalizedQuery);
+            if (CanIncludeReferenceKind(CopilotComposerReferenceKind.Skill, includeUnifiedReferences))
+                AddSkills(candidates, normalizedQuery, skills);
             return RankCandidates(normalizedQuery, candidates);
         }
+
+        internal static bool CanIncludeReferenceKind(
+            CopilotComposerReferenceKind kind,
+            bool mentionsV2Enabled) =>
+            mentionsV2Enabled || kind == CopilotComposerReferenceKind.File;
 
         internal static async Task<IReadOnlyList<CopilotComposerReferenceItem>> SearchWorkspaceReferencesAsync(
             string? workspaceRoot,
@@ -234,10 +267,11 @@ namespace ColorVision.Copilot
 
             if (normalizedQuery.Length == 0)
             {
-                var balanced = Enum.GetValues<CopilotComposerReferenceKind>()
+                var kinds = Enum.GetValues<CopilotComposerReferenceKind>();
+                var balanced = kinds
                     .SelectMany(kind => unique
                         .Where(candidate => candidate.Kind == kind)
-                        .Take(MaximumSuggestions / 3))
+                        .Take(Math.Max(1, MaximumSuggestions / kinds.Length)))
                     .ToList();
                 balanced.AddRange(unique
                     .Where(candidate => !balanced.Contains(candidate))
@@ -397,6 +431,35 @@ namespace ColorVision.Copilot
             catch
             {
                 // Menu discovery is optional while the main window is still initializing.
+            }
+        }
+
+        private static void AddSkills(
+            List<CopilotComposerReferenceItem> candidates,
+            string query,
+            IEnumerable<CopilotAgentSkillCatalogItem>? skills)
+        {
+            foreach (var skill in skills ?? Array.Empty<CopilotAgentSkillCatalogItem>())
+            {
+                var reference = CopilotAgentSkillReference.FromCatalogItem(skill);
+                if (reference == null)
+                    continue;
+                var displayName = string.IsNullOrWhiteSpace(skill.DisplayName)
+                    ? skill.Name
+                    : skill.DisplayName;
+                var searchText = string.Join(' ', displayName, skill.Name, skill.EffectiveDescription);
+                if (query.Length > 0 && Score(query, searchText) == 0)
+                    continue;
+
+                candidates.Add(new CopilotComposerReferenceItem
+                {
+                    Kind = CopilotComposerReferenceKind.Skill,
+                    Title = displayName,
+                    Subtitle = $"${skill.Name} · {skill.EffectiveDescription}",
+                    Value = skill.SkillFilePath,
+                    SourceId = "composer-skill:" + NormalizeSourceId(skill.Name),
+                    AgentSkillReference = reference,
+                });
             }
         }
 

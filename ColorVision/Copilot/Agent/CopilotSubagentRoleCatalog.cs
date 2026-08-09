@@ -304,7 +304,10 @@ namespace ColorVision.Copilot
             {
                 CopilotSubagentContextScope.WorkspaceReadOnly => request.SearchRootPaths.Count > 0
                     && CopilotToolIntentPolicy.NeedsWorkspaceDiscovery(request),
-                CopilotSubagentContextScope.PublicWeb => CopilotToolIntentPolicy.NeedsPublicWebSearch(request) || CopilotToolIntentPolicy.NeedsUrlFetch(request),
+                CopilotSubagentContextScope.PublicWeb =>
+                    CopilotToolIntentPolicy.NeedsUrlFetch(request)
+                    || CopilotToolIntentPolicy.AllowsLiveWebSearch(request)
+                        && CopilotToolIntentPolicy.NeedsPublicWebSearch(request),
                 _ => false,
             };
         }

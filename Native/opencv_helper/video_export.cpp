@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "video_export.h"
+#include "native_log.h"
 #include <opencv2/opencv.hpp>
 #include <unordered_map>
 #include <mutex>
@@ -7,6 +8,7 @@
 #include <thread>
 #include <chrono>
 #include <condition_variable>
+#include <cstring>
 #include <exception>
 #include <memory>
 
@@ -41,12 +43,14 @@ struct VideoContext {
 	bool latestFrameValid;
 	std::mutex slotMutex;              // Protects latest frame slot reads/writes.
 	std::condition_variable slotReady; // Notifies the consumer when a frame is ready.
+	std::atomic<bool> frameDeliveryFailureLogged;
 
 	VideoContext() : totalFrames(0), fps(0), width(0), height(0),
 		stopRequested(false), playbackSpeed(1.0),
 		frameCallback(nullptr), statusCallback(nullptr), userData(nullptr),
 		seekRequestFrame(-1), threadRunning(true), isPaused(true),
-		resizeScale(1.0), latestFrameIndex(0), latestFrameValid(false) {}
+		resizeScale(1.0), latestFrameIndex(0), latestFrameValid(false),
+		frameDeliveryFailureLogged(false) {}
 };
 
 using VideoContextPtr = std::shared_ptr<VideoContext>;
@@ -56,18 +60,29 @@ static std::mutex g_mapMutex;
 static int g_nextHandle = 1;
 
 template <typename Func>
-static int GuardVideoExport(Func func) noexcept
+static int GuardVideoExport(const char* operation, Func func) noexcept
 {
 	try {
-		return func();
+		const int result = func();
+		if (result < 0) {
+			const auto level = std::strcmp(operation, "M_VideoOpen") == 0
+				|| (std::strcmp(operation, "M_VideoReadFrame") == 0 && result == -2)
+				? cvnative::LogLevel::Warn
+				: cvnative::LogLevel::Debug;
+			cvnative::LogFailure(level, "video.export", operation, result);
+		}
+		return result;
 	}
-	catch (const cv::Exception&) {
+	catch (const cv::Exception& ex) {
+		cvnative::LogException("video.export", operation, -2, "cv::Exception", ex.what());
 		return -2;
 	}
-	catch (const std::exception&) {
+	catch (const std::exception& ex) {
+		cvnative::LogException("video.export", operation, -3, "std::exception", ex.what());
 		return -3;
 	}
 	catch (...) {
+		cvnative::LogException("video.export", operation, -4, "unknown");
 		return -4;
 	}
 }
@@ -112,6 +127,7 @@ static void StopVideoWorkers(const VideoContextPtr& ctx) noexcept
 		}
 	}
 	catch (...) {
+		cvnative::LogException("video.worker", "StopVideoWorkers", -4, "unknown");
 	}
 }
 
@@ -172,6 +188,14 @@ static int InvokeFrame(VideoContext& ctx, int handle, const cv::Mat& frame, int 
 	HImage hImage{};
 	int convertResult = MatToHImage(frame, &hImage);
 	if (convertResult != 0) {
+		if (!ctx.frameDeliveryFailureLogged.exchange(true, std::memory_order_relaxed)) {
+			cvnative::LogFailure(
+				cvnative::LogLevel::Warn,
+				"video.worker",
+				"InvokeFrame",
+				convertResult,
+				"frame conversion failed; further identical failures are suppressed");
+		}
 		return convertResult;
 	}
 
@@ -278,11 +302,26 @@ static void VideoProducerLoop(VideoContextPtr ctx, int handle)
 			}
 		}
 	}
+	catch (const cv::Exception& ex) {
+		ctx->threadRunning = false;
+		ctx->isPaused = true;
+		ctx->slotReady.notify_all();
+		ctx->cvPause.notify_all();
+		cvnative::LogException("video.worker", "VideoProducerLoop", -2, "cv::Exception", ex.what());
+	}
+	catch (const std::exception& ex) {
+		ctx->threadRunning = false;
+		ctx->isPaused = true;
+		ctx->slotReady.notify_all();
+		ctx->cvPause.notify_all();
+		cvnative::LogException("video.worker", "VideoProducerLoop", -3, "std::exception", ex.what());
+	}
 	catch (...) {
 		ctx->threadRunning = false;
 		ctx->isPaused = true;
 		ctx->slotReady.notify_all();
 		ctx->cvPause.notify_all();
+		cvnative::LogException("video.worker", "VideoProducerLoop", -4, "unknown");
 	}
 }
 
@@ -315,17 +354,32 @@ static void VideoConsumerLoop(VideoContextPtr ctx, int handle)
 			}
 		}
 	}
+	catch (const cv::Exception& ex) {
+		ctx->threadRunning = false;
+		ctx->isPaused = true;
+		ctx->slotReady.notify_all();
+		ctx->cvPause.notify_all();
+		cvnative::LogException("video.worker", "VideoConsumerLoop", -2, "cv::Exception", ex.what());
+	}
+	catch (const std::exception& ex) {
+		ctx->threadRunning = false;
+		ctx->isPaused = true;
+		ctx->slotReady.notify_all();
+		ctx->cvPause.notify_all();
+		cvnative::LogException("video.worker", "VideoConsumerLoop", -3, "std::exception", ex.what());
+	}
 	catch (...) {
 		ctx->threadRunning = false;
 		ctx->isPaused = true;
 		ctx->slotReady.notify_all();
 		ctx->cvPause.notify_all();
+		cvnative::LogException("video.worker", "VideoConsumerLoop", -4, "unknown");
 	}
 }
 
 COLORVISIONCORE_API int M_VideoOpen(const wchar_t* filePath, VideoInfo* info)
 {
-	return GuardVideoExport([&]() -> int {
+	return GuardVideoExport(__func__, [&]() -> int {
 		if (!info) return -1;
 		*info = VideoInfo{};
 		if (!filePath) return -1;
@@ -385,13 +439,18 @@ COLORVISIONCORE_API int M_VideoOpen(const wchar_t* filePath, VideoInfo* info)
 			throw;
 		}
 
+		cvnative::LogLazy(cvnative::LogLevel::Info, [&] {
+			return std::string("[video.lifecycle] M_VideoOpen handle=") + std::to_string(handle)
+				+ " frames=" + std::to_string(ctx->totalFrames)
+				+ " size=" + std::to_string(ctx->width) + "x" + std::to_string(ctx->height);
+			});
 		return handle;
 		});
 }
 
 COLORVISIONCORE_API int M_VideoReadFrame(int handle, HImage* outImage)
 {
-	return GuardVideoExport([&]() -> int {
+	return GuardVideoExport(__func__, [&]() -> int {
 		if (!outImage) return -1;
 		*outImage = HImage{};
 
@@ -413,7 +472,7 @@ COLORVISIONCORE_API int M_VideoReadFrame(int handle, HImage* outImage)
 
 COLORVISIONCORE_API int M_VideoSeek(int handle, int frameIndex)
 {
-	return GuardVideoExport([&]() -> int {
+	return GuardVideoExport(__func__, [&]() -> int {
 		auto ctx = GetVideoContext(handle);
 		if (!ctx) return -1;
 
@@ -423,6 +482,10 @@ COLORVISIONCORE_API int M_VideoSeek(int handle, int frameIndex)
 				ctx->seekRequestFrame = frameIndex;
 			}
 			ctx->cvPause.notify_one();
+			cvnative::LogLazy(cvnative::LogLevel::Debug, [&] {
+				return std::string("[video.lifecycle] M_VideoSeek handle=") + std::to_string(handle)
+					+ " frame=" + std::to_string(frameIndex);
+				});
 			return 0;
 		}
 		return -2;
@@ -431,7 +494,7 @@ COLORVISIONCORE_API int M_VideoSeek(int handle, int frameIndex)
 
 COLORVISIONCORE_API int M_VideoGetCurrentFrame(int handle)
 {
-	return GuardVideoExport([&]() -> int {
+	return GuardVideoExport(__func__, [&]() -> int {
 		auto ctx = GetVideoContext(handle);
 		if (!ctx) return -1;
 
@@ -442,7 +505,7 @@ COLORVISIONCORE_API int M_VideoGetCurrentFrame(int handle)
 
 COLORVISIONCORE_API int M_VideoSetPlaybackSpeed(int handle, double speed)
 {
-	return GuardVideoExport([&]() -> int {
+	return GuardVideoExport(__func__, [&]() -> int {
 		auto ctx = GetVideoContext(handle);
 		if (!ctx) return -1;
 
@@ -454,7 +517,7 @@ COLORVISIONCORE_API int M_VideoSetPlaybackSpeed(int handle, double speed)
 
 COLORVISIONCORE_API int M_VideoSetResizeScale(int handle, double scale)
 {
-	return GuardVideoExport([&]() -> int {
+	return GuardVideoExport(__func__, [&]() -> int {
 		auto ctx = GetVideoContext(handle);
 		if (!ctx) return -1;
 
@@ -468,7 +531,7 @@ COLORVISIONCORE_API int M_VideoSetResizeScale(int handle, double scale)
 
 COLORVISIONCORE_API int M_VideoPlay(int handle, VideoFrameCallback frameCallback, VideoStatusCallback statusCallback, void* userData)
 {
-	return GuardVideoExport([&]() -> int {
+	return GuardVideoExport(__func__, [&]() -> int {
 		auto ctx = GetVideoContext(handle);
 		if (!ctx) return -1;
 		if (!frameCallback) return -2;
@@ -487,13 +550,16 @@ COLORVISIONCORE_API int M_VideoPlay(int handle, VideoFrameCallback frameCallback
 
 		ctx->cvPause.notify_one();
 		InvokeStatus(*ctx, handle, 1);
+		cvnative::LogLazy(cvnative::LogLevel::Debug, [&] {
+			return std::string("[video.lifecycle] M_VideoPlay handle=") + std::to_string(handle);
+			});
 		return 0;
 		});
 }
 
 COLORVISIONCORE_API int M_VideoPause(int handle)
 {
-	return GuardVideoExport([&]() -> int {
+	return GuardVideoExport(__func__, [&]() -> int {
 		auto ctx = GetVideoContext(handle);
 		if (!ctx) return -1;
 
@@ -503,13 +569,16 @@ COLORVISIONCORE_API int M_VideoPause(int handle)
 		}
 
 		InvokeStatus(*ctx, handle, 0);
+		cvnative::LogLazy(cvnative::LogLevel::Debug, [&] {
+			return std::string("[video.lifecycle] M_VideoPause handle=") + std::to_string(handle);
+			});
 		return 0;
 		});
 }
 
 COLORVISIONCORE_API int M_VideoClose(int handle)
 {
-	return GuardVideoExport([&]() -> int {
+	return GuardVideoExport(__func__, [&]() -> int {
 		VideoContextPtr ctx;
 		{
 			std::lock_guard<std::mutex> lock(g_mapMutex);
@@ -530,6 +599,9 @@ COLORVISIONCORE_API int M_VideoClose(int handle)
 
 		// Release capture resources.
 		ctx->cap.release();
+		cvnative::LogLazy(cvnative::LogLevel::Info, [&] {
+			return std::string("[video.lifecycle] M_VideoClose handle=") + std::to_string(handle);
+			});
 		return 0;
 		});
 }

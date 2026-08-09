@@ -162,6 +162,10 @@ namespace ColorVision.Copilot
         [Browsable(false)]
         public string EffectiveSystemPrompt => string.IsNullOrWhiteSpace(_systemPromptOverride) ? DefaultSystemPrompt : _systemPromptOverride;
 
+        [JsonIgnore]
+        [Browsable(false)]
+        internal bool HasSystemPromptOverride => !string.IsNullOrWhiteSpace(_systemPromptOverride);
+
         private string _systemPromptOverride = string.Empty;
 
         [JsonIgnore]

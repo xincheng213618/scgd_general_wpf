@@ -27,7 +27,7 @@ namespace ColorVision.Copilot
             private readonly CopilotAgentSessionCheckpoint? _requestedCheckpoint;
             private readonly CopilotCapabilityCatalogSnapshot _capabilitySnapshot;
             private readonly IReadOnlyList<string> _availableToolNames;
-            private readonly CopilotAgentEnvironmentContext _environmentContext;
+            private readonly CopilotAgentEnvironmentContext? _checkpointEnvironmentContext;
             private readonly CopilotToolExecutionHookRegistrySnapshot _hookSurfaceSnapshot;
             private readonly IReadOnlyList<CopilotAgentEvidenceArtifact> _previousEvidenceArtifacts;
             private readonly HarnessToolBridge _bridge;
@@ -47,7 +47,7 @@ namespace ColorVision.Copilot
                 CopilotAgentSessionCheckpoint? requestedCheckpoint,
                 CopilotCapabilityCatalogSnapshot capabilitySnapshot,
                 IReadOnlyList<string> availableToolNames,
-                CopilotAgentEnvironmentContext environmentContext,
+                CopilotAgentEnvironmentContext? checkpointEnvironmentContext,
                 CopilotToolExecutionHookRegistrySnapshot hookSurfaceSnapshot,
                 IReadOnlyList<CopilotAgentEvidenceArtifact> previousEvidenceArtifacts,
                 HarnessToolBridge bridge,
@@ -63,7 +63,7 @@ namespace ColorVision.Copilot
                 _requestedCheckpoint = requestedCheckpoint;
                 _capabilitySnapshot = capabilitySnapshot;
                 _availableToolNames = availableToolNames;
-                _environmentContext = environmentContext;
+                _checkpointEnvironmentContext = checkpointEnvironmentContext;
                 _hookSurfaceSnapshot = hookSurfaceSnapshot;
                 _previousEvidenceArtifacts = previousEvidenceArtifacts;
                 _bridge = bridge;
@@ -117,7 +117,7 @@ namespace ColorVision.Copilot
                         _taskEventJournalBuilder.Snapshot(),
                         _availableToolNames,
                         conversationMemory,
-                        _environmentContext,
+                        _checkpointEnvironmentContext,
                         _request.TaskIntentText,
                         _hookSurfaceSnapshot);
                     if (checkpoint == null)

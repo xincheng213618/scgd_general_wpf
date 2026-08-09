@@ -205,10 +205,78 @@ namespace ColorVision.Copilot
             if (currentIndex < 0)
                 return;
 
-            var targetIndex = conversation.IsPinned ? 0 : GetUnpinnedInsertIndex(conversations, conversation);
+            var targetIndex = conversation.IsPinned
+                ? 0
+                : GetRecencyInsertIndex(conversations, conversation, currentIndex);
             if (currentIndex != targetIndex)
                 conversations.Move(currentIndex, targetIndex);
         }
+
+        public static bool MarkTurnStarted(
+            ObservableCollection<CopilotConversationRecord> conversations,
+            CopilotConversationRecord conversation,
+            DateTime startedAt)
+        {
+            ArgumentNullException.ThrowIfNull(conversations);
+            ArgumentNullException.ThrowIfNull(conversation);
+            var previousIndex = conversations.IndexOf(conversation);
+            var changed = conversation.MarkTurnStarted(startedAt);
+            MoveToPreferredIndex(conversations, conversation);
+            return changed || previousIndex != conversations.IndexOf(conversation);
+        }
+
+        public static bool NormalizeOrder(ObservableCollection<CopilotConversationRecord> conversations)
+        {
+            ArgumentNullException.ThrowIfNull(conversations);
+            var indexed = conversations
+                .Select((conversation, index) => new { Conversation = conversation, Index = index })
+                .Where(item => item.Conversation != null)
+                .ToArray();
+            var ordered = indexed
+                .Where(item => item.Conversation.IsPinned)
+                .Concat(indexed
+                    .Where(item => !item.Conversation.IsPinned)
+                    .OrderByDescending(item => GetRecencyAt(item.Conversation))
+                    .ThenBy(item => item.Index))
+                .Select(item => item.Conversation)
+                .ToArray();
+            var changed = false;
+            for (var targetIndex = 0; targetIndex < ordered.Length; targetIndex++)
+            {
+                var currentIndex = conversations.IndexOf(ordered[targetIndex]);
+                if (currentIndex == targetIndex)
+                    continue;
+
+                conversations.Move(currentIndex, targetIndex);
+                changed = true;
+            }
+            return changed;
+        }
+
+        private static int GetRecencyInsertIndex(
+            ObservableCollection<CopilotConversationRecord> conversations,
+            CopilotConversationRecord conversation,
+            int currentIndex)
+        {
+            var recencyAt = GetRecencyAt(conversation);
+            var targetIndex = 0;
+            for (var index = 0; index < conversations.Count; index++)
+            {
+                var candidate = conversations[index];
+                if (ReferenceEquals(candidate, conversation))
+                    continue;
+                if (candidate.IsPinned
+                    || GetRecencyAt(candidate) > recencyAt
+                    || (GetRecencyAt(candidate) == recencyAt && index < currentIndex))
+                {
+                    targetIndex++;
+                }
+            }
+            return targetIndex;
+        }
+
+        private static DateTime GetRecencyAt(CopilotConversationRecord conversation) =>
+            conversation.RecencyAt == default ? conversation.UpdatedAt : conversation.RecencyAt;
 
         private static int GetUnpinnedInsertIndex(
             ObservableCollection<CopilotConversationRecord> conversations,

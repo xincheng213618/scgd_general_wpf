@@ -1,8 +1,10 @@
+using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Database;
+using ColorVision.Themes.Controls;
 using FlowEngineLib.Base;
 using FlowEngineLib.PropertyEditor;
 using MQTTMessageLib.Camera;
@@ -23,6 +25,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         public int MasterId { get; init; }
         public int MasterResultType { get; init; } = (int)ViewResultAlgType.Calibration;
         public int TotalTime { get; init; }
+        public string FlipMode { get; init; } = "None";
+        public bool FlipApplied { get; init; }
         public bool Calibrated { get; init; }
         public bool HasRaw { get; init; }
         public bool HasCie { get; init; }
@@ -89,9 +93,15 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         [STNodeProperty("保存校正文件", "默认关闭；基础校正保存 CVRAW，包含亮度/颜色校正时保存 CVCIE", true)]
         public bool SaveFiles { get => saveFiles; set { saveFiles = value; OnPropertyChanged(); } }
 
+        [JsonIgnore]
+        [CommandDisplay("校正缓存", Order = -100)]
+        [Description("查看已缓存的校正文件、内存占用，并可释放本机校正缓存")]
+        public RelayCommand OpenLocalCalibrationCacheManagerCommand { get; }
+
         protected LocalCalibrationNodeBase(string title, string nodeType, string operatorName, int timeoutMs, params string[] inputNames)
             : base(title, nodeType, operatorName, timeoutMs, inputNames)
         {
+            OpenLocalCalibrationCacheManagerCommand = new RelayCommand(_ => LocalCalibrationCacheManagerWindow.OpenWindow());
             SelectFirstAvailableDevice<DeviceCamera>();
         }
 
@@ -132,7 +142,26 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             {
                 using (LocalFlowFrameLease source = sourceFrame.Acquire())
                 {
-                    if (source.HasRaw)
+                    bool canReuseExistingCie = source.HasCie
+                        && (!source.HasRaw
+                            || string.IsNullOrWhiteSpace(CalibTempName)
+                            || string.Equals(source.Metadata.CalibrationTemplate, CalibTempName, StringComparison.Ordinal));
+                    if (canReuseExistingCie)
+                    {
+                        outputFrame = sourceFrame;
+                        ownsOutputFrame = ownsSourceFrame;
+                        ownsSourceFrame = false;
+                        if (!outputFrame.IsCieFlipApplied)
+                        {
+                            throw new InvalidOperationException("The reusable CIE frame has a pending mirror operation and was published before its orientation was finalized.");
+                        }
+                        if (SaveFiles && string.IsNullOrWhiteSpace(outputFrame.CvCieFilePath))
+                        {
+                            DeviceCamera device = ResolveDevice(source.Metadata.DeviceCode);
+                            LocalFrameFileService.SaveCapture(outputFrame, device.Config.FileServerCfg.DataBasePath, device.Code);
+                        }
+                    }
+                    else if (source.HasRaw)
                     {
                         DeviceCamera device = ResolveDevice(source.Metadata.DeviceCode);
                         calibration = ResolveCalibration(device);
@@ -145,17 +174,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                         calibrated = true;
                         if (SaveFiles)
                         {
-                            LocalFrameFileService.SaveCapture(outputFrame, device.Config.FileServerCfg.DataBasePath, device.Code);
-                        }
-                    }
-                    else if (source.HasCie)
-                    {
-                        outputFrame = sourceFrame;
-                        ownsOutputFrame = ownsSourceFrame;
-                        ownsSourceFrame = false;
-                        if (SaveFiles && string.IsNullOrWhiteSpace(outputFrame.CvCieFilePath))
-                        {
-                            DeviceCamera device = ResolveDevice(source.Metadata.DeviceCode);
                             LocalFrameFileService.SaveCapture(outputFrame, device.Config.FileServerCfg.DataBasePath, device.Code);
                         }
                     }
@@ -224,6 +242,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                     frame.Metadata.Channels,
                     frame.Metadata.Gain,
                     Exposure = frame.Metadata.Exposure,
+                    FlipMode = frame.Metadata.FlipMode.ToString(),
+                    FlipApplied = frame.IsFlipApplied,
                     Calibration = new { ID = execution.Calibration?.Id ?? -1, Name = execution.Calibration?.Name ?? frame.Metadata.CalibrationTemplate }
                 }),
                 RawFile = outputFilePath == null ? null : Path.GetFileName(outputFilePath),
@@ -234,7 +254,9 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                     bpp = frame.HasCie ? frame.Metadata.CieBpp : frame.Metadata.SourceBpp,
                     width = frame.Metadata.Width,
                     height = frame.Metadata.Height,
-                    channels = frame.Metadata.Channels
+                    channels = frame.Metadata.Channels,
+                    flipMode = frame.Metadata.FlipMode.ToString(),
+                    flipApplied = frame.IsFlipApplied
                 }),
                 ResultCode = 0,
                 Result = "ok",
@@ -338,6 +360,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                     FrameId = execution.Frame.FrameId.ToString("N"),
                     MasterId = masterId,
                     TotalTime = execution.TotalTime,
+                    FlipMode = execution.Frame.Metadata.FlipMode.ToString(),
+                    FlipApplied = execution.Frame.IsFlipApplied,
                     Calibrated = execution.Calibrated,
                     HasRaw = execution.Frame.HasRaw,
                     HasCie = execution.Frame.HasCie,

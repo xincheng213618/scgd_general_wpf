@@ -34,16 +34,6 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
 
         public List<FlowSemanticEdge> RemovedEdges { get; } = new();
 
-        public List<FlowErrorRoute> AddedErrorRoutes { get; } = new();
-
-        public List<FlowErrorRoute> RemovedErrorRoutes { get; } = new();
-
-        public List<FlowRetryPolicyReference> AddedRetryPolicies { get; } =
-            new();
-
-        public List<FlowRetryPolicyReference> RemovedRetryPolicies { get; } =
-            new();
-
         public List<FlowLayoutChange> LayoutChanges { get; } = new();
 
         public bool ViewportChanged { get; internal set; }
@@ -54,11 +44,7 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
             || ChangedNodeTypes.Count > 0
             || PropertyChanges.Count > 0
             || AddedEdges.Count > 0
-            || RemovedEdges.Count > 0
-            || AddedErrorRoutes.Count > 0
-            || RemovedErrorRoutes.Count > 0
-            || AddedRetryPolicies.Count > 0
-            || RemovedRetryPolicies.Count > 0;
+            || RemovedEdges.Count > 0;
 
         public bool HasLayoutChanges =>
             ViewportChanged || LayoutChanges.Count > 0;
@@ -123,21 +109,6 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
                 result.RemovedEdges,
                 result.AddedEdges,
                 item => item.DeepClone());
-            CompareSet(
-                before.ErrorRoutes,
-                after.ErrorRoutes,
-                FlowSemanticHash.GetErrorRouteKey,
-                result.RemovedErrorRoutes,
-                result.AddedErrorRoutes,
-                item => item.DeepClone());
-            CompareSet(
-                before.RetryPolicies,
-                after.RetryPolicies,
-                FlowSemanticHash.GetRetryPolicyKey,
-                result.RemovedRetryPolicies,
-                result.AddedRetryPolicies,
-                item => item.DeepClone());
-
             CompareLayout(result, before.Layout, after.Layout);
             return result;
         }

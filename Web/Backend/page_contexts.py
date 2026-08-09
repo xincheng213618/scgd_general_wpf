@@ -571,6 +571,9 @@ def build_updates_page_context(storage: Path, *, cache_manager=None) -> dict[str
 
 
 def build_tools_page_context(storage: Path, *, cache_manager=None) -> dict[str, Any]:
+    from services.spectrum_release import build_spectrum_tool_card
+
+    spectrum = build_spectrum_tool_card(storage)
     # Try reading from tool_index first (fast, no disk scan)
     if cache_manager is not None:
         try:
@@ -603,6 +606,7 @@ def build_tools_page_context(storage: Path, *, cache_manager=None) -> dict[str, 
                 return {
                     "items": items,
                     "summary": summary,
+                    "spectrum": spectrum,
                     "subpath": "Tool",
                     "breadcrumbs": [{"name": "Tool", "path": "Tool"}],
                     "exists": True,
@@ -615,6 +619,7 @@ def build_tools_page_context(storage: Path, *, cache_manager=None) -> dict[str, 
     return {
         "items": context["items"],
         "summary": context["summary"],
+        "spectrum": spectrum,
         "subpath": "Tool",
         "breadcrumbs": context["breadcrumbs"],
         "exists": context["exists"],

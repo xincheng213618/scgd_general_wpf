@@ -36,7 +36,19 @@ namespace ColorVision.Copilot
             };
             foreach (var argument in command.Arguments)
                 startInfo.ArgumentList.Add(argument);
+            if (command.EnvironmentVariables != null)
+            {
+                startInfo.Environment.Clear();
+                foreach (var pair in command.EnvironmentVariables)
+                    startInfo.Environment[pair.Key] = pair.Value;
+            }
             startInfo.Environment["NO_COLOR"] = "1";
+            foreach (var name in startInfo.Environment.Keys
+                .Where(CopilotCodexShellEnvironmentPolicy.IsNonInheritableEnvironmentVariable)
+                .ToArray())
+            {
+                startInfo.Environment.Remove(name);
+            }
 
             var process = new Process { StartInfo = startInfo, EnableRaisingEvents = true };
             try

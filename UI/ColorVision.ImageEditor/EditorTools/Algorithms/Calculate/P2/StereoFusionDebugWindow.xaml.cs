@@ -38,8 +38,10 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.P2
             _drawContext = drawContext;
             _config = config;
 
-            if (_imageContext.HImageCache is HImage image)
+            using ImageFrameLease? lease = _imageContext.AcquireImageFrame();
+            if (lease != null)
             {
+                HImage image = lease.Image;
                 LeftInfoText.Text = $"左图：当前编辑器图像 ({image.cols} x {image.rows})";
                 ConfigText.Text = CreateDefaultConfig(image.cols, image.rows, image.cols, image.rows);
             }
@@ -67,8 +69,10 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.P2
                 ClearOverlay();
                 RightPreview.Source = _rightImage;
                 RightInfoText.Text = $"右图：{Path.GetFileName(dialog.FileName)} ({_rightImage.PixelWidth} x {_rightImage.PixelHeight})";
-                if (!_hasExternalCalibration && _imageContext.HImageCache is HImage left)
+                using ImageFrameLease? lease = _imageContext.AcquireImageFrame();
+                if (!_hasExternalCalibration && lease != null)
                 {
+                    HImage left = lease.Image;
                     ConfigText.Text = CreateDefaultConfig(left.cols, left.rows, _rightImage.PixelWidth, _rightImage.PixelHeight);
                 }
                 StatusText.Text = "右图已加载；请确认标定矩阵、畸变、旋转和平移均与这对图像一致。";
@@ -136,16 +140,17 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.P2
 
             RunButton.IsEnabled = false;
             StatusText.Text = "双目检测与三角化计算中...";
+            long revision = _imageContext.ImageRevision;
             try
             {
                 BitmapSource rightAtStart = _rightImage;
                 P2NativeResult result = await RunAsync(rightAtStart, ConfigText.Text);
-                if (_closed || !ReferenceEquals(_rightImage, rightAtStart)) return;
+                if (_closed || !ReferenceEquals(_rightImage, rightAtStart) || !_imageContext.IsCurrentImageRevision(revision)) return;
                 ApplyResult(result);
             }
             catch (Exception ex)
             {
-                if (_closed) return;
+                if (_closed || !_imageContext.IsCurrentImageRevision(revision)) return;
                 StatusText.Text = ex.Message;
                 MessageBox.Show(this, ex.Message, "双目标定融合", MessageBoxButton.OK, MessageBoxImage.Error);
             }
@@ -157,26 +162,26 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.P2
 
         private async Task<P2NativeResult> RunAsync(BitmapSource rightImage, string config)
         {
-            if (_imageContext.HImageCache is not HImage left)
+            using ImageFrameLease? lease = _imageContext.AcquireImageFrame();
+            if (lease == null)
             {
                 throw new InvalidOperationException("当前左图已经关闭或切换。");
             }
 
-            IntPtr sourcePointer = left.pData;
-            using P2ImageSnapshot leftSnapshot = P2ImageSnapshot.Copy(left);
+            long revision = lease.Revision;
             using P2ImageSnapshot rightSnapshot = P2ImageSnapshot.FromBitmap(rightImage);
-            RoiRect leftRoi = P2RoiHelper.WholeImage(leftSnapshot.Image);
+            RoiRect leftRoi = P2RoiHelper.WholeImage(lease.Image);
             RoiRect rightRoi = P2RoiHelper.WholeImage(rightSnapshot.Image);
             P2NativeResult result = await Task.Run(() => P2NativeJson.Invoke(
                 "双目标定融合",
                 (out IntPtr result) => OpenCVMediaHelper.M_CalStereoBinocularFusion(
-                    leftSnapshot.Image,
+                    lease.Image,
                     rightSnapshot.Image,
                     leftRoi,
                     rightRoi,
                     config,
                     out result)));
-            if (_imageContext.HImageCache is not HImage latest || latest.pData != sourcePointer)
+            if (!_imageContext.IsCurrentImageRevision(revision))
             {
                 throw new InvalidOperationException("计算期间左图发生了切换，结果已丢弃。");
             }
@@ -201,8 +206,10 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.P2
                 : string.Empty;
             StatusText.Text = $"StatusCode: {result.Json.Value<string>("statusCode")}    {result.Json.Value<string>("message")}{warnings}";
 
-            if (_imageContext.HImageCache is HImage left && _rightImage != null)
+            using ImageFrameLease? lease = _imageContext.AcquireImageFrame();
+            if (lease != null && _rightImage != null)
             {
+                HImage left = lease.Image;
                 LeftPointOverlay.SetResult(result.Json, true, left.cols, left.rows);
                 RightPointOverlay.SetResult(result.Json, false, _rightImage.PixelWidth, _rightImage.PixelHeight);
             }

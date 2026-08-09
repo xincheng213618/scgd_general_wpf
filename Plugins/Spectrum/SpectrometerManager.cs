@@ -15,6 +15,8 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows;
 
+#pragma warning disable CA1001 // App-lifetime singleton owns the device gate.
+
 namespace Spectrum
 {
     [DisplayName("EmissionSP100设置")]
@@ -151,10 +153,32 @@ namespace Spectrum
         public Action ExecuteAdaptiveAutoDark { get; set; }
     }
 
+    internal sealed class MeasurementAdmissionPause : IDisposable
+    {
+        private SpectrometerManager? manager;
 
-    public class SpectrometerManager : ViewModelBase,IConfig
+        internal Task WhenDrained { get; }
+
+        internal MeasurementAdmissionPause(SpectrometerManager manager, Task whenDrained)
+        {
+            this.manager = manager;
+            WhenDrained = whenDrained;
+        }
+
+        public void Dispose()
+        {
+            Interlocked.Exchange(ref manager, null)?.ReleaseMeasurementPause();
+        }
+    }
+
+
+    public partial class SpectrometerManager : ViewModelBase,IConfig
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(SpectrometerManager));
+        private readonly SemaphoreSlim deviceOperationGate = new(1, 1);
+        private readonly object measurementStateLock = new();
+        private int measurementPauseCount;
+        private TaskCompletionSource<bool>? measurementsDrained;
 
         public SpectrumConfig Config => ConfigService.Instance.GetRequiredService<SpectrumConfig>();
 
@@ -174,10 +198,77 @@ namespace Spectrum
         public static SetEmissionSP100Config SetEmissionSP100Config => SetEmissionSP100Config.Instance;
 
         [JsonIgnore]
-        public IntPtr Handle { get; set; } = IntPtr.Zero;
+        public IntPtr Handle { get; private set; } = IntPtr.Zero;
+
+        [JsonIgnore]
+        public bool IsDeviceBusy => deviceOperationGate.CurrentCount == 0;
+
+        [JsonIgnore]
+        public bool IsMeasurementActive => Volatile.Read(ref activeMeasurementCount) > 0;
+
+        [JsonIgnore]
+        public bool IsBusy => IsDeviceBusy || IsMeasurementActive || SmuController.IsBusy || ShutterController.IsBusy || FilterWheelController.IsBusy;
+        private int activeMeasurementCount;
+
+        internal MeasurementAdmissionPause StopAcceptingMeasurements()
+        {
+            lock (measurementStateLock)
+            {
+                measurementPauseCount++;
+                Task whenDrained;
+                if (activeMeasurementCount == 0)
+                {
+                    whenDrained = Task.CompletedTask;
+                }
+                else
+                {
+                    measurementsDrained ??= new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                    whenDrained = measurementsDrained.Task;
+                }
+
+                return new MeasurementAdmissionPause(this, whenDrained);
+            }
+        }
+
+        internal void ReleaseMeasurementPause()
+        {
+            lock (measurementStateLock)
+            {
+                if (measurementPauseCount > 0)
+                    measurementPauseCount--;
+            }
+        }
+
+        private bool TryStartMeasurement()
+        {
+            lock (measurementStateLock)
+            {
+                if (measurementPauseCount > 0)
+                    return false;
+
+                activeMeasurementCount++;
+                return true;
+            }
+        }
+
+        private void FinishMeasurement()
+        {
+            TaskCompletionSource<bool>? drained = null;
+            lock (measurementStateLock)
+            {
+                activeMeasurementCount--;
+                if (activeMeasurementCount == 0)
+                {
+                    drained = measurementsDrained;
+                    measurementsDrained = null;
+                }
+            }
+
+            drained?.TrySetResult(true);
+        }
         
         [JsonIgnore]
-        public bool IsConnected { get => _IsConnected; set { _IsConnected = value; OnPropertyChanged(); OnPropertyChanged(nameof(ConnectionTypeDisplay)); OnPropertyChanged(nameof(HardwareModel)); } }
+        public bool IsConnected { get => _IsConnected; private set { _IsConnected = value; OnPropertyChanged(); OnPropertyChanged(nameof(ConnectionTypeDisplay)); OnPropertyChanged(nameof(HardwareModel)); } }
         private bool _IsConnected = false;
 
         /// <summary>
@@ -198,7 +289,7 @@ namespace Spectrum
         /// The serial number of the currently connected spectrometer.
         /// </summary>
         [JsonIgnore]
-        public string SerialNumber { get => _SerialNumber; set { _SerialNumber = value; OnPropertyChanged(); } }
+        public string SerialNumber { get => _SerialNumber; private set { _SerialNumber = value; OnPropertyChanged(); } }
         private string _SerialNumber = string.Empty;
 
         /// <summary>
@@ -297,17 +388,24 @@ namespace Spectrum
             MaguideFile = group.MaguideFile;
 
             if (IsConnected && Handle != IntPtr.Zero)
+                _ = ReloadCalibrationFilesAsync();
+        }
+
+        private async Task ReloadCalibrationFilesAsync()
+        {
+            try
             {
-                int r1 = Spectrometer.CM_Emission_LoadWavaLengthFile(Handle, WavelengthFile);
-                if (r1 == 1)
-                    log.Info($"校准组切换: 加载波长文件成功 {WavelengthFile}");
-                else
-                    log.Warn($"校准组切换: 加载波长文件失败 {WavelengthFile}, {Spectrometer.GetErrorMessage(r1)}");
-                int r2 = Spectrometer.CM_Emission_LoadMagiudeFile(Handle, MaguideFile);
-                if (r2 == 1)
-                    log.Info($"校准组切换: 加载幅值文件成功 {MaguideFile}");
-                else
-                    log.Warn($"校准组切换: 加载幅值文件失败 {MaguideFile}, {Spectrometer.GetErrorMessage(r2)}");
+                await RunExclusiveAsync(token => Task.Run(() =>
+                {
+                    token.ThrowIfCancellationRequested();
+                    if (IsConnected && Handle != IntPtr.Zero)
+                        LoadCalibrationFilesCore();
+                    return true;
+                }, CancellationToken.None));
+            }
+            catch (Exception ex)
+            {
+                log.Warn("切换校准组时重新加载标定文件失败", ex);
             }
         }
 
@@ -364,15 +462,11 @@ namespace Spectrum
         private bool _IsNDConnected;
 
         [JsonIgnore]
-        public RelayCommand SetWavelengthFileCommand { get; set; }
-        [JsonIgnore]
         public RelayCommand LoadWavelengthFileCommand { get; set; }
 
         [JsonIgnore]
         public RelayCommand SetCSFileCommand { get; set; }
 
-        [JsonIgnore]
-        public RelayCommand SetMaguideFileCommand { get; set; }
         [JsonIgnore]
         public RelayCommand SetMaguideOutputFileCommand { get; set; }
 
@@ -386,17 +480,7 @@ namespace Spectrum
         public RelayCommand GetLightDataCommand { get; set; }
 
         [JsonIgnore]
-        public RelayCommand GetIntTimeCommand { get; set; }
-
-        [JsonIgnore]
         public RelayCommand GenerateAmplitudeCommand { get; set; }
-
-
-        [JsonIgnore]
-        public RelayCommand ConnectCommand { get; set; }
-
-        [JsonIgnore]
-        public RelayCommand DisconnectCommand { get; set; }
 
         [JsonIgnore]
         public RelayCommand EditIntTimeConfigCommand { get; set; }
@@ -411,20 +495,14 @@ namespace Spectrum
         public SpectrometerManager()
         {
             SetCSFileCommand = new RelayCommand(a => SetFile(path => CSFile = path));
-            GetIntTimeCommand = new RelayCommand(a => GetIntTime());
-            GetDarkDataCommand = new RelayCommand(a => GetDarkData());
-            GetLightDataCommand = new RelayCommand(a => GetLightData());
-            GenerateAmplitudeCommand = new RelayCommand(a => GenerateAmplitude());
+            GetDarkDataCommand = new RelayCommand(async a => await GetDarkDataAsync());
+            GetLightDataCommand = new RelayCommand(async a => await GetLightDataAsync());
+            GenerateAmplitudeCommand = new RelayCommand(async a => await GenerateAmplitudeAsync());
 
-            ConnectCommand = new RelayCommand(a => Connect());
-            DisconnectCommand = new RelayCommand(a => Disconnect());
             MaguideFile = "Magiude.dat";
 
-            LoadWavelengthFileCommand = new RelayCommand(a => LoadWavelengthFile());
-            SetWavelengthFileCommand = new RelayCommand(a => SetFile(path => WavelengthFile = path));
-
-            SetMaguideFileCommand = new RelayCommand(a => SetMaguideFile());
-            LoadMaguideFileCommand = new RelayCommand(a => LoadMaguideFile());
+            LoadWavelengthFileCommand = new RelayCommand(async a => await LoadWavelengthFileAsync());
+            LoadMaguideFileCommand = new RelayCommand(async a => await LoadMaguideFileAsync());
             SetMaguideOutputFileCommand = new RelayCommand(a => SetMaguideOutputFile());
             EditIntTimeConfigCommand = new RelayCommand(a => EditMeasurementDataConfig());
 
@@ -432,7 +510,7 @@ namespace Spectrum
 
             EditSmuConfigCommand = new RelayCommand(a => new PropertyEditorWindow(SmuController.Config) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
 
-            GetSpectrSerialNumberCommand = new RelayCommand(a => GetSpectrSerialNumber());
+            GetSpectrSerialNumberCommand = new RelayCommand(async a => await GetSpectrSerialNumberAsync());
 
             EditNDConfigCommand = new RelayCommand(a => new PropertyEditorWindow(NDConfig) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
             ConnectNDCommand = new RelayCommand(a => ConnectND());
@@ -549,22 +627,16 @@ namespace Spectrum
 
 
         public RelayCommand GetSpectrSerialNumberCommand { get; set; }
-        public void GetSpectrSerialNumber()
+        public async Task GetSpectrSerialNumberAsync()
         {
-            int i = 0;
-
-            if (Config.IsComPort)
+            string raw = await RunExclusiveAsync(token => Task.Run(() =>
             {
-                if (int.TryParse(Config.SzComName.Replace("COM", ""), out int z))
-                {
-                    i = z;
-                }
-            }
-            int bufferLength = 1024;
-            StringBuilder stringBuilder = new StringBuilder(bufferLength);
-            int ret = Spectrometer.CM_Emission_GetAllSN((int)Config.SpectrometerType, i, stringBuilder, bufferLength);
-
-            string raw = stringBuilder.ToString();
+                token.ThrowIfCancellationRequested();
+                const int bufferLength = 1024;
+                StringBuilder result = new(bufferLength);
+                Spectrometer.CM_Emission_GetAllSN((int)Config.SpectrometerType, GetConfiguredComPort(), result, bufferLength);
+                return result.ToString();
+            }, CancellationToken.None));
             string display = FormatSerialNumberResult(raw);
             MessageBox1.Show(Application.Current.GetActiveWindow(), display, "Sprectrum");
         }
@@ -664,96 +736,300 @@ namespace Spectrum
         private int _LoopMeasureNum;
 
 
-        public static int MyCallback(IntPtr strText, int nLen)
+        private static int MyCallback(IntPtr strText, int nLen)
         {
             string text = Marshal.PtrToStringAnsi(strText, nLen);
             log.Debug("光谱仪回调: " + text);
             return 0;
         }
 
-        public void Connect()
+        /// <summary>
+        /// Runs one device operation after all earlier operations have completed.
+        /// </summary>
+        public T RunExclusive<T>(Func<T> operation, CancellationToken cancellationToken = default)
         {
-            // Sync licenses from DB before connecting
-            LicenseDatabase.Instance.SyncToLocal();
-
-            Handle = Spectrometer.CM_CreateEmission((int)Config.SpectrometerType, MyCallback);
-            int ncom = 0;
-            if (Config.IsComPort)
+            ArgumentNullException.ThrowIfNull(operation);
+            deviceOperationGate.Wait(cancellationToken);
+            try
             {
-                 ncom = int.Parse(Config.SzComName.Replace("COM", ""));
-
+                return operation();
             }
-            int iR = Spectrometer.CM_Emission_Init(Handle, ncom, Config.BaudRate);
-            if (iR == 1)
+            finally
             {
-                log.Info("光谱仪连接成功");
-                MessageBox.Show("连接成功");
-            }
-            else
-            {
-                string errorMsg = Spectrometer.GetErrorMessage(iR);
-                log.Error($"光谱仪连接失败: {errorMsg}");
-                CheckDeviceAndPromptLicense(errorMsg);
+                deviceOperationGate.Release();
             }
         }
 
         /// <summary>
-        /// On connection failure, detect if a device exists.
-        /// If exactly one device is found, it's likely a license issue - prompt user.
+        /// Runs one asynchronous device operation after all earlier operations have completed.
         /// </summary>
-        private void CheckDeviceAndPromptLicense(string errorMsg)
+        public async Task<T> RunExclusiveAsync<T>(Func<CancellationToken, Task<T>> operation, CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(operation);
+            await deviceOperationGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+            try
+            {
+                return await operation(cancellationToken).ConfigureAwait(false);
+            }
+            finally
+            {
+                deviceOperationGate.Release();
+            }
+        }
+
+        /// <summary>
+        /// Attempts to start an operation immediately instead of queuing another measurement.
+        /// </summary>
+        public async Task<(bool Entered, T? Result)> TryRunExclusiveAsync<T>(Func<CancellationToken, Task<T>> operation, CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(operation);
+            if (!await deviceOperationGate.WaitAsync(0, cancellationToken).ConfigureAwait(false))
+            {
+                return (false, default);
+            }
+
+            try
+            {
+                return (true, await operation(cancellationToken).ConfigureAwait(false));
+            }
+            finally
+            {
+                deviceOperationGate.Release();
+            }
+        }
+
+        public int Connect(CancellationToken cancellationToken = default) => RunExclusive(ConnectCore, cancellationToken);
+
+        public Task<int> ConnectAsync(CancellationToken cancellationToken = default) =>
+            Task.Run(() => Connect(cancellationToken), cancellationToken);
+
+        private int ConnectCore()
+        {
+            if (IsConnected && Handle != IntPtr.Zero)
+            {
+                return 1;
+            }
+
+            if (Handle != IntPtr.Zero)
+            {
+                DisconnectCore();
+            }
+
+            if (!SpectrometerNativeSession.TryAcquire(SpectrometerNativeSessionOwner.Main))
+            {
+                log.Warn("光谱仪驱动已被其他会话占用，或上次释放失败，主光谱仪暂时不能连接");
+                return OperationBusy;
+            }
+
+            try
+            {
+                LicenseSync.EnsureLicensesSynchronized();
+                Handle = Spectrometer.CM_CreateEmission((int)Config.SpectrometerType, MyCallback);
+                if (Handle == IntPtr.Zero)
+                {
+                    ResetConnectionState();
+                    log.Error("创建光谱仪实例失败");
+                    return -1;
+                }
+
+                int result = Spectrometer.CM_Emission_Init(Handle, GetConfiguredComPort(), Config.BaudRate);
+                if (result != 1)
+                {
+                    string errorMessage = Spectrometer.GetErrorMessage(result);
+                    log.Error($"光谱仪连接失败: {errorMessage}");
+                    DisconnectCore();
+                    return result;
+                }
+
+                ReadSerialNumberCore();
+
+                // Loading the group updates both file paths. IsConnected remains false here,
+                // so ApplyActiveGroup does not load the same files a second time.
+                LoadCalibrationConfig();
+                LoadCalibrationFilesCore();
+
+                int sp100Result = ApplySp100ConfigurationCore();
+                if (sp100Result != 1)
+                {
+                    log.Warn($"SP100 参数设置失败: {Spectrometer.GetErrorMessage(sp100Result)}");
+                }
+
+                HardwareModel = Config.SpectrometerType switch
+                {
+                    SpectrometerType.CMvSpectra => "SP-100",
+                    SpectrometerType.LightModule => "SP-10",
+                    SpectrometerType.Gaolitong => "高利通",
+                    _ => Config.SpectrometerType.ToString()
+                };
+                IsConnected = true;
+                log.Info($"光谱仪连接成功，型号 {HardwareModel}，序列号 {SerialNumber}");
+                return 1;
+            }
+            catch
+            {
+                DisconnectCore();
+                throw;
+            }
+        }
+
+        public Task<bool> ReconnectAsync(int maxAttempts = 6, CancellationToken cancellationToken = default)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxAttempts);
+
+            return RunExclusiveAsync(async token =>
+            {
+                for (int attempt = 1; attempt <= maxAttempts; attempt++)
+                {
+                    log.Warn($"尝试重连光谱仪 ({attempt}/{maxAttempts})");
+                    DisconnectCore();
+                    await Task.Delay(200, token).ConfigureAwait(false);
+
+                    int result = ConnectCore();
+                    if (result == 1)
+                    {
+                        log.Info("光谱仪重连成功");
+                        return true;
+                    }
+
+                    log.Debug($"重连尝试 {attempt} 失败: {Spectrometer.GetErrorMessage(result)}");
+                    if (attempt < maxAttempts)
+                    {
+                        await Task.Delay(200, token).ConfigureAwait(false);
+                    }
+                }
+
+                return false;
+            }, cancellationToken);
+        }
+
+        public int Disconnect(CancellationToken cancellationToken = default) => RunExclusive(DisconnectCore, cancellationToken);
+
+        public Task<int> DisconnectAsync(CancellationToken cancellationToken = default) =>
+            Task.Run(() => Disconnect(cancellationToken), cancellationToken);
+
+        private int DisconnectCore()
+        {
+            IntPtr handle = Handle;
+            if (handle == IntPtr.Zero)
+            {
+                ResetConnectionState();
+                return 1;
+            }
+
+            int closeResult = -1;
+            int releaseResult = -1;
+            try
+            {
+                closeResult = Spectrometer.CM_Emission_Close(handle);
+            }
+            finally
+            {
+                try
+                {
+                    releaseResult = Spectrometer.CM_ReleaseEmission(handle);
+                }
+                finally
+                {
+                    if (releaseResult != 1)
+                        SpectrometerNativeSession.Quarantine(SpectrometerNativeSessionOwner.Main);
+                    ResetConnectionState();
+                }
+            }
+
+            if (closeResult != 1)
+            {
+                log.Warn($"关闭光谱仪失败: {Spectrometer.GetErrorMessage(closeResult)}");
+            }
+            if (releaseResult != 1)
+            {
+                log.Warn($"释放光谱仪失败: {Spectrometer.GetErrorMessage(releaseResult)}");
+            }
+
+            return closeResult != 1 ? closeResult : releaseResult;
+        }
+
+        private void ResetConnectionState()
+        {
+            Handle = IntPtr.Zero;
+            IsConnected = false;
+            SerialNumber = string.Empty;
+            SpectrometerNativeSession.Release(SpectrometerNativeSessionOwner.Main);
+        }
+
+        private int GetConfiguredComPort()
+        {
+            if (!Config.IsComPort)
+            {
+                return 0;
+            }
+
+            string value = Config.SzComName.Replace("COM", string.Empty, StringComparison.OrdinalIgnoreCase);
+            if (int.TryParse(value, out int comPort))
+            {
+                return comPort;
+            }
+
+            throw new FormatException($"无效串口名称: {Config.SzComName}");
+        }
+
+        private void ReadSerialNumberCore()
         {
             try
             {
-                int comPort = 0;
-                if (Config.IsComPort)
+                StringBuilder serialNumber = new(1024);
+                int result = Spectrometer.CM_GetSpectrSerialNumber(Handle, serialNumber);
+                if (result == 1 && !string.IsNullOrWhiteSpace(serialNumber.ToString()))
                 {
-                    if (int.TryParse(Config.SzComName.Replace("COM", ""), out int z))
-                        comPort = z;
+                    SerialNumber = serialNumber.ToString().Trim();
+                    return;
                 }
 
-                int bufferLength = 1024;
-                StringBuilder sb = new StringBuilder(bufferLength);
-                Spectrometer.CM_Emission_GetAllSN((int)Config.SpectrometerType, comPort, sb, bufferLength);
-                string raw = sb.ToString();
-
-                if (!string.IsNullOrWhiteSpace(raw))
-                {
-                    var result = JsonConvert.DeserializeObject<SpectrometerSnResult>(raw);
-                    if (result?.IDs != null && result.IDs.Count == 1)
-                    {
-                        log.Info($"检测到设备 {result.IDs[0]}，连接失败可能是许可证问题");
-                        var msgResult = MessageBox.Show(
-                            Application.Current.GetActiveWindow(),
-                            $"连接失败: {errorMsg}\n\n检测到设备: {result.IDs[0]}\n连接失败可能是许可证问题。\n\n是否打开许可证管理器?",
-                            "连接失败 - 许可证检查",
-                            MessageBoxButton.YesNo,
-                            MessageBoxImage.Warning);
-
-                        if (msgResult == MessageBoxResult.Yes)
-                        {
-                            new License.LicenseManagerWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-                        }
-                        return;
-                    }
-                }
+                log.Warn($"获取序列号失败: {Spectrometer.GetErrorMessage(result)}");
             }
             catch (Exception ex)
             {
-                log.Debug($"设备检测失败: {ex.Message}");
+                log.Warn("读取序列号异常", ex);
             }
 
-            MessageBox.Show($"连接失败: {errorMsg}");
+            SerialNumber = "Unknown";
         }
-        public int Disconnect()
+
+        private void LoadCalibrationFilesCore()
         {
-            if (Handle != IntPtr.Zero)
-            {
-                int ret = Spectrometer.CM_Emission_Close(Handle);
-                ret = Spectrometer.CM_ReleaseEmission(Handle);
-                IsConnected = false;
-            }
-            return -1;
+            int wavelengthResult = Spectrometer.CM_Emission_LoadWavaLengthFile(Handle, WavelengthFile);
+            if (wavelengthResult == 1)
+                log.Info($"加载波长文件成功: {WavelengthFile}");
+            else
+                log.Warn($"加载波长文件失败: {WavelengthFile}, {Spectrometer.GetErrorMessage(wavelengthResult)}");
+
+            int magnitudeResult = Spectrometer.CM_Emission_LoadMagiudeFile(Handle, MaguideFile);
+            if (magnitudeResult == 1)
+                log.Info($"加载幅值文件成功: {MaguideFile}");
+            else
+                log.Warn($"加载幅值文件失败: {MaguideFile}, {Spectrometer.GetErrorMessage(magnitudeResult)}");
+        }
+
+        private int ApplySp100ConfigurationCore()
+        {
+            if (Handle == IntPtr.Zero)
+                return -1;
+
+            log.Debug($"设置 SP100 参数: IsEnabled={SetEmissionSP100Config.IsEnabled}, nStartPos={SetEmissionSP100Config.nStartPos}, nEndPos={SetEmissionSP100Config.nEndPos}, dMeanThreshold={SetEmissionSP100Config.dMeanThreshold}");
+            return Spectrometer.CM_SetEmissionSP100(Handle, SetEmissionSP100Config.IsEnabled, SetEmissionSP100Config.nStartPos, SetEmissionSP100Config.nEndPos, SetEmissionSP100Config.dMeanThreshold);
+        }
+
+        public Task<int> ApplySp100ConfigurationAsync(CancellationToken cancellationToken = default) =>
+            Task.Run(() => RunExclusive(ApplySp100ConfigurationCore, cancellationToken), cancellationToken);
+
+        public string? FindSingleDetectedSerialNumber(CancellationToken cancellationToken = default) =>
+            RunExclusive(FindSingleDetectedSerialNumberCore, cancellationToken);
+
+        private string? FindSingleDetectedSerialNumberCore()
+        {
+            StringBuilder resultJson = new(1024);
+            Spectrometer.CM_Emission_GetAllSN((int)Config.SpectrometerType, GetConfiguredComPort(), resultJson, resultJson.Capacity);
+            SpectrometerSnResult? result = JsonConvert.DeserializeObject<SpectrometerSnResult>(resultJson.ToString());
+            return result?.IDs?.Count == 1 ? result.IDs[0] : null;
         }
 
         /// <summary>
@@ -761,77 +1037,39 @@ namespace Spectrum
         /// 可被定时任务和Socket指令共享调用
         /// </summary>
         /// <returns>校零结果：1=成功，其他=失败</returns>
-        public async Task<int> PerformDarkCalibrationAsync()
+        public async Task<int> PerformDarkCalibrationAsync(CancellationToken cancellationToken = default)
         {
-            if (ShutterController.IsConnected)
-            {
-                log.Debug("开启快门进行校零");
-                await ShutterController.OpenShutter();
-            }
-
-            int ret = Spectrometer.CM_Emission_DarkStorage(Handle, IntTime, Average, 0, fDarkData);
-
-            if (ShutterController.IsConnected)
-            {
-                log.Debug("关闭快门");
-                await ShutterController.CloseShutter();
-            }
-
-            return ret;
-        }
-
-        /// <summary>
-        /// 获取自动积分时间，自动处理同步频率调整
-        /// 可被定时任务和Socket指令共享调用
-        /// </summary>
-        /// <returns>成功返回积分时间，失败返回null</returns>
-        public float? GetAutoIntegrationTime()
-        {
-            float fIntTime = 0;
-            int ret;
-
-            if (IntTimeConfig.IsOldVersion)
-            {
-                ret = Spectrometer.CM_Emission_GetAutoTime(
-                    Handle, ref fIntTime, IntTimeConfig.IntLimitTime,
-                    IntTimeConfig.AutoIntTimeB, (int)IntTimeConfig.MaxPercent);
-            }
-            else
-            {
-                ret = Spectrometer.CM_Emission_GetAutoTimeEx(
-                    Handle, ref fIntTime, IntTimeConfig.IntLimitTime,
-                    IntTimeConfig.AutoIntTimeB, IntTimeConfig.Max, null);
-            }
-
-            if (ret != 1)
-            {
-                log.Warn($"自动积分时间获取失败: {Spectrometer.GetErrorMessage(ret)}");
-                return null;
-            }
-
-            // Apply sync frequency adjustment if enabled
-            if (GetDataConfig.IsSyncFrequencyEnabled)
-            {
-                float syncIntTime = fIntTime;
-                COLOR_PARA cOLOR_PARA = new COLOR_PARA();
-                int syncRet = Spectrometer.CM_Emission_GetDataSyncfreq(
-                    Handle, 0, GetDataConfig.Syncfreq, GetDataConfig.SyncfreqFactor,
-                    ref syncIntTime, Average, GetDataConfig.FilterBW,
-                    fDarkData, 0, 0, GetDataConfig.SetWL1, GetDataConfig.SetWL2,
-                    ref cOLOR_PARA);
-                if (syncRet == 1)
+            var operation = await TryRunExclusiveAsync(
+                token => Task.Run(async () =>
                 {
-                    log.Info($"同步频率调整积分时间: {fIntTime}ms → {syncIntTime}ms");
-                    fIntTime = syncIntTime;
-                }
-                else
-                {
-                    log.Warn($"同步频率调整积分时间失败: {Spectrometer.GetErrorMessage(syncRet)}");
-                }
-            }
+                    token.ThrowIfCancellationRequested();
+                    if (!IsConnected || Handle == IntPtr.Zero)
+                        return -1;
 
-            log.Info($"自动积分时间获取成功: {fIntTime}ms");
-            return fIntTime;
+                    bool shouldCloseShutter = ShutterController.IsConnected;
+                    try
+                    {
+                        if (shouldCloseShutter)
+                        {
+                            log.Debug("开启快门进行校零");
+                            await ShutterController.OpenShutter();
+                        }
+
+                        token.ThrowIfCancellationRequested();
+                        return Spectrometer.CM_Emission_DarkStorage(Handle, IntTime, Average, 0, fDarkData);
+                    }
+                    finally
+                    {
+                        if (shouldCloseShutter && ShutterController.IsConnected)
+                        {
+                            log.Debug("关闭快门");
+                            await ShutterController.CloseShutter();
+                        }
+                    }
+                }, CancellationToken.None),
+                cancellationToken).ConfigureAwait(false);
+
+            return operation.Entered ? operation.Result : OperationBusy;
         }
 
         /// <summary>
@@ -839,7 +1077,7 @@ namespace Spectrum
         /// </summary>
         public event EventHandler DataAcquired;
 
-        public void GenerateAmplitude()  
+        public async Task GenerateAmplitudeAsync()
         {
             string outputPath = MaguideFileOutput;
             if (string.IsNullOrEmpty(outputPath))
@@ -854,35 +1092,46 @@ namespace Spectrum
                 MaguideFileOutput = outputPath;
             }
 
-            int ret = Spectrometer.CM_Emission_DarkStorage(Handle, IntTime, Average, 0, fLightData);
-            if (ret != 1)
+            var result = await RunExclusiveAsync(token => Task.Run(() =>
             {
-                string errorMsg = Spectrometer.GetErrorMessage(ret);
+                token.ThrowIfCancellationRequested();
+                if (!IsConnected || Handle == IntPtr.Zero)
+                    return (Capture: -1, Generate: -1);
+
+                int capture = Spectrometer.CM_Emission_DarkStorage(Handle, IntTime, Average, 0, fLightData);
+                if (capture != 1)
+                    return (Capture: capture, Generate: -1);
+
+                log.Debug($"生成幅值文件参数: IntTime={IntTime}, CSFile={CSFile}, WavelengthFile={WavelengthFile}, MaguideFileOutput={outputPath}");
+                int generate = Spectrometer.CM_Emission_CreateMagiude(IntTime, fDarkData, fLightData, CSFile, WavelengthFile, outputPath);
+                return (Capture: capture, Generate: generate);
+            }, CancellationToken.None));
+
+            if (result.Capture != 1)
+            {
+                string errorMsg = Spectrometer.GetErrorMessage(result.Capture);
                 log.Error($"获取 LightData 失败: {errorMsg}");
                 MessageBox.Show($"获取 LightData 失败: {errorMsg}");
                 return;
             }
             DataAcquired?.Invoke(this, EventArgs.Empty);
 
-            log.Debug($"生成幅值文件参数: IntTime={IntTime}, CSFile={CSFile}, WavelengthFile={WavelengthFile}, MaguideFileOutput={outputPath}");
-            int ret1 = Spectrometer.CM_Emission_CreateMagiude(IntTime, fDarkData, fLightData, CSFile, WavelengthFile, outputPath);
-            if (ret1 == 1)
+            if (result.Generate == 1)
             {
                 log.Info($"幅值文件生成成功: {outputPath}");
                 MessageBox.Show($"生成成功\n文件: {outputPath}");
             }
             else
             {
-                string errorMsg = Spectrometer.GetErrorMessage(ret1);
+                string errorMsg = Spectrometer.GetErrorMessage(result.Generate);
                 log.Error($"幅值文件生成失败: {errorMsg}");
                 MessageBox.Show($"生成失败: {errorMsg}");
             }
         }
 
-
-        public void GetLightData()
+        public async Task GetLightDataAsync()
         {
-            int ret = Spectrometer.CM_Emission_DarkStorage(Handle, IntTime, Average, 0, fLightData);
+            int ret = await CaptureCalibrationDataAsync(fLightData);
             if (ret == 1)
             {
                 log.Info("LightData 获取成功");
@@ -897,9 +1146,9 @@ namespace Spectrum
             }
         }
 
-        public void GetDarkData()
+        public async Task GetDarkDataAsync()
         {
-            int ret = Spectrometer.CM_Emission_DarkStorage(Handle, IntTime, Average, 0, fDarkData);
+            int ret = await CaptureCalibrationDataAsync(fDarkData);
             if (ret == 1)
             {
                 log.Info("校零成功");
@@ -914,31 +1163,15 @@ namespace Spectrum
             }
         }
 
-        public int MyAutoTimeCallback(int time,double spectum)
+        private Task<int> CaptureCalibrationDataAsync(float[] destination)
         {
-            Application.Current.Dispatcher.Invoke(() =>
+            return RunExclusiveAsync(token => Task.Run(() =>
             {
-                log.Debug($"自动积分时间回调: 积分时间={time}, 光谱强度={spectum}");
-            });
-            return 0;
-        }
-
-        public void GetIntTime()
-        {
-            float fIntTime = IntTime;
-            int ret = Spectrometer.CM_Emission_GetAutoTimeEx(Handle, ref fIntTime, IntLimitTime, AutoIntTimeB, Max,MyAutoTimeCallback);
-            if (ret == 1)
-            {
-                IntTime = fIntTime;
-                log.Info($"自动积分时间获取成功: {fIntTime}ms");
-                MessageBox.Show("获取成功");
-            }
-            else
-            {
-                string errorMsg = Spectrometer.GetErrorMessage(ret);
-                log.Warn($"自动积分时间获取失败: {errorMsg}");
-                MessageBox.Show($"自动积分获取失败: {errorMsg}");
-            }
+                token.ThrowIfCancellationRequested();
+                return IsConnected && Handle != IntPtr.Zero
+                    ? Spectrometer.CM_Emission_DarkStorage(Handle, IntTime, Average, 0, destination)
+                    : -1;
+            }, CancellationToken.None));
         }
 
         public float[] fDarkData = new float[2048];
@@ -946,22 +1179,8 @@ namespace Spectrum
         public float[] fLightData = new float[2048];
 
 
-        public int IntLimitTime { get => _IntLimitTime; set { _IntLimitTime = value; OnPropertyChanged(); } }
-        private int _IntLimitTime = 6000;
-
-        public float AutoIntTimeB { get => _AutoIntTimeB; set { _AutoIntTimeB = value; OnPropertyChanged(); } }
-        private float _AutoIntTimeB = 1;
-
         public float IntTime { get => _IntTime; set { _IntTime = value; OnPropertyChanged(); } }
         private float _IntTime = 100;
-
-        public int Saturation { get => _Saturation; set { _Saturation = value; OnPropertyChanged(); } }
-        private int _Saturation = 99;
-        public int Max { get => _Max; set { _Max = value; OnPropertyChanged(); } }
-        private int _Max = 50000;
-
-        public double MaxPercent { get => _MaxPercent; set { _MaxPercent = value; OnPropertyChanged(); Max = (int)(_MaxPercent * 655.35); } }
-        private double _MaxPercent = 76.3;
 
         public int Average { get => _Average; set { _Average = value; OnPropertyChanged(); } }
         private int _Average = 1;
@@ -1033,9 +1252,15 @@ namespace Spectrum
         private bool _EnableAutoIntegration;
 
 
-        private void LoadMaguideFile()
+        private async Task LoadMaguideFileAsync()
         {
-            int ret = Spectrometer.CM_Emission_LoadMagiudeFile(Handle, MaguideFile);
+            int ret = await RunExclusiveAsync(token => Task.Run(() =>
+            {
+                token.ThrowIfCancellationRequested();
+                return IsConnected && Handle != IntPtr.Zero
+                    ? Spectrometer.CM_Emission_LoadMagiudeFile(Handle, MaguideFile)
+                    : -1;
+            }, CancellationToken.None));
             if (ret == 1)
             {
                 log.Info($"加载幅值文件成功: {MaguideFile}");
@@ -1048,9 +1273,15 @@ namespace Spectrum
                 MessageBox.Show($"配置幅值文件失败: {errorMsg}");
             }
         }
-        private void LoadWavelengthFile()
+        private async Task LoadWavelengthFileAsync()
         {
-            int ret = Spectrometer.CM_Emission_LoadWavaLengthFile(Handle, WavelengthFile);
+            int ret = await RunExclusiveAsync(token => Task.Run(() =>
+            {
+                token.ThrowIfCancellationRequested();
+                return IsConnected && Handle != IntPtr.Zero
+                    ? Spectrometer.CM_Emission_LoadWavaLengthFile(Handle, WavelengthFile)
+                    : -1;
+            }, CancellationToken.None));
             if (ret == 1)
             {
                 log.Info($"加载波长文件成功: {WavelengthFile}");
@@ -1063,23 +1294,6 @@ namespace Spectrum
                 MessageBox.Show($"配置波长文件失败: {errorMsg}");
             }
         }
-
-
-        private void SetMaguideFile()
-        {
-            using (var dialog = new System.Windows.Forms.OpenFileDialog())
-            {
-                dialog.Filter = "All Files|*.*"; // Optionally set a filter for file types
-                dialog.Title = "Save Maguide File";
-                dialog.FileName = "Magiude.dat"; // Default file name
-
-                if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-                {
-                    MaguideFile = dialog.FileName;
-                }
-            }
-        }
-
 
 
         private void SetFile(Action<string> setFilePath)

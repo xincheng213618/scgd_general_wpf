@@ -27,7 +27,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
     }
 
     /// <summary>
-    /// EditDictionaryMode.xaml 的交互逻辑
+    /// 传感器模板明细编辑窗口的交互逻辑
     /// </summary>
     public partial class EditTemplateSensor : UserControl
     {

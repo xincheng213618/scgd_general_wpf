@@ -81,9 +81,6 @@ public class FlowDiagnosticsSchemaTests
             Assert.Contains("last_heartbeat_utc", columns);
             Assert.Contains("final_outcome", columns);
             Assert.Contains("template_revision", columns);
-            Assert.Contains("execution_policy_revision", columns);
-            Assert.Contains("execution_policy_hash", columns);
-            Assert.Contains("execution_policy_snapshot_json", columns);
             Assert.Contains("content_hash", columns);
             Assert.Contains("snapshot_id", columns);
             Assert.Contains("completed_time_utc", columns);
@@ -130,9 +127,6 @@ public class FlowDiagnosticsSchemaTests
                 RunKey = "run-1",
                 StartedTimeUtc = DateTime.UtcNow,
                 TemplateRevision = 3,
-                ExecutionPolicyRevision = 2,
-                ExecutionPolicyHash = new string('a', 64),
-                ExecutionPolicySnapshotJson = """{"revision":2}""",
                 ContentHash = snapshot.ContentHash,
                 SnapshotId = snapshotId,
                 Status = FlowStatus.Completed,
@@ -145,11 +139,6 @@ public class FlowDiagnosticsSchemaTests
             FlowRunRecord persistedRun =
                 db.Queryable<FlowRunRecord>().InSingle(runId);
             Assert.Equal(3, persistedRun.TemplateRevision);
-            Assert.Equal(2, persistedRun.ExecutionPolicyRevision);
-            Assert.Equal(new string('a', 64), persistedRun.ExecutionPolicyHash);
-            Assert.Equal(
-                """{"revision":2}""",
-                persistedRun.ExecutionPolicySnapshotJson);
         }
         finally
         {

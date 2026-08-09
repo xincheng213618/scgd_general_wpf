@@ -15,6 +15,15 @@ namespace ColorVision.Copilot
         RedactedExcerpt,
     }
 
+    public enum CopilotApprovalPromptCategory
+    {
+        SandboxApproval,
+        Rules,
+        McpElicitations,
+        RequestPermissions,
+        SkillApproval,
+    }
+
     public sealed record CopilotToolCapabilityDescriptor
     {
         public static readonly TimeSpan DefaultExecutionTimeout = TimeSpan.FromSeconds(30);
@@ -31,6 +40,8 @@ namespace ColorVision.Copilot
         public CopilotToolRiskLevel RiskLevel { get; init; }
 
         public CopilotToolApprovalMode ApprovalMode { get; init; }
+
+        public CopilotApprovalPromptCategory ApprovalPromptCategory { get; init; }
 
         public CopilotToolIdempotency Idempotency { get; init; }
 
@@ -77,13 +88,15 @@ namespace ColorVision.Copilot
             CopilotToolIdempotency idempotency,
             TimeSpan? executionTimeout = null,
             CopilotToolAuditArgumentMode auditArgumentMode = CopilotToolAuditArgumentMode.RedactedSummary,
-            bool allowsTemporaryFullAccess = false)
+            bool allowsTemporaryFullAccess = false,
+            CopilotApprovalPromptCategory approvalPromptCategory = CopilotApprovalPromptCategory.SandboxApproval)
         {
             return new CopilotToolCapabilityDescriptor
             {
                 Access = CopilotToolAccess.Write,
                 RiskLevel = CopilotToolRiskLevel.High,
                 ApprovalMode = CopilotToolApprovalMode.Always,
+                ApprovalPromptCategory = approvalPromptCategory,
                 Idempotency = idempotency,
                 ConcurrencyMode = CopilotToolConcurrencyMode.Exclusive,
                 ExecutionTimeout = executionTimeout ?? DefaultExecutionTimeout,
@@ -98,6 +111,7 @@ namespace ColorVision.Copilot
             if (!Enum.IsDefined(Access)
                 || !Enum.IsDefined(RiskLevel)
                 || !Enum.IsDefined(ApprovalMode)
+                || !Enum.IsDefined(ApprovalPromptCategory)
                 || !Enum.IsDefined(Idempotency)
                 || !Enum.IsDefined(ConcurrencyMode)
                 || !Enum.IsDefined(AuditArgumentMode)

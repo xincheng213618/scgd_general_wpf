@@ -234,7 +234,6 @@ namespace Conoscope.Core
                 }
 
                 Attribute.ReferenceAngle = angle;
-                Render();
                 return true;
             }
 
@@ -245,7 +244,6 @@ namespace Conoscope.Core
             }
 
             Attribute.ReferenceRadiusAngle = radiusAngle;
-            Render();
             return true;
         }
 
@@ -422,6 +420,8 @@ namespace Conoscope.Core
         private readonly Zoombox zoombox;
         private bool isDragging;
 
+        internal bool IsUpdatingReference { get; private set; }
+
         public ConoscopeCoordinateAxisController(DrawCanvas drawCanvas, Zoombox zoombox, ConoscopeCoordinateAxisParam param)
         {
             this.drawCanvas = drawCanvas;
@@ -494,7 +494,7 @@ namespace Conoscope.Core
 
             isDragging = true;
             drawCanvas.CaptureMouse();
-            bool isValueChanged = Axis.UpdateReferenceFromPoint(point);
+            bool isValueChanged = UpdateReferenceFromPoint(point);
             PointerLeft?.Invoke(this, EventArgs.Empty);
             RaiseReferenceChanged(false, point, isValueChanged);
 
@@ -533,7 +533,7 @@ namespace Conoscope.Core
                 return;
             }
 
-            bool isValueChanged = Axis.UpdateReferenceFromPoint(point);
+            bool isValueChanged = UpdateReferenceFromPoint(point);
             RaiseReferenceChanged(false, point, isValueChanged);
             e.Handled = true;
         }
@@ -553,9 +553,22 @@ namespace Conoscope.Core
             isDragging = false;
             drawCanvas.ReleaseMouseCapture();
             Point point = e.GetPosition(drawCanvas);
-            bool isValueChanged = Axis.UpdateReferenceFromPoint(point);
+            bool isValueChanged = UpdateReferenceFromPoint(point);
             RaiseReferenceChanged(true, point, isValueChanged);
             e.Handled = true;
+        }
+
+        private bool UpdateReferenceFromPoint(Point point)
+        {
+            IsUpdatingReference = true;
+            try
+            {
+                return Axis.UpdateReferenceFromPoint(point);
+            }
+            finally
+            {
+                IsUpdatingReference = false;
+            }
         }
 
         private void Zoombox_LayoutUpdated(object? sender, EventArgs e)

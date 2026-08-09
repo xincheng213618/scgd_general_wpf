@@ -51,13 +51,18 @@ namespace ColorVision.Copilot
                 return;
             }
 
-            var prompt = new StringBuilder("Review the current uncommitted workspace changes. Do not modify files or apply fixes.");
-            if (!string.IsNullOrWhiteSpace(focusInstructions))
-                prompt.Append(" Focus: ").Append(focusInstructions.Trim());
+            if (!CopilotWorkspaceReviewRequest.TryParse(focusInstructions, out var reviewRequest, out var error))
+            {
+                ShowLocalCommandResult(
+                    command,
+                    $"{error}{Environment.NewLine}用法：{command.Usage}");
+                return;
+            }
 
             DismissLocalCommandResult();
             SetPendingRequestModeOverride(CopilotAgentMode.Review);
-            InputText = prompt.ToString();
+            SetPendingWorkspaceReviewTarget(reviewRequest.CreateTargetContext());
+            InputText = reviewRequest.BuildPrompt();
             RunUiOperation(SendAsync, "开始工作区审查");
         }
 
@@ -71,6 +76,7 @@ namespace ColorVision.Copilot
 
             DismissLocalCommandResult();
             SetPendingRequestModeOverride(CopilotAgentMode.Review);
+            SetPendingWorkspaceReviewTarget(CopilotWorkspaceReviewTargetContext.WorkingTree());
             InputText = CopilotWorkspaceVerification.BuildPrompt(focusInstructions);
             RunUiOperation(SendAsync, "验证工作区改动");
         }
@@ -83,8 +89,10 @@ namespace ColorVision.Copilot
                 return;
             }
 
-            var workspaceRoot = CaptureHostedTurnSnapshot(Attachments).SolutionDirectoryPath;
-            var plan = CopilotProjectInitialization.Create(workspaceRoot);
+            var turnSnapshot = CaptureHostedTurnSnapshot(Attachments);
+            var plan = CopilotProjectInitialization.Create(
+                turnSnapshot.SolutionDirectoryPath,
+                turnSnapshot.ProjectInstructionDiscoveryOptions);
             if (!plan.CanStart)
             {
                 ShowLocalCommandResult(command, plan.Message);
@@ -144,6 +152,21 @@ namespace ColorVision.Copilot
             }
 
             var normalizedArguments = (arguments ?? string.Empty).Trim();
+            var goalsEnabled = CaptureHostedTurnSnapshot(
+                conversation,
+                attachmentOverride: conversation.Attachments)
+                .ProjectInstructionDiscoveryOptions
+                .ConfiguredGoalsEnabled;
+            if (!goalsEnabled
+                && !CopilotConversationGoalFeaturePolicy.CanManageWhileDisabled(normalizedArguments))
+            {
+                ShowLocalCommandResult(
+                    command,
+                    "Codex features.goals=false 已暂停持续目标功能：不会向新请求注入目标、记录目标轮次、执行独立完成评估或自动续作。"
+                    + Environment.NewLine
+                    + "已有目标记录保持不变；仍可用 /goal 查看、/goal pause 暂停或 /goal clear 清除。修改配置后可再次恢复。");
+                return;
+            }
             if (IsBusy
                 && normalizedArguments.Length > 0
                 && !string.Equals(normalizedArguments, "pause", StringComparison.OrdinalIgnoreCase)
@@ -230,8 +253,12 @@ namespace ColorVision.Copilot
             }
             if (CopilotAgentTaskContinuityPolicy.HasAvailableStructuredRecovery(
                 conversation,
-                CreateConversationRequestProfile(profile, conversation),
-                CopilotCapabilityCatalog.Shared.GetSnapshot()))
+                CreateCurrentConversationRequestProfile(profile, conversation),
+                CopilotCapabilityCatalog.Shared.GetSnapshot(
+                    _currentCodexConfigOptions.ConfiguredPluginsEnabled),
+                CopilotToolExecutor.GetSharedHookSurfaceSnapshot(
+                    _currentCodexConfigOptions.ConfiguredHooksEnabled
+                        && _currentCodexConfigOptions.ConfiguredPluginsEnabled)))
             {
                 var latestAssistant = conversation.Messages.LastOrDefault(message => message != null && !message.IsUser);
                 var isFinalAnswerRecovery = latestAssistant?.HasRecoverableFinalAnswer == true;
@@ -242,6 +269,9 @@ namespace ColorVision.Copilot
                         : $"当前会话还有可安全继续的 Agent 任务。请先使用“{latestAssistant?.AgentRecoveryActionLabel ?? "继续任务"}”处理它，或在任务列表中明确放弃它，再压缩上下文；本次压缩未开始，checkpoint 已保留。");
                 return;
             }
+
+            var compactionConfig = CaptureHostedTurnSnapshot(
+                conversation.Attachments).ProjectInstructionDiscoveryOptions;
 
             var sourceMessages = conversation.Messages
                 .Where(message => !string.IsNullOrWhiteSpace(message.ModelContent))
@@ -256,14 +286,18 @@ namespace ColorVision.Copilot
                 return;
             }
 
-            var summaryMaximumWeight = ResolveConversationHistoryLimits(profile).MaximumContentCharacters;
+            var summaryMaximumWeight = ResolveConversationHistoryLimits(
+                profile,
+                compactionConfig).MaximumContentCharacters;
             var compactProfile = profile.Clone();
             compactProfile.UseSystemPromptOverride(CopilotConversationCompactionPrompt.SystemPrompt);
             compactProfile.MaxTokens = Math.Min(compactProfile.MaxTokens, CompactSummaryOutputTokens);
             compactProfile.Temperature = 0.1;
 
-            var compactRequest = CopilotConversationCompactionPrompt.BuildRequest(focusInstructions);
-            var historyLimits = ResolveConversationHistoryLimits(compactProfile);
+            var compactRequest = CopilotConversationCompactionPrompt.BuildRequest(
+                focusInstructions,
+                compactionConfig.CompactPrompt);
+            var historyLimits = ResolveConversationHistoryLimits(compactProfile, compactionConfig);
             compactProfile.MaxTokens = Math.Min(
                 compactProfile.MaxTokens,
                 ResolveCompactSummaryOutputTokens(summaryMaximumWeight));
@@ -289,6 +323,15 @@ namespace ColorVision.Copilot
             try
             {
                 var reply = await _chatService.CompleteReplyDetailedAsync(compactProfile, request, cancellation.Token);
+                if (CanApplyAuxiliaryConversationResult(conversation))
+                {
+                    conversation.RecordCompactionUsage(reply.Usage, DateTimeOffset.UtcNow);
+                    PersistState();
+                }
+                else if (Volatile.Read(ref _disposeState) == 1)
+                {
+                    return;
+                }
                 cancellation.Token.ThrowIfCancellationRequested();
                 if (reply.IsIncomplete)
                     throw new InvalidOperationException(BuildIncompleteCompactionMessage(reply));
@@ -316,7 +359,8 @@ namespace ColorVision.Copilot
                 ShowLocalCommandResult(
                     command,
                     $"已将最早 {compactionPlan.NewSourceMessageCount:N0} 条完整上下文、{compactionPlan.NewSourceCharacters:N0} 个字符合并进延续摘要。\n"
-                    + $"后续请求将使用 {summary.Length:N0} 字符摘要，并保留边界后的 {retainedAfterBoundary:N0} 条新消息；界面中的完整对话未删除。"
+                    + $"后续请求将使用 {summary.Length:N0} 字符摘要，并保留边界后的 {retainedAfterBoundary:N0} 条新消息；界面中的完整对话未删除。\n"
+                    + FormatCompactionUsage(reply.Usage)
                     + (!includeFocusInResult || string.IsNullOrWhiteSpace(focusInstructions)
                         ? string.Empty
                         : "\n聚焦要求：" + focusInstructions.Trim()));
@@ -324,7 +368,9 @@ namespace ColorVision.Copilot
             }
             catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
             {
-                ShowLocalCommandResult(command, "上下文压缩已取消，原有对话和压缩状态均未改变。");
+                ShowLocalCommandResult(
+                    command,
+                    "上下文压缩已取消，原有对话和压缩摘要均未改变；若 Provider 已完成响应，其 Token 元数据仍会计入本会话用量。");
             }
             catch (Exception ex)
             {
@@ -342,24 +388,34 @@ namespace ColorVision.Copilot
         private async Task<CopilotAutomaticCompactionOutcome> TryAutoCompactConversationAsync(
             CopilotConversationRecord conversation,
             CopilotProfileConfig requestProfile,
-            string pendingPrompt)
+            string pendingPrompt,
+            CopilotProjectInstructionDiscoveryOptions codexConfigOptions)
         {
             if (IsBusy || _taskHost.IsActive || _isCompactingConversation || IsEditingMessage)
                 return CopilotAutomaticCompactionOutcome.NotNeeded;
             if (CopilotAgentTaskContinuityPolicy.HasAvailableStructuredRecovery(
                 conversation,
                 requestProfile,
-                CopilotCapabilityCatalog.Shared.GetSnapshot()))
+                CopilotCapabilityCatalog.Shared.GetSnapshot(
+                    codexConfigOptions.ConfiguredPluginsEnabled),
+                CopilotToolExecutor.GetSharedHookSurfaceSnapshot(
+                    codexConfigOptions.ConfiguredHooksEnabled
+                        && codexConfigOptions.ConfiguredPluginsEnabled)))
             {
                 return CopilotAutomaticCompactionOutcome.NotNeeded;
             }
 
             var decision = CopilotConversationAutoCompactionPolicy.Evaluate(
                 conversation,
-                ResolveConversationHistoryLimits(requestProfile),
+                ResolveConversationHistoryLimits(requestProfile, codexConfigOptions),
                 pendingPrompt,
-                _config.AgentDefaults.AutoCompactConversationHistory,
-                _config.AgentDefaults.AutoCompactThresholdPercent);
+                new CopilotConversationAutoCompactionOptions(
+                    _config.AgentDefaults.AutoCompactConversationHistory,
+                    _config.AgentDefaults.AutoCompactThresholdPercent,
+                    codexConfigOptions.HasModelAutoCompactTokenLimitOverride
+                        ? codexConfigOptions.ConfiguredModelAutoCompactTokenLimit
+                        : null,
+                    codexConfigOptions.EffectiveModelAutoCompactTokenLimitScope));
             if (!decision.ShouldCompact)
                 return CopilotAutomaticCompactionOutcome.NotNeeded;
 
@@ -384,9 +440,14 @@ namespace ColorVision.Copilot
                 return CopilotAutomaticCompactionOutcome.Failed;
             }
 
-            var triggerText = decision.Trigger == CopilotConversationAutoCompactionTrigger.MessageCount
-                ? $"消息数达到 {decision.UsagePercent:N0}%"
-                : $"估算上下文达到 {decision.UsagePercent:N0}%";
+            var triggerText = decision.Trigger switch
+            {
+                CopilotConversationAutoCompactionTrigger.MessageCount =>
+                    $"消息数达到 {decision.UsagePercent:N0}%",
+                CopilotConversationAutoCompactionTrigger.ConfiguredTokenLimit =>
+                    $"Codex {CopilotModelAutoCompactTokenLimitScopeSelection.GetConfigToken(decision.TokenLimitScope)} 计量达到 {decision.EvaluatedTokens:N0}/{decision.ThresholdTokens:N0} Token",
+                _ => $"估算上下文达到 {decision.UsagePercent:N0}%",
+            };
             var customFocusText = _config.AgentDefaults.AutoCompactInstructions.Length > 0
                 ? $"已应用 {_config.AgentDefaults.AutoCompactInstructions.Length:N0} 字符的自定义长期重点。"
                 : "已应用内置默认保留重点。";
@@ -445,6 +506,17 @@ namespace ColorVision.Copilot
                 CopilotChatFinishKind.ToolRequested => "模型在压缩过程中请求了工具，未应用不完整摘要。",
                 _ => "提供商未正常完成压缩，未应用不完整摘要。",
             };
+        }
+
+        private static string FormatCompactionUsage(CopilotTokenUsage usage)
+        {
+            if (!usage.HasAny)
+                return "本次压缩模型用量：Provider 未返回 Token 元数据。";
+
+            var cache = usage.CachedInputTokens.HasValue
+                ? $" · 缓存输入 {usage.EffectiveCachedInputTokens:N0}"
+                : string.Empty;
+            return $"本次压缩模型用量：输入 {Math.Max(0, usage.InputTokens):N0} · 输出 {Math.Max(0, usage.OutputTokens):N0} · 总计 {usage.EffectiveTotalTokens:N0}{cache}";
         }
 
     }

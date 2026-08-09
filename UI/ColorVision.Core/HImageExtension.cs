@@ -402,7 +402,7 @@ namespace ColorVision.Core
             bytesPerPixel = channels * (depth / 8);
             int stride = writeableBitmap.PixelWidth * bytesPerPixel;
 
-            // Create a new HImageCache instance
+            // Create a borrowed HImage descriptor for the locked bitmap buffer.
             HImage hImage = new()
             {
                 rows = writeableBitmap.PixelHeight,
@@ -464,7 +464,7 @@ namespace ColorVision.Core
             bytesPerPixel = channels * (depth / 8);
             int stride = writeableBitmap.PixelWidth * bytesPerPixel;
 
-            // Create a new HImageCache instance
+            // Create an owned HImage buffer.
             HImage hImage = new()
             {
                 rows = writeableBitmap.PixelHeight,
@@ -485,7 +485,7 @@ namespace ColorVision.Core
                     return hImage;
                 }
 
-                // Copy the pixel data from the WriteableBitmap to the HImageCache.
+                // Copy the pixel data from the WriteableBitmap to the owned HImage buffer.
                 writeableBitmap.Lock();
                 try
                 {

@@ -1,6 +1,7 @@
 ﻿#pragma warning disable CA1725,CS8602,CS8604,CS8629
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
+using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.Engine.Services;
 using CVCommCore.CVAlgorithm;
@@ -95,17 +96,16 @@ namespace ColorVision.Engine.Templates.Jsons.KB
                     ctx.ImageView.OpenImage(result.FilePath);
             }
 
-            List<POIPoint> DrawPoiPoint = new();
+            List<PoiPoint> poiPoints = new();
             foreach (var item in result.ViewResults)
             {
                 if (item is PoiPointResultModel poiPointResultModel)
                 {
-                    POIPoint pOIPoint = new POIPoint(poiPointResultModel.PoiId ?? -1, -1, poiPointResultModel.PoiName, poiPointResultModel.PoiType, (int)poiPointResultModel.PoiX, (int)poiPointResultModel.PoiY, poiPointResultModel.PoiWidth ?? 0, poiPointResultModel.PoiHeight ?? 0);
-                    DrawPoiPoint.Add(pOIPoint);
+                    poiPoints.Add(new PoiPoint(poiPointResultModel.PoiId, -1, poiPointResultModel.PoiName, poiPointResultModel.PoiType.ToPoiShape(), poiPointResultModel.PoiX ?? 0, poiPointResultModel.PoiY ?? 0, poiPointResultModel.PoiWidth ?? 0, poiPointResultModel.PoiHeight ?? 0));
                 }
 
             }
-            AddPOIPoint(ctx.ImageView, DrawPoiPoint);
+            PoiOverlayRenderer.AddRange(ctx.ImageView, poiPoints);
 
             List<string> header;
             List<string> bdHeader;

@@ -52,15 +52,6 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
         [SugarColumn(ColumnName = "template_revision", IsNullable = true)]
         public int? TemplateRevision { get; set; }
 
-        [SugarColumn(ColumnName = "execution_policy_revision", IsNullable = true)]
-        public long? ExecutionPolicyRevision { get; set; }
-
-        [SugarColumn(ColumnName = "execution_policy_hash", IsNullable = true, Length = 64)]
-        public string? ExecutionPolicyHash { get; set; }
-
-        [SugarColumn(ColumnName = "execution_policy_snapshot_json", IsNullable = true)]
-        public string? ExecutionPolicySnapshotJson { get; set; }
-
         [SugarColumn(ColumnName = "content_hash", IsNullable = true, Length = 64)]
         public string? ContentHash { get; set; }
 

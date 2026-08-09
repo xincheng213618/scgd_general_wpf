@@ -348,6 +348,7 @@ namespace ColorVision.Copilot
                     ? $"Rolled back the workspace patch for {Path.GetFileName(fullPath)}."
                     : $"Applied the approved workspace patch to {Path.GetFileName(fullPath)}.",
                 Content = $"path: {fullPath}\npreview_id: {record.PreviewId}\nsha256: {resultingHash}\nstate: {record.State}",
+                WorkspaceMutation = CreateWorkspaceMutationSnapshot([record], rollback),
             };
         }
 
@@ -414,6 +415,7 @@ namespace ColorVision.Copilot
                     Success = true,
                     Summary = $"Rolled back workspace file creation for {Path.GetFileName(rollbackPath)}.",
                     Content = $"path: {rollbackPath}\npreview_id: {record.PreviewId}\nfile_exists: false\nstate: {record.State}",
+                    WorkspaceMutation = CreateWorkspaceMutationSnapshot([record], rollback: true),
                 };
             }
 
@@ -468,6 +470,7 @@ namespace ColorVision.Copilot
                 Success = true,
                 Summary = $"Created the approved workspace file {Path.GetFileName(fullPath)}.",
                 Content = $"path: {fullPath}\npreview_id: {record.PreviewId}\nsha256: {record.AfterSha256}\nstate: {record.State}",
+                WorkspaceMutation = CreateWorkspaceMutationSnapshot([record], rollback: false),
             };
         }
 

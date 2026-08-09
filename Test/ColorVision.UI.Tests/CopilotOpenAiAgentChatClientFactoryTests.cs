@@ -41,6 +41,26 @@ public sealed class CopilotOpenAiAgentChatClientFactoryTests
 
         """;
 
+    private const string ReasoningResponseStream =
+        """
+        data: {"type":"response.created","sequence_number":0,"response":{"id":"resp_reasoning","object":"response","created_at":1234567890,"model":"gpt-5.5","status":"in_progress","output":[]}}
+
+        data: {"type":"response.output_item.added","sequence_number":1,"output_index":0,"item":{"type":"reasoning","id":"rs_test","summary":[],"encrypted_content":"encrypted-reasoning-test"}}
+
+        data: {"type":"response.output_item.done","sequence_number":2,"output_index":0,"item":{"type":"reasoning","id":"rs_test","summary":[],"encrypted_content":"encrypted-reasoning-test"}}
+
+        data: {"type":"response.output_item.added","sequence_number":3,"output_index":1,"item":{"type":"message","id":"msg_reasoning","role":"assistant","status":"in_progress","phase":"final_answer","content":[]}}
+
+        data: {"type":"response.output_text.delta","sequence_number":4,"item_id":"msg_reasoning","output_index":1,"content_index":0,"delta":"First answer."}
+
+        data: {"type":"response.output_item.done","sequence_number":5,"output_index":1,"item":{"type":"message","id":"msg_reasoning","role":"assistant","status":"completed","phase":"final_answer","content":[{"type":"output_text","text":"First answer.","annotations":[]}]}}
+
+        data: {"type":"response.completed","sequence_number":6,"response":{"id":"resp_reasoning","object":"response","created_at":1234567890,"model":"gpt-5.5","status":"completed","output":[{"type":"reasoning","id":"rs_test","summary":[],"encrypted_content":"encrypted-reasoning-test"},{"type":"message","id":"msg_reasoning","role":"assistant","status":"completed","phase":"final_answer","content":[{"type":"output_text","text":"First answer.","annotations":[]}]}],"usage":{"input_tokens":10,"output_tokens":5,"total_tokens":15,"input_tokens_details":{"cached_tokens":0},"output_tokens_details":{"reasoning_tokens":2}}}}
+
+        data: [DONE]
+
+        """;
+
     [Fact]
     public async Task OfficialOpenAiAgentUsesStatelessResponsesStreamingContract()
     {
@@ -88,6 +108,48 @@ public sealed class CopilotOpenAiAgentChatClientFactoryTests
     }
 
     [Fact]
+    public async Task OfficialOpenAiAgentAddsAStableHashedSafetyIdentifier()
+    {
+        using var handler = new CapturingHandler(
+            HttpStatusCode.OK,
+            TextResponseStream,
+            "text/event-stream");
+        using var httpClient = new HttpClient(handler);
+        var profile = CreateProfile(
+            CopilotVendorType.OpenAI,
+            "https://api.openai.com/v1",
+            "gpt-5.6");
+        using var client = CopilotOpenAiAgentChatClientFactory.Create(profile, httpClient);
+        var request = new CopilotAgentRequest { Profile = profile };
+
+        await client.GetStreamingResponseAsync(
+                [new ChatMessage(ChatRole.User, "Use the official Responses contract.")],
+                CopilotMicrosoftAgentFrameworkRuntime.BuildChatOptions(request, []))
+            .ToChatResponseAsync();
+
+        using var payload = JsonDocument.Parse(handler.LastPayload);
+        var safetyIdentifier = payload.RootElement
+            .GetProperty("safety_identifier")
+            .GetString();
+        Assert.NotNull(safetyIdentifier);
+        Assert.Matches("^[0-9a-f]{64}$", safetyIdentifier);
+        Assert.Equal(CopilotOpenAiSafetyIdentifier.GetCurrent(), safetyIdentifier);
+    }
+
+    [Fact]
+    public void SafetyIdentifierHashesAStableNormalizedAccountKey()
+    {
+        var first = CopilotOpenAiSafetyIdentifier.Create(@"DOMAIN\Example.User");
+        var second = CopilotOpenAiSafetyIdentifier.Create(@"domain\example.user");
+
+        Assert.Equal(first, second);
+        Assert.Matches("^[0-9a-f]{64}$", first);
+        Assert.DoesNotContain("example", first, StringComparison.OrdinalIgnoreCase);
+        Assert.NotEqual(first, CopilotOpenAiSafetyIdentifier.Create(@"DOMAIN\Other.User"));
+        Assert.Equal(string.Empty, CopilotOpenAiSafetyIdentifier.Create(" "));
+    }
+
+    [Fact]
     public async Task OfficialOpenAiAgentMapsResponsesFunctionCallsForHarnessExecution()
     {
         using var handler = new CapturingHandler(
@@ -120,6 +182,273 @@ public sealed class CopilotOpenAiAgentChatClientFactoryTests
     }
 
     [Fact]
+    public async Task OfficialOpenAiAgentReplaysEveryStatelessOutputItemAcrossSerializedTurns()
+    {
+        using var handler = new CapturingHandler(
+            ReasoningResponseStream,
+            TextResponseStream,
+            TextResponseStream);
+        using var httpClient = new HttpClient(handler);
+        using var client = CopilotOpenAiAgentChatClientFactory.Create(
+            CreateProfile(
+                CopilotVendorType.OpenAI,
+                "https://api.openai.com/v1",
+                "gpt-5.5"),
+            httpClient);
+        var firstUserMessage = new ChatMessage(ChatRole.User, "Remember the reasoning state.");
+
+        var firstResponse = await client.GetStreamingResponseAsync(
+                [firstUserMessage])
+            .ToChatResponseAsync();
+        var serializedMessages = JsonSerializer.Serialize(
+            firstResponse.Messages,
+            AIJsonUtilities.DefaultOptions);
+        var restoredMessages = JsonSerializer.Deserialize<List<ChatMessage>>(
+            serializedMessages,
+            AIJsonUtilities.DefaultOptions);
+        var secondTurnMessages = new List<ChatMessage> { firstUserMessage };
+        secondTurnMessages.AddRange(Assert.IsType<List<ChatMessage>>(restoredMessages));
+        secondTurnMessages.Add(new ChatMessage(ChatRole.User, "Continue from the prior state."));
+        await client.GetStreamingResponseAsync(secondTurnMessages)
+            .ToChatResponseAsync();
+
+        Assert.Equal(2, handler.Payloads.Count);
+        AssertStatelessResponseItemsReplayed(handler.Payloads[1]);
+
+        secondTurnMessages.Add(new ChatMessage(ChatRole.User, "Verify the preserved state again."));
+        await client.GetStreamingResponseAsync(secondTurnMessages)
+            .ToChatResponseAsync();
+
+        Assert.Equal(3, handler.Payloads.Count);
+        AssertStatelessResponseItemsReplayed(handler.Payloads[2]);
+    }
+
+    private static void AssertStatelessResponseItemsReplayed(string payload)
+    {
+        using var document = JsonDocument.Parse(payload);
+        var inputItems = document.RootElement.GetProperty("input").EnumerateArray().ToArray();
+        var reasoningItem = Assert.Single(inputItems.Where(
+            item => item.GetProperty("type").GetString() == "reasoning"));
+        Assert.True(
+            reasoningItem.TryGetProperty("id", out var reasoningId),
+            payload);
+        Assert.Equal("rs_test", reasoningId.GetString());
+        Assert.Equal(
+            "encrypted-reasoning-test",
+            reasoningItem.GetProperty("encrypted_content").GetString());
+        var assistantItem = Assert.Single(inputItems.Where(
+            item => item.GetProperty("type").GetString() == "message"
+                && item.GetProperty("role").GetString() == "assistant"));
+        Assert.True(assistantItem.TryGetProperty("id", out var assistantId), payload);
+        Assert.Equal("msg_reasoning", assistantId.GetString());
+        Assert.True(assistantItem.TryGetProperty("phase", out var assistantPhase));
+        Assert.Equal("final_answer", assistantPhase.GetString());
+        var outputText = Assert.Single(assistantItem.GetProperty("content").EnumerateArray());
+        Assert.Equal("output_text", outputText.GetProperty("type").GetString());
+        Assert.Equal("First answer.", outputText.GetProperty("text").GetString());
+        Assert.False(document.RootElement.GetProperty("store").GetBoolean());
+    }
+
+    [Theory]
+    [InlineData("fast", "high", "priority", "high")]
+    [InlineData("flex", "medium", "flex", "medium")]
+    [InlineData("scale", "low", "scale", "low")]
+    public async Task OfficialOpenAiAgentPreservesCodexResponsePreferencesOnTheWire(
+        string configuredServiceTier,
+        string configuredVerbosity,
+        string expectedServiceTier,
+        string expectedVerbosity)
+    {
+        Assert.True(CopilotCodexModelVerbositySelection.TryParse(
+            configuredVerbosity,
+            out var verbosity));
+        using var handler = new CapturingHandler(
+            HttpStatusCode.OK,
+            TextResponseStream,
+            "text/event-stream");
+        using var httpClient = new HttpClient(handler);
+        var profile = CreateProfile(
+            CopilotVendorType.OpenAI,
+            "https://api.openai.com/v1",
+            "gpt-5.5");
+        using var client = CopilotOpenAiAgentChatClientFactory.Create(profile, httpClient);
+        var request = new CopilotAgentRequest
+        {
+            Profile = profile,
+            CodexReasoningEffort = CopilotCodexReasoningEffort.Minimal,
+            CodexReasoningSummary = CopilotCodexReasoningSummary.Concise,
+            CodexServiceTier = configuredServiceTier,
+            CodexModelVerbosity = verbosity,
+        };
+
+        await client.GetStreamingResponseAsync(
+                [new ChatMessage(ChatRole.User, "Use the configured response preferences.")],
+                CopilotMicrosoftAgentFrameworkRuntime.BuildChatOptions(request, []))
+            .ToChatResponseAsync();
+
+        using var payload = JsonDocument.Parse(handler.LastPayload);
+        var root = payload.RootElement;
+        Assert.False(root.GetProperty("store").GetBoolean());
+        Assert.Equal(
+            expectedServiceTier,
+            root.GetProperty("service_tier").GetString());
+        Assert.Equal(
+            expectedVerbosity,
+            root.GetProperty("text").GetProperty("verbosity").GetString());
+        Assert.Equal("minimal", root.GetProperty("reasoning").GetProperty("effort").GetString());
+        Assert.Equal("concise", root.GetProperty("reasoning").GetProperty("summary").GetString());
+    }
+
+    [Fact]
+    public async Task OfficialOpenAiAgentDropsServiceTierWhenFastModeIsDisabled()
+    {
+        using var handler = new CapturingHandler(
+            HttpStatusCode.OK,
+            TextResponseStream,
+            "text/event-stream");
+        using var httpClient = new HttpClient(handler);
+        var profile = CreateProfile(
+            CopilotVendorType.OpenAI,
+            "https://api.openai.com/v1",
+            "gpt-5.5");
+        using var client = CopilotOpenAiAgentChatClientFactory.Create(profile, httpClient);
+        var request = new CopilotAgentRequest
+        {
+            Profile = profile,
+            CodexFastModeEnabled = false,
+            CodexServiceTier = "fast",
+        };
+
+        await client.GetStreamingResponseAsync(
+                [new ChatMessage(ChatRole.User, "Honor the fast mode gate.")],
+                CopilotMicrosoftAgentFrameworkRuntime.BuildChatOptions(request, []))
+            .ToChatResponseAsync();
+
+        using var payload = JsonDocument.Parse(handler.LastPayload);
+        Assert.False(payload.RootElement.TryGetProperty("service_tier", out _));
+    }
+
+    [Theory]
+    [InlineData(null, "minimal", "concise", "minimal", "concise")]
+    [InlineData(null, "none", null, "none", null)]
+    [InlineData(null, "xhigh", "detailed", "xhigh", "detailed")]
+    [InlineData(null, "max", "concise", "max", "concise")]
+    [InlineData(null, "ultra", "auto", "ultra", "auto")]
+    [InlineData(null, "high", "none", "high", null)]
+    [InlineData(null, null, "auto", null, "auto")]
+    [InlineData(null, null, "none", null, null)]
+    [InlineData(false, "minimal", "concise", null, null)]
+    [InlineData(true, "minimal", null, "minimal", "auto")]
+    [InlineData(true, "high", "none", "high", null)]
+    public async Task OfficialOpenAiAgentHonorsCodexReasoningOptionsOnTheResponsesWire(
+        bool? supportsReasoningSummaries,
+        string? configuredEffort,
+        string? configuredSummary,
+        string? expectedEffort,
+        string? expectedSummary)
+    {
+        var effort = CopilotCodexReasoningEffort.Unspecified;
+        var summary = CopilotCodexReasoningSummary.Unspecified;
+        if (configuredEffort != null)
+            Assert.True(CopilotCodexReasoningEffortSelection.TryParsePlanMode(configuredEffort, out effort));
+        if (configuredSummary != null)
+            Assert.True(CopilotCodexReasoningSummarySelection.TryParse(configuredSummary, out summary));
+        using var handler = new CapturingHandler(
+            HttpStatusCode.OK,
+            TextResponseStream,
+            "text/event-stream");
+        using var httpClient = new HttpClient(handler);
+        var profile = CreateProfile(
+            CopilotVendorType.OpenAI,
+            "https://api.openai.com/v1",
+            "gpt-5.5");
+        using var client = CopilotOpenAiAgentChatClientFactory.Create(profile, httpClient);
+        var request = new CopilotAgentRequest
+        {
+            Profile = profile,
+            CodexReasoningEffort = effort,
+            CodexReasoningSummary = summary,
+            CodexModelSupportsReasoningSummaries = supportsReasoningSummaries,
+        };
+
+        await client.GetStreamingResponseAsync(
+                [new ChatMessage(ChatRole.User, "Use the configured reasoning contract.")],
+                CopilotMicrosoftAgentFrameworkRuntime.BuildChatOptions(request, []))
+            .ToChatResponseAsync();
+
+        using var payload = JsonDocument.Parse(handler.LastPayload);
+        if (expectedEffort == null && expectedSummary == null)
+        {
+            Assert.False(payload.RootElement.TryGetProperty("reasoning", out _));
+            return;
+        }
+
+        var reasoning = payload.RootElement.GetProperty("reasoning");
+        if (expectedEffort == null)
+            Assert.False(reasoning.TryGetProperty("effort", out _));
+        else
+            Assert.Equal(expectedEffort, reasoning.GetProperty("effort").GetString());
+        if (expectedSummary == null)
+            Assert.False(reasoning.TryGetProperty("summary", out _));
+        else
+            Assert.Equal(expectedSummary, reasoning.GetProperty("summary").GetString());
+    }
+
+    [Fact]
+    public async Task CustomSubagentReasoningSummarySupportFlowsToTheResponsesWire()
+    {
+        using var handler = new CapturingHandler(
+            HttpStatusCode.OK,
+            TextResponseStream,
+            "text/event-stream");
+        using var httpClient = new HttpClient(handler);
+        var profile = CreateProfile(
+            CopilotVendorType.OpenAI,
+            "https://api.openai.com/v1",
+            "gpt-5.5");
+        var parentRequest = new CopilotAgentRequest
+        {
+            ConversationId = "custom-summary-support",
+            UserText = "Delegate a bounded investigation.",
+            TaskIntentText = "Delegate a bounded investigation.",
+            Profile = profile,
+            CodexReasoningEffort = CopilotCodexReasoningEffort.High,
+            CodexReasoningSummary = CopilotCodexReasoningSummary.Detailed,
+            CodexModelSupportsReasoningSummaries = true,
+            CodexCustomSubagents =
+            [
+                new CopilotCodexCustomSubagentDefinition
+                {
+                    Name = "no-summary",
+                    Description = "Use a model without reasoning summaries.",
+                    DeveloperInstructions = "Inspect only bounded evidence.",
+                    SupportsReasoningSummaries = false,
+                },
+            ],
+        };
+        var childRequest = CopilotSubagentRunner.CreateChildRequest(
+            parentRequest,
+            CopilotSubagentRoleCatalog.Default.GetRequired(CopilotSubagentRoleCatalog.ExploreRoleId),
+            new CopilotSubagentRunRequest
+            {
+                RunId = "custom-summary-wire",
+                Task = "Inspect bounded evidence.",
+                Agent = "no-summary",
+                RequestTokenBudget = 16_384,
+            });
+        using var client = CopilotOpenAiAgentChatClientFactory.Create(childRequest.Profile, httpClient);
+
+        await client.GetStreamingResponseAsync(
+                [new ChatMessage(ChatRole.User, "Use the selected custom agent contract.")],
+                CopilotMicrosoftAgentFrameworkRuntime.BuildChatOptions(childRequest, []))
+            .ToChatResponseAsync();
+
+        Assert.False(childRequest.CodexModelSupportsReasoningSummaries);
+        using var payload = JsonDocument.Parse(handler.LastPayload);
+        Assert.False(payload.RootElement.TryGetProperty("reasoning", out _));
+    }
+
+    [Fact]
     public async Task ThirdPartyCompatibleAgentKeepsChatCompletionsTransport()
     {
         using var handler = new CapturingHandler(
@@ -137,16 +466,25 @@ public sealed class CopilotOpenAiAgentChatClientFactoryTests
         using var client = CopilotOpenAiAgentChatClientFactory.Create(
             profile,
             httpClient);
+        var request = new CopilotAgentRequest
+        {
+            Profile = profile,
+            CodexReasoningEffort = CopilotCodexReasoningEffort.Minimal,
+            CodexReasoningSummary = CopilotCodexReasoningSummary.Concise,
+            CodexModelSupportsReasoningSummaries = false,
+        };
 
         await Assert.ThrowsAnyAsync<Exception>(
             () => client.GetResponseAsync(
-                [new ChatMessage(ChatRole.User, "Keep proxy compatibility.")]));
+                [new ChatMessage(ChatRole.User, "Keep proxy compatibility.")],
+                CopilotMicrosoftAgentFrameworkRuntime.BuildChatOptions(request, [])));
 
         Assert.Equal(
             new Uri("https://example.test/v1/chat/completions"),
             handler.LastRequestUri);
         using var payload = JsonDocument.Parse(handler.LastPayload);
         Assert.False(payload.RootElement.TryGetProperty("store", out _));
+        Assert.False(payload.RootElement.TryGetProperty("safety_identifier", out _));
     }
 
     private static ChatOptions CreateToolOptions()
@@ -181,14 +519,37 @@ public sealed class CopilotOpenAiAgentChatClientFactoryTests
         };
     }
 
-    private sealed class CapturingHandler(
-        HttpStatusCode statusCode,
-        string response,
-        string mediaType) : HttpMessageHandler
+    private sealed class CapturingHandler : HttpMessageHandler
     {
+        private readonly Queue<(HttpStatusCode StatusCode, string Response, string MediaType)> _responses;
+
+        public CapturingHandler(
+            HttpStatusCode statusCode,
+            string response,
+            string mediaType)
+            : this([(statusCode, response, mediaType)])
+        {
+        }
+
+        public CapturingHandler(params string[] responseStreams)
+            : this(responseStreams.Select(response => (
+                HttpStatusCode.OK,
+                response,
+                "text/event-stream")))
+        {
+        }
+
+        private CapturingHandler(
+            IEnumerable<(HttpStatusCode StatusCode, string Response, string MediaType)> responses)
+        {
+            _responses = new Queue<(HttpStatusCode, string, string)>(responses);
+        }
+
         public Uri? LastRequestUri { get; private set; }
 
         public string LastPayload { get; private set; } = string.Empty;
+
+        public List<string> Payloads { get; } = [];
 
         protected override async Task<HttpResponseMessage> SendAsync(
             HttpRequestMessage request,
@@ -198,12 +559,14 @@ public sealed class CopilotOpenAiAgentChatClientFactoryTests
             LastPayload = request.Content == null
                 ? string.Empty
                 : await request.Content.ReadAsStringAsync(cancellationToken);
-            return new HttpResponseMessage(statusCode)
+            Payloads.Add(LastPayload);
+            var response = _responses.Dequeue();
+            return new HttpResponseMessage(response.StatusCode)
             {
                 Content = new StringContent(
-                    response,
+                    response.Response,
                     Encoding.UTF8,
-                    mediaType),
+                    response.MediaType),
             };
         }
     }

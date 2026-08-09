@@ -106,33 +106,33 @@ namespace ColorVision.ImageEditor.Draw
                 // 检查点在哪个小矩形内
                 if (selectVisual.topLeft.Contains(point))
                 {
-                    ZoomboxSub.Cursor = Cursors.SizeNWSE;
+                    SetCursor(Cursors.SizeNWSE);
                     FixedPoint = OldRect.BottomRight;
                     return true;
                 }
                 else if (selectVisual.topRight.Contains(point))
                 {
                     FixedPoint = OldRect.BottomLeft;
-                    ZoomboxSub.Cursor = Cursors.SizeNESW;
+                    SetCursor(Cursors.SizeNESW);
                     return true;
                 }
                 else if (selectVisual.bottomLeft.Contains(point))
                 {
                     FixedPoint = OldRect.TopRight;
-                    ZoomboxSub.Cursor = Cursors.SizeNESW;
+                    SetCursor(Cursors.SizeNESW);
                     return true;
                 }
                 else if (selectVisual.bottomRight.Contains(point))
                 {
                     FixedPoint = OldRect.TopLeft;
-                    ZoomboxSub.Cursor = Cursors.SizeNWSE;
+                    SetCursor(Cursors.SizeNWSE);
                     return true;
                 }
                 else if (selectVisual.middleTop.Contains(point))
                 {
                     FixedPoint = OldRect.BottomLeft;
                     FixedPoint1 = OldRect.BottomRight;
-                    ZoomboxSub.Cursor = Cursors.SizeNS;
+                    SetCursor(Cursors.SizeNS);
 
                     return true;
                 }
@@ -140,21 +140,21 @@ namespace ColorVision.ImageEditor.Draw
                 {
                     FixedPoint = OldRect.TopLeft;
                     FixedPoint1 = OldRect.TopRight;
-                    ZoomboxSub.Cursor = Cursors.SizeNS;
+                    SetCursor(Cursors.SizeNS);
                     return true;
                 }
                 else if (selectVisual.middleLeft.Contains(point))
                 {
                     FixedPoint = OldRect.TopRight;
                     FixedPoint1 = OldRect.BottomRight;
-                    ZoomboxSub.Cursor = Cursors.SizeWE;
+                    SetCursor(Cursors.SizeWE);
                     return true;
                 }
                 else if (selectVisual.middleRight.Contains(point))
                 {
                     FixedPoint = OldRect.TopLeft;
                     FixedPoint1 = OldRect.BottomLeft;
-                    ZoomboxSub.Cursor = Cursors.SizeWE;
+                    SetCursor(Cursors.SizeWE);
                     return true;
                 }
                 return false;
@@ -173,12 +173,19 @@ namespace ColorVision.ImageEditor.Draw
             {
                 if (item.rect.Contains(point))
                 {
-                    ZoomboxSub.Cursor = Cursors.SizeAll;
+                    SetCursor(Cursors.SizeAll);
                     return true;
                 }
             }
             return false;
         }
+
+        private void SetCursor(Cursor cursor)
+        {
+            if (ZoomboxSub.Cursor != cursor)
+                ZoomboxSub.Cursor = cursor;
+        }
+
         public void ClearRender()
         {
             Clear();
@@ -573,8 +580,8 @@ namespace ColorVision.ImageEditor.Draw
                         else
                         {
                             SetRender(visual);
-                            if (!(GetContainingRect(MouseDownP)))
-                                ZoomboxSub.Cursor = Cursors.Cross;
+                            if (!GetContainingRect(MouseDownP))
+                                SetCursor(Cursors.Cross);
                         }
                     }
                     else
@@ -685,8 +692,8 @@ namespace ColorVision.ImageEditor.Draw
                 }
                 else
                 {
-                    if (!(drawCanvas.GetVisual<Visual>(point) == this && GetContainingRect(point)))
-                        ZoomboxSub.Cursor = Cursors.Cross;
+                    if (!GetContainingRect(point))
+                        SetCursor(Cursors.Cross);
                 }
                 LastMouseMove = point;
             }

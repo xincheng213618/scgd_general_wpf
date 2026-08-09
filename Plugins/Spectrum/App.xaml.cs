@@ -21,6 +21,9 @@ namespace Spectrum
 
         public App()
         {
+            // Shortcuts and shell launches may inherit an unrelated working directory.
+            // Spectrum's native DLLs and configuration files are deployed beside the executable.
+            Environment.CurrentDirectory = AppContext.BaseDirectory;
 
 #if (DEBUG == false)
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
@@ -74,7 +77,7 @@ namespace Spectrum
             ConfigHandler.GetInstance();
             Authorization.Instance = ConfigService.Instance.GetRequiredService<Authorization>();
             LogConfig.Instance.SetLog();
-            LicenseSync.SyncLicenses();
+            LicenseSync.EnsureLicensesSynchronized();
             this.ApplyTheme(ThemeConfig.Instance.Theme);
             Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(LanguageConfig.Instance.UICulture);
 

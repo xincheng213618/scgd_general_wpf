@@ -30,6 +30,14 @@ namespace ColorVision.Copilot
 
         public bool ShouldSerializeRequestMode() => RequestMode != CopilotAgentMode.Chat;
 
+        public CopilotWorkspaceReviewTargetContext? WorkspaceReviewTarget { get; set; }
+
+        public bool ShouldSerializeWorkspaceReviewTarget() => WorkspaceReviewTarget != null;
+
+        public CopilotAgentSkillReference? AgentSkillReference { get; set; }
+
+        public bool ShouldSerializeAgentSkillReference() => AgentSkillReference != null;
+
         [JsonIgnore]
         public string RetryActionLabel => RequestMode == CopilotAgentMode.Chat
             ? Properties.Resources.CopilotRetry
@@ -127,17 +135,19 @@ namespace ColorVision.Copilot
                     : string.IsNullOrWhiteSpace(RequestContent) ? Content : RequestContent;
                 if (IsUser)
                     return content;
+
+                var modelContent = content;
                 if (WasResponseInterrupted)
-                    return AppendModelMarker(content, ResponseInterruptionModelMarker);
+                    modelContent = AppendModelMarker(modelContent, ResponseInterruptionModelMarker);
                 if (RequestMode != CopilotAgentMode.Chat
                     && AgentStopReason is not (CopilotAgentStopReason.None or CopilotAgentStopReason.Completed))
                 {
                     var marker = IncompleteAgentOutcomeModelMarkerPrefix
                         + AgentStopReason
                         + IncompleteAgentOutcomeModelMarkerSuffix;
-                    return AppendModelMarker(content, marker);
+                    modelContent = AppendModelMarker(modelContent, marker);
                 }
-                return content;
+                return modelContent;
             }
         }
 

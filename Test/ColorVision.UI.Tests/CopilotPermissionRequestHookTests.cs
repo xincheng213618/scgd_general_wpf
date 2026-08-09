@@ -26,9 +26,10 @@ public sealed class CopilotPermissionRequestHookTests
             });
         var tool = new ProtectedRecordingTool();
         var invocation = CreateInvocation(tool, "module-permission-denial");
+        var events = new List<CopilotAgentEvent>();
 
         var outcome = await new CopilotToolExecutor(hookRegistry)
-            .EvaluatePermissionRequestAsync(invocation, CancellationToken.None);
+            .EvaluatePermissionRequestAsync(invocation, CancellationToken.None, events.Add);
 
         Assert.False(outcome.Decision.ShouldPrompt);
         Assert.Equal("module_permission_denied", outcome.Decision.FailureCode);
@@ -40,6 +41,11 @@ public sealed class CopilotPermissionRequestHookTests
         Assert.Equal(CopilotToolExecutionHookPhase.PermissionRequest, run.Phase);
         Assert.Equal(CopilotToolExecutionHookState.Denied, run.State);
         Assert.Equal("module_permission_denied", run.FailureCode);
+        Assert.Equal(
+            [CopilotAgentEventType.HookStarted, CopilotAgentEventType.HookCompleted],
+            events.Select(item => item.Type));
+        Assert.Equal(run.SourceId, events[0].ToolExecutionHook?.SourceId);
+        Assert.Equal(run.FailureCode, events[1].ToolExecutionHook?.Result?.FailureCode);
         Assert.Equal(0, tool.ExecutionCount);
     }
 

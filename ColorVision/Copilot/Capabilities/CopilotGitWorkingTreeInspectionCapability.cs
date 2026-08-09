@@ -89,6 +89,8 @@ namespace ColorVision.Copilot
                     repositoryRoot,
                     ExecutionTimeout)
                 {
+                    EnvironmentVariables = request.CodexShellEnvironmentPolicy
+                        .CreateEnvironmentVariables(request.ConversationId),
                     EnvironmentOverrides = CopilotGitProcessSupport.EnvironmentOverrides,
                 }, cancellationToken);
             }

@@ -28,6 +28,22 @@ namespace ColorVision.Copilot
                 UpdatedAt = CreatedAt;
                 changed = true;
             }
+            else if (UpdatedAt < CreatedAt)
+            {
+                UpdatedAt = CreatedAt;
+                changed = true;
+            }
+
+            if (RecencyAt == default || RecencyAt < CreatedAt)
+            {
+                RecencyAt = UpdatedAt;
+                changed = true;
+            }
+            if (UpdatedAt < RecencyAt)
+            {
+                UpdatedAt = RecencyAt;
+                changed = true;
+            }
 
             if (_draftText == null)
             {
@@ -37,6 +53,20 @@ namespace ColorVision.Copilot
             if (!Enum.IsDefined(DraftRequestMode))
             {
                 DraftRequestMode = CopilotAgentMode.Auto;
+                changed = true;
+            }
+            if (DraftWorkspaceReviewTarget != null
+                && (DraftRequestMode != CopilotAgentMode.Review
+                    || !DraftWorkspaceReviewTarget.IsStructurallyValid()))
+            {
+                DraftWorkspaceReviewTarget = null;
+                changed = true;
+            }
+            if (DraftAgentSkillReference != null
+                && (!DraftAgentSkillReference.IsStructurallyValid()
+                    || !DraftAgentSkillReference.IsExplicitlyInvokedBy(DraftText)))
+            {
+                DraftAgentSkillReference = null;
                 changed = true;
             }
             if (ComposerStash != null)
@@ -51,6 +81,12 @@ namespace ColorVision.Copilot
             if (!Enum.IsDefined(ResponsePersonality))
             {
                 ResponsePersonality = CopilotResponsePersonality.None;
+                changed = true;
+            }
+            else if (!HasResponsePersonalityOverride
+                && ResponsePersonality != CopilotResponsePersonality.None)
+            {
+                HasResponsePersonalityOverride = true;
                 changed = true;
             }
             if (_legacyAccessModeLoaded)
@@ -125,6 +161,7 @@ namespace ColorVision.Copilot
                 Compaction = null;
                 changed = true;
             }
+            changed |= EnsureAuxiliaryUsageValid();
             if (BranchOrigin != null && !BranchOrigin.IsStructurallyValid(Id))
             {
                 BranchOrigin = null;
@@ -133,6 +170,12 @@ namespace ColorVision.Copilot
             if (Goal != null && !Goal.IsStructurallyValid())
             {
                 Goal = null;
+                changed = true;
+            }
+            if (IsGoalContinuationDeferred
+                && (Goal?.IsActive != true || BranchOrigin?.IsStructurallyValid(Id) != true))
+            {
+                IsGoalContinuationDeferred = false;
                 changed = true;
             }
 

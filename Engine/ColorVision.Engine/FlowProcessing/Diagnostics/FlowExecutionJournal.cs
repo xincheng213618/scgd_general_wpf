@@ -78,9 +78,6 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 throw new ArgumentException("运行记录与快照的模板 ID 必须一致。", nameof(run));
 
             run.RunKey = NormalizeKey(run.RunKey);
-            run.ExecutionPolicyHash =
-                NormalizeOptionalKey(run.ExecutionPolicyHash)
-                    ?.ToLowerInvariant();
             run.StartedTimeUtc = NormalizeUtc(run.StartedTimeUtc ?? DateTime.UtcNow);
             run.Status = FlowStatus.Runing;
             run.ElapsedMs = 0;
@@ -739,15 +736,6 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 || existing.TemplateRevision
                     != (requested.TemplateRevision
                         ?? snapshot.TemplateRevision)
-                || existing.ExecutionPolicyRevision != requested.ExecutionPolicyRevision
-                || !string.Equals(
-                    existing.ExecutionPolicyHash,
-                    requested.ExecutionPolicyHash,
-                    StringComparison.OrdinalIgnoreCase)
-                || !string.Equals(
-                    existing.ExecutionPolicySnapshotJson,
-                    requested.ExecutionPolicySnapshotJson,
-                    StringComparison.Ordinal)
                 || !string.Equals(existing.FlowName, requested.FlowName, StringComparison.Ordinal)
                 || !string.Equals(existing.SerialNumber, requested.SerialNumber, StringComparison.Ordinal)
                 || existing.BatchId != requested.BatchId
@@ -855,10 +843,6 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             target.SnapshotId = source.SnapshotId;
             target.ContentHash = source.ContentHash;
             target.TemplateRevision = source.TemplateRevision;
-            target.ExecutionPolicyRevision = source.ExecutionPolicyRevision;
-            target.ExecutionPolicyHash = source.ExecutionPolicyHash;
-            target.ExecutionPolicySnapshotJson =
-                source.ExecutionPolicySnapshotJson;
             target.Status = source.Status;
             target.FinalOutcome = source.FinalOutcome;
             target.ElapsedMs = source.ElapsedMs;

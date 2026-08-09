@@ -63,8 +63,11 @@ namespace ColorVision.Copilot
         private CopilotConversationRecord? _selectedConversation;
         private CopilotProfileConfig? _selectedProfile;
         private CopilotAgentMode? _pendingRequestModeOverride;
+        private CopilotWorkspaceReviewTargetContext? _pendingWorkspaceReviewTarget;
         private CopilotAgentRecoveryRequest? _pendingAgentRecoveryRequest;
         private string _activeDocumentPath = string.Empty;
+        private CopilotProjectInstructionDiscoveryOptions _currentCodexConfigOptions =
+            CopilotProjectInstructionDiscoveryConfig.CreateDefault();
         private string _pendingActionFeedbackText = string.Empty;
         private string _agentRunNoticeConversationId = string.Empty;
         private string _agentRunNoticeText = string.Empty;
@@ -150,6 +153,8 @@ namespace ColorVision.Copilot
             CopilotMcpConfirmationStore.Instance.ActionsChanged += ConfirmationStore_ActionsChanged;
             CopilotMcpConfirmationStore.Instance.ActionStatusChanged -= ConfirmationStore_ActionStatusChanged;
             CopilotMcpConfirmationStore.Instance.ActionStatusChanged += ConfirmationStore_ActionStatusChanged;
+            CopilotAgentSkillCatalog.CatalogChanged -= AgentSkillCatalog_CatalogChanged;
+            CopilotAgentSkillCatalog.CatalogChanged += AgentSkillCatalog_CatalogChanged;
             WeakEventManager<CopilotAgentTaskHost, CopilotAgentTaskHostChangedEventArgs>.RemoveHandler(_taskHost, nameof(CopilotAgentTaskHost.Changed), TaskHost_Changed);
             WeakEventManager<CopilotAgentTaskHost, CopilotAgentTaskHostChangedEventArgs>.AddHandler(_taskHost, nameof(CopilotAgentTaskHost.Changed), TaskHost_Changed);
 
@@ -287,6 +292,7 @@ namespace ColorVision.Copilot
             _pendingActionExpiryTimer.Tick += (_, _) => RefreshTimedAccessAndPendingActions();
             _pendingActionExpiryTimer.Start();
 
+            _ = CaptureHostedTurnSnapshot(Array.Empty<CopilotAttachmentItem>());
             RefreshPendingActions();
             RefreshComposerTokenEstimate();
             RefreshCompactHistoryConversations();
@@ -340,6 +346,8 @@ namespace ColorVision.Copilot
             string ConversationId,
             string Text,
             CopilotAgentMode RequestMode,
+            CopilotWorkspaceReviewTargetContext? WorkspaceReviewTarget,
+            CopilotAgentSkillReference? AgentSkillReference,
             IReadOnlyList<CopilotAttachmentItem> Attachments);
 
         private sealed record CopilotPreparedQueuedFollowUpTurn(

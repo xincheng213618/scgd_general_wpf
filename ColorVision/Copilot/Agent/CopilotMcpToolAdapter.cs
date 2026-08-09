@@ -33,7 +33,10 @@ namespace ColorVision.Copilot
             Name = CopilotMcpToolIdentity.BuildLocalName(_server.Name, remoteTool.Name);
             Description = BuildDescription(_server.Name, remoteTool.Description);
             InputSchema = CopilotToolInputSchema.FromJsonSchema(remoteTool.JsonSchema);
-            Capability = CopilotMcpClientCapabilityPolicy.Create(accessPolicy, TimeSpan.FromSeconds(_server.ToolTimeoutSeconds));
+            Capability = CopilotMcpClientCapabilityPolicy.Create(
+                accessPolicy,
+                TimeSpan.FromSeconds(_server.ToolTimeoutSeconds),
+                remoteTool.ProtocolTool.Annotations);
         }
 
         public string Name { get; }

@@ -50,6 +50,7 @@ namespace ColorVision.Copilot
             RefreshSelectedProfileReasoningState();
         }
         private string _inputText = string.Empty;
+        private CopilotAgentSkillReference? _pendingAgentSkillReference;
 
         public string InputPlaceholder => IsPromptHistorySearchOpen
             ? $"搜索{PromptHistorySearchScopeLabel}的可见历史请求"
@@ -151,6 +152,7 @@ namespace ColorVision.Copilot
                 return false;
 
             InputText = command.CompletionText;
+            SetPendingAgentSkillReference(command.AgentSkillReference);
             return true;
         }
 
@@ -162,7 +164,54 @@ namespace ColorVision.Copilot
                 return true;
 
             InputText = command.CompletionText;
+            SetPendingAgentSkillReference(command.AgentSkillReference);
             return !command.RequiresMoreInputAfterCompletion;
+        }
+
+        private void RefreshPendingAgentSkillReference(string text)
+        {
+            if (_pendingAgentSkillReference != null
+                && !_pendingAgentSkillReference.IsExplicitlyInvokedBy(text))
+            {
+                SetPendingAgentSkillReference(null);
+            }
+        }
+
+        private void SetPendingAgentSkillReference(
+            CopilotAgentSkillReference? reference,
+            bool synchronizeDraft = true)
+        {
+            var normalized = reference?.IsStructurallyValid() == true
+                ? reference.CreateSnapshot()
+                : null;
+            if (SkillReferencesEqual(_pendingAgentSkillReference, normalized))
+                return;
+
+            _pendingAgentSkillReference = normalized;
+            if (!synchronizeDraft || _selectedConversation == null)
+                return;
+
+            _selectedConversation.DraftAgentSkillReference = normalized?.CreateSnapshot();
+            _statePersistenceCoordinator.RequestSave();
+        }
+
+        private CopilotAgentSkillReference? ResolvePendingAgentSkillReference(string text)
+        {
+            return _pendingAgentSkillReference?.IsExplicitlyInvokedBy(text) == true
+                ? _pendingAgentSkillReference.CreateSnapshot()
+                : null;
+        }
+
+        private static bool SkillReferencesEqual(
+            CopilotAgentSkillReference? left,
+            CopilotAgentSkillReference? right)
+        {
+            if (ReferenceEquals(left, right))
+                return true;
+            if (left == null || right == null)
+                return false;
+            return string.Equals(left.Name, right.Name, StringComparison.OrdinalIgnoreCase)
+                && string.Equals(left.SkillFilePath, right.SkillFilePath, StringComparison.OrdinalIgnoreCase);
         }
 
         private CopilotLocalCommand? GetSelectedLocalCommandSuggestion(
@@ -186,6 +235,42 @@ namespace ColorVision.Copilot
             OnPropertyChanged(nameof(LocalCommandSuggestions));
             SelectedLocalCommandSuggestionIndex = selectedIndex;
             OnPropertyChanged(nameof(HasLocalCommandSuggestions));
+        }
+
+        private void AgentSkillCatalog_CatalogChanged(object? sender, EventArgs e)
+        {
+            if (Volatile.Read(ref _disposeState) == 1)
+            {
+                return;
+            }
+
+            var input = InputText ?? string.Empty;
+            var refreshLocalCommands = input.TrimStart().StartsWith('$');
+            var refreshReferences = _currentCodexConfigOptions.ConfiguredMentionsV2Enabled
+                && CopilotComposerReferenceCatalog.TryParseMention(input, out _);
+            if (!refreshLocalCommands && !refreshReferences)
+                return;
+
+            var dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher != null && !dispatcher.CheckAccess())
+            {
+                _ = dispatcher.BeginInvoke(() =>
+                {
+                    if (Volatile.Read(ref _disposeState) == 0)
+                    {
+                        if (refreshLocalCommands)
+                            RefreshLocalCommandSuggestions();
+                        if (refreshReferences)
+                            RefreshComposerReferenceSuggestions();
+                    }
+                }, DispatcherPriority.Background);
+                return;
+            }
+
+            if (refreshLocalCommands)
+                RefreshLocalCommandSuggestions();
+            if (refreshReferences)
+                RefreshComposerReferenceSuggestions();
         }
     }
 }

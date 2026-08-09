@@ -9,6 +9,7 @@
 
 #include <algorithm>
 #include <array>
+#include <chrono>
 #include <cmath>
 #include <cstdint>
 #include <cstring>
@@ -288,6 +289,148 @@ bool TestKeyboardHaloExport()
             "Halo/key ratio is outside tolerance.", success);
     }
 
+    const std::array<int, 5> supportedTypes = {
+        CV_16UC1, CV_8UC3, CV_16UC3, CV_8UC4, CV_16UC4
+    };
+    for (const int type : supportedTypes) {
+        cv::Mat typedImage = cv::Mat::zeros(160, 160, type);
+        const bool is8Bit = typedImage.depth() == CV_8U;
+        const double keyValue = is8Bit ? 220.0 : 220.0 * 257.0;
+        const double haloValue = is8Bit ? 50.0 : 50.0 * 257.0;
+        typedImage(haloBounds).setTo(cv::Scalar::all(haloValue));
+        typedImage(keyRect).setTo(cv::Scalar::all(keyValue));
+
+        const json typedConfig = {
+            { "minimumValidPixels", 10 },
+            { "keys", json::array({ {
+                { "id", 7 }, { "name", "K7" },
+                { "rect", {
+                    { "x", keyRect.x }, { "y", keyRect.y },
+                    { "width", keyRect.width }, { "height", keyRect.height }
+                } },
+                { "keyInsetPixels", 4 },
+                { "haloGapPixels", 4 },
+                { "haloWidthPixels", 10 },
+                { "keyValidMin", 0.50 },
+                { "haloValidMin", 0.10 }
+            } }) }
+        };
+        const std::string typedConfigText = typedConfig.dump();
+        HImage typedView = MakeImageView(typedImage);
+        json typedOutput;
+        if (!InvokeJsonExport("M_AnalyzeKeyboardHalo typed", [&](char** result) {
+            return M_AnalyzeKeyboardHalo(typedView, RoiRect{}, typedConfigText.c_str(), result);
+        }, typedOutput)) {
+            return false;
+        }
+        Expect(typedOutput.value("success", false), "A supported 8/16-bit keyboard image failed.", success);
+        if (typedOutput.contains("keys") && typedOutput.at("keys").size() == 1) {
+            const json& typedKey = typedOutput.at("keys").front();
+            Expect(typedKey.value("id", 0) == 7 && typedKey.value("name", std::string()) == "K7",
+                "Per-key identity was not preserved.", success);
+            Expect(typedKey.value("keyValid", false) && typedKey.value("haloValid", false),
+                "Per-key validity is incorrect for a supported image type.", success);
+            Expect(std::abs(typedKey.value("keyMean", -1.0) - 220.0 / 255.0) <= 0.01,
+                "Normalized key mean differs between 8- and 16-bit input.", success);
+            Expect(std::abs(typedKey.value("haloMean", -1.0) - 50.0 / 255.0) <= 0.01,
+                "Normalized halo mean differs between 8- and 16-bit input.", success);
+        }
+    }
+
+    json standaloneConfig = config;
+    standaloneConfig.erase("keyRects");
+    standaloneConfig["keys"] = json::array({
+        {
+            { "name", "key-only" }, { "rect", {
+                { "x", keyRect.x }, { "y", keyRect.y },
+                { "width", keyRect.width }, { "height", keyRect.height }
+            } }, { "calculateHalo", false }
+        },
+        {
+            { "name", "halo-only" }, { "rect", {
+                { "x", keyRect.x }, { "y", keyRect.y },
+                { "width", keyRect.width }, { "height", keyRect.height }
+            } }, { "calculateKey", false }
+        }
+    });
+    const std::string standaloneConfigText = standaloneConfig.dump();
+    json standaloneOutput;
+    if (!InvokeJsonExport("M_AnalyzeKeyboardHalo standalone", [&](char** result) {
+        return M_AnalyzeKeyboardHalo(view, RoiRect{}, standaloneConfigText.c_str(), result);
+    }, standaloneOutput)) {
+        return false;
+    }
+    Expect(standaloneOutput.value("success", false), "Standalone key/halo calculation failed.", success);
+    if (standaloneOutput.contains("keys") && standaloneOutput.at("keys").size() == 2) {
+        const json& keyOnly = standaloneOutput.at("keys").at(0);
+        const json& haloOnly = standaloneOutput.at("keys").at(1);
+        Expect(keyOnly.value("keyValid", false) && !keyOnly.value("haloValid", true),
+            "Key-only result validity is incorrect.", success);
+        Expect(!haloOnly.value("keyValid", true) && haloOnly.value("haloValid", false),
+            "Halo-only result validity is incorrect.", success);
+    }
+
+    cv::Mat incrementalImage = image.clone();
+    const cv::Rect neighboringKey(106, 70, 6, 20);
+    incrementalImage(neighboringKey).setTo(cv::Scalar(255));
+    json incrementalConfig = {
+        { "minimumValidPixels", 10 },
+        { "excludeKeyRectsFromHalo", true },
+        { "haloExclusionRects", json::array({ {
+            { "x", neighboringKey.x }, { "y", neighboringKey.y },
+            { "width", neighboringKey.width }, { "height", neighboringKey.height }
+        } }) },
+        { "keys", json::array({ {
+            { "name", "dirty-key" },
+            { "rect", {
+                { "x", keyRect.x }, { "y", keyRect.y },
+                { "width", keyRect.width }, { "height", keyRect.height }
+            } },
+            { "keyInsetPixels", 4 },
+            { "haloGapPixels", 4 },
+            { "haloWidthPixels", 10 }
+        } }) }
+    };
+    const std::string incrementalConfigText = incrementalConfig.dump();
+    HImage incrementalView = MakeImageView(incrementalImage);
+    json incrementalOutput;
+    if (!InvokeJsonExport("M_AnalyzeKeyboardHalo incremental", [&](char** result) {
+        return M_AnalyzeKeyboardHalo(incrementalView, RoiRect{}, incrementalConfigText.c_str(), result);
+    }, incrementalOutput)) {
+        return false;
+    }
+    if (incrementalOutput.contains("keys") && incrementalOutput.at("keys").size() == 1) {
+        Expect(std::abs(incrementalOutput.at("keys").front().value("haloMean", -1.0) - 50.0 / 255.0) <= 0.01,
+            "Incremental halo measurement did not exclude a neighboring key.", success);
+    }
+
+    cv::Mat offsetImage = cv::Mat::zeros(100, 120, CV_8UC1);
+    const cv::Rect offsetInput(20, 30, 20, 20);
+    offsetImage(cv::Rect(50, 30, 20, 20)).setTo(cv::Scalar(200));
+    const json offsetConfig = {
+        { "keys", json::array({ {
+            { "rect", {
+                { "x", offsetInput.x }, { "y", offsetInput.y },
+                { "width", offsetInput.width }, { "height", offsetInput.height }
+            } },
+            { "calculateHalo", false },
+            { "keyOffsetX", 30 },
+            { "keyInsetPixels", 0 }
+        } }) }
+    };
+    const std::string offsetConfigText = offsetConfig.dump();
+    HImage offsetView = MakeImageView(offsetImage);
+    json offsetOutput;
+    if (!InvokeJsonExport("M_AnalyzeKeyboardHalo offset", [&](char** result) {
+        return M_AnalyzeKeyboardHalo(offsetView, RoiRect{}, offsetConfigText.c_str(), result);
+    }, offsetOutput)) {
+        return false;
+    }
+    if (offsetOutput.contains("keys") && offsetOutput.at("keys").size() == 1) {
+        Expect(std::abs(offsetOutput.at("keys").front().value("keyMean", -1.0) - 200.0 / 255.0) <= 0.01,
+            "Per-key sampling offset was not applied.", success);
+    }
+
     json automaticConfig = config;
     automaticConfig.erase("keyRects");
     automaticConfig["detection"] = {
@@ -306,6 +449,65 @@ bool TestKeyboardHaloExport()
         "Automatic key detection source metadata is incorrect.", success);
     Expect(automaticOutput.contains("keys") && automaticOutput.at("keys").size() == 1,
         "Automatic key detection did not find exactly one key.", success);
+    return success;
+}
+
+bool TestKeyboardHaloBulkExport()
+{
+    constexpr int KeyRows = 10;
+    constexpr int KeyCols = 20;
+    constexpr int KeyCount = KeyRows * KeyCols;
+    cv::Mat image(3692, 5544, CV_16UC1, cv::Scalar(1000));
+    json keys = json::array();
+    int id = 0;
+    for (int row = 0; row < KeyRows; ++row) {
+        for (int col = 0; col < KeyCols; ++col) {
+            const cv::Rect rect(100 + col * 260, 100 + row * 330, 120, 60);
+            image(rect).setTo(cv::Scalar(40000));
+            keys.push_back({
+                { "id", ++id },
+                { "name", "K" + std::to_string(id) },
+                { "rect", {
+                    { "x", rect.x }, { "y", rect.y },
+                    { "width", rect.width }, { "height", rect.height }
+                } },
+                { "keyInsetPixels", 5 },
+                { "haloGapPixels", 10 },
+                { "haloWidthPixels", 20 }
+            });
+        }
+    }
+
+    const json config = {
+        { "gray", { { "mode", "luminance" }, { "validMin", 0.0 }, { "validMax", 1.0 } } },
+        { "minimumValidPixels", 1 },
+        { "excludeKeyRectsFromHalo", true },
+        { "keys", std::move(keys) }
+    };
+    const std::string configText = config.dump();
+    HImage view = MakeImageView(image);
+    json output;
+    const auto started = std::chrono::steady_clock::now();
+    const bool invoked = InvokeJsonExport("M_AnalyzeKeyboardHalo 200 keys", [&](char** result) {
+        return M_AnalyzeKeyboardHalo(view, RoiRect{}, configText.c_str(), result);
+    }, output);
+    const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::steady_clock::now() - started).count();
+    std::cout << "KeyboardHalo 200-key elapsed: " << elapsed << " ms" << std::endl;
+    if (!invoked) {
+        return false;
+    }
+
+    bool success = true;
+    Expect(output.value("success", false), "200-key keyboard measurement did not succeed.", success);
+    Expect(output.contains("keys") && output.at("keys").size() == KeyCount,
+        "200-key keyboard measurement returned an incorrect result count.", success);
+    if (output.contains("keys") && output.at("keys").size() == KeyCount) {
+        for (const json& key : output.at("keys")) {
+            Expect(key.value("status", std::string()) == "ok",
+                "A 200-key keyboard measurement was not valid.", success);
+        }
+    }
     return success;
 }
 
@@ -851,6 +1053,7 @@ bool RunP2AlgorithmTests()
     success = RunCase("Ghost", TestGhostExport) && success;
     success = RunCase("EnhancedGhost", TestEnhancedGhostExport) && success;
     success = RunCase("KeyboardHalo", TestKeyboardHaloExport) && success;
+    success = RunCase("KeyboardHaloBulk", TestKeyboardHaloBulkExport) && success;
     success = RunCase("LedArray", TestLedArrayExport) && success;
     success = RunCase("RotatedTemplate", TestRotatedTemplateExport) && success;
     success = RunCase("ScaledOccludedTemplate", TestScaledOccludedTemplateExport) && success;

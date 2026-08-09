@@ -12,35 +12,7 @@ namespace Conoscope.ApplicationServices.Preprocess
         float PositiveFloor,
         bool DustRemovalEnabled,
         DustRemovalOptions DustRemoval,
-        ImageFilterOptions Filter)
-    {
-        public static ConoscopePreprocessOptions FromConfig(ConoscopePreprocessSettings config, float positiveFloor)
-        {
-            int minArea = Math.Max(1, config.DustMinArea);
-            int maxArea = Math.Max(minArea, config.DustMaxArea);
-            ImageFilterType filterType = Enum.IsDefined(config.FilterType)
-                ? config.FilterType
-                : ImageFilterType.None;
-
-            return new ConoscopePreprocessOptions(
-                config.ClampNonPositiveXyzOnLoad,
-                positiveFloor,
-                config.DustRemovalEnabled,
-                new DustRemovalOptions(
-                    config.DustRemovalMode,
-                    config.DustThresholdPercent,
-                    minArea,
-                    maxArea,
-                    Math.Max(1, config.DustRepairRadius)),
-                new ImageFilterOptions(
-                    filterType,
-                    ConoscopeNumericHelper.NormalizeOddKernelSize(config.FilterKernelSize),
-                    config.FilterSigma,
-                    Math.Max(1, config.FilterD),
-                    config.FilterSigmaColor,
-                    config.FilterSigmaSpace));
-        }
-    }
+        ImageFilterOptions Filter);
 
     internal static class ConoscopePreprocessPipeline
     {

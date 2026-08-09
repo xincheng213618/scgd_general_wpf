@@ -6,7 +6,6 @@ using ColorVision.Engine.Templates.FocusPoints;
 using ColorVision.Engine.Templates.FOV;
 using ColorVision.Engine.Templates.Ghost;
 using ColorVision.Engine.Templates.ImageCropping;
-using ColorVision.Engine.Templates.JND;
 using ColorVision.Engine.Templates.Jsons.AAFindPoints;
 using ColorVision.Engine.Templates.Jsons.BinocularFusion;
 using ColorVision.Engine.Templates.Jsons.DetectScreenDefects;
@@ -23,9 +22,6 @@ using ColorVision.Engine.Templates.LEDStripDetection;
 using ColorVision.Engine.Templates.MTF;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.SFR;
-using ColorVision.Engine.Templates.Validate;
-using System.Collections.ObjectModel;
-using System.Linq;
 
 namespace ColorVision.Engine.FlowProcessing.Editor.NodeConfiguration
 {
@@ -161,9 +157,6 @@ namespace ColorVision.Engine.FlowProcessing.Editor.NodeConfiguration
                     case FlowEngineLib.Algorithm.AlgorithmType.发光区检测OLED:
                         context.AddTemplatePanel(nameof(node.TempName), Properties.Resources.FindLightAreaOLED, new TemplateRoi());
                         break;
-                    case FlowEngineLib.Algorithm.AlgorithmType.JND:
-                        context.AddTemplatePanel(nameof(node.TempName), "JND", new TemplateJND());
-                        break;
                     case FlowEngineLib.Algorithm.AlgorithmType.SFR_FindROI:
                         context.AddTemplateJsonPanel(nameof(node.TempName), "SFR_FindROI", new TemplateSFRFindROI());
                         context.AddTemplatePanel(nameof(node.POITempName), "POI", new TemplatePoi());
@@ -185,34 +178,6 @@ namespace ColorVision.Engine.FlowProcessing.Editor.NodeConfiguration
                 }
             }
             context.ReconfigureOnPropertyChanged(node, nameof(node.Algorithm));
-            Refresh();
-        }
-    }
-
-    [System.Obsolete("Deprecated configurator retained for existing compliance flow nodes.")]
-    [NodeConfigurator(typeof(FlowEngineLib.Node.Algorithm.AlgComplianceMathNode))]
-    public class AlgComplianceMathNodeConfigurator : NodeConfiguratorBase
-    {
-        public override void Configure(NodeConfiguratorContext context)
-        {
-            var node = (FlowEngineLib.Node.Algorithm.AlgComplianceMathNode)context.Node;
-
-            void Refresh()
-            {
-                context.SignStackPanel.Children.Clear();
-                switch (node.ComplianceMath)
-                {
-                    case FlowEngineLib.Node.Algorithm.ComplianceMathType.CIE:
-                        context.AddTemplateCollectionPanel(nameof(node.TempName), "CIE", new ObservableCollection<TemplateModel<ValidateParam>>(TemplateComplyParam.CIEParams.SelectMany(p => p.Value)));
-                        break;
-                    case FlowEngineLib.Node.Algorithm.ComplianceMathType.JND:
-                        context.AddTemplatePanel(nameof(node.TempName), "JND", new TemplateComplyParam("Comply.JND"));
-                        break;
-                    default:
-                        break;
-                }
-            }
-            context.ReconfigureOnPropertyChanged(node, nameof(node.ComplianceMath));
             Refresh();
         }
     }

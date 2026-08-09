@@ -4,56 +4,15 @@ using System.Windows;
 
 namespace Conoscope
 {
-    public readonly record struct ConoscopeWindowQuickControlState(
-        ExportChannel DisplayChannel,
-        ExportChannel ExportChannel,
-        ConoscopeCoordinateReferenceMode ReferenceMode,
-        double ReferenceValue,
-        double ReferenceMaximum,
-        ContrastReferenceKind ContrastImageKind,
-        ColorDifferenceReferenceMode ColorDifferenceReferenceMode,
-        double ColorDifferenceCustomU,
-        double ColorDifferenceCustomV,
-        bool CanUseDerivedChannels,
-        bool CanUseContrastChannel)
-    {
-        public string ReferenceLabel => ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine ? Properties.Resources.LabelAzimuthDegLabel : Properties.Resources.LabelPolarDegLabel;
-    }
-
     public partial class ConoscopeView
     {
-        public event EventHandler? WindowQuickControlStateChanged;
+        internal event EventHandler? WindowQuickControlStateChanged;
 
-        public bool TryGetWindowQuickControlState(out ConoscopeWindowQuickControlState state)
-        {
-            if (!HasDisplayData())
-            {
-                state = default;
-                return false;
-            }
+        internal bool HasActiveViewState => HasDisplayData();
+        internal bool CanUseDerivedChannels => HasXyzData();
+        internal bool CanUseContrastChannel => HasXyzData() && CanOfferContrastChannel();
 
-            ConoscopeCoordinateAxisParam axisParam = CoordinateAxisConfig;
-            double referenceValue = axisParam.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine
-                ? axisParam.ReferenceAngle
-                : axisParam.ReferenceRadiusAngle;
-            double referenceMaximum = axisParam.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine ? 180.0 : MaxAngle;
-
-            state = new ConoscopeWindowQuickControlState(
-                RenderingConfig.DisplayChannel,
-                GetSelectedExportChannel(),
-                axisParam.ReferenceMode,
-                referenceValue,
-                referenceMaximum,
-                GetCurrentContrastImageKind(),
-                GetSelectedColorDifferenceReferenceMode(),
-                ColorDifferenceConfig.CustomU,
-                ColorDifferenceConfig.CustomV,
-                HasXyzData(),
-                HasXyzData() && CanOfferContrastChannel());
-            return true;
-        }
-
-        public void SetWindowQuickDisplayChannel(ExportChannel channel)
+        internal void SetWindowQuickDisplayChannel(ExportChannel channel)
         {
             if (RequiresFullXyzData(channel) && !HasXyzData())
             {
@@ -65,16 +24,16 @@ namespace Conoscope
                 channel = ExportChannel.Y;
             }
 
-            if (RenderingConfig.DisplayChannel == channel)
+            if (State.DisplayChannel == channel)
             {
                 return;
             }
 
-            RenderingConfig.DisplayChannel = channel;
-            RefreshDisplayControlsFromConfig();
+            State.DisplayChannel = channel;
 
             if (!HasDisplayData())
             {
+                RaiseWindowQuickControlStateChanged();
                 return;
             }
 
@@ -102,53 +61,35 @@ namespace Conoscope
             }
         }
 
-        public void SetWindowQuickReferenceMode(ConoscopeCoordinateReferenceMode mode)
+        internal void SetWindowQuickReferenceMode(ConoscopeCoordinateReferenceMode mode)
         {
-            ConoscopeCoordinateAxisParam axisParam = CoordinateAxisConfig;
+            ConoscopeCoordinateAxisParam axisParam = State.CoordinateAxis;
             if (axisParam.ReferenceMode == mode)
             {
                 return;
             }
 
             axisParam.ReferenceMode = mode;
-            RefreshQuickControlsFromAxisParam();
-            ApplyCoordinateAxisReference();
+            if (coordinateAxisController == null)
+            {
+                NotifyReferenceStateChanged();
+                ApplyCoordinateAxisReference();
+            }
         }
 
-        public void SetWindowQuickExportChannel(ExportChannel channel)
-        {
-            if (RequiresFullXyzData(channel) && !HasXyzData())
-            {
-                channel = ExportChannel.Y;
-            }
-
-            if (channel == ExportChannel.Contrast && !CanOfferContrastChannel())
-            {
-                channel = ExportChannel.Y;
-            }
-
-            if (GetSelectedExportChannel() == channel)
-            {
-                return;
-            }
-
-            selectedExportChannel = channel;
-            RaiseWindowQuickControlStateChanged();
-        }
-
-        public void SetWindowQuickContrastImageKind(ContrastReferenceKind kind)
+        internal void SetWindowQuickContrastImageKind(ContrastReferenceKind kind)
         {
             ApplyContrastImageKind(kind, refreshDisplay: true);
         }
 
-        public void SaveWindowQuickColorDifferenceReference()
+        internal void SaveWindowQuickColorDifferenceReference()
         {
             SaveCurrentAsGlobalColorDifferenceReference();
         }
 
-        public void SetWindowQuickReferenceValue(double value)
+        internal void SetWindowQuickReferenceValue(double value)
         {
-            ConoscopeCoordinateAxisParam axisParam = CoordinateAxisConfig;
+            ConoscopeCoordinateAxisParam axisParam = State.CoordinateAxis;
             if (axisParam.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine)
             {
                 axisParam.ReferenceAngle = ConoscopeCoordinateAxisParam.NormalizeAzimuthAngle(value);
@@ -158,8 +99,11 @@ namespace Conoscope
                 axisParam.ReferenceRadiusAngle = Math.Max(0, Math.Min(value, MaxAngle));
             }
 
-            RefreshQuickControlsFromAxisParam();
-            ApplyCoordinateAxisReference();
+            if (coordinateAxisController == null)
+            {
+                NotifyReferenceStateChanged();
+                ApplyCoordinateAxisReference();
+            }
         }
 
         private void RaiseWindowQuickControlStateChanged()

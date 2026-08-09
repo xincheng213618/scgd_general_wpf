@@ -28,15 +28,24 @@ namespace ProjectARVRPro.Services
                 });
             }
 
-            string resolvedSerialNumber = Application.Current.Dispatcher.Invoke(() =>
+            (bool accepted, string resolvedSerialNumber) = Application.Current.Dispatcher.Invoke(() =>
             {
-                return ProjectWindowInstance.WindowInstance.InitTest(request.SerialNumber);
+                bool accepted = ProjectWindowInstance.WindowInstance.TryPrepareRunAllSession(request.SerialNumber, out string resolvedSerialNumber);
+                if (accepted)
+                    _ = ProjectWindowInstance.WindowInstance.RunAllAsync();
+                return (accepted, resolvedSerialNumber);
             });
-
-            Application.Current.Dispatcher.BeginInvoke(async () =>
+            if (!accepted)
             {
-                await ProjectWindowInstance.WindowInstance.RunAllAsync();
-            });
+                return new SocketResponse
+                {
+                    MsgID = request.MsgID,
+                    EventName = EventName,
+                    Code = -4,
+                    Msg = "ARVR test is busy",
+                    SerialNumber = resolvedSerialNumber,
+                };
+            }
 
             log.Info($"RunAll triggered via Socket, SN={resolvedSerialNumber}");
             return new SocketResponse

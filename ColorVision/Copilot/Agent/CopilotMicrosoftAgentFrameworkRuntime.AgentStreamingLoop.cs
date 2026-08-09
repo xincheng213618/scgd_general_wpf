@@ -22,7 +22,8 @@ namespace ColorVision.Copilot
             bool ProviderInterrupted,
             bool ContextWindowExceeded,
             bool ToolBudgetForcedFinalization,
-            AIChatFinishReason? ProviderFinishReason);
+            AIChatFinishReason? ProviderFinishReason,
+            CopilotAutomaticApprovalDenialCircuitBreakerSnapshot? AutomaticReviewCircuitBreaker);
 
         private async Task<AgentStreamingLoopResult> RunAgentStreamingLoopAsync(
             CopilotAgentRequest request,
@@ -60,6 +61,8 @@ namespace ColorVision.Copilot
             var deferredBackgroundSignalsAccepted = false;
             var frameworkApprovalAwaitingProviderUpdate = false;
             var steeringInputSealed = false;
+            var automaticReviewCircuitBreaker = new CopilotAutomaticApprovalDenialCircuitBreaker();
+            CopilotAutomaticApprovalDenialCircuitBreakerSnapshot? automaticReviewCircuitBreakerSnapshot = null;
             AIChatFinishReason? providerFinishReason = null;
             try
             {
@@ -154,11 +157,20 @@ namespace ColorVision.Copilot
                         request,
                         bridge,
                         contextRecoveryChatClient,
+                        automaticReviewCircuitBreaker,
                         taskEventJournalBuilder,
                         emit,
                         usage,
                         cancellationToken);
                     usage = approvalRouting.Usage;
+                    if (approvalRouting.CircuitBreakerSnapshot is { IsTripped: true } circuitBreakerSnapshot)
+                    {
+                        automaticReviewCircuitBreakerSnapshot = circuitBreakerSnapshot;
+                        CancelFrameworkApprovalRouting();
+                        emit(CopilotAgentEvent.RuntimeDiagnostic(circuitBreakerSnapshot.FormatDiagnostic()));
+                        emit(CopilotAgentEvent.AnswerDelta(circuitBreakerSnapshot.FormatUserMessage()));
+                        break;
+                    }
                     messages =
                     [
                         new ChatMessage(
@@ -269,7 +281,8 @@ namespace ColorVision.Copilot
                 providerInterrupted,
                 contextWindowExceeded,
                 toolBudgetForcedFinalization,
-                providerFinishReason);
+                providerFinishReason,
+                automaticReviewCircuitBreakerSnapshot);
         }
     }
 }

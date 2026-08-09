@@ -3,8 +3,14 @@ using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine;
 using ColorVision.Engine.FlowProcessing.Diagnostics;
+using ColorVision.Solution.Editor.AvalonEditor;
 using ColorVision.UI;
+using log4net;
+using Microsoft.Win32;
+using Newtonsoft.Json;
+using ProjectARVRPro.LegacyARVR;
 using SqlSugar;
+using System.Collections.Specialized;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
@@ -16,94 +22,1045 @@ namespace ProjectARVRPro
 {
     public partial class CycleTimeStatisticsWindow : Window
     {
+        private const int RecordPageSize = 1000;
+        private const int FlowPageSize = 1000;
+        private const int SuggestionDisplayLimit = 20;
+        private static readonly ILog Log = LogManager.GetLogger(typeof(CycleTimeStatisticsWindow));
         private readonly ViewResultManager _viewResultManager = ViewResultManager.GetInstance();
-        private readonly ObservableCollection<CycleTimeGroup> _groups = [];
+        private readonly ResultStatisticsDataStore _statisticsStore = ResultStatisticsDataStore.Instance;
+        private readonly ObservableCollection<ResultStatisticsRecordRow> _recordRows = [];
+        private readonly ObservableCollection<FlowExecutionRecordRow> _flowRows = [];
+        private string[] _snSuggestions = [];
+        private string[] _flowNameSuggestions = [];
         private readonly ObservableCollection<ProjectARVRReuslt> _details = [];
+        private readonly Dictionary<int, ObjectiveTestResultRecord> _recordCache = [];
+        private CopilotDynamicContextSession? _copilotContextSession;
+        private TextBox? _snEditor;
+        private TextBox? _flowNameEditor;
+        private int _copilotPublishQueued;
+        private int _homeLoadVersion;
+        private int _recordLoadVersion;
+        private int _flowLoadVersion;
+        private int _snIndexVersion;
+        private int _flowNameIndexVersion;
         private int _detailLoadVersion;
+        private int _currentPage = 1;
+        private int _totalRecordCount;
+        private int _flowCurrentPage = 1;
+        private int _totalFlowCount;
+        private bool _updatingSnSuggestions;
+        private bool _updatingFlowNameSuggestions;
+        private bool _flowTabInitialized;
+        private string _homeStatus = string.Empty;
+        private string _recordStatus = string.Empty;
+        private string _snIndexStatus = string.Empty;
+        private string _flowStatus = string.Empty;
+        private string _flowNameIndexStatus = string.Empty;
 
         public CycleTimeStatisticsWindow()
         {
             InitializeComponent();
-            GroupList.ItemsSource = _groups;
+            HomeAnchorDatePicker.SelectedDate = DateTime.Today;
+            RecordAnchorDatePicker.SelectedDate = DateTime.Today;
+            FlowAnchorDatePicker.SelectedDate = DateTime.Today;
+            RecordDataGrid.ItemsSource = _recordRows;
+            FlowDataGrid.ItemsSource = _flowRows;
             DetailList.ItemsSource = _details;
+            RecordDataGrid.SelectionChanged += RecordDataGrid_SelectionChanged;
+            _recordRows.CollectionChanged += RecordRows_CollectionChanged;
             BuildDetailContextMenu();
+            RegisterCopilotContext();
+            ApplyStatistics(new ResultStatistics());
+            UpdateHomePeriodText();
+            UpdateRecordPeriodText();
+            UpdateFlowPeriodText();
         }
+
+        private ResultStatisticsRecordRow? SelectedRecordRow => RecordDataGrid.SelectedItem as ResultStatisticsRecordRow;
 
         private async void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            await RefreshAsync();
+            _ = LoadSnSuggestionsAsync();
+            await Task.WhenAll(RefreshHomeAsync(), RefreshRecordsAsync(1));
         }
 
-        private async void Refresh_Click(object sender, RoutedEventArgs e)
+        private async void StatisticsTabs_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            await RefreshAsync();
+            if (e.Source != StatisticsTabs || StatisticsTabs.SelectedItem != FlowQueryTab || _flowTabInitialized)
+                return;
+
+            _flowTabInitialized = true;
+            _ = LoadFlowNameSuggestionsAsync();
+            await RefreshFlowsAsync(1);
         }
 
-        private async Task RefreshAsync()
+        private async void HomeRefresh_Click(object sender, RoutedEventArgs e)
         {
-            RefreshButton.IsEnabled = false;
-            SummaryText.Text = "正在统计...";
-            DetailHeader.Text = "组内明细";
+            await RefreshHomeAsync();
+        }
+
+        private async void RecordRefresh_Click(object sender, RoutedEventArgs e)
+        {
+            await RefreshRecordsAsync(1);
+        }
+
+        private async void FlowRefresh_Click(object sender, RoutedEventArgs e)
+        {
+            await RefreshFlowsAsync(1);
+        }
+
+        private async void Reset_Click(object sender, RoutedEventArgs e)
+        {
+            RecordPeriodMode.SelectedIndex = 0;
+            RecordAnchorDatePicker.SelectedDate = DateTime.Today;
+            SnFilter.Text = string.Empty;
+            ResultFilter.SelectedIndex = 0;
+            UpdateRecordPeriodText();
+            await RefreshRecordsAsync(1);
+        }
+
+        private async void FlowReset_Click(object sender, RoutedEventArgs e)
+        {
+            FlowPeriodMode.SelectedIndex = 0;
+            FlowAnchorDatePicker.SelectedDate = DateTime.Today;
+            FlowNameFilter.Text = string.Empty;
+            FlowResultFilter.SelectedIndex = 0;
+            UpdateFlowPeriodText();
+            await RefreshFlowsAsync(1);
+        }
+
+        private void HomePeriodMode_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            UpdateHomePeriodText();
+        }
+
+        private void RecordPeriodMode_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            UpdateRecordPeriodText();
+        }
+
+        private void FlowPeriodMode_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            UpdateFlowPeriodText();
+        }
+
+        private void HomeAnchorDatePicker_SelectedDateChanged(object sender, SelectionChangedEventArgs e)
+        {
+            UpdateHomePeriodText();
+        }
+
+        private void RecordAnchorDatePicker_SelectedDateChanged(object sender, SelectionChangedEventArgs e)
+        {
+            UpdateRecordPeriodText();
+        }
+
+        private void FlowAnchorDatePicker_SelectedDateChanged(object sender, SelectionChangedEventArgs e)
+        {
+            UpdateFlowPeriodText();
+        }
+
+        private async void HomePreviousPeriod_Click(object sender, RoutedEventArgs e)
+        {
+            ShiftPeriod(HomePeriodMode, HomeAnchorDatePicker, -1);
+            await RefreshHomeAsync();
+        }
+
+        private async void HomeNextPeriod_Click(object sender, RoutedEventArgs e)
+        {
+            ShiftPeriod(HomePeriodMode, HomeAnchorDatePicker, 1);
+            await RefreshHomeAsync();
+        }
+
+        private async void RecordPreviousPeriod_Click(object sender, RoutedEventArgs e)
+        {
+            ShiftPeriod(RecordPeriodMode, RecordAnchorDatePicker, -1);
+            await RefreshRecordsAsync(1);
+        }
+
+        private async void RecordNextPeriod_Click(object sender, RoutedEventArgs e)
+        {
+            ShiftPeriod(RecordPeriodMode, RecordAnchorDatePicker, 1);
+            await RefreshRecordsAsync(1);
+        }
+
+        private async void FlowPreviousPeriod_Click(object sender, RoutedEventArgs e)
+        {
+            ShiftPeriod(FlowPeriodMode, FlowAnchorDatePicker, -1);
+            await RefreshFlowsAsync(1);
+        }
+
+        private async void FlowNextPeriod_Click(object sender, RoutedEventArgs e)
+        {
+            ShiftPeriod(FlowPeriodMode, FlowAnchorDatePicker, 1);
+            await RefreshFlowsAsync(1);
+        }
+
+        private static void ShiftPeriod(ComboBox modeSelector, DatePicker anchorPicker, int offset)
+        {
+            ResultStatisticsPeriodMode mode = GetSelectedPeriodMode(modeSelector);
+            DateTime anchor = anchorPicker.SelectedDate ?? DateTime.Today;
+            anchorPicker.SelectedDate = ResultStatisticsPeriod.ShiftAnchor(mode, anchor, offset);
+        }
+
+        private void UpdateHomePeriodText()
+        {
+            if (HomePeriodText == null || HomePeriodMode == null || HomeAnchorDatePicker == null)
+                return;
+
+            ResultStatisticsPeriodMode mode = GetSelectedPeriodMode(HomePeriodMode);
+            ResultStatisticsPeriodRange range = ResultStatisticsPeriod.GetRange(mode, HomeAnchorDatePicker.SelectedDate ?? DateTime.Today);
+            HomePeriodText.Text = $"查询范围：{range.ToDisplayText(mode)}";
+        }
+
+        private void UpdateRecordPeriodText()
+        {
+            if (RecordPeriodText == null || RecordPeriodMode == null || RecordAnchorDatePicker == null)
+                return;
+
+            ResultStatisticsPeriodMode mode = GetSelectedPeriodMode(RecordPeriodMode);
+            ResultStatisticsPeriodRange range = ResultStatisticsPeriod.GetRange(mode, RecordAnchorDatePicker.SelectedDate ?? DateTime.Today);
+            RecordPeriodText.Text = $"查询范围：{range.ToDisplayText(mode)}";
+        }
+
+        private void UpdateFlowPeriodText()
+        {
+            if (FlowPeriodText == null || FlowPeriodMode == null || FlowAnchorDatePicker == null)
+                return;
+
+            ResultStatisticsPeriodMode mode = GetSelectedPeriodMode(FlowPeriodMode);
+            ResultStatisticsPeriodRange range = ResultStatisticsPeriod.GetRange(mode, FlowAnchorDatePicker.SelectedDate ?? DateTime.Today);
+            FlowPeriodText.Text = $"查询范围：{range.ToDisplayText(mode)}";
+        }
+
+        private static ResultStatisticsPeriodMode GetSelectedPeriodMode(ComboBox selector)
+        {
+            return selector.SelectedIndex switch
+            {
+                1 => ResultStatisticsPeriodMode.Week,
+                2 => ResultStatisticsPeriodMode.Month,
+                _ => ResultStatisticsPeriodMode.Day,
+            };
+        }
+
+        private async Task RefreshHomeAsync()
+        {
+            ResultStatisticsQuery query = CreateHomeQuery();
+            int loadVersion = ++_homeLoadVersion;
+            HomeRefreshButton.IsEnabled = false;
+            _homeStatus = "正在查询统计...";
+            UpdateStatusText();
+
+            try
+            {
+                DateTime now = DateTime.Now;
+                ResultStatistics statistics = await Task.Run(() => _statisticsStore.QueryStatistics(query, now));
+
+                if (loadVersion != _homeLoadVersion)
+                    return;
+
+                ApplyStatistics(statistics);
+                _homeStatus = $"已查询 {statistics.TotalCount:N0} 条记录";
+            }
+            catch (Exception ex)
+            {
+                if (loadVersion != _homeLoadVersion)
+                    return;
+
+                _homeStatus = "查询失败";
+                MessageBox.Show(this, $"读取首页统计失败：{ex.Message}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                if (loadVersion == _homeLoadVersion)
+                {
+                    HomeRefreshButton.IsEnabled = true;
+                    UpdateStatusText();
+                }
+            }
+        }
+
+        private async Task RefreshRecordsAsync(int pageNumber)
+        {
+            ResultStatisticsQuery query = CreateRecordQuery(pageNumber);
+            int loadVersion = ++_recordLoadVersion;
+            RecordRefreshButton.IsEnabled = false;
+            _recordStatus = "正在查询批次记录...";
+            UpdateStatusText();
+            DetailHeader.Text = "流程 CT 明细";
             _details.Clear();
 
             try
             {
-                IReadOnlyList<CycleTimeGroup> groups = await Task.Run(_viewResultManager.QueryCycleTimeGroups);
-                _groups.Clear();
-                foreach (CycleTimeGroup group in groups)
-                {
-                    _groups.Add(group);
-                }
+                Task<int> countTask = Task.Run(() => _statisticsStore.QueryRecordCount(query));
+                Task<IReadOnlyList<ResultStatisticsRecordRow>> recordsTask = Task.Run(() => _statisticsStore.QueryRecords(query));
+                await Task.WhenAll(countTask, recordsTask);
 
-                SummaryText.Text = $"共 {_groups.Count} 次执行；相同 SN 重测会按流程顺序重新开始拆分";
-                if (_groups.Count > 0)
-                {
-                    GroupList.SelectedIndex = 0;
-                }
+                if (loadVersion != _recordLoadVersion)
+                    return;
+
+                _recordCache.Clear();
+                ReplaceItems(_recordRows, await recordsTask);
+                if (_recordRows.Count > 0)
+                    RecordDataGrid.SelectedIndex = 0;
+                _totalRecordCount = await countTask;
+                _currentPage = Math.Clamp(pageNumber, 1, Math.Max(1, GetPageCount()));
+                UpdatePagination();
+                _recordStatus = _totalRecordCount > RecordPageSize
+                    ? $"已查询 {_totalRecordCount:N0} 条批次记录；第 {_currentPage:N0}/{GetPageCount():N0} 页，本页 {_recordRows.Count:N0} 条"
+                    : $"已查询 {_totalRecordCount:N0} 条批次记录";
             }
             catch (Exception ex)
             {
-                SummaryText.Text = "统计失败";
-                MessageBox.Show(this, $"读取 CT 统计失败：{ex.Message}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+                if (loadVersion != _recordLoadVersion)
+                    return;
+
+                _recordStatus = "查询失败";
+                MessageBox.Show(this, $"读取批次记录失败：{ex.Message}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {
-                RefreshButton.IsEnabled = true;
+                if (loadVersion == _recordLoadVersion)
+                {
+                    RecordRefreshButton.IsEnabled = true;
+                    UpdateStatusText();
+                }
             }
         }
 
-        private async void GroupList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private async Task RefreshFlowsAsync(int pageNumber)
         {
-            if (GroupList.SelectedItem is not CycleTimeGroup group)
-            {
-                _details.Clear();
-                DetailHeader.Text = "组内明细";
-                return;
-            }
+            FlowExecutionQuery query = CreateFlowQuery(pageNumber);
+            int loadVersion = ++_flowLoadVersion;
+            FlowRefreshButton.IsEnabled = false;
+            _flowStatus = "正在查询流程执行记录...";
+            UpdateStatusText();
 
-            int loadVersion = ++_detailLoadVersion;
-            DetailHeader.Text = $"{group.SN} - {group.ExecutionText} - {group.ResultCount} 项 - CT {group.TotalRunTimeText}";
             try
             {
-                IReadOnlyList<ProjectARVRReuslt> details = await Task.Run(() => _viewResultManager.QueryCycleTimeDetails(group));
-                if (loadVersion != _detailLoadVersion || GroupList.SelectedItem != group)
-                {
-                    return;
-                }
+                Task<int> countTask = Task.Run(() => _statisticsStore.QueryFlowExecutionCount(query));
+                Task<IReadOnlyList<FlowExecutionRecordRow>> recordsTask = Task.Run(() => _statisticsStore.QueryFlowExecutions(query));
+                await Task.WhenAll(countTask, recordsTask);
 
-                _details.Clear();
-                foreach (ProjectARVRReuslt detail in details)
-                {
-                    _details.Add(detail);
-                }
+                if (loadVersion != _flowLoadVersion)
+                    return;
+
+                ReplaceItems(_flowRows, await recordsTask);
+                if (_flowRows.Count > 0)
+                    FlowDataGrid.SelectedIndex = 0;
+                _totalFlowCount = await countTask;
+                _flowCurrentPage = Math.Clamp(pageNumber, 1, Math.Max(1, GetFlowPageCount()));
+                UpdateFlowPagination();
+                _flowStatus = _totalFlowCount > FlowPageSize
+                    ? $"已查询 {_totalFlowCount:N0} 条流程执行记录；第 {_flowCurrentPage:N0}/{GetFlowPageCount():N0} 页，本页 {_flowRows.Count:N0} 条"
+                    : $"已查询 {_totalFlowCount:N0} 条流程执行记录";
             }
             catch (Exception ex)
             {
-                if (loadVersion == _detailLoadVersion)
+                if (loadVersion != _flowLoadVersion)
+                    return;
+
+                _flowStatus = "查询失败";
+                MessageBox.Show(this, $"读取流程执行记录失败：{ex.Message}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                if (loadVersion == _flowLoadVersion)
                 {
-                    _details.Clear();
-                    MessageBox.Show(this, $"读取组内明细失败：{ex.Message}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+                    FlowRefreshButton.IsEnabled = true;
+                    UpdateStatusText();
                 }
+            }
+        }
+
+        private int GetPageCount()
+        {
+            return Math.Max(1, (int)Math.Ceiling(_totalRecordCount / (double)RecordPageSize));
+        }
+
+        private void UpdatePagination()
+        {
+            int pageCount = GetPageCount();
+            PaginationPanel.Visibility = _totalRecordCount > RecordPageSize ? Visibility.Visible : Visibility.Collapsed;
+            PageStatusText.Text = $"第 {_currentPage:N0} / {pageCount:N0} 页（每页 {RecordPageSize:N0} 条）";
+            FirstPageButton.IsEnabled = _currentPage > 1;
+            PreviousPageButton.IsEnabled = _currentPage > 1;
+            NextPageButton.IsEnabled = _currentPage < pageCount;
+            LastPageButton.IsEnabled = _currentPage < pageCount;
+        }
+
+        private int GetFlowPageCount()
+        {
+            return Math.Max(1, (int)Math.Ceiling(_totalFlowCount / (double)FlowPageSize));
+        }
+
+        private void UpdateFlowPagination()
+        {
+            int pageCount = GetFlowPageCount();
+            FlowPaginationPanel.Visibility = _totalFlowCount > FlowPageSize ? Visibility.Visible : Visibility.Collapsed;
+            FlowPageStatusText.Text = $"第 {_flowCurrentPage:N0} / {pageCount:N0} 页（每页 {FlowPageSize:N0} 条）";
+            FlowFirstPageButton.IsEnabled = _flowCurrentPage > 1;
+            FlowPreviousPageButton.IsEnabled = _flowCurrentPage > 1;
+            FlowNextPageButton.IsEnabled = _flowCurrentPage < pageCount;
+            FlowLastPageButton.IsEnabled = _flowCurrentPage < pageCount;
+        }
+
+        private async void FirstPage_Click(object sender, RoutedEventArgs e)
+        {
+            await RefreshRecordsAsync(1);
+        }
+
+        private async void PreviousPage_Click(object sender, RoutedEventArgs e)
+        {
+            if (_currentPage > 1)
+                await RefreshRecordsAsync(_currentPage - 1);
+        }
+
+        private async void NextPage_Click(object sender, RoutedEventArgs e)
+        {
+            if (_currentPage < GetPageCount())
+                await RefreshRecordsAsync(_currentPage + 1);
+        }
+
+        private async void LastPage_Click(object sender, RoutedEventArgs e)
+        {
+            await RefreshRecordsAsync(GetPageCount());
+        }
+
+        private async void FlowFirstPage_Click(object sender, RoutedEventArgs e)
+        {
+            await RefreshFlowsAsync(1);
+        }
+
+        private async void FlowPreviousPage_Click(object sender, RoutedEventArgs e)
+        {
+            if (_flowCurrentPage > 1)
+                await RefreshFlowsAsync(_flowCurrentPage - 1);
+        }
+
+        private async void FlowNextPage_Click(object sender, RoutedEventArgs e)
+        {
+            if (_flowCurrentPage < GetFlowPageCount())
+                await RefreshFlowsAsync(_flowCurrentPage + 1);
+        }
+
+        private async void FlowLastPage_Click(object sender, RoutedEventArgs e)
+        {
+            await RefreshFlowsAsync(GetFlowPageCount());
+        }
+
+        private ResultStatisticsQuery CreateHomeQuery()
+        {
+            ResultStatisticsPeriodMode mode = GetSelectedPeriodMode(HomePeriodMode);
+            ResultStatisticsPeriodRange range = ResultStatisticsPeriod.GetRange(mode, HomeAnchorDatePicker.SelectedDate ?? DateTime.Today);
+            return new ResultStatisticsQuery { From = range.From, ToExclusive = range.ToExclusive };
+        }
+
+        private ResultStatisticsQuery CreateRecordQuery(int pageNumber)
+        {
+            ResultStatisticsPeriodMode mode = GetSelectedPeriodMode(RecordPeriodMode);
+            ResultStatisticsPeriodRange range = ResultStatisticsPeriod.GetRange(mode, RecordAnchorDatePicker.SelectedDate ?? DateTime.Today);
+            bool? result = ResultFilter.SelectedIndex switch
+            {
+                1 => true,
+                2 => false,
+                _ => null,
+            };
+            string sn = SnFilter.Text.Trim();
+            return new ResultStatisticsQuery
+            {
+                From = range.From,
+                ToExclusive = range.ToExclusive,
+                SN = string.IsNullOrWhiteSpace(sn) ? null : sn,
+                Result = result,
+                PageNumber = Math.Max(1, pageNumber),
+                PageSize = RecordPageSize,
+            };
+        }
+
+        private FlowExecutionQuery CreateFlowQuery(int pageNumber)
+        {
+            ResultStatisticsPeriodMode mode = GetSelectedPeriodMode(FlowPeriodMode);
+            ResultStatisticsPeriodRange range = ResultStatisticsPeriod.GetRange(mode, FlowAnchorDatePicker.SelectedDate ?? DateTime.Today);
+            bool? result = FlowResultFilter.SelectedIndex switch
+            {
+                1 => true,
+                2 => false,
+                _ => null,
+            };
+            string model = FlowNameFilter.Text.Trim();
+            return new FlowExecutionQuery
+            {
+                From = range.From,
+                ToExclusive = range.ToExclusive,
+                Model = string.IsNullOrWhiteSpace(model) ? null : model,
+                Result = result,
+                PageNumber = Math.Max(1, pageNumber),
+                PageSize = FlowPageSize,
+            };
+        }
+
+        private async Task LoadSnSuggestionsAsync()
+        {
+            int version = ++_snIndexVersion;
+            _snIndexStatus = "正在加载 SN，可先手动输入查询";
+            UpdateStatusText();
+            try
+            {
+                IReadOnlyList<ResultStatisticsSnSummary> summaries = await Task.Run(_statisticsStore.QuerySnSummaries);
+                if (version != _snIndexVersion)
+                    return;
+
+                _snSuggestions = summaries.Select(item => item.SN).ToArray();
+                UpdateSnSuggestions(SnFilter.Text, openDropDown: false);
+                _snIndexStatus = $"可检索 {_snSuggestions.Length:N0} 个 SN，下拉最多显示 {SuggestionDisplayLimit} 个匹配项";
+            }
+            catch (Exception ex)
+            {
+                if (version != _snIndexVersion)
+                    return;
+
+                _snIndexStatus = "SN 列表加载失败，仍可手动输入";
+                Log.Warn("Could not load the ARVRPro SN suggestions.", ex);
+            }
+            finally
+            {
+                if (version == _snIndexVersion)
+                    UpdateStatusText();
+            }
+        }
+
+        private void SnFilter_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (_snEditor != null)
+                _snEditor.TextChanged -= SnEditor_TextChanged;
+            SnFilter.ApplyTemplate();
+            _snEditor = SnFilter.Template.FindName("PART_EditableTextBox", SnFilter) as TextBox;
+            if (_snEditor != null)
+                _snEditor.TextChanged += SnEditor_TextChanged;
+            UpdateSnSuggestions(SnFilter.Text, openDropDown: false);
+        }
+
+        private void SnEditor_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (!_updatingSnSuggestions)
+                UpdateSnSuggestions(_snEditor?.Text, openDropDown: true);
+        }
+
+        private void SnFilter_DropDownOpened(object sender, EventArgs e)
+        {
+            if (!_updatingSnSuggestions)
+                UpdateSnSuggestions(_snEditor?.Text ?? SnFilter.Text, openDropDown: false);
+        }
+
+        private void SnFilter_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_updatingSnSuggestions || SnFilter.SelectedItem is not string selected)
+                return;
+
+            _updatingSnSuggestions = true;
+            SnFilter.Text = selected;
+            if (_snEditor != null)
+            {
+                _snEditor.Text = selected;
+                _snEditor.CaretIndex = selected.Length;
+            }
+            SnFilter.IsDropDownOpen = false;
+            _updatingSnSuggestions = false;
+        }
+
+        private void UpdateSnSuggestions(string? text, bool openDropDown)
+        {
+            string input = text ?? string.Empty;
+            IReadOnlyList<string> matches = ResultStatisticsSuggestionFilter.Filter(
+                _snSuggestions,
+                input,
+                SuggestionDisplayLimit);
+
+            _updatingSnSuggestions = true;
+            SnFilter.ItemsSource = matches;
+            SnFilter.Text = input;
+            if (_snEditor != null)
+            {
+                _snEditor.Text = input;
+                _snEditor.CaretIndex = input.Length;
+            }
+            _updatingSnSuggestions = false;
+
+            if (openDropDown && _snEditor?.IsKeyboardFocusWithin == true)
+                SnFilter.IsDropDownOpen = matches.Count > 0;
+        }
+
+        private async Task LoadFlowNameSuggestionsAsync()
+        {
+            int version = ++_flowNameIndexVersion;
+            _flowNameIndexStatus = "正在加载流程名，可先手动输入查询";
+            UpdateStatusText();
+            try
+            {
+                IReadOnlyList<string> names = await Task.Run(_statisticsStore.QueryFlowNames);
+                if (version != _flowNameIndexVersion)
+                    return;
+
+                _flowNameSuggestions = names.ToArray();
+                UpdateFlowNameSuggestions(FlowNameFilter.Text, openDropDown: false);
+                _flowNameIndexStatus = $"可检索 {_flowNameSuggestions.Length:N0} 个流程名，下拉最多显示 {SuggestionDisplayLimit} 个匹配项";
+            }
+            catch (Exception ex)
+            {
+                if (version != _flowNameIndexVersion)
+                    return;
+
+                _flowNameIndexStatus = "流程名列表加载失败，仍可手动输入";
+                Log.Warn("Could not load the ARVRPro flow-name suggestions.", ex);
+            }
+            finally
+            {
+                if (version == _flowNameIndexVersion)
+                    UpdateStatusText();
+            }
+        }
+
+        private void FlowNameFilter_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (_flowNameEditor != null)
+                _flowNameEditor.TextChanged -= FlowNameEditor_TextChanged;
+            FlowNameFilter.ApplyTemplate();
+            _flowNameEditor = FlowNameFilter.Template.FindName("PART_EditableTextBox", FlowNameFilter) as TextBox;
+            if (_flowNameEditor != null)
+                _flowNameEditor.TextChanged += FlowNameEditor_TextChanged;
+            UpdateFlowNameSuggestions(FlowNameFilter.Text, openDropDown: false);
+        }
+
+        private void FlowNameEditor_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (!_updatingFlowNameSuggestions)
+                UpdateFlowNameSuggestions(_flowNameEditor?.Text, openDropDown: true);
+        }
+
+        private void FlowNameFilter_DropDownOpened(object sender, EventArgs e)
+        {
+            if (!_updatingFlowNameSuggestions)
+                UpdateFlowNameSuggestions(_flowNameEditor?.Text ?? FlowNameFilter.Text, openDropDown: false);
+        }
+
+        private void FlowNameFilter_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_updatingFlowNameSuggestions || FlowNameFilter.SelectedItem is not string selected)
+                return;
+
+            _updatingFlowNameSuggestions = true;
+            FlowNameFilter.Text = selected;
+            if (_flowNameEditor != null)
+            {
+                _flowNameEditor.Text = selected;
+                _flowNameEditor.CaretIndex = selected.Length;
+            }
+            FlowNameFilter.IsDropDownOpen = false;
+            _updatingFlowNameSuggestions = false;
+        }
+
+        private void UpdateFlowNameSuggestions(string? text, bool openDropDown)
+        {
+            string input = text ?? string.Empty;
+            IReadOnlyList<string> matches = ResultStatisticsSuggestionFilter.Filter(
+                _flowNameSuggestions,
+                input,
+                SuggestionDisplayLimit);
+
+            _updatingFlowNameSuggestions = true;
+            FlowNameFilter.ItemsSource = matches;
+            FlowNameFilter.Text = input;
+            if (_flowNameEditor != null)
+            {
+                _flowNameEditor.Text = input;
+                _flowNameEditor.CaretIndex = input.Length;
+            }
+            _updatingFlowNameSuggestions = false;
+
+            if (openDropDown && _flowNameEditor?.IsKeyboardFocusWithin == true)
+                FlowNameFilter.IsDropDownOpen = matches.Count > 0;
+        }
+
+        private void ApplyStatistics(ResultStatistics statistics)
+        {
+            TotalCountText.Text = statistics.TotalCount.ToString("N0");
+            PassCountText.Text = statistics.PassCount.ToString("N0");
+            FailCountText.Text = statistics.FailCount.ToString("N0");
+            PassRateText.Text = statistics.PassRateText;
+            FailRateText.Text = statistics.FailRateText;
+            AverageCtText.Text = statistics.AverageCtText;
+            CurrentHourCountText.Text = statistics.CurrentHourCount.ToString("N0");
+            TodayCountText.Text = statistics.TodayCount.ToString("N0");
+        }
+
+        private void UpdateStatusText()
+        {
+            HomeStatusText.Text = _homeStatus;
+            QueryStatusText.Text = string.Join("；", new[] { _recordStatus, _snIndexStatus }.Where(item => !string.IsNullOrWhiteSpace(item)));
+            FlowQueryStatusText.Text = string.Join("；", new[] { _flowStatus, _flowNameIndexStatus }.Where(item => !string.IsNullOrWhiteSpace(item)));
+        }
+
+        private static void ReplaceItems<T>(ObservableCollection<T> target, IEnumerable<T> source)
+        {
+            target.Clear();
+            foreach (T item in source)
+                target.Add(item);
+        }
+
+        private void RecordDataGrid_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            DependencyObject? element = RecordDataGrid.InputHitTest(e.GetPosition(RecordDataGrid)) as DependencyObject;
+            while (element != null && element is not DataGridRow)
+                element = VisualTreeHelper.GetParent(element);
+
+            if (element is DataGridRow row && !row.IsSelected)
+            {
+                RecordDataGrid.SelectedItems.Clear();
+                row.IsSelected = true;
+            }
+        }
+
+        private async void RecordDataGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            await ViewSelectedItemsAsync();
+        }
+
+        private async void ViewItems_Click(object sender, RoutedEventArgs e)
+        {
+            await ViewSelectedItemsAsync();
+        }
+
+        private async Task ViewSelectedItemsAsync()
+        {
+            ObjectiveTestResultRecord? record = await LoadSelectedRecordAsync();
+            if (record == null)
+                return;
+
+            new TestResultViewWindow(record.ObjectiveTestResultJson)
+            {
+                Owner = this,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            }.ShowDialog();
+        }
+
+        private async void ViewJson_Click(object sender, RoutedEventArgs e)
+        {
+            ObjectiveTestResultRecord? record = await LoadSelectedRecordAsync();
+            if (record == null)
+                return;
+
+            var control = new AvalonEditControll();
+            control.SetJsonText(record.ObjectiveTestResultJson);
+            new Window
+            {
+                Title = $"ObjectiveTestResult Json - {record.SN}",
+                Owner = this,
+                Content = control,
+                Width = 900,
+                Height = 650,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            }.ShowDialog();
+        }
+
+        private async void ExportSingleCsv_Click(object sender, RoutedEventArgs e)
+        {
+            if (!TryGetSelectedRecordRow(out ResultStatisticsRecordRow row))
+                return;
+
+            var dialog = new SaveFileDialog
+            {
+                Title = "导出单条 ObjectiveTestResult",
+                Filter = "CSV 文件 (*.csv)|*.csv",
+                DefaultExt = ".csv",
+                AddExtension = true,
+                FileName = $"TestResults_{SanitizeFileName(string.IsNullOrWhiteSpace(row.SN) ? "SN" : row.SN)}.csv",
+                InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),
+            };
+            if (dialog.ShowDialog(this) != true)
+                return;
+
+            try
+            {
+                string fileName = dialog.FileName;
+                ObjectiveTestResultRecord? record = await LoadRecordAsync(row);
+                if (record == null)
+                {
+                    MessageBox.Show(this, "该记录已不存在。", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+
+                ObjectiveTestResult? result = JsonConvert.DeserializeObject<ObjectiveTestResult>(record.ObjectiveTestResultJson);
+                if (result == null)
+                {
+                    MessageBox.Show(this, "ObjectiveTestResult 为空，无法导出。", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                bool useLegacy = _viewResultManager.Config.UseLegacyARVROutput;
+                await Task.Run(() =>
+                {
+                    if (useLegacy)
+                    {
+                        LegacyARVRObjectiveTestResult legacyResult = LegacyARVRConverter.ToLegacy(result);
+                        LegacyARVRCsvExporter.ExportToCsv(new List<LegacyARVRObjectiveTestResult> { legacyResult }, fileName);
+                    }
+                    else
+                    {
+                        ObjectiveTestResultCsvExporter.ExportToCsv(result, fileName);
+                    }
+                });
+                MessageBox.Show(this, $"导出完成：{fileName}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, $"导出失败：{ex.Message}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private async void ExportBatchCsv_Click(object sender, RoutedEventArgs e)
+        {
+            List<ResultStatisticsRecordRow> selectedRows = _recordRows
+                .Where(row => RecordDataGrid.SelectedItems.Contains(row))
+                .ToList();
+            if (selectedRows.Count == 0)
+                selectedRows = _recordRows.ToList();
+            if (selectedRows.Count == 0)
+            {
+                MessageBox.Show(this, "当前没有可导出的记录。", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            var dialog = new SaveFileDialog
+            {
+                Title = "批量导出结果记录",
+                Filter = "CSV 文件 (*.csv)|*.csv",
+                DefaultExt = ".csv",
+                AddExtension = true,
+                FileName = $"TestResults_Batch_{DateTime.Now:yyyyMMdd_HHmmss}.csv",
+                InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),
+            };
+            if (dialog.ShowDialog(this) != true)
+                return;
+
+            try
+            {
+                string fileName = dialog.FileName;
+                int[] ids = selectedRows.Select(row => row.Id).ToArray();
+                List<ObjectiveTestResultRecord> exportedRecords = await Task.Run(() =>
+                {
+                    Dictionary<int, ObjectiveTestResultRecord> recordsById = _statisticsStore.GetRecords(ids)
+                        .ToDictionary(record => record.Id);
+                    List<ObjectiveTestResultRecord> records = selectedRows
+                        .Where(row => recordsById.ContainsKey(row.Id))
+                        .Select(row => recordsById[row.Id])
+                        .ToList();
+                    ObjectiveTestResultBatchCsvExporter.ExportToCsv(records, fileName);
+                    return records;
+                });
+
+                foreach (ObjectiveTestResultRecord record in exportedRecords)
+                    _recordCache[record.Id] = record;
+                MessageBox.Show(this, $"已导出 {exportedRecords.Count:N0} 条记录：{fileName}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, $"批量导出失败：{ex.Message}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private bool TryGetSelectedRecordRow(out ResultStatisticsRecordRow row)
+        {
+            if (SelectedRecordRow is ResultStatisticsRecordRow selectedRow)
+            {
+                row = selectedRow;
+                return true;
+            }
+
+            row = null!;
+            MessageBox.Show(this, "请先选择一条记录。", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+            return false;
+        }
+
+        private async Task<ObjectiveTestResultRecord?> LoadSelectedRecordAsync()
+        {
+            return TryGetSelectedRecordRow(out ResultStatisticsRecordRow row)
+                ? await LoadRecordAsync(row)
+                : null;
+        }
+
+        private async Task<ObjectiveTestResultRecord?> LoadRecordAsync(ResultStatisticsRecordRow row)
+        {
+            if (_recordCache.TryGetValue(row.Id, out ObjectiveTestResultRecord? cached))
+                return cached;
+
+            ObjectiveTestResultRecord? record = await Task.Run(() => _statisticsStore.GetRecord(row.Id));
+            if (record != null)
+                _recordCache[row.Id] = record;
+            return record;
+        }
+
+        private static string SanitizeFileName(string fileName)
+        {
+            foreach (char character in Path.GetInvalidFileNameChars())
+                fileName = fileName.Replace(character, '_');
+            return fileName;
+        }
+
+        private async void RecordDataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            _copilotContextSession?.Activate();
+            ResultStatisticsRecordRow? selectedRow = SelectedRecordRow;
+            if (selectedRow == null)
+            {
+                ++_detailLoadVersion;
+                _details.Clear();
+                DetailHeader.Text = "流程 CT 明细";
+                QueueCopilotContextPublish();
+                return;
+            }
+
+            _ = LoadFlowDetailsAsync(selectedRow);
+            if (!_recordCache.ContainsKey(selectedRow.Id))
+            {
+                try
+                {
+                    await LoadRecordAsync(selectedRow);
+                }
+                catch (Exception ex)
+                {
+                    Log.Debug($"Could not load the selected ARVRPro statistics record for Copilot context: {ex.Message}");
+                }
+            }
+
+            QueueCopilotContextPublish();
+        }
+
+        private async Task LoadFlowDetailsAsync(ResultStatisticsRecordRow row)
+        {
+            int loadVersion = ++_detailLoadVersion;
+            DetailHeader.Text = $"{row.SN} - 正在读取流程 CT 明细...";
+            try
+            {
+                IReadOnlyList<ProjectARVRReuslt> details = await Task.Run(() => _statisticsStore.QueryFlowDetails(row));
+                if (loadVersion != _detailLoadVersion || SelectedRecordRow != row)
+                    return;
+
+                ReplaceItems(_details, details);
+                double flowMilliseconds = details.Sum(item => Convert.ToDouble(item.RunTime));
+                DetailHeader.Text = $"{row.SN} - 整组 CT {row.CycleTimeText}（含切图）- {details.Count:N0} 个流程，流程耗时合计 {ResultStatisticsCalculator.FormatMilliseconds(flowMilliseconds)}";
+            }
+            catch (Exception ex)
+            {
+                if (loadVersion != _detailLoadVersion)
+                    return;
+
+                _details.Clear();
+                DetailHeader.Text = $"{row.SN} - 流程 CT 明细读取失败";
+                MessageBox.Show(this, $"读取流程 CT 明细失败：{ex.Message}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void RecordRows_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+        {
+            QueueCopilotContextPublish();
+        }
+
+        private void RegisterCopilotContext()
+        {
+            try
+            {
+                _copilotContextSession = ProjectARVRCopilotContextHub.Shared.Register(
+                    CaptureCopilotSnapshotAsync,
+                    typeof(CycleTimeStatisticsWindow).Assembly.GetName().Version?.ToString());
+            }
+            catch (Exception ex)
+            {
+                Log.Warn("Could not register the ARVRPro result-statistics Copilot context; the statistics window will continue to operate.", ex);
+            }
+        }
+
+        private async Task<CopilotProjectResultContextSnapshot?> CaptureCopilotSnapshotAsync(CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!Dispatcher.CheckAccess())
+            {
+                return await Dispatcher.InvokeAsync(() =>
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    return CaptureCopilotSnapshot();
+                });
+            }
+
+            return CaptureCopilotSnapshot();
+        }
+
+        private CopilotProjectResultContextSnapshot CaptureCopilotSnapshot()
+        {
+            ObjectiveTestResultRecord[] records = _recordRows.Select(CreateContextRecord).ToArray();
+            ObjectiveTestResultRecord? selected = SelectedRecordRow is ResultStatisticsRecordRow row
+                ? CreateContextRecord(row)
+                : null;
+            return ProjectARVRCopilotSnapshotFactory.CreateForObjectiveResultRecords(
+                "ARVRPro result statistics",
+                records,
+                selected);
+        }
+
+        private ObjectiveTestResultRecord CreateContextRecord(ResultStatisticsRecordRow row)
+        {
+            if (_recordCache.TryGetValue(row.Id, out ObjectiveTestResultRecord? record))
+                return record;
+
+            return new ObjectiveTestResultRecord
+            {
+                Id = row.Id,
+                ResultId = row.ResultId,
+                BatchId = row.BatchId,
+                SN = row.SN,
+                LastModel = row.LastModel,
+                LastFlowStatus = "Completed",
+                Msg = row.Msg,
+                LastResult = row.Result,
+                TotalResult = row.Result,
+                CreateTime = row.StartTime,
+                UpdateTime = row.EndTime,
+            };
+        }
+
+        protected override void OnActivated(EventArgs e)
+        {
+            base.OnActivated(e);
+            _copilotContextSession?.Activate();
+            PublishCopilotContext();
+        }
+
+        private void QueueCopilotContextPublish()
+        {
+            if (Interlocked.Exchange(ref _copilotPublishQueued, 1) != 0)
+                return;
+
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                Interlocked.Exchange(ref _copilotPublishQueued, 0);
+                PublishCopilotContext();
+            }));
+        }
+
+        private void PublishCopilotContext()
+        {
+            if (_copilotContextSession?.IsCurrent != true || !IsActive)
+                return;
+
+            try
+            {
+                var item = CopilotBusinessContextBuilder.BuildProjectResultContextItem(CaptureCopilotSnapshot());
+                CopilotBusinessContextCoordinator.Publish(CopilotBusinessContextBundle.FromItem(
+                    ProjectARVRCopilotAgentExtension.SourceId,
+                    item));
+            }
+            catch (Exception ex)
+            {
+                Log.Debug($"Could not publish the active ARVRPro result-statistics context to Copilot: {ex.Message}");
             }
         }
 
@@ -137,14 +1094,10 @@ namespace ProjectARVRPro
             {
                 DependencyObject? element = DetailList.InputHitTest(e.GetPosition(DetailList)) as DependencyObject;
                 while (element != null && element is not ListViewItem)
-                {
                     element = VisualTreeHelper.GetParent(element);
-                }
 
                 if (element is ListViewItem targetItem)
-                {
                     targetItem.IsSelected = true;
-                }
             };
 
             DetailList.ContextMenu = contextMenu;
@@ -153,9 +1106,7 @@ namespace ProjectARVRPro
         private void OpenFolderAndSelectFile()
         {
             if (DetailList.SelectedItem is ProjectARVRReuslt item && !string.IsNullOrWhiteSpace(item.FileName))
-            {
                 PlatformHelper.OpenFolderAndSelectFile(item.FileName);
-            }
         }
 
         private void OpenBatchDataHistory()
@@ -168,12 +1119,11 @@ namespace ProjectARVRPro
             }
 
             var frame = new Frame();
-            var window = new Window
+            new Window
             {
                 Owner = this,
                 Content = new MeasureBatchPage(frame, batch)
-            };
-            window.Show();
+            }.Show();
         }
 
         private void OpenFlowExecutionAnalysis()
@@ -195,9 +1145,7 @@ namespace ProjectARVRPro
         private MeasureBatchModel? GetSelectedMeasureBatch()
         {
             if (DetailList.SelectedItem is not ProjectARVRReuslt item || item.BatchId <= 0)
-            {
                 return null;
-            }
 
             using var db = new SqlSugarClient(new ConnectionConfig
             {
@@ -211,15 +1159,31 @@ namespace ProjectARVRPro
         private void ViewTestResult()
         {
             if (DetailList.SelectedItem is not ProjectARVRReuslt item || string.IsNullOrEmpty(item.ViewResultJson))
-            {
                 return;
-            }
 
             new TestResultViewWindow(item.ViewResultJson)
             {
                 Owner = this,
                 WindowStartupLocation = WindowStartupLocation.CenterOwner
             }.ShowDialog();
+        }
+
+        protected override void OnClosed(EventArgs e)
+        {
+            ++_homeLoadVersion;
+            ++_recordLoadVersion;
+            ++_snIndexVersion;
+            ++_detailLoadVersion;
+            if (_snEditor != null)
+                _snEditor.TextChanged -= SnEditor_TextChanged;
+            RecordDataGrid.SelectionChanged -= RecordDataGrid_SelectionChanged;
+            _recordRows.CollectionChanged -= RecordRows_CollectionChanged;
+            bool wasCurrent = _copilotContextSession?.IsCurrent == true;
+            _copilotContextSession?.Dispose();
+            _copilotContextSession = null;
+            if (wasCurrent)
+                CopilotLiveContextRegistry.Clear(ProjectARVRCopilotAgentExtension.SourceId);
+            base.OnClosed(e);
         }
     }
 }

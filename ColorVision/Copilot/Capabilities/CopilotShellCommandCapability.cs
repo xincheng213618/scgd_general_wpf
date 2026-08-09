@@ -21,6 +21,8 @@ namespace ColorVision.Copilot
         string WorkingDirectory,
         TimeSpan Timeout)
     {
+        public IReadOnlyDictionary<string, string>? EnvironmentVariables { get; init; }
+
         public IReadOnlyDictionary<string, string?>? EnvironmentOverrides { get; init; }
 
         public Action<string>? StandardOutputReceived { get; init; }
@@ -135,6 +137,8 @@ namespace ColorVision.Copilot
                     execution.WorkingDirectory,
                     TimeSpan.FromSeconds(execution.TimeoutSeconds))
                 {
+                    EnvironmentVariables = request.CodexShellEnvironmentPolicy
+                        .CreateEnvironmentVariables(request.ConversationId),
                     StandardOutputReceived = chunk =>
                     {
                         outputCapture?.AppendStandardOutput(chunk);
@@ -562,6 +566,12 @@ namespace ColorVision.Copilot
             };
             foreach (var argument in command.Arguments)
                 startInfo.ArgumentList.Add(argument);
+            if (command.EnvironmentVariables != null)
+            {
+                startInfo.Environment.Clear();
+                foreach (var pair in command.EnvironmentVariables)
+                    startInfo.Environment[pair.Key] = pair.Value;
+            }
             startInfo.Environment["NO_COLOR"] = "1";
             if (command.EnvironmentOverrides != null)
             {
@@ -574,6 +584,12 @@ namespace ColorVision.Copilot
                     else
                         startInfo.Environment[pair.Key] = pair.Value;
                 }
+            }
+            foreach (var name in startInfo.Environment.Keys
+                .Where(CopilotCodexShellEnvironmentPolicy.IsNonInheritableEnvironmentVariable)
+                .ToArray())
+            {
+                startInfo.Environment.Remove(name);
             }
 
             using var process = new Process { StartInfo = startInfo, EnableRaisingEvents = true };

@@ -1,6 +1,6 @@
 namespace ProjectARVRPro.Process.OpticCenter
 {
-    public class OpticCenterProcessConfig : ProcessConfigBase
+    public class OpticCenterProcessConfig : ProcessConfigBase<OpticCenterRecipeConfig>
     {
     }
 }

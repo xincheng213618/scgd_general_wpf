@@ -108,8 +108,7 @@ public class CVFlowContainer : CVNodeContainer
 				e.TotalTime,
 				e.Message,
 				e.ErrorNodeName,
-				e.ErrorNodeId,
-				e.HandledFailures));
+				e.ErrorNodeId));
 	}
 
 	private void AddDevice(CVBaseServerNode node)

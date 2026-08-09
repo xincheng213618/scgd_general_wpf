@@ -59,15 +59,13 @@ namespace ColorVision.Copilot
             if (!CanScheduleComposerRequest(requestMode))
                 return;
 
-            if (SelectedProfile == null || !SelectedProfile.IsConfigured)
+            var selectedProfile = SelectedProfile;
+            if (selectedProfile == null || !selectedProfile.IsConfigured)
             {
                 OpenSettings();
                 return;
             }
 
-            var requestProfile = CreateConversationRequestProfile(SelectedProfile, SelectedConversation);
-            if (!TryValidatePromptBudget(modelPrompt, requestMode, requestProfile))
-                return;
             var requestAttachments = isDirectSubmission
                 ? Array.Empty<CopilotAttachmentItem>()
                 : Attachments.ToArray();
@@ -75,15 +73,6 @@ namespace ColorVision.Copilot
                 return;
 
             var conversation = EnsureConversation();
-            var automaticCompaction = await TryAutoCompactConversationAsync(
-                conversation,
-                requestProfile,
-                modelPrompt);
-            if (automaticCompaction == CopilotAutomaticCompactionOutcome.Failed)
-                return;
-
-            conversation.ProfileId = requestProfile.Id;
-            conversation.ProfileDisplayName = requestProfile.DisplayLabel;
             var replacedUserIndex = -1;
             CopilotChatMessage replacedUserMessage = null!;
             CopilotChatMessage? replacedAssistantMessage = null;
@@ -101,13 +90,58 @@ namespace ColorVision.Copilot
             var turnSnapshot = isReplacingTurn
                 ? CaptureHostedTurnSnapshot(conversation, replacedUserMessage, conversation.Attachments)
                 : CaptureHostedTurnSnapshot(conversation, attachmentOverride: requestAttachments);
+            var requestProfile = CreateConversationRequestProfile(
+                selectedProfile,
+                conversation,
+                requestMode,
+                turnSnapshot.ProjectInstructionDiscoveryOptions);
+            if (!TryValidatePromptBudget(
+                modelPrompt,
+                requestMode,
+                requestProfile,
+                turnSnapshot.ProjectInstructionDiscoveryOptions))
+            {
+                return;
+            }
+            var automaticCompaction = await TryAutoCompactConversationAsync(
+                conversation,
+                requestProfile,
+                modelPrompt,
+                turnSnapshot.ProjectInstructionDiscoveryOptions);
+            if (automaticCompaction == CopilotAutomaticCompactionOutcome.Failed)
+                return;
+            if (automaticCompaction == CopilotAutomaticCompactionOutcome.Applied)
+            {
+                turnSnapshot = turnSnapshot.WithConversationHistory(
+                    CopilotConversationRequestBuilder.CaptureHistorySnapshot(
+                        conversation,
+                        isReplacingTurn ? replacedUserMessage : null));
+            }
+
+            conversation.ProfileId = requestProfile.Id;
+            conversation.ProfileDisplayName = requestProfile.DisplayLabel;
             var recoveryRequest = isDirectSubmission ? null : ConsumePendingAgentRecoveryRequest();
             if (!isDirectSubmission)
                 requestMode = ConsumeRequestModeOverride();
+            var workspaceReviewTarget = isDirectSubmission
+                ? null
+                : ConsumePendingWorkspaceReviewTarget(requestMode);
+            var agentSkillReference = isDirectSubmission
+                ? null
+                : ResolvePendingAgentSkillReference(prompt);
+            if (workspaceReviewTarget == null
+                && isReplacingTurn
+                && requestMode == CopilotAgentMode.Review
+                && replacedUserMessage.WorkspaceReviewTarget?.IsStructurallyValid() == true)
+            {
+                workspaceReviewTarget = replacedUserMessage.WorkspaceReviewTarget.CreateSnapshot();
+            }
 
             var userMessage = new CopilotChatMessage(CopilotChatRole.User, prompt)
             {
                 RequestMode = requestMode,
+                WorkspaceReviewTarget = workspaceReviewTarget,
+                AgentSkillReference = agentSkillReference,
                 RequestContent = directRequestContent ?? string.Empty,
                 RecoveryRequest = recoveryRequest,
                 Attachments = new ObservableCollection<CopilotAttachmentItem>(turnSnapshot.Attachments),
@@ -154,6 +188,7 @@ namespace ColorVision.Copilot
                 {
                     _pendingAgentRecoveryRequest = recoveryRequest;
                     SetPendingRequestModeOverride(requestMode);
+                    SetPendingWorkspaceReviewTarget(workspaceReviewTarget);
                 }
                 UpdateConversationMetadata(conversation, touch: true);
                 PersistState();
@@ -215,7 +250,8 @@ namespace ColorVision.Copilot
                 userMessage,
                 assistantMessage,
                 turnSnapshot,
-                refreshExternalContext: true);
+                refreshExternalContext: true,
+                isAutomaticGoalContinuation: false);
 
         private async Task ExecuteHostedPreparedTurnAsync(
             CopilotHostedAgentRun hostedRun,
@@ -224,10 +260,32 @@ namespace ColorVision.Copilot
             CopilotChatMessage userMessage,
             CopilotChatMessage assistantMessage,
             CopilotAgentHostContextSnapshot turnSnapshot,
-            bool refreshExternalContext)
+            bool refreshExternalContext,
+            bool isAutomaticGoalContinuation)
         {
+            using var sleepPrevention = CopilotActiveTurnSleepPrevention.Acquire(
+                turnSnapshot.ProjectInstructionDiscoveryOptions);
+            var goalsEnabled = turnSnapshot.ProjectInstructionDiscoveryOptions.ConfiguredGoalsEnabled;
+            CopilotUiDispatcher.Invoke(() =>
+            {
+                CopilotConversationService.MarkTurnStarted(
+                    Conversations,
+                    conversation,
+                    DateTime.Now);
+
+                if (goalsEnabled
+                    && conversation.TryBeginGoalTurn(hostedRun.IsAgent, isAutomaticGoalContinuation))
+                {
+                    CopilotAssistantMessagePresenter.AppendExecutionTrace(
+                        assistantMessage,
+                        "Goal continuation deferral consumed · explicit Agent turn owns lifecycle.");
+                }
+                PersistState(immediate: true);
+            });
             var boundGoalId = CopilotUiDispatcher.Invoke(
-                () => conversation.Goal?.IsActive == true ? conversation.Goal.Id : string.Empty,
+                () => goalsEnabled && conversation.Goal?.IsActive == true
+                    ? conversation.Goal.Id
+                    : string.Empty,
                 fallback: string.Empty);
             var goalOutcomeRecorded = false;
             try
@@ -272,6 +330,7 @@ namespace ColorVision.Copilot
                 if (!goalOutcomeRecorded)
                 {
                     PauseBoundGoalAfterHostedTurnFailure(
+                        hostedRun,
                         conversation,
                         assistantMessage,
                         boundGoalId,
@@ -288,6 +347,7 @@ namespace ColorVision.Copilot
                 if (!goalOutcomeRecorded)
                 {
                     PauseBoundGoalAfterHostedTurnFailure(
+                        hostedRun,
                         conversation,
                         assistantMessage,
                         boundGoalId,
@@ -312,6 +372,7 @@ namespace ColorVision.Copilot
         }
 
         private static void PauseBoundGoalAfterHostedTurnFailure(
+            CopilotHostedAgentRun hostedRun,
             CopilotConversationRecord conversation,
             CopilotChatMessage assistantMessage,
             string boundGoalId,
@@ -332,6 +393,7 @@ namespace ColorVision.Copilot
                 conversation.Goal = goal.WithTurnOutcome(
                     CopilotConversationGoalState.Paused,
                     CopilotTokenUsage.Empty,
+                    hostedRun.ElapsedSeconds,
                     evaluated: false,
                     continued: false,
                     reason,
@@ -404,7 +466,9 @@ namespace ColorVision.Copilot
                 userMessage.ChatAttachmentContextCaptured,
                 refreshExternalContext,
                 turnSnapshot,
-                ResolveConversationHistoryLimits(requestProfile),
+                ResolveConversationHistoryLimits(
+                    requestProfile,
+                    turnSnapshot.ProjectInstructionDiscoveryOptions),
                 sessionCheckpoint,
                 userMessage.RecoveryRequest,
                 hostedRun.RunControl,
@@ -413,8 +477,14 @@ namespace ColorVision.Copilot
                 conversation.Id,
                 hostedRun.Id,
                 accessContext,
-                conversation.Goal?.IsActive == true ? conversation.Goal.Objective : string.Empty);
-            var eventProtocol = new CopilotTurnEventProtocol(userMessage.RequestMode);
+                turnSnapshot.ProjectInstructionDiscoveryOptions.ConfiguredGoalsEnabled
+                    && conversation.Goal?.IsActive == true
+                        ? conversation.Goal.Objective
+                        : string.Empty,
+                userMessage.WorkspaceReviewTarget,
+                userMessage.AgentSkillReference);
+            var eventProtocol = new CopilotTurnEventProtocol(userMessage.RequestMode, hostedRun.Id);
+            var hideAgentReasoning = turnSnapshot.ProjectInstructionDiscoveryOptions.ConfiguredHideAgentReasoning;
             try
             {
                 try
@@ -422,9 +492,18 @@ namespace ColorVision.Copilot
                     await foreach (var turnEvent in _turnRuntime.RunAsync(turnRequest, cancellationToken))
                     {
                         eventProtocol.Observe(turnEvent);
+                        var presentationEvent = CopilotReasoningVisibility.FilterForPresentation(
+                            turnEvent,
+                            hideAgentReasoning);
+                        if (presentationEvent == null)
+                            continue;
 
-                        switch (turnEvent)
+                        switch (presentationEvent)
                         {
+                            case CopilotTurnStartedEvent:
+                                break;
+                            case CopilotTurnErrorEvent:
+                                break;
                             case CopilotTurnRequestPreparedEvent prepared:
                                 ApplyPreparedTurnRequestOnUiThread(userMessage, prepared.Request);
                                 break;
@@ -435,10 +514,34 @@ namespace ColorVision.Copilot
                                 hostedRun.RecordProviderRetry(providerRetry.Retry);
                                 ApplyProviderRetryOnUiThread(assistantMessage, providerRetry.Retry);
                                 break;
+                            case CopilotTurnReviewEnteredEvent reviewEntered:
+                                ApplyReviewEnteredOnUiThread(assistantMessage, reviewEntered.Target);
+                                break;
                             case CopilotTurnAgentEvent agent:
                                 if (agent.Event.ProviderRetry != null)
                                     hostedRun.RecordProviderRetry(agent.Event.ProviderRetry);
                                 eventBuffer?.Enqueue(agent.Event);
+                                break;
+                            case CopilotTurnWorkspaceDiffUpdatedEvent workspaceDiff:
+                                ApplyWorkspaceDiffUpdatedOnUiThread(assistantMessage, workspaceDiff.Snapshot);
+                                break;
+                            case CopilotTurnPlanUpdatedEvent plan:
+                                eventBuffer?.Enqueue(CopilotAgentEvent.PlanUpdated(plan.Snapshot));
+                                break;
+                            case CopilotTurnTokenUsageUpdatedEvent tokenUsage:
+                                ApplyTokenUsageUpdatedOnUiThread(assistantMessage, tokenUsage.Usage);
+                                break;
+                            case CopilotTurnReviewExitedEvent reviewExited:
+                                if (eventBuffer != null)
+                                {
+                                    await eventBuffer.CompleteAsync();
+                                    eventBuffer = null;
+                                }
+                                ApplyReviewExitedOnUiThread(
+                                    assistantMessage,
+                                    reviewExited.Target,
+                                    reviewExited.ReviewText,
+                                    reviewExited.ReviewTextTruncated);
                                 break;
                             case CopilotTurnCompletedEvent:
                                 break;
@@ -502,6 +605,8 @@ namespace ColorVision.Copilot
                     });
                 }
 
+                if (eventProtocol.TerminalStatus == CopilotTurnStatus.Interrupted)
+                    throw new OperationCanceledException(cancellationToken);
                 return result.Usage;
             }
 
@@ -526,6 +631,8 @@ namespace ColorVision.Copilot
                 });
             }
             PersistState(immediate: true);
+            if (eventProtocol.TerminalStatus == CopilotTurnStatus.Interrupted)
+                throw new OperationCanceledException(cancellationToken);
             return result.Usage;
         }
 

@@ -299,8 +299,12 @@ namespace ColorVision.Copilot
                     && CopilotAgentTaskContinuityPolicy.HasAvailableStructuredRecovery(
                         conversation,
                         assistantMessage,
-                        CreateConversationRequestProfile(SelectedProfile, conversation),
-                        CopilotCapabilityCatalog.Shared.GetSnapshot()))
+                        CreateCurrentConversationRequestProfile(SelectedProfile, conversation),
+                        CopilotCapabilityCatalog.Shared.GetSnapshot(
+                            _currentCodexConfigOptions.ConfiguredPluginsEnabled),
+                        CopilotToolExecutor.GetSharedHookSurfaceSnapshot(
+                            _currentCodexConfigOptions.ConfiguredHooksEnabled
+                                && _currentCodexConfigOptions.ConfiguredPluginsEnabled)))
                 {
                     ShowLocalCommandResult(
                         command,
@@ -428,12 +432,19 @@ namespace ColorVision.Copilot
         private void SelectResponsePersonality(CopilotLocalCommand command, string query)
         {
             var conversation = EnsureConversation();
+            var codexConfigOptions = CaptureHostedTurnSnapshot(
+                Array.Empty<CopilotAttachmentItem>()).ProjectInstructionDiscoveryOptions;
+            var previousResolution = CopilotResponsePersonalitySelection.Resolve(
+                conversation,
+                codexConfigOptions);
             var normalizedQuery = query.Trim();
             if (normalizedQuery.Length == 0)
             {
                 ShowLocalCommandResult(
                     command,
-                    $"当前会话风格：{CopilotResponsePersonalitySelection.GetDisplayName(conversation.ResponsePersonality)}"
+                    $"当前会话风格：{CopilotResponsePersonalitySelection.GetDisplayName(previousResolution.Personality)}"
+                    + $"（{CopilotResponsePersonalitySelection.GetCommandToken(previousResolution.Personality)}）"
+                    + $" · 来源 {previousResolution.SourceLabel}"
                     + Environment.NewLine
                     + "可用风格：friendly、pragmatic、none。");
                 return;
@@ -448,19 +459,30 @@ namespace ColorVision.Copilot
                 return;
             }
 
-            var previousPersonality = conversation.ResponsePersonality;
+            var alreadyExplicit = conversation.HasResponsePersonalityOverride
+                || conversation.ResponsePersonality != CopilotResponsePersonality.None;
             conversation.ResponsePersonality = personality;
+            conversation.HasResponsePersonalityOverride = true;
             conversation.Touch();
             PersistState(immediate: true);
-            var changeLabel = previousPersonality == personality ? "保持" : "已设置";
-            var checkpointNote = conversation.AgentSessionCheckpoint == null || previousPersonality == personality
+            var nextResolution = CopilotResponsePersonalitySelection.Resolve(
+                conversation,
+                codexConfigOptions);
+            var changeLabel = alreadyExplicit && previousResolution.Personality == personality
+                ? "保持"
+                : "已设置";
+            var checkpointNote = conversation.AgentSessionCheckpoint == null
+                || previousResolution.Personality == nextResolution.Personality
                 ? string.Empty
                 : Environment.NewLine + "已有 Agent checkpoint 会保留；继续任务时将按新风格重新规划，不会直接复用旧提示身份。";
+            var featureNote = codexConfigOptions.ConfiguredPersonalityEnabled
+                ? "它只影响后续回答的默认表达，不改变任务范围、权限、安全规则、证据要求或用户明确指定的格式。"
+                : "该选择已保存，但当前 features.personality=false，后续请求不会注入 personality 指令；重新启用该功能后生效。";
             ShowLocalCommandResult(
                 command,
                 $"当前会话风格{changeLabel}为“{CopilotResponsePersonalitySelection.GetDisplayName(personality)}”（{CopilotResponsePersonalitySelection.GetCommandToken(personality)}）。"
                 + Environment.NewLine
-                + "它只影响后续回答的默认表达，不改变任务范围、权限、安全规则、证据要求或用户明确指定的格式。"
+                + featureNote
                 + checkpointNote);
         }
 

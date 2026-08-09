@@ -107,17 +107,14 @@ namespace Spectrum
                 && xy.Y <= 1;
         }
 
-
-        public List<Scatter> ScatterPlots => ViewResultManager.ScatterPlots;
-        public List<Scatter> AbsoluteScatterPlots => ViewResultManager.AbsoluteScatterPlots;
-
         bool MulComparison;
         Scatter? LastMulSelectComparsion;
         private bool IsShowingAbsoluteSpectrum { get; set; } = false;
 
         private void DrawPlot()
         {
-            if (ViewResultList.SelectedIndex < 0) return;
+            if (ViewResultList.SelectedItem is not Models.ViewResultSpectrum selectedResult)
+                return;
 
             if (IsShowingAbsoluteSpectrum)
             {
@@ -127,41 +124,37 @@ namespace Spectrum
 
             wpfplot1.Plot.Axes.SetLimitsX(380, 780);
             wpfplot1.Plot.Axes.SetLimitsY(-0.05, 1);
-            wpfplot1.Plot.Axes.Bottom.Min = ViewResultSpectrums[ViewResultList.SelectedIndex].fSpect1;
-            wpfplot1.Plot.Axes.Bottom.Max = ViewResultSpectrums[ViewResultList.SelectedIndex].fSpect2;
+            wpfplot1.Plot.Axes.Bottom.Min = selectedResult.fSpect1;
+            wpfplot1.Plot.Axes.Bottom.Max = selectedResult.fSpect2;
             wpfplot1.Plot.Axes.Left.Min = -0.05;
             wpfplot1.Plot.Axes.Left.Max = 1;
 
-            if (ScatterPlots.Count > 0)
+            Scatter selectedPlot = selectedResult.ScatterPlot;
+            if (MulComparison)
             {
-                if (MulComparison)
+                if (LastMulSelectComparsion != null)
                 {
-                    if (LastMulSelectComparsion != null)
-                    {
-                        LastMulSelectComparsion.Color = Color.FromColor(System.Drawing.Color.DarkGoldenrod);
-                        LastMulSelectComparsion.LineWidth = 1;
-                        LastMulSelectComparsion.MarkerSize = 1;
-                    }
-
-                    LastMulSelectComparsion = ScatterPlots[ViewResultList.SelectedIndex];
-                    LastMulSelectComparsion.LineWidth = 3;
-                    LastMulSelectComparsion.MarkerSize = 3;
-                    LastMulSelectComparsion.Color = Color.FromColor(System.Drawing.Color.Red);
-                    wpfplot1.Plot.PlottableList.Add(LastMulSelectComparsion);
-
+                    LastMulSelectComparsion.Color = Color.FromColor(System.Drawing.Color.DarkGoldenrod);
+                    LastMulSelectComparsion.LineWidth = 1;
+                    LastMulSelectComparsion.MarkerSize = 1;
                 }
-                else
-                {
-                    var temp = ScatterPlots[ViewResultList.SelectedIndex];
-                    temp.Color = Color.FromColor(System.Drawing.Color.DarkGoldenrod);
-                    temp.LineWidth = 1;
-                    temp.MarkerSize = 1;
 
-                    wpfplot1.Plot.PlottableList.Add(temp);
-                    wpfplot1.Plot.Remove(LastMulSelectComparsion);
-                    LastMulSelectComparsion = temp;
-
-                }
+                LastMulSelectComparsion = selectedPlot;
+                selectedPlot.LineWidth = 3;
+                selectedPlot.MarkerSize = 3;
+                selectedPlot.Color = Color.FromColor(System.Drawing.Color.Red);
+                if (!wpfplot1.Plot.PlottableList.Contains(selectedPlot))
+                    wpfplot1.Plot.PlottableList.Add(selectedPlot);
+            }
+            else
+            {
+                wpfplot1.Plot.Remove(LastMulSelectComparsion);
+                selectedPlot.Color = Color.FromColor(System.Drawing.Color.DarkGoldenrod);
+                selectedPlot.LineWidth = 1;
+                selectedPlot.MarkerSize = 1;
+                if (!wpfplot1.Plot.PlottableList.Contains(selectedPlot))
+                    wpfplot1.Plot.PlottableList.Add(selectedPlot);
+                LastMulSelectComparsion = selectedPlot;
             }
 
             wpfplot1.Refresh();
@@ -169,41 +162,41 @@ namespace Spectrum
 
         private void DrawAbsolutePlot()
         {
-            if (ViewResultList.SelectedIndex < 0) return;
+            if (ViewResultList.SelectedItem is not Models.ViewResultSpectrum selectedResult)
+                return;
 
             wpfplot2.Plot.Axes.SetLimitsX(380, 780);
-            wpfplot2.Plot.Axes.Bottom.Min = ViewResultSpectrums[ViewResultList.SelectedIndex].fSpect1;
-            wpfplot2.Plot.Axes.Bottom.Max = ViewResultSpectrums[ViewResultList.SelectedIndex].fSpect2;
+            wpfplot2.Plot.Axes.Bottom.Min = selectedResult.fSpect1;
+            wpfplot2.Plot.Axes.Bottom.Max = selectedResult.fSpect2;
             wpfplot2.Plot.Axes.Left.Min = -0.05;
             wpfplot2.Plot.Axes.Left.Max = double.NaN;
-            if (AbsoluteScatterPlots.Count > 0)
+
+            Scatter selectedPlot = selectedResult.AbsoluteScatterPlot;
+            if (MulComparison)
             {
-                if (MulComparison)
+                if (LastMulSelectComparsion != null)
                 {
-                    if (LastMulSelectComparsion != null)
-                    {
-                        LastMulSelectComparsion.Color = Color.FromColor(System.Drawing.Color.DarkGoldenrod);
-                        LastMulSelectComparsion.LineWidth = 1;
-                        LastMulSelectComparsion.MarkerSize = 1;
-                    }
-
-                    LastMulSelectComparsion = AbsoluteScatterPlots[ViewResultList.SelectedIndex];
-                    LastMulSelectComparsion.LineWidth = 3;
-                    LastMulSelectComparsion.MarkerSize = 3;
-                    LastMulSelectComparsion.Color = Color.FromColor(System.Drawing.Color.Red);
-                    wpfplot2.Plot.PlottableList.Add(LastMulSelectComparsion);
+                    LastMulSelectComparsion.Color = Color.FromColor(System.Drawing.Color.DarkGoldenrod);
+                    LastMulSelectComparsion.LineWidth = 1;
+                    LastMulSelectComparsion.MarkerSize = 1;
                 }
-                else
-                {
-                    var temp = AbsoluteScatterPlots[ViewResultList.SelectedIndex];
-                    temp.Color = Color.FromColor(System.Drawing.Color.DarkGoldenrod);
-                    temp.LineWidth = 1;
-                    temp.MarkerSize = 1;
 
-                    wpfplot2.Plot.PlottableList.Add(temp);
-                    wpfplot2.Plot.Remove(LastMulSelectComparsion);
-                    LastMulSelectComparsion = temp;
-                }
+                LastMulSelectComparsion = selectedPlot;
+                selectedPlot.LineWidth = 3;
+                selectedPlot.MarkerSize = 3;
+                selectedPlot.Color = Color.FromColor(System.Drawing.Color.Red);
+                if (!wpfplot2.Plot.PlottableList.Contains(selectedPlot))
+                    wpfplot2.Plot.PlottableList.Add(selectedPlot);
+            }
+            else
+            {
+                wpfplot2.Plot.Remove(LastMulSelectComparsion);
+                selectedPlot.Color = Color.FromColor(System.Drawing.Color.DarkGoldenrod);
+                selectedPlot.LineWidth = 1;
+                selectedPlot.MarkerSize = 1;
+                if (!wpfplot2.Plot.PlottableList.Contains(selectedPlot))
+                    wpfplot2.Plot.PlottableList.Add(selectedPlot);
+                LastMulSelectComparsion = selectedPlot;
             }
 
             wpfplot2.Refresh();
@@ -245,7 +238,7 @@ namespace Spectrum
                     for (int i = 0; i < ViewResultSpectrums.Count; i++)
                     {
                         if (i == ViewResultList.SelectedIndex) continue;
-                        var plot = AbsoluteScatterPlots[i];
+                        var plot = ViewResultSpectrums[i].AbsoluteScatterPlot;
                         plot.Color = Color.FromColor(System.Drawing.Color.DarkGoldenrod);
                         plot.LineWidth = 1;
                         plot.MarkerSize = 1;
@@ -266,7 +259,7 @@ namespace Spectrum
                     for (int i = 0; i < ViewResultSpectrums.Count; i++)
                     {
                         if (i == ViewResultList.SelectedIndex) continue;
-                        var plot = ScatterPlots[i];
+                        var plot = ViewResultSpectrums[i].ScatterPlot;
                         plot.Color = Color.FromColor(System.Drawing.Color.DarkGoldenrod);
                         plot.LineWidth = 1;
                         plot.MarkerSize = 1;

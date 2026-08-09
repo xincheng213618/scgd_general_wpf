@@ -9,10 +9,21 @@ namespace Spectrum.License
     public static class LicenseSync
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(LicenseSync));
+        private static readonly Lazy<bool> InitialSync = new(() =>
+        {
+            SyncLicenses();
+            return true;
+        });
 
         public static readonly string CompanyName = Assembly.GetEntryAssembly()?.GetCustomAttribute<AssemblyCompanyAttribute>()?.Company;
         public static readonly string LocalLicenseDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "license");
         public static readonly string GlobalLicenseDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),CompanyName, "license");
+
+        /// <summary>
+        /// Runs startup synchronization once, including when Spectrum is loaded as a plugin.
+        /// Explicit calls to <see cref="SyncLicenses"/> can still refresh licenses later.
+        /// </summary>
+        public static void EnsureLicensesSynchronized() => _ = InitialSync.Value;
 
         /// <summary>
         /// Ensures the specified directory exists.

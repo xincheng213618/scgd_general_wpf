@@ -10,13 +10,13 @@ using System.Windows.Media;
 
 namespace ProjectARVRPro.Process.Distortion
 {
-    public class DistortionDynamicProcess : ProcessBase<DistortionDynamicProcessConfig, DistortionRecipeConfig>
+    public class DistortionDynamicProcess : ProcessWithRecipeBase<DistortionDynamicProcessConfig, DistortionRecipeConfig>
     {
         public override async Task<bool> Execute(IProcessExecutionContext ctx)
         {
             if (ctx?.Batch == null || ctx.Result == null) return false;
             var log = ctx.Log;
-            DistortionRecipeConfig recipeConfig = ctx.RecipeConfig.GetRequiredService<DistortionRecipeConfig>();
+            DistortionRecipeConfig recipeConfig = Config.RecipeConfig;
             DistortionDynamicViewTestResult testResult = new DistortionDynamicViewTestResult();
             DistortionViewTestResult distortionResult = testResult.DistortionViewTestResult;
 

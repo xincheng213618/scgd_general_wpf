@@ -5,6 +5,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:core="clr-namespace:Conoscope.Core"
              xmlns:properties="clr-namespace:Conoscope.Properties"
+             xmlns:automation="clr-namespace:System.Windows.Automation;assembly=PresentationCore"
              mc:Ignorable="d"
              Background="Transparent">
     <Grid>
@@ -37,57 +38,62 @@
 
                 <Grid x:Name="rowFilterKernel" Margin="0,0,0,6">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="92"/>
+                        <ColumnDefinition Width="150"/>
                         <ColumnDefinition Width="40"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="{x:Static properties:Resources.KernelSize}" VerticalAlignment="Center"/>
                     <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderKernelSize, Path=Value, StringFormat=F0}" TextAlignment="Right" VerticalAlignment="Center"/>
-                    <Slider x:Name="sliderKernelSize" Grid.Column="2" Minimum="1" Maximum="101" Value="55" TickFrequency="2" IsSnapToTickEnabled="True" ValueChanged="PreprocessSetting_Changed"/>
+                    <Slider x:Name="sliderKernelSize" Grid.Column="2" Minimum="1" Maximum="101" Value="7" TickFrequency="2" IsSnapToTickEnabled="True" ValueChanged="PreprocessSetting_Changed"
+                            automation:AutomationProperties.Name="{x:Static properties:Resources.KernelSize}"/>
                 </Grid>
 
                 <Grid x:Name="rowFilterSigma" Margin="0,0,0,6">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="92"/>
+                        <ColumnDefinition Width="150"/>
                         <ColumnDefinition Width="40"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Text="σ" VerticalAlignment="Center"/>
+                    <TextBlock Text="{x:Static properties:Resources.Con_Cfg_GaussianSigma}" VerticalAlignment="Center"/>
                     <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderSigma, Path=Value, StringFormat=F1}" TextAlignment="Right" VerticalAlignment="Center"/>
-                    <Slider x:Name="sliderSigma" Grid.Column="2" Minimum="0.1" Maximum="10" Value="1.0" TickFrequency="0.1" IsSnapToTickEnabled="True" ValueChanged="PreprocessSetting_Changed"/>
+                    <Slider x:Name="sliderSigma" Grid.Column="2" Minimum="0.1" Maximum="10" Value="1.0" TickFrequency="0.1" IsSnapToTickEnabled="True" ValueChanged="PreprocessSetting_Changed"
+                            automation:AutomationProperties.Name="{x:Static properties:Resources.Con_Cfg_GaussianSigma}"/>
                 </Grid>
 
                 <Grid x:Name="rowFilterD" Margin="0,0,0,6">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="92"/>
+                        <ColumnDefinition Width="150"/>
                         <ColumnDefinition Width="40"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Text="d" VerticalAlignment="Center"/>
+                    <TextBlock Text="{x:Static properties:Resources.Con_Cfg_BilateralD}" VerticalAlignment="Center"/>
                     <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderD, Path=Value, StringFormat=F0}" TextAlignment="Right" VerticalAlignment="Center"/>
-                    <Slider x:Name="sliderD" Grid.Column="2" Minimum="1" Maximum="15" Value="5" TickFrequency="1" IsSnapToTickEnabled="True" ValueChanged="PreprocessSetting_Changed"/>
+                    <Slider x:Name="sliderD" Grid.Column="2" Minimum="1" Maximum="15" Value="5" TickFrequency="1" IsSnapToTickEnabled="True" ValueChanged="PreprocessSetting_Changed"
+                            automation:AutomationProperties.Name="{x:Static properties:Resources.Con_Cfg_BilateralD}"/>
                 </Grid>
 
                 <Grid x:Name="rowFilterSigmaColor" Margin="0,0,0,6">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="92"/>
+                        <ColumnDefinition Width="150"/>
                         <ColumnDefinition Width="40"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Text="σColor" VerticalAlignment="Center"/>
+                    <TextBlock Text="{x:Static properties:Resources.Con_Cfg_BilateralSigmaColor}" VerticalAlignment="Center"/>
                     <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderSigmaColor, Path=Value, StringFormat=F0}" TextAlignment="Right" VerticalAlignment="Center"/>
-                    <Slider x:Name="sliderSigmaColor" Grid.Column="2" Minimum="1" Maximum="200" Value="75" TickFrequency="1" IsSnapToTickEnabled="True" ValueChanged="PreprocessSetting_Changed"/>
+                    <Slider x:Name="sliderSigmaColor" Grid.Column="2" Minimum="1" Maximum="200" Value="75" TickFrequency="1" IsSnapToTickEnabled="True" ValueChanged="PreprocessSetting_Changed"
+                            automation:AutomationProperties.Name="{x:Static properties:Resources.Con_Cfg_BilateralSigmaColor}"/>
                 </Grid>
 
                 <Grid x:Name="rowFilterSigmaSpace" Margin="0,0,0,0">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="92"/>
+                        <ColumnDefinition Width="150"/>
                         <ColumnDefinition Width="40"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Text="σSpace" VerticalAlignment="Center"/>
+                    <TextBlock Text="{x:Static properties:Resources.Con_Cfg_BilateralSigmaSpace}" VerticalAlignment="Center"/>
                     <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderSigmaSpace, Path=Value, StringFormat=F0}" TextAlignment="Right" VerticalAlignment="Center"/>
-                    <Slider x:Name="sliderSigmaSpace" Grid.Column="2" Minimum="1" Maximum="200" Value="75" TickFrequency="1" IsSnapToTickEnabled="True" ValueChanged="PreprocessSetting_Changed"/>
+                    <Slider x:Name="sliderSigmaSpace" Grid.Column="2" Minimum="1" Maximum="200" Value="75" TickFrequency="1" IsSnapToTickEnabled="True" ValueChanged="PreprocessSetting_Changed"
+                            automation:AutomationProperties.Name="{x:Static properties:Resources.Con_Cfg_BilateralSigmaSpace}"/>
                 </Grid>
             </StackPanel>
         </Border>
@@ -103,7 +109,7 @@
 
                 <Grid x:Name="rowDustMode" Margin="0,0,0,6">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="92"/>
+                        <ColumnDefinition Width="150"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="{x:Static properties:Resources.LabelDustType}" VerticalAlignment="Center"/>
@@ -116,46 +122,50 @@
 
                 <Grid x:Name="rowDustThreshold" Margin="0,0,0,6">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="92"/>
+                        <ColumnDefinition Width="150"/>
                         <ColumnDefinition Width="40"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="{x:Static properties:Resources.LabelThresholdPct}" VerticalAlignment="Center"/>
                     <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderDustThreshold, Path=Value, StringFormat=F1}" TextAlignment="Right" VerticalAlignment="Center"/>
-                    <Slider x:Name="sliderDustThreshold" Grid.Column="2" Minimum="1" Maximum="100" Value="12" TickFrequency="0.5" IsSnapToTickEnabled="True" ValueChanged="PreprocessSetting_Changed"/>
+                    <Slider x:Name="sliderDustThreshold" Grid.Column="2" Minimum="1" Maximum="100" Value="12" TickFrequency="0.5" IsSnapToTickEnabled="True" ValueChanged="PreprocessSetting_Changed"
+                            automation:AutomationProperties.Name="{x:Static properties:Resources.LabelThresholdPct}"/>
                 </Grid>
 
                 <Grid x:Name="rowDustMinArea" Margin="0,0,0,6">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="92"/>
+                        <ColumnDefinition Width="150"/>
                         <ColumnDefinition Width="40"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="{x:Static properties:Resources.LabelMinArea}" VerticalAlignment="Center"/>
                     <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderDustMinArea, Path=Value, StringFormat=F0}" TextAlignment="Right" VerticalAlignment="Center"/>
-                    <Slider x:Name="sliderDustMinArea" Grid.Column="2" Minimum="1" Maximum="200" Value="1" TickFrequency="1" IsSnapToTickEnabled="True" ValueChanged="PreprocessSetting_Changed"/>
+                    <Slider x:Name="sliderDustMinArea" Grid.Column="2" Minimum="1" Maximum="200" Value="1" TickFrequency="1" IsSnapToTickEnabled="True" ValueChanged="PreprocessSetting_Changed"
+                            automation:AutomationProperties.Name="{x:Static properties:Resources.LabelMinArea}"/>
                 </Grid>
 
                 <Grid x:Name="rowDustMaxArea" Margin="0,0,0,6">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="92"/>
+                        <ColumnDefinition Width="150"/>
                         <ColumnDefinition Width="40"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="{x:Static properties:Resources.LabelMaxArea}" VerticalAlignment="Center"/>
                     <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderDustMaxArea, Path=Value, StringFormat=F0}" TextAlignment="Right" VerticalAlignment="Center"/>
-                    <Slider x:Name="sliderDustMaxArea" Grid.Column="2" Minimum="10" Maximum="5000" Value="500" TickFrequency="10" IsSnapToTickEnabled="True" ValueChanged="PreprocessSetting_Changed"/>
+                    <Slider x:Name="sliderDustMaxArea" Grid.Column="2" Minimum="10" Maximum="5000" Value="500" TickFrequency="10" IsSnapToTickEnabled="True" ValueChanged="PreprocessSetting_Changed"
+                            automation:AutomationProperties.Name="{x:Static properties:Resources.LabelMaxArea}"/>
                 </Grid>
 
                 <Grid x:Name="rowDustRepairRadius" Margin="0,0,0,0">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="92"/>
+                        <ColumnDefinition Width="150"/>
                         <ColumnDefinition Width="40"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="{x:Static properties:Resources.LabelRepairRadius}" VerticalAlignment="Center"/>
                     <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderDustRepairRadius, Path=Value, StringFormat=F0}" TextAlignment="Right" VerticalAlignment="Center"/>
-                    <Slider x:Name="sliderDustRepairRadius" Grid.Column="2" Minimum="1" Maximum="31" Value="3" TickFrequency="1" IsSnapToTickEnabled="True" ValueChanged="PreprocessSetting_Changed"/>
+                    <Slider x:Name="sliderDustRepairRadius" Grid.Column="2" Minimum="1" Maximum="31" Value="3" TickFrequency="1" IsSnapToTickEnabled="True" ValueChanged="PreprocessSetting_Changed"
+                            automation:AutomationProperties.Name="{x:Static properties:Resources.LabelRepairRadius}"/>
                 </Grid>
             </StackPanel>
         </Border>

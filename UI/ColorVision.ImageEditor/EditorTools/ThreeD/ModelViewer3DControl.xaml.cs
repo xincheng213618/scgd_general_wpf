@@ -16,6 +16,8 @@ using System.Windows.Data;
 
 namespace ColorVision.ImageEditor.EditorTools.ThreeD
 {
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1001:Types that own disposable fields should be disposable",
+        Justification = "The WPF control disposes its camera coordinator from its existing DisposeViewer lifecycle.")]
     public partial class ModelViewer3DControl : UserControl
     {
         private sealed class GeometryMaterialState
@@ -42,6 +44,7 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
         private ModelVisual3D? currentModelVisual;
         private Model3DGroup? currentModelGroup;
         private List<Visual3D>? axesVisuals;
+        private CameraAxesUpdateCoordinator? axesUpdateCoordinator;
         private List<GeometryMaterialState>? originalMaterialStates;
         private bool isWireframe;
         private bool isInitialized;
@@ -104,7 +107,7 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
             foreach (var axis in axesVisuals)
                 viewport.Children.Add(axis);
 
-            CompositionTarget.Rendering += CompositionTarget_Rendering;
+            axesUpdateCoordinator = new CameraAxesUpdateCoordinator(viewport, axesVisuals);
 
             WireframeToggle.IsChecked = Config.DefaultWireframe;
             TextureToggle.IsChecked = Config.IsTextureVisible;
@@ -121,7 +124,8 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
         public void DisposeViewer()
         {
             Loaded -= ModelViewer3DControl_Loaded;
-            CompositionTarget.Rendering -= CompositionTarget_Rendering;
+            axesUpdateCoordinator?.Dispose();
+            axesUpdateCoordinator = null;
 
             if (viewport != null)
             {
@@ -202,12 +206,6 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
                 imageBrush.ImageSource = null;
             else if (material is EmissiveMaterial emissive && emissive.Brush is ImageBrush emissiveBrush)
                 emissiveBrush.ImageSource = null;
-        }
-
-        private void CompositionTarget_Rendering(object? sender, EventArgs e)
-        {
-            if (viewport?.Camera is ProjectionCamera camera && axesVisuals != null)
-                Viewport3DHelper.UpdateFixedCornerAxes(axesVisuals, camera);
         }
 
         private void Viewport_MouseDown(object sender, MouseButtonEventArgs e)
@@ -877,6 +875,7 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
             }
 
             viewport.Camera = newCamera;
+            axesUpdateCoordinator?.RequestUpdate();
 
             Viewport3DHelper.ClearLights(viewport);
             if (currentModelGroup != null)

@@ -29,7 +29,7 @@ namespace Conoscope
             RefreshFromConfig();
         }
 
-        private ConoscopePreprocessSettings PreprocessConfig => config.Preprocess;
+        private ConoscopeConfig PreprocessConfig => config;
 
         public void RefreshFromConfig()
         {

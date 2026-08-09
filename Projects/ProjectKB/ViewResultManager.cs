@@ -102,7 +102,7 @@ namespace ProjectKB
                 IsAutoCloseConnection = true
             });
             // 确保表存在
-            _db.CodeFirst.InitTables<KBItemMaster>();
+            _db.CodeFirst.InitTables<KBItemMaster, KBProductionSession>();
             LoadAll(Config.Count);
         }
 
@@ -178,9 +178,23 @@ namespace ProjectKB
         public void Save(KBItemMaster item)
         {
             if (item == null) return;
+
+            if (item.Id > 0)
+            {
+                _db.Updateable(item).ExecuteCommand();
+                if (!ViewResluts.Any(x => ReferenceEquals(x, item) || x.Id == item.Id))
+                    AddViewResult(item);
+                return;
+            }
+
             int id = _db.Insertable(item).ExecuteReturnIdentity();
             item.Id = id; // 更新ID
 
+            AddViewResult(item);
+        }
+
+        private void AddViewResult(KBItemMaster item)
+        {
             if (Config.OrderByType == OrderByType.Desc)
             {
                 ViewResluts.Insert(0, item); //倒序插入
@@ -198,7 +212,6 @@ namespace ProjectKB
                     ListView?.ScrollIntoView(item);
                 }
             }
-
         }
 
         public void GenericQuery()

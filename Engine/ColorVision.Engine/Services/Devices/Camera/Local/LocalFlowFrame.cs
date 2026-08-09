@@ -1,4 +1,5 @@
 using FlowEngineLib.Base;
+using FlowEngineLib.Algorithm;
 using System;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -26,6 +27,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         public string CalibrationTemplate { get; init; } = string.Empty;
         public DateTime CaptureTime { get; init; } = DateTime.Now;
         public LocalFrameBufferKind PrimaryBufferKind { get; init; }
+        public CVImageFlipMode FlipMode { get; init; } = CVImageFlipMode.None;
+        /// <summary>Whether all sensor-coordinate transforms have completed.</summary>
+        public bool IsMirrorReady { get; init; }
     }
 
     /// <summary>
@@ -35,6 +39,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
     public sealed class LocalFlowFrame : IDisposable
     {
         private readonly SharedFrameStorage storage;
+        private readonly object flipSync = new();
         private int disposed;
 
         private LocalFlowFrame(SharedFrameStorage storage, LocalFrameMetadata metadata)
@@ -51,6 +56,16 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         public string CvCieFilePath { get; set; } = string.Empty;
         public bool HasRaw => storage.RawLength > 0;
         public bool HasCie => storage.CieLength > 0;
+        public bool IsRawFlipApplied => storage.IsBufferFlipApplied(LocalFrameBufferKind.CvRaw, Metadata.FlipMode);
+        public bool IsCieFlipApplied => storage.IsBufferFlipApplied(LocalFrameBufferKind.CvCie, Metadata.FlipMode);
+        public bool IsFlipApplied => storage.IsBufferFlipApplied(Metadata.PrimaryBufferKind, Metadata.FlipMode);
+
+        /// <summary>
+        /// Records that a newly generated primary buffer inherited the already-finalized
+        /// pixel orientation of its source without performing another physical flip.
+        /// </summary>
+        internal void MarkPrimaryBufferFlipApplied()
+            => storage.MarkFlipApplied(Metadata.PrimaryBufferKind);
 
         public static LocalFlowFrame Allocate(LocalFrameMetadata metadata, int rawLength, int cieLength)
         {
@@ -68,6 +83,39 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             return new LocalFlowFrameLease(storage, Metadata, FrameId, MasterId);
         }
 
+        internal void ApplyPendingFlip(Action<LocalFlowFrameLease, LocalFrameBufferKind, CVImageFlipMode> apply)
+        {
+            ArgumentNullException.ThrowIfNull(apply);
+            LocalFrameBufferKind target = Metadata.PrimaryBufferKind == LocalFrameBufferKind.CvCie
+                ? LocalFrameBufferKind.CvCie
+                : LocalFrameBufferKind.CvRaw;
+            if (storage.IsBufferFlipApplied(target, Metadata.FlipMode)) return;
+            if (!Metadata.IsMirrorReady)
+            {
+                throw new InvalidOperationException("Image mirroring is deferred until spatial calibration has completed.");
+            }
+
+            lock (flipSync)
+            {
+                if (storage.IsBufferFlipApplied(target, Metadata.FlipMode)) return;
+                if (storage.IsBufferFlipFailed(target))
+                {
+                    throw new InvalidOperationException($"The previous {target} mirror operation failed; this frame can no longer be used safely.");
+                }
+                using LocalFlowFrameLease lease = Acquire();
+                try
+                {
+                    apply(lease, target, Metadata.FlipMode);
+                    storage.MarkFlipApplied(target);
+                }
+                catch
+                {
+                    storage.MarkFlipFailed(target);
+                    throw;
+                }
+            }
+        }
+
         public void Dispose()
         {
             if (Interlocked.Exchange(ref disposed, 1) == 0)
@@ -79,6 +127,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         internal sealed class SharedFrameStorage
         {
             private int referenceCount = 1;
+            private int rawFlipState;
+            private int cieFlipState;
             private IntPtr rawPointer;
             private IntPtr ciePointer;
 
@@ -108,6 +158,18 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             public IntPtr RawPointer => rawPointer;
             public IntPtr CiePointer => ciePointer;
 
+            public bool IsBufferFlipApplied(LocalFrameBufferKind bufferKind, CVImageFlipMode flipMode)
+                => flipMode == CVImageFlipMode.None || Volatile.Read(ref GetFlipState(bufferKind)) == 1;
+
+            public bool IsBufferFlipFailed(LocalFrameBufferKind bufferKind)
+                => Volatile.Read(ref GetFlipState(bufferKind)) < 0;
+
+            public void MarkFlipApplied(LocalFrameBufferKind bufferKind)
+                => Volatile.Write(ref GetFlipState(bufferKind), 1);
+
+            public void MarkFlipFailed(LocalFrameBufferKind bufferKind)
+                => Volatile.Write(ref GetFlipState(bufferKind), -1);
+
             public void AddReference()
             {
                 while (true)
@@ -135,6 +197,12 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 IntPtr cie = Interlocked.Exchange(ref ciePointer, IntPtr.Zero);
                 if (cie != IntPtr.Zero) Marshal.FreeHGlobal(cie);
             }
+
+            private ref int GetFlipState(LocalFrameBufferKind bufferKind)
+            {
+                if (bufferKind == LocalFrameBufferKind.CvCie) return ref cieFlipState;
+                return ref rawFlipState;
+            }
         }
     }
 
@@ -159,6 +227,15 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         public int CieLength => GetStorage().CieLength;
         public bool HasRaw => RawLength > 0;
         public bool HasCie => CieLength > 0;
+        public bool IsRawFlipApplied => GetStorage().IsBufferFlipApplied(LocalFrameBufferKind.CvRaw, Metadata.FlipMode);
+        public bool IsCieFlipApplied => GetStorage().IsBufferFlipApplied(LocalFrameBufferKind.CvCie, Metadata.FlipMode);
+        public bool IsFlipApplied => GetStorage().IsBufferFlipApplied(Metadata.PrimaryBufferKind, Metadata.FlipMode);
+
+        internal bool IsBufferFlipFailed(LocalFrameBufferKind bufferKind)
+            => GetStorage().IsBufferFlipFailed(bufferKind);
+
+        internal void MarkBufferFlipApplied(LocalFrameBufferKind bufferKind)
+            => GetStorage().MarkFlipApplied(bufferKind);
 
         public byte[] CopyRawToArray() => CopyToArray(RawPointer, RawLength);
         public byte[] CopyCieToArray() => CopyToArray(CiePointer, CieLength);
@@ -192,6 +269,10 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         {
             ArgumentNullException.ThrowIfNull(action);
             ArgumentNullException.ThrowIfNull(frame);
+            if (frame.Metadata.IsMirrorReady && !frame.IsFlipApplied)
+            {
+                throw new InvalidOperationException("A mirror-ready frame cannot be published before its orientation is finalized.");
+            }
             action.RuntimeResources.Set(GetFrameResourceKey(frame.FrameId), frame);
             action.Data[FrameIdDataKey] = frame.FrameId.ToString("N");
         }

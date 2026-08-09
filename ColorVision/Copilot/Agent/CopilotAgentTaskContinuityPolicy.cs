@@ -8,17 +8,24 @@ namespace ColorVision.Copilot
         public static bool HasAvailableStructuredRecovery(
             CopilotConversationRecord? conversation,
             CopilotProfileConfig? profile,
-            CopilotCapabilityCatalogSnapshot capabilitySnapshot)
+            CopilotCapabilityCatalogSnapshot capabilitySnapshot,
+            CopilotToolExecutionHookRegistrySnapshot? hookSurfaceSnapshot = null)
         {
             var latestAssistant = conversation?.Messages.LastOrDefault(message => message != null && !message.IsUser);
-            return HasAvailableStructuredRecovery(conversation, latestAssistant, profile, capabilitySnapshot);
+            return HasAvailableStructuredRecovery(
+                conversation,
+                latestAssistant,
+                profile,
+                capabilitySnapshot,
+                hookSurfaceSnapshot);
         }
 
         public static bool HasAvailableStructuredRecovery(
             CopilotConversationRecord? conversation,
             CopilotChatMessage? message,
             CopilotProfileConfig? profile,
-            CopilotCapabilityCatalogSnapshot capabilitySnapshot)
+            CopilotCapabilityCatalogSnapshot capabilitySnapshot,
+            CopilotToolExecutionHookRegistrySnapshot? hookSurfaceSnapshot = null)
         {
             ArgumentNullException.ThrowIfNull(capabilitySnapshot);
             if (conversation == null || message == null || message.IsUser)
@@ -33,7 +40,7 @@ namespace ColorVision.Copilot
                 conversation.AgentSessionCheckpoint,
                 profile,
                 capabilitySnapshot,
-                CopilotToolExecutor.GetSharedHookSurfaceSnapshot()).IsAvailable;
+                hookSurfaceSnapshot ?? CopilotToolExecutor.GetSharedHookSurfaceSnapshot()).IsAvailable;
         }
     }
 }

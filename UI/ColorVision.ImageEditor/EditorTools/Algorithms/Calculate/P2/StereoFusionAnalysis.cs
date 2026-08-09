@@ -30,7 +30,8 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.P2
 
         private void Open()
         {
-            if (ImageContext.HImageCache is not HImage)
+            using ImageFrameLease? lease = ImageContext.AcquireImageFrame();
+            if (lease == null)
             {
                 MessageBox.Show("当前没有可作为左图的图像。", "双目标定融合", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;

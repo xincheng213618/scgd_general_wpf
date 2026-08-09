@@ -25,8 +25,4 @@ public class FlowEngineNodeRunEventArgs : EventArgs
     /// 发送的MQTT消息内容(JSON)
     /// </summary>
     public string SendPayload { get; set; }
-
-    public int AttemptNumber { get; set; } = 1;
-
-    public int MaxAttempts { get; set; } = 1;
 }

@@ -11,7 +11,7 @@ namespace Conoscope
 {
     public partial class ConoscopeWindow
     {
-        private readonly ConoscopeAnalysisWorkflow analysisWorkflow = new();
+        private readonly ConoscopeAnalysisSession analysisSession = new();
         private readonly Dictionary<Button, (object? Content, object? ToolTip)> recordButtonVisualStates = new();
 
         private void InitializeAnalysisRibbonControls()
@@ -43,16 +43,16 @@ namespace Conoscope
             btnRecordContrastWhite.IsEnabled = hasActiveView;
             btnRecordContrastBlack.IsEnabled = hasActiveView;
 
-            btnComputeGamut.IsEnabled = analysisWorkflow.CanComputeGamut(cbRibbonGamutStandard?.SelectedItem as ColorGamutStandard);
-            btnClearGamut.IsEnabled = analysisWorkflow.HasAnyGamutCapture;
-            btnComputeContrast.IsEnabled = analysisWorkflow.CanComputeContrast;
-            btnClearContrast.IsEnabled = analysisWorkflow.HasAnyContrastCapture;
+            btnComputeGamut.IsEnabled = analysisSession.CanComputeGamut(cbRibbonGamutStandard?.SelectedItem as ColorGamutStandard);
+            btnClearGamut.IsEnabled = analysisSession.HasAnyGamutCapture;
+            btnComputeContrast.IsEnabled = analysisSession.CanComputeContrast;
+            btnClearContrast.IsEnabled = analysisSession.HasAnyContrastCapture;
 
-            UpdateRecordButton(btnRecordGamutRed, analysisWorkflow.GamutRedCapture, Color.FromRgb(214, 69, 65), "R");
-            UpdateRecordButton(btnRecordGamutGreen, analysisWorkflow.GamutGreenCapture, Color.FromRgb(66, 165, 79), "G");
-            UpdateRecordButton(btnRecordGamutBlue, analysisWorkflow.GamutBlueCapture, Color.FromRgb(52, 120, 246), "B");
-            UpdateRecordButton(btnRecordContrastWhite, analysisWorkflow.ContrastWhiteCapture, Color.FromRgb(160, 160, 160), Properties.Resources.SlotWhite);
-            UpdateRecordButton(btnRecordContrastBlack, analysisWorkflow.ContrastBlackCapture, Color.FromRgb(90, 90, 90), Properties.Resources.SlotBlack);
+            UpdateRecordButton(btnRecordGamutRed, analysisSession.GamutRedCapture, Color.FromRgb(214, 69, 65), "R");
+            UpdateRecordButton(btnRecordGamutGreen, analysisSession.GamutGreenCapture, Color.FromRgb(66, 165, 79), "G");
+            UpdateRecordButton(btnRecordGamutBlue, analysisSession.GamutBlueCapture, Color.FromRgb(52, 120, 246), "B");
+            UpdateRecordButton(btnRecordContrastWhite, analysisSession.ContrastWhiteCapture, Color.FromRgb(160, 160, 160), Properties.Resources.SlotWhite);
+            UpdateRecordButton(btnRecordContrastBlack, analysisSession.ContrastBlackCapture, Color.FromRgb(90, 90, 90), Properties.Resources.SlotBlack);
         }
 
         private (object? Content, object? ToolTip) GetRecordButtonVisualState(Button button)
@@ -86,7 +86,7 @@ namespace Conoscope
             button.BorderBrush = new SolidColorBrush(accentColor);
             button.Foreground = Brushes.White;
             button.FontWeight = FontWeights.SemiBold;
-            button.ToolTip = Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgSlotRecordedDetail, slotName, capture.SourceDisplayName, capture.PointCount);
+            button.ToolTip = Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgSlotRecordedDetail, slotName, capture.SourceLabel, capture.PointCount);
         }
 
         private void btnRecordGamutRed_Click(object sender, RoutedEventArgs e) => RecordFocusCapture(CaptureSlot.GamutRed, "R");
@@ -95,7 +95,7 @@ namespace Conoscope
 
         private void btnClearGamut_Click(object sender, RoutedEventArgs e)
         {
-            analysisWorkflow.ClearGamut();
+            analysisSession.ClearGamut();
             RefreshAnalysisRibbonState(ActiveView);
         }
 
@@ -107,7 +107,7 @@ namespace Conoscope
                 return;
             }
 
-            var (gamutResult, gamutError) = analysisWorkflow.ComputeGamut(standard);
+            var (gamutResult, gamutError) = analysisSession.ComputeGamut(standard);
             if (gamutError != null)
             {
                 MessageBox.Show(this, gamutError, Properties.Resources.TitleGamutCalc, MessageBoxButton.OK, MessageBoxImage.Warning);
@@ -128,13 +128,13 @@ namespace Conoscope
 
         private void btnClearContrast_Click(object sender, RoutedEventArgs e)
         {
-            analysisWorkflow.ClearContrast();
+            analysisSession.ClearContrast();
             RefreshAnalysisRibbonState(ActiveView);
         }
 
         private void btnComputeContrast_Click(object sender, RoutedEventArgs e)
         {
-            var (contrastResult, contrastError) = analysisWorkflow.ComputeContrast();
+            var (contrastResult, contrastError) = analysisSession.ComputeContrast();
             if (contrastError != null)
             {
                 MessageBox.Show(this, contrastError, Properties.Resources.TitleContrastCalc, MessageBoxButton.OK, MessageBoxImage.Warning);
@@ -165,7 +165,7 @@ namespace Conoscope
                 return;
             }
 
-            analysisWorkflow.RecordCapture(slot, capture);
+            analysisSession.RecordCapture(slot, capture);
             RefreshAnalysisRibbonState(activeView);
         }
     }

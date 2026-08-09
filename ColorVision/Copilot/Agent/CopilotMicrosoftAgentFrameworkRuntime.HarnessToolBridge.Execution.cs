@@ -38,7 +38,7 @@ namespace ColorVision.Copilot
                     cancellationToken);
                 if (callResult.HasConflict)
                 {
-                    return CopilotFrameworkToolResultFormatter.FormatRejected(
+                    return FormatRejectedToolCall(
                         tool.Name,
                         callResult.Error,
                         "duplicate_call_id_conflict",
@@ -132,7 +132,7 @@ namespace ColorVision.Copilot
                         approvalFailureReason,
                         approvalFailureCode);
                     Reject(approvalReservation, decision);
-                    return CopilotFrameworkToolResultFormatter.FormatRejected(
+                    return FormatRejectedToolCall(
                         tool.Name,
                         decision.Reason,
                         approvalFailureCode,
@@ -168,7 +168,7 @@ namespace ColorVision.Copilot
                 if (outcome.Result.DelegatedRunUsage != null)
                     _recordDelegatedRunUsage?.Invoke(outcome.Result.DelegatedRunUsage);
 
-                return CopilotFrameworkToolResultFormatter.Format(outcome);
+                return FormatToolResult(outcome);
             }
 
         }

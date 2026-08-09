@@ -45,9 +45,11 @@ namespace Conoscope.Processing.Preprocess
                 return new DustRemovalSummary(darkComponents, brightComponents, darkPixels, brightPixels);
             }
 
-            xMat = ReplaceChannelWithDustRepair(xMat, darkMask, brightMask, options);
-            yMat = ReplaceChannelWithDustRepair(yMat, darkMask, brightMask, options);
-            zMat = ReplaceChannelWithDustRepair(zMat, darkMask, brightMask, options);
+            bool hasDarkDust = darkPixels > 0;
+            bool hasBrightDust = brightPixels > 0;
+            xMat = ReplaceChannelWithDustRepair(xMat, darkMask, brightMask, options, hasDarkDust, hasBrightDust);
+            yMat = ReplaceChannelWithDustRepair(yMat, darkMask, brightMask, options, hasDarkDust, hasBrightDust);
+            zMat = ReplaceChannelWithDustRepair(zMat, darkMask, brightMask, options, hasDarkDust, hasBrightDust);
             return new DustRemovalSummary(darkComponents, brightComponents, darkPixels, brightPixels);
         }
 
@@ -74,7 +76,7 @@ namespace Conoscope.Processing.Preprocess
                 return new DustRemovalSummary(darkComponents, brightComponents, darkPixels, brightPixels);
             }
 
-            channelMat = ReplaceChannelWithDustRepair(channelMat, darkMask, brightMask, options);
+            channelMat = ReplaceChannelWithDustRepair(channelMat, darkMask, brightMask, options, darkPixels > 0, brightPixels > 0);
             return new DustRemovalSummary(darkComponents, brightComponents, darkPixels, brightPixels);
         }
 
@@ -141,7 +143,7 @@ namespace Conoscope.Processing.Preprocess
             return gray8;
         }
 
-        private static Mat FilterMaskByArea(Mat rawMask, int minArea, int maxArea, out int componentCount)
+        private static unsafe Mat FilterMaskByArea(Mat rawMask, int minArea, int maxArea, out int componentCount)
         {
             Mat filtered = new Mat(rawMask.Rows, rawMask.Cols, MatType.CV_8UC1, Scalar.All(0));
             using Mat labels = new Mat();
@@ -149,6 +151,7 @@ namespace Conoscope.Processing.Preprocess
             using Mat centroids = new Mat();
 
             int labelsCount = Cv2.ConnectedComponentsWithStats(rawMask, labels, stats, centroids);
+            bool[] acceptedLabels = new bool[labelsCount];
             componentCount = 0;
             for (int labelIndex = 1; labelIndex < labelsCount; labelIndex++)
             {
@@ -158,23 +161,51 @@ namespace Conoscope.Processing.Preprocess
                     continue;
                 }
 
-                using Mat componentMask = new Mat();
-                Cv2.InRange(labels, new Scalar(labelIndex), new Scalar(labelIndex), componentMask);
-                filtered.SetTo(new Scalar(255), componentMask);
+                acceptedLabels[labelIndex] = true;
                 componentCount++;
+            }
+
+            if (componentCount == 0)
+            {
+                return filtered;
+            }
+
+            int rows = labels.Rows;
+            int columns = labels.Cols;
+            for (int row = 0; row < rows; row++)
+            {
+                int* labelsRow = (int*)labels.Ptr(row);
+                byte* filteredRow = (byte*)filtered.Ptr(row);
+                for (int column = 0; column < columns; column++)
+                {
+                    int label = labelsRow[column];
+                    filteredRow[column] = label > 0 && acceptedLabels[label] ? (byte)255 : (byte)0;
+                }
             }
 
             return filtered;
         }
 
-        private static Mat ReplaceChannelWithDustRepair(Mat channel, Mat darkMask, Mat brightMask, DustRemovalOptions options)
+        private static Mat ReplaceChannelWithDustRepair(
+            Mat channel,
+            Mat darkMask,
+            Mat brightMask,
+            DustRemovalOptions options,
+            bool hasDarkDust,
+            bool hasBrightDust)
         {
-            Mat repaired = ApplyDustRepairToChannel(channel, darkMask, brightMask, options);
+            Mat repaired = ApplyDustRepairToChannel(channel, darkMask, brightMask, options, hasDarkDust, hasBrightDust);
             channel.Dispose();
             return repaired;
         }
 
-        private static Mat ApplyDustRepairToChannel(Mat source, Mat darkMask, Mat brightMask, DustRemovalOptions options)
+        private static Mat ApplyDustRepairToChannel(
+            Mat source,
+            Mat darkMask,
+            Mat brightMask,
+            DustRemovalOptions options,
+            bool hasDarkDust,
+            bool hasBrightDust)
         {
             Mat result = source.Clone();
             int backgroundKernelSize = ConoscopeNumericHelper.NormalizeOddKernelSize(options.RepairRadius * 2 + 1);
@@ -182,14 +213,14 @@ namespace Conoscope.Processing.Preprocess
                 MorphShapes.Ellipse,
                 new Size(backgroundKernelSize, backgroundKernelSize));
 
-            if (Cv2.CountNonZero(darkMask) > 0)
+            if (hasDarkDust)
             {
                 using Mat darkBackground = new Mat();
                 Cv2.MorphologyEx(source, darkBackground, MorphTypes.Close, kernel);
                 darkBackground.CopyTo(result, darkMask);
             }
 
-            if (Cv2.CountNonZero(brightMask) > 0)
+            if (hasBrightDust)
             {
                 using Mat brightBackground = new Mat();
                 Cv2.MorphologyEx(source, brightBackground, MorphTypes.Open, kernel);

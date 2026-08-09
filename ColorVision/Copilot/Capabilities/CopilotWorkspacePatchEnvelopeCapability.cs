@@ -199,6 +199,7 @@ namespace ColorVision.Copilot
                     Success = true,
                     Summary = $"Restored the deleted workspace file {Path.GetFileName(fullPath)}.",
                     Content = $"path: {fullPath}\npreview_id: {record.PreviewId}\nsha256: {record.BeforeSha256}\nstate: {record.State}",
+                    WorkspaceMutation = CreateWorkspaceMutationSnapshot([record], rollback: true),
                 };
             }
 
@@ -254,6 +255,7 @@ namespace ColorVision.Copilot
                 Success = true,
                 Summary = $"Deleted the approved workspace file {Path.GetFileName(deletePath)}.",
                 Content = $"path: {deletePath}\npreview_id: {record.PreviewId}\nfile_exists: false\nstate: {record.State}",
+                WorkspaceMutation = CreateWorkspaceMutationSnapshot([record], rollback: false),
             };
         }
 

@@ -1,6 +1,5 @@
 ﻿#pragma warning disable CS8601
 using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.Engine.FlowProcessing;
@@ -8,38 +7,22 @@ using Newtonsoft.Json;
 using SqlSugar;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.IO;
-using System.Windows.Controls;
 
 namespace ProjectKB
 {
     [@SugarTable("KBItemMaster")]
     public class KBItemMaster : ViewModelBase,IEntity
     {
-        [SugarColumn(IsIgnore = true)]
-        public ContextMenu ContextMenu { get; set; }
-
-        public KBItemMaster()
-        {
-            ContextMenu = new ContextMenu();
-            ContextMenu.Items.Add(new MenuItem() { Command = System.Windows.Input.ApplicationCommands.Delete });
-            ContextMenu.Items.Add(new MenuItem() { Command = System.Windows.Input.ApplicationCommands.Copy, Header = "复制" });
-
-            RelayCommand openFolderAndSelectFile = new RelayCommand(a =>
-            {
-                PlatformHelper.OpenFolderAndSelectFile(ResultImagFile);
-            }, e => File.Exists(ResultImagFile));
-
-            ContextMenu.Items.Add(new MenuItem() { Command = openFolderAndSelectFile, Header = "OpenFolderAndSelectFile" });
-        }
-
-
         [SugarColumn(IsPrimaryKey = true, IsIdentity = true)]
         public int Id { get => _Id; set { _Id = value; OnPropertyChanged(); } }
         private int _Id;
 
         public int BatchId { get => _BatchId; set { _BatchId = value; OnPropertyChanged(); } }
         private int _BatchId;
+
+        [SugarColumn(IsNullable = true)]
+        public int? ProductionSessionId { get => _ProductionSessionId; set { _ProductionSessionId = value; OnPropertyChanged(); } }
+        private int? _ProductionSessionId;
 
         public FlowStatus FlowStatus { get; set; } = FlowStatus.Ready;
 
@@ -104,6 +87,15 @@ namespace ProjectKB
 
         public double LvUniformity { get => _LvUniformity; set { _LvUniformity = value; OnPropertyChanged(); } }
         private double _LvUniformity;
+
+        public double? KeyLcNeighborhoodRadiusMm { get => _KeyLcNeighborhoodRadiusMm; set { _KeyLcNeighborhoodRadiusMm = value; OnPropertyChanged(); } }
+        private double? _KeyLcNeighborhoodRadiusMm;
+
+        public double? KeyLcPixelsPerMillimeter { get => _KeyLcPixelsPerMillimeter; set { _KeyLcPixelsPerMillimeter = value; OnPropertyChanged(); } }
+        private double? _KeyLcPixelsPerMillimeter;
+
+        public int? KeyLcNeighborhoodVersion { get => _KeyLcNeighborhoodVersion; set { _KeyLcNeighborhoodVersion = value; OnPropertyChanged(); } }
+        private int? _KeyLcNeighborhoodVersion;
 
         public bool BacklightAutotuneEnabled { get => _BacklightAutotuneEnabled; set { _BacklightAutotuneEnabled = value; OnPropertyChanged(); } }
         private bool _BacklightAutotuneEnabled;

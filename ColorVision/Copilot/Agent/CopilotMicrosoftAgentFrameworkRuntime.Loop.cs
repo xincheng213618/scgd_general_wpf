@@ -64,7 +64,7 @@ namespace ColorVision.Copilot
                 onEvent(agentEvent);
             });
             taskEventJournalBuilder.RecordRunStarted();
-            var capabilitySnapshot = _capabilityCatalog.GetSnapshot();
+            var capabilitySnapshot = _capabilityCatalog.GetSnapshot(request.CodexPluginsEnabled);
             var finalAnswerRecovery = NormalizeFinalAnswerRecoveryRequest(
                 request.Recovery,
                 requestedCheckpoint,
@@ -93,11 +93,12 @@ namespace ColorVision.Copilot
             await using var externalToolLease = await _externalToolProvider.DiscoverAsync(request, cancellationToken);
             foreach (var diagnostic in externalToolLease.Diagnostics)
                 emit(CopilotAgentEvent.RuntimeDiagnostic(diagnostic));
-            capabilitySnapshot = _capabilityCatalog.GetSnapshot();
-            var registeredToolCount = _toolRegistry.Tools.Count + externalToolLease.Tools.Count;
+            capabilitySnapshot = _capabilityCatalog.GetSnapshot(request.CodexPluginsEnabled);
+            var registeredToolCount = _toolRegistry.GetRegisteredTools(request).Count + externalToolLease.Tools.Count;
             var availableTools = MergeAvailableTools(request, _toolRegistry.FindTools(request), externalToolLease.Tools, emit);
             emit(CopilotAgentEvent.RuntimeDiagnostic($"Request tool surface · {availableTools.Length}/{registeredToolCount} candidate tool(s) selected after mode and intent filtering."));
             var availableToolNames = availableTools.Select(tool => tool.Name).ToArray();
+            var checkpointToolNames = BuildCheckpointToolNames(request, availableToolNames);
             var hasBackgroundShellObservationTool =
                 availableToolNames.Any(toolName =>
                     string.Equals(
@@ -120,7 +121,10 @@ namespace ColorVision.Copilot
                         .ToArray()
                     : Array.Empty<CopilotBackgroundShellCommandSnapshot>();
             var environmentContext = CopilotAgentEnvironmentContext.Capture(request);
-            var hookSurfaceSnapshot = _toolExecutor.GetHookSurfaceSnapshot();
+            var checkpointEnvironmentContext = request.CodexIncludeEnvironmentContext
+                ? environmentContext
+                : null;
+            var hookSurfaceSnapshot = _toolExecutor.GetHookSurfaceSnapshot(request.CodexExtensionHooksEnabled);
             var executionScope = baseExecutionScope.WithRuntimeSnapshot(
                 environmentContext.Fingerprint,
                 capabilitySnapshot.Revision);
@@ -128,9 +132,10 @@ namespace ColorVision.Copilot
             var checkpointCompatibility = requestedCheckpoint?.EvaluateFor(
                 request.Profile,
                 capabilitySnapshot,
-                availableToolNames,
-                environmentContext,
-                hookSurfaceSnapshot);
+                checkpointToolNames,
+                checkpointEnvironmentContext,
+                hookSurfaceSnapshot,
+                requireEnvironmentContextMatch: true);
             var requiresCheckpointReplan = checkpointCompatibility?.Kind == CopilotAgentCheckpointCompatibilityKind.ProfileChanged
                 || checkpointCompatibility?.RequiresReplan == true;
             var recovery = NormalizeRecoveryRequest(request.Recovery, requestedCheckpoint, availableTools, requiresCheckpointReplan);
@@ -152,7 +157,7 @@ namespace ColorVision.Copilot
                 _toolExecutor,
                 _approvalCoordinator,
                 emit,
-                () => _capabilityCatalog.GetSnapshot().Revision,
+                () => _capabilityCatalog.GetSnapshot(request.CodexPluginsEnabled).Revision,
                 delegatedRun => chatClient?.RecordDelegatedRunUsage(delegatedRun),
                 toolBudgetCancellation.RequestCancellation);
             var harnessPreparation = PrepareHarnessPolicy(
@@ -280,7 +285,7 @@ namespace ColorVision.Copilot
                     }
                     : null,
                 DisableOpenTelemetry = true,
-                ChatOptions = BuildChatOptions(request.Profile, frameworkTools),
+                ChatOptions = BuildChatOptions(request, frameworkTools),
             });
             TodoProvider? todoProvider = null;
             if (taskLedgerEnabled)
@@ -301,9 +306,11 @@ namespace ColorVision.Copilot
             functionInvokingClient.AllowConcurrentInvocation = true;
             emit(CopilotAgentEvent.RuntimeDiagnostic(taskLedgerEnabled && agentModeEnabled
                 ? $"Agent task ledger enabled for a complex or explicitly planned request · plan/execute modes enabled · completion loop capped at {autonomousTaskPasses} pass(es)."
-                : taskLedgerAvailable
-                    ? "Agent task ledger skipped for this direct request; the runtime will execute the requested outcome without plan-only provider turns."
-                    : "Agent control tools disabled by the isolated runtime tool surface."));
+                : !request.CodexUpdatePlanEnabled
+                    ? "Agent task ledger disabled by Codex tools.update_plan.enabled=false; no plan/execute completion loop is registered."
+                    : taskLedgerAvailable
+                        ? "Agent task ledger skipped for this direct request; the runtime will execute the requested outcome without plan-only provider turns."
+                        : "Agent control tools disabled by the isolated runtime tool surface."));
 
             var usage = CopilotTokenUsage.Empty;
             var sessionPreparation = await PrepareAgentSessionAsync(
@@ -312,8 +319,8 @@ namespace ColorVision.Copilot
                 checkpointCompatibility,
                 requiresCheckpointReplan,
                 capabilitySnapshot,
-                availableToolNames,
-                environmentContext,
+                checkpointToolNames,
+                checkpointEnvironmentContext,
                 hookSurfaceSnapshot,
                 previousEvidenceArtifacts,
                 agent,
@@ -413,6 +420,8 @@ namespace ColorVision.Copilot
             var contextWindowExceeded = loopResult.ContextWindowExceeded;
             var toolBudgetForcedFinalization = loopResult.ToolBudgetForcedFinalization;
             var providerFinishReason = loopResult.ProviderFinishReason;
+            var automaticReviewCircuitBreaker = loopResult.AutomaticReviewCircuitBreaker;
+            var automaticReviewCircuitBreakerTripped = automaticReviewCircuitBreaker?.IsTripped == true;
             var outputLengthLimitReached = IsLengthLimitedOutput(providerFinishReason);
             var outputContentFiltered = IsContentFilteredOutput(providerFinishReason);
             var outputFinishReasonIncomplete = IsUnexpectedIncompleteOutput(providerFinishReason);
@@ -432,6 +441,7 @@ namespace ColorVision.Copilot
                     "The provider ended the Agent answer with an explicit non-success finish reason; starting one bounded no-tools finalization call instead of accepting partial text."));
             }
             var hasModelFinalAnswer = !providerInterrupted
+                && !automaticReviewCircuitBreakerTripped
                 && !outputLengthLimitReached
                 && !outputContentFiltered
                 && !outputFinishReasonIncomplete
@@ -440,6 +450,7 @@ namespace ColorVision.Copilot
                 && !timeBudgetExhausted
                 && !providerInterrupted
                 && !contextWindowExceeded
+                && !automaticReviewCircuitBreakerTripped
                 && !outputContentFiltered
                 && (!hasModelFinalAnswer || toolBudgetForcedFinalization))
             {
@@ -475,6 +486,7 @@ namespace ColorVision.Copilot
                 timeBudgetExhausted,
                 providerInterrupted,
                 contextWindowExceeded,
+                automaticReviewCircuitBreakerTripped,
                 hasModelFinalAnswer,
                 outputLengthLimitReached,
                 outputContentFiltered,
@@ -564,12 +576,14 @@ namespace ColorVision.Copilot
                 _ when timeBudgetExhausted => CopilotAgentStopReason.BudgetExhausted,
                 _ when contextWindowExceeded => CopilotAgentStopReason.ProviderFailure,
                 _ when providerInterrupted => CopilotAgentStopReason.ProviderFailure,
+                _ when automaticReviewCircuitBreakerTripped => CopilotAgentStopReason.ApprovalDenied,
                 _ => DetermineStopReason(taskLedger, budgetSnapshot, bridge.StepRecords, hasModelFinalAnswer, request.Mode),
             };
             if (controlIntent == CopilotAgentControlIntent.None
                 && !timeBudgetExhausted
                 && !providerInterrupted
                 && !contextWindowExceeded
+                && !automaticReviewCircuitBreakerTripped
                 && executionContractEvaluation.IsRequired
                 && !executionContractEvaluation.IsSatisfied)
             {
@@ -582,12 +596,33 @@ namespace ColorVision.Copilot
                 && !timeBudgetExhausted
                 && !providerInterrupted
                 && !contextWindowExceeded
+                && !automaticReviewCircuitBreakerTripped
                 && !blockers.Any(blocker => string.Equals(blocker.Code, executionContractBlocker.Code, StringComparison.Ordinal)))
             {
                 blockers = blockers.Append(executionContractBlocker).ToArray();
             }
             if (providerInterrupted)
                 blockers = blockers.Prepend(CreateProviderInterruptionBlocker()).ToArray();
+            if (automaticReviewCircuitBreaker is { IsTripped: true } circuitBreaker)
+            {
+                var deniedStep = bridge.StepRecords.LastOrDefault(
+                    step => step.Execution.State == CopilotToolExecutionState.Denied);
+                blockers = blockers
+                    .Where(blocker => !string.Equals(blocker.Code, "approval_denied", StringComparison.Ordinal))
+                    .Prepend(new CopilotAgentBlockerSnapshot
+                    {
+                        Kind = CopilotAgentBlockerKind.Approval,
+                        Code = "auto_review_denial_limit",
+                        Summary = circuitBreaker.FormatUserMessage(),
+                        ToolName = deniedStep?.Execution.ToolName ?? string.Empty,
+                        SourceCallKey = deniedStep == null
+                            ? string.Empty
+                            : CopilotAgentTaskEventIds.ForCall(deniedStep.Execution.CallId),
+                        RetryEligible = false,
+                        RequiresUserInput = true,
+                    })
+                    .ToArray();
+            }
             if (contextWindowExceeded
                 && !blockers.Any(blocker => string.Equals(blocker.Code, "provider_context_window", StringComparison.Ordinal)))
             {
@@ -649,8 +684,8 @@ namespace ColorVision.Copilot
                 capabilitySnapshot,
                 evidenceArtifacts,
                 taskEventJournal,
-                availableToolNames,
-                environmentContext,
+                checkpointToolNames,
+                checkpointEnvironmentContext,
                 hookSurfaceSnapshot,
                 steeringRegistration,
                 liveCheckpointPublisher,

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 namespace ColorVision.Copilot
@@ -79,9 +80,15 @@ namespace ColorVision.Copilot
         IReadOnlyList<CopilotLocalCommandArgument>? Arguments = null,
         bool RequiresMoreInputAfterCompletion = false)
     {
-        public string CompletionText => Name + (AcceptsArguments ? " " : string.Empty);
+        public string CompletionText => CompletionTextOverride.Length > 0
+            ? CompletionTextOverride
+            : Name + (AcceptsArguments ? " " : string.Empty);
 
         public IReadOnlyList<string> Aliases { get; init; } = Array.Empty<string>();
+
+        internal string CompletionTextOverride { get; init; } = string.Empty;
+
+        internal CopilotAgentSkillReference? AgentSkillReference { get; init; }
     }
 
     public sealed record CopilotLocalCommandArgument(
@@ -135,7 +142,7 @@ namespace ColorVision.Copilot
                 new("delete", "取消 #N；若为自动续作，同时暂停对应持续目标", AcceptsArguments: true),
             ]),
             new("/stop", "停止当前任务；有安全 checkpoint 时优先暂停，否则取消当前轮次", CopilotLocalCommandKind.StopTask, AvailableWhileAgentRuns: true, Usage: "/stop"),
-            new("/approve", "查看待确认操作，或打开指定操作的原生审查窗口", CopilotLocalCommandKind.Approve, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/approve [N]"),
+            new("/approve", "审核待确认操作，或为自动审查拒绝授权一次精确重试", CopilotLocalCommandKind.Approve, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/approve [N]"),
             new("/usage", "查看当前会话或本地每日、每周与累计 Token 活动", CopilotLocalCommandKind.Usage, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: CopilotUsageCommand.Usage, Arguments:
             [
                 new("session", "当前会话 Token、Agent 时延与最新供应商限额"),
@@ -155,7 +162,7 @@ namespace ColorVision.Copilot
                 new("stop", "按 run_id 停止当前会话中的运行中子代理；父 Agent 继续", AcceptsArguments: true),
             ]) { Aliases = ["/subagents"] },
             new("/context", "查看本地上下文、预算与注入统计", CopilotLocalCommandKind.Context, AvailableWhileAgentRuns: true, Usage: "/context"),
-            new("/memory", "预览工作区型 Agent 请求会加载的项目指令，或按编号打开源文件", CopilotLocalCommandKind.ProjectInstructions, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/memory [open N]", Arguments:
+            new("/memory", "预览工作区型 Agent 请求会加载的个人与项目指令，或按编号打开源文件", CopilotLocalCommandKind.ProjectInstructions, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/memory [open N]", Arguments:
             [
                 new("open", "在内置编辑器中打开第 N 个生效指令文件", AcceptsArguments: true),
             ]) { Aliases = ["/instructions"] },
@@ -181,7 +188,12 @@ namespace ColorVision.Copilot
             ]) { Aliases = ["/config", "/preferences", "/prefs"] },
             new("/init", "为当前项目生成根级 AGENTS.md，不覆盖已有项目指令", CopilotLocalCommandKind.InitializeProject, Usage: "/init"),
             new("/hooks", "查看生效 Hook、模块来源与最近运行健康度", CopilotLocalCommandKind.Hooks, AvailableWhileAgentRuns: true, Usage: "/hooks"),
-            new("/skills", "查看 Skill 使用率、连续未加载与降级状态", CopilotLocalCommandKind.Skills, AvailableWhileAgentRuns: true, Usage: "/skills"),
+            new("/skills", "列出当前工作区 Skill、使用证据；支持按 SKILL.md 路径启停", CopilotLocalCommandKind.Skills, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: CopilotAgentSkillCommand.Usage, Arguments:
+            [
+                new("reload", "强制从磁盘重扫当前工作区与内置 Skill 目录"),
+                new("off", "按列表编号关闭一个精确 Skill 路径", AcceptsArguments: true),
+                new("enable", "按列表编号恢复一个精确 Skill 路径", AcceptsArguments: true),
+            ]),
             new("/mcp", "查看本机与外部 MCP 状态；verbose 展开脱敏诊断", CopilotLocalCommandKind.Mcp, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/mcp [verbose]", Arguments:
             [
                 new("verbose", "展开外部服务策略、工具发现与最近健康快照"),
@@ -195,13 +207,19 @@ namespace ColorVision.Copilot
             ]),
             new("/rollback", "查看或安全撤销当前会话仍可回滚的精确文件修改", CopilotLocalCommandKind.RollbackWorkspace, AcceptsArguments: true, Usage: "/rollback [N]"),
             new("/compact", "压缩早期对话，可在命令后补充聚焦要求", CopilotLocalCommandKind.Compact, AcceptsArguments: true, Usage: "/compact [聚焦要求]"),
-            new("/review", "只读审查当前工作区变更，可补充关注点", CopilotLocalCommandKind.Review, AcceptsArguments: true, Usage: "/review [关注点]"),
+            new("/review", "只读审查工作区、基线分支或指定提交，可补充关注点", CopilotLocalCommandKind.Review, AcceptsArguments: true, Usage: "/review [--current|--base <分支>|--commit <提交号>] [关注点]", Arguments:
+            [
+                new("--current", "审查当前已暂存和未暂存变更", AcceptsArguments: true),
+                new("--base", "审查指定基线分支的合并基点到 HEAD", AcceptsArguments: true),
+                new("--commit", "审查指定十六进制提交号", AcceptsArguments: true),
+            ]),
             new("/verify", "只读审查改动并经确认运行一次受限构建或测试", CopilotLocalCommandKind.Verify, AcceptsArguments: true, Usage: "/verify [关注点]") { Aliases = ["/check-work", "/check"] },
             new("/plan", "只读分析并生成可执行计划，可在命令后直接填写任务", CopilotLocalCommandKind.Plan, AcceptsArguments: true, Usage: "/plan [任务]"),
             new("/view-plan", "定位当前会话最近一份已完成计划", CopilotLocalCommandKind.ViewPlan, AvailableWhileAgentRuns: true, Usage: "/view-plan"),
-            new("/goal", "查看或管理当前会话的持续目标", CopilotLocalCommandKind.Goal, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/goal [目标|edit <新目标>|pause|resume|clear]", Arguments:
+            new("/goal", "查看或管理当前会话的持续目标", CopilotLocalCommandKind.Goal, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/goal [目标|edit <新目标>|budget <Token|clear>|pause|resume|clear]", Arguments:
             [
                 new("edit", "修改当前持续目标", AcceptsArguments: true),
+                new("budget", "设置或清除持续目标 Token 预算", AcceptsArguments: true),
                 new("pause", "暂停当前持续目标"),
                 new("resume", "恢复已暂停的持续目标"),
                 new("clear", "清除当前持续目标"),
@@ -329,20 +347,105 @@ namespace ColorVision.Copilot
                     CopilotLocalCommandAvailabilityPolicy.CanSuggest(command, composerContext)
                     && command.Name.StartsWith(normalized, StringComparison.OrdinalIgnoreCase))
                 : Enumerable.Empty<CopilotLocalCommand>();
-            var skillSuggestions = (skills ?? Array.Empty<CopilotAgentSkillCatalogItem>())
+            var availableSkills = (skills ?? Array.Empty<CopilotAgentSkillCatalogItem>()).ToArray();
+            var duplicateSkillNames = availableSkills
+                .GroupBy(skill => skill.Name, StringComparer.OrdinalIgnoreCase)
+                .Where(group => group.Count() > 1)
+                .Select(group => group.Key)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var skillSuggestions = availableSkills
                 .Select(skill => new CopilotLocalCommand(
                     normalized[0] + skill.Name,
-                    "Skill · " + skill.Description,
+                    BuildSkillSuggestionDescription(skill, duplicateSkillNames.Contains(skill.Name)),
                     CopilotLocalCommandKind.Skill,
                     AcceptsArguments: true,
-                    Usage: normalized[0] + skill.Name + " [参数]"))
+                    Usage: normalized[0] + skill.Name + " [参数]")
+                {
+                    CompletionTextOverride = BuildSkillCompletionText(normalized[0], skill),
+                    AgentSkillReference = CopilotAgentSkillReference.FromCatalogItem(skill),
+                })
                 .Where(command => command.Name.StartsWith(normalized, StringComparison.OrdinalIgnoreCase)
                     && !string.Equals(command.Name, normalized, StringComparison.OrdinalIgnoreCase));
             return suggestions
                 .Concat(skillSuggestions)
-                .DistinctBy(command => command.Name, StringComparer.OrdinalIgnoreCase)
+                .DistinctBy(BuildSuggestionIdentity, StringComparer.OrdinalIgnoreCase)
                 .Take(MaximumSuggestions)
                 .ToArray();
+        }
+
+        private static string BuildSuggestionIdentity(CopilotLocalCommand command)
+        {
+            return command.Kind == CopilotLocalCommandKind.Skill
+                && command.AgentSkillReference?.IsStructurallyValid() == true
+                    ? command.Name + "\0" + command.AgentSkillReference.SkillFilePath
+                    : command.Name;
+        }
+
+        private static string BuildSkillSuggestionDescription(
+            CopilotAgentSkillCatalogItem skill,
+            bool includeSource)
+        {
+            var displayName = string.IsNullOrWhiteSpace(skill.DisplayName) ? string.Empty : skill.DisplayName + " · ";
+            var dependencies = skill.Dependencies.Count == 0 ? string.Empty : $" · 依赖 {skill.Dependencies.Count}";
+            var source = includeSource ? " · 来源 " + BuildSkillSourceLabel(skill) : string.Empty;
+            return "Skill · " + displayName + skill.EffectiveDescription + dependencies + source;
+        }
+
+        private static string BuildSkillSourceLabel(CopilotAgentSkillCatalogItem skill)
+        {
+            if (skill.SourceKind == CopilotAgentSkillSourceKind.User)
+                return "用户";
+            if (skill.SourceKind == CopilotAgentSkillSourceKind.BuiltIn)
+                return "内置";
+
+            try
+            {
+                var agentsDirectory = Directory.GetParent(skill.SearchRootPath)?.FullName;
+                var projectDirectory = string.IsNullOrWhiteSpace(agentsDirectory)
+                    ? null
+                    : Directory.GetParent(agentsDirectory)?.FullName;
+                var directoryName = string.IsNullOrWhiteSpace(projectDirectory)
+                    ? string.Empty
+                    : Path.GetFileName(projectDirectory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+                return string.IsNullOrWhiteSpace(directoryName) ? "项目" : "项目:" + directoryName;
+            }
+            catch
+            {
+                return "项目";
+            }
+        }
+
+        private static string BuildSkillCompletionText(char prefix, CopilotAgentSkillCatalogItem skill)
+        {
+            var invocation = prefix + skill.Name;
+            if (string.IsNullOrWhiteSpace(skill.DefaultPrompt))
+                return invocation + " ";
+            if (ContainsSkillInvocation(skill.DefaultPrompt, skill.Name))
+                return skill.DefaultPrompt;
+            return invocation + " " + skill.DefaultPrompt;
+        }
+
+        private static bool ContainsSkillInvocation(string text, string skillName)
+        {
+            return ContainsSkillInvocation(text, '$', skillName)
+                || ContainsSkillInvocation(text, '/', skillName);
+        }
+
+        private static bool ContainsSkillInvocation(string text, char prefix, string skillName)
+        {
+            var invocation = prefix + skillName;
+            var startIndex = 0;
+            while (startIndex < text.Length)
+            {
+                var index = text.IndexOf(invocation, startIndex, StringComparison.OrdinalIgnoreCase);
+                if (index < 0)
+                    return false;
+                var endIndex = index + invocation.Length;
+                if (endIndex == text.Length || text[endIndex] is not (>= 'a' and <= 'z' or >= 'A' and <= 'Z' or >= '0' and <= '9' or '-'))
+                    return true;
+                startIndex = index + 1;
+            }
+            return false;
         }
 
         private static CopilotLocalCommand[] SuggestArguments(

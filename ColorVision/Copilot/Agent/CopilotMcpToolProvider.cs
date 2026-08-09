@@ -471,14 +471,21 @@ namespace ColorVision.Copilot
 
     public static class CopilotMcpClientCapabilityPolicy
     {
-        public static CopilotToolCapabilityDescriptor Create(CopilotMcpClientAccessPolicy accessPolicy, TimeSpan executionTimeout)
+        public static CopilotToolCapabilityDescriptor Create(
+            CopilotMcpClientAccessPolicy accessPolicy,
+            TimeSpan executionTimeout,
+            ToolAnnotations? annotations = null)
         {
-            return accessPolicy == CopilotMcpClientAccessPolicy.ReadOnly
+            var effectiveAccessPolicy = annotations?.DestructiveHint == true
+                ? CopilotMcpClientAccessPolicy.RequireApproval
+                : accessPolicy;
+            return effectiveAccessPolicy == CopilotMcpClientAccessPolicy.ReadOnly
                 ? CopilotToolCapabilityDescriptor.ReadOnly(executionTimeout, CopilotToolAuditArgumentMode.NamesOnly)
                 : CopilotToolCapabilityDescriptor.ProtectedWrite(
                     CopilotToolIdempotency.NonIdempotent,
                     executionTimeout,
-                    CopilotToolAuditArgumentMode.NamesOnly);
+                    CopilotToolAuditArgumentMode.NamesOnly,
+                    approvalPromptCategory: CopilotApprovalPromptCategory.McpElicitations);
         }
     }
 }

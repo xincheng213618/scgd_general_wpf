@@ -135,7 +135,10 @@ namespace ColorVision.Copilot
                         ? "源会话中的 Agent 仍会继续运行；分支已将当前回答标记为运行中快照，未完成工具不会在分支中继续。"
                         : "原会话保持不变；这里只分叉聊天历史，不会创建 Git 分支或回滚当前工作区。")
                     + Environment.NewLine
-                    + "未发送草稿、编辑区附件、Agent checkpoint 与会话级授权不会继承。");
+                    + "未发送草稿、编辑区附件、Agent checkpoint 与会话级授权不会继承。"
+                    + (branch.IsGoalContinuationDeferred
+                        ? Environment.NewLine + "活动持续目标已带入分支；下一条显式 Agent 任务接管后，才会恢复正常自动续作。"
+                        : string.Empty));
             }
             catch (Exception ex)
             {
@@ -194,6 +197,7 @@ namespace ColorVision.Copilot
                 foreach (var attachment in restoredAttachments)
                     branch.Attachments.Add(attachment);
                 branch.DraftText = point.UserMessage.Content;
+                branch.DraftAgentSkillReference = point.UserMessage.AgentSkillReference?.CreateSnapshot();
                 InsertAndSelectConversationBranch(branch);
 
                 _pendingAgentRecoveryRequest = null;
@@ -201,7 +205,9 @@ namespace ColorVision.Copilot
                 SetPendingRequestModeOverride(Enum.IsDefined(point.UserMessage.RequestMode)
                     ? point.UserMessage.RequestMode
                     : CopilotAgentMode.Chat);
+                SetPendingWorkspaceReviewTarget(point.UserMessage.WorkspaceReviewTarget);
                 InputText = point.UserMessage.Content;
+                SetPendingAgentSkillReference(point.UserMessage.AgentSkillReference);
                 UpdateAttachmentsState(branch);
 
                 var attachmentText = point.AttachmentCount > 0
@@ -300,6 +306,8 @@ namespace ColorVision.Copilot
                 conversation.Id,
                 InputText,
                 ResolveComposerRequestMode(),
+                _pendingWorkspaceReviewTarget?.CreateSnapshot(),
+                _pendingAgentSkillReference?.CreateSnapshot(),
                 conversation.Attachments.Select(attachment => attachment.CreateSnapshot()).ToArray());
             var messageAttachments = (userMessage.AttachmentSnapshotCaptured
                     ? userMessage.Attachments
@@ -314,7 +322,9 @@ namespace ColorVision.Copilot
             DismissLocalCommandResult();
             SetMessageEditState(conversation.Id, userMessage.Id);
             SetPendingRequestModeOverride(userMessage.RequestMode);
+            SetPendingWorkspaceReviewTarget(userMessage.WorkspaceReviewTarget);
             InputText = userMessage.Content;
+            SetPendingAgentSkillReference(userMessage.AgentSkillReference);
             UpdateAttachmentsState(conversation);
         }
 
@@ -342,7 +352,9 @@ namespace ColorVision.Copilot
                 foreach (var attachment in draftSnapshot.Attachments)
                     conversation.Attachments.Add(attachment.CreateSnapshot());
                 SetPendingRequestModeOverride(draftSnapshot.RequestMode);
+                SetPendingWorkspaceReviewTarget(draftSnapshot.WorkspaceReviewTarget);
                 InputText = draftSnapshot.Text;
+                SetPendingAgentSkillReference(draftSnapshot.AgentSkillReference);
             }
             else
             {
@@ -381,8 +393,12 @@ namespace ColorVision.Copilot
                 && !CopilotAgentTaskContinuityPolicy.HasAvailableStructuredRecovery(
                     conversation,
                     assistantMessage,
-                    CreateConversationRequestProfile(SelectedProfile, conversation),
-                    CopilotCapabilityCatalog.Shared.GetSnapshot());
+                    CreateCurrentConversationRequestProfile(SelectedProfile, conversation),
+                    CopilotCapabilityCatalog.Shared.GetSnapshot(
+                        _currentCodexConfigOptions.ConfiguredPluginsEnabled),
+                    CopilotToolExecutor.GetSharedHookSurfaceSnapshot(
+                        _currentCodexConfigOptions.ConfiguredHooksEnabled
+                            && _currentCodexConfigOptions.ConfiguredPluginsEnabled));
         }
 
         private async Task RetryMessageAsync(CopilotChatMessage? message, bool refreshExternalContext)
@@ -398,8 +414,12 @@ namespace ColorVision.Copilot
             if (CopilotAgentTaskContinuityPolicy.HasAvailableStructuredRecovery(
                 conversation,
                 assistantMessage,
-                CreateConversationRequestProfile(SelectedProfile, conversation),
-                CopilotCapabilityCatalog.Shared.GetSnapshot()))
+                CreateCurrentConversationRequestProfile(SelectedProfile, conversation),
+                CopilotCapabilityCatalog.Shared.GetSnapshot(
+                    _currentCodexConfigOptions.ConfiguredPluginsEnabled),
+                CopilotToolExecutor.GetSharedHookSurfaceSnapshot(
+                    _currentCodexConfigOptions.ConfiguredHooksEnabled
+                        && _currentCodexConfigOptions.ConfiguredPluginsEnabled)))
             {
                 return;
             }
@@ -409,14 +429,21 @@ namespace ColorVision.Copilot
             if (string.IsNullOrWhiteSpace(prompt))
                 return;
 
-            var requestProfile = CreateConversationRequestProfile(SelectedProfile, conversation);
+            var turnSnapshot = CaptureHostedTurnSnapshot(conversation, userMessage);
+            var requestProfile = CreateConversationRequestProfile(
+                SelectedProfile,
+                conversation,
+                userMessage.RequestMode,
+                turnSnapshot.ProjectInstructionDiscoveryOptions);
             if (!TryValidateComposerCharacterLimit(modelPrompt)
-                || !TryValidatePromptBudget(modelPrompt, userMessage.RequestMode, requestProfile))
+                || !TryValidatePromptBudget(
+                    modelPrompt,
+                    userMessage.RequestMode,
+                    requestProfile,
+                    turnSnapshot.ProjectInstructionDiscoveryOptions))
             {
                 return;
             }
-
-            var turnSnapshot = CaptureHostedTurnSnapshot(conversation, userMessage);
             if (!TryValidateComposerAttachments(turnSnapshot.Attachments))
                 return;
 
@@ -472,7 +499,8 @@ namespace ColorVision.Copilot
                 userMessage,
                 replacementAssistantMessage,
                 turnSnapshot,
-                refreshExternalContext);
+                refreshExternalContext,
+                isAutomaticGoalContinuation: false);
         }
 
         private bool TryResolveLatestTurn(CopilotChatMessage? message, out CopilotConversationRecord conversation, out CopilotChatMessage userMessage, out CopilotChatMessage? assistantMessage)

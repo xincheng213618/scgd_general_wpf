@@ -135,6 +135,16 @@ namespace ColorVision.UI
             LoadConfigs(ConfigFilePath);
         }
 
+        public void ReloadFromDisk()
+        {
+            if (!TryReadConfigFile(ConfigFilePath, out JObject loadedJson, ex => log.Warn(ex)))
+                throw new InvalidOperationException($"Unable to reload configuration file '{ConfigFilePath}'.");
+
+            jsonObject = loadedJson;
+            Configs = new ConcurrentDictionary<Type, IConfig>();
+            Authorization.Instance = GetRequiredService<Authorization>();
+        }
+
         public void SaveConfigs() => SaveConfigs(ConfigFilePath);
 
         internal JsonSerializerSettings JsonSerializerSettings { get; set; } = CreateJsonSerializerSettings();

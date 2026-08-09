@@ -122,7 +122,7 @@ namespace ColorVision.Engine.Templates.POI
             PoiPoint point = template.PoiPoints.Count == 1
                 ? template.PoiPoints[0]
                 : throw new InvalidOperationException($"布点 ROI 必须包含 1 个{expectedType}区域：{template.Name}。");
-            if (point.PointType != expectedType)
+            if (point.PointType != expectedType.ToPoiShape())
             {
                 throw new InvalidOperationException($"布点 ROI 类型与参数模板不一致：参数为 {expectedType}，区域为 {point.PointType}。");
             }
@@ -134,7 +134,7 @@ namespace ColorVision.Engine.Templates.POI
             PoiPoint point = template.PoiPoints.Count == 1
                 ? template.PoiPoints[0]
                 : throw new InvalidOperationException($"布点 ROI 必须包含 1 个矩形区域：{template.Name}。");
-            if (point.PointType is not GraphicTypes.Rect and not GraphicTypes.Quadrilateral)
+            if (point.PointType is not PoiShape.Rect and not PoiShape.Quadrilateral)
             {
                 throw new InvalidOperationException($"布点 ROI 类型与参数模板不一致：参数为 Rect，区域为 {point.PointType}。");
             }

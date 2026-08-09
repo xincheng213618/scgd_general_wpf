@@ -20,17 +20,6 @@ namespace Spectrum.Socket
 
         public SocketResponse Handle(NetworkStream stream, SocketRequest request)
         {
-            if (MainWindow.Instance == null)
-            {
-                return new SocketResponse
-                {
-                    MsgID = request.MsgID,
-                    EventName = EventName,
-                    Code = -1,
-                    Msg = "光谱仪窗口未打开"
-                };
-            }
-
             var manager = SpectrometerManager.Instance;
             if (!manager.IsConnected)
             {
@@ -47,20 +36,8 @@ namespace Spectrum.Socket
             {
                 log.Info("Socket指令: 执行光谱仪校零");
 
-                // ISocketJsonHandler.Handle is synchronous; use Task.Run to bridge async
-                var task = Task.Run(async () => await manager.PerformDarkCalibrationAsync());
-                if (!task.Wait(TimeSpan.FromSeconds(30)))
-                {
-                    return new SocketResponse
-                    {
-                        MsgID = request.MsgID,
-                        EventName = EventName,
-                        Code = -4,
-                        Msg = "校零操作超时"
-                    };
-                }
-
-                int result = task.Result;
+                using CancellationTokenSource timeout = new(TimeSpan.FromSeconds(30));
+                int result = manager.PerformDarkCalibrationAsync(timeout.Token).GetAwaiter().GetResult();
                 if (result == 1)
                 {
                     log.Info("校零完成");
@@ -70,6 +47,16 @@ namespace Spectrum.Socket
                         EventName = EventName,
                         Code = 200,
                         Msg = "校零成功"
+                    };
+                }
+                else if (result == SpectrometerManager.OperationBusy)
+                {
+                    return new SocketResponse
+                    {
+                        MsgID = request.MsgID,
+                        EventName = EventName,
+                        Code = -4,
+                        Msg = "光谱仪正在执行其他操作"
                     };
                 }
                 else
@@ -84,6 +71,16 @@ namespace Spectrum.Socket
                         Msg = $"校零失败: {errorMsg}"
                     };
                 }
+            }
+            catch (OperationCanceledException)
+            {
+                return new SocketResponse
+                {
+                    MsgID = request.MsgID,
+                    EventName = EventName,
+                    Code = -4,
+                    Msg = "校零操作超时或已取消"
+                };
             }
             catch (Exception ex)
             {

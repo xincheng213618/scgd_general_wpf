@@ -10,9 +10,11 @@ namespace ColorVision.Copilot
     {
         internal sealed partial class HarnessToolBridge
         {
-            private static bool RequiresNativeApproval(ICopilotTool tool)
+            private bool RequiresNativeApproval(ICopilotTool tool)
             {
-                return tool.Capability.RequiresNativeApproval;
+                return CopilotCodexApprovalPolicySelection.RequiresNativeApproval(
+                    _request.CodexApprovalPolicy,
+                    tool);
             }
 
             public static string ToFunctionName(string toolName)
@@ -165,10 +167,26 @@ namespace ColorVision.Copilot
                 _toolBudgetCompletionGate.CompleteRound(outcome.Invocation.Round);
             }
 
-            private static string FormatRejectedToolCall(string toolName, string error)
+            private string FormatToolResult(CopilotToolExecutionOutcome outcome)
             {
-                return CopilotFrameworkToolResultFormatter.FormatRejected(toolName, error);
-           }
+                return CopilotFrameworkToolResultFormatter.Format(
+                    outcome,
+                    _request.ToolOutputTokenLimitOverride);
+            }
+
+            private string FormatRejectedToolCall(
+                string toolName,
+                string error,
+                string failureCode = "",
+                CopilotToolFailureKind failureKind = CopilotToolFailureKind.None)
+            {
+                return CopilotFrameworkToolResultFormatter.FormatRejected(
+                    toolName,
+                    error,
+                    failureCode,
+                    failureKind,
+                    _request.ToolOutputTokenLimitOverride);
+            }
         }
     }
 }

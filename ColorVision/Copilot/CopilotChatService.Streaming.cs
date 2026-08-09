@@ -19,6 +19,7 @@ namespace ColorVision.Copilot
             CopilotProfileConfig config,
             HttpResponseMessage response,
             Action<CopilotStreamDelta> onDelta,
+            Action<CopilotTokenUsage> onUsageChanged,
             TimeSpan remainingFirstResponseTimeout,
             CopilotProviderInactivityTimeouts inactivityTimeouts,
             string providerRequestId,
@@ -64,6 +65,7 @@ namespace ColorVision.Copilot
                         emittedContent = true;
                         onDelta(delta);
                     },
+                    onUsageChanged,
                     ref usage,
                     ref receivedDisplayableText,
                     ref finishReason);
@@ -153,6 +155,7 @@ namespace ColorVision.Copilot
             StringBuilder eventData,
             string providerRequestId,
             Action<CopilotStreamDelta> onDelta,
+            Action<CopilotTokenUsage> onUsageChanged,
             ref CopilotTokenUsage usage,
             ref bool receivedDisplayableText,
             ref string finishReason)
@@ -185,7 +188,14 @@ namespace ColorVision.Copilot
                 ? ExtractAnthropicStreamingReply(payload)
                 : ExtractOpenAiStreamingReply(payload);
             if (reply.Usage.HasAny)
-                usage = usage.MergeProgress(reply.Usage);
+            {
+                var updatedUsage = usage.MergeProgress(reply.Usage);
+                if (updatedUsage != usage)
+                {
+                    usage = updatedUsage;
+                    onUsageChanged(usage);
+                }
+            }
             if (!reply.Delta.HasAny)
                 return terminalEvent;
 

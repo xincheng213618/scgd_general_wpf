@@ -20,14 +20,8 @@ namespace Spectrum.Job
 
         public async Task Execute(IJobExecutionContext context)
         {
-            var mainWindow = MainWindow.Instance;
-            if (mainWindow == null)
-            {
-                log.Warn("光谱仪窗口未打开，无法执行测量任务");
-                throw new JobExecutionException("光谱仪窗口未打开");
-            }
-
-            if (!SpectrometerManager.Instance.IsConnected)
+            SpectrometerManager manager = SpectrometerManager.Instance;
+            if (!manager.IsConnected)
             {
                 log.Warn("光谱仪未连接，无法执行测量任务");
                 throw new JobExecutionException("光谱仪未连接");
@@ -47,10 +41,12 @@ namespace Spectrum.Job
 
             for (int i = 0; i < measureCount; i++)
             {
-                await mainWindow.Measure();
+                SpectrumMeasurementResult result = await manager.MeasureAsync(context.CancellationToken);
+                if (!result.IsSuccess)
+                    throw new JobExecutionException(result.ErrorMessage ?? "光谱测量失败");
 
                 if (i < measureCount - 1)
-                    await Task.Delay(measureInterval);
+                    await Task.Delay(measureInterval, context.CancellationToken);
             }
 
             log.Info("光谱测量任务执行完成");

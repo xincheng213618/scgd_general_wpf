@@ -1,103 +1,315 @@
-using ColorVision.UI;
 using ColorVision.Core;
-using Conoscope;
+using ColorVision.UI;
+using Conoscope.Presentation.Formatters;
 using System;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
+using System.Globalization;
+using System.Linq;
+using System.Reflection;
 using System.Windows;
+using System.Windows.Automation;
 using System.Windows.Controls;
+using System.Windows.Media;
 
 namespace Conoscope.Core
 {
     public partial class ConoscopeConfigWindow : Window
     {
         private readonly ConoscopeConfig config;
-        private readonly ConoscopeGlobalSettings globalSettings;
+        private readonly ConoscopeConfig workingConfig;
+        private static readonly DisplayMetadataProvider MetadataProvider = new DisplayMetadataProvider();
 
         public ConoscopeConfigWindow(ConoscopeConfig config)
         {
-            InitializeComponent();
-            this.config = config;
-            globalSettings = new ConoscopeGlobalSettings(config);
+            this.config = config ?? throw new ArgumentNullException(nameof(config));
+            workingConfig = new ConoscopeConfig();
+            CopyEditableSettings(config, workingConfig);
 
+            InitializeComponent();
+            InitializeLocalizedText();
+            InitializeOptions();
+
+            basicSettingsPanel.DataContext = workingConfig;
+            PreprocessSettingsHost.Content = new ConoscopePreprocessSettingsControl(workingConfig, persistChanges: false);
+            cbCurrentModel.SelectedItem = workingConfig.CurrentModel;
+            RefreshModelEditors();
+        }
+
+        private void InitializeLocalizedText()
+        {
+            tabBasic.Header = UiText("Ui_BasicSettings", "常用设置");
+            tabAdvanced.Header = UiText("Ui_AdvancedSettings", "高级设置");
+            groupDisplayExport.Header = UiText("Ui_DisplayAndExport", "显示与导出");
+            groupModelBasic.Header = UiText("Ui_ModelAndCamera", "型号与观察相机");
+            btnRestoreDefaults.Content = UiText("Ui_RestoreDefaults", "恢复默认");
+            btnRestoreDefaults.ToolTip = UiText("Ui_RestoreDefaultsHint", "恢复本窗口中的显示、预处理、导出和当前型号参数；取消可放弃。 ");
+            btnApply.Content = UiText("Ui_ApplyAndSave", "应用并保存");
+            tbPendingHint.Text = UiText("Ui_SettingsPendingHint", "修改仅保留在本窗口中，单击“应用并保存”后才会生效。");
+            txtFullScalePixels.ToolTip = UiText("Con_Model_Pixels_Description", "0 表示自动使用图像短边的一半。");
+
+            AutomationProperties.SetName(tabBasic, tabBasic.Header?.ToString() ?? string.Empty);
+            AutomationProperties.SetName(tabAdvanced, tabAdvanced.Header?.ToString() ?? string.Empty);
+            AutomationProperties.SetName(btnRestoreDefaults, btnRestoreDefaults.Content?.ToString() ?? string.Empty);
+            AutomationProperties.SetName(btnApply, btnApply.Content?.ToString() ?? string.Empty);
+        }
+
+        private void InitializeOptions()
+        {
             cbCurrentModel.ItemsSource = Enum.GetValues<ConoscopeModelType>();
-            cbCurrentModel.SelectedItem = config.CurrentModel;
-            GlobalSettingsHost.Content = PropertyEditorHelper.GenPropertyEditorControl(globalSettings);
-            PreprocessSettingsHost.Content = new ConoscopePreprocessSettingsControl(config, persistChanges: false);
-            RefreshModelProfileEditor();
+            cbDisplayChannel.ItemsSource = Enum.GetValues<ExportChannel>()
+                .Select(value => new NamedOption<ExportChannel>(GetChannelName(value), value))
+                .ToArray();
+            cbPseudoColorMap.ItemsSource = Enum.GetValues<ColormapTypes>()
+                .Select(value => new NamedOption<ColormapTypes>(ColormapNameFormatter.Format(value), value))
+                .ToArray();
         }
 
         private void cbCurrentModel_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (cbCurrentModel.SelectedItem is ConoscopeModelType modelType)
+            if (cbCurrentModel.SelectedItem is not ConoscopeModelType modelType || workingConfig == null)
             {
-                config.CurrentModel = modelType;
-                RefreshModelProfileEditor();
+                return;
+            }
+
+            workingConfig.CurrentModel = modelType;
+            RefreshModelEditors();
+        }
+
+        private void RefreshModelEditors()
+        {
+            ConoscopeModelProfile profile = workingConfig.CurrentModelProfile;
+            modelBasicPanel.DataContext = profile;
+            AdvancedProfileHost.Content = PropertyEditorHelper.GenPropertyEditorControl(
+                profile,
+                Properties.Resources.ResourceManager,
+                showCategoryHeader: true,
+                metadataProvider: MetadataProvider);
+            CoordinateAxisHost.Content = PropertyEditorHelper.GenPropertyEditorControl(
+                profile.CoordinateAxisParam,
+                Properties.Resources.ResourceManager,
+                showCategoryHeader: true,
+                metadataProvider: MetadataProvider);
+        }
+
+        private void btnRestoreDefaults_Click(object sender, RoutedEventArgs e)
+        {
+            ConoscopeModelType currentModel = workingConfig.CurrentModel;
+            ConoscopeConfig defaults = new ConoscopeConfig();
+            CopyGeneralSettings(defaults, workingConfig);
+            CopyProfile(ConoscopeModelProfile.CreateDefault(currentModel), workingConfig.CurrentModelProfile);
+            workingConfig.CurrentModel = currentModel;
+
+            basicSettingsPanel.DataContext = null;
+            basicSettingsPanel.DataContext = workingConfig;
+            RefreshModelEditors();
+            if (PreprocessSettingsHost.Content is ConoscopePreprocessSettingsControl preprocessControl)
+            {
+                preprocessControl.RefreshFromConfig();
+            }
+
+            tbSettingsStatus.Text = UiText("Ui_DefaultsLoaded", "已载入默认值；应用并保存后才会生效。");
+        }
+
+        private void btnApply_Click(object sender, RoutedEventArgs e)
+        {
+            UpdateBindingSources(this);
+            if (HasValidationError(this))
+            {
+                MessageBox.Show(
+                    UiText("Ui_InvalidSettings", "部分输入不是有效数值，请检查红色标记的输入框。"),
+                    Properties.Resources.TitleHint,
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                return;
+            }
+
+            ConoscopeConfig backup = new ConoscopeConfig();
+            CopyEditableSettings(config, backup);
+            try
+            {
+                CopyEditableSettings(workingConfig, config);
+                ConfigService.Instance.Save<ConoscopeConfig>();
+                DialogResult = true;
+            }
+            catch (Exception ex)
+            {
+                CopyEditableSettings(backup, config);
+                MessageBox.Show(
+                    CompositeFormatCache.Format(Properties.Resources.MsgSaveConfigFailedDetail, ex.Message),
+                    Properties.Resources.TitleError,
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
             }
         }
 
-        private void RefreshModelProfileEditor()
+        private void btnCancel_Click(object sender, RoutedEventArgs e)
         {
-            ModelProfileHost.Content = PropertyEditorHelper.GenPropertyEditorControl(config.CurrentModelProfile);
+            DialogResult = false;
         }
 
-        private void btnClose_Click(object sender, RoutedEventArgs e)
+        private static void CopyEditableSettings(ConoscopeConfig source, ConoscopeConfig target)
         {
-            Close();
+            CopyGeneralSettings(source, target);
+            foreach (ConoscopeModelProfile sourceProfile in source.ModelProfiles)
+            {
+                ConoscopeModelProfile? targetProfile = target.ModelProfiles.FirstOrDefault(item => item.ModelType == sourceProfile.ModelType);
+                if (targetProfile == null)
+                {
+                    targetProfile = ConoscopeModelProfile.CreateDefault(sourceProfile.ModelType);
+                    target.ModelProfiles.Add(targetProfile);
+                }
+
+                CopyProfile(sourceProfile, targetProfile);
+            }
+
+            target.CurrentModel = source.CurrentModel;
         }
 
-        private sealed class ConoscopeGlobalSettings
+        private static void CopyGeneralSettings(ConoscopeConfig source, ConoscopeConfig target)
         {
-            private readonly ConoscopeRenderingSettings rendering;
-            private readonly ConoscopeExportSettings export;
+            target.DisplayChannel = source.DisplayChannel;
+            target.PseudoColorMap = source.PseudoColorMap;
+            target.UsePseudoColor = source.UsePseudoColor;
+            target.UsePseudoColorRangeLimit = source.UsePseudoColorRangeLimit;
 
-            public ConoscopeGlobalSettings(ConoscopeConfig config)
+            target.ApplyFilterOnOpen = source.ApplyFilterOnOpen;
+            target.ClampNonPositiveXyzOnLoad = source.ClampNonPositiveXyzOnLoad;
+            target.FilterType = source.FilterType;
+            target.FilterKernelSize = source.FilterKernelSize;
+            target.FilterSigma = source.FilterSigma;
+            target.FilterD = source.FilterD;
+            target.FilterSigmaColor = source.FilterSigmaColor;
+            target.FilterSigmaSpace = source.FilterSigmaSpace;
+            target.DustRemovalEnabled = source.DustRemovalEnabled;
+            target.DustRemovalMode = source.DustRemovalMode;
+            target.DustThresholdPercent = source.DustThresholdPercent;
+            target.DustMinArea = source.DustMinArea;
+            target.DustMaxArea = source.DustMaxArea;
+            target.DustRepairRadius = source.DustRepairRadius;
+
+            target.CurrentCurveExportStepDegrees = source.CurrentCurveExportStepDegrees;
+            target.CurrentCurveExportIncludeMetadata = source.CurrentCurveExportIncludeMetadata;
+            target.ExportDecimalPlaces = source.ExportDecimalPlaces;
+        }
+
+        private static void CopyProfile(ConoscopeModelProfile source, ConoscopeModelProfile target)
+        {
+            target.ModelType = source.ModelType;
+            target.DisplayName = source.DisplayName;
+            target.MaxAngle = source.MaxAngle;
+            target.CalculationDiameterPixels = source.CalculationDiameterPixels;
+            target.ManualConoscopeCoefficient = source.ManualConoscopeCoefficient;
+            target.HasObservationCamera = source.HasObservationCamera;
+            target.ObservationCameraScaleCoefficient = source.ObservationCameraScaleCoefficient;
+            target.ObservationCameraCenterX = source.ObservationCameraCenterX;
+            target.ObservationCameraCenterY = source.ObservationCameraCenterY;
+            CopyCoordinateAxis(source.CoordinateAxisParam, target.CoordinateAxisParam);
+        }
+
+        private static void CopyCoordinateAxis(ConoscopeCoordinateAxisParam source, ConoscopeCoordinateAxisParam target)
+        {
+            target.IsInteractionEnabled = source.IsInteractionEnabled;
+            target.MaxAngle = source.MaxAngle;
+            target.ConoscopeCoefficient = source.ConoscopeCoefficient;
+            target.CenterX = source.CenterX;
+            target.CenterY = source.CenterY;
+            target.AxisRadius = source.AxisRadius;
+            target.AzimuthStep = source.AzimuthStep;
+            target.PolarStep = source.PolarStep;
+            target.LineWidth = source.LineWidth;
+            target.AxisBrush = source.AxisBrush.CloneCurrentValue();
+            target.ReferenceMode = source.ReferenceMode;
+            target.ReferenceAngle = source.ReferenceAngle;
+            target.ReferenceRadiusAngle = source.ReferenceRadiusAngle;
+            target.ReferenceLineWidth = source.ReferenceLineWidth;
+            target.ReferenceBrush = source.ReferenceBrush.CloneCurrentValue();
+            target.IsMaskVisible = source.IsMaskVisible;
+            target.MaskOpacity = source.MaskOpacity;
+            target.MaskColor = source.MaskColor;
+            target.IsTextVisible = source.IsTextVisible;
+            target.FontSize = source.FontSize;
+            target.TextBrush = source.TextBrush.CloneCurrentValue();
+        }
+
+        private static void UpdateBindingSources(DependencyObject root)
+        {
+            if (root is TextBox textBox)
             {
-                rendering = config.Rendering;
-                export = config.Export;
+                textBox.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
             }
 
-            [Display(Name = "Con_Cfg_DisplayChannel", GroupName = "Con_Category_Display", ResourceType = typeof(Properties.Resources))]
-            public ExportChannel DisplayChannel
+            int childCount = VisualTreeHelper.GetChildrenCount(root);
+            for (int index = 0; index < childCount; index++)
             {
-                get => rendering.DisplayChannel;
-                set => rendering.DisplayChannel = value;
+                UpdateBindingSources(VisualTreeHelper.GetChild(root, index));
+            }
+        }
+
+        private static bool HasValidationError(DependencyObject root)
+        {
+            if (Validation.GetHasError(root))
+            {
+                return true;
             }
 
-            [Display(Name = "Con_Cfg_PseudoColor", GroupName = "Con_Category_Display", ResourceType = typeof(Properties.Resources))]
-            public ColormapTypes PseudoColorMap
+            int childCount = VisualTreeHelper.GetChildrenCount(root);
+            for (int index = 0; index < childCount; index++)
             {
-                get => rendering.PseudoColorMap;
-                set => rendering.PseudoColorMap = value;
+                if (HasValidationError(VisualTreeHelper.GetChild(root, index)))
+                {
+                    return true;
+                }
             }
 
-            [Display(Name = "Con_Cfg_UsePseudoColor", GroupName = "Con_Category_Display", ResourceType = typeof(Properties.Resources))]
-            public bool UsePseudoColor
-            {
-                get => rendering.UsePseudoColor;
-                set => rendering.UsePseudoColor = value;
-            }
+            return false;
+        }
 
-            [Display(Name = "Con_Cfg_SampleInterval", GroupName = "Con_Category_Export", Description = "当前曲线 CSV 导出的默认采样间隔。", ResourceType = typeof(Properties.Resources))]
-            public double CurrentCurveExportStepDegrees
+        private static string GetChannelName(ExportChannel channel)
+        {
+            return channel switch
             {
-                get => export.CurrentCurveStepDegrees;
-                set => export.CurrentCurveStepDegrees = value;
-            }
+                ExportChannel.X => Properties.Resources.ChannelX,
+                ExportChannel.Y => Properties.Resources.ChannelY,
+                ExportChannel.Z => Properties.Resources.ChannelZ,
+                ExportChannel.CieX => Properties.Resources.ChannelCieX,
+                ExportChannel.CieY => Properties.Resources.ChannelCieY,
+                ExportChannel.CieU => Properties.Resources.ChannelCieU,
+                ExportChannel.CieV => Properties.Resources.ChannelCieV,
+                ExportChannel.ColorDifference => Properties.Resources.ChannelDeltaUV,
+                ExportChannel.Contrast => Properties.Resources.ChannelContrast,
+                _ => ConoscopeColorimetry.GetChannelLabel(channel)
+            };
+        }
 
-            [Display(Name = "Con_Cfg_ExportMetadata", GroupName = "Con_Category_Export", Description = "是否在当前曲线 CSV 顶部写入标题和元数据。", ResourceType = typeof(Properties.Resources))]
-            public bool CurrentCurveExportIncludeMetadata
-            {
-                get => export.IncludeMetadata;
-                set => export.IncludeMetadata = value;
-            }
+        private static string UiText(string key, string fallback)
+        {
+            return Properties.Resources.ResourceManager.GetString(key, CultureInfo.CurrentUICulture) ?? fallback;
+        }
 
-            [Display(Name = "Con_Cfg_Decimals", GroupName = "Con_Category_Export", Description = "CSV 导出时数据值默认保留的小数位数。", ResourceType = typeof(Properties.Resources))]
-            public int ExportDecimalPlaces
-            {
-                get => export.DecimalPlaces;
-                set => export.DecimalPlaces = value;
-            }
+        private sealed record NamedOption<T>(string Name, T Value);
+
+        private sealed class DisplayMetadataProvider : IPropertyEditorMetadataProvider
+        {
+            public bool IsPropertyManaged(PropertyInfo propertyInfo) =>
+                propertyInfo.GetCustomAttribute<DisplayAttribute>() != null
+                || propertyInfo.GetCustomAttribute<DisplayNameAttribute>() != null;
+
+            public bool IsBrowsable(PropertyInfo propertyInfo) => propertyInfo.GetCustomAttribute<BrowsableAttribute>()?.Browsable ?? true;
+
+            public Type? GetEditorType(PropertyInfo propertyInfo) => null;
+
+            public string? GetDisplayName(PropertyInfo propertyInfo) =>
+                propertyInfo.GetCustomAttribute<DisplayNameAttribute>()?.DisplayName
+                ?? propertyInfo.GetCustomAttribute<DisplayAttribute>()?.Name;
+
+            public string? GetDescription(PropertyInfo propertyInfo) =>
+                propertyInfo.GetCustomAttribute<DescriptionAttribute>()?.Description
+                ?? propertyInfo.GetCustomAttribute<DisplayAttribute>()?.Description;
+
+            public string? GetCategory(PropertyInfo propertyInfo) =>
+                propertyInfo.GetCustomAttribute<CategoryAttribute>()?.Category
+                ?? propertyInfo.GetCustomAttribute<DisplayAttribute>()?.GroupName;
         }
     }
 }

@@ -58,7 +58,12 @@ namespace ColorVision.Copilot
                 config.AgentDefaults.SkillOverrides.Clear();
                 foreach (var item in CopilotAgentSkillOverrideConfig.Normalize(AgentSkillSettings
                     .Where(setting => setting.State != CopilotAgentSkillOverrideState.Auto)
-                    .Select(setting => new CopilotAgentSkillOverrideConfig { Name = setting.Name, State = setting.State })))
+                    .Select(setting => new CopilotAgentSkillOverrideConfig
+                    {
+                        Name = setting.Name,
+                        SkillFilePath = setting.SkillFilePath,
+                        State = setting.State,
+                    })))
                 {
                     config.AgentDefaults.SkillOverrides.Add(item);
                 }

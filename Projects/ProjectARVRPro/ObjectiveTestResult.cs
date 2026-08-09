@@ -12,6 +12,7 @@ using ProjectARVRPro.Process.KeyedResults.LuminanceChromaticity;
 using ProjectARVRPro.Process.ScreenDefects;
 using ProjectARVRPro.Process.W255;
 using ProjectARVRPro.Process.W51;
+using Newtonsoft.Json;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 
@@ -22,6 +23,9 @@ namespace ProjectARVRPro
     /// </summary>
     public class ObjectiveTestResult:ViewModelBase
     {
+        [JsonIgnore]
+        public DateTime? SessionStartTime { get; set; }
+
         [DisplayName("W51")]
         public W51TestResult W51TestResult { get; set; }
 

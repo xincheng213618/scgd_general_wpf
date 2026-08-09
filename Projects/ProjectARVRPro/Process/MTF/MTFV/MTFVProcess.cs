@@ -17,13 +17,13 @@ namespace ProjectARVRPro.Process.MTF.MTFV
     /// <summary>
     /// 旧版MTFV解析 - 使用 MTFResult.result + mtfValue
     /// </summary>
-    public class MTFVProcess : ProcessBase<MTFVProcessConfig, MTFVRecipeConfig>
+    public class MTFVProcess : ProcessWithRecipeBase<MTFVProcessConfig, MTFVRecipeConfig>
     {
         public override async Task<bool> Execute(IProcessExecutionContext ctx)
         {
             if (ctx?.Batch == null || ctx.Result == null) return false;
             var log = ctx.Log;
-            MTFVRecipeConfig recipeConfig = ctx.RecipeConfig.GetRequiredService<MTFVRecipeConfig>();
+            MTFVRecipeConfig recipeConfig = Config.RecipeConfig;
             MTFVViewTestResult testResult = new MTFVViewTestResult();
 
             try

@@ -49,39 +49,6 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
                 canonical.EndGroup();
             }
 
-            foreach (FlowErrorRoute route in document.ErrorRoutes
-                .OrderBy(GetErrorRouteKey, StringComparer.Ordinal))
-            {
-                canonical.Add("error");
-                canonical.Add(route.SourceNodeId);
-                canonical.Add(route.ErrorCode);
-                canonical.Add(route.TargetNodeId);
-                canonical.Add(route.TargetPort);
-                canonical.Add(route.IsInterrupting ? "1" : "0");
-                canonical.EndGroup();
-            }
-
-            foreach (FlowRetryPolicyReference retryPolicy in
-                document.RetryPolicies
-                    .OrderBy(GetRetryPolicyKey, StringComparer.Ordinal))
-            {
-                canonical.Add("retry");
-                canonical.Add(retryPolicy.NodeId);
-                canonical.Add(retryPolicy.MaxAttempts.ToString(
-                    CultureInfo.InvariantCulture));
-                canonical.Add(retryPolicy.InitialDelayMs.ToString(
-                    CultureInfo.InvariantCulture));
-                canonical.Add(ToInvariant(retryPolicy.Backoff));
-                canonical.Add(retryPolicy.MaxDelayMs.ToString(
-                    CultureInfo.InvariantCulture));
-                foreach (string kind in retryPolicy.RetryableKinds
-                    .OrderBy(item => item, StringComparer.Ordinal))
-                {
-                    canonical.Add(kind);
-                }
-                canonical.EndGroup();
-            }
-
             return ToHash(canonical.ToString());
         }
 
@@ -117,37 +84,6 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
                 edge.SourcePort,
                 edge.TargetNodeId,
                 edge.TargetPort);
-        }
-
-        internal static string GetErrorRouteKey(FlowErrorRoute route)
-        {
-            return string.Join(
-                "\u001f",
-                route.SourceNodeId,
-                route.ErrorCode,
-                route.TargetNodeId,
-                route.TargetPort,
-                route.IsInterrupting ? "1" : "0");
-        }
-
-        internal static string GetRetryPolicyKey(
-            FlowRetryPolicyReference retryPolicy)
-        {
-            var canonical = new CanonicalTextBuilder();
-            canonical.Add(retryPolicy.NodeId);
-            canonical.Add(retryPolicy.MaxAttempts.ToString(
-                CultureInfo.InvariantCulture));
-            canonical.Add(retryPolicy.InitialDelayMs.ToString(
-                CultureInfo.InvariantCulture));
-            canonical.Add(ToInvariant(retryPolicy.Backoff));
-            canonical.Add(retryPolicy.MaxDelayMs.ToString(
-                CultureInfo.InvariantCulture));
-            foreach (string kind in retryPolicy.RetryableKinds
-                .OrderBy(item => item, StringComparer.Ordinal))
-            {
-                canonical.Add(kind);
-            }
-            return canonical.ToString();
         }
 
         internal static string GetLayoutKey(FlowNodeLayout node)

@@ -141,6 +141,8 @@ namespace ColorVision.Copilot
                 return true;
             if (recognizedLocalCommand)
                 return false;
+            if (ResolvePendingAgentSkillReference(steeringMessage) != null)
+                return TryQueueCurrentRunFollowUp();
             if (SelectedProfile == null
                 || !TryValidateComposerCharacterLimit(steeringMessage)
                 || !TryValidatePromptBudget(steeringMessage, activeRun.Mode, SelectedProfile))

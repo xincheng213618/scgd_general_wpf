@@ -98,6 +98,26 @@ namespace ColorVision.Copilot
         public bool ShouldSerializeDraftRequestMode() =>
             DraftRequestMode != CopilotAgentMode.Auto;
 
+        public CopilotWorkspaceReviewTargetContext? DraftWorkspaceReviewTarget
+        {
+            get => _draftWorkspaceReviewTarget;
+            set => SetProperty(ref _draftWorkspaceReviewTarget, value);
+        }
+        private CopilotWorkspaceReviewTargetContext? _draftWorkspaceReviewTarget;
+
+        public bool ShouldSerializeDraftWorkspaceReviewTarget() =>
+            DraftWorkspaceReviewTarget != null;
+
+        public CopilotAgentSkillReference? DraftAgentSkillReference
+        {
+            get => _draftAgentSkillReference;
+            set => SetProperty(ref _draftAgentSkillReference, value);
+        }
+        private CopilotAgentSkillReference? _draftAgentSkillReference;
+
+        public bool ShouldSerializeDraftAgentSkillReference() =>
+            DraftAgentSkillReference != null;
+
         public CopilotComposerStash? ComposerStash
         {
             get => _composerStash;
@@ -137,6 +157,16 @@ namespace ColorVision.Copilot
 
         public bool ShouldSerializeResponsePersonality() =>
             ResponsePersonality != CopilotResponsePersonality.None;
+
+        public bool HasResponsePersonalityOverride
+        {
+            get => _hasResponsePersonalityOverride;
+            set => SetProperty(ref _hasResponsePersonalityOverride, value);
+        }
+        private bool _hasResponsePersonalityOverride;
+
+        public bool ShouldSerializeHasResponsePersonalityOverride() =>
+            HasResponsePersonalityOverride;
 
         public int LastUsageInputTokens
         {
@@ -178,11 +208,22 @@ namespace ColorVision.Copilot
             get => _updatedAt;
             set
             {
-                if (SetProperty(ref _updatedAt, value))
+                if (SetProperty(ref _updatedAt, value) && RecencyAt == default)
                     OnPropertyChanged(nameof(UpdatedLabel));
             }
         }
         private DateTime _updatedAt = DateTime.Now;
+
+        public DateTime RecencyAt
+        {
+            get => _recencyAt;
+            set
+            {
+                if (SetProperty(ref _recencyAt, value))
+                    OnPropertyChanged(nameof(UpdatedLabel));
+            }
+        }
+        private DateTime _recencyAt;
 
         public ObservableCollection<CopilotChatMessage> Messages { get; set; } = new();
 
@@ -232,6 +273,8 @@ namespace ColorVision.Copilot
             {
                 if (SetProperty(ref _goal, value))
                 {
+                    if (IsGoalContinuationDeferred && value?.IsActive != true)
+                        IsGoalContinuationDeferred = false;
                     OnPropertyChanged(nameof(HasGoal));
                     OnPropertyChanged(nameof(GoalDisplayText));
                     OnPropertyChanged(nameof(GoalToolTip));
@@ -242,6 +285,36 @@ namespace ColorVision.Copilot
 
         public bool ShouldSerializeGoal() => Goal != null;
 
+        public bool IsGoalContinuationDeferred
+        {
+            get => _isGoalContinuationDeferred;
+            set
+            {
+                if (SetProperty(ref _isGoalContinuationDeferred, value))
+                {
+                    OnPropertyChanged(nameof(GoalDisplayText));
+                    OnPropertyChanged(nameof(GoalToolTip));
+                }
+            }
+        }
+        private bool _isGoalContinuationDeferred;
+
+        public bool ShouldSerializeIsGoalContinuationDeferred() => IsGoalContinuationDeferred;
+
+        internal bool TryBeginGoalTurn(
+            bool isAgentTurn,
+            bool isAutomaticGoalContinuation)
+        {
+            if (!isAgentTurn
+                || isAutomaticGoalContinuation
+                || !IsGoalContinuationDeferred
+                || Goal?.IsActive != true)
+                return false;
+
+            IsGoalContinuationDeferred = false;
+            return true;
+        }
+
         [JsonIgnore]
         public CopilotTokenUsage LastUsage => new(
             LastUsageInputTokens,
@@ -251,7 +324,31 @@ namespace ColorVision.Copilot
 
         public void Touch()
         {
-            UpdatedAt = DateTime.Now;
+            var now = DateTime.Now;
+            if (now > UpdatedAt)
+                UpdatedAt = now;
+        }
+
+        internal bool MarkTurnStarted(DateTime startedAt)
+        {
+            var effectiveStartedAt = startedAt == default ? DateTime.Now : startedAt;
+            if (effectiveStartedAt < CreatedAt)
+                effectiveStartedAt = CreatedAt;
+            if (effectiveStartedAt < RecencyAt)
+                effectiveStartedAt = RecencyAt;
+
+            var changed = false;
+            if (RecencyAt != effectiveStartedAt)
+            {
+                RecencyAt = effectiveStartedAt;
+                changed = true;
+            }
+            if (UpdatedAt < effectiveStartedAt)
+            {
+                UpdatedAt = effectiveStartedAt;
+                changed = true;
+            }
+            return changed;
         }
 
         internal bool MarkWorkspaceChangeSetRolledBack(string changeSetId)

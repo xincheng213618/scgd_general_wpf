@@ -127,6 +127,8 @@ if (Test-Path -LiteralPath $comHostDll) {
     Invoke-ExternalProcess 'regsvr32.exe' @('/s', '/u', $comHostDll) 20
 }
 
+Invoke-ExternalProcess 'taskkill.exe' @('/F', '/FI', 'MODULES eq ColorVision.ShellExtension.dll', '/IM', 'dllhost.exe') 20
+
 if (-not [string]::IsNullOrWhiteSpace($thumbnailCacheDirectory) -and (Test-Path -LiteralPath $thumbnailCacheDirectory -PathType Container)) {
     Get-ChildItem -LiteralPath $thumbnailCacheDirectory -Filter 'thumbcache_*.db' -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
     Get-ChildItem -LiteralPath $thumbnailCacheDirectory -Filter 'iconcache_*.db' -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue

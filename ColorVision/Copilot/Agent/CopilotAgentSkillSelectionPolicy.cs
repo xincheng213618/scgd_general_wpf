@@ -11,7 +11,6 @@ namespace ColorVision.Copilot
 {
     internal static class CopilotAgentSkillSelectionPolicy
     {
-        private const int MaxInvocationPolicyFileBytes = 32_768;
         private const string NameOnlyDescription = "\u200B";
         private static readonly HashSet<string> RelevanceStopWords = new(StringComparer.OrdinalIgnoreCase)
         {
@@ -26,7 +25,10 @@ namespace ColorVision.Copilot
             IReadOnlySet<string> historicalExplicitOnlySkillNames,
             IReadOnlyDictionary<string, CopilotAgentSkillOverrideState>? skillOverrides,
             int maximumCount,
-            int maximumMetadataCharacters)
+            int maximumMetadataCharacters,
+            IReadOnlyDictionary<string, CopilotAgentSkillOverrideState>? skillPathOverrides = null,
+            Func<AgentSkill, string?>? skillFilePathResolver = null,
+            bool allowImplicitSelection = true)
         {
             var query = userText?.Trim() ?? string.Empty;
             var queryWords = ExtractAsciiWords(query);
@@ -40,6 +42,7 @@ namespace ColorVision.Copilot
             var manualNameOnlyNames = new List<string>();
             var manualExplicitOnlyNames = new List<string>();
             var manualOffNames = new List<string>();
+            var automaticInstructionsDisabledNames = new List<string>();
             var irrelevantNames = new List<string>();
             var candidates = new List<SkillCandidate>(skills.Count);
             for (var index = 0; index < skills.Count; index++)
@@ -47,12 +50,21 @@ namespace ColorVision.Copilot
                 var skill = skills[index];
                 var skillName = skill.Frontmatter.Name;
                 var explicitlyInvoked = explicitlyInvokedNames.Contains(skillName);
-                var overrideState = skillOverrides?.TryGetValue(skillName, out var configuredState) == true && Enum.IsDefined(configuredState)
-                    ? configuredState
-                    : CopilotAgentSkillOverrideState.Auto;
+                var skillFilePath = (skillFilePathResolver ?? ResolveSkillFilePath)(skill);
+                var overrideState = CopilotAgentSkillOverrideConfig.ResolveState(
+                    skillName,
+                    skillFilePath,
+                    skillOverrides,
+                    skillPathOverrides);
                 if (overrideState == CopilotAgentSkillOverrideState.Off)
                 {
                     manualOffNames.Add(skillName);
+                    continue;
+                }
+
+                if (!explicitlyInvoked && !allowImplicitSelection)
+                {
+                    automaticInstructionsDisabledNames.Add(skillName);
                     continue;
                 }
 
@@ -144,8 +156,24 @@ namespace ColorVision.Copilot
                 manualNameOnlyNames.ToArray(),
                 manualExplicitOnlyNames.ToArray(),
                 manualOffNames.ToArray(),
+                automaticInstructionsDisabledNames.ToArray(),
                 irrelevantNames.ToArray(),
                 shortenedDescriptionNames.ToArray());
+        }
+
+        private static string? ResolveSkillFilePath(AgentSkill skill)
+        {
+            if (skill is not AgentFileSkill fileSkill)
+                return null;
+
+            try
+            {
+                return Path.Combine(fileSkill.Path, "SKILL.md");
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         private static string Shorten(string value, int maximumCharacters)
@@ -188,64 +216,8 @@ namespace ColorVision.Copilot
 
         private static bool DisallowsImplicitInvocation(AgentSkill skill)
         {
-            if (skill is not AgentFileSkill fileSkill)
-                return false;
-
-            try
-            {
-                var skillDirectoryPath = Path.GetFullPath(fileSkill.Path);
-                var agentsDirectoryPath = Path.GetFullPath(Path.Combine(skillDirectoryPath, "agents"));
-                var policyFilePath = Path.GetFullPath(Path.Combine(agentsDirectoryPath, "openai.yaml"));
-                if (!IsDescendantPath(skillDirectoryPath, policyFilePath)
-                    || !Directory.Exists(agentsDirectoryPath)
-                    || (File.GetAttributes(agentsDirectoryPath) & FileAttributes.ReparsePoint) != 0)
-                {
-                    return false;
-                }
-
-                var file = new FileInfo(policyFilePath);
-                if (!file.Exists
-                    || file.Length <= 0
-                    || file.Length > MaxInvocationPolicyFileBytes
-                    || (file.Attributes & FileAttributes.ReparsePoint) != 0)
-                {
-                    return false;
-                }
-
-                var inPolicy = false;
-                foreach (var rawLine in File.ReadLines(policyFilePath))
-                {
-                    var commentIndex = rawLine.IndexOf('#');
-                    var normalizedLine = (commentIndex < 0 ? rawLine : rawLine[..commentIndex]).Trim();
-                    if (normalizedLine.Length == 0)
-                        continue;
-
-                    var indentation = rawLine.Length - rawLine.TrimStart().Length;
-                    if (indentation == 0)
-                    {
-                        inPolicy = string.Equals(normalizedLine, "policy:", StringComparison.OrdinalIgnoreCase);
-                        continue;
-                    }
-                    if (!inPolicy)
-                        continue;
-
-                    const string key = "allow_implicit_invocation:";
-                    if (!normalizedLine.StartsWith(key, StringComparison.OrdinalIgnoreCase))
-                        continue;
-                    var value = normalizedLine[key.Length..].Trim().Trim('\'', '"');
-                    return string.Equals(value, "false", StringComparison.OrdinalIgnoreCase);
-                }
-            }
-            catch
-            {
-            }
-            return false;
-        }
-
-        private static bool IsDescendantPath(string parentPath, string candidatePath)
-        {
-            var normalizedParent = Path.TrimEndingDirectorySeparator(Path.GetFullPath(parentPath)) + Path.DirectorySeparatorChar;
-            return Path.GetFullPath(candidatePath).StartsWith(normalizedParent, StringComparison.OrdinalIgnoreCase);
+            return skill is AgentFileSkill fileSkill
+                && CopilotAgentSkillMetadata.Read(fileSkill.Path).AllowImplicitInvocation == false;
         }
 
         private static int CalculateRelevanceScore(
@@ -369,6 +341,7 @@ namespace ColorVision.Copilot
         IReadOnlyList<string> ManualNameOnlyNames,
         IReadOnlyList<string> ManualExplicitOnlyNames,
         IReadOnlyList<string> ManualOffNames,
+        IReadOnlyList<string> AutomaticInstructionsDisabledNames,
         IReadOnlyList<string> IrrelevantNames,
         IReadOnlyList<string> ShortenedDescriptionNames);
 }

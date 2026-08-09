@@ -167,6 +167,13 @@ namespace ProjectARVRPro.Recipe
             try
             {
                 JToken normalized = CloneWithoutTypeMetadata(source);
+                if (normalized is JObject normalizedObject && !normalizedObject.Properties().Any())
+                {
+                    config = null!;
+                    errorMessage = $"{targetType.FullName} 的配置内容为空。";
+                    return false;
+                }
+
                 var serializer = JsonSerializer.Create(new JsonSerializerSettings
                 {
                     MissingMemberHandling = MissingMemberHandling.Ignore

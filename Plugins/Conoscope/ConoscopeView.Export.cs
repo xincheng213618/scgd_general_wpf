@@ -21,7 +21,7 @@ namespace Conoscope
                     return;
                 }
 
-                ConoscopeExportService.ExportAngleModeToCsv(filePath!, channel, CreateExportContext(), ConoscopeManager.GetInstance().Config.Export.DecimalPlaces);
+                ConoscopeExportService.ExportAngleModeToCsv(filePath!, channel, CreateExportContext(), ConoscopeManager.GetInstance().Config.ExportDecimalPlaces);
                 OnExportSuccess(filePath!);
             }
             catch (Exception ex)
@@ -40,7 +40,7 @@ namespace Conoscope
                     return;
                 }
 
-                ConoscopeExportService.ExportCircleModeToCsv(filePath!, channel, CreateExportContext(), ConoscopeManager.GetInstance().Config.Export.DecimalPlaces);
+                ConoscopeExportService.ExportCircleModeToCsv(filePath!, channel, CreateExportContext(), ConoscopeManager.GetInstance().Config.ExportDecimalPlaces);
                 OnExportSuccess(filePath!);
             }
             catch (Exception ex)
@@ -79,7 +79,6 @@ namespace Conoscope
             log.Info($"导出成功: {filePath}");
         }
 
-        private ExportChannel GetSelectedExportChannel() => selectedExportChannel;
         private ExportChannel GetSelectedCurrentCurveChannel() => GetSelectedDisplayChannel();
 
         private bool EnsureExportChannelReady(ExportChannel channel)
@@ -247,12 +246,11 @@ namespace Conoscope
                     return;
                 }
 
-                AdvancedExportSettings settings = GetAdvancedExportSettings();
-                int decimalPlaces = ConoscopeManager.GetInstance().Config.Export.DecimalPlaces;
-                AdvancedExportDialog dialog = new AdvancedExportDialog(settings, decimalPlaces) { Owner = Window.GetWindow(this) };
+                ConoscopeConfig config = ConoscopeManager.GetInstance().Config;
+                AdvancedExportDialog dialog = new AdvancedExportDialog(config.AdvancedExport) { Owner = Window.GetWindow(this) };
                 if (dialog.ShowDialog() == true)
                 {
-                    settings = dialog.Settings;
+                    AdvancedExportSettings settings = dialog.Settings;
                     SaveAdvancedExportSettings(settings);
 
                     if (!HasXyzData() && settings.Channels.Exists(channel => channel != ExportChannel.Y))
@@ -276,53 +274,10 @@ namespace Conoscope
             }
         }
 
-        private static AdvancedExportSettings GetAdvancedExportSettings()
-        {
-            ConoscopeConfig config = ConoscopeManager.GetInstance().Config;
-            ConoscopeAdvancedExportState saved = config.AdvancedExport;
-
-            return new AdvancedExportSettings
-            {
-                FilePrefix = saved.FilePrefix,
-                Channels = saved.Channels is { Count: > 0 }
-                    ? new List<ExportChannel>(saved.Channels)
-                    : new List<ExportChannel> { ExportChannel.Y },
-                ExportAzimuth = saved.ExportAzimuth,
-                ExportPolar = saved.ExportPolar,
-                AzimuthStep = saved.AzimuthStep,
-                RadialStep = saved.RadialStep,
-                PolarStep = saved.PolarStep,
-                CircumferentialStep = saved.CircumferentialStep,
-                DecimalPlaces = config.Export.DecimalPlaces,
-                EnableCrossSection = saved.EnableCrossSection,
-                CrossSectionType = saved.UseAzimuthCrossSection ? CrossSectionType.Azimuth : CrossSectionType.Polar,
-                CrossSectionAzimuthAngle = saved.CrossSectionAzimuthAngle,
-                CrossSectionPolarAngle = saved.CrossSectionPolarAngle,
-                CrossSectionAngle = saved.UseAzimuthCrossSection ? saved.CrossSectionAzimuthAngle : saved.CrossSectionPolarAngle
-            };
-        }
-
         private static void SaveAdvancedExportSettings(AdvancedExportSettings settings)
         {
             ConoscopeConfig config = ConoscopeManager.GetInstance().Config;
-            config.AdvancedExport = new ConoscopeAdvancedExportState
-            {
-                FilePrefix = settings.FilePrefix,
-                Channels = settings.Channels.Count > 0
-                    ? new List<ExportChannel>(settings.Channels)
-                    : new List<ExportChannel> { ExportChannel.Y },
-                ExportAzimuth = settings.ExportAzimuth,
-                ExportPolar = settings.ExportPolar,
-                AzimuthStep = settings.AzimuthStep,
-                RadialStep = settings.RadialStep,
-                PolarStep = settings.PolarStep,
-                CircumferentialStep = settings.CircumferentialStep,
-                EnableCrossSection = settings.EnableCrossSection,
-                UseAzimuthCrossSection = settings.CrossSectionType == CrossSectionType.Azimuth,
-                CrossSectionAzimuthAngle = settings.CrossSectionAzimuthAngle,
-                CrossSectionPolarAngle = settings.CrossSectionPolarAngle
-            };
-            config.Export.DecimalPlaces = settings.DecimalPlaces;
+            config.AdvancedExport = settings;
 
             try
             {
@@ -431,12 +386,12 @@ namespace Conoscope
 
         private ConoscopeCrossSectionExportOptions? ShowCurrentCurveExportDialog()
         {
-            ConoscopeExportSettings exportConfig = ConoscopeManager.GetInstance().Config.Export;
+            ConoscopeConfig exportConfig = ConoscopeManager.GetInstance().Config;
             ConoscopeCrossSectionExportOptions currentOptions = new ConoscopeCrossSectionExportOptions
             {
-                StepDegrees = exportConfig.CurrentCurveStepDegrees,
-                IncludeMetadata = exportConfig.IncludeMetadata,
-                DecimalPlaces = exportConfig.DecimalPlaces
+                StepDegrees = exportConfig.CurrentCurveExportStepDegrees,
+                IncludeMetadata = exportConfig.CurrentCurveExportIncludeMetadata,
+                DecimalPlaces = exportConfig.ExportDecimalPlaces
             };
 
             CurrentCurveExportDialog dialog = new CurrentCurveExportDialog(currentOptions)
@@ -514,10 +469,10 @@ namespace Conoscope
                 exportAction(filePath, channel, CreateExportContext(), angle, exportOptions);
                 MessageBox.Show(CompositeFormatCache.Format(successMessageResource, angle), Properties.Resources.TitleSuccess, MessageBoxButton.OK, MessageBoxImage.Information);
 
-                ConoscopeExportSettings exportConfig = ConoscopeManager.GetInstance().Config.Export;
-                exportConfig.CurrentCurveStepDegrees = exportOptions.StepDegrees;
-                exportConfig.IncludeMetadata = exportOptions.IncludeMetadata;
-                exportConfig.DecimalPlaces = exportOptions.DecimalPlaces;
+                ConoscopeConfig exportConfig = ConoscopeManager.GetInstance().Config;
+                exportConfig.CurrentCurveExportStepDegrees = exportOptions.StepDegrees;
+                exportConfig.CurrentCurveExportIncludeMetadata = exportOptions.IncludeMetadata;
+                exportConfig.ExportDecimalPlaces = exportOptions.DecimalPlaces;
                 try
                 {
                     ConfigService.Instance.Save<ConoscopeConfig>();

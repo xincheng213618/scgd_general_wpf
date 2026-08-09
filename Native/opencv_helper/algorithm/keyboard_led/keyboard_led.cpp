@@ -25,6 +25,12 @@ struct PixelStats
     double mean = 0.0;
 };
 
+struct KeyboardGrayPlane
+{
+    cv::Mat values;
+    double normalizationScale = 1.0;
+};
+
 struct CoordinateCluster
 {
     double center = 0.0;
@@ -121,6 +127,19 @@ cv::Rect expandRect(const cv::Rect& rect, int amount, const cv::Size& size)
     return clipRect(cv::Rect(safeLeft, safeTop, safeWidth, safeHeight), size);
 }
 
+cv::Rect offsetRect(const cv::Rect& rect, int offsetX, int offsetY, const cv::Size& size)
+{
+    const int64_t x = static_cast<int64_t>(rect.x) + offsetX;
+    const int64_t y = static_cast<int64_t>(rect.y) + offsetY;
+    return clipRect(
+        cv::Rect(
+            static_cast<int>(std::clamp<int64_t>(x, std::numeric_limits<int>::min(), std::numeric_limits<int>::max())),
+            static_cast<int>(std::clamp<int64_t>(y, std::numeric_limits<int>::min(), std::numeric_limits<int>::max())),
+            rect.width,
+            rect.height),
+        size);
+}
+
 cv::Rect insetRect(const cv::Rect& rect, int amount)
 {
     if (amount < 0 || rect.width <= amount * 2 || rect.height <= amount * 2) {
@@ -155,8 +174,8 @@ bool convertToGray32(const cv::Mat& image, const GrayConfig& config, cv::Mat& gr
         return false;
     }
     if ((image.depth() != CV_8U && image.depth() != CV_16U) ||
-        (image.channels() != 1 && image.channels() != 3)) {
-        error = "Only 8/16-bit one- or three-channel images are supported.";
+        (image.channels() != 1 && image.channels() != 3 && image.channels() != 4)) {
+        error = "Only 8/16-bit one-, three-, or four-channel images are supported.";
         return false;
     }
     if (!validateGrayConfig(config, error)) {
@@ -191,7 +210,7 @@ bool convertToGray32(const cv::Mat& image, const GrayConfig& config, cv::Mat& gr
         break;
     case GrayMode::Channel:
         if (config.channel < 0 || config.channel >= 3) {
-            error = "The selected channel is outside the three-channel image.";
+            error = "The selected color channel is outside the image.";
             return false;
         }
         gray32 = channels[static_cast<size_t>(config.channel)];
@@ -203,11 +222,88 @@ bool convertToGray32(const cv::Mat& image, const GrayConfig& config, cv::Mat& gr
     return !gray32.empty();
 }
 
+bool prepareKeyboardGrayPlane(
+    const cv::Mat& image,
+    const GrayConfig& config,
+    KeyboardGrayPlane& gray,
+    std::string& error)
+{
+    if (image.empty() || image.dims != 2) {
+        error = "Image is empty or is not two-dimensional.";
+        return false;
+    }
+    if ((image.depth() != CV_8U && image.depth() != CV_16U) ||
+        (image.channels() != 1 && image.channels() != 3 && image.channels() != 4)) {
+        error = "Only 8/16-bit one-, three-, or four-channel images are supported.";
+        return false;
+    }
+    if (!validateGrayConfig(config, error)) {
+        return false;
+    }
+
+    const double sourceScale = image.depth() == CV_8U ? 1.0 / 255.0 : 1.0 / 65535.0;
+    if (image.channels() == 1) {
+        if (config.mode == GrayMode::Channel && config.channel != 0) {
+            error = "The selected channel does not exist in a one-channel image.";
+            return false;
+        }
+        gray.values = image;
+        gray.normalizationScale = sourceScale;
+        return true;
+    }
+
+    switch (config.mode)
+    {
+    case GrayMode::Luminance:
+        cv::cvtColor(
+            image,
+            gray.values,
+            image.channels() == 3 ? cv::COLOR_BGR2GRAY : cv::COLOR_BGRA2GRAY);
+        gray.normalizationScale = sourceScale;
+        break;
+    case GrayMode::Channel:
+        if (config.channel < 0 || config.channel >= 3) {
+            error = "The selected color channel is outside the image.";
+            return false;
+        }
+        cv::extractChannel(image, gray.values, config.channel);
+        gray.normalizationScale = sourceScale;
+        break;
+    case GrayMode::MaxChannel: {
+        cv::extractChannel(image, gray.values, 0);
+        cv::Mat channel;
+        for (int index = 1; index < 3; ++index) {
+            cv::extractChannel(image, channel, index);
+            cv::max(gray.values, channel, gray.values);
+        }
+        gray.normalizationScale = sourceScale;
+        break;
+    }
+    case GrayMode::AverageChannels: {
+        gray.values = cv::Mat::zeros(image.size(), CV_32F);
+        cv::Mat channel;
+        for (int index = 0; index < 3; ++index) {
+            cv::extractChannel(image, channel, index);
+            cv::accumulate(channel, gray.values);
+        }
+        gray.values *= sourceScale / 3.0;
+        gray.normalizationScale = 1.0;
+        break;
+    }
+    default:
+        error = "Unknown gray conversion mode.";
+        return false;
+    }
+    return !gray.values.empty();
+}
+
 PixelStats calculateStats(
     const cv::Mat& gray32,
     const cv::Rect& rect,
     const cv::Mat& geometryMask,
-    const GrayConfig& config)
+    double validMin,
+    double validMax,
+    double normalizationScale = 1.0)
 {
     PixelStats stats;
     if (rect.area() <= 0) {
@@ -228,14 +324,15 @@ PixelStats calculateStats(
 
     cv::Mat minimumMask;
     cv::Mat maximumMask;
-    cv::compare(gray32(rect), config.validMin, minimumMask, cv::CMP_GE);
-    cv::compare(gray32(rect), config.validMax, maximumMask, cv::CMP_LE);
+    const double thresholdScale = 1.0 / normalizationScale;
+    cv::compare(gray32(rect), validMin * thresholdScale, minimumMask, cv::CMP_GE);
+    cv::compare(gray32(rect), validMax * thresholdScale, maximumMask, cv::CMP_LE);
     cv::Mat validMask;
     cv::bitwise_and(minimumMask, maximumMask, validMask);
     cv::bitwise_and(validMask, sampleMask, validMask);
     stats.validPixels = cv::countNonZero(validMask);
     if (stats.validPixels > 0) {
-        stats.mean = cv::mean(gray32(rect), validMask)[0];
+        stats.mean = cv::mean(gray32(rect), validMask)[0] * normalizationScale;
     }
     return stats;
 }
@@ -761,7 +858,7 @@ PixelStats sampleDetectionBrightness(
                 cv::LINE_8);
         }
     }
-    return calculateStats(gray32, sampleRect, mask, grayConfig);
+    return calculateStats(gray32, sampleRect, mask, grayConfig.validMin, grayConfig.validMax);
 }
 
 bool validateLedConfig(const LedArrayConfig& config, std::string& error)
@@ -887,12 +984,136 @@ nlohmann::json sizeJson(const cv::Size& size)
     };
 }
 
+KeyHaloMeasurement measureKeyRegion(
+    const KeyboardGrayPlane& gray,
+    const cv::Rect& clippedRect,
+    const std::vector<cv::Rect>& haloExclusionRects,
+    const KeyHaloRegion& key,
+    size_t index,
+    const KeyHaloConfig& config)
+{
+    KeyHaloMeasurement item;
+    item.id = key.id > 0 ? key.id : static_cast<int>(index) + 1;
+    item.name = key.name;
+    item.calculateKey = key.calculateKey;
+    item.calculateHalo = key.calculateHalo;
+    item.inputRect = key.rect;
+    item.clippedKeyRect = clippedRect;
+    if (!item.calculateKey && !item.calculateHalo) {
+        item.status = "disabled";
+        item.warnings.push_back("Both key and halo calculations are disabled.");
+        return item;
+    }
+    if (item.clippedKeyRect.area() <= 0) {
+        item.status = "invalid_rect";
+        item.warnings.push_back("Key rectangle does not intersect the image.");
+        return item;
+    }
+
+    const int referenceSize = std::min(item.clippedKeyRect.width, item.clippedKeyRect.height);
+    const int maximumExpansion = std::max(gray.values.cols, gray.values.rows);
+    const int inset = key.keyInsetPixels >= 0
+        ? key.keyInsetPixels
+        : static_cast<int>(std::llround(referenceSize * config.innerInsetRatio));
+    const int gap = key.haloGapPixels >= 0
+        ? key.haloGapPixels
+        : scaledPixels(referenceSize, config.haloGapRatio, 0, maximumExpansion);
+    const int haloWidth = key.haloWidthPixels >= 0
+        ? key.haloWidthPixels
+        : scaledPixels(referenceSize, config.haloWidthRatio, 1, maximumExpansion);
+    const double keyValidMin = key.keyValidMin >= 0.0 ? key.keyValidMin : config.gray.validMin;
+    const double keyValidMax = key.keyValidMax >= 0.0 ? key.keyValidMax : config.gray.validMax;
+    const double haloValidMin = key.haloValidMin >= 0.0 ? key.haloValidMin : config.gray.validMin;
+    const double haloValidMax = key.haloValidMax >= 0.0 ? key.haloValidMax : config.gray.validMax;
+    if (inset < 0 || gap < 0 || haloWidth <= 0 ||
+        keyValidMin < 0.0 || keyValidMax > 1.0 || keyValidMin > keyValidMax ||
+        haloValidMin < 0.0 || haloValidMax > 1.0 || haloValidMin > haloValidMax) {
+        item.status = "invalid_config";
+        item.warnings.push_back("Per-key geometry or normalized threshold range is invalid.");
+        return item;
+    }
+
+    if (item.calculateKey) {
+        const cv::Rect keySamplingRect = offsetRect(key.rect, key.keyOffsetX, key.keyOffsetY, gray.values.size());
+        item.innerRect = insetRect(keySamplingRect, inset);
+        if (item.innerRect.area() > 0) {
+            const PixelStats keyStats = calculateStats(
+                gray.values,
+                item.innerRect,
+                {},
+                keyValidMin,
+                keyValidMax,
+                gray.normalizationScale);
+            item.keyPixelCount = keyStats.samplePixels;
+            item.keyValidPixelCount = keyStats.validPixels;
+            item.keyMean = keyStats.mean;
+            item.keyValid = keyStats.validPixels >= config.minimumValidPixels;
+        }
+        if (!item.keyValid) {
+            item.warnings.push_back("Key has fewer valid pixels than required.");
+        }
+    }
+
+    if (item.calculateHalo) {
+        const cv::Rect haloSamplingRect = offsetRect(key.rect, key.haloOffsetX, key.haloOffsetY, gray.values.size());
+        const int haloExpansion = static_cast<int>(
+            std::min<int64_t>(maximumExpansion, static_cast<int64_t>(gap) + haloWidth));
+        item.haloBounds = expandRect(haloSamplingRect, haloExpansion, gray.values.size());
+        if (item.haloBounds.area() > 0) {
+            cv::Mat haloMask(item.haloBounds.size(), CV_8U, cv::Scalar(255));
+            clearMaskRect(haloMask, item.haloBounds, expandRect(haloSamplingRect, gap, gray.values.size()));
+            if (config.excludeKeyRectsFromHalo) {
+                for (const cv::Rect& keyRect : haloExclusionRects) {
+                    clearMaskRect(haloMask, item.haloBounds, keyRect);
+                }
+            }
+            const PixelStats haloStats = calculateStats(
+                gray.values,
+                item.haloBounds,
+                haloMask,
+                haloValidMin,
+                haloValidMax,
+                gray.normalizationScale);
+            item.haloPixelCount = haloStats.samplePixels;
+            item.haloValidPixelCount = haloStats.validPixels;
+            item.haloMean = haloStats.mean;
+            item.haloValid = haloStats.validPixels >= config.minimumValidPixels;
+        }
+        if (!item.haloValid) {
+            item.warnings.push_back("Halo has fewer valid pixels than required.");
+        }
+    }
+
+    const bool keyReady = !item.calculateKey || item.keyValid;
+    const bool haloReady = !item.calculateHalo || item.haloValid;
+    if (!keyReady || !haloReady) {
+        item.status = "insufficient_pixels";
+    }
+    else if (item.calculateKey && item.calculateHalo && item.keyMean <= Epsilon) {
+        item.status = "zero_key_mean";
+        item.warnings.push_back("Halo-to-key ratio is undefined because key mean is zero.");
+    }
+    else {
+        if (item.calculateKey && item.calculateHalo) {
+            item.haloToKeyRatio = item.haloMean / item.keyMean;
+            item.ratioValid = true;
+        }
+        item.status = "ok";
+    }
+    return item;
+}
+
 } // namespace
 
 nlohmann::json ToJson(const KeyHaloMeasurement& measurement)
 {
     return {
         { "id", measurement.id },
+        { "name", measurement.name },
+        { "calculateKey", measurement.calculateKey },
+        { "calculateHalo", measurement.calculateHalo },
+        { "keyValid", measurement.keyValid },
+        { "haloValid", measurement.haloValid },
         { "inputRect", rectJson(measurement.inputRect) },
         { "clippedKeyRect", rectJson(measurement.clippedKeyRect) },
         { "innerRect", rectJson(measurement.innerRect) },
@@ -982,90 +1203,70 @@ KeyHaloResult measureKeyHalo(
     const std::vector<cv::Rect>& keyRects,
     const KeyHaloConfig& config)
 {
+    std::vector<KeyHaloRegion> keys;
+    keys.reserve(keyRects.size());
+    for (size_t index = 0; index < keyRects.size(); ++index) {
+        KeyHaloRegion key;
+        key.id = static_cast<int>(index) + 1;
+        key.rect = keyRects[index];
+        keys.push_back(std::move(key));
+    }
+    return measureKeyHalo(image, keys, config);
+}
+
+KeyHaloResult measureKeyHalo(
+    const cv::Mat& image,
+    const std::vector<KeyHaloRegion>& keys,
+    const KeyHaloConfig& config)
+{
     KeyHaloResult result;
     result.imageSize = image.empty() ? cv::Size() : image.size();
 
     std::string error;
-    cv::Mat gray32;
-    if (!validateKeyHaloConfig(config, error) || !convertToGray32(image, config.gray, gray32, error)) {
+    KeyboardGrayPlane gray;
+    if (!validateKeyHaloConfig(config, error) || !prepareKeyboardGrayPlane(image, config.gray, gray, error)) {
         result.statusCode = "invalid_input";
         result.message = error;
         return result;
     }
-    if (keyRects.empty()) {
+    if (keys.empty()) {
         result.statusCode = "invalid_input";
         result.message = "At least one key rectangle is required.";
         return result;
     }
 
     std::vector<cv::Rect> clippedRects;
-    clippedRects.reserve(keyRects.size());
-    for (const cv::Rect& rect : keyRects) {
-        clippedRects.push_back(clipRect(rect, gray32.size()));
+    clippedRects.reserve(keys.size());
+    for (const KeyHaloRegion& key : keys) {
+        clippedRects.push_back(clipRect(key.rect, gray.values.size()));
     }
 
-    int validMeasurements = 0;
-    result.keys.reserve(keyRects.size());
-    for (size_t index = 0; index < keyRects.size(); ++index) {
-        KeyHaloMeasurement item;
-        item.id = static_cast<int>(index) + 1;
-        item.inputRect = keyRects[index];
-        item.clippedKeyRect = clippedRects[index];
-        if (item.clippedKeyRect.area() <= 0) {
-            item.status = "invalid_rect";
-            item.warnings.push_back("Key rectangle does not intersect the image.");
-            result.keys.push_back(std::move(item));
-            continue;
+    std::vector<cv::Rect> haloExclusionRects = clippedRects;
+    haloExclusionRects.reserve(clippedRects.size() + config.haloExclusionRects.size());
+    for (const cv::Rect& rect : config.haloExclusionRects) {
+        const cv::Rect clipped = clipRect(rect, gray.values.size());
+        if (clipped.area() > 0) {
+            haloExclusionRects.push_back(clipped);
         }
-
-        const int referenceSize = std::min(item.clippedKeyRect.width, item.clippedKeyRect.height);
-        const int inset = static_cast<int>(std::llround(referenceSize * config.innerInsetRatio));
-        const int maximumExpansion = std::max(gray32.cols, gray32.rows);
-        const int gap = scaledPixels(referenceSize, config.haloGapRatio, 0, maximumExpansion);
-        const int haloWidth = scaledPixels(referenceSize, config.haloWidthRatio, 1, maximumExpansion);
-        const int haloExpansion = static_cast<int>(
-            std::min<int64_t>(maximumExpansion, static_cast<int64_t>(gap) + haloWidth));
-        item.innerRect = insetRect(item.clippedKeyRect, inset);
-        item.haloBounds = expandRect(item.clippedKeyRect, haloExpansion, gray32.size());
-        if (item.innerRect.area() <= 0 || item.haloBounds.area() <= 0) {
-            item.status = "invalid_geometry";
-            item.warnings.push_back("Inset or halo geometry is empty after clipping.");
-            result.keys.push_back(std::move(item));
-            continue;
-        }
-
-        const PixelStats keyStats = calculateStats(gray32, item.innerRect, {}, config.gray);
-        cv::Mat haloMask(item.haloBounds.size(), CV_8U, cv::Scalar(255));
-        clearMaskRect(haloMask, item.haloBounds, expandRect(item.clippedKeyRect, gap, gray32.size()));
-        if (config.excludeKeyRectsFromHalo) {
-            for (const cv::Rect& keyRect : clippedRects) {
-                clearMaskRect(haloMask, item.haloBounds, keyRect);
-            }
-        }
-        const PixelStats haloStats = calculateStats(gray32, item.haloBounds, haloMask, config.gray);
-
-        item.keyPixelCount = keyStats.samplePixels;
-        item.keyValidPixelCount = keyStats.validPixels;
-        item.haloPixelCount = haloStats.samplePixels;
-        item.haloValidPixelCount = haloStats.validPixels;
-        item.keyMean = keyStats.mean;
-        item.haloMean = haloStats.mean;
-        if (keyStats.validPixels < config.minimumValidPixels || haloStats.validPixels < config.minimumValidPixels) {
-            item.status = "insufficient_pixels";
-            item.warnings.push_back("Key or halo has fewer valid pixels than required.");
-        }
-        else if (keyStats.mean <= Epsilon) {
-            item.status = "zero_key_mean";
-            item.warnings.push_back("Halo-to-key ratio is undefined because key mean is zero.");
-        }
-        else {
-            item.haloToKeyRatio = haloStats.mean / keyStats.mean;
-            item.ratioValid = true;
-            item.status = "ok";
-            ++validMeasurements;
-        }
-        result.keys.push_back(std::move(item));
     }
+
+    result.keys.resize(keys.size());
+    cv::parallel_for_(cv::Range(0, static_cast<int>(keys.size())), [&](const cv::Range& range) {
+        for (int index = range.start; index < range.end; ++index) {
+            result.keys[static_cast<size_t>(index)] = measureKeyRegion(
+                gray,
+                clippedRects[static_cast<size_t>(index)],
+                haloExclusionRects,
+                keys[static_cast<size_t>(index)],
+                static_cast<size_t>(index),
+                config);
+        }
+    });
+
+    const int validMeasurements = static_cast<int>(std::count_if(
+        result.keys.begin(),
+        result.keys.end(),
+        [](const KeyHaloMeasurement& measurement) { return measurement.status == "ok"; }));
 
     result.success = validMeasurements > 0;
     if (validMeasurements == static_cast<int>(result.keys.size())) {

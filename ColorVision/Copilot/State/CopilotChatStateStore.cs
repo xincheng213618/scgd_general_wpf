@@ -92,13 +92,15 @@ namespace ColorVision.Copilot
                     return BlockForFutureVersion(temporarySchemaVersion);
                 if (temporaryStatus == StateFileReadStatus.Valid)
                 {
-                    var primaryStatus = ReadStateFile(StateFilePath, out _, out var primarySchemaVersion);
+                    var primaryStatus = ReadStateFile(StateFilePath, out var primaryState, out var primarySchemaVersion);
                     if (primaryStatus == StateFileReadStatus.FutureVersion)
                         return BlockForFutureVersion(primarySchemaVersion);
                     if (primaryStatus == StateFileReadStatus.Valid
                         && File.GetLastWriteTimeUtc(TemporaryStateFilePath) <= File.GetLastWriteTimeUtc(StateFilePath))
                     {
                         TryDeleteFile(TemporaryStateFilePath);
+                        LastLoadStatus = new CopilotChatStateLoadStatus(CopilotChatStateLoadSource.Primary);
+                        return primaryState;
                     }
                     else
                     {

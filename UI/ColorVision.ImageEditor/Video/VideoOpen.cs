@@ -521,12 +521,12 @@ namespace ColorVision.ImageEditor.Video
             {
                 // Fast path: reuse existing WriteableBitmap with parallel copy for large frames
                 UpdateWriteableBitmapFast(_writeableBitmap, frame);
+                _imageView?.NotifySourcePixelsChanged();
             }
             else
             {
                 _writeableBitmap = frame.ToWriteableBitmap();
-                if (_imageView?.ImageShow != null)
-                    _imageView.ImageShow.Source = _writeableBitmap;
+                _imageView?.SetImageSource(_writeableBitmap);
             }
         }
 

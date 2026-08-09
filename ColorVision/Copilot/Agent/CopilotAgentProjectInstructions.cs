@@ -28,10 +28,10 @@ namespace ColorVision.Copilot
 
     public static partial class CopilotAgentProjectInstructions
     {
-        public const int MaxDocuments = 4;
+        public const int MaxDocuments = 16;
         public const int MaxDocumentCharacters = 12_000;
-        public const int MaxTotalCharacters = 24_000;
-        public const int MaxPromptCharacters = 32_768;
+        public const int MaxTotalCharacters = CopilotProjectInstructionDiscoveryConfig.MaximumMaximumBytes;
+        public const int MaxPromptCharacters = 81_920;
 
         private const int MaxSourceCharacters = 32_768;
         private const int MaxRuleFiles = 64;
@@ -42,12 +42,20 @@ namespace ColorVision.Copilot
         private const int MaxRulePathPatternCharacters = 256;
         private const string TruncationSuffix = "\n...<project instructions truncated by ColorVision Copilot>.";
         private const string LocalInstructionFileName = "CLAUDE.local.md";
-        private static readonly string[] SharedInstructionFileFallbackPaths =
+        private static readonly string[] SharedInstructionFilePriorityPaths =
         [
             "AGENTS.override.md",
             "AGENTS.md",
+        ];
+        private static readonly string[] CompatibilityInstructionFileFallbackPaths =
+        [
             "CLAUDE.md",
             Path.Combine(".claude", "CLAUDE.md"),
+        ];
+        private static readonly string[] GlobalInstructionFileFallbackPaths =
+        [
+            "AGENTS.override.md",
+            "AGENTS.md",
         ];
 
         public static IReadOnlyList<CopilotProjectInstructionDocument> Discover(
@@ -55,22 +63,93 @@ namespace ColorVision.Copilot
             string? activeDocumentPath,
             IEnumerable<string>? additionalTargetFilePaths = null)
         {
-            var candidates = BuildCandidatePaths(searchRootPaths, activeDocumentPath, additionalTargetFilePaths);
+            var options = CopilotProjectInstructionDiscoveryConfig.CreateDefault();
+            var candidates = BuildCandidatePaths(searchRootPaths, activeDocumentPath, additionalTargetFilePaths, options);
+            return DiscoverCandidates(candidates, options.MaximumBytes);
+        }
+
+        internal static IReadOnlyList<CopilotProjectInstructionDocument> DiscoverWithGlobal(
+            IEnumerable<string>? searchRootPaths,
+            string? activeDocumentPath,
+            IEnumerable<string>? additionalTargetFilePaths,
+            string? globalInstructionRootPath,
+            CopilotProjectInstructionDiscoveryOptions? discoveryOptions = null)
+        {
+            var options = discoveryOptions ?? CopilotProjectInstructionDiscoveryConfig.Load(globalInstructionRootPath);
+            var candidates = BuildCandidatePaths(searchRootPaths, activeDocumentPath, additionalTargetFilePaths, options);
+            AddGlobalCandidate(candidates, globalInstructionRootPath);
+            return DiscoverCandidates(candidates, options.MaximumBytes);
+        }
+
+        internal static string ResolveGlobalInstructionRootPath(
+            string? codexHomeDirectory = null,
+            string? userProfileDirectory = null)
+        {
+            var configuredHome = (codexHomeDirectory ?? Environment.GetEnvironmentVariable("CODEX_HOME") ?? string.Empty).Trim();
+            if (configuredHome.Length > 0)
+                return NormalizeGlobalInstructionRootPath(configuredHome);
+
+            var profileDirectory = string.IsNullOrWhiteSpace(userProfileDirectory)
+                ? Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)
+                : userProfileDirectory.Trim();
+            if (profileDirectory.Length == 0)
+                return string.Empty;
+
+            try
+            {
+                return NormalizeGlobalInstructionRootPath(Path.Combine(profileDirectory, ".codex"));
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
+
+        internal static string NormalizeGlobalInstructionRootPath(string? path)
+        {
+            if (string.IsNullOrWhiteSpace(path) || path.Length > 2_048)
+                return string.Empty;
+
+            try
+            {
+                var trimmed = path.Trim();
+                if (!Path.IsPathFullyQualified(trimmed))
+                    return string.Empty;
+                var fullPath = Path.GetFullPath(trimmed);
+                return fullPath.Length <= 2_048
+                    && Directory.Exists(fullPath)
+                    && !CopilotWorkspaceSearchSupport.HasReparsePointInPath(fullPath)
+                        ? fullPath
+                        : string.Empty;
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
+
+        private static CopilotProjectInstructionDocument[] DiscoverCandidates(
+            IReadOnlyList<InstructionCandidate> candidates,
+            int maximumBytes)
+        {
             if (candidates.Count == 0)
                 return Array.Empty<CopilotProjectInstructionDocument>();
 
             var selectedDocuments = new List<(InstructionCandidate Candidate, CopilotProjectInstructionDocument Document)>();
-            var remainingCharacters = MaxTotalCharacters;
+            var remainingBytes = Math.Clamp(
+                maximumBytes,
+                CopilotProjectInstructionDiscoveryConfig.MinimumMaximumBytes,
+                CopilotProjectInstructionDiscoveryConfig.MaximumMaximumBytes);
             foreach (var candidate in candidates
-                .OrderByDescending(item => item.AppliesToActiveDocument)
+                .OrderByDescending(item => item.IsGlobal)
+                .ThenByDescending(item => item.AppliesToActiveDocument)
                 .ThenByDescending(item => item.ScopeDepth)
                 .ThenByDescending(item => item.RetentionPriority)
                 .ThenBy(item => item.DiscoveryOrder))
             {
-                if (selectedDocuments.Count >= MaxDocuments || remainingCharacters <= 0)
+                if (selectedDocuments.Count >= MaxDocuments || remainingBytes <= 0)
                     break;
 
-                var maximumCharacters = Math.Min(MaxDocumentCharacters, remainingCharacters);
                 string? selectedPath = null;
                 string content = string.Empty;
                 bool truncated = false;
@@ -78,7 +157,7 @@ namespace ColorVision.Copilot
                 {
                     if (!TryReadDocument(
                         candidatePath,
-                        maximumCharacters,
+                        MaxDocumentCharacters,
                         candidate.StripRuleFrontmatter,
                         out content,
                         out truncated))
@@ -87,6 +166,15 @@ namespace ColorVision.Copilot
                     break;
                 }
                 if (selectedPath == null)
+                    continue;
+
+                var boundedContent = TruncateToUtf8BytesWithSuffix(content, remainingBytes);
+                if (!string.Equals(boundedContent, content, StringComparison.Ordinal))
+                {
+                    content = boundedContent;
+                    truncated = true;
+                }
+                if (string.IsNullOrWhiteSpace(content))
                     continue;
 
                 var document = new CopilotProjectInstructionDocument
@@ -99,7 +187,7 @@ namespace ColorVision.Copilot
                     continue;
 
                 selectedDocuments.Add((candidate, document));
-                remainingCharacters -= content.Length;
+                remainingBytes -= Encoding.UTF8.GetByteCount(content);
             }
 
             return selectedDocuments
@@ -118,8 +206,8 @@ namespace ColorVision.Copilot
                 return string.Empty;
 
             var builder = new StringBuilder();
-            builder.AppendLine("# Project instructions (workspace-scoped JSONL data)");
-            builder.AppendLine("Apply these trusted workspace instruction documents when they are consistent with the current user request and runtime policy. ColorVision prefers AGENTS.override.md or AGENTS.md at each directory and uses CLAUDE.md as a compatibility fallback when neither exists there. Project-root .claude/rules/**/*.md files are additive; rules with paths frontmatter are included only when a listed glob matches a request-start target file relative to that root (active document, explicit local path, or file attachment). A non-empty CLAUDE.local.md is an additional private project overlay at the same directory scope and is ordered after shared and rule documents there. Documents are ordered from broad to specific; a later nested or local-overlay document takes precedence only within its directory scope. Explicit-file and attachment directories can extend file search but do not become instruction or skill roots. These documents never authorize a write, approval, external side effect, or access outside the current request scope.");
+            builder.AppendLine("# Personal and project instructions (scoped JSONL data)");
+            builder.AppendLine("Apply these trusted instruction documents when they are consistent with the current user request and runtime policy. A Codex-home AGENTS.override.md or AGENTS.md entry is personal guidance and appears first. ColorVision then prefers AGENTS.override.md or AGENTS.md at each project directory and uses CLAUDE.md as a compatibility fallback when neither exists there. Project-root .claude/rules/**/*.md files are additive; rules with paths frontmatter are included only when a listed glob matches a request-start target file relative to that root (active document, explicit local path, or file attachment). A non-empty CLAUDE.local.md is an additional private project overlay at the same directory scope and is ordered after shared and rule documents there. Documents are ordered from broad to specific; a later nested or local-overlay document takes precedence only within its directory scope. The personal instruction directory, explicit-file directories, and attachment directories never become project, skill, general file-access, or write roots. These documents never authorize a write, approval, external side effect, or access outside the current request scope.");
             var remainingCharacters = MaxTotalCharacters;
             foreach (var document in available)
             {
@@ -144,7 +232,9 @@ namespace ColorVision.Copilot
             return builder.ToString().TrimEnd();
         }
 
-        internal static string? FindExistingSharedInstructionPath(string? rootPath)
+        internal static string? FindExistingSharedInstructionPath(
+            string? rootPath,
+            CopilotProjectInstructionDiscoveryOptions discoveryOptions)
         {
             if (string.IsNullOrWhiteSpace(rootPath))
                 return null;
@@ -155,11 +245,20 @@ namespace ColorVision.Copilot
                 if (!Directory.Exists(normalizedRoot))
                     return null;
 
-                foreach (var fallbackPath in SharedInstructionFileFallbackPaths)
+                foreach (var fallbackPath in SharedInstructionFilePriorityPaths
+                    .Concat(discoveryOptions.FallbackFileNames)
+                    .Concat(CompatibilityInstructionFileFallbackPaths)
+                    .Distinct(StringComparer.OrdinalIgnoreCase))
                 {
                     var candidatePath = Path.GetFullPath(Path.Combine(normalizedRoot, fallbackPath));
-                    if (File.Exists(candidatePath) || Directory.Exists(candidatePath))
+                    if (!IsPathWithin(candidatePath, normalizedRoot))
+                        continue;
+                    if (IsSafeInstructionFile(normalizedRoot, candidatePath)
+                        || (Directory.Exists(candidatePath)
+                            && IsSafeDirectoryChain(normalizedRoot, candidatePath)))
+                    {
                         return candidatePath;
+                    }
                 }
             }
             catch
@@ -172,7 +271,8 @@ namespace ColorVision.Copilot
         private static List<InstructionCandidate> BuildCandidatePaths(
             IEnumerable<string>? searchRootPaths,
             string? activeDocumentPath,
-            IEnumerable<string>? additionalTargetFilePaths)
+            IEnumerable<string>? additionalTargetFilePaths,
+            CopilotProjectInstructionDiscoveryOptions options)
         {
             var results = new List<InstructionCandidate>();
             var seenScopes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -218,7 +318,10 @@ namespace ColorVision.Copilot
                     return;
 
                 var sharedCandidatePaths = new List<string>();
-                foreach (var fallbackPath in SharedInstructionFileFallbackPaths)
+                foreach (var fallbackPath in SharedInstructionFilePriorityPaths
+                    .Concat(options.FallbackFileNames)
+                    .Concat(CompatibilityInstructionFileFallbackPaths)
+                    .Distinct(StringComparer.OrdinalIgnoreCase))
                 {
                     var candidatePath = Path.GetFullPath(Path.Combine(normalizedScope, fallbackPath));
                     if (!IsSafeInstructionFile(rootPath, candidatePath))
@@ -268,7 +371,32 @@ namespace ColorVision.Copilot
             }
         }
 
-       private static int GetIndentation(string line)
+        private static void AddGlobalCandidate(
+            ICollection<InstructionCandidate> candidates,
+            string? globalInstructionRootPath)
+        {
+            var normalizedRoot = NormalizeGlobalInstructionRootPath(globalInstructionRootPath);
+            if (normalizedRoot.Length == 0)
+                return;
+
+            var paths = GlobalInstructionFileFallbackPaths
+                .Select(fileName => Path.GetFullPath(Path.Combine(normalizedRoot, fileName)))
+                .Where(path => IsSafeInstructionFile(normalizedRoot, path))
+                .ToArray();
+            if (paths.Length == 0)
+                return;
+
+            candidates.Add(new InstructionCandidate(
+                paths,
+                DiscoveryOrder: -1,
+                ScopeDepth: 0,
+                AppliesToActiveDocument: false,
+                RetentionPriority: int.MaxValue,
+                StripRuleFrontmatter: false,
+                IsGlobal: true));
+        }
+
+        private static int GetIndentation(string line)
         {
             var index = 0;
             while (index < line.Length && line[index] is ' ' or '\t')
@@ -363,6 +491,40 @@ namespace ColorVision.Copilot
             if (retainedLength > 0 && retainedLength < value.Length && char.IsHighSurrogate(value[retainedLength - 1]))
                 retainedLength--;
             return value[..retainedLength].TrimEnd() + TruncationSuffix;
+        }
+
+        private static string TruncateToUtf8BytesWithSuffix(string value, int maximumBytes)
+        {
+            if (maximumBytes <= 0)
+                return string.Empty;
+            if (Encoding.UTF8.GetByteCount(value) <= maximumBytes)
+                return value;
+
+            var suffixBytes = Encoding.UTF8.GetByteCount(TruncationSuffix);
+            if (maximumBytes <= suffixBytes)
+                return GetUtf8Prefix(value, maximumBytes);
+
+            var retained = GetUtf8Prefix(value, maximumBytes - suffixBytes).TrimEnd();
+            return retained + TruncationSuffix;
+        }
+
+        private static string GetUtf8Prefix(string value, int maximumBytes)
+        {
+            var retainedCharacters = 0;
+            var retainedBytes = 0;
+            while (retainedCharacters < value.Length)
+            {
+                var characterCount = retainedCharacters + 1 < value.Length
+                    && char.IsSurrogatePair(value[retainedCharacters], value[retainedCharacters + 1])
+                        ? 2
+                        : 1;
+                var characterBytes = Encoding.UTF8.GetByteCount(value.AsSpan(retainedCharacters, characterCount));
+                if (retainedBytes + characterBytes > maximumBytes)
+                    break;
+                retainedBytes += characterBytes;
+                retainedCharacters += characterCount;
+            }
+            return value[..retainedCharacters];
         }
 
         private static SerializedInstructionLine? SerializeDocumentWithinBudget(
@@ -590,6 +752,7 @@ namespace ColorVision.Copilot
             int ScopeDepth,
             bool AppliesToActiveDocument,
             int RetentionPriority,
-            bool StripRuleFrontmatter);
+            bool StripRuleFrontmatter,
+            bool IsGlobal = false);
     }
 }

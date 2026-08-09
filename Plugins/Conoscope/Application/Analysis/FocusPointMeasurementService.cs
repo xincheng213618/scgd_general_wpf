@@ -7,7 +7,7 @@ namespace Conoscope.ApplicationServices.Analysis
 {
     public static class FocusPointMeasurementService
     {
-        public static bool TryCalculateCircleRoiAverage(
+        public static unsafe bool TryCalculateCircleRoiAverage(
             OpenCvSharp.Mat xMat, OpenCvSharp.Mat yMat, OpenCvSharp.Mat zMat,
             int displayWidth, int displayHeight,
             Point imageCenter, double imageRadius,
@@ -55,6 +55,9 @@ namespace Conoscope.ApplicationServices.Analysis
                     continue;
                 }
 
+                float* xRow = (float*)xMat.Ptr(iy);
+                float* yRow = (float*)yMat.Ptr(iy);
+                float* zRow = (float*)zMat.Ptr(iy);
                 for (int ix = startX; ix <= endX; ix++)
                 {
                     double dx = radiusX <= 0 ? 0 : (ix - centerX) / radiusX;
@@ -63,10 +66,10 @@ namespace Conoscope.ApplicationServices.Analysis
                         continue;
                     }
 
-                    double xValue = xMat.At<float>(iy, ix);
-                    double yValue = yMat.At<float>(iy, ix);
-                    double zValue = zMat.At<float>(iy, ix);
-                    if (!double.IsFinite(xValue) || !double.IsFinite(yValue) || !double.IsFinite(zValue))
+                    float xValue = xRow[ix];
+                    float yValue = yRow[ix];
+                    float zValue = zRow[ix];
+                    if (!float.IsFinite(xValue) || !float.IsFinite(yValue) || !float.IsFinite(zValue))
                     {
                         continue;
                     }
@@ -113,8 +116,22 @@ namespace Conoscope.ApplicationServices.Analysis
         {
             double deltaX = point.X - imageCenter.X;
             double deltaY = imageCenter.Y - point.Y;
-            double angle = Math.Atan2(deltaY, deltaX) * 180.0 / Math.PI;
-            return angle < 0 ? angle + 360.0 : angle;
+            return NormalizeFullAzimuthAngle(Math.Atan2(deltaY, deltaX) * 180.0 / Math.PI);
+        }
+
+        public static double NormalizeFullAzimuthAngle(double angleDegrees)
+        {
+            double normalized = angleDegrees % 360.0;
+            return normalized < 0 ? normalized + 360.0 : normalized;
+        }
+
+        public static Point CreatePointFromPolar(double azimuthDegrees, double distancePixels, Point imageCenter)
+        {
+            double radians = NormalizeFullAzimuthAngle(azimuthDegrees) * Math.PI / 180.0;
+            double distance = Math.Max(0, distancePixels);
+            return new Point(
+                imageCenter.X + Math.Cos(radians) * distance,
+                imageCenter.Y - Math.Sin(radians) * distance);
         }
 
         public static double GetPolarRadiusAngle(Point point, Point imageCenter, double imageRadius, double maxAngle)

@@ -38,6 +38,12 @@ namespace ColorVision.Copilot
 
         public string Task { get; init; } = string.Empty;
 
+        public string Agent { get; init; } = string.Empty;
+
+        public string Model { get; init; } = string.Empty;
+
+        public string ReasoningEffort { get; init; } = string.Empty;
+
         public int RequestTokenBudget { get; init; }
 
         public long QueueDurationMs { get; init; }

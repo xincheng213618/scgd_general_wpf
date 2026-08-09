@@ -47,11 +47,18 @@ namespace ColorVision.Copilot
                     if (schemaToken.Type != JTokenType.Integer)
                         return StateFileReadStatus.Invalid;
 
-                    schemaVersion = schemaToken.Value<int>();
+                    var parsedSchemaVersion = schemaToken.Value<long>();
+                    if (parsedSchemaVersion > int.MaxValue)
+                    {
+                        schemaVersion = int.MaxValue;
+                        return StateFileReadStatus.FutureVersion;
+                    }
+                    if (parsedSchemaVersion < 1)
+                        return StateFileReadStatus.Invalid;
+
+                    schemaVersion = (int)parsedSchemaVersion;
                     if (schemaVersion > CopilotChatState.CurrentSchemaVersion)
                         return StateFileReadStatus.FutureVersion;
-                    if (schemaVersion < 1)
-                        return StateFileReadStatus.Invalid;
                 }
 
                 if (!HasTrustedDocumentShape(document))
@@ -102,9 +109,13 @@ namespace ColorVision.Copilot
                     || conversation.GetValue(nameof(CopilotConversationRecord.Attachments), StringComparison.OrdinalIgnoreCase) is not JArray attachments
                     || !IsOptionalString(conversation.GetValue(nameof(CopilotConversationRecord.DraftText), StringComparison.OrdinalIgnoreCase))
                     || !IsOptionalInteger(conversation.GetValue(nameof(CopilotConversationRecord.DraftRequestMode), StringComparison.OrdinalIgnoreCase))
+                    || !IsOptionalReviewTarget(conversation.GetValue(nameof(CopilotConversationRecord.DraftWorkspaceReviewTarget), StringComparison.OrdinalIgnoreCase))
+                    || !IsOptionalSkillReference(conversation.GetValue(nameof(CopilotConversationRecord.DraftAgentSkillReference), StringComparison.OrdinalIgnoreCase))
                     || !IsOptionalComposerStash(conversation.GetValue(nameof(CopilotConversationRecord.ComposerStash), StringComparison.OrdinalIgnoreCase))
                     || !IsOptionalPendingSteeringRecoveries(conversation.GetValue(nameof(CopilotConversationRecord.PendingSteeringRecoveries), StringComparison.OrdinalIgnoreCase))
                     || !IsOptionalObject(conversation.GetValue(nameof(CopilotConversationRecord.BranchOrigin), StringComparison.OrdinalIgnoreCase))
+                    || !IsOptionalBoolean(conversation.GetValue(nameof(CopilotConversationRecord.IsGoalContinuationDeferred), StringComparison.OrdinalIgnoreCase))
+                    || !IsOptionalDate(conversation.GetValue(nameof(CopilotConversationRecord.RecencyAt), StringComparison.OrdinalIgnoreCase))
                     || !IsOptionalBoolean(conversation.GetValue(nameof(CopilotConversationRecord.IsArchived), StringComparison.OrdinalIgnoreCase))
                     || messages.Any(item => item is not JObject)
                     || attachments.Any(item => item is not JObject))
@@ -159,13 +170,35 @@ namespace ColorVision.Copilot
 
             var caretIndex = stash.GetValue(nameof(CopilotComposerStash.CaretIndex), StringComparison.OrdinalIgnoreCase);
             var requestMode = stash.GetValue(nameof(CopilotComposerStash.RequestMode), StringComparison.OrdinalIgnoreCase);
+            var reviewTarget = stash.GetValue(nameof(CopilotComposerStash.WorkspaceReviewTarget), StringComparison.OrdinalIgnoreCase);
+            var skillReference = stash.GetValue(nameof(CopilotComposerStash.AgentSkillReference), StringComparison.OrdinalIgnoreCase);
             var attachments = stash.GetValue(nameof(CopilotComposerStash.Attachments), StringComparison.OrdinalIgnoreCase);
             return (caretIndex == null || caretIndex.Type is JTokenType.Integer or JTokenType.Null)
                 && (requestMode == null || requestMode.Type is JTokenType.Integer or JTokenType.Null)
+                && IsOptionalReviewTarget(reviewTarget)
+                && IsOptionalSkillReference(skillReference)
                 && (attachments == null
                     || attachments.Type == JTokenType.Null
                     || attachments is JArray attachmentArray
                         && attachmentArray.All(item => item is JObject));
+        }
+
+        private static bool IsOptionalReviewTarget(JToken? token)
+        {
+            if (token == null || token.Type == JTokenType.Null)
+                return true;
+            return token is JObject target
+                && IsOptionalInteger(target.GetValue(nameof(CopilotWorkspaceReviewTargetContext.Target), StringComparison.OrdinalIgnoreCase))
+                && IsOptionalString(target.GetValue(nameof(CopilotWorkspaceReviewTargetContext.Revision), StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static bool IsOptionalSkillReference(JToken? token)
+        {
+            if (token == null || token.Type == JTokenType.Null)
+                return true;
+            return token is JObject reference
+                && IsOptionalString(reference.GetValue(nameof(CopilotAgentSkillReference.Name), StringComparison.OrdinalIgnoreCase))
+                && IsOptionalString(reference.GetValue(nameof(CopilotAgentSkillReference.SkillFilePath), StringComparison.OrdinalIgnoreCase));
         }
 
         private static bool IsOptionalPendingSteeringRecoveries(JToken? token)

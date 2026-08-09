@@ -20,9 +20,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR
 
         public void Execute()
         {
-            if (_image.HImageCache is not HImage hImage) return;
-
-            SfrAnalysisRunner.Run(hImage, new RoiRect(0, 0, hImage.cols, hImage.rows));
+            SfrAnalysisRunner.Run(_image, new RoiRect());
         }
     }
 
@@ -68,21 +66,63 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR
             }
         }
 
-        public static void Run(HImage image, RoiRect roi)
+        public static void Run(ImageProcessingContext imageContext, RoiRect requestedRoi)
         {
-            Task.Run(() =>
+            ImageFrameLease? lease = imageContext.AcquireImageFrame();
+            if (lease == null) return;
+
+            HImage image = lease.Image;
+            if (!TryNormalizeRoi(requestedRoi, image, out RoiRect roi))
+            {
+                lease.Dispose();
+                return;
+            }
+
+            long revision = lease.Revision;
+            _ = Task.Run(() =>
             {
                 try
                 {
-                    SfrCalculationResult result = Calculate(image, roi);
-                    Application.Current.Dispatcher.BeginInvoke(() => ShowResult(result));
+                    SfrCalculationResult result;
+                    using (lease)
+                    {
+                        result = Calculate(lease.Image, roi);
+                    }
+
+                    imageContext.Dispatcher.BeginInvoke(() =>
+                    {
+                        if (!imageContext.IsCurrentImageRevision(revision)) return;
+
+                        ShowResult(result);
+                    });
                 }
                 catch (Exception ex)
                 {
-                    Application.Current.Dispatcher.BeginInvoke(() =>
-                        MessageBox.Show($"SFR 计算异常: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error));
+                    lease.Dispose();
+                    imageContext.Dispatcher.BeginInvoke(() =>
+                    {
+                        if (!imageContext.IsCurrentImageRevision(revision)) return;
+
+                        MessageBox.Show($"SFR 计算异常: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                    });
                 }
             });
+        }
+
+        private static bool TryNormalizeRoi(RoiRect requestedRoi, HImage image, out RoiRect roi)
+        {
+            int x = requestedRoi.Width > 0 && requestedRoi.Height > 0 ? Math.Max(0, requestedRoi.X) : 0;
+            int y = requestedRoi.Width > 0 && requestedRoi.Height > 0 ? Math.Max(0, requestedRoi.Y) : 0;
+            int right = requestedRoi.Width > 0 && requestedRoi.Height > 0
+                ? Math.Min(image.cols, requestedRoi.X + requestedRoi.Width)
+                : image.cols;
+            int bottom = requestedRoi.Width > 0 && requestedRoi.Height > 0
+                ? Math.Min(image.rows, requestedRoi.Y + requestedRoi.Height)
+                : image.rows;
+            int width = right - x;
+            int height = bottom - y;
+            roi = width > 0 && height > 0 ? new RoiRect(x, y, width, height) : new RoiRect();
+            return width > 0 && height > 0;
         }
 
         private static SfrCalculationResult Calculate(HImage image, RoiRect roi)
@@ -196,7 +236,9 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR
             List<MenuItem> menuItems = new();
             if (obj is not IRectangle dvRectangle) return menuItems;
 
-            if (_imageContext.HImageCache is not HImage hImage) return menuItems;
+            using ImageFrameLease? lease = _imageContext.AcquireImageFrame();
+            if (lease == null) return menuItems;
+            HImage hImage = lease.Image;
 
             double DpiX = _config.GetProperties<double>("DpiX");
             double DpiY = _config.GetProperties<double>("DpiY");
@@ -239,12 +281,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR
             }
 
             var cropSave = new MenuItem { Header = "SFR/MTF 分析" };
-            cropSave.Click += (s, e) =>
-            {
-                if (_imageContext.HImageCache is not HImage image) return;
-
-                SfrAnalysisRunner.Run(image, new RoiRect(roiX, roiY, roiW, roiH));
-            };
+            cropSave.Click += (s, e) => SfrAnalysisRunner.Run(_imageContext, new RoiRect(roiX, roiY, roiW, roiH));
             menuItems.Add(cropSave);
             return menuItems;
         }

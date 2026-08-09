@@ -23,17 +23,6 @@ namespace Spectrum.Socket
 
         public SocketResponse Handle(NetworkStream stream, SocketRequest request)
         {
-            if (MainWindow.Instance == null)
-            {
-                return new SocketResponse
-                {
-                    MsgID = request.MsgID,
-                    EventName = EventName,
-                    Code = -1,
-                    Msg = "光谱仪窗口未打开"
-                };
-            }
-
             var manager = SpectrometerManager.Instance;
             if (!manager.IsConnected)
             {
@@ -50,12 +39,22 @@ namespace Spectrum.Socket
             {
                 log.Info("Socket指令: 获取自动积分时间");
 
-                float? result = manager.GetAutoIntegrationTime();
+                using CancellationTokenSource timeout = new(TimeSpan.FromSeconds(30));
+                (bool entered, float? result) = manager.TryGetAutoIntegrationTimeAsync(timeout.Token).GetAwaiter().GetResult();
+
+                if (!entered)
+                {
+                    return new SocketResponse
+                    {
+                        MsgID = request.MsgID,
+                        EventName = EventName,
+                        Code = -4,
+                        Msg = "光谱仪正在执行其他操作"
+                    };
+                }
 
                 if (result.HasValue)
                 {
-                    manager.IntTime = result.Value;
-
                     return new SocketResponse
                     {
                         MsgID = request.MsgID,
@@ -75,6 +74,16 @@ namespace Spectrum.Socket
                         Msg = "自动积分时间获取失败"
                     };
                 }
+            }
+            catch (OperationCanceledException)
+            {
+                return new SocketResponse
+                {
+                    MsgID = request.MsgID,
+                    EventName = EventName,
+                    Code = -4,
+                    Msg = "自动积分时间操作超时或已取消"
+                };
             }
             catch (Exception ex)
             {

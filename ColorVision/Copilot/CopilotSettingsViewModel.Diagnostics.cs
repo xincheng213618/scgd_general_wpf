@@ -97,16 +97,23 @@ namespace ColorVision.Copilot
                     item.State,
                     usage: null,
                     isHistoricalExplicitOnly: false,
-                    OnAgentSkillSettingChanged));
+                    OnAgentSkillSettingChanged,
+                    item.SkillFilePath));
             }
         }
 
         private void SynchronizeAgentSkillSettings(CopilotAgentSkillUsageSnapshot snapshot)
         {
-            var pendingStates = AgentSkillSettings.ToDictionary(setting => setting.Name, setting => setting.State, StringComparer.OrdinalIgnoreCase);
+            var pendingSettings = AgentSkillSettings
+                .GroupBy(setting => setting.Identity, StringComparer.OrdinalIgnoreCase)
+                .Select(group => group.Last())
+                .ToArray();
+            var pendingNameStates = pendingSettings
+                .Where(setting => !setting.HasExactPath)
+                .ToDictionary(setting => setting.Name, setting => setting.State, StringComparer.OrdinalIgnoreCase);
             var usageByName = snapshot.Entries.ToDictionary(entry => entry.Name, StringComparer.OrdinalIgnoreCase);
             var historicalNames = snapshot.HistoricalExplicitOnlySkills.Select(entry => entry.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
-            var names = pendingStates.Keys.Concat(usageByName.Keys).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(name => name, StringComparer.OrdinalIgnoreCase).ToArray();
+            var names = pendingNameStates.Keys.Concat(usageByName.Keys).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(name => name, StringComparer.OrdinalIgnoreCase).ToArray();
 
             AgentSkillSettings.Clear();
             foreach (var name in names)
@@ -114,10 +121,23 @@ namespace ColorVision.Copilot
                 usageByName.TryGetValue(name, out var usage);
                 AgentSkillSettings.Add(new CopilotAgentSkillSetting(
                     name,
-                    pendingStates.GetValueOrDefault(name, CopilotAgentSkillOverrideState.Auto),
+                    pendingNameStates.GetValueOrDefault(name, CopilotAgentSkillOverrideState.Auto),
                     usage,
                     historicalNames.Contains(name),
                     OnAgentSkillSettingChanged));
+            }
+            foreach (var setting in pendingSettings
+                .Where(setting => setting.HasExactPath)
+                .OrderBy(setting => setting.Name, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(setting => setting.SkillFilePath, StringComparer.OrdinalIgnoreCase))
+            {
+                AgentSkillSettings.Add(new CopilotAgentSkillSetting(
+                    setting.Name,
+                    setting.State,
+                    usage: null,
+                    isHistoricalExplicitOnly: false,
+                    OnAgentSkillSettingChanged,
+                    setting.SkillFilePath));
             }
             OnPropertyChanged(nameof(CanAddAgentSkillOverride));
         }
@@ -125,7 +145,9 @@ namespace ColorVision.Copilot
         private void AddAgentSkillOverride()
         {
             var name = CopilotAgentSkillOverrideConfig.NormalizeName(NewAgentSkillName);
-            if (name.Length == 0 || AgentSkillSettings.Any(setting => string.Equals(setting.Name, name, StringComparison.OrdinalIgnoreCase)))
+            if (name.Length == 0 || AgentSkillSettings.Any(setting =>
+                !setting.HasExactPath
+                && string.Equals(setting.Name, name, StringComparison.OrdinalIgnoreCase)))
                 return;
 
             AgentSkillSettings.Add(new CopilotAgentSkillSetting(

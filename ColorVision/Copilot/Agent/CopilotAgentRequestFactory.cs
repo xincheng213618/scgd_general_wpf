@@ -20,6 +20,14 @@ namespace ColorVision.Copilot
 
         public IReadOnlyList<string> AdditionalReadRootPaths { get; }
 
+        internal string GlobalInstructionRootPath { get; }
+
+        internal string PrimaryTrustedProjectRootPath { get; }
+
+        internal string ProjectConfigWorkingDirectoryPath { get; }
+
+        internal CopilotProjectInstructionDiscoveryOptions ProjectInstructionDiscoveryOptions { get; }
+
         public CopilotAgentHostContextSnapshot(
             string? activeDocumentPath,
             string? solutionDirectoryPath,
@@ -27,6 +35,47 @@ namespace ColorVision.Copilot
             CopilotLiveContext? liveContext = null,
             CopilotConversationHistorySnapshot? conversationHistory = null,
             IEnumerable<string>? additionalReadRootPaths = null)
+            : this(
+                activeDocumentPath,
+                solutionDirectoryPath,
+                attachments,
+                liveContext,
+                conversationHistory,
+                additionalReadRootPaths,
+                globalInstructionRootPath: null,
+                loadCodexConfigLayers: false)
+        {
+        }
+
+        internal CopilotAgentHostContextSnapshot(
+            string? activeDocumentPath,
+            string? solutionDirectoryPath,
+            IEnumerable<CopilotAttachmentItem>? attachments,
+            CopilotLiveContext? liveContext,
+            CopilotConversationHistorySnapshot? conversationHistory,
+            IEnumerable<string>? additionalReadRootPaths,
+            string? globalInstructionRootPath)
+            : this(
+                activeDocumentPath,
+                solutionDirectoryPath,
+                attachments,
+                liveContext,
+                conversationHistory,
+                additionalReadRootPaths,
+                globalInstructionRootPath,
+                loadCodexConfigLayers: true)
+        {
+        }
+
+        private CopilotAgentHostContextSnapshot(
+            string? activeDocumentPath,
+            string? solutionDirectoryPath,
+            IEnumerable<CopilotAttachmentItem>? attachments,
+            CopilotLiveContext? liveContext,
+            CopilotConversationHistorySnapshot? conversationHistory,
+            IEnumerable<string>? additionalReadRootPaths,
+            string? globalInstructionRootPath,
+            bool loadCodexConfigLayers)
         {
             ActiveDocumentPath = activeDocumentPath ?? string.Empty;
             SolutionDirectoryPath = solutionDirectoryPath ?? string.Empty;
@@ -39,6 +88,74 @@ namespace ColorVision.Copilot
                 ? CopilotConversationHistorySnapshot.Empty
                 : new CopilotConversationHistorySnapshot(conversationHistory.ModelMessages, conversationHistory.VisibleMessages);
             AdditionalReadRootPaths = CopilotAdditionalDirectoryCommand.NormalizeStoredPaths(additionalReadRootPaths);
+            GlobalInstructionRootPath = CopilotAgentProjectInstructions.NormalizeGlobalInstructionRootPath(globalInstructionRootPath);
+            ProjectConfigWorkingDirectoryPath = CopilotAgentRequestFactory.ResolvePrimaryProjectWorkingDirectoryPath(
+                SolutionDirectoryPath,
+                ActiveDocumentPath);
+            if (loadCodexConfigLayers)
+            {
+                var codexHome = CopilotProjectInstructionDiscoveryConfig.LoadCodexHome(GlobalInstructionRootPath);
+                PrimaryTrustedProjectRootPath = CopilotAgentRequestFactory.ResolvePrimaryTrustedProjectRootPath(
+                    SolutionDirectoryPath,
+                    ActiveDocumentPath,
+                    codexHome.Options.ProjectRootMarkers);
+                ProjectInstructionDiscoveryOptions = CopilotProjectInstructionDiscoveryConfig.LoadTrustedProjectLayers(
+                    codexHome,
+                    PrimaryTrustedProjectRootPath,
+                    ProjectConfigWorkingDirectoryPath);
+            }
+            else
+            {
+                ProjectInstructionDiscoveryOptions = CopilotProjectInstructionDiscoveryConfig.CreateDefault();
+                PrimaryTrustedProjectRootPath = CopilotAgentRequestFactory.ResolvePrimaryTrustedProjectRootPath(
+                    SolutionDirectoryPath,
+                    ActiveDocumentPath,
+                    ProjectInstructionDiscoveryOptions.ProjectRootMarkers);
+            }
+        }
+
+        internal CopilotAgentHostContextSnapshot WithConversationHistory(
+            CopilotConversationHistorySnapshot? conversationHistory)
+        {
+            return new CopilotAgentHostContextSnapshot(
+                ActiveDocumentPath,
+                SolutionDirectoryPath,
+                Attachments,
+                LiveContext,
+                conversationHistory,
+                AdditionalReadRootPaths,
+                GlobalInstructionRootPath,
+                PrimaryTrustedProjectRootPath,
+                ProjectConfigWorkingDirectoryPath,
+                ProjectInstructionDiscoveryOptions);
+        }
+
+        private CopilotAgentHostContextSnapshot(
+            string activeDocumentPath,
+            string solutionDirectoryPath,
+            IEnumerable<CopilotAttachmentItem> attachments,
+            CopilotLiveContext? liveContext,
+            CopilotConversationHistorySnapshot? conversationHistory,
+            IEnumerable<string> additionalReadRootPaths,
+            string globalInstructionRootPath,
+            string primaryTrustedProjectRootPath,
+            string projectConfigWorkingDirectoryPath,
+            CopilotProjectInstructionDiscoveryOptions projectInstructionDiscoveryOptions)
+        {
+            ActiveDocumentPath = activeDocumentPath;
+            SolutionDirectoryPath = solutionDirectoryPath;
+            LiveContext = CloneLiveContext(liveContext);
+            Attachments = attachments.Select(attachment => attachment.CreateSnapshot()).ToArray();
+            ConversationHistory = conversationHistory == null
+                ? CopilotConversationHistorySnapshot.Empty
+                : new CopilotConversationHistorySnapshot(
+                    conversationHistory.ModelMessages,
+                    conversationHistory.VisibleMessages);
+            AdditionalReadRootPaths = additionalReadRootPaths.ToArray();
+            GlobalInstructionRootPath = globalInstructionRootPath;
+            PrimaryTrustedProjectRootPath = primaryTrustedProjectRootPath;
+            ProjectConfigWorkingDirectoryPath = projectConfigWorkingDirectoryPath;
+            ProjectInstructionDiscoveryOptions = projectInstructionDiscoveryOptions;
         }
 
         private static CopilotLiveContext? CloneLiveContext(CopilotLiveContext? source)
@@ -106,6 +223,83 @@ namespace ColorVision.Copilot
 
         public string ActiveDocumentPath { get; init; } = string.Empty;
 
+        public string ConfiguredDeveloperInstructions { get; init; } = string.Empty;
+
+        internal CopilotCodexWebSearchMode CodexWebSearchMode { get; init; } =
+            CopilotCodexWebSearchMode.Unspecified;
+
+        internal CopilotCodexSandboxMode CodexSandboxMode { get; init; } =
+            CopilotCodexSandboxMode.Unspecified;
+
+        internal bool CodexShellToolEnabled { get; init; } = true;
+
+        internal bool CodexHooksEnabled { get; init; } = true;
+
+        internal bool CodexPluginsEnabled { get; init; } = true;
+
+        internal CopilotCodexShellEnvironmentPolicy CodexShellEnvironmentPolicy { get; init; } =
+            CopilotCodexShellEnvironmentPolicy.Default;
+
+        internal bool CodexExperimentalRequestUserInputEnabled { get; init; } = true;
+
+        internal bool CodexDefaultModeRequestUserInputEnabled { get; init; }
+
+        internal bool CodexUpdatePlanEnabled { get; init; } = true;
+
+        internal bool CodexIncludePermissionsInstructions { get; init; } = true;
+
+        internal bool CodexIncludeCollaborationModeInstructions { get; init; } = true;
+
+        internal bool CodexIncludeEnvironmentContext { get; init; } = true;
+
+        internal bool CodexIncludeSkillInstructions { get; init; } = true;
+
+        internal bool CodexGoalsEnabled { get; init; } = true;
+
+        internal CopilotCodexApprovalPolicy CodexApprovalPolicy { get; init; } =
+            CopilotCodexApprovalPolicy.Unspecified;
+
+        internal CopilotCodexApprovalsReviewer CodexApprovalsReviewer { get; init; } =
+            CopilotCodexApprovalsReviewer.Unspecified;
+
+        internal bool CodexGuardianApprovalEnabled { get; init; } = true;
+
+        internal string CodexAutoReviewPolicy { get; init; } = string.Empty;
+
+        internal bool CodexAgentsEnabled { get; init; } = true;
+
+        internal bool CodexInterruptMessageEnabled { get; init; } = true;
+
+        internal int CodexMaximumConcurrentSubagentRuns { get; init; } =
+            CopilotSubagentCoordinator.DefaultMaximumConcurrentRuns;
+
+        internal string CodexDefaultSubagentModel { get; init; } = string.Empty;
+
+        internal CopilotCodexReasoningEffort CodexDefaultSubagentReasoningEffort { get; init; } =
+            CopilotCodexReasoningEffort.Unspecified;
+
+        internal IReadOnlyList<CopilotCodexCustomSubagentDefinition> CodexCustomSubagents { get; init; } =
+            Array.Empty<CopilotCodexCustomSubagentDefinition>();
+
+        internal int? ModelContextWindowTokensOverride { get; init; }
+
+        internal int? ToolOutputTokenLimitOverride { get; init; }
+
+        internal CopilotCodexReasoningEffort CodexReasoningEffort { get; init; } =
+            CopilotCodexReasoningEffort.Unspecified;
+
+        internal CopilotCodexReasoningSummary CodexReasoningSummary { get; init; } =
+            CopilotCodexReasoningSummary.Unspecified;
+
+        internal bool? CodexModelSupportsReasoningSummaries { get; init; }
+
+        internal bool CodexFastModeEnabled { get; init; } = true;
+
+        internal string CodexServiceTier { get; init; } = string.Empty;
+
+        internal CopilotCodexModelVerbosity CodexModelVerbosity { get; init; } =
+            CopilotCodexModelVerbosity.Unspecified;
+
         public IReadOnlyList<CopilotProjectInstructionDocument> ProjectInstructions { get; init; } = Array.Empty<CopilotProjectInstructionDocument>();
 
         public IReadOnlyList<string> ReadableLocalFilePaths { get; init; } = Array.Empty<string>();
@@ -150,6 +344,10 @@ namespace ColorVision.Copilot
         public string TaskIntentText { get; init; } = string.Empty;
 
         public string ActiveGoalText { get; init; } = string.Empty;
+
+        public CopilotWorkspaceReviewTargetContext? WorkspaceReviewTarget { get; init; }
+
+        public CopilotAgentSkillReference? AgentSkillReference { get; init; }
     }
 
     public static class CopilotAgentRequestFactory
@@ -177,14 +375,34 @@ namespace ColorVision.Copilot
                 .ToArray();
             var searchRootPaths = BuildSearchRootPaths(hostContext, explicitLocalPaths);
             var trustedProjectRootPaths = BuildTrustedProjectRootPaths(hostContext);
-            var workspaceWritableLocalRootPaths = CopilotWorkspaceSearchSupport.NormalizeSearchRoots([hostContext.SolutionDirectoryPath]);
-            var requestedWritableLocalRootPaths = CopilotWorkspaceSearchSupport.NormalizeSearchRoots(
-                workspaceWritableLocalRootPaths.Concat(explicitLocalDirectoryPaths));
-            var writableLocalFilePaths = BuildWritableLocalFilePaths(hostContext, explicitLocalFilePaths);
+            var codexSandboxMode = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredSandboxMode;
+            var codexApprovalPolicy = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredApprovalPolicy;
+            var codexGuardianApprovalEnabled = hostContext.ProjectInstructionDiscoveryOptions
+                .ConfiguredGuardianApprovalEnabled;
+            var codexApprovalsReviewer = hostContext.ProjectInstructionDiscoveryOptions.EffectiveApprovalsReviewer;
+            var codexAutoReviewPolicy = codexGuardianApprovalEnabled
+                ? hostContext.ProjectInstructionDiscoveryOptions.ConfiguredAutoReviewPolicy
+                : string.Empty;
+            var codexReadOnly = CopilotCodexSandboxModeSelection.IsReadOnly(codexSandboxMode);
+            var workspaceWritableLocalRootPaths = codexReadOnly
+                ? Array.Empty<string>()
+                : CopilotWorkspaceSearchSupport.NormalizeSearchRoots([hostContext.SolutionDirectoryPath]);
+            var requestedWritableLocalRootPaths = codexReadOnly
+                ? Array.Empty<string>()
+                : CopilotWorkspaceSearchSupport.NormalizeSearchRoots(
+                    workspaceWritableLocalRootPaths.Concat(explicitLocalDirectoryPaths));
+            var writableLocalFilePaths = codexReadOnly
+                ? Array.Empty<string>()
+                : BuildWritableLocalFilePaths(hostContext, explicitLocalFilePaths);
             var intentProbe = new CopilotAgentRequest
             {
                 UserText = normalizedUserText,
                 Mode = mode,
+                CodexSandboxMode = codexSandboxMode,
+                CodexApprovalPolicy = codexApprovalPolicy,
+                CodexApprovalsReviewer = codexApprovalsReviewer,
+                CodexGuardianApprovalEnabled = codexGuardianApprovalEnabled,
+                CodexAutoReviewPolicy = codexAutoReviewPolicy,
                 ReadableLocalFilePaths = explicitLocalFilePaths,
                 ReadableLocalDirectoryPaths = readableLocalDirectoryPaths,
                 WritableLocalRootPaths = requestedWritableLocalRootPaths,
@@ -192,7 +410,8 @@ namespace ColorVision.Copilot
             };
             var requiresWorkspaceEvidence = CopilotToolIntentPolicy.NeedsLocalEvidence(intentProbe);
             var requiresDelegatedWorkspaceEvidence =
-                CopilotToolIntentPolicy.ExplicitlyRequiresDelegatedWorkspaceEvidence(intentProbe);
+                hostContext.ProjectInstructionDiscoveryOptions.EffectiveAgentsEnabled
+                && CopilotToolIntentPolicy.ExplicitlyRequiresDelegatedWorkspaceEvidence(intentProbe);
             var writableLocalRootPaths = CopilotToolIntentPolicy.NeedsWorkspaceCreate(intentProbe)
                 || CopilotToolIntentPolicy.NeedsWorkspaceEdit(intentProbe)
                 ? requestedWritableLocalRootPaths
@@ -200,12 +419,14 @@ namespace ColorVision.Copilot
             var projectInstructions = mode == CopilotAgentMode.Chat
                 || !requiresWorkspaceEvidence
                 ? Array.Empty<CopilotProjectInstructionDocument>()
-                : CopilotAgentProjectInstructions.Discover(
+                : CopilotAgentProjectInstructions.DiscoverWithGlobal(
                     trustedProjectRootPaths,
                     hostContext.ActiveDocumentPath,
                     explicitLocalFilePaths.Concat(hostContext.Attachments
                         .Where(attachment => attachment.Type == CopilotAttachmentType.File)
-                        .Select(attachment => attachment.Value)));
+                        .Select(attachment => attachment.Value)),
+                    hostContext.GlobalInstructionRootPath,
+                    hostContext.ProjectInstructionDiscoveryOptions);
 
             return new CopilotAgentRequestPlan
             {
@@ -219,11 +440,71 @@ namespace ColorVision.Copilot
                     ActiveDocumentPath = hostContext.ActiveDocumentPath,
                     SearchRootPaths = searchRootPaths,
                     RequiresWorkspaceEvidence = requiresWorkspaceEvidence,
+                    IncludeExtensionProviders = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredPluginsEnabled,
                 },
                 Attachments = hostContext.Attachments,
                 SearchRootPaths = searchRootPaths,
                 TrustedProjectRootPaths = trustedProjectRootPaths,
                 ActiveDocumentPath = hostContext.ActiveDocumentPath,
+                ConfiguredDeveloperInstructions = hostContext.ProjectInstructionDiscoveryOptions.DeveloperInstructions,
+                CodexWebSearchMode = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredWebSearchMode,
+                CodexSandboxMode = codexSandboxMode,
+                CodexShellToolEnabled = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredShellToolEnabled,
+                CodexHooksEnabled = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredHooksEnabled,
+                CodexPluginsEnabled = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredPluginsEnabled,
+                CodexShellEnvironmentPolicy = hostContext.ProjectInstructionDiscoveryOptions
+                    .ConfiguredShellEnvironmentPolicy.CreateSnapshot(),
+                CodexExperimentalRequestUserInputEnabled = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredExperimentalRequestUserInputEnabled,
+                CodexDefaultModeRequestUserInputEnabled = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredDefaultModeRequestUserInputEnabled,
+                CodexUpdatePlanEnabled = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredUpdatePlanEnabled,
+                CodexIncludePermissionsInstructions = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredIncludePermissionsInstructions,
+                CodexIncludeCollaborationModeInstructions = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredIncludeCollaborationModeInstructions,
+                CodexIncludeEnvironmentContext = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredIncludeEnvironmentContext,
+                CodexIncludeSkillInstructions = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredIncludeSkillInstructions,
+                CodexGoalsEnabled = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredGoalsEnabled,
+                CodexApprovalPolicy = codexApprovalPolicy,
+                CodexApprovalsReviewer = codexApprovalsReviewer,
+                CodexGuardianApprovalEnabled = codexGuardianApprovalEnabled,
+                CodexAutoReviewPolicy = codexAutoReviewPolicy,
+                CodexAgentsEnabled = hostContext.ProjectInstructionDiscoveryOptions.EffectiveAgentsEnabled,
+                CodexInterruptMessageEnabled = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredInterruptMessageEnabled,
+                CodexMaximumConcurrentSubagentRuns =
+                    hostContext.ProjectInstructionDiscoveryOptions.ConfiguredMaximumConcurrentSubagentRuns,
+                CodexDefaultSubagentModel = hostContext.ProjectInstructionDiscoveryOptions.HasDefaultSubagentModelOverride
+                    ? hostContext.ProjectInstructionDiscoveryOptions.ConfiguredDefaultSubagentModel
+                    : string.Empty,
+                CodexDefaultSubagentReasoningEffort =
+                    hostContext.ProjectInstructionDiscoveryOptions.HasDefaultSubagentReasoningEffortOverride
+                        ? hostContext.ProjectInstructionDiscoveryOptions.ConfiguredDefaultSubagentReasoningEffort
+                        : CopilotCodexReasoningEffort.Unspecified,
+                CodexCustomSubagents = hostContext.ProjectInstructionDiscoveryOptions.CustomSubagents
+                    .Select(definition => definition.CreateSnapshot())
+                    .ToArray(),
+                ModelContextWindowTokensOverride = hostContext.ProjectInstructionDiscoveryOptions.HasModelContextWindowOverride
+                    ? hostContext.ProjectInstructionDiscoveryOptions.ConfiguredModelContextWindowTokens
+                    : null,
+                ToolOutputTokenLimitOverride = hostContext.ProjectInstructionDiscoveryOptions.HasToolOutputTokenLimitOverride
+                    ? hostContext.ProjectInstructionDiscoveryOptions.ConfiguredToolOutputTokenLimit
+                    : null,
+                CodexReasoningEffort = mode == CopilotAgentMode.Plan
+                    && hostContext.ProjectInstructionDiscoveryOptions.HasPlanModeReasoningEffortOverride
+                        ? hostContext.ProjectInstructionDiscoveryOptions.ConfiguredPlanModeReasoningEffort
+                        : hostContext.ProjectInstructionDiscoveryOptions.HasModelReasoningEffortOverride
+                            ? hostContext.ProjectInstructionDiscoveryOptions.ConfiguredModelReasoningEffort
+                            : CopilotCodexReasoningEffort.Unspecified,
+                CodexReasoningSummary = hostContext.ProjectInstructionDiscoveryOptions.HasModelReasoningSummaryOverride
+                    ? hostContext.ProjectInstructionDiscoveryOptions.ConfiguredModelReasoningSummary
+                    : CopilotCodexReasoningSummary.Unspecified,
+                CodexModelSupportsReasoningSummaries = hostContext.ProjectInstructionDiscoveryOptions.HasModelSupportsReasoningSummariesOverride
+                    ? hostContext.ProjectInstructionDiscoveryOptions.ConfiguredModelSupportsReasoningSummaries
+                    : null,
+                CodexFastModeEnabled = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredFastModeEnabled,
+                CodexServiceTier = hostContext.ProjectInstructionDiscoveryOptions.HasServiceTierOverride
+                    ? hostContext.ProjectInstructionDiscoveryOptions.ConfiguredServiceTier
+                    : string.Empty,
+                CodexModelVerbosity = hostContext.ProjectInstructionDiscoveryOptions.HasModelVerbosityOverride
+                    ? hostContext.ProjectInstructionDiscoveryOptions.ConfiguredModelVerbosity
+                    : CopilotCodexModelVerbosity.Unspecified,
                 ProjectInstructions = projectInstructions,
                 ReadableLocalFilePaths = explicitLocalFilePaths,
                 ReadableLocalDirectoryPaths = readableLocalDirectoryPaths,
@@ -242,6 +523,8 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(input.AgentDefaults);
 
             var agentDefaults = input.AgentDefaults.Clone();
+            if (plan.ModelContextWindowTokensOverride.HasValue)
+                agentDefaults.ContextWindowTokens = plan.ModelContextWindowTokensOverride.Value;
             return new CopilotAgentRequest
             {
                 ConversationId = (input.ConversationId ?? string.Empty).Trim(),
@@ -251,12 +534,17 @@ namespace ColorVision.Copilot
                 TaskIntentText = string.IsNullOrWhiteSpace(input.TaskIntentText)
                     ? plan.UserText
                     : input.TaskIntentText.Trim(),
-                ActiveGoalText = CopilotConversationGoal.TryNormalizeObjective(
-                    input.ActiveGoalText,
-                    out var normalizedGoal,
-                    out _)
+                ActiveGoalText = plan.CodexGoalsEnabled
+                    && CopilotConversationGoal.TryNormalizeObjective(
+                        input.ActiveGoalText,
+                        out var normalizedGoal,
+                        out _)
                     ? normalizedGoal
                     : string.Empty,
+                WorkspaceReviewTarget = plan.Mode == CopilotAgentMode.Review
+                    && input.WorkspaceReviewTarget?.IsStructurallyValid() == true
+                        ? input.WorkspaceReviewTarget.CreateSnapshot()
+                        : null,
                 Profile = input.Profile,
                 History = input.History.ToArray(),
                 Attachments = plan.Attachments,
@@ -264,6 +552,41 @@ namespace ColorVision.Copilot
                 SearchRootPaths = plan.SearchRootPaths,
                 TrustedProjectRootPaths = plan.TrustedProjectRootPaths,
                 ActiveDocumentPath = plan.ActiveDocumentPath,
+                ConfiguredDeveloperInstructions = plan.ConfiguredDeveloperInstructions,
+                CodexWebSearchMode = plan.CodexWebSearchMode,
+                CodexSandboxMode = plan.CodexSandboxMode,
+                CodexShellToolEnabled = plan.CodexShellToolEnabled,
+                CodexHooksEnabled = plan.CodexHooksEnabled,
+                CodexPluginsEnabled = plan.CodexPluginsEnabled,
+                CodexShellEnvironmentPolicy = plan.CodexShellEnvironmentPolicy.CreateSnapshot(),
+                CodexExperimentalRequestUserInputEnabled = plan.CodexExperimentalRequestUserInputEnabled,
+                CodexDefaultModeRequestUserInputEnabled = plan.CodexDefaultModeRequestUserInputEnabled,
+                CodexUpdatePlanEnabled = plan.CodexUpdatePlanEnabled,
+                CodexIncludePermissionsInstructions = plan.CodexIncludePermissionsInstructions,
+                CodexIncludeCollaborationModeInstructions = plan.CodexIncludeCollaborationModeInstructions,
+                CodexIncludeEnvironmentContext = plan.CodexIncludeEnvironmentContext,
+                CodexIncludeSkillInstructions = plan.CodexIncludeSkillInstructions,
+                CodexApprovalPolicy = plan.CodexApprovalPolicy,
+                CodexApprovalsReviewer = plan.CodexApprovalsReviewer,
+                CodexGuardianApprovalEnabled = plan.CodexGuardianApprovalEnabled,
+                CodexAutoReviewPolicy = plan.CodexAutoReviewPolicy,
+                CodexAgentsEnabled = plan.CodexAgentsEnabled,
+                CodexInterruptMessageEnabled = plan.CodexInterruptMessageEnabled,
+                CodexMaximumConcurrentSubagentRuns = plan.CodexMaximumConcurrentSubagentRuns,
+                CodexDefaultSubagentModel = plan.CodexDefaultSubagentModel,
+                CodexDefaultSubagentReasoningEffort = plan.CodexDefaultSubagentReasoningEffort,
+                CodexCustomSubagents = plan.CodexCustomSubagents
+                    .Select(definition => definition.CreateSnapshot())
+                    .ToArray(),
+                ToolOutputTokenLimitOverride = plan.ToolOutputTokenLimitOverride,
+                CodexReasoningEffort = plan.CodexReasoningEffort,
+                CodexReasoningSummary = plan.CodexReasoningSummary,
+                CodexModelSupportsReasoningSummaries = plan.CodexModelSupportsReasoningSummaries,
+                CodexFastModeEnabled = plan.CodexFastModeEnabled,
+                CodexServiceTier = plan.CodexFastModeEnabled
+                    ? plan.CodexServiceTier
+                    : string.Empty,
+                CodexModelVerbosity = plan.CodexModelVerbosity,
                 ProjectInstructions = plan.ProjectInstructions,
                 ReadableLocalFilePaths = plan.ReadableLocalFilePaths,
                 ReadableLocalDirectoryPaths = plan.ReadableLocalDirectoryPaths,
@@ -277,6 +600,11 @@ namespace ColorVision.Copilot
                 RunControl = input.RunControl,
                 RunBudgetDefaults = agentDefaults.CreateRunBudgetDefaults(),
                 SkillOverrides = agentDefaults.CreateSkillOverrideSnapshot(),
+                SkillPathOverrides = agentDefaults.CreateSkillPathOverrideSnapshot(),
+                AgentSkillReference = input.AgentSkillReference?.IsStructurallyValid() == true
+                    && input.AgentSkillReference.IsExplicitlyInvokedBy(plan.UserText)
+                        ? input.AgentSkillReference.CreateSnapshot()
+                        : null,
                 AccessContext = input.AccessContext,
                 ExternalMcpServers = input.ExternalMcpServers
                     .Where(server => server?.Enabled == true)
@@ -316,11 +644,72 @@ namespace ColorVision.Copilot
         {
             ArgumentNullException.ThrowIfNull(hostContext);
 
+            var root = hostContext.PrimaryTrustedProjectRootPath;
+            return root.Length == 0 ? Array.Empty<string>() : [root];
+        }
+
+        internal static string ResolvePrimaryTrustedProjectRootPath(
+            string? solutionDirectoryPath,
+            string? activeDocumentPath)
+            => ResolvePrimaryTrustedProjectRootPath(
+                solutionDirectoryPath,
+                activeDocumentPath,
+                CopilotProjectInstructionDiscoveryConfig.DefaultProjectRootMarkers);
+
+        internal static string ResolvePrimaryTrustedProjectRootPath(
+            string? solutionDirectoryPath,
+            string? activeDocumentPath,
+            IEnumerable<string>? projectRootMarkers)
+        {
+            var workingDirectory = ResolvePrimaryProjectWorkingDirectoryPath(
+                solutionDirectoryPath,
+                activeDocumentPath);
+            if (workingDirectory.Length == 0)
+                return string.Empty;
+
+            if (CopilotWorkspaceSearchSupport.HasReparsePointInPath(workingDirectory))
+                return workingDirectory;
+
+            var normalizedMarkers = (projectRootMarkers ?? Array.Empty<string>())
+                .Select(CopilotProjectInstructionDiscoveryConfig.NormalizeProjectRootMarker)
+                .Where(marker => marker.Length > 0)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Take(CopilotProjectInstructionDiscoveryConfig.MaximumProjectRootMarkers)
+                .ToArray();
+            if (normalizedMarkers.Length == 0)
+                return workingDirectory;
+
+            try
+            {
+                var current = new DirectoryInfo(workingDirectory);
+                while (current != null)
+                {
+                    foreach (var marker in normalizedMarkers)
+                    {
+                        var markerPath = Path.Combine(current.FullName, marker);
+                        if (Directory.Exists(markerPath) || File.Exists(markerPath))
+                            return Path.TrimEndingDirectorySeparator(current.FullName);
+                    }
+                    current = current.Parent;
+                }
+            }
+            catch
+            {
+            }
+
+            return workingDirectory;
+        }
+
+        internal static string ResolvePrimaryProjectWorkingDirectoryPath(
+            string? solutionDirectoryPath,
+            string? activeDocumentPath)
+        {
             var roots = new List<string>();
-            AddSearchCandidate(roots, hostContext.SolutionDirectoryPath);
+            AddSearchCandidate(roots, solutionDirectoryPath);
             if (roots.Count == 0)
-                AddSearchCandidate(roots, hostContext.ActiveDocumentPath);
-            return CopilotWorkspaceSearchSupport.NormalizeSearchRoots(roots);
+                AddSearchCandidate(roots, activeDocumentPath);
+            var normalizedRoots = CopilotWorkspaceSearchSupport.NormalizeSearchRoots(roots);
+            return normalizedRoots.Count == 0 ? string.Empty : normalizedRoots[0];
         }
 
         private static string[] BuildWritableLocalFilePaths(

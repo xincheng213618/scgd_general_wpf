@@ -293,6 +293,7 @@ namespace ColorVision.Copilot
                     ? $"Rolled back the approved {records.Length}-file workspace change set."
                     : $"Applied the approved {records.Length}-file workspace change set.",
                 Content = BuildChangeSetContent(changeSet, records, preview: false),
+                WorkspaceMutation = CreateWorkspaceMutationSnapshot(records, rollback),
             };
         }
 

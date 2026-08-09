@@ -18,9 +18,11 @@ namespace ColorVision.UI
     public partial class WindowLog : Window
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(WindowLog));
+        private readonly LogConfig _config;
 
         public WindowLog()
         {
+            _config = LogConfig.Instance;
             InitializeComponent();
             this.ApplyCaption();
         }
@@ -31,7 +33,7 @@ namespace ColorVision.UI
         private void Window_Initialized(object sender, EventArgs e)
         {
             Hierarchy = (Hierarchy)LogManager.GetRepository();
-            LogViewerAppender = new LogViewerAppender(LogViewer)
+            LogViewerAppender = new LogViewerAppender(LogViewer, _config)
             {
                 Layout = new PatternLayout(LogConstants.DefaultLogPattern),
                 IgnoreAutoRefresh = true,
@@ -48,15 +50,15 @@ namespace ColorVision.UI
                 log4net.Config.BasicConfigurator.Configure(Hierarchy);
             };
 
-            this.DataContext = LogConfig.Instance;
+            this.DataContext = _config;
 
             _logTextView = new LogTextViewController(this, RootGrid, SearchPanel, SearchBar1, LogViewer, CloseSearchButton);
-            _logTextView.ConfigureContextMenus(contextMenu => LogTextViewMenuFactory.AppendRealtimeLogMenuItems(contextMenu, ClearLog, SetLogLevel, GetAutoRefresh, SetAutoRefresh));
+            _logTextView.ConfigureContextMenus(contextMenu => LogTextViewMenuFactory.AppendRealtimeLogMenuItems(contextMenu, _config, ClearLog, SetLogLevel, GetAutoRefresh, SetAutoRefresh));
 
             LoadLogHistory();
             Application.Current.Dispatcher.BeginInvoke(() =>
             {
-                LogViewer.ScrollToLatest(LogConfig.Instance.LogReserve);
+                LogViewer.ScrollToLatest(_config.LogReserve);
             });
 
         }
@@ -70,9 +72,9 @@ namespace ColorVision.UI
 
         private void LoadLogHistory()
         {
-            if (LogConfig.Instance.LogLoadState == LogLoadState.None) return;
+            if (_config.LogLoadState == LogLoadState.None) return;
             LogViewer.Clear();
-            LogViewer.MaxEntries = LogConfig.Instance.MaxEntries;
+            LogViewer.MaxEntries = _config.MaxEntries;
             var logFilePath = GetLogFilePath();
             if (logFilePath != null && File.Exists(logFilePath))
             {
@@ -85,19 +87,19 @@ namespace ColorVision.UI
                         {
                             var entries = LogHistoryReader.ReadEntries(
                                 reader,
-                                LogConfig.Instance.LogLoadState,
+                                _config.LogLoadState,
                                 reverse: false,
-                                LogConfig.Instance.MaxChars);
-                            LogViewer.SetEntries(entries, LogConfig.Instance.LogReserve);
+                                _config.MaxChars);
+                            LogViewer.SetEntries(entries, _config.LogReserve);
                         }
                         else
                         {
                             var displayText = LogHistoryReader.ReadDisplayText(
                                 reader,
-                                LogConfig.Instance.LogLoadState,
-                                LogConfig.Instance.LogReserve,
-                                LogConfig.Instance.MaxChars);
-                            LogViewer.SetText(displayText, LogConfig.Instance.LogReserve);
+                                _config.LogLoadState,
+                                _config.LogReserve,
+                                _config.MaxChars);
+                            LogViewer.SetText(displayText, _config.LogReserve);
                         }
                     }
                 }
@@ -117,7 +119,7 @@ namespace ColorVision.UI
             var hierarchy = (Hierarchy)LogManager.GetRepository();
             if (!string.Equals(selectedLevel.Name, hierarchy.Root.Level?.Name, StringComparison.Ordinal))
             {
-                LogConfig.Instance.LogLevel = selectedLevel;
+                _config.LogLevel = selectedLevel;
                 log.Info(Properties.Resources.UpdateLog4NetLevel + selectedLevel.Name);
             }
         }

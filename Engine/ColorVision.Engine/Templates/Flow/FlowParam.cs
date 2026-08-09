@@ -58,19 +58,5 @@ namespace ColorVision.Engine.Templates.Flow
         [System.Text.Json.Serialization.JsonIgnore]
         public string? LoadedContentHash { get; internal set; }
 
-        [Browsable(false)]
-        [JsonIgnore]
-        [System.Text.Json.Serialization.JsonIgnore]
-        public long? ExecutionPolicyRevision { get; internal set; }
-
-        [Browsable(false)]
-        [JsonIgnore]
-        [System.Text.Json.Serialization.JsonIgnore]
-        public string? ExecutionPolicyHash { get; internal set; }
-
-        [Browsable(false)]
-        [JsonIgnore]
-        [System.Text.Json.Serialization.JsonIgnore]
-        public string? ExecutionPolicySnapshotJson { get; internal set; }
     }
 }

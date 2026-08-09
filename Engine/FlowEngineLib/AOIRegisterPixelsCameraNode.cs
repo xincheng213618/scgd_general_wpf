@@ -7,6 +7,9 @@ using ST.Library.UI.NodeEditor;
 namespace FlowEngineLib;
 
 [STNode("/02 相机")]
+[FlowEngineLib.PropertyEditor.FlowNodePropertyEditorAttribute(nameof(AOIRegisterPixelsCameraNode.CaliTempName), typeof(FlowEngineLib.PropertyEditor.FlowCalibrationTemplateEditor))]
+[FlowEngineLib.PropertyEditor.FlowNodePropertyEditorAttribute(nameof(AOIRegisterPixelsCameraNode.AlgTempName), typeof(FlowEngineLib.PropertyEditor.FlowLedCheck2JsonTemplateEditor))]
+[FlowEngineLib.PropertyEditor.FlowNodePropertyEditorAttribute(nameof(AOIRegisterPixelsCameraNode.OutputTempName), typeof(FlowEngineLib.PropertyEditor.FlowPoiOutputTemplateEditor))]
 public class AOIRegisterPixelsCameraNode : CVBaseServerNodeHub
 {
 	private ImgSaveBppMode _ImgSaveMode;

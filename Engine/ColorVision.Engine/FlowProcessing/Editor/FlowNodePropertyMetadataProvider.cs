@@ -26,7 +26,9 @@ namespace ColorVision.Engine.FlowProcessing.Editor
 
         public static PropertyEditorAdvancedOptions AdvancedOptions { get; } = new(propertyInfo => DefaultHiddenProperties.Contains(propertyInfo.Name))
         {
-            ToolTip = Properties.Resources.Flow_ShowAdvancedPropertiesTooltip
+            ToolTip = Properties.Resources.Flow_ShowAdvancedPropertiesTooltip,
+            ShowFirstCategoryHeader = false,
+            ShowAdvancedToggleInCategoryHeader = false
         };
 
         private FlowNodePropertyMetadataProvider()

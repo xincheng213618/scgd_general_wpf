@@ -8,14 +8,6 @@ namespace ColorVision.UI.Tests;
 public class CameraRunParamTests
 {
     [Fact]
-    public void CameraTemplate_UsesCustomEditor()
-    {
-        var template = new TemplateCameraRunParam();
-
-        Assert.True(template.IsUserControl);
-    }
-
-    [Fact]
     public void SetAllExposure_UpdatesEveryExposureField()
     {
         var param = new CameraRunParam

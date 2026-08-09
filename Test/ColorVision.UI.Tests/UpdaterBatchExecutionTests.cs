@@ -90,6 +90,7 @@ namespace ColorVision.UI.Tests
             File.WriteAllText(batchPath, string.Empty);
             ExitUpdateHandoffState handoffState = ExitUpdateHandoff.Prepare(targetDirectory, tempRoot, Path.Combine(_rootDirectory, "PluginState"));
             PluginUpdater.GenerateBatchFile(batchPath, targetDirectory, executableName, int.MaxValue, handoffState, restartArguments: null);
+            ShortenBatchWaits(batchPath, Encoding.GetEncoding(936));
 
             BatchResult result = await RunBatchAsync(batchPath, workingDirectory: tempRoot);
 
@@ -260,7 +261,7 @@ namespace ColorVision.UI.Tests
                 Path.Combine(cleanupDirectory, "handoff", "reopen.requested"),
                 "0123456789abcdef0123456789abcdef",
                 cleanupDirectory);
-            return (string)method.Invoke(null, [
+            return ShortenBatchWaits((string)method.Invoke(null, [
                 stageDirectory,
                 cleanupDirectory,
                 targetDirectory,
@@ -269,7 +270,17 @@ namespace ColorVision.UI.Tests
                 handoffState,
                 repairServiceHost,
                 restartApplication,
-                scanProtectionId])!;
+                scanProtectionId])!);
+        }
+
+        private static string ShortenBatchWaits(string batch) => batch
+            .Replace("ping -n 2 127.0.0.1", "ping -n 1 127.0.0.1", StringComparison.Ordinal)
+            .Replace("ping -n 4 127.0.0.1", "ping -n 1 127.0.0.1", StringComparison.Ordinal);
+
+        private static void ShortenBatchWaits(string batchPath, Encoding encoding)
+        {
+            string batch = File.ReadAllText(batchPath, encoding);
+            File.WriteAllText(batchPath, ShortenBatchWaits(batch), encoding);
         }
 
         private static string CreateProbeExecutable(string directory)

@@ -14,6 +14,10 @@ namespace Spectrum.Configs
         private static readonly ILog log = LogManager.GetLogger(typeof(ShutterController));
 
         private SerialPort? _serialPort;
+        private int activeOperationCount;
+        private readonly SemaphoreSlim commandGate = new(1, 1);
+
+        public bool IsBusy => Volatile.Read(ref activeOperationCount) > 0;
 
         // 绑定到界面的配置
         public ShutterConfig Config=> SpectrumConfig.Instance.ShutterConfig;
@@ -45,21 +49,21 @@ namespace Spectrum.Configs
 
             DisconnectCommand = new TimedButtonCommand(
                 async _ => await Task.FromResult(Disconnect()),
-                _ => IsConnected,
+                _ => IsConnected && !SpectrometerManager.Instance.IsDeviceBusy,
                 SpectrumTimedButtonHost.GetOwner,
                 SpectrumTimedButtonHost.BuildOperationKey,
                 "shutter-disconnect");
 
             OpenShutterCommand = new TimedButtonCommand(
                 _ => SendCommand(Config.OpenCmd),
-                _ => IsConnected,
+                _ => IsConnected && !SpectrometerManager.Instance.IsDeviceBusy,
                 SpectrumTimedButtonHost.GetOwner,
                 SpectrumTimedButtonHost.BuildOperationKey,
                 "shutter-open");
 
             CloseShutterCommand = new TimedButtonCommand(
                 _ => SendCommand(Config.CloseCmd),
-                _ => IsConnected,
+                _ => IsConnected && !SpectrometerManager.Instance.IsDeviceBusy,
                 SpectrumTimedButtonHost.GetOwner,
                 SpectrumTimedButtonHost.BuildOperationKey,
                 "shutter-close");
@@ -113,8 +117,17 @@ namespace Spectrum.Configs
             finally
             {
                 IsConnected = false;
-                _serialPort?.Dispose();
+                SerialPort? serialPort = _serialPort;
                 _serialPort = null;
+                try
+                {
+                    serialPort?.Dispose();
+                }
+                catch (Exception ex)
+                {
+                    log.Warn("释放快门串口失败", ex);
+                    success = false;
+                }
             }
 
             return success;
@@ -132,68 +145,73 @@ namespace Spectrum.Configs
 
         private async Task<bool> SendCommand(string cmd)
         {
-            if (_serialPort != null && _serialPort.IsOpen)
+            Interlocked.Increment(ref activeOperationCount);
+            await commandGate.WaitAsync();
+            try
             {
-                try
+                if (_serialPort != null && _serialPort.IsOpen)
                 {
-                    // 发送指令
-                    _serialPort.Write(cmd);
-
-                    string receiveBuffer = "";
-
-                    // 3. 循环等待接收
-                    // 根据 Configs.DelayTime 计算循环次数，例如 1000ms / 16ms ≈ 62次
-                    int maxLoops = (Config.DelayTime > 0 ? Config.DelayTime : 1000) / 16;
-                    if (maxLoops < 10) maxLoops = 60; // 保底循环次数
-
-                    for (int i = 0; i < maxLoops; i++)
+                    try
                     {
-                        await Task.Delay(16); // 非阻塞延时，UI 不会卡顿
+                        // 发送指令
+                        _serialPort.Write(cmd);
 
-                        if (_serialPort == null || !_serialPort.IsOpen) break;
+                        string receiveBuffer = "";
 
-                        int bytesread = _serialPort.BytesToRead;
-                        if (bytesread > 0)
+                        // 3. 循环等待接收
+                        // 根据 Configs.DelayTime 计算循环次数，例如 1000ms / 16ms ≈ 62次
+                        int maxLoops = (Config.DelayTime > 0 ? Config.DelayTime : 1000) / 16;
+                        if (maxLoops < 10) maxLoops = 60; // 保底循环次数
+
+                        for (int i = 0; i < maxLoops; i++)
                         {
-                            byte[] buff = new byte[bytesread];
-                            _serialPort.Read(buff, 0, bytesread);
+                            await Task.Delay(16); // 非阻塞延时，UI 不会卡顿
 
-                            // 将新读到的数据拼接到缓存中，防止数据包被从中间截断
-                            string msg = Encoding.UTF8.GetString(buff);
-                            receiveBuffer += msg;
+                            if (_serialPort == null || !_serialPort.IsOpen) break;
 
-                            // 忽略大小写检查返回值
-                            if (receiveBuffer.Contains("turn on", StringComparison.OrdinalIgnoreCase))
+                            int bytesread = _serialPort.BytesToRead;
+                            if (bytesread > 0)
                             {
-                                return true;
-                            }
-                            else if (receiveBuffer.Contains("turn off", StringComparison.OrdinalIgnoreCase))
-                            {
-                                return true;
+                                byte[] buff = new byte[bytesread];
+                                _serialPort.Read(buff, 0, bytesread);
+
+                                // 将新读到的数据拼接到缓存中，防止数据包被从中间截断
+                                string msg = Encoding.UTF8.GetString(buff);
+                                receiveBuffer += msg;
+
+                                // 忽略大小写检查返回值
+                                if (receiveBuffer.Contains("turn on", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    return true;
+                                }
+                                else if (receiveBuffer.Contains("turn off", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    return true;
+                                }
                             }
                         }
+                        return false;
                     }
-                    return false;
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"发送或读取指令失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                        Disconnect(); // 异常通常是线被拔了，直接断开
+                        return false;
+                    }
                 }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"发送或读取指令失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
-                    Disconnect(); // 异常通常是线被拔了，直接断开
-                    return false;
-                }
-                finally
-                {
-                }
-            }
 
-            return false;
+                return false;
+            }
+            finally
+            {
+                commandGate.Release();
+                Interlocked.Decrement(ref activeOperationCount);
+            }
         }
 
         public void Dispose()
         {
-            _serialPort?.Close();
-            _serialPort?.Dispose();
-            _serialPort = null;
+            Disconnect();
             GC.SuppressFinalize(this);
         }
     }

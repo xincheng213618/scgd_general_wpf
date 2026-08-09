@@ -24,7 +24,7 @@ namespace Conoscope
                 return;
             }
 
-            if (activeView == null || !activeView.TryGetWindowQuickControlState(out ConoscopeWindowQuickControlState state))
+            if (activeView == null || !activeView.HasActiveViewState)
             {
                 bdActiveViewControls.IsEnabled = false;
                 bdActiveViewExportControls.IsEnabled = false;
@@ -72,22 +72,27 @@ namespace Conoscope
                 return;
             }
 
+            ConoscopeViewState state = activeView.State;
+            ConoscopeCoordinateAxisParam axis = state.CoordinateAxis;
             bdActiveViewControls.IsEnabled = true;
             bdActiveViewExportControls.IsEnabled = true;
 
             isUpdatingActiveViewControls = true;
             try
             {
-                RefreshActiveViewChannelAvailability(state.CanUseDerivedChannels, state.CanUseContrastChannel);
+                RefreshActiveViewChannelAvailability(activeView.CanUseDerivedChannels, activeView.CanUseContrastChannel);
                 ComboBoxHelper.SelectItemByTag(cbActiveDisplayChannel, state.DisplayChannel.ToString());
                 ComboBoxHelper.SelectItemByTag(cbActiveContrastImageKind, state.ContrastImageKind.ToString());
                 ComboBoxHelper.SelectItemByTag(cbActiveColorDifferenceReference, state.ColorDifferenceReferenceMode.ToString());
-                SetActiveReferenceModeSelection(state.ReferenceMode);
+                SetActiveReferenceModeSelection(axis.ReferenceMode);
 
-                txtActiveReferenceValue.Text = state.ReferenceValue.ToString("F2", CultureInfo.InvariantCulture);
-                txtActiveReferenceValue.ToolTip = state.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine
+                double referenceValue = axis.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine
+                    ? axis.ReferenceAngle
+                    : axis.ReferenceRadiusAngle;
+                txtActiveReferenceValue.Text = referenceValue.ToString("F2", CultureInfo.InvariantCulture);
+                txtActiveReferenceValue.ToolTip = axis.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine
                     ? Properties.Resources.TipEnterAzimuth
-                    : CompositeFormatCache.Format(Properties.Resources.TipEnterPolarAngle, state.ReferenceMaximum);
+                    : CompositeFormatCache.Format(Properties.Resources.TipEnterPolarAngle, activeView.MaxAngle);
 
                 txtActiveColorDifferenceCustomU.Text = state.ColorDifferenceCustomU.ToString("F4", CultureInfo.InvariantCulture);
                 txtActiveColorDifferenceCustomV.Text = state.ColorDifferenceCustomV.ToString("F4", CultureInfo.InvariantCulture);
@@ -445,7 +450,7 @@ namespace Conoscope
                 return;
             }
 
-            if (!ActiveView.TryGetWindowQuickControlState(out _))
+            if (!ActiveView.HasActiveViewState)
             {
                 RefreshActiveViewControlState(ActiveView);
                 return;

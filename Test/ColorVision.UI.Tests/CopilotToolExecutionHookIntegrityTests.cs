@@ -8,6 +8,70 @@ public sealed class CopilotToolExecutionHookIntegrityTests
     private static readonly TimeSpan TestTimeout = TimeSpan.FromSeconds(5);
 
     [Fact]
+    public async Task SlowHooksPublishOrderedLifecycleBeforeTerminalReconciliation()
+    {
+        var beforeEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseBefore = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var hook = new RecordingHook(async (_, cancellationToken) =>
+        {
+            beforeEntered.TrySetResult();
+            await releaseBefore.Task.WaitAsync(cancellationToken);
+            return CopilotToolExecutionHookDecision.Proceed;
+        });
+        var events = new System.Collections.Concurrent.ConcurrentQueue<CopilotAgentEvent>();
+
+        var executionTask = new CopilotToolExecutor([hook]).ExecuteAsync(
+            CreateInvocation(new RecordingTool(), "live-hook-lifecycle"),
+            events.Enqueue,
+            CancellationToken.None);
+        await beforeEntered.Task.WaitAsync(TestTimeout);
+
+        var liveEvents = events.ToArray();
+        var liveStart = Assert.Single(liveEvents, item =>
+            item.Type == CopilotAgentEventType.HookStarted
+            && item.ToolExecutionHook?.SourceId == "fixed:0");
+        Assert.Equal(CopilotToolExecutionHookPhase.BeforeExecute, liveStart.ToolExecutionHook?.Phase);
+        Assert.False(liveStart.ToolExecutionHook?.IsCompleted);
+        Assert.DoesNotContain(liveEvents, item =>
+            item.Type == CopilotAgentEventType.HookCompleted
+            && item.ToolExecutionHook?.SourceId == "fixed:0");
+        Assert.DoesNotContain(liveEvents, item => item.Type == CopilotAgentEventType.ToolResult);
+
+        var assistant = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty);
+        foreach (var agentEvent in liveEvents)
+            CopilotAssistantMessagePresenter.ApplyAgentEvent(assistant, agentEvent);
+        var liveTrace = Assert.Single(assistant.AgentTraceEntries);
+        Assert.Contains("Running pre-execution hook fixed:0", liveTrace.ResultSummary, StringComparison.Ordinal);
+
+        releaseBefore.TrySetResult();
+        var outcome = await executionTask.WaitAsync(TestTimeout);
+        var published = events.ToArray();
+        Assert.Equal(
+            [
+                CopilotAgentEventType.HookStarted,
+                CopilotAgentEventType.HookCompleted,
+                CopilotAgentEventType.HookStarted,
+                CopilotAgentEventType.HookCompleted,
+                CopilotAgentEventType.ToolStarted,
+                CopilotAgentEventType.HookStarted,
+                CopilotAgentEventType.HookCompleted,
+                CopilotAgentEventType.HookStarted,
+                CopilotAgentEventType.HookCompleted,
+                CopilotAgentEventType.ToolResult,
+            ],
+            published.Select(item => item.Type));
+
+        foreach (var agentEvent in published.Skip(liveEvents.Length))
+            CopilotAssistantMessagePresenter.ApplyAgentEvent(assistant, agentEvent);
+
+        var finalTrace = Assert.Single(assistant.AgentTraceEntries);
+        Assert.Equal(4, finalTrace.HookRuns.Count);
+        Assert.Equal(outcome.HookRuns.Select(run => (run.SourceId, run.Phase, run.State, run.FailureCode)),
+            finalTrace.HookRuns.Select(run => (run.SourceId, run.Phase, run.State, run.FailureCode)));
+        Assert.Equal(CopilotToolExecutionState.Completed, finalTrace.State);
+    }
+
+    [Fact]
     public async Task ExplicitHookDenialPublishesStableTerminalOutcome()
     {
         var hook = new RecordingHook((_, _) => Task.FromResult(
@@ -86,6 +150,11 @@ public sealed class CopilotToolExecutionHookIntegrityTests
             "tool_hook_failed",
             CopilotToolFailureKind.Internal);
         Assert.DoesNotContain(sensitiveMessage, outcome.Result.ErrorMessage, StringComparison.Ordinal);
+        Assert.DoesNotContain(
+            sensitiveMessage,
+            JsonConvert.SerializeObject(events.Where(item =>
+                item.Type is CopilotAgentEventType.HookStarted or CopilotAgentEventType.HookCompleted)),
+            StringComparison.Ordinal);
         Assert.Equal(0, tool.ExecutionCount);
         Assert.Equal(1, hook.AfterCount);
         AssertHookRun(

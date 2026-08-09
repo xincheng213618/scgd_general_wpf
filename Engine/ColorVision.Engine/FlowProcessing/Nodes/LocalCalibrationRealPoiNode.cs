@@ -24,8 +24,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
     [STNode("Flow_CustomNodes", "本地校正+实时 POI")]
     [FlowNodePropertyEditorAttribute(nameof(CalibTempName), typeof(FlowCalibrationTemplateEditor))]
     [FlowNodePropertyEditorAttribute(nameof(POITempName), typeof(FlowPoiTemplateEditor))]
-    [FlowNodePropertyEditorAttribute(nameof(POIFilterTempName), typeof(FlowPoiFilterTemplateEditor))]
-    [FlowNodePropertyEditorAttribute(nameof(POIReviseTempName), typeof(FlowPoiReviseTemplateEditor))]
     public sealed class LocalCalibrationRealPoiNode : LocalCalibrationNodeBase
     {
         private static readonly string[] InputPortNames = { "IN_IMG", "IN_POI" };
@@ -46,12 +44,12 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         [STNodeProperty("POI 模板", "校正后直接在 CIE 内存上计算的 POI 模板", true)]
         public string POITempName { get => poiTempName; set { poiTempName = value ?? string.Empty; OnPropertyChanged(); } }
 
-        [Category("实时 POI")]
-        [STNodeProperty("POI 过滤", "可选的 POI 过滤模板", true)]
+        [Browsable(false)]
+        // Kept only so existing serialized node payloads can still be opened.
         public string POIFilterTempName { get => poiFilterTempName; set { poiFilterTempName = value ?? string.Empty; OnPropertyChanged(); } }
 
-        [Category("实时 POI")]
-        [STNodeProperty("POI 修正", "可选的 POI 修正模板", true)]
+        [Browsable(false)]
+        // Kept only so existing serialized node payloads can still be opened.
         public string POIReviseTempName { get => poiReviseTempName; set { poiReviseTempName = value ?? string.Empty; OnPropertyChanged(); } }
 
         [Category("实时 POI")]
@@ -112,8 +110,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 poiInputResultType,
                 InputPortNames[0],
                 POITempName,
-                POIFilterTempName,
-                POIReviseTempName,
                 POIType,
                 POIWidth,
                 POIHeight);
@@ -133,7 +129,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 LocalPoiResultSet result;
                 using (LocalFlowFrameLease frame = execution.Frame.Acquire())
                 {
-                    result = LocalPoiCalculator.Calculate(frame, parameters.Poi, parameters.Filter, parameters.Revise);
+                    result = LocalPoiCalculator.Calculate(frame, parameters.Poi);
                 }
                 stopwatch.Stop();
                 int poiTime = checked((int)Math.Min(stopwatch.ElapsedMilliseconds, int.MaxValue));
@@ -153,8 +149,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                         POISourceMasterId = parameters.SourceMasterId > 0 ? (int?)parameters.SourceMasterId : null,
                         CalibrationTemplate = execution.Calibration?.Name ?? execution.Frame.Metadata.CalibrationTemplate,
                         POITemplate = parameters.Poi.Name,
-                        POIFilterTemplate = parameters.Filter?.Name,
-                        POIReviseTemplate = parameters.Revise?.Name,
                         MemoryOnly = string.IsNullOrWhiteSpace(execution.Frame.CvCieFilePath)
                     });
                 LocalPoiCalculator.SaveDetails(poiMasterId, result);
@@ -174,6 +168,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                         CalibrationMasterId = calibrationMasterId,
                         PoiMasterId = poiMasterId,
                         TotalTime = execution.TotalTime + poiTime,
+                        FlipMode = execution.Frame.Metadata.FlipMode.ToString(),
+                        FlipApplied = execution.Frame.IsFlipApplied,
                         LoadedFromFile = execution.LoadedFromFile,
                         Calibrated = execution.Calibrated,
                         HasRaw = execution.Frame.HasRaw,
@@ -206,8 +202,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 ImageFilePath,
                 CalibTempName,
                 POITempName,
-                POIFilterTempName,
-                POIReviseTempName,
                 POIType,
                 POIWidth,
                 POIHeight,

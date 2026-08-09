@@ -1,6 +1,6 @@
 ﻿#pragma  warning disable CA1708,CS8602,CS8604,CS8629
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
-using CVCommCore.CVAlgorithm;
+using ColorVision.Engine.Templates.POI;
 using Newtonsoft.Json;
 
 namespace ColorVision.Engine.Templates.MTF
@@ -11,7 +11,7 @@ namespace ColorVision.Engine.Templates.MTF
 
         private double _Articulation;
 
-        public ViewResultMTF(POIPoint point, double articulation)
+        public ViewResultMTF(PoiPoint point, double articulation)
         {
             Point = point;
             Articulation = articulation;
@@ -21,7 +21,7 @@ namespace ColorVision.Engine.Templates.MTF
         public ViewResultMTF(PoiPointResultModel detail)
         {
             AlgResultMTFModel = detail;
-            Point = new POIPoint(detail.PoiId ?? -1, -1, detail.PoiName, detail.PoiType, (int)detail.PoiX, (int)detail.PoiY, (int)detail.PoiWidth, (int)detail.PoiHeight);
+            Point = new PoiPoint(detail.PoiId, -1, detail.PoiName, detail.PoiType.ToPoiShape(), detail.PoiX ?? 0, detail.PoiY ?? 0, detail.PoiWidth ?? 0, detail.PoiHeight ?? 0);
             var temp = JsonConvert.DeserializeObject<MTFResultData>(detail.Value);
             Articulation = temp.Articulation;
         }

@@ -49,7 +49,8 @@
                             </Button>
                             <Button Content="SlectDb" Command="{Binding ViewResultManager.SlectSqlLiteDbCommand}" Margin="2,0,0,0"/>
                             <Button Content="数据清理" Click="OpenDatabaseCleanup_Click" Margin="2,0,0,0"/>
-                            <Button Content="CT统计" Click="OpenCycleTimeStatistics_Click" Margin="2,0,0,0"/>
+                            <Button Content="释放截图缓存" Click="ReleaseSnapshotBuffer_Click" Margin="2,0,0,0"/>
+                            <Button Content="结果统计" Click="OpenCycleTimeStatistics_Click" Margin="2,0,0,0"/>
                         </StackPanel>
                         <StackPanel HorizontalAlignment="Right"  Orientation="Horizontal">
                             <Button Command="{Binding ViewResultManager.SaveCommand}" Padding="2" Height="25" Width="25" Margin="0,1,5,0">
@@ -282,7 +283,6 @@
             <StatusBarItem HorizontalAlignment="Left" HorizontalContentAlignment="Left" Padding="0">
                 <StackPanel Orientation="Horizontal">
                     <Button Content="设置" Command="{Binding OpenConfigCommand}" Margin="2,0"/>
-                    <Button Content="结果记录" Click="ObjectiveTestResultRecord_Click" Margin="2,0"/>
                     <Button Content="ProcessManager" Command="{Binding ProcessManager.EditCommand}" Margin="2,0"/>
                     <Button Content="切图" Command="{Binding ThunderbirdSerialManager.EditCommand}" Padding="10,2" Margin="2,0"/>
                     <Button Content="中转" Command="{Binding SocketRelayManager.EditCommand}" Padding="10,2" Margin="2,0"/>

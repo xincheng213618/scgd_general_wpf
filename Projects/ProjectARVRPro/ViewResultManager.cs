@@ -13,6 +13,38 @@ using System.Windows.Controls;
 
 namespace ProjectARVRPro
 {
+    public enum ResultImageFormat
+    {
+        PNG = 0,
+        JPEG = 1,
+    }
+
+    public enum SourceImageFormat
+    {
+        TIFF = 0,
+        PNG = 1,
+        BMP = 2,
+    }
+
+    public enum SourceImageHighBitFormat
+    {
+        TIFF = 0,
+        PNG = 1,
+    }
+
+    public enum SourceTiffCompression
+    {
+        LZW = 5,
+        ZIP = 8,
+    }
+
+    public enum ImageExportSize
+    {
+        完整尺寸 = 0,
+        二分之一尺寸 = 2,
+        四分之一尺寸 = 4,
+    }
+
     public class ViewResultManagerConfig : ViewModelBase, IConfig
     {
         [DisplayName("查询数量"), Category("View")]
@@ -39,11 +71,178 @@ namespace ProjectARVRPro
         public bool IsSaveLink { get => _IsSaveLink; set { _IsSaveLink = value; OnPropertyChanged(); } }
         private bool _IsSaveLink = true;
 
-        public bool IsSaveImageReuslt { get => _IsSaveImageReuslt; set { _IsSaveImageReuslt = value; OnPropertyChanged(); } }
+        [DisplayName("保存标记图（8位）"), Category("图像导出")]
+        [Description("保存8位结果图；可选择是否把点位、文字等标记混合到图中")]
+        public bool IsSaveImageReuslt
+        {
+            get => _IsSaveImageReuslt;
+            set
+            {
+                _IsSaveImageReuslt = value;
+                OnPropertyChanged();
+            }
+        }
         private bool _IsSaveImageReuslt;
 
-        public int SaveImageReusltDelay { get => _SaveImageReusltDelay; set {  if (value>=0) _SaveImageReusltDelay = value; OnPropertyChanged(); } }
-        private int _SaveImageReusltDelay = 1000;
+        [Browsable(false), EditorBrowsable(EditorBrowsableState.Never)]
+        [Newtonsoft.Json.JsonIgnore]
+        [Obsolete("结果快照已改为立即异步保存，不再使用保存延时。")]
+        public int SaveImageReusltDelay
+        {
+            get => 0;
+            set { }
+        }
+
+        [DisplayName("标记图格式"), Category("图像导出")]
+        [Description("PNG无损并兼容原有result.png；JPEG固定质量100、编码更快但属于有损格式")]
+        [PropertyVisibility(nameof(IsSaveImageReuslt))]
+        public ResultImageFormat ResultSnapshotFormat
+        {
+            get => _ResultSnapshotFormat;
+            set
+            {
+                _ResultSnapshotFormat = value is ResultImageFormat.PNG or ResultImageFormat.JPEG
+                    ? value
+                    : ResultImageFormat.PNG;
+                OnPropertyChanged();
+            }
+        }
+        private ResultImageFormat _ResultSnapshotFormat = ResultImageFormat.PNG;
+
+        [DisplayName("标记图尺寸"), Category("图像导出")]
+        [Description("完整、1/2或1/4宽高；缩小仅用于降低导出耗时和文件大小，不影响测量数据与算法结果")]
+        [PropertyVisibility(nameof(IsSaveImageReuslt))]
+        public ImageExportSize ResultSnapshotSize
+        {
+            get => _ResultSnapshotSize;
+            set
+            {
+                _ResultSnapshotSize = value switch
+                {
+                    ImageExportSize.完整尺寸 or ImageExportSize.二分之一尺寸 or ImageExportSize.四分之一尺寸 => value,
+                    _ when (int)value == 4096 => ImageExportSize.二分之一尺寸,
+                    _ => ImageExportSize.完整尺寸,
+                };
+                OnPropertyChanged();
+            }
+        }
+        private ImageExportSize _ResultSnapshotSize = ImageExportSize.完整尺寸;
+
+        [DisplayName("混合保存标记"), Category("图像导出")]
+        [Description("开启时将点位、文字等标记混合到结果图；关闭时只保存底图")]
+        [PropertyVisibility(nameof(IsSaveImageReuslt))]
+        public bool ResultSnapshotIncludeOverlays { get => _ResultSnapshotIncludeOverlays; set { _ResultSnapshotIncludeOverlays = value; OnPropertyChanged(); } }
+        private bool _ResultSnapshotIncludeOverlays = true;
+
+        [Browsable(false), EditorBrowsable(EditorBrowsableState.Never)]
+        [Newtonsoft.Json.JsonIgnore]
+        [Obsolete("JPEG质量固定为100，不再向用户开放压缩参数。")]
+        public int ResultSnapshotJpegQuality
+        {
+            get => 100;
+            set { }
+        }
+
+        [DisplayName("保存原图（保留位深）"), Category("图像导出")]
+        [Description("直接保存ImageEditor当前已加载的原始像素，不混合标记、不改变尺寸；可与8位标记图同时保存")]
+        public bool IsSaveSourceImage
+        {
+            get => _IsSaveSourceImage;
+            set
+            {
+                _IsSaveSourceImage = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(ShowSourceFormatWithBmp));
+                OnPropertyChanged(nameof(ShowSourceFormatWithoutBmp));
+                OnPropertyChanged(nameof(ShowSourceTiffCompression));
+            }
+        }
+        private bool _IsSaveSourceImage;
+
+        [Browsable(false)]
+        public SourceImageFormat SourceExportFormat
+        {
+            get => _SourceImageFormat;
+            set
+            {
+                _SourceImageFormat = value is SourceImageFormat.TIFF or SourceImageFormat.PNG or SourceImageFormat.BMP
+                    ? value
+                    : SourceImageFormat.TIFF;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(SourceExportFormatWithBmp));
+                OnPropertyChanged(nameof(SourceExportFormatWithoutBmp));
+                OnPropertyChanged(nameof(ShowSourceTiffCompression));
+            }
+        }
+        private SourceImageFormat _SourceImageFormat = SourceImageFormat.TIFF;
+
+        [DisplayName("原图格式"), Category("图像导出")]
+        [Description("TIFF和PNG保留源图位深；BMP仅在当前ImageEditor源图可无损表示为8位格式时提供")]
+        [PropertyVisibility(nameof(ShowSourceFormatWithBmp))]
+        [Newtonsoft.Json.JsonIgnore]
+        public SourceImageFormat SourceExportFormatWithBmp
+        {
+            get => SourceExportFormat;
+            set => SourceExportFormat = value;
+        }
+
+        [DisplayName("原图格式"), Category("图像导出")]
+        [Description("当前ImageEditor源图为高位深格式；PNG和TIFF可保留源图位深，BMP不提供")]
+        [PropertyVisibility(nameof(ShowSourceFormatWithoutBmp))]
+        [Newtonsoft.Json.JsonIgnore]
+        public SourceImageHighBitFormat SourceExportFormatWithoutBmp
+        {
+            get => SourceExportFormat == SourceImageFormat.PNG
+                ? SourceImageHighBitFormat.PNG
+                : SourceImageHighBitFormat.TIFF;
+            set => SourceExportFormat = value == SourceImageHighBitFormat.PNG
+                ? SourceImageFormat.PNG
+                : SourceImageFormat.TIFF;
+        }
+
+        [Browsable(false), Newtonsoft.Json.JsonIgnore]
+        public bool SourceImageSupportsBmp
+        {
+            get => _SourceImageSupportsBmp;
+            set
+            {
+                if (_SourceImageSupportsBmp == value)
+                    return;
+
+                _SourceImageSupportsBmp = value;
+                if (!value && SourceExportFormat == SourceImageFormat.BMP)
+                    SourceExportFormat = SourceImageFormat.TIFF;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(ShowSourceFormatWithBmp));
+                OnPropertyChanged(nameof(ShowSourceFormatWithoutBmp));
+            }
+        }
+        private bool _SourceImageSupportsBmp;
+
+        [Browsable(false), Newtonsoft.Json.JsonIgnore]
+        public bool ShowSourceFormatWithBmp => IsSaveSourceImage && SourceImageSupportsBmp;
+
+        [Browsable(false), Newtonsoft.Json.JsonIgnore]
+        public bool ShowSourceFormatWithoutBmp => IsSaveSourceImage && !SourceImageSupportsBmp;
+
+        [DisplayName("TIFF压缩"), Category("图像导出")]
+        [Description("LZW为推荐默认；ZIP文件仅略小但速度可能慢很多。两者均为无损压缩并保留源图位深")]
+        [PropertyVisibility(nameof(ShowSourceTiffCompression))]
+        public SourceTiffCompression SourceTiffCompressionMode
+        {
+            get => _SourceTiffCompression;
+            set
+            {
+                _SourceTiffCompression = value is SourceTiffCompression.LZW or SourceTiffCompression.ZIP
+                    ? value
+                    : SourceTiffCompression.LZW;
+                OnPropertyChanged();
+            }
+        }
+        private SourceTiffCompression _SourceTiffCompression = SourceTiffCompression.LZW;
+
+        [Browsable(false), Newtonsoft.Json.JsonIgnore]
+        public bool ShowSourceTiffCompression => IsSaveSourceImage && SourceExportFormat == SourceImageFormat.TIFF;
 
         [DisplayName("Csv保存路径"), PropertyEditorType(typeof(TextSelectFolderPropertiesEditor)), Category("ARVR")]
         public string CsvSavePath { get => _CsvSavePath; set { _CsvSavePath = value; OnPropertyChanged(); } }
@@ -103,6 +302,7 @@ namespace ProjectARVRPro
         public static string SqliteDbPath { get; set; } = DirectoryPath + "ProjectARVRPro.db";
 
         public ViewResultManagerConfig Config { get; set; }
+        public Func<bool>? SourceBmpAvailabilityProvider { get; set; }
 
         public ObservableCollection<ProjectARVRReuslt> ViewResluts { get; set; } = new ObservableCollection<ProjectARVRReuslt>();
 
@@ -133,10 +333,12 @@ namespace ProjectARVRPro
 
             _db = new SqlSugarClient(new ConnectionConfig
             {
-                ConnectionString = $"Data Source={SqliteDbPath}",
+                ConnectionString = $"Data Source={SqliteDbPath};Default Timeout=5",
                 DbType = DbType.Sqlite,
                 IsAutoCloseConnection = true
             });
+            _db.Ado.ExecuteCommand("PRAGMA busy_timeout = 5000;");
+            _db.Ado.ExecuteCommand("PRAGMA journal_mode = WAL;");
             // 确保表存在
             _db.CodeFirst.InitTables<ProjectARVRReuslt, ObjectiveTestResultRecord>();
             LoadAll(Config.Count);
@@ -160,6 +362,14 @@ namespace ProjectARVRPro
 
         public void EditConfig()
         {
+            try
+            {
+                Config.SourceImageSupportsBmp = SourceBmpAvailabilityProvider?.Invoke() == true;
+            }
+            catch
+            {
+                Config.SourceImageSupportsBmp = false;
+            }
             new PropertyEditorWindow(Config) { Owner =Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
             ConfigService.Instance.SaveConfigs();
         }
@@ -236,6 +446,7 @@ namespace ProjectARVRPro
                 {
                     record.Id = currentRecordId;
                     record.CreateTime = oldRecord.CreateTime;
+                    record.IsFinalized = oldRecord.IsFinalized;
                     _db.Updateable(record).Where(x => x.Id == record.Id).ExecuteCommand();
                     return record.Id;
                 }
@@ -243,6 +454,19 @@ namespace ProjectARVRPro
 
             record.Id = _db.Insertable(record).ExecuteReturnIdentity();
             return record.Id;
+        }
+
+        public int FinalizeObjectiveTestResult(int recordId, DateTime completedAt)
+        {
+            if (recordId <= 0)
+                return 0;
+
+            using SqlSugarClient db = CreateSqliteClient();
+            return db.Updateable<ObjectiveTestResultRecord>()
+                .SetColumns(item => item.IsFinalized == true)
+                .SetColumns(item => item.UpdateTime == completedAt)
+                .Where(item => item.Id == recordId)
+                .ExecuteCommand();
         }
 
         public List<ObjectiveTestResultRecord> QueryObjectiveTestResultRecords(string sn = null, int count = 100)
@@ -257,22 +481,55 @@ namespace ProjectARVRPro
             return count > 0 ? query.Take(count).ToList() : query.ToList();
         }
 
-        public IReadOnlyList<CycleTimeGroup> QueryCycleTimeGroups()
+        public IReadOnlyList<CycleTimeGroup> QueryCycleTimeGroups(
+            DateTime? from = null,
+            DateTime? toExclusive = null,
+            string? sn = null,
+            bool? result = null,
+            int count = -1)
         {
             using SqlSugarClient db = CreateSqliteClient();
-            List<CycleTimeResultSample> samples = db.Queryable<ProjectARVRReuslt>()
-                .Where(item => item.SN != string.Empty)
+            ISugarQueryable<ProjectARVRReuslt> query = db.Queryable<ProjectARVRReuslt>()
+                .Where(item => item.SN != string.Empty);
+            if (from.HasValue)
+            {
+                // Include a lead-in window so an execution crossing midnight is grouped before
+                // applying the completion-time filter below. This legacy table has no stable
+                // execution id, so retain the prior one-day boundary rather than silently
+                // truncating a long prepared/session run.
+                DateTime scanFrom = from.Value.Date.AddDays(-1);
+                query = query.Where(item => item.CreateTime >= scanFrom);
+            }
+            if (toExclusive.HasValue)
+            {
+                DateTime scanTo = toExclusive.Value.Date.AddDays(1);
+                query = query.Where(item => item.CreateTime < scanTo);
+            }
+            if (!string.IsNullOrWhiteSpace(sn))
+                query = query.Where(item => item.SN.Contains(sn));
+
+            List<CycleTimeResultSample> samples = query
                 .Select(item => new CycleTimeResultSample
                 {
                     Id = item.Id,
                     SN = item.SN,
                     TestType = item.TestType,
+                    Result = item.Result,
                     RunTime = item.RunTime,
                     CreateTime = item.CreateTime
                 })
                 .ToList();
 
-            return CycleTimeCalculator.Calculate(samples);
+            IEnumerable<CycleTimeGroup> groups = CycleTimeCalculator.Calculate(samples);
+            if (from.HasValue)
+                groups = groups.Where(group => group.LastTime >= from.Value);
+            if (toExclusive.HasValue)
+                groups = groups.Where(group => group.LastTime < toExclusive.Value);
+            if (result.HasValue)
+                groups = groups.Where(group => group.Result == result.Value);
+            if (count > 0)
+                groups = groups.Take(count);
+            return groups.ToList();
         }
 
         public IReadOnlyList<ProjectARVRReuslt> QueryCycleTimeDetails(CycleTimeGroup group)
@@ -293,7 +550,7 @@ namespace ProjectARVRPro
         {
             return new SqlSugarClient(new ConnectionConfig
             {
-                ConnectionString = $"Data Source={SqliteDbPath}",
+                ConnectionString = $"Data Source={SqliteDbPath};Default Timeout=5",
                 DbType = DbType.Sqlite,
                 IsAutoCloseConnection = true
             });
@@ -314,6 +571,10 @@ namespace ProjectARVRPro
             ViewResluts.Clear();
 
             var query = _db.Queryable<ProjectARVRReuslt>();
+            if (!string.IsNullOrWhiteSpace(model))
+                query = query.Where(item => item.Model.Contains(model.Trim()));
+            if (!string.IsNullOrWhiteSpace(sn))
+                query = query.Where(item => item.SN.Contains(sn.Trim()));
             query = query.OrderBy(x => x.Id, OrderByType.Desc);
             var dbList = count > 0 ? query.Take(count).ToList() : query.ToList();
 

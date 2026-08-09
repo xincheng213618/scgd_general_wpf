@@ -8,8 +8,8 @@ AR/VR 显示设备光学性能专业测试系统 — 基于 ColorVision 平台�
 |------|------|
 | 框架 | .NET 10.0 / WPF (Windows x64) |
 | 架构 | ColorVision 平台插件 |
-| 版本 | 1.1.7.73 |
-| 插件要求 | ColorVision >= 1.3.15.15 |
+| 版本 | 1.1.7.93 |
+| 插件要求 | ColorVision >= 1.4.12.25 |
 | 数据库 | MySQL (SqlSugar) — 批次/算法数据；SQLite — 本地测试结果 |
 | 配置持久化 | JSON 文件 (ProcessGroups / Recipe) |
 
@@ -85,13 +85,13 @@ ProjectARVRPro
 ## 核心设计模式
 
 - **策略模式** — 每个测试类型实现 `IProcess` 接口，Execute / Render / GenText 可插拔替换
-- **服务定位器** — `ProcessManager.RecipeConfig.GetRequiredService<T>()` 获取 Recipe 类型化配置
-- **类型化流程基类** — `ProcessBase<TProcessConfig, TRecipeConfig>` 统一声明并获取共享 Recipe，流程类无需重复实现 `GetRecipeConfig()`
+- **实例 Recipe** — Recipe 保存在每个流程或解析实例的 `ProcessConfig` 中，随对应 `ConfigJson` 一起持久化
+- **类型化流程基类** — `ProcessWithRecipeBase<TProcessConfig, TRecipeConfig>` 统一暴露实例 Recipe，避免同类型解析实例共享阈值
 - **单例管理器** — ProcessManager / ViewResultManager
-- **反射发现** — ProcessManager 扫描 `IProcess` 实现，Recipe 配置按流程类型延迟创建
+- **反射发现** — ProcessManager 扫描 `IProcess` 实现，并为流程项创建独立的流程与 Recipe 配置
 - **插件架构** — 实现 `IFeatureLauncherBase` / `MenuItemBase`，由 ColorVision 宿主运行时发现
 - **MVVM** — WPF 数据绑定，ViewModelBase / RelayCommand / OnPropertyChanged()
-- **配置分层** — RecipeBase 承载限值与修正系数，ProcessConfig 保留行为配置
+- **配置分层** — RecipeBase 承载限值与修正系数，ProcessConfig 同时持有行为配置和该实例的 Recipe
 
 ## 测试执行流程
 

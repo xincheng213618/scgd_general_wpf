@@ -225,10 +225,10 @@ namespace ColorVision.UI
             return lazyResourceManager.Value;
         }
 
-        public static void GenCommand(object obj, UniformGrid uniformGrid)
+        public static void GenCommand(object obj, UniformGrid uniformGrid, bool compact = false)
         {
             if (uniformGrid == null) return;
-            uniformGrid.SizeChanged += (_, __) => uniformGrid.AutoUpdateLayout();
+            uniformGrid.SizeChanged += (_, __) => uniformGrid.AutoUpdateLayout(compact ? 100 : 120);
 
             var type = obj.GetType();
             ResourceManager? rm = GetResourceManager(obj);
@@ -246,21 +246,34 @@ namespace ColorVision.UI
 
                 string displayName = GetDisplayName(rm, item.Prop, item.Attr!.DisplayName);
 
+                var descriptionAttr = item.Prop.GetCustomAttribute<DescriptionAttribute>();
+                var description = GetLocalizedString(rm, descriptionAttr?.Description);
                 var button = new Button
                 {
-                    Margin = new Thickness(5),
-                    Padding = new Thickness(10, 8, 10, 8),
+                    Margin = compact ? new Thickness(2, 0, 2, 0) : new Thickness(5),
                     HorizontalContentAlignment = HorizontalAlignment.Center,
                     VerticalContentAlignment = VerticalAlignment.Center,
-                    Background = (Brush)Application.Current.FindResource("GlobalBackground"),
-                    BorderBrush = (Brush)Application.Current.FindResource("BorderBrush"),
-                    BorderThickness = new Thickness(1),
                     Command = command,
-                    ToolTip = displayName,
-                    Height = 70,
+                    ToolTip = string.IsNullOrWhiteSpace(description) ? displayName : $"{displayName}\n{description}",
                     VerticalAlignment = VerticalAlignment.Stretch,
-                    HorizontalAlignment = HorizontalAlignment.Stretch,
+                    HorizontalAlignment = compact ? HorizontalAlignment.Left : HorizontalAlignment.Stretch,
                 };
+
+                if (compact)
+                {
+                    button.SetResourceReference(FrameworkElement.StyleProperty, "ButtonDefault.Small");
+                    button.Content = displayName;
+                    if (item.Attr!.CommandType == CommandType.Highlighted)
+                        button.Foreground = Brushes.Red;
+                    uniformGrid.Children.Add(button);
+                    continue;
+                }
+
+                button.Padding = new Thickness(10, 8, 10, 8);
+                button.Background = (Brush)Application.Current.FindResource("GlobalBackground");
+                button.BorderBrush = (Brush)Application.Current.FindResource("BorderBrush");
+                button.BorderThickness = new Thickness(1);
+                button.Height = 70;
 
                 var stackPanel = new StackPanel();
 
@@ -274,8 +287,6 @@ namespace ColorVision.UI
                 };
                 stackPanel.Children.Add(nameText);
 
-                var descriptionAttr = item.Prop.GetCustomAttribute<DescriptionAttribute>();
-                var description = GetLocalizedString(rm, descriptionAttr?.Description);
                 if (!string.IsNullOrWhiteSpace(description))
                 {
                     var assemblyText = new TextBlock
@@ -296,6 +307,7 @@ namespace ColorVision.UI
                 }
                 uniformGrid.Children.Add(button);
             }
+
         }
 
         public static void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -751,13 +763,18 @@ namespace ColorVision.UI
                 bool hasAdvancedProperties = advancedOptions != null && categoryGroups.Values.SelectMany(properties => properties).Any(property => advancedOptions.IsAdvancedProperty(property));
                 bool hasStandardProperties = advancedOptions == null || categoryGroups.Values.SelectMany(properties => properties).Any(property => !advancedOptions.IsAdvancedProperty(property));
                 bool advancedToggleAdded = false;
+                bool categoryHeaderAdded = false;
 
                 foreach (var categoryGroup in categoryGroups)
                 {
                     var visibleProperties = advancedOptions?.ShowAdvancedProperties == false
                         ? categoryGroup.Value.Where(property => !advancedOptions.IsAdvancedProperty(property)).ToList()
                         : categoryGroup.Value;
-                    bool addAdvancedToggle = showCategoryHeader && hasAdvancedProperties && !advancedToggleAdded && (visibleProperties.Count > 0 || !hasStandardProperties);
+                    bool addAdvancedToggle = showCategoryHeader
+                        && advancedOptions?.ShowAdvancedToggleInCategoryHeader != false
+                        && hasAdvancedProperties
+                        && !advancedToggleAdded
+                        && (visibleProperties.Count > 0 || !hasStandardProperties);
                     if (visibleProperties.Count == 0 && !addAdvancedToggle)
                         continue;
 
@@ -773,8 +790,13 @@ namespace ColorVision.UI
 
                     if (showCategoryHeader)
                     {
-                        var categoryHeader = CreateCategoryHeader(categoryGroup.Key, addAdvancedToggle ? advancedOptions : null, advancedChanged);
-                        stackPanel.Children.Add(categoryHeader);
+                        bool showCurrentCategoryHeader = categoryHeaderAdded || advancedOptions?.ShowFirstCategoryHeader != false;
+                        if (showCurrentCategoryHeader)
+                        {
+                            var categoryHeader = CreateCategoryHeader(categoryGroup.Key, addAdvancedToggle ? advancedOptions : null, advancedChanged);
+                            stackPanel.Children.Add(categoryHeader);
+                        }
+                        categoryHeaderAdded = true;
                         advancedToggleAdded |= addAdvancedToggle;
                     }
 

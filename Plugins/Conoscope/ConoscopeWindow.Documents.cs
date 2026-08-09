@@ -20,7 +20,6 @@ namespace Conoscope
                 if (existingDocument?.Content is ConoscopeView existingView && !ReferenceEquals(existingView, reuseView))
                 {
                     SelectDocument(existingDocument);
-                    ConoscopeModuleService.Activate(existingView);
                     return existingView;
                 }
             }
@@ -65,7 +64,6 @@ namespace Conoscope
             {
                 if (layoutDocument.IsActive)
                 {
-                    ConoscopeModuleService.Activate(view);
                     RefreshActiveViewUi();
                 }
             };
@@ -88,11 +86,6 @@ namespace Conoscope
         {
             ViewDocumentPane.SelectedContentIndex = ViewDocumentPane.IndexOf(document);
             document.IsActive = true;
-            if (document.Content is ConoscopeView view)
-            {
-                ConoscopeModuleService.Activate(view);
-            }
-
             RefreshActiveViewUi();
         }
 
@@ -118,7 +111,7 @@ namespace Conoscope
             return null;
         }
 
-        private ConoscopeView[] GetOpenViews()
+        internal ConoscopeView[] GetOpenViews()
         {
             return ViewDocumentPane.Children
                 .OfType<LayoutDocument>()

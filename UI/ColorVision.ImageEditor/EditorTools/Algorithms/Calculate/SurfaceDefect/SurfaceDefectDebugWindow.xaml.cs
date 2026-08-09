@@ -42,12 +42,15 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SurfaceDefect
 
         private async void DetectButton_Click(object sender, RoutedEventArgs e)
         {
-            if (_imageContext.HImageCache is not HImage image)
+            ImageFrameLease? lease = _imageContext.AcquireImageFrame();
+            if (lease == null)
             {
                 MessageBox.Show(this, "当前没有可检测的图像。", "表面缺陷/Mura 检测", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
+            long revision = lease.Revision;
+            RoiRect roi = NormalizeRoi(_roi, lease.Image);
             string configJson;
             try
             {
@@ -55,6 +58,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SurfaceDefect
             }
             catch (Exception ex)
             {
+                lease.Dispose();
                 MessageBox.Show(this, ex.Message, "参数无效", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
@@ -63,16 +67,21 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SurfaceDefect
             StatusText.Text = "检测中...";
             try
             {
-                SurfaceDefectNativeResult result = await Task.Run(() => RunNative(image, _roi, configJson));
+                SurfaceDefectNativeResult result = await Task.Run(() => RunNative(lease.Image, roi, configJson));
+                if (!_imageContext.IsCurrentImageRevision(revision)) return;
+
                 ApplyResult(result);
             }
             catch (Exception ex)
             {
+                if (!_imageContext.IsCurrentImageRevision(revision)) return;
+
                 StatusText.Text = ex.Message;
                 MessageBox.Show(this, ex.Message, "表面缺陷/Mura 检测", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {
+                lease.Dispose();
                 DetectButton.IsEnabled = true;
             }
         }
@@ -205,14 +214,17 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SurfaceDefect
                 {
                     if (resultPtr != IntPtr.Zero)
                     {
-                        _ = OpenCVMediaHelper.FreeResult(resultPtr);
+                        IntPtr failedResult = resultPtr;
+                        resultPtr = IntPtr.Zero;
+                        _ = OpenCVMediaHelper.FreeResult(failedResult);
                     }
 
                     throw new InvalidOperationException($"表面缺陷/Mura 检测失败，返回码: {length}。{DescribeReturnCode(length)}");
                 }
 
-                string json = OpenCVMediaHelper.PtrToStringAnsiAndFree(resultPtr);
+                IntPtr ownedResult = resultPtr;
                 resultPtr = IntPtr.Zero;
+                string json = OpenCVMediaHelper.PtrToStringAnsiAndFree(ownedResult);
                 SurfaceDefectNativeResult? result = JsonConvert.DeserializeObject<SurfaceDefectNativeResult>(json);
                 if (result == null)
                 {
@@ -269,8 +281,10 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SurfaceDefect
 
         private string BuildRoiText()
         {
-            if (_imageContext.HImageCache is HImage image)
+            using ImageFrameLease? lease = _imageContext.AcquireImageFrame();
+            if (lease != null)
             {
+                HImage image = lease.Image;
                 RoiRect roi = NormalizeRoi(_roi, image);
                 return $"ROI: X={roi.X}, Y={roi.Y}, W={roi.Width}, H={roi.Height}    Image: {image.cols} x {image.rows}";
             }

@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Windows;
+using System.Windows.Automation;
+using Conoscope.Core;
 
 namespace Conoscope
 {
@@ -15,16 +17,106 @@ namespace Conoscope
         public AdvancedExportDialog(AdvancedExportSettings? initialSettings = null, int defaultDecimalPlaces = 4)
         {
             InitializeComponent();
+            InitializeLocalizedText();
             Settings = NormalizeSettings(initialSettings, defaultDecimalPlaces);
             ApplySettings(Settings);
+            UpdateExportUiState();
         }
 
-        private void chkEnableCrossSection_Changed(object sender, RoutedEventArgs e)
+        private void InitializeLocalizedText()
         {
-            if (panelCrossSection != null)
+            tbChannelPresets.Text = UiText("Ui_ChannelPresets", "快捷选择：");
+            btnPresetAll.Content = UiText("Ui_SelectAll", "全选");
+            tbFooterHint.Text = UiText("Ui_ExportFooterHint", "仅会导出上方勾选的通道和模式。");
+            AutomationProperties.SetName(btnPresetAll, btnPresetAll.Content?.ToString() ?? string.Empty);
+        }
+
+        private void ExportOption_Changed(object sender, RoutedEventArgs e)
+        {
+            UpdateExportUiState();
+        }
+
+        private void ExportText_Changed(object sender, System.Windows.Controls.TextChangedEventArgs e)
+        {
+            UpdateExportUiState();
+        }
+
+        private void btnPresetXyz_Click(object sender, RoutedEventArgs e)
+        {
+            ApplyChannelPreset(Core.ExportChannel.X, Core.ExportChannel.Y, Core.ExportChannel.Z);
+        }
+
+        private void btnPresetChromaticity_Click(object sender, RoutedEventArgs e)
+        {
+            ApplyChannelPreset(Core.ExportChannel.CieX, Core.ExportChannel.CieY, Core.ExportChannel.CieU, Core.ExportChannel.CieV);
+        }
+
+        private void btnPresetAll_Click(object sender, RoutedEventArgs e)
+        {
+            ApplyChannelPreset(
+                Core.ExportChannel.X,
+                Core.ExportChannel.Y,
+                Core.ExportChannel.Z,
+                Core.ExportChannel.CieX,
+                Core.ExportChannel.CieY,
+                Core.ExportChannel.CieU,
+                Core.ExportChannel.CieV,
+                Core.ExportChannel.ColorDifference,
+                Core.ExportChannel.Contrast);
+        }
+
+        private void ApplyChannelPreset(params Core.ExportChannel[] channels)
+        {
+            HashSet<Core.ExportChannel> selected = new HashSet<Core.ExportChannel>(channels);
+            chkChannelX.IsChecked = selected.Contains(Core.ExportChannel.X);
+            chkChannelY.IsChecked = selected.Contains(Core.ExportChannel.Y);
+            chkChannelZ.IsChecked = selected.Contains(Core.ExportChannel.Z);
+            chkChannelCieX.IsChecked = selected.Contains(Core.ExportChannel.CieX);
+            chkChannelCieY.IsChecked = selected.Contains(Core.ExportChannel.CieY);
+            chkChannelCieU.IsChecked = selected.Contains(Core.ExportChannel.CieU);
+            chkChannelCieV.IsChecked = selected.Contains(Core.ExportChannel.CieV);
+            chkChannelColorDifference.IsChecked = selected.Contains(Core.ExportChannel.ColorDifference);
+            chkChannelContrast.IsChecked = selected.Contains(Core.ExportChannel.Contrast);
+            UpdateExportUiState();
+        }
+
+        private void UpdateExportUiState()
+        {
+            if (panelAzimuthSettings == null || panelPolarSettings == null || panelCrossSection == null || btnExport == null)
             {
-                panelCrossSection.IsEnabled = chkEnableCrossSection.IsChecked == true;
+                return;
             }
+
+            bool exportAzimuth = chkExportAzimuth.IsChecked == true;
+            bool exportPolar = chkExportPolar.IsChecked == true;
+            bool crossSectionEnabled = chkEnableCrossSection.IsChecked == true;
+            bool azimuthCrossSection = rbCrossSectionAzimuth.IsChecked == true;
+
+            panelAzimuthSettings.IsEnabled = exportAzimuth || (crossSectionEnabled && azimuthCrossSection);
+            panelPolarSettings.IsEnabled = exportPolar || (crossSectionEnabled && !azimuthCrossSection);
+            panelCrossSection.IsEnabled = crossSectionEnabled;
+            txtCrossSectionAzimuthAngle.IsEnabled = crossSectionEnabled && azimuthCrossSection;
+            txtCrossSectionPolarAngle.IsEnabled = crossSectionEnabled && !azimuthCrossSection;
+
+            List<Core.ExportChannel> channels = CollectSelectedChannels();
+            int modeCount = (exportAzimuth ? 1 : 0) + (exportPolar ? 1 : 0);
+            btnExport.IsEnabled = channels.Count > 0 && modeCount > 0;
+
+            if (!btnExport.IsEnabled)
+            {
+                tbExportSummary.Text = UiText("Ui_ExportNoSelectionSummary", "请选择至少一个通道和一种导出模式。");
+                return;
+            }
+
+            int fileCount = channels.Count * (modeCount + (crossSectionEnabled ? 1 : 0));
+            string prefix = string.IsNullOrWhiteSpace(txtFilePrefix?.Text) ? "Conoscope_Export" : txtFilePrefix.Text.Trim();
+            string modeName = exportAzimuth ? "Azimuth" : "Polar";
+            string channelName = channels[0].ToString();
+            string example = $"{prefix}_{modeName}_{channelName}_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
+            tbExportSummary.Text = Core.CompositeFormatCache.Format(
+                UiText("Ui_ExportSummaryFormat", "预计生成 {0} 个 CSV 文件；示例：{1}"),
+                fileCount,
+                example);
         }
 
         private void btnExport_Click(object sender, RoutedEventArgs e)
@@ -57,8 +149,8 @@ namespace Conoscope
                 CrossSectionType crossSectionType = rbCrossSectionAzimuth.IsChecked == true
                     ? CrossSectionType.Azimuth
                     : CrossSectionType.Polar;
-                double azimuthCrossSectionAngle = ParseDouble(txtCrossSectionAzimuthAngle.Text);
-                double polarCrossSectionAngle = ParseDouble(txtCrossSectionPolarAngle.Text);
+                double azimuthCrossSectionAngle = ParseDoubleOrDefault(txtCrossSectionAzimuthAngle.Text, Settings.CrossSectionAzimuthAngle);
+                double polarCrossSectionAngle = ParseDoubleOrDefault(txtCrossSectionPolarAngle.Text, Settings.CrossSectionPolarAngle);
 
                 Settings = new AdvancedExportSettings
                 {
@@ -66,18 +158,15 @@ namespace Conoscope
                     Channels = channels,
                     ExportAzimuth = exportAzimuth,
                     ExportPolar = exportPolar,
-                    AzimuthStep = ParseDouble(txtAzimuthStep.Text),
-                    RadialStep = ParseDouble(txtRadialStep.Text),
-                    PolarStep = ParseDouble(txtPolarStep.Text),
-                    CircumferentialStep = ParseDouble(txtCircumferentialStep.Text),
+                    AzimuthStep = ParseDoubleOrDefault(txtAzimuthStep.Text, Settings.AzimuthStep),
+                    RadialStep = ParseDoubleOrDefault(txtRadialStep.Text, Settings.RadialStep),
+                    PolarStep = ParseDoubleOrDefault(txtPolarStep.Text, Settings.PolarStep),
+                    CircumferentialStep = ParseDoubleOrDefault(txtCircumferentialStep.Text, Settings.CircumferentialStep),
                     DecimalPlaces = int.Parse(txtDecimalPlaces.Text, CultureInfo.InvariantCulture),
                     EnableCrossSection = enableCrossSection,
                     CrossSectionType = crossSectionType,
                     CrossSectionAzimuthAngle = azimuthCrossSectionAngle,
-                    CrossSectionPolarAngle = polarCrossSectionAngle,
-                    CrossSectionAngle = crossSectionType == CrossSectionType.Azimuth
-                        ? azimuthCrossSectionAngle
-                        : polarCrossSectionAngle
+                    CrossSectionPolarAngle = polarCrossSectionAngle
                 };
 
                 DialogResult = true;
@@ -97,25 +186,30 @@ namespace Conoscope
                 return false;
             }
 
-            if (!TryParseDouble(txtAzimuthStep.Text, out double azimuthStep) || azimuthStep < 0.01 || azimuthStep > 180)
+            bool crossSectionEnabled = chkEnableCrossSection.IsChecked == true;
+            bool azimuthCrossSection = rbCrossSectionAzimuth.IsChecked == true;
+            bool needsAzimuthSettings = chkExportAzimuth.IsChecked == true || (crossSectionEnabled && azimuthCrossSection);
+            bool needsPolarSettings = chkExportPolar.IsChecked == true || (crossSectionEnabled && !azimuthCrossSection);
+
+            if (needsAzimuthSettings && (!TryParseDouble(txtAzimuthStep.Text, out double azimuthStep) || azimuthStep < 0.01 || azimuthStep > 180))
             {
                 MessageBox.Show(Properties.Resources.MsgInvalidAzimuthStep, Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
                 return false;
             }
 
-            if (!TryParseDouble(txtRadialStep.Text, out double radialStep) || radialStep < 0.01 || radialStep > 80)
+            if (needsAzimuthSettings && (!TryParseDouble(txtRadialStep.Text, out double radialStep) || radialStep < 0.01 || radialStep > 80))
             {
                 MessageBox.Show(Properties.Resources.MsgInvalidRadialStep, Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
                 return false;
             }
 
-            if (!TryParseDouble(txtPolarStep.Text, out double polarStep) || polarStep < 0.01 || polarStep > 80)
+            if (needsPolarSettings && (!TryParseDouble(txtPolarStep.Text, out double polarStep) || polarStep < 0.01 || polarStep > 80))
             {
                 MessageBox.Show(Properties.Resources.MsgInvalidRingStep, Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
                 return false;
             }
 
-            if (!TryParseDouble(txtCircumferentialStep.Text, out double circumStep) || circumStep < 0.01 || circumStep > 360)
+            if (needsPolarSettings && (!TryParseDouble(txtCircumferentialStep.Text, out double circumStep) || circumStep < 0.01 || circumStep > 360))
             {
                 MessageBox.Show(Properties.Resources.MsgInvalidCircularStep, Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
                 return false;
@@ -178,7 +272,7 @@ namespace Conoscope
             chkEnableCrossSection.IsChecked = settings.EnableCrossSection;
             rbCrossSectionAzimuth.IsChecked = settings.CrossSectionType == CrossSectionType.Azimuth;
             rbCrossSectionPolar.IsChecked = settings.CrossSectionType == CrossSectionType.Polar;
-            panelCrossSection.IsEnabled = settings.EnableCrossSection;
+            UpdateExportUiState();
         }
 
         private static AdvancedExportSettings NormalizeSettings(AdvancedExportSettings? settings, int defaultDecimalPlaces)
@@ -207,10 +301,7 @@ namespace Conoscope
                 EnableCrossSection = settings?.EnableCrossSection ?? false,
                 CrossSectionType = crossSectionType,
                 CrossSectionAzimuthAngle = azimuthCrossSectionAngle,
-                CrossSectionPolarAngle = polarCrossSectionAngle,
-                CrossSectionAngle = crossSectionType == CrossSectionType.Azimuth
-                    ? azimuthCrossSectionAngle
-                    : polarCrossSectionAngle
+                CrossSectionPolarAngle = polarCrossSectionAngle
             };
         }
 
@@ -235,14 +326,14 @@ namespace Conoscope
                 || double.TryParse(text, NumberStyles.Float, CultureInfo.CurrentCulture, out value);
         }
 
-        private static double ParseDouble(string? text)
+        private static double ParseDoubleOrDefault(string? text, double fallback)
         {
             if (TryParseDouble(text, out double value))
             {
                 return value;
             }
 
-            throw new FormatException("Invalid numeric input.");
+            return fallback;
         }
 
         private static double NormalizeValue(double value, double min, double max, double fallback)
@@ -255,35 +346,10 @@ namespace Conoscope
             return Math.Max(min, Math.Min(value, max));
         }
 
-    }
+        private static string UiText(string key, string fallback)
+        {
+            return Properties.Resources.ResourceManager.GetString(key, CultureInfo.CurrentUICulture) ?? fallback;
+        }
 
-    /// <summary>
-    /// 高级导出设置
-    /// </summary>
-    public class AdvancedExportSettings
-    {
-        public string FilePrefix { get; set; } = "Conoscope_Export";
-        public List<Core.ExportChannel> Channels { get; set; } = new List<Core.ExportChannel>();
-        public bool ExportAzimuth { get; set; } = true;
-        public bool ExportPolar { get; set; }
-        public double AzimuthStep { get; set; } = 1;
-        public double RadialStep { get; set; } = 1;
-        public double PolarStep { get; set; } = 1;
-        public double CircumferentialStep { get; set; } = 1;
-        public int DecimalPlaces { get; set; } = 4;
-        public bool EnableCrossSection { get; set; }
-        public CrossSectionType CrossSectionType { get; set; } = CrossSectionType.Azimuth;
-        public double CrossSectionAzimuthAngle { get; set; }
-        public double CrossSectionPolarAngle { get; set; } = 45;
-        public double CrossSectionAngle { get; set; }
-    }
-
-    /// <summary>
-    /// 截面类型
-    /// </summary>
-    public enum CrossSectionType
-    {
-        Azimuth,  // 方位角截面
-        Polar     // 极角截面
     }
 }

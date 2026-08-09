@@ -39,7 +39,9 @@ namespace ColorVision.Copilot
                 Enum.IsDefined(ComposerState?.RequestMode ?? CopilotAgentMode.Auto)
                     ? ComposerState?.RequestMode ?? CopilotAgentMode.Auto
                     : CopilotAgentMode.Auto,
-                attachments);
+                attachments,
+                ComposerState?.WorkspaceReviewTarget,
+                ComposerState?.AgentSkillReference);
             return runId.Length is > 0 and <= MaximumIdentifierCharacters
                 && conversationId.Length is > 0 and <= MaximumIdentifierCharacters
                 && prompt.Length is > 0 and <= MaximumPromptCharacters
@@ -114,6 +116,15 @@ namespace ColorVision.Copilot
                     conversation.DraftText = string.IsNullOrWhiteSpace(existingDraft)
                         ? restoredDraft
                         : existingDraft + Environment.NewLine + Environment.NewLine + restoredDraft;
+                }
+                var recoveredSkillReference = pair.Value.Count == 1
+                    ? pair.Value[0].AgentSkillReference
+                    : null;
+                if (string.IsNullOrWhiteSpace(existingDraft)
+                    && pair.Value.Count == 1
+                    && recoveredSkillReference?.IsExplicitlyInvokedBy(conversation.DraftText) == true)
+                {
+                    conversation.DraftAgentSkillReference = recoveredSkillReference.CreateSnapshot();
                 }
                 RestoreAttachments(conversation, pair.Value);
                 if (conversation.DraftRequestMode == CopilotAgentMode.Auto

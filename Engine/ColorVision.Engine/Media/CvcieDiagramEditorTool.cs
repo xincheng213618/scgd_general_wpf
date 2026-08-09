@@ -1,8 +1,8 @@
 using ColorVision.Common.MVVM;
+using ColorVision.Engine.Services.POI;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Cie;
 using ColorVision.ImageEditor.Draw.Special;
-using cvColorVision;
 using System;
 using System.Windows;
 using System.Windows.Input;
@@ -12,21 +12,18 @@ namespace ColorVision.Engine.Media
     internal sealed class CvcieDiagramEditorTool : IEditorTool, IDisposable
     {
         private readonly EditorContext _context;
-        private readonly Func<IntPtr> _getConvertHandle;
-        private readonly Action _ensureBufferLoaded;
+        private readonly Func<PoiMeasurementPoint, (int Channels, PoiMeasurementResult Result)> _calculatePoi;
         private readonly Func<CvcieMouseProbeOptions> _getProbeSettings;
         private WindowCIE? _windowCie;
         private EventHandler<ImagePixelSample>? _pixelSampleChangedHandler;
 
         public CvcieDiagramEditorTool(
             EditorContext context,
-            Func<IntPtr> getConvertHandle,
-            Action ensureBufferLoaded,
+            Func<PoiMeasurementPoint, (int Channels, PoiMeasurementResult Result)> calculatePoi,
             Func<CvcieMouseProbeOptions> getProbeSettings)
         {
             _context = context;
-            _getConvertHandle = getConvertHandle;
-            _ensureBufferLoaded = ensureBufferLoaded;
+            _calculatePoi = calculatePoi;
             _getProbeSettings = getProbeSettings;
             Command = new RelayCommand(_ => OpenCieDiagram());
         }
@@ -49,32 +46,16 @@ namespace ColorVision.Engine.Media
 
                 _pixelSampleChangedHandler = (_, pixelSample) =>
                 {
-                    _ensureBufferLoaded();
-
                     CvcieMouseProbeOptions probeSettings = _getProbeSettings();
-                    float dXVal = 0;
-                    float dYVal = 0;
-                    float dZVal = 0;
-                    float dx = 0;
-                    float dy = 0;
-                    float du = 0;
-                    float dv = 0;
+                    PoiMeasurementResult measurement = _calculatePoi(
+                        new PoiMeasurementPoint(
+                            pixelSample.PixelX,
+                            pixelSample.PixelY,
+                            Math.Max(1, probeSettings.RectWidth),
+                            Math.Max(1, probeSettings.RectHeight),
+                            PoiMeasurementShape.Rect)).Result;
 
-                    _ = ConvertXYZ.CM_GetXYZxyuvRect(
-                        _getConvertHandle(),
-                        pixelSample.PixelX,
-                        pixelSample.PixelY,
-                        ref dXVal,
-                        ref dYVal,
-                        ref dZVal,
-                        ref dx,
-                        ref dy,
-                        ref du,
-                        ref dv,
-                        probeSettings.RectWidth,
-                        probeSettings.RectHeight);
-
-                    _windowCie?.ChangeSelect(dx, dy);
+                    _windowCie?.ChangeSelect(measurement.ChromaX, measurement.ChromaY);
                 };
 
                 _context.MouseInfoProvider.PixelSampleChanged += _pixelSampleChangedHandler;

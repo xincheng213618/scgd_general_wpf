@@ -13,13 +13,13 @@ using System.Windows.Media;
 
 namespace ProjectARVRPro.Process.MTF.MTFHV
 {
-    public class MTFHVProcess : ProcessBase<MTFHVProcessConfig, MTFHVRecipeConfig>
+    public class MTFHVProcess : ProcessWithRecipeBase<MTFHVProcessConfig, MTFHVRecipeConfig>
     {
         public override async Task<bool> Execute(IProcessExecutionContext ctx)
         {
             if (ctx?.Batch == null || ctx.Result == null) return false;
             var log = ctx.Log;
-            MTFHVRecipeConfig recipeConfig = ctx.RecipeConfig.GetRequiredService<MTFHVRecipeConfig>();
+            MTFHVRecipeConfig recipeConfig = Config.RecipeConfig;
             MTFHVViewTestResult testResult = new MTFHVViewTestResult();
 
             try

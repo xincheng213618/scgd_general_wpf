@@ -295,9 +295,14 @@ namespace ColorVision.Copilot
 
             CopilotConversationFindSession.ClearHighlights(_selectedConversation?.Messages);
             _selectedConversation = conversation;
+            _pendingAgentSkillReference = null;
             _pendingRequestModeOverride = conversation?.DraftRequestMode is { } restoredMode
                 && restoredMode != CopilotAgentMode.Auto
                     ? restoredMode
+                    : null;
+            _pendingWorkspaceReviewTarget = _pendingRequestModeOverride == CopilotAgentMode.Review
+                && conversation?.DraftWorkspaceReviewTarget?.IsStructurallyValid() == true
+                    ? conversation.DraftWorkspaceReviewTarget.CreateSnapshot()
                     : null;
             _promptHistoryNavigator.Reset();
             DismissLocalCommandResult();
@@ -308,6 +313,9 @@ namespace ColorVision.Copilot
                 _selectedConversation.Messages.CollectionChanged += Messages_CollectionChanged;
 
             InputText = _selectedConversation?.DraftText ?? string.Empty;
+            SetPendingAgentSkillReference(
+                _selectedConversation?.DraftAgentSkillReference,
+                synchronizeDraft: false);
 
             OnPropertyChanged(nameof(SelectedConversation));
             OnPropertyChanged(nameof(Messages));
@@ -451,11 +459,36 @@ namespace ColorVision.Copilot
 
         private static CopilotProfileConfig CreateConversationRequestProfile(
             CopilotProfileConfig profile,
+            CopilotConversationRecord? conversation,
+            CopilotAgentMode mode,
+            CopilotProjectInstructionDiscoveryOptions? codexConfigOptions = null)
+        {
+            var personality = CopilotResponsePersonalitySelection.Resolve(
+                conversation,
+                codexConfigOptions);
+            return CopilotReviewModelSelection.CreateRequestProfile(
+                profile,
+                mode,
+                personality.Personality,
+                codexConfigOptions?.ModelInstructions,
+                codexConfigOptions?.HasReviewModelOverride == true
+                    ? codexConfigOptions.ConfiguredReviewModel
+                    : null,
+                codexConfigOptions?.HasModelOverride == true
+                    ? codexConfigOptions.ConfiguredModel
+                    : null);
+        }
+
+        private CopilotProfileConfig CreateCurrentConversationRequestProfile(
+            CopilotProfileConfig profile,
             CopilotConversationRecord? conversation)
         {
-            return CopilotResponsePresentationGuidance.CreateRequestProfile(
-                profile,
-                conversation?.ResponsePersonality ?? CopilotResponsePersonality.None);
+            var codexConfigOptions = CaptureHostedTurnSnapshot(
+                Array.Empty<CopilotAttachmentItem>()).ProjectInstructionDiscoveryOptions;
+            var mode = conversation?.Messages
+                .LastOrDefault(candidate => candidate != null && candidate.IsUser)
+                ?.RequestMode ?? CopilotAgentMode.Auto;
+            return CreateConversationRequestProfile(profile, conversation, mode, codexConfigOptions);
         }
 
         private void UpdateConversationMetadata(CopilotConversationRecord conversation, bool touch)
@@ -470,37 +503,47 @@ namespace ColorVision.Copilot
             }
 
             conversation.RefreshSummary();
-            BringConversationToFront(conversation);
             RefreshFilteredConversations();
             RefreshComposerTokenEstimate();
         }
 
         private async Task ApplyGeneratedConversationTitleAsync(
             CopilotConversationRecord conversation,
-            string generatedTitle,
+            CopilotConversationTitleGenerationResult result,
             Func<bool> isCurrentGeneration,
             CancellationToken cancellationToken)
         {
+            if (!CanApplyAuxiliaryConversationResult(conversation))
+                return;
+
             var application = Application.Current;
             if (application == null)
                 return;
 
             await CopilotUiDispatcher.InvokeAsync(application.Dispatcher, () =>
             {
-                if (cancellationToken.IsCancellationRequested
-                    || !isCurrentGeneration()
-                    || !Conversations.Contains(conversation)
-                    || conversation.HasCustomTitle)
-                {
+                if (!CanApplyAuxiliaryConversationResult(conversation))
                     return false;
-                }
 
-                conversation.SetGeneratedTitle(generatedTitle);
-                RefreshFilteredConversations();
+                conversation.RecordTitleGenerationUsage(result.Usage, result.CompletedAtUtc);
+                var shouldApplyTitle = !cancellationToken.IsCancellationRequested
+                    && isCurrentGeneration()
+                    && !conversation.HasCustomTitle
+                    && !string.IsNullOrWhiteSpace(result.Title);
+                if (shouldApplyTitle)
+                {
+                    conversation.SetGeneratedTitle(result.Title!);
+                    RefreshFilteredConversations();
+                }
                 PersistState();
-                return true;
-            }, cancellationToken).ConfigureAwait(false);
+                return shouldApplyTitle;
+            }, CancellationToken.None).ConfigureAwait(false);
         }
+
+        private bool CanApplyAuxiliaryConversationResult(CopilotConversationRecord? conversation) =>
+            Volatile.Read(ref _disposeState) == 0
+            && conversation != null
+            && Conversations.Contains(conversation);
 
         private CopilotNonBlockingCancellationSource BeginAuxiliaryOperation()
         {
@@ -521,12 +564,6 @@ namespace ColorVision.Copilot
             _auxiliaryOperationCancellations.Clear();
             foreach (var cancellation in cancellations)
                 cancellation.RequestCancellation();
-        }
-
-        private void BringConversationToFront(CopilotConversationRecord conversation)
-        {
-            CopilotConversationService.MoveToPreferredIndex(Conversations, conversation);
-            _state.ActiveConversationId = conversation.Id;
         }
 
         private void RenameConversation(CopilotConversationRecord? conversation)

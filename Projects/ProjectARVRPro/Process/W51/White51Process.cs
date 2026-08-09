@@ -12,13 +12,13 @@ using System.Windows.Media;
 
 namespace ProjectARVRPro.Process.W51
 {
-    public class White51Process : ProcessBase<W51ProcessConfig, W51RecipeConfig>
+    public class White51Process : ProcessWithRecipeBase<W51ProcessConfig, W51RecipeConfig>
     {
         public override async Task<bool> Execute(IProcessExecutionContext ctx)
         {
             if (ctx?.Batch == null || ctx.Result == null) return false;
             var log = ctx.Log;
-            W51RecipeConfig recipeConfig = ctx.RecipeConfig.GetRequiredService<W51RecipeConfig>();
+            W51RecipeConfig recipeConfig = Config.RecipeConfig;
             W51ViewTestResult testResult = new W51ViewTestResult();
 
             try

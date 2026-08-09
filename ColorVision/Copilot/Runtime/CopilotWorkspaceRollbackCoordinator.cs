@@ -194,6 +194,7 @@ namespace ColorVision.Copilot
                     RiskLevel = action.RiskLevel,
                     ExpiresAtUtc = action.ExpiresAt,
                     ExecuteOnApproval = true,
+                    ResumesAgentOnApproval = false,
                 },
             };
             onEvent(CopilotAgentEvent.FromToolResult(

@@ -71,16 +71,23 @@ namespace ColorVision.Copilot
                 ReportRequestAdmissionFailure(preflightAdmission);
                 return false;
             }
+            var agentSkillReference = ResolvePendingAgentSkillReference(prompt);
+            var submissionContext = CaptureHostedTurnSnapshot(conversation, attachmentOverride: conversation.Attachments);
+            var requestProfile = CreateConversationRequestProfile(
+                profile,
+                conversation,
+                activeRun.Mode,
+                submissionContext.ProjectInstructionDiscoveryOptions);
             if (!TryValidateComposerCharacterLimit(prompt)
-                || !TryValidatePromptBudget(prompt, activeRun.Mode, profile))
+                || !TryValidatePromptBudget(
+                    prompt,
+                    activeRun.Mode,
+                    requestProfile,
+                    submissionContext.ProjectInstructionDiscoveryOptions)
+                || !TryValidateComposerAttachments(submissionContext.Attachments))
             {
                 return false;
             }
-
-            var requestProfile = CreateConversationRequestProfile(profile, conversation);
-            var submissionContext = CaptureHostedTurnSnapshot(conversation, attachmentOverride: conversation.Attachments);
-            if (!TryValidateComposerAttachments(submissionContext.Attachments))
-                return false;
 
             var itemReady = new TaskCompletionSource<CopilotQueuedFollowUp>(TaskCreationOptions.RunContinuationsAsynchronously);
             async Task ExecuteFollowUpAsync(CopilotHostedAgentRun run)
@@ -117,7 +124,8 @@ namespace ColorVision.Copilot
                 prompt,
                 activeRun.Mode,
                 requestProfile,
-                submissionContext);
+                submissionContext,
+                agentSkillReference: agentSkillReference);
             _queuedFollowUpsByRunId.Add(queuedRun.Id, queuedFollowUp);
             QueuedFollowUps.Add(queuedFollowUp);
             AddQueuedFollowUpRecovery(queuedFollowUp);
@@ -197,7 +205,8 @@ namespace ColorVision.Copilot
                 preparedTurn.UserMessage,
                 preparedTurn.AssistantMessage,
                 preparedTurn.TurnSnapshot,
-                refreshExternalContext: true).ConfigureAwait(false);
+                refreshExternalContext: true,
+                isAutomaticGoalContinuation: queuedFollowUp.IsAutomaticGoalContinuation).ConfigureAwait(false);
         }
 
         private CopilotPreparedQueuedFollowUpTurn? PrepareQueuedFollowUpTurn(CopilotQueuedFollowUp queuedFollowUp)
@@ -214,17 +223,12 @@ namespace ColorVision.Copilot
                 PersistState(immediate: true);
                 return null;
             }
-            var submittedContext = queuedFollowUp.SubmissionContext;
-            var turnSnapshot = new CopilotAgentHostContextSnapshot(
-                submittedContext.ActiveDocumentPath,
-                submittedContext.SolutionDirectoryPath,
-                submittedContext.Attachments,
-                submittedContext.LiveContext,
-                CopilotConversationRequestBuilder.CaptureHistorySnapshot(conversation),
-                submittedContext.AdditionalReadRootPaths);
+            var turnSnapshot = queuedFollowUp.CreateExecutionContext(
+                CopilotConversationRequestBuilder.CaptureHistorySnapshot(conversation));
             var userMessage = new CopilotChatMessage(CopilotChatRole.User, queuedFollowUp.Prompt)
             {
                 RequestMode = queuedFollowUp.Mode,
+                AgentSkillReference = queuedFollowUp.AgentSkillReference?.CreateSnapshot(),
                 Attachments = new ObservableCollection<CopilotAttachmentItem>(turnSnapshot.Attachments),
                 AttachmentSnapshotCaptured = true,
             };
@@ -310,12 +314,14 @@ namespace ColorVision.Copilot
                 queuedFollowUp.Prompt,
                 queuedFollowUp.Prompt.Length,
                 queuedFollowUp.Mode,
-                queuedFollowUp.SubmissionContext.Attachments);
+                queuedFollowUp.SubmissionContext.Attachments,
+                agentSkillReference: queuedFollowUp.AgentSkillReference);
             var previousMode = ResolveComposerRequestMode();
             foreach (var attachment in composerState.CreateAttachmentSnapshots())
                 conversation.Attachments.Add(attachment);
             SetPendingRequestModeOverride(composerState.RequestMode);
             InputText = composerState.Text;
+            SetPendingAgentSkillReference(composerState.AgentSkillReference);
             UpdateAttachmentsState(conversation);
             if (!_taskHost.RequestCancel(queuedFollowUp.RunId))
             {
@@ -411,7 +417,8 @@ namespace ColorVision.Copilot
                     queuedFollowUp.Prompt,
                     queuedFollowUp.Prompt.Length,
                     queuedFollowUp.Mode,
-                    queuedFollowUp.SubmissionContext.Attachments),
+                    queuedFollowUp.SubmissionContext.Attachments,
+                    agentSkillReference: queuedFollowUp.AgentSkillReference),
             });
         }
 

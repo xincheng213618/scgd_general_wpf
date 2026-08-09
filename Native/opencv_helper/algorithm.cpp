@@ -1,11 +1,9 @@
 
 #include "pch.h"
 #include "algorithm.h"
-#include <iostream>  
 #include <opencv2/core/core.hpp>  
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
-#include "spdlog/spdlog.h"
 
 #include <vector>
 #include <algorithm>
@@ -106,7 +104,6 @@ void LampBeadDetection(cv::Mat image, int rows, int cols)
 
     // ����͹�������
     double area = cv::contourArea(hull);
-    std::cout << "Convex Hull Area: " << area << std::endl;
 
     // ����͹���ı߽����
     cv::Rect boundingRect = cv::boundingRect(hull);
@@ -137,8 +134,6 @@ void LampBeadDetection(cv::Mat image, int rows, int cols)
 
     //ȱ�ٵĵ�
     size_t black = rows * cols - centers.size();
-    std::cout << black << std::endl;
-
 
     std::vector<std::vector<cv::Point>> ledMatrix1;
     std::vector<cv::Point> currentRow;
@@ -191,13 +186,10 @@ void LampBeadDetection(cv::Mat image, int rows, int cols)
     }
 
     //ȱ�ٵĵ�
-    std::cout << blackcenters.size() << std::endl;
     for (const auto& contour : blackcenters)
     {
-        std::cout << contour << std::endl;
         cv::circle(image8bit, contour, 5, cv::Scalar(0, 0, 255), 1);
     }
-    std::cout << blackcenters.size() << std::endl;
 
 }
 
@@ -753,7 +745,6 @@ static void BuildAutoLevelTable(int minValue, int maxValue, int table[256])
 void autoLevelsAdjust(cv::Mat& src, cv::Mat& dst)
 {
     CV_Assert(!src.empty() && src.channels() >= 3);
-    spdlog::info("AutoLevelsAdjust");
 
     //ͳ�ƻҶ�ֱ��ͼ
     int BHist[256] = { 0 };    //B����

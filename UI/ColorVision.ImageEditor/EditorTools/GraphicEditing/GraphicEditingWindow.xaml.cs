@@ -423,19 +423,30 @@ namespace ColorVision.ImageEditor
         DVDatumPolygon Polygon;
         private void FindLuminousAreaCorner_Click(object sender, RoutedEventArgs e)
         {
-            if (ImageContext.HImageCache != null)
+            string FindLuminousAreajson = Config.FindLuminousAreaCorner.ToJsonN();
+            ImageFrameLease? acquiredLease = ImageContext.AcquireImageFrame();
+            if (acquiredLease != null)
             {
-                string FindLuminousAreajson = Config.FindLuminousAreaCorner.ToJsonN();
-                Task.Run(() =>
+                ImageFrameLease lease = acquiredLease;
+                long revision = lease.Revision;
+                _ = Task.Run(() =>
                 {
-                    int length = OpenCVMediaHelper.M_FindLuminousArea((HImage)ImageContext.HImageCache, new RoiRect(), FindLuminousAreajson, out IntPtr resultPtr);
+                    int length;
+                    IntPtr resultPtr;
+                    using (lease)
+                    {
+                        length = OpenCVMediaHelper.M_FindLuminousArea(lease.Image, new RoiRect(), FindLuminousAreajson, out resultPtr);
+                    }
                     if (length > 0)
                     {
                         string result = OpenCVMediaHelper.PtrToStringAnsiAndFree(resultPtr);
                         Console.WriteLine("Result: " + result);
 
-                        Application.Current.Dispatcher.Invoke(() =>
+                        Application.Current.Dispatcher.BeginInvoke(() =>
                         {
+                            if (!ImageContext.IsCurrentImageRevision(revision))
+                                return;
+
                             if (Config.FindLuminousAreaCorner.UseRotatedRect)
                             {
                                 var jObj = Newtonsoft.Json.Linq.JObject.Parse(result);

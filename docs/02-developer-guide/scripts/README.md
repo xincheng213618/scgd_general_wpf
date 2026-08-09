@@ -9,6 +9,7 @@
 | 主程序正式发布 | `Scripts\release.bat` | 唯一正常入口，会通过后端 HTTP 接口上传主包和 `CHANGELOG.md`，最后更新 `LATEST_RELEASE`，随后上传增量包并生成全量 zip |
 | 发布插件包 | `Scripts\package_plugin.bat <PluginName>` | 面向 `Plugins/<PluginName>/`，上传成功后删除本地 `.cvxp` |
 | 发布项目包 | `Scripts\package_project.bat <ProjectName>` | 面向 `Projects/<ProjectName>/`，上传成功后删除本地 `.cvxp` |
+| 发布 Spectrum 独立包和插件包 | `Scripts\Spectrum.bat --release-notes "<说明>"` | 同时维护独立更新源和 ColorVision 插件更新源，完整远程验收后才删除本地 `.cvxp` |
 | 发布外部编译产物 | `py Scripts\package_cvxp.py --src-dir <输出目录>` | 适合只拿到插件输出目录的场景 |
 | 只校验插件清单 | `py Scripts\package_cvxp.py --project-file <插件.csproj> --validate-only` | 不构建、不打包、不上传 |
 | 刷新共享文件表 | `py Scripts\generate_shared_files.py` | 只有宿主输出目录共享 DLL 明显变化时才需要 |
@@ -37,6 +38,16 @@ Scripts\release.bat
 
 存在清单时，`manifest.id` 是唯一的发布身份：它决定服务器目录、`.cvxp` 文件名前缀、包内根目录和最终的 `Plugins/<id>/` 安装目录；`dllpath` 只决定用于读取版本并启动插件的主 DLL。因此第三方插件不需要让项目名、程序集名和插件 ID 完全相同。
 
+## Spectrum 双通道发布
+
+Spectrum 同时提供无需安装 ColorVision 主程序的独立 ZIP，以及可随主程序更新的 `.cvxp` 插件包。正式发布使用 `Scripts\Spectrum.bat --release-notes "本次变更说明"`。
+
+`build_spectrum.py` 从 `Spectrum.exe` 读取四段 PE 版本，并沿用 `package_cvxp.py` 的清单版本同步规则。独立清单使用 canonical UTF-8 JSON，包含版本、UTC 发布时间、发布说明和 ZIP 的文件名、大小、SHA-256；脚本通过 `Cert:\CurrentUser\My` 中 `CN=xincheng`、指纹 `0AFB92F7CF8B33F13C931B327B1BE5DC773F30FA` 的 RSA 私钥生成 PKCS#1 SHA-256 签名，私钥不会导出或上传。
+
+远端写入顺序是先上传尚未对用户可见的 `.cvxp` 文件，再调用独立包原子发布接口，最后提交插件 `LATEST_RELEASE`。随后脚本会校验插件 latest、独立 latest 和 latest-version，重新下载插件包比对长度及 SHA-256，并以 Range 请求重新下载独立 ZIP 做相同校验。任一步骤失败都会以非零状态结束并保留本地 ZIP 和 `.cvxp`；只有全部远程验证通过才删除本地 `.cvxp`。
+
+只生成本地包、不签名也不上传时，使用 `py Scripts\build_spectrum.py --release-notes "本地打包"`。正式 `--upload` 不允许配合 `--no-zip` 或 `--no-cvxp`，避免两个更新源出现人为缺口。
+
 ## 上传配置
 
 远程上传优先使用环境变量，不要在文档或脚本调用里写真实账号密码：
@@ -63,7 +74,7 @@ $env:COLORVISION_UPLOAD_USE_SYSTEM_PROXY = "1"
 | `build.py`、`build_update.py` | 否 | `release.bat` 内部构建、上传和增量更新步骤 |
 | `backend_client.py` | 否 | 统一处理上传认证、预检、重试、流式上传和路径编码 |
 | `generate_shared_files.py` | 偶尔 | 生成宿主共享文件清单 |
-| `build_spectrum.py` | 特殊 | Spectrum 插件专用构建入口 |
+| `build_spectrum.py` | 特殊 | Spectrum 独立 ZIP + 插件 `.cvxp` 双通道构建、签名、发布和远程验收 |
 
 如果某个脚本不在 `Scripts/` 目录里，就不要在文档里继续引用它。
 
@@ -76,6 +87,7 @@ $env:COLORVISION_UPLOAD_USE_SYSTEM_PROXY = "1"
 | `.cvxp` 包过大 | `shared_files.json` 是否过期，宿主共享 DLL 是否被误带入包 |
 | 插件/项目包找不到项目 | 名称是否等于 `Plugins/<Name>/<Name>.csproj` 或 `Projects/<Name>/<Name>.csproj` |
 | 上传 401 或连接失败 | 环境变量、后端是否运行、URL 是否正确、代理是否需要启用 |
+| Spectrum 发布保留了本地 `.cvxp` | 检查签名证书、独立发布接口响应、两个 latest 以及 Range 下载的大小/SHA-256 验证输出；修复后重新完整发布 |
 | 构建失败 | 先单独跑对应 `dotnet build`，再看 MSBuild、Advanced Installer 或外部 DLL |
 
 改正式发布路径时，需要做一次测试环境发布演练。

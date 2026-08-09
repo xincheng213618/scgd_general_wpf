@@ -53,11 +53,49 @@ namespace ColorVision.Copilot
         {
             ArgumentNullException.ThrowIfNull(request);
 
-            return GetCurrentTools()
-                .Where(tool => IsAllowedForMode(tool, request)
+            return GetRegisteredTools(request)
+                .Where(tool => IsAllowedForCodexAgentPolicy(tool, request)
+                    && IsAllowedForCodexShellToolPolicy(tool, request)
+                    && IsAllowedForCodexSandboxPolicy(tool, request)
+                    && IsAllowedForMode(tool, request)
                     && (IsAvailableForAgent(tool, request)
                         || tool is not ICopilotAgentDrivenTool && CopilotToolIntentPolicy.CanRetainForFollowUp(request, tool)))
                 .ToArray();
+        }
+
+        internal IReadOnlyList<ICopilotTool> GetRegisteredTools(CopilotAgentRequest request)
+        {
+            ArgumentNullException.ThrowIfNull(request);
+            return GetCurrentTools(request.CodexPluginsEnabled);
+        }
+
+        internal static bool IsAllowedForCodexAgentPolicy(
+            ICopilotTool tool,
+            CopilotAgentRequest request)
+        {
+            ArgumentNullException.ThrowIfNull(tool);
+            ArgumentNullException.ThrowIfNull(request);
+            return request.CodexAgentsEnabled || tool is not CopilotDelegateSubagentTool;
+        }
+
+        internal static bool IsAllowedForCodexSandboxPolicy(
+            ICopilotTool tool,
+            CopilotAgentRequest request)
+        {
+            ArgumentNullException.ThrowIfNull(tool);
+            ArgumentNullException.ThrowIfNull(request);
+            return !CopilotCodexSandboxModeSelection.IsReadOnly(request.CodexSandboxMode)
+                || tool.Capability.Access == CopilotToolAccess.ReadOnly;
+        }
+
+        internal static bool IsAllowedForCodexShellToolPolicy(
+            ICopilotTool tool,
+            CopilotAgentRequest request)
+        {
+            ArgumentNullException.ThrowIfNull(tool);
+            ArgumentNullException.ThrowIfNull(request);
+            return request.CodexShellToolEnabled
+                || tool is not (CopilotShellCommandTool or CopilotStartBackgroundShellCommandTool);
         }
 
         internal static bool IsAllowedForMode(ICopilotTool tool, CopilotAgentRequest request)
@@ -167,10 +205,10 @@ namespace ColorVision.Copilot
             };
         }
 
-        private ICopilotTool[] GetCurrentTools()
+        private ICopilotTool[] GetCurrentTools(bool includeExtensionTools = true)
         {
             IEnumerable<ICopilotTool> currentTools = _tools;
-            if (_extensionBridge != null)
+            if (includeExtensionTools && _extensionBridge != null)
                 currentTools = currentTools.Concat(_extensionBridge.GetSnapshot().Tools);
 
             var tools = currentTools.ToArray();

@@ -7,6 +7,7 @@ using ColorVision.Engine.FlowProcessing.Diagnostics;
 using ColorVision.Engine.FlowProcessing.PreProcess;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services.RC;
+using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.Engine.FlowProcessing;
 using ColorVision.SocketProtocol;
@@ -186,7 +187,7 @@ namespace ProjectLUX
 
             if (ProjectLUXConfig.Instance.LogControlVisibility)
             {
-                logOutput = new LogOutput("%date{HH:mm:ss} [%thread] %-5level %message%newline");
+                logOutput = new LogOutput("%date{HH:mm:ss} [%thread] %-5level %message%newline", ProjectLUXLogConfig.Instance);
                 LogGrid.Children.Add(logOutput);
             }
             else
@@ -329,21 +330,22 @@ namespace ProjectLUX
         public async Task RunTemplate()
         {
             if (flowControl != null && flowControl.IsFlowRun) return;
+            if (FlowTemplate.SelectedItem is not TemplateModel<FlowParam> template) return;
 
             TryCount++;
-            _currentFlowTemplateId = TemplateFlow.Params
-                .FirstOrDefault(template => string.Equals(template.Key, FlowTemplate.Text, StringComparison.OrdinalIgnoreCase))
-                ?.Id ?? 0;
+            _currentFlowTemplateId = template.Id;
+            string flowName = template.Key;
             LastFlowTime = await Task.Run(
-                () => FlowNodeRecordDataBaseHelper.GetLastCompletedFlowElapsed(_currentFlowTemplateId, FlowTemplate.Text));
+                () => FlowNodeRecordDataBaseHelper.GetLastCompletedFlowElapsed(
+                    new FlowIdentity(template.Id, template.Value.FlowKey, flowName)));
 
             CurrentFlowResult = new ProjectLUXReuslt();
             CurrentFlowResult.SN = ProjectLUXConfig.Instance.SN;
-            CurrentFlowResult.Model = FlowTemplate.Text;
+            CurrentFlowResult.Model = flowName;
 
             Application.Current.Dispatcher.Invoke(() =>
             {
-                if (ProcessMetas.FirstOrDefault(m => string.Equals(m.FlowTemplate, FlowTemplate.Text, StringComparison.OrdinalIgnoreCase)) is ProcessMeta processMeta)
+                if (ProcessMetas.FirstOrDefault(m => string.Equals(m.FlowTemplate, flowName, StringComparison.OrdinalIgnoreCase)) is ProcessMeta processMeta)
                 {
                     CurrentFlowResult.TestType = ProcessMetas.IndexOf(processMeta);
                     ProjectLUXConfig.Instance.StepIndex = CurrentFlowResult.TestType;
@@ -356,7 +358,7 @@ namespace ProjectLUX
                 }
             });
 
-            FlowName = FlowTemplate.Text;
+            FlowName = flowName;
 
             ProcessMeta? processMeta = ProcessManager.ProcessMetas.FirstOrDefault(a => a.FlowTemplate == FlowName);
             if (processMeta != null)
@@ -367,8 +369,6 @@ namespace ProjectLUX
                     ProjectLUXConfig.Instance.StepIndex = index;
                 });
             }
-
-            FlowName = FlowTemplate.Text;
 
             CurrentFlowResult.Code = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
 

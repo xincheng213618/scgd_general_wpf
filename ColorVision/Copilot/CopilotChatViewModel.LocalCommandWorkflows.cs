@@ -122,7 +122,7 @@ namespace ColorVision.Copilot
                     ShowLocalCommandResult(command, BuildHookDiagnosticsReport());
                     break;
                 case CopilotLocalCommandKind.Skills:
-                    ShowLocalCommandResult(command, BuildAgentSkillDiagnosticsReport());
+                    HandleAgentSkillsCommand(command, invocation.Arguments);
                     break;
                 case CopilotLocalCommandKind.Mcp:
                     HandleMcpCommand(command, invocation.Arguments);
@@ -240,7 +240,11 @@ namespace ColorVision.Copilot
             var trustedProjectRoots = CopilotAgentRequestFactory.BuildTrustedProjectRootPaths(turnSnapshot);
             return CopilotAgentSkillCatalog.DiscoverCached(
                 trustedProjectRoots,
-                _config.AgentDefaults.CreateSkillOverrideSnapshot());
+                _config.AgentDefaults.CreateSkillOverrideSnapshot(),
+                applicationBaseDirectory: null,
+                userProfileDirectory: null,
+                activeDocumentPath: turnSnapshot.ActiveDocumentPath,
+                pathOverrides: _config.AgentDefaults.CreateSkillPathOverrideSnapshot());
         }
 
         private bool TryReportCommandInputRecovery(string prompt)
@@ -312,8 +316,44 @@ namespace ColorVision.Copilot
             string arguments)
         {
             RefreshPendingActions();
+            var reviewableActions = _pendingActions.Where(CanReviewPendingAction).ToArray();
+            if (reviewableActions.Length == 0)
+            {
+                var conversation = SelectedConversation;
+                var workspacePath = CaptureHostedTurnSnapshot(
+                    conversation?.Attachments ?? Enumerable.Empty<CopilotAttachmentItem>()).SolutionDirectoryPath;
+                var denialResult = CopilotAutomaticApprovalDenialCommand.Evaluate(
+                    CopilotAutomaticApprovalOverrideStore.Shared.GetRecentDenials(
+                        conversation?.Id,
+                        workspacePath),
+                    arguments,
+                    DateTimeOffset.UtcNow);
+                if (!denialResult.AuthorizesRetry)
+                {
+                    ShowLocalCommandResult(command, denialResult.Report);
+                    return;
+                }
+
+                if (!CopilotAutomaticApprovalOverrideStore.Shared.TryAuthorizeOneRetry(
+                    denialResult.Denial!.DenialId,
+                    conversation?.Id,
+                    workspacePath,
+                    out var authorizedDenial))
+                {
+                    ShowLocalCommandResult(
+                        command,
+                        "该拒绝记录已被使用、已过期，或当前会话与工作区不再匹配；没有创建重试授权。");
+                    return;
+                }
+
+                RunUiOperation(
+                    () => RetryAutomaticallyDeniedActionAsync(authorizedDenial),
+                    "精确重试自动审查拒绝操作");
+                return;
+            }
+
             var result = CopilotPendingApprovalCommand.Evaluate(
-                _pendingActions.Where(CanReviewPendingAction),
+                reviewableActions,
                 arguments,
                 DateTimeOffset.UtcNow);
             if (!result.OpensReview)
@@ -379,9 +419,24 @@ namespace ColorVision.Copilot
                         SelectedConversation?.Id,
                         request.RunId);
                 }
+                var showsRoles = request.Action is CopilotSubagentDiagnosticAction.Overview
+                    or CopilotSubagentDiagnosticAction.Roles;
+                var usesActiveRequestSnapshot = showsRoles && ActiveHostedRun?.IsAgent == true;
+                var customAgentOptions = showsRoles
+                    ? usesActiveRequestSnapshot
+                        ? _currentCodexConfigOptions
+                        : CaptureHostedTurnSnapshot(Attachments).ProjectInstructionDiscoveryOptions
+                    : CopilotProjectInstructionDiscoveryConfig.CreateDefault();
                 ShowLocalCommandResult(
                     command,
-                    CopilotSubagentDiagnostics.Format(SelectedConversation, arguments));
+                    CopilotSubagentDiagnostics.Format(
+                        SelectedConversation,
+                        arguments,
+                        customSubagents: customAgentOptions.CustomSubagents,
+                        customAgentsEnabled: customAgentOptions.EffectiveAgentsEnabled,
+                        customAgentSnapshotLabel: usesActiveRequestSnapshot
+                            ? "当前活动 Agent 请求的提交快照"
+                            : "下一次 Agent 请求的当前配置快照"));
                 return;
             }
 

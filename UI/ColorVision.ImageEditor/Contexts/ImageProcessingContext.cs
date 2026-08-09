@@ -31,14 +31,21 @@ namespace ColorVision.ImageEditor
 
         public bool IsInitialized => _binding.IsInitialized();
 
-        public double Width => _binding.GetWidth();
+        public long ImageRevision => _binding.GetImageRevision();
 
-        public double Height => _binding.GetHeight();
-
-        public HImage? HImageCache
+        public ImageFrameLease? AcquireImageFrame()
         {
-            get => _binding.GetHImageCache();
-            set => _binding.SetHImageCache(value);
+            return _binding.AcquireImageFrame();
+        }
+
+        public bool IsCurrentImageRevision(long revision)
+        {
+            return _binding.IsCurrentImageRevision(revision);
+        }
+
+        public void NotifySourcePixelsChanged()
+        {
+            _binding.NotifySourcePixelsChanged();
         }
 
         public ImageSource FunctionImage
@@ -75,13 +82,13 @@ namespace ColorVision.ImageEditor
     {
         public required Func<bool> IsInitialized { get; init; }
 
-        public required Func<double> GetWidth { get; init; }
+        public required Func<long> GetImageRevision { get; init; }
 
-        public required Func<double> GetHeight { get; init; }
+        public required Func<ImageFrameLease?> AcquireImageFrame { get; init; }
 
-        public required Func<HImage?> GetHImageCache { get; init; }
+        public required Func<long, bool> IsCurrentImageRevision { get; init; }
 
-        public required Action<HImage?> SetHImageCache { get; init; }
+        public required Action NotifySourcePixelsChanged { get; init; }
 
         public required Func<ImageSource?> GetFunctionImage { get; init; }
 

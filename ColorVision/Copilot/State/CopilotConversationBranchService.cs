@@ -143,18 +143,24 @@ namespace ColorVision.Copilot
             bool capturesInProgressTurn)
         {
             var forkedAtUtc = DateTimeOffset.UtcNow;
+            var forkedAt = forkedAtUtc.LocalDateTime;
+            var copiedGoal = source.Goal?.IsStructurallyValid() == true
+                ? source.Goal.CopyForBranch(forkedAtUtc)
+                : null;
             var branch = new CopilotConversationRecord
             {
-                CreatedAt = DateTime.Now,
+                CreatedAt = forkedAt,
                 HasCustomTitle = true,
                 IsPinned = false,
                 ProfileDisplayName = source.ProfileDisplayName,
                 ProfileId = source.ProfileId,
                 ResponsePersonality = source.ResponsePersonality,
+                HasResponsePersonalityOverride = source.HasResponsePersonalityOverride,
                 AdditionalReadRootPaths = new ObservableCollection<string>(
                     CopilotAdditionalDirectoryCommand.NormalizeStoredPaths(source.AdditionalReadRootPaths)),
                 Title = BuildBranchTitle(source.Title, requestedTitle),
-                UpdatedAt = DateTime.Now,
+                UpdatedAt = forkedAt,
+                RecencyAt = forkedAt,
                 BranchOrigin = new CopilotConversationBranchOrigin
                 {
                     ParentConversationId = source.Id,
@@ -164,9 +170,8 @@ namespace ColorVision.Copilot
                     ThroughMessageId = originThroughMessageId,
                     ForkedAtUtc = forkedAtUtc,
                 },
-                Goal = source.Goal?.IsStructurallyValid() == true
-                    ? source.Goal.CopyForBranch(forkedAtUtc)
-                    : null,
+                Goal = copiedGoal,
+                IsGoalContinuationDeferred = copiedGoal?.IsActive == true,
             };
             var messageIdMap = new Dictionary<string, string>(StringComparer.Ordinal);
             var lastUserMode = CopilotAgentMode.Chat;
@@ -197,7 +202,10 @@ namespace ColorVision.Copilot
                     Summary = source.Compaction.Summary,
                     ThroughMessageId = branchBoundaryId,
                 };
+                branch.CompactionUsage = source.CompactionUsage?.Copy();
             }
+            if (copyThroughIndex >= 0)
+                branch.TitleGenerationUsage = source.TitleGenerationUsage?.Copy();
 
             branch.RefreshSummary();
             return branch;

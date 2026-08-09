@@ -246,7 +246,7 @@ namespace Conoscope
                 {
                     Id = 0,
                     Name = ResolveFocusCircleName(circle),
-                    PointType = GraphicTypes.Circle,
+                    PointType = PoiShape.Circle,
                     PixX = circle.Attribute.Center.X,
                     PixY = circle.Attribute.Center.Y,
                     PixWidth = Math.Max(1, radiusX * 2),
@@ -581,21 +581,7 @@ namespace Conoscope
                 points.Add(point);
             }
 
-            capture = MeasurementCapture.FromFocusPoints(slotName, string.IsNullOrWhiteSpace(Filename) ? "CurrentView" : Path.GetFileName(Filename), points);
-            return true;
-        }
-
-        public bool TryGetLatestFocusPointMeasurement(out ImageMeasurement measurement, out string? errorMessage)
-        {
-            measurement = default!;
-            errorMessage = null;
-
-            if (!TryGetFocusPointMeasurementCapture("Latest", out MeasurementCapture capture, out errorMessage))
-            {
-                return false;
-            }
-
-            measurement = capture.Points[^1].Measurement;
+            capture = new MeasurementCapture(slotName, string.IsNullOrWhiteSpace(Filename) ? "CurrentView" : Path.GetFileName(Filename), points);
             return true;
         }
 
@@ -672,12 +658,12 @@ namespace Conoscope
                 dominantWave = 0;
             }
 
-            POIPoint poiPoint = new()
+            PoiPoint poiPoint = new()
             {
                 Name = ResolveFocusCircleName(circle),
                 PixelX = (int)Math.Round(circle.Attribute.Center.X),
                 PixelY = (int)Math.Round(circle.Attribute.Center.Y),
-                PointType = CVCommCore.CVAlgorithm.POIPointTypes.Circle,
+                PointType = PoiShape.Circle,
                 Width = (int)Math.Round(circle.Attribute.Radius * 2),
                 Height = (int)Math.Round(circle.Attribute.RadiusY * 2)
             };

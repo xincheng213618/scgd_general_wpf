@@ -48,6 +48,8 @@ namespace ColorVision.Copilot.Mcp
 
         public bool ResumesAgentOnApproval { get; init; }
 
+        public bool IsUserReviewVisible { get; init; } = true;
+
         public string AgentCallId { get; internal set; } = string.Empty;
 
         internal CopilotConfirmationRequestContext RequestContext { get; set; } = new();
@@ -73,6 +75,8 @@ namespace ColorVision.Copilot.Mcp
         public string ApprovalDecisionSource { get; internal set; } = string.Empty;
 
         public string ApprovalDecisionReason { get; internal set; } = string.Empty;
+
+        internal bool HasAutomaticReviewRetryOverride { get; private set; }
 
         public DateTimeOffset? CompletedAt { get; internal set; }
 
@@ -174,6 +178,20 @@ namespace ColorVision.Copilot.Mcp
         }
 
         internal void ReleaseExecutor() => Executor = MissingExecutorAsync;
+
+        internal bool TryMarkAutomaticReviewRetryOverride()
+        {
+            if (Status != ConfirmableActionStatus.Pending
+                || !ResumesAgentOnApproval
+                || RequestContext.SourceKind != CopilotApprovalSourceKind.InAppAgent
+                || HasAutomaticReviewRetryOverride)
+            {
+                return false;
+            }
+
+            HasAutomaticReviewRetryOverride = true;
+            return true;
+        }
 
         internal void ClearReviewDetails()
         {

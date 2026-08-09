@@ -4,14 +4,13 @@ using ColorVision.Database;
 using ColorVision.UI;
 using cvColorVision;
 using Newtonsoft.Json;
-using ScottPlot.Plottables;
 using Spectrum.Models;
 using SqlSugar;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Windows;
-using System.Windows.Controls;
 
 namespace Spectrum.Data
 {
@@ -62,7 +61,7 @@ namespace Spectrum.Data
         [DisplayName("创建时间")]
         public DateTime CreateTime { get; set; } = DateTime.Now;
 
-        [DisplayName("总耗时(ms)")]
+        [DisplayName("结果就绪耗时(ms)")]
         [SugarColumn(IsNullable = true)]
         public long? TotalDurationMs { get; set; }
 
@@ -157,21 +156,6 @@ namespace Spectrum.Data
         public string? StepDetailsJson { get; set; }
     }
 
-    public class MeasurementStepDetail
-    {
-        public string? StepName { get; set; }
-
-        public long DurationMs { get; set; }
-
-        public bool IsSuccess { get; set; }
-
-        public int? ReturnCode { get; set; }
-
-        public string? InputJson { get; set; }
-
-        public string? Message { get; set; }
-    }
-
     public class ViewResultManager : ViewModelBase
     {
         private static ViewResultManager _instance;
@@ -186,18 +170,12 @@ namespace Spectrum.Data
         public ViewResultManagerConfig Config { get; set; }
 
         public ObservableCollection<ViewResultSpectrum> ViewResluts { get; set; } = new ObservableCollection<ViewResultSpectrum>();
-        public List<Scatter> ScatterPlots { get; set; } = new List<Scatter>();
-        public List<Scatter> AbsoluteScatterPlots { get; set; } = new List<Scatter>();
 
         public int ViewReslutsSelectedIndex { get => _ViewReslutsSelectedIndex; set { _ViewReslutsSelectedIndex = value; OnPropertyChanged(); } }
         private int _ViewReslutsSelectedIndex = -1;
-        public ListView ListView { get; set; }
-
         public RelayCommand EditConfigCommand { get; set; }
-        public RelayCommand ViewReslutsClearCommand { get; set; }
         public RelayCommand QueryCommand { get; set; }
         public RelayCommand GenericQueryCommand { get; set; }
-        public RelayCommand SaveCommand { get; set; }
         public RelayCommand DeleteAllCommand { get; set; }
         public RelayCommand ResetDatabaseCommand { get; set; }
         public RelayCommand ReloadCommand { get; set; }
@@ -238,10 +216,8 @@ namespace Spectrum.Data
         {
             Config = ConfigService.Instance.GetRequiredService<ViewResultManagerConfig>();
             EditConfigCommand = new RelayCommand(a => EditConfig());
-            ViewReslutsClearCommand = new RelayCommand(a => ViewReslutsClear());
             QueryCommand = new RelayCommand(a => Query());
             GenericQueryCommand = new RelayCommand(a => GenericQuery());
-            SaveCommand = new RelayCommand(a => Save());
             DeleteAllCommand = new RelayCommand(a =>
             {
                 if (MessageBox.Show("确定要删除数据库中所有记录吗？此操作不可恢复。", "确认删除", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
@@ -278,12 +254,10 @@ namespace Spectrum.Data
         {
             ViewReslutsSelectedIndex = -1;
             ViewResluts.Clear();
-            ScatterPlots.Clear();
-            AbsoluteScatterPlots.Clear();
         }
         public void Query()
         {
-            Query(null,null,Config.Count);
+            LoadAll(Config.Count);
         }
 
         public void Delete(int index)
@@ -355,8 +329,6 @@ namespace Spectrum.Data
         /// </summary>
         public void ReloadData()
         {
-            ScatterPlots.Clear();
-            AbsoluteScatterPlots.Clear();
             LoadAll(Config.Count);
         }
 
@@ -380,43 +352,12 @@ namespace Spectrum.Data
                 .ExecuteCommand();
         }
 
-        public void UpdateMeasurementDuration(int spectrumId, long totalDurationMs)
-        {
-            EnsureDatabaseInitialized();
-            using var db = CreateDb();
-            db.Updateable<SprectrumModel>()
-                .SetColumns(x => x.TotalDurationMs == (long?)totalDurationMs)
-                .Where(x => x.Id == spectrumId)
-                .ExecuteCommand();
-        }
-
         public void SaveMeasurementProfile(SpectrumMeasurementProfile item)
         {
             if (item == null) return;
             EnsureDatabaseInitialized();
             using var db = CreateDb();
             db.Insertable(item).ExecuteCommand();
-        }
-
-        public void Save()
-        {
-            //if (ViewResluts.Count >0 &&  ViewReslutsSelectedIndex > -1)
-            //{
-            //    if (ViewResluts[ViewReslutsSelectedIndex] is KBItemMaster kbItemMaster)
-            //    {
-            //        string invalidChars = new string(Path.GetInvalidFileNameChars()) + new string(Path.GetInvalidPathChars());
-            //        string regexPattern = $"[{Regex.Escape(invalidChars)}]";
-            //        string csvpath = Configs.SavePathCsv + $"\\{Regex.Replace(kbItemMaster.Model, regexPattern, "")}_{kbItemMaster.CreateTime:yyyyMMdd}.csv";
-                    
-            //        using var dialog = new System.Windows.Forms.SaveFileDialog();
-            //        dialog.Filter = "CSV files (*.csv) | *.csv";
-            //        dialog.FileName = csvpath;
-            //        dialog.RestoreDirectory = true;
-            //        if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-            //        kbItemMaster.SaveCsv(dialog.FileName);
-            //    }
-            //}
-
         }
 
         /// <summary>
@@ -427,55 +368,99 @@ namespace Spectrum.Data
             EnsureDatabaseInitialized();
             ViewResluts.Clear();
             using var db = CreateDb();
-            var query = db.Queryable<SprectrumModel>().OrderBy(x => x.Id, Config.OrderByType);
-            var dbList = count > 0 ? query.Take(count).ToList() : query.ToList();
-            foreach (var dbItem in dbList)
+            List<SprectrumModel> dbList;
+            if (count > 0)
             {
-                ViewResultSpectrum viewResultSpectrum = new ViewResultSpectrum(dbItem);
-                ViewResluts.Add(viewResultSpectrum);
-                ScatterPlots.Add(viewResultSpectrum.ScatterPlot);
-                AbsoluteScatterPlots.Add(viewResultSpectrum.AbsoluteScatterPlot);
-            }
-        }
-
-        public void Save(SprectrumModel item)
-        {
-            if (item == null) return;
-            EnsureDatabaseInitialized();
-            using var db = CreateDb();
-            int id = db.Insertable(item).ExecuteReturnIdentity();
-            item.Id = id; // 更新ID
-            ViewResultSpectrum viewResultSpectrum = new ViewResultSpectrum(item);
-
-            // Persist ExcitationPurity computed in Gen()
-            db.Updateable<SprectrumModel>()
-                .SetColumns(x => x.ExcitationPurity == (double?)viewResultSpectrum.ExcitationPurity)
-                .Where(x => x.Id == id)
-                .ExecuteCommand();
-
-            if (Config.OrderByType == OrderByType.Desc)
-            {
-                ScatterPlots.Insert(0,viewResultSpectrum.ScatterPlot);
-                AbsoluteScatterPlots.Insert(0, viewResultSpectrum.AbsoluteScatterPlot);
-                ViewResluts.Insert(0, viewResultSpectrum); //倒序插入
-
-                if (Config.AutoRefresh)
-                {
-                    ViewReslutsSelectedIndex = 0;
-                }
+                dbList = db.Queryable<SprectrumModel>()
+                    .OrderBy(x => x.Id, OrderByType.Desc)
+                    .Take(count)
+                    .ToList();
+                if (Config.OrderByType == OrderByType.Asc)
+                    dbList.Reverse();
             }
             else
             {
-                ScatterPlots.Add(viewResultSpectrum.ScatterPlot);
-                AbsoluteScatterPlots.Add(viewResultSpectrum.AbsoluteScatterPlot);
-                ViewResluts.Add(viewResultSpectrum);
-                if (Config.AutoRefresh)
-                {
-                    ViewReslutsSelectedIndex = ViewResluts.Count - 1;
-                    ListView?.ScrollIntoView(item);
-                }
+                dbList = db.Queryable<SprectrumModel>()
+                    .OrderBy(x => x.Id, Config.OrderByType)
+                    .ToList();
             }
 
+            foreach (var dbItem in dbList)
+            {
+                ViewResluts.Add(new ViewResultSpectrum(dbItem));
+            }
+        }
+
+        public ViewResultSpectrum Save(SprectrumModel item, float? eqeVoltage, float? eqeCurrentMA)
+        {
+            ArgumentNullException.ThrowIfNull(item);
+            long preparationStarted = Stopwatch.GetTimestamp();
+            item.ColorParam = ViewResultSpectrum.NormalizeColorParam(item.ColorParam);
+            ViewResultSpectrum viewResultSpectrum = new(item);
+            if (eqeVoltage.HasValue && eqeCurrentMA.HasValue)
+                viewResultSpectrum.CalculateEqeParams(eqeVoltage.Value, eqeCurrentMA.Value);
+
+            item.EqeVoltage = eqeVoltage;
+            item.EqeCurrentMA = eqeCurrentMA;
+            item.Eqe = viewResultSpectrum.Eqe;
+            item.LuminousFlux = viewResultSpectrum.LuminousFlux;
+            item.RadiantFlux = viewResultSpectrum.RadiantFlux;
+            item.LuminousEfficacy = viewResultSpectrum.LuminousEfficacy;
+            item.ExcitationPurity = viewResultSpectrum.ExcitationPurity;
+            item.IsRecalculated = false;
+            item.TotalDurationMs = (item.TotalDurationMs ?? 0) + (long)Stopwatch.GetElapsedTime(preparationStarted).TotalMilliseconds;
+            viewResultSpectrum.TotalDurationMs = item.TotalDurationMs;
+
+            EnsureDatabaseInitialized();
+            using var db = CreateDb();
+            int id = db.Insertable(item).ExecuteReturnIdentity();
+            item.Id = id;
+            viewResultSpectrum.Id = id;
+
+            PublishResult(viewResultSpectrum);
+            return viewResultSpectrum;
+        }
+
+        private void PublishResult(ViewResultSpectrum viewResultSpectrum)
+        {
+            void Publish()
+            {
+                ViewResultSpectrum? publishedResult = ViewResluts.FirstOrDefault(item => item.Id == viewResultSpectrum.Id);
+                if (publishedResult == null && Config.OrderByType == OrderByType.Desc)
+                {
+                    ViewResluts.Insert(0, viewResultSpectrum);
+                    publishedResult = viewResultSpectrum;
+                }
+                else if (publishedResult == null)
+                {
+                    ViewResluts.Add(viewResultSpectrum);
+                    publishedResult = viewResultSpectrum;
+                }
+
+                TrimVisibleResults();
+                if (!Config.AutoRefresh)
+                    return;
+
+                ViewReslutsSelectedIndex = ViewResluts.IndexOf(publishedResult);
+            }
+
+            var dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher != null && !dispatcher.CheckAccess())
+                dispatcher.Invoke(Publish);
+            else
+                Publish();
+        }
+
+        private void TrimVisibleResults()
+        {
+            if (Config.Count <= 0)
+                return;
+
+            while (ViewResluts.Count > Config.Count)
+            {
+                int removeIndex = Config.OrderByType == OrderByType.Desc ? ViewResluts.Count - 1 : 0;
+                ViewResluts.RemoveAt(removeIndex);
+            }
         }
 
         public void GenericQuery()
@@ -493,28 +478,6 @@ namespace Spectrum.Data
             {
                 db.Dispose();
                 throw;
-            }
-        }
-
-        /// <summary>
-        /// 根据条件查询，举例：根据SN或Model等
-        /// </summary>
-        public void Query(string? model = null, string? sn = null, int count = -1)
-        {
-            EnsureDatabaseInitialized();
-            ViewResluts.Clear();
-
-            using var db = CreateDb();
-            var query = db.Queryable<SprectrumModel>();
-            query = query.OrderBy(x => x.Id, Config.OrderByType);
-            var dbList = count > 0 ? query.Take(count).ToList() : query.ToList();
-
-            foreach (var dbItem in dbList)
-            {
-                ViewResultSpectrum viewResultSpectrum = new ViewResultSpectrum(dbItem);
-                ScatterPlots.Add(viewResultSpectrum.ScatterPlot);
-                AbsoluteScatterPlots.Add(viewResultSpectrum.AbsoluteScatterPlot);
-                ViewResluts.Add(viewResultSpectrum);
             }
         }
 

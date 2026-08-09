@@ -118,6 +118,8 @@ namespace ColorVision.UI
         public IReadOnlyList<string> SearchRootPaths { get; init; } = Array.Empty<string>();
 
         public bool RequiresWorkspaceEvidence { get; init; }
+
+        public bool IncludeExtensionProviders { get; init; } = true;
     }
 
     public sealed class CopilotContextItem

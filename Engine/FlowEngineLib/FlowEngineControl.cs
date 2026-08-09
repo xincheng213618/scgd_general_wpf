@@ -40,11 +40,8 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 
 	private readonly HashSet<STNode> attachedNodes;
 
-	private IFlowFailureRouter failureRouter;
-
-	private IReadOnlyDictionary<string, FlowNodeRetryPolicy> retryPolicies =
-		new Dictionary<string, FlowNodeRetryPolicy>(
-			StringComparer.OrdinalIgnoreCase);
+	// FLOW_EXECUTION_POLICY_RESTORE_POINT: optional retry and ERROR-route
+	// policies were removed; recover the feature from commit 3ca350bcd.
 
 	private readonly IFlowServiceResolver runtimeServiceResolver;
 
@@ -68,64 +65,6 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 	}
 
 	public event FlowEngineEventHandler Finished;
-
-	public void ConfigureFailureRoutes(IEnumerable<FlowErrorRoute> routes)
-	{
-		ArgumentNullException.ThrowIfNull(routes);
-		FlowErrorRoute[] routeSnapshot = routes.ToArray();
-		lock (lifecycleLock)
-		{
-			lock (stateLock)
-			{
-				ThrowIfDisposedLocked();
-				failureRouter = routeSnapshot.Length == 0
-					? null
-					: new FlowFailureRouter(
-						routeSnapshot,
-						() =>
-						{
-							lock (stateLock)
-							{
-								return attachedNodes.ToArray();
-							}
-						});
-				foreach (CVBaseServerNode serverNode in attachedDeviceNodes.Keys)
-				{
-					serverNode.RuntimeFailureRouter = failureRouter;
-				}
-			}
-		}
-	}
-
-	public void ConfigureRetryPolicies(
-		IEnumerable<FlowNodeRetryPolicy> policies)
-	{
-		ArgumentNullException.ThrowIfNull(policies);
-		FlowNodeRetryPolicy[] policySnapshot = policies.ToArray();
-		foreach (FlowNodeRetryPolicy policy in policySnapshot)
-		{
-			ArgumentNullException.ThrowIfNull(policy);
-			policy.Validate();
-		}
-		IReadOnlyDictionary<string, FlowNodeRetryPolicy> nextPolicies =
-			policySnapshot.ToDictionary(
-				policy => policy.NodeId,
-				policy => policy,
-				StringComparer.OrdinalIgnoreCase);
-		lock (lifecycleLock)
-		{
-			lock (stateLock)
-			{
-				ThrowIfDisposedLocked();
-				retryPolicies = nextPolicies;
-				foreach (CVBaseServerNode serverNode in attachedDeviceNodes.Keys)
-				{
-					serverNode.RuntimeRetryPolicy =
-						GetRetryPolicyLocked(serverNode.NodeID);
-				}
-			}
-		}
-	}
 
 	private bool GetFlowReady()
 	{
@@ -478,9 +417,6 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 					return;
 				}
 				device = new DeviceNode(serverNode);
-				serverNode.RuntimeFailureRouter = failureRouter;
-				serverNode.RuntimeRetryPolicy =
-					GetRetryPolicyLocked(serverNode.NodeID);
 				serverNode.RuntimeServiceResolver =
 					runtimeServiceResolver;
 				attachedDeviceNodes.Add(serverNode, device);
@@ -516,8 +452,6 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 			}
 			else if (node is CVBaseServerNode serverNode && attachedDeviceNodes.Remove(serverNode, out DeviceNode device))
 			{
-				serverNode.RuntimeFailureRouter = null;
-				serverNode.RuntimeRetryPolicy = null;
 				serverNode.RuntimeServiceResolver = null;
 				RebuildServicesLocked();
 				deviceToRemove = device;
@@ -666,8 +600,7 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 				e.TotalTime,
 				e.Message,
 				e.ErrorNodeName,
-				e.ErrorNodeId,
-				e.HandledFailures);
+				e.ErrorNodeId);
 		}
 		Delegate[] handlers = finished?.GetInvocationList() ?? Array.Empty<Delegate>();
 		foreach (FlowEngineEventHandler handler in handlers.Cast<FlowEngineEventHandler>())
@@ -717,8 +650,6 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 				node.PropertyChanged -= AttachedNode_PropertyChanged;
 				if (node is CVBaseServerNode serverNode)
 				{
-					serverNode.RuntimeFailureRouter = null;
-					serverNode.RuntimeRetryPolicy = null;
 					serverNode.RuntimeServiceResolver = null;
 				}
 			}
@@ -1053,13 +984,4 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 		ObjectDisposedException.ThrowIf(isDisposed, this);
 	}
 
-	private FlowNodeRetryPolicy GetRetryPolicyLocked(string nodeId)
-	{
-		return nodeId != null
-			&& retryPolicies.TryGetValue(
-				nodeId,
-				out FlowNodeRetryPolicy policy)
-					? policy
-					: null;
-	}
 }

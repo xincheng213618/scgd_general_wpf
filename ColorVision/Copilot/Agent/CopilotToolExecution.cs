@@ -25,6 +25,7 @@ namespace ColorVision.Copilot
         private static readonly TimeSpan MaximumProgressInterval = TimeSpan.FromMinutes(1);
         private static readonly TimeSpan MinimumStructuredProgressInterval = TimeSpan.FromMilliseconds(250);
         private static readonly ICopilotToolExecutionHook BuiltInWriteToolPolicyHook = new CopilotWriteToolPolicyHook();
+        private const string ExtensionHookSourcePrefix = "extension:";
         private const int MaxRecordedHookRuns = (CopilotToolExecutionHookRegistry.MaxRegistrations + 1) * 3;
 
         private readonly IReadOnlyList<ICopilotToolExecutionHook> _fixedHooks;
@@ -113,7 +114,7 @@ namespace ColorVision.Copilot
             invocation = NormalizeInvocation(invocation, callId);
             var hooks = invocation.InitialHookBindings.Count > 0
                 ? invocation.InitialHookBindings.ToArray()
-                : ResolveInvocationHooks(invocation.Tool.Name);
+                : ResolveInvocationHooks(invocation.Tool.Name, invocation.AgentRequest.CodexExtensionHooksEnabled);
             var hookRuns = new List<CopilotToolExecutionHookRun>(
                 Math.Min(MaxRecordedHookRuns, invocation.InitialHookRuns.Count + hooks.Length * 2));
             hookRuns.AddRange(invocation.InitialHookRuns
@@ -122,13 +123,87 @@ namespace ColorVision.Copilot
             var startedAt = _utcNow();
             var timeout = invocation.Tool.Capability.EffectiveExecutionTimeout;
             var stopwatch = Stopwatch.StartNew();
-            if (invocation.Tool.Capability.RequiresNativeApproval)
+            if (!CopilotToolRegistry.IsAllowedForCodexAgentPolicy(
+                invocation.Tool,
+                invocation.AgentRequest))
             {
-                var approvalError = invocation.Tool is not ICopilotFrameworkApprovedTool
-                    ? $"{invocation.Tool.Name} requires native approval but has no approved execution path."
-                    : !invocation.FrameworkApprovalGranted
-                        ? $"{invocation.Tool.Name} requires approval for this exact call before it can execute."
-                        : string.Empty;
+                var denied = CreateOutcome(
+                    invocation,
+                    CopilotToolExecutionState.Denied,
+                    startedAt,
+                    timeout,
+                    stopwatch,
+                    Failure(
+                        invocation.Tool.Name,
+                        $"{invocation.Tool.Name} execution was denied.",
+                        "Codex agents.enabled=false disables subagent tools for this submitted turn.",
+                        CopilotToolFailureKind.Authorization,
+                        "codex_agents_disabled"));
+                return await PublishOutcomeAsync(denied, hooks, hookRuns, onEvent);
+            }
+            if (!CopilotToolRegistry.IsAllowedForCodexShellToolPolicy(
+                invocation.Tool,
+                invocation.AgentRequest))
+            {
+                var denied = CreateOutcome(
+                    invocation,
+                    CopilotToolExecutionState.Denied,
+                    startedAt,
+                    timeout,
+                    stopwatch,
+                    Failure(
+                        invocation.Tool.Name,
+                        $"{invocation.Tool.Name} execution was denied.",
+                        "Codex features.shell_tool=false disables shell command starts for this submitted turn.",
+                        CopilotToolFailureKind.Authorization,
+                        "codex_shell_tool_disabled"));
+                return await PublishOutcomeAsync(denied, hooks, hookRuns, onEvent);
+            }
+            if (!CopilotToolRegistry.IsAllowedForCodexSandboxPolicy(
+                invocation.Tool,
+                invocation.AgentRequest))
+            {
+                var denied = CreateOutcome(
+                    invocation,
+                    CopilotToolExecutionState.Denied,
+                    startedAt,
+                    timeout,
+                    stopwatch,
+                    Failure(
+                        invocation.Tool.Name,
+                        $"{invocation.Tool.Name} execution was denied.",
+                        "Codex sandbox_mode=read-only disables write-capable tools for this submitted turn.",
+                        CopilotToolFailureKind.Authorization,
+                        "codex_read_only_sandbox"));
+                return await PublishOutcomeAsync(denied, hooks, hookRuns, onEvent);
+            }
+            var requiresCodexApproval = CopilotCodexApprovalPolicySelection.RequiresNativeApproval(
+                invocation.AgentRequest.CodexApprovalPolicy,
+                invocation.Tool);
+            if (requiresCodexApproval)
+            {
+                var approvalPromptDisabled = !invocation.FrameworkApprovalGranted
+                    && !CopilotCodexApprovalPolicySelection.AllowsApprovalPrompt(
+                        invocation.AgentRequest.CodexApprovalPolicy,
+                        invocation.Tool.Capability.ApprovalPromptCategory);
+                string approvalError;
+                if (approvalPromptDisabled)
+                {
+                    approvalError = CopilotCodexApprovalPolicySelection.GetApprovalDenialReason(
+                        invocation.AgentRequest.CodexApprovalPolicy,
+                        invocation.Tool.Capability.ApprovalPromptCategory);
+                }
+                else if (invocation.Tool.Capability.RequiresNativeApproval
+                    && invocation.Tool is not ICopilotFrameworkApprovedTool)
+                {
+                    approvalError = $"{invocation.Tool.Name} requires native approval but has no approved execution path.";
+                }
+                else
+                {
+                    approvalError = invocation.FrameworkApprovalGranted
+                        ? string.Empty
+                        : $"{invocation.Tool.Name} requires approval for this exact call before it can execute.";
+                }
                 if (!string.IsNullOrEmpty(approvalError))
                 {
                     var denied = CreateOutcome(
@@ -137,7 +212,14 @@ namespace ColorVision.Copilot
                         startedAt,
                         timeout,
                         stopwatch,
-                        Failure(invocation.Tool.Name, $"{invocation.Tool.Name} execution was denied.", approvalError, CopilotToolFailureKind.Authorization));
+                        Failure(
+                            invocation.Tool.Name,
+                            $"{invocation.Tool.Name} execution was denied.",
+                            approvalError,
+                            CopilotToolFailureKind.Authorization,
+                            approvalPromptDisabled
+                                ? "codex_approval_prompt_disabled"
+                                : string.Empty));
                     return await PublishOutcomeAsync(denied, hooks, hookRuns, onEvent);
                 }
             }
@@ -152,7 +234,21 @@ namespace ColorVision.Copilot
             CopilotToolExecutionHookDecision decision;
             try
             {
-                decision = await RunBeforeHooksAsync(hookContext, hooks, hookRuns, cancellationToken);
+                var beforeHookEvents = new CopilotToolExecutionHookEventPublisher(
+                    onEvent,
+                    () => CreateExecutionInfo(
+                        invocation,
+                        CopilotToolExecutionState.Pending,
+                        startedAt,
+                        completedAt: null,
+                        stopwatch.ElapsedMilliseconds,
+                        timeout));
+                decision = await RunBeforeHooksAsync(
+                    hookContext,
+                    hooks,
+                    hookRuns,
+                    beforeHookEvents,
+                    cancellationToken);
             }
             catch (OperationCanceledException)
             {
@@ -382,21 +478,27 @@ namespace ColorVision.Copilot
                 cancellationToken).ConfigureAwait(false);
         }
 
-        private CopilotToolExecutionHookBinding[] ResolveInvocationHooks(string toolName)
+        private CopilotToolExecutionHookBinding[] ResolveInvocationHooks(
+            string toolName,
+            bool codexHooksEnabled)
         {
             var configuredHooks = _hookRegistry?.Resolve(toolName)
                 ?? _fixedHooks.Select((hook, index) =>
                     new CopilotToolExecutionHookBinding($"fixed:{index}", hook)).ToArray();
-            var hooks = new CopilotToolExecutionHookBinding[configuredHooks.Count + 1];
+            var effectiveHooks = codexHooksEnabled
+                ? configuredHooks
+                : configuredHooks.Where(binding => !IsExtensionHookSource(binding.SourceId)).ToArray();
+            var hooks = new CopilotToolExecutionHookBinding[effectiveHooks.Count + 1];
             hooks[0] = new CopilotToolExecutionHookBinding(
                 "builtin:write-tool-policy",
                 BuiltInWriteToolPolicyHook);
-            for (var i = 0; i < configuredHooks.Count; i++)
-                hooks[i + 1] = configuredHooks[i];
+            for (var i = 0; i < effectiveHooks.Count; i++)
+                hooks[i + 1] = effectiveHooks[i];
             return hooks;
         }
 
-        internal CopilotToolExecutionHookRegistrySnapshot GetHookSurfaceSnapshot()
+        internal CopilotToolExecutionHookRegistrySnapshot GetHookSurfaceSnapshot(
+            bool codexHooksEnabled = true)
         {
             var configuredSnapshot = _hookRegistry?.GetSnapshot()
                 ?? CopilotToolExecutionHookRegistry.CreateSnapshot(
@@ -407,17 +509,26 @@ namespace ColorVision.Copilot
                             "*",
                             index,
                             hook)));
-            return CreateHookSurfaceSnapshot(configuredSnapshot);
+            return CreateHookSurfaceSnapshot(configuredSnapshot, codexHooksEnabled);
         }
 
-        internal static CopilotToolExecutionHookRegistrySnapshot GetSharedHookSurfaceSnapshot()
+        internal static CopilotToolExecutionHookRegistrySnapshot GetSharedHookSurfaceSnapshot(
+            bool codexHooksEnabled = true)
         {
-            return CreateHookSurfaceSnapshot(CopilotToolExecutionHookRegistry.Shared.GetSnapshot());
+            return CreateHookSurfaceSnapshot(
+                CopilotToolExecutionHookRegistry.Shared.GetSnapshot(),
+                codexHooksEnabled);
         }
 
         private static CopilotToolExecutionHookRegistrySnapshot CreateHookSurfaceSnapshot(
-            CopilotToolExecutionHookRegistrySnapshot configuredSnapshot)
+            CopilotToolExecutionHookRegistrySnapshot configuredSnapshot,
+            bool codexHooksEnabled)
         {
+            var configuredEntries = codexHooksEnabled
+                ? configuredSnapshot.Entries
+                : configuredSnapshot.Entries
+                    .Where(entry => !IsExtensionHookSource(entry.SourceId))
+                    .ToArray();
             return CopilotToolExecutionHookRegistry.CreateSnapshot(
                 configuredSnapshot.Revision,
                 new[]
@@ -427,8 +538,11 @@ namespace ColorVision.Copilot
                         "*",
                         int.MinValue,
                         BuiltInWriteToolPolicyHook),
-                }.Concat(configuredSnapshot.Entries));
+                }.Concat(configuredEntries));
         }
+
+        private static bool IsExtensionHookSource(string? sourceId) =>
+            sourceId?.StartsWith(ExtensionHookSourcePrefix, StringComparison.OrdinalIgnoreCase) == true;
 
     }
 

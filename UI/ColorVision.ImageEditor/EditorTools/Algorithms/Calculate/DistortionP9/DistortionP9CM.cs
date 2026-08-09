@@ -27,68 +27,118 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.DistortionP9
 
         public void Execute()
         {
-            if (_imageContext.HImageCache is not HImage hImage)
-            {
-                return;
-            }
-
             DistortionP9AnalysisRunner.Run(
-                hImage,
-                new RoiRect(0, 0, hImage.cols, hImage.rows),
+                _imageContext,
+                new RoiRect(),
                 _drawContext);
         }
     }
 
     internal static class DistortionP9AnalysisRunner
     {
-        public static void Run(HImage image, RoiRect roi, DrawEditorContext drawContext)
+        public static void Run(ImageProcessingContext imageContext, RoiRect requestedRoi, DrawEditorContext drawContext)
         {
-            Task.Run(() =>
+            ImageFrameLease? lease = imageContext.AcquireImageFrame();
+            if (lease == null)
+            {
+                return;
+            }
+
+            HImage image = lease.Image;
+            if (!TryNormalizeRoi(requestedRoi, image, out RoiRect roi))
+            {
+                lease.Dispose();
+                return;
+            }
+
+            long revision = lease.Revision;
+            _ = Task.Run(() =>
             {
                 IntPtr resultPtr = IntPtr.Zero;
                 try
                 {
-                    int length = OpenCVMediaHelper.M_CalDistortionP9(image, roi, CreateDefaultConfigJson(), out resultPtr);
+                    int length;
+                    using (lease)
+                    {
+                        length = OpenCVMediaHelper.M_CalDistortionP9(lease.Image, roi, CreateDefaultConfigJson(), out resultPtr);
+                    }
+
                     if (length <= 0 || resultPtr == IntPtr.Zero)
                     {
                         if (resultPtr != IntPtr.Zero)
                         {
                             _ = OpenCVMediaHelper.FreeResult(resultPtr);
+                            resultPtr = IntPtr.Zero;
                         }
 
-                        Application.Current.Dispatcher.BeginInvoke(() =>
+                        imageContext.Dispatcher.BeginInvoke(() =>
+                        {
+                            if (!imageContext.IsCurrentImageRevision(revision)) return;
+
                             MessageBox.Show(
                                 $"9点畸变计算失败，返回码: {length}\n{DescribeReturnCode(length)}",
                                 "9点畸变",
                                 MessageBoxButton.OK,
-                                MessageBoxImage.Error));
+                                MessageBoxImage.Error);
+                        });
                         return;
                     }
 
-                    string json = OpenCVMediaHelper.PtrToStringAnsiAndFree(resultPtr);
+                    IntPtr ownedResult = resultPtr;
                     resultPtr = IntPtr.Zero;
+                    string json = OpenCVMediaHelper.PtrToStringAnsiAndFree(ownedResult);
                     DistortionP9NativeResult? result = JsonConvert.DeserializeObject<DistortionP9NativeResult>(json);
                     if (result == null)
                     {
-                        Application.Current.Dispatcher.BeginInvoke(() =>
-                            MessageBox.Show("9点畸变结果解析失败。", "9点畸变", MessageBoxButton.OK, MessageBoxImage.Error));
+                        imageContext.Dispatcher.BeginInvoke(() =>
+                        {
+                            if (!imageContext.IsCurrentImageRevision(revision)) return;
+
+                            MessageBox.Show("9点畸变结果解析失败。", "9点畸变", MessageBoxButton.OK, MessageBoxImage.Error);
+                        });
                         return;
                     }
 
                     result.RawJson = json;
-                    Application.Current.Dispatcher.BeginInvoke(() => ShowResult(result, drawContext));
+                    imageContext.Dispatcher.BeginInvoke(() =>
+                    {
+                        if (!imageContext.IsCurrentImageRevision(revision)) return;
+
+                        ShowResult(result, drawContext);
+                    });
                 }
                 catch (Exception ex)
                 {
+                    lease.Dispose();
                     if (resultPtr != IntPtr.Zero)
                     {
                         _ = OpenCVMediaHelper.FreeResult(resultPtr);
                     }
 
-                    Application.Current.Dispatcher.BeginInvoke(() =>
-                        MessageBox.Show($"9点畸变计算异常: {ex.Message}", "9点畸变", MessageBoxButton.OK, MessageBoxImage.Error));
+                    imageContext.Dispatcher.BeginInvoke(() =>
+                    {
+                        if (!imageContext.IsCurrentImageRevision(revision)) return;
+
+                        MessageBox.Show($"9点畸变计算异常: {ex.Message}", "9点畸变", MessageBoxButton.OK, MessageBoxImage.Error);
+                    });
                 }
             });
+        }
+
+        private static bool TryNormalizeRoi(RoiRect requestedRoi, HImage image, out RoiRect roi)
+        {
+            int x = requestedRoi.Width > 0 && requestedRoi.Height > 0 ? Math.Max(0, requestedRoi.X) : 0;
+            int y = requestedRoi.Width > 0 && requestedRoi.Height > 0 ? Math.Max(0, requestedRoi.Y) : 0;
+            int right = requestedRoi.Width > 0 && requestedRoi.Height > 0
+                ? Math.Min(image.cols, requestedRoi.X + requestedRoi.Width)
+                : image.cols;
+            int bottom = requestedRoi.Width > 0 && requestedRoi.Height > 0
+                ? Math.Min(image.rows, requestedRoi.Y + requestedRoi.Height)
+                : image.rows;
+            int width = right - x;
+            int height = bottom - y;
+            roi = width > 0 && height > 0 ? new RoiRect(x, y, width, height) : new RoiRect();
+            return width > 0 && height > 0;
         }
 
         private static string CreateDefaultConfigJson()
@@ -248,10 +298,14 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.DistortionP9
         public IEnumerable<MenuItem> GetContextMenuItems(object obj)
         {
             List<MenuItem> menuItems = new();
-            if (obj is not IRectangle rectangle || _imageContext.HImageCache is not HImage hImage)
+            if (obj is not IRectangle rectangle)
             {
                 return menuItems;
             }
+
+            using ImageFrameLease? lease = _imageContext.AcquireImageFrame();
+            if (lease == null) return menuItems;
+            HImage hImage = lease.Image;
 
             if (!TryBuildRoi(rectangle, hImage, out RoiRect roi))
             {
@@ -259,13 +313,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.DistortionP9
             }
 
             MenuItem item = new() { Header = "9点畸变分析" };
-            item.Click += (_, _) =>
-            {
-                if (_imageContext.HImageCache is HImage image)
-                {
-                    DistortionP9AnalysisRunner.Run(image, roi, _drawContext);
-                }
-            };
+            item.Click += (_, _) => DistortionP9AnalysisRunner.Run(_imageContext, roi, _drawContext);
             menuItems.Add(item);
             return menuItems;
         }

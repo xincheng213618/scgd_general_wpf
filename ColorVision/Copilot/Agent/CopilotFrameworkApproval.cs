@@ -66,6 +66,13 @@ namespace ColorVision.Copilot
                     $"{name} was approved by the temporary structured-workspace grant. Agent Framework is resuming the same session.",
                 CopilotFrameworkApprovalDecisionKind.Approved =>
                     $"{name} was approved by the ColorVision user. Agent Framework is resuming the same session.",
+                CopilotFrameworkApprovalDecisionKind.Rejected
+                    when Source == CopilotFrameworkApprovalDecisionSource.AutomaticReview
+                        && string.Equals(FailureCode, "automatic_review_unavailable", StringComparison.Ordinal) =>
+                    $"{name} automatic permission review was unavailable. Agent Framework will continue without executing it; unavailability alone does not establish that the action is unsafe.",
+                CopilotFrameworkApprovalDecisionKind.Rejected
+                    when Source == CopilotFrameworkApprovalDecisionSource.AutomaticReview =>
+                    $"{name} was denied by the automatic permission reviewer. Agent Framework will continue without executing it.",
                 CopilotFrameworkApprovalDecisionKind.Rejected => $"{name} was rejected by the ColorVision user. Agent Framework will continue without executing it.",
                 CopilotFrameworkApprovalDecisionKind.Expired => $"{name} approval expired. Agent Framework will continue without executing it.",
                 CopilotFrameworkApprovalDecisionKind.Cancelled => $"{name} approval was cancelled. Agent Framework will continue without executing it.",
@@ -78,6 +85,13 @@ namespace ColorVision.Copilot
             var name = string.IsNullOrWhiteSpace(toolName) ? "The protected tool" : toolName.Trim();
             return Kind switch
             {
+                CopilotFrameworkApprovalDecisionKind.Rejected
+                    when Source == CopilotFrameworkApprovalDecisionSource.AutomaticReview
+                        && string.Equals(FailureCode, "automatic_review_unavailable", StringComparison.Ordinal) =>
+                    $"{name} stayed closed because automatic permission review was unavailable.",
+                CopilotFrameworkApprovalDecisionKind.Rejected
+                    when Source == CopilotFrameworkApprovalDecisionSource.AutomaticReview =>
+                    $"{name} was denied by the automatic permission reviewer.",
                 CopilotFrameworkApprovalDecisionKind.Rejected => $"{name} was rejected by the user.",
                 CopilotFrameworkApprovalDecisionKind.Expired => $"{name} approval expired.",
                 CopilotFrameworkApprovalDecisionKind.Cancelled => $"{name} approval was cancelled.",
@@ -117,6 +131,32 @@ namespace ColorVision.Copilot
         public static CopilotFrameworkApprovalDecision FromAction(ConfirmableAction action)
         {
             ArgumentNullException.ThrowIfNull(action);
+            if (action.Status == ConfirmableActionStatus.Rejected
+                && string.Equals(action.ApprovalDecisionSource, "automatic-review-unavailable", StringComparison.Ordinal))
+            {
+                var detail = string.IsNullOrWhiteSpace(action.ApprovalDecisionReason)
+                    ? "The automatic permission reviewer did not return a usable decision."
+                    : action.ApprovalDecisionReason.Trim();
+                return new CopilotFrameworkApprovalDecision(
+                    CopilotFrameworkApprovalDecisionKind.Rejected,
+                    "Automatic ColorVision permission review was unavailable, so execution stayed closed."
+                    + " This alone does not establish that the action is unsafe: "
+                    + detail,
+                    "automatic_review_unavailable",
+                    CopilotFrameworkApprovalDecisionSource.AutomaticReview);
+            }
+            if (action.Status == ConfirmableActionStatus.Rejected
+                && string.Equals(action.ApprovalDecisionSource, "automatic-review", StringComparison.Ordinal))
+            {
+                var detail = string.IsNullOrWhiteSpace(action.ApprovalDecisionReason)
+                    ? "The protected action did not satisfy the automatic permission policy."
+                    : action.ApprovalDecisionReason.Trim();
+                return new CopilotFrameworkApprovalDecision(
+                    CopilotFrameworkApprovalDecisionKind.Rejected,
+                    "Denied by the automatic ColorVision permission reviewer: " + detail,
+                    "automatic_review_denied",
+                    CopilotFrameworkApprovalDecisionSource.AutomaticReview);
+            }
             if (action.Status != ConfirmableActionStatus.Approved)
                 return FromStatus(action.Status);
 
@@ -352,7 +392,8 @@ namespace ColorVision.Copilot
             CopilotAgentToolInput input,
             string callId,
             CancellationToken cancellationToken,
-            CopilotExecutionScope? executionScope = null)
+            CopilotExecutionScope? executionScope = null,
+            bool userReviewVisible = true)
         {
             ArgumentNullException.ThrowIfNull(tool);
             ArgumentNullException.ThrowIfNull(request);
@@ -411,7 +452,8 @@ namespace ColorVision.Copilot
                         "in-app-agent-framework",
                         executionScope),
                     createdAction => action = createdAction,
-                    reviewDetails: presentation.ReviewDetails);
+                    reviewDetails: presentation.ReviewDetails,
+                    userReviewVisible: userReviewVisible);
 
                 if (cancellationToken.IsCancellationRequested)
                 {
@@ -469,6 +511,70 @@ namespace ColorVision.Copilot
                     request.TaskId,
                     currentWorkspacePath),
                 decisionReason,
+                out message);
+        }
+
+        public bool RejectAfterAutomaticReview(
+            CopilotFrameworkApprovalHandle handle,
+            CopilotAgentRequest request,
+            ICopilotTool tool,
+            string currentWorkspacePath,
+            string decisionReason,
+            out string message)
+        {
+            ArgumentNullException.ThrowIfNull(handle);
+            ArgumentNullException.ThrowIfNull(request);
+            ArgumentNullException.ThrowIfNull(tool);
+            if (!CopilotAgentAccessPolicy.CanAutoReview(request, tool, currentWorkspacePath))
+            {
+                message = "The automatic-review scope expired or its workspace changed.";
+                return false;
+            }
+            if (handle.Action.Status != ConfirmableActionStatus.Pending)
+            {
+                message = $"The action is {handle.Action.StatusLabel}.";
+                return false;
+            }
+
+            return _confirmationStore.RejectAutomatically(
+                handle.Action.ActionId,
+                new CopilotConfirmationReviewContext(
+                    request.ConversationId,
+                    request.TaskId,
+                    currentWorkspacePath),
+                decisionReason,
+                out message);
+        }
+
+        public bool CloseAfterAutomaticReviewUnavailable(
+            CopilotFrameworkApprovalHandle handle,
+            CopilotAgentRequest request,
+            ICopilotTool tool,
+            string currentWorkspacePath,
+            string unavailableReason,
+            out string message)
+        {
+            ArgumentNullException.ThrowIfNull(handle);
+            ArgumentNullException.ThrowIfNull(request);
+            ArgumentNullException.ThrowIfNull(tool);
+            if (!CopilotAgentAccessPolicy.CanAutoReview(request, tool, currentWorkspacePath))
+            {
+                message = "The automatic-review scope expired or its workspace changed.";
+                return false;
+            }
+            if (handle.Action.Status != ConfirmableActionStatus.Pending)
+            {
+                message = $"The action is {handle.Action.StatusLabel}.";
+                return false;
+            }
+
+            return _confirmationStore.CloseAfterAutomaticReviewUnavailable(
+                handle.Action.ActionId,
+                new CopilotConfirmationReviewContext(
+                    request.ConversationId,
+                    request.TaskId,
+                    currentWorkspacePath),
+                unavailableReason,
                 out message);
         }
 

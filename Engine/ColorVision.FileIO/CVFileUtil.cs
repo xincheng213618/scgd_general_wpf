@@ -3,6 +3,7 @@ using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Diagnostics;
+using System.Threading;
 
 namespace ColorVision.FileIO
 {
@@ -422,6 +423,96 @@ namespace ColorVision.FileIO
             if (index > 0)
                 return ReadCIEFileData(filePath, ref fileInfo, index);
             return false;
+        }
+
+        /// <summary>
+        /// Reads one embedded channel directly from a CVCIE/CVRAW file.
+        /// Header metadata is preserved in <paramref name="fileInfo"/> while
+        /// <see cref="CVCIEFile.Data"/> contains only the requested channel.
+        /// Unlike <see cref="Read(string, out CVCIEFile)"/>, this method does not
+        /// allocate or read the complete multi-channel payload.
+        /// </summary>
+        /// <param name="filePath">Path to the CVCIE/CVRAW file.</param>
+        /// <param name="channelIndex">Zero-based embedded channel index.</param>
+        /// <param name="fileInfo">Parsed header metadata and requested channel data.</param>
+        /// <param name="cancellationToken">Token checked while reading large channels.</param>
+        /// <returns><see langword="true"/> when the header and complete channel were read.</returns>
+        public static bool ReadCIEFileChannel(
+            string filePath,
+            int channelIndex,
+            out CVCIEFile fileInfo,
+            CancellationToken cancellationToken = default)
+        {
+            int dataStartIndex = ReadCIEFileHeader(filePath, out fileInfo);
+            if (dataStartIndex < 0)
+            {
+                return false;
+            }
+
+            try
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (channelIndex < 0 || channelIndex >= fileInfo.Channels
+                    || fileInfo.Rows <= 0 || fileInfo.Cols <= 0
+                    || fileInfo.Bpp <= 0 || fileInfo.Bpp % 8 != 0)
+                {
+                    return false;
+                }
+
+                long channelByteCount = checked((long)fileInfo.Rows * fileInfo.Cols * (fileInfo.Bpp / 8));
+                if (channelByteCount <= 0 || channelByteCount > int.MaxValue)
+                {
+                    return false;
+                }
+
+                using (FileStream stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+                using (BinaryReader reader = new BinaryReader(stream))
+                {
+                    int lengthPrefixSize = fileInfo.Version == 2 ? sizeof(long) : sizeof(int);
+                    if (dataStartIndex < 0 || stream.Length - dataStartIndex < lengthPrefixSize)
+                    {
+                        return false;
+                    }
+
+                    stream.Position = dataStartIndex;
+                    long payloadByteCount = fileInfo.Version == 2 ? reader.ReadInt64() : reader.ReadInt32();
+                    long payloadStart = stream.Position;
+                    long requiredPayloadByteCount = checked(channelByteCount * fileInfo.Channels);
+                    if (payloadByteCount < requiredPayloadByteCount || payloadByteCount > stream.Length - payloadStart)
+                    {
+                        return false;
+                    }
+
+                    stream.Position = checked(payloadStart + channelByteCount * channelIndex);
+                    byte[] channelData = new byte[(int)channelByteCount];
+                    int totalBytesRead = 0;
+                    while (totalBytesRead < channelData.Length)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        int bytesToRead = Math.Min(81920, channelData.Length - totalBytesRead);
+                        int bytesRead = stream.Read(channelData, totalBytesRead, bytesToRead);
+                        if (bytesRead == 0)
+                        {
+                            return false;
+                        }
+
+                        totalBytesRead += bytesRead;
+                    }
+
+                    fileInfo.Data = channelData;
+                    return true;
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                fileInfo.Dispose();
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[ReadCIEFileChannel] Exception: {ex}");
+                return false;
+            }
         }
 
         /// <summary>

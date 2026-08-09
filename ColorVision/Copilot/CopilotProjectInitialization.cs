@@ -19,7 +19,9 @@ namespace ColorVision.Copilot
         private const string OriginStatement = "This request was created by ColorVision's internal /init command. It authorizes only the bounded initialization task described below; it does not pre-approve any protected tool call.";
         private const string PreviewInstruction = "Propose exactly one add operation with PreviewWorkspacePatchEnvelope, then use its change_set_id with ApplyWorkspacePatchEnvelope. The protected apply must remain subject to the current native approval policy.";
 
-        public static CopilotProjectInitializationPlan Create(string? workspaceRoot)
+        public static CopilotProjectInitializationPlan Create(
+            string? workspaceRoot,
+            CopilotProjectInstructionDiscoveryOptions? discoveryOptions = null)
         {
             var normalizedRoot = TryNormalizeWorkspaceRoot(workspaceRoot);
             if (normalizedRoot == null)
@@ -27,7 +29,10 @@ namespace ColorVision.Copilot
                 return Blocked("请先打开项目或解决方案，再使用 /init。");
             }
 
-            var existingPath = CopilotAgentProjectInstructions.FindExistingSharedInstructionPath(normalizedRoot);
+            var options = discoveryOptions
+                ?? CopilotProjectInstructionDiscoveryConfig.Load(
+                    CopilotAgentProjectInstructions.ResolveGlobalInstructionRootPath());
+            var existingPath = CopilotAgentProjectInstructions.FindExistingSharedInstructionPath(normalizedRoot, options);
             if (existingPath != null)
             {
                 var displayPath = Path.GetRelativePath(normalizedRoot, existingPath);
@@ -40,6 +45,10 @@ namespace ColorVision.Copilot
             var targetPath = Path.Combine(normalizedRoot, "AGENTS.md");
             var serializedRoot = JsonSerializer.Serialize(normalizedRoot);
             var serializedTarget = JsonSerializer.Serialize(targetPath);
+            var serializedFallbackFileNames = JsonSerializer.Serialize(options.FallbackFileNames);
+            var configuredFallbackCheck = options.FallbackFileNames.Count == 0
+                ? string.Empty
+                : $" any configured fallback filename from {serializedFallbackFileNames},";
             var modelPrompt = string.Join(Environment.NewLine,
             [
                 RequestPrefix,
@@ -49,7 +58,7 @@ namespace ColorVision.Copilot
                 "First inspect the workspace structure and only the relevant build, test, architecture, and developer documentation needed to describe this project accurately.",
                 "Write a concise root AGENTS.md containing durable project facts, architecture boundaries, PowerShell-compatible build and test commands, code conventions and known pitfalls, and completion criteria.",
                 "Exclude secrets, credentials, personal absolute paths, generated file inventories, transient branch or worktree state, and speculative rules that are not supported by workspace evidence.",
-                "Immediately before proposing the change, re-check that no root AGENTS.override.md, AGENTS.md, CLAUDE.md, or .claude/CLAUDE.md exists. If one exists, stop without writing and report its workspace-relative path.",
+                $"Immediately before proposing the change, re-check that no root AGENTS.override.md, AGENTS.md,{configuredFallbackCheck} CLAUDE.md, or .claude/CLAUDE.md exists. If one exists, stop without writing and report its workspace-relative path.",
                 PreviewInstruction,
                 "Build and test execution are outside this initialization task. After the approved add succeeds, summarize the evidence used and ask the user to review and refine the generated instructions.",
             ]);

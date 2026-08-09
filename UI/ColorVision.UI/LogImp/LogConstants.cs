@@ -38,7 +38,17 @@ namespace ColorVision.UI.LogImp
         /// <summary>
         /// 默认最大日志条目数限制
         /// </summary>
-        public const int DefaultMaxEntries = 100000;
+        public const int DefaultMaxEntries = 10000;
+
+        /// <summary>
+        /// 实时日志面板默认最大日志条目数限制
+        /// </summary>
+        public const int DefaultRealtimeLogMaxEntries = 1000;
+
+        /// <summary>
+        /// 主界面日志面板默认最大日志条目数限制
+        /// </summary>
+        public const int DefaultLogPanelMaxEntries = DefaultRealtimeLogMaxEntries;
 
         /// <summary>
         /// 启用字符数截断的最小阈值

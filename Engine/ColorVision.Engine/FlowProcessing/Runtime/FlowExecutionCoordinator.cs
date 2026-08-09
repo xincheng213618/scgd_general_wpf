@@ -1,6 +1,5 @@
 using ColorVision.Engine.FlowProcessing.PostProcess;
 using ColorVision.Engine.Templates.Flow;
-using ColorVision.Engine.Templates.Flow.Routing;
 using FlowEngineLib;
 using System;
 using System.Collections.Generic;
@@ -77,23 +76,11 @@ public sealed class FlowExecutionCoordinator
                 $"流程 {flowKey} 的 STN 数据无效。",
                 ex);
         }
-        if (!FlowExecutionPolicyStoreProvider.Shared.TryLoad(
-                flowKey,
-                out FlowExecutionPolicySnapshot executionPolicy,
-                out string? policyFailure))
-        {
-            throw new InvalidOperationException(
-                $"流程 {flowKey} 的执行策略无法读取：{policyFailure}");
-        }
         var request = new FlowHeadlessExecutionRequest(
             savedStn,
             startNodeName,
             serialNumber,
             services,
-            FlowExecutionPolicyRuntimeAdapter.ToRuntimeErrorRoutes(
-                executionPolicy),
-            FlowExecutionPolicyRuntimeAdapter.ToRuntimeRetryPolicies(
-                executionPolicy),
             readinessTimeout,
             executionTimeout);
         return RunHeadlessAsync(request, cancellationToken);

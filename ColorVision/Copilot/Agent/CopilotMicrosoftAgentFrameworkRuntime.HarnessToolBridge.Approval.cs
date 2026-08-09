@@ -112,13 +112,17 @@ namespace ColorVision.Copilot
                 ArgumentNullException.ThrowIfNull(reservation);
                 var outcome = await _toolExecutor.EvaluatePermissionRequestAsync(
                     CreateInvocation(reservation, frameworkApprovalGranted: false),
-                    cancellationToken);
+                    cancellationToken,
+                    _emit);
                 reservation.PermissionHookRuns = outcome.HookRuns;
                 reservation.HookBindings = outcome.HookBindings;
                 return outcome;
             }
 
-            public void PublishAwaitingApproval(FrameworkApprovalReservation reservation, Mcp.ConfirmableAction action)
+            public void PublishAwaitingApproval(
+                FrameworkApprovalReservation reservation,
+                Mcp.ConfirmableAction action,
+                bool automaticReview)
             {
                 reservation.ApprovalActionId = action.ActionId;
                 reservation.ApprovalArgumentsDigest = action.ArgumentsDigest;
@@ -126,7 +130,9 @@ namespace ColorVision.Copilot
                 {
                     ToolName = reservation.Tool.Name,
                     Success = true,
-                    Summary = $"{reservation.Tool.Name} is waiting for explicit ColorVision approval.",
+                    Summary = automaticReview
+                        ? $"{reservation.Tool.Name} is waiting for the configured automatic permission reviewer."
+                        : $"{reservation.Tool.Name} is waiting for explicit ColorVision approval.",
                     Approval = new CopilotToolApprovalInfo
                     {
                         ActionId = action.ActionId,
@@ -134,6 +140,7 @@ namespace ColorVision.Copilot
                         RiskLevel = action.RiskLevel,
                         ExpiresAtUtc = action.ExpiresAt,
                         ExecuteOnApproval = false,
+                        ResumesAgentOnApproval = true,
                     },
                 };
                 _emit(CopilotAgentEvent.FromToolResult(

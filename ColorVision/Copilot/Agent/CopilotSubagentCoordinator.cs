@@ -254,18 +254,19 @@ namespace ColorVision.Copilot
 
     internal sealed class CopilotSubagentCoordinator
     {
-        public const int MaximumConcurrentRuns = 2;
+        public const int DefaultMaximumConcurrentRuns = 2;
         public const int MaximumRunTokenBudget = 16_384;
-        public const int MaximumTotalTokenBudget = MaximumConcurrentRuns * MaximumRunTokenBudget;
+        public const int MaximumTotalTokenBudget = DefaultMaximumConcurrentRuns * MaximumRunTokenBudget;
         public const int MaximumTrackedCompletedRuns = 8;
 
         private readonly object _syncRoot = new();
-        private readonly SemaphoreSlim _slots = new(MaximumConcurrentRuns, MaximumConcurrentRuns);
+        private readonly SemaphoreSlim _slots;
         private readonly HashSet<string> _activeRunIds = new(StringComparer.Ordinal);
         private readonly Dictionary<string, CompletedSubagentRun> _completedRuns = new(StringComparer.Ordinal);
         private readonly Queue<string> _completedRunOrder = new();
         private readonly int _totalTokenBudget;
         private readonly int _perRunTokenBudget;
+        private readonly int _maximumConcurrentRuns;
         private readonly string _conversationId;
         private long _committedTokens;
         private int _reservedTokens;
@@ -274,12 +275,14 @@ namespace ColorVision.Copilot
         {
             ArgumentNullException.ThrowIfNull(parentRequest);
             _conversationId = (parentRequest.ConversationId ?? string.Empty).Trim();
+            _maximumConcurrentRuns = Math.Max(1, parentRequest.CodexMaximumConcurrentSubagentRuns);
+            _slots = new SemaphoreSlim(_maximumConcurrentRuns, _maximumConcurrentRuns);
             var parentTokenBudget = CopilotAgentRunBudget.Resolve(parentRequest).RequestTokenBudget;
             _totalTokenBudget = Math.Max(
                 CopilotAgentRunBudget.MinimumRequestTokenBudget,
                 Math.Min(MaximumTotalTokenBudget, parentTokenBudget / 2));
-            _perRunTokenBudget = _totalTokenBudget >= CopilotAgentRunBudget.MinimumRequestTokenBudget * MaximumConcurrentRuns
-                ? Math.Min(MaximumRunTokenBudget, _totalTokenBudget / MaximumConcurrentRuns)
+            _perRunTokenBudget = _totalTokenBudget >= (long)CopilotAgentRunBudget.MinimumRequestTokenBudget * _maximumConcurrentRuns
+                ? Math.Min(MaximumRunTokenBudget, _totalTokenBudget / _maximumConcurrentRuns)
                 : CopilotAgentRunBudget.MinimumRequestTokenBudget;
         }
 
@@ -319,6 +322,9 @@ namespace ColorVision.Copilot
         public bool TryResolveCompletedRun(
             string roleId,
             string runId,
+            string agentName,
+            string model,
+            string reasoningEffort,
             out CopilotAgentSessionCheckpoint? checkpoint,
             out CopilotToolFailureKind failureKind,
             out string errorMessage)
@@ -346,6 +352,13 @@ namespace ColorVision.Copilot
                     errorMessage = $"Subagent run '{normalizedRunId}' belongs to role '{completed.RoleId}', not '{normalizedRoleId}'.";
                     return false;
                 }
+                if (!string.Equals(completed.AgentName, (agentName ?? string.Empty).Trim(), StringComparison.OrdinalIgnoreCase)
+                    || !string.Equals(completed.Model, (model ?? string.Empty).Trim(), StringComparison.OrdinalIgnoreCase)
+                    || !string.Equals(completed.ReasoningEffort, (reasoningEffort ?? string.Empty).Trim(), StringComparison.Ordinal))
+                {
+                    errorMessage = $"Subagent run '{normalizedRunId}' was completed with a different agent/model/reasoning profile. Start a fresh run instead of resuming its checkpoint.";
+                    return false;
+                }
                 if (completed.Checkpoint?.IsStructurallyValid() != true)
                 {
                     errorMessage = $"Subagent run '{normalizedRunId}' did not produce a structurally valid resumable checkpoint.";
@@ -361,6 +374,9 @@ namespace ColorVision.Copilot
         public void RecordCompleted(
             string roleId,
             string runId,
+            string agentName,
+            string model,
+            string reasoningEffort,
             CopilotAgentSessionCheckpoint? checkpoint)
         {
             var normalizedRoleId = NormalizeRoleId(roleId);
@@ -375,7 +391,12 @@ namespace ColorVision.Copilot
 
                 _completedRuns.Add(
                     normalizedRunId,
-                    new CompletedSubagentRun(normalizedRoleId, checkpoint));
+                    new CompletedSubagentRun(
+                        normalizedRoleId,
+                        (agentName ?? string.Empty).Trim(),
+                        (model ?? string.Empty).Trim(),
+                        (reasoningEffort ?? string.Empty).Trim(),
+                        checkpoint));
                 _completedRunOrder.Enqueue(normalizedRunId);
                 while (_completedRunOrder.Count > MaximumTrackedCompletedRuns)
                 {
@@ -416,6 +437,9 @@ namespace ColorVision.Copilot
 
         private sealed record CompletedSubagentRun(
             string RoleId,
+            string AgentName,
+            string Model,
+            string ReasoningEffort,
             CopilotAgentSessionCheckpoint? Checkpoint);
 
         internal sealed class CopilotSubagentLease : IDisposable

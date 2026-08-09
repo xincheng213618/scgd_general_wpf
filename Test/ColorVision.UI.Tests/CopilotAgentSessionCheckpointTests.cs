@@ -290,7 +290,7 @@ public sealed class CopilotAgentSessionCheckpointTests
     }
 
     [Fact]
-    public void OfficialOpenAiResponsesMigrationRetiresOnlyLegacyOfficialCheckpointKeys()
+    public void OfficialOpenAiResponsesMigrationRetiresLegacyAndPreviousTransportCheckpointKeys()
     {
         var officialProfile = CreateOpenAiProfile(
             CopilotVendorType.OpenAI,
@@ -301,6 +301,11 @@ public sealed class CopilotAgentSessionCheckpointTests
 
         Assert.NotEqual(
             CreateLegacyProfileKey(officialProfile),
+            CopilotAgentSessionCheckpoint.CreateProfileKey(officialProfile));
+        Assert.NotEqual(
+            CreateProfileKey(
+                officialProfile,
+                "openai-responses-stateless-v1"),
             CopilotAgentSessionCheckpoint.CreateProfileKey(officialProfile));
         Assert.Equal(
             CreateLegacyProfileKey(proxyProfile),
@@ -356,6 +361,13 @@ public sealed class CopilotAgentSessionCheckpointTests
 
     private static string CreateLegacyProfileKey(CopilotProfileConfig profile)
     {
+        return CreateProfileKey(profile, transportVersion: null);
+    }
+
+    private static string CreateProfileKey(
+        CopilotProfileConfig profile,
+        string? transportVersion)
+    {
         var value = string.Join("|", new[]
         {
             profile.Id?.Trim() ?? string.Empty,
@@ -364,6 +376,8 @@ public sealed class CopilotAgentSessionCheckpointTests
             profile.Model?.Trim() ?? string.Empty,
             profile.EffectiveSystemPrompt,
         });
+        if (!string.IsNullOrEmpty(transportVersion))
+            value += "|" + transportVersion;
         var hash = SHA256.HashData(Encoding.UTF8.GetBytes(value));
         return Convert.ToHexString(hash.AsSpan(0, 16)).ToLowerInvariant();
     }

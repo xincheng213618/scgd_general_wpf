@@ -9,13 +9,15 @@
 ## Table of Contents
 
 1. [Data Structures](#data-structures)
-2. [Image Processing Functions](#image-processing-functions)
-3. [SFR (Spatial Frequency Response) Functions](#sfr-spatial-frequency-response-functions)
-4. [Focus Evaluation Functions](#focus-evaluation-functions)
-5. [Detection Functions](#detection-functions)
-6. [Video Processing Functions](#video-processing-functions)
-7. [Utility Functions](#utility-functions)
-8. [Error Codes](#error-codes)
+2. [Calibration Context API](#calibration-context-api)
+3. [POI Batch API](#poi-batch-api)
+4. [Image Processing Functions](#image-processing-functions)
+5. [SFR (Spatial Frequency Response) Functions](#sfr-spatial-frequency-response-functions)
+6. [Focus Evaluation Functions](#focus-evaluation-functions)
+7. [Detection Functions](#detection-functions)
+8. [Video Processing Functions](#video-processing-functions)
+9. [Utility Functions](#utility-functions)
+10. [Error Codes](#error-codes)
 
 ---
 
@@ -106,6 +108,91 @@ struct VideoInfo {
     int height;         // Frame height
 };
 ```
+
+## Calibration Context API
+
+The calibration API keeps parsed correction tables, distortion maps, and scratch
+buffers alive across frames. Rebuild a context only when the ordered calibration
+file list, file contents, or source layout changes.
+
+```cpp
+void* context = nullptr;
+M_CalibrationCreate(&context);
+M_CalibrationLoadFileW(context, calibrationType, filePath);
+M_CalibrationExecuteToV1(
+    context, width, height, bitsPerChannel, channels,
+    sourceRawData, rawByteLength,
+    correctedRawData, correctedRawByteLength,
+    cieData, cieFloatCount, &options);
+M_CalibrationDestroy(context);
+```
+
+Supported legacy calibration values are `0` through `9` and `11` through `15`:
+DarkNoise, three defect-point variants, DSNU, Uniformity, Luminance, OneColor,
+FourColor, MultiColor, Distortion, ColorShift, LineArity, ColorDiff, and
+AngleShift. Value `10` (`LumColor`) is reserved and intentionally rejected.
+
+Execution preserves template order for RAW corrections. If one luminance/color
+transform is loaded, it runs last and writes planar float CIE (`X`, then `Y`,
+then `Z`); Luminance writes one float plane. At most one color transform may be
+selected. Color-transform exposure values must be finite and positive.
+`rawByteLength` and `cieFloatCount` are validated before processing.
+Geometric transforms that cannot safely run in place share one context-owned
+RAW-sized work buffer and ping-pong through it. Consecutive Distortion and
+ColorDiff therefore require no intermediate full-frame copy.
+
+`M_CalibrationExecuteToV1` borrows a read-only source RAW pointer. It can write
+corrected RAW, planar CIE, or both without first copying the source in managed
+code. When a template ends in a luminance/color transform, `correctedRawData`
+may be null. Source RAW, corrected RAW, and CIE ranges must not overlap. The
+older `M_CalibrationExecute` mutable-buffer entry point remains available for
+ABI compatibility; its RAW and CIE ranges must also be distinct.
+
+All functions use `__cdecl`. Calls on a live context are serialized internally,
+but `M_CalibrationDestroy` must not overlap another call on the same context.
+Use `M_CalibrationGetLastError` twice: first to obtain the required UTF-8 byte
+count, then to copy the message. Return value `1` means success; negative values
+are `MCalibrationResult` errors. A failed call and both error-reading calls must
+be kept in the same caller-side critical section so another call cannot replace
+the context's last-error text between them.
+
+Parsed calibration assets are retained process-wide by calibration type and
+canonical file path, so different camera/template groups reuse the same file
+data and precomputed maps while keeping independent execution contexts. File
+size and last-write time invalidate stale generations. The default retained
+memory budget is 4 GiB; set `COLORVISION_CALIBRATION_CACHE_MB` before first use
+to override it (`0` disables retention). Use
+`M_CalibrationCacheGetStatsV1`/`M_CalibrationCacheGetEntryV1` to inspect the
+cache and `M_CalibrationCacheReleaseV1` to drop cache-owned references. Releasing
+the cache never invalidates a live context; the release result reports memory
+that remains temporarily owned by active contexts. An in-flight file load that
+has not published its context lease is canceled at the release boundary; if a
+lease was already reserved, it is reported as active before release returns.
+The budget may be exceeded while every resident entry is active, but is trimmed
+as soon as the last owner of an over-budget entry is destroyed.
+
+## POI Batch API
+
+The POI API borrows planar float CIE memory directly for the duration of one
+call. It does not allocate or copy the full image. `MPoiRequestV1` supports
+solid point, circle, and center-based rectangle regions; all results are written
+to the caller-owned `MPoiResultV1` array.
+
+`M_CalculatePoiBatchV1` preserves the legacy unfiltered calculation exactly.
+`M_CalculatePoiBatchV2` adds a 48-byte `MPoiOptionsV2` structure for Value,
+XYZ-mask, and NoArea filters, percentage thresholds, and final XYZ scaling.
+Unknown flags and non-zero reserved fields are rejected so the ABI can evolve
+safely. Percentage thresholds use the mean of the highest `maxPercent` samples.
+XYZ-mask mode derives one deterministic common mask from the selected X, Y, or
+Z plane; percentage mode also derives its threshold from that selected plane.
+This intentionally fixes the old implementation's uninitialized memory,
+POI-order-dependent behavior, and per-output-plane percentage thresholds. Use
+the legacy rollback switch when reproducing those defective edge semantics is
+required for diagnosis.
+
+The managed local-flow implementation uses V2 by default. Set the AppContext
+switch `ColorVision.UseLegacyLocalPoi=true` only for temporary rollback to the
+old `cvCamera.dll` path.
 
 ---
 

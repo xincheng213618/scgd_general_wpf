@@ -45,7 +45,7 @@ namespace ProjectARVRPro.Process.AOI
         public bool ExportCieFile { get => _ExportCieFile; set { _ExportCieFile = value; OnPropertyChanged(); } }
         private bool _ExportCieFile;
 
-        public AoiRecipeConfig RecipeConfig { get => _RecipeConfig; set { _RecipeConfig = value; OnPropertyChanged(); } }
+        public AoiRecipeConfig RecipeConfig { get => _RecipeConfig; set { _RecipeConfig = value ?? new(); OnPropertyChanged(); } }
         private AoiRecipeConfig _RecipeConfig = new AoiRecipeConfig();
 
     }

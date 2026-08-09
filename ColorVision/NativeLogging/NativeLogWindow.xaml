@@ -1,0 +1,85 @@
+<Window x:Class="ColorVision.NativeLogging.NativeLogWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:logControls="clr-namespace:ColorVision.UI.LogImp.Controls;assembly=ColorVision.UI"
+        xmlns:properties="clr-namespace:ColorVision.UI.Properties;assembly=ColorVision.UI"
+        mc:Ignorable="d"
+        Title="Native Logs"
+        Width="1100"
+        Height="620"
+        MinWidth="720"
+        MinHeight="360"
+        Background="{DynamicResource GlobalBackground}"
+        Loaded="Window_Loaded"
+        Closed="Window_Closed">
+    <Grid Margin="8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0"
+                Margin="0,0,0,8"
+                Padding="8,6"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="1"
+                CornerRadius="4">
+            <WrapPanel VerticalAlignment="Center">
+                <Button x:Name="StartStopButton"
+                        MinWidth="104"
+                        Margin="0,0,8,0"
+                        Padding="12,5"
+                        Click="StartStopButton_Click"/>
+                <ToggleButton x:Name="PauseToggleButton"
+                              MinWidth="104"
+                              Margin="0,0,12,0"
+                              Padding="12,5"
+                              Click="PauseToggleButton_Click"/>
+                <CheckBox x:Name="AutoScrollCheckBox"
+                          Margin="0,0,16,0"
+                          VerticalAlignment="Center"
+                          IsChecked="True"
+                          Content="{x:Static properties:Resources.AutoScrollToEnd}"/>
+                <TextBlock Margin="0,0,6,0"
+                           VerticalAlignment="Center"
+                           Foreground="{DynamicResource GlobalTextBrush}"
+                           Text="{x:Static properties:Resources.LogLevel}"/>
+                <ComboBox x:Name="LevelComboBox"
+                          Width="112"
+                          Margin="0,0,12,0"
+                          VerticalContentAlignment="Center"
+                          SelectionChanged="LevelComboBox_SelectionChanged"/>
+                <Button Margin="0"
+                        MinWidth="72"
+                        Padding="12,5"
+                        Content="{x:Static properties:Resources.Clear}"
+                        Click="ClearButton_Click"/>
+            </WrapPanel>
+        </Border>
+
+        <Border Grid.Row="1"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="1">
+            <logControls:LogViewerControl x:Name="LogViewer"
+                                          ViewerMode="Virtualized"
+                                          MaxEntries="20000"
+                                          MaxChars="4000000"
+                                          UseLevelColors="True"
+                                          TextWrapping="NoWrap"/>
+        </Border>
+
+        <StatusBar Grid.Row="2"
+                   Margin="0,6,0,0"
+                   Padding="4,2"
+                   Background="Transparent">
+            <StatusBarItem>
+                <TextBlock x:Name="StatusTextBlock"
+                           Foreground="{DynamicResource GlobalTextBrush}"
+                           TextTrimming="CharacterEllipsis"/>
+            </StatusBarItem>
+        </StatusBar>
+    </Grid>
+</Window>

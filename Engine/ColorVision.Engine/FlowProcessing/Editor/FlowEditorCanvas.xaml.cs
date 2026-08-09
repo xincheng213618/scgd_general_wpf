@@ -24,6 +24,7 @@ namespace ColorVision.Engine.FlowProcessing.Editor
         private bool _propertyPanelPositionUpdatePending;
         private bool _fitCanvasToNodesPending;
         private bool _fitCanvasToNodesScheduled;
+        private bool _showNodeDocumentation;
         private float _fitCanvasMaximumScale = 0.85f;
         private bool _disposed;
         private readonly StackPanel _generatedPropertyPanel = new();
@@ -75,6 +76,8 @@ namespace ColorVision.Engine.FlowProcessing.Editor
 
             ThemeManager.Current.CurrentUIThemeChanged += ThemeChanged;
             ThemeChanged(ThemeManager.Current.CurrentUITheme);
+            AdvancedPropertiesButton.ToolTip = FlowNodePropertyMetadataProvider.AdvancedOptions.ToolTip;
+            UpdateInspectorViewButtons();
         }
 
         private static void OnPropertyPanelMarginChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -227,27 +230,45 @@ namespace ColorVision.Engine.FlowProcessing.Editor
                 return;
             }
 
-            var configurator = NodeConfiguratorRegistry.GetConfigurator(activeNode!.GetType());
-            if (configurator != null)
-            {
-                var context = new NodeConfiguratorContext
-                {
-                    Node = activeNode,
-                    SignStackPanel = signPanel,
-                    STNodeEditor = STNodeEditorMain,
-                    Refresh = RefreshNodePropertyPanel
-                };
-                configurator.Configure(context);
-            }
+            NodeInspectorTitle.Text = activeNode!.GetType().Name;
 
-            _generatedPropertyPanel.Children.Clear();
-            var resourceManager = PropertyEditorHelper.GetResourceManager(activeNode);
-            _generatedPropertyPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(
-                activeNode,
-                resourceManager,
-                metadataProvider: FlowNodePropertyMetadataProvider.Instance,
-                advancedOptions: FlowNodePropertyMetadataProvider.AdvancedOptions));
-            signPanel.Children.Add(_generatedPropertyPanel);
+            if (_showNodeDocumentation)
+            {
+                signPanel.Children.Add(FlowNodeDocumentationPresenter.Create(activeNode!));
+            }
+            else
+            {
+                UniformGrid commandGrid = new()
+                {
+                    HorizontalAlignment = HorizontalAlignment.Stretch,
+                    Margin = new Thickness(0, 0, 0, 4)
+                };
+                PropertyEditorHelper.GenCommand(activeNode!, commandGrid, compact: true);
+                if (commandGrid.Children.Count > 0)
+                    signPanel.Children.Add(commandGrid);
+
+                var configurator = NodeConfiguratorRegistry.GetConfigurator(activeNode!.GetType());
+                if (configurator != null)
+                {
+                    var context = new NodeConfiguratorContext
+                    {
+                        Node = activeNode,
+                        SignStackPanel = signPanel,
+                        STNodeEditor = STNodeEditorMain,
+                        Refresh = RefreshNodePropertyPanel
+                    };
+                    configurator.Configure(context);
+                }
+
+                _generatedPropertyPanel.Children.Clear();
+                var resourceManager = PropertyEditorHelper.GetResourceManager(activeNode);
+                _generatedPropertyPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(
+                    activeNode,
+                    resourceManager,
+                    metadataProvider: FlowNodePropertyMetadataProvider.Instance,
+                    advancedOptions: FlowNodePropertyMetadataProvider.AdvancedOptions));
+                signPanel.Children.Add(_generatedPropertyPanel);
+            }
             signPanel.Visibility = signPanel.Children.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
             if (signPanel.Visibility != Visibility.Visible)
             {
@@ -262,6 +283,64 @@ namespace ColorVision.Engine.FlowProcessing.Editor
             }
 
             PreparePropertyPanelForFirstRender();
+        }
+
+        internal bool IsShowingNodeDocumentation => _showNodeDocumentation;
+
+        internal void ShowNodeDocumentation(bool showDocumentation)
+        {
+            if (_showNodeDocumentation == showDocumentation)
+                return;
+
+            _showNodeDocumentation = showDocumentation;
+            UpdateInspectorViewButtons();
+            RefreshNodePropertyPanel();
+            QueuePropertyPanelPositionUpdate();
+        }
+
+        private void ConfigurationViewButton_Click(object sender, RoutedEventArgs e)
+        {
+            ShowNodeDocumentation(false);
+        }
+
+        private void DocumentationViewButton_Click(object sender, RoutedEventArgs e)
+        {
+            ShowNodeDocumentation(true);
+        }
+
+        private void AdvancedPropertiesButton_Checked(object sender, RoutedEventArgs e)
+        {
+            SetAdvancedPropertiesVisibility(true);
+        }
+
+        private void AdvancedPropertiesButton_Unchecked(object sender, RoutedEventArgs e)
+        {
+            SetAdvancedPropertiesVisibility(false);
+        }
+
+        private void SetAdvancedPropertiesVisibility(bool showAdvancedProperties)
+        {
+            if (FlowNodePropertyMetadataProvider.AdvancedOptions.ShowAdvancedProperties == showAdvancedProperties)
+                return;
+
+            FlowNodePropertyMetadataProvider.AdvancedOptions.ShowAdvancedProperties = showAdvancedProperties;
+            UpdateInspectorViewButtons();
+            RefreshNodePropertyPanel();
+            QueuePropertyPanelPositionUpdate();
+        }
+
+        private void UpdateInspectorViewButtons()
+        {
+            ConfigurationViewButton.FontWeight = _showNodeDocumentation ? FontWeights.Normal : FontWeights.SemiBold;
+            DocumentationViewButton.FontWeight = _showNodeDocumentation ? FontWeights.SemiBold : FontWeights.Normal;
+            ConfigurationViewButton.Opacity = _showNodeDocumentation ? 0.65 : 1;
+            DocumentationViewButton.Opacity = _showNodeDocumentation ? 1 : 0.65;
+            ConfigurationViewButton.SetResourceReference(Control.ForegroundProperty, _showNodeDocumentation ? "GlobalTextBrush" : "PrimaryBrush");
+            DocumentationViewButton.SetResourceReference(Control.ForegroundProperty, _showNodeDocumentation ? "PrimaryBrush" : "GlobalTextBrush");
+            AdvancedPropertiesButton.Visibility = _showNodeDocumentation ? Visibility.Collapsed : Visibility.Visible;
+            AdvancedPropertiesButton.IsChecked = FlowNodePropertyMetadataProvider.AdvancedOptions.ShowAdvancedProperties;
+            AdvancedPropertiesButton.SetResourceReference(Control.ForegroundProperty,
+                FlowNodePropertyMetadataProvider.AdvancedOptions.ShowAdvancedProperties ? "PrimaryBrush" : "GlobalTextBrush");
         }
 
         public void HideNodePropertyPanel()

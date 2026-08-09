@@ -22,11 +22,12 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
         {
             Application.Current.Dispatcher.BeginInvoke(() =>
             {
-                if (_image.HImageCache == null) return;
+                using ImageFrameLease? lease = _image.AcquireImageFrame();
+                if (lease == null) return;
 
                 log.Info("AutoLevelsAdjust - 开始执行");
                 
-                int ret = OpenCVMediaHelper.M_AutoLevelsAdjust((HImage)_image.HImageCache, out HImage hImageProcessed);
+                int ret = OpenCVMediaHelper.M_AutoLevelsAdjust(lease.Image, out HImage hImageProcessed);
                 if (ret == 0)
                 {
                     if (!HImageExtension.UpdateWriteableBitmap(_image.FunctionImage, hImageProcessed))
@@ -38,6 +39,10 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                     }
                     _image.ImageShow.Source = _image.FunctionImage;
                     log.Info("AutoLevelsAdjust 完成");
+                }
+                else
+                {
+                    hImageProcessed.Dispose();
                 }
             });
         }

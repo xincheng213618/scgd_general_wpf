@@ -14,14 +14,20 @@ namespace ColorVision.UI.LogImp
         private readonly object _lock = new();
         private readonly System.Timers.Timer _flushTimer;
         private readonly PropertyChangedEventHandler _configChangedHandler;
+        private readonly LogViewConfig _viewConfig;
         private bool _isClosed;
         private bool _flushQueued;
         private bool _reverseLastState;
 
-        public LogViewerAppender(LogViewerControl logViewer)
+        public LogViewerAppender(LogViewerControl logViewer) : this(logViewer, new RealtimeLogViewConfig())
+        {
+        }
+
+        public LogViewerAppender(LogViewerControl logViewer, LogViewConfig viewConfig)
         {
             _logViewer = logViewer ?? throw new ArgumentNullException(nameof(logViewer));
-            _logViewer.MaxEntries = GetMaxEntries();
+            _viewConfig = viewConfig ?? throw new ArgumentNullException(nameof(viewConfig));
+            _logViewer.MaxEntries = _viewConfig.MaxEntries;
 
             _flushTimer = new System.Timers.Timer(GetFlushIntervalMs()) { AutoReset = true };
             _flushTimer.Elapsed += (_, _) => QueueFlush(force: false);
@@ -29,16 +35,16 @@ namespace ColorVision.UI.LogImp
 
             _configChangedHandler = (_, e) =>
             {
-                if (e.PropertyName == nameof(LogConfig.LogFlushIntervalMs))
+                if (e.PropertyName == nameof(LogViewConfig.LogFlushIntervalMs))
                 {
                     _flushTimer.Interval = GetFlushIntervalMs();
                 }
-                else if (e.PropertyName == nameof(LogConfig.MaxEntries))
+                else if (e.PropertyName == nameof(LogViewConfig.MaxEntries))
                 {
-                    _logViewer.Dispatcher.BeginInvoke(() => _logViewer.MaxEntries = GetMaxEntries(), DispatcherPriority.Background);
+                    _logViewer.Dispatcher.BeginInvoke(() => _logViewer.MaxEntries = _viewConfig.MaxEntries, DispatcherPriority.Background);
                 }
             };
-            LogConfig.Instance.PropertyChanged += _configChangedHandler;
+            _viewConfig.PropertyChanged += _configChangedHandler;
         }
 
         public bool IgnoreAutoRefresh { get; set; }
@@ -46,7 +52,7 @@ namespace ColorVision.UI.LogImp
 
         protected override void Append(LoggingEvent loggingEvent)
         {
-            if (!AutoRefresh || (!IgnoreAutoRefresh && !LogConfig.Instance.AutoRefresh))
+            if (!AutoRefresh || (!IgnoreAutoRefresh && !_viewConfig.AutoRefresh))
             {
                 return;
             }
@@ -61,7 +67,7 @@ namespace ColorVision.UI.LogImp
             lock (_lock)
             {
                 _buffer.AddRange(entries);
-                _reverseLastState = LogConfig.Instance.LogReserve;
+                _reverseLastState = _viewConfig.LogReserve;
             }
         }
 
@@ -109,7 +115,7 @@ namespace ColorVision.UI.LogImp
 
             try
             {
-                _logViewer.AppendEntries(pendingEntries, reverse, LogConfig.Instance.AutoScrollToEnd);
+                _logViewer.AppendEntries(pendingEntries, reverse, _viewConfig.AutoScrollToEnd);
             }
             catch
             {
@@ -138,7 +144,7 @@ namespace ColorVision.UI.LogImp
 
             _isClosed = true;
             base.OnClose();
-            LogConfig.Instance.PropertyChanged -= _configChangedHandler;
+            _viewConfig.PropertyChanged -= _configChangedHandler;
             _flushTimer.Stop();
             _flushTimer.Dispose();
             QueueFlush(force: true);
@@ -150,16 +156,11 @@ namespace ColorVision.UI.LogImp
             GC.SuppressFinalize(this);
         }
 
-        private static int GetFlushIntervalMs()
+        private int GetFlushIntervalMs()
         {
-            return LogConfig.Instance.LogFlushIntervalMs > 0
-                ? LogConfig.Instance.LogFlushIntervalMs
+            return _viewConfig.LogFlushIntervalMs > 0
+                ? _viewConfig.LogFlushIntervalMs
                 : LogConstants.DefaultFlushIntervalMs;
-        }
-
-        private static int GetMaxEntries()
-        {
-            return LogConfig.Instance.MaxEntries;
         }
     }
 }

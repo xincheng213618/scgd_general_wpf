@@ -3,19 +3,29 @@
 namespace Conoscope.Core
 {
     /// <summary>
-    /// 极角线数据类，存储角度、线对象和RGB数据
+    /// 参考曲线公共数据：方位角线和极角圆共用数值与采样点存储。
     /// </summary>
-    public class PolarAngleLine
+    public abstract class ReferenceCurve
     {
-        /// <summary>
-        /// 极角（度）
-        /// </summary>
-        public double Angle { get; set; }
+        public double ReferenceValue { get; set; }
 
-        /// <summary>
-        /// 沿线采样的RGB数据
-        /// </summary>
-        public List<RgbSample> RgbData { get; set; } = new List<RgbSample>();
+        public List<RgbSample> Samples { get; } = new List<RgbSample>();
+
+        public abstract bool IsClosed { get; }
+    }
+
+    /// <summary>
+    /// 沿一个方位角穿过图像的采样线。
+    /// </summary>
+    public sealed class PolarAngleLine : ReferenceCurve
+    {
+        public double Angle
+        {
+            get => ReferenceValue;
+            set => ReferenceValue = value;
+        }
+
+        public override bool IsClosed => false;
 
         public override string ToString() => $"{Angle}°";
     }

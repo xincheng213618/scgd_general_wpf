@@ -278,6 +278,9 @@ namespace ColorVision.Copilot
                 key,
                 modifiers,
                 hasComposerOverlay,
+                PromptTextBox.GetLineIndexFromCharacterIndex(PromptTextBox.CaretIndex),
+                PromptTextBox.LineCount,
+                PromptTextBox.SelectionLength,
                 promptScrollViewer?.VerticalOffset ?? 0,
                 promptScrollViewer?.ScrollableHeight ?? 0,
                 messagesScrollViewer.VerticalOffset,
@@ -297,6 +300,9 @@ namespace ColorVision.Copilot
             Key key,
             ModifierKeys modifiers,
             bool hasComposerOverlay,
+            int promptCaretLineIndex,
+            int promptLineCount,
+            int promptSelectionLength,
             double promptVerticalOffset,
             double promptScrollableHeight,
             double conversationVerticalOffset,
@@ -305,7 +311,16 @@ namespace ColorVision.Copilot
             const double boundaryTolerance = 0.5;
             if (key is not (Key.PageUp or Key.PageDown)
                 || modifiers != ModifierKeys.None
-                || hasComposerOverlay)
+                || hasComposerOverlay
+                || promptSelectionLength != 0)
+            {
+                return false;
+            }
+
+            if (promptLineCount > 1
+                && (promptCaretLineIndex < 0
+                    || (key == Key.PageUp && promptCaretLineIndex > 0)
+                    || (key == Key.PageDown && promptCaretLineIndex < promptLineCount - 1)))
             {
                 return false;
             }

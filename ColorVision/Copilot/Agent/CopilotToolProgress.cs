@@ -34,9 +34,15 @@ namespace ColorVision.Copilot
     {
         public string RoleId { get; init; } = string.Empty;
 
+        public string AgentName { get; init; } = string.Empty;
+
         public string RunId { get; init; } = string.Empty;
 
         public string ResumeFromRunId { get; init; } = string.Empty;
+
+        public string Model { get; init; } = string.Empty;
+
+        public string ReasoningEffort { get; init; } = string.Empty;
 
         public int RequestTokenBudget { get; init; }
 
@@ -189,8 +195,11 @@ namespace ColorVision.Copilot
                 delegatedRun = new CopilotDelegatedRunProgress
                 {
                     RoleId = NormalizeIdentifier(update.DelegatedRun.RoleId),
+                    AgentName = NormalizeIdentifier(update.DelegatedRun.AgentName),
                     RunId = NormalizeIdentifier(update.DelegatedRun.RunId),
                     ResumeFromRunId = NormalizeIdentifier(update.DelegatedRun.ResumeFromRunId),
+                    Model = NormalizeModel(update.DelegatedRun.Model),
+                    ReasoningEffort = NormalizeReasoningEffort(update.DelegatedRun.ReasoningEffort),
                     RequestTokenBudget = requestTokenBudget,
                     QueueDurationMs = Math.Clamp(
                         update.DelegatedRun.QueueDurationMs,
@@ -245,8 +254,11 @@ namespace ColorVision.Copilot
                 return left == right;
 
             return string.Equals(left.RoleId, right.RoleId, StringComparison.Ordinal)
+                && string.Equals(left.AgentName, right.AgentName, StringComparison.Ordinal)
                 && string.Equals(left.RunId, right.RunId, StringComparison.Ordinal)
                 && string.Equals(left.ResumeFromRunId, right.ResumeFromRunId, StringComparison.Ordinal)
+                && string.Equals(left.Model, right.Model, StringComparison.Ordinal)
+                && string.Equals(left.ReasoningEffort, right.ReasoningEffort, StringComparison.Ordinal)
                 && left.RequestTokenBudget == right.RequestTokenBudget
                 && left.QueueDurationMs == right.QueueDurationMs
                 && left.ConsumedTokens == right.ConsumedTokens
@@ -258,6 +270,23 @@ namespace ColorVision.Copilot
         {
             var identifier = CollapseWhitespace(CopilotMcpAuditLogger.RedactText(value));
             return identifier.Length <= 120 ? identifier : identifier[..120];
+        }
+
+        private static string NormalizeModel(string? value)
+        {
+            return CopilotConfiguredModelSelection.TryNormalize(value, out var model)
+                ? model
+                : string.Empty;
+        }
+
+        private static string NormalizeReasoningEffort(string? value)
+        {
+            var normalized = (value ?? string.Empty).Trim();
+            if (string.Equals(normalized, "model_default", StringComparison.Ordinal))
+                return normalized;
+            return CopilotCodexReasoningEffortSelection.TryParse(normalized, out var effort)
+                ? CopilotCodexReasoningEffortSelection.GetConfigToken(effort)
+                : string.Empty;
         }
 
         private static string CollapseWhitespace(string? value)

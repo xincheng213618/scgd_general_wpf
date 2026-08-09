@@ -171,7 +171,8 @@ namespace ColorVision.Copilot
             CopilotCapabilityCatalogSnapshot capabilitySnapshot,
             IReadOnlyCollection<string>? availableToolNames = null,
             CopilotAgentEnvironmentContext? environmentContext = null,
-            CopilotToolExecutionHookRegistrySnapshot? hookSurfaceSnapshot = null)
+            CopilotToolExecutionHookRegistrySnapshot? hookSurfaceSnapshot = null,
+            bool requireEnvironmentContextMatch = false)
         {
             ArgumentNullException.ThrowIfNull(capabilitySnapshot);
             if (profile == null || !IsStructurallyValid())
@@ -226,6 +227,11 @@ namespace ColorVision.Copilot
                 }
                 if (!string.Equals(EnvironmentFingerprint, environmentContext.Fingerprint, StringComparison.OrdinalIgnoreCase))
                     return CreateCompatibility(CopilotAgentCheckpointCompatibilityKind.EnvironmentDrift, capabilitySnapshot);
+            }
+            else if (requireEnvironmentContextMatch
+                && (EnvironmentVersion != 0 || !string.IsNullOrEmpty(EnvironmentFingerprint)))
+            {
+                return CreateCompatibility(CopilotAgentCheckpointCompatibilityKind.EnvironmentDrift, capabilitySnapshot);
             }
 
             if (hookSurfaceSnapshot != null)

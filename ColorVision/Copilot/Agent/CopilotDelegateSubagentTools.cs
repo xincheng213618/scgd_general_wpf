@@ -85,8 +85,51 @@ namespace ColorVision.Copilot
             CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(request);
-            if (!TryReadArguments(toolInput?.Arguments, out var task, out var resumeFromRunId, out var validationError))
+            if (!request.CodexAgentsEnabled)
+            {
+                return Failure(
+                    CopilotToolFailureKind.Authorization,
+                    "Codex agents.enabled=false disables subagent tools for this submitted turn.",
+                    "codex_agents_disabled");
+            }
+            if (!TryReadArguments(
+                toolInput?.Arguments,
+                out var task,
+                out var agent,
+                out var resumeFromRunId,
+                out var model,
+                out var reasoningEffort,
+                out var validationError))
                 return Failure(CopilotToolFailureKind.Validation, validationError);
+
+            CopilotCodexCustomSubagentDefinition? customSubagent = null;
+            if (agent.Length > 0)
+            {
+                customSubagent = CopilotCodexCustomSubagentSelection.Find(request.CodexCustomSubagents, agent);
+                if (customSubagent == null)
+                {
+                    var availableNames = request.CodexCustomSubagents
+                        .Select(definition => definition.Name)
+                        .Take(8)
+                        .ToArray();
+                    return Failure(
+                        CopilotToolFailureKind.Validation,
+                        availableNames.Length == 0
+                            ? $"Argument 'agent' names '{agent}', but this submitted request has no custom subagents."
+                            : $"Argument 'agent' names unknown custom subagent '{agent}'. Available: {string.Join(", ", availableNames)}.");
+                }
+                agent = customSubagent.Name;
+            }
+
+            var requestedProfile = new CopilotSubagentRunRequest
+            {
+                Agent = agent,
+                Model = model,
+                ReasoningEffort = reasoningEffort,
+            };
+            var effectiveModel = CopilotSubagentRunner.ResolveChildModel(request, requestedProfile);
+            var effectiveReasoningEffort = CopilotSubagentRunner.ResolveChildReasoningEffort(request, requestedProfile);
+            var effectiveReasoningEffortToken = FormatEffectiveReasoningEffort(effectiveReasoningEffort);
 
             var coordinator = CopilotSubagentCoordination.GetCoordinator(request);
             CopilotAgentSessionCheckpoint? resumeCheckpoint = null;
@@ -94,6 +137,9 @@ namespace ColorVision.Copilot
                 && !coordinator.TryResolveCompletedRun(
                     _role.Id,
                     resumeFromRunId,
+                    agent,
+                    effectiveModel,
+                    effectiveReasoningEffortToken,
                     out resumeCheckpoint,
                     out var resumeFailureKind,
                     out var resumeError))
@@ -110,14 +156,17 @@ namespace ColorVision.Copilot
                 ResumeFromRunId = resumeFromRunId,
                 ResumeCheckpoint = resumeCheckpoint,
                 Task = task,
+                Agent = agent,
+                Model = model,
+                ReasoningEffort = reasoningEffort,
                 RequestTokenBudget = lease.RequestTokenBudget,
                 QueueDurationMs = lease.QueueDurationMs,
             };
             if (progress != null)
             {
                 childRun.ProgressUpdated = (phase, budget, activeToolName) =>
-                    ReportSubagentProgress(progress, childRun, phase, budget, activeToolName);
-                ReportSubagentProgress(progress, childRun, phase: null, budget: null, activeToolName: null);
+                    ReportSubagentProgress(request, progress, childRun, phase, budget, activeToolName);
+                ReportSubagentProgress(request, progress, childRun, phase: null, budget: null, activeToolName: null);
             }
             CopilotSubagentResult result;
             using var runCancellation = CancellationTokenSource.CreateLinkedTokenSource(
@@ -129,16 +178,24 @@ namespace ColorVision.Copilot
                 lease.CompleteCancellationWindow();
                 lease.Commit(Math.Max(result.Budget.ConsumedTokens, result.Usage.EffectiveTotalTokens));
                 if (lease.WasCancellationRequested && !cancellationToken.IsCancellationRequested)
-                    return Cancelled(childRun);
+                    return Cancelled(request, childRun);
                 if (childRun.ResumeCheckpoint == null || result.SessionResumed)
-                    coordinator.RecordCompleted(_role.Id, childRun.RunId, result.SessionCheckpoint);
+                {
+                    coordinator.RecordCompleted(
+                        _role.Id,
+                        childRun.RunId,
+                        childRun.Agent,
+                        effectiveModel,
+                        effectiveReasoningEffortToken,
+                        result.SessionCheckpoint);
+                }
             }
             catch (OperationCanceledException) when (lease.WasCancellationRequested
                 && !cancellationToken.IsCancellationRequested)
             {
                 lease.CompleteCancellationWindow();
                 lease.Commit(lease.RequestTokenBudget);
-                return Cancelled(childRun);
+                return Cancelled(request, childRun);
             }
             catch
             {
@@ -161,7 +218,11 @@ namespace ColorVision.Copilot
                     : hasAnswer
                         ? $"{_role.DisplayName} 子 Agent 在 {result.StopReason} 前返回了部分结果；该结果已保留，但不能视为已完成调查。"
                         : $"{_role.DisplayName} 子 Agent 没有返回可用结果。",
-                Content = FormatResultContent(result, childRun),
+                Content = FormatResultContent(
+                    result,
+                    childRun,
+                    effectiveModel,
+                    effectiveReasoningEffortToken),
                 ErrorMessage = success
                     ? string.Empty
                     : resumeFailed
@@ -181,8 +242,11 @@ namespace ColorVision.Copilot
                 DelegatedRunUsage = new CopilotDelegatedRunUsage
                 {
                     RoleId = _role.Id,
+                    AgentName = childRun.Agent,
                     RunId = childRun.RunId,
                     ResumeFromRunId = childRun.ResumeFromRunId,
+                    Model = effectiveModel,
+                    ReasoningEffort = effectiveReasoningEffortToken,
                     RequestTokenBudget = childRun.RequestTokenBudget,
                     QueueDurationMs = childRun.QueueDurationMs,
                     StopReason = result.StopReason,
@@ -228,6 +292,7 @@ namespace ColorVision.Copilot
         }
 
         private void ReportSubagentProgress(
+            CopilotAgentRequest request,
             CopilotToolProgressContext progress,
             CopilotSubagentRunRequest runRequest,
             CopilotSubagentRunPhase? phase,
@@ -247,8 +312,12 @@ namespace ColorVision.Copilot
                 DelegatedRun = new CopilotDelegatedRunProgress
                 {
                     RoleId = _role.Id,
+                    AgentName = runRequest.Agent,
                     RunId = runRequest.RunId,
                     ResumeFromRunId = runRequest.ResumeFromRunId,
+                    Model = CopilotSubagentRunner.ResolveChildModel(request, runRequest),
+                    ReasoningEffort = FormatEffectiveReasoningEffort(
+                        CopilotSubagentRunner.ResolveChildReasoningEffort(request, runRequest)),
                     RequestTokenBudget = runRequest.RequestTokenBudget,
                     QueueDurationMs = runRequest.QueueDurationMs,
                     ConsumedTokens = Math.Max(0, budget?.ConsumedTokens ?? 0),
@@ -258,7 +327,9 @@ namespace ColorVision.Copilot
             });
         }
 
-        private CopilotToolResult Cancelled(CopilotSubagentRunRequest runRequest)
+        private CopilotToolResult Cancelled(
+            CopilotAgentRequest request,
+            CopilotSubagentRunRequest runRequest)
         {
             return new CopilotToolResult
             {
@@ -270,8 +341,12 @@ namespace ColorVision.Copilot
                 DelegatedRunUsage = new CopilotDelegatedRunUsage
                 {
                     RoleId = _role.Id,
+                    AgentName = runRequest.Agent,
                     RunId = runRequest.RunId,
                     ResumeFromRunId = runRequest.ResumeFromRunId,
+                    Model = CopilotSubagentRunner.ResolveChildModel(request, runRequest),
+                    ReasoningEffort = FormatEffectiveReasoningEffort(
+                        CopilotSubagentRunner.ResolveChildReasoningEffort(request, runRequest)),
                     RequestTokenBudget = runRequest.RequestTokenBudget,
                     QueueDurationMs = runRequest.QueueDurationMs,
                     StopReason = CopilotAgentStopReason.Cancelled,
@@ -280,6 +355,7 @@ namespace ColorVision.Copilot
                 {
                     StopReason = CopilotAgentStopReason.Cancelled,
                 },
+                SuppressModelOutput = !request.CodexInterruptMessageEnabled,
             };
         }
 
@@ -301,6 +377,24 @@ namespace ColorVision.Copilot
                       "minLength": 1,
                       "maxLength": 128,
                       "pattern": "^[A-Za-z0-9-]+$"
+                    },
+                    "agent": {
+                      "type": "string",
+                      "description": "Optional custom agent name from the submitted trusted configuration snapshot. It supplies additional instructions and runtime defaults but cannot change this delegate tool's fixed read-only capabilities, sandbox, approvals, MCP servers, or skills.",
+                      "minLength": 1,
+                      "maxLength": 64,
+                      "pattern": "^[A-Za-z][A-Za-z0-9_-]*$"
+                    },
+                    "model": {
+                      "type": "string",
+                      "description": "Optional model for this spawned subagent. It overrides agents.default_subagent_model while retaining the parent provider, endpoint, credentials, sandbox, and approval boundaries.",
+                      "minLength": 1,
+                      "maxLength": 256
+                    },
+                    "reasoning_effort": {
+                      "type": "string",
+                      "description": "Optional reasoning effort for this spawned subagent. It overrides agents.default_subagent_reasoning_effort when the selected provider supports reasoning metadata.",
+                      "enum": ["minimal", "low", "medium", "high", "xhigh", "max", "ultra"]
                     }
                   },
                   "required": ["task"],
@@ -310,11 +404,16 @@ namespace ColorVision.Copilot
             return CopilotToolInputSchema.FromJsonSchema(document.RootElement);
         }
 
-        private string FormatResultContent(CopilotSubagentResult result, CopilotSubagentRunRequest runRequest)
+        private string FormatResultContent(
+            CopilotSubagentResult result,
+            CopilotSubagentRunRequest runRequest,
+            string effectiveModel,
+            string effectiveReasoningEffort)
         {
             var builder = new StringBuilder();
             builder.Append('[').Append(_role.DisplayName).AppendLine(" subagent result]");
             builder.Append("role: ").AppendLine(_role.Id);
+            builder.Append("agent: ").AppendLine(string.IsNullOrWhiteSpace(runRequest.Agent) ? "none" : runRequest.Agent);
             builder.Append("run_id: ").AppendLine(runRequest.RunId);
             builder.Append("resumed_from: ").AppendLine(string.IsNullOrWhiteSpace(runRequest.ResumeFromRunId) ? "none" : runRequest.ResumeFromRunId);
             builder.Append("resume_succeeded: ").AppendLine(string.IsNullOrWhiteSpace(runRequest.ResumeFromRunId)
@@ -324,8 +423,14 @@ namespace ColorVision.Copilot
                 && result.SessionCheckpoint?.IsStructurallyValid() == true;
             builder.Append("resume_available: ").AppendLine(resumeAvailable ? "true" : "false");
             if (resumeAvailable)
-                builder.Append("resume_hint: use resume_from=\"").Append(runRequest.RunId).AppendLine("\" with the same delegate tool");
+            {
+                builder.Append("resume_hint: use resume_from=\"")
+                    .Append(runRequest.RunId)
+                    .AppendLine("\" with the same delegate tool and the same agent/model/reasoning_effort overrides");
+            }
             builder.Append("stop_reason: ").AppendLine(result.StopReason.ToString());
+            builder.Append("model: ").AppendLine(effectiveModel);
+            builder.Append("reasoning_effort: ").AppendLine(effectiveReasoningEffort);
             builder.Append("request_token_budget: ").AppendLine(runRequest.RequestTokenBudget.ToString());
             builder.Append("queue_ms: ").AppendLine(Math.Max(0, runRequest.QueueDurationMs).ToString());
             builder.Append("budget_finalization: ").AppendLine(result.UsedBudgetFinalization ? "true" : "false");
@@ -342,7 +447,10 @@ namespace ColorVision.Copilot
             return builder.ToString();
         }
 
-        private CopilotToolResult Failure(CopilotToolFailureKind failureKind, string errorMessage)
+        private CopilotToolResult Failure(
+            CopilotToolFailureKind failureKind,
+            string errorMessage,
+            string failureCode = "")
         {
             return new CopilotToolResult
             {
@@ -351,6 +459,7 @@ namespace ColorVision.Copilot
                 Summary = $"{_role.DisplayName} 子 Agent 未启动。",
                 ErrorMessage = errorMessage,
                 FailureKind = failureKind,
+                FailureCode = failureCode,
             };
         }
 
@@ -364,11 +473,17 @@ namespace ColorVision.Copilot
         private static bool TryReadArguments(
             IReadOnlyDictionary<string, object?>? arguments,
             out string task,
+            out string agent,
             out string resumeFromRunId,
+            out string model,
+            out string reasoningEffort,
             out string errorMessage)
         {
             task = string.Empty;
+            agent = string.Empty;
             resumeFromRunId = string.Empty;
+            model = string.Empty;
+            reasoningEffort = string.Empty;
             errorMessage = string.Empty;
             if (arguments == null)
             {
@@ -388,23 +503,61 @@ namespace ColorVision.Copilot
                 return false;
             }
 
-            var resumePair = arguments.FirstOrDefault(candidate => string.Equals(candidate.Key, "resume_from", StringComparison.OrdinalIgnoreCase));
-            if (resumePair.Key == null)
-                return true;
-            resumeFromRunId = resumePair.Value switch
+            var agentPair = arguments.FirstOrDefault(candidate => string.Equals(candidate.Key, "agent", StringComparison.OrdinalIgnoreCase));
+            if (agentPair.Key != null
+                && !CopilotCodexCustomSubagentSelection.TryNormalizeName(ReadString(agentPair.Value), out agent))
             {
-                string text => text.Trim(),
-                JsonElement { ValueKind: JsonValueKind.String } element => (element.GetString() ?? string.Empty).Trim(),
-                _ => string.Empty,
-            };
-            if (resumeFromRunId.Length is > 0 and <= 128
-                && resumeFromRunId.All(character => char.IsAsciiLetterOrDigit(character) || character == '-'))
-            {
-                return true;
+                errorMessage = $"Argument 'agent' must be a 1 to {CopilotCodexCustomSubagentDefinition.MaximumNameCharacters} character name containing only ASCII letters, digits, '-' or '_', and must start with a letter.";
+                return false;
             }
 
-            errorMessage = "Argument 'resume_from' must be a 1 to 128 character ASCII run id.";
-            return false;
+            var resumePair = arguments.FirstOrDefault(candidate => string.Equals(candidate.Key, "resume_from", StringComparison.OrdinalIgnoreCase));
+            if (resumePair.Key != null)
+            {
+                resumeFromRunId = ReadString(resumePair.Value);
+                if (resumeFromRunId.Length is not (> 0 and <= 128)
+                    || !resumeFromRunId.All(character => char.IsAsciiLetterOrDigit(character) || character == '-'))
+                {
+                    errorMessage = "Argument 'resume_from' must be a 1 to 128 character ASCII run id.";
+                    return false;
+                }
+            }
+
+            var modelPair = arguments.FirstOrDefault(candidate => string.Equals(candidate.Key, "model", StringComparison.OrdinalIgnoreCase));
+            if (modelPair.Key != null)
+            {
+                if (!CopilotConfiguredModelSelection.TryNormalize(ReadString(modelPair.Value), out model))
+                {
+                    errorMessage = $"Argument 'model' must contain 1 to {CopilotConfiguredModelSelection.MaximumModelCharacters} non-control characters.";
+                    return false;
+                }
+            }
+
+            var effortPair = arguments.FirstOrDefault(candidate => string.Equals(candidate.Key, "reasoning_effort", StringComparison.OrdinalIgnoreCase));
+            if (effortPair.Key != null)
+            {
+                if (!CopilotCodexReasoningEffortSelection.TryParse(ReadString(effortPair.Value), out var parsedEffort))
+                {
+                    errorMessage = "Argument 'reasoning_effort' must be one of: minimal, low, medium, high, xhigh, max, ultra.";
+                    return false;
+                }
+                reasoningEffort = CopilotCodexReasoningEffortSelection.GetConfigToken(parsedEffort);
+            }
+            return true;
+        }
+
+        private static string ReadString(object? value) => value switch
+        {
+            string text => text.Trim(),
+            JsonElement { ValueKind: JsonValueKind.String } element => (element.GetString() ?? string.Empty).Trim(),
+            _ => string.Empty,
+        };
+
+        private static string FormatEffectiveReasoningEffort(CopilotCodexReasoningEffort effort)
+        {
+            return effort == CopilotCodexReasoningEffort.Unspecified
+                ? "model_default"
+                : CopilotCodexReasoningEffortSelection.GetConfigToken(effort);
         }
     }
 

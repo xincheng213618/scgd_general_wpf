@@ -143,7 +143,9 @@ namespace ColorVision.Copilot
                 var name = CopilotAgentSkillOverrideConfig.NormalizeName(NewAgentSkillName);
                 return name.Length > 0
                     && AgentSkillSettings.Count(setting => setting.State != CopilotAgentSkillOverrideState.Auto) < CopilotAgentSkillOverrideConfig.MaxEntries
-                    && !AgentSkillSettings.Any(setting => string.Equals(setting.Name, name, StringComparison.OrdinalIgnoreCase));
+                    && !AgentSkillSettings.Any(setting =>
+                        !setting.HasExactPath
+                        && string.Equals(setting.Name, name, StringComparison.OrdinalIgnoreCase));
             }
         }
     }

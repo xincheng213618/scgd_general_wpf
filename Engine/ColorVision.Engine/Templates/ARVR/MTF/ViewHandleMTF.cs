@@ -3,8 +3,6 @@ using ColorVision.Common.MVVM;
 using ColorVision.Database;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.Engine.Services;
-using ColorVision.ImageEditor.Draw;
-using CVCommCore.CVAlgorithm;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -12,10 +10,8 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
-using System.Windows.Media;
 
 namespace ColorVision.Engine.Templates.MTF
 {
@@ -147,42 +143,8 @@ namespace ColorVision.Engine.Templates.MTF
             if (File.Exists(result.FilePath))
                 ctx.ImageView.OpenImage(result.FilePath);
 
-            foreach (var item in result.ViewResults)
-            {
-                if (item is ViewResultMTF poiResultData)
-                {
-                    switch (poiResultData.Point.PointType)
-                    {
-                        case POIPointTypes.Circle:
-                            DVCircleText Circle = new();
-                            Circle.Attribute.Center = new Point(poiResultData.Point.PixelX, poiResultData.Point.PixelY);
-                            Circle.Attribute.Radius = poiResultData.Point.Height / 2;
-                            Circle.Attribute.Brush = Brushes.Transparent;
-                            Circle.Attribute.Pen = new Pen(Brushes.Red, OverlayPenThickness);
-                            Circle.Attribute.Id = poiResultData.Id;
-                            Circle.Attribute.Text = poiResultData.Name;
-                            Circle.Attribute.FontSize = OverlayFontSize;
-                            Circle.Attribute.Msg = FormatNumber(poiResultData.Articulation);
-                            Circle.Render();
-                            ctx.ImageView.AddVisual(Circle);
-                            break;
-                        case POIPointTypes.Rect:
-                            DVRectangleText Rectangle = new();
-                            Rectangle.Attribute.Rect = new Rect(poiResultData.Point.PixelX - poiResultData.Point.Width / 2, poiResultData.Point.PixelY - poiResultData.Point.Height / 2, poiResultData.Point.Width, poiResultData.Point.Height);
-                            Rectangle.Attribute.Brush = Brushes.Transparent;
-                            Rectangle.Attribute.Pen = new Pen(Brushes.Red, OverlayPenThickness);
-                            Rectangle.Attribute.Id = poiResultData.Id;
-                            Rectangle.Attribute.Text = poiResultData.Name;
-                            Rectangle.Attribute.FontSize = OverlayFontSize;
-                            Rectangle.Attribute.Msg = FormatNumber(poiResultData.Articulation);
-                            Rectangle.Render();
-                            ctx.ImageView.AddVisual(Rectangle);
-                            break;
-                        default:
-                            break;
-                    }
-                }
-            }
+            foreach (ViewResultMTF poiResultData in result.ViewResults.OfType<ViewResultMTF>())
+                PoiOverlayRenderer.Add(ctx.ImageView, poiResultData.Point, FormatNumber(poiResultData.Articulation));
 
 
             List<string> header;

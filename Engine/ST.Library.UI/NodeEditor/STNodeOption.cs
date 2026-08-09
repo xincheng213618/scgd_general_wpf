@@ -515,56 +515,6 @@ public class STNodeOption
 		}
 	}
 
-	/// <summary>
-	/// Transfers data to one input without creating a persisted canvas connection.
-	/// This is intended for runtime-only virtual edges such as error routes.
-	/// </summary>
-	public ConnectionStatus CanTransferDataTo(STNodeOption targetInput)
-	{
-		if (_DataType == null || targetInput == null || targetInput == Empty)
-		{
-			return ConnectionStatus.EmptyOption;
-		}
-		if (_IsInput || !targetInput._IsInput)
-		{
-			return ConnectionStatus.SameInputOrOutput;
-		}
-		if (_Owner == null || targetInput._Owner == null)
-		{
-			return ConnectionStatus.NoOwner;
-		}
-		if (ReferenceEquals(_Owner, targetInput._Owner))
-		{
-			return ConnectionStatus.SameOwner;
-		}
-		if (_DataType != targetInput._DataType
-			&& !_DataType.IsSubclassOf(targetInput._DataType))
-		{
-			return ConnectionStatus.ErrorType;
-		}
-		return ConnectionStatus.Connected;
-	}
-
-	/// <summary>
-	/// Transfers data to one input without creating a persisted canvas connection.
-	/// </summary>
-	public ConnectionStatus TransferDataTo(STNodeOption targetInput, object data)
-	{
-		ConnectionStatus status = CanTransferDataTo(targetInput);
-		if (status != ConnectionStatus.Connected)
-		{
-			return status;
-		}
-
-		Data = data;
-		targetInput.OnDataTransfer(
-			new STNodeOptionEventArgs(
-				isSponsor: true,
-				this,
-				ConnectionStatus.Connected));
-		return status;
-	}
-
 	public void TransferData(object data, bool bDisposeOld)
 	{
 		if (bDisposeOld && _Data != null)

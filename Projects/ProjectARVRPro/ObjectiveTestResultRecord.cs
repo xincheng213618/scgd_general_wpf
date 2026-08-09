@@ -17,6 +17,8 @@ namespace ProjectARVRPro
         public string Msg { get; set; } = string.Empty;
         public bool LastResult { get; set; }
         public bool TotalResult { get; set; }
+        [SugarColumn(IsNullable = true)]
+        public bool? IsFinalized { get; set; }
         public bool HasW51 { get; set; }
         public bool HasW255 { get; set; }
         public bool HasFov { get; set; }
@@ -30,6 +32,10 @@ namespace ProjectARVRPro
 
         public static ObjectiveTestResultRecord Create(ProjectARVRReuslt result, ObjectiveTestResult objectiveTestResult)
         {
+            DateTime savedAt = DateTime.Now;
+            DateTime sessionStartTime = objectiveTestResult?.SessionStartTime is DateTime startTime && startTime <= savedAt
+                ? startTime
+                : savedAt;
             return new ObjectiveTestResultRecord
             {
                 ResultId = result.Id,
@@ -42,34 +48,11 @@ namespace ProjectARVRPro
                 Msg = objectiveTestResult?.Msg ?? result.Msg ?? string.Empty,
                 LastResult = result.Result,
                 TotalResult = objectiveTestResult?.TotalResult ?? false,
-                HasW51 = objectiveTestResult?.W51TestResult != null,
-                HasW255 = objectiveTestResult?.W255TestResult != null,
-                HasFov = HasFovData(objectiveTestResult),
-                DynamicTestCount = objectiveTestResult?.DynamicTestResults?.Sum(x => x.Value?.Count ?? 0) ?? 0,
-                DynamicPoiCount = objectiveTestResult?.DynamicPoixyuvDatas?.Sum(x => x.Value?.Count ?? 0) ?? 0,
-                CreateTime = DateTime.Now,
-                UpdateTime = DateTime.Now,
+                IsFinalized = false,
+                CreateTime = sessionStartTime,
+                UpdateTime = savedAt,
                 ObjectiveTestResultJson = JsonConvert.SerializeObject(objectiveTestResult)
             };
-        }
-
-        private static bool HasFovData(ObjectiveTestResult? result)
-        {
-            if (result == null) return false;
-            return HasFovData(result.W51TestResult?.HorizontalFieldOfViewAngle, result.W51TestResult?.VerticalFieldOfViewAngle, result.W51TestResult?.DiagonalFieldOfViewAngle)
-                || HasFovData(result.W255TestResult?.HorizontalFieldOfViewAngle, result.W255TestResult?.VerticalFieldOfViewAngle, result.W255TestResult?.DiagonalFieldOfViewAngle)
-                || result.FieldOfViewTestResults?.Values.Any(item =>
-                    item != null && HasFovData(item.HorizontalFieldOfViewAngle, item.VerticalFieldOfViewAngle, item.DiagonalFieldOfViewAngle)) == true;
-        }
-
-        private static bool HasFovData(ObjectiveTestItem? horizontal, ObjectiveTestItem? vertical, ObjectiveTestItem? diagonal)
-        {
-            return HasValue(horizontal) || HasValue(vertical) || HasValue(diagonal);
-        }
-
-        private static bool HasValue(ObjectiveTestItem? item)
-        {
-            return item != null && (!string.IsNullOrWhiteSpace(item.TestValue) || Math.Abs(item.Value) > double.Epsilon);
         }
     }
 }

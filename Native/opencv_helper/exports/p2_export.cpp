@@ -3,6 +3,7 @@
 #include "../algorithm/ghost/ghost_detection.h"
 #include "../algorithm/keyboard_led/keyboard_led.h"
 #include "../algorithm/matching/rotated_template_matching.h"
+#include "../native_log.h"
 #include "../../include/opencv_media_export.h"
 
 #include <combaseapi.h>
@@ -30,24 +31,36 @@ constexpr int ExportStdException = -6;
 constexpr int ExportUnknownException = -7;
 
 template <typename Func>
-int GuardExport(Func func) noexcept
+int GuardExport(const char* operation, Func func) noexcept
 {
     try {
-        return func();
+        const int result = func();
+        if (result < 0) {
+            const auto level = result == ExportAllocationFailed
+                ? cvnative::LogLevel::Error
+                : cvnative::LogLevel::Debug;
+            cvnative::LogFailure(level, "p2.export", operation, result);
+        }
+        return result;
     }
-    catch (const json::exception&) {
+    catch (const json::exception& ex) {
+        cvnative::LogException("p2.export", operation, ExportInvalidJson, "json::exception", ex.what());
         return ExportInvalidJson;
     }
-    catch (const std::invalid_argument&) {
+    catch (const std::invalid_argument& ex) {
+        cvnative::LogException("p2.export", operation, ExportInvalidJson, "std::invalid_argument", ex.what());
         return ExportInvalidJson;
     }
-    catch (const cv::Exception&) {
+    catch (const cv::Exception& ex) {
+        cvnative::LogException("p2.export", operation, ExportOpenCvException, "cv::Exception", ex.what());
         return ExportOpenCvException;
     }
-    catch (const std::exception&) {
+    catch (const std::exception& ex) {
+        cvnative::LogException("p2.export", operation, ExportStdException, "std::exception", ex.what());
         return ExportStdException;
     }
     catch (...) {
+        cvnative::LogException("p2.export", operation, ExportUnknownException, "unknown");
         return ExportUnknownException;
     }
 }
@@ -260,6 +273,16 @@ cvcore::keyboard_led::KeyHaloConfig ParseHaloConfig(const json& value)
     config.haloGapRatio = value.value("haloGapRatio", config.haloGapRatio);
     config.haloWidthRatio = value.value("haloWidthRatio", config.haloWidthRatio);
     config.excludeKeyRectsFromHalo = value.value("excludeKeyRectsFromHalo", config.excludeKeyRectsFromHalo);
+    if (value.contains("haloExclusionRects")) {
+        const json& rects = value.at("haloExclusionRects");
+        if (!rects.is_array()) {
+            throw std::invalid_argument("haloExclusionRects must be an array.");
+        }
+        config.haloExclusionRects.reserve(rects.size());
+        for (const json& rect : rects) {
+            config.haloExclusionRects.push_back(ParseRect(rect));
+        }
+    }
     config.minimumValidPixels = value.value("minimumValidPixels", config.minimumValidPixels);
     return config;
 }
@@ -457,6 +480,53 @@ std::vector<cv::Rect> ParseKeyRects(const json& config)
     return rects;
 }
 
+std::vector<cvcore::keyboard_led::KeyHaloRegion> ParseKeyRegions(const json& config)
+{
+    std::vector<cvcore::keyboard_led::KeyHaloRegion> keys;
+    if (!config.contains("keys")) {
+        const std::vector<cv::Rect> rects = ParseKeyRects(config);
+        keys.reserve(rects.size());
+        for (size_t index = 0; index < rects.size(); ++index) {
+            cvcore::keyboard_led::KeyHaloRegion key;
+            key.id = static_cast<int>(index) + 1;
+            key.rect = rects[index];
+            keys.push_back(std::move(key));
+        }
+        return keys;
+    }
+
+    const json& values = config.at("keys");
+    if (!values.is_array()) {
+        throw std::invalid_argument("keys must be an array.");
+    }
+    keys.reserve(values.size());
+    for (size_t index = 0; index < values.size(); ++index) {
+        const json& value = values.at(index);
+        if (!value.is_object() || !value.contains("rect")) {
+            throw std::invalid_argument("Each keyboard key must contain a rect.");
+        }
+        cvcore::keyboard_led::KeyHaloRegion key;
+        key.id = value.value("id", static_cast<int>(index) + 1);
+        key.name = value.value("name", std::string());
+        key.rect = ParseRect(value.at("rect"));
+        key.calculateKey = value.value("calculateKey", key.calculateKey);
+        key.calculateHalo = value.value("calculateHalo", key.calculateHalo);
+        key.keyOffsetX = value.value("keyOffsetX", key.keyOffsetX);
+        key.keyOffsetY = value.value("keyOffsetY", key.keyOffsetY);
+        key.haloOffsetX = value.value("haloOffsetX", key.haloOffsetX);
+        key.haloOffsetY = value.value("haloOffsetY", key.haloOffsetY);
+        key.keyInsetPixels = value.value("keyInsetPixels", key.keyInsetPixels);
+        key.haloGapPixels = value.value("haloGapPixels", key.haloGapPixels);
+        key.haloWidthPixels = value.value("haloWidthPixels", key.haloWidthPixels);
+        key.keyValidMin = value.value("keyValidMin", key.keyValidMin);
+        key.keyValidMax = value.value("keyValidMax", key.keyValidMax);
+        key.haloValidMin = value.value("haloValidMin", key.haloValidMin);
+        key.haloValidMax = value.value("haloValidMax", key.haloValidMax);
+        keys.push_back(std::move(key));
+    }
+    return keys;
+}
+
 std::vector<cvcore::keyboard_led::LedDetection> ParseLedDetections(const json& config)
 {
     std::vector<cvcore::keyboard_led::LedDetection> detections;
@@ -622,7 +692,7 @@ void AddMetadata(json& output, const char* algorithm)
 
 COLORVISIONCORE_API int M_DetectGhosts(HImage img, RoiRect roi, const char* config, char** result)
 {
-    return GuardExport([&]() -> int {
+    return GuardExport(__func__, [&]() -> int {
         if (result != nullptr) *result = nullptr;
         cv::Mat image = HImageToMatView(img);
         json parsed;
@@ -638,7 +708,7 @@ COLORVISIONCORE_API int M_DetectGhosts(HImage img, RoiRect roi, const char* conf
 
 COLORVISIONCORE_API int M_AnalyzeKeyboardHalo(HImage img, RoiRect roi, const char* config, char** result)
 {
-    return GuardExport([&]() -> int {
+    return GuardExport(__func__, [&]() -> int {
         if (result != nullptr) *result = nullptr;
         cv::Mat image = HImageToMatView(img);
         json parsed;
@@ -646,17 +716,22 @@ COLORVISIONCORE_API int M_AnalyzeKeyboardHalo(HImage img, RoiRect roi, const cha
         if (!TryParseConfig(config, parsed)) return ExportInvalidJson;
 
         const auto haloConfig = ParseHaloConfig(parsed);
-        std::vector<cv::Rect> keyRects = ParseKeyRects(parsed);
-        bool autoDetected = keyRects.empty();
+        std::vector<cvcore::keyboard_led::KeyHaloRegion> keys = ParseKeyRegions(parsed);
+        bool autoDetected = keys.empty();
         if (autoDetected) {
             cv::Rect searchRoi;
             if (!ResolveSearchRoi(image, roi, searchRoi)) return ExportInvalidArgument;
             const auto detections = DetectBrightComponents(image, searchRoi, haloConfig.gray, ParseDetectionConfig(parsed, 100));
-            keyRects.reserve(detections.size());
-            for (const auto& detection : detections) keyRects.push_back(detection.boundingRect);
+            keys.reserve(detections.size());
+            for (const auto& detection : detections) {
+                cvcore::keyboard_led::KeyHaloRegion key;
+                key.id = detection.id;
+                key.rect = detection.boundingRect;
+                keys.push_back(std::move(key));
+            }
         }
 
-        const auto measurement = cvcore::keyboard_led::measureKeyHalo(image, keyRects, haloConfig);
+        const auto measurement = cvcore::keyboard_led::measureKeyHalo(image, keys, haloConfig);
         json output = cvcore::keyboard_led::ToJson(measurement);
         AddMetadata(output, "KeyboardHalo");
         output["keyRectSource"] = autoDetected ? "automatic" : "config";
@@ -666,7 +741,7 @@ COLORVISIONCORE_API int M_AnalyzeKeyboardHalo(HImage img, RoiRect roi, const cha
 
 COLORVISIONCORE_API int M_AnalyzeLedArray(HImage img, RoiRect roi, const char* config, char** result)
 {
-    return GuardExport([&]() -> int {
+    return GuardExport(__func__, [&]() -> int {
         if (result != nullptr) *result = nullptr;
         cv::Mat image = HImageToMatView(img);
         json parsed;
@@ -697,7 +772,7 @@ COLORVISIONCORE_API int M_MatchRotatedTemplate(
     const char* config,
     char** result)
 {
-    return GuardExport([&]() -> int {
+    return GuardExport(__func__, [&]() -> int {
         if (result != nullptr) *result = nullptr;
         cv::Mat image = HImageToMatView(img);
         cv::Mat templ = HImageToMatView(templateImage);
@@ -714,7 +789,7 @@ COLORVISIONCORE_API int M_MatchRotatedTemplate(
 
 COLORVISIONCORE_API int M_CalBinocularFusion(HImage img, RoiRect roi, const char* config, char** result)
 {
-    return GuardExport([&]() -> int {
+    return GuardExport(__func__, [&]() -> int {
         if (result != nullptr) *result = nullptr;
         cv::Mat image = HImageToMatView(img);
         json parsed;
@@ -736,7 +811,7 @@ COLORVISIONCORE_API int M_CalStereoBinocularFusion(
     const char* config,
     char** result)
 {
-    return GuardExport([&]() -> int {
+    return GuardExport(__func__, [&]() -> int {
         if (result != nullptr) *result = nullptr;
         cv::Mat left = HImageToMatView(leftImage);
         cv::Mat right = HImageToMatView(rightImage);
