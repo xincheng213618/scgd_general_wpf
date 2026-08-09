@@ -233,12 +233,13 @@ public static class Spectrometer
 
 ## 开发调试
 
-```bash
-# 构建项目
-dotnet build Engine/cvColorVision/cvColorVision.csproj
+```powershell
+# 从仓库根目录构建项目
+dotnet build .\Engine\cvColorVision\cvColorVision.csproj -p:Platform=x64
 
-# 构建整个解决方案
-dotnet build ColorVision.sln
+# 构建完整解决方案（在 Visual Studio Developer PowerShell 中运行）
+dotnet restore .\build.sln
+msbuild .\build.sln /m /p:Configuration=Release /p:Platform=x64
 ```
 
 ### 调试注意事项

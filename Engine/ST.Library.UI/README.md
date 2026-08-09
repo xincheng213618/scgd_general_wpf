@@ -1,7 +1,7 @@
 # ST.Library.UI
 
 `ST.Library.UI` 是 ColorVision 的 WPF 节点编辑器库，目标框架为
-`.NET 8/10 for Windows` 和 `.NET Framework 4.7.2`。
+`net8.0-windows` 和 `net10.0-windows`。
 
 ## 架构
 
