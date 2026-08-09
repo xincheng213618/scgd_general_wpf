@@ -1490,8 +1490,20 @@ namespace ColorVision.Copilot
             foreach (var issue in issues.Take(8))
             {
                 var source = FormatInlineDiagnosticText(issue.SourceId, "unknown", 120);
+                var failureCode = CopilotToolFailureCode.Normalize(issue.FailureCode);
+                if (failureCode.Length == 0)
+                    failureCode = CopilotAgentExtensionFailureCodes.ActivationFailed;
                 var message = FormatInlineDiagnosticText(issue.Message, "No details provided.", 240);
-                builder.Append("  ! ").Append(source).Append(": ").AppendLine(message);
+                builder.Append("  ! ")
+                    .Append(source)
+                    .Append(" · code ")
+                    .Append(failureCode);
+                if (!string.IsNullOrWhiteSpace(issue.CapabilityName))
+                {
+                    builder.Append(" · capability ")
+                        .Append(FormatInlineDiagnosticText(issue.CapabilityName, "unknown", 120));
+                }
+                builder.Append(": ").AppendLine(message);
             }
             if (issues.Count > 8)
                 builder.Append("  ! ...另有 ").Append(FormatCount(issues.Count - 8)).AppendLine(" 个问题未展开");

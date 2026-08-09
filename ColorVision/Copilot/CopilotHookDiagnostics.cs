@@ -177,9 +177,19 @@ namespace ColorVision.Copilot
 
             foreach (var issue in extensionIssues.Take(MaxExtensionIssues))
             {
+                var failureCode = CopilotToolFailureCode.Normalize(issue.FailureCode);
+                if (failureCode.Length == 0)
+                    failureCode = CopilotAgentExtensionFailureCodes.ActivationFailed;
                 builder.Append("  ! ")
                     .Append(FormatInline(issue.SourceId, "unknown", 120))
-                    .Append(": ")
+                    .Append(" · code ")
+                    .Append(failureCode);
+                if (!string.IsNullOrWhiteSpace(issue.CapabilityName))
+                {
+                    builder.Append(" · capability ")
+                        .Append(FormatInline(issue.CapabilityName, "unknown", 120));
+                }
+                builder.Append(": ")
                     .Append(FormatInline(issue.Message, "No details provided.", 300))
                     .AppendLine();
             }

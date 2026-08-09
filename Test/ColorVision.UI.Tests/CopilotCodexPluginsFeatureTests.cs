@@ -261,6 +261,111 @@ public sealed class CopilotCodexPluginsFeatureTests
     }
 
     [Fact]
+    public void ExtensionActivationIssuesUseStableCodesWithoutRawExceptionText()
+    {
+        const string sourceId = "test.activation-issues";
+        var extensionRegistry = new CopilotAgentExtensionRegistry();
+        var hookRegistry = new CopilotToolExecutionHookRegistry();
+        using var conflictingHook = hookRegistry.Register(
+            "extension:test.activation-issues:hook:plugins_feature_hook",
+            new NoopRuntimeHook());
+        using var bridge = new CopilotAgentExtensionBridge(
+            extensionRegistry,
+            new CopilotCapabilityCatalog(),
+            reservedToolNames: ["PluginFeatureModuleTool"],
+            hookRegistry);
+        using var registration = extensionRegistry.Register(
+            new CopilotAgentExtensionRegistration
+            {
+                SourceId = sourceId,
+                SourceName = "Activation issue extension",
+                SourceVersion = "1.0.0",
+                Tools = [new RecordingModuleTool()],
+                ToolExecutionHooks = [new RecordingModuleHook()],
+            });
+
+        var snapshot = bridge.GetSnapshot();
+        Assert.Equal(2, snapshot.Issues.Count);
+        var toolConflict = Assert.Single(
+            snapshot.Issues,
+            issue => issue.FailureCode == CopilotAgentExtensionFailureCodes.ToolNameConflict);
+        Assert.Equal("PluginFeatureModuleTool", toolConflict.CapabilityName);
+        var hookFailure = Assert.Single(
+            snapshot.Issues,
+            issue => issue.FailureCode == CopilotAgentExtensionFailureCodes.HookRegistrationFailed);
+        Assert.Empty(hookFailure.CapabilityName);
+        Assert.DoesNotContain("already registered", hookFailure.Message, StringComparison.OrdinalIgnoreCase);
+
+        string hooksReport = CopilotHookDiagnostics.Format(new CopilotHookDiagnosticSnapshot
+        {
+            ExtensionSources = snapshot.Sources,
+            ExtensionIssues = snapshot.Issues,
+        });
+        string contextReport = CopilotContextDiagnostics.Format(new CopilotContextDiagnosticSnapshot
+        {
+            ProfileLabel = "Profile",
+            Mode = CopilotAgentMode.Code,
+            AgentContextEnabled = true,
+            CodexPluginsEnabled = true,
+            AgentExtensions = snapshot.Sources,
+            AgentExtensionIssues = snapshot.Issues,
+        });
+        foreach (var report in new[] { hooksReport, contextReport })
+        {
+            Assert.Contains("code extension_tool_name_conflict", report, StringComparison.Ordinal);
+            Assert.Contains("capability PluginFeatureModuleTool", report, StringComparison.Ordinal);
+            Assert.Contains("code extension_hook_registration_failed", report, StringComparison.Ordinal);
+            Assert.DoesNotContain("already registered", report, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    [Fact]
+    public void CapabilityCatalogActivationFailureUsesStableCodeWithoutCapacityDetails()
+    {
+        var catalog = new CopilotCapabilityCatalog();
+        var capacityReached = false;
+        for (var index = 0; index < 512; index++)
+        {
+            try
+            {
+                catalog.PublishSource(
+                    CopilotCapabilitySourceKind.Plugin,
+                    $"seed:{index}",
+                    $"Seed {index}",
+                    [new RecordingTool($"SeedTool{index}")]);
+            }
+            catch (InvalidOperationException)
+            {
+                capacityReached = true;
+                break;
+            }
+        }
+        Assert.True(capacityReached);
+
+        var extensionRegistry = new CopilotAgentExtensionRegistry();
+        using var bridge = new CopilotAgentExtensionBridge(
+            extensionRegistry,
+            catalog,
+            reservedToolNames: [],
+            new CopilotToolExecutionHookRegistry());
+        using var registration = extensionRegistry.Register(
+            new CopilotAgentExtensionRegistration
+            {
+                SourceId = "test.catalog-capacity",
+                SourceName = "Catalog capacity extension",
+                SourceVersion = "1.0.0",
+                Tools = [new RecordingModuleTool()],
+            });
+
+        var issue = Assert.Single(bridge.GetSnapshot().Issues);
+        Assert.Equal(CopilotAgentExtensionFailureCodes.CapabilityPublishFailed, issue.FailureCode);
+        Assert.Equal(
+            "Module tools were not activated because their capability catalog entry could not be published.",
+            issue.Message);
+        Assert.DoesNotContain("source limit", issue.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void DiagnosticsAndHarnessExposeTheFrozenPluginBoundary()
     {
         var options = CopilotProjectInstructionDiscoveryConfig.CreateDefault() with
@@ -449,6 +554,19 @@ public sealed class CopilotCodexPluginsFeatureTests
             CopilotModuleToolExecutionHookContext context,
             CancellationToken cancellationToken) =>
             Task.FromResult(CopilotModuleToolExecutionHookDecision.Proceed);
+    }
+
+    private sealed class NoopRuntimeHook : ICopilotToolExecutionHook
+    {
+        public Task<CopilotToolExecutionHookDecision> BeforeExecuteAsync(
+            CopilotToolExecutionHookContext context,
+            CancellationToken cancellationToken) =>
+            Task.FromResult(CopilotToolExecutionHookDecision.Proceed);
+
+        public Task AfterExecuteAsync(
+            CopilotToolExecutionOutcome outcome,
+            CancellationToken cancellationToken) =>
+            Task.CompletedTask;
     }
 
     private sealed class RecordingTool(string name) : ICopilotTool
