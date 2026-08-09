@@ -206,6 +206,28 @@ namespace ColorVision.Copilot
                 throw new InvalidOperationException("The queued Copilot follow-up could not be prepared on the UI thread.");
             }
 
+            try
+            {
+                await _statePersistenceCoordinator.FlushAsync().ConfigureAwait(false);
+            }
+            catch
+            {
+                CopilotUiDispatcher.Invoke(() =>
+                    RollbackUnpersistedQueuedFollowUp(queuedFollowUp, preparedTurn));
+                throw;
+            }
+
+            var recoveryCommitted = CopilotUiDispatcher.Invoke(
+                () =>
+                {
+                    RemoveQueuedFollowUpRecovery(queuedFollowUp.RunId);
+                    PersistState(immediate: true);
+                    return true;
+                },
+                fallback: false);
+            if (!recoveryCommitted)
+                throw new OperationCanceledException("The Copilot UI shut down before the queued follow-up could be committed.");
+
             await ExecuteHostedPreparedTurnAsync(
                 hostedRun,
                 preparedTurn.Conversation,
@@ -235,6 +257,7 @@ namespace ColorVision.Copilot
                 CopilotConversationRequestBuilder.CaptureHistorySnapshot(conversation));
             var userMessage = new CopilotChatMessage(CopilotChatRole.User, queuedFollowUp.Prompt)
             {
+                Id = queuedFollowUp.RunId,
                 RequestMode = queuedFollowUp.Mode,
                 AgentSkillReference = queuedFollowUp.AgentSkillReference?.CreateSnapshot(),
                 Attachments = new ObservableCollection<CopilotAttachmentItem>(turnSnapshot.Attachments),
@@ -246,10 +269,40 @@ namespace ColorVision.Copilot
             conversation.ProfileDisplayName = queuedFollowUp.Profile.DisplayLabel;
             conversation.Messages.Add(userMessage);
             conversation.Messages.Add(assistantMessage);
-            RemoveQueuedFollowUpRecovery(queuedFollowUp.RunId);
             UpdateConversationMetadata(conversation, touch: true);
             PersistState(immediate: true);
             return new CopilotPreparedQueuedFollowUpTurn(conversation, userMessage, assistantMessage, turnSnapshot);
+        }
+
+        private void RollbackUnpersistedQueuedFollowUp(
+            CopilotQueuedFollowUp queuedFollowUp,
+            CopilotPreparedQueuedFollowUpTurn preparedTurn)
+        {
+            preparedTurn.Conversation.Messages.Remove(preparedTurn.AssistantMessage);
+            preparedTurn.Conversation.Messages.Remove(preparedTurn.UserMessage);
+            CopilotQueuedFollowUpRecovery.RestoreRecordToDraft(_state, queuedFollowUp.RunId);
+            UpdateConversationMetadata(preparedTurn.Conversation, touch: true);
+
+            if (ReferenceEquals(preparedTurn.Conversation, SelectedConversation))
+            {
+                _pendingRequestModeOverride = preparedTurn.Conversation.DraftRequestMode == CopilotAgentMode.Auto
+                    ? null
+                    : preparedTurn.Conversation.DraftRequestMode;
+                _pendingWorkspaceReviewTarget = _pendingRequestModeOverride == CopilotAgentMode.Review
+                    && preparedTurn.Conversation.DraftWorkspaceReviewTarget?.IsStructurallyValid() == true
+                        ? preparedTurn.Conversation.DraftWorkspaceReviewTarget.CreateSnapshot()
+                        : null;
+                InputText = preparedTurn.Conversation.DraftText;
+                SetPendingAgentSkillReference(
+                    preparedTurn.Conversation.DraftAgentSkillReference,
+                    synchronizeDraft: false);
+                UpdateAttachmentsState(preparedTurn.Conversation);
+                OnComposerRequestModeChanged();
+            }
+            RefreshCompactHistoryConversations();
+            if (HasConversationSearchQuery)
+                RefreshFilteredConversations();
+            PersistState(immediate: true);
         }
 
         private bool CanSendQueuedFollowUpNow(CopilotQueuedFollowUp? queuedFollowUp)

@@ -68,19 +68,69 @@ namespace ColorVision.Copilot
             if (state.QueuedFollowUpRecoveries.Count == 0)
                 return false;
 
+            state.RecoveredQueuedFollowUpCount = RestoreRecordsToDrafts(
+                state,
+                state.QueuedFollowUpRecoveries.Take(CopilotAgentTaskHost.MaximumQueuedRuns));
+            state.QueuedFollowUpRecoveries.Clear();
+            return true;
+        }
+
+        internal static bool RestoreRecordToDraft(CopilotChatState state, string runId)
+        {
+            ArgumentNullException.ThrowIfNull(state);
+            var normalizedRunId = (runId ?? string.Empty).Trim();
+            if (normalizedRunId.Length is 0 or > CopilotQueuedFollowUpRecoveryRecord.MaximumIdentifierCharacters
+                || state.QueuedFollowUpRecoveries == null
+                || state.QueuedFollowUpRecoveries.Count == 0)
+            {
+                return false;
+            }
+
+            var matchingRecords = state.QueuedFollowUpRecoveries
+                .Where(record => string.Equals(
+                    (record?.RunId ?? string.Empty).Trim(),
+                    normalizedRunId,
+                    StringComparison.Ordinal))
+                .Take(CopilotAgentTaskHost.MaximumQueuedRuns)
+                .ToArray();
+            if (matchingRecords.Length == 0)
+                return false;
+
+            RestoreRecordsToDrafts(state, matchingRecords);
+            for (var index = state.QueuedFollowUpRecoveries.Count - 1; index >= 0; index--)
+            {
+                if (string.Equals(
+                    (state.QueuedFollowUpRecoveries[index]?.RunId ?? string.Empty).Trim(),
+                    normalizedRunId,
+                    StringComparison.Ordinal))
+                {
+                    state.QueuedFollowUpRecoveries.RemoveAt(index);
+                }
+            }
+            return true;
+        }
+
+        private static int RestoreRecordsToDrafts(
+            CopilotChatState state,
+            IEnumerable<CopilotQueuedFollowUpRecoveryRecord?> records)
+        {
             var conversationsById = (state.Conversations ?? new ObservableCollection<CopilotConversationRecord>())
                 .Where(conversation => conversation != null && !string.IsNullOrWhiteSpace(conversation.Id))
                 .GroupBy(conversation => conversation.Id, StringComparer.Ordinal)
                 .ToDictionary(group => group.Key, group => group.First(), StringComparer.Ordinal);
             var recoveriesByConversation = new Dictionary<string, List<CopilotComposerStash>>(StringComparer.Ordinal);
             var seenRunIds = new HashSet<string>(StringComparer.Ordinal);
+            var restoredCount = 0;
 
-            foreach (var record in state.QueuedFollowUpRecoveries.Take(CopilotAgentTaskHost.MaximumQueuedRuns))
+            foreach (var record in records)
             {
                 if (record == null
                     || !record.TryGetNormalized(out var runId, out var conversationId, out var composerState)
                     || !seenRunIds.Add(runId)
-                    || !conversationsById.ContainsKey(conversationId))
+                    || !conversationsById.TryGetValue(conversationId, out var conversation)
+                    || conversation.Messages.Any(message => message != null
+                        && message.IsUser
+                        && string.Equals((message.Id ?? string.Empty).Trim(), runId, StringComparison.Ordinal)))
                 {
                     continue;
                 }
@@ -126,17 +176,22 @@ namespace ColorVision.Copilot
                 {
                     conversation.DraftAgentSkillReference = recoveredSkillReference.CreateSnapshot();
                 }
+                var recoveredReviewTarget = pair.Value.Count == 1
+                    && pair.Value[0].RequestMode == CopilotAgentMode.Review
+                    && pair.Value[0].WorkspaceReviewTarget?.IsStructurallyValid() == true
+                        ? pair.Value[0].WorkspaceReviewTarget.CreateSnapshot()
+                        : null;
+                if (string.IsNullOrWhiteSpace(existingDraft) && recoveredReviewTarget != null)
+                    conversation.DraftWorkspaceReviewTarget = recoveredReviewTarget;
                 RestoreAttachments(conversation, pair.Value);
                 if (conversation.DraftRequestMode == CopilotAgentMode.Auto
                     && recoveredModes.Length == 1)
                 {
                     conversation.DraftRequestMode = recoveredModes[0];
                 }
-                state.RecoveredQueuedFollowUpCount += pair.Value.Count;
+                restoredCount += pair.Value.Count;
             }
-
-            state.QueuedFollowUpRecoveries.Clear();
-            return true;
+            return restoredCount;
         }
 
         internal static string FormatRestoredDraft(IReadOnlyList<string> prompts)
