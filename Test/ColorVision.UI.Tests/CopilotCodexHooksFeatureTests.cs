@@ -381,7 +381,7 @@ public sealed class CopilotCodexHooksFeatureTests
                 CopilotToolExecutionHookPhase.AfterExecute,
                 "HooksFeatureTool",
                 $"async-capacity-{index}",
-                TimeSpan.FromMilliseconds(50),
+                TimeSpan.FromSeconds(1),
                 async _ =>
                 {
                     if (Interlocked.Increment(ref started)
@@ -399,7 +399,16 @@ public sealed class CopilotCodexHooksFeatureTests
         }
 
         await firstWaveStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
-        await Task.Delay(200);
+        var running = scheduler.GetActivitySnapshot();
+        Assert.True(running.IsStructurallyValid());
+        Assert.Equal(CopilotToolExecutionHookBackgroundScheduler.MaxConcurrency, running.RunningCount);
+        Assert.Equal(0, running.QueuedCount);
+        Assert.Equal(0, running.TimedOutRetainedCount);
+        await WaitForTimedOutActivityAsync(scheduler);
+        var timedOut = scheduler.GetActivitySnapshot();
+        Assert.True(timedOut.IsStructurallyValid());
+        Assert.Equal(CopilotToolExecutionHookBackgroundScheduler.MaxConcurrency, timedOut.RunningCount);
+        Assert.Equal(CopilotToolExecutionHookBackgroundScheduler.MaxConcurrency, timedOut.TimedOutRetainedCount);
         for (var index = CopilotToolExecutionHookBackgroundScheduler.MaxConcurrency;
             index < CopilotToolExecutionHookBackgroundScheduler.MaxPending;
             index++)
@@ -421,6 +430,24 @@ public sealed class CopilotCodexHooksFeatureTests
                 }));
         }
 
+        var saturated = scheduler.GetActivitySnapshot();
+        Assert.True(saturated.IsStructurallyValid());
+        Assert.Equal(CopilotToolExecutionHookBackgroundScheduler.MaxConcurrency, saturated.RunningCount);
+        Assert.Equal(
+            CopilotToolExecutionHookBackgroundScheduler.MaxPending
+                - CopilotToolExecutionHookBackgroundScheduler.MaxConcurrency,
+            saturated.QueuedCount);
+        Assert.Equal(CopilotToolExecutionHookBackgroundScheduler.MaxPending, saturated.OutstandingCount);
+        Assert.Equal(CopilotToolExecutionHookBackgroundScheduler.MaxConcurrency, saturated.TimedOutRetainedCount);
+        string hooksReport = CopilotHookDiagnostics.Format(new CopilotHookDiagnosticSnapshot
+        {
+            BackgroundActivity = saturated,
+        });
+        Assert.Contains("后台活动：运行 4/4", hooksReport, StringComparison.Ordinal);
+        Assert.Contains("排队 60", hooksReport, StringComparison.Ordinal);
+        Assert.Contains("未完成 64/64", hooksReport, StringComparison.Ordinal);
+        Assert.Contains("超时占槽 4", hooksReport, StringComparison.Ordinal);
+
         Assert.False(scheduler.TrySchedule(
             "test:async:overflow",
             CopilotToolExecutionHookPhase.AfterExecute,
@@ -432,6 +459,30 @@ public sealed class CopilotCodexHooksFeatureTests
         release.TrySetResult(true);
         await allCompleted.Task.WaitAsync(TimeSpan.FromSeconds(5));
         Assert.Equal(CopilotToolExecutionHookBackgroundScheduler.MaxPending, completed);
+        await WaitForActivityToDrainAsync(scheduler);
+        var drained = scheduler.GetActivitySnapshot();
+        Assert.True(drained.IsStructurallyValid());
+        Assert.Equal(0, drained.OutstandingCount);
+        Assert.Equal(0, drained.TimedOutRetainedCount);
+    }
+
+    private static async Task WaitForActivityToDrainAsync(
+        CopilotToolExecutionHookBackgroundScheduler scheduler)
+    {
+        using var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        while (scheduler.GetActivitySnapshot().OutstandingCount > 0)
+            await Task.Delay(10, cancellation.Token);
+    }
+
+    private static async Task WaitForTimedOutActivityAsync(
+        CopilotToolExecutionHookBackgroundScheduler scheduler)
+    {
+        using var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        while (scheduler.GetActivitySnapshot().TimedOutRetainedCount
+            < CopilotToolExecutionHookBackgroundScheduler.MaxConcurrency)
+        {
+            await Task.Delay(10, cancellation.Token);
+        }
     }
 
     private static CopilotToolInvocation CreateInvocation(

@@ -5,6 +5,26 @@ using System.Threading.Tasks;
 
 namespace ColorVision.Copilot
 {
+    internal readonly record struct CopilotToolExecutionHookBackgroundActivitySnapshot(
+        int RunningCount,
+        int QueuedCount,
+        int TimedOutRetainedCount,
+        int MaximumConcurrency,
+        int MaximumPending)
+    {
+        public int OutstandingCount => RunningCount + QueuedCount;
+
+        public bool IsStructurallyValid() =>
+            RunningCount >= 0
+            && QueuedCount >= 0
+            && TimedOutRetainedCount >= 0
+            && MaximumConcurrency > 0
+            && MaximumPending >= MaximumConcurrency
+            && RunningCount <= MaximumConcurrency
+            && OutstandingCount <= MaximumPending
+            && TimedOutRetainedCount <= RunningCount;
+    }
+
     /// <summary>
     /// Runs notification-only hooks without delaying the tool call that launched
     /// them. The shared limits prevent module hooks from creating an unbounded
@@ -18,7 +38,10 @@ namespace ColorVision.Copilot
         private static readonly ILog Log = LogManager.GetLogger(
             typeof(CopilotToolExecutionHookBackgroundScheduler));
         private readonly SemaphoreSlim _concurrency = new(MaxConcurrency, MaxConcurrency);
+        private readonly object _activityGate = new();
         private int _pending;
+        private int _running;
+        private int _timedOutRetained;
 
         public static CopilotToolExecutionHookBackgroundScheduler Shared { get; } = new();
 
@@ -44,15 +67,27 @@ namespace ColorVision.Copilot
             return true;
         }
 
+        public CopilotToolExecutionHookBackgroundActivitySnapshot GetActivitySnapshot()
+        {
+            lock (_activityGate)
+            {
+                return new CopilotToolExecutionHookBackgroundActivitySnapshot(
+                    _running,
+                    _pending - _running,
+                    _timedOutRetained,
+                    MaxConcurrency,
+                    MaxPending);
+            }
+        }
+
         private bool TryReservePendingSlot()
         {
-            while (true)
+            lock (_activityGate)
             {
-                var current = Volatile.Read(ref _pending);
-                if (current >= MaxPending)
+                if (_pending >= MaxPending)
                     return false;
-                if (Interlocked.CompareExchange(ref _pending, current + 1, current) == current)
-                    return true;
+                _pending++;
+                return true;
             }
         }
 
@@ -72,6 +107,8 @@ namespace ColorVision.Copilot
             {
                 await _concurrency.WaitAsync().ConfigureAwait(false);
                 entered = true;
+                lock (_activityGate)
+                    _running++;
                 cancellation = new CancellationTokenSource();
                 callbackTask = callback(cancellation.Token) ?? Task.CompletedTask;
                 await callbackTask.WaitAsync(timeout).ConfigureAwait(false);
@@ -85,6 +122,8 @@ namespace ColorVision.Copilot
                 if (entered && callbackTask is { IsCompleted: false })
                 {
                     reservationTransferred = true;
+                    lock (_activityGate)
+                        _timedOutRetained++;
                     _ = ReleaseAfterCompletionAsync(callbackTask);
                 }
                 Log.Warn(
@@ -119,15 +158,22 @@ namespace ColorVision.Copilot
             }
             finally
             {
-                ReleaseReservation(entered: true);
+                ReleaseReservation(entered: true, timedOutRetained: true);
             }
         }
 
-        private void ReleaseReservation(bool entered)
+        private void ReleaseReservation(bool entered, bool timedOutRetained = false)
         {
+            lock (_activityGate)
+            {
+                if (timedOutRetained)
+                    _timedOutRetained--;
+                if (entered)
+                    _running--;
+                _pending--;
+            }
             if (entered)
                 _concurrency.Release();
-            Interlocked.Decrement(ref _pending);
         }
 
         private static void CancelAndDisposeWithoutWaiting(

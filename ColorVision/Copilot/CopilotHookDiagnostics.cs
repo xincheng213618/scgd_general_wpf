@@ -10,6 +10,8 @@ namespace ColorVision.Copilot
     {
         public CopilotToolExecutionHookRegistrySnapshot? HookSurface { get; init; }
 
+        public CopilotToolExecutionHookBackgroundActivitySnapshot? BackgroundActivity { get; init; }
+
         public IReadOnlyList<CopilotAgentExtensionSourceSnapshot> ExtensionSources { get; init; } =
             Array.Empty<CopilotAgentExtensionSourceSnapshot>();
 
@@ -37,6 +39,7 @@ namespace ColorVision.Copilot
             builder.AppendLine("本地只读诊断：不调用模型、工具或 MCP，不加载外部脚本，也不修改 Hook 或审批策略。");
             builder.AppendLine();
             AppendEffectiveHooks(builder, snapshot.HookSurface);
+            AppendBackgroundActivity(builder, snapshot.BackgroundActivity);
             builder.AppendLine();
             AppendExtensionSources(builder, snapshot.ExtensionSources, snapshot.ExtensionIssues);
             builder.AppendLine();
@@ -44,6 +47,32 @@ namespace ColorVision.Copilot
             builder.AppendLine();
             builder.Append("安全边界：这里只显示来源、匹配器、状态、耗时与稳定失败码；不显示工具参数、结果正文或审批内容。");
             return builder.ToString().TrimEnd();
+        }
+
+        private static void AppendBackgroundActivity(
+            StringBuilder builder,
+            CopilotToolExecutionHookBackgroundActivitySnapshot? activity)
+        {
+            if (activity?.IsStructurallyValid() != true)
+            {
+                builder.AppendLine("后台活动：无有效运行时快照");
+                return;
+            }
+
+            var value = activity.Value;
+            builder.Append("后台活动：运行 ")
+                .Append(FormatCount(value.RunningCount))
+                .Append('/')
+                .Append(FormatCount(value.MaximumConcurrency))
+                .Append(" · 排队 ")
+                .Append(FormatCount(value.QueuedCount))
+                .Append(" · 未完成 ")
+                .Append(FormatCount(value.OutstandingCount))
+                .Append('/')
+                .Append(FormatCount(value.MaximumPending))
+                .Append(" · 超时占槽 ")
+                .Append(FormatCount(value.TimedOutRetainedCount))
+                .AppendLine();
         }
 
         private static void AppendEffectiveHooks(

@@ -300,6 +300,7 @@ namespace ColorVision.Copilot
                 HookSurface = CopilotToolExecutor.GetSharedHookSurfaceSnapshot(
                     _currentCodexConfigOptions.ConfiguredHooksEnabled
                         && _currentCodexConfigOptions.ConfiguredPluginsEnabled),
+                BackgroundActivity = CopilotToolExecutionHookBackgroundScheduler.Shared.GetActivitySnapshot(),
                 ExtensionSources = extensionSnapshot.Sources,
                 ExtensionIssues = extensionSnapshot.Issues,
                 RecentToolExecutions = CopilotToolExecutionAuditLogger.GetRecentEntries(30),
