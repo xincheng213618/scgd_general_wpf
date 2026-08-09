@@ -6,14 +6,15 @@
 
 | 测试区域 | 目录 | 技术栈 | 主要验证内容 | 运行入口 |
 | --- | --- | --- | --- | --- |
-| UI 与主程序逻辑测试 | `Test/ColorVision.UI.Tests/` | xUnit、`net10.0-windows`、WPF | UI 基础设施、Copilot/MCP、日志、Marketplace、PropertyGrid、终端缓冲、STNode、排序和编辑器辅助逻辑 | `dotnet test Test/ColorVision.UI.Tests/ -p:Platform=x64` |
+| Copilot 与 Agent 测试 | `Test/ColorVision.Copilot.Tests/` | xUnit、`net10.0-windows`、WPF | Copilot、Codex 配置、Agent、MCP、审批、Hook、Skill、会话恢复与工作区安全边界 | `dotnet test Test/ColorVision.Copilot.Tests/ -p:Platform=x64` |
+| UI 与主程序逻辑测试 | `Test/ColorVision.UI.Tests/` | xUnit、`net10.0-windows`、WPF | UI 基础设施、日志、Marketplace、PropertyGrid、终端缓冲、STNode、排序和编辑器辅助逻辑 | `dotnet test Test/ColorVision.UI.Tests/ -p:Platform=x64` |
 | native OpenCV helper 验证 | `Test/opencv_helper_test/` | Visual C++、OpenCV、x64 | `opencv_helper` 侧函数，例如 `M_FindLuminousArea` | Visual Studio 2022 或 `msbuild opencv_helper_test.vcxproj` |
 | 插件市场后端测试 | `Web/Backend/` | Python/Flask | Marketplace API、release 记录、上传下载和存储行为 | `python test_app.py`、`python test_app_releases.py` |
 | 文档站验证 | `docs/` | VitePress | 导航、Markdown、搜索索引、静态页面生成 | `npm run docs:build` |
 
 ## `ColorVision.UI.Tests`
 
-这是当前最主要的 .NET 测试项目。工程声明 `TargetFramework=net10.0-windows`、`UseWPF=true`、`IsTestProject=true`，并引用主程序、`ColorVision.UI.Desktop`、`ColorVision.UI`、`ColorVision.Solution` 和 `ST.Library.UI`。
+这是普通 UI 与主程序基础设施测试项目。工程声明 `TargetFramework=net10.0-windows`、`UseWPF=true`、`IsTestProject=true`；Copilot 测试不再由这个程序集承载。
 
 | 测试文件 | 覆盖面 |
 | --- | --- |
@@ -23,16 +24,23 @@
 | `TerminalScreenBufferTests.cs`、`STNodeCopyPasteTests.cs` | 终端屏幕缓冲、Flow/STNode 复制粘贴 |
 | `LogEntryParserTests.cs`、`LogHistoryReaderTests.cs`、`LogSearchHelperTests.cs` | 日志解析、历史读取和搜索 |
 | `MarketplacePackageDownloadServiceTests.cs` | 插件市场包下载、校验和临时目录处理 |
-| `Copilot*Tests.cs`、`CopilotSearchDocsToolTests.cs`、`CopilotUiTextTests.cs` | Copilot/MCP 能力、业务上下文、配置、文档搜索和 UI 文案 |
 
 ```powershell
 dotnet test Test/ColorVision.UI.Tests/ -p:Platform=x64
 dotnet test .\Test\ColorVision.UI.Tests\ColorVision.UI.Tests.csproj -p:Platform=x64 --filter "FullyQualifiedName~UniversalSortTests"
-dotnet test Test/ColorVision.UI.Tests/ -p:Platform=x64 --filter "FullyQualifiedName~CopilotMcpTests"
 dotnet test Test/ColorVision.UI.Tests/ -p:Platform=x64 --filter "FullyQualifiedName~MarketplacePackageDownloadServiceTests"
 ```
 
 如果测试在非 Windows 环境失败，先确认是不是 WPF/Windows Desktop Runtime 限制。这个项目不是跨平台测试项目。
+
+## `ColorVision.Copilot.Tests`
+
+这是 Copilot 模块的独立测试程序集。现有 `Copilot*.cs`、桌面宠物 Copilot 状态映射，以及批量图片 Copilot 工具边界都由本项目承载；新增 Copilot、Agent 或 MCP 回归不要再放回普通 UI 测试项目。
+
+```powershell
+dotnet test Test/ColorVision.Copilot.Tests/ -p:Platform=x64
+dotnet test Test/ColorVision.Copilot.Tests/ -p:Platform=x64 --filter "FullyQualifiedName~CopilotMcp"
+```
 
 ## native 和后端
 
@@ -48,7 +56,7 @@ dotnet test Test/ColorVision.UI.Tests/ -p:Platform=x64 --filter "FullyQualifiedN
 | 变更类型 | 至少验证 |
 | --- | --- |
 | UI 菜单、设置、PropertyGrid、列表编辑、日志或终端 | `dotnet test Test/ColorVision.UI.Tests/ -p:Platform=x64` |
-| Copilot/MCP、文档搜索、业务上下文 | `Copilot*Tests`、`CopilotSearchDocsToolTests` |
+| Copilot/MCP、文档搜索、业务上下文 | `dotnet test Test/ColorVision.Copilot.Tests/ -p:Platform=x64` |
 | 插件市场下载、包校验、临时目录 | `MarketplacePackageDownloadServiceTests`，再看 [现有插件能力](../04-api-reference/plugins/README.md) |
 | Flow 节点复制粘贴或 STNode 行为 | `STNodeCopyPasteTests`，再看 [模板与 Flow 链路](../04-api-reference/engine-components/template-flow-chain.md) |
 | native/OpenCV helper | `opencv_helper_test`，并确认 runtime DLL 输出 |

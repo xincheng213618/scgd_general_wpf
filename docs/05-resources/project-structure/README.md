@@ -14,7 +14,7 @@
 | `Web/Backend/` | 插件市场后端服务 | [插件市场后端](../../02-developer-guide/backend/README.md) |
 | `Scripts/` | 构建、打包、发布脚本 | [构建与发布脚本](../../02-developer-guide/scripts/README.md) |
 | `src/ColorVisionSetup/` | 历史保留的安装/更新程序源码，未接入当前发布链 | [部署概览](../../02-developer-guide/deployment/overview.md) / [构建与发布脚本](../../02-developer-guide/scripts/README.md) |
-| `Test/` | xUnit、native helper、后端和脚本验证 | [测试与验证](../../02-developer-guide/testing.md) |
+| `Test/` | 独立 Copilot xUnit、普通 UI xUnit、native helper 和脚本验证 | [测试与验证](../../02-developer-guide/testing.md) |
 | `docs/` | VitePress 文档源码 | 当前文档 |
 
 ## 按角色阅读

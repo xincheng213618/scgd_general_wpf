@@ -1,6 +1,6 @@
 # ColorVision.UI.Tests
 
-`ColorVision.UI.Tests` 是仓库当前主要的 .NET/xUnit 综合测试项目，不是排序专用项目。项目以 `net10.0-windows` 和 WPF 运行，覆盖 UI 基础设施、主程序协作逻辑及相关服务边界；实际范围以 [项目文件](./ColorVision.UI.Tests.csproj) 和测试发现结果为准。
+`ColorVision.UI.Tests` 是普通 UI 与主程序基础设施的 .NET/xUnit 测试项目。项目以 `net10.0-windows` 和 WPF 运行，覆盖 UI 基础设施、日志、Marketplace、PropertyGrid、终端缓冲、STNode、排序和编辑器辅助逻辑；Copilot、Agent 与 MCP 回归已迁移到 `ColorVision.Copilot.Tests`。
 
 测试需在 Windows 上运行，仓库默认使用 x64。请从仓库根目录执行以下 PowerShell 命令。
 
@@ -8,6 +8,12 @@
 
 ```powershell
 dotnet test .\Test\ColorVision.UI.Tests\ColorVision.UI.Tests.csproj -p:Platform=x64
+```
+
+Copilot 回归请改为运行：
+
+```powershell
+dotnet test .\Test\ColorVision.Copilot.Tests\ColorVision.Copilot.Tests.csproj -p:Platform=x64
 ```
 
 只验证当前通用排序回归时运行：

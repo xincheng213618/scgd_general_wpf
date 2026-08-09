@@ -32,6 +32,7 @@
 dotnet restore
 dotnet build build.sln -p:Platform=x64
 dotnet test Test/ColorVision.UI.Tests/ColorVision.UI.Tests.csproj -c Release -p:Platform=x64
+dotnet test Test/ColorVision.Copilot.Tests/ColorVision.Copilot.Tests.csproj -c Release -p:Platform=x64
 npm run docs:build
 npm run docs:validate
 ```

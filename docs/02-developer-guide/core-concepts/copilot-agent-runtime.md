@@ -27,7 +27,7 @@ ColorVision Copilot 使用 Microsoft Agent Framework 作为唯一 Agent 执行�
 ## 验证
 
 ```powershell
-dotnet test Test/ColorVision.UI.Tests/ColorVision.UI.Tests.csproj --filter "FullyQualifiedName~Copilot" --no-restore -p:BuildProjectReferences=false
+dotnet test Test/ColorVision.Copilot.Tests/ColorVision.Copilot.Tests.csproj --filter "FullyQualifiedName~Copilot" --no-restore -p:BuildProjectReferences=false
 dotnet test Test/ProjectARVRPro.Tests/ProjectARVRPro.Tests.csproj --no-restore
 dotnet build ColorVision/ColorVision.csproj --no-restore -p:BuildProjectReferences=false
 ```

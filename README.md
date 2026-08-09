@@ -63,6 +63,7 @@ msbuild build.sln /p:Configuration=Release /p:Platform=x64
 
 ```powershell
 dotnet test Test/ColorVision.UI.Tests/ColorVision.UI.Tests.csproj -c Release -p:Platform=x64
+dotnet test Test/ColorVision.Copilot.Tests/ColorVision.Copilot.Tests.csproj -c Release -p:Platform=x64
 ```
 
 后端测试：

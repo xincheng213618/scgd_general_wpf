@@ -27,7 +27,10 @@ dotnet build .\ColorVision\ColorVision.csproj -p:Platform=x64
 dotnet restore .\build.sln
 msbuild .\build.sln /m /p:Configuration=Release /p:Platform=x64
 
-# Main managed test suite
+# Copilot managed test suite
+dotnet test .\Test\ColorVision.Copilot.Tests\ColorVision.Copilot.Tests.csproj -p:Platform=x64
+
+# UI managed test suite
 dotnet test .\Test\ColorVision.UI.Tests\ColorVision.UI.Tests.csproj -p:Platform=x64
 ```
 
