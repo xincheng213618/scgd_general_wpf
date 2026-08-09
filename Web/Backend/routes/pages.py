@@ -7,10 +7,10 @@ JSON payloads and file-serving endpoints that those pages need.
 
 from __future__ import annotations
 
-import hmac
 import hashlib
 
-from flask import Blueprint, abort, jsonify, request, send_from_directory, session
+from flask import Blueprint, abort, jsonify, request, send_from_directory
+from routes.request_context import current_request_context, set_authenticated_request_context
 
 pages = Blueprint("pages", __name__)
 
@@ -47,29 +47,17 @@ def _is_transfer_storage_path(relative_path: str) -> bool:
 
 
 def _has_transfer_auth() -> bool:
-    if session.get("authenticated") or session.get("user_authenticated"):
-        return True
+    from transfer_files import TRANSFER_FILE_SCOPE
 
-    auth = request.authorization
-    if auth and (auth.type or "").lower() == "basic" and auth.username and auth.password:
-        expected_username, expected_password = _app_mod._get_upload_auth()
-        if (
-            expected_username
-            and expected_password
-            and hmac.compare_digest(auth.username, expected_username)
-            and hmac.compare_digest(auth.password, expected_password)
-        ):
-            return True
-
-    auth_header = request.headers.get("Authorization", "")
-    if auth_header.startswith("Bearer "):
-        token = auth_header[7:].strip()
-        if token:
-            from services.api_key_service import verify_api_key
-            from transfer_files import TRANSFER_FILE_SCOPE
-            return verify_api_key(_cache(), token, required_scopes=[TRANSFER_FILE_SCOPE]) is not None
-
-    return False
+    request_context = current_request_context()
+    decision = _app_mod._ctx.auth_policy.authorize(
+        request_context,
+        [TRANSFER_FILE_SCOPE],
+        allow_user_session=True,
+    )
+    if decision.allowed:
+        set_authenticated_request_context(request_context.with_actor(decision.principal))
+    return decision.allowed
 
 
 def _transfer_auth_challenge():
@@ -107,24 +95,25 @@ def _latest_version_payload() -> tuple[str, str]:
 def api_site_home():
     from page_contexts import build_compact_index_page_context, build_index_page_context
 
+    request_context = current_request_context()
     is_compact = request.args.get("view", "").strip().lower() == "compact"
     if is_compact:
-        compact_app_info = _services().get_request_compact_home_app_info()
+        compact_app_info = _services().get_request_compact_home_app_info(request_context)
         if compact_app_info is not None:
             payload = build_index_page_context(
                 _storage(),
                 get_app_info=lambda: compact_app_info,
                 get_storage_overview_context=_services().get_storage_overview_context,
-                get_tool_preview=_services().get_request_home_tool_preview,
+                get_tool_preview=lambda: _services().get_request_home_tool_preview(request_context),
                 cache_manager=_cache(),
             )
             return jsonify(build_compact_index_page_context(payload))
 
     payload = build_index_page_context(
         _storage(),
-        get_app_info=_services().get_request_home_app_info,
+        get_app_info=lambda: _services().get_request_home_app_info(request_context),
         get_storage_overview_context=_services().get_storage_overview_context,
-        get_tool_preview=_services().get_request_home_tool_preview,
+        get_tool_preview=lambda: _services().get_request_home_tool_preview(request_context),
         cache_manager=_cache(),
     )
     if is_compact:
@@ -136,6 +125,7 @@ def api_site_home():
 def api_site_releases():
     from page_contexts import build_compact_releases_page_context, build_releases_page_context
 
+    request_context = current_request_context()
     kwargs = {
         "major_minor": request.args.get("major_minor", ""),
         "branch": request.args.get("branch", ""),
@@ -153,18 +143,19 @@ def api_site_releases():
         compact_payload = _services().get_request_compact_release_page(**compact_kwargs)
         if compact_payload is not None:
             return jsonify(compact_payload)
-        app_info = _services().get_request_release_app_info()
+        app_info = _services().get_request_release_app_info(request_context)
         return jsonify(build_compact_releases_page_context(app_info, **compact_kwargs))
-    app_info = _services().get_request_release_app_info()
+    app_info = _services().get_request_release_app_info(request_context)
     return jsonify(build_releases_page_context(app_info, **kwargs))
 
 
 @pages.route("/api/site/changelog")
 def api_site_changelog():
+    request_context = current_request_context()
     if request.args.get("view", "").strip().lower() == "compact":
-        app_info = _services().get_request_compact_changelog_app_info()
+        app_info = _services().get_request_compact_changelog_app_info(request_context)
     else:
-        app_info = _services().get_request_changelog_app_info()
+        app_info = _services().get_request_changelog_app_info(request_context)
     return jsonify({"app_info": app_info})
 
 

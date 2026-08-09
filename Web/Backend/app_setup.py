@@ -87,7 +87,9 @@ def create_app_and_context():
     """
     from db.schema_version import ensure_schema_version
     from marketplace_services import MarketplaceCacheSettings, MarketplaceDataService
-    from services.auth_middleware import check_web_session_auth, make_require_upload_auth
+    from routes.auth_adapters import check_web_session_auth, make_require_upload_auth
+    from routes.request_context import current_request_context
+    from services.auth_policy import AuthPolicy
 
     base_dir = Path(__file__).resolve().parent
     config = load_config()
@@ -149,7 +151,8 @@ def create_app_and_context():
         except (OSError, UnicodeDecodeError):
             return None
 
-    require_upload_auth = make_require_upload_auth(cache, get_upload_auth, json_error)
+    auth_policy = AuthPolicy(cache, get_upload_auth)
+    require_upload_auth = make_require_upload_auth(auth_policy, json_error)
 
     # Service layer — storage_getter reads from app.STORAGE so test mutations are reflected
     services = MarketplaceDataService(
@@ -190,6 +193,8 @@ def create_app_and_context():
         invalidate_cache_prefix=cache.invalidate_cache_prefix,
         refresh_related_caches=cache.refresh_related_caches,
         get_upload_auth=get_upload_auth,
+        auth_policy=auth_policy,
+        request_context_factory=current_request_context,
         services=services, human_size=human_size, render_markdown=render_markdown,
         render_markdown_cached=render_markdown_cached,
         json_error=json_error,
@@ -199,6 +204,8 @@ def create_app_and_context():
         "config": config, "storage": storage, "db_path": db_path, "cache": cache,
         "get_db": get_db, "get_upload_auth": get_upload_auth, "json_error": json_error,
         "require_upload_auth": require_upload_auth, "read_text_file": read_text_file,
+        "auth_policy": auth_policy, "request_context_factory": current_request_context,
+        "check_web_session_auth": check_web_session_auth,
         "render_markdown_cached": render_markdown_cached,
         "access_recorder": access_recorder,
     }
@@ -310,7 +317,7 @@ def register_all_blueprints(app, ctx, services, helpers):
     register_public_pages(app, PublicPageContext(
         cache=cache, storage=storage, config=config,
         get_upload_auth=helpers["get_upload_auth"],
-        check_web_session_auth=lambda: __import__("flask").session.get("authenticated", False),
+        check_web_session_auth=helpers["check_web_session_auth"],
         dist_dir=Path(__file__).resolve().parents[1] / "Frontend" / "dist",
     ))
 
@@ -331,13 +338,14 @@ def register_all_blueprints(app, ctx, services, helpers):
 
     # Marketplace API (plugin search, publish, download)
     def _refresh_plugin_index_on_publish(plugin_id):
+        request_context = helpers["request_context_factory"]()
         _refresh_plugin_index(
             cache, _dynamic_storage(), f"Plugins/{plugin_id}",
             get_download_counts=services.get_download_counts,
             get_cache_entry=cache.get_cache_entry,
             set_cache_entry=cache.set_cache_entry,
             ttl_seconds=PLUGIN_INFO_CACHE_TTL_SECONDS,
-            get_request_username=ctx.get_request_username,
+            actor=request_context.actor,
         )
 
     from flask import request as _req
@@ -355,10 +363,10 @@ def register_all_blueprints(app, ctx, services, helpers):
             render_markdown=helpers["render_markdown_cached"],
         ),
         collect_catalog_categories=collect_catalog_categories,
-        get_request_plugin_catalog=lambda: services.get_request_plugin_catalog(),
+        get_request_plugin_catalog=lambda: services.get_request_plugin_catalog(helpers["request_context_factory"]()),
         build_plugin_icon_url=lambda pid: f"/plugins/{pid}/icon",
         get_plugin_info=services.get_plugin_info,
-        get_request_download_counts=services.get_request_download_counts,
+        get_request_download_counts=lambda: services.get_request_download_counts(helpers["request_context_factory"]()),
         read_text_file=helpers["read_text_file"],
         is_safe_id=is_safe_id, is_safe_version=is_safe_version,
         sanitize_filename=sanitize_filename,
@@ -369,7 +377,7 @@ def register_all_blueprints(app, ctx, services, helpers):
         get_download_counts=services.get_download_counts,
         get_cache_entry=cache.get_cache_entry,
         set_cache_entry=cache.set_cache_entry,
-        record_download=lambda pid, ver: services.record_download(pid, ver),
+        record_download=lambda pid, ver: services.record_download(pid, ver, helpers["request_context_factory"]()),
         normalize_relative_path=normalize_relative_path,
         is_root_release_file=lambda p: p.parent == storage and p.suffix.lower() in (".exe", ".zip", ".rar"),
         reconcile_app_release_history=services.reconcile_app_release_history,
@@ -377,48 +385,33 @@ def register_all_blueprints(app, ctx, services, helpers):
         require_upload_auth=helpers["require_upload_auth"],
         refresh_plugin_index_on_publish=_refresh_plugin_index_on_publish,
         cache=cache,
+        request_context_factory=helpers["request_context_factory"],
     ))
 
-    # Admin API
-    import hmac as _hmac
-
     def _check_admin_auth(required_scopes=None):
-        from flask import session as _session
-        if _session.get("authenticated"):
-            return True
-        auth_header = _req.headers.get("Authorization", "")
-        if auth_header.startswith("Bearer "):
-            token = auth_header[7:].strip()
-            if token:
-                from services.api_key_service import verify_api_key
-                scopes = required_scopes or ["admin:*"]
-                if verify_api_key(cache, token, required_scopes=scopes):
-                    return True
-        auth = _req.authorization
-        if auth and (auth.type or "").lower() == "basic" and auth.username and auth.password:
-            eu, ep = helpers["get_upload_auth"]()
-            if eu and ep and _hmac.compare_digest(auth.username, eu) and _hmac.compare_digest(auth.password, ep):
-                return True
-        return False
+        from routes.request_context import set_authenticated_request_context
+
+        request_context = helpers["request_context_factory"]()
+        decision = helpers["auth_policy"].authorize(
+            request_context,
+            required_scopes or ["admin:*"],
+        )
+        if decision.allowed:
+            set_authenticated_request_context(request_context.with_actor(decision.principal))
+        return decision.allowed
 
     def _check_transfer_auth(required_scopes=None):
-        from flask import session as _session
-        if _session.get("authenticated") or _session.get("user_authenticated"):
-            return True
-        auth_header = _req.headers.get("Authorization", "")
-        if auth_header.startswith("Bearer "):
-            token = auth_header[7:].strip()
-            if token:
-                from services.api_key_service import verify_api_key
-                scopes = required_scopes or ["file:transfer"]
-                if verify_api_key(cache, token, required_scopes=scopes):
-                    return True
-        auth = _req.authorization
-        if auth and (auth.type or "").lower() == "basic" and auth.username and auth.password:
-            eu, ep = helpers["get_upload_auth"]()
-            if eu and ep and _hmac.compare_digest(auth.username, eu) and _hmac.compare_digest(auth.password, ep):
-                return True
-        return False
+        from routes.request_context import set_authenticated_request_context
+
+        request_context = helpers["request_context_factory"]()
+        decision = helpers["auth_policy"].authorize(
+            request_context,
+            required_scopes or ["file:transfer"],
+            allow_user_session=True,
+        )
+        if decision.allowed:
+            set_authenticated_request_context(request_context.with_actor(decision.principal))
+        return decision.allowed
 
     from routes.transfer import TransferRouteContext, register_transfer_routes
     register_transfer_routes(app, TransferRouteContext(
@@ -429,8 +422,9 @@ def register_all_blueprints(app, ctx, services, helpers):
     register_admin_api_routes(app, AdminApiContext(
         cache=cache, jobs=cache.jobs,
         storage_getter=_dynamic_storage, config_getter=_dynamic_config,
-        get_db=helpers["get_db"], check_auth=_check_admin_auth,
-        require_auth_decorator=helpers["require_upload_auth"],
+        get_db=helpers["get_db"],
+        auth_policy=helpers["auth_policy"],
+        request_context_factory=helpers["request_context_factory"],
         refresh_plugin_index=lambda c, s, pid, **kw: __import__("services.plugin_index", fromlist=["refresh_plugin_index"]).refresh_plugin_index(c, s, pid, **kw),
         refresh_all_plugin_index=lambda c, s, **kw: __import__("services.plugin_index", fromlist=["refresh_all_plugin_index"]).refresh_all_plugin_index(c, s, **kw),
         get_plugin_index_state=lambda c: __import__("services.plugin_index", fromlist=["get_plugin_index_state"]).get_plugin_index_state(c),

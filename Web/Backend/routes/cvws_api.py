@@ -6,12 +6,12 @@ Handles /api/tool/cvwindowsservice/* for the React Web frontend.
 
 from __future__ import annotations
 
-import hmac
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from flask import Blueprint, jsonify, request, send_from_directory, session
+from flask import Blueprint, jsonify, request, send_from_directory
+from routes.request_context import current_request_context, set_authenticated_request_context
 
 cvws_api = Blueprint("cvws_api", __name__)
 
@@ -90,28 +90,14 @@ def _json_auth_error():
 
 
 def _has_cvws_publish_auth() -> bool:
-    if session.get("authenticated"):
-        return True
-
-    auth = request.authorization
-    if auth and (auth.type or "").lower() == "basic" and auth.username and auth.password:
-        expected_username, expected_password = _app_mod._get_upload_auth()
-        if (
-            expected_username
-            and expected_password
-            and hmac.compare_digest(auth.username, expected_username)
-            and hmac.compare_digest(auth.password, expected_password)
-        ):
-            return True
-
-    auth_header = request.headers.get("Authorization", "")
-    if auth_header.startswith("Bearer "):
-        token = auth_header[7:].strip()
-        if token:
-            from services.api_key_service import verify_api_key
-            return verify_api_key(_app_mod._cache, token, required_scopes=["release:publish"]) is not None
-
-    return False
+    request_context = current_request_context()
+    decision = _app_mod._ctx.auth_policy.authorize(
+        request_context,
+        ["release:publish"],
+    )
+    if decision.allowed:
+        set_authenticated_request_context(request_context.with_actor(decision.principal))
+    return decision.allowed
 
 
 @cvws_api.route("/api/tool/cvwindowsservice/latest-version")

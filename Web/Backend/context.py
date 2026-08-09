@@ -13,6 +13,8 @@ from pathlib import Path
 from typing import Any, Callable
 
 from db_cache import CacheManager
+from services.auth_policy import AuthPolicy
+from services.request_context import RequestContext
 
 
 @dataclass
@@ -48,6 +50,8 @@ class MarketplaceContext:
 
     # Upload auth
     get_upload_auth: Callable[[], tuple[str, str]]
+    auth_policy: AuthPolicy
+    request_context_factory: Callable[[], RequestContext]
 
     # Service layer (populated after construction)
     services: Any = None  # MarketplaceDataService
@@ -76,12 +80,7 @@ class MarketplaceContext:
     def storage(self, value: Path):
         self._storage = value
 
-    def get_request_username(self) -> str:
-        """Get the current request username from session or auth."""
-        from flask import request, session
-        if session.get("username"):
-            return session["username"]
-        auth = request.authorization
-        if auth and auth.username:
-            return auth.username
-        return "system"
+    @staticmethod
+    def get_request_username(request_context: RequestContext) -> str:
+        """Return the explicitly resolved audit actor identity."""
+        return request_context.actor.actor_id or "system"

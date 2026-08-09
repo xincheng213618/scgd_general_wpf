@@ -17,6 +17,7 @@ from plugin_marketplace import prewarm_plugin_metadata
 from storage_uploads import UploadTooLargeError, UploadWorkflowError, store_legacy_upload
 from update_retention import prune_update_packages, repair_update_storage_layout
 from flask import abort, jsonify, request, send_from_directory
+from services.request_context import RequestContext
 
 
 @dataclass(frozen=True)
@@ -53,6 +54,7 @@ class MarketplaceApiRouteContext:
     require_upload_auth: Any
     refresh_plugin_index_on_publish: Callable[[str], None] | None = None
     cache: Any = None
+    request_context_factory: Callable[[], RequestContext] | None = None
 
 
 def register_marketplace_api_routes(app, ctx: MarketplaceApiRouteContext) -> None:
@@ -323,7 +325,17 @@ def register_marketplace_api_routes(app, ctx: MarketplaceApiRouteContext) -> Non
 
             def _on_upload_complete(normalized_path: str):
                 from services.storage_events import on_storage_change
-                on_storage_change(ctx.cache, storage, normalized_path)
+                request_context = (
+                    ctx.request_context_factory()
+                    if ctx.request_context_factory
+                    else RequestContext()
+                )
+                on_storage_change(
+                    ctx.cache,
+                    storage,
+                    normalized_path,
+                    actor=request_context.actor,
+                )
 
             store_legacy_upload(
                 storage=storage,
