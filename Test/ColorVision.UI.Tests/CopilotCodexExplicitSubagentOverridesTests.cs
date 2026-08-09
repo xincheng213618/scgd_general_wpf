@@ -97,6 +97,30 @@ public sealed class CopilotCodexExplicitSubagentOverridesTests
     }
 
     [Fact]
+    public void ChangedModelDoesNotInheritParentModelResponseMetadata()
+    {
+        var parent = CreateParentRequest(
+            defaultModel: string.Empty,
+            defaultEffort: CopilotCodexReasoningEffort.Unspecified);
+
+        var changedModelChild = CreateChildRequest(
+            parent,
+            model: "different-model",
+            reasoningEffort: string.Empty);
+        Assert.Equal(CopilotCodexReasoningSummary.Unspecified, changedModelChild.CodexReasoningSummary);
+        Assert.Null(changedModelChild.CodexModelSupportsReasoningSummaries);
+        Assert.Equal(CopilotCodexModelVerbosity.Unspecified, changedModelChild.CodexModelVerbosity);
+
+        var sameModelChild = CreateChildRequest(
+            parent,
+            model: "parent-model",
+            reasoningEffort: string.Empty);
+        Assert.Equal(CopilotCodexReasoningSummary.Concise, sameModelChild.CodexReasoningSummary);
+        Assert.True(sameModelChild.CodexModelSupportsReasoningSummaries);
+        Assert.Equal(CopilotCodexModelVerbosity.Low, sameModelChild.CodexModelVerbosity);
+    }
+
+    [Fact]
     public async Task InvalidInjectedOverridesAreRejectedBeforeTheRunnerStarts()
     {
         var runner = new RecordingSubagentRunner();
@@ -155,6 +179,9 @@ public sealed class CopilotCodexExplicitSubagentOverridesTests
             CodexDefaultSubagentModel = defaultModel,
             CodexDefaultSubagentReasoningEffort = defaultEffort,
             CodexReasoningEffort = CopilotCodexReasoningEffort.Medium,
+            CodexReasoningSummary = CopilotCodexReasoningSummary.Concise,
+            CodexModelSupportsReasoningSummaries = true,
+            CodexModelVerbosity = CopilotCodexModelVerbosity.Low,
         };
     }
 

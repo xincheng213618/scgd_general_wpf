@@ -540,12 +540,21 @@ namespace ColorVision.Copilot
             var customSubagent = CopilotCodexCustomSubagentSelection.Find(
                 parentRequest.CodexCustomSubagents,
                 runRequest.Agent);
+            var canInheritParentModelMetadata = customSubagent != null
+                || string.Equals(
+                    childProfile.Model,
+                    parentRequest.Profile.Model,
+                    StringComparison.OrdinalIgnoreCase);
             var childReasoningSummary = customSubagent != null
                 && customSubagent.ReasoningSummary != CopilotCodexReasoningSummary.Unspecified
                     ? customSubagent.ReasoningSummary
-                    : parentRequest.CodexReasoningSummary;
+                    : canInheritParentModelMetadata
+                        ? parentRequest.CodexReasoningSummary
+                        : CopilotCodexReasoningSummary.Unspecified;
             var childSupportsReasoningSummaries = customSubagent?.SupportsReasoningSummaries
-                ?? parentRequest.CodexModelSupportsReasoningSummaries;
+                ?? (canInheritParentModelMetadata
+                    ? parentRequest.CodexModelSupportsReasoningSummaries
+                    : null);
             var childServiceTier = parentRequest.CodexFastModeEnabled
                 ? !string.IsNullOrWhiteSpace(customSubagent?.ServiceTier)
                     ? customSubagent.ServiceTier
@@ -554,7 +563,9 @@ namespace ColorVision.Copilot
             var childModelVerbosity = customSubagent != null
                 && customSubagent.ModelVerbosity != CopilotCodexModelVerbosity.Unspecified
                     ? customSubagent.ModelVerbosity
-                    : parentRequest.CodexModelVerbosity;
+                    : canInheritParentModelMetadata
+                        ? parentRequest.CodexModelVerbosity
+                        : CopilotCodexModelVerbosity.Unspecified;
             childProfile.MaxTokens = Math.Min(childProfile.MaxTokens, MaximumExplorationOutputTokens);
             var childExecutionScope = CopilotExecutionScope.ForAgentRun(parentRequest)
                 .DeriveChild(CopilotAgentTaskEventIds.CreateRunId());
