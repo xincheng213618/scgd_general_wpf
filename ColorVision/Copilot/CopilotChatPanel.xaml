@@ -1363,7 +1363,7 @@
                                                             CommandParameter="{Binding}"
                                                             Click="EditMessageButton_Click"
                                                             Content="编辑"
-                                                            ToolTip="编辑这条请求并替换最新回复" />
+                                                            ToolTip="编辑这条请求；历史请求会先创建隔离的会话分支，最新请求会替换最新回复" />
                                                     <Button Margin="0"
                                                             Style="{StaticResource UserMessageActionButtonStyle}"
                                                     Command="{Binding DataContext.RetryMessageCommand, Source={x:Reference Root}}"

@@ -63,9 +63,17 @@ namespace ColorVision.Copilot
 
         private bool CanEditMessage(CopilotChatMessage? message)
         {
-            return !IsBusy
-                && message?.IsUser == true
-                && TryResolveLatestTurn(message, out _, out _, out _);
+            if (IsBusy || message?.IsUser != true)
+                return false;
+
+            if (TryResolveLatestTurn(message, out _, out _, out _))
+                return true;
+
+            return !IsEditingMessage
+                && CanSwitchConversation
+                && CopilotConversationBranchService.CanPreparePromptEditBranch(
+                    SelectedConversation,
+                    message);
         }
 
         private bool CanBranchConversation(CopilotChatMessage? message)
@@ -185,34 +193,18 @@ namespace ColorVision.Copilot
 
             try
             {
-                var restoredAttachments = point.UserMessage.AttachmentSnapshotCaptured
-                    ? point.UserMessage.Attachments.Select(attachment => attachment.CreateSnapshot()).ToArray()
-                    : Array.Empty<CopilotAttachmentItem>();
-                if (restoredAttachments.Length > CopilotComposerAttachmentService.MaximumAttachmentCount)
-                    throw new InvalidOperationException($"历史请求包含超过 {CopilotComposerAttachmentService.MaximumAttachmentCount:N0} 个附件，不能安全恢复到输入框。");
-
-                var branch = CopilotConversationBranchService.CreateRewindBranch(
+                var preparation = CopilotConversationBranchService.PreparePromptEditBranch(
                     source,
                     point.UserMessage);
-                foreach (var attachment in restoredAttachments)
-                    branch.Attachments.Add(attachment);
-                branch.DraftText = point.UserMessage.Content;
-                branch.DraftAgentSkillReference = point.UserMessage.AgentSkillReference?.CreateSnapshot();
+                var branch = preparation.Branch;
                 InsertAndSelectConversationBranch(branch);
 
                 _pendingAgentRecoveryRequest = null;
-                ClearPendingRequestModeOverride();
-                SetPendingRequestModeOverride(Enum.IsDefined(point.UserMessage.RequestMode)
-                    ? point.UserMessage.RequestMode
-                    : CopilotAgentMode.Chat);
-                SetPendingWorkspaceReviewTarget(point.UserMessage.WorkspaceReviewTarget);
-                InputText = point.UserMessage.Content;
-                SetPendingAgentSkillReference(point.UserMessage.AgentSkillReference);
                 UpdateAttachmentsState(branch);
 
-                var attachmentText = point.AttachmentCount > 0
-                    ? $"，并恢复 {point.AttachmentCount:N0} 个附件快照"
-                    : point.UserMessage.HasAttachments
+                var attachmentText = preparation.RestoredAttachmentCount > 0
+                    ? $"，并恢复 {preparation.RestoredAttachmentCount:N0} 个附件快照"
+                    : preparation.HasUnrestorableAttachments
                         ? "；该旧请求没有可靠的附件快照，附件未恢复"
                         : string.Empty;
                 ShowLocalCommandResult(
@@ -278,9 +270,12 @@ namespace ColorVision.Copilot
 
         private void BeginEditMessage(CopilotChatMessage? message)
         {
-            if (!CanEditMessage(message)
-                || !TryResolveLatestTurn(message, out var conversation, out var userMessage, out _))
+            if (!CanEditMessage(message))
+                return;
+
+            if (!TryResolveLatestTurn(message, out var conversation, out var userMessage, out _))
             {
+                BeginHistoricalPromptEdit(message!);
                 return;
             }
 
@@ -326,6 +321,47 @@ namespace ColorVision.Copilot
             InputText = userMessage.Content;
             SetPendingAgentSkillReference(userMessage.AgentSkillReference);
             UpdateAttachmentsState(conversation);
+        }
+
+        private void BeginHistoricalPromptEdit(CopilotChatMessage userMessage)
+        {
+            var source = SelectedConversation;
+            if (source == null
+                || !CopilotConversationBranchService.CanPreparePromptEditBranch(source, userMessage))
+            {
+                return;
+            }
+
+            try
+            {
+                var preparation = CopilotConversationBranchService.PreparePromptEditBranch(
+                    source,
+                    userMessage);
+                var branch = preparation.Branch;
+                InsertAndSelectConversationBranch(branch);
+
+                _pendingAgentRecoveryRequest = null;
+                UpdateAttachmentsState(branch);
+                var attachmentText = preparation.RestoredAttachmentCount > 0
+                    ? $"，已恢复 {preparation.RestoredAttachmentCount:N0} 个附件快照"
+                    : preparation.HasUnrestorableAttachments
+                        ? "；旧请求没有可靠的附件快照，附件未恢复"
+                        : string.Empty;
+                LocalCommandResultTitle = "已创建历史编辑分支";
+                LocalCommandResultText =
+                    $"原请求已恢复到“{branch.Title}”的输入框{attachmentText}，可修改后发送；不会自动执行。"
+                    + Environment.NewLine
+                    + $"源会话“{source.Title}”、当前文件和外部操作保持不变；Agent checkpoint 与临时授权未继承。";
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    Application.Current.GetActiveWindow(),
+                    $"无法创建历史编辑分支：{CopilotUserFacingErrorFormatter.Sanitize(ex.Message)}",
+                    "ColorVision",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
         }
 
         private void CancelMessageEdit()
