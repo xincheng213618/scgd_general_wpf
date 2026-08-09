@@ -366,7 +366,9 @@ namespace ColorVision.Copilot
             }
 
             outcome.ApplyModelVisibleFeedback(output.FeedbackMessage);
-            outcome.AddModelAdditionalContext(output.AdditionalContext);
+            outcome.AddModelAdditionalContext(
+                output.AdditionalContext,
+                output.AdditionalContextLimitTokens);
             return output.Control switch
             {
                 CopilotToolPostExecutionControl.Blocked =>

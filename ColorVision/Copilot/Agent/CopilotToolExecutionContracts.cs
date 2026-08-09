@@ -78,8 +78,8 @@ namespace ColorVision.Copilot
 
     public sealed class CopilotToolExecutionOutcome
     {
+        internal const int DefaultAdditionalContextLimitTokens = 2_500;
         private const int MaximumModelFeedbackCharacters = 12_000;
-        private const int MaximumAdditionalContextTokens = 2_500;
         private const string AdditionalContextTruncationMarker =
             "\n...[PostToolUse additional context truncated]...\n";
         private CopilotToolResult? _modelVisibleResult;
@@ -142,13 +142,18 @@ namespace ColorVision.Copilot
             };
         }
 
-        internal void AddModelAdditionalContext(string? context)
+        internal void AddModelAdditionalContext(
+            string? context,
+            int maximumTokens = DefaultAdditionalContextLimitTokens)
         {
+            ArgumentOutOfRangeException.ThrowIfNegative(maximumTokens);
             var normalized = CopilotMcpAuditLogger.RedactText(context).Trim();
             if (normalized.Length == 0)
                 return;
 
-            var bounded = BoundAdditionalContext(normalized);
+            var bounded = maximumTokens == 0
+                ? normalized
+                : BoundAdditionalContext(normalized, maximumTokens);
             lock (_modelAdditionalContexts)
                 _modelAdditionalContexts.Add(bounded);
         }
@@ -164,15 +169,23 @@ namespace ColorVision.Copilot
             return value[..length];
         }
 
-        private static string BoundAdditionalContext(string value)
+        private static string BoundAdditionalContext(string value, int maximumTokens)
         {
-            var maximumWeight = (long)MaximumAdditionalContextTokens
+            var maximumWeight = (long)maximumTokens
                 * CopilotTokenEstimator.AsciiCharactersPerToken;
             if (CopilotTokenEstimator.EstimateTextWeight(value) <= maximumWeight)
                 return value;
 
+            var markerWeight = CopilotTokenEstimator.EstimateTextWeight(
+                AdditionalContextTruncationMarker);
+            if (markerWeight >= maximumWeight)
+            {
+                return value[..CopilotTokenEstimator.GetPrefixLengthWithinWeight(
+                    value,
+                    maximumWeight)];
+            }
             var previewWeight = maximumWeight
-                - CopilotTokenEstimator.EstimateTextWeight(AdditionalContextTruncationMarker);
+                - markerWeight;
             var headWeight = Math.Max(1, (previewWeight + 1) / 2);
             var tailWeight = Math.Max(1, previewWeight - headWeight);
             var headLength = CopilotTokenEstimator.GetPrefixLengthWithinWeight(value, headWeight);
@@ -347,7 +360,8 @@ namespace ColorVision.Copilot
         string SystemMessage = "",
         string AdditionalContext = "",
         CopilotToolPostExecutionControl Control = CopilotToolPostExecutionControl.None,
-        string FailureMessage = "")
+        string FailureMessage = "",
+        int AdditionalContextLimitTokens = CopilotToolExecutionOutcome.DefaultAdditionalContextLimitTokens)
     {
         public bool HasFailure => !string.IsNullOrWhiteSpace(FailureMessage);
 

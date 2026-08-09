@@ -30,6 +30,7 @@ public sealed class CopilotCodexConfiguredCommandHookTests
                             "command": "fallback-command",
                             "commandWindows": "windows-command",
                             "timeout": 7,
+                            "additionalContextLimit": 3210,
                             "statusMessage": "Checking shell policy"
                           }
                         ]
@@ -44,6 +45,7 @@ public sealed class CopilotCodexConfiguredCommandHookTests
             var hook = Assert.Single(options.ConfiguredCommandHooks);
             Assert.Equal("windows-command", hook.Command);
             Assert.Equal(7, hook.TimeoutSeconds);
+            Assert.Equal(3_210, hook.AdditionalContextLimitTokens);
             Assert.Equal("Checking shell policy", hook.StatusMessage);
             Assert.Equal(CopilotCodexConfiguredHookEvent.PreToolUse, hook.Event);
             Assert.Equal(CopilotProjectInstructionConfigSources.CodexHome, hook.Source);
@@ -54,6 +56,16 @@ public sealed class CopilotCodexConfiguredCommandHookTests
                 CopilotCodexConfiguredHookToolNames.GetCanonicalName("RunShellCommand"));
             Assert.Equal([Path.Combine(codexHome, "hooks.json")], options.AppliedHookFilePaths);
             Assert.Empty(options.ConfiguredHookIssues);
+
+            File.WriteAllText(
+                Path.Combine(codexHome, "hooks.json"),
+                File.ReadAllText(Path.Combine(codexHome, "hooks.json"))
+                    .Replace("3210", "3211", StringComparison.Ordinal));
+            var changed = CopilotProjectInstructionDiscoveryConfig.Load(codexHome);
+
+            Assert.NotEqual(
+                hook.ConfigurationFingerprint,
+                Assert.Single(changed.ConfiguredCommandHooks).ConfigurationFingerprint);
         }
         finally
         {
@@ -80,6 +92,7 @@ public sealed class CopilotCodexConfiguredCommandHookTests
                 command_windows = 'windows # command'
                 timeout = 7
                 async = true
+                additionalContextLimit = 0
                 statusMessage = "Checking inline shell policy"
                 """);
 
@@ -88,6 +101,7 @@ public sealed class CopilotCodexConfiguredCommandHookTests
             var hook = Assert.Single(options.ConfiguredCommandHooks);
             Assert.Equal("windows # command", hook.Command);
             Assert.Equal(7, hook.TimeoutSeconds);
+            Assert.Equal(0, hook.AdditionalContextLimitTokens);
             Assert.Equal("Checking inline shell policy", hook.StatusMessage);
             Assert.Equal(CopilotToolExecutionHookMode.Async, hook.ExecutionMode);
             Assert.Equal(CopilotCodexConfiguredHookEvent.PreToolUse, hook.Event);
@@ -132,7 +146,81 @@ public sealed class CopilotCodexConfiguredCommandHookTests
             var options = CopilotProjectInstructionDiscoveryConfig.Load(codexHome);
 
             Assert.Equal([600, 900, 1], options.ConfiguredCommandHooks.Select(hook => hook.TimeoutSeconds));
+            Assert.All(
+                options.ConfiguredCommandHooks,
+                hook => Assert.Equal(2_500, hook.AdditionalContextLimitTokens));
             Assert.Empty(options.ConfiguredHookIssues);
+        }
+        finally
+        {
+            Directory.Delete(codexHome, recursive: true);
+        }
+    }
+
+    [Theory]
+    [InlineData("{ \"type\": \"command\", \"commandWindows\": \"invalid-limit\", \"additionalContextLimit\": -1 }")]
+    [InlineData("{ \"type\": \"command\", \"commandWindows\": \"invalid-limit\", \"additionalContextLimit\": \"2500\" }")]
+    public void HooksJsonRejectsInvalidAdditionalContextLimit(string handlerJson)
+    {
+        var codexHome = CreateTemporaryDirectory();
+        try
+        {
+            var hooksPath = Path.Combine(codexHome, "hooks.json");
+            File.WriteAllText(
+                hooksPath,
+                $$"""
+                {
+                  "hooks": {
+                    "PostToolUse": [
+                      {
+                        "matcher": "^ReadLocalFile$",
+                        "hooks": [{{handlerJson}}]
+                      }
+                    ]
+                  }
+                }
+                """);
+
+            var options = CopilotProjectInstructionDiscoveryConfig.Load(codexHome);
+
+            Assert.Empty(options.ConfiguredCommandHooks);
+            Assert.Equal([hooksPath], options.AppliedHookFilePaths);
+            Assert.Contains(
+                options.ConfiguredHookIssues,
+                issue => issue.Message.Contains("additionalContextLimit", StringComparison.Ordinal));
+        }
+        finally
+        {
+            Directory.Delete(codexHome, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void InlineTomlRejectsInvalidAdditionalContextLimit()
+    {
+        var codexHome = CreateTemporaryDirectory();
+        try
+        {
+            var configPath = Path.Combine(codexHome, "config.toml");
+            File.WriteAllText(
+                configPath,
+                """
+                [[hooks.PostToolUse]]
+                matcher = "^ReadLocalFile$"
+
+                [[hooks.PostToolUse.hooks]]
+                type = "command"
+                commandWindows = "invalid-limit"
+                additionalContextLimit = -1
+                """);
+
+            var options = CopilotProjectInstructionDiscoveryConfig.Load(codexHome);
+
+            Assert.Empty(options.ConfiguredCommandHooks);
+            Assert.Equal([configPath], options.AppliedHookFilePaths);
+            Assert.Contains(
+                options.ConfiguredHookIssues,
+                issue => issue.Message.Contains("additionalContextLimit", StringComparison.Ordinal));
         }
         finally
         {
@@ -776,6 +864,101 @@ public sealed class CopilotCodexConfiguredCommandHookTests
     }
 
     [Fact]
+    public async Task PostToolAdditionalContextHonorsConfiguredLimit()
+    {
+        var workspace = CreateTemporaryDirectory();
+        try
+        {
+            var additionalContext = "start " + new string('x', 2_000) + " end";
+            var runner = new RecordingCommandHookRunner(new CopilotCodexCommandHookProcessResult(
+                0,
+                false,
+                JsonSerializer.Serialize(new
+                {
+                    hookSpecificOutput = new
+                    {
+                        hookEventName = "PostToolUse",
+                        additionalContext,
+                    },
+                }),
+                string.Empty));
+            var definition = CreateDefinition(
+                CopilotCodexConfiguredHookEvent.PostToolUse,
+                "^RecordingReadTool$") with
+            {
+                AdditionalContextLimitTokens = 64,
+            };
+
+            var outcome = await CreateExecutor(runner).ExecuteAsync(
+                CreateInvocation(
+                    new RecordingReadTool(),
+                    CreateRequest(workspace, definition),
+                    "post-custom-context-limit-call"),
+                _ => { },
+                CancellationToken.None);
+
+            var context = Assert.Single(outcome.ModelAdditionalContexts);
+            Assert.StartsWith("start ", context, StringComparison.Ordinal);
+            Assert.EndsWith(" end", context, StringComparison.Ordinal);
+            Assert.Contains("PostToolUse additional context truncated", context, StringComparison.Ordinal);
+            Assert.True(CopilotTokenEstimator.EstimateTextWeight(context)
+                <= 64L * CopilotTokenEstimator.AsciiCharactersPerToken);
+        }
+        finally
+        {
+            Directory.Delete(workspace, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task PostToolAdditionalContextLimitZeroPreservesFullRedactedOutput()
+    {
+        const string secret = "unlimited-context-secret";
+        var workspace = CreateTemporaryDirectory();
+        try
+        {
+            var additionalContext = "start " + new string('x', 12_000) + "; api_key=" + secret + " end";
+            var runner = new RecordingCommandHookRunner(new CopilotCodexCommandHookProcessResult(
+                0,
+                false,
+                JsonSerializer.Serialize(new
+                {
+                    hookSpecificOutput = new
+                    {
+                        hookEventName = "PostToolUse",
+                        additionalContext,
+                    },
+                }),
+                string.Empty));
+            var definition = CreateDefinition(
+                CopilotCodexConfiguredHookEvent.PostToolUse,
+                "^RecordingReadTool$") with
+            {
+                AdditionalContextLimitTokens = 0,
+            };
+
+            var outcome = await CreateExecutor(runner).ExecuteAsync(
+                CreateInvocation(
+                    new RecordingReadTool(),
+                    CreateRequest(workspace, definition),
+                    "post-unlimited-context-call"),
+                _ => { },
+                CancellationToken.None);
+
+            var context = Assert.Single(outcome.ModelAdditionalContexts);
+            Assert.Equal(additionalContext.Replace(secret, "<redacted>", StringComparison.Ordinal), context);
+            Assert.DoesNotContain("PostToolUse additional context truncated", context, StringComparison.Ordinal);
+            Assert.DoesNotContain(secret, context, StringComparison.Ordinal);
+            Assert.True(CopilotTokenEstimator.EstimateTextWeight(context)
+                > 2_500L * CopilotTokenEstimator.AsciiCharactersPerToken);
+        }
+        finally
+        {
+            Directory.Delete(workspace, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task PostToolUnsupportedSuppressOutputFailsHookWithoutChangingModelResult()
     {
         var workspace = CreateTemporaryDirectory();
@@ -927,6 +1110,18 @@ public sealed class CopilotCodexConfiguredCommandHookTests
                 Assert.False(char.IsLowSurrogate(context[index]));
             }
         }
+    }
+
+    [Fact]
+    public void PostToolAdditionalContextSupportsLimitSmallerThanTruncationMarker()
+    {
+        var outcome = new CopilotToolExecutionOutcome();
+        outcome.AddModelAdditionalContext("abcdef", maximumTokens: 1);
+
+        var context = Assert.Single(outcome.ModelAdditionalContexts);
+        Assert.Equal("abcd", context);
+        Assert.True(CopilotTokenEstimator.EstimateTextWeight(context)
+            <= CopilotTokenEstimator.AsciiCharactersPerToken);
     }
 
     [Fact]

@@ -407,7 +407,8 @@ namespace ColorVision.Copilot
             {
                 return new CopilotToolPostExecutionOutput(
                     SystemMessage: systemMessage,
-                    AdditionalContext: additionalContext);
+                    AdditionalContext: additionalContext,
+                    AdditionalContextLimitTokens: _definition.AdditionalContextLimitTokens);
             }
 
             var hasBlockDecision = string.Equals(decision, "block", StringComparison.Ordinal);
@@ -442,7 +443,8 @@ namespace ColorVision.Copilot
                     FeedbackMessage: feedback,
                     SystemMessage: systemMessage,
                     AdditionalContext: usableAdditionalContext,
-                    Control: CopilotToolPostExecutionControl.Stopped);
+                    Control: CopilotToolPostExecutionControl.Stopped,
+                    AdditionalContextLimitTokens: _definition.AdditionalContextLimitTokens);
             }
             if (invalidReason.Length > 0)
                 return CreateInvalidPostToolOutput(systemMessage, invalidReason);
@@ -452,11 +454,13 @@ namespace ColorVision.Copilot
                     FeedbackMessage: reason,
                     SystemMessage: systemMessage,
                     AdditionalContext: additionalContext,
-                    Control: CopilotToolPostExecutionControl.Blocked);
+                    Control: CopilotToolPostExecutionControl.Blocked,
+                    AdditionalContextLimitTokens: _definition.AdditionalContextLimitTokens);
             }
             return new CopilotToolPostExecutionOutput(
                 SystemMessage: systemMessage,
-                AdditionalContext: additionalContext);
+                AdditionalContext: additionalContext,
+                AdditionalContextLimitTokens: _definition.AdditionalContextLimitTokens);
         }
 
         private static CopilotToolPostExecutionOutput CreateInvalidPostToolOutput(

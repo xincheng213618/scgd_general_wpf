@@ -42,7 +42,8 @@ namespace ColorVision.Copilot
         string StatusMessage,
         CopilotToolExecutionHookMode ExecutionMode,
         int Order,
-        string ConfigurationFingerprint)
+        string ConfigurationFingerprint,
+        int AdditionalContextLimitTokens = CopilotToolExecutionOutcome.DefaultAdditionalContextLimitTokens)
     {
         public CopilotToolExecutionHookPhases Phases => Event switch
         {
@@ -76,6 +77,7 @@ namespace ColorVision.Copilot
                 && !StatusMessage.Contains('\0')
                 && Enum.IsDefined(ExecutionMode)
                 && Order >= 0
+                && AdditionalContextLimitTokens >= 0
                 && ConfigurationFingerprint.Length == 64
                 && ConfigurationFingerprint.All(Uri.IsHexDigit);
         }
@@ -180,6 +182,7 @@ namespace ColorVision.Copilot
             public int? TimeoutSeconds { get; set; }
             public bool? IsAsync { get; set; }
             public string StatusMessage { get; set; } = string.Empty;
+            public int? AdditionalContextLimitTokens { get; set; }
             public string Error { get; set; } = string.Empty;
         }
 
@@ -285,6 +288,7 @@ namespace ColorVision.Copilot
                     completed.TimeoutSeconds,
                     completed.IsAsync,
                     completed.StatusMessage,
+                    completed.AdditionalContextLimitTokens,
                     normalizedPath,
                     source,
                     hookEvent,
@@ -474,7 +478,8 @@ namespace ColorVision.Copilot
                     or "command_windows"
                     or "timeout"
                     or "async"
-                    or "statusMessage"))
+                    or "statusMessage"
+                    or "additionalContextLimit"))
             {
                 return;
             }
@@ -518,6 +523,12 @@ namespace ColorVision.Copilot
                         value,
                         MaximumHookStatusMessageCharacters,
                         text => handler.StatusMessage = text);
+                    break;
+                case "additionalContextLimit":
+                    if (TryParseHookTimeout(value, out var additionalContextLimitTokens))
+                        handler.AdditionalContextLimitTokens = additionalContextLimitTokens;
+                    else
+                        handler.Error = $"Hook event '{hookEvent}' additionalContextLimit must be a non-negative integer.";
                     break;
             }
 
@@ -745,6 +756,19 @@ namespace ColorVision.Copilot
                 isAsync = asyncElement.ValueKind == JsonValueKind.True;
             }
 
+            int? additionalContextLimitTokens = null;
+            if (handler.TryGetProperty("additionalContextLimit", out var additionalContextLimitElement))
+            {
+                if (additionalContextLimitElement.ValueKind != JsonValueKind.Number
+                    || !additionalContextLimitElement.TryGetInt32(out var parsedAdditionalContextLimitTokens)
+                    || parsedAdditionalContextLimitTokens < 0)
+                {
+                    error = $"Hook event '{hookEvent}' additionalContextLimit must be a non-negative integer.";
+                    return false;
+                }
+                additionalContextLimitTokens = parsedAdditionalContextLimitTokens;
+            }
+
             return TryCreateCommandHookDefinition(
                 handlerType,
                 ReadOptionalString(handler, "command"),
@@ -753,6 +777,7 @@ namespace ColorVision.Copilot
                 timeoutSeconds,
                 isAsync,
                 ReadOptionalString(handler, "statusMessage"),
+                additionalContextLimitTokens,
                 sourceFilePath,
                 source,
                 hookEvent,
@@ -770,6 +795,7 @@ namespace ColorVision.Copilot
             int? configuredTimeoutSeconds,
             bool? configuredAsync,
             string statusMessage,
+            int? configuredAdditionalContextLimitTokens,
             string sourceFilePath,
             CopilotProjectInstructionConfigSources source,
             CopilotCodexConfiguredHookEvent hookEvent,
@@ -818,6 +844,8 @@ namespace ColorVision.Copilot
             var executionMode = configuredAsync == true
                 ? CopilotToolExecutionHookMode.Async
                 : CopilotToolExecutionHookMode.Sync;
+            var additionalContextLimitTokens = configuredAdditionalContextLimitTokens
+                ?? CopilotToolExecutionOutcome.DefaultAdditionalContextLimitTokens;
             var fingerprint = ComputeHookFingerprint(
                 sourceFilePath,
                 source,
@@ -826,6 +854,7 @@ namespace ColorVision.Copilot
                 selectedCommand,
                 timeoutSeconds,
                 statusMessage,
+                additionalContextLimitTokens,
                 executionMode,
                 order);
             definition = new CopilotCodexCommandHookDefinition(
@@ -839,7 +868,8 @@ namespace ColorVision.Copilot
                 statusMessage,
                 executionMode,
                 order,
-                fingerprint);
+                fingerprint,
+                additionalContextLimitTokens);
             return true;
         }
 
@@ -873,6 +903,7 @@ namespace ColorVision.Copilot
             string command,
             int timeoutSeconds,
             string statusMessage,
+            int additionalContextLimitTokens,
             CopilotToolExecutionHookMode executionMode,
             int order)
         {
@@ -885,6 +916,7 @@ namespace ColorVision.Copilot
                 Command = command,
                 TimeoutSeconds = timeoutSeconds,
                 StatusMessage = statusMessage,
+                AdditionalContextLimitTokens = additionalContextLimitTokens,
                 ExecutionMode = executionMode.ToString(),
                 Order = order,
             });
