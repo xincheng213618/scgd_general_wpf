@@ -436,6 +436,9 @@ namespace ColorVision.Copilot
                 CodexPluginsEnabled = projectInstructionOptions.ConfiguredPluginsEnabled,
                 HasCodexPluginsEnabledOverride = projectInstructionOptions.HasPluginsEnabledOverride,
                 CodexPluginsEnabledSourceLabel = projectInstructionOptions.PluginsEnabledSourceLabel,
+                CodexMentionsV2Enabled = projectInstructionOptions.ConfiguredMentionsV2Enabled,
+                HasCodexMentionsV2EnabledOverride = projectInstructionOptions.HasMentionsV2EnabledOverride,
+                CodexMentionsV2EnabledSourceLabel = projectInstructionOptions.MentionsV2EnabledSourceLabel,
                 CodexShellEnvironmentPolicySummary = projectInstructionOptions
                     .ConfiguredShellEnvironmentPolicy.BuildRedactedSummary(),
                 HasCodexShellEnvironmentPolicyOverride = projectInstructionOptions.HasShellEnvironmentPolicyOverride,

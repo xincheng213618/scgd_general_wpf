@@ -181,15 +181,23 @@ namespace ColorVision.Copilot
 
         internal static IReadOnlyList<CopilotComposerReferenceItem> SearchImmediate(
             string? query,
-            string? activeDocumentPath)
+            string? activeDocumentPath,
+            bool includeUnifiedReferences = true)
         {
             var normalizedQuery = (query ?? string.Empty).Trim();
             var candidates = new List<CopilotComposerReferenceItem>();
             AddActiveDocument(candidates, activeDocumentPath);
-            AddTemplates(candidates, normalizedQuery);
-            AddMenus(candidates, normalizedQuery);
+            if (CanIncludeReferenceKind(CopilotComposerReferenceKind.Template, includeUnifiedReferences))
+                AddTemplates(candidates, normalizedQuery);
+            if (CanIncludeReferenceKind(CopilotComposerReferenceKind.Menu, includeUnifiedReferences))
+                AddMenus(candidates, normalizedQuery);
             return RankCandidates(normalizedQuery, candidates);
         }
+
+        internal static bool CanIncludeReferenceKind(
+            CopilotComposerReferenceKind kind,
+            bool mentionsV2Enabled) =>
+            mentionsV2Enabled || kind == CopilotComposerReferenceKind.File;
 
         internal static async Task<IReadOnlyList<CopilotComposerReferenceItem>> SearchWorkspaceReferencesAsync(
             string? workspaceRoot,

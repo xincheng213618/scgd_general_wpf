@@ -99,6 +99,12 @@ namespace ColorVision.Copilot
 
         public string CodexPluginsEnabledSourceLabel { get; init; } = string.Empty;
 
+        public bool CodexMentionsV2Enabled { get; init; } = true;
+
+        public bool HasCodexMentionsV2EnabledOverride { get; init; }
+
+        public string CodexMentionsV2EnabledSourceLabel { get; init; } = string.Empty;
+
         public string CodexShellEnvironmentPolicySummary { get; init; } = string.Empty;
 
         public bool HasCodexShellEnvironmentPolicyOverride { get; init; }
@@ -662,6 +668,23 @@ namespace ColorVision.Copilot
             builder.AppendLine(snapshot.CodexPluginsEnabled
                 ? "模块提供的 Copilot context 与 tool 可用，扩展 Hook 仍受 features.hooks 约束）"
                 : "模块提供的 Copilot context、tool 与 Hook 已排除；内置工具、外部 MCP 与主程序业务插件不受影响）");
+            builder.Append("编辑器引用：features.mentions_v2=")
+                .Append(snapshot.CodexMentionsV2Enabled ? "true" : "false");
+            if (snapshot.HasCodexMentionsV2EnabledOverride)
+            {
+                builder.Append('（')
+                    .Append(string.IsNullOrWhiteSpace(snapshot.CodexMentionsV2EnabledSourceLabel)
+                        ? "Codex config.toml features.mentions_v2"
+                        : snapshot.CodexMentionsV2EnabledSourceLabel.Trim())
+                    .Append(" 当前编辑器快照；");
+            }
+            else
+            {
+                builder.Append("（Codex 默认开启；");
+            }
+            builder.AppendLine(snapshot.CodexMentionsV2Enabled
+                ? "@ 统一列出模板、菜单与工作区文件）"
+                : "@ 回退为旧版文件候选，不列出模板或菜单；已有附件与上下文不受影响）");
             builder.Append("命令环境：")
                 .Append(string.IsNullOrWhiteSpace(snapshot.CodexShellEnvironmentPolicySummary)
                     ? CopilotCodexShellEnvironmentPolicy.Default.BuildRedactedSummary()

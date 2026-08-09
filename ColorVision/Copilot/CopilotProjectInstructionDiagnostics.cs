@@ -373,6 +373,23 @@ namespace ColorVision.Copilot
             builder.AppendLine(effective.ConfiguredPluginsEnabled
                 ? "模块提供的 Copilot context 与 tool 可用，扩展 Hook 仍受 features.hooks 约束"
                 : "排除模块提供的 Copilot context、tool、Hook 与 checkpoint capability；不卸载主程序业务插件，不影响内置工具或外部 MCP");
+            builder.Append("Codex features.mentions_v2：")
+                .Append(effective.ConfiguredMentionsV2Enabled ? "true" : "false");
+            if (effective.HasMentionsV2EnabledOverride)
+            {
+                builder.Append(" · 来源 ")
+                    .Append(effective.MentionsV2EnabledSourceLabel.Length == 0
+                        ? "Codex config.toml features.mentions_v2"
+                        : effective.MentionsV2EnabledSourceLabel)
+                    .Append(" 当前编辑器快照；");
+            }
+            else
+            {
+                builder.Append(" · 官方默认；");
+            }
+            builder.AppendLine(effective.ConfiguredMentionsV2Enabled
+                ? "@ 统一列出模板、菜单与工作区文件"
+                : "@ 回退为旧版文件候选，不列出模板或菜单；已有附件与上下文不受影响");
             builder.Append("Codex shell_environment_policy：")
                 .Append(effective.ConfiguredShellEnvironmentPolicy.BuildRedactedSummary());
             if (effective.HasShellEnvironmentPolicyOverride)

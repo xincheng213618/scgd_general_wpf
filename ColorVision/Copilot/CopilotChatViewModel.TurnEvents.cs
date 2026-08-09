@@ -137,7 +137,16 @@ namespace ColorVision.Copilot
                 conversationHistory,
                 additionalReadRootPaths,
                 CopilotAgentProjectInstructions.ResolveGlobalInstructionRootPath());
+            var previousMentionsV2Enabled = _currentCodexConfigOptions.ConfiguredMentionsV2Enabled;
             _currentCodexConfigOptions = snapshot.ProjectInstructionDiscoveryOptions;
+            if (previousMentionsV2Enabled != _currentCodexConfigOptions.ConfiguredMentionsV2Enabled)
+            {
+                OnPropertyChanged(nameof(ComposerReferenceHeader));
+                OnPropertyChanged(nameof(ComposerReferenceMenuHeader));
+                OnPropertyChanged(nameof(ComposerReferenceMenuToolTip));
+                if (CopilotComposerReferenceCatalog.TryParseMention(InputText, out _))
+                    RefreshComposerReferenceSuggestions();
+            }
             return snapshot;
         }
 

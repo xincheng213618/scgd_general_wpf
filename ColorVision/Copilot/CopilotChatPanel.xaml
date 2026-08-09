@@ -2225,7 +2225,7 @@
                                            FontSize="10"
                                            FontWeight="SemiBold"
                                            Opacity="0.68"
-                                           Text="@ 关联模板、菜单或文件" />
+                                           Text="{Binding ComposerReferenceHeader}" />
                             </DockPanel>
                             <TextBlock DockPanel.Dock="Top"
                                        Margin="12,9,12,12"
@@ -2419,9 +2419,9 @@
                                               Command="{Binding AttachCurrentLiveContextCommand}"
                                               Visibility="{Binding HasCurrentLiveContext, Converter={StaticResource bool2VisibilityConverter}}" />
                                     <Separator />
-                                    <MenuItem Header="关联模板、菜单或文件（@）"
+                                    <MenuItem Header="{Binding ComposerReferenceMenuHeader}"
                                               Click="ComposerReferenceMenuItem_Click"
-                                              ToolTip="在当前光标位置插入 @ 并打开关联候选。" />
+                                              ToolTip="{Binding ComposerReferenceMenuToolTip}" />
                                     <Separator />
                                     <MenuItem Header="{x:Static properties:Resources.CopilotPasteImage}" Command="{Binding PasteImageAttachmentCommand}" />
                                     <MenuItem Header="{x:Static properties:Resources.CopilotSpecifyWebPage}" Command="{Binding AddWebPageAttachmentCommand}" />

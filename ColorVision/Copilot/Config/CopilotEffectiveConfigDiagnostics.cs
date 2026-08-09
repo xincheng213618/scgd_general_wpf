@@ -517,6 +517,7 @@ namespace ColorVision.Copilot
             AppendShellToolEnabled(builder, codexConfigOptions);
             AppendHooksEnabled(builder, codexConfigOptions);
             AppendPluginsEnabled(builder, codexConfigOptions);
+            AppendMentionsV2Enabled(builder, codexConfigOptions);
             AppendShellEnvironmentPolicy(builder, codexConfigOptions);
             AppendGoalsEnabled(builder, codexConfigOptions);
             AppendDefaultModeRequestUserInputEnabled(builder, codexConfigOptions);
@@ -879,6 +880,29 @@ namespace ColorVision.Copilot
             builder.AppendLine(codexConfigOptions.ConfiguredPluginsEnabled
                 ? " · 模块提供的 Copilot context 与 tool 可用；扩展 Hook 仍受 features.hooks 约束"
                 : " · 模块 Copilot context、tool、Hook 与 checkpoint capability 已排除；不卸载主程序业务插件，不影响内置工具或外部 MCP");
+        }
+
+        private static void AppendMentionsV2Enabled(
+            StringBuilder builder,
+            CopilotProjectInstructionDiscoveryOptions codexConfigOptions)
+        {
+            builder.Append("- Codex features.mentions_v2：")
+                .Append(codexConfigOptions.ConfiguredMentionsV2Enabled ? "true" : "false");
+            if (codexConfigOptions.HasMentionsV2EnabledOverride)
+            {
+                builder.Append(" · 来源 ")
+                    .Append(codexConfigOptions.MentionsV2EnabledSourceLabel.Length == 0
+                        ? "Codex config.toml features.mentions_v2"
+                        : codexConfigOptions.MentionsV2EnabledSourceLabel)
+                    .Append(" · 当前编辑器快照");
+            }
+            else
+            {
+                builder.Append(" · 官方默认");
+            }
+            builder.AppendLine(codexConfigOptions.ConfiguredMentionsV2Enabled
+                ? " · @ 使用统一候选，合并模板、菜单与工作区文件"
+                : " · @ 回退为旧版文件候选，不列出模板或菜单；已有附件与已关联上下文不受影响");
         }
 
         private static void AppendIncludePermissionsInstructions(
