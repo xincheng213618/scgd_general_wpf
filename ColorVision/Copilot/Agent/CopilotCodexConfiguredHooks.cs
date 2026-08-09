@@ -29,6 +29,8 @@ namespace ColorVision.Copilot
         Stop,
         PreCompact,
         PostCompact,
+        SubagentStart,
+        SubagentStop,
     }
 
     internal sealed record CopilotCodexConfiguredHookIssue(
@@ -311,6 +313,7 @@ namespace ColorVision.Copilot
                         "Hook event 'PermissionRequest' ignores additionalContextLimit because it cannot return additional context.");
                 }
                 if ((hookEvent is CopilotCodexConfiguredHookEvent.Stop
+                        or CopilotCodexConfiguredHookEvent.SubagentStop
                         or CopilotCodexConfiguredHookEvent.PreCompact
                         or CopilotCodexConfiguredHookEvent.PostCompact)
                     && completed.AdditionalContextLimitTokens.HasValue)
@@ -733,6 +736,7 @@ namespace ColorVision.Copilot
                             "Hook event 'PermissionRequest' ignores additionalContextLimit because it cannot return additional context."));
                     }
                     if ((hookEvent is CopilotCodexConfiguredHookEvent.Stop
+                            or CopilotCodexConfiguredHookEvent.SubagentStop
                             or CopilotCodexConfiguredHookEvent.PreCompact
                             or CopilotCodexConfiguredHookEvent.PostCompact)
                         && handler.TryGetProperty("additionalContextLimit", out _))
@@ -942,10 +946,13 @@ namespace ColorVision.Copilot
                 "PostCompact" => CopilotCodexConfiguredHookEvent.PostCompact,
                 "UserPromptSubmit" => CopilotCodexConfiguredHookEvent.UserPromptSubmit,
                 "Stop" => CopilotCodexConfiguredHookEvent.Stop,
+                "SubagentStart" => CopilotCodexConfiguredHookEvent.SubagentStart,
+                "SubagentStop" => CopilotCodexConfiguredHookEvent.SubagentStop,
                 _ => default,
             };
             return value is "PermissionRequest" or "PreToolUse" or "PostToolUse"
-                or "PreCompact" or "PostCompact" or "UserPromptSubmit" or "Stop";
+                or "PreCompact" or "PostCompact" or "UserPromptSubmit" or "Stop"
+                or "SubagentStart" or "SubagentStop";
         }
 
         private static string ComputeHookFingerprint(

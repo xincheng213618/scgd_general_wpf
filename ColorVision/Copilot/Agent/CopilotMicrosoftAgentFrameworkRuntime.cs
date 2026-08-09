@@ -50,6 +50,7 @@ namespace ColorVision.Copilot
         private bool _isFrameworkApprovalPending;
         private readonly object _steeringSyncRoot = new();
         private ActiveSteeringContext? _activeSteeringContext;
+        private readonly CopilotCodexStopHookExecutor _stopHookExecutor;
 
         public CopilotMicrosoftAgentFrameworkRuntime(CopilotToolRegistry toolRegistry, CopilotAgentContextBuilder contextBuilder)
             : this(toolRegistry, contextBuilder, new CopilotToolExecutor(), CreateChatClient)
@@ -108,9 +109,32 @@ namespace ColorVision.Copilot
             Func<CopilotProfileConfig, IChatClient> chatClientFactory,
             ICopilotExternalToolProvider externalToolProvider,
             CopilotCapabilityCatalog? capabilityCatalog,
+            CopilotCodexStopHookExecutor stopHookExecutor)
+            : this(
+                toolRegistry,
+                contextBuilder,
+                toolExecutor,
+                chatClientFactory,
+                externalToolProvider,
+                capabilityCatalog,
+                skillUsageStore: null,
+                automaticApprovalReviewer: new CopilotAutomaticApprovalReviewer(),
+                automaticApprovalOverrideStore: null,
+                stopHookExecutor: stopHookExecutor)
+        {
+        }
+
+        internal CopilotMicrosoftAgentFrameworkRuntime(
+            CopilotToolRegistry toolRegistry,
+            CopilotAgentContextBuilder contextBuilder,
+            CopilotToolExecutor toolExecutor,
+            Func<CopilotProfileConfig, IChatClient> chatClientFactory,
+            ICopilotExternalToolProvider externalToolProvider,
+            CopilotCapabilityCatalog? capabilityCatalog,
             CopilotAgentSkillUsageStore? skillUsageStore,
             ICopilotAutomaticApprovalReviewer automaticApprovalReviewer,
-            CopilotAutomaticApprovalOverrideStore? automaticApprovalOverrideStore = null)
+            CopilotAutomaticApprovalOverrideStore? automaticApprovalOverrideStore = null,
+            CopilotCodexStopHookExecutor? stopHookExecutor = null)
         {
             _toolRegistry = toolRegistry ?? throw new ArgumentNullException(nameof(toolRegistry));
             _contextBuilder = contextBuilder ?? throw new ArgumentNullException(nameof(contextBuilder));
@@ -124,6 +148,7 @@ namespace ColorVision.Copilot
                 ?? throw new ArgumentNullException(nameof(automaticApprovalReviewer));
             _automaticApprovalOverrideStore = automaticApprovalOverrideStore
                 ?? CopilotAutomaticApprovalOverrideStore.Shared;
+            _stopHookExecutor = stopHookExecutor ?? new CopilotCodexStopHookExecutor();
         }
 
 

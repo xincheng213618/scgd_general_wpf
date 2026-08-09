@@ -163,6 +163,7 @@ namespace ColorVision.Copilot
                 CodexCommandHooks = explorationRequest.CodexCommandHooks
                     .Select(definition => definition.CreateSnapshot())
                     .ToArray(),
+                CodexSubagentHookContext = explorationRequest.CodexSubagentHookContext?.CreateSnapshot(),
                 CodexPluginsEnabled = explorationRequest.CodexPluginsEnabled,
                 CodexErrorOnToolCollisions = explorationRequest.CodexErrorOnToolCollisions,
                 CodexShellEnvironmentPolicy = explorationRequest.CodexShellEnvironmentPolicy.CreateSnapshot(),

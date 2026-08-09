@@ -44,10 +44,19 @@ namespace ColorVision.Copilot
             if (!request.CodexHooksEnabled)
                 return CopilotCodexStopHookOutcome.Complete;
 
+            var subagent = request.CodexSubagentHookContext?.IsStructurallyValid() == true
+                ? request.CodexSubagentHookContext
+                : null;
+            var hookEvent = subagent == null
+                ? CopilotCodexConfiguredHookEvent.Stop
+                : CopilotCodexConfiguredHookEvent.SubagentStop;
+            var eventName = hookEvent.ToString();
+
             var definitions = (request.CodexCommandHooks
                     ?? Array.Empty<CopilotCodexCommandHookDefinition>())
                 .Where(definition => definition?.IsStructurallyValid() == true
-                    && definition.Event == CopilotCodexConfiguredHookEvent.Stop)
+                    && definition.Event == hookEvent
+                    && (subagent == null || definition.Matches(subagent.AgentType)))
                 .OrderBy(definition => definition.Order)
                 .ToArray();
             if (definitions.Length == 0)
@@ -58,14 +67,15 @@ namespace ColorVision.Copilot
             {
                 var scheduled = _backgroundScheduler.TrySchedule(
                     definition.SourceId,
-                    "Stop",
-                    request.TaskId,
+                    eventName,
+                    subagent?.TurnId ?? request.TaskId,
                     TimeSpan.FromSeconds(definition.TimeoutSeconds),
                     async backgroundCancellationToken =>
                     {
                         var output = await new CopilotCodexCommandHook(definition, _runner)
-                            .OnStopAsync(
+                            .RunStopEventAsync(
                                 request,
+                                subagent,
                                 stopHookActive,
                                 lastAssistantMessage,
                                 backgroundCancellationToken)
@@ -76,8 +86,8 @@ namespace ColorVision.Copilot
                 PublishDiagnostic(
                     onDiagnostic,
                     scheduled
-                        ? $"Stop async hook scheduled · {definition.SourceId}"
-                        : $"Stop async hook skipped · {definition.SourceId}: the bounded lifecycle-hook queue is full.");
+                        ? $"{eventName} async hook scheduled · {definition.SourceId}"
+                        : $"{eventName} async hook skipped · {definition.SourceId}: the bounded lifecycle-hook queue is full.");
             }
 
             var synchronousDefinitions = definitions
@@ -87,12 +97,13 @@ namespace ColorVision.Copilot
                 return CopilotCodexStopHookOutcome.Complete;
 
             foreach (var definition in synchronousDefinitions)
-                PublishDiagnostic(onDiagnostic, $"Stop hook started · {definition.SourceId}");
+                PublishDiagnostic(onDiagnostic, $"{eventName} hook started · {definition.SourceId}");
 
             var results = await Task.WhenAll(synchronousDefinitions.Select(definition =>
                 RunOneAsync(
                     definition,
                     request,
+                    subagent,
                     stopHookActive,
                     lastAssistantMessage,
                     cancellationToken))).ConfigureAwait(false);
@@ -106,30 +117,30 @@ namespace ColorVision.Copilot
                 {
                     PublishDiagnostic(
                         onDiagnostic,
-                        $"Stop hook warning · {result.Definition.SourceId}: {systemMessage}");
+                        $"{eventName} hook warning · {result.Definition.SourceId}: {systemMessage}");
                 }
 
                 if (result.Output.HasFailure)
                 {
                     PublishDiagnostic(
                         onDiagnostic,
-                        $"Stop hook failed open · {result.Definition.SourceId}: {CopilotApprovalRequestReason.Normalize(result.Output.StopReason)}");
+                        $"{eventName} hook failed open · {result.Definition.SourceId}: {CopilotApprovalRequestReason.Normalize(result.Output.StopReason)}");
                 }
                 else if (result.Output.ShouldStop)
                 {
                     PublishDiagnostic(
                         onDiagnostic,
-                        $"Stop hook stopped continuation · {result.Definition.SourceId}: {CopilotApprovalRequestReason.Normalize(result.Output.StopReason)}");
+                        $"{eventName} hook stopped continuation · {result.Definition.SourceId}: {CopilotApprovalRequestReason.Normalize(result.Output.StopReason)}");
                 }
                 else if (result.Output.ShouldContinue)
                 {
                     PublishDiagnostic(
                         onDiagnostic,
-                        $"Stop hook requested continuation · {result.Definition.SourceId}: {CopilotApprovalRequestReason.Normalize(result.Output.ContinuationReason)}");
+                        $"{eventName} hook requested continuation · {result.Definition.SourceId}: {CopilotApprovalRequestReason.Normalize(result.Output.ContinuationReason)}");
                 }
                 else
                 {
-                    PublishDiagnostic(onDiagnostic, $"Stop hook completed · {result.Definition.SourceId}");
+                    PublishDiagnostic(onDiagnostic, $"{eventName} hook completed · {result.Definition.SourceId}");
                 }
 
                 if (result.Output.ShouldStop && !shouldStop)
@@ -160,6 +171,7 @@ namespace ColorVision.Copilot
         private async Task<HookResult> RunOneAsync(
             CopilotCodexCommandHookDefinition definition,
             CopilotAgentRequest request,
+            CopilotCodexSubagentHookContext? subagent,
             bool stopHookActive,
             string? lastAssistantMessage,
             CancellationToken cancellationToken)
@@ -167,8 +179,9 @@ namespace ColorVision.Copilot
             try
             {
                 var output = await new CopilotCodexCommandHook(definition, _runner)
-                    .OnStopAsync(
+                    .RunStopEventAsync(
                         request,
+                        subagent,
                         stopHookActive,
                         lastAssistantMessage,
                         cancellationToken)
@@ -184,7 +197,7 @@ namespace ColorVision.Copilot
                 return new HookResult(
                     definition,
                     new CopilotCodexStopOutput(
-                        StopReason: "A configured Stop hook failed before it could inspect this answer.",
+                        StopReason: $"A configured {(subagent == null ? "Stop" : "SubagentStop")} hook failed before it could inspect this answer.",
                         FailureCode: "configured_hook_failed"));
             }
         }

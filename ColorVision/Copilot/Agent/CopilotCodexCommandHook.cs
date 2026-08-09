@@ -46,6 +46,16 @@ namespace ColorVision.Copilot
         public bool HasFailure => !string.IsNullOrWhiteSpace(FailureCode);
     }
 
+    internal sealed record CopilotCodexSubagentStartOutput(
+        string SystemMessage = "",
+        string AdditionalContext = "",
+        int AdditionalContextLimitTokens = CopilotToolExecutionOutcome.DefaultAdditionalContextLimitTokens,
+        string FailureMessage = "",
+        string FailureCode = "")
+    {
+        public bool HasFailure => !string.IsNullOrWhiteSpace(FailureCode);
+    }
+
     internal interface ICopilotCodexCommandHookRunner
     {
         Task<CopilotCodexCommandHookProcessResult> RunAsync(
@@ -492,11 +502,65 @@ namespace ColorVision.Copilot
             if (_definition.Event != CopilotCodexConfiguredHookEvent.Stop)
                 return null;
 
-            var result = await RunAsync(
+            return await OnStopCoreAsync(
                 request,
+                "Stop",
                 BuildStopInputJson(request, stopHookActive, lastAssistantMessage),
                 cancellationToken).ConfigureAwait(false);
-            var failure = GetProcessFailure(result, "Stop");
+        }
+
+        internal async Task<CopilotCodexStopOutput?> OnSubagentStopAsync(
+            CopilotAgentRequest request,
+            CopilotCodexSubagentHookContext subagent,
+            bool stopHookActive,
+            string? lastAssistantMessage,
+            CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(request);
+            ArgumentNullException.ThrowIfNull(subagent);
+            if (_definition.Event != CopilotCodexConfiguredHookEvent.SubagentStop)
+                return null;
+
+            return await OnStopCoreAsync(
+                request,
+                "SubagentStop",
+                BuildSubagentStopInputJson(
+                    request,
+                    subagent,
+                    stopHookActive,
+                    lastAssistantMessage),
+                cancellationToken).ConfigureAwait(false);
+        }
+
+        internal Task<CopilotCodexStopOutput?> RunStopEventAsync(
+            CopilotAgentRequest request,
+            CopilotCodexSubagentHookContext? subagent,
+            bool stopHookActive,
+            string? lastAssistantMessage,
+            CancellationToken cancellationToken) => subagent == null
+                ? OnStopAsync(
+                    request,
+                    stopHookActive,
+                    lastAssistantMessage,
+                    cancellationToken)
+                : OnSubagentStopAsync(
+                    request,
+                    subagent,
+                    stopHookActive,
+                    lastAssistantMessage,
+                    cancellationToken);
+
+        private async Task<CopilotCodexStopOutput> OnStopCoreAsync(
+            CopilotAgentRequest request,
+            string eventName,
+            string inputJson,
+            CancellationToken cancellationToken)
+        {
+            var result = await RunAsync(
+                request,
+                inputJson,
+                cancellationToken).ConfigureAwait(false);
+            var failure = GetProcessFailure(result, eventName);
             if (failure != null)
                 return CreateInvalidStopOutput(string.Empty, failure, "configured_hook_failed");
             if (result.ExitCode == 2)
@@ -506,13 +570,13 @@ namespace ColorVision.Copilot
                 {
                     return CreateInvalidStopOutput(
                         string.Empty,
-                        "An asynchronous configured Stop hook exited with code 2.",
+                        $"An asynchronous configured {eventName} hook exited with code 2.",
                         "configured_hook_failed");
                 }
                 return continuationReason.Length == 0
                     ? CreateInvalidStopOutput(
                         string.Empty,
-                        "A configured Stop hook exited with code 2 without a continuation prompt.")
+                        $"A configured {eventName} hook exited with code 2 without a continuation prompt.")
                     : new CopilotCodexStopOutput(
                         ShouldContinue: _definition.ExecutionMode == CopilotToolExecutionHookMode.Sync,
                         ContinuationReason: continuationReason);
@@ -527,13 +591,13 @@ namespace ColorVision.Copilot
                         ? new CopilotCodexStopOutput()
                         : CreateInvalidStopOutput(
                             string.Empty,
-                            "A configured Stop hook returned invalid JSON.");
+                            $"A configured {eventName} hook returned invalid JSON.");
             }
             if (root == null)
             {
                 return CreateInvalidStopOutput(
                     string.Empty,
-                    "A configured Stop hook did not return a usable JSON document.");
+                    $"A configured {eventName} hook did not return a usable JSON document.");
             }
 
             using (root)
@@ -556,7 +620,7 @@ namespace ColorVision.Copilot
                 {
                     return CreateInvalidStopOutput(
                         string.Empty,
-                        "A configured Stop hook returned an invalid output field.");
+                        $"A configured {eventName} hook returned an invalid output field.");
                 }
 
                 if (_definition.ExecutionMode == CopilotToolExecutionHookMode.Async)
@@ -566,7 +630,7 @@ namespace ColorVision.Copilot
                 {
                     return CreateInvalidStopOutput(
                         systemMessage,
-                        "A configured Stop hook returned an unsupported decision.");
+                        $"A configured {eventName} hook returned an unsupported decision.");
                 }
                 if (!shouldContinue)
                 {
@@ -581,7 +645,7 @@ namespace ColorVision.Copilot
                 {
                     return CreateInvalidStopOutput(
                         systemMessage,
-                        "A configured Stop hook returned decision:block without a non-empty reason.");
+                        $"A configured {eventName} hook returned decision:block without a non-empty reason.");
                 }
                 return new CopilotCodexStopOutput(
                     ShouldContinue: true,
@@ -589,6 +653,112 @@ namespace ColorVision.Copilot
                     SystemMessage: systemMessage);
             }
         }
+
+        internal async Task<CopilotCodexSubagentStartOutput?> OnSubagentStartAsync(
+            CopilotAgentRequest request,
+            CopilotCodexSubagentHookContext subagent,
+            CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(request);
+            ArgumentNullException.ThrowIfNull(subagent);
+            if (_definition.Event != CopilotCodexConfiguredHookEvent.SubagentStart)
+                return null;
+
+            var result = await RunAsync(
+                request,
+                BuildSubagentStartInputJson(request, subagent),
+                cancellationToken).ConfigureAwait(false);
+            var failure = GetProcessFailure(result, "SubagentStart");
+            if (failure != null)
+                return CreateInvalidSubagentStartOutput(string.Empty, failure, "configured_hook_failed");
+            if (result.ExitCode == 2)
+            {
+                return CreateInvalidSubagentStartOutput(
+                    string.Empty,
+                    "A configured SubagentStart hook exited with code 2.",
+                    "configured_hook_failed");
+            }
+
+            if (!TryParseJsonOutput(result.StandardOutput, out var root, out var invalidJson))
+            {
+                if (invalidJson)
+                {
+                    return CreateInvalidSubagentStartOutput(
+                        string.Empty,
+                        "A configured SubagentStart hook returned invalid JSON.");
+                }
+                return new CopilotCodexSubagentStartOutput(
+                    AdditionalContext: _definition.ExecutionMode == CopilotToolExecutionHookMode.Sync
+                        ? result.StandardOutput?.Trim() ?? string.Empty
+                        : string.Empty,
+                    AdditionalContextLimitTokens: _definition.AdditionalContextLimitTokens);
+            }
+            if (root == null)
+            {
+                return CreateInvalidSubagentStartOutput(
+                    string.Empty,
+                    "A configured SubagentStart hook did not return a usable JSON document.");
+            }
+
+            using (root)
+            {
+                if (!HasOnlySubagentStartProperties(root.RootElement)
+                    || !TryReadOptionalString(root.RootElement, "systemMessage", out var systemMessage)
+                    || !TryReadOptionalString(root.RootElement, "stopReason", out _)
+                    || !TryReadOptionalBoolean(
+                        root.RootElement,
+                        "continue",
+                        defaultValue: true,
+                        out _)
+                    || !TryReadOptionalBoolean(
+                        root.RootElement,
+                        "suppressOutput",
+                        defaultValue: false,
+                        out _))
+                {
+                    return CreateInvalidSubagentStartOutput(
+                        string.Empty,
+                        "A configured SubagentStart hook returned an invalid universal output field.");
+                }
+
+                var additionalContext = string.Empty;
+                if (!TryReadHookSpecificOutput(
+                    root.RootElement,
+                    "SubagentStart",
+                    out var specific,
+                    out var specificError))
+                {
+                    if (specificError.Length > 0)
+                    {
+                        return CreateInvalidSubagentStartOutput(
+                            systemMessage,
+                            specificError);
+                    }
+                }
+                else if (!HasOnlySubagentStartSpecificProperties(specific)
+                    || !TryReadOptionalString(specific, "additionalContext", out additionalContext))
+                {
+                    return CreateInvalidSubagentStartOutput(
+                        systemMessage,
+                        "A configured SubagentStart hook returned an invalid hook-specific output field.");
+                }
+
+                return new CopilotCodexSubagentStartOutput(
+                    SystemMessage: systemMessage,
+                    AdditionalContext: _definition.ExecutionMode == CopilotToolExecutionHookMode.Sync
+                        ? additionalContext
+                        : string.Empty,
+                    AdditionalContextLimitTokens: _definition.AdditionalContextLimitTokens);
+            }
+        }
+
+        private static CopilotCodexSubagentStartOutput CreateInvalidSubagentStartOutput(
+            string systemMessage,
+            string failureMessage,
+            string failureCode = "configured_hook_invalid_output") => new(
+                SystemMessage: systemMessage,
+                FailureMessage: failureMessage,
+                FailureCode: failureCode);
 
         private static CopilotCodexStopOutput CreateInvalidStopOutput(
             string systemMessage,
@@ -1088,6 +1258,23 @@ namespace ColorVision.Copilot
             return true;
         }
 
+        private static bool HasOnlySubagentStartProperties(JsonElement root)
+        {
+            foreach (var property in root.EnumerateObject())
+            {
+                if (property.Name is not (
+                    "continue"
+                    or "stopReason"
+                    or "suppressOutput"
+                    or "systemMessage"
+                    or "hookSpecificOutput"))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
         private static bool HasOnlyCompactProperties(JsonElement root)
         {
             foreach (var property in root.EnumerateObject())
@@ -1105,6 +1292,20 @@ namespace ColorVision.Copilot
         }
 
         private static bool HasOnlyUserPromptSubmitSpecificProperties(JsonElement specific)
+        {
+            foreach (var property in specific.EnumerateObject())
+            {
+                if (property.Name is not (
+                    "hookEventName"
+                    or "additionalContext"))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        private static bool HasOnlySubagentStartSpecificProperties(JsonElement specific)
         {
             foreach (var property in specific.EnumerateObject())
             {
@@ -1267,6 +1468,51 @@ namespace ColorVision.Copilot
                 ["hook_event_name"] = "Stop",
                 ["model"] = request.Profile?.Model ?? string.Empty,
                 ["permission_mode"] = ResolvePermissionMode(request),
+                ["stop_hook_active"] = stopHookActive,
+                ["last_assistant_message"] = string.IsNullOrWhiteSpace(lastAssistantMessage)
+                    ? null
+                    : lastAssistantMessage,
+            };
+            return JsonSerializer.Serialize(input) + Environment.NewLine;
+        }
+
+        private static string BuildSubagentStartInputJson(
+            CopilotAgentRequest request,
+            CopilotCodexSubagentHookContext subagent)
+        {
+            var input = new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["session_id"] = request.ConversationId,
+                ["turn_id"] = subagent.TurnId,
+                ["transcript_path"] = null,
+                ["cwd"] = CopilotCodexCommandHookRunner.ResolveWorkingDirectory(request),
+                ["hook_event_name"] = "SubagentStart",
+                ["model"] = request.Profile?.Model ?? string.Empty,
+                ["permission_mode"] = ResolvePermissionMode(request),
+                ["agent_id"] = subagent.AgentId,
+                ["agent_type"] = subagent.AgentType,
+            };
+            return JsonSerializer.Serialize(input) + Environment.NewLine;
+        }
+
+        private static string BuildSubagentStopInputJson(
+            CopilotAgentRequest request,
+            CopilotCodexSubagentHookContext subagent,
+            bool stopHookActive,
+            string? lastAssistantMessage)
+        {
+            var input = new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["session_id"] = request.ConversationId,
+                ["turn_id"] = subagent.TurnId,
+                ["transcript_path"] = null,
+                ["cwd"] = CopilotCodexCommandHookRunner.ResolveWorkingDirectory(request),
+                ["hook_event_name"] = "SubagentStop",
+                ["model"] = request.Profile?.Model ?? string.Empty,
+                ["permission_mode"] = ResolvePermissionMode(request),
+                ["agent_id"] = subagent.AgentId,
+                ["agent_type"] = subagent.AgentType,
+                ["agent_transcript_path"] = null,
                 ["stop_hook_active"] = stopHookActive,
                 ["last_assistant_message"] = string.IsNullOrWhiteSpace(lastAssistantMessage)
                     ? null

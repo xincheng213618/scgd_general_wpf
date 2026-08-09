@@ -394,7 +394,6 @@ namespace ColorVision.Copilot
                 ? "Agent Framework is generating an answer without tools."
                 : $"Agent Framework can use {frameworkTools.Count} request-scoped tool(s)."));
 
-            var stopHookExecutor = new CopilotCodexStopHookExecutor();
             var stopHookActive = false;
             var stopContinuationCount = 0;
             var loopMessages = initialMessages;
@@ -525,7 +524,7 @@ namespace ColorVision.Copilot
                 if (!hasModelFinalAnswer)
                     break;
 
-                var stopOutcome = await stopHookExecutor.RunAsync(
+                var stopOutcome = await _stopHookExecutor.RunAsync(
                     request,
                     stopHookActive,
                     answerText.ToString(),
@@ -533,6 +532,16 @@ namespace ColorVision.Copilot
                     cancellationToken).ConfigureAwait(false);
                 if (!stopOutcome.ShouldContinue)
                     break;
+
+                if (stopContinuationCount >= CopilotCodexStopHookExecutor.MaximumConsecutiveContinuations)
+                {
+                    var eventName = request.CodexSubagentHookContext == null
+                        ? "Stop"
+                        : "SubagentStop";
+                    emit(CopilotAgentEvent.RuntimeDiagnostic(
+                        $"{eventName} hook continuation limit reached · {CopilotCodexStopHookExecutor.MaximumConsecutiveContinuations} consecutive continuation(s); the Agent turn is finalizing to avoid an unbounded hook loop."));
+                    break;
+                }
 
                 var budgetExhausted = chatClient.Snapshot.BudgetExhausted;
                 if (budgetExhausted
@@ -547,8 +556,11 @@ namespace ColorVision.Copilot
 
                 stopContinuationCount++;
                 stopHookActive = true;
+                var stopEventName = request.CodexSubagentHookContext == null
+                    ? "Stop"
+                    : "SubagentStop";
                 emit(CopilotAgentEvent.RuntimeDiagnostic(
-                    $"Stop hook continuation {stopContinuationCount} · Agent is asking the current Harness session to revise the completed answer."));
+                    $"{stopEventName} hook continuation {stopContinuationCount}/{CopilotCodexStopHookExecutor.MaximumConsecutiveContinuations} · Agent is asking the current Harness session to revise the completed answer."));
                 emit(CopilotAgentEvent.AnswerReset());
                 loopMessages = finalAnswerRecoveredOutsideSession
                     ?
