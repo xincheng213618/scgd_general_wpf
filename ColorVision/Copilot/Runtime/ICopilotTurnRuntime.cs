@@ -162,6 +162,8 @@ namespace ColorVision.Copilot
     internal sealed record CopilotTurnChatDeltaEvent(
         CopilotStreamDelta Delta) : CopilotTurnEvent;
 
+    internal sealed record CopilotTurnChatAnswerResetEvent : CopilotTurnEvent;
+
     internal sealed record CopilotTurnProviderRetryEvent(
         CopilotProviderRetryInfo Retry) : CopilotTurnEvent;
 
@@ -334,6 +336,9 @@ namespace ColorVision.Copilot
 
         public void OnChatDelta(CopilotStreamDelta delta) =>
             _publish(new CopilotTurnChatDeltaEvent(delta));
+
+        public void OnChatAnswerReset() =>
+            _publish(new CopilotTurnChatAnswerResetEvent());
 
         public void OnProviderRetry(CopilotProviderRetryInfo retry) =>
             _publish(new CopilotTurnProviderRetryEvent(retry));

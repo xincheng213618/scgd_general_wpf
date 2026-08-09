@@ -565,6 +565,11 @@ namespace ColorVision.Copilot
                             case CopilotTurnChatDeltaEvent chatDelta:
                                 deltaBuffer?.Enqueue(chatDelta.Delta);
                                 break;
+                            case CopilotTurnChatAnswerResetEvent:
+                                if (deltaBuffer != null)
+                                    await deltaBuffer.FlushAsync();
+                                CopilotUiDispatcher.Invoke(assistantMessage.ResetResponseTimelineText);
+                                break;
                             case CopilotTurnProviderRetryEvent providerRetry:
                                 hostedRun.RecordProviderRetry(providerRetry.Retry);
                                 ApplyProviderRetryOnUiThread(assistantMessage, providerRetry.Retry);

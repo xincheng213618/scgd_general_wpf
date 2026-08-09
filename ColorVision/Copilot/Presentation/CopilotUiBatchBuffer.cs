@@ -95,10 +95,19 @@ namespace ColorVision.Copilot
             }
         }
 
-        public Task CompleteAsync()
+        public Task FlushAsync() => FlushCoreAsync(markCompleted: false);
+
+        public Task CompleteAsync() => FlushCoreAsync(markCompleted: true);
+
+        private Task FlushCoreAsync(bool markCompleted)
         {
             lock (_syncRoot)
-                _completed = true;
+            {
+                if (markCompleted)
+                    _completed = true;
+                else
+                    ThrowIfUnavailableNoLock();
+            }
 
             if (_targetContext == null || IsOnTargetThread())
             {

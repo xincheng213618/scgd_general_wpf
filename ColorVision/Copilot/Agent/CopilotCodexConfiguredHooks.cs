@@ -26,6 +26,7 @@ namespace ColorVision.Copilot
         PreToolUse,
         PostToolUse,
         UserPromptSubmit,
+        Stop,
     }
 
     internal sealed record CopilotCodexConfiguredHookIssue(
@@ -306,6 +307,12 @@ namespace ColorVision.Copilot
                 {
                     AddIssue(
                         "Hook event 'PermissionRequest' ignores additionalContextLimit because it cannot return additional context.");
+                }
+                if (hookEvent == CopilotCodexConfiguredHookEvent.Stop
+                    && completed.AdditionalContextLimitTokens.HasValue)
+                {
+                    AddIssue(
+                        "Hook event 'Stop' ignores additionalContextLimit because it cannot return additional context.");
                 }
                 if (hookEvent == CopilotCodexConfiguredHookEvent.UserPromptSubmit
                     && completed.IsAsync == true)
@@ -721,6 +728,13 @@ namespace ColorVision.Copilot
                             sourceFilePath,
                             "Hook event 'PermissionRequest' ignores additionalContextLimit because it cannot return additional context."));
                     }
+                    if (hookEvent == CopilotCodexConfiguredHookEvent.Stop
+                        && handler.TryGetProperty("additionalContextLimit", out _))
+                    {
+                        issues.Add(new CopilotCodexConfiguredHookIssue(
+                            sourceFilePath,
+                            "Hook event 'Stop' ignores additionalContextLimit because it cannot return additional context."));
+                    }
                     if (hookEvent == CopilotCodexConfiguredHookEvent.UserPromptSubmit
                         && handler.TryGetProperty("async", out var asyncElement)
                         && asyncElement.ValueKind == JsonValueKind.True)
@@ -919,9 +933,10 @@ namespace ColorVision.Copilot
                 "PreToolUse" => CopilotCodexConfiguredHookEvent.PreToolUse,
                 "PostToolUse" => CopilotCodexConfiguredHookEvent.PostToolUse,
                 "UserPromptSubmit" => CopilotCodexConfiguredHookEvent.UserPromptSubmit,
+                "Stop" => CopilotCodexConfiguredHookEvent.Stop,
                 _ => default,
             };
-            return value is "PermissionRequest" or "PreToolUse" or "PostToolUse" or "UserPromptSubmit";
+            return value is "PermissionRequest" or "PreToolUse" or "PostToolUse" or "UserPromptSubmit" or "Stop";
         }
 
         private static string ComputeHookFingerprint(

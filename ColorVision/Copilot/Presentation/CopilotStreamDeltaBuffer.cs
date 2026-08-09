@@ -38,6 +38,8 @@ namespace ColorVision.Copilot
 
         public Task CompleteAsync() => _buffer.CompleteAsync();
 
+        public Task FlushAsync() => _buffer.FlushAsync();
+
         private sealed class PendingDeltaBatch : ICopilotPendingBatch<CopilotStreamDelta>
         {
             private readonly List<PendingSegment> _segments = new();

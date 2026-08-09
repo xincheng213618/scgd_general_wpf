@@ -26,6 +26,17 @@ namespace ColorVision.Copilot
         public bool HasFailure => !string.IsNullOrWhiteSpace(FailureCode);
     }
 
+    internal sealed record CopilotCodexStopOutput(
+        bool ShouldStop = false,
+        string StopReason = "",
+        bool ShouldContinue = false,
+        string ContinuationReason = "",
+        string SystemMessage = "",
+        string FailureCode = "")
+    {
+        public bool HasFailure => !string.IsNullOrWhiteSpace(FailureCode);
+    }
+
     internal interface ICopilotCodexCommandHookRunner
     {
         Task<CopilotCodexCommandHookProcessResult> RunAsync(
@@ -462,6 +473,122 @@ namespace ColorVision.Copilot
                 SystemMessage: systemMessage,
                 FailureCode: failureCode);
 
+        internal async Task<CopilotCodexStopOutput?> OnStopAsync(
+            CopilotAgentRequest request,
+            bool stopHookActive,
+            string? lastAssistantMessage,
+            CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(request);
+            if (_definition.Event != CopilotCodexConfiguredHookEvent.Stop)
+                return null;
+
+            var result = await RunAsync(
+                request,
+                BuildStopInputJson(request, stopHookActive, lastAssistantMessage),
+                cancellationToken).ConfigureAwait(false);
+            var failure = GetProcessFailure(result, "Stop");
+            if (failure != null)
+                return CreateInvalidStopOutput(string.Empty, failure, "configured_hook_failed");
+            if (result.ExitCode == 2)
+            {
+                var continuationReason = CopilotApprovalRequestReason.Normalize(result.StandardError);
+                if (_definition.ExecutionMode == CopilotToolExecutionHookMode.Async)
+                {
+                    return CreateInvalidStopOutput(
+                        string.Empty,
+                        "An asynchronous configured Stop hook exited with code 2.",
+                        "configured_hook_failed");
+                }
+                return continuationReason.Length == 0
+                    ? CreateInvalidStopOutput(
+                        string.Empty,
+                        "A configured Stop hook exited with code 2 without a continuation prompt.")
+                    : new CopilotCodexStopOutput(
+                        ShouldContinue: _definition.ExecutionMode == CopilotToolExecutionHookMode.Sync,
+                        ContinuationReason: continuationReason);
+            }
+
+            if (!TryParseJsonOutput(result.StandardOutput, out var root, out var invalidJson))
+            {
+                return string.IsNullOrWhiteSpace(result.StandardOutput)
+                    ? new CopilotCodexStopOutput()
+                    : _definition.ExecutionMode == CopilotToolExecutionHookMode.Async
+                        && !invalidJson
+                        ? new CopilotCodexStopOutput()
+                        : CreateInvalidStopOutput(
+                            string.Empty,
+                            "A configured Stop hook returned invalid JSON.");
+            }
+            if (root == null)
+            {
+                return CreateInvalidStopOutput(
+                    string.Empty,
+                    "A configured Stop hook did not return a usable JSON document.");
+            }
+
+            using (root)
+            {
+                if (!HasOnlyStopProperties(root.RootElement)
+                    || !TryReadOptionalString(root.RootElement, "systemMessage", out var systemMessage)
+                    || !TryReadOptionalString(root.RootElement, "stopReason", out var stopReason)
+                    || !TryReadOptionalString(root.RootElement, "decision", out var decision)
+                    || !TryReadOptionalString(root.RootElement, "reason", out var reason)
+                    || !TryReadOptionalBoolean(
+                        root.RootElement,
+                        "continue",
+                        defaultValue: true,
+                        out var shouldContinue)
+                    || !TryReadOptionalBoolean(
+                        root.RootElement,
+                        "suppressOutput",
+                        defaultValue: false,
+                        out _))
+                {
+                    return CreateInvalidStopOutput(
+                        string.Empty,
+                        "A configured Stop hook returned an invalid output field.");
+                }
+
+                if (_definition.ExecutionMode == CopilotToolExecutionHookMode.Async)
+                    return new CopilotCodexStopOutput(SystemMessage: systemMessage);
+                if (decision.Length > 0
+                    && !string.Equals(decision, "block", StringComparison.Ordinal))
+                {
+                    return CreateInvalidStopOutput(
+                        systemMessage,
+                        "A configured Stop hook returned an unsupported decision.");
+                }
+                if (!shouldContinue)
+                {
+                    return new CopilotCodexStopOutput(
+                        ShouldStop: true,
+                        StopReason: stopReason,
+                        SystemMessage: systemMessage);
+                }
+                if (decision.Length == 0)
+                    return new CopilotCodexStopOutput(SystemMessage: systemMessage);
+                if (reason.Length == 0)
+                {
+                    return CreateInvalidStopOutput(
+                        systemMessage,
+                        "A configured Stop hook returned decision:block without a non-empty reason.");
+                }
+                return new CopilotCodexStopOutput(
+                    ShouldContinue: true,
+                    ContinuationReason: reason,
+                    SystemMessage: systemMessage);
+            }
+        }
+
+        private static CopilotCodexStopOutput CreateInvalidStopOutput(
+            string systemMessage,
+            string failureMessage,
+            string failureCode = "configured_hook_invalid_output") => new(
+                SystemMessage: systemMessage,
+                StopReason: failureMessage,
+                FailureCode: failureCode);
+
         public async Task<CopilotToolExecutionHookDecision> BeforeExecuteAsync(
             CopilotToolExecutionHookContext context,
             CancellationToken cancellationToken)
@@ -848,6 +975,24 @@ namespace ColorVision.Copilot
             return true;
         }
 
+        private static bool HasOnlyStopProperties(JsonElement root)
+        {
+            foreach (var property in root.EnumerateObject())
+            {
+                if (property.Name is not (
+                    "continue"
+                    or "stopReason"
+                    or "suppressOutput"
+                    or "systemMessage"
+                    or "decision"
+                    or "reason"))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
         private static bool HasOnlyUserPromptSubmitSpecificProperties(JsonElement specific)
         {
             foreach (var property in specific.EnumerateObject())
@@ -993,6 +1138,28 @@ namespace ColorVision.Copilot
                 ["model"] = request.Profile?.Model ?? string.Empty,
                 ["permission_mode"] = ResolvePermissionMode(request),
                 ["prompt"] = prompt ?? string.Empty,
+            };
+            return JsonSerializer.Serialize(input) + Environment.NewLine;
+        }
+
+        private static string BuildStopInputJson(
+            CopilotAgentRequest request,
+            bool stopHookActive,
+            string? lastAssistantMessage)
+        {
+            var input = new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["session_id"] = request.ConversationId,
+                ["turn_id"] = request.TaskId,
+                ["transcript_path"] = null,
+                ["cwd"] = CopilotCodexCommandHookRunner.ResolveWorkingDirectory(request),
+                ["hook_event_name"] = "Stop",
+                ["model"] = request.Profile?.Model ?? string.Empty,
+                ["permission_mode"] = ResolvePermissionMode(request),
+                ["stop_hook_active"] = stopHookActive,
+                ["last_assistant_message"] = string.IsNullOrWhiteSpace(lastAssistantMessage)
+                    ? null
+                    : lastAssistantMessage,
             };
             return JsonSerializer.Serialize(input) + Environment.NewLine;
         }
@@ -1231,7 +1398,9 @@ namespace ColorVision.Copilot
             ICopilotCodexCommandHookRunner? runner = null)
         {
             return (definitions ?? Array.Empty<CopilotCodexCommandHookDefinition>())
-                .Where(definition => definition?.Matches(toolName) == true)
+                .Where(definition => definition != null
+                    && definition.Phases != CopilotToolExecutionHookPhases.None
+                    && definition.Matches(toolName))
                 .OrderBy(definition => definition.Order)
                 .Select(definition => new CopilotToolExecutionHookBinding(
                     definition.SourceId,

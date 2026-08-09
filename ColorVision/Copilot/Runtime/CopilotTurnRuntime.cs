@@ -2,6 +2,7 @@ using ColorVision.UI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -16,8 +17,30 @@ namespace ColorVision.Copilot
         private readonly CopilotMicrosoftAgentFrameworkRuntime _agentRuntime;
         private readonly CopilotWorkspaceRollbackCoordinator _workspaceRollbackCoordinator;
         private readonly CopilotCodexUserPromptSubmitHookExecutor _userPromptSubmitHookExecutor;
+        private readonly CopilotCodexStopHookExecutor _stopHookExecutor;
 
         public CopilotTurnRuntime(CopilotChatService chatService)
+            : this(
+                chatService,
+                new CopilotCodexUserPromptSubmitHookExecutor(),
+                new CopilotCodexStopHookExecutor())
+        {
+        }
+
+        internal CopilotTurnRuntime(
+            CopilotChatService chatService,
+            CopilotCodexStopHookExecutor stopHookExecutor)
+            : this(
+                chatService,
+                new CopilotCodexUserPromptSubmitHookExecutor(),
+                stopHookExecutor)
+        {
+        }
+
+        private CopilotTurnRuntime(
+            CopilotChatService chatService,
+            CopilotCodexUserPromptSubmitHookExecutor userPromptSubmitHookExecutor,
+            CopilotCodexStopHookExecutor stopHookExecutor)
         {
             _chatService = chatService ?? throw new ArgumentNullException(nameof(chatService));
             _conversationRequestBuilder = new CopilotConversationRequestBuilder();
@@ -32,7 +55,10 @@ namespace ColorVision.Copilot
             _workspaceRollbackCoordinator = new CopilotWorkspaceRollbackCoordinator(
                 toolRegistry,
                 toolExecutor);
-            _userPromptSubmitHookExecutor = new CopilotCodexUserPromptSubmitHookExecutor();
+            _userPromptSubmitHookExecutor = userPromptSubmitHookExecutor
+                ?? throw new ArgumentNullException(nameof(userPromptSubmitHookExecutor));
+            _stopHookExecutor = stopHookExecutor
+                ?? throw new ArgumentNullException(nameof(stopHookExecutor));
         }
 
         public IAsyncEnumerable<CopilotTurnEvent> RunAsync(
@@ -160,16 +186,62 @@ namespace ColorVision.Copilot
             var userPromptSubmitDeveloperContext =
                 CopilotCodexUserPromptSubmitHookExecutor.BuildDeveloperContext(
                     userPromptSubmitAdditionalContexts);
-            var streamResult = await _chatService.StreamReplyAsync(
-                request.Profile,
-                history,
-                eventSink.OnChatDelta,
-                eventSink.OnProviderRetry,
-                eventSink.OnProviderConnectionRecovery,
-                usage => eventSink.OnTokenUsageUpdated(imageUnderstanding.Usage.Add(usage)),
-                userPromptSubmitDeveloperContext,
-                cancellationToken).ConfigureAwait(false);
-            var turnUsage = imageUnderstanding.Usage.Add(streamResult.Usage);
+            var hookRequest = CreateUserPromptSubmitHookRequest(request);
+            var providerUsage = CopilotTokenUsage.Empty;
+            var stopHookActive = false;
+            var continuationCount = 0;
+            var currentHistory = history;
+            var streamResult = default(CopilotChatStreamResult);
+            while (true)
+            {
+                var assistantText = new StringBuilder();
+                streamResult = await _chatService.StreamReplyAsync(
+                    request.Profile,
+                    currentHistory,
+                    delta =>
+                    {
+                        if (!string.IsNullOrEmpty(delta.Content))
+                            assistantText.Append(delta.Content);
+                        eventSink.OnChatDelta(delta);
+                    },
+                    eventSink.OnProviderRetry,
+                    eventSink.OnProviderConnectionRecovery,
+                    usage => eventSink.OnTokenUsageUpdated(
+                        imageUnderstanding.Usage.Add(providerUsage).Add(usage)),
+                    userPromptSubmitDeveloperContext,
+                    cancellationToken).ConfigureAwait(false);
+                providerUsage = providerUsage.Add(streamResult.Usage);
+                streamResult = streamResult with { Usage = providerUsage };
+                eventSink.OnTokenUsageUpdated(imageUnderstanding.Usage.Add(providerUsage));
+                if (streamResult.IsIncomplete)
+                    break;
+
+                var stopOutcome = await _stopHookExecutor.RunAsync(
+                    hookRequest,
+                    stopHookActive,
+                    assistantText.ToString(),
+                    eventSink.OnRuntimeDiagnostic,
+                    cancellationToken).ConfigureAwait(false);
+                if (!stopOutcome.ShouldContinue)
+                    break;
+                if (continuationCount >= CopilotCodexStopHookExecutor.MaximumConsecutiveContinuations)
+                {
+                    eventSink.OnRuntimeDiagnostic(
+                        $"Stop hook continuation limit reached · {CopilotCodexStopHookExecutor.MaximumConsecutiveContinuations} consecutive continuation(s); the Chat turn is finalizing to avoid an unbounded hook loop.");
+                    break;
+                }
+
+                continuationCount++;
+                stopHookActive = true;
+                eventSink.OnRuntimeDiagnostic(
+                    $"Stop hook continuation {continuationCount}/{CopilotCodexStopHookExecutor.MaximumConsecutiveContinuations} · Chat is asking the model to revise the completed answer.");
+                eventSink.OnChatAnswerReset();
+                currentHistory = CopilotRequestMessageSequence.Normalize(
+                    currentHistory
+                        .Append(new CopilotRequestMessage("assistant", assistantText.ToString()))
+                        .Append(new CopilotRequestMessage("user", stopOutcome.ContinuationPrompt)));
+            }
+            var turnUsage = imageUnderstanding.Usage.Add(providerUsage);
             eventSink.OnTokenUsageUpdated(turnUsage);
             return CopilotTurnResult.FromChat(
                 turnUsage,
