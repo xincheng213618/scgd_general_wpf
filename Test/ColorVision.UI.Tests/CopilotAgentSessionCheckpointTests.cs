@@ -97,6 +97,8 @@ public sealed class CopilotAgentSessionCheckpointTests
             EnvironmentFingerprint = new string('a', 64),
             HookSurfaceVersion = CopilotAgentSessionCheckpoint.CurrentHookSurfaceVersion,
             HookSurfaceFingerprint = new string('b', 64),
+            ProjectInstructionSurfaceVersion = CopilotAgentSessionCheckpoint.CurrentProjectInstructionSurfaceVersion,
+            ProjectInstructionSurfaceFingerprint = new string('d', 64),
             TaskEventJournal = new CopilotAgentTaskEventJournalSnapshot(),
         };
 
@@ -108,6 +110,8 @@ public sealed class CopilotAgentSessionCheckpointTests
         Assert.Equal(checkpoint.EnvironmentFingerprint, copy.EnvironmentFingerprint);
         Assert.Equal(checkpoint.HookSurfaceVersion, copy.HookSurfaceVersion);
         Assert.Equal(checkpoint.HookSurfaceFingerprint, copy.HookSurfaceFingerprint);
+        Assert.Equal(checkpoint.ProjectInstructionSurfaceVersion, copy.ProjectInstructionSurfaceVersion);
+        Assert.Equal(checkpoint.ProjectInstructionSurfaceFingerprint, copy.ProjectInstructionSurfaceFingerprint);
     }
 
     [Fact]
@@ -190,6 +194,73 @@ public sealed class CopilotAgentSessionCheckpointTests
     }
 
     [Fact]
+    public void MatchingProjectInstructionsCanResume()
+    {
+        var profile = CreateOpenAiProfile(
+            CopilotVendorType.OpenAI,
+            "https://example.test/v1");
+        var capabilitySnapshot = CopilotCapabilityCatalog.Shared.GetSnapshot();
+        var projectInstructions = CreateProjectInstructions("Keep the runtime contract stable.");
+        var checkpoint = CopilotAgentSessionCheckpoint.Create(
+            profile,
+            "{}",
+            capabilitySnapshot,
+            projectInstructions: projectInstructions);
+
+        var compatibility = checkpoint!.EvaluateFor(
+            profile,
+            capabilitySnapshot,
+            projectInstructions: projectInstructions);
+
+        Assert.Equal(CopilotAgentCheckpointCompatibilityKind.Compatible, compatibility.Kind);
+        Assert.True(compatibility.CanResume);
+    }
+
+    [Fact]
+    public void ProjectInstructionDriftRequiresAReplan()
+    {
+        var profile = CreateOpenAiProfile(
+            CopilotVendorType.OpenAI,
+            "https://example.test/v1");
+        var capabilitySnapshot = CopilotCapabilityCatalog.Shared.GetSnapshot();
+        var checkpoint = CopilotAgentSessionCheckpoint.Create(
+            profile,
+            "{}",
+            capabilitySnapshot,
+            projectInstructions: CreateProjectInstructions("Use the original workflow."));
+
+        var compatibility = checkpoint!.EvaluateFor(
+            profile,
+            capabilitySnapshot,
+            projectInstructions: CreateProjectInstructions("Use the revised workflow."));
+
+        Assert.Equal(CopilotAgentCheckpointCompatibilityKind.ProjectInstructionDrift, compatibility.Kind);
+        Assert.True(compatibility.RequiresReplan);
+        Assert.False(compatibility.CanResume);
+    }
+
+    [Fact]
+    public void LegacyCheckpointWithoutProjectInstructionSnapshotRequiresAReplan()
+    {
+        var profile = CreateOpenAiProfile(
+            CopilotVendorType.OpenAI,
+            "https://example.test/v1");
+        var capabilitySnapshot = CopilotCapabilityCatalog.Shared.GetSnapshot();
+        var checkpoint = CopilotAgentSessionCheckpoint.Create(
+            profile,
+            "{}",
+            capabilitySnapshot);
+
+        var compatibility = checkpoint!.EvaluateFor(
+            profile,
+            capabilitySnapshot,
+            projectInstructions: Array.Empty<CopilotProjectInstructionDocument>());
+
+        Assert.Equal(CopilotAgentCheckpointCompatibilityKind.ProjectInstructionSnapshotMissing, compatibility.Kind);
+        Assert.True(compatibility.RequiresReplan);
+    }
+
+    [Fact]
     public void ConversationNormalizationDropsCheckpointWithInvalidJournal()
     {
         var conversation = new CopilotConversationRecord
@@ -214,6 +285,8 @@ public sealed class CopilotAgentSessionCheckpointTests
             SerializedSessionJson = sessionJson,
             HookSurfaceVersion = CopilotAgentSessionCheckpoint.CurrentHookSurfaceVersion,
             HookSurfaceFingerprint = new string('c', 64),
+            ProjectInstructionSurfaceVersion = CopilotAgentSessionCheckpoint.CurrentProjectInstructionSurfaceVersion,
+            ProjectInstructionSurfaceFingerprint = new string('d', 64),
         };
 
         var serialized = JsonConvert.SerializeObject(checkpoint);
@@ -225,6 +298,8 @@ public sealed class CopilotAgentSessionCheckpointTests
         Assert.Equal(sessionJson, restored.SerializedSessionJson);
         Assert.Equal(checkpoint.HookSurfaceVersion, restored.HookSurfaceVersion);
         Assert.Equal(checkpoint.HookSurfaceFingerprint, restored.HookSurfaceFingerprint);
+        Assert.Equal(checkpoint.ProjectInstructionSurfaceVersion, restored.ProjectInstructionSurfaceVersion);
+        Assert.Equal(checkpoint.ProjectInstructionSurfaceFingerprint, restored.ProjectInstructionSurfaceFingerprint);
     }
 
     [Fact]
@@ -387,6 +462,18 @@ public sealed class CopilotAgentSessionCheckpointTests
             RunId = runId,
             SubjectId = runId,
         };
+    }
+
+    private static IReadOnlyList<CopilotProjectInstructionDocument> CreateProjectInstructions(string content)
+    {
+        return
+        [
+            new CopilotProjectInstructionDocument
+            {
+                Path = @"C:\workspace\AGENTS.md",
+                Content = content,
+            },
+        ];
     }
 
     private static CopilotProfileConfig CreateOpenAiProfile(

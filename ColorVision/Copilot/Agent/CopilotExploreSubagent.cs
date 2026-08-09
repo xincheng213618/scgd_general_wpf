@@ -67,7 +67,8 @@ namespace ColorVision.Copilot
                 catalog.GetSnapshot(),
                 tools.Select(tool => tool.Name).ToArray(),
                 CopilotAgentEnvironmentContext.Capture(childRequest),
-                toolExecutor.GetHookSurfaceSnapshot(childRequest.CodexExtensionHooksEnabled));
+                toolExecutor.GetHookSurfaceSnapshot(childRequest.CodexExtensionHooksEnabled),
+                projectInstructions: childRequest.ProjectInstructions);
             if (resumeCompatibility != null && !resumeCompatibility.CanResume)
             {
                 return CreateResumeFailureResult(

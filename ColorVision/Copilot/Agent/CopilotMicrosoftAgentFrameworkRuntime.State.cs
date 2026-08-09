@@ -119,7 +119,8 @@ namespace ColorVision.Copilot
                         conversationMemory,
                         _checkpointEnvironmentContext,
                         _request.TaskIntentText,
-                        _hookSurfaceSnapshot);
+                        _hookSurfaceSnapshot,
+                        _request.ProjectInstructions);
                     if (checkpoint == null)
                     {
                         _emit(CopilotAgentEvent.RuntimeDiagnostic("Incremental Agent checkpoint was rejected because the serialized state was invalid."));
