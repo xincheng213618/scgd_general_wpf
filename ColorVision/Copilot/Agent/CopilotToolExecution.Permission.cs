@@ -107,7 +107,7 @@ namespace ColorVision.Copilot
                     hookEvents,
                     binding.SourceId,
                     CopilotToolExecutionHookPhase.PermissionRequest);
-                var remaining = _hookPhaseTimeout - phaseStopwatch.Elapsed;
+                var remaining = GetHookTimeout(binding, phaseStopwatch);
                 if (remaining <= TimeSpan.Zero)
                 {
                     RecordHookRun(
@@ -187,7 +187,7 @@ namespace ColorVision.Copilot
                         hooks,
                         hookRuns,
                         CopilotToolPermissionRequestDecision.Deny(
-                            $"A permission-request hook exceeded the {FormatTimeout(_hookPhaseTimeout)} phase timeout.",
+                            $"A permission-request hook exceeded its {FormatTimeout(remaining)} timeout.",
                             "permission_hook_timeout"));
                 }
                 catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)

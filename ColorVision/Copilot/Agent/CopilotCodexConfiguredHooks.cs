@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
@@ -70,7 +71,7 @@ namespace ColorVision.Copilot
                 && !string.IsNullOrWhiteSpace(Command)
                 && Command.Length <= CopilotProjectInstructionDiscoveryConfig.MaximumHookCommandCharacters
                 && !Command.Contains('\0')
-                && TimeoutSeconds is >= 1 and <= CopilotProjectInstructionDiscoveryConfig.MaximumHookTimeoutSeconds
+                && TimeoutSeconds >= 1
                 && StatusMessage.Length <= CopilotProjectInstructionDiscoveryConfig.MaximumHookStatusMessageCharacters
                 && !StatusMessage.Contains('\0')
                 && Enum.IsDefined(ExecutionMode)
@@ -166,8 +167,7 @@ namespace ColorVision.Copilot
         internal const int MaximumConfiguredHookHandlers = 128;
         internal const int MaximumHookCommandCharacters = 16_384;
         internal const int MaximumHookStatusMessageCharacters = 512;
-        internal const int MaximumHookTimeoutSeconds = 30;
-        private const int DefaultHookTimeoutSeconds = 5;
+        private const int DefaultHookTimeoutSeconds = 600;
         private const string HooksFileName = "hooks.json";
 
         private sealed class TomlCommandHookHandler
@@ -502,10 +502,10 @@ namespace ColorVision.Copilot
                     AssignTomlHookText(value, MaximumHookCommandCharacters, text => handler.CommandWindowsSnake = text);
                     break;
                 case "timeout":
-                    if (TryParsePositiveInteger(value, out var timeoutSeconds))
+                    if (TryParseHookTimeout(value, out var timeoutSeconds))
                         handler.TimeoutSeconds = timeoutSeconds;
                     else
-                        handler.Error = $"Hook event '{hookEvent}' command timeout must be an integer.";
+                        handler.Error = $"Hook event '{hookEvent}' command timeout must be a non-negative integer.";
                     break;
                 case "async":
                     if (TryParseTomlBoolean(value, out var isAsync))
@@ -530,6 +530,19 @@ namespace ColorVision.Copilot
                 }
                 handler.Error = $"Hook event '{hookEvent}' handler field '{key}' is invalid or oversized.";
             }
+        }
+
+        private static bool TryParseHookTimeout(string value, out int timeoutSeconds)
+        {
+            var normalized = (value ?? string.Empty)
+                .Replace("_", string.Empty, StringComparison.Ordinal)
+                .Trim();
+            return int.TryParse(
+                    normalized,
+                    NumberStyles.None,
+                    CultureInfo.InvariantCulture,
+                    out timeoutSeconds)
+                && timeoutSeconds >= 0;
         }
 
         private static CopilotCodexConfiguredHookDiscoveryResult DiscoverConfiguredHookFile(
@@ -786,12 +799,14 @@ namespace ColorVision.Copilot
                 return false;
             }
 
-            var timeoutSeconds = configuredTimeoutSeconds ?? DefaultHookTimeoutSeconds;
-            if (timeoutSeconds is < 1 or > MaximumHookTimeoutSeconds)
+            if (configuredTimeoutSeconds < 0)
             {
-                error = $"Hook event '{hookEvent}' command timeout must be between 1 and {MaximumHookTimeoutSeconds} seconds.";
+                error = $"Hook event '{hookEvent}' command timeout must be a non-negative integer.";
                 return false;
             }
+            var timeoutSeconds = Math.Max(
+                1,
+                configuredTimeoutSeconds ?? DefaultHookTimeoutSeconds);
 
             if (statusMessage.Length > MaximumHookStatusMessageCharacters
                 || statusMessage.Contains('\0'))

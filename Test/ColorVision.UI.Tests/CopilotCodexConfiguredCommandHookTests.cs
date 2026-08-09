@@ -92,7 +92,46 @@ public sealed class CopilotCodexConfiguredCommandHookTests
             Assert.Equal(CopilotToolExecutionHookMode.Async, hook.ExecutionMode);
             Assert.Equal(CopilotCodexConfiguredHookEvent.PreToolUse, hook.Event);
             Assert.True(hook.Matches("RunShellCommand"));
+            var binding = Assert.Single(
+                CopilotCodexCommandHookFactory.Resolve([hook], "RunShellCommand"));
+            Assert.Equal(TimeSpan.FromSeconds(7), binding.ExecutionTimeout);
             Assert.Equal([configPath], options.AppliedHookFilePaths);
+            Assert.Empty(options.ConfiguredHookIssues);
+        }
+        finally
+        {
+            Directory.Delete(codexHome, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void CommandHookTimeoutDefaultsToCodexTenMinutesAndAcceptsLongerValues()
+    {
+        var codexHome = CreateTemporaryDirectory();
+        try
+        {
+            File.WriteAllText(
+                Path.Combine(codexHome, "hooks.json"),
+                """
+                {
+                  "hooks": {
+                    "PreToolUse": [
+                      {
+                        "matcher": "^ReadLocalFile$",
+                        "hooks": [
+                          { "type": "command", "commandWindows": "default-timeout" },
+                          { "type": "command", "commandWindows": "long-timeout", "timeout": 900 },
+                          { "type": "command", "commandWindows": "minimum-timeout", "timeout": 0 }
+                        ]
+                      }
+                    ]
+                  }
+                }
+                """);
+
+            var options = CopilotProjectInstructionDiscoveryConfig.Load(codexHome);
+
+            Assert.Equal([600, 900, 1], options.ConfiguredCommandHooks.Select(hook => hook.TimeoutSeconds));
             Assert.Empty(options.ConfiguredHookIssues);
         }
         finally
@@ -471,6 +510,97 @@ public sealed class CopilotCodexConfiguredCommandHookTests
         }
     }
 
+    [Theory]
+    [InlineData((int)CopilotCodexConfiguredHookEvent.PermissionRequest)]
+    [InlineData((int)CopilotCodexConfiguredHookEvent.PreToolUse)]
+    [InlineData((int)CopilotCodexConfiguredHookEvent.PostToolUse)]
+    public async Task ConfiguredHookUsesItsOwnTimeoutInsteadOfTheExtensionPhaseBudget(
+        int hookEventValue)
+    {
+        var hookEvent = (CopilotCodexConfiguredHookEvent)hookEventValue;
+        var workspace = CreateTemporaryDirectory();
+        try
+        {
+            var runner = new DelayedCommandHookRunner(TimeSpan.FromMilliseconds(100));
+            var tool = hookEvent == CopilotCodexConfiguredHookEvent.PermissionRequest
+                ? (ICopilotTool)new ProtectedTool()
+                : new RecordingReadTool();
+            var definition = CreateDefinition(hookEvent, $"^{tool.Name}$") with
+            {
+                TimeoutSeconds = 1,
+            };
+            var request = CreateRequest(workspace, definition);
+            var executor = CreateExecutor(runner, TimeSpan.FromMilliseconds(25));
+            IReadOnlyList<CopilotToolExecutionHookRun> hookRuns;
+
+            if (hookEvent == CopilotCodexConfiguredHookEvent.PermissionRequest)
+            {
+                var permission = await executor.EvaluatePermissionRequestAsync(
+                    CreateInvocation(tool, request, $"{hookEvent}-timeout-call"),
+                    CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(5));
+                Assert.True(permission.Decision.ShouldPrompt);
+                hookRuns = permission.HookRuns;
+            }
+            else
+            {
+                var outcome = await executor.ExecuteAsync(
+                    CreateInvocation(tool, request, $"{hookEvent}-timeout-call"),
+                    _ => { },
+                    CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(5));
+                Assert.True(outcome.Result.Success);
+                hookRuns = outcome.HookRuns;
+            }
+
+            Assert.Equal(1, runner.CompletionCount);
+            var run = Assert.Single(hookRuns.Where(item =>
+                item.SourceId.StartsWith("codex-config:", StringComparison.Ordinal)));
+            Assert.Equal(CopilotToolExecutionHookState.Completed, run.State);
+        }
+        finally
+        {
+            Directory.Delete(workspace, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task ConfiguredHookTimeoutIsIndependentForEachMatchingHandler()
+    {
+        var workspace = CreateTemporaryDirectory();
+        try
+        {
+            var runner = new DelayedCommandHookRunner(TimeSpan.FromMilliseconds(75));
+            var tool = new RecordingReadTool();
+            var first = CreateDefinition(
+                CopilotCodexConfiguredHookEvent.PreToolUse,
+                "^RecordingReadTool$",
+                order: 0) with { TimeoutSeconds = 1 };
+            var second = CreateDefinition(
+                CopilotCodexConfiguredHookEvent.PreToolUse,
+                "^RecordingReadTool$",
+                order: 1) with { TimeoutSeconds = 1 };
+            var request = CreateRequest(workspace, first, second);
+
+            var outcome = await CreateExecutor(
+                runner,
+                TimeSpan.FromMilliseconds(25)).ExecuteAsync(
+                    CreateInvocation(tool, request, "independent-handler-timeout-call"),
+                    _ => { },
+                    CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(5));
+
+            Assert.True(outcome.Result.Success);
+            Assert.Equal(2, runner.CompletionCount);
+            Assert.Equal(
+                2,
+                outcome.HookRuns.Count(item =>
+                    item.SourceId.StartsWith("codex-config:", StringComparison.Ordinal)
+                    && item.State == CopilotToolExecutionHookState.Completed));
+        }
+        finally
+        {
+            Directory.Delete(workspace, recursive: true);
+        }
+    }
+
     [Fact]
     public async Task ShellHookReceivesCanonicalBashToolName()
     {
@@ -725,11 +855,13 @@ public sealed class CopilotCodexConfiguredCommandHookTests
         }
     }
 
-    private static CopilotToolExecutor CreateExecutor(ICopilotCodexCommandHookRunner runner) =>
+    private static CopilotToolExecutor CreateExecutor(
+        ICopilotCodexCommandHookRunner runner,
+        TimeSpan? hookPhaseTimeout = null) =>
         new(
             Array.Empty<ICopilotToolExecutionHook>(),
             utcNow: null,
-            hookPhaseTimeout: TimeSpan.FromSeconds(2),
+            hookPhaseTimeout: hookPhaseTimeout ?? TimeSpan.FromSeconds(2),
             progressInterval: TimeSpan.FromSeconds(1),
             codexCommandHookRunner: runner);
 
@@ -837,6 +969,27 @@ public sealed class CopilotCodexConfiguredCommandHookTests
             cancellationToken.ThrowIfCancellationRequested();
             Calls.Add(new CommandHookCall(definition, standardInput));
             return Task.FromResult(_results.Dequeue());
+        }
+    }
+
+    private sealed class DelayedCommandHookRunner(TimeSpan delay)
+        : ICopilotCodexCommandHookRunner
+    {
+        public int CompletionCount { get; private set; }
+
+        public async Task<CopilotCodexCommandHookProcessResult> RunAsync(
+            CopilotCodexCommandHookDefinition definition,
+            CopilotAgentRequest request,
+            string standardInput,
+            CancellationToken cancellationToken)
+        {
+            await Task.Delay(delay, cancellationToken);
+            CompletionCount++;
+            return new CopilotCodexCommandHookProcessResult(
+                0,
+                false,
+                string.Empty,
+                string.Empty);
         }
     }
 

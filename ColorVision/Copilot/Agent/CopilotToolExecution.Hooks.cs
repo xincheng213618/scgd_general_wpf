@@ -47,7 +47,7 @@ namespace ColorVision.Copilot
                     hookEvents,
                     binding.SourceId,
                     CopilotToolExecutionHookPhase.BeforeExecute);
-                var remaining = _hookPhaseTimeout - phaseStopwatch.Elapsed;
+                var remaining = GetHookTimeout(binding, phaseStopwatch);
                 if (remaining <= TimeSpan.Zero)
                 {
                     RecordHookRun(
@@ -58,7 +58,7 @@ namespace ColorVision.Copilot
                         0,
                         "tool_hook_phase_timeout",
                         hookEvents);
-                    return CreateBeforeHookTimeoutDecision();
+                    return CreateBeforeHookTimeoutDecision(_hookPhaseTimeout);
                 }
 
                 CancellationTokenSource? hookCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -102,7 +102,7 @@ namespace ColorVision.Copilot
                         hookStopwatch.ElapsedMilliseconds,
                         "tool_hook_timeout",
                         hookEvents);
-                    return CreateBeforeHookTimeoutDecision();
+                    return CreateBeforeHookTimeoutDecision(remaining);
                 }
                 catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
                 {
@@ -209,7 +209,7 @@ namespace ColorVision.Copilot
                     hookEvents,
                     binding.SourceId,
                     CopilotToolExecutionHookPhase.AfterExecute);
-                var remaining = _hookPhaseTimeout - phaseStopwatch.Elapsed;
+                var remaining = GetHookTimeout(binding, phaseStopwatch);
                 if (remaining <= TimeSpan.Zero)
                 {
                     RecordHookRun(
@@ -265,7 +265,7 @@ namespace ColorVision.Copilot
                         hookStopwatch.ElapsedMilliseconds,
                         "tool_hook_timeout",
                         hookEvents);
-                    Log.Warn($"Copilot post-tool hook phase timed out. Tool={outcome.Invocation.Tool.Name} CallId={outcome.Execution.CallId} HookSource={binding.SourceId} Hook={binding.Hook.GetType().FullName}");
+                    Log.Warn($"Copilot post-tool hook exceeded its {FormatTimeout(remaining)} timeout. Tool={outcome.Invocation.Tool.Name} CallId={outcome.Execution.CallId} HookSource={binding.SourceId} Hook={binding.Hook.GetType().FullName}");
                     break;
                 }
                 catch (OperationCanceledException)
@@ -349,7 +349,7 @@ namespace ColorVision.Copilot
                 phase,
                 invocation.Tool.Name,
                 invocation.CallId,
-                _hookPhaseTimeout,
+                binding.ExecutionTimeout ?? _hookPhaseTimeout,
                 callback);
             RecordHookRun(
                 hookRuns,
@@ -464,10 +464,19 @@ namespace ColorVision.Copilot
             };
         }
 
-        private CopilotToolExecutionHookDecision CreateBeforeHookTimeoutDecision()
+        private TimeSpan GetHookTimeout(
+            CopilotToolExecutionHookBinding binding,
+            Stopwatch phaseStopwatch)
+        {
+            return binding.ExecutionTimeout
+                ?? (_hookPhaseTimeout - phaseStopwatch.Elapsed);
+        }
+
+        private static CopilotToolExecutionHookDecision CreateBeforeHookTimeoutDecision(
+            TimeSpan timeout)
         {
             return CopilotToolExecutionHookDecision.Deny(
-                $"The pre-execution hook phase exceeded its {FormatTimeout(_hookPhaseTimeout)} timeout.",
+                $"A pre-execution hook exceeded its {FormatTimeout(timeout)} timeout.",
                 "tool_hook_timeout",
                 CopilotToolFailureKind.Internal);
         }

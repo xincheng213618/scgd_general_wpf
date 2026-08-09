@@ -585,7 +585,8 @@ namespace ColorVision.Copilot
                     definition.SourceId,
                     new CopilotCodexCommandHook(definition, runner),
                     definition.ExecutionMode,
-                    definition.Phases))
+                    definition.Phases,
+                    TimeSpan.FromSeconds(definition.TimeoutSeconds)))
                 .ToArray();
         }
 

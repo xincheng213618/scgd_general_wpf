@@ -19,7 +19,8 @@ namespace ColorVision.Copilot
         string SourceId,
         ICopilotToolExecutionHook Hook,
         CopilotToolExecutionHookMode ExecutionMode = CopilotToolExecutionHookMode.Sync,
-        CopilotToolExecutionHookPhases Phases = CopilotToolExecutionHookPhases.All);
+        CopilotToolExecutionHookPhases Phases = CopilotToolExecutionHookPhases.All,
+        TimeSpan? ExecutionTimeout = null);
 
     internal sealed record CopilotToolExecutionHookRegistrationDefinition(
         string SourceId,
