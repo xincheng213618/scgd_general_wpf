@@ -182,6 +182,7 @@ namespace ColorVision.Copilot
                     return Cancelled(
                         request,
                         childRun,
+                        result,
                         committedTokens,
                         result.Budget.UsedEstimatedUsage);
                 if (childRun.ResumeCheckpoint == null || result.SessionResumed)
@@ -203,6 +204,7 @@ namespace ColorVision.Copilot
                 return Cancelled(
                     request,
                     childRun,
+                    result: null,
                     lease.RequestTokenBudget,
                     usedEstimatedUsage: true);
             }
@@ -248,48 +250,13 @@ namespace ColorVision.Copilot
                     : result.StopReason is CopilotAgentStopReason.Cancelled or CopilotAgentStopReason.Paused
                         ? CopilotToolFailureKind.Cancelled
                         : CopilotToolFailureKind.Internal,
-                DelegatedRunUsage = new CopilotDelegatedRunUsage
-                {
-                    RoleId = _role.Id,
-                    AgentName = childRun.Agent,
-                    RunId = childRun.RunId,
-                    ResumeFromRunId = childRun.ResumeFromRunId,
-                    Model = effectiveModel,
-                    ReasoningEffort = effectiveReasoningEffortToken,
-                    RequestTokenBudget = childRun.RequestTokenBudget,
-                    QueueDurationMs = childRun.QueueDurationMs,
-                    StopReason = result.StopReason,
-                    ToolCalls = result.Budget.ToolCalls,
-                    DeliveredSteeringCount = Math.Max(0, result.DeliveredSteeringCount),
-                    UndeliveredSteeringCount = Math.Max(0, result.UndeliveredSteeringCount),
-                    PeakEstimatedInputTokens = result.Budget.PeakEstimatedInputTokens,
-                    ProviderRetryCount = result.Budget.ProviderRetryCount,
-                    ProviderRateLimitRetryCount = result.Budget.ProviderRateLimitRetryCount,
-                    ProviderRetryDelayMs = result.Budget.ProviderRetryDelayMs,
-                    ProviderFirstContentTimeoutCount =
-                        result.Budget.ProviderFirstContentTimeoutCount,
-                    ProviderStreamInactivityTimeoutCount =
-                        result.Budget.ProviderStreamInactivityTimeoutCount,
-                    ProviderResponseCount = result.Budget.ProviderResponseCount,
-                    ProviderFirstResponseLatencyTotalMs = result.Budget.ProviderFirstResponseLatencyTotalMs,
-                    ProviderFirstResponseLatencyMaxMs = result.Budget.ProviderFirstResponseLatencyMaxMs,
-                    ProviderCallDurationTotalMs = result.Budget.ProviderCallDurationTotalMs,
-                    ProviderStreamChunkCount = result.Budget.ProviderStreamChunkCount,
-                    ProviderStreamInterChunkLatencyCount = result.Budget.ProviderStreamInterChunkLatencyCount,
-                    ProviderStreamInterChunkLatencyTotalMs = result.Budget.ProviderStreamInterChunkLatencyTotalMs,
-                    ProviderStreamInterChunkLatencyMaxMs = result.Budget.ProviderStreamInterChunkLatencyMaxMs,
-                    ContextRecoveryCount = result.Budget.ContextRecoveryCount,
-                    ContextRecoveryEstimatedInputTokensBefore = result.Budget.ContextRecoveryEstimatedInputTokensBefore,
-                    ContextRecoveryEstimatedInputTokensAfter = result.Budget.ContextRecoveryEstimatedInputTokensAfter,
-                    Usage = result.Usage,
-                    ConsumedTokens = result.Budget.ConsumedTokens,
-                    ProviderCalls = result.Budget.ProviderCalls,
-                    UsedEstimatedUsage = result.Budget.UsedEstimatedUsage,
-                    RegisteredToolCount = result.Budget.RegisteredToolCount,
-                    AvailableToolCount = result.Budget.AvailableToolCount,
-                    AvailableToolDefinitionCharacters = result.Budget.AvailableToolDefinitionCharacters,
-                    HarnessInstructionCharacters = result.Budget.HarnessInstructionCharacters,
-                },
+                DelegatedRunUsage = CreateDelegatedRunUsage(
+                    request,
+                    childRun,
+                    result,
+                    result.StopReason,
+                    result.Budget.ConsumedTokens,
+                    result.Budget.UsedEstimatedUsage),
                 DelegatedAnswer = new CopilotDelegatedAnswer
                 {
                     Text = result.Answer,
@@ -339,6 +306,7 @@ namespace ColorVision.Copilot
         private CopilotToolResult Cancelled(
             CopilotAgentRequest request,
             CopilotSubagentRunRequest runRequest,
+            CopilotSubagentResult? result,
             long consumedTokens,
             bool usedEstimatedUsage)
         {
@@ -349,26 +317,70 @@ namespace ColorVision.Copilot
                 Summary = $"{_role.DisplayName} 子 Agent 已按用户请求停止；父 Agent 将继续运行。",
                 ErrorMessage = "The delegated subagent was stopped by the user. Continue the parent task without retrying it unless the user explicitly asks.",
                 FailureKind = CopilotToolFailureKind.Cancelled,
-                DelegatedRunUsage = new CopilotDelegatedRunUsage
-                {
-                    RoleId = _role.Id,
-                    AgentName = runRequest.Agent,
-                    RunId = runRequest.RunId,
-                    ResumeFromRunId = runRequest.ResumeFromRunId,
-                    Model = CopilotSubagentRunner.ResolveChildModel(request, runRequest),
-                    ReasoningEffort = FormatEffectiveReasoningEffort(
-                        CopilotSubagentRunner.ResolveChildReasoningEffort(request, runRequest)),
-                    RequestTokenBudget = runRequest.RequestTokenBudget,
-                    QueueDurationMs = runRequest.QueueDurationMs,
-                    StopReason = CopilotAgentStopReason.Cancelled,
-                    ConsumedTokens = Math.Max(0, consumedTokens),
-                    UsedEstimatedUsage = usedEstimatedUsage,
-                },
+                DelegatedRunUsage = CreateDelegatedRunUsage(
+                    request,
+                    runRequest,
+                    result,
+                    CopilotAgentStopReason.Cancelled,
+                    consumedTokens,
+                    usedEstimatedUsage),
                 DelegatedAnswer = new CopilotDelegatedAnswer
                 {
                     StopReason = CopilotAgentStopReason.Cancelled,
                 },
                 SuppressModelOutput = !request.CodexInterruptMessageEnabled,
+            };
+        }
+
+        private CopilotDelegatedRunUsage CreateDelegatedRunUsage(
+            CopilotAgentRequest request,
+            CopilotSubagentRunRequest runRequest,
+            CopilotSubagentResult? result,
+            CopilotAgentStopReason stopReason,
+            long consumedTokens,
+            bool usedEstimatedUsage)
+        {
+            var budget = result?.Budget ?? new CopilotAgentBudgetSnapshot();
+            return new CopilotDelegatedRunUsage
+            {
+                RoleId = _role.Id,
+                AgentName = runRequest.Agent,
+                RunId = runRequest.RunId,
+                ResumeFromRunId = runRequest.ResumeFromRunId,
+                Model = CopilotSubagentRunner.ResolveChildModel(request, runRequest),
+                ReasoningEffort = FormatEffectiveReasoningEffort(
+                    CopilotSubagentRunner.ResolveChildReasoningEffort(request, runRequest)),
+                RequestTokenBudget = runRequest.RequestTokenBudget,
+                QueueDurationMs = runRequest.QueueDurationMs,
+                StopReason = stopReason,
+                ToolCalls = budget.ToolCalls,
+                DeliveredSteeringCount = Math.Max(0, result?.DeliveredSteeringCount ?? 0),
+                UndeliveredSteeringCount = Math.Max(0, result?.UndeliveredSteeringCount ?? 0),
+                PeakEstimatedInputTokens = budget.PeakEstimatedInputTokens,
+                ProviderRetryCount = budget.ProviderRetryCount,
+                ProviderRateLimitRetryCount = budget.ProviderRateLimitRetryCount,
+                ProviderRetryDelayMs = budget.ProviderRetryDelayMs,
+                ProviderFirstContentTimeoutCount = budget.ProviderFirstContentTimeoutCount,
+                ProviderStreamInactivityTimeoutCount = budget.ProviderStreamInactivityTimeoutCount,
+                ProviderResponseCount = budget.ProviderResponseCount,
+                ProviderFirstResponseLatencyTotalMs = budget.ProviderFirstResponseLatencyTotalMs,
+                ProviderFirstResponseLatencyMaxMs = budget.ProviderFirstResponseLatencyMaxMs,
+                ProviderCallDurationTotalMs = budget.ProviderCallDurationTotalMs,
+                ProviderStreamChunkCount = budget.ProviderStreamChunkCount,
+                ProviderStreamInterChunkLatencyCount = budget.ProviderStreamInterChunkLatencyCount,
+                ProviderStreamInterChunkLatencyTotalMs = budget.ProviderStreamInterChunkLatencyTotalMs,
+                ProviderStreamInterChunkLatencyMaxMs = budget.ProviderStreamInterChunkLatencyMaxMs,
+                ContextRecoveryCount = budget.ContextRecoveryCount,
+                ContextRecoveryEstimatedInputTokensBefore = budget.ContextRecoveryEstimatedInputTokensBefore,
+                ContextRecoveryEstimatedInputTokensAfter = budget.ContextRecoveryEstimatedInputTokensAfter,
+                Usage = result?.Usage ?? CopilotTokenUsage.Empty,
+                ConsumedTokens = Math.Max(0, consumedTokens),
+                ProviderCalls = budget.ProviderCalls,
+                UsedEstimatedUsage = usedEstimatedUsage,
+                RegisteredToolCount = budget.RegisteredToolCount,
+                AvailableToolCount = budget.AvailableToolCount,
+                AvailableToolDefinitionCharacters = budget.AvailableToolDefinitionCharacters,
+                HarnessInstructionCharacters = budget.HarnessInstructionCharacters,
             };
         }
 
