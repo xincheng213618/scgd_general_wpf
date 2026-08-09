@@ -9,6 +9,8 @@ namespace ColorVision.Copilot
         IReadOnlyList<string> Issues)
     {
         public bool HasServers => Servers.Count > 0;
+
+        public bool RequiresPrompt => HasServers || Issues.Count > 0;
     }
 
     internal static class CopilotAgentSkillMcpDependencyInstaller
@@ -195,6 +197,41 @@ namespace ColorVision.Copilot
             (conversationId ?? string.Empty).Trim()
             + "|streamable_http|"
             + (server?.Endpoint ?? string.Empty).Trim();
+
+        public static CopilotAgentSkillMcpDependencyInstallPlan CreatePendingPromptPlan(
+            CopilotAgentSkillMcpDependencyInstallPlan plan,
+            string conversationId,
+            ISet<string>? acknowledgedPromptKeys)
+        {
+            ArgumentNullException.ThrowIfNull(plan);
+            var acknowledged = acknowledgedPromptKeys ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            return new CopilotAgentSkillMcpDependencyInstallPlan(
+                plan.Servers
+                    .Where(server => !acknowledged.Contains(CreatePromptKey(conversationId, server)))
+                    .Select(server => server.Clone())
+                    .ToArray(),
+                plan.Issues
+                    .Where(issue => !acknowledged.Contains(CreateIssuePromptKey(conversationId, issue)))
+                    .ToArray());
+        }
+
+        public static void AcknowledgePromptPlan(
+            CopilotAgentSkillMcpDependencyInstallPlan plan,
+            string conversationId,
+            ISet<string> acknowledgedPromptKeys)
+        {
+            ArgumentNullException.ThrowIfNull(plan);
+            ArgumentNullException.ThrowIfNull(acknowledgedPromptKeys);
+            foreach (var server in plan.Servers)
+                acknowledgedPromptKeys.Add(CreatePromptKey(conversationId, server));
+            foreach (var issue in plan.Issues)
+                acknowledgedPromptKeys.Add(CreateIssuePromptKey(conversationId, issue));
+        }
+
+        private static string CreateIssuePromptKey(string conversationId, string issue) =>
+            (conversationId ?? string.Empty).Trim()
+            + "|issue|"
+            + (issue ?? string.Empty).Trim();
 
         private static string FormatStatus(
             CopilotAgentSkillMcpDependencyStatus status,

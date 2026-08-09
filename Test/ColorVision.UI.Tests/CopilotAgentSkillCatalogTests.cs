@@ -960,6 +960,51 @@ public sealed class CopilotAgentSkillCatalogTests
     }
 
     [Fact]
+    public void SkillMcpDependencyIssueOnlyPlansRequireOneAcknowledgementPerConversation()
+    {
+        var dependency = new CopilotAgentSkillDependency(
+            "mcp",
+            "docs",
+            "Docs",
+            Url: "https://example.test/docs-mcp");
+        var disabledPlan = CopilotAgentSkillMcpDependencyInstaller.CreatePlan(
+            [dependency],
+            [new CopilotMcpClientServerConfig
+            {
+                Name = "docs-disabled",
+                Endpoint = dependency.Url,
+                Enabled = false,
+            }]);
+        var acknowledgedPromptKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var issueOnlyPrompt = CopilotAgentSkillMcpDependencyInstaller.CreatePendingPromptPlan(
+            disabledPlan,
+            "conversation-1",
+            acknowledgedPromptKeys);
+        Assert.True(issueOnlyPrompt.RequiresPrompt);
+        Assert.False(issueOnlyPrompt.HasServers);
+        Assert.Single(issueOnlyPrompt.Issues);
+        string prompt = CopilotChatViewModel.FormatUnresolvedSkillMcpDependencyPrompt(
+            [new CopilotAgentSkillCatalogItem("docs-skill", "Docs skill")],
+            issueOnlyPrompt.Issues);
+        Assert.Contains("MCP 依赖无法自动配置", prompt, StringComparison.Ordinal);
+        Assert.Contains("仍要在不配置这些依赖的情况下发送", prompt, StringComparison.Ordinal);
+        Assert.Contains("保留草稿", prompt, StringComparison.Ordinal);
+
+        CopilotAgentSkillMcpDependencyInstaller.AcknowledgePromptPlan(
+            issueOnlyPrompt,
+            "conversation-1",
+            acknowledgedPromptKeys);
+        Assert.False(CopilotAgentSkillMcpDependencyInstaller.CreatePendingPromptPlan(
+            disabledPlan,
+            "conversation-1",
+            acknowledgedPromptKeys).RequiresPrompt);
+        Assert.True(CopilotAgentSkillMcpDependencyInstaller.CreatePendingPromptPlan(
+            disabledPlan,
+            "conversation-2",
+            acknowledgedPromptKeys).RequiresPrompt);
+    }
+
+    [Fact]
     public void SkillMcpDependencyInstallerResolvesPersistedRetryReferenceAndUniqueMentions()
     {
         var root = Path.Combine(Path.GetTempPath(), "copilot-skill-mcp-resolve");
