@@ -738,6 +738,9 @@ public sealed class CopilotAgentSkillCatalogTests
             Assert.Equal("mcp", dependency.Type);
             Assert.Equal("openaiDeveloperDocs", dependency.Value);
             Assert.Equal("OpenAI Docs MCP server", dependency.Description);
+            Assert.Equal("streamable_http", dependency.Transport);
+            Assert.Equal("", dependency.Command);
+            Assert.Equal("https://developers.openai.com/mcp", dependency.Url);
 
             var suggestion = Assert.Single(CopilotLocalCommandCatalog.Suggest("$document", [skill]));
             Assert.Contains("Document Review · Review the current document · 依赖 1", suggestion.Description, StringComparison.Ordinal);
@@ -748,7 +751,10 @@ public sealed class CopilotAgentSkillCatalogTests
                 metadataCharacterBudget: 1_024,
                 availableSkills: [skill]);
             Assert.Contains("$document-review [项目] — Document Review · Review the current document", report, StringComparison.Ordinal);
-            Assert.Contains("依赖：mcp:openaiDeveloperDocs（OpenAI Docs MCP server）", report, StringComparison.Ordinal);
+            Assert.Contains(
+                "依赖：mcp:openaiDeveloperDocs（OpenAI Docs MCP server） [streamable_http · 可安全配置]",
+                report,
+                StringComparison.Ordinal);
         }
         finally
         {
@@ -756,6 +762,75 @@ public sealed class CopilotAgentSkillCatalogTests
             DeleteTemporaryDirectory(applicationBaseDirectory);
             DeleteTemporaryDirectory(userProfileDirectory);
         }
+    }
+
+    [Fact]
+    public void SkillMcpDependencyPolicyCreatesOnlySafeStreamableHttpConfig()
+    {
+        var dependency = new CopilotAgentSkillDependency(
+            "mcp",
+            "openaiDeveloperDocs",
+            "OpenAI Docs MCP server",
+            "streamable_http",
+            "",
+            "https://developers.openai.com/mcp");
+
+        Assert.True(CopilotAgentSkillMcpDependencyPolicy.TryCreateServerConfig(
+            dependency,
+            out var server,
+            out var error), error);
+        Assert.Equal("openaiDeveloperDocs", server.Name);
+        Assert.Equal("https://developers.openai.com/mcp", server.Endpoint);
+        Assert.Equal(CopilotMcpClientAccessPolicy.RequireApproval, server.AccessPolicy);
+        Assert.Equal(
+            CopilotAgentSkillMcpDependencyStatus.Installable,
+            CopilotAgentSkillMcpDependencyPolicy.Evaluate(dependency));
+        Assert.Equal(
+            CopilotAgentSkillMcpDependencyStatus.Installed,
+            CopilotAgentSkillMcpDependencyPolicy.Evaluate(
+                dependency,
+                [new CopilotMcpClientServerConfig
+                {
+                    Name = "docs-alias",
+                    Endpoint = "https://developers.openai.com/mcp",
+                }]));
+        Assert.Equal(
+            CopilotAgentSkillMcpDependencyStatus.Installable,
+            CopilotAgentSkillMcpDependencyPolicy.Evaluate(
+                dependency,
+                [new CopilotMcpClientServerConfig
+                {
+                    Name = "openaiDeveloperDocs",
+                    Endpoint = "https://example.test/different-mcp",
+                }]));
+
+        var missingUrl = dependency with { Url = "" };
+        Assert.Equal(
+            CopilotAgentSkillMcpDependencyStatus.MissingInstallMetadata,
+            CopilotAgentSkillMcpDependencyPolicy.Evaluate(missingUrl));
+
+        var unsupportedTransport = dependency with
+        {
+            Transport = "stdio",
+            Command = "openai-docs-mcp",
+            Url = "",
+        };
+        Assert.Equal(
+            CopilotAgentSkillMcpDependencyStatus.UnsupportedTransport,
+            CopilotAgentSkillMcpDependencyPolicy.Evaluate(unsupportedTransport));
+        Assert.False(CopilotAgentSkillMcpDependencyPolicy.TryCreateServerConfig(
+            unsupportedTransport,
+            out _,
+            out _));
+
+        var insecureRemote = dependency with { Url = "http://developers.openai.com/mcp" };
+        Assert.Equal(
+            CopilotAgentSkillMcpDependencyStatus.InvalidConfiguration,
+            CopilotAgentSkillMcpDependencyPolicy.Evaluate(insecureRemote));
+        Assert.False(CopilotAgentSkillMcpDependencyPolicy.TryCreateServerConfig(
+            insecureRemote,
+            out _,
+            out _));
     }
 
     [Fact]
@@ -780,7 +855,10 @@ public sealed class CopilotAgentSkillCatalogTests
                       {
                         "type": "env_var",
                         "value": "SAMPLE_TOKEN",
-                        "description": "Sample token"
+                        "description": "Sample token",
+                        "transport": "stdio",
+                        "command": "sample-tool",
+                        "url": "https://example.test/mcp"
                       }
                     ]
                   }
@@ -799,6 +877,9 @@ public sealed class CopilotAgentSkillCatalogTests
             var dependency = Assert.Single(skill.Dependencies);
             Assert.Equal("env_var", dependency.Type);
             Assert.Equal("SAMPLE_TOKEN", dependency.Value);
+            Assert.Equal("stdio", dependency.Transport);
+            Assert.Equal("sample-tool", dependency.Command);
+            Assert.Equal("https://example.test/mcp", dependency.Url);
         }
         finally
         {

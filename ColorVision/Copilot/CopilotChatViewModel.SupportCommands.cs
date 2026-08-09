@@ -75,7 +75,8 @@ namespace ColorVision.Copilot
                 overrides,
                 availableSkills,
                 forceReload,
-                pathOverrides);
+                pathOverrides,
+                _config.ExternalMcpServers.ToArray());
         }
 
         private IReadOnlyList<CopilotAgentSkillCatalogItem> DiscoverAgentSkillCatalog(

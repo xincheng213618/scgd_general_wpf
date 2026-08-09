@@ -32,12 +32,19 @@ namespace ColorVision.Copilot
             IReadOnlyDictionary<string, CopilotAgentSkillOverrideState>? overrides = null,
             IReadOnlyList<CopilotAgentSkillCatalogItem>? availableSkills = null,
             bool catalogReloaded = false,
-            IReadOnlyDictionary<string, CopilotAgentSkillOverrideState>? pathOverrides = null)
+            IReadOnlyDictionary<string, CopilotAgentSkillOverrideState>? pathOverrides = null,
+            IReadOnlyList<CopilotMcpClientServerConfig>? externalMcpServers = null)
         {
             ArgumentNullException.ThrowIfNull(snapshot);
             var builder = new StringBuilder();
             builder.AppendLine("/skills · Agent Skill 目录与使用快照");
-            AppendCatalog(builder, availableSkills, overrides, pathOverrides, catalogReloaded);
+            AppendCatalog(
+                builder,
+                availableSkills,
+                overrides,
+                pathOverrides,
+                catalogReloaded,
+                externalMcpServers);
             builder.AppendLine()
                 .AppendLine("本地使用证据")
                 .AppendLine(FormatSummary(snapshot));
@@ -61,7 +68,8 @@ namespace ColorVision.Copilot
             IReadOnlyList<CopilotAgentSkillCatalogItem>? availableSkills,
             IReadOnlyDictionary<string, CopilotAgentSkillOverrideState>? overrides,
             IReadOnlyDictionary<string, CopilotAgentSkillOverrideState>? pathOverrides,
-            bool catalogReloaded)
+            bool catalogReloaded,
+            IReadOnlyList<CopilotMcpClientServerConfig>? externalMcpServers)
         {
             var items = availableSkills ?? Array.Empty<CopilotAgentSkillCatalogItem>();
             var enabledCount = items.Count(item => CopilotAgentSkillOverrideConfig.ResolveState(
@@ -106,7 +114,8 @@ namespace ColorVision.Copilot
                 if (item.Dependencies.Count > 0)
                 {
                     builder.Append("  依赖：")
-                        .AppendLine(string.Join("；", item.Dependencies.Select(FormatDependency)));
+                        .AppendLine(string.Join("；", item.Dependencies.Select(dependency =>
+                            FormatDependency(dependency, externalMcpServers))));
                 }
             }
         }
@@ -114,12 +123,28 @@ namespace ColorVision.Copilot
         private static string FormatDisplayName(string displayName) =>
             string.IsNullOrWhiteSpace(displayName) ? string.Empty : displayName + " · ";
 
-        private static string FormatDependency(CopilotAgentSkillDependency dependency)
+        private static string FormatDependency(
+            CopilotAgentSkillDependency dependency,
+            IReadOnlyList<CopilotMcpClientServerConfig>? externalMcpServers)
         {
             var description = string.IsNullOrWhiteSpace(dependency.Description)
                 ? string.Empty
                 : $"（{dependency.Description}）";
-            return $"{dependency.Type}:{dependency.Value}{description}";
+            if (!string.Equals(dependency.Type, "mcp", StringComparison.OrdinalIgnoreCase))
+                return $"{dependency.Type}:{dependency.Value}{description}";
+
+            var transport = CopilotAgentSkillMcpDependencyPolicy.ResolveTransport(dependency);
+            var status = CopilotAgentSkillMcpDependencyPolicy.Evaluate(dependency, externalMcpServers);
+            var statusLabel = status switch
+            {
+                CopilotAgentSkillMcpDependencyStatus.Installed => "已配置",
+                CopilotAgentSkillMcpDependencyStatus.Installable => "可安全配置",
+                CopilotAgentSkillMcpDependencyStatus.MissingInstallMetadata => "缺少 URL",
+                CopilotAgentSkillMcpDependencyStatus.UnsupportedTransport => "当前传输不支持",
+                CopilotAgentSkillMcpDependencyStatus.InvalidConfiguration => "配置无效",
+                _ => "未识别",
+            };
+            return $"{dependency.Type}:{dependency.Value}{description} [{transport} · {statusLabel}]";
         }
 
         private static string FormatSource(CopilotAgentSkillSourceKind sourceKind)

@@ -7,7 +7,13 @@ using System.Text.Json;
 
 namespace ColorVision.Copilot
 {
-    internal sealed record CopilotAgentSkillDependency(string Type, string Value, string Description);
+    internal sealed record CopilotAgentSkillDependency(
+        string Type,
+        string Value,
+        string Description,
+        string Transport = "",
+        string Command = "",
+        string Url = "");
 
     internal sealed class CopilotAgentSkillMetadata
     {
@@ -114,14 +120,28 @@ namespace ColorVision.Copilot
             string dependencyType = string.Empty;
             string dependencyValue = string.Empty;
             string dependencyDescription = string.Empty;
+            string dependencyTransport = string.Empty;
+            string dependencyCommand = string.Empty;
+            string dependencyUrl = string.Empty;
 
             void CommitDependency()
             {
                 if (dependencies.Count < MaxDependencies && dependencyType.Length > 0 && dependencyValue.Length > 0)
-                    dependencies.Add(new CopilotAgentSkillDependency(dependencyType, dependencyValue, dependencyDescription));
+                {
+                    dependencies.Add(new CopilotAgentSkillDependency(
+                        dependencyType,
+                        dependencyValue,
+                        dependencyDescription,
+                        dependencyTransport,
+                        dependencyCommand,
+                        dependencyUrl));
+                }
                 dependencyType = string.Empty;
                 dependencyValue = string.Empty;
                 dependencyDescription = string.Empty;
+                dependencyTransport = string.Empty;
+                dependencyCommand = string.Empty;
+                dependencyUrl = string.Empty;
             }
 
             foreach (var rawLine in content.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries))
@@ -197,6 +217,15 @@ namespace ColorVision.Copilot
                     case "description":
                         dependencyDescription = NormalizeText(value, MaxDescriptionCharacters);
                         break;
+                    case "transport":
+                        dependencyTransport = NormalizeText(value, MaxDependencyCharacters);
+                        break;
+                    case "command":
+                        dependencyCommand = NormalizeText(value, MaxDependencyCharacters);
+                        break;
+                    case "url":
+                        dependencyUrl = NormalizeText(value, MaxDependencyCharacters);
+                        break;
                 }
             }
             CommitDependency();
@@ -232,7 +261,10 @@ namespace ColorVision.Copilot
                 dependencies.Add(new CopilotAgentSkillDependency(
                     type,
                     value,
-                    ReadString(item, "description", "description", MaxDescriptionCharacters)));
+                    ReadString(item, "description", "description", MaxDescriptionCharacters),
+                    ReadString(item, "transport", "transport", MaxDependencyCharacters),
+                    ReadString(item, "command", "command", MaxDependencyCharacters),
+                    ReadString(item, "url", "url", MaxDependencyCharacters)));
             }
             return dependencies;
         }
