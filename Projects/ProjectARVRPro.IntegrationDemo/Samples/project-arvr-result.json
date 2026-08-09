@@ -64,6 +64,148 @@
         "TestResult": true
       }
     },
+    "FieldOfViewTestResults": {
+      "White": {
+        "HorizontalFieldOfViewAngle": {
+          "Name": "Horizontal_Field_Of_View_Angle",
+          "TestValue": "21.63",
+          "Value": 21.63,
+          "LowLimit": 21.0,
+          "UpLimit": 22.0,
+          "Unit": "degree",
+          "TestResult": true
+        },
+        "VerticalFieldOfViewAngle": {
+          "Name": "Vertical_Field of_View_Angle",
+          "TestValue": "15.42",
+          "Value": 15.42,
+          "LowLimit": 15.0,
+          "UpLimit": 16.0,
+          "Unit": "degree",
+          "TestResult": true
+        },
+        "DiagonalFieldOfViewAngle": {
+          "Name": "Diagonal_Field_of_View_Angle",
+          "TestValue": "26.47",
+          "Value": 26.47,
+          "LowLimit": 26.0,
+          "UpLimit": 27.0,
+          "Unit": "degree",
+          "TestResult": true
+        }
+      }
+    },
+    "LuminanceChromaticityTestResults": {
+      "White": {
+        "PoixyuvDatas": [
+          {
+            "Id": 5,
+            "Name": "P_5",
+            "CCT": 6520.4,
+            "Wave": 0.0,
+            "X": 741.2,
+            "Y": 812.5,
+            "Z": 826.8,
+            "u": 0.1978,
+            "v": 0.4681,
+            "x": 0.3127,
+            "y": 0.3290
+          }
+        ],
+        "LuminanceUniformity": {
+          "Name": "LuminanceUniformity",
+          "TestValue": "78.4",
+          "Value": 78.4,
+          "LowLimit": 65.0,
+          "UpLimit": 0.0,
+          "Unit": "%",
+          "TestResult": true
+        },
+        "ColorUniformity": {
+          "Name": "ColorUniformity",
+          "TestValue": "0.011",
+          "Value": 0.011,
+          "LowLimit": 0.0,
+          "UpLimit": 0.02,
+          "Unit": "None",
+          "TestResult": true
+        },
+        "CenterCorrelatedColorTemperature": {
+          "Name": "CenterCorrelatedColorTemperature",
+          "TestValue": "6520.4",
+          "Value": 6520.4,
+          "LowLimit": 6000.0,
+          "UpLimit": 7000.0,
+          "Unit": "K",
+          "TestResult": true
+        },
+        "CenterLuminance": {
+          "Name": "CenterLuminance",
+          "TestValue": "812.5",
+          "Value": 812.5,
+          "LowLimit": 700.0,
+          "UpLimit": 900.0,
+          "Unit": "cd/m2",
+          "TestResult": true
+        },
+        "CenterCIE1931ChromaticCoordinatesx": {
+          "Name": "CenterCIE1931ChromaticCoordinatesx",
+          "TestValue": "0.3127",
+          "Value": 0.3127,
+          "LowLimit": 0.30,
+          "UpLimit": 0.33,
+          "Unit": "None",
+          "TestResult": true
+        },
+        "CenterCIE1931ChromaticCoordinatesy": {
+          "Name": "CenterCIE1931ChromaticCoordinatesy",
+          "TestValue": "0.3290",
+          "Value": 0.329,
+          "LowLimit": 0.31,
+          "UpLimit": 0.35,
+          "Unit": "None",
+          "TestResult": true
+        },
+        "CenterCIE1976ChromaticCoordinatesu": {
+          "Name": "CenterCIE1976ChromaticCoordinatesu",
+          "TestValue": "0.1978",
+          "Value": 0.1978,
+          "LowLimit": 0.18,
+          "UpLimit": 0.22,
+          "Unit": "None",
+          "TestResult": true
+        },
+        "CenterCIE1976ChromaticCoordinatesv": {
+          "Name": "CenterCIE1976ChromaticCoordinatesv",
+          "TestValue": "0.4681",
+          "Value": 0.4681,
+          "LowLimit": 0.44,
+          "UpLimit": 0.49,
+          "Unit": "None",
+          "TestResult": true
+        }
+      }
+    },
+    "ChessboardTestResult": {
+      "ChessboardContrast": {
+        "Name": "ChessboardContrast",
+        "TestValue": "142.6",
+        "Value": 142.6,
+        "LowLimit": 100.0,
+        "UpLimit": 0.0,
+        "Unit": "None",
+        "TestResult": true
+      },
+      "AverageBlackLuminance": {
+        "Name": "AverageBlackLuminance",
+        "TestValue": "5.7",
+        "Value": 5.7,
+        "LowLimit": 0.0,
+        "UpLimit": 8.0,
+        "Unit": "cd/m2",
+        "TestResult": true
+      }
+    },
     "DistortionTestResult": {
       "HorizontalTVDistortion": {
         "Name": "HorizontalTVDistortion",
@@ -84,32 +226,43 @@
         "TestResult": true
       }
     },
-    "DynamicTestResults": {
-      "MTFH1": [
-        {
-          "Name": "P_1_H_1",
-          "TestValue": "0.72",
-          "Value": 0.72,
+    "DynamicMTFHV058TestResults": {
+      "MTF058_Main": {
+        "MTF_HV_H_Center_0F": {
+          "Name": "MTF_HV_H_Center_0F",
+          "TestValue": "0.76",
+          "Value": 0.76,
           "LowLimit": 0.65,
           "UpLimit": 0.0,
-          "Unit": "None",
+          "Unit": "%",
           "TestResult": true
         },
-        {
-          "Name": "P_2_H_1",
-          "TestValue": "0.68",
-          "Value": 0.68,
+        "MTF_HV_Center_0F": {
+          "Name": "MTF_HV_Center_0F",
+          "TestValue": "0.75",
+          "Value": 0.75,
           "LowLimit": 0.65,
           "UpLimit": 0.0,
-          "Unit": "None",
+          "Unit": "%",
+          "TestResult": true
+        },
+        "MTF_HV_V_Center_0F": {
+          "Name": "MTF_HV_V_Center_0F",
+          "TestValue": "0.74",
+          "Value": 0.74,
+          "LowLimit": 0.65,
+          "UpLimit": 0.0,
+          "Unit": "%",
           "TestResult": true
         }
-      ],
-      "MTFV1": [
+      }
+    },
+    "DynamicTestResults": {
+      "MTFH": [
         {
-          "Name": "P_1_V_1",
-          "TestValue": "0.71",
-          "Value": 0.71,
+          "Name": "MTF_H_Center_0F",
+          "TestValue": "0.72",
+          "Value": 0.72,
           "LowLimit": 0.65,
           "UpLimit": 0.0,
           "Unit": "None",
@@ -117,6 +270,46 @@
         }
       ]
     },
+    "DynamicPoixyuvDatas": {
+      "POI": [
+        {
+          "Id": 9,
+          "Name": "P_9",
+          "CCT": 6488.2,
+          "Wave": 0.0,
+          "X": 729.6,
+          "Y": 798.1,
+          "Z": 814.3,
+          "u": 0.1981,
+          "v": 0.4677,
+          "x": 0.3131,
+          "y": 0.3284
+        }
+      ]
+    },
+    "DynamicScreenDefectResults": {
+      "ScreenDefects": {
+        "AvgBrightness": 812.5,
+        "DefectCount": 1,
+        "GradeLevel": "A",
+        "TimeStamp": "2026-08-10T09:30:00+08:00",
+        "Defects": [
+          {
+            "Id": 1,
+            "Type": "DarkSpot",
+            "X": 320.5,
+            "Y": 180.25,
+            "Width": 4.0,
+            "Height": 3.5,
+            "Area": 14.0,
+            "Contrast": 0.18,
+            "MeanValue": 624.2,
+            "LocalMean": 812.1
+          }
+        ]
+      }
+    },
+    "Msg": "",
     "TotalResult": true,
     "TotalResultString": "PASS"
   }

@@ -37,6 +37,120 @@ public sealed class ResultStatisticsTests
     }
 
     [Fact]
+    public void AllPeriodUsesAnUnboundedRangeAndHasNoNavigationShift()
+    {
+        DateTime anchor = new(2026, 8, 9, 16, 30, 0);
+        ResultStatisticsPeriodRange range = ResultStatisticsPeriod.GetRange(ResultStatisticsPeriodMode.All, anchor);
+
+        Assert.Equal(DateTime.MinValue, range.From);
+        Assert.Equal(DateTime.MaxValue, range.ToExclusive);
+        Assert.Equal("全部记录", range.ToDisplayText(ResultStatisticsPeriodMode.All));
+        Assert.Equal(anchor.Date, ResultStatisticsPeriod.ShiftAnchor(ResultStatisticsPeriodMode.All, anchor, 1));
+        Assert.Equal(0, (int)ResultStatisticsPeriodMode.Day);
+        Assert.Equal(1, (int)ResultStatisticsPeriodMode.Week);
+        Assert.Equal(2, (int)ResultStatisticsPeriodMode.Month);
+    }
+
+    [Fact]
+    public void MonthlyTrendBuilderFillsMissingMonthsAndUsesWeightedCt()
+    {
+        var statistics = new ResultStatistics
+        {
+            DailyRows =
+            [
+                new ResultStatisticsDailyRow { Date = new DateTime(2026, 1, 3), TotalCount = 2, AverageCtMilliseconds = 1_000 },
+                new ResultStatisticsDailyRow { Date = new DateTime(2026, 1, 4), TotalCount = 1, AverageCtMilliseconds = 4_000 },
+                new ResultStatisticsDailyRow { Date = new DateTime(2026, 3, 1), TotalCount = 1, AverageCtMilliseconds = 2_000 },
+            ],
+        };
+
+        IReadOnlyList<ResultStatisticsTrendPoint> all = ResultStatisticsTrendBuilder.BuildMonthly(statistics);
+
+        Assert.Equal(["2026/01", "2026/02", "2026/03"], all.Select(item => item.Label));
+        Assert.Equal(new DateTime(2026, 1, 1), all[0].Time);
+        Assert.Equal(3, all[0].TotalCount);
+        Assert.Equal(2_000, all[0].AverageCtMilliseconds);
+        Assert.Equal(0, all[1].TotalCount);
+    }
+
+    [Fact]
+    public void DetailTrendBuilderKeepsEveryRecordInStableCompletionOrder()
+    {
+        DateTime completion = new(2026, 8, 9, 8, 0, 0);
+        ResultStatisticsSample[] samples =
+        [
+            new() { Id = 2, StartTime = completion.AddSeconds(1), EndTime = completion },
+            new() { Id = 3, StartTime = completion.AddMinutes(1).AddSeconds(-2), EndTime = completion.AddMinutes(1) },
+            new() { Id = 1, StartTime = completion.AddSeconds(-1), EndTime = completion },
+        ];
+
+        IReadOnlyList<ResultStatisticsTrendPoint> points = ResultStatisticsTrendBuilder.BuildDetails(
+            samples,
+            ResultStatisticsPeriodMode.Day);
+
+        Assert.Equal(3, points.Count);
+        Assert.All(points, item => Assert.Equal(1, item.TotalCount));
+        Assert.Equal([1_000d, 0d, 2_000d], points.Select(item => item.AverageCtMilliseconds));
+        Assert.Equal([completion, completion, completion.AddMinutes(1)], points.Select(item => item.Time));
+        Assert.Equal(["08:00:00", "08:00:00", "08:01:00"], points.Select(item => item.Label));
+    }
+
+    [Fact]
+    public void DetailTrendBuilderKeepsTenThousandPointsWithoutSampling()
+    {
+        DateTime start = new(2026, 8, 1);
+        ResultStatisticsSample[] samples = Enumerable.Range(0, 10_000)
+            .Select(index => new ResultStatisticsSample
+            {
+                Id = index + 1,
+                StartTime = start.AddSeconds(index * 10),
+                EndTime = start.AddSeconds(index * 10 + 2),
+            })
+            .ToArray();
+
+        IReadOnlyList<ResultStatisticsTrendPoint> points = ResultStatisticsTrendBuilder.BuildDetails(
+            samples,
+            ResultStatisticsPeriodMode.Month);
+
+        Assert.Equal(10_000, points.Count);
+        Assert.Equal(samples[^1].EndTime, points[^1].Time);
+        Assert.All(points, item => Assert.Equal(2_000d, item.AverageCtMilliseconds));
+    }
+
+    [Fact]
+    public void StatisticsWindowStateRoundTripsAllIndependentSearches()
+    {
+        var state = new ResultStatisticsWindowState
+        {
+            SelectedTabIndex = 2,
+            HomePeriodMode = ResultStatisticsPeriodMode.All,
+            HomeAnchorDate = new DateTime(2026, 8, 1),
+            RecordPeriodMode = ResultStatisticsPeriodMode.Week,
+            RecordAnchorDate = new DateTime(2026, 7, 20),
+            RecordSn = "SN-123",
+            RecordResultIndex = 2,
+            FlowPeriodMode = ResultStatisticsPeriodMode.Month,
+            FlowAnchorDate = new DateTime(2026, 6, 1),
+            FlowName = "White1_Fast_Test",
+            FlowResultIndex = 1,
+        };
+
+        string json = Newtonsoft.Json.JsonConvert.SerializeObject(state);
+        ResultStatisticsWindowState restored = Newtonsoft.Json.JsonConvert.DeserializeObject<ResultStatisticsWindowState>(json)!;
+
+        Assert.Equal(state.SelectedTabIndex, restored.SelectedTabIndex);
+        Assert.Equal(state.HomePeriodMode, restored.HomePeriodMode);
+        Assert.Equal(state.RecordPeriodMode, restored.RecordPeriodMode);
+        Assert.Equal(state.RecordAnchorDate, restored.RecordAnchorDate);
+        Assert.Equal(state.RecordSn, restored.RecordSn);
+        Assert.Equal(state.RecordResultIndex, restored.RecordResultIndex);
+        Assert.Equal(state.FlowPeriodMode, restored.FlowPeriodMode);
+        Assert.Equal(state.FlowAnchorDate, restored.FlowAnchorDate);
+        Assert.Equal(state.FlowName, restored.FlowName);
+        Assert.Equal(state.FlowResultIndex, restored.FlowResultIndex);
+    }
+
+    [Fact]
     public void ObjectiveRecordUsesTheRealSessionStartTime()
     {
         DateTime sessionStart = DateTime.Now.AddSeconds(-5);
@@ -289,9 +403,77 @@ public sealed class ResultStatisticsTests
         Assert.Contains("IX_ObjectiveTestResultRecord_UpdateTime", indexNames);
         Assert.Contains("IX_ObjectiveTestResultRecord_TotalResult", indexNames);
         Assert.Contains("IX_ObjectiveTestResultRecord_IsFinalized_UpdateTime", indexNames);
+        Assert.Contains("IX_ObjectiveTestResultRecord_Statistics", indexNames);
         Assert.Contains("IX_ARVRReuslt_CreateTime", indexNames);
         Assert.Contains("IX_ARVRReuslt_SN_CreateTime", indexNames);
         Assert.Contains("IX_ARVRReuslt_SN_Id", indexNames);
+    }
+
+    [Fact]
+    public void DashboardUsesDetailPointsExceptForTheAllPeriod()
+    {
+        using var database = new TemporaryResultDatabase();
+        ResultStatisticsDataStore store = new(database.Path);
+        store.InitializeSchema();
+        database.Insert(
+            CreateRecord("SN-A", true, new DateTime(2026, 1, 3, 8, 0, 0), 1_000, "first", true),
+            CreateRecord("SN-B", false, new DateTime(2026, 1, 4, 8, 0, 0), 3_000, "second", true),
+            CreateRecord("SN-C", true, new DateTime(2026, 3, 1, 8, 0, 0), 2_000, "third", null),
+            CreateRecord("SN-D", true, new DateTime(2026, 4, 1, 8, 0, 0), 9_000, "unfinished", false));
+        database.InsertFlow(new ProjectARVRReuslt
+        {
+            SN = "SN-A",
+            Model = "White1_Fast_Test",
+            CreateTime = new DateTime(2025, 12, 1),
+            RunTime = 1_000,
+            Result = true,
+        });
+        database.InsertFlow(new ProjectARVRReuslt
+        {
+            SN = "SN-C",
+            Model = "White1_Fast_Test",
+            CreateTime = new DateTime(2026, 3, 1),
+            RunTime = 2_000,
+            Result = false,
+        });
+
+        ResultStatisticsPeriodRange range = ResultStatisticsPeriod.GetRange(ResultStatisticsPeriodMode.All, DateTime.Today);
+        var query = new ResultStatisticsQuery { From = range.From, ToExclusive = range.ToExclusive };
+        ResultStatisticsDashboard dashboard = store.QueryDashboard(query, ResultStatisticsPeriodMode.All, new DateTime(2026, 3, 1, 8, 30, 0));
+
+        Assert.Equal(3, dashboard.Summary.TotalCount);
+        Assert.Equal(2, dashboard.Summary.PassCount);
+        Assert.Equal(1, dashboard.Summary.FailCount);
+        Assert.InRange(dashboard.Summary.AverageCtMilliseconds, 1_999.9, 2_000.1);
+        Assert.Equal(1, dashboard.Summary.CurrentHourCount);
+        Assert.Equal(1, dashboard.Summary.TodayCount);
+        Assert.Equal(["2026/01", "2026/02", "2026/03"], dashboard.Trend.Select(item => item.Label));
+        Assert.Equal([2, 0, 1], dashboard.Trend.Select(item => item.TotalCount));
+        ResultStatisticsDashboard januaryDashboard = store.QueryDashboard(new ResultStatisticsQuery
+        {
+            From = new DateTime(2026, 1, 1),
+            ToExclusive = new DateTime(2026, 2, 1),
+        }, ResultStatisticsPeriodMode.Month, new DateTime(2026, 1, 5));
+        Assert.Equal(2, januaryDashboard.Summary.TotalCount);
+        Assert.Equal(2, januaryDashboard.Trend.Count);
+        Assert.All(januaryDashboard.Trend, item => Assert.Equal(1, item.TotalCount));
+        Assert.Equal([1_000d, 3_000d], januaryDashboard.Trend.Select(item => Math.Round(item.AverageCtMilliseconds)));
+        Assert.Equal(
+            [new DateTime(2026, 1, 3, 8, 0, 1), new DateTime(2026, 1, 4, 8, 0, 3)],
+            januaryDashboard.Trend.Select(item => item.Time));
+        Assert.Equal(3, store.QueryRecordCount(query));
+        Assert.Equal(3, store.QueryRecords(query).Count);
+        ResultStatisticsDashboard filteredDashboard = store.QueryDashboard(new ResultStatisticsQuery
+        {
+            From = range.From,
+            ToExclusive = range.ToExclusive,
+            SN = "SN-A",
+            Result = true,
+        }, ResultStatisticsPeriodMode.All, new DateTime(2026, 3, 1, 8, 30, 0));
+        Assert.Equal(1, filteredDashboard.Summary.TotalCount);
+        var flowQuery = new FlowExecutionQuery { From = range.From, ToExclusive = range.ToExclusive };
+        Assert.Equal(2, store.QueryFlowExecutionCount(flowQuery));
+        Assert.Equal(2, store.QueryFlowExecutions(flowQuery).Count);
     }
 
     [Fact]
@@ -592,6 +774,7 @@ public sealed class ResultStatisticsTests
         {
             using SqlSugarClient db = CreateClient();
             db.Ado.ExecuteCommand("DROP INDEX IF EXISTS \"IX_ObjectiveTestResultRecord_IsFinalized_UpdateTime\";");
+            db.Ado.ExecuteCommand("DROP INDEX IF EXISTS \"IX_ObjectiveTestResultRecord_Statistics\";");
             db.Ado.ExecuteCommand("ALTER TABLE \"ObjectiveTestResultRecord\" DROP COLUMN \"IsFinalized\";");
         }
 

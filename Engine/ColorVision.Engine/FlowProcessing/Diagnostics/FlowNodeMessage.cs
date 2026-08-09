@@ -22,6 +22,16 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
     /// 流程节点MQTT消息记录 - 一条记录包含发送和接收
     /// </summary>
     [SugarTable("FlowNodeMessage")]
+    [SugarIndex(
+        "idx_flow_node_message_batch_time",
+        nameof(BatchId),
+        OrderByType.Asc,
+        nameof(SendTime),
+        OrderByType.Desc)]
+    [SugarIndex(
+        "idx_flow_node_message_send_time",
+        nameof(SendTime),
+        OrderByType.Desc)]
     public class FlowNodeMessage
     {
         [SugarColumn(ColumnName = "id", IsPrimaryKey = true, IsIdentity = true)]
@@ -51,8 +61,12 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
         [SugarColumn(ColumnName = "send_topic", IsNullable = true)]
         public string SendTopic { get; set; }
 
-        [SugarColumn(ColumnName = "send_payload", IsNullable = true, Length = 8000)]
-        public string SendPayload { get; set; }
+        /// <summary>
+        /// Runtime-only payload. SQLite stores this value as a compressed BLOB
+        /// which is loaded explicitly for the selected message.
+        /// </summary>
+        [SugarColumn(IsIgnore = true)]
+        public string? SendPayload { get; set; }
 
         [SugarColumn(ColumnName = "send_time")]
         public DateTime SendTime { get; set; }
@@ -60,8 +74,12 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
         [SugarColumn(ColumnName = "recv_topic", IsNullable = true)]
         public string RecvTopic { get; set; }
 
-        [SugarColumn(ColumnName = "recv_payload", IsNullable = true, Length = 8000)]
-        public string RecvPayload { get; set; }
+        /// <summary>
+        /// Runtime-only payload. SQLite stores this value as a compressed BLOB
+        /// which is loaded explicitly for the selected message.
+        /// </summary>
+        [SugarColumn(IsIgnore = true)]
+        public string? RecvPayload { get; set; }
 
         [SugarColumn(ColumnName = "recv_time", IsNullable = true)]
         public DateTime? RecvTime { get; set; }

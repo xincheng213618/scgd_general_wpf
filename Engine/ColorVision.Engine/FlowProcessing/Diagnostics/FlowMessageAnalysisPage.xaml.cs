@@ -2,6 +2,7 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -420,9 +421,35 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             ApplyFilter();
         }
 
-        private void MessageListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private async void MessageListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            UpdateMessageDetails(MessageListView.SelectedItem as FlowNodeMessage);
+            FlowNodeMessage? message = MessageListView.SelectedItem as FlowNodeMessage;
+            UpdateMessageDetails(message);
+            if (message?.Id is not > 0)
+                return;
+            SendPayloadTextBox.Text = "（正在加载 Payload…）";
+            ReceivePayloadTextBox.Text = "（正在加载 Payload…）";
+
+            try
+            {
+                FlowNodeMessagePayloads payloads = await Task.Run(
+                    () => FlowNodeRecordDataBaseHelper.GetMessagePayloads(message.Id));
+                if (!ReferenceEquals(MessageListView.SelectedItem, message))
+                    return;
+
+                message.SendPayload = payloads.SendPayload;
+                message.RecvPayload = payloads.RecvPayload;
+                UpdateMessageDetails(message);
+            }
+            catch (Exception ex)
+            {
+                if (!ReferenceEquals(MessageListView.SelectedItem, message))
+                    return;
+
+                string error = $"（Payload 读取失败：{ex.Message}）";
+                SendPayloadTextBox.Text = error;
+                ReceivePayloadTextBox.Text = error;
+            }
         }
 
         private void MessageListView_MouseDoubleClick(object sender, MouseButtonEventArgs e)

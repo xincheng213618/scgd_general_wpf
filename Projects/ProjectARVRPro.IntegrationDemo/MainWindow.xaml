@@ -57,6 +57,7 @@
             <TextBox x:Name="MaxMessagesTextBox" Text="200" Width="62" />
             <TextBlock Text="输出目录" />
             <TextBox x:Name="OutputDirectoryTextBox" Text="output" MinWidth="150" />
+            <Button Content="仅连接" Click="ConnectOnlyButton_Click" />
             <Button Content="连接 Init" Click="ConnectInitButton_Click" />
             <Button Content="连接 RunAll" Click="ConnectRunAllButton_Click" />
             <Button Content="SwitchPG 完成" Click="SwitchPgCompleteButton_Click" />
@@ -64,6 +65,20 @@
             <Button Content="断开" Click="DisconnectButton_Click" />
             <CheckBox x:Name="AutoSwitchPgCheckBox" Content="自动确认 SwitchPG" IsChecked="True" />
             <CheckBox x:Name="AutoAoiCheckBox" Content="自动确认 AOI" IsChecked="True" />
+        </WrapPanel>
+
+        <WrapPanel DockPanel.Dock="Top" Margin="0,2,0,2" VerticalAlignment="Center">
+            <TextBlock Text="同步命令" />
+            <ComboBox x:Name="CommandEventNameComboBox" Width="190" MinHeight="26" Margin="0,0,8,6" SelectedIndex="0">
+                <ComboBoxItem Content="SwitchGroup" />
+                <ComboBoxItem Content="GetProcessEnable" />
+                <ComboBoxItem Content="SetProcessEnable" />
+            </ComboBox>
+            <TextBlock Text="Params" />
+            <TextBox x:Name="CommandParamsTextBox"
+                     MinWidth="430"
+                     ToolTip="SwitchGroup: 组名；GetProcessEnable: 留空；SetProcessEnable: &quot;Items&quot; JSON 字符串" />
+            <Button Content="发送同步命令" Click="SendCommandButton_Click" />
         </WrapPanel>
 
         <WrapPanel DockPanel.Dock="Top" Margin="0,2,0,8">

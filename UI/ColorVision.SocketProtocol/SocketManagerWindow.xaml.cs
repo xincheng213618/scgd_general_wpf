@@ -129,7 +129,7 @@ namespace ColorVision.SocketProtocol
             return Contains(message.ClientEndPoint, keyword)
                    || Contains(message.EventName, keyword)
                    || Contains(message.MsgID, keyword)
-                   || Contains(message.Content, keyword)
+                   || Contains(message.ContentPreview, keyword)
                    || Contains(message.ResponseCode?.ToString(), keyword);
         }
 
@@ -198,7 +198,21 @@ namespace ColorVision.SocketProtocol
             if (DetailContentTextBox == null)
                 return;
 
-            DetailContentTextBox.Text = FormatContent(message?.Content, PrettyPrintCheckBox?.IsChecked == true);
+            if (message == null)
+            {
+                DetailContentTextBox.Text = string.Empty;
+                return;
+            }
+
+            try
+            {
+                string? content = _socketManager.MessageManager.LoadContent(message);
+                DetailContentTextBox.Text = FormatContent(content, PrettyPrintCheckBox?.IsChecked == true);
+            }
+            catch (Exception ex)
+            {
+                DetailContentTextBox.Text = $"消息正文读取失败：{ex.Message}";
+            }
             DetailContentTextBox.ScrollToHome();
         }
 
@@ -228,7 +242,8 @@ namespace ColorVision.SocketProtocol
         {
             if (sender is MenuItem menuItem && menuItem.Tag is SocketMessage message)
             {
-                Common.Clipboard.SetText(message.Content ?? string.Empty);
+                if (TryLoadMessageContent(message, out string? content))
+                    Common.Clipboard.SetText(content ?? string.Empty);
             }
         }
 
@@ -269,7 +284,8 @@ namespace ColorVision.SocketProtocol
         /// </summary>
         private void ResendMessageToClient(SocketMessage message)
         {
-            if (string.IsNullOrEmpty(message.Content)) return;
+            if (!TryLoadMessageContent(message, out string? content) || string.IsNullOrEmpty(content))
+                return;
 
             TcpClient? targetClient = FindTargetClient(message);
             if (targetClient != null && IsClientWritable(targetClient))
@@ -277,7 +293,7 @@ namespace ColorVision.SocketProtocol
                 try
                 {
                     var stream = targetClient.GetStream();
-                    byte[] data = Encoding.UTF8.GetBytes(message.Content);
+                    byte[] data = Encoding.UTF8.GetBytes(content);
                     stream.Write(data, 0, data.Length);
                     var clientEndPoint = GetEndPointText(targetClient) ?? message.ClientEndPoint;
 
@@ -286,7 +302,7 @@ namespace ColorVision.SocketProtocol
                     {
                         ClientEndPoint = clientEndPoint,
                         Direction = SocketMessageDirection.Sent,
-                        Content = message.Content,
+                        Content = content,
                         MessageTime = DateTime.Now,
                         EventName = message.EventName,
                         MsgID = message.MsgID
@@ -303,6 +319,25 @@ namespace ColorVision.SocketProtocol
             else
             {
                 MessageBox.Show(Properties.Resources.ClientNotConnected, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+
+        private bool TryLoadMessageContent(SocketMessage message, out string? content)
+        {
+            try
+            {
+                content = _socketManager.MessageManager.LoadContent(message);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                content = null;
+                MessageBox.Show(
+                    $"消息正文读取失败：{ex.Message}",
+                    "ColorVision",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+                return false;
             }
         }
 
@@ -388,7 +423,8 @@ namespace ColorVision.SocketProtocol
 
             if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.C && GetCurrentMessage() is SocketMessage copyMessage)
             {
-                Common.Clipboard.SetText(copyMessage.Content ?? string.Empty);
+                if (TryLoadMessageContent(copyMessage, out string? content))
+                    Common.Clipboard.SetText(content ?? string.Empty);
                 e.Handled = true;
                 return;
             }

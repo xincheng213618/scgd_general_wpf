@@ -14,6 +14,21 @@ using System.Windows;
 
 namespace ProjectARVRPro
 {
+    public sealed class ResultStatisticsWindowState
+    {
+        public int SelectedTabIndex { get; set; }
+        public ResultStatisticsPeriodMode HomePeriodMode { get; set; } = ResultStatisticsPeriodMode.Day;
+        public DateTime HomeAnchorDate { get; set; } = DateTime.Today;
+        public ResultStatisticsPeriodMode RecordPeriodMode { get; set; } = ResultStatisticsPeriodMode.Day;
+        public DateTime RecordAnchorDate { get; set; } = DateTime.Today;
+        public string RecordSn { get; set; } = string.Empty;
+        public int RecordResultIndex { get; set; }
+        public ResultStatisticsPeriodMode FlowPeriodMode { get; set; } = ResultStatisticsPeriodMode.Day;
+        public DateTime FlowAnchorDate { get; set; } = DateTime.Today;
+        public string FlowName { get; set; } = string.Empty;
+        public int FlowResultIndex { get; set; }
+    }
+
     public sealed class ProjectARVRProLogConfig : RealtimeLogViewConfig, IConfig
     {
         public static ProjectARVRProLogConfig Instance => ConfigService.Instance.GetRequiredService<ProjectARVRProLogConfig>();
@@ -116,6 +131,9 @@ namespace ProjectARVRPro
         [DisplayName("结果图层自动刷新"), Category("结果图层")]
         public bool ResultOverlayAutoRefresh { get => _ResultOverlayAutoRefresh; set { _ResultOverlayAutoRefresh = value; OnPropertyChanged(); } }
         private bool _ResultOverlayAutoRefresh;
+
+        [Browsable(false)]
+        public ResultStatisticsWindowState ResultStatisticsWindowState { get; set; } = new();
 
         public void OpenConfig()
         {

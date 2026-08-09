@@ -1,5 +1,6 @@
 using ProjectARVRPro;
 using ProjectARVRPro.IntegrationDemo.Contracts.Socket;
+using ProjectARVRPro.Process;
 using ProjectARVRPro.Process.W51;
 using System;
 using System.Collections.Generic;
@@ -58,6 +59,9 @@ namespace ProjectARVRPro.IntegrationDemo
         public int Port { get; private set; } = 6666;
         public string SerialNumber { get; private set; } = "SN-" + DateTime.Now.ToString("yyyyMMddHHmmss", CultureInfo.InvariantCulture);
         public string Mode { get; private set; } = "init";
+        public string CommandEventName { get; private set; } = string.Empty;
+        public string CommandParams { get; private set; } = string.Empty;
+        public bool IsSynchronousCommand { get { return !string.IsNullOrWhiteSpace(CommandEventName); } }
         public bool AutoConfirmSwitchPg { get; private set; }
         public bool AutoConfirmAoi { get; private set; }
         public int TimeoutSeconds { get; private set; } = 300;
@@ -65,6 +69,7 @@ namespace ProjectARVRPro.IntegrationDemo
         public string ParseFile { get; private set; }
         public string OutputDirectory { get; private set; } = "output";
         public bool ShowHelp { get; private set; }
+        private bool _modeSpecified;
 
         public static DemoOptions Parse(string[] args)
         {
@@ -94,6 +99,16 @@ namespace ProjectARVRPro.IntegrationDemo
                         break;
                     case "--mode":
                         options.Mode = nextValue().Trim().ToLowerInvariant();
+                        options._modeSpecified = true;
+                        break;
+                    case "--switch-group":
+                        options.SetSynchronousCommand("SwitchGroup", nextValue());
+                        break;
+                    case "--get-process-enable":
+                        options.SetSynchronousCommand("GetProcessEnable", string.Empty);
+                        break;
+                    case "--set-process-enable":
+                        options.SetSynchronousCommand("SetProcessEnable", nextValue());
                         break;
                     case "--auto-confirm-switchpg":
                         options.AutoConfirmSwitchPg = true;
@@ -125,12 +140,27 @@ namespace ProjectARVRPro.IntegrationDemo
 
             if (options.Mode != "init" && options.Mode != "runall")
                 throw new ArgumentException("--mode must be init or runall.");
+            if (options._modeSpecified && options.IsSynchronousCommand)
+                throw new ArgumentException("--mode cannot be combined with a synchronous command option.");
+            if (options.CommandEventName == "SwitchGroup" && string.IsNullOrWhiteSpace(options.CommandParams))
+                throw new ArgumentException("--switch-group requires a non-empty group name.");
+            if (options.CommandEventName == "SetProcessEnable" && string.IsNullOrWhiteSpace(options.CommandParams))
+                throw new ArgumentException("--set-process-enable requires an Items JSON string.");
             if (options.TimeoutSeconds <= 0)
                 throw new ArgumentException("--timeout-seconds must be greater than 0.");
             if (options.MaxMessages <= 0)
                 throw new ArgumentException("--max-messages must be greater than 0.");
 
             return options;
+        }
+
+        private void SetSynchronousCommand(string eventName, string requestParams)
+        {
+            if (IsSynchronousCommand)
+                throw new ArgumentException("Only one synchronous command can be specified.");
+
+            CommandEventName = eventName;
+            CommandParams = requestParams ?? string.Empty;
         }
 
         public static void PrintHelp()
@@ -146,6 +176,11 @@ namespace ProjectARVRPro.IntegrationDemo
             Console.WriteLine("  ProjectARVRPro.IntegrationDemo.exe --sn SN001 --mode init --auto-confirm-switchpg --auto-confirm-aoi");
             Console.WriteLine("  ProjectARVRPro.IntegrationDemo.exe --sn SN001 --mode runall");
             Console.WriteLine("  ProjectARVRPro.IntegrationDemo.exe --sn SN001 --mode init --timeout-seconds 300 --max-messages 200");
+            Console.WriteLine();
+            Console.WriteLine("Synchronous commands (return after the matching response):");
+            Console.WriteLine("  ProjectARVRPro.IntegrationDemo.exe --switch-group Model_A_Group");
+            Console.WriteLine("  ProjectARVRPro.IntegrationDemo.exe --get-process-enable");
+            Console.WriteLine("  ProjectARVRPro.IntegrationDemo.exe --set-process-enable '{\"Items\":[{\"Index\":0,\"IsEnabled\":true}]}'");
             Console.WriteLine();
             Console.WriteLine("Offline parser demo:");
             Console.WriteLine("  ProjectARVRPro.IntegrationDemo.exe --parse-file Samples\\project-arvr-result.json");
@@ -171,29 +206,58 @@ namespace ProjectARVRPro.IntegrationDemo
 
                 using (NetworkStream stream = tcpClient.GetStream())
                 {
-                    string firstEvent = options.Mode == "runall" ? "RunAll" : "ProjectARVRInit";
-                    await SendRequestAsync(stream, firstEvent, options.SerialNumber);
+                    string firstEvent = options.IsSynchronousCommand
+                        ? options.CommandEventName
+                        : options.Mode == "runall" ? "RunAll" : "ProjectARVRInit";
+                    string requestParams = options.IsSynchronousCommand ? options.CommandParams : string.Empty;
+                    string requestJson = await SendRequestAsync(stream, firstEvent, options.SerialNumber, requestParams);
+                    string requestMsgId = ResultParser.GetString(ResultParser.DeserializeDictionary(requestJson), "MsgID");
 
                     var reader = new JsonStreamMessageReader(stream);
+                    if (options.IsSynchronousCommand)
+                    {
+                        for (int messageIndex = 0; messageIndex < options.MaxMessages; messageIndex++)
+                        {
+                            string responseJson = await reader.ReadMessageAsync(TimeSpan.FromSeconds(options.TimeoutSeconds));
+                            if (responseJson == null)
+                            {
+                                throw new InvalidDataException("Connection closed by server before the " + firstEvent + " response was received.");
+                            }
+
+                            Console.WriteLine();
+                            Console.WriteLine("Received:");
+                            Console.WriteLine(responseJson);
+                            Dictionary<string, object> responseRoot = ResultParser.DeserializeDictionary(responseJson);
+                            string responseEventName = ResultParser.GetString(responseRoot, "EventName");
+                            string responseMsgId = ResultParser.GetString(responseRoot, "MsgID");
+                            Console.WriteLine(
+                                "EventName={0}, MsgID={1}, Code={2}, Msg={3}",
+                                responseEventName,
+                                responseMsgId,
+                                ResultParser.GetString(responseRoot, "Code"),
+                                ResultParser.GetString(responseRoot, "Msg"));
+                            if (string.Equals(responseEventName, firstEvent, StringComparison.Ordinal) &&
+                                string.Equals(responseMsgId, requestMsgId, StringComparison.Ordinal))
+                            {
+                                int responseCode;
+                                if (int.TryParse(ResultParser.GetString(responseRoot, "Code"), NumberStyles.Integer, CultureInfo.InvariantCulture, out responseCode) && responseCode < 0)
+                                    throw new InvalidOperationException(firstEvent + " failed. Code=" + responseCode.ToString(CultureInfo.InvariantCulture) + ", Msg=" + ResultParser.GetString(responseRoot, "Msg"));
+                                return;
+                            }
+
+                            Console.WriteLine("Waiting for matching {0} response with MsgID={1}.", firstEvent, requestMsgId);
+                        }
+
+                        throw new TimeoutException("Stopped after " + options.MaxMessages.ToString(CultureInfo.InvariantCulture) + " messages without receiving the " + firstEvent + " response with MsgID=" + requestMsgId + ".");
+                    }
+
                     var confirmedMessages = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                     for (int messageIndex = 0; messageIndex < options.MaxMessages; messageIndex++)
                     {
-                        string json;
-                        try
-                        {
-                            json = await reader.ReadMessageAsync(TimeSpan.FromSeconds(options.TimeoutSeconds));
-                        }
-                        catch (TimeoutException ex)
-                        {
-                            Console.WriteLine(ex.Message);
-                            return;
-                        }
+                        string json = await reader.ReadMessageAsync(TimeSpan.FromSeconds(options.TimeoutSeconds));
 
                         if (json == null)
-                        {
-                            Console.WriteLine("Connection closed by server.");
-                            return;
-                        }
+                            throw new InvalidDataException("Connection closed by server before ProjectARVRResult was received.");
 
                         Console.WriteLine();
                         Console.WriteLine("Received:");
@@ -202,6 +266,9 @@ namespace ProjectARVRPro.IntegrationDemo
                         Dictionary<string, object> root = ResultParser.DeserializeDictionary(json);
                         string eventName = ResultParser.GetString(root, "EventName");
                         string serialNumber = ResultParser.GetString(root, "SerialNumber");
+                        int responseCode;
+                        if (int.TryParse(ResultParser.GetString(root, "Code"), NumberStyles.Integer, CultureInfo.InvariantCulture, out responseCode) && responseCode < 0)
+                            throw new InvalidOperationException(eventName + " failed. Code=" + responseCode.ToString(CultureInfo.InvariantCulture) + ", Msg=" + ResultParser.GetString(root, "Msg"));
 
                         if (eventName == "SwitchPG")
                         {
@@ -219,7 +286,9 @@ namespace ProjectARVRPro.IntegrationDemo
                         }
                         else if (eventName == "ProjectARVRResult")
                         {
-                            ResultParser.ParseJson(json, options.OutputDirectory);
+                            ParsedProjectArvrResult parsed = ResultParser.ParseJson(json, options.OutputDirectory);
+                            if (parsed.TotalResult == false)
+                                throw new InvalidOperationException("ProjectARVRResult reported failure. TotalResultString=" + parsed.TotalResultString);
                             Console.WriteLine("Final result received. Demo completed.");
                             return;
                         }
@@ -229,7 +298,7 @@ namespace ProjectARVRPro.IntegrationDemo
                         }
                     }
 
-                    Console.WriteLine("Stopped after {0} messages without receiving ProjectARVRResult.", options.MaxMessages);
+                    throw new TimeoutException("Stopped after " + options.MaxMessages.ToString(CultureInfo.InvariantCulture) + " messages without receiving ProjectARVRResult.");
                 }
             }
         }
@@ -246,7 +315,7 @@ namespace ProjectARVRPro.IntegrationDemo
             return await SendRequestAsync(stream, replyEventName, serialNumber);
         }
 
-        public static async Task<string> SendRequestAsync(NetworkStream stream, string eventName, string serialNumber)
+        public static async Task<string> SendRequestAsync(NetworkStream stream, string eventName, string serialNumber, string requestParams = "")
         {
             var request = new ProjectArvrSocketRequest
             {
@@ -254,7 +323,7 @@ namespace ProjectARVRPro.IntegrationDemo
                 MsgID = Guid.NewGuid().ToString("N"),
                 EventName = eventName,
                 SerialNumber = serialNumber,
-                Params = string.Empty
+                Params = requestParams ?? string.Empty
             };
 
             string json = Serializer.Serialize(request);
@@ -291,6 +360,8 @@ namespace ProjectARVRPro.IntegrationDemo
     {
         private readonly Stream _stream;
         private readonly byte[] _buffer = new byte[8192];
+        private readonly char[] _charBuffer = new char[Encoding.UTF8.GetMaxCharCount(8192)];
+        private readonly Decoder _decoder = Encoding.UTF8.GetDecoder();
         private readonly StringBuilder _textBuffer = new StringBuilder();
 
         public JsonStreamMessageReader(Stream stream)
@@ -308,9 +379,15 @@ namespace ProjectARVRPro.IntegrationDemo
 
                 int bytesRead = await _stream.ReadAsync(_buffer, 0, _buffer.Length);
                 if (bytesRead == 0)
+                {
+                    int finalChars = _decoder.GetChars(_buffer, 0, 0, _charBuffer, 0, true);
+                    if (finalChars > 0)
+                        _textBuffer.Append(_charBuffer, 0, finalChars);
                     return _textBuffer.Length == 0 ? null : _textBuffer.ToString();
+                }
 
-                _textBuffer.Append(Encoding.UTF8.GetString(_buffer, 0, bytesRead));
+                int charsDecoded = _decoder.GetChars(_buffer, 0, bytesRead, _charBuffer, 0, false);
+                _textBuffer.Append(_charBuffer, 0, charsDecoded);
             }
         }
 
@@ -414,9 +491,73 @@ namespace ProjectARVRPro.IntegrationDemo
         }
     }
 
+    internal sealed class PoixyuvDataJavaScriptConverter : JavaScriptConverter
+    {
+        private static readonly Type[] ConverterTypes = { typeof(PoixyuvData) };
+
+        public override IEnumerable<Type> SupportedTypes { get { return ConverterTypes; } }
+
+        public override object Deserialize(IDictionary<string, object> dictionary, Type type, JavaScriptSerializer serializer)
+        {
+            if (type != typeof(PoixyuvData))
+                return null;
+
+            return new PoixyuvData
+            {
+                Id = GetValue<int>(dictionary, "Id", serializer),
+                Name = GetValue<string>(dictionary, "Name", serializer) ?? string.Empty,
+                CCT = GetValue<double>(dictionary, "CCT", serializer),
+                Wave = GetValue<double>(dictionary, "Wave", serializer),
+                X = GetValue<double>(dictionary, "X", serializer),
+                Y = GetValue<double>(dictionary, "Y", serializer),
+                Z = GetValue<double>(dictionary, "Z", serializer),
+                u = GetValue<double>(dictionary, "u", serializer),
+                v = GetValue<double>(dictionary, "v", serializer),
+                x = GetValue<double>(dictionary, "x", serializer),
+                y = GetValue<double>(dictionary, "y", serializer)
+            };
+        }
+
+        public override IDictionary<string, object> Serialize(object obj, JavaScriptSerializer serializer)
+        {
+            var value = (PoixyuvData)obj;
+            return new Dictionary<string, object>(StringComparer.Ordinal)
+            {
+                { "Id", value.Id },
+                { "Name", value.Name },
+                { "CCT", value.CCT },
+                { "Wave", value.Wave },
+                { "X", value.X },
+                { "Y", value.Y },
+                { "Z", value.Z },
+                { "u", value.u },
+                { "v", value.v },
+                { "x", value.x },
+                { "y", value.y }
+            };
+        }
+
+        private static T GetValue<T>(IDictionary<string, object> dictionary, string propertyName, JavaScriptSerializer serializer)
+        {
+            object value;
+            return dictionary.TryGetValue(propertyName, out value) && value != null
+                ? serializer.ConvertToType<T>(value)
+                : default(T);
+        }
+    }
+
     internal static class ResultParser
     {
-        private static readonly JavaScriptSerializer Serializer = new JavaScriptSerializer { MaxJsonLength = int.MaxValue, RecursionLimit = 200 };
+        private static readonly JavaScriptSerializer Serializer = CreateSerializer();
+        private static readonly string[] ScreenDefectSummaryFields = { "AvgBrightness", "DefectCount", "GradeLevel", "TimeStamp" };
+        private static readonly string[] ScreenDefectFields = { "Id", "Type", "X", "Y", "Width", "Height", "Area", "Contrast", "MeanValue", "LocalMean" };
+
+        private static JavaScriptSerializer CreateSerializer()
+        {
+            var serializer = new JavaScriptSerializer { MaxJsonLength = int.MaxValue, RecursionLimit = 200 };
+            serializer.RegisterConverters(new JavaScriptConverter[] { new PoixyuvDataJavaScriptConverter() });
+            return serializer;
+        }
 
         public static ParsedProjectArvrResult ParseFile(string filePath, string outputDirectory)
         {
@@ -524,8 +665,9 @@ namespace ProjectARVRPro.IntegrationDemo
                 string json = Serializer.Serialize(data);
                 return Serializer.Deserialize<ObjectiveTestResult>(json);
             }
-            catch
+            catch (Exception ex)
             {
+                Console.Error.WriteLine("Strongly typed ObjectiveTestResult parsing failed: " + ex.Message);
                 return null;
             }
         }
@@ -534,6 +676,13 @@ namespace ProjectARVRPro.IntegrationDemo
         {
             foreach (KeyValuePair<string, object> property in data)
             {
+                if (property.Key == "DynamicScreenDefectResults")
+                {
+                    foreach (ResultItem item in FlattenScreenDefectResults(property.Value))
+                        yield return item;
+                    continue;
+                }
+
                 if (property.Key == "DynamicTestResults")
                 {
                     foreach (ResultItem item in FlattenDynamicResults(property.Value))
@@ -541,9 +690,133 @@ namespace ProjectARVRPro.IntegrationDemo
                     continue;
                 }
 
+                if (IsKeyedResultProperty(property.Key))
+                {
+                    foreach (ResultItem item in FlattenKeyedResults(property.Key, property.Value))
+                        yield return item;
+                    continue;
+                }
+
                 foreach (ResultItem item in FlattenElement(property.Key, property.Key, property.Value))
                     yield return item;
             }
+        }
+
+        private static bool IsKeyedResultProperty(string propertyName)
+        {
+            return propertyName == "FieldOfViewTestResults" ||
+                   propertyName == "LuminanceChromaticityTestResults" ||
+                   propertyName == "DynamicMTFHV058TestResults" ||
+                   propertyName == "DynamicPoixyuvDatas";
+        }
+
+        private static IEnumerable<ResultItem> FlattenKeyedResults(string propertyName, object keyedResults)
+        {
+            var results = keyedResults as Dictionary<string, object>;
+            if (results == null)
+                yield break;
+
+            foreach (KeyValuePair<string, object> result in results)
+            {
+                string path = propertyName + "[\"" + EscapePathKey(result.Key) + "\"]";
+                foreach (ResultItem item in FlattenElement(result.Key, path, result.Value))
+                    yield return item;
+            }
+        }
+
+        private static IEnumerable<ResultItem> FlattenScreenDefectResults(object dynamicResults)
+        {
+            var screens = dynamicResults as Dictionary<string, object>;
+            if (screens == null)
+                yield break;
+
+            foreach (KeyValuePair<string, object> screen in screens)
+            {
+                var screenData = screen.Value as Dictionary<string, object>;
+                if (screenData == null)
+                    continue;
+
+                string screenPath = "DynamicScreenDefectResults[\"" + EscapePathKey(screen.Key) + "\"]";
+                foreach (string fieldName in ScreenDefectSummaryFields)
+                {
+                    object fieldValue;
+                    if (screenData.TryGetValue(fieldName, out fieldValue) && fieldValue != null)
+                        yield return CreateScreenDefectItem(screen.Key, fieldName, fieldName, fieldValue, screenPath + "." + fieldName);
+                }
+
+                object defectsValue;
+                var defects = screenData.TryGetValue("Defects", out defectsValue) ? defectsValue as object[] : null;
+                if (defects == null)
+                    continue;
+
+                for (int defectIndex = 0; defectIndex < defects.Length; defectIndex++)
+                {
+                    var defect = defects[defectIndex] as Dictionary<string, object>;
+                    if (defect == null)
+                        continue;
+
+                    string defectName = "Defects[" + defectIndex.ToString(CultureInfo.InvariantCulture) + "]";
+                    string defectPath = screenPath + "." + defectName;
+                    foreach (string fieldName in ScreenDefectFields)
+                    {
+                        object fieldValue;
+                        if (defect.TryGetValue(fieldName, out fieldValue) && fieldValue != null)
+                        {
+                            yield return CreateScreenDefectItem(
+                                screen.Key,
+                                defectName + "." + fieldName,
+                                fieldName,
+                                fieldValue,
+                                defectPath + "." + fieldName);
+                        }
+                    }
+                }
+            }
+        }
+
+        private static ResultItem CreateScreenDefectItem(string screenName, string itemName, string fieldName, object value, string path)
+        {
+            return new ResultItem
+            {
+                Screen = screenName,
+                Item = itemName,
+                Description = GetScreenDefectDescription(fieldName),
+                Value = Convert.ToString(value, CultureInfo.InvariantCulture) ?? string.Empty,
+                Unit = GetScreenDefectUnit(fieldName),
+                Path = path
+            };
+        }
+
+        private static string GetScreenDefectDescription(string fieldName)
+        {
+            if (fieldName == "AvgBrightness") return "屏幕缺陷检测图像的平均亮度。";
+            if (fieldName == "DefectCount") return "检测到的屏幕缺陷总数。";
+            if (fieldName == "GradeLevel") return "屏幕缺陷检测返回的等级。";
+            if (fieldName == "TimeStamp") return "屏幕缺陷检测结果的时间戳。";
+            if (fieldName == "Id") return "缺陷在本次检测结果中的编号。";
+            if (fieldName == "Type") return "缺陷类型。";
+            if (fieldName == "X") return "缺陷框左上角 X 坐标。";
+            if (fieldName == "Y") return "缺陷框左上角 Y 坐标。";
+            if (fieldName == "Width") return "缺陷框宽度。";
+            if (fieldName == "Height") return "缺陷框高度。";
+            if (fieldName == "Area") return "缺陷区域面积。";
+            if (fieldName == "Contrast") return "缺陷区域与局部背景的对比度。";
+            if (fieldName == "MeanValue") return "缺陷区域的平均像素值。";
+            if (fieldName == "LocalMean") return "缺陷周边局部背景的平均像素值。";
+            return "屏幕缺陷检测结果字段。";
+        }
+
+        private static string GetScreenDefectUnit(string fieldName)
+        {
+            if (fieldName == "DefectCount") return "count";
+            if (fieldName == "X" || fieldName == "Y" || fieldName == "Width" || fieldName == "Height") return "px";
+            if (fieldName == "Area") return "px^2";
+            return string.Empty;
+        }
+
+        private static string EscapePathKey(string value)
+        {
+            return (value ?? string.Empty).Replace("\\", "\\\\").Replace("\"", "\\\"");
         }
 
         private static IEnumerable<ResultItem> FlattenDynamicResults(object dynamicResults)
@@ -564,7 +837,10 @@ namespace ProjectARVRPro.IntegrationDemo
                     var itemDict = itemObject as Dictionary<string, object>;
                     ResultItem item;
                     if (TryReadObjectiveTestItem(screen.Key, "Item" + (index + 1), itemDict, out item))
+                    {
+                        item.Path = "DynamicTestResults[\"" + EscapePathKey(screen.Key) + "\"][" + index.ToString(CultureInfo.InvariantCulture) + "]";
                         yield return item;
+                    }
                     index++;
                 }
             }
@@ -774,6 +1050,8 @@ namespace ProjectARVRPro.IntegrationDemo
                 return "FOFO 对比度，白场亮度与黑场亮度的对比关系，单位 %。";
             if (Contains(key, itemKey, "ChessboardContrast"))
                 return "棋盘格对比度，基于棋盘格亮暗区域计算的对比度指标。";
+            if (Contains(key, itemKey, "AverageBlackLuminance"))
+                return "棋盘格暗区的平均亮度，单位以服务端输出为准。";
             if (Contains(key, itemKey, "HorizontalTVDistortion"))
                 return "水平 TV 畸变，表示水平方向几何畸变比例，单位 %。";
             if (Contains(key, itemKey, "VerticalTVDistortion"))
@@ -804,22 +1082,22 @@ namespace ProjectARVRPro.IntegrationDemo
                 return "光学中心 X 方向偏移或倾斜角，单位 degree。";
             if (Contains(key, itemKey, "OptCenterYTilt"))
                 return "光学中心 Y 方向偏移或倾斜角，单位 degree。";
+            if (itemKey.EndsWith("(Lv)", StringComparison.OrdinalIgnoreCase) || key.EndsWith(".Y", StringComparison.Ordinal))
+                return "测点亮度 Lv/Y，单位 cd/m^2。";
+            if (itemKey.EndsWith("(Cx)", StringComparison.OrdinalIgnoreCase) || key.EndsWith(".x", StringComparison.Ordinal))
+                return "测点 CIE 1931 色品坐标 x。";
+            if (itemKey.EndsWith("(Cy)", StringComparison.OrdinalIgnoreCase) || key.EndsWith(".y", StringComparison.Ordinal))
+                return "测点 CIE 1931 色品坐标 y。";
+            if (itemKey.EndsWith("(u')", StringComparison.OrdinalIgnoreCase) || key.EndsWith(".u", StringComparison.Ordinal))
+                return "测点 CIE 1976 色品坐标 u'。";
+            if (itemKey.EndsWith("(v')", StringComparison.OrdinalIgnoreCase) || key.EndsWith(".v", StringComparison.Ordinal))
+                return "测点 CIE 1976 色品坐标 v'。";
+            if (itemKey.EndsWith("(CCT)", StringComparison.OrdinalIgnoreCase) || key.EndsWith(".CCT", StringComparison.Ordinal))
+                return "测点相关色温 CCT，单位 K。";
+            if (itemKey.EndsWith("(Wave)", StringComparison.OrdinalIgnoreCase) || key.EndsWith(".Wave", StringComparison.Ordinal))
+                return "测点主波长或波长相关结果。";
             if (itemKey.IndexOf("MTF", StringComparison.OrdinalIgnoreCase) >= 0 || itemKey.StartsWith("P_", StringComparison.OrdinalIgnoreCase))
                 return "MTF 调制传递函数，表示成像系统在指定位置和方向的清晰度/解析力，H 为水平线对方向，V 为垂直线对方向，0F/0.3F/0.6F/0.8F 表示不同视场位置。";
-            if (itemKey.EndsWith("(Lv)", StringComparison.OrdinalIgnoreCase) || key.EndsWith(".Y", StringComparison.OrdinalIgnoreCase))
-                return "测点亮度 Lv/Y，单位 cd/m^2。";
-            if (itemKey.EndsWith("(Cx)", StringComparison.OrdinalIgnoreCase) || key.EndsWith(".x", StringComparison.OrdinalIgnoreCase))
-                return "测点 CIE 1931 色品坐标 x。";
-            if (itemKey.EndsWith("(Cy)", StringComparison.OrdinalIgnoreCase) || key.EndsWith(".y", StringComparison.OrdinalIgnoreCase))
-                return "测点 CIE 1931 色品坐标 y。";
-            if (itemKey.EndsWith("(u')", StringComparison.OrdinalIgnoreCase) || key.EndsWith(".u", StringComparison.OrdinalIgnoreCase))
-                return "测点 CIE 1976 色品坐标 u'。";
-            if (itemKey.EndsWith("(v')", StringComparison.OrdinalIgnoreCase) || key.EndsWith(".v", StringComparison.OrdinalIgnoreCase))
-                return "测点 CIE 1976 色品坐标 v'。";
-            if (itemKey.EndsWith("(CCT)", StringComparison.OrdinalIgnoreCase) || key.EndsWith(".CCT", StringComparison.OrdinalIgnoreCase))
-                return "测点相关色温 CCT，单位 K。";
-            if (itemKey.EndsWith("(Wave)", StringComparison.OrdinalIgnoreCase) || key.EndsWith(".Wave", StringComparison.OrdinalIgnoreCase))
-                return "测点主波长或波长相关结果。";
 
             return "ARVRPro 输出的客观测试项。具体含义以项目测试配置和字段名为准。";
         }
@@ -831,15 +1109,17 @@ namespace ProjectARVRPro.IntegrationDemo
                    "FOV / Field Of View: 视场角，Horizontal/Vertical/Diagonal 分别表示水平、垂直、对角方向，单位 degree。\r\n" +
                    "LuminanceUniformity: 亮度均匀性，通常为最小亮度/最大亮度*100%，越高越均匀。\r\n" +
                    "ColorUniformity: 色度均匀性，通常为最大 Delta u'v'，越小越均匀。\r\n" +
-                   "CenterLunimance: 中心点亮度，单位 cd/m^2。字段名保留 ARVRPro 当前拼写。\r\n" +
+                   "CenterLuminance: 中心点亮度，单位通常为 nit 或 cd/m^2；旧兼容字段可能拼写为 CenterLunimance。\r\n" +
                    "CIE1931 x/y: CIE 1931 色品坐标，无单位。\r\n" +
                    "CIE1976 u'/v': CIE 1976 UCS 色品坐标，无单位。\r\n" +
                    "CCT: 相关色温，单位 K。\r\n" +
                    "FOFOContrast: 白场/黑场对比关系，单位 %。\r\n" +
                    "ChessboardContrast: 棋盘格亮暗区域对比度。\r\n" +
+                   "AverageBlackLuminance: 棋盘格暗区的平均亮度。\r\n" +
                    "TV/Optic/Keystone Distortion: 几何畸变、光学畸变和梯形畸变，单位通常为 %。\r\n" +
                    "OpticCenter/ImageCenter: 光学中心或图像中心的偏移、倾斜、旋转，单位通常为 degree。\r\n" +
                    "MTF: 调制传递函数，用于描述清晰度/解析力；H/V 为方向，0F/0.3F/0.6F/0.8F 为不同视场位置。\r\n" +
+                   "DynamicScreenDefectResults: 按画面名称输出缺陷汇总；Defects 中包含 Id/Type/X/Y/Width/Height/Area 及可选亮度、对比度字段。\r\n" +
                    "\r\n" +
                    "ObjectiveTestItem 字段说明\r\n" +
                    "Name: ARVRPro 输出的测试项显示名。\r\n" +

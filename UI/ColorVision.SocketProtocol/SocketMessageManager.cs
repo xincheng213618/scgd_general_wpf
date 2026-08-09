@@ -71,8 +71,10 @@ namespace ColorVision.SocketProtocol
             QueryCommand = new RelayCommand(_ => LoadAll(Config.Count));
             SelectDbFileCommand = new RelayCommand(_ => PlatformHelper.OpenFolderAndSelectFile(SqliteDbPath));
 
-            // 确保目录存在
-            Directory.CreateDirectory(DirectoryPath);
+            // 确保数据库所在目录存在；测试或诊断工具可以安全替换数据库路径。
+            string databaseDirectory = Path.GetDirectoryName(Path.GetFullPath(SqliteDbPath))
+                ?? throw new InvalidOperationException("无法确定 Socket 消息数据库目录。");
+            Directory.CreateDirectory(databaseDirectory);
 
             _db = new SqlSugarClient(new ConnectionConfig
             {
@@ -81,8 +83,12 @@ namespace ColorVision.SocketProtocol
                 IsAutoCloseConnection = true
             });
 
-            // 确保表存在
-            _db.CodeFirst.InitTables<SocketMessage>();
+            // 建表和补列也必须与历史迁移串行，避免两边同时修改 SQLite schema。
+            SocketMessagePayloadStorage.RunDatabaseMaintenance(() =>
+            {
+                _db.CodeFirst.InitTables<SocketMessage>();
+                SocketMessagePayloadStorage.EnsureSchema(_db);
+            });
         }
 
             public static IDatabaseBrowserProvider CreateBrowserProvider() =>
@@ -114,11 +120,15 @@ namespace ColorVision.SocketProtocol
         /// <param name="count">要加载的记录数，默认100条，最大1000条</param>
         public void LoadAll(int count = 100)
         {
-            Messages.Clear();
             // 限制最大加载数量以避免内存问题
             int effectiveCount = count <= 0 ? Config.Count : Math.Min(count, 1000);
-            var query = _db.Queryable<SocketMessage>().OrderBy(x => x.Id, Config.OrderByType);
-            var dbList = query.Take(effectiveCount).ToList();
+            List<SocketMessage> dbList = SocketMessagePayloadStorage.RunDatabaseMaintenance(() =>
+            {
+                var query = _db.Queryable<SocketMessage>().OrderBy(x => x.Id, Config.OrderByType);
+                return query.Take(effectiveCount).ToList();
+            });
+
+            Messages.Clear();
             foreach (var item in dbList)
             {
                 Messages.Add(item);
@@ -133,7 +143,27 @@ namespace ColorVision.SocketProtocol
             try
             {
                 if (message == null) return;
-                int id = _db.Insertable(message).ExecuteReturnIdentity();
+                string? content = message.Content;
+                message.ContentPreview = GzipTextPayloadCodec.CreatePreview(
+                    content,
+                    SocketMessagePayloadStorage.PreviewCharacters);
+
+                int id = SocketMessagePayloadStorage.RunDatabaseMaintenance(() =>
+                {
+                    _db.Ado.BeginTran();
+                    try
+                    {
+                        int insertedId = _db.Insertable(message).ExecuteReturnIdentity();
+                        SocketMessagePayloadStorage.Save(_db, insertedId, content);
+                        _db.Ado.CommitTran();
+                        return insertedId;
+                    }
+                    catch
+                    {
+                        _db.Ado.RollbackTran();
+                        throw;
+                    }
+                });
                 message.Id = id;
 
                 Application.Current.Dispatcher.Invoke(() =>
@@ -155,6 +185,21 @@ namespace ColorVision.SocketProtocol
         }
 
         /// <summary>
+        /// 按 Id 加载一条消息的正文。已加载内容会留在当前行对象中，避免重复查询和解压。
+        /// </summary>
+        public string? LoadContent(SocketMessage message)
+        {
+            ArgumentNullException.ThrowIfNull(message);
+            if (message.IsContentLoaded)
+                return message.Content;
+
+            string? content = SocketMessagePayloadStorage.RunDatabaseMaintenance(() =>
+                SocketMessagePayloadStorage.Load(_db, message.Id));
+            message.Content = content;
+            return content;
+        }
+
+        /// <summary>
         /// 删除消息
         /// </summary>
         public void DeleteMessage(SocketMessage message)
@@ -162,7 +207,8 @@ namespace ColorVision.SocketProtocol
             try
             {
                 if (message == null) return;
-                _db.Deleteable<SocketMessage>().Where(x => x.Id == message.Id).ExecuteCommand();
+                SocketMessagePayloadStorage.RunDatabaseMaintenance(() =>
+                    _db.Deleteable<SocketMessage>().Where(x => x.Id == message.Id).ExecuteCommand());
                 Messages.Remove(message);
             }
             catch (Exception ex)
@@ -176,7 +222,7 @@ namespace ColorVision.SocketProtocol
         /// </summary>
         public void GenericQuery()
         {
-            GenericQuery<SocketMessage> genericQuery = new GenericQuery<SocketMessage>(_db, Messages);
+            GenericQuery<SocketMessage> genericQuery = new SocketMessageGenericQuery(_db, Messages);
             GenericQueryWindow genericQueryWindow = new GenericQueryWindow(genericQuery) 
             { 
                 Owner = Application.Current.GetActiveWindow(), 
@@ -187,8 +233,49 @@ namespace ColorVision.SocketProtocol
 
         public void Dispose()
         {
-            _db?.Dispose();
+            SocketMessagePayloadStorage.RunDatabaseMaintenance(() => _db?.Dispose());
             GC.SuppressFinalize(this);
+        }
+
+        private sealed class SocketMessageGenericQuery : GenericQuery<SocketMessage>
+        {
+            public SocketMessageGenericQuery(SqlSugarClient db, IList<SocketMessage> viewResults)
+                : base(db, viewResults)
+            {
+            }
+
+            public override void QueryDB()
+            {
+                SocketMessagePayloadStorage.RunDatabaseMaintenance(base.QueryDB);
+            }
+
+            public override void DeleteAll()
+            {
+                SocketMessagePayloadStorage.RunDatabaseMaintenance(base.DeleteAll);
+            }
+
+            public override void TruncateTable()
+            {
+                SocketMessagePayloadStorage.RunDatabaseMaintenance(() =>
+                {
+                    string tableName = Db.EntityMaintenance.GetTableName<SocketMessage>();
+                    Db.Ado.BeginTran();
+                    try
+                    {
+                        Db.Deleteable<SocketMessage>().ExecuteCommand();
+                        Db.Ado.ExecuteCommand(
+                            "DELETE FROM sqlite_sequence WHERE name = @tableName",
+                            new SugarParameter("@tableName", tableName));
+                        Db.Ado.CommitTran();
+                        log.InfoFormat("Truncate SQLite table {0}", tableName);
+                    }
+                    catch
+                    {
+                        Db.Ado.RollbackTran();
+                        throw;
+                    }
+                });
+            }
         }
     }
 }

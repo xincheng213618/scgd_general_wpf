@@ -1,4 +1,5 @@
 using SqlSugar;
+using System.Globalization;
 
 namespace ProjectARVRPro
 {
@@ -7,6 +8,7 @@ namespace ProjectARVRPro
         Day,
         Week,
         Month,
+        All,
     }
 
     public readonly record struct ResultStatisticsPeriodRange(DateTime From, DateTime ToExclusive)
@@ -15,6 +17,7 @@ namespace ProjectARVRPro
         {
             return mode switch
             {
+                ResultStatisticsPeriodMode.All => "全部记录",
                 ResultStatisticsPeriodMode.Week => $"{From:yyyy/MM/dd} - {ToExclusive.AddDays(-1):MM/dd}",
                 ResultStatisticsPeriodMode.Month => From.ToString("yyyy/MM"),
                 _ => From.ToString("yyyy/MM/dd"),
@@ -29,6 +32,7 @@ namespace ProjectARVRPro
             DateTime day = anchor.Date;
             return mode switch
             {
+                ResultStatisticsPeriodMode.All => new ResultStatisticsPeriodRange(DateTime.MinValue, DateTime.MaxValue),
                 ResultStatisticsPeriodMode.Week => CreateWeekRange(day),
                 ResultStatisticsPeriodMode.Month => new ResultStatisticsPeriodRange(
                     new DateTime(day.Year, day.Month, 1),
@@ -41,6 +45,7 @@ namespace ProjectARVRPro
         {
             return mode switch
             {
+                ResultStatisticsPeriodMode.All => anchor.Date,
                 ResultStatisticsPeriodMode.Week => anchor.Date.AddDays(checked(offset * 7)),
                 ResultStatisticsPeriodMode.Month => anchor.Date.AddMonths(offset),
                 _ => anchor.Date.AddDays(offset),
@@ -159,6 +164,83 @@ namespace ProjectARVRPro
         public string PassRateText => ResultStatisticsCalculator.FormatRate(PassRate);
         public string FailRateText => ResultStatisticsCalculator.FormatRate(FailRate);
         public string AverageCtText => ResultStatisticsCalculator.FormatMilliseconds(AverageCtMilliseconds);
+    }
+
+    public sealed class ResultStatisticsTrendPoint
+    {
+        public DateTime Time { get; init; }
+        public string Label { get; init; } = string.Empty;
+        public int TotalCount { get; init; }
+        public double AverageCtMilliseconds { get; init; }
+    }
+
+    public sealed class ResultStatisticsDashboard
+    {
+        public ResultStatistics Summary { get; init; } = new();
+        public IReadOnlyList<ResultStatisticsTrendPoint> Trend { get; init; } = [];
+    }
+
+    public static class ResultStatisticsTrendBuilder
+    {
+        public static IReadOnlyList<ResultStatisticsTrendPoint> BuildMonthly(ResultStatistics statistics)
+        {
+            ArgumentNullException.ThrowIfNull(statistics);
+
+            Dictionary<DateTime, ResultStatisticsTrendPoint> monthly = statistics.DailyRows
+                .GroupBy(item => new DateTime(item.Date.Year, item.Date.Month, 1))
+                .ToDictionary(group => group.Key, group => CreatePoint(group.Key, group));
+            if (monthly.Count == 0)
+                return [];
+
+            DateTime firstMonth = monthly.Keys.Min();
+            DateTime lastMonth = monthly.Keys.Max();
+            int monthCount = checked((lastMonth.Year - firstMonth.Year) * 12 + lastMonth.Month - firstMonth.Month + 1);
+            return Enumerable.Range(0, monthCount)
+                .Select(firstMonth.AddMonths)
+                .Select(month => monthly.TryGetValue(month, out ResultStatisticsTrendPoint? point)
+                    ? point
+                    : new ResultStatisticsTrendPoint { Time = month, Label = month.ToString("yyyy/MM") })
+                .ToList();
+        }
+
+        public static IReadOnlyList<ResultStatisticsTrendPoint> BuildDetails(
+            IEnumerable<ResultStatisticsSample> samples,
+            ResultStatisticsPeriodMode mode)
+        {
+            ArgumentNullException.ThrowIfNull(samples);
+            if (mode == ResultStatisticsPeriodMode.All)
+                throw new ArgumentOutOfRangeException(nameof(mode), mode, "全部周期必须使用月度聚合趋势。");
+
+            return samples
+                .OrderBy(item => item.EndTime)
+                .ThenBy(item => item.Id)
+                .Select(item => new ResultStatisticsTrendPoint
+                {
+                    Time = item.EndTime,
+                    Label = mode == ResultStatisticsPeriodMode.Day
+                        ? item.EndTime.ToString("HH:mm:ss")
+                        : item.EndTime.ToString("MM/dd HH:mm:ss"),
+                    TotalCount = 1,
+                    AverageCtMilliseconds = Math.Max(0, (item.EndTime - item.StartTime).TotalMilliseconds),
+                })
+                .ToList();
+        }
+
+        private static ResultStatisticsTrendPoint CreatePoint(DateTime month, IEnumerable<ResultStatisticsDailyRow> rows)
+        {
+            List<ResultStatisticsDailyRow> values = rows.ToList();
+            int totalCount = values.Sum(item => item.TotalCount);
+            double averageCtMilliseconds = totalCount == 0
+                ? 0
+                : values.Sum(item => item.AverageCtMilliseconds * item.TotalCount) / totalCount;
+            return new ResultStatisticsTrendPoint
+            {
+                Time = month,
+                Label = month.ToString("yyyy/MM"),
+                TotalCount = totalCount,
+                AverageCtMilliseconds = averageCtMilliseconds,
+            };
+        }
     }
 
     public sealed class ResultStatisticsRecordRow
@@ -405,6 +487,7 @@ namespace ProjectARVRPro
                 db.Ado.ExecuteCommand($"CREATE INDEX IF NOT EXISTS \"IX_{TableName}_UpdateTime\" ON \"{TableName}\" (\"UpdateTime\");");
                 db.Ado.ExecuteCommand($"CREATE INDEX IF NOT EXISTS \"IX_{TableName}_TotalResult\" ON \"{TableName}\" (\"TotalResult\");");
                 db.Ado.ExecuteCommand($"CREATE INDEX IF NOT EXISTS \"IX_{TableName}_IsFinalized_UpdateTime\" ON \"{TableName}\" (\"IsFinalized\", \"UpdateTime\");");
+                db.Ado.ExecuteCommand($"CREATE INDEX IF NOT EXISTS \"IX_{TableName}_Statistics\" ON \"{TableName}\" (\"IsFinalized\", \"UpdateTime\", \"CreateTime\", \"TotalResult\");");
                 db.Ado.ExecuteCommand("CREATE INDEX IF NOT EXISTS \"IX_ARVRReuslt_CreateTime\" ON \"ARVRReuslt\" (\"CreateTime\");");
                 db.Ado.ExecuteCommand("CREATE INDEX IF NOT EXISTS \"IX_ARVRReuslt_SN_CreateTime\" ON \"ARVRReuslt\" (\"SN\", \"CreateTime\");");
                 db.Ado.ExecuteCommand("CREATE INDEX IF NOT EXISTS \"IX_ARVRReuslt_SN_Id\" ON \"ARVRReuslt\" (\"SN\", \"Id\");");
@@ -431,6 +514,92 @@ namespace ProjectARVRPro
                 .ToList();
 
             return ResultStatisticsCalculator.Calculate(samples, query.From, query.ToExclusive, now);
+        }
+
+        public ResultStatisticsDashboard QueryDashboard(
+            ResultStatisticsQuery query,
+            ResultStatisticsPeriodMode mode,
+            DateTime now)
+        {
+            ArgumentNullException.ThrowIfNull(query);
+            ResultStatisticsCalculator.ValidateRange(query.From, query.ToExclusive);
+            InitializeSchema();
+
+            using SqlSugarClient db = CreateClient();
+            db.Ado.BeginTran();
+            try
+            {
+                const string cycleTimeExpression = "CASE WHEN julianday(\"UpdateTime\") >= julianday(\"CreateTime\") THEN (julianday(\"UpdateTime\") - julianday(\"CreateTime\")) * 86400000.0 ELSE 0.0 END";
+                string optionalFilter = string.Empty;
+                if (!string.IsNullOrWhiteSpace(query.SN))
+                    optionalFilter += " AND \"SN\" LIKE '%' || @SN || '%'";
+                if (query.Result.HasValue)
+                    optionalFilter += " AND \"TotalResult\" = @Result";
+                string summarySql = $$"""
+                    SELECT COUNT(*) AS "TotalCount",
+                           COALESCE(SUM(CASE WHEN "TotalResult" = 1 THEN 1 ELSE 0 END), 0) AS "PassCount",
+                           COALESCE(AVG({{cycleTimeExpression}}), 0.0) AS "AverageCtMilliseconds",
+                           COALESCE(MIN({{cycleTimeExpression}}), 0.0) AS "MinimumCtMilliseconds",
+                           COALESCE(MAX({{cycleTimeExpression}}), 0.0) AS "MaximumCtMilliseconds",
+                           COALESCE(SUM(CASE WHEN "UpdateTime" >= @CurrentHour AND "UpdateTime" < @NextHour THEN 1 ELSE 0 END), 0) AS "CurrentHourCount",
+                           COALESCE(SUM(CASE WHEN "UpdateTime" >= @Today AND "UpdateTime" < @Tomorrow THEN 1 ELSE 0 END), 0) AS "TodayCount"
+                    FROM "ObjectiveTestResultRecord"
+                    WHERE "UpdateTime" >= @From
+                      AND "UpdateTime" < @ToExclusive
+                      AND ("IsFinalized" = 1 OR "IsFinalized" IS NULL)
+                      {{optionalFilter}};
+                    """;
+                ResultStatisticsAggregateRow aggregate = db.Ado.SqlQuery<ResultStatisticsAggregateRow>(
+                    summarySql,
+                    CreateDashboardParameters(query, now)).Single();
+
+                IReadOnlyList<ResultStatisticsTrendPoint> trend;
+                if (mode == ResultStatisticsPeriodMode.All)
+                {
+                    const string bucketExpression = "strftime('%Y-%m-01 00:00:00', \"UpdateTime\")";
+                    string trendSql = $$"""
+                        SELECT {{bucketExpression}} AS "Bucket",
+                               COUNT(*) AS "TotalCount",
+                               COALESCE(SUM(CASE WHEN "TotalResult" = 1 THEN 1 ELSE 0 END), 0) AS "PassCount",
+                               COALESCE(AVG({{cycleTimeExpression}}), 0.0) AS "AverageCtMilliseconds"
+                        FROM "ObjectiveTestResultRecord"
+                        WHERE "UpdateTime" >= @From
+                          AND "UpdateTime" < @ToExclusive
+                          AND ("IsFinalized" = 1 OR "IsFinalized" IS NULL)
+                          {{optionalFilter}}
+                        GROUP BY {{bucketExpression}}
+                        ORDER BY {{bucketExpression}};
+                        """;
+                    List<ResultStatisticsAggregateBucketRow> buckets = db.Ado.SqlQuery<ResultStatisticsAggregateBucketRow>(
+                        trendSql,
+                        CreateDashboardParameters(query, now));
+                    ResultStatistics bucketStatistics = CreateBucketStatistics(buckets, mode);
+                    trend = ResultStatisticsTrendBuilder.BuildMonthly(bucketStatistics);
+                }
+                else
+                {
+                    List<ResultStatisticsSample> samples = ApplyFilters(db.Queryable<ObjectiveTestResultRecord>(), query)
+                        .OrderBy(item => item.UpdateTime)
+                        .OrderBy(item => item.Id)
+                        .Select(item => new ResultStatisticsSample
+                        {
+                            Id = item.Id,
+                            StartTime = item.CreateTime,
+                            EndTime = item.UpdateTime,
+                        })
+                        .ToList();
+                    trend = ResultStatisticsTrendBuilder.BuildDetails(samples, mode);
+                }
+
+                ResultStatistics summary = CreateStatistics(aggregate);
+                db.Ado.CommitTran();
+                return new ResultStatisticsDashboard { Summary = summary, Trend = trend };
+            }
+            catch
+            {
+                db.Ado.RollbackTran();
+                throw;
+            }
         }
 
         public IReadOnlyList<ResultStatisticsRecordRow> QueryRecords(ResultStatisticsQuery query)
@@ -707,6 +876,82 @@ namespace ProjectARVRPro
                 throw new ArgumentOutOfRangeException(nameof(query), query.PageSize, "每页数量必须大于零。");
         }
 
+        private static SugarParameter[] CreateDashboardParameters(ResultStatisticsQuery query, DateTime now)
+        {
+            DateTime currentHour = new(now.Year, now.Month, now.Day, now.Hour, 0, 0, now.Kind);
+            return
+            [
+                new SugarParameter("@From", query.From),
+                new SugarParameter("@ToExclusive", query.ToExclusive),
+                new SugarParameter("@SN", string.IsNullOrWhiteSpace(query.SN) ? DBNull.Value : query.SN.Trim()),
+                new SugarParameter("@Result", query.Result.HasValue ? query.Result.Value : DBNull.Value),
+                new SugarParameter("@CurrentHour", currentHour),
+                new SugarParameter("@NextHour", currentHour.AddHours(1)),
+                new SugarParameter("@Today", now.Date),
+                new SugarParameter("@Tomorrow", now.Date.AddDays(1)),
+            ];
+        }
+
+        private static ResultStatistics CreateStatistics(ResultStatisticsAggregateRow aggregate)
+        {
+            int failCount = aggregate.TotalCount - aggregate.PassCount;
+            return new ResultStatistics
+            {
+                TotalCount = aggregate.TotalCount,
+                PassCount = aggregate.PassCount,
+                FailCount = failCount,
+                PassRate = aggregate.TotalCount > 0 ? aggregate.PassCount / (double)aggregate.TotalCount : 0,
+                FailRate = aggregate.TotalCount > 0 ? failCount / (double)aggregate.TotalCount : 0,
+                AverageCtMilliseconds = aggregate.AverageCtMilliseconds,
+                MinimumCtMilliseconds = aggregate.MinimumCtMilliseconds,
+                MaximumCtMilliseconds = aggregate.MaximumCtMilliseconds,
+                CurrentHourCount = aggregate.CurrentHourCount,
+                TodayCount = aggregate.TodayCount,
+            };
+        }
+
+        private static ResultStatistics CreateBucketStatistics(
+            IEnumerable<ResultStatisticsAggregateBucketRow> buckets,
+            ResultStatisticsPeriodMode mode)
+        {
+            List<ResultStatisticsAggregateBucketRow> rows = buckets.ToList();
+            if (mode == ResultStatisticsPeriodMode.Day)
+            {
+                return new ResultStatistics
+                {
+                    HourlyRows = rows.Select(item => new ResultStatisticsHourlyRow
+                    {
+                        Hour = ParseBucket(item.Bucket),
+                        TotalCount = item.TotalCount,
+                        PassCount = item.PassCount,
+                        FailCount = item.TotalCount - item.PassCount,
+                        PassRate = item.TotalCount > 0 ? item.PassCount / (double)item.TotalCount : 0,
+                        FailRate = item.TotalCount > 0 ? (item.TotalCount - item.PassCount) / (double)item.TotalCount : 0,
+                        AverageCtMilliseconds = item.AverageCtMilliseconds,
+                    }).ToList(),
+                };
+            }
+
+            return new ResultStatistics
+            {
+                DailyRows = rows.Select(item => new ResultStatisticsDailyRow
+                {
+                    Date = ParseBucket(item.Bucket).Date,
+                    TotalCount = item.TotalCount,
+                    PassCount = item.PassCount,
+                    FailCount = item.TotalCount - item.PassCount,
+                    PassRate = item.TotalCount > 0 ? item.PassCount / (double)item.TotalCount : 0,
+                    FailRate = item.TotalCount > 0 ? (item.TotalCount - item.PassCount) / (double)item.TotalCount : 0,
+                    AverageCtMilliseconds = item.AverageCtMilliseconds,
+                }).ToList(),
+            };
+        }
+
+        private static DateTime ParseBucket(string value)
+        {
+            return DateTime.ParseExact(value, "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
+        }
+
         private SqlSugarClient CreateClient()
         {
             return new SqlSugarClient(new ConnectionConfig
@@ -730,6 +975,25 @@ namespace ProjectARVRPro
         private sealed class FlowExecutionNameRow
         {
             public string Model { get; set; } = string.Empty;
+        }
+
+        private sealed class ResultStatisticsAggregateRow
+        {
+            public int TotalCount { get; set; }
+            public int PassCount { get; set; }
+            public double AverageCtMilliseconds { get; set; }
+            public double MinimumCtMilliseconds { get; set; }
+            public double MaximumCtMilliseconds { get; set; }
+            public int CurrentHourCount { get; set; }
+            public int TodayCount { get; set; }
+        }
+
+        private sealed class ResultStatisticsAggregateBucketRow
+        {
+            public string Bucket { get; set; } = string.Empty;
+            public int TotalCount { get; set; }
+            public int PassCount { get; set; }
+            public double AverageCtMilliseconds { get; set; }
         }
     }
 }

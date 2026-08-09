@@ -1,15 +1,15 @@
 using ColorVision.Common.MVVM;
+using ProjectARVRPro.Process;
 using ProjectARVRPro.Process.Black;
 using ProjectARVRPro.Process.Chessboard;
 using ProjectARVRPro.Process.Distortion;
+using ProjectARVRPro.Process.KeyedResults.FieldOfView;
+using ProjectARVRPro.Process.KeyedResults.LuminanceChromaticity;
 using ProjectARVRPro.Process.MTF.MTFHV;
 using ProjectARVRPro.Process.MTF.MTFHV048;
 using ProjectARVRPro.Process.MTF.MTFHV058;
 using ProjectARVRPro.Process.OpticCenter;
-using ProjectARVRPro.Process.RGB.Blue;
-using ProjectARVRPro.Process.RGB.Green;
-using ProjectARVRPro.Process.RGB.Red;
-using ProjectARVRPro.Process.W25;
+using ProjectARVRPro.Process.ScreenDefects;
 using ProjectARVRPro.Process.W255;
 using ProjectARVRPro.Process.W51;
 using System.Collections.ObjectModel;
@@ -23,10 +23,6 @@ namespace ProjectARVRPro
     /// </summary>
     public class ObjectiveTestResult : ViewModelBase
     {
-        /// <summary>W25 白场 25 阶测试结果，主要包含中心亮度和中心色品坐标。</summary>
-        [DisplayName("W25")]
-        public W25TestResult W25TestResult { get; set; }
-
         /// <summary>W51 视场角测试结果，包含水平、垂直、对角线视场角。</summary>
         [DisplayName("W51")]
         public W51TestResult W51TestResult { get; set; }
@@ -39,17 +35,13 @@ namespace ProjectARVRPro
         [DisplayName("Black")]
         public BlackTestResult BlackTestResult { get; set; }
 
-        /// <summary>红场测试结果，包含红色画面的亮度均匀性、色度均匀性和中心光色参数。</summary>
-        [DisplayName("R255")]
-        public RedTestResult RedTestResult { get; set; }
+        /// <summary>按配置名称输出的视场角测试结果。</summary>
+        [DisplayName("视场角测试")]
+        public Dictionary<string, FieldOfViewTestResult> FieldOfViewTestResults { get; set; } = new Dictionary<string, FieldOfViewTestResult>();
 
-        /// <summary>绿场测试结果，包含绿色画面的亮度均匀性、色度均匀性和中心光色参数。</summary>
-        [DisplayName("G255")]
-        public GreenTestResult GreenTestResult { get; set; }
-
-        /// <summary>蓝场测试结果，包含蓝色画面的亮度均匀性、色度均匀性和中心光色参数。</summary>
-        [DisplayName("B255")]
-        public BlueTestResult BlueTestResult { get; set; }
+        /// <summary>按配置名称输出的亮度、色度及均匀性测试结果。</summary>
+        [DisplayName("亮色度测试")]
+        public Dictionary<string, LuminanceChromaticityTestResult> LuminanceChromaticityTestResults { get; set; } = new Dictionary<string, LuminanceChromaticityTestResult>();
 
         /// <summary>棋盘格测试结果，主要包含棋盘格对比度。</summary>
         [DisplayName("Chessborad")]
@@ -67,6 +59,10 @@ namespace ProjectARVRPro
         [DisplayName("MTF058")]
         public List<MTFHV058TestResult> MTFHV058TestResults { get; set; } = new List<MTFHV058TestResult>();
 
+        /// <summary>按配置名称输出的 MTF 0.5F/0.8F 测试结果。</summary>
+        [DisplayName("DynamicMTFHV058")]
+        public Dictionary<string, MTFHV058TestResult> DynamicMTFHV058TestResults { get; set; } = new Dictionary<string, MTFHV058TestResult>();
+
         /// <summary>畸变测试结果，包含 TV 畸变、光学畸变和九点/梯形畸变。</summary>
         [DisplayName("Distortion")]
         public DistortionTestResult DistortionTestResult { get; set; }
@@ -79,6 +75,16 @@ namespace ProjectARVRPro
         /// 动态测试结果字典。Key 为测试画面名称，Value 为该画面下的测试项集合；用于后续扩展 MTF 等动态项目。
         /// </summary>
         public Dictionary<string, ObservableCollection<ObjectiveTestItem>> DynamicTestResults { get; set; } = new Dictionary<string, ObservableCollection<ObjectiveTestItem>>();
+
+        /// <summary>
+        /// 动态关注点结果字典。Key 为测试画面名称，Value 为该画面下的 POI 光色数据。
+        /// </summary>
+        public Dictionary<string, ObservableCollection<PoixyuvData>> DynamicPoixyuvDatas { get; set; } = new Dictionary<string, ObservableCollection<PoixyuvData>>();
+
+        /// <summary>
+        /// 动态屏幕缺陷检测结果。Key 为测试画面名称，Value 为缺陷汇总和缺陷框参数。
+        /// </summary>
+        public Dictionary<string, ScreenDefectsData> DynamicScreenDefectResults { get; set; } = new Dictionary<string, ScreenDefectsData>();
 
         /// <summary>
         /// 总体测试结果。true 表示整机或当前流程判定通过。

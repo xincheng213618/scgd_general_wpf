@@ -115,7 +115,8 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
         {
             this.db = db ?? throw new ArgumentNullException(nameof(db));
             this.ownsDb = ownsDb;
-            FlowDiagnosticsSchemaMigrator.EnsureSchema(db);
+            FlowDiagnosticsMaintenanceGate.RunExclusive(
+                () => FlowDiagnosticsSchemaMigrator.EnsureSchema(db));
         }
 
         public FlowIncidentPage Query(FlowIncidentQuery? query = null)
@@ -356,38 +357,41 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             ArgumentNullException.ThrowIfNull(update);
             ThrowIfDisposed();
 
-            lock (ActionLock)
+            lock (FlowDiagnosticsMaintenanceGate.SyncRoot)
             {
-                lock (dbLock)
+                lock (ActionLock)
                 {
-                    ThrowIfDisposed();
-                    db.Ado.BeginTran();
-                    try
+                    lock (dbLock)
                     {
-                        FlowIncident? incident =
-                            db.Queryable<FlowIncident>().InSingle(incidentId);
-                        if (incident == null)
-                        {
-                            throw new InvalidOperationException(
-                                $"找不到 Incident {incidentId}。");
-                        }
-
-                        FlowIncident updated = update(incident);
-                        db.Updateable(updated).ExecuteCommand();
-                        db.Ado.CommitTran();
-                        return updated;
-                    }
-                    catch
-                    {
+                        ThrowIfDisposed();
+                        db.Ado.BeginTran();
                         try
                         {
-                            db.Ado.RollbackTran();
+                            FlowIncident? incident =
+                                db.Queryable<FlowIncident>().InSingle(incidentId);
+                            if (incident == null)
+                            {
+                                throw new InvalidOperationException(
+                                    $"找不到 Incident {incidentId}。");
+                            }
+
+                            FlowIncident updated = update(incident);
+                            db.Updateable(updated).ExecuteCommand();
+                            db.Ado.CommitTran();
+                            return updated;
                         }
                         catch
                         {
-                            // Preserve the original incident action failure.
+                            try
+                            {
+                                db.Ado.RollbackTran();
+                            }
+                            catch
+                            {
+                                // Preserve the original incident action failure.
+                            }
+                            throw;
                         }
-                        throw;
                     }
                 }
             }

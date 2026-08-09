@@ -7,6 +7,7 @@ using System.IO;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
 using Microsoft.Win32;
 
 namespace ProjectARVRPro.IntegrationDemo
@@ -34,9 +35,35 @@ namespace ProjectARVRPro.IntegrationDemo
             await ConnectAsync("init");
         }
 
+        private async void ConnectOnlyButton_Click(object sender, RoutedEventArgs e)
+        {
+            await ConnectAsync(null);
+        }
+
         private async void ConnectRunAllButton_Click(object sender, RoutedEventArgs e)
         {
             await ConnectAsync("runall");
+        }
+
+        private async void SendCommandButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                string eventName = GetSelectedCommandEventName();
+                string requestParams = eventName == "GetProcessEnable" ? string.Empty : CommandParamsTextBox.Text.Trim();
+                if ((eventName == "SwitchGroup" || eventName == "SetProcessEnable") && string.IsNullOrWhiteSpace(requestParams))
+                {
+                    MessageBox.Show(this, eventName + " 需要填写 Params。", "缺少参数", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+
+                await SendEventAsync(eventName, requestParams);
+            }
+            catch (Exception ex)
+            {
+                AppendLog("Send command failed: " + ex.Message);
+                MessageBox.Show(this, ex.Message, "发送失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
         }
 
         private async void SwitchPgCompleteButton_Click(object sender, RoutedEventArgs e)
@@ -87,17 +114,9 @@ namespace ProjectARVRPro.IntegrationDemo
         {
             try
             {
-                Disconnect();
-                _tcpClient = new TcpClient();
-                string host = HostTextBox.Text.Trim();
-                int port = ParsePositiveInt(PortTextBox.Text, "Port");
-                await _tcpClient.ConnectAsync(host, port);
-                _networkStream = _tcpClient.GetStream();
-                _messageReader = new JsonStreamMessageReader(_networkStream);
-                _confirmedMessages.Clear();
-
-                AppendLog("Connected " + host + ":" + port.ToString(CultureInfo.InvariantCulture));
-                await SendEventAsync(mode == "runall" ? "RunAll" : "ProjectARVRInit");
+                await OpenConnectionAsync();
+                if (!string.IsNullOrEmpty(mode))
+                    await SendEventAsync(mode == "runall" ? "RunAll" : "ProjectARVRInit");
                 _ = ReceiveLoopAsync();
             }
             catch (Exception ex)
@@ -106,6 +125,19 @@ namespace ProjectARVRPro.IntegrationDemo
                 MessageBox.Show(this, ex.Message, "连接失败", MessageBoxButton.OK, MessageBoxImage.Warning);
                 Disconnect();
             }
+        }
+
+        private async Task OpenConnectionAsync()
+        {
+            Disconnect();
+            _tcpClient = new TcpClient();
+            string host = HostTextBox.Text.Trim();
+            int port = ParsePositiveInt(PortTextBox.Text, "Port");
+            await _tcpClient.ConnectAsync(host, port);
+            _networkStream = _tcpClient.GetStream();
+            _messageReader = new JsonStreamMessageReader(_networkStream);
+            _confirmedMessages.Clear();
+            AppendLog("Connected " + host + ":" + port.ToString(CultureInfo.InvariantCulture));
         }
 
         private async Task ReceiveLoopAsync()
@@ -180,7 +212,7 @@ namespace ProjectARVRPro.IntegrationDemo
                 _ = Dispatcher.BeginInvoke(new Action(() => AppendLog("Skipped duplicate " + sourceEventName + " confirmation.")));
         }
 
-        private async Task SendEventAsync(string eventName)
+        private async Task SendEventAsync(string eventName, string requestParams = "")
         {
             if (_networkStream == null)
             {
@@ -188,8 +220,17 @@ namespace ProjectARVRPro.IntegrationDemo
                 return;
             }
 
-            string json = await ArvrClient.SendRequestAsync(_networkStream, eventName, GetSerialNumber());
+            string json = await ArvrClient.SendRequestAsync(_networkStream, eventName, GetSerialNumber(), requestParams);
             AppendLog("Sent: " + json);
+        }
+
+        private string GetSelectedCommandEventName()
+        {
+            var selectedItem = CommandEventNameComboBox.SelectedItem as ComboBoxItem;
+            string eventName = selectedItem == null ? string.Empty : Convert.ToString(selectedItem.Content, CultureInfo.InvariantCulture);
+            if (string.IsNullOrWhiteSpace(eventName))
+                throw new InvalidOperationException("请选择同步命令。");
+            return eventName;
         }
 
         private void Disconnect()
@@ -358,20 +399,21 @@ namespace ProjectARVRPro.IntegrationDemo
         {
             return "public class ObjectiveTestResult : ViewModelBase\r\n" +
                    "{\r\n" +
-                   "    public W25TestResult W25TestResult { get; set; }\r\n" +
                    "    public W51TestResult W51TestResult { get; set; }\r\n" +
                    "    public W255TestResult W255TestResult { get; set; }\r\n" +
                    "    public BlackTestResult BlackTestResult { get; set; }\r\n" +
-                   "    public RedTestResult RedTestResult { get; set; }\r\n" +
-                   "    public GreenTestResult GreenTestResult { get; set; }\r\n" +
-                   "    public BlueTestResult BlueTestResult { get; set; }\r\n" +
+                   "    public Dictionary<string, FieldOfViewTestResult> FieldOfViewTestResults { get; set; }\r\n" +
+                   "    public Dictionary<string, LuminanceChromaticityTestResult> LuminanceChromaticityTestResults { get; set; }\r\n" +
                    "    public ChessboardTestResult ChessboardTestResult { get; set; }\r\n" +
                    "    public MTFHVTestResult MTFHVTestResult { get; set; }\r\n" +
                    "    public List<MTFHV048TestResult> MTFHV048TestResults { get; set; }\r\n" +
                    "    public List<MTFHV058TestResult> MTFHV058TestResults { get; set; }\r\n" +
+                   "    public Dictionary<string, MTFHV058TestResult> DynamicMTFHV058TestResults { get; set; }\r\n" +
                    "    public DistortionTestResult DistortionTestResult { get; set; }\r\n" +
                    "    public OpticCenterTestResult OpticCenterTestResult { get; set; }\r\n" +
                    "    public Dictionary<string, ObservableCollection<ObjectiveTestItem>> DynamicTestResults { get; set; }\r\n" +
+                   "    public Dictionary<string, ObservableCollection<PoixyuvData>> DynamicPoixyuvDatas { get; set; }\r\n" +
+                   "    public Dictionary<string, ScreenDefectsData> DynamicScreenDefectResults { get; set; }\r\n" +
                    "    public string Msg { get; set; }\r\n" +
                    "    public bool TotalResult { get; set; }\r\n" +
                    "    public string TotalResultString { get; }\r\n" +
