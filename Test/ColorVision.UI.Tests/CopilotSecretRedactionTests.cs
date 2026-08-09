@@ -2,8 +2,10 @@ using ColorVision.Copilot;
 using ColorVision.Copilot.Mcp;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -72,6 +74,111 @@ public sealed class CopilotSecretRedactionTests
         finally
         {
             await registry.ShutdownAsync();
+        }
+    }
+
+    [Fact]
+    public async Task McpToolAuditKeepsFieldNamesAndFailureCodeWithoutPayloadValuesOrWorkspacePath()
+    {
+        const string rawSessionToken = "raw-mcp-session-token-that-must-not-be-audited";
+        const string rawWorkspacePath = @"C:\Customers\SensitiveWorkspace";
+        const string argumentValue = "private-locale-value-that-must-not-be-audited";
+        var executionScope = CopilotExecutionScope.ForExternalMcpSession(
+            rawSessionToken,
+            "test-caller",
+            rawWorkspacePath);
+        var dispatcher = new CopilotMcpToolDispatcher(new CopilotMcpToolEnvironment
+        {
+            WorkspaceSnapshotProvider = () => new CopilotMcpWorkspaceSnapshot
+            {
+                SolutionDirectoryPath = rawWorkspacePath,
+                SearchRootPaths = [rawWorkspacePath],
+            },
+        });
+        var arguments = new Dictionary<string, JsonElement>
+        {
+            ["language"] = JsonSerializer.SerializeToElement(argumentValue),
+        };
+
+        CopilotMcpAuditLogger.ClearForTests();
+        CopilotMcpConfirmationStore.Instance.ClearForTests();
+        try
+        {
+            var result = await dispatcher.CallExternalAsync(
+                "set_language",
+                arguments,
+                executionScope,
+                CancellationToken.None);
+
+            Assert.False(result.Success);
+            Assert.Equal("confirmation_required", result.ErrorCode);
+            var entries = CopilotMcpAuditLogger.GetRecentEntries(200);
+            var toolEntry = Assert.Single(entries.Where(entry => entry.ToolName == "set_language"));
+            Assert.Equal("fields=language", toolEntry.ArgumentSummary);
+            Assert.Equal("confirmation_required", toolEntry.ErrorMessage);
+            Assert.Equal(executionScope.WorkspaceIdentity, toolEntry.WorkspaceIdentity);
+            Assert.DoesNotContain(rawWorkspacePath, toolEntry.WorkspaceIdentity, StringComparison.OrdinalIgnoreCase);
+
+            foreach (var entry in entries)
+            {
+                var retainedText = string.Join('|',
+                    entry.ArgumentSummary,
+                    entry.ErrorMessage,
+                    entry.WorkspaceIdentity,
+                    entry.ApprovalDecisionReason);
+                Assert.DoesNotContain(argumentValue, retainedText, StringComparison.Ordinal);
+                Assert.DoesNotContain(rawWorkspacePath, retainedText, StringComparison.OrdinalIgnoreCase);
+                Assert.DoesNotContain(rawSessionToken, retainedText, StringComparison.Ordinal);
+            }
+        }
+        finally
+        {
+            CopilotMcpConfirmationStore.Instance.ClearForTests();
+            CopilotMcpAuditLogger.ClearForTests();
+        }
+    }
+
+    [Fact]
+    public void McpActionAuditProjectsArgumentsApprovalReasonAndWorkspace()
+    {
+        const string sensitiveDetail = "private-review-detail-that-must-not-be-audited";
+        const string rawWorkspacePath = @"C:\Customers\SensitiveWorkspace";
+        var executionScope = CopilotExecutionScope.ForExternalMcpSession(
+            "raw-session-token",
+            "test-caller",
+            rawWorkspacePath);
+        var action = new ConfirmableAction
+        {
+            ActionId = "action-1",
+            ToolName = "set_language",
+            ArgumentsSummary = "language=" + sensitiveDetail,
+            ApprovalDecisionSource = "automatic-review",
+            ApprovalDecisionReason = sensitiveDetail,
+            RequestContext = new CopilotConfirmationRequestContext
+            {
+                Scope = executionScope,
+                SourceKind = CopilotApprovalSourceKind.ExternalMcp,
+                RequestSource = "test-caller",
+                WorkspacePath = rawWorkspacePath,
+            },
+        };
+
+        CopilotMcpAuditLogger.ClearForTests();
+        try
+        {
+            CopilotMcpAuditLogger.ActionApproved(action);
+
+            var entry = Assert.Single(CopilotMcpAuditLogger.GetRecentEntries(1));
+            Assert.Equal("details-withheld", entry.ArgumentSummary);
+            Assert.Equal("details-withheld", entry.ApprovalDecisionReason);
+            Assert.Equal(executionScope.WorkspaceIdentity, entry.WorkspaceIdentity);
+            Assert.DoesNotContain(sensitiveDetail, entry.ArgumentSummary, StringComparison.Ordinal);
+            Assert.DoesNotContain(sensitiveDetail, entry.ApprovalDecisionReason, StringComparison.Ordinal);
+            Assert.DoesNotContain(rawWorkspacePath, entry.WorkspaceIdentity, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            CopilotMcpAuditLogger.ClearForTests();
         }
     }
 }

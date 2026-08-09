@@ -54,7 +54,7 @@ namespace ColorVision.Copilot.Mcp
             executionScope = EnsureWorkspaceScope(executionScope);
             var normalizedUri = NormalizeResourceUri(uri);
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-            CopilotMcpAuditLogger.ToolCallStarted("resources/read", $"uri={normalizedUri}", executionScope);
+            CopilotMcpAuditLogger.ToolCallStarted("resources/read", "fields=uri", executionScope);
             try
             {
                 var result = normalizedUri switch
@@ -73,18 +73,18 @@ namespace ColorVision.Copilot.Mcp
                         CopilotAgentTaskEventJournal.MaxQueryLimit),
                     _ => CopilotMcpToolCallResult.Fail("resource_not_found", $"Unknown ColorVision MCP resource: {uri}"),
                 };
-                CopilotMcpAuditLogger.ToolCallCompleted("resources/read", result.Success, stopwatch.Elapsed, result.Success ? "OK" : result.Text);
+                CopilotMcpAuditLogger.ToolCallCompleted("resources/read", result.Success, stopwatch.Elapsed, result.Success ? "OK" : FirstNonEmpty(result.ErrorCode, "resource_read_failed"));
                 return result;
             }
             catch (OperationCanceledException)
             {
-                CopilotMcpAuditLogger.ToolCallCompleted("resources/read", false, stopwatch.Elapsed, "The MCP resource read was canceled.");
+                CopilotMcpAuditLogger.ToolCallCompleted("resources/read", false, stopwatch.Elapsed, "operation_canceled");
                 throw;
             }
             catch (Exception ex)
             {
                 var result = CopilotMcpToolCallResult.Fail("resource_read_failed", $"The MCP resource read failed: {CopilotMcpAuditLogger.RedactText(ex.Message)}");
-                CopilotMcpAuditLogger.ToolCallCompleted("resources/read", false, stopwatch.Elapsed, result.Text);
+                CopilotMcpAuditLogger.ToolCallCompleted("resources/read", false, stopwatch.Elapsed, result.ErrorCode);
                 return result;
             }
         }

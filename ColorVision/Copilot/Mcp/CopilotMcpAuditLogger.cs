@@ -29,7 +29,7 @@ namespace ColorVision.Copilot.Mcp
 
         public string TaskId { get; init; } = string.Empty;
 
-        public string WorkspacePath { get; init; } = string.Empty;
+        public string WorkspaceIdentity { get; init; } = string.Empty;
 
         public string SessionIdentity { get; init; } = string.Empty;
 
@@ -91,7 +91,7 @@ namespace ColorVision.Copilot.Mcp
             {
                 TimestampUtc = DateTimeOffset.UtcNow,
                 ToolName = Sanitize(toolName),
-                ArgumentSummary = Sanitize(Redact(argumentSummary)),
+                ArgumentSummary = SanitizeRedacted(argumentSummary),
                 ExecutionScope = executionScope,
             };
 
@@ -99,7 +99,7 @@ namespace ColorVision.Copilot.Mcp
             Log.Info($"MCP tool call started. TimestampUtc={scope.TimestampUtc:O} Tool={scope.ToolName} Arguments={scope.ArgumentSummary} Caller={EmptyLabel(executionScope.CallerIdentity)} ScopeId={executionScope.ScopeId}");
         }
 
-        public static void ToolCallCompleted(string toolName, bool success, TimeSpan elapsed, string message)
+        public static void ToolCallCompleted(string toolName, bool success, TimeSpan elapsed, string failureCode)
         {
             var scope = CurrentScope.Value;
             var entry = new CopilotMcpAuditEntry
@@ -109,7 +109,7 @@ namespace ColorVision.Copilot.Mcp
                 ArgumentSummary = Sanitize(scope?.ArgumentSummary),
                 Success = success,
                 DurationMs = (long)elapsed.TotalMilliseconds,
-                ErrorMessage = success ? string.Empty : Sanitize(message),
+                ErrorMessage = success ? string.Empty : SanitizeRedacted(failureCode),
             };
             entry = WithExecutionScope(entry, scope?.ExecutionScope);
 
@@ -131,10 +131,10 @@ namespace ColorVision.Copilot.Mcp
                 TimestampUtc = DateTimeOffset.UtcNow,
                 ToolName = "authentication",
                 ArgumentSummary = "{}",
-                CallerSource = Sanitize(callerSource),
+                CallerSource = SanitizeRedacted(callerSource),
                 Success = false,
                 DurationMs = 0,
-                ErrorMessage = Sanitize(reason),
+                ErrorMessage = SanitizeRedacted(reason),
             };
 
             lock (SyncRoot)
@@ -161,38 +161,37 @@ namespace ColorVision.Copilot.Mcp
             "action_rejected",
             action,
             false,
-            string.Equals(action.ApprovalDecisionSource, "automatic-review", StringComparison.Ordinal)
-                ? "Denied by the automatic permission reviewer."
-                : string.Equals(action.ApprovalDecisionSource, "automatic-review-unavailable", StringComparison.Ordinal)
-                    ? "Automatic permission review was unavailable, so the action stayed closed."
-                : "Rejected by the ColorVision user.");
+            string.Equals(action.ApprovalDecisionSource, "automatic-review-unavailable", StringComparison.Ordinal)
+                ? "automatic_review_unavailable"
+                : string.Equals(action.ApprovalDecisionSource, "automatic-review", StringComparison.Ordinal)
+                    ? "automatic_review_denied"
+                    : "action_rejected");
 
-        public static void ActionCancelled(ConfirmableAction action) => RecordActionEvent("action_cancelled", action, false, "Cancelled before the approved action completed.");
+        public static void ActionCancelled(ConfirmableAction action) => RecordActionEvent("action_cancelled", action, false, "action_cancelled");
 
-        public static void ActionExpired(ConfirmableAction action) => RecordActionEvent("action_expired", action, false, "The confirmable action expired.");
+        public static void ActionExpired(ConfirmableAction action) => RecordActionEvent("action_expired", action, false, "action_expired");
 
-        public static void ActionExecuted(ConfirmableAction action, bool success, string message) => RecordActionEvent("action_executed", action, success, message);
+        public static void ActionExecuted(ConfirmableAction action, bool success, string failureCode) => RecordActionEvent("action_executed", action, success, failureCode);
 
-        private static void RecordActionEvent(string eventName, ConfirmableAction action, bool success, string message)
+        private static void RecordActionEvent(string eventName, ConfirmableAction action, bool success, string failureCode)
         {
             var executionScope = action.RequestContext.ResolveExecutionScope();
             var entry = WithExecutionScope(new CopilotMcpAuditEntry
             {
                 TimestampUtc = DateTimeOffset.UtcNow,
                 ToolName = Sanitize(eventName),
-                ArgumentSummary = Sanitize(Redact(action.ArgumentsSummary)),
+                ArgumentSummary = ProjectDetailPresence(action.ArgumentsSummary),
                 Success = success,
                 DurationMs = 0,
-                ErrorMessage = success ? string.Empty : Sanitize(message),
-                CallerSource = Sanitize(string.IsNullOrWhiteSpace(action.RequestContext.RequestSource)
+                ErrorMessage = success ? string.Empty : SanitizeRedacted(failureCode),
+                CallerSource = SanitizeRedacted(string.IsNullOrWhiteSpace(action.RequestContext.RequestSource)
                     ? "colorvision-ui"
                     : action.RequestContext.RequestSource),
-                ActionId = Sanitize(action.ActionId),
-                ConversationId = Sanitize(action.RequestContext.ConversationId),
-                TaskId = Sanitize(action.RequestContext.TaskId),
-                WorkspacePath = Sanitize(action.RequestContext.WorkspacePath),
-                ApprovalDecisionSource = Sanitize(action.ApprovalDecisionSource),
-                ApprovalDecisionReason = Sanitize(action.ApprovalDecisionReason),
+                ActionId = SanitizeRedacted(action.ActionId),
+                ConversationId = SanitizeRedacted(action.RequestContext.ConversationId),
+                TaskId = SanitizeRedacted(action.RequestContext.TaskId),
+                ApprovalDecisionSource = SanitizeRedacted(action.ApprovalDecisionSource),
+                ApprovalDecisionReason = ProjectDetailPresence(action.ApprovalDecisionReason),
             }, executionScope);
 
             lock (SyncRoot)
@@ -202,7 +201,7 @@ namespace ColorVision.Copilot.Mcp
                     RecentEntries.RemoveRange(0, RecentEntries.Count - MaxEntries);
             }
 
-            Log.Info($"MCP action event. TimestampUtc={entry.TimestampUtc:O} Event={entry.ToolName} ActionId={entry.ActionId} Tool={action.ToolName} Conversation={EmptyLabel(entry.ConversationId)} Task={EmptyLabel(entry.TaskId)} Run={EmptyLabel(entry.RunId)} Workspace={EmptyLabel(entry.WorkspacePath)} Caller={EmptyLabel(entry.CallerSource)} ScopeId={EmptyLabel(entry.ScopeId)} ApprovalSource={EmptyLabel(entry.ApprovalDecisionSource)} ApprovalReason={EmptyLabel(entry.ApprovalDecisionReason)} Success={entry.Success} Message={EmptyLabel(entry.ErrorMessage)}");
+            Log.Info($"MCP action event. TimestampUtc={entry.TimestampUtc:O} Event={entry.ToolName} ActionId={entry.ActionId} Tool={action.ToolName} Conversation={EmptyLabel(entry.ConversationId)} Task={EmptyLabel(entry.TaskId)} Run={EmptyLabel(entry.RunId)} WorkspaceIdentity={EmptyLabel(entry.WorkspaceIdentity)} Caller={EmptyLabel(entry.CallerSource)} ScopeId={EmptyLabel(entry.ScopeId)} ApprovalSource={EmptyLabel(entry.ApprovalDecisionSource)} ApprovalReason={EmptyLabel(entry.ApprovalDecisionReason)} Success={entry.Success} Message={EmptyLabel(entry.ErrorMessage)}");
         }
 
         private static CopilotMcpAuditEntry WithExecutionScope(
@@ -218,20 +217,20 @@ namespace ColorVision.Copilot.Mcp
                 Success = entry.Success,
                 DurationMs = entry.DurationMs,
                 ErrorMessage = entry.ErrorMessage,
-                CallerSource = Sanitize(FirstNonEmpty(entry.CallerSource, executionScope.CallerIdentity)),
+                CallerSource = SanitizeRedacted(FirstNonEmpty(entry.CallerSource, executionScope.CallerIdentity)),
                 ActionId = entry.ActionId,
-                ConversationId = Sanitize(FirstNonEmpty(entry.ConversationId, executionScope.ConversationId)),
-                TaskId = Sanitize(FirstNonEmpty(entry.TaskId, executionScope.TaskId)),
-                WorkspacePath = Sanitize(FirstNonEmpty(entry.WorkspacePath, executionScope.WorkspacePath)),
-                SessionIdentity = Sanitize(executionScope.SessionIdentity),
-                RunId = Sanitize(executionScope.RunId),
-                ParentRunId = Sanitize(executionScope.ParentRunId),
-                TraceId = Sanitize(executionScope.TraceId),
-                ScopeId = Sanitize(executionScope.ScopeId),
-                ProviderCallId = Sanitize(executionScope.ProviderCallId),
-                ArgumentsSignature = Sanitize(executionScope.ArgumentsSignature),
-                ApprovalDecisionSource = Sanitize(entry.ApprovalDecisionSource),
-                ApprovalDecisionReason = Sanitize(entry.ApprovalDecisionReason),
+                ConversationId = SanitizeRedacted(FirstNonEmpty(entry.ConversationId, executionScope.ConversationId)),
+                TaskId = SanitizeRedacted(FirstNonEmpty(entry.TaskId, executionScope.TaskId)),
+                WorkspaceIdentity = SanitizeRedacted(FirstNonEmpty(entry.WorkspaceIdentity, executionScope.WorkspaceIdentity)),
+                SessionIdentity = SanitizeRedacted(executionScope.SessionIdentity),
+                RunId = SanitizeRedacted(executionScope.RunId),
+                ParentRunId = SanitizeRedacted(executionScope.ParentRunId),
+                TraceId = SanitizeRedacted(executionScope.TraceId),
+                ScopeId = SanitizeRedacted(executionScope.ScopeId),
+                ProviderCallId = SanitizeRedacted(executionScope.ProviderCallId),
+                ArgumentsSignature = SanitizeRedacted(executionScope.ArgumentsSignature),
+                ApprovalDecisionSource = SanitizeRedacted(entry.ApprovalDecisionSource),
+                ApprovalDecisionReason = SanitizeRedacted(entry.ApprovalDecisionReason),
             };
         }
 
@@ -340,6 +339,11 @@ namespace ColorVision.Copilot.Mcp
             var text = (value ?? string.Empty).Replace('\r', ' ').Replace('\n', ' ').Trim();
             return text.Length <= 800 ? text : text[..800] + "...";
         }
+
+        private static string SanitizeRedacted(string? value) => Sanitize(Redact(value));
+
+        private static string ProjectDetailPresence(string? value) =>
+            string.IsNullOrWhiteSpace(value) ? string.Empty : "details-withheld";
 
         private static string EmptyLabel(string? value)
         {

@@ -154,6 +154,22 @@ namespace ColorVision.Copilot.Mcp
             return string.Join(", ", arguments.Select(pair => $"{pair.Key}={TrimLong(CopilotMcpAuditLogger.RedactArgument(pair.Key, pair.Value.ToString()), 160)}"));
         }
 
+        private static string BuildAuditArgumentSummary(IReadOnlyDictionary<string, JsonElement>? arguments)
+        {
+            if (arguments == null || arguments.Count == 0)
+                return "{}";
+
+            const int maximumFieldNames = 32;
+            var fieldNames = arguments.Keys
+                .OrderBy(name => name, StringComparer.Ordinal)
+                .Take(maximumFieldNames)
+                .Select(name => TrimLong(CopilotMcpAuditLogger.RedactText(name), 80));
+            var omittedSuffix = arguments.Count > maximumFieldNames
+                ? $", ... (+{arguments.Count - maximumFieldNames} fields)"
+                : string.Empty;
+            return $"fields={string.Join(", ", fieldNames)}{omittedSuffix}";
+        }
+
         private static string BuildExactArgumentBinding(IReadOnlyDictionary<string, JsonElement>? arguments)
         {
             using var stream = new MemoryStream();

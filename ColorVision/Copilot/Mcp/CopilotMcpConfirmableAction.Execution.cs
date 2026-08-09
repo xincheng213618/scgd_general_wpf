@@ -136,7 +136,7 @@ namespace ColorVision.Copilot.Mcp
                 action.ReleaseExecutor();
             }
 
-            CopilotMcpAuditLogger.ActionExecuted(action, result.Success, result.Success ? "OK" : result.Text);
+            CopilotMcpAuditLogger.ActionExecuted(action, result.Success, result.Success ? "OK" : FirstNonEmpty(result.ErrorCode, "action_execution_failed"));
             RaiseActionStatusChanged(action);
             RaiseActionsChanged();
             return result;
@@ -264,7 +264,7 @@ namespace ColorVision.Copilot.Mcp
                 action.ReleaseExecutor();
             }
 
-            CopilotMcpAuditLogger.ActionExecuted(action, result.Success, result.Success ? "OK" : action.ExecutionResultText);
+            CopilotMcpAuditLogger.ActionExecuted(action, result.Success, result.Success ? "OK" : FirstNonEmpty(result.FailureCode, "action_execution_failed"));
             RaiseActionStatusChanged(action);
             RaiseActionsChanged();
             return true;
