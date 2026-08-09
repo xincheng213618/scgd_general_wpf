@@ -736,7 +736,14 @@ namespace ProjectARVRPro
             if (record == null)
                 return;
 
-            new TestResultViewWindow(record.ObjectiveTestResultJson)
+            string json = record.ObjectiveTestResultJson ?? string.Empty;
+            if (json.Length == 0)
+            {
+                MessageBox.Show(this, "ObjectiveTestResult 为空。", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            new TestResultViewWindow(json)
             {
                 Owner = this,
                 WindowStartupLocation = WindowStartupLocation.CenterOwner
@@ -749,8 +756,15 @@ namespace ProjectARVRPro
             if (record == null)
                 return;
 
+            string json = record.ObjectiveTestResultJson ?? string.Empty;
+            if (json.Length == 0)
+            {
+                MessageBox.Show(this, "ObjectiveTestResult 为空。", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
             var control = new AvalonEditControll();
-            control.SetJsonText(record.ObjectiveTestResultJson);
+            control.SetJsonText(json);
             new Window
             {
                 Title = $"ObjectiveTestResult Json - {record.SN}",
@@ -789,7 +803,7 @@ namespace ProjectARVRPro
                     return;
                 }
 
-                ObjectiveTestResult? result = JsonConvert.DeserializeObject<ObjectiveTestResult>(record.ObjectiveTestResultJson);
+                ObjectiveTestResult? result = JsonConvert.DeserializeObject<ObjectiveTestResult>(record.ObjectiveTestResultJson ?? string.Empty);
                 if (result == null)
                 {
                     MessageBox.Show(this, "ObjectiveTestResult 为空，无法导出。", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
@@ -1079,7 +1093,7 @@ namespace ProjectARVRPro
                 _ => DetailList.SelectedItem is ProjectARVRReuslt item && item.BatchId > 0);
             var viewTestResultCommand = new RelayCommand(
                 _ => ViewTestResult(),
-                _ => DetailList.SelectedItem is ProjectARVRReuslt item && !string.IsNullOrEmpty(item.ViewResultJson));
+                _ => DetailList.SelectedItem is ProjectARVRReuslt item && (item.Id > 0 || !string.IsNullOrEmpty(item.ViewResultJson)));
 
             var contextMenu = new ContextMenu();
             contextMenu.Items.Add(new MenuItem { Command = ApplicationCommands.Copy, Header = "复制" });
@@ -1158,10 +1172,17 @@ namespace ProjectARVRPro
 
         private void ViewTestResult()
         {
-            if (DetailList.SelectedItem is not ProjectARVRReuslt item || string.IsNullOrEmpty(item.ViewResultJson))
+            if (DetailList.SelectedItem is not ProjectARVRReuslt item)
                 return;
 
-            new TestResultViewWindow(item.ViewResultJson)
+            string? viewResultJson = _statisticsStore.LoadViewResultJson(item);
+            if (string.IsNullOrEmpty(viewResultJson))
+            {
+                MessageBox.Show(this, "ViewResultJson为空", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            new TestResultViewWindow(viewResultJson)
             {
                 Owner = this,
                 WindowStartupLocation = WindowStartupLocation.CenterOwner

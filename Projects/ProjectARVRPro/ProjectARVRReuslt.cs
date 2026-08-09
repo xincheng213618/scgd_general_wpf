@@ -41,7 +41,11 @@ namespace ProjectARVRPro
         [SugarColumn(IsNullable = true)]
         public string? ProcessConfigJson { get; set; }
 
-        [SugarColumn(IsNullable = true)]
+        /// <summary>
+        /// 当前流程或按需加载后的结果 JSON。数据库只保存 GZip 压缩字段，
+        /// 避免普通结果列表查询加载大文本。
+        /// </summary>
+        [SugarColumn(IsIgnore = true)]
         public string? ViewResultJson { get; set; }
     }
 }

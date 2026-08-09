@@ -399,6 +399,7 @@ namespace ProjectARVRPro
                 db.Ado.ExecuteCommand("PRAGMA busy_timeout = 5000;");
                 db.Ado.ExecuteCommand("PRAGMA journal_mode = WAL;");
                 db.CodeFirst.InitTables<ObjectiveTestResultRecord, ProjectARVRReuslt>();
+                ResultJsonPayloadStorage.EnsureSchema(db);
                 db.Ado.ExecuteCommand($"CREATE INDEX IF NOT EXISTS \"IX_{TableName}_SN\" ON \"{TableName}\" (\"SN\");");
                 db.Ado.ExecuteCommand($"CREATE INDEX IF NOT EXISTS \"IX_{TableName}_CreateTime\" ON \"{TableName}\" (\"CreateTime\");");
                 db.Ado.ExecuteCommand($"CREATE INDEX IF NOT EXISTS \"IX_{TableName}_UpdateTime\" ON \"{TableName}\" (\"UpdateTime\");");
@@ -618,7 +619,10 @@ namespace ProjectARVRPro
 
             InitializeSchema();
             using SqlSugarClient db = CreateClient();
-            return db.Queryable<ObjectiveTestResultRecord>().Where(item => item.Id == id).First();
+            ObjectiveTestResultRecord? record = db.Queryable<ObjectiveTestResultRecord>().Where(item => item.Id == id).First();
+            if (record != null)
+                record.ObjectiveTestResultJson = ResultJsonPayloadStorage.LoadObjectiveTestResultJson(db, record.Id) ?? string.Empty;
+            return record;
         }
 
         public IReadOnlyList<ObjectiveTestResultRecord> GetRecords(IEnumerable<int> ids)
@@ -630,9 +634,25 @@ namespace ProjectARVRPro
 
             InitializeSchema();
             using SqlSugarClient db = CreateClient();
-            return db.Queryable<ObjectiveTestResultRecord>()
+            List<ObjectiveTestResultRecord> records = db.Queryable<ObjectiveTestResultRecord>()
                 .Where(item => recordIds.Contains(item.Id))
                 .ToList();
+            ResultJsonPayloadStorage.LoadObjectiveTestResultJsons(db, records);
+            foreach (ObjectiveTestResultRecord record in records.Where(item => item.ObjectiveTestResultJson == null))
+                record.ObjectiveTestResultJson = string.Empty;
+            return records;
+        }
+
+        public string? LoadViewResultJson(ProjectARVRReuslt result)
+        {
+            ArgumentNullException.ThrowIfNull(result);
+            if (result.ViewResultJson != null || result.Id <= 0)
+                return result.ViewResultJson;
+
+            InitializeSchema();
+            using SqlSugarClient db = CreateClient();
+            result.ViewResultJson = ResultJsonPayloadStorage.LoadViewResultJson(db, result.Id) ?? string.Empty;
+            return result.ViewResultJson;
         }
 
         private static ISugarQueryable<ObjectiveTestResultRecord> ApplyFilters(

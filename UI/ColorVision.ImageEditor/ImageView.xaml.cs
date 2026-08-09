@@ -42,7 +42,6 @@ namespace ColorVision.ImageEditor
     public partial class ImageView : UserControl, IDisposable, IActiveDocumentStatusProvider, INotifyPropertyChanged
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ImageView));
-        private static readonly SemaphoreSlim SnapshotSaveGate = new(1, 1);
         private readonly DefaultImageViewDisplayConfig _defaultDisplayConfig = DefaultImageViewDisplayConfig.Current;
         private readonly ImageFrameStore _imageFrameStore = new();
         private readonly List<Func<IEnumerable<ImageViewSettingsEntry>>> _settingsEntries = new();
@@ -779,7 +778,7 @@ namespace ColorVision.ImageEditor
 
         /// <summary>
         /// Encodes and writes a frozen snapshot without occupying the UI thread.
-        /// PNG encoding is serialized to avoid competing large bitmap encoders.
+        /// Each frozen snapshot is encoded independently so callers may run exports concurrently.
         /// </summary>
         public static async Task SaveSnapshotAsync(
             BitmapSource snapshot,
@@ -798,17 +797,9 @@ namespace ColorVision.ImageEditor
                     "ImageView snapshots must be frozen before background saving.");
             }
 
-            await SnapshotSaveGate.WaitAsync(cancellationToken).ConfigureAwait(false);
-            try
-            {
-                await Task.Run(
-                    () => SaveSnapshot(snapshot, fileName, cancellationToken),
-                    cancellationToken).ConfigureAwait(false);
-            }
-            finally
-            {
-                SnapshotSaveGate.Release();
-            }
+            await Task.Run(
+                () => SaveSnapshot(snapshot, fileName, cancellationToken),
+                cancellationToken).ConfigureAwait(false);
         }
 
         private static void SaveSnapshot(

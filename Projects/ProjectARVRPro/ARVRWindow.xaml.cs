@@ -454,7 +454,7 @@ namespace ProjectARVRPro
 
             var viewTestResultCommand = new RelayCommand(
                 _ => ContextMenu_ViewTestResult(),
-                _ => listView1.SelectedItem is ProjectARVRReuslt item && !string.IsNullOrEmpty(item.ViewResultJson));
+                _ => listView1.SelectedItem is ProjectARVRReuslt item && (item.Id > 0 || !string.IsNullOrEmpty(item.ViewResultJson)));
 
             var contextMenu = new ContextMenu();
             contextMenu.Items.Add(new MenuItem() { Command = ApplicationCommands.Delete });
@@ -539,12 +539,13 @@ namespace ProjectARVRPro
         private void ContextMenu_ViewTestResult()
         {
             if (listView1.SelectedItem is not ProjectARVRReuslt item) return;
-            if (string.IsNullOrEmpty(item.ViewResultJson))
+            string? viewResultJson = ViewResultManager.LoadViewResultJson(item);
+            if (string.IsNullOrEmpty(viewResultJson))
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), "ViewResultJson为空", "ColorVision");
                 return;
             }
-            var window = new TestResultViewWindow(item.ViewResultJson)
+            var window = new TestResultViewWindow(viewResultJson)
             {
                 Owner = Application.Current.GetActiveWindow(),
                 WindowStartupLocation = WindowStartupLocation.CenterOwner
@@ -1779,6 +1780,7 @@ namespace ProjectARVRPro
             {
                 try
                 {
+                    ViewResultManager.LoadViewResultJson(result);
                     if (result.FlowStatus == FlowStatus.Completed)
                     {
                         GenoutputText(result);
@@ -1890,7 +1892,6 @@ namespace ProjectARVRPro
             }
         }
 
-        private readonly SemaphoreSlim _imageExportCapacity = new(1, 1);
         private readonly SemaphoreSlim _resultImagePresentationGate = new(1, 1);
         private readonly HashSet<ProjectARVRReuslt> _automaticImageExportResults = new(ReferenceEqualityComparer.Instance);
 
@@ -1918,7 +1919,7 @@ namespace ProjectARVRPro
             }
 
             log.Info("ImageEditor图像加载及外部点位渲染已完成，开始捕获本次结果快照。");
-            _ = StartImageExportFromLoadedImageAsync(result);
+            StartImageExportFromLoadedImage(result);
         }
 
         private bool CanCurrentSourceExportBmp()
@@ -1930,7 +1931,7 @@ namespace ProjectARVRPro
             return source != null && ColorVision.ImageEditor.ImageView.CanBmpPreserveSourceBitDepth(source.Format);
         }
 
-        private async Task StartImageExportFromLoadedImageAsync(ProjectARVRReuslt result)
+        private void StartImageExportFromLoadedImage(ProjectARVRReuslt result)
         {
             ViewResultManagerConfig config = ViewResultManager.Config;
             bool saveResultImage = config.IsSaveImageReuslt;
@@ -1945,8 +1946,6 @@ namespace ProjectARVRPro
             DateTime requestedAt = result.CreateTime == default ? DateTime.Now : result.CreateTime;
 
             ImageViewSnapshot? snapshot = null;
-            bool capacityAcquired = false;
-            bool exportStarted = false;
             try
             {
                 if (_isDisposed)
@@ -1989,14 +1988,9 @@ namespace ProjectARVRPro
                     $"ImageEditor像素与场景快照准备完成，源格式 {loadedSource.Format}，"
                     + $"耗时 {snapshotStopwatch.ElapsedMilliseconds}ms。");
 
-                if (_imageExportCapacity.CurrentCount == 0)
-                    log.Warn("上一图像导出尚未完成；已绑定本次已加载图像，将等待有界导出通道以限制大图内存占用。");
-                await _imageExportCapacity.WaitAsync();
-                capacityAcquired = true;
                 if (_isDisposed)
                     return;
 
-                exportStarted = true;
                 _ = ExportImagesAsync(
                     snapshot,
                     saveResultImage,
@@ -2019,8 +2013,6 @@ namespace ProjectARVRPro
             finally
             {
                 snapshot?.Dispose();
-                if (capacityAcquired && !exportStarted)
-                    _imageExportCapacity.Release();
             }
         }
 
@@ -2111,20 +2103,22 @@ namespace ProjectARVRPro
             }
             catch (Exception ex)
             {
-                log.Error("图像导出任务失败", ex);
+                log.Error("图像导出任务失败；已停止本任务，之前已经写盘的文件不会回滚。", ex);
             }
             finally
             {
                 exportStopwatch?.Stop();
-                LogExportedImage("8位标记图", renderedFilePath);
-                LogExportedImage("原位深原图", sourceFilePath);
+                if (exportSucceeded)
+                {
+                    LogExportedImage("8位标记图", renderedFilePath);
+                    LogExportedImage("原位深原图", sourceFilePath);
+                }
                 if (exportStopwatch != null)
                 {
                     string outcome = exportSucceeded ? "完成" : "结束（含失败）";
                     log.Info($"ImageEditor图像导出任务{outcome}，总耗时 {exportStopwatch.ElapsedMilliseconds}ms。");
                 }
                 snapshot?.Dispose();
-                _imageExportCapacity.Release();
             }
         }
 

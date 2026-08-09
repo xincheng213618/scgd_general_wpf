@@ -18,6 +18,7 @@ namespace ColorVision.Database
         private readonly IDatabaseCleanupSelectionProvider? _selectionProvider;
         private readonly IDatabaseCleanupBackupProvider? _backupProvider;
         private readonly IDatabaseCleanupMaintenanceProvider? _maintenanceProvider;
+        private readonly IDatabaseCleanupMigrationProvider? _migrationProvider;
 
         private string _description = string.Empty;
         private string _keepMonthsText = "3";
@@ -32,6 +33,7 @@ namespace ColorVision.Database
             _selectionProvider = provider as IDatabaseCleanupSelectionProvider;
             _backupProvider = provider as IDatabaseCleanupBackupProvider;
             _maintenanceProvider = provider as IDatabaseCleanupMaintenanceProvider;
+            _migrationProvider = provider as IDatabaseCleanupMigrationProvider;
             _description = provider.Description;
             _backupBeforeCleanup = _backupProvider != null;
 
@@ -42,6 +44,7 @@ namespace ColorVision.Database
             CleanupSelectedCommand = new RelayCommand(_ => ExecuteCleanupSelected(), _ => !IsBusy && SupportsTableCleanup && SelectedTableCount > 0);
             CleanupHistoryCommand = new RelayCommand(_ => ExecuteCleanupHistory(), _ => !IsBusy && ExistingTableCount > 0);
             CleanupAllCommand = new RelayCommand(_ => ExecuteCleanupAll(), _ => !IsBusy && ExistingTableCount > 0);
+            MigrationCommand = new RelayCommand(_ => ExecuteMigration(), _ => !IsBusy && SupportsMigration && ExistingTableCount > 0);
         }
 
         public string SourceId => _provider.Id;
@@ -49,6 +52,8 @@ namespace ColorVision.Database
         public int Order => _provider.Order;
         public bool SupportsTableCleanup => _selectionProvider != null;
         public bool SupportsBackup => _backupProvider != null;
+        public bool SupportsMigration => _migrationProvider != null;
+        public string MigrationActionName => _migrationProvider?.MigrationActionName ?? string.Empty;
         public ObservableCollection<DatabaseCleanupTableInfo> Tables { get; } = new();
 
         public RelayCommand RefreshCommand { get; }
@@ -58,6 +63,7 @@ namespace ColorVision.Database
         public RelayCommand CleanupSelectedCommand { get; }
         public RelayCommand CleanupHistoryCommand { get; }
         public RelayCommand CleanupAllCommand { get; }
+        public RelayCommand MigrationCommand { get; }
 
         public string Description
         {
@@ -241,7 +247,36 @@ namespace ColorVision.Database
             _ = ExecuteCleanupAsync(_provider.CleanupAll, $"正在清空 {DisplayName} 全部数据...");
         }
 
-        private async Task ExecuteCleanupAsync(Func<DatabaseCleanupExecutionResult> action, string busyStatus)
+        private void ExecuteMigration()
+        {
+            if (_migrationProvider == null)
+                return;
+
+            if (_backupProvider == null)
+            {
+                ShowMessage("该迁移没有可用的完整备份能力，已拒绝执行。", MessageBoxImage.Error);
+                return;
+            }
+
+            string confirmMessage =
+                _migrationProvider.MigrationConfirmationMessage + Environment.NewLine + Environment.NewLine +
+                BuildBackupNotice(forceBackup: true) + Environment.NewLine + Environment.NewLine +
+                "是否继续？";
+            if (!ConfirmCleanup(confirmMessage, MessageBoxImage.Warning))
+                return;
+
+            _ = ExecuteCleanupAsync(
+                _migrationProvider.ExecuteMigration,
+                $"正在执行 {DisplayName} 数据迁移并释放空间...",
+                "迁移",
+                forceBackup: true);
+        }
+
+        private async Task ExecuteCleanupAsync(
+            Func<DatabaseCleanupExecutionResult> action,
+            string busyStatus,
+            string operationName = "清理",
+            bool forceBackup = false)
         {
             if (IsBusy)
                 return;
@@ -252,11 +287,11 @@ namespace ColorVision.Database
 
             try
             {
-                if (BackupBeforeCleanup && _backupProvider != null)
+                if ((forceBackup || BackupBeforeCleanup) && _backupProvider != null)
                 {
                     if (_maintenanceProvider != null)
                     {
-                        SetStatus("正在同一维护操作中创建完整备份并执行清理...");
+                        SetStatus($"正在同一维护操作中创建完整备份并执行{operationName}...");
                         try
                         {
                             var maintenanceResult = await Task.Run(() => ExecuteBackupAndCleanup(
@@ -268,9 +303,9 @@ namespace ColorVision.Database
                         }
                         catch (Exception ex)
                         {
-                            SetStatus("完整备份与清理组合操作失败。");
+                            SetStatus($"完整备份与{operationName}组合操作失败。");
                             ShowMessage(
-                                $"{DisplayName} 完整备份与清理组合操作失败：{ex.Message}{Environment.NewLine}" +
+                                $"{DisplayName} 完整备份与{operationName}组合操作失败：{ex.Message}{Environment.NewLine}" +
                                 "如备份已经生成，备份文件会保留；请刷新统计后确认当前数据状态。",
                                 MessageBoxImage.Error);
                             return;
@@ -278,15 +313,15 @@ namespace ColorVision.Database
                     }
                     else
                     {
-                        SetStatus("正在创建清理前完整备份...");
+                        SetStatus($"正在创建{operationName}前完整备份...");
                         try
                         {
                             backup = await Task.Run(_backupProvider.CreateBackup).ConfigureAwait(false);
                         }
                         catch (Exception ex)
                         {
-                            SetStatus("备份失败，未执行清理。");
-                            ShowMessage($"清理前完整备份失败，数据尚未清理：{ex.Message}", MessageBoxImage.Error);
+                            SetStatus($"备份失败，未执行{operationName}。");
+                            ShowMessage($"{operationName}前完整备份失败，数据尚未更改：{ex.Message}", MessageBoxImage.Error);
                             return;
                         }
                     }
@@ -301,8 +336,8 @@ namespace ColorVision.Database
                     }
                     catch (Exception ex)
                     {
-                        SetStatus("清理失败。");
-                        ShowMessage($"{DisplayName} 清理失败：{ex.Message}", MessageBoxImage.Error);
+                        SetStatus($"{operationName}失败。");
+                        ShowMessage($"{DisplayName} {operationName}失败：{ex.Message}", MessageBoxImage.Error);
                         return;
                     }
                 }
@@ -339,7 +374,7 @@ namespace ColorVision.Database
                 if (refreshError != null)
                 {
                     messageLines.Add(string.Empty);
-                    messageLines.Add($"数据已清理，但统计刷新失败：{refreshError.Message}");
+                    messageLines.Add($"数据已完成{operationName}，但统计刷新失败：{refreshError.Message}");
                 }
 
                 ShowMessage(string.Join(Environment.NewLine, messageLines), refreshError == null ? MessageBoxImage.Information : MessageBoxImage.Warning);
@@ -373,14 +408,17 @@ namespace ColorVision.Database
             return int.TryParse(KeepMonthsText, out keepMonths) && keepMonths > 0;
         }
 
-        private string BuildBackupNotice()
+        private string BuildBackupNotice(bool forceBackup = false)
         {
             if (!SupportsBackup)
                 return "当前数据源不支持自动备份，请确认已有可恢复副本。";
 
+            if (forceBackup)
+                return "本次迁移会强制先创建完整备份；备份失败时不会执行迁移。";
+
             return BackupBeforeCleanup
-                ? "清理前会先创建完整备份；备份失败时不会执行清理。"
-                : "本次清理不会自动创建备份。";
+                ? "操作前会先创建完整备份；备份失败时不会继续。"
+                : "本次操作不会自动创建备份。";
         }
 
         private IReadOnlyList<string> GetExistingTableNames()

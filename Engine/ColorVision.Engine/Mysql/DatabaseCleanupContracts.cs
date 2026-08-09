@@ -153,4 +153,14 @@ namespace ColorVision.Database
     {
         DatabaseCleanupMaintenanceResult ExecuteCleanupWithBackup(Func<DatabaseCleanupExecutionResult> cleanupAction);
     }
+
+    /// <summary>
+    /// Optional capability for a source-specific, manually triggered data migration.
+    /// </summary>
+    public interface IDatabaseCleanupMigrationProvider
+    {
+        string MigrationActionName { get; }
+        string MigrationConfirmationMessage { get; }
+        DatabaseCleanupExecutionResult ExecuteMigration();
+    }
 }
