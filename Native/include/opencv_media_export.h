@@ -21,17 +21,17 @@ enum FocusAlgorithm {
     VarianceOfLaplacian = 4,
     EnergyOfGradient = 5,
     SpatialFrequency = 6
-    // CalResol �Ƚϸ��ӣ�ͨ����Ҫ�ض�ͼ�������ﲻ��Ϊͨ�öԽ��㷨
+    // CalResol 比较复杂，通常需要特定图卡，这里不作为通用对焦算法
 };
 
-// ����������ö��
+// 定义错误代码枚举
 enum class StitchingErrorCode {
-    SUCCESS = 0,          // �ɹ�
-    EMPTY_INPUT = -1,     // ����Ϊ��
-    FILE_NOT_FOUND = -2,  // �ļ�δ�ҵ�
-    DIFFERENT_DIMENSIONS = -3, // �ߴ粻ͬ
-    DIFFERENT_TYPE = -4,  // ���Ͳ�ͬ
-    NO_VALID_IMAGES = -5 // û����Ч��ͼ��
+    SUCCESS = 0,          // 成功
+    EMPTY_INPUT = -1,     // 输入为空
+    FILE_NOT_FOUND = -2,  // 文件未找到
+    DIFFERENT_DIMENSIONS = -3, // 尺寸不同
+    DIFFERENT_TYPE = -4,  // 类型不同
+    NO_VALID_IMAGES = -5 // 没有有效的图像
 };
 
 extern "C" COLORVISIONCORE_API int M_ExtractChannel(HImage img, HImage* outImage, int channel);
