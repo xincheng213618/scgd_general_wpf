@@ -143,6 +143,12 @@ public sealed class CopilotMcpRequestIdentityTests
         var dispatcher = new CopilotMcpToolDispatcher(new CopilotMcpToolEnvironment
         {
             ResidentMemoryBytesProvider = () => 12_345_678,
+            TemporaryDirectoryPathsProvider = () =>
+            [
+                @"C:\Temp\Codex",
+                @"c:\temp\codex",
+                @"D:\AgentTemp",
+            ],
             FlowSnapshotProvider = _ => Task.FromResult<CopilotFlowContextSnapshot?>(null),
             RecentLogProvider = (_, _, _, _, _) => Task.FromResult(new CopilotCapabilityResult
             {
@@ -161,9 +167,17 @@ public sealed class CopilotMcpRequestIdentityTests
             CancellationToken.None);
 
         Assert.Equal(200, response.StatusCode);
+        var summary = ReadToolText(response);
         Assert.Contains(
             "Resident memory bytes: 12345678",
-            ReadToolText(response),
+            summary,
+            StringComparison.Ordinal);
+        Assert.Contains("Temporary directories: 2", summary, StringComparison.Ordinal);
+        Assert.Contains(@"- C:\Temp\Codex", summary, StringComparison.Ordinal);
+        Assert.Contains(@"- D:\AgentTemp", summary, StringComparison.Ordinal);
+        Assert.Contains(
+            "Temporary directory access: diagnostic metadata only; current sandbox and tool authorization still apply.",
+            summary,
             StringComparison.Ordinal);
     }
 
@@ -174,6 +188,7 @@ public sealed class CopilotMcpRequestIdentityTests
         var dispatcher = new CopilotMcpToolDispatcher(new CopilotMcpToolEnvironment
         {
             ResidentMemoryBytesProvider = () => throw new InvalidOperationException("memory unavailable"),
+            TemporaryDirectoryPathsProvider = () => throw new InvalidOperationException("temporary directories unavailable"),
             FlowSnapshotProvider = _ => Task.FromException<CopilotFlowContextSnapshot?>(
                 new InvalidOperationException("flow unavailable")),
             RecentLogProvider = (_, _, _, _, _) => Task.FromException<CopilotCapabilityResult>(
@@ -194,11 +209,13 @@ public sealed class CopilotMcpRequestIdentityTests
         Assert.False(ReadIsError(response));
         var summary = ReadToolText(response);
         Assert.Contains("Resident memory bytes: (unavailable)", summary, StringComparison.Ordinal);
+        Assert.Contains("Temporary directories: (unavailable)", summary, StringComparison.Ordinal);
         Assert.Contains("Flow snapshot collection: failed", summary, StringComparison.Ordinal);
         Assert.Contains("Flow snapshot available: False", summary, StringComparison.Ordinal);
         Assert.Contains("Recent log collection: failed", summary, StringComparison.Ordinal);
         Assert.Contains("Recent log available: False", summary, StringComparison.Ordinal);
         Assert.DoesNotContain("memory unavailable", summary, StringComparison.Ordinal);
+        Assert.DoesNotContain("temporary directories unavailable", summary, StringComparison.Ordinal);
         Assert.DoesNotContain("flow unavailable", summary, StringComparison.Ordinal);
         Assert.DoesNotContain("log unavailable", summary, StringComparison.Ordinal);
     }

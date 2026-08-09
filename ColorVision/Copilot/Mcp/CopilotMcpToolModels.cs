@@ -226,6 +226,8 @@ namespace ColorVision.Copilot.Mcp
 
         public Func<long?> ResidentMemoryBytesProvider { get; init; } = GetCurrentProcessResidentMemoryBytes;
 
+        public Func<IReadOnlyList<string>> TemporaryDirectoryPathsProvider { get; init; } = GetProcessTemporaryDirectoryPaths;
+
         public Func<CancellationToken, Task<CopilotFlowContextSnapshot?>> FlowSnapshotProvider { get; init; } = CreateDefaultFlowSnapshotAsync;
 
         public Func<string?, int, CancellationToken, Task<CopilotFlowNodeCatalogSnapshot?>> FlowNodeCatalogProvider { get; init; } = CreateDefaultFlowNodeCatalogAsync;
@@ -252,6 +254,29 @@ namespace ColorVision.Copilot.Mcp
         {
             using var process = Process.GetCurrentProcess();
             return process.WorkingSet64;
+        }
+
+        private static IReadOnlyList<string> GetProcessTemporaryDirectoryPaths()
+        {
+            var paths = new List<string>();
+            foreach (var variableName in new[] { "TEMP", "TMP" })
+            {
+                var value = Environment.GetEnvironmentVariable(variableName);
+                if (string.IsNullOrWhiteSpace(value) || !Path.IsPathFullyQualified(value))
+                    continue;
+
+                try
+                {
+                    var fullPath = Path.TrimEndingDirectorySeparator(Path.GetFullPath(value));
+                    if (!paths.Contains(fullPath, StringComparer.OrdinalIgnoreCase))
+                        paths.Add(fullPath);
+                }
+                catch (Exception ex) when (ex is ArgumentException or IOException or NotSupportedException)
+                {
+                }
+            }
+
+            return paths;
         }
 
         private static async Task<CopilotMcpToolCallResult> ApplyTemplatePatchToActiveEditorAsync(CopilotTemplatePatchApplyRequest request, CancellationToken cancellationToken)

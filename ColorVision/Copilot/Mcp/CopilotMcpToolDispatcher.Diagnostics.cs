@@ -198,6 +198,11 @@ namespace ColorVision.Copilot.Mcp
             var residentMemoryLabel = residentMemoryBytes is long bytes && bytes >= 0
                 ? bytes.ToString(CultureInfo.InvariantCulture)
                 : "(unavailable)";
+            var temporaryDirectoryPaths = SafeInvoke(_environment.TemporaryDirectoryPathsProvider)?
+                .Where(path => !string.IsNullOrWhiteSpace(path))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Take(4)
+                .ToArray();
             var logDirectories = SafeInvoke(() => CopilotRecentLogSupport.GetCandidateLogDirectories()
                 .Where(directory => !string.IsNullOrWhiteSpace(directory))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
@@ -210,6 +215,10 @@ namespace ColorVision.Copilot.Mcp
             builder.AppendLine($"Process start time: {EmptyLabel(SafeInvoke(() => process.StartTime.ToString("O", CultureInfo.InvariantCulture)))}");
             builder.AppendLine($"Resident memory bytes: {residentMemoryLabel}");
             builder.AppendLine($"Base directory: {EmptyLabel(AppDomain.CurrentDomain.BaseDirectory)}");
+            builder.AppendLine($"Temporary directories: {(temporaryDirectoryPaths == null ? "(unavailable)" : temporaryDirectoryPaths.Length.ToString(CultureInfo.InvariantCulture))}");
+            foreach (var directory in temporaryDirectoryPaths ?? Array.Empty<string>())
+                builder.AppendLine($"- {directory}");
+            builder.AppendLine("Temporary directory access: diagnostic metadata only; current sandbox and tool authorization still apply.");
             builder.AppendLine($"Config directory: {EmptyLabel(configDirectory)}");
             builder.AppendLine($"AppData directory: {EmptyLabel(appDataDirectory)}");
             builder.AppendLine($"Log file path: {EmptyLabel(logFilePath)}");
