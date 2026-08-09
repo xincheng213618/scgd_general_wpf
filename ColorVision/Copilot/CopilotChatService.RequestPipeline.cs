@@ -209,7 +209,7 @@ namespace ColorVision.Copilot
                 var responseStarted = false;
                 try
                 {
-                    return await StreamReplyAttemptAsync(
+                    var result = await StreamReplyAttemptAsync(
                         config,
                         requestMessages,
                         imagePayloads,
@@ -225,6 +225,10 @@ namespace ColorVision.Copilot
                         },
                         inactivityTimeouts,
                         cancellationToken).ConfigureAwait(false);
+                    return result with
+                    {
+                        ImagePreparationNotice = BuildImagePreparationNotice(imagePayloads),
+                    };
                 }
                 catch (Exception exception) when (onConnectionRecovery != null
                     && !responseStarted
@@ -643,7 +647,7 @@ namespace ColorVision.Copilot
                 .Append(CopilotImageInputBudget.MaximumDimension)
                 .Append(" px / ")
                 .Append(CopilotImageInputBudget.MaximumPatches)
-                .AppendLine(" patch input budget. Inspect only the prepared pixels:");
+                .AppendLine(" patch input budget. Only the prepared pixels are available to this vision pass:");
             foreach (var image in resized)
             {
                 builder.Append("- ")

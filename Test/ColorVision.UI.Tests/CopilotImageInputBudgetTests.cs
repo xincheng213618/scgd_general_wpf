@@ -1,5 +1,9 @@
 using ColorVision.Copilot;
 using SkiaSharp;
+using System.IO;
+using System.Net;
+using System.Net.Http;
+using System.Text;
 
 namespace ColorVision.UI.Tests;
 
@@ -75,6 +79,52 @@ public sealed class CopilotImageInputBudgetTests
         Assert.DoesNotContain(Convert.ToBase64String(prepared.Bytes), notice, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task ResizedImagePreparationRemainsAttachedToDurableAnalysis()
+    {
+        var imagePath = Path.Combine(Path.GetTempPath(), $"copilot-image-{Guid.NewGuid():N}.png");
+        await File.WriteAllBytesAsync(
+            imagePath,
+            CreatePng(6_001, 2, new SKColor(32, 96, 160, 64)));
+        try
+        {
+            using var handler = new ImageAnalysisHandler();
+            using var httpClient = new HttpClient(handler);
+            var service = new CopilotImageUnderstandingService(new CopilotChatService(httpClient));
+            var profile = new CopilotProfileConfig
+            {
+                VendorType = CopilotVendorType.OpenAI,
+                ProviderType = CopilotProviderType.OpenAICompatible,
+                ApiKey = "test-key",
+                BaseUrl = "https://api.openai.com/v1",
+                Model = "gpt-4o",
+                MaxTokens = 4_096,
+            };
+            var result = await service.AnalyzeAsync(
+                profile,
+                "Inspect the chart.",
+                [new CopilotAttachmentItem
+                {
+                    Type = CopilotAttachmentType.Image,
+                    Title = "wide-transparent.png",
+                    Value = imagePath,
+                }],
+                CancellationToken.None);
+
+            Assert.Contains("[Image preparation]", result.Context, StringComparison.Ordinal);
+            Assert.Contains("wide-transparent.png: 6001×2 -> 6000×2", result.Context, StringComparison.Ordinal);
+            Assert.Contains("Only the prepared pixels are available", result.Context, StringComparison.Ordinal);
+            Assert.True(
+                result.Context.IndexOf("[Image preparation]", StringComparison.Ordinal)
+                    < result.Context.IndexOf("Visible chart evidence.", StringComparison.Ordinal));
+            Assert.Contains("[Image preparation]", handler.LastPayload, StringComparison.Ordinal);
+        }
+        finally
+        {
+            File.Delete(imagePath);
+        }
+    }
+
     private static byte[] CreatePng(int width, int height, SKColor color)
     {
         using var bitmap = new SKBitmap(
@@ -83,5 +133,37 @@ public sealed class CopilotImageInputBudgetTests
         using var encoded = bitmap.Encode(SKEncodedImageFormat.Png, 100);
         Assert.NotNull(encoded);
         return encoded.ToArray();
+    }
+
+    private sealed class ImageAnalysisHandler : HttpMessageHandler
+    {
+        public string LastPayload { get; private set; } = string.Empty;
+
+        protected override async Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            LastPayload = request.Content == null
+                ? string.Empty
+                : await request.Content.ReadAsStringAsync(cancellationToken);
+            const string response =
+                """
+                {
+                  "choices": [
+                    {
+                      "message": {
+                        "role": "assistant",
+                        "content": "Visible chart evidence."
+                      },
+                      "finish_reason": "stop"
+                    }
+                  ]
+                }
+                """;
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(response, Encoding.UTF8, "application/json"),
+            };
+        }
     }
 }
