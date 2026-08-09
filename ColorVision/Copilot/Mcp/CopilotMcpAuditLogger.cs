@@ -65,6 +65,14 @@ namespace ColorVision.Copilot.Mcp
             "Bearer\\s+[^,;\\s]+",
             RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
+        private static readonly Regex OpenAiApiKeyRegex = new(
+            "sk-[A-Za-z0-9]{20,}",
+            RegexOptions.Compiled);
+
+        private static readonly Regex AwsAccessKeyIdRegex = new(
+            "\\bAKIA[0-9A-Z]{16}\\b",
+            RegexOptions.Compiled);
+
         public static void ToolCallStarted(string toolName, string argumentSummary, string? callerSource = null)
         {
             ToolCallStarted(
@@ -302,6 +310,8 @@ namespace ColorVision.Copilot.Mcp
         {
             var text = value ?? string.Empty;
             text = BearerRegex.Replace(text, "Bearer <redacted>");
+            text = OpenAiApiKeyRegex.Replace(text, "<redacted>");
+            text = AwsAccessKeyIdRegex.Replace(text, "<redacted>");
             return SensitiveInlineRegex.Replace(text, match => $"{match.Groups["name"].Value}<redacted>");
         }
 
