@@ -185,7 +185,7 @@ namespace ColorVision.Copilot
                     throw new InvalidOperationException("Another Copilot run is already active.");
 
                 var run = new CopilotHostedAgentRun(conversationId.Trim(), mode);
-                workItem = new HostedRunWorkItem(run, operation);
+                workItem = new HostedRunWorkItem(run, operation, QueuedRunDispatchPolicy.Always);
                 _activeWorkItem = workItem;
             }
 
@@ -224,7 +224,7 @@ namespace ColorVision.Copilot
                 }
 
                 run = new CopilotHostedAgentRun(normalizedConversationId, mode);
-                workItem = new HostedRunWorkItem(run, operation);
+                workItem = new HostedRunWorkItem(run, operation, QueuedRunDispatchPolicy.Always);
                 if (_activeWorkItem == null)
                 {
                     _activeWorkItem = workItem;
@@ -298,7 +298,12 @@ namespace ColorVision.Copilot
                 }
 
                 run = new CopilotHostedAgentRun(normalizedConversationId, mode);
-                var workItem = new HostedRunWorkItem(run, operation);
+                var workItem = new HostedRunWorkItem(
+                    run,
+                    operation,
+                    runNext
+                        ? QueuedRunDispatchPolicy.AfterAnyTurn
+                        : QueuedRunDispatchPolicy.AfterCompletedTurn);
                 if (runNext)
                     _queuedWorkItems.AddFirst(workItem);
                 else
@@ -534,6 +539,33 @@ namespace ColorVision.Copilot
             return true;
         }
 
+        internal bool TryStartQueuedRun(string runId)
+        {
+            if (string.IsNullOrWhiteSpace(runId))
+                return false;
+
+            HostedRunWorkItem? workItem = null;
+            lock (_gate)
+            {
+                if (_isShutdown || _activeWorkItem != null)
+                    return false;
+
+                var node = _queuedWorkItems.First;
+                while (node != null && !string.Equals(node.Value.Run.Id, runId, StringComparison.Ordinal))
+                    node = node.Next;
+                if (node == null)
+                    return false;
+
+                workItem = node.Value;
+                _queuedWorkItems.Remove(node);
+                _activeWorkItem = workItem;
+            }
+
+            Publish(CopilotAgentTaskHostChangeKind.QueueChanged, workItem.Run);
+            BeginExecution(workItem);
+            return true;
+        }
+
         public CopilotHostedAgentRun? FindRunByConversationId(string? conversationId)
         {
             if (string.IsNullOrWhiteSpace(conversationId))
@@ -607,18 +639,26 @@ namespace ColorVision.Copilot
             finally
             {
                 HostedRunWorkItem? nextWorkItem = null;
+                var completedNormally = error == null
+                    && workItem.Run.AllowsAutomaticFollowUpDispatch
+                    && !workItem.Run.CancellationToken.IsCancellationRequested;
                 lock (_gate)
                 {
                     if (ReferenceEquals(_activeWorkItem, workItem))
                     {
                         _activeWorkItem = null;
-                        while (_queuedWorkItems.First != null)
+                        var nextNode = _queuedWorkItems.First;
+                        while (nextNode != null
+                            && !CanAutoStartAfter(nextNode.Value, workItem.Run, completedNormally))
                         {
-                            var candidate = _queuedWorkItems.First.Value;
-                            _queuedWorkItems.RemoveFirst();
+                            nextNode = nextNode.Next;
+                        }
+                        if (nextNode != null)
+                        {
+                            var candidate = nextNode.Value;
+                            _queuedWorkItems.Remove(nextNode);
                             _activeWorkItem = candidate;
                             nextWorkItem = candidate;
-                            break;
                         }
                     }
                 }
@@ -628,6 +668,18 @@ namespace ColorVision.Copilot
                 if (nextWorkItem != null)
                     BeginExecution(nextWorkItem);
             }
+        }
+
+        private static bool CanAutoStartAfter(
+            HostedRunWorkItem candidate,
+            CopilotHostedAgentRun completedRun,
+            bool completedNormally)
+        {
+            if (candidate.DispatchPolicy == QueuedRunDispatchPolicy.Always)
+                return true;
+            if (!string.Equals(candidate.Run.ConversationId, completedRun.ConversationId, StringComparison.Ordinal))
+                return false;
+            return completedNormally || candidate.DispatchPolicy == QueuedRunDispatchPolicy.AfterAnyTurn;
         }
 
         private void Publish(CopilotAgentTaskHostChangeKind kind, CopilotHostedAgentRun run)
@@ -650,8 +702,16 @@ namespace ColorVision.Copilot
             }
         }
 
+        private enum QueuedRunDispatchPolicy
+        {
+            Always,
+            AfterCompletedTurn,
+            AfterAnyTurn,
+        }
+
         private sealed record HostedRunWorkItem(
             CopilotHostedAgentRun Run,
-            Func<CopilotHostedAgentRun, Task> Operation);
+            Func<CopilotHostedAgentRun, Task> Operation,
+            QueuedRunDispatchPolicy DispatchPolicy);
     }
 }

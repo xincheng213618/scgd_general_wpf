@@ -13,6 +13,7 @@ namespace ColorVision.Copilot
         private readonly TaskCompletionSource<object?> _completion = new(TaskCreationOptions.RunContinuationsAsynchronously);
         private readonly CancellationToken _cancellationToken;
         private int _agentStopReason;
+        private int _automaticFollowUpDispatchSuppressed;
         private int _checkpointReady;
         private int _disposed;
         private int _state = (int)CopilotHostedRunState.Queued;
@@ -67,6 +68,9 @@ namespace ColorVision.Copilot
         internal CopilotHostedProviderRetrySnapshot ProviderRetrySnapshot =>
             Volatile.Read(ref _providerRetrySnapshot);
 
+        internal bool AllowsAutomaticFollowUpDispatch =>
+            Volatile.Read(ref _automaticFollowUpDispatchSuppressed) == 0;
+
         internal long ElapsedSeconds
         {
             get
@@ -107,6 +111,11 @@ namespace ColorVision.Copilot
                 return;
 
             Volatile.Write(ref _agentStopReason, (int)stopReason);
+        }
+
+        internal void SuppressAutomaticFollowUpDispatch()
+        {
+            Interlocked.Exchange(ref _automaticFollowUpDispatchSuppressed, 1);
         }
 
         internal void RecordProviderRetry(CopilotProviderRetryInfo retry)

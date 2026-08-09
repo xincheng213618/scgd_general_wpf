@@ -255,7 +255,7 @@ namespace ColorVision.Copilot
         private bool CanSendQueuedFollowUpNow(CopilotQueuedFollowUp? queuedFollowUp)
         {
             return queuedFollowUp != null
-                && ActiveHostedRun?.CanRequestCancel == true
+                && (ActiveHostedRun == null || ActiveHostedRun.CanRequestCancel)
                 && _taskHost.GetQueuePosition(queuedFollowUp.RunId) > 0;
         }
 
@@ -267,13 +267,15 @@ namespace ColorVision.Copilot
         private bool TrySendQueuedFollowUpNow(CopilotQueuedFollowUp? queuedFollowUp)
         {
             var activeRun = ActiveHostedRun;
-            if (!CanSendQueuedFollowUpNow(queuedFollowUp)
-                || queuedFollowUp == null
-                || activeRun == null
-                || !_taskHost.PromoteQueuedRun(queuedFollowUp.RunId))
+            if (!CanSendQueuedFollowUpNow(queuedFollowUp) || queuedFollowUp == null)
             {
                 return false;
             }
+
+            if (activeRun == null)
+                return _taskHost.TryStartQueuedRun(queuedFollowUp.RunId);
+            if (!_taskHost.PromoteQueuedRun(queuedFollowUp.RunId))
+                return false;
 
             RefreshQueuedFollowUpPositions();
             SynchronizeQueuedFollowUpRecoveryOrder();

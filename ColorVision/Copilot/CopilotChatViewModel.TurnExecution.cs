@@ -342,6 +342,7 @@ namespace ColorVision.Copilot
             }
             catch (OperationCanceledException) when (hostedRun.CancellationToken.IsCancellationRequested)
             {
+                hostedRun.SuppressAutomaticFollowUpDispatch();
                 var controlIntent = hostedRun.RunControl?.Intent ?? CopilotAgentControlIntent.None;
                 CopilotHostedTurnCompletion.CompleteCancellation(conversation, assistantMessage, controlIntent);
                 if (!goalOutcomeRecorded)
@@ -360,6 +361,7 @@ namespace ColorVision.Copilot
             }
             catch (Exception ex)
             {
+                hostedRun.SuppressAutomaticFollowUpDispatch();
                 CopilotHostedTurnCompletion.CompleteFailure(conversation, assistantMessage, ex.Message, requestProfile.ApiKey);
                 if (!goalOutcomeRecorded)
                 {
