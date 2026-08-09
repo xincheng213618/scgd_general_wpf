@@ -233,6 +233,9 @@ namespace ColorVision.Copilot
 
         internal bool CodexShellToolEnabled { get; init; } = true;
 
+        internal CopilotCodexShellEnvironmentPolicy CodexShellEnvironmentPolicy { get; init; } =
+            CopilotCodexShellEnvironmentPolicy.Default;
+
         internal bool CodexExperimentalRequestUserInputEnabled { get; init; } = true;
 
         internal bool CodexDefaultModeRequestUserInputEnabled { get; init; }
@@ -433,6 +436,8 @@ namespace ColorVision.Copilot
                 CodexWebSearchMode = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredWebSearchMode,
                 CodexSandboxMode = codexSandboxMode,
                 CodexShellToolEnabled = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredShellToolEnabled,
+                CodexShellEnvironmentPolicy = hostContext.ProjectInstructionDiscoveryOptions
+                    .ConfiguredShellEnvironmentPolicy.CreateSnapshot(),
                 CodexExperimentalRequestUserInputEnabled = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredExperimentalRequestUserInputEnabled,
                 CodexDefaultModeRequestUserInputEnabled = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredDefaultModeRequestUserInputEnabled,
                 CodexUpdatePlanEnabled = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredUpdatePlanEnabled,
@@ -533,6 +538,7 @@ namespace ColorVision.Copilot
                 CodexWebSearchMode = plan.CodexWebSearchMode,
                 CodexSandboxMode = plan.CodexSandboxMode,
                 CodexShellToolEnabled = plan.CodexShellToolEnabled,
+                CodexShellEnvironmentPolicy = plan.CodexShellEnvironmentPolicy.CreateSnapshot(),
                 CodexExperimentalRequestUserInputEnabled = plan.CodexExperimentalRequestUserInputEnabled,
                 CodexDefaultModeRequestUserInputEnabled = plan.CodexDefaultModeRequestUserInputEnabled,
                 CodexUpdatePlanEnabled = plan.CodexUpdatePlanEnabled,

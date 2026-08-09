@@ -515,6 +515,7 @@ namespace ColorVision.Copilot
             }
             AppendPreventIdleSleep(builder, codexConfigOptions);
             AppendShellToolEnabled(builder, codexConfigOptions);
+            AppendShellEnvironmentPolicy(builder, codexConfigOptions);
             AppendGoalsEnabled(builder, codexConfigOptions);
             AppendDefaultModeRequestUserInputEnabled(builder, codexConfigOptions);
             AppendExperimentalRequestUserInputEnabled(builder, codexConfigOptions);
@@ -803,6 +804,29 @@ namespace ColorVision.Copilot
             builder.AppendLine(codexConfigOptions.ConfiguredIncludePermissionsInstructions
                 ? " · 注入模型可见的完整权限说明"
                 : " · 仅省略模型可见权限说明；沙箱、审批、工具过滤与执行策略保持强制");
+        }
+
+        private static void AppendShellEnvironmentPolicy(
+            StringBuilder builder,
+            CopilotProjectInstructionDiscoveryOptions codexConfigOptions)
+        {
+            builder.Append("- Codex shell_environment_policy：")
+                .Append(codexConfigOptions.ConfiguredShellEnvironmentPolicy.BuildRedactedSummary());
+            if (codexConfigOptions.HasShellEnvironmentPolicyOverride)
+            {
+                builder.Append(" · 来源 ")
+                    .Append(codexConfigOptions.ShellEnvironmentPolicySourceLabel.Length == 0
+                        ? "Codex config.toml"
+                        : codexConfigOptions.ShellEnvironmentPolicySourceLabel)
+                    .Append(" · 提交快照");
+            }
+            else
+            {
+                builder.Append(" · 官方默认");
+            }
+            builder.AppendLine(codexConfigOptions.ShellEnvironmentPolicyError.Length == 0
+                ? " · 前台、后台与固定 Git 子进程共享；set 仅报告数量"
+                : " · " + codexConfigOptions.ShellEnvironmentPolicyError);
         }
 
         private static void AppendIncludeEnvironmentContext(

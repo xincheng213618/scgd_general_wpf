@@ -75,6 +75,14 @@ namespace ColorVision.Copilot
 
         public string CodexShellToolEnabledSourceLabel { get; init; } = string.Empty;
 
+        public string CodexShellEnvironmentPolicySummary { get; init; } = string.Empty;
+
+        public bool HasCodexShellEnvironmentPolicyOverride { get; init; }
+
+        public string CodexShellEnvironmentPolicySourceLabel { get; init; } = string.Empty;
+
+        public string CodexShellEnvironmentPolicyError { get; init; } = string.Empty;
+
         public bool CodexGoalsEnabled { get; init; } = true;
 
         public bool HasCodexGoalsEnabledOverride { get; init; }
@@ -538,6 +546,25 @@ namespace ColorVision.Copilot
             {
                 builder.Append("（Codex 默认开启）");
             }
+            builder.AppendLine();
+            builder.Append("命令环境：")
+                .Append(string.IsNullOrWhiteSpace(snapshot.CodexShellEnvironmentPolicySummary)
+                    ? CopilotCodexShellEnvironmentPolicy.Default.BuildRedactedSummary()
+                    : snapshot.CodexShellEnvironmentPolicySummary.Trim());
+            if (snapshot.HasCodexShellEnvironmentPolicyOverride)
+            {
+                builder.Append('（')
+                    .Append(string.IsNullOrWhiteSpace(snapshot.CodexShellEnvironmentPolicySourceLabel)
+                        ? "Codex config.toml"
+                        : snapshot.CodexShellEnvironmentPolicySourceLabel.Trim())
+                    .Append(" 提交快照；set 仅报告数量）");
+            }
+            else
+            {
+                builder.Append("（Codex 默认；set 仅报告数量）");
+            }
+            if (!string.IsNullOrWhiteSpace(snapshot.CodexShellEnvironmentPolicyError))
+                builder.Append(" · ").Append(snapshot.CodexShellEnvironmentPolicyError.Trim());
             builder.AppendLine();
             builder.Append("持续目标：")
                 .Append(snapshot.CodexGoalsEnabled ? "开启" : "暂停");

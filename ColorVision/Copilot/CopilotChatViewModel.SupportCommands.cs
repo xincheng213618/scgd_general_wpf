@@ -419,6 +419,11 @@ namespace ColorVision.Copilot
                 CodexShellToolEnabled = projectInstructionOptions.ConfiguredShellToolEnabled,
                 HasCodexShellToolEnabledOverride = projectInstructionOptions.HasShellToolEnabledOverride,
                 CodexShellToolEnabledSourceLabel = projectInstructionOptions.ShellToolEnabledSourceLabel,
+                CodexShellEnvironmentPolicySummary = projectInstructionOptions
+                    .ConfiguredShellEnvironmentPolicy.BuildRedactedSummary(),
+                HasCodexShellEnvironmentPolicyOverride = projectInstructionOptions.HasShellEnvironmentPolicyOverride,
+                CodexShellEnvironmentPolicySourceLabel = projectInstructionOptions.ShellEnvironmentPolicySourceLabel,
+                CodexShellEnvironmentPolicyError = projectInstructionOptions.ShellEnvironmentPolicyError,
                 CodexGoalsEnabled = projectInstructionOptions.ConfiguredGoalsEnabled,
                 HasCodexGoalsEnabledOverride = projectInstructionOptions.HasGoalsEnabledOverride,
                 CodexGoalsEnabledSourceLabel = projectInstructionOptions.GoalsEnabledSourceLabel,

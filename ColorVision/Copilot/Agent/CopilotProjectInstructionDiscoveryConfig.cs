@@ -361,6 +361,16 @@ namespace ColorVision.Copilot
         public CopilotProjectInstructionConfigSources ShellToolEnabledSource { get; init; } =
             CopilotProjectInstructionConfigSources.None;
 
+        internal CopilotCodexShellEnvironmentPolicy ConfiguredShellEnvironmentPolicy { get; init; } =
+            CopilotCodexShellEnvironmentPolicy.Default;
+
+        public bool HasShellEnvironmentPolicyOverride { get; init; }
+
+        public CopilotProjectInstructionConfigSources ShellEnvironmentPolicySources { get; init; } =
+            CopilotProjectInstructionConfigSources.None;
+
+        public string ShellEnvironmentPolicyError { get; init; } = string.Empty;
+
         public bool ConfiguredGoalsEnabled { get; init; } = true;
 
         public bool HasGoalsEnabledOverride { get; init; }
@@ -656,6 +666,7 @@ namespace ColorVision.Copilot
             || HasReviewModelOverride
             || HasPreventIdleSleepOverride
             || HasShellToolEnabledOverride
+            || HasShellEnvironmentPolicyOverride
             || HasGoalsEnabledOverride
             || HasDefaultModeRequestUserInputEnabledOverride
             || HasExperimentalRequestUserInputEnabledOverride
@@ -736,6 +747,18 @@ namespace ColorVision.Copilot
         {
             CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml approval_policy",
             CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml approval_policy",
+            _ => string.Empty,
+        };
+
+        public string ShellEnvironmentPolicySourceLabel => ShellEnvironmentPolicySources switch
+        {
+            CopilotProjectInstructionConfigSources.CodexHome =>
+                "Codex Home config.toml shell_environment_policy",
+            CopilotProjectInstructionConfigSources.TrustedProject =>
+                "受信项目 .codex/config.toml shell_environment_policy",
+            CopilotProjectInstructionConfigSources.CodexHome
+                | CopilotProjectInstructionConfigSources.TrustedProject =>
+                "Codex Home + 受信项目 .codex/config.toml shell_environment_policy",
             _ => string.Empty,
         };
 
@@ -1327,6 +1350,21 @@ namespace ColorVision.Copilot
                 ShellToolEnabledSource = layer.HasShellToolEnabledOverride
                     ? source
                     : current.ShellToolEnabledSource,
+                ConfiguredShellEnvironmentPolicy = layer.ShellEnvironmentPolicyLayer.HasAssignment
+                    && current.ShellEnvironmentPolicyError.Length == 0
+                        ? CopilotCodexShellEnvironmentPolicyMerge.Apply(
+                            current.ConfiguredShellEnvironmentPolicy,
+                            layer.ShellEnvironmentPolicyLayer)
+                        : current.ConfiguredShellEnvironmentPolicy,
+                HasShellEnvironmentPolicyOverride = current.HasShellEnvironmentPolicyOverride
+                    || layer.ShellEnvironmentPolicyLayer.HasAssignment,
+                ShellEnvironmentPolicySources = layer.ShellEnvironmentPolicyLayer.HasAssignment
+                    ? current.ShellEnvironmentPolicySources | source
+                    : current.ShellEnvironmentPolicySources,
+                ShellEnvironmentPolicyError = layer.ShellEnvironmentPolicyLayer.HasAssignment
+                    && !layer.ShellEnvironmentPolicyLayer.IsValid
+                        ? layer.ShellEnvironmentPolicyLayer.ErrorMessage
+                        : current.ShellEnvironmentPolicyError,
                 ConfiguredGoalsEnabled = layer.HasGoalsEnabledOverride
                     ? layer.GoalsEnabled
                     : current.ConfiguredGoalsEnabled,
@@ -1577,6 +1615,7 @@ namespace ColorVision.Copilot
                 || layer.HasReviewModelOverride
                 || layer.HasPreventIdleSleepOverride
                 || layer.HasShellToolEnabledOverride
+                || layer.ShellEnvironmentPolicyLayer.HasAssignment
                 || layer.HasGoalsEnabledOverride
                 || layer.HasDefaultModeRequestUserInputEnabledOverride
                 || layer.HasExperimentalRequestUserInputEnabledOverride
@@ -1859,6 +1898,7 @@ namespace ColorVision.Copilot
             string source,
             out ProjectInstructionConfigLayer layer)
         {
+            var shellEnvironmentPolicyLayer = ParseShellEnvironmentPolicyLayer(source);
             var maximumBytes = DefaultMaximumBytes;
             var fallbackFileNames = Array.Empty<string>();
             var projectRootMarkers = Array.Empty<string>();
@@ -2601,6 +2641,7 @@ namespace ColorVision.Copilot
                 HasPreventIdleSleepOverride = hasPreventIdleSleepOverride,
                 ShellToolEnabled = shellToolEnabled,
                 HasShellToolEnabledOverride = hasShellToolEnabledOverride,
+                ShellEnvironmentPolicyLayer = shellEnvironmentPolicyLayer,
                 GoalsEnabled = goalsEnabled,
                 HasGoalsEnabledOverride = hasGoalsEnabledOverride,
                 DefaultModeRequestUserInputEnabled = defaultModeRequestUserInputEnabled,
@@ -2666,6 +2707,7 @@ namespace ColorVision.Copilot
                 || hasReviewModelOverride
                 || hasPreventIdleSleepOverride
                 || hasShellToolEnabledOverride
+                || shellEnvironmentPolicyLayer.HasAssignment
                 || hasGoalsEnabledOverride
                 || hasDefaultModeRequestUserInputEnabledOverride
                 || hasExperimentalRequestUserInputEnabledOverride
@@ -3821,6 +3863,9 @@ namespace ColorVision.Copilot
             public bool ShellToolEnabled { get; init; } = true;
 
             public bool HasShellToolEnabledOverride { get; init; }
+
+            public CopilotCodexShellEnvironmentPolicyLayer ShellEnvironmentPolicyLayer { get; init; } =
+                CopilotCodexShellEnvironmentPolicyLayer.Empty;
 
             public bool GoalsEnabled { get; init; } = true;
 

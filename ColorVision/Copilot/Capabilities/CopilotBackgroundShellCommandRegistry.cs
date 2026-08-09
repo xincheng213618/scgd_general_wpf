@@ -145,7 +145,11 @@ namespace ColorVision.Copilot
                         Path.GetFullPath(executablePath),
                         CopilotShellCommandService.BuildArguments(execution.Shell, execution.CommandText),
                         execution.WorkingDirectory,
-                        TimeSpan.FromSeconds(lifetimeSeconds)),
+                        TimeSpan.FromSeconds(lifetimeSeconds))
+                    {
+                        EnvironmentVariables = request.CodexShellEnvironmentPolicy
+                            .CreateEnvironmentVariables(request.ConversationId),
+                    },
                     cancellationToken).ConfigureAwait(false);
                 var entry = new Entry(
                     "bg:" + Guid.NewGuid().ToString("N"),

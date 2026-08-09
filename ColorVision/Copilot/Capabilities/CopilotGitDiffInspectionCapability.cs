@@ -98,11 +98,19 @@ namespace ColorVision.Copilot
 
             var sections = new List<CopilotGitDiffSection>();
             var resolvedRevision = string.Empty;
+            var environmentVariables = request.CodexShellEnvironmentPolicy
+                .CreateEnvironmentVariables(request.ConversationId);
             if (string.Equals(target, "working_tree", StringComparison.Ordinal))
             {
                 foreach (var sectionScope in GetSectionScopes(scope))
                 {
-                    var sectionResult = await ExecuteSectionAsync(gitExecutable, repositoryRoot, pathFilter, sectionScope, cancellationToken);
+                    var sectionResult = await ExecuteSectionAsync(
+                        gitExecutable,
+                        repositoryRoot,
+                        pathFilter,
+                        sectionScope,
+                        environmentVariables,
+                        cancellationToken);
                     if (sectionResult.Failure != null)
                         return sectionResult.Failure;
                     sections.Add(sectionResult.Section!);
@@ -116,6 +124,7 @@ namespace ColorVision.Copilot
                     pathFilter,
                     target,
                     revision,
+                    environmentVariables,
                     cancellationToken);
                 if (revisionResult.Failure != null)
                     return revisionResult.Failure;
@@ -150,6 +159,7 @@ namespace ColorVision.Copilot
             string repositoryRoot,
             string pathFilter,
             string scope,
+            IReadOnlyDictionary<string, string> environmentVariables,
             CancellationToken cancellationToken)
         {
             var execution = await RunGitAsync(
@@ -158,6 +168,7 @@ namespace ColorVision.Copilot
                 BuildArguments(repositoryRoot, pathFilter, scope),
                 $"{scope} Git diff",
                 CopilotToolFailureKind.Internal,
+                environmentVariables,
                 cancellationToken);
             if (execution.Failure != null)
                 return (null, execution.Failure);
@@ -180,6 +191,7 @@ namespace ColorVision.Copilot
             string pathFilter,
             string target,
             string revision,
+            IReadOnlyDictionary<string, string> environmentVariables,
             CancellationToken cancellationToken)
         {
             var resolution = await RunGitAsync(
@@ -188,6 +200,7 @@ namespace ColorVision.Copilot
                 BuildRevisionResolveArguments(repositoryRoot, revision),
                 "Git revision resolution",
                 CopilotToolFailureKind.NotFound,
+                environmentVariables,
                 cancellationToken);
             if (resolution.Failure != null)
                 return (null, string.Empty, resolution.Failure);
@@ -209,6 +222,7 @@ namespace ColorVision.Copilot
                     BuildMergeBaseArguments(repositoryRoot, resolvedRevision),
                     "Git merge-base resolution",
                     CopilotToolFailureKind.NotFound,
+                    environmentVariables,
                     cancellationToken);
                 if (mergeBase.Failure != null)
                     return (null, string.Empty, mergeBase.Failure);
@@ -241,6 +255,7 @@ namespace ColorVision.Copilot
                     ? "base-branch Git diff"
                     : "commit Git diff",
                 CopilotToolFailureKind.Internal,
+                environmentVariables,
                 cancellationToken);
             if (patch.Failure != null)
                 return (null, string.Empty, patch.Failure);
@@ -263,6 +278,7 @@ namespace ColorVision.Copilot
             IReadOnlyList<string> arguments,
             string operation,
             CopilotToolFailureKind nonzeroFailureKind,
+            IReadOnlyDictionary<string, string> environmentVariables,
             CancellationToken cancellationToken)
         {
             CopilotShellProcessResult processResult;
@@ -275,6 +291,7 @@ namespace ColorVision.Copilot
                     repositoryRoot,
                     ExecutionTimeout)
                 {
+                    EnvironmentVariables = environmentVariables,
                     EnvironmentOverrides = CopilotGitProcessSupport.EnvironmentOverrides,
                 }, cancellationToken);
             }
