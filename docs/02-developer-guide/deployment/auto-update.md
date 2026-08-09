@@ -1,6 +1,6 @@
 # 自动更新
 
-本页保留 ColorVision 自动更新的工程入口。安装器和更新包的实际发布流程以 [部署概览](./overview.md) 与 [构建与发布脚本](../scripts/README.md) 为准。
+本页说明 ColorVision 当前自动更新的工程入口。客户端实现位于 `ColorVision/Update/`，共享的更新进程协调与快照能力位于 `UI/ColorVision.UI/Update/`；安装器和更新包的实际发布流程以 [部署概览](./overview.md) 与 [构建与发布脚本](../scripts/README.md) 为准。
 
 ## 更新流程
 
@@ -48,8 +48,10 @@ flowchart LR
 
 | 范围 | 位置 |
 | --- | --- |
-| 安装器和更新程序 | `src/ColorVisionSetup/` |
-| 发布和更新脚本 | `Scripts/` |
+| 客户端更新实现 | `ColorVision/Update/`、`UI/ColorVision.UI/Update/` |
+| 正式发布入口 | [构建与发布脚本](../scripts/README.md) 中的 `Scripts\release.bat` |
+| 完整安装包 | `Scripts/build.py` 调用仓库外的 Advanced Installer `ColorVision.aip` 构建 |
+| 历史项目 | `src/ColorVisionSetup/` 仅保留源码，未接入 `build.sln`、外部 AIP 或当前发布脚本 |
 | 发布版本号 | `Directory.Build.props` 的 `VersionPrefix` |
 | 版本历史 | 根目录 `CHANGELOG.md` |
 

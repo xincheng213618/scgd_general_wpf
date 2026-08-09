@@ -13,7 +13,8 @@
 - `Engine/`：设备服务、模板系统、流程执行、OpenCV 集成、文件处理
 - `Plugins/`：运行时插件扩展
 - `Projects/`：客户项目和定制业务组合
-- `src/ColorVisionSetup/`：安装器与更新相关程序
+- `ColorVision/Update/`：当前客户端更新实现，详见 [自动更新系统](../../02-developer-guide/deployment/auto-update.md)
+- `src/ColorVisionSetup/`：历史保留的安装/更新程序源码，未接入当前发布链
 - `Web/Backend/`：插件市场后端
 - `Scripts/`：构建、打包、发布脚本
 
@@ -52,9 +53,10 @@
 
 ### 交付与外围层
 
-- `src/ColorVisionSetup/` 负责安装与更新侧程序
+- `ColorVision/Update/` 负责当前客户端更新流程
+- `src/ColorVisionSetup/` 仅保留历史源码，未接入 `build.sln`、外部 `ColorVision.aip` 或 `Scripts\release.bat` 发布链
 - `Web/Backend/` 负责插件市场后端
-- `Scripts/` 和根目录批处理脚本负责构建、打包和发布
+- `Scripts/` 和根目录批处理脚本负责构建、打包和发布；完整安装包由发布链调用仓库外的 Advanced Installer `ColorVision.aip` 构建，入口见 [构建与发布脚本](../../02-developer-guide/scripts/README.md)
 
 ## 运行时最常见的主链路
 

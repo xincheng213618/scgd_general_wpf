@@ -13,7 +13,7 @@
 | `Projects/` | 客户项目包、业务定制和对接示例 | [项目说明](../../00-projects/README.md) |
 | `Web/Backend/` | 插件市场后端服务 | [插件市场后端](../../02-developer-guide/backend/README.md) |
 | `Scripts/` | 构建、打包、发布脚本 | [构建与发布脚本](../../02-developer-guide/scripts/README.md) |
-| `src/ColorVisionSetup/` | 安装器与更新程序 | [自动更新系统](../../02-developer-guide/deployment/auto-update.md) |
+| `src/ColorVisionSetup/` | 历史保留的安装/更新程序源码，未接入当前发布链 | [部署概览](../../02-developer-guide/deployment/overview.md) / [构建与发布脚本](../../02-developer-guide/scripts/README.md) |
 | `Test/` | xUnit、native helper、后端和脚本验证 | [测试与验证](../../02-developer-guide/testing.md) |
 | `docs/` | VitePress 文档源码 | 当前文档 |
 

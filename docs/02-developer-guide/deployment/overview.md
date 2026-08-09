@@ -4,10 +4,12 @@
 
 ## 当前部署对象
 
-- `ColorVision/`：主程序本体
-- `src/ColorVisionSetup/`：安装与更新相关程序
+- `ColorVision/`：主程序本体，当前客户端更新实现位于 `ColorVision/Update/`
 - `Scripts/`：构建、打包、发布辅助脚本
+- 仓库外的 Advanced Installer `ColorVision.aip`：由 `Scripts\release.bat` 发布链调用，生成完整安装包
 - `Plugins/`：运行时加载的插件目录
+
+`src/ColorVisionSetup/` 是历史保留的安装/更新程序源码，未接入当前 `build.sln`、外部 `ColorVision.aip` 或 `Scripts\release.bat` 发布链，不是当前部署入口。当前实现与发布方式分别见 [自动更新系统](./auto-update.md) 和 [构建与发布脚本](../scripts/README.md)。
 
 ## 当前推荐路径
 
