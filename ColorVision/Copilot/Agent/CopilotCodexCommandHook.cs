@@ -26,6 +26,18 @@ namespace ColorVision.Copilot
         public bool HasFailure => !string.IsNullOrWhiteSpace(FailureCode);
     }
 
+    internal sealed record CopilotCodexSessionStartOutput(
+        bool ShouldStop = false,
+        string StopReason = "",
+        string SystemMessage = "",
+        string AdditionalContext = "",
+        int AdditionalContextLimitTokens = CopilotToolExecutionOutcome.DefaultAdditionalContextLimitTokens,
+        string FailureMessage = "",
+        string FailureCode = "")
+    {
+        public bool HasFailure => !string.IsNullOrWhiteSpace(FailureCode);
+    }
+
     internal sealed record CopilotCodexStopOutput(
         bool ShouldStop = false,
         string StopReason = "",
@@ -348,6 +360,113 @@ namespace ColorVision.Copilot
         private static CopilotToolPermissionRequestOutput CreatePermissionRequestOutput(
             CopilotToolPermissionRequestDecision decision,
             string systemMessage = "") => new(decision, systemMessage);
+
+        internal async Task<CopilotCodexSessionStartOutput?> OnSessionStartAsync(
+            CopilotAgentRequest request,
+            string source,
+            CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(request);
+            if (_definition.Event != CopilotCodexConfiguredHookEvent.SessionStart)
+                return null;
+
+            var result = await RunAsync(
+                request,
+                BuildSessionStartInputJson(request, source),
+                cancellationToken).ConfigureAwait(false);
+            var failure = result.TimedOut
+                ? "A configured SessionStart hook exceeded its timeout."
+                : result.ExitCode == 0
+                    ? string.Empty
+                    : $"A configured SessionStart hook exited with code {result.ExitCode}.";
+            if (failure.Length > 0)
+                return CreateInvalidSessionStartOutput(string.Empty, failure, "configured_hook_failed");
+
+            if (!TryParseJsonOutput(result.StandardOutput, out var root, out var invalidJson))
+            {
+                if (invalidJson)
+                {
+                    return CreateInvalidSessionStartOutput(
+                        string.Empty,
+                        "A configured SessionStart hook returned invalid JSON.");
+                }
+                return new CopilotCodexSessionStartOutput(
+                    AdditionalContext: result.StandardOutput?.Trim() ?? string.Empty,
+                    AdditionalContextLimitTokens: _definition.AdditionalContextLimitTokens);
+            }
+            if (root == null)
+            {
+                return CreateInvalidSessionStartOutput(
+                    string.Empty,
+                    "A configured SessionStart hook did not return a usable JSON document.");
+            }
+
+            using (root)
+            {
+                if (!HasOnlySessionStartProperties(root.RootElement)
+                    || !TryReadOptionalString(root.RootElement, "systemMessage", out var systemMessage)
+                    || !TryReadOptionalString(root.RootElement, "stopReason", out var stopReason)
+                    || !TryReadOptionalBoolean(
+                        root.RootElement,
+                        "continue",
+                        defaultValue: true,
+                        out var shouldContinue)
+                    || !TryReadOptionalBoolean(
+                        root.RootElement,
+                        "suppressOutput",
+                        defaultValue: false,
+                        out _))
+                {
+                    return CreateInvalidSessionStartOutput(
+                        string.Empty,
+                        "A configured SessionStart hook returned an invalid universal output field.");
+                }
+
+                var additionalContext = string.Empty;
+                if (!TryReadHookSpecificOutput(
+                    root.RootElement,
+                    "SessionStart",
+                    out var specific,
+                    out var specificError))
+                {
+                    if (specificError.Length > 0)
+                    {
+                        return CreateInvalidSessionStartOutput(
+                            systemMessage,
+                            specificError);
+                    }
+                }
+                else if (!HasOnlySessionStartSpecificProperties(specific)
+                    || !TryReadOptionalString(specific, "additionalContext", out additionalContext))
+                {
+                    return CreateInvalidSessionStartOutput(
+                        systemMessage,
+                        "A configured SessionStart hook returned an invalid hook-specific output field.");
+                }
+
+                return new CopilotCodexSessionStartOutput(
+                    ShouldStop: _definition.ExecutionMode == CopilotToolExecutionHookMode.Sync
+                        && !shouldContinue,
+                    StopReason: !shouldContinue
+                        ? NormalizeReason(
+                            stopReason,
+                            "A configured SessionStart hook stopped this session.")
+                        : string.Empty,
+                    SystemMessage: systemMessage,
+                    AdditionalContext: _definition.ExecutionMode == CopilotToolExecutionHookMode.Sync
+                        ? additionalContext
+                        : string.Empty,
+                    AdditionalContextLimitTokens: _definition.AdditionalContextLimitTokens);
+            }
+        }
+
+        private static CopilotCodexSessionStartOutput CreateInvalidSessionStartOutput(
+            string systemMessage,
+            string failureMessage,
+            string failureCode = "configured_hook_invalid_output") => new(
+                SystemMessage: systemMessage,
+                FailureMessage: failureMessage,
+                FailureCode: failureCode);
 
         internal async Task<CopilotCodexUserPromptSubmitOutput?> OnUserPromptSubmitAsync(
             CopilotAgentRequest request,
@@ -1221,6 +1340,23 @@ namespace ColorVision.Copilot
             return true;
         }
 
+        private static bool HasOnlySessionStartProperties(JsonElement root)
+        {
+            foreach (var property in root.EnumerateObject())
+            {
+                if (property.Name is not (
+                    "continue"
+                    or "stopReason"
+                    or "suppressOutput"
+                    or "systemMessage"
+                    or "hookSpecificOutput"))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
         private static bool HasOnlyUserPromptSubmitProperties(JsonElement root)
         {
             foreach (var property in root.EnumerateObject())
@@ -1292,6 +1428,20 @@ namespace ColorVision.Copilot
         }
 
         private static bool HasOnlyUserPromptSubmitSpecificProperties(JsonElement specific)
+        {
+            foreach (var property in specific.EnumerateObject())
+            {
+                if (property.Name is not (
+                    "hookEventName"
+                    or "additionalContext"))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        private static bool HasOnlySessionStartSpecificProperties(JsonElement specific)
         {
             foreach (var property in specific.EnumerateObject())
             {
@@ -1434,6 +1584,23 @@ namespace ColorVision.Copilot
                     + CopilotUserFacingErrorFormatter.Sanitize(ex.Message),
                     ex);
             }
+        }
+
+        private static string BuildSessionStartInputJson(
+            CopilotAgentRequest request,
+            string source)
+        {
+            var input = new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["session_id"] = request.ConversationId,
+                ["transcript_path"] = null,
+                ["cwd"] = CopilotCodexCommandHookRunner.ResolveWorkingDirectory(request),
+                ["hook_event_name"] = "SessionStart",
+                ["model"] = request.Profile?.Model ?? string.Empty,
+                ["permission_mode"] = ResolvePermissionMode(request),
+                ["source"] = source ?? string.Empty,
+            };
+            return JsonSerializer.Serialize(input) + Environment.NewLine;
         }
 
         private string BuildUserPromptSubmitInputJson(

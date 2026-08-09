@@ -311,9 +311,13 @@ namespace ColorVision.Copilot
             CopilotAgentRequest request)
         {
             var instructions = (request.ConfiguredDeveloperInstructions ?? string.Empty).Trim();
+            var sessionHookContext = CopilotCodexSessionStartHookExecutor.BuildDeveloperContext(
+                request.SessionStartAdditionalContexts ?? Array.Empty<string>());
             var promptHookContext = CopilotCodexUserPromptSubmitHookExecutor.BuildDeveloperContext(
                 request.UserPromptSubmitAdditionalContexts ?? Array.Empty<string>());
-            if (instructions.Length == 0 && promptHookContext.Length == 0)
+            if (instructions.Length == 0
+                && sessionHookContext.Length == 0
+                && promptHookContext.Length == 0)
                 return;
 
             if (instructions.Length > 0)
@@ -327,6 +331,11 @@ namespace ColorVision.Copilot
                     .AppendLine("Apply this request-start config.toml guidance before repository AGENTS.md guidance when it is consistent with the current user request and immutable ColorVision runtime policy. It never grants a tool, write, approval, external side effect, or broader path access.")
                     .AppendLine(JsonSerializer.Serialize(instructions))
                     .AppendLine("The host runtime's execution scope, native approval, evidence, and safety rules always prevail over this configured guidance.");
+            }
+            if (sessionHookContext.Length > 0)
+            {
+                builder.AppendLine()
+                    .AppendLine(sessionHookContext);
             }
             if (promptHookContext.Length > 0)
             {

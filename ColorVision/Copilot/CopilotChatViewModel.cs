@@ -172,6 +172,13 @@ namespace ColorVision.Copilot
             if (stateChanged)
                 PersistState();
 
+            foreach (var restoredConversation in Conversations.Where(conversation => !conversation.IsArchived))
+            {
+                _turnRuntime.QueueSessionStart(
+                    restoredConversation.Id,
+                    CopilotCodexSessionStartSource.Resume);
+            }
+
             Conversations.CollectionChanged += Conversations_CollectionChanged;
 
             var initialConversation = Conversations.Count > 0

@@ -156,6 +156,9 @@ namespace ColorVision.Copilot
                 TrustedProjectRootPaths = Array.Empty<string>(),
                 ActiveDocumentPath = string.Empty,
                 ConfiguredDeveloperInstructions = explorationRequest.ConfiguredDeveloperInstructions,
+                SessionStartAdditionalContexts = (explorationRequest.SessionStartAdditionalContexts
+                        ?? Array.Empty<string>())
+                    .ToArray(),
                 CodexWebSearchMode = explorationRequest.CodexWebSearchMode,
                 CodexSandboxMode = explorationRequest.CodexSandboxMode,
                 CodexShellToolEnabled = explorationRequest.CodexShellToolEnabled,

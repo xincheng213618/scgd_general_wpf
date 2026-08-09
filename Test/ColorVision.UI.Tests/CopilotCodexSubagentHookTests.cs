@@ -296,6 +296,7 @@ public sealed class CopilotCodexSubagentHookTests
                 SearchRootPaths = [workspace],
                 TrustedProjectRootPaths = [workspace],
                 ConfiguredDeveloperInstructions = "base developer guidance",
+                SessionStartAdditionalContexts = ["session-wide guidance"],
                 CodexHooksEnabled = true,
                 CodexCommandHooks = parent.CodexCommandHooks,
                 CodexCustomSubagents =
@@ -327,6 +328,7 @@ public sealed class CopilotCodexSubagentHookTests
             Assert.Contains("# SubagentStart hook context", child.ConfiguredDeveloperInstructions, StringComparison.Ordinal);
             Assert.Contains("read the test conventions first", child.ConfiguredDeveloperInstructions, StringComparison.Ordinal);
             Assert.Contains("base developer guidance", child.ConfiguredDeveloperInstructions, StringComparison.Ordinal);
+            Assert.Equal(["session-wide guidance"], child.SessionStartAdditionalContexts);
         }
         finally
         {

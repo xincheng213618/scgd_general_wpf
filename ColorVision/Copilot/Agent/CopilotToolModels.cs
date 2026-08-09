@@ -69,6 +69,9 @@ namespace ColorVision.Copilot
 
         public string ConfiguredDeveloperInstructions { get; init; } = string.Empty;
 
+        internal IReadOnlyList<string> SessionStartAdditionalContexts { get; init; } =
+            Array.Empty<string>();
+
         internal IReadOnlyList<string> UserPromptSubmitAdditionalContexts { get; init; } =
             Array.Empty<string>();
 

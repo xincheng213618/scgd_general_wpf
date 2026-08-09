@@ -633,6 +633,9 @@ namespace ColorVision.Copilot
                     CopilotCodexSubagentStartHookExecutor.MergeDeveloperInstructions(
                         parentRequest.ConfiguredDeveloperInstructions,
                         subagentStartAdditionalContexts ?? Array.Empty<string>()),
+                SessionStartAdditionalContexts = (parentRequest.SessionStartAdditionalContexts
+                        ?? Array.Empty<string>())
+                    .ToArray(),
                 CodexWebSearchMode = parentRequest.CodexWebSearchMode,
                 CodexSandboxMode = CopilotCodexSandboxMode.ReadOnly,
                 CodexShellToolEnabled = parentRequest.CodexShellToolEnabled,

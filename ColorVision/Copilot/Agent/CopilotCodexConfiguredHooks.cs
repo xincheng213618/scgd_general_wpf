@@ -22,6 +22,7 @@ namespace ColorVision.Copilot
 
     internal enum CopilotCodexConfiguredHookEvent
     {
+        SessionStart,
         PermissionRequest,
         PreToolUse,
         PostToolUse,
@@ -939,6 +940,7 @@ namespace ColorVision.Copilot
         {
             hookEvent = value switch
             {
+                "SessionStart" => CopilotCodexConfiguredHookEvent.SessionStart,
                 "PermissionRequest" => CopilotCodexConfiguredHookEvent.PermissionRequest,
                 "PreToolUse" => CopilotCodexConfiguredHookEvent.PreToolUse,
                 "PostToolUse" => CopilotCodexConfiguredHookEvent.PostToolUse,
@@ -950,7 +952,7 @@ namespace ColorVision.Copilot
                 "SubagentStop" => CopilotCodexConfiguredHookEvent.SubagentStop,
                 _ => default,
             };
-            return value is "PermissionRequest" or "PreToolUse" or "PostToolUse"
+            return value is "SessionStart" or "PermissionRequest" or "PreToolUse" or "PostToolUse"
                 or "PreCompact" or "PostCompact" or "UserPromptSubmit" or "Stop"
                 or "SubagentStart" or "SubagentStop";
         }

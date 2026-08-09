@@ -342,6 +342,31 @@ namespace ColorVision.Copilot
             {
                 var reply = default(CopilotCompletedReplyResult);
                 var summary = string.Empty;
+                var sessionStart = await _turnRuntime.RunSessionStartHooksAsync(
+                    hookRequest,
+                    hasPersistedHistory: sourceMessages.Length > 0,
+                    hookDiagnostics.Add,
+                    cancellation.Token);
+                if (sessionStart.ShouldStop)
+                {
+                    ShowLocalCommandResult(
+                        command,
+                        "压缩未开始：SessionStart Hook 已停止本次模型请求。"
+                        + FormatCompactionHookReason(sessionStart.StopReason)
+                        + FormatCompactionHookDiagnostics(hookDiagnostics));
+                    return false;
+                }
+                var sessionStartContext =
+                    CopilotCodexSessionStartHookExecutor.BuildDeveloperContext(
+                        sessionStart.AdditionalContexts);
+                if (sessionStartContext.Length > 0)
+                {
+                    compactProfile.UseSystemPromptOverride(
+                        CopilotConversationCompactionPrompt.SystemPrompt
+                        + Environment.NewLine
+                        + Environment.NewLine
+                        + sessionStartContext);
+                }
                 var lifecycle = await new CopilotCodexCompactionHookLifecycle().RunAsync(
                     hookRequest,
                     hookTrigger,
@@ -380,6 +405,9 @@ namespace ColorVision.Copilot
                             SourceCharacters = compactionPlan.TotalSourceCharacters,
                         };
                         conversation.AgentSessionCheckpoint = null;
+                        _turnRuntime.QueueSessionStart(
+                            conversation.Id,
+                            CopilotCodexSessionStartSource.Compact);
                         UpdateConversationMetadata(conversation, touch: true);
                         PersistState();
                         compactionApplied = true;

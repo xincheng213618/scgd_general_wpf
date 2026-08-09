@@ -263,6 +263,9 @@ namespace ColorVision.Copilot
         private CopilotConversationRecord InsertAndSelectConversationBranch(CopilotConversationRecord branch)
         {
             CopilotConversationService.Insert(Conversations, branch);
+            _turnRuntime.QueueSessionStart(
+                branch.Id,
+                CopilotCodexSessionStartSource.Startup);
             SelectConversation(branch, persist: false, preferredProfileId: branch.ProfileId);
             PersistState(immediate: true);
             return branch;

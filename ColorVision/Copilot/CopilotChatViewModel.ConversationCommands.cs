@@ -26,7 +26,8 @@ namespace ColorVision.Copilot
 {
     public partial class CopilotChatViewModel
     {
-        private void StartNewChat()
+        private void StartNewChat(
+            CopilotCodexSessionStartSource? sessionStartSource = null)
         {
             if (!CanSwitchConversation)
                 return;
@@ -36,7 +37,11 @@ namespace ColorVision.Copilot
             ClearPendingRequestModeOverride();
 
             if (CopilotConversationService.IsReusableEmpty(SelectedConversation))
+            {
+                if (sessionStartSource.HasValue && SelectedConversation != null)
+                    _turnRuntime.QueueSessionStart(SelectedConversation.Id, sessionStartSource.Value);
                 return;
+            }
 
             var conversation = ResolveNewConversationTarget();
             if (!ReferenceEquals(conversation, SelectedConversation))
@@ -44,6 +49,8 @@ namespace ColorVision.Copilot
                 SelectConversation(conversation, persist: false);
                 PersistState();
             }
+            if (sessionStartSource.HasValue)
+                _turnRuntime.QueueSessionStart(conversation.Id, sessionStartSource.Value);
         }
 
         private void ClearConversationContext(CopilotLocalCommand command, string previousTitle)
@@ -66,7 +73,7 @@ namespace ColorVision.Copilot
             }
 
             DismissLocalCommandResult();
-            StartNewChat();
+            StartNewChat(CopilotCodexSessionStartSource.Clear);
         }
 
         private void ResumeConversation(CopilotLocalCommand command, string query)
