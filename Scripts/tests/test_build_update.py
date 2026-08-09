@@ -5,6 +5,7 @@ from pathlib import Path
 
 from Scripts.build_update import (
     REQUIRED_SERVICE_HOST_RUNTIME_PATHS,
+    create_full_zip,
     find_incremental_baseline,
     make_incremental_zip,
     validate_service_host_runtime,
@@ -100,6 +101,75 @@ class IncrementalServiceHostPackageTests(unittest.TestCase):
     def _write_file(path: Path, content: bytes) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(content)
+
+
+class CopilotSkillsPackageTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self._temp_directory = tempfile.TemporaryDirectory(prefix="build-update-copilot-skills-tests-")
+        self.root = Path(self._temp_directory.name)
+        self.old_directory = self.root / "old"
+        self.new_directory = self.root / "new"
+        self.old_directory.mkdir()
+        self.new_directory.mkdir()
+
+    def tearDown(self) -> None:
+        self._temp_directory.cleanup()
+
+    def test_full_zip_preserves_recursive_copilot_skill_paths_and_content(self) -> None:
+        expected_files = {
+            "Copilot/Skills/nested-skill/SKILL.md": b"# Nested skill\nfull-package-content\n",
+            "Copilot/Skills/nested-skill/agents/openai.yaml": b"name: nested-skill\n",
+            "Copilot/Skills/nested-skill/references/overview.md": b"overview-bytes\n",
+            "Copilot/Skills/nested-skill/references/guides/details.md": b"deep-reference-bytes\n",
+        }
+        self._write_files(self.new_directory, expected_files)
+
+        full_zip = self.root / "full.zip"
+        create_full_zip(self.new_directory, full_zip)
+
+        self.assertEqual(expected_files, self._read_zip(full_zip))
+
+    def test_incremental_zip_preserves_added_and_changed_copilot_skill_trees(self) -> None:
+        old_files = {
+            "Copilot/Skills/existing-skill/SKILL.md": b"# Existing skill\nold\n",
+            "Copilot/Skills/existing-skill/agents/openai.yaml": b"name: old-existing\n",
+            "Copilot/Skills/existing-skill/references/overview.md": b"old-reference\n",
+            "Copilot/Skills/existing-skill/references/unchanged.md": b"same-reference\n",
+        }
+        changed_files = {
+            "Copilot/Skills/existing-skill/SKILL.md": b"# Existing skill\nchanged\n",
+            "Copilot/Skills/existing-skill/agents/openai.yaml": b"name: changed-existing\n",
+            "Copilot/Skills/existing-skill/references/overview.md": b"changed-reference\n",
+        }
+        added_files = {
+            "Copilot/Skills/added-skill/SKILL.md": b"# Added skill\nnew\n",
+            "Copilot/Skills/added-skill/agents/openai.yaml": b"name: added-skill\n",
+            "Copilot/Skills/added-skill/references/start-here.md": b"new-reference\n",
+            "Copilot/Skills/added-skill/references/deep/checklist.md": b"new-deep-reference\n",
+        }
+        new_files = old_files | changed_files | added_files
+        self._write_files(self.old_directory, old_files)
+        self._write_files(self.new_directory, new_files)
+
+        old_zip = self.root / "old.zip"
+        create_full_zip(self.old_directory, old_zip)
+        incremental_zip = self.root / "incremental.cvx"
+        make_incremental_zip(old_zip, self.new_directory, incremental_zip)
+
+        self.assertEqual(changed_files | added_files, self._read_zip(incremental_zip))
+
+    @staticmethod
+    def _write_files(root: Path, files: dict[str, bytes]) -> None:
+        for relative_path, content in files.items():
+            path = root / Path(relative_path)
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(content)
+
+    def _read_zip(self, path: Path) -> dict[str, bytes]:
+        with zipfile.ZipFile(path, "r") as archive:
+            names = archive.namelist()
+            self.assertTrue(all("\\" not in name for name in names))
+            return {name: archive.read(name) for name in names}
 
 
 if __name__ == "__main__":
