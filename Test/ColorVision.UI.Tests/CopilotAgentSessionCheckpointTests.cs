@@ -59,6 +59,21 @@ public sealed class CopilotAgentSessionCheckpointTests
     }
 
     [Fact]
+    public void PersistedCheckpointWithInvalidEvidenceArtifactIsRejected()
+    {
+        var checkpoint = JsonConvert.DeserializeObject<CopilotAgentSessionCheckpoint>(
+            """
+            {
+              "ProfileKey": "test-profile",
+              "SerializedSessionJson": "{}",
+              "EvidenceArtifacts": [{}]
+            }
+            """)!;
+
+        Assert.False(checkpoint.IsStructurallyValid());
+    }
+
+    [Fact]
     public void CopyWithTaskEventJournalRejectsInvalidJournal()
     {
         var checkpoint = CreateCheckpoint(new CopilotAgentTaskEventJournalSnapshot());

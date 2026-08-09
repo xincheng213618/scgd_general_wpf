@@ -282,6 +282,7 @@ namespace ColorVision.Copilot
                 || (Capabilities?.Select(capability => capability.Id).Distinct(StringComparer.OrdinalIgnoreCase).Count() != Capabilities?.Count)
                 || EvidenceArtifacts == null
                 || EvidenceArtifacts?.Count > CopilotAgentEvidenceArtifact.MaxArtifacts
+                || (EvidenceArtifacts?.Any(artifact => artifact?.IsStructurallyValid() != true) ?? false)
                 || ConversationMemory == null
                 || ConversationMemory.Count > MaxConversationMemoryMessages
                 || ConversationMemory.Sum(message => message.Content?.Length ?? 0) > MaxConversationMemoryCharacters
