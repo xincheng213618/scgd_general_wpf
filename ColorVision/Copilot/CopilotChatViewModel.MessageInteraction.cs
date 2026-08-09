@@ -473,6 +473,14 @@ namespace ColorVision.Copilot
             {
                 return;
             }
+            if (!TryPrepareExplicitSkillMcpDependencies(
+                prompt,
+                userMessage.AgentSkillReference,
+                turnSnapshot.ProjectInstructionDiscoveryOptions,
+                conversation.Id))
+            {
+                return;
+            }
             var requestProfile = CreateConversationRequestProfile(
                 SelectedProfile,
                 conversation,

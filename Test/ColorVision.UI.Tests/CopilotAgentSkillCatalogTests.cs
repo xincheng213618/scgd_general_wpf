@@ -960,7 +960,7 @@ public sealed class CopilotAgentSkillCatalogTests
     }
 
     [Fact]
-    public void SkillMcpDependencyInstallerResolvesUniqueManualAndExactDuplicateMentions()
+    public void SkillMcpDependencyInstallerResolvesPersistedRetryReferenceAndUniqueMentions()
     {
         var root = Path.Combine(Path.GetTempPath(), "copilot-skill-mcp-resolve");
         var unique = new CopilotAgentSkillCatalogItem("unique-skill", "Unique")
@@ -976,14 +976,21 @@ public sealed class CopilotAgentSkillCatalogTests
             SkillFilePath = Path.GetFullPath(Path.Combine(root, "two", "SKILL.md")),
         };
         var prompt = "Use $unique-skill and $duplicate-skill.";
+        var retryMessage = new CopilotChatMessage(CopilotChatRole.User, prompt)
+        {
+            AgentSkillReference = CopilotAgentSkillReference.FromCatalogItem(duplicateTwo),
+        };
+        var persistedRetryMessage = JsonConvert.DeserializeObject<CopilotChatMessage>(
+            JsonConvert.SerializeObject(retryMessage))!;
+        persistedRetryMessage.EnsureValid();
 
         var withoutExact = CopilotAgentSkillMcpDependencyInstaller.ResolveExplicitSkills(
             prompt,
             exactReference: null,
             [unique, duplicateOne, duplicateTwo]);
         var withExact = CopilotAgentSkillMcpDependencyInstaller.ResolveExplicitSkills(
-            prompt,
-            CopilotAgentSkillReference.FromCatalogItem(duplicateTwo),
+            persistedRetryMessage.Content,
+            persistedRetryMessage.AgentSkillReference,
             [unique, duplicateOne, duplicateTwo]);
 
         Assert.Equal([unique], withoutExact);
