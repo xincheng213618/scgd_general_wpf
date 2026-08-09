@@ -19,7 +19,7 @@
 | --- | --- |
 | `ConfigServiceAdaptersTests.cs`、`BrushJsonConverterTests.cs` | 配置 adapter、基础配置、WPF brush JSON 序列化 |
 | `PropertyEditorWindowTests.cs`、`ListEditorTests.cs`、`NestedListEditorTests.cs` | PropertyGrid、属性编辑窗口、列表编辑器 |
-| `UniversalSortTests.cs`、`SortManagerTests.cs`、`TreemapLayoutTests.cs` | 通用排序、排序管理、Treemap 布局 |
+| `UniversalSortTests.cs`、`TreemapLayoutTests.cs` | 通用排序、Treemap 布局 |
 | `TerminalScreenBufferTests.cs`、`STNodeCopyPasteTests.cs` | 终端屏幕缓冲、Flow/STNode 复制粘贴 |
 | `LogEntryParserTests.cs`、`LogHistoryReaderTests.cs`、`LogSearchHelperTests.cs` | 日志解析、历史读取和搜索 |
 | `MarketplacePackageDownloadServiceTests.cs` | 插件市场包下载、校验和临时目录处理 |
@@ -27,6 +27,7 @@
 
 ```powershell
 dotnet test Test/ColorVision.UI.Tests/ -p:Platform=x64
+dotnet test .\Test\ColorVision.UI.Tests\ColorVision.UI.Tests.csproj -p:Platform=x64 --filter "FullyQualifiedName~UniversalSortTests"
 dotnet test Test/ColorVision.UI.Tests/ -p:Platform=x64 --filter "FullyQualifiedName~CopilotMcpTests"
 dotnet test Test/ColorVision.UI.Tests/ -p:Platform=x64 --filter "FullyQualifiedName~MarketplacePackageDownloadServiceTests"
 ```
