@@ -249,8 +249,9 @@
                                         <DataGridTextColumn Header="第几次测试" Binding="{Binding ExecutionText}" Width="82"/>
                                         <DataGridTextColumn Header="结束时间" Binding="{Binding EndTime, StringFormat=MM/dd HH:mm:ss}" Width="118"/>
                                         <DataGridTextColumn Header="整组 CT" Binding="{Binding CycleTimeText}" Width="88"/>
+                                        <DataGridTextColumn Header="流程数" Binding="{Binding FlowCountText}" Width="64"/>
+                                        <DataGridTextColumn Header="流程总耗时" Binding="{Binding FlowRunTimeText}" Width="96"/>
                                         <DataGridTextColumn Header="结果" Binding="{Binding ResultText}" Width="62"/>
-                                        <DataGridTextColumn Header="Msg" Binding="{Binding Msg}" Width="*" MinWidth="110"/>
                                     </DataGrid.Columns>
                                 </DataGrid>
                             </GroupBox>

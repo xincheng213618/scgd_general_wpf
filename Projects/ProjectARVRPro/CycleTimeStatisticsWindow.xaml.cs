@@ -678,7 +678,7 @@ namespace ProjectARVRPro
 
                 ReplaceItems(_details, details);
                 double flowMilliseconds = details.Sum(item => Convert.ToDouble(item.RunTime));
-                DetailHeader.Text = $"{row.SN} - 整组 CT {row.CycleTimeText} - {details.Count:N0} 个流程，流程耗时合计 {ResultStatisticsCalculator.FormatMilliseconds(flowMilliseconds)}";
+                DetailHeader.Text = $"{row.SN} - 整组 CT {row.CycleTimeText}（含切图）- {details.Count:N0} 个流程，流程耗时合计 {ResultStatisticsCalculator.FormatMilliseconds(flowMilliseconds)}";
             }
             catch (Exception ex)
             {

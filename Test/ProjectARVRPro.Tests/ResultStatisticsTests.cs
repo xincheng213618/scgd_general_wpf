@@ -291,6 +291,7 @@ public sealed class ResultStatisticsTests
         Assert.Contains("IX_ObjectiveTestResultRecord_IsFinalized_UpdateTime", indexNames);
         Assert.Contains("IX_ARVRReuslt_CreateTime", indexNames);
         Assert.Contains("IX_ARVRReuslt_SN_CreateTime", indexNames);
+        Assert.Contains("IX_ARVRReuslt_SN_Id", indexNames);
     }
 
     [Fact]
@@ -300,10 +301,10 @@ public sealed class ResultStatisticsTests
         ResultStatisticsDataStore store = new(database.Path);
         store.InitializeSchema();
         DateTime start = new(2026, 8, 9, 8, 0, 0);
-        database.InsertFlow(new ProjectARVRReuslt { SN = "SN-A", Model = "before", CreateTime = start.AddSeconds(-1), RunTime = 50 });
-        ProjectARVRReuslt first = database.InsertFlow(new ProjectARVRReuslt { SN = "SN-A", Model = "first", CreateTime = start.AddSeconds(1), RunTime = 100 });
-        ProjectARVRReuslt last = database.InsertFlow(new ProjectARVRReuslt { SN = "SN-A", Model = "last", CreateTime = start.AddSeconds(2), RunTime = 200 });
-        database.InsertFlow(new ProjectARVRReuslt { SN = "SN-A", Model = "next", CreateTime = start.AddSeconds(2), RunTime = 300 });
+        ProjectARVRReuslt before = database.InsertFlow(new ProjectARVRReuslt { SN = "SN-A", Model = "before", TestType = 1, CreateTime = start.AddSeconds(-1), RunTime = 50 });
+        ProjectARVRReuslt first = database.InsertFlow(new ProjectARVRReuslt { SN = "SN-A", Model = "first", TestType = 0, CreateTime = start.AddSeconds(1), RunTime = 100 });
+        ProjectARVRReuslt last = database.InsertFlow(new ProjectARVRReuslt { SN = "SN-A", Model = "last", TestType = 1, CreateTime = start.AddSeconds(2), RunTime = 200 });
+        database.InsertFlow(new ProjectARVRReuslt { SN = "SN-A", Model = "next", TestType = 0, CreateTime = start.AddSeconds(2), RunTime = 300 });
         database.InsertFlow(new ProjectARVRReuslt { SN = "SN-B", Model = "other", CreateTime = start.AddSeconds(1), RunTime = 400 });
 
         IReadOnlyList<ProjectARVRReuslt> details = store.QueryFlowDetails(new ResultStatisticsRecordRow
@@ -311,11 +312,86 @@ public sealed class ResultStatisticsTests
             SN = "SN-A",
             StartTime = start,
             EndTime = start.AddSeconds(3),
+            PreviousResultId = before.Id,
             ResultId = last.Id,
         });
 
         Assert.Equal([first.Id, last.Id], details.Select(item => item.Id));
         Assert.Equal(300, details.Sum(item => item.RunTime));
+    }
+
+    [Fact]
+    public void DataStoreIncludesTheFirstFlowBeforeTheObjectiveTimeWindow()
+    {
+        using var database = new TemporaryResultDatabase();
+        ResultStatisticsDataStore store = new(database.Path);
+        store.InitializeSchema();
+        DateTime firstFlowTime = new(2026, 8, 9, 8, 0, 0);
+        ProjectARVRReuslt previousFlow = database.InsertFlow(new ProjectARVRReuslt
+        {
+            SN = "SN-A",
+            Model = "previous",
+            TestType = 0,
+            CreateTime = firstFlowTime.AddDays(-1),
+            RunTime = 250,
+        });
+        ObjectiveTestResultRecord previousObjectiveRecord = CreateRecord(
+            "SN-A",
+            true,
+            firstFlowTime.AddDays(-1),
+            1_000,
+            previousFlow.Model);
+        previousObjectiveRecord.ResultId = previousFlow.Id;
+        database.Insert(previousObjectiveRecord);
+
+        ProjectARVRReuslt first = database.InsertFlow(new ProjectARVRReuslt
+        {
+            SN = "SN-A",
+            Model = "White51_Test",
+            TestType = 0,
+            CreateTime = firstFlowTime,
+            RunTime = 500,
+        });
+        ProjectARVRReuslt second = database.InsertFlow(new ProjectARVRReuslt
+        {
+            SN = "SN-A",
+            Model = "White255_Fast_Test",
+            TestType = 1,
+            CreateTime = firstFlowTime.AddSeconds(1),
+            RunTime = 1_000,
+        });
+        ProjectARVRReuslt last = database.InsertFlow(new ProjectARVRReuslt
+        {
+            SN = "SN-A",
+            Model = "White1_Fast_Test",
+            TestType = 2,
+            CreateTime = firstFlowTime.AddSeconds(2),
+            RunTime = 1_500,
+        });
+        ObjectiveTestResultRecord objectiveRecord = CreateRecord(
+            "SN-A",
+            false,
+            second.CreateTime,
+            5_000,
+            last.Model);
+        objectiveRecord.ResultId = last.Id;
+        database.Insert(objectiveRecord);
+
+        ResultStatisticsRecordRow row = Assert.Single(store.QueryRecords(new ResultStatisticsQuery
+        {
+            From = firstFlowTime.Date,
+            ToExclusive = firstFlowTime.Date.AddDays(1),
+            PageSize = 10,
+        }));
+        IReadOnlyList<ProjectARVRReuslt> details = store.QueryFlowDetails(row);
+
+        Assert.Equal(3, row.FlowCount);
+        Assert.Equal("3 个", row.FlowCountText);
+        Assert.Equal(3_000, row.FlowRunTimeMilliseconds);
+        Assert.Equal("3.000 s", row.FlowRunTimeText);
+        Assert.Equal("5.000 s", row.CycleTimeText);
+        Assert.Equal(previousFlow.Id, row.PreviousResultId);
+        Assert.Equal([first.Id, second.Id, last.Id], details.Select(item => item.Id));
     }
 
     [Fact]

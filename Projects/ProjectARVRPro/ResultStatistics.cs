@@ -150,10 +150,15 @@ namespace ProjectARVRPro
         public int BatchId { get; set; }
         public int ResultId { get; set; }
         public string Msg { get; set; } = string.Empty;
+        public int PreviousResultId { get; set; }
+        public int FlowCount { get; set; }
+        public long FlowRunTimeMilliseconds { get; set; }
 
         public double CycleTimeMilliseconds => Math.Max(0, (EndTime - StartTime).TotalMilliseconds);
         public string ExecutionText => $"第 {ExecutionIndex} 次";
         public string CycleTimeText => ResultStatisticsCalculator.FormatMilliseconds(CycleTimeMilliseconds);
+        public string FlowCountText => FlowCount > 0 ? $"{FlowCount} 个" : "-";
+        public string FlowRunTimeText => FlowCount > 0 ? ResultStatisticsCalculator.FormatMilliseconds(FlowRunTimeMilliseconds) : "-";
         public string ResultText => Result ? "PASS" : "FAIL";
     }
 
@@ -378,6 +383,7 @@ namespace ProjectARVRPro
                 db.Ado.ExecuteCommand($"CREATE INDEX IF NOT EXISTS \"IX_{TableName}_IsFinalized_UpdateTime\" ON \"{TableName}\" (\"IsFinalized\", \"UpdateTime\");");
                 db.Ado.ExecuteCommand("CREATE INDEX IF NOT EXISTS \"IX_ARVRReuslt_CreateTime\" ON \"ARVRReuslt\" (\"CreateTime\");");
                 db.Ado.ExecuteCommand("CREATE INDEX IF NOT EXISTS \"IX_ARVRReuslt_SN_CreateTime\" ON \"ARVRReuslt\" (\"SN\", \"CreateTime\");");
+                db.Ado.ExecuteCommand("CREATE INDEX IF NOT EXISTS \"IX_ARVRReuslt_SN_Id\" ON \"ARVRReuslt\" (\"SN\", \"Id\");");
                 _schemaInitialized = true;
             }
         }
@@ -427,18 +433,33 @@ namespace ProjectARVRPro
                            "BatchId",
                            "ResultId",
                            "Msg",
+                           COALESCE(LAG("ResultId") OVER (PARTITION BY TRIM("SN") ORDER BY "Id"), 0) AS "PreviousResultId",
                            ROW_NUMBER() OVER (PARTITION BY TRIM("SN") ORDER BY "Id") AS "ExecutionIndex"
                     FROM "ObjectiveTestResultRecord"
                     WHERE "IsFinalized" = 1 OR "IsFinalized" IS NULL
                 )
-                SELECT "Id", "ExecutionIndex", "SN", "StartTime", "EndTime", "Result",
-                       "LastModel", "BatchId", "ResultId", "Msg"
-                FROM RankedRecords
-                WHERE "EndTime" >= @From
-                  AND "EndTime" < @ToExclusive
-                  AND (@SN IS NULL OR "SN" LIKE '%' || @SN || '%')
-                  AND (@Result IS NULL OR "Result" = @Result)
-                ORDER BY "Id" DESC
+                SELECT R."Id", R."ExecutionIndex", R."SN", R."StartTime", R."EndTime", R."Result",
+                       R."LastModel", R."BatchId", R."ResultId", R."Msg", R."PreviousResultId",
+                       CASE WHEN R."ResultId" > R."PreviousResultId" THEN
+                           (SELECT COUNT(*)
+                            FROM "ARVRReuslt" AS F
+                            WHERE F."SN" = R."SN"
+                              AND F."Id" > R."PreviousResultId"
+                              AND F."Id" <= R."ResultId")
+                           ELSE 0 END AS "FlowCount",
+                       CASE WHEN R."ResultId" > R."PreviousResultId" THEN
+                           COALESCE((SELECT SUM(F."RunTime")
+                                     FROM "ARVRReuslt" AS F
+                                     WHERE F."SN" = R."SN"
+                                       AND F."Id" > R."PreviousResultId"
+                                       AND F."Id" <= R."ResultId"), 0)
+                           ELSE 0 END AS "FlowRunTimeMilliseconds"
+                FROM RankedRecords AS R
+                WHERE R."EndTime" >= @From
+                  AND R."EndTime" < @ToExclusive
+                  AND (@SN IS NULL OR R."SN" LIKE '%' || @SN || '%')
+                  AND (@Result IS NULL OR R."Result" = @Result)
+                ORDER BY R."Id" DESC
                 LIMIT @PageSize OFFSET @Skip;
                 """;
             return db.Ado.SqlQuery<ResultStatisticsRecordRow>(
@@ -470,6 +491,16 @@ namespace ProjectARVRPro
             InitializeSchema();
             using SqlSugarClient db = CreateClient();
             string sn = record.SN;
+            if (record.ResultId > record.PreviousResultId)
+            {
+                int previousResultId = Math.Max(0, record.PreviousResultId);
+                int resultId = record.ResultId;
+                return db.Queryable<ProjectARVRReuslt>()
+                    .Where(item => item.SN == sn && item.Id > previousResultId && item.Id <= resultId)
+                    .OrderBy(item => item.Id, OrderByType.Asc)
+                    .ToList();
+            }
+
             DateTime startTime = record.StartTime;
             DateTime endTime = record.EndTime >= startTime ? record.EndTime : startTime;
             ISugarQueryable<ProjectARVRReuslt> query = db.Queryable<ProjectARVRReuslt>()
