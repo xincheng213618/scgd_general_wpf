@@ -451,8 +451,7 @@ def _refresh_all_plugin_index(
     except Exception as exc:
         print(f"[plugin_index] pre-scan signature computation failed: {exc}")
 
-    _update_index_state(
-        cache,
+    cache.index_states.update(
         "plugins",
         status="refreshing",
         signature=pre_scan_signature,
@@ -514,8 +513,7 @@ def _refresh_all_plugin_index(
         and pre_scan_signature != post_scan_signature
     )
 
-    _update_index_state(
-        cache,
+    cache.index_states.update(
         "plugins",
         status="ready",
         signature=pre_scan_signature,
@@ -538,42 +536,6 @@ def _refresh_all_plugin_index(
         "status": "ready",
         "changed_during_refresh": changed_during_refresh,
     }
-
-
-def _update_index_state(
-    cache: CacheManager,
-    scope: str,
-    *,
-    status: str = "ready",
-    signature: str = "",
-    started_at: str = "",
-    finished_at: str = "",
-    item_count: int = 0,
-    duration_ms: int = 0,
-    error: str = "",
-):
-    db = cache.get_db()
-    try:
-        db.execute(
-            """INSERT INTO index_state (scope, signature, status, last_started_at, last_finished_at,
-                                        last_error, item_count, duration_ms)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-               ON CONFLICT(scope) DO UPDATE SET
-                   signature = CASE WHEN excluded.signature != '' THEN excluded.signature ELSE index_state.signature END,
-                   status = excluded.status,
-                   last_started_at = COALESCE(excluded.last_started_at, index_state.last_started_at),
-                   last_finished_at = COALESCE(excluded.last_finished_at, index_state.last_finished_at),
-                   last_error = excluded.last_error,
-                   item_count = excluded.item_count,
-                   duration_ms = excluded.duration_ms
-            """,
-            (scope, signature or "", status, started_at or None, finished_at or None, error, item_count, duration_ms),
-        )
-        db.commit()
-    except Exception as exc:
-        print(f"[index_state] update failed for {scope}: {exc}")
-    finally:
-        db.close()
 
 
 # ---------------------------------------------------------------------------
@@ -720,11 +682,4 @@ def has_active_packages_missing_hash(cache: CacheManager) -> bool:
 
 def get_plugin_index_state(cache: CacheManager) -> dict[str, Any] | None:
     """Get the current index_state for 'plugins' scope."""
-    db = cache.get_db()
-    try:
-        row = db.execute("SELECT * FROM index_state WHERE scope = 'plugins'").fetchone()
-        return dict(row) if row else None
-    except Exception:
-        return None
-    finally:
-        db.close()
+    return cache.index_states.get("plugins")

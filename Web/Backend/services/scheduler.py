@@ -198,15 +198,9 @@ def _run_plugin_index_check(cache: CacheManager, storage: Path, get_db: Callable
 
     current_sig = plugin_catalog_signature(storage)
 
-    db = cache.get_db()
-    try:
-        row = db.execute(
-            "SELECT signature, status FROM index_state WHERE scope = 'plugins'"
-        ).fetchone()
-        stored_sig = row["signature"] if row else ""
-        stored_status = row["status"] if row else ""
-    finally:
-        db.close()
+    state = cache.index_states.get("plugins")
+    stored_sig = state["signature"] if state else ""
+    stored_status = state["status"] if state else ""
 
     if current_sig == stored_sig and stored_status == "ready":
         return "No changes detected"

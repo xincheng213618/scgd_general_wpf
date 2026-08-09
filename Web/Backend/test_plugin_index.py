@@ -643,6 +643,27 @@ class PluginIndexTests(unittest.TestCase):
         self.assertIn("package_index_count", payload)
         self.assertIn("storage_path", payload)
 
+    def test_admin_cache_status_exposes_plugin_index_last_error(self):
+        self.cache.index_states.update(
+            "plugins",
+            status="error",
+            finished_at="2026-08-10T04:00:00+00:00",
+            error="table plugin_index has no column named readme",
+        )
+
+        response = self.client.get(
+            "/api/admin/cache/status",
+            headers=self._auth_headers(),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        state = response.get_json()["plugin_index_state"]
+        self.assertEqual(state["status"], "error")
+        self.assertEqual(
+            state["last_error"],
+            "table plugin_index has no column named readme",
+        )
+
     def test_admin_cache_status_requires_auth(self):
         response = self.client.get("/api/admin/cache/status")
         self.assertEqual(response.status_code, 401)
