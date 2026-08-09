@@ -540,11 +540,10 @@ namespace ColorVision.Copilot
             var customSubagent = CopilotCodexCustomSubagentSelection.Find(
                 parentRequest.CodexCustomSubagents,
                 runRequest.Agent);
-            var canInheritParentModelMetadata = customSubagent != null
-                || string.Equals(
-                    childProfile.Model,
-                    parentRequest.Profile.Model,
-                    StringComparison.OrdinalIgnoreCase);
+            var canInheritParentModelMetadata = string.Equals(
+                childProfile.Model,
+                parentRequest.Profile.Model,
+                StringComparison.OrdinalIgnoreCase);
             var childReasoningSummary = customSubagent != null
                 && customSubagent.ReasoningSummary != CopilotCodexReasoningSummary.Unspecified
                     ? customSubagent.ReasoningSummary

@@ -470,7 +470,7 @@ public sealed class CopilotCodexCustomSubagentsTests
     }
 
     [Fact]
-    public void CustomAgentModelWithoutEffortUsesTheSelectedModelDefault()
+    public void CustomAgentModelWithoutResponseOverridesUsesTheSelectedModelDefaults()
     {
         var request = CreateParentRequest(
             new CopilotCodexCustomSubagentDefinition
@@ -496,10 +496,10 @@ public sealed class CopilotCodexCustomSubagentsTests
         Assert.Equal(262_144, CopilotAgentRunBudget.Resolve(child).ContextWindowTokens);
         Assert.Equal(12_000, child.ToolOutputTokenLimitOverride);
         Assert.Equal(CopilotCodexReasoningEffort.Unspecified, child.CodexReasoningEffort);
-        Assert.Equal(CopilotCodexReasoningSummary.Concise, child.CodexReasoningSummary);
-        Assert.True(child.CodexModelSupportsReasoningSummaries);
+        Assert.Equal(CopilotCodexReasoningSummary.Unspecified, child.CodexReasoningSummary);
+        Assert.Null(child.CodexModelSupportsReasoningSummaries);
         Assert.Equal("scale", child.CodexServiceTier);
-        Assert.Equal(CopilotCodexModelVerbosity.Low, child.CodexModelVerbosity);
+        Assert.Equal(CopilotCodexModelVerbosity.Unspecified, child.CodexModelVerbosity);
     }
 
     [Fact]
