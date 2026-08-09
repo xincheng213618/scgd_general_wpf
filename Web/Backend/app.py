@@ -17,6 +17,17 @@ Run:
 import json
 from pathlib import Path
 
+# Deprecated compatibility globals. Core composition receives these through
+# explicit outer accessors and never imports this module. Remove them only when
+# tests, publishing scripts and external WSGI consumers stop mutating them.
+LEGACY_APP_COMPAT_REMOVAL = (
+    "Remove after repository tests, publishing scripts, and external WSGI "
+    "consumers no longer import app globals or thin helper re-exports."
+)
+CONFIG = None
+STORAGE = None
+DB_PATH = None
+
 # ---------------------------------------------------------------------------
 # Create app, services, and context via app_setup
 # ---------------------------------------------------------------------------
@@ -24,19 +35,23 @@ from pathlib import Path
 from app_setup import (
     create_app_and_context, register_error_handlers,
     register_slow_request_logging, register_all_blueprints,
-    human_size, render_markdown,
+    human_size, render_markdown, RuntimeOverrides,
 )
 from db_cache import CacheManager
 
-app, _ctx, SERVICES, _helpers = create_app_and_context()
+app, _ctx, SERVICES, _helpers = create_app_and_context(RuntimeOverrides(
+    config=lambda: CONFIG,
+    storage=lambda: STORAGE,
+    db_path=lambda: DB_PATH,
+))
 
 # ---------------------------------------------------------------------------
 # Module-level globals (kept for test backward compatibility)
 # ---------------------------------------------------------------------------
 
-CONFIG = _ctx.config
-STORAGE = _ctx._storage
-DB_PATH = _ctx.db_path
+CONFIG = _helpers["runtime"].config
+STORAGE = _helpers["runtime"].storage
+DB_PATH = _helpers["runtime"].db_path
 _cache = _ctx.cache
 
 # Re-export for tests that mutate these
@@ -48,7 +63,8 @@ PLUGIN_INFO_CACHE_TTL_SECONDS = __import__("db_cache").PLUGIN_INFO_CACHE_TTL_SEC
 CVWS_RELEASES_CACHE_KEY = "cvws_releases:v1"
 CVWS_RELEASES_CACHE_TTL_SECONDS = 180
 
-# Thin wrappers
+# Deprecated, stateless compatibility wrappers. New code must use MarketplaceContext
+# or a typed service. The removal condition is LEGACY_APP_COMPAT_REMOVAL above.
 def get_db():
     return _helpers["get_db"]()
 

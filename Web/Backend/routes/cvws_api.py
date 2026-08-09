@@ -15,20 +15,22 @@ from routes.request_context import current_request_context, set_authenticated_re
 
 cvws_api = Blueprint("cvws_api", __name__)
 
-_app_mod = None
+_ctx = None
 _CVWS_PACKAGE_RE = None
+CVWS_RELEASES_CACHE_KEY = "cvws_releases:v1"
+CVWS_RELEASES_CACHE_TTL_SECONDS = 180
 
 
 def register_cvws_api(app, ctx):
-    global _app_mod, _CVWS_PACKAGE_RE
-    _app_mod = __import__("app")
+    global _ctx, _CVWS_PACKAGE_RE
+    _ctx = ctx
     from cvwindowsservice_publish import CVWS_PACKAGE_RE
     _CVWS_PACKAGE_RE = CVWS_PACKAGE_RE
     app.register_blueprint(cvws_api)
 
 
 def _get_storage():
-    return _app_mod.STORAGE
+    return _ctx.storage
 
 
 def _scan_cvwindowsservice_packages():
@@ -49,7 +51,7 @@ def _scan_cvwindowsservice_packages():
             packages.append({
                 "fileName": entry.name, "version": m.group("version"),
                 "suffix": m.group("suffix") or "", "size": stat.st_size,
-                "sizeText": _app_mod.human_size(stat.st_size),
+                "sizeText": _ctx.human_size(stat.st_size),
                 "modified": dt.isoformat(), "modifiedDisplay": dt.strftime("%Y-%m-%d %H:%M"),
                 "downloadUrl": f"/download/Tool/CVWindowsService/{entry.name}",
             })
@@ -72,13 +74,17 @@ def _get_cvwindowsservice_releases_payload():
     lr = tool_dir / "LATEST_RELEASE"
     latest = lr.read_text(encoding="utf-8").strip() if lr.exists() else ""
     sig = _cvws_cache_signature(tool_dir, latest)
-    cached = _app_mod._get_cache_entry(_app_mod.CVWS_RELEASES_CACHE_KEY, signature=sig)
+    cached = _ctx.cache.get_cache_entry(CVWS_RELEASES_CACHE_KEY, signature=sig)
     if cached and isinstance(cached.get("value"), dict):
         return cached["value"]
     packages = _scan_cvwindowsservice_packages()
     payload = {"latestVersion": latest, "packages": packages, "count": len(packages)}
-    _app_mod._set_cache_entry(_app_mod.CVWS_RELEASES_CACHE_KEY, payload,
-                               ttl_seconds=_app_mod.CVWS_RELEASES_CACHE_TTL_SECONDS, signature=sig)
+    _ctx.cache.set_cache_entry(
+        CVWS_RELEASES_CACHE_KEY,
+        payload,
+        ttl_seconds=CVWS_RELEASES_CACHE_TTL_SECONDS,
+        signature=sig,
+    )
     return payload
 
 
@@ -91,7 +97,7 @@ def _json_auth_error():
 
 def _has_cvws_publish_auth() -> bool:
     request_context = current_request_context()
-    decision = _app_mod._ctx.auth_policy.authorize(
+    decision = _ctx.auth_policy.authorize(
         request_context,
         ["release:publish"],
     )
@@ -124,7 +130,7 @@ def api_cvwindowsservice_context():
         storage,
         scan_packages=_scan_cvwindowsservice_packages,
         read_text_file=read_text,
-        human_size=_app_mod.human_size,
+        human_size=_ctx.human_size,
     )
     payload.pop("human_size", None)
     return jsonify(payload)
@@ -133,7 +139,7 @@ def api_cvwindowsservice_context():
 @cvws_api.route("/api/tool/cvwindowsservice/download/<version>")
 def api_cvwindowsservice_download(version):
     storage = _get_storage()
-    if not _app_mod._is_safe_version(version):
+    if not _ctx.is_safe_version(version):
         return jsonify({"error": "Invalid version format"}), 400
     tool_dir = storage / "Tool" / "CVWindowsService"
     if not tool_dir.is_dir():
@@ -193,11 +199,11 @@ def api_cvwindowsservice_publish():
     if set_latest:
         update_cvws_latest_release(target_dir, version)
 
-    _app_mod._cache.invalidate_cache_prefix("cvws_releases:")
-    _app_mod._cache.invalidate_cache_prefix("home_tool_preview:")
-    _app_mod._cache.invalidate_cache_prefix("storage_overview:")
+    _ctx.cache.invalidate_cache_prefix("cvws_releases:")
+    _ctx.cache.invalidate_cache_prefix("home_tool_preview:")
+    _ctx.cache.invalidate_cache_prefix("storage_overview:")
     from services.storage_events import on_storage_change
-    on_storage_change(_app_mod._cache, storage, "Tool/CVWindowsService")
+    on_storage_change(_ctx.cache, storage, "Tool/CVWindowsService")
 
     lr = target_dir / "LATEST_RELEASE"
     latest_now = lr.read_text(encoding="utf-8").strip() if lr.exists() else ""

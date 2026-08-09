@@ -21,8 +21,8 @@ from services.request_context import RequestContext
 class MarketplaceContext:
     """Central dependency container for the marketplace application.
 
-    The storage property reads from the app module's STORAGE global
-    so that test mutations are always reflected.
+    Runtime accessors are supplied by the composition root. The core context
+    therefore has no dependency on the executable ``app`` compatibility shell.
     """
 
     # Core config
@@ -30,6 +30,9 @@ class MarketplaceContext:
     _storage: Path
     db_path: Path
     cache: CacheManager
+    storage_getter: Callable[[], Path]
+    config_getter: Callable[[], dict[str, Any]]
+    db_path_getter: Callable[[], Path]
 
     # DB helpers
     get_db: Callable[[], sqlite3.Connection]
@@ -69,16 +72,19 @@ class MarketplaceContext:
 
     @property
     def storage(self) -> Path:
-        """Read storage from app module globals so test mutations are reflected."""
-        try:
-            import app as _app
-            return _app.STORAGE
-        except ImportError:
-            return self._storage
+        return self.storage_getter()
 
     @storage.setter
     def storage(self, value: Path):
         self._storage = value
+
+    @property
+    def active_config(self) -> dict[str, Any]:
+        return self.config_getter()
+
+    @property
+    def active_db_path(self) -> Path:
+        return self.db_path_getter()
 
     @staticmethod
     def get_request_username(request_context: RequestContext) -> str:

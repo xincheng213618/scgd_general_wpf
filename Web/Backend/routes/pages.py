@@ -9,39 +9,37 @@ from __future__ import annotations
 
 import hashlib
 
-from flask import Blueprint, abort, jsonify, request, send_from_directory
+from flask import Blueprint, abort, current_app, jsonify, request, send_from_directory
 from routes.request_context import current_request_context, set_authenticated_request_context
 
 pages = Blueprint("pages", __name__)
 
-_app_mod = None
-_SERVICES = None
+_ctx = None
 
 
-def register_pages(app, services):
-    global _app_mod, _SERVICES
-    _app_mod = __import__("app")
-    _SERVICES = services
+def register_pages(app, ctx):
+    global _ctx
+    _ctx = ctx
     app.register_blueprint(pages)
 
 
 def _storage():
-    return _app_mod.STORAGE
+    return _ctx.storage
 
 
 def _cache():
-    return _app_mod._cache
+    return _ctx.cache
 
 
 def _services():
-    return _SERVICES
+    return _ctx.services
 
 
 def _is_transfer_storage_path(relative_path: str) -> bool:
     try:
         from transfer_files import is_transfer_storage_path
-        target = _app_mod._storage_target(relative_path)
-        return is_transfer_storage_path(_storage(), _app_mod.CONFIG, target)
+        target = _ctx.storage_target(relative_path)
+        return is_transfer_storage_path(_storage(), _ctx.active_config, target)
     except Exception:
         return False
 
@@ -50,7 +48,7 @@ def _has_transfer_auth() -> bool:
     from transfer_files import TRANSFER_FILE_SCOPE
 
     request_context = current_request_context()
-    decision = _app_mod._ctx.auth_policy.authorize(
+    decision = _ctx.auth_policy.authorize(
         request_context,
         [TRANSFER_FILE_SCOPE],
         allow_user_session=True,
@@ -61,7 +59,7 @@ def _has_transfer_auth() -> bool:
 
 
 def _transfer_auth_challenge():
-    response = _app_mod.app.response_class("Authentication required", status=401)
+    response = current_app.response_class("Authentication required", status=401)
     response.headers["WWW-Authenticate"] = 'Basic realm="ColorVision Transfer"'
     return response
 
@@ -178,13 +176,13 @@ def api_site_tools():
 def api_site_browse(subpath: str = ""):
     from page_contexts import build_browse_page_context
 
-    normalized = _app_mod._normalize_relative_path(subpath)
+    normalized = _ctx.normalize_relative_path(subpath)
     auth_result = _require_transfer_auth_for_storage_path(normalized)
     if auth_result is not None:
         return auth_result
 
     storage = _storage()
-    target = _app_mod._storage_target(normalized)
+    target = _ctx.storage_target(normalized)
     if not target.exists():
         abort(404)
     try:
@@ -210,18 +208,18 @@ def api_site_browse(subpath: str = ""):
 def api_site_upload_context():
     from page_contexts import build_upload_page_context
 
-    keep = int(_app_mod.CONFIG.get("plugin_package_keep_count", 3) or 3)
+    keep = int(_ctx.active_config.get("plugin_package_keep_count", 3) or 3)
     return jsonify(build_upload_page_context(
         message=None,
         error=None,
-        max_upload_size_bytes=_app_mod.MAX_UPLOAD_SIZE_BYTES,
+        max_upload_size_bytes=current_app.config["MAX_CONTENT_LENGTH"],
         plugin_package_keep_count=keep,
     ))
 
 
 @pages.route("/download/<path:relative_path>")
 def download_storage_file(relative_path):
-    normalized = _app_mod._normalize_relative_path(relative_path)
+    normalized = _ctx.normalize_relative_path(relative_path)
     auth_result = _require_transfer_auth_for_storage_path(normalized)
     if auth_result is not None:
         return auth_result
@@ -234,7 +232,7 @@ def plugin_icon(plugin_id):
     from email.utils import formatdate, parsedate_to_datetime
     from plugin_marketplace import load_plugin_icon_payload
 
-    if not _app_mod._is_safe_id(plugin_id):
+    if not _ctx.is_safe_id(plugin_id):
         abort(404)
     storage = _storage()
     icon_path = storage / "Plugins" / plugin_id / "PackageIcon.png"
@@ -250,16 +248,16 @@ def plugin_icon(plugin_id):
     etag = hashlib.md5(payload_bytes).hexdigest()
     inm = request.headers.get("If-None-Match", "")
     if inm and inm.strip('"') == etag:
-        return _app_mod.app.response_class(status=304)
+        return current_app.response_class(status=304)
     if last_ts > 0:
         ims = request.headers.get("If-Modified-Since", "")
         if ims:
             try:
                 if last_ts <= parsedate_to_datetime(ims).timestamp():
-                    return _app_mod.app.response_class(status=304)
+                    return current_app.response_class(status=304)
             except (ValueError, TypeError):
                 pass
-    resp = _app_mod.app.response_class(payload_bytes, mimetype=ct)
+    resp = current_app.response_class(payload_bytes, mimetype=ct)
     resp.headers["ETag"] = f'"{etag}"'
     if last_ts > 0:
         resp.headers["Last-Modified"] = formatdate(last_ts, usegmt=True)
@@ -271,7 +269,7 @@ def plugin_icon(plugin_id):
 def api_app_latest_version():
     version, etag = _latest_version_payload()
     if request.headers.get("If-None-Match", "").strip('"') == etag:
-        response = _app_mod.app.response_class(status=304)
+        response = current_app.response_class(status=304)
         response.headers["ETag"] = f'"{etag}"'
         response.headers["Cache-Control"] = "public, max-age=30"
         return response
@@ -287,12 +285,12 @@ def api_app_changelog():
     changelog = _services()._read_text_file(_storage() / "CHANGELOG.md")
     if not changelog:
         return jsonify({"error": "CHANGELOG.md not found"}), 404
-    return _app_mod.app.response_class(changelog, content_type="text/plain; charset=utf-8")
+    return current_app.response_class(changelog, content_type="text/plain; charset=utf-8")
 
 
 @pages.route("/api/app/releases/<version>/download")
 def api_app_release_download(version):
-    if not _app_mod._is_safe_version(version):
+    if not _ctx.is_safe_version(version):
         return jsonify({"error": "Invalid version format"}), 400
     svc = _services()
     candidates = [
@@ -308,7 +306,7 @@ def api_app_release_download(version):
 
 @pages.route("/api/app/updates/<version>/download")
 def api_app_incremental_download(version):
-    if not _app_mod._is_safe_version(version):
+    if not _ctx.is_safe_version(version):
         return jsonify({"error": "Invalid version format"}), 400
     from update_retention import repair_update_storage_layout
 

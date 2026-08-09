@@ -25,18 +25,17 @@ from services.spectrum_release import (
 
 
 spectrum_api = Blueprint("spectrum_api", __name__)
-_app_mod = None
+_ctx = None
 
 
 def register_spectrum_api(app, ctx) -> None:
-    del ctx
-    global _app_mod
-    _app_mod = __import__("app")
+    global _ctx
+    _ctx = ctx
     app.register_blueprint(spectrum_api)
 
 
 def _get_storage():
-    return _app_mod.STORAGE
+    return _ctx.storage
 
 
 def _json_error(message: str, status: int):
@@ -52,7 +51,7 @@ def _json_auth_error():
 
 def _has_publish_auth() -> bool:
     request_context = current_request_context()
-    decision = _app_mod._ctx.auth_policy.authorize(
+    decision = _ctx.auth_policy.authorize(
         request_context,
         ["release:publish"],
     )
