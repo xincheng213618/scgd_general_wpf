@@ -59,6 +59,12 @@ namespace ColorVision.UI
 
         public string FailureCode { get; init; } = string.Empty;
 
+        public static CopilotModuleToolPermissionRequestDecision PromptWithReason(string reason) => new()
+        {
+            ShouldPrompt = true,
+            Reason = reason ?? string.Empty,
+        };
+
         public static CopilotModuleToolPermissionRequestDecision Deny(
             string reason,
             string failureCode = "extension_permission_hook_denied")

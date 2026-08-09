@@ -119,6 +119,60 @@ public sealed class CopilotPermissionRequestHookTests
         Assert.Equal("permission_hook_failed", run.FailureCode);
     }
 
+    [Fact]
+    public async Task PromptReasonIsRedactedEncodedAndBoundedForAutomaticReview()
+    {
+        string hookReason = "HOOK-REASON-HEAD \u202E Bearer synthetic-secret "
+            + new string('x', 5_000)
+            + " HOOK-REASON-TAIL";
+        var outcome = await new CopilotToolExecutor([new PromptingPermissionHook(hookReason)])
+            .EvaluatePermissionRequestAsync(
+                CreateInvocation(new ProtectedRecordingTool(), "permission-prompt-reason"),
+                CancellationToken.None);
+
+        Assert.True(outcome.Decision.ShouldPrompt);
+        Assert.Contains("sandbox_approval capability", outcome.Decision.Reason, StringComparison.Ordinal);
+        Assert.Contains("HOOK-REASON-HEAD \u202E", outcome.Decision.Reason, StringComparison.Ordinal);
+        Assert.Contains("...[approval reason truncated]...", outcome.Decision.Reason, StringComparison.Ordinal);
+        Assert.EndsWith("HOOK-REASON-TAIL", outcome.Decision.Reason, StringComparison.Ordinal);
+        Assert.True(outcome.Decision.Reason.Length <= CopilotApprovalRequestReason.MaximumCharacters);
+        var reviewerReason = CopilotApprovalRequestReason.Normalize(outcome.Decision.Reason);
+        Assert.Contains(@"HOOK-REASON-HEAD \u202E", reviewerReason, StringComparison.Ordinal);
+        Assert.Contains("Bearer <redacted>", reviewerReason, StringComparison.Ordinal);
+        Assert.DoesNotContain("synthetic-secret", reviewerReason, StringComparison.Ordinal);
+        Assert.DoesNotContain("\u202E", reviewerReason, StringComparison.Ordinal);
+        Assert.True(reviewerReason.Length <= CopilotApprovalRequestReason.MaximumCharacters);
+    }
+
+    [Fact]
+    public async Task ModulePromptReasonSurvivesTheExtensionAdapter()
+    {
+        var extensionRegistry = new CopilotAgentExtensionRegistry();
+        var hookRegistry = new CopilotToolExecutionHookRegistry();
+        using var bridge = new CopilotAgentExtensionBridge(
+            extensionRegistry,
+            new CopilotCapabilityCatalog(),
+            reservedToolNames: [],
+            hookRegistry);
+        using var extensionRegistration = extensionRegistry.Register(
+            new CopilotAgentExtensionRegistration
+            {
+                SourceId = "test.permission-prompt-extension",
+                SourceName = "Permission prompt test extension",
+                SourceVersion = "1.0.0",
+                ToolExecutionHooks = [new PromptingModulePermissionHook()],
+            });
+
+        var outcome = await new CopilotToolExecutor(hookRegistry)
+            .EvaluatePermissionRequestAsync(
+                CreateInvocation(new ProtectedRecordingTool(), "module-permission-prompt"),
+                CancellationToken.None);
+
+        Assert.True(outcome.Decision.ShouldPrompt);
+        Assert.Contains("sandbox_approval capability", outcome.Decision.Reason, StringComparison.Ordinal);
+        Assert.Contains("module policy requires an operator checkpoint", outcome.Decision.Reason, StringComparison.Ordinal);
+    }
+
     private static CopilotToolInvocation CreateInvocation(
         ICopilotTool tool,
         string callId)
@@ -225,6 +279,47 @@ public sealed class CopilotPermissionRequestHookTests
             AfterCount++;
             return Task.CompletedTask;
         }
+    }
+
+    private sealed class PromptingPermissionHook(string reason) : ICopilotToolPermissionRequestHook
+    {
+        public Task<CopilotToolPermissionRequestDecision> OnPermissionRequestAsync(
+            CopilotToolPermissionRequestContext context,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return Task.FromResult(CopilotToolPermissionRequestDecision.PromptWithReason(reason));
+        }
+
+        public Task<CopilotToolExecutionHookDecision> BeforeExecuteAsync(
+            CopilotToolExecutionHookContext context,
+            CancellationToken cancellationToken) =>
+            Task.FromResult(CopilotToolExecutionHookDecision.Proceed);
+
+        public Task AfterExecuteAsync(
+            CopilotToolExecutionOutcome outcome,
+            CancellationToken cancellationToken) => Task.CompletedTask;
+    }
+
+    private sealed class PromptingModulePermissionHook : ICopilotModuleToolPermissionRequestHook
+    {
+        public string Name => "Permission_Prompt_Policy";
+
+        public string ToolNamePattern => "^ProtectedRecordingTool$";
+
+        public Task<CopilotModuleToolPermissionRequestDecision> OnPermissionRequestAsync(
+            CopilotModuleToolExecutionHookContext context,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return Task.FromResult(CopilotModuleToolPermissionRequestDecision.PromptWithReason(
+                "The module policy requires an operator checkpoint for this exact call."));
+        }
+
+        public Task<CopilotModuleToolExecutionHookDecision> BeforeExecuteAsync(
+            CopilotModuleToolExecutionHookContext context,
+            CancellationToken cancellationToken) =>
+            Task.FromResult(CopilotModuleToolExecutionHookDecision.Proceed);
     }
 
     private sealed class ProtectedRecordingTool : ICopilotFrameworkApprovedTool

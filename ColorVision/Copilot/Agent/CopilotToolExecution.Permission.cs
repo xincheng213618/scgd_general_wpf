@@ -56,6 +56,10 @@ namespace ColorVision.Copilot
                         "codex_approval_prompt_disabled"));
             }
 
+            var approvalReason = CopilotCodexApprovalPolicySelection.GetApprovalPromptReason(
+                invocation.AgentRequest.CodexApprovalPolicy,
+                invocation.Tool);
+
             var context = new CopilotToolPermissionRequestContext
             {
                 Invocation = invocation,
@@ -127,8 +131,12 @@ namespace ColorVision.Copilot
                                 string.IsNullOrWhiteSpace(decision.Reason)
                                     ? "A permission-request hook denied this protected tool call."
                                     : CopilotUserFacingErrorFormatter.Sanitize(decision.Reason),
-                                failureCode));
+                            failureCode));
                     }
+
+                    approvalReason = CopilotApprovalRequestReason.Combine(
+                        approvalReason,
+                        decision.Reason);
 
                     RecordHookRun(
                         hookRuns,
@@ -228,7 +236,7 @@ namespace ColorVision.Copilot
             return CreatePermissionRequestOutcome(
                 hooks,
                 hookRuns,
-                CopilotToolPermissionRequestDecision.Prompt);
+                CopilotToolPermissionRequestDecision.PromptWithReason(approvalReason));
         }
     }
 }

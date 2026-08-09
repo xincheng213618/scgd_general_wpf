@@ -158,6 +158,7 @@ public sealed class CopilotAutomaticApprovalOverrideTests
             request,
             tool,
             action,
+            string.Empty,
             "Complete command: Write-Output safe");
 
         Assert.DoesNotContain("Explicit user retry override", ordinaryInstructions, StringComparison.Ordinal);

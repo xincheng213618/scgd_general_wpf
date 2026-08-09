@@ -153,6 +153,23 @@ namespace ColorVision.Copilot
                 : $"Codex granular approval_policy disables {GetConfigCategoryName(category)} prompts for this submitted turn; the protected tool call was not authorized.";
         }
 
+        public static string GetApprovalPromptReason(
+            CopilotCodexApprovalPolicy? policy,
+            ICopilotTool tool)
+        {
+            ArgumentNullException.ThrowIfNull(tool);
+            policy ??= CopilotCodexApprovalPolicy.Unspecified;
+            if (policy.Mode == CopilotCodexApprovalPolicyMode.Untrusted
+                && tool.Capability.Access == CopilotToolAccess.Write)
+            {
+                return "Codex approval_policy=untrusted requires exact ColorVision approval for this write-capable tool call.";
+            }
+
+            return tool.Capability.RequiresNativeApproval
+                ? $"The tool's {GetConfigCategoryName(tool.Capability.ApprovalPromptCategory)} capability requires exact ColorVision approval before execution."
+                : string.Empty;
+        }
+
         public static string GetModelInstruction(CopilotCodexApprovalPolicy? policy)
         {
             policy ??= CopilotCodexApprovalPolicy.Unspecified;

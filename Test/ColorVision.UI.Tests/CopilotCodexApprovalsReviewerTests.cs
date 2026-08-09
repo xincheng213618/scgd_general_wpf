@@ -521,12 +521,15 @@ public sealed class CopilotCodexApprovalsReviewerTests
                 request,
                 tool,
                 handle.Action,
+                "The tool call requires exact approval for its current workspace.",
                 handle.Action.ReviewDetails);
 
             Assert.Equal(stepWorkspacePath, handle.Action.RequestContext.WorkspacePath);
             Assert.Equal(stepWorkspacePath, handle.Action.RequestContext.Scope.WorkspacePath);
             Assert.Contains($"Workspace: {stepWorkspacePath}", evidence, StringComparison.Ordinal);
             Assert.DoesNotContain($"Workspace: {turnWorkspacePath}", evidence, StringComparison.Ordinal);
+            Assert.Contains("Approval trigger:", evidence, StringComparison.Ordinal);
+            Assert.Contains("requires exact approval", evidence, StringComparison.Ordinal);
         }
         finally
         {
@@ -615,6 +618,7 @@ public sealed class CopilotCodexApprovalsReviewerTests
                 request,
                 tool,
                 handle.Action,
+                string.Empty,
                 CancellationToken.None);
 
             Assert.Equal(CopilotAutomaticApprovalReviewVerdict.Unavailable, unavailable.Verdict);
@@ -629,6 +633,7 @@ public sealed class CopilotCodexApprovalsReviewerTests
                     request,
                     tool,
                     handle.Action,
+                    string.Empty,
                     cancellation.Token));
         }
         finally

@@ -112,6 +112,7 @@ namespace ColorVision.Copilot
                                         request,
                                         reservation.Tool,
                                         handle.Action,
+                                        permissionOutcome.Decision.Reason,
                                         cancellationToken);
                                     usage = usage.Add(automaticReview.Usage);
                                     circuitBreakerSnapshot = isExplicitAutoReview

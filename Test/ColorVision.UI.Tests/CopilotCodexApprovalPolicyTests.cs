@@ -150,6 +150,10 @@ public sealed class CopilotCodexApprovalPolicyTests
             Assert.Single(bridge.CreateFunctions()).GetType().Name,
             StringComparison.Ordinal);
 
+        var permission = await executor.EvaluatePermissionRequestAsync(
+            CreateInvocation(tool, request, "untrusted-permission", frameworkApprovalGranted: false),
+            CancellationToken.None);
+
         var denied = await executor.ExecuteAsync(
             CreateInvocation(tool, request, "untrusted-denied", frameworkApprovalGranted: false),
             _ => { },
@@ -166,6 +170,8 @@ public sealed class CopilotCodexApprovalPolicyTests
             agentModeEnabled: true);
 
         Assert.Equal(CopilotToolExecutionState.Denied, denied.Execution.State);
+        Assert.True(permission.Decision.ShouldPrompt);
+        Assert.Contains("approval_policy=untrusted", permission.Decision.Reason, StringComparison.Ordinal);
         Assert.Equal(CopilotToolFailureKind.Authorization, denied.Result.FailureKind);
         Assert.Equal(CopilotToolExecutionState.Completed, approved.Execution.State);
         Assert.Equal(1, tool.ExecutionCount);

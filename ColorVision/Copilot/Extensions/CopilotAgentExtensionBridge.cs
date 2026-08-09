@@ -510,7 +510,7 @@ namespace ColorVision.Copilot
                 CreateContext(context.Invocation),
                 cancellationToken);
             if (decision?.ShouldPrompt != false)
-                return CopilotToolPermissionRequestDecision.Prompt;
+                return CopilotToolPermissionRequestDecision.PromptWithReason(decision?.Reason ?? string.Empty);
 
             return CopilotToolPermissionRequestDecision.Deny(
                 string.IsNullOrWhiteSpace(decision.Reason)

@@ -1,3 +1,4 @@
+using ColorVision.Copilot.Mcp;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -157,6 +158,12 @@ namespace ColorVision.Copilot
 
         public string FailureCode { get; init; } = string.Empty;
 
+        public static CopilotToolPermissionRequestDecision PromptWithReason(string reason) => new()
+        {
+            ShouldPrompt = true,
+            Reason = reason ?? string.Empty,
+        };
+
         public static CopilotToolPermissionRequestDecision Deny(
             string reason,
             string failureCode = "permission_hook_denied")
@@ -170,6 +177,50 @@ namespace ColorVision.Copilot
                     ? "permission_hook_denied"
                     : normalizedFailureCode,
             };
+        }
+    }
+
+    internal static class CopilotApprovalRequestReason
+    {
+        internal const int MaximumCharacters = 2_048;
+        private const string TruncationMarker = "\n...[approval reason truncated]...\n";
+
+        public static string Combine(string? first, string? second)
+        {
+            var boundedFirst = Bound((first ?? string.Empty).Trim());
+            var boundedSecond = Bound((second ?? string.Empty).Trim());
+            if (boundedFirst.Length == 0)
+                return boundedSecond;
+            if (boundedSecond.Length == 0
+                || string.Equals(boundedFirst, boundedSecond, StringComparison.Ordinal))
+            {
+                return boundedFirst;
+            }
+
+            return Bound(boundedFirst + Environment.NewLine + boundedSecond);
+        }
+
+        public static string Normalize(string? value)
+        {
+            var redacted = CopilotMcpAuditLogger.RedactText(value ?? string.Empty);
+            var encoded = CopilotApprovalReviewTextEncoder.Encode(redacted).Trim();
+            return Bound(encoded);
+        }
+
+        private static string Bound(string value)
+        {
+            if (value.Length <= MaximumCharacters)
+                return value;
+
+            var available = MaximumCharacters - TruncationMarker.Length;
+            var headLength = (available + 1) / 2;
+            var tailLength = available - headLength;
+            if (headLength > 0 && char.IsHighSurrogate(value[headLength - 1]))
+                headLength--;
+            var tailStart = value.Length - tailLength;
+            if (tailStart < value.Length && char.IsLowSurrogate(value[tailStart]))
+                tailStart++;
+            return value[..headLength] + TruncationMarker + value[tailStart..];
         }
     }
 

@@ -52,6 +52,7 @@ namespace ColorVision.Copilot
             CopilotAgentRequest request,
             ICopilotTool tool,
             ConfirmableAction action,
+            string approvalReason,
             CancellationToken cancellationToken);
     }
 
@@ -90,6 +91,7 @@ namespace ColorVision.Copilot
             CopilotAgentRequest request,
             ICopilotTool tool,
             ConfirmableAction action,
+            string approvalReason,
             CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(chatClient);
@@ -126,7 +128,7 @@ namespace ColorVision.Copilot
                     [
                         new Microsoft.Extensions.AI.ChatMessage(
                             ChatRole.User,
-                            BuildEvidencePrompt(request, tool, action, actionEvidence)),
+                            BuildEvidencePrompt(request, tool, action, approvalReason, actionEvidence)),
                     ],
                     new ChatOptions
                     {
@@ -206,6 +208,7 @@ namespace ColorVision.Copilot
             CopilotAgentRequest request,
             ICopilotTool tool,
             ConfirmableAction action,
+            string approvalReason,
             string actionEvidence)
         {
             ArgumentNullException.ThrowIfNull(request);
@@ -247,6 +250,12 @@ namespace ColorVision.Copilot
                 .Append(action.RequestContext.Reversibility)
                 .Append(" · ")
                 .AppendLine(BoundInline(action.RequestContext.ReversibilitySummary, 2_000));
+            var boundedApprovalReason = CopilotApprovalRequestReason.Normalize(approvalReason);
+            if (boundedApprovalReason.Length > 0)
+            {
+                builder.AppendLine("Approval trigger:");
+                builder.AppendLine(boundedApprovalReason);
+            }
             builder.AppendLine("Complete native approval details:");
             builder.AppendLine(actionEvidence);
             return builder.ToString().TrimEnd();
