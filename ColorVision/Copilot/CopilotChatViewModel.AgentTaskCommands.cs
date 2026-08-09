@@ -42,7 +42,8 @@ namespace ColorVision.Copilot
                 SelectedConversation.AgentSessionCheckpoint,
                 CreateCurrentConversationRequestProfile(SelectedProfile, SelectedConversation),
                 CopilotCapabilityCatalog.Shared.GetSnapshot(),
-                CopilotToolExecutor.GetSharedHookSurfaceSnapshot()).IsAvailable;
+                CopilotToolExecutor.GetSharedHookSurfaceSnapshot(
+                    _currentCodexConfigOptions.ConfiguredHooksEnabled)).IsAvailable;
         }
 
         private void ContinueAgentTasks(CopilotChatMessage? message)
@@ -62,7 +63,8 @@ namespace ColorVision.Copilot
                 conversation.AgentSessionCheckpoint,
                 CreateCurrentConversationRequestProfile(profile, conversation),
                 CopilotCapabilityCatalog.Shared.GetSnapshot(),
-                CopilotToolExecutor.GetSharedHookSurfaceSnapshot());
+                CopilotToolExecutor.GetSharedHookSurfaceSnapshot(
+                    _currentCodexConfigOptions.ConfiguredHooksEnabled));
             if (!decision.IsAvailable)
                 return false;
 
@@ -458,7 +460,8 @@ namespace ColorVision.Copilot
                 task.Conversation.AgentSessionCheckpoint,
                 CreateCurrentConversationRequestProfile(profile, task.Conversation),
                 CopilotCapabilityCatalog.Shared.GetSnapshot(),
-                CopilotToolExecutor.GetSharedHookSurfaceSnapshot()).IsAvailable;
+                CopilotToolExecutor.GetSharedHookSurfaceSnapshot(
+                    _currentCodexConfigOptions.ConfiguredHooksEnabled)).IsAvailable;
         }
 
         private void ResumeAgentTask(CopilotAgentTaskSummary? task)

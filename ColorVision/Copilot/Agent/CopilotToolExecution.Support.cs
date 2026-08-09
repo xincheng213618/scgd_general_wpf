@@ -106,10 +106,14 @@ namespace ColorVision.Copilot
                     invocation.PreviousObservationProgressSignature,
                 InitialHookRuns = invocation.InitialHookRuns
                     .Where(run => run?.IsStructurallyValid() == true)
+                    .Where(run => invocation.AgentRequest.CodexHooksEnabled
+                        || !IsExtensionHookSource(run.SourceId))
                     .Take(MaxRecordedHookRuns)
                     .ToArray(),
                 InitialHookBindings = invocation.InitialHookBindings
                     .Where(binding => binding?.Hook != null)
+                    .Where(binding => invocation.AgentRequest.CodexHooksEnabled
+                        || !IsExtensionHookSource(binding.SourceId))
                     .Take(CopilotToolExecutionHookRegistry.MaxRegistrations + 1)
                     .ToArray(),
             };

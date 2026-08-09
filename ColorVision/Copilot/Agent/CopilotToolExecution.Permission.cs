@@ -22,7 +22,9 @@ namespace ColorVision.Copilot
                 ? Guid.NewGuid().ToString("N")
                 : invocation.CallId.Trim();
             invocation = NormalizeInvocation(invocation, callId);
-            var hooks = ResolveInvocationHooks(invocation.Tool.Name);
+            var hooks = ResolveInvocationHooks(
+                invocation.Tool.Name,
+                invocation.AgentRequest.CodexHooksEnabled);
             var permissionHooks = hooks
                 .Where(binding => binding.Hook is ICopilotToolPermissionRequestHook)
                 .ToArray();

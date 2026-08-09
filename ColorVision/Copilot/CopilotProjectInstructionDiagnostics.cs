@@ -312,6 +312,23 @@ namespace ColorVision.Copilot
             builder.AppendLine(effective.ConfiguredShellToolEnabled
                 ? "按请求意图暴露命令启动工具"
                 : "隐藏命令启动工具并拒绝旧计划、恢复状态或注入调用；已有后台命令仍可观察或停止");
+            builder.Append("Codex features.hooks：")
+                .Append(effective.ConfiguredHooksEnabled ? "true" : "false");
+            if (effective.HasHooksEnabledOverride)
+            {
+                builder.Append(" · 来源 ")
+                    .Append(effective.HooksEnabledSourceLabel.Length == 0
+                        ? "Codex config.toml"
+                        : effective.HooksEnabledSourceLabel)
+                    .Append(" 提交快照；");
+            }
+            else
+            {
+                builder.Append(" · 官方默认；");
+            }
+            builder.AppendLine(effective.ConfiguredHooksEnabled
+                ? "ColorVision 模块扩展授权与生命周期 Hook 可运行，内置写入安全策略始终保留"
+                : "省略模块扩展授权与生命周期 Hook，内置写入安全策略仍保留；checkpoint 按有效 Hook 面校验");
             builder.Append("Codex shell_environment_policy：")
                 .Append(effective.ConfiguredShellEnvironmentPolicy.BuildRedactedSummary());
             if (effective.HasShellEnvironmentPolicyOverride)

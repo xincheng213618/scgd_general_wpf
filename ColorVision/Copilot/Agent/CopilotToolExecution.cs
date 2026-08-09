@@ -25,6 +25,7 @@ namespace ColorVision.Copilot
         private static readonly TimeSpan MaximumProgressInterval = TimeSpan.FromMinutes(1);
         private static readonly TimeSpan MinimumStructuredProgressInterval = TimeSpan.FromMilliseconds(250);
         private static readonly ICopilotToolExecutionHook BuiltInWriteToolPolicyHook = new CopilotWriteToolPolicyHook();
+        private const string ExtensionHookSourcePrefix = "extension:";
         private const int MaxRecordedHookRuns = (CopilotToolExecutionHookRegistry.MaxRegistrations + 1) * 3;
 
         private readonly IReadOnlyList<ICopilotToolExecutionHook> _fixedHooks;
@@ -113,7 +114,7 @@ namespace ColorVision.Copilot
             invocation = NormalizeInvocation(invocation, callId);
             var hooks = invocation.InitialHookBindings.Count > 0
                 ? invocation.InitialHookBindings.ToArray()
-                : ResolveInvocationHooks(invocation.Tool.Name);
+                : ResolveInvocationHooks(invocation.Tool.Name, invocation.AgentRequest.CodexHooksEnabled);
             var hookRuns = new List<CopilotToolExecutionHookRun>(
                 Math.Min(MaxRecordedHookRuns, invocation.InitialHookRuns.Count + hooks.Length * 2));
             hookRuns.AddRange(invocation.InitialHookRuns
@@ -477,21 +478,27 @@ namespace ColorVision.Copilot
                 cancellationToken).ConfigureAwait(false);
         }
 
-        private CopilotToolExecutionHookBinding[] ResolveInvocationHooks(string toolName)
+        private CopilotToolExecutionHookBinding[] ResolveInvocationHooks(
+            string toolName,
+            bool codexHooksEnabled)
         {
             var configuredHooks = _hookRegistry?.Resolve(toolName)
                 ?? _fixedHooks.Select((hook, index) =>
                     new CopilotToolExecutionHookBinding($"fixed:{index}", hook)).ToArray();
-            var hooks = new CopilotToolExecutionHookBinding[configuredHooks.Count + 1];
+            var effectiveHooks = codexHooksEnabled
+                ? configuredHooks
+                : configuredHooks.Where(binding => !IsExtensionHookSource(binding.SourceId)).ToArray();
+            var hooks = new CopilotToolExecutionHookBinding[effectiveHooks.Count + 1];
             hooks[0] = new CopilotToolExecutionHookBinding(
                 "builtin:write-tool-policy",
                 BuiltInWriteToolPolicyHook);
-            for (var i = 0; i < configuredHooks.Count; i++)
-                hooks[i + 1] = configuredHooks[i];
+            for (var i = 0; i < effectiveHooks.Count; i++)
+                hooks[i + 1] = effectiveHooks[i];
             return hooks;
         }
 
-        internal CopilotToolExecutionHookRegistrySnapshot GetHookSurfaceSnapshot()
+        internal CopilotToolExecutionHookRegistrySnapshot GetHookSurfaceSnapshot(
+            bool codexHooksEnabled = true)
         {
             var configuredSnapshot = _hookRegistry?.GetSnapshot()
                 ?? CopilotToolExecutionHookRegistry.CreateSnapshot(
@@ -502,17 +509,26 @@ namespace ColorVision.Copilot
                             "*",
                             index,
                             hook)));
-            return CreateHookSurfaceSnapshot(configuredSnapshot);
+            return CreateHookSurfaceSnapshot(configuredSnapshot, codexHooksEnabled);
         }
 
-        internal static CopilotToolExecutionHookRegistrySnapshot GetSharedHookSurfaceSnapshot()
+        internal static CopilotToolExecutionHookRegistrySnapshot GetSharedHookSurfaceSnapshot(
+            bool codexHooksEnabled = true)
         {
-            return CreateHookSurfaceSnapshot(CopilotToolExecutionHookRegistry.Shared.GetSnapshot());
+            return CreateHookSurfaceSnapshot(
+                CopilotToolExecutionHookRegistry.Shared.GetSnapshot(),
+                codexHooksEnabled);
         }
 
         private static CopilotToolExecutionHookRegistrySnapshot CreateHookSurfaceSnapshot(
-            CopilotToolExecutionHookRegistrySnapshot configuredSnapshot)
+            CopilotToolExecutionHookRegistrySnapshot configuredSnapshot,
+            bool codexHooksEnabled)
         {
+            var configuredEntries = codexHooksEnabled
+                ? configuredSnapshot.Entries
+                : configuredSnapshot.Entries
+                    .Where(entry => !IsExtensionHookSource(entry.SourceId))
+                    .ToArray();
             return CopilotToolExecutionHookRegistry.CreateSnapshot(
                 configuredSnapshot.Revision,
                 new[]
@@ -522,8 +538,11 @@ namespace ColorVision.Copilot
                         "*",
                         int.MinValue,
                         BuiltInWriteToolPolicyHook),
-                }.Concat(configuredSnapshot.Entries));
+                }.Concat(configuredEntries));
         }
+
+        private static bool IsExtensionHookSource(string? sourceId) =>
+            sourceId?.StartsWith(ExtensionHookSourcePrefix, StringComparison.OrdinalIgnoreCase) == true;
 
     }
 

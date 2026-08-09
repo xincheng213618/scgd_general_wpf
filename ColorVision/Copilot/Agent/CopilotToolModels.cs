@@ -77,6 +77,8 @@ namespace ColorVision.Copilot
 
         internal bool CodexShellToolEnabled { get; init; } = true;
 
+        internal bool CodexHooksEnabled { get; init; } = true;
+
         internal CopilotCodexShellEnvironmentPolicy CodexShellEnvironmentPolicy { get; init; } =
             CopilotCodexShellEnvironmentPolicy.Default;
 

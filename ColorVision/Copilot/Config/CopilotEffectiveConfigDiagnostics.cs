@@ -515,6 +515,7 @@ namespace ColorVision.Copilot
             }
             AppendPreventIdleSleep(builder, codexConfigOptions);
             AppendShellToolEnabled(builder, codexConfigOptions);
+            AppendHooksEnabled(builder, codexConfigOptions);
             AppendShellEnvironmentPolicy(builder, codexConfigOptions);
             AppendGoalsEnabled(builder, codexConfigOptions);
             AppendDefaultModeRequestUserInputEnabled(builder, codexConfigOptions);
@@ -798,6 +799,29 @@ namespace ColorVision.Copilot
             builder.AppendLine(codexConfigOptions.ConfiguredShellToolEnabled
                 ? " · 按请求意图暴露命令启动工具"
                 : " · 命令启动工具已从目录移除，旧计划、恢复状态与注入调用也会拒绝；已有后台命令仍可观察或停止");
+        }
+
+        private static void AppendHooksEnabled(
+            StringBuilder builder,
+            CopilotProjectInstructionDiscoveryOptions codexConfigOptions)
+        {
+            builder.Append("- Codex features.hooks：")
+                .Append(codexConfigOptions.ConfiguredHooksEnabled ? "true" : "false");
+            if (codexConfigOptions.HasHooksEnabledOverride)
+            {
+                builder.Append(" · 来源 ")
+                    .Append(codexConfigOptions.HooksEnabledSourceLabel.Length == 0
+                        ? "Codex config.toml"
+                        : codexConfigOptions.HooksEnabledSourceLabel)
+                    .Append(" · 提交快照");
+            }
+            else
+            {
+                builder.Append(" · 官方默认");
+            }
+            builder.AppendLine(codexConfigOptions.ConfiguredHooksEnabled
+                ? " · ColorVision 模块扩展授权与生命周期 Hook 可运行；内置写入安全策略始终保留"
+                : " · 模块扩展授权与生命周期 Hook 已省略；内置写入安全策略仍保留，checkpoint 按有效 Hook 面校验");
         }
 
         private static void AppendIncludePermissionsInstructions(

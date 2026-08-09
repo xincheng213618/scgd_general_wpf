@@ -81,6 +81,12 @@ namespace ColorVision.Copilot
 
         public string CodexShellToolEnabledSourceLabel { get; init; } = string.Empty;
 
+        public bool CodexHooksEnabled { get; init; } = true;
+
+        public bool HasCodexHooksEnabledOverride { get; init; }
+
+        public string CodexHooksEnabledSourceLabel { get; init; } = string.Empty;
+
         public string CodexShellEnvironmentPolicySummary { get; init; } = string.Empty;
 
         public bool HasCodexShellEnvironmentPolicyOverride { get; init; }
@@ -582,6 +588,23 @@ namespace ColorVision.Copilot
                 builder.Append("（Codex 默认开启）");
             }
             builder.AppendLine();
+            builder.Append("模块扩展 Hook：")
+                .Append(snapshot.CodexHooksEnabled ? "开启" : "关闭");
+            if (snapshot.HasCodexHooksEnabledOverride)
+            {
+                builder.Append('（')
+                    .Append(string.IsNullOrWhiteSpace(snapshot.CodexHooksEnabledSourceLabel)
+                        ? "Codex config.toml"
+                        : snapshot.CodexHooksEnabledSourceLabel.Trim())
+                    .Append(" 提交快照；");
+            }
+            else
+            {
+                builder.Append("（Codex 默认开启；");
+            }
+            builder.AppendLine(snapshot.CodexHooksEnabled
+                ? "扩展授权与生命周期 Hook 可运行，内置写入安全策略始终保留）"
+                : "扩展授权与生命周期 Hook 已省略，内置写入安全策略仍保留）");
             builder.Append("命令环境：")
                 .Append(string.IsNullOrWhiteSpace(snapshot.CodexShellEnvironmentPolicySummary)
                     ? CopilotCodexShellEnvironmentPolicy.Default.BuildRedactedSummary()

@@ -124,7 +124,7 @@ namespace ColorVision.Copilot
             var checkpointEnvironmentContext = request.CodexIncludeEnvironmentContext
                 ? environmentContext
                 : null;
-            var hookSurfaceSnapshot = _toolExecutor.GetHookSurfaceSnapshot();
+            var hookSurfaceSnapshot = _toolExecutor.GetHookSurfaceSnapshot(request.CodexHooksEnabled);
             var executionScope = baseExecutionScope.WithRuntimeSnapshot(
                 environmentContext.Fingerprint,
                 capabilitySnapshot.Revision);

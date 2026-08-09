@@ -159,6 +159,7 @@ namespace ColorVision.Copilot
                 CodexWebSearchMode = explorationRequest.CodexWebSearchMode,
                 CodexSandboxMode = explorationRequest.CodexSandboxMode,
                 CodexShellToolEnabled = explorationRequest.CodexShellToolEnabled,
+                CodexHooksEnabled = explorationRequest.CodexHooksEnabled,
                 CodexShellEnvironmentPolicy = explorationRequest.CodexShellEnvironmentPolicy.CreateSnapshot(),
                 CodexExperimentalRequestUserInputEnabled = explorationRequest.CodexExperimentalRequestUserInputEnabled,
                 CodexDefaultModeRequestUserInputEnabled = explorationRequest.CodexDefaultModeRequestUserInputEnabled,

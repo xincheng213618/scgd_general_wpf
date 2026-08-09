@@ -67,7 +67,7 @@ namespace ColorVision.Copilot
                 catalog.GetSnapshot(),
                 tools.Select(tool => tool.Name).ToArray(),
                 CopilotAgentEnvironmentContext.Capture(childRequest),
-                toolExecutor.GetHookSurfaceSnapshot());
+                toolExecutor.GetHookSurfaceSnapshot(childRequest.CodexHooksEnabled));
             if (resumeCompatibility != null && !resumeCompatibility.CanResume)
             {
                 return CreateResumeFailureResult(
@@ -580,6 +580,7 @@ namespace ColorVision.Copilot
                 CodexWebSearchMode = parentRequest.CodexWebSearchMode,
                 CodexSandboxMode = CopilotCodexSandboxMode.ReadOnly,
                 CodexShellToolEnabled = parentRequest.CodexShellToolEnabled,
+                CodexHooksEnabled = parentRequest.CodexHooksEnabled,
                 CodexShellEnvironmentPolicy = parentRequest.CodexShellEnvironmentPolicy.CreateSnapshot(),
                 CodexExperimentalRequestUserInputEnabled = parentRequest.CodexExperimentalRequestUserInputEnabled,
                 CodexDefaultModeRequestUserInputEnabled = parentRequest.CodexDefaultModeRequestUserInputEnabled,
