@@ -294,6 +294,31 @@ public sealed class CopilotCodexInterruptMessageTests
         Assert.Equal(320, delegated.AvailableToolDefinitionCharacters);
         Assert.Equal(100, delegated.HarnessInstructionCharacters);
         Assert.False(delegated.UsedEstimatedUsage);
+
+        var trace = CopilotAgentTraceEntry.FromResult(
+            new CopilotToolExecutionInfo
+            {
+                ToolName = tool.Name,
+                State = CopilotToolExecutionState.Cancelled,
+                FailureKind = CopilotToolFailureKind.Cancelled,
+            },
+            result);
+        var persistedTrace = Assert.IsType<CopilotAgentTraceEntry>(
+            JsonConvert.DeserializeObject<CopilotAgentTraceEntry>(
+                JsonConvert.SerializeObject(trace)));
+
+        Assert.Equal(120, trace.DelegatedReportedInputTokens);
+        Assert.Equal(30, trace.DelegatedReportedOutputTokens);
+        Assert.Equal(150, trace.DelegatedReportedTotalTokens);
+        Assert.Equal(40, trace.DelegatedReportedCachedInputTokens);
+        Assert.Contains(
+            "Child reported usage: 120 input · 30 output · 150 total · 40 cached input",
+            trace.DiagnosticDetails,
+            StringComparison.Ordinal);
+        Assert.Equal(trace.DelegatedReportedInputTokens, persistedTrace.DelegatedReportedInputTokens);
+        Assert.Equal(trace.DelegatedReportedOutputTokens, persistedTrace.DelegatedReportedOutputTokens);
+        Assert.Equal(trace.DelegatedReportedTotalTokens, persistedTrace.DelegatedReportedTotalTokens);
+        Assert.Equal(trace.DelegatedReportedCachedInputTokens, persistedTrace.DelegatedReportedCachedInputTokens);
     }
 
     [Fact]
@@ -336,6 +361,27 @@ public sealed class CopilotCodexInterruptMessageTests
         Assert.Contains("子代理中断消息：仅保留本地审计", contextReport, StringComparison.Ordinal);
         Assert.Contains("Codex agents.interrupt_message：false", debugReport, StringComparison.Ordinal);
         Assert.Contains("UI、事件与审计仍保留", debugReport, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void PersistedDelegatedUsageNormalizationPreservesTokenInvariants()
+    {
+        var trace = new CopilotAgentTraceEntry
+        {
+            SchemaVersion = CopilotAgentTraceEntry.CurrentSchemaVersion - 1,
+            DelegatedRunId = "child-run",
+            DelegatedConsumedTokens = 40,
+            DelegatedReportedInputTokens = 120,
+            DelegatedReportedOutputTokens = 30,
+            DelegatedReportedTotalTokens = 10,
+            DelegatedReportedCachedInputTokens = 999,
+        };
+
+        Assert.True(trace.EnsureValid(DateTimeOffset.UtcNow));
+        Assert.Equal(CopilotAgentTraceEntry.CurrentSchemaVersion, trace.SchemaVersion);
+        Assert.Equal(150, trace.DelegatedReportedTotalTokens);
+        Assert.Equal(120, trace.DelegatedReportedCachedInputTokens);
+        Assert.Equal(150, trace.DelegatedConsumedTokens);
     }
 
     private sealed class BlockingSubagentRunner : ICopilotSubagentRunner

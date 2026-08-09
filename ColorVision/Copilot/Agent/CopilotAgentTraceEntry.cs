@@ -11,7 +11,7 @@ namespace ColorVision.Copilot
 {
     public sealed partial class CopilotAgentTraceEntry : ViewModelBase
     {
-        public const int CurrentSchemaVersion = 16;
+        public const int CurrentSchemaVersion = 17;
         private const int MaxSummaryLength = 800;
         private const int MaxDelegatedAnswerLength = 20_000;
         internal const int MaxPersistedHookRuns = 64;
@@ -98,6 +98,14 @@ namespace ColorVision.Copilot
         public long DelegatedConsumedTokens { get; set; }
 
         public bool DelegatedUsageIncludesEstimates { get; set; }
+
+        public int DelegatedReportedInputTokens { get; set; }
+
+        public int DelegatedReportedOutputTokens { get; set; }
+
+        public int DelegatedReportedTotalTokens { get; set; }
+
+        public int? DelegatedReportedCachedInputTokens { get; set; }
 
         public int DelegatedProviderCalls { get; set; }
 
@@ -218,6 +226,14 @@ namespace ColorVision.Copilot
         public bool ShouldSerializeDelegatedConsumedTokens() => DelegatedConsumedTokens != 0;
 
         public bool ShouldSerializeDelegatedUsageIncludesEstimates() => DelegatedUsageIncludesEstimates;
+
+        public bool ShouldSerializeDelegatedReportedInputTokens() => DelegatedReportedInputTokens != 0;
+
+        public bool ShouldSerializeDelegatedReportedOutputTokens() => DelegatedReportedOutputTokens != 0;
+
+        public bool ShouldSerializeDelegatedReportedTotalTokens() => DelegatedReportedTotalTokens != 0;
+
+        public bool ShouldSerializeDelegatedReportedCachedInputTokens() => DelegatedReportedCachedInputTokens.HasValue;
 
         public bool ShouldSerializeDelegatedProviderCalls() => DelegatedProviderCalls != 0;
 
@@ -366,6 +382,15 @@ namespace ColorVision.Copilot
                         builder.Append(" · includes estimates");
                     if (DelegatedQueueDurationMs > 0)
                         builder.Append(" · queued ").Append(FormatDuration(DelegatedQueueDurationMs));
+                    if (DelegatedReportedTotalTokens > 0)
+                    {
+                        builder.AppendLine().Append("Child reported usage: ")
+                            .Append(DelegatedReportedInputTokens).Append(" input · ")
+                            .Append(DelegatedReportedOutputTokens).Append(" output · ")
+                            .Append(DelegatedReportedTotalTokens).Append(" total");
+                        if (DelegatedReportedCachedInputTokens.HasValue)
+                            builder.Append(" · ").Append(DelegatedReportedCachedInputTokens.Value).Append(" cached input");
+                    }
                     if (DelegatedRegisteredToolCount > 0
                         || DelegatedAvailableToolCount > 0
                         || DelegatedAvailableToolDefinitionCharacters > 0
@@ -487,6 +512,10 @@ namespace ColorVision.Copilot
                 entry.FailureCode = result.Success ? string.Empty : CopilotToolFailureCode.Normalize(result.FailureCode);
                 if (result.DelegatedRunUsage != null)
                 {
+                    var reportedUsage = result.DelegatedRunUsage.Usage;
+                    var reportedInputTokens = Math.Max(0, reportedUsage.InputTokens);
+                    var reportedOutputTokens = Math.Max(0, reportedUsage.OutputTokens);
+                    var reportedTotalTokens = Math.Max(0, reportedUsage.EffectiveTotalTokens);
                     entry.DelegatedRoleId = SanitizeIdentifier(result.DelegatedRunUsage.RoleId);
                     entry.DelegatedAgentName = SanitizeIdentifier(result.DelegatedRunUsage.AgentName);
                     entry.DelegatedRunId = SanitizeIdentifier(result.DelegatedRunUsage.RunId);
@@ -495,8 +524,17 @@ namespace ColorVision.Copilot
                     entry.DelegatedReasoningEffort = SanitizeIdentifier(result.DelegatedRunUsage.ReasoningEffort);
                     entry.DelegatedStopReason = result.DelegatedRunUsage.StopReason;
                     entry.DelegatedRequestTokenBudget = Math.Max(0, result.DelegatedRunUsage.RequestTokenBudget);
-                    entry.DelegatedConsumedTokens = Math.Max(0, result.DelegatedRunUsage.ConsumedTokens);
+                    entry.DelegatedConsumedTokens = Math.Max(
+                        Math.Max(0, result.DelegatedRunUsage.ConsumedTokens),
+                        reportedTotalTokens);
                     entry.DelegatedUsageIncludesEstimates = result.DelegatedRunUsage.UsedEstimatedUsage;
+                    entry.DelegatedReportedInputTokens = reportedInputTokens;
+                    entry.DelegatedReportedOutputTokens = reportedOutputTokens;
+                    entry.DelegatedReportedTotalTokens = reportedTotalTokens;
+                    entry.DelegatedReportedCachedInputTokens = reportedInputTokens > 0
+                        && reportedUsage.CachedInputTokens.HasValue
+                            ? reportedUsage.EffectiveCachedInputTokens
+                            : null;
                     entry.DelegatedProviderCalls = Math.Max(0, result.DelegatedRunUsage.ProviderCalls);
                     entry.DelegatedToolCalls = Math.Max(0, result.DelegatedRunUsage.ToolCalls);
                     entry.DelegatedDeliveredSteeringCount = Math.Max(0, result.DelegatedRunUsage.DeliveredSteeringCount);

@@ -220,6 +220,10 @@ namespace ColorVision.Copilot
             var originalDelegatedStopReason = DelegatedStopReason;
             var originalDelegatedRequestTokenBudget = DelegatedRequestTokenBudget;
             var originalDelegatedConsumedTokens = DelegatedConsumedTokens;
+            var originalDelegatedReportedInputTokens = DelegatedReportedInputTokens;
+            var originalDelegatedReportedOutputTokens = DelegatedReportedOutputTokens;
+            var originalDelegatedReportedTotalTokens = DelegatedReportedTotalTokens;
+            var originalDelegatedReportedCachedInputTokens = DelegatedReportedCachedInputTokens;
             var originalDelegatedProviderCalls = DelegatedProviderCalls;
             var originalDelegatedToolCalls = DelegatedToolCalls;
             var originalDelegatedDeliveredSteeringCount = DelegatedDeliveredSteeringCount;
@@ -268,6 +272,24 @@ namespace ColorVision.Copilot
             DelegatedReasoningEffort = NormalizeDelegatedReasoningEffort(DelegatedReasoningEffort);
             DelegatedRequestTokenBudget = Math.Max(0, DelegatedRequestTokenBudget);
             DelegatedConsumedTokens = Math.Max(0, DelegatedConsumedTokens);
+            DelegatedReportedInputTokens = Math.Max(0, DelegatedReportedInputTokens);
+            DelegatedReportedOutputTokens = Math.Max(0, DelegatedReportedOutputTokens);
+            DelegatedReportedTotalTokens = (int)Math.Clamp(
+                Math.Max(
+                    (long)Math.Max(0, DelegatedReportedTotalTokens),
+                    (long)DelegatedReportedInputTokens + DelegatedReportedOutputTokens),
+                0,
+                int.MaxValue);
+            DelegatedReportedCachedInputTokens = DelegatedReportedInputTokens > 0
+                && DelegatedReportedCachedInputTokens.HasValue
+                    ? Math.Clamp(
+                        DelegatedReportedCachedInputTokens.Value,
+                        0,
+                        DelegatedReportedInputTokens)
+                    : null;
+            DelegatedConsumedTokens = Math.Max(
+                DelegatedConsumedTokens,
+                DelegatedReportedTotalTokens);
             DelegatedProviderCalls = Math.Max(0, DelegatedProviderCalls);
             DelegatedToolCalls = Math.Max(0, DelegatedToolCalls);
             DelegatedDeliveredSteeringCount = Math.Max(0, DelegatedDeliveredSteeringCount);
@@ -328,6 +350,10 @@ namespace ColorVision.Copilot
                 || originalDelegatedStopReason != DelegatedStopReason
                 || originalDelegatedRequestTokenBudget != DelegatedRequestTokenBudget
                 || originalDelegatedConsumedTokens != DelegatedConsumedTokens
+                || originalDelegatedReportedInputTokens != DelegatedReportedInputTokens
+                || originalDelegatedReportedOutputTokens != DelegatedReportedOutputTokens
+                || originalDelegatedReportedTotalTokens != DelegatedReportedTotalTokens
+                || originalDelegatedReportedCachedInputTokens != DelegatedReportedCachedInputTokens
                 || originalDelegatedProviderCalls != DelegatedProviderCalls
                 || originalDelegatedToolCalls != DelegatedToolCalls
                 || originalDelegatedDeliveredSteeringCount != DelegatedDeliveredSteeringCount
