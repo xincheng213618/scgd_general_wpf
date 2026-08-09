@@ -474,6 +474,7 @@ namespace ColorVision.Copilot
                 ReportedTotalTokens = reportedTotalTokens,
                 ReportedCachedInputTokens = reportedCachedInputTokens,
                 UsedEstimatedUsage = exploration.UsedEstimatedUsage || finalization.UsedEstimatedUsage,
+                UsedDelegatedDirectAnswer = exploration.UsedDelegatedDirectAnswer || finalization.UsedDelegatedDirectAnswer,
                 BudgetExhausted = totalRequestBudgetExhausted
                     || (!finalizationCompleted && (exploration.BudgetExhausted || finalization.BudgetExhausted)),
                 RequestTokenBudgetExhausted = totalRequestBudgetExhausted
