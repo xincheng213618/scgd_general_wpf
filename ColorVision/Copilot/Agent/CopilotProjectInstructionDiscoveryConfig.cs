@@ -281,6 +281,13 @@ namespace ColorVision.Copilot
         public CopilotProjectInstructionConfigSources DeveloperInstructionsSource { get; init; } =
             CopilotProjectInstructionConfigSources.None;
 
+        public bool ConfiguredPersonalityEnabled { get; init; } = true;
+
+        public bool HasPersonalityEnabledOverride { get; init; }
+
+        public CopilotProjectInstructionConfigSources PersonalityEnabledSource { get; init; } =
+            CopilotProjectInstructionConfigSources.None;
+
         public CopilotResponsePersonality ConfiguredPersonality { get; init; } =
             CopilotResponsePersonality.None;
 
@@ -663,6 +670,7 @@ namespace ColorVision.Copilot
             || HasFallbackFileNamesOverride
             || HasProjectRootMarkersOverride
             || HasDeveloperInstructionsOverride
+            || HasPersonalityEnabledOverride
             || HasPersonalityOverride
             || HasWebSearchModeOverride
             || HasSandboxModeOverride
@@ -725,6 +733,15 @@ namespace ColorVision.Copilot
         {
             CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml personality",
             CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml personality",
+            _ => string.Empty,
+        };
+
+        public string PersonalityEnabledSourceLabel => PersonalityEnabledSource switch
+        {
+            CopilotProjectInstructionConfigSources.CodexHome =>
+                "Codex Home config.toml features.personality",
+            CopilotProjectInstructionConfigSources.TrustedProject =>
+                "受信项目 .codex/config.toml features.personality",
             _ => string.Empty,
         };
 
@@ -1069,6 +1086,8 @@ namespace ColorVision.Copilot
         private const string ProjectRootMarkersKey = "project_root_markers";
         private const string DeveloperInstructionsKey = "developer_instructions";
         private const string PersonalityKey = "personality";
+        private const string PersonalityEnabledKey = "features.personality";
+        private const string PersonalityEnabledFeatureKey = "personality";
         private const string WebSearchKey = "web_search";
         private const string LegacyWebSearchKey = "features.web_search";
         private const string LegacyWebSearchFeatureKey = "web_search";
@@ -1292,6 +1311,14 @@ namespace ColorVision.Copilot
                 DeveloperInstructionsSource = layer.HasDeveloperInstructionsOverride
                     ? source
                     : current.DeveloperInstructionsSource,
+                ConfiguredPersonalityEnabled = layer.HasPersonalityEnabledOverride
+                    ? layer.PersonalityEnabled
+                    : current.ConfiguredPersonalityEnabled,
+                HasPersonalityEnabledOverride = current.HasPersonalityEnabledOverride
+                    || layer.HasPersonalityEnabledOverride,
+                PersonalityEnabledSource = layer.HasPersonalityEnabledOverride
+                    ? source
+                    : current.PersonalityEnabledSource,
                 ConfiguredPersonality = layer.HasPersonalityOverride
                     ? layer.Personality
                     : current.ConfiguredPersonality,
@@ -1632,6 +1659,7 @@ namespace ColorVision.Copilot
             return layer.HasMaximumBytesOverride
                 || layer.HasFallbackFileNamesOverride
                 || layer.HasDeveloperInstructionsOverride
+                || layer.HasPersonalityEnabledOverride
                 || layer.HasPersonalityOverride
                 || layer.WebSearchConfigState.HasAnyAssignment
                 || layer.HasSandboxModeOverride
@@ -1931,6 +1959,7 @@ namespace ColorVision.Copilot
             var fallbackFileNames = Array.Empty<string>();
             var projectRootMarkers = Array.Empty<string>();
             var developerInstructions = string.Empty;
+            var personalityEnabled = true;
             var personality = CopilotResponsePersonality.None;
             var webSearchMode = CopilotCodexWebSearchMode.Unspecified;
             var sandboxMode = CopilotCodexSandboxMode.Unspecified;
@@ -1974,6 +2003,7 @@ namespace ColorVision.Copilot
             var hasFallbackFileNamesOverride = false;
             var hasProjectRootMarkersOverride = false;
             var hasDeveloperInstructionsOverride = false;
+            var hasPersonalityEnabledOverride = false;
             var hasPersonalityOverride = false;
             var hasCanonicalWebSearchModeOverride = false;
             var hasCanonicalWebSearchModeAssignment = false;
@@ -2047,6 +2077,18 @@ namespace ColorVision.Copilot
                         continue;
                     developerInstructions = configuredDeveloperInstructions;
                     hasDeveloperInstructionsOverride = true;
+                    continue;
+                }
+
+                if (string.Equals(assignment.Key, PersonalityEnabledKey, StringComparison.Ordinal))
+                {
+                    if (!TryParseTomlBoolean(
+                        assignment.Value,
+                        out personalityEnabled))
+                    {
+                        continue;
+                    }
+                    hasPersonalityEnabledOverride = true;
                     continue;
                 }
 
@@ -2664,6 +2706,8 @@ namespace ColorVision.Copilot
                 ConfiguredCompactPromptFilePath = compactPromptFilePath,
                 HasModelInstructionsInlineOverride = hasModelInstructionsInlineOverride,
                 HasModelInstructionsFileOverride = hasModelInstructionsFileOverride,
+                PersonalityEnabled = personalityEnabled,
+                HasPersonalityEnabledOverride = hasPersonalityEnabledOverride,
                 Personality = personality,
                 HasPersonalityOverride = hasPersonalityOverride,
                 WebSearchConfigState = webSearchConfigState,
@@ -2741,6 +2785,7 @@ namespace ColorVision.Copilot
                 || hasFallbackFileNamesOverride
                 || hasProjectRootMarkersOverride
                 || hasDeveloperInstructionsOverride
+                || hasPersonalityEnabledOverride
                 || hasPersonalityOverride
                 || webSearchConfigState.HasAnyAssignment
                 || hasSandboxModeOverride
@@ -2940,6 +2985,7 @@ namespace ColorVision.Copilot
                     {
                         PreventIdleSleepFeatureKey => PreventIdleSleepKey,
                         ShellToolEnabledFeatureKey => ShellToolEnabledKey,
+                        PersonalityEnabledFeatureKey => PersonalityEnabledKey,
                         FastModeEnabledFeatureKey => FastModeEnabledKey,
                         GoalsEnabledFeatureKey => GoalsEnabledKey,
                         DefaultModeRequestUserInputEnabledFeatureKey => DefaultModeRequestUserInputEnabledKey,
@@ -2978,6 +3024,7 @@ namespace ColorVision.Copilot
                     && !string.Equals(key, FallbackFileNamesKey, StringComparison.Ordinal)
                     && !string.Equals(key, ProjectRootMarkersKey, StringComparison.Ordinal)
                     && !string.Equals(key, DeveloperInstructionsKey, StringComparison.Ordinal)
+                    && !string.Equals(key, PersonalityEnabledKey, StringComparison.Ordinal)
                     && !string.Equals(key, PersonalityKey, StringComparison.Ordinal)
                     && !string.Equals(key, WebSearchKey, StringComparison.Ordinal)
                     && !string.Equals(key, LegacyWebSearchKey, StringComparison.Ordinal)
@@ -3868,6 +3915,10 @@ namespace ColorVision.Copilot
             public string ModelInstructionsSourceFilePath { get; init; } = string.Empty;
 
             public bool HasModelInstructionsFileOverride { get; init; }
+
+            public bool PersonalityEnabled { get; init; } = true;
+
+            public bool HasPersonalityEnabledOverride { get; init; }
 
             public CopilotResponsePersonality Personality { get; init; } =
                 CopilotResponsePersonality.None;

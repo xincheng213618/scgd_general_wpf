@@ -3210,6 +3210,97 @@ public sealed class CopilotAgentProjectInstructionsTests
     }
 
     [Fact]
+    public void PersonalityFeatureUsesTheClosestTrustedLayerAndGatesConversationOverrides()
+    {
+        string globalRoot = CreateTemporaryDirectory();
+        string projectRoot = CreateTemporaryDirectory();
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
+            File.WriteAllText(
+                Path.Combine(globalRoot, "config.toml"),
+                $"""
+                personality = "friendly"
+
+                [features]
+                personality = true
+
+                [projects.'{projectRoot}']
+                trust_level = "trusted"
+                """);
+            string configDirectory = Path.Combine(projectRoot, ".codex");
+            Directory.CreateDirectory(configDirectory);
+            string configPath = Path.Combine(configDirectory, "config.toml");
+            File.WriteAllText(
+                configPath,
+                "personality = \"pragmatic\"\n\n[features]\npersonality = false");
+
+            var submittedContext = new CopilotAgentHostContextSnapshot(
+                activeDocumentPath: null,
+                projectRoot,
+                attachments: null,
+                liveContext: null,
+                conversationHistory: null,
+                additionalReadRootPaths: null,
+                globalInstructionRootPath: globalRoot);
+            File.WriteAllText(
+                configPath,
+                "personality = \"friendly\"\n\n[features]\npersonality = true");
+            var refreshed = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
+            var submitted = submittedContext.ProjectInstructionDiscoveryOptions;
+            var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+            conversation.ResponsePersonality = CopilotResponsePersonality.Friendly;
+            conversation.HasResponsePersonalityOverride = true;
+
+            var gated = CopilotResponsePersonalitySelection.Resolve(conversation, submitted);
+            var enabled = CopilotResponsePersonalitySelection.Resolve(conversation, refreshed);
+            var gatedProfile = CopilotResponsePresentationGuidance.CreateRequestProfile(
+                CopilotProfileConfig.CreateDefault(),
+                gated.Personality);
+            var enabledProfile = CopilotResponsePresentationGuidance.CreateRequestProfile(
+                CopilotProfileConfig.CreateDefault(),
+                enabled.Personality);
+
+            Assert.False(submitted.ConfiguredPersonalityEnabled);
+            Assert.True(submitted.HasPersonalityEnabledOverride);
+            Assert.Equal(CopilotProjectInstructionConfigSources.TrustedProject, submitted.PersonalityEnabledSource);
+            Assert.Equal(CopilotResponsePersonality.None, gated.Personality);
+            Assert.Contains("features.personality", gated.SourceLabel, StringComparison.Ordinal);
+            Assert.DoesNotContain("<response_personality>", gatedProfile.EffectiveSystemPrompt, StringComparison.Ordinal);
+            Assert.True(refreshed.ConfiguredPersonalityEnabled);
+            Assert.Equal(CopilotResponsePersonality.Friendly, enabled.Personality);
+            Assert.Contains("<response_personality>", enabledProfile.EffectiveSystemPrompt, StringComparison.Ordinal);
+        }
+        finally
+        {
+            Directory.Delete(globalRoot, recursive: true);
+            Directory.Delete(projectRoot, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void EnabledPersonalityFeatureDefaultsToPragmaticWhileExplicitNoneStillWins()
+    {
+        var defaults = CopilotProjectInstructionDiscoveryConfig.CreateDefault();
+        var defaultResolution = CopilotResponsePersonalitySelection.Resolve(
+            conversation: null,
+            defaults);
+        var explicitNone = CopilotResponsePersonalitySelection.Resolve(
+            conversation: null,
+            defaults with
+            {
+                ConfiguredPersonality = CopilotResponsePersonality.None,
+                HasPersonalityOverride = true,
+                PersonalitySource = CopilotProjectInstructionConfigSources.CodexHome,
+            });
+
+        Assert.True(defaults.ConfiguredPersonalityEnabled);
+        Assert.Equal(CopilotResponsePersonality.Pragmatic, defaultResolution.Personality);
+        Assert.Equal("Codex features.personality 稳定功能默认值", defaultResolution.SourceLabel);
+        Assert.Equal(CopilotResponsePersonality.None, explicitNone.Personality);
+    }
+
+    [Fact]
     public void UntrustedOrInvalidProjectPersonalityCannotOverrideTheCodexHomeDefault()
     {
         string globalRoot = CreateTemporaryDirectory();
@@ -3222,6 +3313,9 @@ public sealed class CopilotAgentProjectInstructionsTests
                 $"""
                 personality = "friendly"
 
+                [features]
+                personality = true
+
                 [projects.'{projectRoot}']
                 trust_level = "untrusted"
                 """);
@@ -3229,15 +3323,21 @@ public sealed class CopilotAgentProjectInstructionsTests
             Directory.CreateDirectory(configDirectory);
             File.WriteAllText(
                 Path.Combine(configDirectory, "config.toml"),
-                "personality = \"pragmatic\"");
+                "personality = \"pragmatic\"\n\n[features]\npersonality = false");
 
             var untrusted = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
+            Assert.True(untrusted.ConfiguredPersonalityEnabled);
+            Assert.Equal(CopilotProjectInstructionConfigSources.CodexHome, untrusted.PersonalityEnabledSource);
             Assert.Equal(CopilotResponsePersonality.Friendly, untrusted.ConfiguredPersonality);
             Assert.Equal(CopilotProjectInstructionConfigSources.CodexHome, untrusted.PersonalitySource);
             Assert.Empty(untrusted.AppliedProjectConfigFilePaths);
 
-            File.WriteAllText(Path.Combine(globalRoot, "config.toml"), "personality = \"unknown\"");
+            File.WriteAllText(
+                Path.Combine(globalRoot, "config.toml"),
+                "personality = \"unknown\"\n\n[features]\npersonality = \"disabled\"");
             var invalid = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot);
+            Assert.True(invalid.ConfiguredPersonalityEnabled);
+            Assert.False(invalid.HasPersonalityEnabledOverride);
             Assert.False(invalid.HasPersonalityOverride);
             Assert.Equal(CopilotResponsePersonality.None, invalid.ConfiguredPersonality);
         }
@@ -3324,6 +3424,55 @@ public sealed class CopilotAgentProjectInstructionsTests
         Assert.Contains("回答风格：无 · 来源 会话覆盖", debugReport, StringComparison.Ordinal);
         Assert.Contains("Codex personality 默认：友好", debugReport, StringComparison.Ordinal);
         Assert.Contains("会话覆盖优先", debugReport, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void DisabledPersonalityFeatureDiagnosticsExplainTheEffectiveNeutralStyle()
+    {
+        var options = CopilotProjectInstructionDiscoveryConfig.CreateDefault() with
+        {
+            ConfiguredPersonalityEnabled = false,
+            HasPersonalityEnabledOverride = true,
+            PersonalityEnabledSource = CopilotProjectInstructionConfigSources.CodexHome,
+            ConfiguredPersonality = CopilotResponsePersonality.Friendly,
+            HasPersonalityOverride = true,
+            PersonalitySource = CopilotProjectInstructionConfigSources.CodexHome,
+        };
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        conversation.HasResponsePersonalityOverride = true;
+        conversation.ResponsePersonality = CopilotResponsePersonality.Pragmatic;
+        var resolution = CopilotResponsePersonalitySelection.Resolve(conversation, options);
+        string memoryReport = CopilotProjectInstructionDiagnostics.Format(
+            new CopilotProjectInstructionSnapshot(
+                string.Empty,
+                string.Empty,
+                string.Empty,
+                options,
+                Array.Empty<CopilotProjectInstructionDocument>()),
+            hasActiveAgentRun: false);
+        string contextReport = CopilotContextDiagnostics.Format(new CopilotContextDiagnosticSnapshot
+        {
+            ResponsePersonality = resolution.Personality,
+            ResponsePersonalitySourceLabel = resolution.SourceLabel,
+            CodexPersonalityEnabled = false,
+            HasCodexPersonalityEnabledOverride = true,
+            CodexPersonalityEnabledSourceLabel = options.PersonalityEnabledSourceLabel,
+        });
+        string debugReport = CopilotEffectiveConfigDiagnostics.Format(new CopilotEffectiveConfigDiagnosticContext
+        {
+            Config = new CopilotConfig(),
+            State = new CopilotChatState(),
+            Conversation = conversation,
+            CodexConfigOptions = options,
+        });
+
+        Assert.Equal(CopilotResponsePersonality.None, resolution.Personality);
+        Assert.Contains("Codex features.personality：false", memoryReport, StringComparison.Ordinal);
+        Assert.Contains("被 features.personality=false 阻断", memoryReport, StringComparison.Ordinal);
+        Assert.Contains("回答风格：无（none）", contextReport, StringComparison.Ordinal);
+        Assert.Contains("Personality 功能：关闭", contextReport, StringComparison.Ordinal);
+        Assert.Contains("Codex features.personality：false", debugReport, StringComparison.Ordinal);
+        Assert.Contains("回答风格：无", debugReport, StringComparison.Ordinal);
     }
 
     [Fact]

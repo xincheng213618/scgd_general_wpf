@@ -17,6 +17,12 @@ namespace ColorVision.Copilot
 
         public string ResponsePersonalitySourceLabel { get; init; } = string.Empty;
 
+        public bool CodexPersonalityEnabled { get; init; } = true;
+
+        public bool HasCodexPersonalityEnabledOverride { get; init; }
+
+        public string CodexPersonalityEnabledSourceLabel { get; init; } = string.Empty;
+
         internal CopilotCodexWebSearchMode CodexWebSearchMode { get; init; } =
             CopilotCodexWebSearchMode.Unspecified;
 
@@ -404,8 +410,25 @@ namespace ColorVision.Copilot
                 .Append(CopilotResponsePersonalitySelection.GetCommandToken(snapshot.ResponsePersonality))
                 .Append("） · 来源 ")
                 .AppendLine(string.IsNullOrWhiteSpace(snapshot.ResponsePersonalitySourceLabel)
-                    ? "内置默认"
+                    ? "Codex features.personality 稳定功能默认值"
                     : snapshot.ResponsePersonalitySourceLabel.Trim());
+            builder.Append("Personality 功能：")
+                .Append(snapshot.CodexPersonalityEnabled ? "启用" : "关闭");
+            if (snapshot.HasCodexPersonalityEnabledOverride)
+            {
+                builder.Append("（")
+                    .Append(string.IsNullOrWhiteSpace(snapshot.CodexPersonalityEnabledSourceLabel)
+                        ? "Codex config.toml features.personality"
+                        : snapshot.CodexPersonalityEnabledSourceLabel.Trim())
+                    .Append('）');
+            }
+            else
+            {
+                builder.Append("（Codex 稳定功能默认值）");
+            }
+            builder.AppendLine(snapshot.CodexPersonalityEnabled
+                ? " · 允许 personality 指令"
+                : " · 总闸门关闭，不注入任何 personality 指令");
             builder.Append("公网检索：")
                 .Append(CopilotCodexWebSearchModeSelection.GetEffectiveLabel(
                     snapshot.CodexWebSearchMode));

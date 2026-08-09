@@ -461,18 +461,24 @@ namespace ColorVision.Copilot
             conversation.HasResponsePersonalityOverride = true;
             conversation.Touch();
             PersistState(immediate: true);
+            var nextResolution = CopilotResponsePersonalitySelection.Resolve(
+                conversation,
+                codexConfigOptions);
             var changeLabel = alreadyExplicit && previousResolution.Personality == personality
                 ? "保持"
                 : "已设置";
             var checkpointNote = conversation.AgentSessionCheckpoint == null
-                || previousResolution.Personality == personality
+                || previousResolution.Personality == nextResolution.Personality
                 ? string.Empty
                 : Environment.NewLine + "已有 Agent checkpoint 会保留；继续任务时将按新风格重新规划，不会直接复用旧提示身份。";
+            var featureNote = codexConfigOptions.ConfiguredPersonalityEnabled
+                ? "它只影响后续回答的默认表达，不改变任务范围、权限、安全规则、证据要求或用户明确指定的格式。"
+                : "该选择已保存，但当前 features.personality=false，后续请求不会注入 personality 指令；重新启用该功能后生效。";
             ShowLocalCommandResult(
                 command,
                 $"当前会话风格{changeLabel}为“{CopilotResponsePersonalitySelection.GetDisplayName(personality)}”（{CopilotResponsePersonalitySelection.GetCommandToken(personality)}）。"
                 + Environment.NewLine
-                + "它只影响后续回答的默认表达，不改变任务范围、权限、安全规则、证据要求或用户明确指定的格式。"
+                + featureNote
                 + checkpointNote);
         }
 

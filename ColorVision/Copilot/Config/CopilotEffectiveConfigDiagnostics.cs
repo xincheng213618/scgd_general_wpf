@@ -1124,11 +1124,28 @@ namespace ColorVision.Copilot
 
             builder.AppendLine()
                 .AppendLine("会话与本机偏好")
+                .Append("- Codex features.personality：")
+                .Append(codexConfigOptions.ConfiguredPersonalityEnabled ? "true" : "false");
+            if (codexConfigOptions.HasPersonalityEnabledOverride)
+            {
+                builder.Append(" · 来源 ")
+                    .Append(codexConfigOptions.PersonalityEnabledSourceLabel.Length == 0
+                        ? "Codex config.toml"
+                        : codexConfigOptions.PersonalityEnabledSourceLabel);
+            }
+            else
+            {
+                builder.Append(" · Codex 稳定功能默认值");
+            }
+            builder.AppendLine(codexConfigOptions.ConfiguredPersonalityEnabled
+                    ? " · 允许 personality 指令"
+                    : " · 总闸门关闭，不注入任何 personality 指令")
                 .Append("- 回答风格：")
                 .Append(CopilotResponsePersonalitySelection.GetDisplayName(personality.Personality))
                 .Append(" · 来源 ")
                 .AppendLine(personality.SourceLabel);
-            if (codexConfigOptions.HasPersonalityOverride
+            if (codexConfigOptions.ConfiguredPersonalityEnabled
+                && codexConfigOptions.HasPersonalityOverride
                 && string.Equals(personality.SourceLabel, "会话覆盖", StringComparison.Ordinal))
             {
                 builder.Append("- Codex personality 默认：")

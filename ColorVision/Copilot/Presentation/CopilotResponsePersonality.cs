@@ -63,6 +63,16 @@ namespace ColorVision.Copilot
             CopilotConversationRecord? conversation,
             CopilotProjectInstructionDiscoveryOptions? codexConfigOptions)
         {
+            if (codexConfigOptions?.ConfiguredPersonalityEnabled == false)
+            {
+                string sourceLabel = codexConfigOptions.PersonalityEnabledSourceLabel.Length == 0
+                    ? "Codex config.toml features.personality"
+                    : codexConfigOptions.PersonalityEnabledSourceLabel;
+                return new Resolution(
+                    CopilotResponsePersonality.None,
+                    sourceLabel + "（关闭；不注入 personality）");
+            }
+
             if (conversation != null
                 && (conversation.HasResponsePersonalityOverride
                     || conversation.ResponsePersonality != CopilotResponsePersonality.None))
@@ -81,7 +91,9 @@ namespace ColorVision.Copilot
                         : codexConfigOptions.PersonalitySourceLabel);
             }
 
-            return new Resolution(CopilotResponsePersonality.None, "内置默认");
+            return new Resolution(
+                CopilotResponsePersonality.Pragmatic,
+                "Codex features.personality 稳定功能默认值");
         }
     }
 }

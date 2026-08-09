@@ -163,6 +163,18 @@ namespace ColorVision.Copilot
                         ? " 请求快照；显式清空）"
                         : " 请求快照；独立开发者指令）");
             }
+            if (effective.HasPersonalityEnabledOverride)
+            {
+                builder.Append("Codex features.personality：")
+                    .Append(effective.ConfiguredPersonalityEnabled ? "true" : "false")
+                    .Append(" · 来源 ")
+                    .Append(effective.PersonalityEnabledSourceLabel.Length == 0
+                        ? "Codex config.toml"
+                        : effective.PersonalityEnabledSourceLabel)
+                    .AppendLine(effective.ConfiguredPersonalityEnabled
+                        ? " 请求快照；允许 personality 指令"
+                        : " 请求快照；总闸门关闭，不注入任何 personality 指令");
+            }
             if (effective.HasPersonalityOverride)
             {
                 builder.Append("Codex personality：")
@@ -173,7 +185,9 @@ namespace ColorVision.Copilot
                     .Append(effective.PersonalitySourceLabel.Length == 0
                         ? "Codex config.toml"
                         : effective.PersonalitySourceLabel)
-                    .AppendLine(" 请求快照；会话显式选择优先");
+                    .AppendLine(effective.ConfiguredPersonalityEnabled
+                        ? " 请求快照；会话显式选择优先"
+                        : " 请求快照；已配置但被 features.personality=false 阻断");
             }
             if (effective.HasWebSearchModeOverride)
             {
