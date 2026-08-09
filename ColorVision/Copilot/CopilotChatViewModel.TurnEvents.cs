@@ -471,6 +471,7 @@ namespace ColorVision.Copilot
         private bool TryQueueGoalContinuation(
             CopilotConversationRecord conversation,
             CopilotProfileConfig requestProfile,
+            CopilotAgentHostContextSnapshot completedTurnSnapshot,
             string goalId,
             string reason)
         {
@@ -493,9 +494,9 @@ namespace ColorVision.Copilot
                 + Environment.NewLine
                 + "根据现有证据选择下一项最有价值的工作并验证结果；不要把持续目标当作工具、写入、审批复用或扩大范围的授权。";
             var requestProfileSnapshot = requestProfile.Clone();
-            var submissionContext = CaptureHostedTurnSnapshot(
-                conversation,
-                attachmentOverride: conversation.Attachments);
+            var submissionContext = CopilotGoalContinuationContext.Capture(
+                completedTurnSnapshot,
+                conversation);
             var itemReady = new TaskCompletionSource<CopilotQueuedFollowUp>(
                 TaskCreationOptions.RunContinuationsAsynchronously);
             if (!_taskHost.TryScheduleFollowUp(

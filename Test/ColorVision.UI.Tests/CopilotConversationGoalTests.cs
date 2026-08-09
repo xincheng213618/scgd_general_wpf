@@ -1,10 +1,41 @@
 using ColorVision.Copilot;
 using Newtonsoft.Json;
+using System.IO;
 
 namespace ColorVision.UI.Tests;
 
 public sealed class CopilotConversationGoalTests
 {
+    [Fact]
+    public void AutomaticContinuationKeepsCompletedTurnWorkspaceAndRefreshesHistory()
+    {
+        string completedWorkspace = Path.Combine(Path.GetTempPath(), "copilot-goal-completed-workspace");
+        string completedDocument = Path.Combine(completedWorkspace, "Completed.cs");
+        var completedTurnSnapshot = new CopilotAgentHostContextSnapshot(
+            completedDocument,
+            completedWorkspace,
+            attachments: null,
+            conversationHistory: new CopilotConversationHistorySnapshot(
+                [new CopilotRequestMessage("user", "Earlier request")],
+                [new CopilotRequestMessage("user", "Earlier request")]),
+            additionalReadRootPaths: [Path.Combine(completedWorkspace, "shared")]);
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        conversation.Messages.Add(new CopilotChatMessage(CopilotChatRole.User, "Completed request"));
+        conversation.Messages.Add(new CopilotChatMessage(CopilotChatRole.Assistant, "Completed response"));
+
+        var continuation = CopilotGoalContinuationContext.Capture(
+            completedTurnSnapshot,
+            conversation);
+
+        Assert.NotSame(completedTurnSnapshot, continuation);
+        Assert.Equal(completedWorkspace, continuation.SolutionDirectoryPath);
+        Assert.Equal(completedDocument, continuation.ActiveDocumentPath);
+        Assert.Equal(completedTurnSnapshot.AdditionalReadRootPaths, continuation.AdditionalReadRootPaths);
+        Assert.Equal(2, continuation.ConversationHistory.VisibleMessages.Count);
+        Assert.Equal("Completed request", continuation.ConversationHistory.VisibleMessages[0].Content);
+        Assert.Equal("Completed response", continuation.ConversationHistory.VisibleMessages[1].Content);
+    }
+
     [Fact]
     public void TurnOutcomeKeepsTimestampsValidWhenClockMovesBeforeCreation()
     {

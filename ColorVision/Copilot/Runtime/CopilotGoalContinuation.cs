@@ -404,6 +404,19 @@ namespace ColorVision.Copilot
         CopilotGoalTurnAction Action,
         string Reason);
 
+    internal static class CopilotGoalContinuationContext
+    {
+        public static CopilotAgentHostContextSnapshot Capture(
+            CopilotAgentHostContextSnapshot completedTurnSnapshot,
+            CopilotConversationRecord conversation)
+        {
+            ArgumentNullException.ThrowIfNull(completedTurnSnapshot);
+            ArgumentNullException.ThrowIfNull(conversation);
+            return completedTurnSnapshot.WithConversationHistory(
+                CopilotConversationRequestBuilder.CaptureHistorySnapshot(conversation));
+        }
+    }
+
     internal static class CopilotGoalContinuationPolicy
     {
         public const int MaximumConsecutiveContinuations = 8;

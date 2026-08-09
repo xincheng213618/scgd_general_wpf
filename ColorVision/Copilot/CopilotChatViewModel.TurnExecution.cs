@@ -343,6 +343,7 @@ namespace ColorVision.Copilot
                         TryQueueGoalContinuation(
                             conversation,
                             requestProfile,
+                            turnSnapshot,
                             goalResult.GoalId,
                             goalResult.Reason));
                 }
