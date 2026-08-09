@@ -85,6 +85,9 @@ namespace ColorVision.Copilot
         private int _terminationReason;
         private int _disposed;
 
+        private static TimeSpan DisposeCompletionTimeout { get; } =
+            CopilotProcessExecutionSupport.ProcessTreeExitTimeout + TimeSpan.FromSeconds(2);
+
         public CopilotBackgroundShellProcess(
             Process process,
             CopilotWindowsProcessJob? processJob,
@@ -371,13 +374,50 @@ namespace ColorVision.Copilot
 
             SignalObservationChanged();
             Interlocked.CompareExchange(ref _terminationReason, 1, 0);
-            _processJob?.TryTerminate();
-            _processJob?.Dispose();
-            _outputReadSource.Cancel();
-            _outputReadSource.Dispose();
-            _standardOutput.Dispose();
-            _standardError.Dispose();
-            _process.Dispose();
+            // Process-tree termination begins synchronously. Keep the process and
+            // redirected streams alive until the existing completion waiter settles.
+            var cleanupTask = TerminateAndDisposeAsync();
+            CopilotCancellationBoundary.ObserveLateFault(cleanupTask);
+        }
+
+        private async Task TerminateAndDisposeAsync()
+        {
+            try
+            {
+                try
+                {
+                    await CopilotProcessExecutionSupport.TerminateProcessTreeAsync(
+                        _process,
+                        _processJob).ConfigureAwait(false);
+                }
+                catch (Exception ex) when (ex is IOException
+                    or Win32Exception
+                    or InvalidOperationException
+                    or ObjectDisposedException)
+                {
+                }
+
+                try
+                {
+                    await _completion.WaitAsync(DisposeCompletionTimeout).ConfigureAwait(false);
+                }
+                catch (Exception ex) when (ex is TimeoutException
+                    or IOException
+                    or Win32Exception
+                    or InvalidOperationException
+                    or ObjectDisposedException)
+                {
+                }
+            }
+            finally
+            {
+                _outputReadSource.Cancel();
+                _outputReadSource.Dispose();
+                _standardOutput.Dispose();
+                _standardError.Dispose();
+                _processJob?.Dispose();
+                _process.Dispose();
+            }
         }
 
         private sealed class BoundedOutput : IDisposable
