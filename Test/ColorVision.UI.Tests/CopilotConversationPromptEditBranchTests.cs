@@ -81,6 +81,34 @@ public sealed class CopilotConversationPromptEditBranchTests
     }
 
     [Fact]
+    public void InitializationRepairsDuplicateMessageIdsBeforeHistoricalPromptEdit()
+    {
+        var source = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        var firstPrompt = new CopilotChatMessage(CopilotChatRole.User, "First prompt");
+        var firstAnswer = new CopilotChatMessage(CopilotChatRole.Assistant, "First answer");
+        var selectedPrompt = new CopilotChatMessage(CopilotChatRole.User, "Edit this prompt")
+        {
+            Id = firstPrompt.Id,
+        };
+        var originalFirstPromptId = firstPrompt.Id;
+        source.Messages.Add(firstPrompt);
+        source.Messages.Add(firstAnswer);
+        source.Messages.Add(selectedPrompt);
+
+        Assert.True(source.EnsureValid());
+
+        Assert.Equal(originalFirstPromptId, firstPrompt.Id);
+        Assert.NotEqual(firstPrompt.Id, selectedPrompt.Id);
+        var preparation = CopilotConversationBranchService.PreparePromptEditBranch(source, selectedPrompt);
+
+        Assert.Equal(3, source.Messages.Count);
+        Assert.Equal(2, preparation.Branch.Messages.Count);
+        Assert.Equal("First prompt", preparation.Branch.Messages[0].Content);
+        Assert.Equal("First answer", preparation.Branch.Messages[1].Content);
+        Assert.Equal(selectedPrompt.Id, preparation.Branch.BranchOrigin?.ThroughMessageId);
+    }
+
+    [Fact]
     public void PreparationRejectsForeignAndOversizedPromptSnapshots()
     {
         var source = CopilotConversationRecord.CreateEmpty("profile", "Profile");
