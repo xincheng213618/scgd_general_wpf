@@ -1626,6 +1626,30 @@ public sealed class CopilotCodexConfiguredCommandHookTests
         }
     }
 
+    [Fact]
+    public async Task CommandHookRunnerRequestsDetachedDescendantPreservation()
+    {
+        var workspace = CreateTemporaryDirectory();
+        try
+        {
+            var processRunner = new RecordingShellProcessRunner();
+            var runner = new CopilotCodexCommandHookRunner(processRunner);
+
+            var result = await runner.RunAsync(
+                CreateDefinition(CopilotCodexConfiguredHookEvent.SessionStart, string.Empty),
+                CreateRequest(workspace),
+                "{}",
+                CancellationToken.None);
+
+            Assert.Equal(0, result.ExitCode);
+            Assert.True(Assert.Single(processRunner.Commands).PreserveDescendantsOnCompletion);
+        }
+        finally
+        {
+            Directory.Delete(workspace, recursive: true);
+        }
+    }
+
     private static CopilotToolExecutor CreateExecutor(
         ICopilotCodexCommandHookRunner runner,
         TimeSpan? hookPhaseTimeout = null) =>
@@ -1761,6 +1785,25 @@ public sealed class CopilotCodexConfiguredCommandHookTests
                 false,
                 string.Empty,
                 string.Empty);
+        }
+    }
+
+    private sealed class RecordingShellProcessRunner : ICopilotShellProcessRunner
+    {
+        public List<CopilotShellProcessCommand> Commands { get; } = [];
+
+        public Task<CopilotShellProcessResult> RunAsync(
+            CopilotShellProcessCommand command,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            Commands.Add(command);
+            return Task.FromResult(new CopilotShellProcessResult(
+                0,
+                false,
+                string.Empty,
+                string.Empty,
+                TimeSpan.Zero));
         }
     }
 

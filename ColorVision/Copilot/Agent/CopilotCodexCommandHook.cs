@@ -125,6 +125,7 @@ namespace ColorVision.Copilot
                     EnvironmentVariables = request.CodexShellEnvironmentPolicy
                         .CreateEnvironmentVariables(request.ConversationId),
                     StandardInput = standardInput,
+                    PreserveDescendantsOnCompletion = true,
                 },
                 cancellationToken).ConfigureAwait(false);
             return new CopilotCodexCommandHookProcessResult(
