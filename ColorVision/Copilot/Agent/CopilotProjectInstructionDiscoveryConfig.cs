@@ -434,6 +434,13 @@ namespace ColorVision.Copilot
         public CopilotProjectInstructionConfigSources IncludeSkillInstructionsSource { get; init; } =
             CopilotProjectInstructionConfigSources.None;
 
+        public bool ConfiguredMultiAgentEnabled { get; init; } = true;
+
+        public bool HasMultiAgentEnabledOverride { get; init; }
+
+        public CopilotProjectInstructionConfigSources MultiAgentEnabledSource { get; init; } =
+            CopilotProjectInstructionConfigSources.None;
+
         public bool ConfiguredAgentsEnabled { get; init; } = true;
 
         public bool HasAgentsEnabledOverride { get; init; }
@@ -690,6 +697,7 @@ namespace ColorVision.Copilot
             || HasIncludeCollaborationModeInstructionsOverride
             || HasIncludeEnvironmentContextOverride
             || HasIncludeSkillInstructionsOverride
+            || HasMultiAgentEnabledOverride
             || HasAgentsEnabledOverride
             || HasInterruptMessageOverride
             || HasMaximumConcurrentSubagentRunsOverride
@@ -884,6 +892,18 @@ namespace ColorVision.Copilot
             CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml skills.include_instructions",
             _ => string.Empty,
         };
+
+        public string MultiAgentEnabledSourceLabel => MultiAgentEnabledSource switch
+        {
+            CopilotProjectInstructionConfigSources.CodexHome =>
+                "Codex Home config.toml features.multi_agent",
+            CopilotProjectInstructionConfigSources.TrustedProject =>
+                "受信项目 .codex/config.toml features.multi_agent",
+            _ => string.Empty,
+        };
+
+        public bool EffectiveAgentsEnabled => ConfiguredMultiAgentEnabled
+            && ConfiguredAgentsEnabled;
 
         public string AgentsEnabledSourceLabel => AgentsEnabledSource switch
         {
@@ -1118,6 +1138,8 @@ namespace ColorVision.Copilot
         private const string IncludeEnvironmentContextKey = "include_environment_context";
         private const string SkillsIncludeInstructionsKey = "skills.include_instructions";
         private const string SkillsIncludeInstructionsTableKey = "include_instructions";
+        private const string MultiAgentEnabledKey = "features.multi_agent";
+        private const string MultiAgentEnabledFeatureKey = "multi_agent";
         private const string AgentsEnabledKey = "agents.enabled";
         private const string AgentsEnabledTableKey = "enabled";
         private const string AgentsInterruptMessageKey = "agents.interrupt_message";
@@ -1475,6 +1497,14 @@ namespace ColorVision.Copilot
                 IncludeSkillInstructionsSource = layer.HasIncludeSkillInstructionsOverride
                     ? source
                     : current.IncludeSkillInstructionsSource,
+                ConfiguredMultiAgentEnabled = layer.HasMultiAgentEnabledOverride
+                    ? layer.MultiAgentEnabled
+                    : current.ConfiguredMultiAgentEnabled,
+                HasMultiAgentEnabledOverride = current.HasMultiAgentEnabledOverride
+                    || layer.HasMultiAgentEnabledOverride,
+                MultiAgentEnabledSource = layer.HasMultiAgentEnabledOverride
+                    ? source
+                    : current.MultiAgentEnabledSource,
                 ConfiguredAgentsEnabled = layer.HasAgentsEnabledOverride
                     ? layer.AgentsEnabled
                     : current.ConfiguredAgentsEnabled,
@@ -1679,6 +1709,7 @@ namespace ColorVision.Copilot
                 || layer.HasIncludeCollaborationModeInstructionsOverride
                 || layer.HasIncludeEnvironmentContextOverride
                 || layer.HasIncludeSkillInstructionsOverride
+                || layer.HasMultiAgentEnabledOverride
                 || layer.HasAgentsEnabledOverride
                 || layer.HasInterruptMessageOverride
                 || layer.HasMaximumConcurrentSubagentRunsOverride
@@ -1978,6 +2009,7 @@ namespace ColorVision.Copilot
             var includeCollaborationModeInstructions = true;
             var includeEnvironmentContext = true;
             var includeSkillInstructions = true;
+            var multiAgentEnabled = true;
             var agentsEnabled = true;
             var interruptMessageEnabled = true;
             var maximumConcurrentSubagentRuns = CopilotSubagentCoordinator.DefaultMaximumConcurrentRuns;
@@ -2029,6 +2061,7 @@ namespace ColorVision.Copilot
             var hasIncludeCollaborationModeInstructionsOverride = false;
             var hasIncludeEnvironmentContextOverride = false;
             var hasIncludeSkillInstructionsOverride = false;
+            var hasMultiAgentEnabledOverride = false;
             var hasAgentsEnabledOverride = false;
             var hasInterruptMessageOverride = false;
             var hasMaximumConcurrentSubagentRunsOverride = false;
@@ -2359,6 +2392,18 @@ namespace ColorVision.Copilot
                         continue;
                     }
                     hasIncludeSkillInstructionsOverride = true;
+                    continue;
+                }
+
+                if (string.Equals(assignment.Key, MultiAgentEnabledKey, StringComparison.Ordinal))
+                {
+                    if (!TryParseTomlBoolean(
+                        assignment.Value,
+                        out multiAgentEnabled))
+                    {
+                        continue;
+                    }
+                    hasMultiAgentEnabledOverride = true;
                     continue;
                 }
 
@@ -2744,6 +2789,8 @@ namespace ColorVision.Copilot
                 HasIncludeEnvironmentContextOverride = hasIncludeEnvironmentContextOverride,
                 IncludeSkillInstructions = includeSkillInstructions,
                 HasIncludeSkillInstructionsOverride = hasIncludeSkillInstructionsOverride,
+                MultiAgentEnabled = multiAgentEnabled,
+                HasMultiAgentEnabledOverride = hasMultiAgentEnabledOverride,
                 AgentsEnabled = agentsEnabled,
                 HasAgentsEnabledOverride = hasAgentsEnabledOverride,
                 InterruptMessageEnabled = interruptMessageEnabled,
@@ -2805,6 +2852,7 @@ namespace ColorVision.Copilot
                 || hasIncludeCollaborationModeInstructionsOverride
                 || hasIncludeEnvironmentContextOverride
                 || hasIncludeSkillInstructionsOverride
+                || hasMultiAgentEnabledOverride
                 || hasAgentsEnabledOverride
                 || hasInterruptMessageOverride
                 || hasMaximumConcurrentSubagentRunsOverride
@@ -2987,6 +3035,7 @@ namespace ColorVision.Copilot
                         ShellToolEnabledFeatureKey => ShellToolEnabledKey,
                         PersonalityEnabledFeatureKey => PersonalityEnabledKey,
                         FastModeEnabledFeatureKey => FastModeEnabledKey,
+                        MultiAgentEnabledFeatureKey => MultiAgentEnabledKey,
                         GoalsEnabledFeatureKey => GoalsEnabledKey,
                         DefaultModeRequestUserInputEnabledFeatureKey => DefaultModeRequestUserInputEnabledKey,
                         LegacyWebSearchFeatureKey => LegacyWebSearchKey,
@@ -3046,6 +3095,7 @@ namespace ColorVision.Copilot
                     && !string.Equals(key, IncludeCollaborationModeInstructionsKey, StringComparison.Ordinal)
                     && !string.Equals(key, IncludeEnvironmentContextKey, StringComparison.Ordinal)
                     && !string.Equals(key, SkillsIncludeInstructionsKey, StringComparison.Ordinal)
+                    && !string.Equals(key, MultiAgentEnabledKey, StringComparison.Ordinal)
                     && !string.Equals(key, AgentsEnabledKey, StringComparison.Ordinal)
                     && !string.Equals(key, AgentsInterruptMessageKey, StringComparison.Ordinal)
                     && !string.Equals(key, AgentsMaximumConcurrentThreadsKey, StringComparison.Ordinal)
@@ -3996,6 +4046,10 @@ namespace ColorVision.Copilot
             public bool IncludeSkillInstructions { get; init; } = true;
 
             public bool HasIncludeSkillInstructionsOverride { get; init; }
+
+            public bool MultiAgentEnabled { get; init; } = true;
+
+            public bool HasMultiAgentEnabledOverride { get; init; }
 
             public bool AgentsEnabled { get; init; } = true;
 

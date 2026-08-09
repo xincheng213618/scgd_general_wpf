@@ -447,6 +447,21 @@ namespace ColorVision.Copilot
             builder.AppendLine(effective.ConfiguredIncludeSkillInstructions
                 ? "允许按请求相关性自动注入 Skill 元数据"
                 : "省略自动 Skill 说明；显式 $name 或 /name 调用仍可加载匹配 Skill");
+            builder.Append("Codex features.multi_agent：")
+                .Append(effective.ConfiguredMultiAgentEnabled ? "true" : "false");
+            if (effective.HasMultiAgentEnabledOverride)
+            {
+                builder.Append(" · 来源 ")
+                    .Append(effective.MultiAgentEnabledSourceLabel.Length == 0
+                        ? "Codex config.toml"
+                        : effective.MultiAgentEnabledSourceLabel)
+                    .Append(" 提交快照");
+            }
+            else
+            {
+                builder.Append(" · Codex 稳定功能默认值");
+            }
+            builder.AppendLine();
             builder.Append("Codex agents.enabled：")
                 .Append(effective.ConfiguredAgentsEnabled ? "true" : "false");
             if (effective.HasAgentsEnabledOverride)
@@ -455,15 +470,18 @@ namespace ColorVision.Copilot
                     .Append(effective.AgentsEnabledSourceLabel.Length == 0
                         ? "Codex config.toml"
                         : effective.AgentsEnabledSourceLabel)
-                    .Append(" 提交快照；");
+                    .Append(" 提交快照");
             }
             else
             {
-                builder.Append(" · 官方默认；");
+                builder.Append(" · 官方默认");
             }
-            builder.AppendLine(effective.ConfiguredAgentsEnabled
-                ? "允许按请求意图暴露子代理工具"
-                : "隐藏子代理工具并拒绝旧计划、恢复状态或注入调用");
+            builder.AppendLine();
+            builder.Append("子代理工具（有效）：")
+                .Append(effective.EffectiveAgentsEnabled ? "开启" : "关闭")
+                .AppendLine(effective.EffectiveAgentsEnabled
+                    ? "；features.multi_agent 与 agents.enabled 均允许"
+                    : "；任一门槛关闭都会隐藏工具并拒绝旧计划、恢复状态或注入调用");
             builder.Append("Codex agents.interrupt_message：")
                 .Append(effective.ConfiguredInterruptMessageEnabled ? "true" : "false");
             if (effective.HasInterruptMessageOverride)

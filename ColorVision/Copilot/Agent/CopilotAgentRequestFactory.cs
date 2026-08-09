@@ -399,7 +399,7 @@ namespace ColorVision.Copilot
             };
             var requiresWorkspaceEvidence = CopilotToolIntentPolicy.NeedsLocalEvidence(intentProbe);
             var requiresDelegatedWorkspaceEvidence =
-                hostContext.ProjectInstructionDiscoveryOptions.ConfiguredAgentsEnabled
+                hostContext.ProjectInstructionDiscoveryOptions.EffectiveAgentsEnabled
                 && CopilotToolIntentPolicy.ExplicitlyRequiresDelegatedWorkspaceEvidence(intentProbe);
             var writableLocalRootPaths = CopilotToolIntentPolicy.NeedsWorkspaceCreate(intentProbe)
                 || CopilotToolIntentPolicy.NeedsWorkspaceEdit(intentProbe)
@@ -451,7 +451,7 @@ namespace ColorVision.Copilot
                 CodexApprovalPolicy = codexApprovalPolicy,
                 CodexApprovalsReviewer = codexApprovalsReviewer,
                 CodexAutoReviewPolicy = codexAutoReviewPolicy,
-                CodexAgentsEnabled = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredAgentsEnabled,
+                CodexAgentsEnabled = hostContext.ProjectInstructionDiscoveryOptions.EffectiveAgentsEnabled,
                 CodexInterruptMessageEnabled = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredInterruptMessageEnabled,
                 CodexMaximumConcurrentSubagentRuns =
                     hostContext.ProjectInstructionDiscoveryOptions.ConfiguredMaximumConcurrentSubagentRuns,

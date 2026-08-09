@@ -433,7 +433,7 @@ namespace ColorVision.Copilot
                         SelectedConversation,
                         arguments,
                         customSubagents: customAgentOptions.CustomSubagents,
-                        customAgentsEnabled: customAgentOptions.ConfiguredAgentsEnabled,
+                        customAgentsEnabled: customAgentOptions.EffectiveAgentsEnabled,
                         customAgentSnapshotLabel: usesActiveRequestSnapshot
                             ? "当前活动 Agent 请求的提交快照"
                             : "下一次 Agent 请求的当前配置快照"));

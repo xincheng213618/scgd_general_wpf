@@ -137,6 +137,12 @@ namespace ColorVision.Copilot
 
         public string CodexIncludeSkillInstructionsSourceLabel { get; init; } = string.Empty;
 
+        public bool CodexMultiAgentEnabled { get; init; } = true;
+
+        public bool HasCodexMultiAgentEnabledOverride { get; init; }
+
+        public string CodexMultiAgentEnabledSourceLabel { get; init; } = string.Empty;
+
         public bool CodexAgentsEnabled { get; init; } = true;
 
         public bool HasCodexAgentsEnabledOverride { get; init; }
@@ -721,7 +727,22 @@ namespace ColorVision.Copilot
                 builder.Append("（Codex 默认注入）");
             }
             builder.AppendLine();
-            builder.Append("子代理工具：")
+            builder.Append("V1 多代理功能：")
+                .Append(snapshot.CodexMultiAgentEnabled ? "开启" : "关闭");
+            if (snapshot.HasCodexMultiAgentEnabledOverride)
+            {
+                builder.Append('（')
+                    .Append(string.IsNullOrWhiteSpace(snapshot.CodexMultiAgentEnabledSourceLabel)
+                        ? "Codex config.toml features.multi_agent"
+                        : snapshot.CodexMultiAgentEnabledSourceLabel.Trim())
+                    .Append(" 提交快照）");
+            }
+            else
+            {
+                builder.Append("（Codex 稳定功能默认值）");
+            }
+            builder.AppendLine();
+            builder.Append("Agents 配置：")
                 .Append(snapshot.CodexAgentsEnabled ? "开启" : "关闭");
             if (snapshot.HasCodexAgentsEnabledOverride)
             {
@@ -729,16 +750,20 @@ namespace ColorVision.Copilot
                     .Append(string.IsNullOrWhiteSpace(snapshot.CodexAgentsEnabledSourceLabel)
                         ? "Codex config.toml"
                         : snapshot.CodexAgentsEnabledSourceLabel.Trim())
-                    .Append(" 提交快照")
-                    .Append(snapshot.CodexAgentsEnabled
-                        ? "；允许按请求意图暴露委派工具）"
-                        : "；委派工具已从目录移除，旧调用也会拒绝）");
+                    .Append(" 提交快照）");
             }
             else
             {
                 builder.Append("（Codex 默认开启）");
             }
             builder.AppendLine();
+            bool effectiveAgentsEnabled = snapshot.CodexMultiAgentEnabled
+                && snapshot.CodexAgentsEnabled;
+            builder.Append("子代理工具（有效）：")
+                .Append(effectiveAgentsEnabled ? "开启" : "关闭")
+                .AppendLine(effectiveAgentsEnabled
+                    ? "（两个门槛均允许；可按请求意图暴露委派工具）"
+                    : "（任一门槛关闭；工具已从目录移除，旧调用也会拒绝）");
             builder.Append("子代理中断消息：")
                 .Append(snapshot.CodexInterruptMessageEnabled ? "记录给父 Agent" : "仅保留本地审计");
             if (snapshot.HasCodexInterruptMessageOverride)

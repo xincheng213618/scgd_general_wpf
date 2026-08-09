@@ -1020,6 +1020,21 @@ namespace ColorVision.Copilot
             StringBuilder builder,
             CopilotProjectInstructionDiscoveryOptions codexConfigOptions)
         {
+            builder.Append("- Codex features.multi_agent：")
+                .Append(codexConfigOptions.ConfiguredMultiAgentEnabled ? "true" : "false");
+            if (codexConfigOptions.HasMultiAgentEnabledOverride)
+            {
+                builder.Append(" · 来源 ")
+                    .Append(codexConfigOptions.MultiAgentEnabledSourceLabel.Length == 0
+                        ? "Codex config.toml"
+                        : codexConfigOptions.MultiAgentEnabledSourceLabel)
+                    .Append(" · 提交快照");
+            }
+            else
+            {
+                builder.Append(" · Codex 稳定功能默认值");
+            }
+            builder.AppendLine();
             builder.Append("- Codex agents.enabled：")
                 .Append(codexConfigOptions.ConfiguredAgentsEnabled ? "true" : "false");
             if (codexConfigOptions.HasAgentsEnabledOverride)
@@ -1034,9 +1049,12 @@ namespace ColorVision.Copilot
             {
                 builder.Append(" · 官方默认");
             }
-            builder.AppendLine(codexConfigOptions.ConfiguredAgentsEnabled
-                ? " · 允许按请求意图暴露子代理工具"
-                : " · 隐藏子代理工具并拒绝旧计划、恢复状态或注入调用");
+            builder.AppendLine();
+            builder.Append("- 子代理工具（有效）：")
+                .Append(codexConfigOptions.EffectiveAgentsEnabled ? "开启" : "关闭")
+                .AppendLine(codexConfigOptions.EffectiveAgentsEnabled
+                    ? " · features.multi_agent 与 agents.enabled 均允许"
+                    : " · 任一门槛关闭都会隐藏工具并拒绝旧计划、恢复状态或注入调用");
             builder.Append("- Codex agents.interrupt_message：")
                 .Append(codexConfigOptions.ConfiguredInterruptMessageEnabled ? "true" : "false");
             if (codexConfigOptions.HasInterruptMessageOverride)
