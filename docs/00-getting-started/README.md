@@ -28,8 +28,8 @@
 当前仓库以 Windows WPF 和 x64 为主，建议先完成依赖恢复，再构建主程序：
 
 ```powershell
-dotnet restore
-dotnet build -p:Platform=x64
+dotnet restore .\ColorVision\ColorVision.csproj
+dotnet build .\ColorVision\ColorVision.csproj -p:Platform=x64
 dotnet run --project ColorVision/ColorVision.csproj
 ```
 

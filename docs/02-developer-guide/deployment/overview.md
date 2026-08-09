@@ -5,7 +5,7 @@
 ## 当前部署对象
 
 - `ColorVision/`：主程序本体
-- `ColorVisionSetup/`：安装与更新相关程序
+- `src/ColorVisionSetup/`：安装与更新相关程序
 - `Scripts/`：构建、打包、发布辅助脚本
 - `Plugins/`：运行时加载的插件目录
 
@@ -16,8 +16,8 @@
 直接从源码构建并运行主程序：
 
 ```powershell
-dotnet restore
-dotnet build -p:Platform=x64
+dotnet restore .\ColorVision\ColorVision.csproj
+dotnet build .\ColorVision\ColorVision.csproj -p:Platform=x64
 dotnet run --project ColorVision/ColorVision.csproj
 ```
 

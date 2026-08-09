@@ -1,62 +1,14 @@
 # 扩展性开发
 
-## 概述
+ColorVision 的扩展工作分布在运行时插件、Engine 服务、模板和 Flow 等不同模块。本页只帮助初次参与开发的人找到入口，不再复制接口或生命周期；实现细节以对应专题页和当前源码为准。
 
-ColorVision 提供丰富的扩展性接口，支持插件开发和功能定制。
+## 按需求选择入口
 
-## 目录
+| 目标 | 先读 | 源码入口 |
+| --- | --- | --- |
+| 开发运行时插件 | [插件开发概览](../plugin-development/overview.md) | `Plugins/` |
+| 新增设备或业务服务 | [Engine 服务开发指南](../engine-development/services.md) | `Engine/ColorVision.Engine/Services/` |
+| 新增算法参数或模板 | [模板系统开发指南](../engine-development/templates.md)、[Engine 模板与 Flow 链路](../../04-api-reference/engine-components/template-flow-chain.md) | `Engine/ColorVision.Engine/Templates/` |
+| 新增或维护 Flow 节点 | [FlowEngineLib 节点扩展](../../04-api-reference/extensions/flow-node.md)、[FlowEngineLib](../../04-api-reference/engine-components/FlowEngineLib.md) | `Engine/FlowEngineLib/`、`Engine/ColorVision.Engine/FlowProcessing/` |
 
-1. [插件开发手册](#插件开发手册)
-2. [接口扩展](#接口扩展)
-3. [自定义组件](#自定义组件)
-4. [第三方集成](#第三方集成)
-
-## 插件开发手册
-
-### IPlugin 接口
-```csharp
-public interface IPlugin
-{
-    string Name { get; }
-    string Version { get; }
-    void Initialize();
-    void Shutdown();
-}
-```
-
-### 插件生命周期
-1. 程序启动时自动发现插件
-2. 调用 Initialize() 方法初始化
-3. 程序关闭时调用 Shutdown() 方法清理资源
-
-## 接口扩展
-
-### 设备服务接口
-- 实现自定义设备驱动
-- 集成第三方设备
-
-### 算法模块接口
-- 添加自定义算法
-- 扩展图像处理功能
-
-## 自定义组件
-
-### UI 组件扩展
-- 自定义视图窗口
-- 扩展状态栏组件
-
-### 流程引擎扩展
-- 自定义流程节点
-- 扩展任务类型
-
-## 第三方集成
-
-### 支持的集成类型
-- 硬件设备驱动
-- 图像处理算法
-- 数据分析工具
-- 通信协议
-
----
-
-*此文档持续更新中...*
+如果还不能确定改动属于哪一层，先看 [Engine 组件总览](../../04-api-reference/engine-components/README.md)。当前已整理成专题的扩展点集中在 [扩展点概览](../../04-api-reference/extensions/README.md)，该页不是所有扩展机制的完整清单。
