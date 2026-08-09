@@ -23,34 +23,48 @@ namespace ProjectARVRPro
     public partial class CycleTimeStatisticsWindow : Window
     {
         private const int RecordPageSize = 1000;
-        private const int SnSuggestionDisplayLimit = 20;
+        private const int FlowPageSize = 1000;
+        private const int SuggestionDisplayLimit = 20;
         private static readonly ILog Log = LogManager.GetLogger(typeof(CycleTimeStatisticsWindow));
         private readonly ViewResultManager _viewResultManager = ViewResultManager.GetInstance();
         private readonly ResultStatisticsDataStore _statisticsStore = ResultStatisticsDataStore.Instance;
         private readonly ObservableCollection<ResultStatisticsRecordRow> _recordRows = [];
+        private readonly ObservableCollection<FlowExecutionRecordRow> _flowRows = [];
         private string[] _snSuggestions = [];
+        private string[] _flowNameSuggestions = [];
         private readonly ObservableCollection<ProjectARVRReuslt> _details = [];
         private readonly Dictionary<int, ObjectiveTestResultRecord> _recordCache = [];
         private CopilotDynamicContextSession? _copilotContextSession;
         private TextBox? _snEditor;
+        private TextBox? _flowNameEditor;
         private int _copilotPublishQueued;
         private int _homeLoadVersion;
         private int _recordLoadVersion;
+        private int _flowLoadVersion;
         private int _snIndexVersion;
+        private int _flowNameIndexVersion;
         private int _detailLoadVersion;
         private int _currentPage = 1;
         private int _totalRecordCount;
+        private int _flowCurrentPage = 1;
+        private int _totalFlowCount;
         private bool _updatingSnSuggestions;
+        private bool _updatingFlowNameSuggestions;
+        private bool _flowTabInitialized;
         private string _homeStatus = string.Empty;
         private string _recordStatus = string.Empty;
         private string _snIndexStatus = string.Empty;
+        private string _flowStatus = string.Empty;
+        private string _flowNameIndexStatus = string.Empty;
 
         public CycleTimeStatisticsWindow()
         {
             InitializeComponent();
             HomeAnchorDatePicker.SelectedDate = DateTime.Today;
             RecordAnchorDatePicker.SelectedDate = DateTime.Today;
+            FlowAnchorDatePicker.SelectedDate = DateTime.Today;
             RecordDataGrid.ItemsSource = _recordRows;
+            FlowDataGrid.ItemsSource = _flowRows;
             DetailList.ItemsSource = _details;
             RecordDataGrid.SelectionChanged += RecordDataGrid_SelectionChanged;
             _recordRows.CollectionChanged += RecordRows_CollectionChanged;
@@ -59,6 +73,7 @@ namespace ProjectARVRPro
             ApplyStatistics(new ResultStatistics());
             UpdateHomePeriodText();
             UpdateRecordPeriodText();
+            UpdateFlowPeriodText();
         }
 
         private ResultStatisticsRecordRow? SelectedRecordRow => RecordDataGrid.SelectedItem as ResultStatisticsRecordRow;
@@ -67,6 +82,16 @@ namespace ProjectARVRPro
         {
             _ = LoadSnSuggestionsAsync();
             await Task.WhenAll(RefreshHomeAsync(), RefreshRecordsAsync(1));
+        }
+
+        private async void StatisticsTabs_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (e.Source != StatisticsTabs || StatisticsTabs.SelectedItem != FlowQueryTab || _flowTabInitialized)
+                return;
+
+            _flowTabInitialized = true;
+            _ = LoadFlowNameSuggestionsAsync();
+            await RefreshFlowsAsync(1);
         }
 
         private async void HomeRefresh_Click(object sender, RoutedEventArgs e)
@@ -79,6 +104,11 @@ namespace ProjectARVRPro
             await RefreshRecordsAsync(1);
         }
 
+        private async void FlowRefresh_Click(object sender, RoutedEventArgs e)
+        {
+            await RefreshFlowsAsync(1);
+        }
+
         private async void Reset_Click(object sender, RoutedEventArgs e)
         {
             RecordPeriodMode.SelectedIndex = 0;
@@ -87,6 +117,16 @@ namespace ProjectARVRPro
             ResultFilter.SelectedIndex = 0;
             UpdateRecordPeriodText();
             await RefreshRecordsAsync(1);
+        }
+
+        private async void FlowReset_Click(object sender, RoutedEventArgs e)
+        {
+            FlowPeriodMode.SelectedIndex = 0;
+            FlowAnchorDatePicker.SelectedDate = DateTime.Today;
+            FlowNameFilter.Text = string.Empty;
+            FlowResultFilter.SelectedIndex = 0;
+            UpdateFlowPeriodText();
+            await RefreshFlowsAsync(1);
         }
 
         private void HomePeriodMode_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -99,6 +139,11 @@ namespace ProjectARVRPro
             UpdateRecordPeriodText();
         }
 
+        private void FlowPeriodMode_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            UpdateFlowPeriodText();
+        }
+
         private void HomeAnchorDatePicker_SelectedDateChanged(object sender, SelectionChangedEventArgs e)
         {
             UpdateHomePeriodText();
@@ -107,6 +152,11 @@ namespace ProjectARVRPro
         private void RecordAnchorDatePicker_SelectedDateChanged(object sender, SelectionChangedEventArgs e)
         {
             UpdateRecordPeriodText();
+        }
+
+        private void FlowAnchorDatePicker_SelectedDateChanged(object sender, SelectionChangedEventArgs e)
+        {
+            UpdateFlowPeriodText();
         }
 
         private async void HomePreviousPeriod_Click(object sender, RoutedEventArgs e)
@@ -131,6 +181,18 @@ namespace ProjectARVRPro
         {
             ShiftPeriod(RecordPeriodMode, RecordAnchorDatePicker, 1);
             await RefreshRecordsAsync(1);
+        }
+
+        private async void FlowPreviousPeriod_Click(object sender, RoutedEventArgs e)
+        {
+            ShiftPeriod(FlowPeriodMode, FlowAnchorDatePicker, -1);
+            await RefreshFlowsAsync(1);
+        }
+
+        private async void FlowNextPeriod_Click(object sender, RoutedEventArgs e)
+        {
+            ShiftPeriod(FlowPeriodMode, FlowAnchorDatePicker, 1);
+            await RefreshFlowsAsync(1);
         }
 
         private static void ShiftPeriod(ComboBox modeSelector, DatePicker anchorPicker, int offset)
@@ -158,6 +220,16 @@ namespace ProjectARVRPro
             ResultStatisticsPeriodMode mode = GetSelectedPeriodMode(RecordPeriodMode);
             ResultStatisticsPeriodRange range = ResultStatisticsPeriod.GetRange(mode, RecordAnchorDatePicker.SelectedDate ?? DateTime.Today);
             RecordPeriodText.Text = $"查询范围：{range.ToDisplayText(mode)}";
+        }
+
+        private void UpdateFlowPeriodText()
+        {
+            if (FlowPeriodText == null || FlowPeriodMode == null || FlowAnchorDatePicker == null)
+                return;
+
+            ResultStatisticsPeriodMode mode = GetSelectedPeriodMode(FlowPeriodMode);
+            ResultStatisticsPeriodRange range = ResultStatisticsPeriod.GetRange(mode, FlowAnchorDatePicker.SelectedDate ?? DateTime.Today);
+            FlowPeriodText.Text = $"查询范围：{range.ToDisplayText(mode)}";
         }
 
         private static ResultStatisticsPeriodMode GetSelectedPeriodMode(ComboBox selector)
@@ -255,6 +327,51 @@ namespace ProjectARVRPro
             }
         }
 
+        private async Task RefreshFlowsAsync(int pageNumber)
+        {
+            FlowExecutionQuery query = CreateFlowQuery(pageNumber);
+            int loadVersion = ++_flowLoadVersion;
+            FlowRefreshButton.IsEnabled = false;
+            _flowStatus = "正在查询流程执行记录...";
+            UpdateStatusText();
+
+            try
+            {
+                Task<int> countTask = Task.Run(() => _statisticsStore.QueryFlowExecutionCount(query));
+                Task<IReadOnlyList<FlowExecutionRecordRow>> recordsTask = Task.Run(() => _statisticsStore.QueryFlowExecutions(query));
+                await Task.WhenAll(countTask, recordsTask);
+
+                if (loadVersion != _flowLoadVersion)
+                    return;
+
+                ReplaceItems(_flowRows, await recordsTask);
+                if (_flowRows.Count > 0)
+                    FlowDataGrid.SelectedIndex = 0;
+                _totalFlowCount = await countTask;
+                _flowCurrentPage = Math.Clamp(pageNumber, 1, Math.Max(1, GetFlowPageCount()));
+                UpdateFlowPagination();
+                _flowStatus = _totalFlowCount > FlowPageSize
+                    ? $"已查询 {_totalFlowCount:N0} 条流程执行记录；第 {_flowCurrentPage:N0}/{GetFlowPageCount():N0} 页，本页 {_flowRows.Count:N0} 条"
+                    : $"已查询 {_totalFlowCount:N0} 条流程执行记录";
+            }
+            catch (Exception ex)
+            {
+                if (loadVersion != _flowLoadVersion)
+                    return;
+
+                _flowStatus = "查询失败";
+                MessageBox.Show(this, $"读取流程执行记录失败：{ex.Message}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                if (loadVersion == _flowLoadVersion)
+                {
+                    FlowRefreshButton.IsEnabled = true;
+                    UpdateStatusText();
+                }
+            }
+        }
+
         private int GetPageCount()
         {
             return Math.Max(1, (int)Math.Ceiling(_totalRecordCount / (double)RecordPageSize));
@@ -269,6 +386,22 @@ namespace ProjectARVRPro
             PreviousPageButton.IsEnabled = _currentPage > 1;
             NextPageButton.IsEnabled = _currentPage < pageCount;
             LastPageButton.IsEnabled = _currentPage < pageCount;
+        }
+
+        private int GetFlowPageCount()
+        {
+            return Math.Max(1, (int)Math.Ceiling(_totalFlowCount / (double)FlowPageSize));
+        }
+
+        private void UpdateFlowPagination()
+        {
+            int pageCount = GetFlowPageCount();
+            FlowPaginationPanel.Visibility = _totalFlowCount > FlowPageSize ? Visibility.Visible : Visibility.Collapsed;
+            FlowPageStatusText.Text = $"第 {_flowCurrentPage:N0} / {pageCount:N0} 页（每页 {FlowPageSize:N0} 条）";
+            FlowFirstPageButton.IsEnabled = _flowCurrentPage > 1;
+            FlowPreviousPageButton.IsEnabled = _flowCurrentPage > 1;
+            FlowNextPageButton.IsEnabled = _flowCurrentPage < pageCount;
+            FlowLastPageButton.IsEnabled = _flowCurrentPage < pageCount;
         }
 
         private async void FirstPage_Click(object sender, RoutedEventArgs e)
@@ -291,6 +424,28 @@ namespace ProjectARVRPro
         private async void LastPage_Click(object sender, RoutedEventArgs e)
         {
             await RefreshRecordsAsync(GetPageCount());
+        }
+
+        private async void FlowFirstPage_Click(object sender, RoutedEventArgs e)
+        {
+            await RefreshFlowsAsync(1);
+        }
+
+        private async void FlowPreviousPage_Click(object sender, RoutedEventArgs e)
+        {
+            if (_flowCurrentPage > 1)
+                await RefreshFlowsAsync(_flowCurrentPage - 1);
+        }
+
+        private async void FlowNextPage_Click(object sender, RoutedEventArgs e)
+        {
+            if (_flowCurrentPage < GetFlowPageCount())
+                await RefreshFlowsAsync(_flowCurrentPage + 1);
+        }
+
+        private async void FlowLastPage_Click(object sender, RoutedEventArgs e)
+        {
+            await RefreshFlowsAsync(GetFlowPageCount());
         }
 
         private ResultStatisticsQuery CreateHomeQuery()
@@ -322,6 +477,28 @@ namespace ProjectARVRPro
             };
         }
 
+        private FlowExecutionQuery CreateFlowQuery(int pageNumber)
+        {
+            ResultStatisticsPeriodMode mode = GetSelectedPeriodMode(FlowPeriodMode);
+            ResultStatisticsPeriodRange range = ResultStatisticsPeriod.GetRange(mode, FlowAnchorDatePicker.SelectedDate ?? DateTime.Today);
+            bool? result = FlowResultFilter.SelectedIndex switch
+            {
+                1 => true,
+                2 => false,
+                _ => null,
+            };
+            string model = FlowNameFilter.Text.Trim();
+            return new FlowExecutionQuery
+            {
+                From = range.From,
+                ToExclusive = range.ToExclusive,
+                Model = string.IsNullOrWhiteSpace(model) ? null : model,
+                Result = result,
+                PageNumber = Math.Max(1, pageNumber),
+                PageSize = FlowPageSize,
+            };
+        }
+
         private async Task LoadSnSuggestionsAsync()
         {
             int version = ++_snIndexVersion;
@@ -335,7 +512,7 @@ namespace ProjectARVRPro
 
                 _snSuggestions = summaries.Select(item => item.SN).ToArray();
                 UpdateSnSuggestions(SnFilter.Text, openDropDown: false);
-                _snIndexStatus = $"可检索 {_snSuggestions.Length:N0} 个 SN，下拉最多显示 {SnSuggestionDisplayLimit} 个匹配项";
+                _snIndexStatus = $"可检索 {_snSuggestions.Length:N0} 个 SN，下拉最多显示 {SuggestionDisplayLimit} 个匹配项";
             }
             catch (Exception ex)
             {
@@ -397,7 +574,7 @@ namespace ProjectARVRPro
             IReadOnlyList<string> matches = ResultStatisticsSuggestionFilter.Filter(
                 _snSuggestions,
                 input,
-                SnSuggestionDisplayLimit);
+                SuggestionDisplayLimit);
 
             _updatingSnSuggestions = true;
             SnFilter.ItemsSource = matches;
@@ -411,6 +588,97 @@ namespace ProjectARVRPro
 
             if (openDropDown && _snEditor?.IsKeyboardFocusWithin == true)
                 SnFilter.IsDropDownOpen = matches.Count > 0;
+        }
+
+        private async Task LoadFlowNameSuggestionsAsync()
+        {
+            int version = ++_flowNameIndexVersion;
+            _flowNameIndexStatus = "正在加载流程名，可先手动输入查询";
+            UpdateStatusText();
+            try
+            {
+                IReadOnlyList<string> names = await Task.Run(_statisticsStore.QueryFlowNames);
+                if (version != _flowNameIndexVersion)
+                    return;
+
+                _flowNameSuggestions = names.ToArray();
+                UpdateFlowNameSuggestions(FlowNameFilter.Text, openDropDown: false);
+                _flowNameIndexStatus = $"可检索 {_flowNameSuggestions.Length:N0} 个流程名，下拉最多显示 {SuggestionDisplayLimit} 个匹配项";
+            }
+            catch (Exception ex)
+            {
+                if (version != _flowNameIndexVersion)
+                    return;
+
+                _flowNameIndexStatus = "流程名列表加载失败，仍可手动输入";
+                Log.Warn("Could not load the ARVRPro flow-name suggestions.", ex);
+            }
+            finally
+            {
+                if (version == _flowNameIndexVersion)
+                    UpdateStatusText();
+            }
+        }
+
+        private void FlowNameFilter_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (_flowNameEditor != null)
+                _flowNameEditor.TextChanged -= FlowNameEditor_TextChanged;
+            FlowNameFilter.ApplyTemplate();
+            _flowNameEditor = FlowNameFilter.Template.FindName("PART_EditableTextBox", FlowNameFilter) as TextBox;
+            if (_flowNameEditor != null)
+                _flowNameEditor.TextChanged += FlowNameEditor_TextChanged;
+            UpdateFlowNameSuggestions(FlowNameFilter.Text, openDropDown: false);
+        }
+
+        private void FlowNameEditor_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (!_updatingFlowNameSuggestions)
+                UpdateFlowNameSuggestions(_flowNameEditor?.Text, openDropDown: true);
+        }
+
+        private void FlowNameFilter_DropDownOpened(object sender, EventArgs e)
+        {
+            if (!_updatingFlowNameSuggestions)
+                UpdateFlowNameSuggestions(_flowNameEditor?.Text ?? FlowNameFilter.Text, openDropDown: false);
+        }
+
+        private void FlowNameFilter_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_updatingFlowNameSuggestions || FlowNameFilter.SelectedItem is not string selected)
+                return;
+
+            _updatingFlowNameSuggestions = true;
+            FlowNameFilter.Text = selected;
+            if (_flowNameEditor != null)
+            {
+                _flowNameEditor.Text = selected;
+                _flowNameEditor.CaretIndex = selected.Length;
+            }
+            FlowNameFilter.IsDropDownOpen = false;
+            _updatingFlowNameSuggestions = false;
+        }
+
+        private void UpdateFlowNameSuggestions(string? text, bool openDropDown)
+        {
+            string input = text ?? string.Empty;
+            IReadOnlyList<string> matches = ResultStatisticsSuggestionFilter.Filter(
+                _flowNameSuggestions,
+                input,
+                SuggestionDisplayLimit);
+
+            _updatingFlowNameSuggestions = true;
+            FlowNameFilter.ItemsSource = matches;
+            FlowNameFilter.Text = input;
+            if (_flowNameEditor != null)
+            {
+                _flowNameEditor.Text = input;
+                _flowNameEditor.CaretIndex = input.Length;
+            }
+            _updatingFlowNameSuggestions = false;
+
+            if (openDropDown && _flowNameEditor?.IsKeyboardFocusWithin == true)
+                FlowNameFilter.IsDropDownOpen = matches.Count > 0;
         }
 
         private void ApplyStatistics(ResultStatistics statistics)
@@ -429,6 +697,7 @@ namespace ProjectARVRPro
         {
             HomeStatusText.Text = _homeStatus;
             QueryStatusText.Text = string.Join("；", new[] { _recordStatus, _snIndexStatus }.Where(item => !string.IsNullOrWhiteSpace(item)));
+            FlowQueryStatusText.Text = string.Join("；", new[] { _flowStatus, _flowNameIndexStatus }.Where(item => !string.IsNullOrWhiteSpace(item)));
         }
 
         private static void ReplaceItems<T>(ObservableCollection<T> target, IEnumerable<T> source)

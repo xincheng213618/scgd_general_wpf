@@ -1,8 +1,7 @@
 ﻿using ColorVision.FileIO;
 using System;
-using System.Collections.Generic;
-using System.Drawing.Imaging;
 using System.Globalization;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -43,15 +42,17 @@ namespace ColorVision.Engine.Media
                 return;
             }
             DataContext = VExportCIE;
-            var imageFormats = new Dictionary<string, ImageFormat>
-            {
-                { "TIFF Image (*.tif;*.tiff)", ImageFormat.Tiff },
-                { "Bitmap Image (*.bmp)", ImageFormat.Bmp },
-                { "PNG Image (*.png)", ImageFormat.Png },
-                { "JPEG Image (*.jpg;*.jpeg)", ImageFormat.Jpeg },
-            };
-            ExportImageFormatComboBox.ItemsSource = imageFormats;
+            if (!VExportCIE.AvailableImageFormats.Values.Any(format => format.Guid == VExportCIE.ExportImageFormat.Guid))
+                VExportCIE.ExportImageFormat = VExportCIE.AvailableImageFormats.First().Value;
+            VExportCIE.PrepareForInteractiveExport();
+            Title = $"{ColorVision.Engine.Properties.Resources.Export} - {VExportCIE.FileKindName}";
         }
+
+        private void Cancel_Click(object sender, RoutedEventArgs e)
+        {
+            Close();
+        }
+
         private void Save_Click(object sender, RoutedEventArgs e)
         {
             System.Windows.Forms.FolderBrowserDialog dialog = new();
@@ -72,6 +73,9 @@ namespace ColorVision.Engine.Media
         private async void Button_Click(object sender, RoutedEventArgs e)
         {
             ExportButton.IsEnabled = false;
+            CancelButton.IsEnabled = false;
+            ExportForm.IsEnabled = false;
+            ExportProgress.Visibility = Visibility.Visible;
             bool succeeded = false;
             try
             {
@@ -99,6 +103,9 @@ namespace ColorVision.Engine.Media
             finally
             {
                 ExportButton.IsEnabled = true;
+                CancelButton.IsEnabled = true;
+                ExportForm.IsEnabled = true;
+                ExportProgress.Visibility = Visibility.Collapsed;
             }
 
             if (succeeded)

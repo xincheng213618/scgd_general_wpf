@@ -16,15 +16,27 @@ namespace ColorVision.Engine.Media
         private static readonly ILog Log = LogManager.GetLogger(typeof(VExportCIE));
 
         public const int DefaultTiffCompression = 5;
-        public const int DefaultPngCompressionLevel = 1;
-        public const int DefaultJpegQuality = 95;
+        public const int ZipTiffCompression = 8;
+        public const int AutomaticPngCompressionLevel = -1;
+        public const int DefaultPngCompressionLevel = AutomaticPngCompressionLevel;
+        public const int DefaultJpegQuality = 100;
+
+        private static readonly IReadOnlyDictionary<string, ImageFormat> CvRawExportImageFormats = new Dictionary<string, ImageFormat>
+        {
+            ["TIFF Image (*.tif;*.tiff)"] = ImageFormat.Tiff,
+            ["PNG Image (*.png)"] = ImageFormat.Png,
+            ["JPEG Image (*.jpg;*.jpeg)"] = ImageFormat.Jpeg,
+        };
+
+        private static readonly IReadOnlyDictionary<string, ImageFormat> CvcieExportImageFormats = new Dictionary<string, ImageFormat>
+        {
+            ["TIFF Image (*.tif;*.tiff)"] = ImageFormat.Tiff,
+        };
 
         public IReadOnlyDictionary<string, int> TiffCompressionOptions { get; } = new Dictionary<string, int>
         {
             ["LZW"] = DefaultTiffCompression,
-            ["Deflate"] = 8,
-            ["PackBits"] = 32773,
-            ["None"] = 1,
+            ["ZIP"] = ZipTiffCompression,
         };
 
         public static void SaveTo(VExportCIE export, Mat src, string fileName)
@@ -50,11 +62,15 @@ namespace ColorVision.Engine.Media
             }
             else if (IsFormat(export.ExportImageFormat, ImageFormat.Png))
             {
-                image.SaveImage(fileName, new ImageEncodingParam(ImwriteFlags.PngCompression, export.PngCompressionLevel));
+                if (export.PngCompressionLevel == AutomaticPngCompressionLevel)
+                    image.SaveImage(fileName);
+                else
+                    image.SaveImage(fileName, new ImageEncodingParam(ImwriteFlags.PngCompression, export.PngCompressionLevel));
             }
             else if (IsFormat(export.ExportImageFormat, ImageFormat.Jpeg))
             {
-                image.SaveImage(fileName, new ImageEncodingParam(ImwriteFlags.JpegQuality, export.JpegQuality));
+                using Mat jpegImage = CreateBmpCompatibleMat(image);
+                jpegImage.SaveImage(fileName, new ImageEncodingParam(ImwriteFlags.JpegQuality, export.JpegQuality));
             }
             else
             {
@@ -173,6 +189,22 @@ namespace ColorVision.Engine.Media
             };
         }
 
+        private static string? ResolveAssociatedSourcePath(string cieFilePath, string? associatedSourcePath)
+        {
+            string directory = Path.GetDirectoryName(Path.GetFullPath(cieFilePath)) ?? string.Empty;
+            if (!string.IsNullOrWhiteSpace(associatedSourcePath))
+            {
+                string candidate = Path.IsPathRooted(associatedSourcePath)
+                    ? associatedSourcePath
+                    : Path.Combine(directory, associatedSourcePath);
+                if (File.Exists(candidate))
+                    return candidate;
+            }
+
+            string fallback = Path.Combine(directory, Path.GetFileNameWithoutExtension(cieFilePath) + ".cvraw");
+            return File.Exists(fallback) ? fallback : null;
+        }
+
         public static int SaveToTif(VExportCIE export)
         {
             try
@@ -264,17 +296,14 @@ namespace ColorVision.Engine.Media
 
                     if (export.IsExportSrc)
                     {
-                        if (cvcie.SrcFileName != null)
+                        string? associatedSourcePath = ResolveAssociatedSourcePath(fileName, cvcie.SrcFileName);
+                        if (associatedSourcePath != null && CVFileUtil.IsCIEFile(associatedSourcePath))
                         {
-                            cvcie.SrcFileName = Path.Combine(Path.GetDirectoryName(fileName) ?? string.Empty, cvcie.SrcFileName);
-                            if (File.Exists(cvcie.SrcFileName) && CVFileUtil.IsCIEFile(cvcie.SrcFileName))
+                            if (CVFileUtil.Read(associatedSourcePath, out CVCIEFile cvraw))
                             {
-                                if (CVFileUtil.Read(cvcie.SrcFileName, out CVCIEFile cvraw))
+                                using (src = CreateMatFromCVCIEFile(cvraw))
                                 {
-                                    using (src = CreateMatFromCVCIEFile(cvraw))
-                                    {
-                                        SaveImage(src, "_Src");
-                                    }
+                                    SaveImage(src, "_Src");
                                 }
                             }
                         }
@@ -357,20 +386,18 @@ namespace ColorVision.Engine.Media
                 IsExportChannelY = true;
                 IsExportChannelZ = true;
 
-                if (CVFileUtil.ReadCIEFileHeader(filePath, out CVCIEFile cVCIEFile) > 0 && !string.IsNullOrEmpty(cVCIEFile.SrcFileName))
+                if (CVFileUtil.ReadCIEFileHeader(filePath, out CVCIEFile cVCIEFile) > 0)
                 {
-                    if (!File.Exists(cVCIEFile.SrcFileName))
-                        cVCIEFile.SrcFileName = Path.Combine(Path.GetDirectoryName(filePath) ?? string.Empty, Path.GetFileNameWithoutExtension(filePath) + ".cvraw");
-                    if (File.Exists(cVCIEFile.SrcFileName))
+                    string? associatedSourcePath = ResolveAssociatedSourcePath(filePath, cVCIEFile.SrcFileName);
+                    if (associatedSourcePath != null)
                     {
-                        IsCanExportSrc = CVFileUtil.ReadCIEFileHeader(cVCIEFile.SrcFileName, out _CVCIEFile) > 0;
-                        IsChannelOne = _CVCIEFile.Channels == 0;
+                        IsCanExportSrc = CVFileUtil.ReadCIEFileHeader(associatedSourcePath, out _) > 0;
                     }
                 }
                 _CVCIEFile = cVCIEFile;
 
             }
-            else if (FileExtType == CVType.Raw)
+            else if (FileExtType is CVType.Raw or CVType.Src)
             {
                 IsCanExportSrc = CVFileUtil.ReadCIEFileHeader(filePath, out _CVCIEFile) > 0;
                 IsChannelOne = CVCIEFile.Channels == 0;
@@ -393,6 +420,21 @@ namespace ColorVision.Engine.Media
             Name = Path.GetFileNameWithoutExtension(FilePath);
         }
 
+        internal void PrepareForInteractiveExport()
+        {
+            if (IsTiff)
+            {
+                if (TiffCompression != DefaultTiffCompression && TiffCompression != ZipTiffCompression)
+                    TiffCompression = DefaultTiffCompression;
+                return;
+            }
+
+            if (IsPng)
+                PngCompressionLevel = AutomaticPngCompressionLevel;
+            else if (IsJpeg)
+                JpegQuality = DefaultJpegQuality;
+        }
+
 
 
         public string CoverFilePath { get; set; }
@@ -401,8 +443,29 @@ namespace ColorVision.Engine.Media
         public int Rows { get => _CVCIEFile.Rows; }
         public int Cols { get => _CVCIEFile.Cols; }
         public int Channels { get => _CVCIEFile.Channels; }
+        public int Bpp { get => _CVCIEFile.Bpp; }
         public float Gain { get => _CVCIEFile.Gain; }
         public float[] Exp { get => _CVCIEFile.Exp; }
+
+        public string FileKindName => FileExtType switch
+        {
+            CVType.Raw => "CVRAW",
+            CVType.Src => "CVSRC",
+            CVType.CIE => "CVCIE",
+            _ => FileExtType.ToString().ToUpperInvariant(),
+        };
+
+        public IReadOnlyDictionary<string, ImageFormat> AvailableImageFormats => IsCVCIE
+            ? CvcieExportImageFormats
+            : CvRawExportImageFormats;
+
+        public bool IsCieThreeChannel => IsCVCIE && Channels >= 3;
+
+        public string ExportFormatHint => IsTiff
+            ? $"TIFF · {Bpp}-bit · LZW / ZIP"
+            : IsPng
+                ? $"PNG · Auto · {(Bpp is 8 or 16 ? $"{Bpp}-bit" : "8-bit")}"
+                : "JPEG · Quality 100 · 8-bit";
 
         public ImageFormat ExportImageFormat
         {
@@ -418,6 +481,7 @@ namespace ColorVision.Engine.Media
                 OnPropertyChanged(nameof(IsPng));
                 OnPropertyChanged(nameof(IsJpeg));
                 OnPropertyChanged(nameof(Compression));
+                OnPropertyChanged(nameof(ExportFormatHint));
             }
         }
         private ImageFormat _ExportImageFormat = ImageFormat.Tiff;
@@ -502,7 +566,7 @@ namespace ColorVision.Engine.Media
             get => _PngCompressionLevel;
             set
             {
-                _PngCompressionLevel = Math.Clamp(value, 0, 9);
+                _PngCompressionLevel = Math.Clamp(value, AutomaticPngCompressionLevel, 9);
                 OnPropertyChanged();
                 OnPropertyChanged(nameof(Compression));
             }

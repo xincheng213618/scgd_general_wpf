@@ -65,6 +65,29 @@ namespace ProjectARVRPro
         public int PageSize { get; init; } = 1000;
     }
 
+    public sealed class FlowExecutionQuery
+    {
+        public DateTime From { get; init; } = DateTime.Today;
+        public DateTime ToExclusive { get; init; } = DateTime.Today.AddDays(1);
+        public string? Model { get; init; }
+        public bool? Result { get; init; }
+        public int PageNumber { get; init; } = 1;
+        public int PageSize { get; init; } = 1000;
+    }
+
+    public sealed class FlowExecutionRecordRow
+    {
+        public int Id { get; set; }
+        public string SN { get; set; } = string.Empty;
+        public string Model { get; set; } = string.Empty;
+        public DateTime CreateTime { get; set; }
+        public long RunTimeMilliseconds { get; set; }
+        public bool Result { get; set; }
+
+        public string RunTimeText => ResultStatisticsCalculator.FormatMilliseconds(RunTimeMilliseconds);
+        public string ResultText => Result ? "PASS" : "FAIL";
+    }
+
     public sealed class ResultStatisticsSample
     {
         public int Id { get; set; }
@@ -514,6 +537,50 @@ namespace ProjectARVRPro
             return query.OrderBy(item => item.Id, OrderByType.Asc).ToList();
         }
 
+        public IReadOnlyList<FlowExecutionRecordRow> QueryFlowExecutions(FlowExecutionQuery query)
+        {
+            ValidateFlowExecutionQuery(query);
+            InitializeSchema();
+
+            using SqlSugarClient db = CreateClient();
+            return ApplyFlowFilters(db.Queryable<ProjectARVRReuslt>(), query)
+                .OrderBy(item => item.Id, OrderByType.Desc)
+                .Select(item => new FlowExecutionRecordRow
+                {
+                    Id = item.Id,
+                    SN = item.SN,
+                    Model = item.Model,
+                    CreateTime = item.CreateTime,
+                    RunTimeMilliseconds = item.RunTime,
+                    Result = item.Result,
+                })
+                .ToPageList(query.PageNumber, query.PageSize);
+        }
+
+        public int QueryFlowExecutionCount(FlowExecutionQuery query)
+        {
+            ValidateFlowExecutionQuery(query);
+            InitializeSchema();
+
+            using SqlSugarClient db = CreateClient();
+            return ApplyFlowFilters(db.Queryable<ProjectARVRReuslt>(), query).Count();
+        }
+
+        public IReadOnlyList<string> QueryFlowNames()
+        {
+            InitializeSchema();
+            using SqlSugarClient db = CreateClient();
+            const string sql = """
+                SELECT DISTINCT TRIM("Model") AS "Model"
+                FROM "ARVRReuslt"
+                WHERE TRIM("Model") <> ''
+                ORDER BY TRIM("Model");
+                """;
+            return db.Ado.SqlQuery<FlowExecutionNameRow>(sql)
+                .Select(item => item.Model)
+                .ToList();
+        }
+
         public IReadOnlyList<ResultStatisticsSnSummary> QuerySnSummaries()
         {
             InitializeSchema();
@@ -590,6 +657,36 @@ namespace ProjectARVRPro
             return queryResult;
         }
 
+        private static ISugarQueryable<ProjectARVRReuslt> ApplyFlowFilters(
+            ISugarQueryable<ProjectARVRReuslt> queryable,
+            FlowExecutionQuery query)
+        {
+            DateTime from = query.From;
+            DateTime toExclusive = query.ToExclusive;
+            ISugarQueryable<ProjectARVRReuslt> queryResult = queryable
+                .Where(item => item.CreateTime >= from && item.CreateTime < toExclusive);
+            string? model = string.IsNullOrWhiteSpace(query.Model) ? null : query.Model.Trim();
+            if (model != null)
+                queryResult = queryResult.Where(item => item.Model.Contains(model));
+            if (query.Result.HasValue)
+            {
+                bool expectedResult = query.Result.Value;
+                queryResult = queryResult.Where(item => item.Result == expectedResult);
+            }
+
+            return queryResult;
+        }
+
+        private static void ValidateFlowExecutionQuery(FlowExecutionQuery query)
+        {
+            ArgumentNullException.ThrowIfNull(query);
+            ResultStatisticsCalculator.ValidateRange(query.From, query.ToExclusive);
+            if (query.PageNumber <= 0)
+                throw new ArgumentOutOfRangeException(nameof(query), query.PageNumber, "页码必须大于零。");
+            if (query.PageSize <= 0)
+                throw new ArgumentOutOfRangeException(nameof(query), query.PageSize, "每页数量必须大于零。");
+        }
+
         private SqlSugarClient CreateClient()
         {
             return new SqlSugarClient(new ConnectionConfig
@@ -608,6 +705,11 @@ namespace ProjectARVRPro
             public int PassCount { get; set; }
             public DateTime FirstTime { get; set; }
             public DateTime LastTime { get; set; }
+        }
+
+        private sealed class FlowExecutionNameRow
+        {
+            public string Model { get; set; } = string.Empty;
         }
     }
 }

@@ -395,6 +395,80 @@ public sealed class ResultStatisticsTests
     }
 
     [Fact]
+    public void DataStoreQueriesFlowExecutionsByPeriodModelResultAndPage()
+    {
+        using var database = new TemporaryResultDatabase();
+        ResultStatisticsDataStore store = new(database.Path);
+        store.InitializeSchema();
+        DateTime start = new(2026, 8, 9, 8, 0, 0);
+        ProjectARVRReuslt first = database.InsertFlow(new ProjectARVRReuslt
+        {
+            SN = "SN-A",
+            Model = "White255_Fast_Test",
+            CreateTime = start,
+            RunTime = 1_250,
+            Result = true,
+        });
+        ProjectARVRReuslt second = database.InsertFlow(new ProjectARVRReuslt
+        {
+            SN = "SN-B",
+            Model = "White255_Fast_Test",
+            CreateTime = start.AddHours(1),
+            RunTime = 2_500,
+            Result = false,
+        });
+        database.InsertFlow(new ProjectARVRReuslt
+        {
+            SN = "SN-C",
+            Model = "Chessboard_Fast_Test",
+            CreateTime = start.AddHours(2),
+            RunTime = 3_000,
+            Result = true,
+        });
+        database.InsertFlow(new ProjectARVRReuslt
+        {
+            SN = "SN-D",
+            Model = "White255_Fast_Test",
+            CreateTime = start.AddDays(1),
+            RunTime = 4_000,
+            Result = true,
+        });
+
+        var firstPageQuery = new FlowExecutionQuery
+        {
+            From = start.Date,
+            ToExclusive = start.Date.AddDays(1),
+            Model = "White255",
+            PageSize = 1,
+        };
+        FlowExecutionRecordRow firstPage = Assert.Single(store.QueryFlowExecutions(firstPageQuery));
+        FlowExecutionRecordRow secondPage = Assert.Single(store.QueryFlowExecutions(new FlowExecutionQuery
+        {
+            From = firstPageQuery.From,
+            ToExclusive = firstPageQuery.ToExclusive,
+            Model = firstPageQuery.Model,
+            PageNumber = 2,
+            PageSize = 1,
+        }));
+        IReadOnlyList<FlowExecutionRecordRow> failed = store.QueryFlowExecutions(new FlowExecutionQuery
+        {
+            From = firstPageQuery.From,
+            ToExclusive = firstPageQuery.ToExclusive,
+            Model = firstPageQuery.Model,
+            Result = false,
+            PageSize = 10,
+        });
+
+        Assert.Equal(2, store.QueryFlowExecutionCount(firstPageQuery));
+        Assert.Equal(second.Id, firstPage.Id);
+        Assert.Equal("2.500 s", firstPage.RunTimeText);
+        Assert.Equal("FAIL", firstPage.ResultText);
+        Assert.Equal(first.Id, secondPage.Id);
+        Assert.Equal(second.Id, Assert.Single(failed).Id);
+        Assert.Equal(["Chessboard_Fast_Test", "White255_Fast_Test"], store.QueryFlowNames());
+    }
+
+    [Fact]
     public void DataStoreBuildsSnSuggestionsFromAllObjectiveRecords()
     {
         using var database = new TemporaryResultDatabase();

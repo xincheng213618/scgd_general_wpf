@@ -1,92 +1,194 @@
-﻿<Window x:Class="ColorVision.Engine.Media.ExportCVCIE"
+<Window x:Class="ColorVision.Engine.Media.ExportCVCIE"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:hc ="https://handyorg.github.io/handycontrol"
+        xmlns:hc="https://handyorg.github.io/handycontrol"
         xmlns:local="clr-namespace:ColorVision.Engine.Media"
-        xmlns:properties ="clr-namespace:ColorVision.Engine.Properties"
+        xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:VExportCIE}"
-        Title="{x:Static properties:Resources.Export}" Background="{StaticResource GlobalBackground}" Height="470" Width="460" Initialized="Window_Initialized">
+        Title="{x:Static properties:Resources.Export}"
+        Background="{DynamicResource GlobalBackground}"
+        Width="560"
+        MaxHeight="720"
+        SizeToContent="Height"
+        ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner"
+        Initialized="Window_Initialized">
     <Window.Resources>
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
             <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
-            <Setter Property="ToolTip" Value="{ Binding Text,RelativeSource={RelativeSource Self}}"/>
         </Style>
     </Window.Resources>
-    <Grid Margin="5">
+
+    <Grid Margin="16">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <StackPanel >
-            <DockPanel  Margin="0,3">
-                <hc:ComboBox  Margin="0,0,0,0" IsEditable="True" Text="{Binding Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" hc:InfoElement.Title="{x:Static properties:Resources.Name}"
-                              hc:InfoElement.Necessary="True"  hc:InfoElement.Symbol="*" 
-                              />
-            </DockPanel>
-            <DockPanel  Margin="0,3">
-                <Button Content="..." Height="30" DockPanel.Dock="Right" VerticalAlignment="Bottom" Margin="2,0,0,0" Click="Save_Click"/>
-                <hc:ComboBox  Margin="0,0,0,0" IsEditable="True" Text="{Binding SavePath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" hc:InfoElement.Title="{x:Static properties:Resources.SelectProjectSaveLocation}"
-                              hc:InfoElement.Necessary="True"  hc:InfoElement.Symbol="*" 
-                              ItemsSource="{Binding RecentImageSaveList}"/>
-            </DockPanel>
-            <DockPanel  Margin="0,3">
-                <hc:ComboBox x:Name="ExportImageFormatComboBox" IsEditable="False" DisplayMemberPath="Key" SelectedValuePath="Value" SelectedValue="{Binding ExportImageFormat, Mode=TwoWay}" hc:InfoElement.Title="{x:Static properties:Resources.Type}"
-                              hc:InfoElement.Necessary="True"  hc:InfoElement.Symbol="*" 
-                              />
-            </DockPanel>
-            <DockPanel Margin="0,3" Visibility="{Binding IsTiff, Converter={StaticResource bool2VisibilityConverter}}">
-                <hc:ComboBox ItemsSource="{Binding TiffCompressionOptions}"
-                             DisplayMemberPath="Key"
-                             SelectedValuePath="Value"
-                             SelectedValue="{Binding TiffCompression, Mode=TwoWay}"
-                             hc:InfoElement.Title="{x:Static properties:Resources.ImageExportTiffCompression}"/>
-            </DockPanel>
-            <DockPanel Margin="0,3" Visibility="{Binding IsPng, Converter={StaticResource bool2VisibilityConverter}}">
-                <hc:NumericUpDown Minimum="0"
-                                  Maximum="9"
-                                  Value="{Binding PngCompressionLevel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                  hc:InfoElement.Title="{x:Static properties:Resources.ImageExportPngCompressionLevel}"/>
-            </DockPanel>
-            <DockPanel Margin="0,3" Visibility="{Binding IsJpeg, Converter={StaticResource bool2VisibilityConverter}}">
-                <hc:NumericUpDown Minimum="0"
-                                  Maximum="100"
-                                  Value="{Binding JpegQuality, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                  hc:InfoElement.Title="{x:Static properties:Resources.ImageExportJpegQuality}"/>
-            </DockPanel>
-            <DockPanel>
-                <TextBlock Width="80"><Run Text="{x:Static properties:Resources.ImageInfo}"/><Run Text="："/></TextBlock>
-                <TextBlock Text="{Binding Rows}"/>
-                <TextBlock Text="x"/>
-                <TextBlock Text="{Binding Cols}"/>
-            </DockPanel>
-            <DockPanel>
-                <TextBlock Width="80"><Run Text="{x:Static properties:Resources.ChannelCount}"/><Run Text="："/></TextBlock>
-                <TextBlock Text="{Binding Channels}"/>
-            </DockPanel>
 
+        <Grid x:Name="ExportForm">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
 
+            <Border Grid.Row="0"
+                    Padding="14,12"
+                    Background="{DynamicResource SecondaryRegionBrush}"
+                    BorderBrush="{DynamicResource BorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="6">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <TextBlock Text="{Binding FilePath}"
+                                   FontWeight="SemiBold"
+                                   ToolTip="{Binding FilePath}"/>
+                        <TextBlock Margin="0,4,0,0"
+                                   Foreground="{DynamicResource SecondaryTextBrush}">
+                            <Run Text="{Binding Cols, Mode=OneWay}"/><Run Text=" × "/><Run Text="{Binding Rows, Mode=OneWay}"/>
+                            <Run Text="   ·   "/><Run Text="{Binding Bpp, Mode=OneWay}"/><Run Text="-bit"/>
+                            <Run Text="   ·   "/><Run Text="{Binding Channels, Mode=OneWay}"/><Run Text=" CH"/>
+                        </TextBlock>
+                    </StackPanel>
+                    <Border Grid.Column="1"
+                            Margin="16,0,0,0"
+                            Padding="12,5"
+                            VerticalAlignment="Center"
+                            Background="{DynamicResource PrimaryBrush}"
+                            CornerRadius="12">
+                        <TextBlock Text="{Binding FileKindName}" Foreground="White" FontWeight="SemiBold"/>
+                    </Border>
+                </Grid>
+            </Border>
 
-            <UniformGrid  Columns="4" Margin="0,10" Visibility="{Binding IsCanExportSrc ,Converter={StaticResource bool2VisibilityConverter}}">
-                <CheckBox Margin="2" Content="{x:Static properties:Resources.OriginalImage}" IsChecked="{Binding IsExportSrc}"/>
-                <CheckBox Margin="2" Content="{x:Static properties:Resources.ChannelR}" IsChecked="{Binding IsExportChannelR}" Visibility="{Binding IsChannelOne ,Converter={StaticResource bool2VisibilityConverter}}"/>
-                <CheckBox Margin="2" Content="{x:Static properties:Resources.ChannelG}" IsChecked="{Binding IsExportChannelG}" Visibility="{Binding IsChannelOne ,Converter={StaticResource bool2VisibilityConverter}}"/>
-                <CheckBox Margin="2" Content="{x:Static properties:Resources.ChannelB}" IsChecked="{Binding IsExportChannelB}" Visibility="{Binding IsChannelOne ,Converter={StaticResource bool2VisibilityConverter}}"/>
-            </UniformGrid>
-            <UniformGrid Columns="4" Visibility="{Binding IsCVCIE ,Converter={StaticResource bool2VisibilityConverter}}">
-                <CheckBox Margin="2" Content="{x:Static properties:Resources.ChannelX}" IsChecked="{Binding IsExportChannelX}"/>
-                <CheckBox Margin="2" Content="{x:Static properties:Resources.ChannelY}" IsChecked="{Binding IsExportChannelY}"/>
-                <CheckBox Margin="2" Content="{x:Static properties:Resources.ChannelZ}" IsChecked="{Binding IsExportChannelZ}"/>
-            </UniformGrid>
+            <GroupBox x:Name="CvcieChannelGroup"
+                      Grid.Row="1"
+                      Margin="0,12,0,0"
+                      Header="CVCIE"
+                      Visibility="{Binding IsCVCIE, Converter={StaticResource bool2VisibilityConverter}}">
+                <StackPanel Margin="10,6,10,10">
+                    <TextBlock Margin="0,0,0,8"
+                               Foreground="{DynamicResource SecondaryTextBrush}"
+                               Text="{x:Static properties:Resources.ChannelParamSettings}"/>
+                    <UniformGrid Columns="4">
+                        <CheckBox Margin="4"
+                                  Content="{x:Static properties:Resources.OriginalImage}"
+                                  IsChecked="{Binding IsExportSrc}"
+                                  Visibility="{Binding IsCanExportSrc, Converter={StaticResource bool2VisibilityConverter}}"/>
+                        <CheckBox Margin="4"
+                                  Content="{x:Static properties:Resources.ChannelX}"
+                                  IsChecked="{Binding IsExportChannelX}"
+                                  Visibility="{Binding IsCieThreeChannel, Converter={StaticResource bool2VisibilityConverter}}"/>
+                        <CheckBox Margin="4"
+                                  Content="{x:Static properties:Resources.ChannelY}"
+                                  IsChecked="{Binding IsExportChannelY}"/>
+                        <CheckBox Margin="4"
+                                  Content="{x:Static properties:Resources.ChannelZ}"
+                                  IsChecked="{Binding IsExportChannelZ}"
+                                  Visibility="{Binding IsCieThreeChannel, Converter={StaticResource bool2VisibilityConverter}}"/>
+                    </UniformGrid>
+                </StackPanel>
+            </GroupBox>
 
+            <GroupBox Grid.Row="2" Margin="0,12,0,0" Header="{x:Static properties:Resources.Configuration}">
+                <Grid Margin="10,8,10,12">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBox Grid.Row="0"
+                             Margin="0,4"
+                             Text="{Binding Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             hc:InfoElement.Title="{x:Static properties:Resources.Name}"
+                             hc:InfoElement.Necessary="True"
+                             hc:InfoElement.Symbol="*"/>
+
+                    <DockPanel Grid.Row="1" Margin="0,4">
+                        <Button DockPanel.Dock="Right"
+                                MinWidth="82"
+                                Margin="8,0,0,0"
+                                Content="{x:Static properties:Resources.SelectWithEllipsis}"
+                                Click="Save_Click"/>
+                        <hc:ComboBox IsEditable="True"
+                                     Text="{Binding SavePath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                     ItemsSource="{Binding RecentImageSaveList}"
+                                     hc:InfoElement.Title="{x:Static properties:Resources.SelectProjectSaveLocation}"
+                                     hc:InfoElement.Necessary="True"
+                                     hc:InfoElement.Symbol="*"/>
+                    </DockPanel>
+
+                    <hc:ComboBox x:Name="ExportImageFormatComboBox"
+                                 Grid.Row="2"
+                                 Margin="0,4"
+                                 IsEditable="False"
+                                 ItemsSource="{Binding AvailableImageFormats}"
+                                 DisplayMemberPath="Key"
+                                 SelectedValuePath="Value"
+                                 SelectedValue="{Binding ExportImageFormat, Mode=TwoWay}"
+                                 hc:InfoElement.Title="{x:Static properties:Resources.Type}"
+                                 hc:InfoElement.Necessary="True"
+                                 hc:InfoElement.Symbol="*"/>
+
+                    <hc:ComboBox x:Name="TiffCompressionComboBox"
+                                 Grid.Row="3"
+                                 Margin="0,4"
+                                 ItemsSource="{Binding TiffCompressionOptions}"
+                                 DisplayMemberPath="Key"
+                                 SelectedValuePath="Value"
+                                 SelectedValue="{Binding TiffCompression, Mode=TwoWay}"
+                                 hc:InfoElement.Title="{x:Static properties:Resources.ImageExportTiffCompression}"
+                                 Visibility="{Binding IsTiff, Converter={StaticResource bool2VisibilityConverter}}"/>
+
+                    <Border Grid.Row="4"
+                            Margin="0,8,0,0"
+                            Padding="10,7"
+                            Background="{DynamicResource SecondaryRegionBrush}"
+                            CornerRadius="4">
+                        <TextBlock Text="{Binding ExportFormatHint}"/>
+                    </Border>
+                </Grid>
+            </GroupBox>
+        </Grid>
+
+        <ProgressBar x:Name="ExportProgress"
+                     Grid.Row="1"
+                     Height="3"
+                     Margin="0,12,0,0"
+                     IsIndeterminate="True"
+                     Visibility="Collapsed"/>
+
+        <StackPanel Grid.Row="2"
+                    Margin="0,14,0,0"
+                    HorizontalAlignment="Right"
+                    Orientation="Horizontal">
+            <Button x:Name="CancelButton"
+                    MinWidth="92"
+                    Margin="0,0,8,0"
+                    Content="{x:Static properties:Resources.Cancel}"
+                    IsCancel="True"
+                    Click="Cancel_Click"/>
+            <Button x:Name="ExportButton"
+                    MinWidth="104"
+                    Content="{x:Static properties:Resources.Export}"
+                    Foreground="White"
+                    Background="{DynamicResource PrimaryBrush}"
+                    IsDefault="True"
+                    Click="Button_Click"/>
         </StackPanel>
-        <Border Grid.Row="2" Height="30">
-            <Button x:Name="ExportButton" Content="{x:Static properties:Resources.Export}" Foreground="White" Background="{StaticResource PrimaryBrush}" Click="Button_Click" />
-        </Border>
     </Grid>
 </Window>

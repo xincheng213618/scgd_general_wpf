@@ -47,7 +47,7 @@
     </Window.Resources>
 
     <Grid Margin="10">
-        <TabControl x:Name="StatisticsTabs">
+        <TabControl x:Name="StatisticsTabs" SelectionChanged="StatisticsTabs_SelectionChanged">
             <TabItem Header="首页">
                 <Grid Margin="4,8,4,4">
                     <Grid.RowDefinitions>
@@ -301,6 +301,112 @@
                                 </ListView.View>
                             </ListView>
                         </GroupBox>
+                    </Grid>
+                </Grid>
+            </TabItem>
+
+            <TabItem x:Name="FlowQueryTab" Header="流程查询">
+                <Grid Margin="4,8,4,4">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <Border Margin="0,0,0,8"
+                            Padding="10,8"
+                            Background="{DynamicResource SecondaryRegionBrush}"
+                            BorderBrush="{DynamicResource BorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="5">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="统计周期" VerticalAlignment="Center" Margin="0,0,6,0" Foreground="{DynamicResource GlobalTextBrush}"/>
+                                    <ComboBox x:Name="FlowPeriodMode"
+                                              Width="82"
+                                              SelectedIndex="0"
+                                              Style="{StaticResource CompactQueryComboBox}"
+                                              SelectionChanged="FlowPeriodMode_SelectionChanged">
+                                        <ComboBoxItem Content="按天"/>
+                                        <ComboBoxItem Content="按周"/>
+                                        <ComboBoxItem Content="按月"/>
+                                    </ComboBox>
+                                    <Button Content="&lt;" Width="42" MinWidth="42" Margin="8,0,6,0" Style="{StaticResource CompactQueryButton}" Click="FlowPreviousPeriod_Click"/>
+                                    <DatePicker x:Name="FlowAnchorDatePicker"
+                                                Width="130"
+                                                Style="{StaticResource CompactQueryDatePicker}"
+                                                SelectedDateChanged="FlowAnchorDatePicker_SelectedDateChanged"/>
+                                    <Button Content="&gt;" Width="42" MinWidth="42" Margin="6,0,0,0" Style="{StaticResource CompactQueryButton}" Click="FlowNextPeriod_Click"/>
+                                    <TextBlock Text="流程名" VerticalAlignment="Center" Margin="12,0,5,0" Foreground="{DynamicResource GlobalTextBrush}"/>
+                                    <ComboBox x:Name="FlowNameFilter"
+                                              Width="230"
+                                              IsEditable="True"
+                                              IsTextSearchEnabled="False"
+                                              StaysOpenOnEdit="True"
+                                              MaxDropDownHeight="260"
+                                              Style="{StaticResource CompactQueryComboBox}"
+                                              Loaded="FlowNameFilter_Loaded"
+                                              DropDownOpened="FlowNameFilter_DropDownOpened"
+                                              SelectionChanged="FlowNameFilter_SelectionChanged"/>
+                                    <TextBlock Text="结果" VerticalAlignment="Center" Margin="12,0,5,0" Foreground="{DynamicResource GlobalTextBrush}"/>
+                                    <ComboBox x:Name="FlowResultFilter" Width="82" SelectedIndex="0" Style="{StaticResource CompactQueryComboBox}">
+                                        <ComboBoxItem Content="全部"/>
+                                        <ComboBoxItem Content="PASS"/>
+                                        <ComboBoxItem Content="FAIL"/>
+                                    </ComboBox>
+                                    <Button x:Name="FlowRefreshButton" Content="查询" Width="64" Margin="10,0,0,0" Style="{StaticResource CompactQueryButton}" Click="FlowRefresh_Click"/>
+                                    <Button Content="重置" Width="64" Margin="6,0,0,0" Style="{StaticResource CompactQueryButton}" Click="FlowReset_Click"/>
+                                </StackPanel>
+                            </ScrollViewer>
+                            <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,7,0,0">
+                                <TextBlock x:Name="FlowPeriodText" Foreground="{DynamicResource GlobalTextBrush}"/>
+                                <TextBlock Text="；" Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.72"/>
+                                <TextBlock x:Name="FlowQueryStatusText" Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.72"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <Grid Grid.Row="1">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <GroupBox Header="流程执行记录" Padding="4">
+                            <DataGrid x:Name="FlowDataGrid"
+                                      AutoGenerateColumns="False"
+                                      IsReadOnly="True"
+                                      CanUserAddRows="False"
+                                      CanUserDeleteRows="False"
+                                      HeadersVisibility="Column"
+                                      SelectionMode="Extended"
+                                      SelectionUnit="FullRow"
+                                      Style="{StaticResource DataGrid.Small}">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="SN" Binding="{Binding SN}" Width="220"/>
+                                    <DataGridTextColumn Header="流程名" Binding="{Binding Model}" Width="*" MinWidth="260"/>
+                                    <DataGridTextColumn Header="执行时间" Binding="{Binding CreateTime, StringFormat=MM/dd HH:mm:ss}" Width="135"/>
+                                    <DataGridTextColumn Header="流程耗时" Binding="{Binding RunTimeText}" Width="100"/>
+                                    <DataGridTextColumn Header="结果" Binding="{Binding ResultText}" Width="70"/>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </GroupBox>
+
+                        <StackPanel x:Name="FlowPaginationPanel"
+                                    Grid.Row="1"
+                                    Orientation="Horizontal"
+                                    HorizontalAlignment="Right"
+                                    Margin="0,8,0,0"
+                                    Visibility="Collapsed">
+                            <Button x:Name="FlowFirstPageButton" Content="首页" Width="54" Margin="0,0,4,0" Style="{StaticResource CompactQueryButton}" Click="FlowFirstPage_Click"/>
+                            <Button x:Name="FlowPreviousPageButton" Content="上一页" Width="62" Margin="0,0,8,0" Style="{StaticResource CompactQueryButton}" Click="FlowPreviousPage_Click"/>
+                            <TextBlock x:Name="FlowPageStatusText" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource GlobalTextBrush}"/>
+                            <Button x:Name="FlowNextPageButton" Content="下一页" Width="62" Margin="0,0,4,0" Style="{StaticResource CompactQueryButton}" Click="FlowNextPage_Click"/>
+                            <Button x:Name="FlowLastPageButton" Content="末页" Width="54" Style="{StaticResource CompactQueryButton}" Click="FlowLastPage_Click"/>
+                        </StackPanel>
                     </Grid>
                 </Grid>
             </TabItem>
