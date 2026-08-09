@@ -176,9 +176,14 @@ namespace ColorVision.Copilot
             {
                 result = await _runner.RunAsync(request, _role, childRun, runCancellation.Token);
                 lease.CompleteCancellationWindow();
-                lease.Commit(Math.Max(result.Budget.ConsumedTokens, result.Usage.EffectiveTotalTokens));
+                var committedTokens = Math.Max(result.Budget.ConsumedTokens, result.Usage.EffectiveTotalTokens);
+                lease.Commit(committedTokens);
                 if (lease.WasCancellationRequested && !cancellationToken.IsCancellationRequested)
-                    return Cancelled(request, childRun);
+                    return Cancelled(
+                        request,
+                        childRun,
+                        committedTokens,
+                        result.Budget.UsedEstimatedUsage);
                 if (childRun.ResumeCheckpoint == null || result.SessionResumed)
                 {
                     coordinator.RecordCompleted(
@@ -195,7 +200,11 @@ namespace ColorVision.Copilot
             {
                 lease.CompleteCancellationWindow();
                 lease.Commit(lease.RequestTokenBudget);
-                return Cancelled(request, childRun);
+                return Cancelled(
+                    request,
+                    childRun,
+                    lease.RequestTokenBudget,
+                    usedEstimatedUsage: true);
             }
             catch
             {
@@ -329,7 +338,9 @@ namespace ColorVision.Copilot
 
         private CopilotToolResult Cancelled(
             CopilotAgentRequest request,
-            CopilotSubagentRunRequest runRequest)
+            CopilotSubagentRunRequest runRequest,
+            long consumedTokens,
+            bool usedEstimatedUsage)
         {
             return new CopilotToolResult
             {
@@ -350,6 +361,8 @@ namespace ColorVision.Copilot
                     RequestTokenBudget = runRequest.RequestTokenBudget,
                     QueueDurationMs = runRequest.QueueDurationMs,
                     StopReason = CopilotAgentStopReason.Cancelled,
+                    ConsumedTokens = Math.Max(0, consumedTokens),
+                    UsedEstimatedUsage = usedEstimatedUsage,
                 },
                 DelegatedAnswer = new CopilotDelegatedAnswer
                 {

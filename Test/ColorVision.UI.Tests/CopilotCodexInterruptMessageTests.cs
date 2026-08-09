@@ -169,12 +169,17 @@ public sealed class CopilotCodexInterruptMessageTests
         Assert.False(result.Success);
         Assert.Equal(CopilotToolFailureKind.Cancelled, result.FailureKind);
         Assert.Equal(CopilotAgentStopReason.Cancelled, result.DelegatedRunUsage?.StopReason);
+        Assert.Equal(
+            result.DelegatedRunUsage?.RequestTokenBudget,
+            result.DelegatedRunUsage?.ConsumedTokens);
+        Assert.True(result.DelegatedRunUsage?.UsedEstimatedUsage);
         Assert.NotEmpty(result.Summary);
         Assert.NotEmpty(result.ErrorMessage);
         Assert.Equal(!interruptMessageEnabled, result.SuppressModelOutput);
         if (interruptMessageEnabled)
         {
             Assert.Contains("stopped by the user", modelOutput, StringComparison.Ordinal);
+            Assert.Contains("\"includes_estimates\":true", modelOutput, StringComparison.Ordinal);
             Assert.Contains(tool.Name, recoveryObservations, StringComparison.Ordinal);
         }
         else
