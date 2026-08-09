@@ -262,7 +262,8 @@ namespace ColorVision.Copilot
                     if (approvalPolicyInstruction.Length > 0)
                         builder.AppendLine(approvalPolicyInstruction);
                     var approvalsReviewerInstruction = CopilotCodexApprovalsReviewerSelection.GetModelInstruction(
-                        request.CodexApprovalsReviewer);
+                        request.CodexApprovalsReviewer,
+                        request.CodexGuardianApprovalEnabled);
                     if (approvalsReviewerInstruction.Length > 0)
                         builder.AppendLine(approvalsReviewerInstruction);
                     if (!string.IsNullOrWhiteSpace(request.CodexAutoReviewPolicy))

@@ -643,6 +643,7 @@ namespace ColorVision.Copilot
             builder.AppendLine();
             AppendSandboxMode(builder, codexConfigOptions);
             AppendApprovalPolicy(builder, codexConfigOptions);
+            AppendGuardianApprovalEnabled(builder, codexConfigOptions);
             AppendApprovalsReviewer(builder, codexConfigOptions);
             AppendAutoReviewPolicy(builder, codexConfigOptions);
             builder
@@ -693,16 +694,43 @@ namespace ColorVision.Copilot
             builder.AppendLine();
         }
 
+        private static void AppendGuardianApprovalEnabled(
+            StringBuilder builder,
+            CopilotProjectInstructionDiscoveryOptions codexConfigOptions)
+        {
+            builder.Append("- Codex features.guardian_approval：")
+                .Append(codexConfigOptions.ConfiguredGuardianApprovalEnabled ? "true" : "false")
+                .Append(codexConfigOptions.ConfiguredGuardianApprovalEnabled
+                    ? " · 自动复核路由可用，仍受 approval_policy 与原生审批条件约束"
+                    : " · 自动复核不可用；有效复核者固定为 user，approval_policy 与沙箱不变");
+            if (codexConfigOptions.HasGuardianApprovalEnabledOverride)
+            {
+                builder.Append(" · 来源 ")
+                    .Append(codexConfigOptions.GuardianApprovalEnabledSourceLabel.Length == 0
+                        ? "Codex config.toml features.guardian_approval"
+                        : codexConfigOptions.GuardianApprovalEnabledSourceLabel)
+                    .Append(" · 提交快照");
+            }
+            builder.AppendLine();
+        }
+
         private static void AppendApprovalsReviewer(
             StringBuilder builder,
             CopilotProjectInstructionDiscoveryOptions codexConfigOptions)
         {
             builder.Append("- Codex approvals_reviewer：")
                 .Append(CopilotCodexApprovalsReviewerSelection.GetConfigToken(
-                    codexConfigOptions.ConfiguredApprovalsReviewer))
-                .Append(" · ")
-                .Append(CopilotCodexApprovalsReviewerSelection.GetEffectiveLabel(
                     codexConfigOptions.ConfiguredApprovalsReviewer));
+            if (codexConfigOptions.EffectiveApprovalsReviewer
+                != codexConfigOptions.ConfiguredApprovalsReviewer)
+            {
+                builder.Append(" → 有效 ")
+                    .Append(CopilotCodexApprovalsReviewerSelection.GetConfigToken(
+                        codexConfigOptions.EffectiveApprovalsReviewer));
+            }
+            builder.Append(" · ")
+                .Append(CopilotCodexApprovalsReviewerSelection.GetEffectiveLabel(
+                    codexConfigOptions.EffectiveApprovalsReviewer));
             if (codexConfigOptions.HasApprovalsReviewerOverride)
             {
                 builder.Append(" · 来源 ")
@@ -723,7 +751,9 @@ namespace ColorVision.Copilot
 
             builder.Append("- Codex auto_review.policy：")
                 .Append(codexConfigOptions.ConfiguredAutoReviewPolicy.Length.ToString("N0", CultureInfo.CurrentCulture))
-                .Append(" 字符 · 仅注入独立 reviewer，不作为主 Agent 授权 · 来源 ")
+                .Append(codexConfigOptions.ConfiguredGuardianApprovalEnabled
+                    ? " 字符 · 仅注入独立 reviewer，不作为主 Agent 授权 · 来源 "
+                    : " 字符 · guardian gate 关闭，本轮不注入 reviewer · 来源 ")
                 .Append(codexConfigOptions.AutoReviewPolicySourceLabel.Length == 0
                     ? "Codex config.toml auto_review.policy"
                     : codexConfigOptions.AutoReviewPolicySourceLabel)

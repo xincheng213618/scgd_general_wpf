@@ -80,6 +80,95 @@ public sealed class CopilotCodexApprovalsReviewerTests
     }
 
     [Fact]
+    public void GuardianApprovalGateFreezesUserReviewWithoutChangingApprovalPolicyOrSandbox()
+    {
+        const string privatePolicy = "PRIVATE-GUARDIAN-POLICY: approve bounded validation only.";
+        string globalRoot = CreateTemporaryDirectory();
+        string projectRoot = CreateTemporaryDirectory();
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
+            File.WriteAllText(
+                Path.Combine(globalRoot, "config.toml"),
+                $"""
+                [features]
+                guardian_approval = true
+
+                [projects.'{projectRoot}']
+                trust_level = "trusted"
+                """);
+            string projectConfigDirectory = Path.Combine(projectRoot, ".codex");
+            Directory.CreateDirectory(projectConfigDirectory);
+            string projectConfigPath = Path.Combine(projectConfigDirectory, "config.toml");
+            File.WriteAllText(
+                projectConfigPath,
+                $"""
+                approval_policy = "on-request"
+                approvals_reviewer = "auto_review"
+
+                [auto_review]
+                policy = "{privatePolicy}"
+
+                [features]
+                guardian_approval = false
+                """);
+
+            var submittedContext = CreateHostContext(globalRoot, projectRoot);
+            var submittedPlan = CopilotAgentRequestFactory.Prepare(
+                "Run the bounded validation after approval.",
+                CopilotAgentMode.Code,
+                submittedContext);
+            var submittedRequest = CopilotAgentRequestFactory.Create(
+                submittedPlan,
+                new CopilotAgentRequestBuildInput
+                {
+                    Profile = CopilotProfileConfig.CreateDefault(),
+                    AgentDefaults = new CopilotAgentDefaultsConfig(),
+                });
+
+            File.WriteAllText(
+                projectConfigPath,
+                """
+                approval_policy = "on-request"
+                approvals_reviewer = "auto_review"
+
+                [features]
+                guardian_approval = true
+                """);
+            var refreshed = CreateHostContext(globalRoot, projectRoot)
+                .ProjectInstructionDiscoveryOptions;
+            var options = submittedContext.ProjectInstructionDiscoveryOptions;
+
+            Assert.False(options.ConfiguredGuardianApprovalEnabled);
+            Assert.True(options.HasGuardianApprovalEnabledOverride);
+            Assert.Equal(
+                CopilotProjectInstructionConfigSources.TrustedProject,
+                options.GuardianApprovalEnabledSource);
+            Assert.Equal(CopilotCodexApprovalsReviewer.AutoReview, options.ConfiguredApprovalsReviewer);
+            Assert.Equal(CopilotCodexApprovalsReviewer.User, options.EffectiveApprovalsReviewer);
+            Assert.Equal(
+                CopilotCodexApprovalPolicyMode.OnRequest,
+                options.ConfiguredApprovalPolicy.Mode);
+            Assert.False(submittedPlan.CodexGuardianApprovalEnabled);
+            Assert.Equal(CopilotCodexApprovalsReviewer.User, submittedPlan.CodexApprovalsReviewer);
+            Assert.Empty(submittedPlan.CodexAutoReviewPolicy);
+            Assert.False(submittedRequest.CodexGuardianApprovalEnabled);
+            Assert.Equal(CopilotCodexApprovalsReviewer.User, submittedRequest.CodexApprovalsReviewer);
+            Assert.Empty(submittedRequest.CodexAutoReviewPolicy);
+            Assert.Equal(options.ConfiguredSandboxMode, submittedPlan.CodexSandboxMode);
+            Assert.Equal(options.ConfiguredApprovalPolicy, submittedPlan.CodexApprovalPolicy);
+            Assert.True(refreshed.ConfiguredGuardianApprovalEnabled);
+            Assert.Equal(CopilotCodexApprovalsReviewer.AutoReview, refreshed.EffectiveApprovalsReviewer);
+            Assert.False(submittedPlan.CodexGuardianApprovalEnabled);
+        }
+        finally
+        {
+            Directory.Delete(globalRoot, recursive: true);
+            Directory.Delete(projectRoot, recursive: true);
+        }
+    }
+
+    [Fact]
     public void UntrustedAndMalformedProjectValuesCannotChangeTheCodexHomeReviewer()
     {
         string globalRoot = CreateTemporaryDirectory();
@@ -92,6 +181,9 @@ public sealed class CopilotCodexApprovalsReviewerTests
                 $"""
                 approvals_reviewer = "user"
 
+                [features]
+                guardian_approval = false
+
                 [projects.'{projectRoot}']
                 trust_level = "untrusted"
                 """);
@@ -99,21 +191,37 @@ public sealed class CopilotCodexApprovalsReviewerTests
             Directory.CreateDirectory(projectConfigDirectory);
             File.WriteAllText(
                 Path.Combine(projectConfigDirectory, "config.toml"),
-                "approvals_reviewer = \"auto_review\"");
+                """
+                approvals_reviewer = "auto_review"
+
+                [features]
+                guardian_approval = true
+                """);
 
             var untrusted = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
 
             Assert.Equal(CopilotCodexApprovalsReviewer.User, untrusted.ConfiguredApprovalsReviewer);
             Assert.Equal(CopilotProjectInstructionConfigSources.CodexHome, untrusted.ApprovalsReviewerSource);
+            Assert.False(untrusted.ConfiguredGuardianApprovalEnabled);
+            Assert.Equal(
+                CopilotProjectInstructionConfigSources.CodexHome,
+                untrusted.GuardianApprovalEnabledSource);
             Assert.Empty(untrusted.AppliedProjectConfigFilePaths);
 
             File.WriteAllText(
                 Path.Combine(globalRoot, "config.toml"),
-                "approvals_reviewer = \"guardian_subagent\"");
+                """
+                approvals_reviewer = "guardian_subagent"
+
+                [features]
+                guardian_approval = "false"
+                """);
             var malformed = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot);
 
             Assert.False(malformed.HasApprovalsReviewerOverride);
             Assert.Equal(CopilotCodexApprovalsReviewer.Unspecified, malformed.ConfiguredApprovalsReviewer);
+            Assert.False(malformed.HasGuardianApprovalEnabledOverride);
+            Assert.True(malformed.ConfiguredGuardianApprovalEnabled);
         }
         finally
         {
@@ -295,8 +403,39 @@ public sealed class CopilotCodexApprovalsReviewerTests
             workspacePath,
             CopilotCodexApprovalsReviewer.AutoReview,
             CopilotCodexApprovalPolicy.CreateScalar(CopilotCodexApprovalPolicyMode.Untrusted));
+        var guardianDisabled = CreateRequest(
+            workspacePath,
+            CopilotCodexApprovalsReviewer.AutoReview,
+            CopilotCodexApprovalPolicy.CreateScalar(CopilotCodexApprovalPolicyMode.OnRequest),
+            guardianApprovalEnabled: false);
+        var legacyReviewer = CreateRequest(
+            workspacePath,
+            CopilotCodexApprovalsReviewer.Unspecified,
+            CopilotCodexApprovalPolicy.CreateScalar(CopilotCodexApprovalPolicyMode.OnRequest));
+        legacyReviewer.AccessContext.PrepareFullAccess(
+            legacyReviewer.ConversationId,
+            workspacePath,
+            legacyReviewer.TaskId,
+            DateTimeOffset.UtcNow.AddMinutes(5));
+        var guardianDisabledLegacyReviewer = CreateRequest(
+            workspacePath,
+            CopilotCodexApprovalsReviewer.Unspecified,
+            CopilotCodexApprovalPolicy.CreateScalar(CopilotCodexApprovalPolicyMode.OnRequest),
+            guardianApprovalEnabled: false);
+        guardianDisabledLegacyReviewer.AccessContext.PrepareFullAccess(
+            guardianDisabledLegacyReviewer.ConversationId,
+            workspacePath,
+            guardianDisabledLegacyReviewer.TaskId,
+            DateTimeOffset.UtcNow.AddMinutes(5));
         Assert.False(CopilotAgentAccessPolicy.CanAutoReview(never, tool, workspacePath));
         Assert.False(CopilotAgentAccessPolicy.CanAutoReview(untrusted, tool, workspacePath));
+        Assert.False(CopilotAgentAccessPolicy.CanAutoReview(guardianDisabled, tool, workspacePath));
+        Assert.False(CopilotCodexApprovalsReviewerSelection.IsExplicitAutoReview(guardianDisabled));
+        Assert.True(CopilotAgentAccessPolicy.CanAutoReview(legacyReviewer, tool, workspacePath));
+        Assert.False(CopilotAgentAccessPolicy.CanAutoReview(
+            guardianDisabledLegacyReviewer,
+            tool,
+            workspacePath));
     }
 
     [Fact]
@@ -511,6 +650,54 @@ public sealed class CopilotCodexApprovalsReviewerTests
                 CopilotCodexApprovalsReviewer.AutoReview,
                 CopilotCodexApprovalPolicy.CreateScalar(CopilotCodexApprovalPolicyMode.OnRequest),
                 "PRIVATE\0POLICY"));
+        var guardianDisabledOptions = options with
+        {
+            ConfiguredGuardianApprovalEnabled = false,
+            HasGuardianApprovalEnabledOverride = true,
+            GuardianApprovalEnabledSource = CopilotProjectInstructionConfigSources.CodexHome,
+        };
+        string guardianDisabledProjectReport = CopilotProjectInstructionDiagnostics.Format(
+            new CopilotProjectInstructionSnapshot(
+                string.Empty,
+                string.Empty,
+                string.Empty,
+                guardianDisabledOptions,
+                Array.Empty<CopilotProjectInstructionDocument>()),
+            hasActiveAgentRun: false);
+        string guardianDisabledContextReport = CopilotContextDiagnostics.Format(
+            new CopilotContextDiagnosticSnapshot
+            {
+                ProfileLabel = "Profile",
+                Mode = CopilotAgentMode.Code,
+                CodexApprovalsReviewer = CopilotCodexApprovalsReviewer.AutoReview,
+                HasCodexApprovalsReviewerOverride = true,
+                CodexApprovalsReviewerSourceLabel = options.ApprovalsReviewerSourceLabel,
+                CodexGuardianApprovalEnabled = false,
+                HasCodexGuardianApprovalEnabledOverride = true,
+                CodexGuardianApprovalEnabledSourceLabel = guardianDisabledOptions.GuardianApprovalEnabledSourceLabel,
+                CodexAutoReviewPolicyCharacters = privatePolicy.Length,
+                HasCodexAutoReviewPolicyOverride = true,
+                CodexAutoReviewPolicySourceLabel = options.AutoReviewPolicySourceLabel,
+            });
+        string guardianDisabledEffectiveReport = CopilotEffectiveConfigDiagnostics.Format(
+            new CopilotEffectiveConfigDiagnosticContext
+            {
+                Config = new CopilotConfig(),
+                State = new CopilotChatState(),
+                ComposerMode = CopilotAgentMode.Code,
+                CodexConfigOptions = guardianDisabledOptions,
+            });
+        var guardianDisabledRequest = CreateRequest(
+            Path.GetFullPath(Path.GetTempPath()),
+            CopilotCodexApprovalsReviewer.AutoReview,
+            CopilotCodexApprovalPolicy.CreateScalar(CopilotCodexApprovalPolicyMode.OnRequest),
+            guardianApprovalEnabled: false);
+        string guardianDisabledHarness = CopilotMicrosoftAgentFrameworkRuntime.BuildHarnessInstructions(
+            guardianDisabledRequest,
+            [new CopilotShellCommandTool()],
+            new CopilotAgentEnvironmentContext(),
+            taskLedgerEnabled: false,
+            agentModeEnabled: true);
 
         Assert.Contains("Codex approvals_reviewer：auto_review", projectReport, StringComparison.Ordinal);
         Assert.Contains("审批复核者：auto_review", contextReport, StringComparison.Ordinal);
@@ -530,6 +717,18 @@ public sealed class CopilotCodexApprovalsReviewerTests
         Assert.Contains("Approve LOW or MEDIUM risk", defaultReviewerPrompt, StringComparison.Ordinal);
         Assert.Contains("Approve LOW or MEDIUM risk", invalidReviewerPrompt, StringComparison.Ordinal);
         Assert.DoesNotContain("PRIVATE\0POLICY", invalidReviewerPrompt, StringComparison.Ordinal);
+        Assert.Contains("Codex features.guardian_approval：false", guardianDisabledProjectReport, StringComparison.Ordinal);
+        Assert.Contains("auto_review → 有效 user", guardianDisabledProjectReport, StringComparison.Ordinal);
+        Assert.Contains("features.guardian_approval=false", guardianDisabledContextReport, StringComparison.Ordinal);
+        Assert.Contains("有效 user", guardianDisabledContextReport, StringComparison.Ordinal);
+        Assert.Contains("Codex features.guardian_approval：false", guardianDisabledEffectiveReport, StringComparison.Ordinal);
+        Assert.Contains("auto_review → 有效 user", guardianDisabledEffectiveReport, StringComparison.Ordinal);
+        Assert.Contains("features.guardian_approval=false is frozen", guardianDisabledHarness, StringComparison.Ordinal);
+        Assert.DoesNotContain("approvals_reviewer=auto_review is frozen", guardianDisabledHarness, StringComparison.Ordinal);
+        Assert.DoesNotContain(privatePolicy, guardianDisabledProjectReport, StringComparison.Ordinal);
+        Assert.DoesNotContain(privatePolicy, guardianDisabledContextReport, StringComparison.Ordinal);
+        Assert.DoesNotContain(privatePolicy, guardianDisabledEffectiveReport, StringComparison.Ordinal);
+        Assert.DoesNotContain(privatePolicy, guardianDisabledHarness, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -607,7 +806,8 @@ public sealed class CopilotCodexApprovalsReviewerTests
         string workspacePath,
         CopilotCodexApprovalsReviewer reviewer,
         CopilotCodexApprovalPolicy approvalPolicy,
-        string autoReviewPolicy = "") => new()
+        string autoReviewPolicy = "",
+        bool guardianApprovalEnabled = true) => new()
     {
         ConversationId = "approvals-reviewer-conversation",
         TaskId = "approvals-reviewer-task",
@@ -618,6 +818,7 @@ public sealed class CopilotCodexApprovalsReviewerTests
         Mode = CopilotAgentMode.Code,
         CodexApprovalPolicy = approvalPolicy,
         CodexApprovalsReviewer = reviewer,
+        CodexGuardianApprovalEnabled = guardianApprovalEnabled,
         CodexAutoReviewPolicy = autoReviewPolicy,
         SearchRootPaths = [workspacePath],
         WritableLocalRootPaths = [workspacePath],

@@ -333,6 +333,18 @@ namespace ColorVision.Copilot
         public CopilotProjectInstructionConfigSources ApprovalsReviewerSource { get; init; } =
             CopilotProjectInstructionConfigSources.None;
 
+        public bool ConfiguredGuardianApprovalEnabled { get; init; } = true;
+
+        public bool HasGuardianApprovalEnabledOverride { get; init; }
+
+        public CopilotProjectInstructionConfigSources GuardianApprovalEnabledSource { get; init; } =
+            CopilotProjectInstructionConfigSources.None;
+
+        internal CopilotCodexApprovalsReviewer EffectiveApprovalsReviewer =>
+            ConfiguredGuardianApprovalEnabled
+                ? ConfiguredApprovalsReviewer
+                : CopilotCodexApprovalsReviewer.User;
+
         public string ConfiguredAutoReviewPolicy { get; init; } = string.Empty;
 
         public bool HasAutoReviewPolicyOverride { get; init; }
@@ -690,6 +702,7 @@ namespace ColorVision.Copilot
             || HasSandboxModeOverride
             || HasApprovalPolicyOverride
             || HasApprovalsReviewerOverride
+            || HasGuardianApprovalEnabledOverride
             || HasAutoReviewPolicyOverride
             || HasModelOverride
             || HasReviewModelOverride
@@ -807,6 +820,13 @@ namespace ColorVision.Copilot
         {
             CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml approvals_reviewer",
             CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml approvals_reviewer",
+            _ => string.Empty,
+        };
+
+        public string GuardianApprovalEnabledSourceLabel => GuardianApprovalEnabledSource switch
+        {
+            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml features.guardian_approval",
+            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml features.guardian_approval",
             _ => string.Empty,
         };
 
@@ -1133,6 +1153,8 @@ namespace ColorVision.Copilot
         private const string SandboxModeKey = "sandbox_mode";
         private const string ApprovalPolicyKey = "approval_policy";
         private const string ApprovalsReviewerKey = "approvals_reviewer";
+        private const string GuardianApprovalEnabledKey = "features.guardian_approval";
+        private const string GuardianApprovalEnabledFeatureKey = "guardian_approval";
         private const string AutoReviewPolicyKey = "auto_review.policy";
         private const string AutoReviewPolicyTableKey = "policy";
         private const string ModelKey = "model";
@@ -1395,6 +1417,14 @@ namespace ColorVision.Copilot
                 ApprovalsReviewerSource = layer.HasApprovalsReviewerOverride
                     ? source
                     : current.ApprovalsReviewerSource,
+                ConfiguredGuardianApprovalEnabled = layer.HasGuardianApprovalEnabledOverride
+                    ? layer.GuardianApprovalEnabled
+                    : current.ConfiguredGuardianApprovalEnabled,
+                HasGuardianApprovalEnabledOverride = current.HasGuardianApprovalEnabledOverride
+                    || layer.HasGuardianApprovalEnabledOverride,
+                GuardianApprovalEnabledSource = layer.HasGuardianApprovalEnabledOverride
+                    ? source
+                    : current.GuardianApprovalEnabledSource,
                 ConfiguredAutoReviewPolicy = layer.HasAutoReviewPolicyOverride
                     ? layer.AutoReviewPolicy
                     : current.ConfiguredAutoReviewPolicy,
@@ -1720,6 +1750,7 @@ namespace ColorVision.Copilot
                 || layer.HasSandboxModeOverride
                 || layer.HasApprovalPolicyOverride
                 || layer.HasApprovalsReviewerOverride
+                || layer.HasGuardianApprovalEnabledOverride
                 || layer.HasAutoReviewPolicyOverride
                 || layer.HasModelOverride
                 || layer.HasReviewModelOverride
@@ -2022,6 +2053,7 @@ namespace ColorVision.Copilot
             var sandboxMode = CopilotCodexSandboxMode.Unspecified;
             var approvalPolicy = CopilotCodexApprovalPolicy.Unspecified;
             var approvalsReviewer = CopilotCodexApprovalsReviewer.Unspecified;
+            var guardianApprovalEnabled = true;
             var autoReviewPolicy = string.Empty;
             var model = string.Empty;
             var reviewModel = string.Empty;
@@ -2075,6 +2107,7 @@ namespace ColorVision.Copilot
             var hasSandboxModeOverride = false;
             var hasApprovalPolicyOverride = false;
             var hasApprovalsReviewerOverride = false;
+            var hasGuardianApprovalEnabledOverride = false;
             var hasAutoReviewPolicyOverride = false;
             var hasModelOverride = false;
             var hasReviewModelOverride = false;
@@ -2253,6 +2286,18 @@ namespace ColorVision.Copilot
                         continue;
                     }
                     hasApprovalsReviewerOverride = true;
+                    continue;
+                }
+
+                if (string.Equals(assignment.Key, GuardianApprovalEnabledKey, StringComparison.Ordinal))
+                {
+                    if (!TryParseTomlBoolean(
+                        assignment.Value,
+                        out guardianApprovalEnabled))
+                    {
+                        continue;
+                    }
+                    hasGuardianApprovalEnabledOverride = true;
                     continue;
                 }
 
@@ -2802,6 +2847,8 @@ namespace ColorVision.Copilot
                 HasApprovalPolicyOverride = hasApprovalPolicyOverride,
                 ApprovalsReviewer = approvalsReviewer,
                 HasApprovalsReviewerOverride = hasApprovalsReviewerOverride,
+                GuardianApprovalEnabled = guardianApprovalEnabled,
+                HasGuardianApprovalEnabledOverride = hasGuardianApprovalEnabledOverride,
                 AutoReviewPolicy = autoReviewPolicy,
                 HasAutoReviewPolicyOverride = hasAutoReviewPolicyOverride,
                 Model = model,
@@ -2880,6 +2927,7 @@ namespace ColorVision.Copilot
                 || hasSandboxModeOverride
                 || hasApprovalPolicyOverride
                 || hasApprovalsReviewerOverride
+                || hasGuardianApprovalEnabledOverride
                 || hasAutoReviewPolicyOverride
                 || hasModelOverride
                 || hasReviewModelOverride
@@ -3077,6 +3125,7 @@ namespace ColorVision.Copilot
                         PreventIdleSleepFeatureKey => PreventIdleSleepKey,
                         ShellToolEnabledFeatureKey => ShellToolEnabledKey,
                         HooksEnabledFeatureKey => HooksEnabledKey,
+                        GuardianApprovalEnabledFeatureKey => GuardianApprovalEnabledKey,
                         PersonalityEnabledFeatureKey => PersonalityEnabledKey,
                         FastModeEnabledFeatureKey => FastModeEnabledKey,
                         MultiAgentEnabledFeatureKey => MultiAgentEnabledKey,
@@ -3126,6 +3175,7 @@ namespace ColorVision.Copilot
                     && !string.Equals(key, SandboxModeKey, StringComparison.Ordinal)
                     && !string.Equals(key, ApprovalPolicyKey, StringComparison.Ordinal)
                     && !string.Equals(key, ApprovalsReviewerKey, StringComparison.Ordinal)
+                    && !string.Equals(key, GuardianApprovalEnabledKey, StringComparison.Ordinal)
                     && !string.Equals(key, AutoReviewPolicyKey, StringComparison.Ordinal)
                     && !string.Equals(key, ModelKey, StringComparison.Ordinal)
                     && !string.Equals(key, ReviewModelKey, StringComparison.Ordinal)
@@ -4036,6 +4086,10 @@ namespace ColorVision.Copilot
                 CopilotCodexApprovalsReviewer.Unspecified;
 
             public bool HasApprovalsReviewerOverride { get; init; }
+
+            public bool GuardianApprovalEnabled { get; init; } = true;
+
+            public bool HasGuardianApprovalEnabledOverride { get; init; }
 
             public string AutoReviewPolicy { get; init; } = string.Empty;
 

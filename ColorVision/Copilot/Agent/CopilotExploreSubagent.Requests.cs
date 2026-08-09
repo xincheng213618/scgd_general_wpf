@@ -170,6 +170,7 @@ namespace ColorVision.Copilot
                 CodexIncludeSkillInstructions = explorationRequest.CodexIncludeSkillInstructions,
                 CodexApprovalPolicy = explorationRequest.CodexApprovalPolicy,
                 CodexApprovalsReviewer = explorationRequest.CodexApprovalsReviewer,
+                CodexGuardianApprovalEnabled = explorationRequest.CodexGuardianApprovalEnabled,
                 CodexAutoReviewPolicy = explorationRequest.CodexAutoReviewPolicy,
                 CodexAgentsEnabled = explorationRequest.CodexAgentsEnabled,
                 CodexInterruptMessageEnabled = explorationRequest.CodexInterruptMessageEnabled,

@@ -306,6 +306,8 @@ namespace ColorVision.Copilot
                 return false;
             }
 
+            if (!request.CodexGuardianApprovalEnabled)
+                return false;
             if (request.CodexApprovalsReviewer == CopilotCodexApprovalsReviewer.User)
                 return false;
             if (request.CodexApprovalsReviewer == CopilotCodexApprovalsReviewer.AutoReview)

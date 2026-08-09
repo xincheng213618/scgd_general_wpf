@@ -42,16 +42,27 @@ namespace ColorVision.Copilot
         public static bool IsExplicitAutoReview(CopilotAgentRequest request)
         {
             ArgumentNullException.ThrowIfNull(request);
-            return request.CodexApprovalsReviewer == CopilotCodexApprovalsReviewer.AutoReview;
+            return request.CodexGuardianApprovalEnabled
+                && request.CodexApprovalsReviewer == CopilotCodexApprovalsReviewer.AutoReview;
         }
 
-        public static string GetModelInstruction(CopilotCodexApprovalsReviewer reviewer) => reviewer switch
+        public static string GetModelInstruction(
+            CopilotCodexApprovalsReviewer reviewer,
+            bool guardianApprovalEnabled = true)
         {
-            CopilotCodexApprovalsReviewer.User =>
-                "Codex approvals_reviewer=user is frozen for this submitted turn. Eligible native approval prompts are reviewed by the ColorVision user; never claim that an automatic reviewer approved them.",
-            CopilotCodexApprovalsReviewer.AutoReview =>
-                "Codex approvals_reviewer=auto_review is frozen for this submitted turn. Eligible native approval prompts are routed to an independent reviewer instead of the user. A denial is not authorization to retry indirectly: use a materially safer path or explain that user direction is required.",
-            _ => string.Empty,
-        };
+            if (!guardianApprovalEnabled)
+            {
+                return "Codex features.guardian_approval=false is frozen for this submitted turn. Automatic approval review is unavailable; eligible native approval prompts must be reviewed by the ColorVision user. This does not change approval_policy, sandbox, or tool permissions.";
+            }
+
+            return reviewer switch
+            {
+                CopilotCodexApprovalsReviewer.User =>
+                    "Codex approvals_reviewer=user is frozen for this submitted turn. Eligible native approval prompts are reviewed by the ColorVision user; never claim that an automatic reviewer approved them.",
+                CopilotCodexApprovalsReviewer.AutoReview =>
+                    "Codex approvals_reviewer=auto_review is frozen for this submitted turn. Eligible native approval prompts are routed to an independent reviewer instead of the user. A denial is not authorization to retry indirectly: use a materially safer path or explain that user direction is required.",
+                _ => string.Empty,
+            };
+        }
     }
 }

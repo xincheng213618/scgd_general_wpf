@@ -260,6 +260,8 @@ namespace ColorVision.Copilot
         internal CopilotCodexApprovalsReviewer CodexApprovalsReviewer { get; init; } =
             CopilotCodexApprovalsReviewer.Unspecified;
 
+        internal bool CodexGuardianApprovalEnabled { get; init; } = true;
+
         internal string CodexAutoReviewPolicy { get; init; } = string.Empty;
 
         internal bool CodexAgentsEnabled { get; init; } = true;
@@ -373,8 +375,12 @@ namespace ColorVision.Copilot
             var trustedProjectRootPaths = BuildTrustedProjectRootPaths(hostContext);
             var codexSandboxMode = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredSandboxMode;
             var codexApprovalPolicy = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredApprovalPolicy;
-            var codexApprovalsReviewer = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredApprovalsReviewer;
-            var codexAutoReviewPolicy = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredAutoReviewPolicy;
+            var codexGuardianApprovalEnabled = hostContext.ProjectInstructionDiscoveryOptions
+                .ConfiguredGuardianApprovalEnabled;
+            var codexApprovalsReviewer = hostContext.ProjectInstructionDiscoveryOptions.EffectiveApprovalsReviewer;
+            var codexAutoReviewPolicy = codexGuardianApprovalEnabled
+                ? hostContext.ProjectInstructionDiscoveryOptions.ConfiguredAutoReviewPolicy
+                : string.Empty;
             var codexReadOnly = CopilotCodexSandboxModeSelection.IsReadOnly(codexSandboxMode);
             var workspaceWritableLocalRootPaths = codexReadOnly
                 ? Array.Empty<string>()
@@ -393,6 +399,7 @@ namespace ColorVision.Copilot
                 CodexSandboxMode = codexSandboxMode,
                 CodexApprovalPolicy = codexApprovalPolicy,
                 CodexApprovalsReviewer = codexApprovalsReviewer,
+                CodexGuardianApprovalEnabled = codexGuardianApprovalEnabled,
                 CodexAutoReviewPolicy = codexAutoReviewPolicy,
                 ReadableLocalFilePaths = explicitLocalFilePaths,
                 ReadableLocalDirectoryPaths = readableLocalDirectoryPaths,
@@ -453,6 +460,7 @@ namespace ColorVision.Copilot
                 CodexGoalsEnabled = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredGoalsEnabled,
                 CodexApprovalPolicy = codexApprovalPolicy,
                 CodexApprovalsReviewer = codexApprovalsReviewer,
+                CodexGuardianApprovalEnabled = codexGuardianApprovalEnabled,
                 CodexAutoReviewPolicy = codexAutoReviewPolicy,
                 CodexAgentsEnabled = hostContext.ProjectInstructionDiscoveryOptions.EffectiveAgentsEnabled,
                 CodexInterruptMessageEnabled = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredInterruptMessageEnabled,
@@ -555,6 +563,7 @@ namespace ColorVision.Copilot
                 CodexIncludeSkillInstructions = plan.CodexIncludeSkillInstructions,
                 CodexApprovalPolicy = plan.CodexApprovalPolicy,
                 CodexApprovalsReviewer = plan.CodexApprovalsReviewer,
+                CodexGuardianApprovalEnabled = plan.CodexGuardianApprovalEnabled,
                 CodexAutoReviewPolicy = plan.CodexAutoReviewPolicy,
                 CodexAgentsEnabled = plan.CodexAgentsEnabled,
                 CodexInterruptMessageEnabled = plan.CodexInterruptMessageEnabled,

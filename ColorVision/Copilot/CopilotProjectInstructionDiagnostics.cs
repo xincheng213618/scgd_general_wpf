@@ -236,9 +236,32 @@ namespace ColorVision.Copilot
             }
             builder.AppendLine(CopilotCodexApprovalPolicySelection.GetEffectiveLabel(
                 effective.ConfiguredApprovalPolicy));
+            builder.Append("Codex features.guardian_approval：")
+                .Append(effective.ConfiguredGuardianApprovalEnabled ? "true" : "false");
+            if (effective.HasGuardianApprovalEnabledOverride)
+            {
+                builder.Append(" · 来源 ")
+                    .Append(effective.GuardianApprovalEnabledSourceLabel.Length == 0
+                        ? "Codex config.toml features.guardian_approval"
+                        : effective.GuardianApprovalEnabledSourceLabel)
+                    .Append(" 请求快照；");
+            }
+            else
+            {
+                builder.Append(" · 默认 true；");
+            }
+            builder.AppendLine(effective.ConfiguredGuardianApprovalEnabled
+                ? "自动复核路由可用，仍受 approval_policy 与原生审批条件约束"
+                : "自动复核不可用；有效复核者固定为 user，approval_policy 与沙箱不变");
             builder.Append("Codex approvals_reviewer：")
                 .Append(CopilotCodexApprovalsReviewerSelection.GetConfigToken(
                     effective.ConfiguredApprovalsReviewer));
+            if (effective.EffectiveApprovalsReviewer != effective.ConfiguredApprovalsReviewer)
+            {
+                builder.Append(" → 有效 ")
+                    .Append(CopilotCodexApprovalsReviewerSelection.GetConfigToken(
+                        effective.EffectiveApprovalsReviewer));
+            }
             if (effective.HasApprovalsReviewerOverride)
             {
                 builder.Append(" · 来源 ")
@@ -252,7 +275,7 @@ namespace ColorVision.Copilot
                 builder.Append(" · 未配置；");
             }
             builder.AppendLine(CopilotCodexApprovalsReviewerSelection.GetEffectiveLabel(
-                effective.ConfiguredApprovalsReviewer));
+                effective.EffectiveApprovalsReviewer));
             if (effective.HasAutoReviewPolicyOverride)
             {
                 builder.Append("Codex auto_review.policy：")
@@ -261,7 +284,9 @@ namespace ColorVision.Copilot
                     .Append(effective.AutoReviewPolicySourceLabel.Length == 0
                         ? "Codex config.toml auto_review.policy"
                         : effective.AutoReviewPolicySourceLabel)
-                    .AppendLine(" 请求快照；仅注入独立 reviewer，不作为主 Agent 授权");
+                    .AppendLine(effective.ConfiguredGuardianApprovalEnabled
+                        ? " 请求快照；仅注入独立 reviewer，不作为主 Agent 授权"
+                        : " 配置快照；guardian gate 关闭，本轮不注入 reviewer，也不作为主 Agent 授权");
             }
             if (effective.HasModelOverride)
             {

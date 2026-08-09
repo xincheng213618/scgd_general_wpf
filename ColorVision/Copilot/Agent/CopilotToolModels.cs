@@ -102,6 +102,8 @@ namespace ColorVision.Copilot
         internal CopilotCodexApprovalsReviewer CodexApprovalsReviewer { get; init; } =
             CopilotCodexApprovalsReviewer.Unspecified;
 
+        internal bool CodexGuardianApprovalEnabled { get; init; } = true;
+
         internal string CodexAutoReviewPolicy { get; init; } = string.Empty;
 
         internal bool CodexAgentsEnabled { get; init; } = true;
