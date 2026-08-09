@@ -110,6 +110,8 @@ namespace ColorVision.Copilot
             {
                 return;
             }
+            var runtimeConfigSnapshot = CaptureTurnRuntimeConfigSnapshot();
+            var agentDefaultsSnapshot = runtimeConfigSnapshot.CreateAgentDefaultsSnapshot();
             var requestProfile = CreateConversationRequestProfile(
                 selectedProfile,
                 conversation,
@@ -119,7 +121,8 @@ namespace ColorVision.Copilot
                 modelPrompt,
                 requestMode,
                 requestProfile,
-                turnSnapshot.ProjectInstructionDiscoveryOptions))
+                turnSnapshot.ProjectInstructionDiscoveryOptions,
+                agentDefaultsSnapshot))
             {
                 return;
             }
@@ -127,7 +130,8 @@ namespace ColorVision.Copilot
                 conversation,
                 requestProfile,
                 modelPrompt,
-                turnSnapshot.ProjectInstructionDiscoveryOptions);
+                turnSnapshot.ProjectInstructionDiscoveryOptions,
+                agentDefaultsSnapshot);
             if (automaticCompaction == CopilotAutomaticCompactionOutcome.Failed)
                 return;
             if (automaticCompaction == CopilotAutomaticCompactionOutcome.Applied)
@@ -187,7 +191,14 @@ namespace ColorVision.Copilot
             if (!_taskHost.TrySchedule(
                 conversation.Id,
                 userMessage.RequestMode,
-                run => ExecuteHostedTurnAsync(run, conversation, requestProfile, userMessage, assistantMessage, turnSnapshot),
+                run => ExecuteHostedTurnAsync(
+                    run,
+                    conversation,
+                    requestProfile,
+                    userMessage,
+                    assistantMessage,
+                    turnSnapshot,
+                    runtimeConfigSnapshot),
                 out var hostedRun,
                 out var admission)
                 || hostedRun == null)
@@ -259,7 +270,8 @@ namespace ColorVision.Copilot
             CopilotProfileConfig requestProfile,
             CopilotChatMessage userMessage,
             CopilotChatMessage assistantMessage,
-            CopilotAgentHostContextSnapshot turnSnapshot) =>
+            CopilotAgentHostContextSnapshot turnSnapshot,
+            CopilotTurnRuntimeConfigSnapshot runtimeConfigSnapshot) =>
             ExecuteHostedPreparedTurnAsync(
                 hostedRun,
                 conversation,
@@ -267,6 +279,7 @@ namespace ColorVision.Copilot
                 userMessage,
                 assistantMessage,
                 turnSnapshot,
+                runtimeConfigSnapshot,
                 refreshExternalContext: true,
                 isAutomaticGoalContinuation: false);
 
@@ -277,6 +290,7 @@ namespace ColorVision.Copilot
             CopilotChatMessage userMessage,
             CopilotChatMessage assistantMessage,
             CopilotAgentHostContextSnapshot turnSnapshot,
+            CopilotTurnRuntimeConfigSnapshot runtimeConfigSnapshot,
             bool refreshExternalContext,
             bool isAutomaticGoalContinuation)
         {
@@ -323,6 +337,7 @@ namespace ColorVision.Copilot
                     userMessage,
                     assistantMessage,
                     turnSnapshot,
+                    runtimeConfigSnapshot,
                     refreshExternalContext);
                 CopilotHostedTurnCompletion.PrepareTerminalEvidence(assistantMessage);
                 var goalResult = await ProcessGoalAfterTurnAsync(
@@ -345,6 +360,7 @@ namespace ColorVision.Copilot
                             conversation,
                             requestProfile,
                             turnSnapshot,
+                            runtimeConfigSnapshot,
                             goalResult.GoalId,
                             goalResult.Reason));
                 }
@@ -440,6 +456,7 @@ namespace ColorVision.Copilot
             CopilotChatMessage userMessage,
             CopilotChatMessage assistantMessage,
             CopilotAgentHostContextSnapshot turnSnapshot,
+            CopilotTurnRuntimeConfigSnapshot runtimeConfigSnapshot,
             bool refreshExternalContext)
         {
             var cancellationToken = hostedRun.CancellationToken;
@@ -487,6 +504,8 @@ namespace ColorVision.Copilot
 
             var sessionCheckpoint = conversation.AgentSessionCheckpoint;
             var accessContext = conversation.AccessContext;
+            var agentDefaults = runtimeConfigSnapshot.CreateAgentDefaultsSnapshot();
+            var externalMcpServers = runtimeConfigSnapshot.CreateExternalMcpServerSnapshots();
             var turnRequest = new CopilotTurnRequest(
                 requestProfile,
                 userMessage.RequestMode,
@@ -497,12 +516,13 @@ namespace ColorVision.Copilot
                 turnSnapshot,
                 ResolveConversationHistoryLimits(
                     requestProfile,
-                    turnSnapshot.ProjectInstructionDiscoveryOptions),
+                    turnSnapshot.ProjectInstructionDiscoveryOptions,
+                    agentDefaults),
                 sessionCheckpoint,
                 userMessage.RecoveryRequest,
                 hostedRun.RunControl,
-                _config.AgentDefaults,
-                _config.ExternalMcpServers,
+                agentDefaults,
+                externalMcpServers,
                 conversation.Id,
                 hostedRun.Id,
                 accessContext,
@@ -669,6 +689,9 @@ namespace ColorVision.Copilot
                 throw new OperationCanceledException(cancellationToken);
             return result.Usage;
         }
+
+        private CopilotTurnRuntimeConfigSnapshot CaptureTurnRuntimeConfigSnapshot() =>
+            new(_config.AgentDefaults, _config.ExternalMcpServers);
 
         private static string BuildChatInterruptionDetail(CopilotChatStreamResult streamResult)
         {

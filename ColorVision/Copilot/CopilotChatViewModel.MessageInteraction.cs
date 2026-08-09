@@ -481,6 +481,8 @@ namespace ColorVision.Copilot
             {
                 return;
             }
+            var runtimeConfigSnapshot = CaptureTurnRuntimeConfigSnapshot();
+            var agentDefaultsSnapshot = runtimeConfigSnapshot.CreateAgentDefaultsSnapshot();
             var requestProfile = CreateConversationRequestProfile(
                 SelectedProfile,
                 conversation,
@@ -491,7 +493,8 @@ namespace ColorVision.Copilot
                     modelPrompt,
                     userMessage.RequestMode,
                     requestProfile,
-                    turnSnapshot.ProjectInstructionDiscoveryOptions))
+                    turnSnapshot.ProjectInstructionDiscoveryOptions,
+                    agentDefaultsSnapshot))
             {
                 return;
             }
@@ -506,7 +509,15 @@ namespace ColorVision.Copilot
             var hostedRun = _taskHost.Start(
                 conversation.Id,
                 userMessage.RequestMode,
-                run => ExecuteHostedRetryAsync(run, conversation, requestProfile, userMessage, assistantMessage, turnSnapshot, refreshExternalContext));
+                run => ExecuteHostedRetryAsync(
+                    run,
+                    conversation,
+                    requestProfile,
+                    userMessage,
+                    assistantMessage,
+                    turnSnapshot,
+                    runtimeConfigSnapshot,
+                    refreshExternalContext));
             await AwaitHostedRunCompletionAsync(hostedRun);
         }
 
@@ -517,6 +528,7 @@ namespace ColorVision.Copilot
             CopilotChatMessage userMessage,
             CopilotChatMessage? assistantMessage,
             CopilotAgentHostContextSnapshot turnSnapshot,
+            CopilotTurnRuntimeConfigSnapshot runtimeConfigSnapshot,
             bool refreshExternalContext)
         {
             CopilotChatMessage? replacementAssistantMessage = null;
@@ -550,6 +562,7 @@ namespace ColorVision.Copilot
                 userMessage,
                 replacementAssistantMessage,
                 turnSnapshot,
+                runtimeConfigSnapshot,
                 refreshExternalContext,
                 isAutomaticGoalContinuation: false);
         }

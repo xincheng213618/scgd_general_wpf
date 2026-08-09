@@ -472,6 +472,7 @@ namespace ColorVision.Copilot
             CopilotConversationRecord conversation,
             CopilotProfileConfig requestProfile,
             CopilotAgentHostContextSnapshot completedTurnSnapshot,
+            CopilotTurnRuntimeConfigSnapshot completedTurnRuntimeConfig,
             string goalId,
             string reason)
         {
@@ -530,7 +531,8 @@ namespace ColorVision.Copilot
                 CopilotAgentMode.Auto,
                 requestProfileSnapshot,
                 submissionContext,
-                goalId);
+                goalId,
+                runtimeConfigSnapshot: completedTurnRuntimeConfig);
             _queuedFollowUpsByRunId.Add(queuedRun.Id, queuedFollowUp);
             QueuedFollowUps.Add(queuedFollowUp);
             AddQueuedFollowUpRecovery(queuedFollowUp);

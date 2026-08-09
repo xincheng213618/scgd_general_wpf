@@ -197,23 +197,28 @@ namespace ColorVision.Copilot
             string prompt,
             CopilotAgentMode mode,
             CopilotProfileConfig profile,
-            CopilotProjectInstructionDiscoveryOptions? codexConfigOptions = null)
+            CopilotProjectInstructionDiscoveryOptions? codexConfigOptions = null,
+            CopilotAgentDefaultsConfig? agentDefaults = null)
         {
+            agentDefaults ??= _config.AgentDefaults;
             long maximumWeight;
             int maximumTokens;
             if (mode == CopilotAgentMode.Chat)
             {
-                var historyLimits = ResolveConversationHistoryLimits(profile, codexConfigOptions);
+                var historyLimits = ResolveConversationHistoryLimits(
+                    profile,
+                    codexConfigOptions,
+                    agentDefaults);
                 maximumWeight = historyLimits.MaximumContentCharacters;
                 maximumTokens = CopilotTokenEstimator.WeightToTokenEstimate(maximumWeight);
             }
             else
             {
-                var contextWindowTokens = ResolveContextWindowTokens(codexConfigOptions);
+                var contextWindowTokens = ResolveContextWindowTokens(codexConfigOptions, agentDefaults);
                 var outputTokens = Math.Clamp(profile.MaxTokens, 32, CopilotProfileConfig.DefaultMaxTokens);
                 var inputBudgetTokens = Math.Max(1, contextWindowTokens - outputTokens);
                 var requestBudgetTokens = Math.Clamp(
-                    _config.AgentDefaults.RequestTokenBudget,
+                    agentDefaults.RequestTokenBudget,
                     CopilotAgentRunBudget.MinimumRequestTokenBudget,
                     CopilotAgentRunBudget.MaximumRequestTokenBudget);
                 maximumTokens = Math.Min(inputBudgetTokens, requestBudgetTokens);

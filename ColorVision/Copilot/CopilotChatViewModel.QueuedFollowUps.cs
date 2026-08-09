@@ -107,6 +107,7 @@ namespace ColorVision.Copilot
             {
                 return false;
             }
+            var runtimeConfigSnapshot = CaptureTurnRuntimeConfigSnapshot();
 
             var itemReady = new TaskCompletionSource<CopilotQueuedFollowUp>(TaskCreationOptions.RunContinuationsAsynchronously);
             async Task ExecuteFollowUpAsync(CopilotHostedAgentRun run)
@@ -144,7 +145,8 @@ namespace ColorVision.Copilot
                 activeRun.Mode,
                 requestProfile,
                 submissionContext,
-                agentSkillReference: agentSkillReference);
+                agentSkillReference: agentSkillReference,
+                runtimeConfigSnapshot: runtimeConfigSnapshot);
             _queuedFollowUpsByRunId.Add(queuedRun.Id, queuedFollowUp);
             QueuedFollowUps.Add(queuedFollowUp);
             AddQueuedFollowUpRecovery(queuedFollowUp);
@@ -246,6 +248,7 @@ namespace ColorVision.Copilot
                 preparedTurn.UserMessage,
                 preparedTurn.AssistantMessage,
                 preparedTurn.TurnSnapshot,
+                queuedFollowUp.RuntimeConfigSnapshot,
                 refreshExternalContext: true,
                 isAutomaticGoalContinuation: queuedFollowUp.IsAutomaticGoalContinuation).ConfigureAwait(false);
         }

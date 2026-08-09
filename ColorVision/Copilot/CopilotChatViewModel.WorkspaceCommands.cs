@@ -237,8 +237,11 @@ namespace ColorVision.Copilot
         private async Task CompactConversationAsync(
             CopilotLocalCommand command,
             string focusInstructions,
-            bool includeFocusInResult = true)
+            bool includeFocusInResult = true,
+            CopilotAgentDefaultsConfig? agentDefaults = null,
+            CopilotProjectInstructionDiscoveryOptions? codexConfigOptions = null)
         {
+            agentDefaults ??= _config.AgentDefaults;
             var conversation = SelectedConversation;
             var profile = SelectedProfile;
             if (IsBusy || _isCompactingConversation)
@@ -270,8 +273,9 @@ namespace ColorVision.Copilot
                 return;
             }
 
-            var compactionConfig = CaptureHostedTurnSnapshot(
-                conversation.Attachments).ProjectInstructionDiscoveryOptions;
+            var compactionConfig = codexConfigOptions
+                ?? CaptureHostedTurnSnapshot(
+                    conversation.Attachments).ProjectInstructionDiscoveryOptions;
 
             var sourceMessages = conversation.Messages
                 .Where(message => !string.IsNullOrWhiteSpace(message.ModelContent))
@@ -288,7 +292,8 @@ namespace ColorVision.Copilot
 
             var summaryMaximumWeight = ResolveConversationHistoryLimits(
                 profile,
-                compactionConfig).MaximumContentCharacters;
+                compactionConfig,
+                agentDefaults).MaximumContentCharacters;
             var compactProfile = profile.Clone();
             compactProfile.UseSystemPromptOverride(CopilotConversationCompactionPrompt.SystemPrompt);
             compactProfile.MaxTokens = Math.Min(compactProfile.MaxTokens, CompactSummaryOutputTokens);
@@ -297,7 +302,10 @@ namespace ColorVision.Copilot
             var compactRequest = CopilotConversationCompactionPrompt.BuildRequest(
                 focusInstructions,
                 compactionConfig.CompactPrompt);
-            var historyLimits = ResolveConversationHistoryLimits(compactProfile, compactionConfig);
+            var historyLimits = ResolveConversationHistoryLimits(
+                compactProfile,
+                compactionConfig,
+                agentDefaults);
             compactProfile.MaxTokens = Math.Min(
                 compactProfile.MaxTokens,
                 ResolveCompactSummaryOutputTokens(summaryMaximumWeight));
@@ -389,7 +397,8 @@ namespace ColorVision.Copilot
             CopilotConversationRecord conversation,
             CopilotProfileConfig requestProfile,
             string pendingPrompt,
-            CopilotProjectInstructionDiscoveryOptions codexConfigOptions)
+            CopilotProjectInstructionDiscoveryOptions codexConfigOptions,
+            CopilotAgentDefaultsConfig agentDefaults)
         {
             if (IsBusy || _taskHost.IsActive || _isCompactingConversation || IsEditingMessage)
                 return CopilotAutomaticCompactionOutcome.NotNeeded;
@@ -407,11 +416,11 @@ namespace ColorVision.Copilot
 
             var decision = CopilotConversationAutoCompactionPolicy.Evaluate(
                 conversation,
-                ResolveConversationHistoryLimits(requestProfile, codexConfigOptions),
+                ResolveConversationHistoryLimits(requestProfile, codexConfigOptions, agentDefaults),
                 pendingPrompt,
                 new CopilotConversationAutoCompactionOptions(
-                    _config.AgentDefaults.AutoCompactConversationHistory,
-                    _config.AgentDefaults.AutoCompactThresholdPercent,
+                    agentDefaults.AutoCompactConversationHistory,
+                    agentDefaults.AutoCompactThresholdPercent,
                     codexConfigOptions.HasModelAutoCompactTokenLimitOverride
                         ? codexConfigOptions.ConfiguredModelAutoCompactTokenLimit
                         : null,
@@ -427,8 +436,10 @@ namespace ColorVision.Copilot
             await CompactConversationAsync(
                 command,
                 CopilotConversationCompactionPrompt.BuildAutomaticFocus(
-                    _config.AgentDefaults.AutoCompactInstructions),
-                includeFocusInResult: false);
+                    agentDefaults.AutoCompactInstructions),
+                includeFocusInResult: false,
+                agentDefaults,
+                codexConfigOptions);
             var applied = !ReferenceEquals(previousCompaction, conversation.Compaction)
                 && conversation.Compaction?.IsStructurallyValid() == true;
             if (!applied)
@@ -448,8 +459,8 @@ namespace ColorVision.Copilot
                     $"Codex {CopilotModelAutoCompactTokenLimitScopeSelection.GetConfigToken(decision.TokenLimitScope)} 计量达到 {decision.EvaluatedTokens:N0}/{decision.ThresholdTokens:N0} Token",
                 _ => $"估算上下文达到 {decision.UsagePercent:N0}%",
             };
-            var customFocusText = _config.AgentDefaults.AutoCompactInstructions.Length > 0
-                ? $"已应用 {_config.AgentDefaults.AutoCompactInstructions.Length:N0} 字符的自定义长期重点。"
+            var customFocusText = agentDefaults.AutoCompactInstructions.Length > 0
+                ? $"已应用 {agentDefaults.AutoCompactInstructions.Length:N0} 字符的自定义长期重点。"
                 : "已应用内置默认保留重点。";
             LocalCommandResultTitle = "/compact · 自动压缩";
             LocalCommandResultText = $"{triggerText}，已在发送前自动压缩早期对话。"

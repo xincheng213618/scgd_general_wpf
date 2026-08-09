@@ -14,7 +14,8 @@ namespace ColorVision.Copilot
             CopilotProfileConfig profile,
             CopilotAgentHostContextSnapshot submissionContext,
             string? goalId = null,
-            CopilotAgentSkillReference? agentSkillReference = null)
+            CopilotAgentSkillReference? agentSkillReference = null,
+            CopilotTurnRuntimeConfigSnapshot? runtimeConfigSnapshot = null)
         {
             RunId = runId ?? throw new ArgumentNullException(nameof(runId));
             ConversationId = conversationId ?? throw new ArgumentNullException(nameof(conversationId));
@@ -28,6 +29,10 @@ namespace ColorVision.Copilot
                 && agentSkillReference.IsExplicitlyInvokedBy(Prompt)
                     ? agentSkillReference.CreateSnapshot()
                     : null;
+            RuntimeConfigSnapshot = runtimeConfigSnapshot?.CreateSnapshot()
+                ?? new CopilotTurnRuntimeConfigSnapshot(
+                    new CopilotAgentDefaultsConfig(),
+                    Array.Empty<CopilotMcpClientServerConfig>());
             QueuedAtUtc = DateTimeOffset.UtcNow;
         }
 
@@ -88,6 +93,8 @@ namespace ColorVision.Copilot
         internal CopilotProfileConfig Profile { get; }
 
         internal CopilotAgentHostContextSnapshot SubmissionContext { get; }
+
+        internal CopilotTurnRuntimeConfigSnapshot RuntimeConfigSnapshot { get; }
 
         internal CopilotAgentHostContextSnapshot CreateExecutionContext(
             CopilotConversationHistorySnapshot conversationHistory) =>
