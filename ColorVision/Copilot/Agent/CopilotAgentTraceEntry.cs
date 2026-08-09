@@ -11,7 +11,7 @@ namespace ColorVision.Copilot
 {
     public sealed partial class CopilotAgentTraceEntry : ViewModelBase
     {
-        public const int CurrentSchemaVersion = 15;
+        public const int CurrentSchemaVersion = 16;
         private const int MaxSummaryLength = 800;
         private const int MaxDelegatedAnswerLength = 20_000;
         internal const int MaxPersistedHookRuns = 64;
@@ -96,6 +96,8 @@ namespace ColorVision.Copilot
         public int DelegatedRequestTokenBudget { get; set; }
 
         public long DelegatedConsumedTokens { get; set; }
+
+        public bool DelegatedUsageIncludesEstimates { get; set; }
 
         public int DelegatedProviderCalls { get; set; }
 
@@ -214,6 +216,8 @@ namespace ColorVision.Copilot
         public bool ShouldSerializeDelegatedRequestTokenBudget() => DelegatedRequestTokenBudget != 0;
 
         public bool ShouldSerializeDelegatedConsumedTokens() => DelegatedConsumedTokens != 0;
+
+        public bool ShouldSerializeDelegatedUsageIncludesEstimates() => DelegatedUsageIncludesEstimates;
 
         public bool ShouldSerializeDelegatedProviderCalls() => DelegatedProviderCalls != 0;
 
@@ -358,6 +362,8 @@ namespace ColorVision.Copilot
                         .Append(" · tool calls: ").Append(DelegatedToolCalls);
                     builder.AppendLine().Append("Child budget: ").Append(DelegatedConsumedTokens)
                         .Append('/').Append(DelegatedRequestTokenBudget).Append(" tokens");
+                    if (DelegatedUsageIncludesEstimates)
+                        builder.Append(" · includes estimates");
                     if (DelegatedQueueDurationMs > 0)
                         builder.Append(" · queued ").Append(FormatDuration(DelegatedQueueDurationMs));
                     if (DelegatedRegisteredToolCount > 0
@@ -490,6 +496,7 @@ namespace ColorVision.Copilot
                     entry.DelegatedStopReason = result.DelegatedRunUsage.StopReason;
                     entry.DelegatedRequestTokenBudget = Math.Max(0, result.DelegatedRunUsage.RequestTokenBudget);
                     entry.DelegatedConsumedTokens = Math.Max(0, result.DelegatedRunUsage.ConsumedTokens);
+                    entry.DelegatedUsageIncludesEstimates = result.DelegatedRunUsage.UsedEstimatedUsage;
                     entry.DelegatedProviderCalls = Math.Max(0, result.DelegatedRunUsage.ProviderCalls);
                     entry.DelegatedToolCalls = Math.Max(0, result.DelegatedRunUsage.ToolCalls);
                     entry.DelegatedDeliveredSteeringCount = Math.Max(0, result.DelegatedRunUsage.DeliveredSteeringCount);

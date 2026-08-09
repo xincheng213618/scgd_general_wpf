@@ -1,4 +1,5 @@
 using ColorVision.Copilot;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -165,6 +166,9 @@ public sealed class CopilotCodexInterruptMessageTests
             maxSteps: 4,
             maxContentChars: 2_000,
             includeContent: true);
+        var trace = CopilotAgentTraceEntry.FromResult(outcome.Execution, result);
+        var persistedTrace = JsonConvert.DeserializeObject<CopilotAgentTraceEntry>(
+            JsonConvert.SerializeObject(trace));
 
         Assert.False(result.Success);
         Assert.Equal(CopilotToolFailureKind.Cancelled, result.FailureKind);
@@ -173,6 +177,9 @@ public sealed class CopilotCodexInterruptMessageTests
             result.DelegatedRunUsage?.RequestTokenBudget,
             result.DelegatedRunUsage?.ConsumedTokens);
         Assert.True(result.DelegatedRunUsage?.UsedEstimatedUsage);
+        Assert.True(trace.DelegatedUsageIncludesEstimates);
+        Assert.Contains("includes estimates", trace.DiagnosticDetails, StringComparison.Ordinal);
+        Assert.True(Assert.IsType<CopilotAgentTraceEntry>(persistedTrace).DelegatedUsageIncludesEstimates);
         Assert.NotEmpty(result.Summary);
         Assert.NotEmpty(result.ErrorMessage);
         Assert.Equal(!interruptMessageEnabled, result.SuppressModelOutput);

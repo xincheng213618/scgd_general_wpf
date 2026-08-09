@@ -465,7 +465,7 @@ public sealed class CopilotCodexCustomSubagentsTests
             "reviewer",
             formatted.RootElement.GetProperty("delegated_run").GetProperty("agent").GetString());
         var trace = CopilotAgentTraceEntry.FromResult(outcome.Execution, result);
-        Assert.Equal(15, trace.SchemaVersion);
+        Assert.Equal(CopilotAgentTraceEntry.CurrentSchemaVersion, trace.SchemaVersion);
         Assert.Equal("reviewer", trace.DelegatedAgentName);
     }
 
