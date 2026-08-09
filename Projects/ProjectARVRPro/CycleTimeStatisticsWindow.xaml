@@ -31,6 +31,19 @@
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="HorizontalAlignment" Value="Center"/>
         </Style>
+        <Style x:Key="CompactQueryButton" TargetType="Button">
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="MinWidth" Value="54"/>
+            <Setter Property="Padding" Value="10,2"/>
+        </Style>
+        <Style x:Key="CompactQueryComboBox" TargetType="ComboBox">
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+        <Style x:Key="CompactQueryDatePicker" TargetType="DatePicker">
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
     </Window.Resources>
 
     <Grid Margin="10">
@@ -54,17 +67,29 @@
                                 <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="快捷查询" VerticalAlignment="Center" Margin="0,0,10,0" Foreground="{DynamicResource GlobalTextBrush}"/>
-                                <Button Content="查询当天" Tag="Today" Width="88" Margin="0,0,8,0" Click="QuickRange_Click"/>
-                                <Button Content="查询本周" Tag="Week" Width="88" Margin="0,0,8,0" Click="QuickRange_Click"/>
-                                <Button Content="查询本月" Tag="Month" Width="88" Margin="0,0,8,0" Click="QuickRange_Click"/>
-                                <Button Content="查询总数" Tag="All" Width="88" Click="QuickRange_Click"/>
+                                <TextBlock Text="统计周期" VerticalAlignment="Center" Margin="0,0,6,0" Foreground="{DynamicResource GlobalTextBrush}"/>
+                                <ComboBox x:Name="HomePeriodMode"
+                                          Width="82"
+                                          SelectedIndex="0"
+                                          Style="{StaticResource CompactQueryComboBox}"
+                                          SelectionChanged="HomePeriodMode_SelectionChanged">
+                                    <ComboBoxItem Content="按天"/>
+                                    <ComboBoxItem Content="按周"/>
+                                    <ComboBoxItem Content="按月"/>
+                                </ComboBox>
+                                <Button Content="&lt;" Width="42" MinWidth="42" Margin="8,0,6,0" Style="{StaticResource CompactQueryButton}" Click="HomePreviousPeriod_Click"/>
+                                <DatePicker x:Name="HomeAnchorDatePicker"
+                                            Width="130"
+                                            Style="{StaticResource CompactQueryDatePicker}"
+                                            SelectedDateChanged="HomeAnchorDatePicker_SelectedDateChanged"/>
+                                <Button Content="&gt;" Width="42" MinWidth="42" Margin="6,0,8,0" Style="{StaticResource CompactQueryButton}" Click="HomeNextPeriod_Click"/>
+                                <Button x:Name="HomeRefreshButton" Content="查询" Width="64" Style="{StaticResource CompactQueryButton}" Click="HomeRefresh_Click"/>
                             </StackPanel>
-                            <TextBlock x:Name="HomeStatusText"
-                                       Grid.Row="1"
-                                       Margin="0,8,0,0"
-                                       Foreground="{DynamicResource GlobalTextBrush}"
-                                       Opacity="0.72"/>
+                            <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,7,0,0">
+                                <TextBlock x:Name="HomePeriodText" Foreground="{DynamicResource GlobalTextBrush}"/>
+                                <TextBlock Text="；" Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.72"/>
+                                <TextBlock x:Name="HomeStatusText" Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.72"/>
+                            </StackPanel>
                         </Grid>
                     </Border>
 
@@ -125,9 +150,7 @@
                 <Grid Margin="4,8,4,4">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="3*"/>
-                        <RowDefinition Height="6"/>
-                        <RowDefinition Height="2*"/>
+                        <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
                     <Border Margin="0,0,0,8"
@@ -143,123 +166,141 @@
                             </Grid.RowDefinitions>
                             <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
                                 <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="开始日期" VerticalAlignment="Center" Margin="0,0,5,0" Foreground="{DynamicResource GlobalTextBrush}"/>
-                                    <DatePicker x:Name="StartDatePicker" Width="125" SelectedDateChanged="DatePicker_SelectedDateChanged"/>
-                                    <TextBlock Text="结束日期" VerticalAlignment="Center" Margin="12,0,5,0" Foreground="{DynamicResource GlobalTextBrush}"/>
-                                    <DatePicker x:Name="EndDatePicker" Width="125" SelectedDateChanged="DatePicker_SelectedDateChanged"/>
+                                    <TextBlock Text="统计周期" VerticalAlignment="Center" Margin="0,0,6,0" Foreground="{DynamicResource GlobalTextBrush}"/>
+                                    <ComboBox x:Name="RecordPeriodMode"
+                                              Width="82"
+                                              SelectedIndex="0"
+                                              Style="{StaticResource CompactQueryComboBox}"
+                                              SelectionChanged="RecordPeriodMode_SelectionChanged">
+                                        <ComboBoxItem Content="按天"/>
+                                        <ComboBoxItem Content="按周"/>
+                                        <ComboBoxItem Content="按月"/>
+                                    </ComboBox>
+                                    <Button Content="&lt;" Width="42" MinWidth="42" Margin="8,0,6,0" Style="{StaticResource CompactQueryButton}" Click="RecordPreviousPeriod_Click"/>
+                                    <DatePicker x:Name="RecordAnchorDatePicker"
+                                                Width="130"
+                                                Style="{StaticResource CompactQueryDatePicker}"
+                                                SelectedDateChanged="RecordAnchorDatePicker_SelectedDateChanged"/>
+                                    <Button Content="&gt;" Width="42" MinWidth="42" Margin="6,0,0,0" Style="{StaticResource CompactQueryButton}" Click="RecordNextPeriod_Click"/>
                                     <TextBlock Text="SN" VerticalAlignment="Center" Margin="12,0,5,0" Foreground="{DynamicResource GlobalTextBrush}"/>
                                     <ComboBox x:Name="SnFilter"
-                                              Width="230"
+                                              Width="210"
                                               IsEditable="True"
                                               IsTextSearchEnabled="False"
                                               StaysOpenOnEdit="True"
                                               MaxDropDownHeight="260"
+                                              Style="{StaticResource CompactQueryComboBox}"
                                               Loaded="SnFilter_Loaded"
                                               DropDownOpened="SnFilter_DropDownOpened"
                                               SelectionChanged="SnFilter_SelectionChanged"/>
                                     <TextBlock Text="结果" VerticalAlignment="Center" Margin="12,0,5,0" Foreground="{DynamicResource GlobalTextBrush}"/>
-                                    <ComboBox x:Name="ResultFilter" Width="90" SelectedIndex="0">
+                                    <ComboBox x:Name="ResultFilter" Width="82" SelectedIndex="0" Style="{StaticResource CompactQueryComboBox}">
                                         <ComboBoxItem Content="全部"/>
                                         <ComboBoxItem Content="PASS"/>
                                         <ComboBoxItem Content="FAIL"/>
                                     </ComboBox>
-                                    <Button x:Name="RefreshButton" Content="查询" Width="72" Margin="10,0,0,0" Click="Refresh_Click"/>
-                                    <Button x:Name="ResetButton" Content="重置" Width="72" Margin="6,0,0,0" Click="Reset_Click"/>
+                                    <Button x:Name="RecordRefreshButton" Content="查询" Width="64" Margin="10,0,0,0" Style="{StaticResource CompactQueryButton}" Click="RecordRefresh_Click"/>
+                                    <Button x:Name="ResetButton" Content="重置" Width="64" Margin="6,0,0,0" Style="{StaticResource CompactQueryButton}" Click="Reset_Click"/>
                                 </StackPanel>
                             </ScrollViewer>
-                            <TextBlock x:Name="QueryStatusText"
-                                       Grid.Row="1"
-                                       Margin="0,8,0,0"
-                                       Foreground="{DynamicResource GlobalTextBrush}"
-                                       Opacity="0.72"/>
+                            <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,7,0,0">
+                                <TextBlock x:Name="RecordPeriodText" Foreground="{DynamicResource GlobalTextBrush}"/>
+                                <TextBlock Text="；" Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.72"/>
+                                <TextBlock x:Name="QueryStatusText" Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.72"/>
+                            </StackPanel>
                         </Grid>
                     </Border>
 
                     <Grid Grid.Row="1">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="*"/>
-                            <RowDefinition Height="Auto"/>
-                        </Grid.RowDefinitions>
-                        <GroupBox Header="批次记录（双击查看测试项，右键查看更多操作）" Padding="4">
-                            <DataGrid x:Name="RecordDataGrid"
-                                  AutoGenerateColumns="False"
-                                  IsReadOnly="True"
-                                  CanUserAddRows="False"
-                                  CanUserDeleteRows="False"
-                                  HeadersVisibility="Column"
-                                  SelectionMode="Extended"
-                                  SelectionUnit="FullRow"
-                                  PreviewMouseRightButtonDown="RecordDataGrid_PreviewMouseRightButtonDown"
-                                  MouseDoubleClick="RecordDataGrid_MouseDoubleClick">
-                            <DataGrid.ContextMenu>
-                                <ContextMenu>
-                                    <MenuItem Header="查看测试项" Click="ViewItems_Click"/>
-                                    <MenuItem Header="查看 JSON" Click="ViewJson_Click"/>
-                                    <MenuItem Header="导出单条 CSV" Click="ExportSingleCsv_Click"/>
-                                    <Separator/>
-                                    <MenuItem Header="批量导出 CSV" Click="ExportBatchCsv_Click"/>
-                                </ContextMenu>
-                            </DataGrid.ContextMenu>
-                            <DataGrid.Columns>
-                                <DataGridTextColumn Header="Id" Binding="{Binding Id}" Width="64"/>
-                                <DataGridTextColumn Header="SN" Binding="{Binding SN}" Width="180"/>
-                                <DataGridTextColumn Header="开始时间" Binding="{Binding StartTime, StringFormat=yyyy/MM/dd HH:mm:ss}" Width="155"/>
-                                <DataGridTextColumn Header="结束时间" Binding="{Binding EndTime, StringFormat=yyyy/MM/dd HH:mm:ss}" Width="155"/>
-                                <DataGridTextColumn Header="整组 CT" Binding="{Binding CycleTimeText}" Width="100"/>
-                                <DataGridTextColumn Header="结果" Binding="{Binding ResultText}" Width="75"/>
-                                <DataGridTextColumn Header="LastModel" Binding="{Binding LastModel}" Width="150"/>
-                                <DataGridTextColumn Header="BatchId" Binding="{Binding BatchId}" Width="80"/>
-                                <DataGridTextColumn Header="ResultId" Binding="{Binding ResultId}" Width="80"/>
-                                <DataGridTextColumn Header="Msg" Binding="{Binding Msg}" Width="*" MinWidth="160"/>
-                            </DataGrid.Columns>
-                            </DataGrid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" MinWidth="480"/>
+                            <ColumnDefinition Width="6"/>
+                            <ColumnDefinition Width="*" MinWidth="440"/>
+                        </Grid.ColumnDefinitions>
+
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <GroupBox Header="批次记录（双击查看测试项，右键查看更多操作）" Padding="4">
+                                <DataGrid x:Name="RecordDataGrid"
+                                          AutoGenerateColumns="False"
+                                          IsReadOnly="True"
+                                          CanUserAddRows="False"
+                                          CanUserDeleteRows="False"
+                                          HeadersVisibility="Column"
+                                          SelectionMode="Extended"
+                                          SelectionUnit="FullRow"
+                                          Style="{StaticResource DataGrid.Small}"
+                                          PreviewMouseRightButtonDown="RecordDataGrid_PreviewMouseRightButtonDown"
+                                          MouseDoubleClick="RecordDataGrid_MouseDoubleClick">
+                                    <DataGrid.ContextMenu>
+                                        <ContextMenu>
+                                            <MenuItem Header="查看测试项" Click="ViewItems_Click"/>
+                                            <MenuItem Header="查看 JSON" Click="ViewJson_Click"/>
+                                            <MenuItem Header="导出单条 CSV" Click="ExportSingleCsv_Click"/>
+                                            <Separator/>
+                                            <MenuItem Header="批量导出 CSV" Click="ExportBatchCsv_Click"/>
+                                        </ContextMenu>
+                                    </DataGrid.ContextMenu>
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="SN" Binding="{Binding SN}" Width="190"/>
+                                        <DataGridTextColumn Header="第几次测试" Binding="{Binding ExecutionText}" Width="82"/>
+                                        <DataGridTextColumn Header="结束时间" Binding="{Binding EndTime, StringFormat=MM/dd HH:mm:ss}" Width="118"/>
+                                        <DataGridTextColumn Header="整组 CT" Binding="{Binding CycleTimeText}" Width="88"/>
+                                        <DataGridTextColumn Header="结果" Binding="{Binding ResultText}" Width="62"/>
+                                        <DataGridTextColumn Header="Msg" Binding="{Binding Msg}" Width="*" MinWidth="110"/>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                            </GroupBox>
+
+                            <StackPanel x:Name="PaginationPanel"
+                                        Grid.Row="1"
+                                        Orientation="Horizontal"
+                                        HorizontalAlignment="Right"
+                                        Margin="0,8,0,0"
+                                        Visibility="Collapsed">
+                                <Button x:Name="FirstPageButton" Content="首页" Width="54" Margin="0,0,4,0" Style="{StaticResource CompactQueryButton}" Click="FirstPage_Click"/>
+                                <Button x:Name="PreviousPageButton" Content="上一页" Width="62" Margin="0,0,8,0" Style="{StaticResource CompactQueryButton}" Click="PreviousPage_Click"/>
+                                <TextBlock x:Name="PageStatusText" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource GlobalTextBrush}"/>
+                                <Button x:Name="NextPageButton" Content="下一页" Width="62" Margin="0,0,4,0" Style="{StaticResource CompactQueryButton}" Click="NextPage_Click"/>
+                                <Button x:Name="LastPageButton" Content="末页" Width="54" Style="{StaticResource CompactQueryButton}" Click="LastPage_Click"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <GridSplitter Grid.Column="1"
+                                      Width="6"
+                                      HorizontalAlignment="Stretch"
+                                      VerticalAlignment="Stretch"
+                                      ResizeDirection="Columns"
+                                      ResizeBehavior="PreviousAndNext"/>
+
+                        <GroupBox Grid.Column="2" Padding="4">
+                            <GroupBox.Header>
+                                <TextBlock x:Name="DetailHeader" Text="流程 CT 明细"/>
+                            </GroupBox.Header>
+                            <ListView x:Name="DetailList"
+                                      BorderThickness="0"
+                                      Padding="0"
+                                      SelectionMode="Extended">
+                                <ListView.ItemContainerStyle>
+                                    <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}"/>
+                                </ListView.ItemContainerStyle>
+                                <ListView.View>
+                                    <GridView>
+                                        <GridViewColumn Header="Id" Width="52" DisplayMemberBinding="{Binding Id}"/>
+                                        <GridViewColumn Header="状态" Width="72" DisplayMemberBinding="{Binding FlowStatus}"/>
+                                        <GridViewColumn Header="PASS" Width="48" DisplayMemberBinding="{Binding Result}"/>
+                                        <GridViewColumn Header="Model" Width="145" DisplayMemberBinding="{Binding Model}"/>
+                                        <GridViewColumn Header="时间" Width="118" DisplayMemberBinding="{Binding CreateTime, StringFormat=MM/dd HH:mm:ss}"/>
+                                        <GridViewColumn Header="耗时(ms)" Width="82" DisplayMemberBinding="{Binding RunTime}"/>
+                                        <GridViewColumn Header="RunMsg" Width="180" DisplayMemberBinding="{Binding Msg}"/>
+                                    </GridView>
+                                </ListView.View>
+                            </ListView>
                         </GroupBox>
-
-                        <StackPanel x:Name="PaginationPanel"
-                                    Grid.Row="1"
-                                    Orientation="Horizontal"
-                                    HorizontalAlignment="Right"
-                                    Margin="0,8,0,8"
-                                    Visibility="Collapsed">
-                            <Button x:Name="FirstPageButton" Content="首页" Width="64" Margin="0,0,6,0" Click="FirstPage_Click"/>
-                            <Button x:Name="PreviousPageButton" Content="上一页" Width="72" Margin="0,0,10,0" Click="PreviousPage_Click"/>
-                            <TextBlock x:Name="PageStatusText" VerticalAlignment="Center" Margin="0,0,10,0" Foreground="{DynamicResource GlobalTextBrush}"/>
-                            <Button x:Name="NextPageButton" Content="下一页" Width="72" Margin="0,0,6,0" Click="NextPage_Click"/>
-                            <Button x:Name="LastPageButton" Content="末页" Width="64" Click="LastPage_Click"/>
-                        </StackPanel>
                     </Grid>
-
-                    <GridSplitter Grid.Row="2"
-                                  Height="6"
-                                  HorizontalAlignment="Stretch"
-                                  VerticalAlignment="Stretch"
-                                  ResizeDirection="Rows"
-                                  ResizeBehavior="PreviousAndNext"/>
-
-                    <GroupBox Grid.Row="3" Padding="4">
-                        <GroupBox.Header>
-                            <TextBlock x:Name="DetailHeader" Text="流程 CT 明细"/>
-                        </GroupBox.Header>
-                        <ListView x:Name="DetailList"
-                                  BorderThickness="0"
-                                  Padding="0"
-                                  SelectionMode="Extended">
-                            <ListView.ItemContainerStyle>
-                                <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}"/>
-                            </ListView.ItemContainerStyle>
-                            <ListView.View>
-                                <GridView>
-                                    <GridViewColumn Header="Id" Width="55" DisplayMemberBinding="{Binding Id}"/>
-                                    <GridViewColumn Header="FlowStatus" Width="90" DisplayMemberBinding="{Binding FlowStatus}"/>
-                                    <GridViewColumn Header="PASS" Width="55" DisplayMemberBinding="{Binding Result}"/>
-                                    <GridViewColumn Header="Model" Width="170" DisplayMemberBinding="{Binding Model}"/>
-                                    <GridViewColumn Header="Time" Width="150" DisplayMemberBinding="{Binding CreateTime, StringFormat=yyyy/MM/dd HH:mm:ss}"/>
-                                    <GridViewColumn Header="RunTime(ms)" Width="100" DisplayMemberBinding="{Binding RunTime}"/>
-                                    <GridViewColumn Header="RunMsg" Width="240" DisplayMemberBinding="{Binding Msg}"/>
-                                </GridView>
-                            </ListView.View>
-                        </ListView>
-                    </GroupBox>
                 </Grid>
             </TabItem>
         </TabControl>

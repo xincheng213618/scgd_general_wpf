@@ -2,6 +2,59 @@ using SqlSugar;
 
 namespace ProjectARVRPro
 {
+    public enum ResultStatisticsPeriodMode
+    {
+        Day,
+        Week,
+        Month,
+    }
+
+    public readonly record struct ResultStatisticsPeriodRange(DateTime From, DateTime ToExclusive)
+    {
+        public string ToDisplayText(ResultStatisticsPeriodMode mode)
+        {
+            return mode switch
+            {
+                ResultStatisticsPeriodMode.Week => $"{From:yyyy/MM/dd} - {ToExclusive.AddDays(-1):MM/dd}",
+                ResultStatisticsPeriodMode.Month => From.ToString("yyyy/MM"),
+                _ => From.ToString("yyyy/MM/dd"),
+            };
+        }
+    }
+
+    public static class ResultStatisticsPeriod
+    {
+        public static ResultStatisticsPeriodRange GetRange(ResultStatisticsPeriodMode mode, DateTime anchor)
+        {
+            DateTime day = anchor.Date;
+            return mode switch
+            {
+                ResultStatisticsPeriodMode.Week => CreateWeekRange(day),
+                ResultStatisticsPeriodMode.Month => new ResultStatisticsPeriodRange(
+                    new DateTime(day.Year, day.Month, 1),
+                    new DateTime(day.Year, day.Month, 1).AddMonths(1)),
+                _ => new ResultStatisticsPeriodRange(day, day.AddDays(1)),
+            };
+        }
+
+        public static DateTime ShiftAnchor(ResultStatisticsPeriodMode mode, DateTime anchor, int offset)
+        {
+            return mode switch
+            {
+                ResultStatisticsPeriodMode.Week => anchor.Date.AddDays(checked(offset * 7)),
+                ResultStatisticsPeriodMode.Month => anchor.Date.AddMonths(offset),
+                _ => anchor.Date.AddDays(offset),
+            };
+        }
+
+        private static ResultStatisticsPeriodRange CreateWeekRange(DateTime day)
+        {
+            int daysSinceMonday = ((int)day.DayOfWeek + 6) % 7;
+            DateTime from = day.AddDays(-daysSinceMonday);
+            return new ResultStatisticsPeriodRange(from, from.AddDays(7));
+        }
+    }
+
     public sealed class ResultStatisticsQuery
     {
         public DateTime From { get; init; } = DateTime.Today;
@@ -88,6 +141,7 @@ namespace ProjectARVRPro
     public sealed class ResultStatisticsRecordRow
     {
         public int Id { get; set; }
+        public int ExecutionIndex { get; set; }
         public string SN { get; set; } = string.Empty;
         public DateTime StartTime { get; set; }
         public DateTime EndTime { get; set; }
@@ -98,6 +152,7 @@ namespace ProjectARVRPro
         public string Msg { get; set; } = string.Empty;
 
         public double CycleTimeMilliseconds => Math.Max(0, (EndTime - StartTime).TotalMilliseconds);
+        public string ExecutionText => $"第 {ExecutionIndex} 次";
         public string CycleTimeText => ResultStatisticsCalculator.FormatMilliseconds(CycleTimeMilliseconds);
         public string ResultText => Result ? "PASS" : "FAIL";
     }
@@ -360,23 +415,50 @@ namespace ProjectARVRPro
             InitializeSchema();
             using SqlSugarClient db = CreateClient();
             int skip = checked((query.PageNumber - 1) * query.PageSize);
-            return ApplyFilters(db.Queryable<ObjectiveTestResultRecord>(), query)
-                .OrderBy(item => item.Id, OrderByType.Desc)
-                .Skip(skip)
-                .Take(query.PageSize)
-                .Select(item => new ResultStatisticsRecordRow
-                {
-                    Id = item.Id,
-                    SN = item.SN,
-                    StartTime = item.CreateTime,
-                    EndTime = item.UpdateTime,
-                    Result = item.TotalResult,
-                    LastModel = item.LastModel,
-                    BatchId = item.BatchId,
-                    ResultId = item.ResultId,
-                    Msg = item.Msg,
-                })
-                .ToList();
+            const string sql = """
+                WITH RankedRecords AS
+                (
+                    SELECT "Id",
+                           "SN",
+                           "CreateTime" AS "StartTime",
+                           "UpdateTime" AS "EndTime",
+                           "TotalResult" AS "Result",
+                           "LastModel",
+                           "BatchId",
+                           "ResultId",
+                           "Msg",
+                           ROW_NUMBER() OVER (PARTITION BY TRIM("SN") ORDER BY "Id") AS "ExecutionIndex"
+                    FROM "ObjectiveTestResultRecord"
+                    WHERE "IsFinalized" = 1 OR "IsFinalized" IS NULL
+                )
+                SELECT "Id", "ExecutionIndex", "SN", "StartTime", "EndTime", "Result",
+                       "LastModel", "BatchId", "ResultId", "Msg"
+                FROM RankedRecords
+                WHERE "EndTime" >= @From
+                  AND "EndTime" < @ToExclusive
+                  AND (@SN IS NULL OR "SN" LIKE '%' || @SN || '%')
+                  AND (@Result IS NULL OR "Result" = @Result)
+                ORDER BY "Id" DESC
+                LIMIT @PageSize OFFSET @Skip;
+                """;
+            return db.Ado.SqlQuery<ResultStatisticsRecordRow>(
+                sql,
+                new SugarParameter("@From", query.From),
+                new SugarParameter("@ToExclusive", query.ToExclusive),
+                new SugarParameter("@SN", string.IsNullOrWhiteSpace(query.SN) ? DBNull.Value : query.SN.Trim()),
+                new SugarParameter("@Result", query.Result.HasValue ? query.Result.Value : DBNull.Value),
+                new SugarParameter("@PageSize", query.PageSize),
+                new SugarParameter("@Skip", skip));
+        }
+
+        public int QueryRecordCount(ResultStatisticsQuery query)
+        {
+            ArgumentNullException.ThrowIfNull(query);
+            ResultStatisticsCalculator.ValidateRange(query.From, query.ToExclusive);
+            InitializeSchema();
+
+            using SqlSugarClient db = CreateClient();
+            return ApplyFilters(db.Queryable<ObjectiveTestResultRecord>(), query).Count();
         }
 
         public IReadOnlyList<ProjectARVRReuslt> QueryFlowDetails(ResultStatisticsRecordRow record)

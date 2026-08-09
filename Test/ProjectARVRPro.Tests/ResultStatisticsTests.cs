@@ -8,6 +8,34 @@ namespace ProjectARVRPro.Tests;
 
 public sealed class ResultStatisticsTests
 {
+    [Theory]
+    [InlineData(ResultStatisticsPeriodMode.Day, "2026-08-09", "2026-08-10", "2026/08/09")]
+    [InlineData(ResultStatisticsPeriodMode.Week, "2026-08-03", "2026-08-10", "2026/08/03 - 08/09")]
+    [InlineData(ResultStatisticsPeriodMode.Month, "2026-08-01", "2026-09-01", "2026/08")]
+    public void PeriodModesCreateStableCalendarRanges(
+        ResultStatisticsPeriodMode mode,
+        string expectedFrom,
+        string expectedToExclusive,
+        string expectedDisplayText)
+    {
+        ResultStatisticsPeriodRange range = ResultStatisticsPeriod.GetRange(mode, new DateTime(2026, 8, 9, 16, 30, 0));
+
+        Assert.Equal(DateTime.Parse(expectedFrom), range.From);
+        Assert.Equal(DateTime.Parse(expectedToExclusive), range.ToExclusive);
+        Assert.Equal(expectedDisplayText, range.ToDisplayText(mode));
+    }
+
+    [Theory]
+    [InlineData(ResultStatisticsPeriodMode.Day, 1, "2026-08-10")]
+    [InlineData(ResultStatisticsPeriodMode.Week, -1, "2026-08-02")]
+    [InlineData(ResultStatisticsPeriodMode.Month, 1, "2026-09-09")]
+    public void PeriodNavigationUsesTheSelectedCalendarUnit(ResultStatisticsPeriodMode mode, int offset, string expected)
+    {
+        DateTime shifted = ResultStatisticsPeriod.ShiftAnchor(mode, new DateTime(2026, 8, 9), offset);
+
+        Assert.Equal(DateTime.Parse(expected), shifted);
+    }
+
     [Fact]
     public void ObjectiveRecordUsesTheRealSessionStartTime()
     {
@@ -209,8 +237,11 @@ public sealed class ResultStatisticsTests
         Assert.Equal(2, statistics.TotalCount);
         Assert.Equal(1, statistics.PassCount);
         Assert.Equal(1, statistics.FailCount);
+        Assert.Equal(2, store.QueryRecordCount(query));
         ResultStatisticsRecordRow record = Assert.Single(records);
         Assert.Equal("second", record.LastModel);
+        Assert.Equal(2, record.ExecutionIndex);
+        Assert.Equal("第 2 次", record.ExecutionText);
         Assert.Equal("FAIL", record.ResultText);
         Assert.Equal("2.000 s", record.CycleTimeText);
         Assert.NotNull(store.GetRecord(record.Id));
@@ -228,6 +259,18 @@ public sealed class ResultStatisticsTests
         Assert.Equal(1, passOnly.TotalCount);
         Assert.Equal(1, passOnly.PassCount);
 
+        IReadOnlyList<ResultStatisticsRecordRow> passRecords = store.QueryRecords(new ResultStatisticsQuery
+        {
+            From = query.From,
+            ToExclusive = query.ToExclusive,
+            SN = query.SN,
+            Result = true,
+            PageSize = 10,
+        });
+        ResultStatisticsRecordRow passRecord = Assert.Single(passRecords);
+        Assert.Equal("first", passRecord.LastModel);
+        Assert.Equal("第 1 次", passRecord.ExecutionText);
+
         IReadOnlyList<ResultStatisticsRecordRow> secondPage = store.QueryRecords(new ResultStatisticsQuery
         {
             From = query.From,
@@ -236,7 +279,9 @@ public sealed class ResultStatisticsTests
             PageNumber = 2,
             PageSize = 1,
         });
-        Assert.Equal("first", Assert.Single(secondPage).LastModel);
+        ResultStatisticsRecordRow firstRecord = Assert.Single(secondPage);
+        Assert.Equal("first", firstRecord.LastModel);
+        Assert.Equal("第 1 次", firstRecord.ExecutionText);
 
         HashSet<string> indexNames = database.QueryIndexNames();
         Assert.Contains("IX_ObjectiveTestResultRecord_SN", indexNames);

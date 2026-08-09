@@ -34,22 +34,22 @@ namespace ProjectARVRPro
         private CopilotDynamicContextSession? _copilotContextSession;
         private TextBox? _snEditor;
         private int _copilotPublishQueued;
-        private int _loadVersion;
+        private int _homeLoadVersion;
+        private int _recordLoadVersion;
         private int _snIndexVersion;
         private int _detailLoadVersion;
         private int _currentPage = 1;
         private int _totalRecordCount;
-        private bool _queryAllDates;
-        private bool _settingDateRange;
         private bool _updatingSnSuggestions;
-        private string _queryStatus = string.Empty;
+        private string _homeStatus = string.Empty;
+        private string _recordStatus = string.Empty;
         private string _snIndexStatus = string.Empty;
 
         public CycleTimeStatisticsWindow()
         {
             InitializeComponent();
-            StartDatePicker.SelectedDate = DateTime.Today;
-            EndDatePicker.SelectedDate = DateTime.Today;
+            HomeAnchorDatePicker.SelectedDate = DateTime.Today;
+            RecordAnchorDatePicker.SelectedDate = DateTime.Today;
             RecordDataGrid.ItemsSource = _recordRows;
             DetailList.ItemsSource = _details;
             RecordDataGrid.SelectionChanged += RecordDataGrid_SelectionChanged;
@@ -57,6 +57,8 @@ namespace ProjectARVRPro
             BuildDetailContextMenu();
             RegisterCopilotContext();
             ApplyStatistics(new ResultStatistics());
+            UpdateHomePeriodText();
+            UpdateRecordPeriodText();
         }
 
         private ResultStatisticsRecordRow? SelectedRecordRow => RecordDataGrid.SelectedItem as ResultStatisticsRecordRow;
@@ -64,111 +66,190 @@ namespace ProjectARVRPro
         private async void Window_Loaded(object sender, RoutedEventArgs e)
         {
             _ = LoadSnSuggestionsAsync();
-            await RefreshAsync(1);
+            await Task.WhenAll(RefreshHomeAsync(), RefreshRecordsAsync(1));
         }
 
-        private async void Refresh_Click(object sender, RoutedEventArgs e)
+        private async void HomeRefresh_Click(object sender, RoutedEventArgs e)
         {
-            await RefreshAsync(1);
+            await RefreshHomeAsync();
+        }
+
+        private async void RecordRefresh_Click(object sender, RoutedEventArgs e)
+        {
+            await RefreshRecordsAsync(1);
         }
 
         private async void Reset_Click(object sender, RoutedEventArgs e)
         {
-            SetDateRange(DateTime.Today, DateTime.Today, queryAllDates: false);
+            RecordPeriodMode.SelectedIndex = 0;
+            RecordAnchorDatePicker.SelectedDate = DateTime.Today;
             SnFilter.Text = string.Empty;
             ResultFilter.SelectedIndex = 0;
-            await RefreshAsync(1);
+            UpdateRecordPeriodText();
+            await RefreshRecordsAsync(1);
         }
 
-        private async void QuickRange_Click(object sender, RoutedEventArgs e)
+        private void HomePeriodMode_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            DateTime today = DateTime.Today;
-            string range = (sender as FrameworkElement)?.Tag as string ?? "Today";
-            switch (range)
-            {
-                case "Week":
-                    int daysSinceMonday = ((int)today.DayOfWeek + 6) % 7;
-                    SetDateRange(today.AddDays(-daysSinceMonday), today, queryAllDates: false);
-                    break;
-                case "Month":
-                    SetDateRange(new DateTime(today.Year, today.Month, 1), today, queryAllDates: false);
-                    break;
-                case "All":
-                    SetDateRange(null, null, queryAllDates: true);
-                    break;
-                default:
-                    SetDateRange(today, today, queryAllDates: false);
-                    break;
-            }
-
-            SnFilter.Text = string.Empty;
-            ResultFilter.SelectedIndex = 0;
-            await RefreshAsync(1);
+            UpdateHomePeriodText();
         }
 
-        private void SetDateRange(DateTime? start, DateTime? end, bool queryAllDates)
+        private void RecordPeriodMode_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            _settingDateRange = true;
-            StartDatePicker.SelectedDate = start;
-            EndDatePicker.SelectedDate = end;
-            _queryAllDates = queryAllDates;
-            _settingDateRange = false;
+            UpdateRecordPeriodText();
         }
 
-        private void DatePicker_SelectedDateChanged(object sender, SelectionChangedEventArgs e)
+        private void HomeAnchorDatePicker_SelectedDateChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (!_settingDateRange)
-                _queryAllDates = false;
+            UpdateHomePeriodText();
         }
 
-        private async Task RefreshAsync(int pageNumber)
+        private void RecordAnchorDatePicker_SelectedDateChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (!TryCreateQuery(pageNumber, out ResultStatisticsQuery query))
+            UpdateRecordPeriodText();
+        }
+
+        private async void HomePreviousPeriod_Click(object sender, RoutedEventArgs e)
+        {
+            ShiftPeriod(HomePeriodMode, HomeAnchorDatePicker, -1);
+            await RefreshHomeAsync();
+        }
+
+        private async void HomeNextPeriod_Click(object sender, RoutedEventArgs e)
+        {
+            ShiftPeriod(HomePeriodMode, HomeAnchorDatePicker, 1);
+            await RefreshHomeAsync();
+        }
+
+        private async void RecordPreviousPeriod_Click(object sender, RoutedEventArgs e)
+        {
+            ShiftPeriod(RecordPeriodMode, RecordAnchorDatePicker, -1);
+            await RefreshRecordsAsync(1);
+        }
+
+        private async void RecordNextPeriod_Click(object sender, RoutedEventArgs e)
+        {
+            ShiftPeriod(RecordPeriodMode, RecordAnchorDatePicker, 1);
+            await RefreshRecordsAsync(1);
+        }
+
+        private static void ShiftPeriod(ComboBox modeSelector, DatePicker anchorPicker, int offset)
+        {
+            ResultStatisticsPeriodMode mode = GetSelectedPeriodMode(modeSelector);
+            DateTime anchor = anchorPicker.SelectedDate ?? DateTime.Today;
+            anchorPicker.SelectedDate = ResultStatisticsPeriod.ShiftAnchor(mode, anchor, offset);
+        }
+
+        private void UpdateHomePeriodText()
+        {
+            if (HomePeriodText == null || HomePeriodMode == null || HomeAnchorDatePicker == null)
                 return;
 
-            int loadVersion = ++_loadVersion;
-            RefreshButton.IsEnabled = false;
-            _queryStatus = "正在查询统计和记录...";
+            ResultStatisticsPeriodMode mode = GetSelectedPeriodMode(HomePeriodMode);
+            ResultStatisticsPeriodRange range = ResultStatisticsPeriod.GetRange(mode, HomeAnchorDatePicker.SelectedDate ?? DateTime.Today);
+            HomePeriodText.Text = $"查询范围：{range.ToDisplayText(mode)}";
+        }
+
+        private void UpdateRecordPeriodText()
+        {
+            if (RecordPeriodText == null || RecordPeriodMode == null || RecordAnchorDatePicker == null)
+                return;
+
+            ResultStatisticsPeriodMode mode = GetSelectedPeriodMode(RecordPeriodMode);
+            ResultStatisticsPeriodRange range = ResultStatisticsPeriod.GetRange(mode, RecordAnchorDatePicker.SelectedDate ?? DateTime.Today);
+            RecordPeriodText.Text = $"查询范围：{range.ToDisplayText(mode)}";
+        }
+
+        private static ResultStatisticsPeriodMode GetSelectedPeriodMode(ComboBox selector)
+        {
+            return selector.SelectedIndex switch
+            {
+                1 => ResultStatisticsPeriodMode.Week,
+                2 => ResultStatisticsPeriodMode.Month,
+                _ => ResultStatisticsPeriodMode.Day,
+            };
+        }
+
+        private async Task RefreshHomeAsync()
+        {
+            ResultStatisticsQuery query = CreateHomeQuery();
+            int loadVersion = ++_homeLoadVersion;
+            HomeRefreshButton.IsEnabled = false;
+            _homeStatus = "正在查询统计...";
+            UpdateStatusText();
+
+            try
+            {
+                DateTime now = DateTime.Now;
+                ResultStatistics statistics = await Task.Run(() => _statisticsStore.QueryStatistics(query, now));
+
+                if (loadVersion != _homeLoadVersion)
+                    return;
+
+                ApplyStatistics(statistics);
+                _homeStatus = $"已查询 {statistics.TotalCount:N0} 条记录";
+            }
+            catch (Exception ex)
+            {
+                if (loadVersion != _homeLoadVersion)
+                    return;
+
+                _homeStatus = "查询失败";
+                MessageBox.Show(this, $"读取首页统计失败：{ex.Message}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                if (loadVersion == _homeLoadVersion)
+                {
+                    HomeRefreshButton.IsEnabled = true;
+                    UpdateStatusText();
+                }
+            }
+        }
+
+        private async Task RefreshRecordsAsync(int pageNumber)
+        {
+            ResultStatisticsQuery query = CreateRecordQuery(pageNumber);
+            int loadVersion = ++_recordLoadVersion;
+            RecordRefreshButton.IsEnabled = false;
+            _recordStatus = "正在查询批次记录...";
             UpdateStatusText();
             DetailHeader.Text = "流程 CT 明细";
             _details.Clear();
 
             try
             {
-                DateTime now = DateTime.Now;
-                Task<ResultStatistics> statisticsTask = Task.Run(() => _statisticsStore.QueryStatistics(query, now));
+                Task<int> countTask = Task.Run(() => _statisticsStore.QueryRecordCount(query));
                 Task<IReadOnlyList<ResultStatisticsRecordRow>> recordsTask = Task.Run(() => _statisticsStore.QueryRecords(query));
-                await Task.WhenAll(statisticsTask, recordsTask);
+                await Task.WhenAll(countTask, recordsTask);
 
-                if (loadVersion != _loadVersion)
+                if (loadVersion != _recordLoadVersion)
                     return;
 
-                ResultStatistics statistics = await statisticsTask;
                 _recordCache.Clear();
                 ReplaceItems(_recordRows, await recordsTask);
                 if (_recordRows.Count > 0)
                     RecordDataGrid.SelectedIndex = 0;
-                ApplyStatistics(statistics);
-                _totalRecordCount = statistics.TotalCount;
+                _totalRecordCount = await countTask;
                 _currentPage = Math.Clamp(pageNumber, 1, Math.Max(1, GetPageCount()));
                 UpdatePagination();
-                _queryStatus = _totalRecordCount > RecordPageSize
+                _recordStatus = _totalRecordCount > RecordPageSize
                     ? $"已查询 {_totalRecordCount:N0} 条批次记录；第 {_currentPage:N0}/{GetPageCount():N0} 页，本页 {_recordRows.Count:N0} 条"
                     : $"已查询 {_totalRecordCount:N0} 条批次记录";
             }
             catch (Exception ex)
             {
-                if (loadVersion != _loadVersion)
+                if (loadVersion != _recordLoadVersion)
                     return;
 
-                _queryStatus = "查询失败";
-                MessageBox.Show(this, $"读取结果统计失败：{ex.Message}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+                _recordStatus = "查询失败";
+                MessageBox.Show(this, $"读取批次记录失败：{ex.Message}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {
-                if (loadVersion == _loadVersion)
+                if (loadVersion == _recordLoadVersion)
                 {
-                    RefreshButton.IsEnabled = true;
+                    RecordRefreshButton.IsEnabled = true;
                     UpdateStatusText();
                 }
             }
@@ -192,48 +273,37 @@ namespace ProjectARVRPro
 
         private async void FirstPage_Click(object sender, RoutedEventArgs e)
         {
-            await RefreshAsync(1);
+            await RefreshRecordsAsync(1);
         }
 
         private async void PreviousPage_Click(object sender, RoutedEventArgs e)
         {
             if (_currentPage > 1)
-                await RefreshAsync(_currentPage - 1);
+                await RefreshRecordsAsync(_currentPage - 1);
         }
 
         private async void NextPage_Click(object sender, RoutedEventArgs e)
         {
             if (_currentPage < GetPageCount())
-                await RefreshAsync(_currentPage + 1);
+                await RefreshRecordsAsync(_currentPage + 1);
         }
 
         private async void LastPage_Click(object sender, RoutedEventArgs e)
         {
-            await RefreshAsync(GetPageCount());
+            await RefreshRecordsAsync(GetPageCount());
         }
 
-        private bool TryCreateQuery(int pageNumber, out ResultStatisticsQuery query)
+        private ResultStatisticsQuery CreateHomeQuery()
         {
-            DateTime from;
-            DateTime toExclusive;
-            if (_queryAllDates)
-            {
-                from = DateTime.MinValue;
-                toExclusive = DateTime.MaxValue;
-            }
-            else
-            {
-                from = (StartDatePicker.SelectedDate ?? DateTime.Today).Date;
-                DateTime end = (EndDatePicker.SelectedDate ?? from).Date;
-                if (end < from)
-                {
-                    query = null!;
-                    MessageBox.Show(this, "结束日期不能早于开始日期。", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
-                    return false;
-                }
-                toExclusive = end == DateTime.MaxValue.Date ? DateTime.MaxValue : end.AddDays(1);
-            }
+            ResultStatisticsPeriodMode mode = GetSelectedPeriodMode(HomePeriodMode);
+            ResultStatisticsPeriodRange range = ResultStatisticsPeriod.GetRange(mode, HomeAnchorDatePicker.SelectedDate ?? DateTime.Today);
+            return new ResultStatisticsQuery { From = range.From, ToExclusive = range.ToExclusive };
+        }
 
+        private ResultStatisticsQuery CreateRecordQuery(int pageNumber)
+        {
+            ResultStatisticsPeriodMode mode = GetSelectedPeriodMode(RecordPeriodMode);
+            ResultStatisticsPeriodRange range = ResultStatisticsPeriod.GetRange(mode, RecordAnchorDatePicker.SelectedDate ?? DateTime.Today);
             bool? result = ResultFilter.SelectedIndex switch
             {
                 1 => true,
@@ -241,16 +311,15 @@ namespace ProjectARVRPro
                 _ => null,
             };
             string sn = SnFilter.Text.Trim();
-            query = new ResultStatisticsQuery
+            return new ResultStatisticsQuery
             {
-                From = from,
-                ToExclusive = toExclusive,
+                From = range.From,
+                ToExclusive = range.ToExclusive,
                 SN = string.IsNullOrWhiteSpace(sn) ? null : sn,
                 Result = result,
                 PageNumber = Math.Max(1, pageNumber),
                 PageSize = RecordPageSize,
             };
-            return true;
         }
 
         private async Task LoadSnSuggestionsAsync()
@@ -358,8 +427,8 @@ namespace ProjectARVRPro
 
         private void UpdateStatusText()
         {
-            HomeStatusText.Text = _queryStatus;
-            QueryStatusText.Text = string.Join("；", new[] { _queryStatus, _snIndexStatus }.Where(item => !string.IsNullOrWhiteSpace(item)));
+            HomeStatusText.Text = _homeStatus;
+            QueryStatusText.Text = string.Join("；", new[] { _recordStatus, _snIndexStatus }.Where(item => !string.IsNullOrWhiteSpace(item)));
         }
 
         private static void ReplaceItems<T>(ObservableCollection<T> target, IEnumerable<T> source)
@@ -832,7 +901,8 @@ namespace ProjectARVRPro
 
         protected override void OnClosed(EventArgs e)
         {
-            ++_loadVersion;
+            ++_homeLoadVersion;
+            ++_recordLoadVersion;
             ++_snIndexVersion;
             ++_detailLoadVersion;
             if (_snEditor != null)
