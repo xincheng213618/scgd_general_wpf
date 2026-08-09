@@ -90,6 +90,17 @@ namespace ColorVision.Copilot
             var turnSnapshot = isReplacingTurn
                 ? CaptureHostedTurnSnapshot(conversation, replacedUserMessage, conversation.Attachments)
                 : CaptureHostedTurnSnapshot(conversation, attachmentOverride: requestAttachments);
+            var agentSkillReference = isDirectSubmission
+                ? null
+                : ResolvePendingAgentSkillReference(prompt);
+            if (!TryPrepareExplicitSkillMcpDependencies(
+                prompt,
+                agentSkillReference,
+                turnSnapshot.ProjectInstructionDiscoveryOptions,
+                conversation.Id))
+            {
+                return;
+            }
             var requestProfile = CreateConversationRequestProfile(
                 selectedProfile,
                 conversation,
@@ -126,9 +137,6 @@ namespace ColorVision.Copilot
             var workspaceReviewTarget = isDirectSubmission
                 ? null
                 : ConsumePendingWorkspaceReviewTarget(requestMode);
-            var agentSkillReference = isDirectSubmission
-                ? null
-                : ResolvePendingAgentSkillReference(prompt);
             if (workspaceReviewTarget == null
                 && isReplacingTurn
                 && requestMode == CopilotAgentMode.Review

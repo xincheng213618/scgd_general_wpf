@@ -401,6 +401,13 @@ namespace ColorVision.Copilot
         public CopilotProjectInstructionConfigSources MentionsV2EnabledSource { get; init; } =
             CopilotProjectInstructionConfigSources.None;
 
+        public bool ConfiguredSkillMcpDependencyInstallEnabled { get; init; } = true;
+
+        public bool HasSkillMcpDependencyInstallEnabledOverride { get; init; }
+
+        public CopilotProjectInstructionConfigSources SkillMcpDependencyInstallEnabledSource { get; init; } =
+            CopilotProjectInstructionConfigSources.None;
+
         internal CopilotCodexShellEnvironmentPolicy ConfiguredShellEnvironmentPolicy { get; init; } =
             CopilotCodexShellEnvironmentPolicy.Default;
 
@@ -725,6 +732,7 @@ namespace ColorVision.Copilot
             || HasHooksEnabledOverride
             || HasPluginsEnabledOverride
             || HasMentionsV2EnabledOverride
+            || HasSkillMcpDependencyInstallEnabledOverride
             || HasShellEnvironmentPolicyOverride
             || HasGoalsEnabledOverride
             || HasDefaultModeRequestUserInputEnabledOverride
@@ -899,6 +907,13 @@ namespace ColorVision.Copilot
         {
             CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml features.mentions_v2",
             CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml features.mentions_v2",
+            _ => string.Empty,
+        };
+
+        public string SkillMcpDependencyInstallEnabledSourceLabel => SkillMcpDependencyInstallEnabledSource switch
+        {
+            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml features.skill_mcp_dependency_install",
+            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml features.skill_mcp_dependency_install",
             _ => string.Empty,
         };
 
@@ -1199,6 +1214,8 @@ namespace ColorVision.Copilot
         private const string PluginsEnabledFeatureKey = "plugins";
         private const string MentionsV2EnabledKey = "features.mentions_v2";
         private const string MentionsV2EnabledFeatureKey = "mentions_v2";
+        private const string SkillMcpDependencyInstallEnabledKey = "features.skill_mcp_dependency_install";
+        private const string SkillMcpDependencyInstallEnabledFeatureKey = "skill_mcp_dependency_install";
         private const string GoalsEnabledKey = "features.goals";
         private const string GoalsEnabledFeatureKey = "goals";
         private const string DefaultModeRequestUserInputEnabledKey = "features.default_mode_request_user_input";
@@ -1523,6 +1540,14 @@ namespace ColorVision.Copilot
                 MentionsV2EnabledSource = layer.HasMentionsV2EnabledOverride
                     ? source
                     : current.MentionsV2EnabledSource,
+                ConfiguredSkillMcpDependencyInstallEnabled = layer.HasSkillMcpDependencyInstallEnabledOverride
+                    ? layer.SkillMcpDependencyInstallEnabled
+                    : current.ConfiguredSkillMcpDependencyInstallEnabled,
+                HasSkillMcpDependencyInstallEnabledOverride = current.HasSkillMcpDependencyInstallEnabledOverride
+                    || layer.HasSkillMcpDependencyInstallEnabledOverride,
+                SkillMcpDependencyInstallEnabledSource = layer.HasSkillMcpDependencyInstallEnabledOverride
+                    ? source
+                    : current.SkillMcpDependencyInstallEnabledSource,
                 ConfiguredShellEnvironmentPolicy = layer.ShellEnvironmentPolicyLayer.HasAssignment
                     && current.ShellEnvironmentPolicyError.Length == 0
                         ? CopilotCodexShellEnvironmentPolicyMerge.Apply(
@@ -1809,6 +1834,7 @@ namespace ColorVision.Copilot
                 || layer.HasHooksEnabledOverride
                 || layer.HasPluginsEnabledOverride
                 || layer.HasMentionsV2EnabledOverride
+                || layer.HasSkillMcpDependencyInstallEnabledOverride
                 || layer.ShellEnvironmentPolicyLayer.HasAssignment
                 || layer.HasGoalsEnabledOverride
                 || layer.HasDefaultModeRequestUserInputEnabledOverride
@@ -2114,6 +2140,7 @@ namespace ColorVision.Copilot
             var hooksEnabled = true;
             var pluginsEnabled = true;
             var mentionsV2Enabled = true;
+            var skillMcpDependencyInstallEnabled = true;
             var goalsEnabled = true;
             var defaultModeRequestUserInputEnabled = false;
             var experimentalRequestUserInputEnabled = true;
@@ -2170,6 +2197,7 @@ namespace ColorVision.Copilot
             var hasHooksEnabledOverride = false;
             var hasPluginsEnabledOverride = false;
             var hasMentionsV2EnabledOverride = false;
+            var hasSkillMcpDependencyInstallEnabledOverride = false;
             var hasGoalsEnabledOverride = false;
             var hasDefaultModeRequestUserInputEnabledOverride = false;
             var hasExperimentalRequestUserInputEnabledOverride = false;
@@ -2461,6 +2489,18 @@ namespace ColorVision.Copilot
                         continue;
                     }
                     hasMentionsV2EnabledOverride = true;
+                    continue;
+                }
+
+                if (string.Equals(assignment.Key, SkillMcpDependencyInstallEnabledKey, StringComparison.Ordinal))
+                {
+                    if (!TryParseTomlBoolean(
+                        assignment.Value,
+                        out skillMcpDependencyInstallEnabled))
+                    {
+                        continue;
+                    }
+                    hasSkillMcpDependencyInstallEnabledOverride = true;
                     continue;
                 }
 
@@ -2945,6 +2985,8 @@ namespace ColorVision.Copilot
                 HasPluginsEnabledOverride = hasPluginsEnabledOverride,
                 MentionsV2Enabled = mentionsV2Enabled,
                 HasMentionsV2EnabledOverride = hasMentionsV2EnabledOverride,
+                SkillMcpDependencyInstallEnabled = skillMcpDependencyInstallEnabled,
+                HasSkillMcpDependencyInstallEnabledOverride = hasSkillMcpDependencyInstallEnabledOverride,
                 ShellEnvironmentPolicyLayer = shellEnvironmentPolicyLayer,
                 GoalsEnabled = goalsEnabled,
                 HasGoalsEnabledOverride = hasGoalsEnabledOverride,
@@ -3020,6 +3062,7 @@ namespace ColorVision.Copilot
                 || hasHooksEnabledOverride
                 || hasPluginsEnabledOverride
                 || hasMentionsV2EnabledOverride
+                || hasSkillMcpDependencyInstallEnabledOverride
                 || shellEnvironmentPolicyLayer.HasAssignment
                 || hasGoalsEnabledOverride
                 || hasDefaultModeRequestUserInputEnabledOverride
@@ -3213,6 +3256,7 @@ namespace ColorVision.Copilot
                         HooksEnabledFeatureKey => HooksEnabledKey,
                         PluginsEnabledFeatureKey => PluginsEnabledKey,
                         MentionsV2EnabledFeatureKey => MentionsV2EnabledKey,
+                        SkillMcpDependencyInstallEnabledFeatureKey => SkillMcpDependencyInstallEnabledKey,
                         GuardianApprovalEnabledFeatureKey => GuardianApprovalEnabledKey,
                         PersonalityEnabledFeatureKey => PersonalityEnabledKey,
                         FastModeEnabledFeatureKey => FastModeEnabledKey,
@@ -3272,6 +3316,7 @@ namespace ColorVision.Copilot
                     && !string.Equals(key, HooksEnabledKey, StringComparison.Ordinal)
                     && !string.Equals(key, PluginsEnabledKey, StringComparison.Ordinal)
                     && !string.Equals(key, MentionsV2EnabledKey, StringComparison.Ordinal)
+                    && !string.Equals(key, SkillMcpDependencyInstallEnabledKey, StringComparison.Ordinal)
                     && !string.Equals(key, GoalsEnabledKey, StringComparison.Ordinal)
                     && !string.Equals(key, DefaultModeRequestUserInputEnabledKey, StringComparison.Ordinal)
                     && !string.Equals(key, ExperimentalRequestUserInputEnabledKey, StringComparison.Ordinal)
@@ -4212,6 +4257,10 @@ namespace ColorVision.Copilot
             public bool MentionsV2Enabled { get; init; } = true;
 
             public bool HasMentionsV2EnabledOverride { get; init; }
+
+            public bool SkillMcpDependencyInstallEnabled { get; init; } = true;
+
+            public bool HasSkillMcpDependencyInstallEnabledOverride { get; init; }
 
             public CopilotCodexShellEnvironmentPolicyLayer ShellEnvironmentPolicyLayer { get; init; } =
                 CopilotCodexShellEnvironmentPolicyLayer.Empty;

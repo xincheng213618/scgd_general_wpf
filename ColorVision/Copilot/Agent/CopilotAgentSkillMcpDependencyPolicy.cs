@@ -8,6 +8,7 @@ namespace ColorVision.Copilot
     {
         NotMcp,
         Installed,
+        ConfiguredDisabled,
         Installable,
         MissingInstallMetadata,
         UnsupportedTransport,
@@ -34,11 +35,13 @@ namespace ColorVision.Copilot
             if (!TryCreateServerConfig(dependency, out var candidate, out _))
                 return CopilotAgentSkillMcpDependencyStatus.InvalidConfiguration;
 
-            var installed = (configuredServers ?? Array.Empty<CopilotMcpClientServerConfig>())
-                .Where(server => server?.Enabled == true)
-                .Any(server => EndpointsEqual(server.Endpoint, candidate.Endpoint));
-            return installed
-                ? CopilotAgentSkillMcpDependencyStatus.Installed
+            var matchingServers = (configuredServers ?? Array.Empty<CopilotMcpClientServerConfig>())
+                .Where(server => server != null && EndpointsEqual(server.Endpoint, candidate.Endpoint))
+                .ToArray();
+            if (matchingServers.Any(server => server.Enabled))
+                return CopilotAgentSkillMcpDependencyStatus.Installed;
+            return matchingServers.Length > 0
+                ? CopilotAgentSkillMcpDependencyStatus.ConfiguredDisabled
                 : CopilotAgentSkillMcpDependencyStatus.Installable;
         }
 
@@ -87,7 +90,7 @@ namespace ColorVision.Copilot
                 : dependency.Transport.Trim();
         }
 
-        private static bool EndpointsEqual(string? left, string? right)
+        internal static bool EndpointsEqual(string? left, string? right)
         {
             return Uri.TryCreate(left, UriKind.Absolute, out var leftUri)
                 && Uri.TryCreate(right, UriKind.Absolute, out var rightUri)

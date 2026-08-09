@@ -518,6 +518,7 @@ namespace ColorVision.Copilot
             AppendHooksEnabled(builder, codexConfigOptions);
             AppendPluginsEnabled(builder, codexConfigOptions);
             AppendMentionsV2Enabled(builder, codexConfigOptions);
+            AppendSkillMcpDependencyInstallEnabled(builder, codexConfigOptions);
             AppendShellEnvironmentPolicy(builder, codexConfigOptions);
             AppendGoalsEnabled(builder, codexConfigOptions);
             AppendDefaultModeRequestUserInputEnabled(builder, codexConfigOptions);
@@ -903,6 +904,29 @@ namespace ColorVision.Copilot
             builder.AppendLine(codexConfigOptions.ConfiguredMentionsV2Enabled
                 ? " · @ 使用统一候选，合并 Skill、模板、菜单与工作区文件"
                 : " · @ 回退为旧版文件候选，不列出 Skill、模板或菜单；已有附件与已关联上下文不受影响");
+        }
+
+        private static void AppendSkillMcpDependencyInstallEnabled(
+            StringBuilder builder,
+            CopilotProjectInstructionDiscoveryOptions codexConfigOptions)
+        {
+            builder.Append("- Codex features.skill_mcp_dependency_install：")
+                .Append(codexConfigOptions.ConfiguredSkillMcpDependencyInstallEnabled ? "true" : "false");
+            if (codexConfigOptions.HasSkillMcpDependencyInstallEnabledOverride)
+            {
+                builder.Append(" · 来源 ")
+                    .Append(codexConfigOptions.SkillMcpDependencyInstallEnabledSourceLabel.Length == 0
+                        ? "Codex config.toml features.skill_mcp_dependency_install"
+                        : codexConfigOptions.SkillMcpDependencyInstallEnabledSourceLabel)
+                    .Append(" · 提交快照");
+            }
+            else
+            {
+                builder.Append(" · 官方默认");
+            }
+            builder.AppendLine(codexConfigOptions.ConfiguredSkillMcpDependencyInstallEnabled
+                ? " · 显式 Skill 的缺失 MCP 仅在原生确认后写入；继续执行不会修改配置"
+                : " · 不提示或安装 Skill MCP 依赖；已有外部 MCP 配置保持有效");
         }
 
         private static void AppendIncludePermissionsInstructions(

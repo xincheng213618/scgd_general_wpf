@@ -390,6 +390,23 @@ namespace ColorVision.Copilot
             builder.AppendLine(effective.ConfiguredMentionsV2Enabled
                 ? "@ 统一列出 Skill、模板、菜单与工作区文件"
                 : "@ 回退为旧版文件候选，不列出 Skill、模板或菜单；已有附件与上下文不受影响");
+            builder.Append("Codex features.skill_mcp_dependency_install：")
+                .Append(effective.ConfiguredSkillMcpDependencyInstallEnabled ? "true" : "false");
+            if (effective.HasSkillMcpDependencyInstallEnabledOverride)
+            {
+                builder.Append(" · 来源 ")
+                    .Append(effective.SkillMcpDependencyInstallEnabledSourceLabel.Length == 0
+                        ? "Codex config.toml features.skill_mcp_dependency_install"
+                        : effective.SkillMcpDependencyInstallEnabledSourceLabel)
+                    .Append(" 提交快照；");
+            }
+            else
+            {
+                builder.Append(" · 官方默认；");
+            }
+            builder.AppendLine(effective.ConfiguredSkillMcpDependencyInstallEnabled
+                ? "显式点名 Skill 时检查缺失 MCP；仅经原生确认后写入安全的 streamable HTTP 配置"
+                : "不提示或写入 Skill 声明的缺失 MCP；已配置的外部 MCP 不受影响");
             builder.Append("Codex shell_environment_policy：")
                 .Append(effective.ConfiguredShellEnvironmentPolicy.BuildRedactedSummary());
             if (effective.HasShellEnvironmentPolicyOverride)

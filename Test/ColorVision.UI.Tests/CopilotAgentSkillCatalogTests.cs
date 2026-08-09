@@ -803,6 +803,16 @@ public sealed class CopilotAgentSkillCatalogTests
                     Name = "openaiDeveloperDocs",
                     Endpoint = "https://example.test/different-mcp",
                 }]));
+        Assert.Equal(
+            CopilotAgentSkillMcpDependencyStatus.ConfiguredDisabled,
+            CopilotAgentSkillMcpDependencyPolicy.Evaluate(
+                dependency,
+                [new CopilotMcpClientServerConfig
+                {
+                    Name = "disabled-docs",
+                    Endpoint = "https://developers.openai.com/mcp",
+                    Enabled = false,
+                }]));
 
         var missingUrl = dependency with { Url = "" };
         Assert.Equal(
@@ -831,6 +841,120 @@ public sealed class CopilotAgentSkillCatalogTests
             insecureRemote,
             out _,
             out _));
+    }
+
+    [Fact]
+    public void SkillMcpDependencyInstallerBuildsAndAppliesAnAtomicSafePlan()
+    {
+        var dependencies = new[]
+        {
+            new CopilotAgentSkillDependency(
+                "mcp",
+                "docs",
+                "Docs",
+                Url: "https://example.test/docs-mcp"),
+            new CopilotAgentSkillDependency(
+                "mcp",
+                "unsafe",
+                "Unsafe",
+                Url: "http://example.test/unsafe-mcp"),
+            new CopilotAgentSkillDependency(
+                "mcp",
+                "local",
+                "Local",
+                Url: "http://127.0.0.1:8765/mcp"),
+        };
+
+        var plan = CopilotAgentSkillMcpDependencyInstaller.CreatePlan(dependencies, []);
+
+        Assert.Equal(2, plan.Servers.Count);
+        Assert.Contains(plan.Servers, server => server.Name == "docs");
+        Assert.Contains(plan.Servers, server => server.Name == "local");
+        Assert.Single(plan.Issues);
+        Assert.Contains("unsafe", plan.Issues[0], StringComparison.Ordinal);
+
+        var configured = new List<CopilotMcpClientServerConfig>();
+        Assert.True(CopilotAgentSkillMcpDependencyInstaller.TryInstall(
+            plan,
+            configured,
+            out var added,
+            out var error), error);
+        Assert.Equal(2, added.Count);
+        Assert.Equal(2, configured.Count);
+        Assert.All(configured, server => Assert.Equal(
+            CopilotMcpClientAccessPolicy.RequireApproval,
+            server.AccessPolicy));
+
+        Assert.False(CopilotAgentSkillMcpDependencyInstaller.TryInstall(
+            plan,
+            configured,
+            out var repeatedAdditions,
+            out _));
+        Assert.Empty(repeatedAdditions);
+        Assert.Equal(2, configured.Count);
+
+        var maliciousPlan = new CopilotAgentSkillMcpDependencyInstallPlan(
+            [new CopilotMcpClientServerConfig
+            {
+                Name = "unsafe-plan",
+                Endpoint = "http://example.test/mcp",
+                AccessPolicy = CopilotMcpClientAccessPolicy.ReadOnly,
+            }],
+            []);
+        var untouched = new List<CopilotMcpClientServerConfig>();
+        Assert.False(CopilotAgentSkillMcpDependencyInstaller.TryInstall(
+            maliciousPlan,
+            untouched,
+            out var maliciousAdditions,
+            out _));
+        Assert.Empty(maliciousAdditions);
+        Assert.Empty(untouched);
+
+        var disabled = new[]
+        {
+            new CopilotMcpClientServerConfig
+            {
+                Name = "docs-disabled",
+                Endpoint = "https://example.test/docs-mcp",
+                Enabled = false,
+            },
+        };
+        var disabledPlan = CopilotAgentSkillMcpDependencyInstaller.CreatePlan(
+            [dependencies[0]],
+            disabled);
+        Assert.False(disabledPlan.HasServers);
+        Assert.Contains("禁用", Assert.Single(disabledPlan.Issues), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void SkillMcpDependencyInstallerResolvesUniqueManualAndExactDuplicateMentions()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "copilot-skill-mcp-resolve");
+        var unique = new CopilotAgentSkillCatalogItem("unique-skill", "Unique")
+        {
+            SkillFilePath = Path.GetFullPath(Path.Combine(root, "unique", "SKILL.md")),
+        };
+        var duplicateOne = new CopilotAgentSkillCatalogItem("duplicate-skill", "First")
+        {
+            SkillFilePath = Path.GetFullPath(Path.Combine(root, "one", "SKILL.md")),
+        };
+        var duplicateTwo = new CopilotAgentSkillCatalogItem("duplicate-skill", "Second")
+        {
+            SkillFilePath = Path.GetFullPath(Path.Combine(root, "two", "SKILL.md")),
+        };
+        var prompt = "Use $unique-skill and $duplicate-skill.";
+
+        var withoutExact = CopilotAgentSkillMcpDependencyInstaller.ResolveExplicitSkills(
+            prompt,
+            exactReference: null,
+            [unique, duplicateOne, duplicateTwo]);
+        var withExact = CopilotAgentSkillMcpDependencyInstaller.ResolveExplicitSkills(
+            prompt,
+            CopilotAgentSkillReference.FromCatalogItem(duplicateTwo),
+            [unique, duplicateOne, duplicateTwo]);
+
+        Assert.Equal([unique], withoutExact);
+        Assert.Equal([duplicateTwo, unique], withExact);
     }
 
     [Fact]

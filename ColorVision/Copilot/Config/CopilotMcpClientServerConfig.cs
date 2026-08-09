@@ -132,7 +132,7 @@ namespace ColorVision.Copilot
 
     public static class CopilotMcpClientConfigurationText
     {
-        private const int MaximumServers = 8;
+        internal const int MaximumServers = 8;
         private static readonly Regex NameRegex = new("^[A-Za-z0-9][A-Za-z0-9._-]{0,39}$", RegexOptions.Compiled);
         private static readonly Regex EnvironmentVariableRegex = new("^[A-Za-z_][A-Za-z0-9_]{0,127}$", RegexOptions.Compiled);
         private static readonly Regex ToolNameRegex = new("^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$", RegexOptions.Compiled);

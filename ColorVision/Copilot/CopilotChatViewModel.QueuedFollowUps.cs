@@ -88,6 +88,14 @@ namespace ColorVision.Copilot
             {
                 return false;
             }
+            if (!TryPrepareExplicitSkillMcpDependencies(
+                prompt,
+                agentSkillReference,
+                submissionContext.ProjectInstructionDiscoveryOptions,
+                conversation.Id))
+            {
+                return false;
+            }
 
             var itemReady = new TaskCompletionSource<CopilotQueuedFollowUp>(TaskCreationOptions.RunContinuationsAsynchronously);
             async Task ExecuteFollowUpAsync(CopilotHostedAgentRun run)
