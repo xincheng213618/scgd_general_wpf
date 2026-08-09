@@ -394,6 +394,13 @@ namespace ColorVision.Copilot
         public CopilotProjectInstructionConfigSources PluginsEnabledSource { get; init; } =
             CopilotProjectInstructionConfigSources.None;
 
+        public bool ConfiguredErrorOnToolCollisions { get; init; }
+
+        public bool HasErrorOnToolCollisionsOverride { get; init; }
+
+        public CopilotProjectInstructionConfigSources ErrorOnToolCollisionsSource { get; init; } =
+            CopilotProjectInstructionConfigSources.None;
+
         public bool ConfiguredMentionsV2Enabled { get; init; } = true;
 
         public bool HasMentionsV2EnabledOverride { get; init; }
@@ -731,6 +738,7 @@ namespace ColorVision.Copilot
             || HasShellToolEnabledOverride
             || HasHooksEnabledOverride
             || HasPluginsEnabledOverride
+            || HasErrorOnToolCollisionsOverride
             || HasMentionsV2EnabledOverride
             || HasSkillMcpDependencyInstallEnabledOverride
             || HasShellEnvironmentPolicyOverride
@@ -900,6 +908,15 @@ namespace ColorVision.Copilot
         {
             CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml features.plugins",
             CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml features.plugins",
+            _ => string.Empty,
+        };
+
+        public string ErrorOnToolCollisionsSourceLabel => ErrorOnToolCollisionsSource switch
+        {
+            CopilotProjectInstructionConfigSources.CodexHome =>
+                "Codex Home config.toml features.tool_registry.error_on_tool_collisions",
+            CopilotProjectInstructionConfigSources.TrustedProject =>
+                "受信项目 .codex/config.toml features.tool_registry.error_on_tool_collisions",
             _ => string.Empty,
         };
 
@@ -1212,6 +1229,8 @@ namespace ColorVision.Copilot
         private const string HooksEnabledFeatureKey = "hooks";
         private const string PluginsEnabledKey = "features.plugins";
         private const string PluginsEnabledFeatureKey = "plugins";
+        private const string ErrorOnToolCollisionsKey = "features.tool_registry.error_on_tool_collisions";
+        private const string ErrorOnToolCollisionsTableKey = "error_on_tool_collisions";
         private const string MentionsV2EnabledKey = "features.mentions_v2";
         private const string MentionsV2EnabledFeatureKey = "mentions_v2";
         private const string SkillMcpDependencyInstallEnabledKey = "features.skill_mcp_dependency_install";
@@ -1546,6 +1565,14 @@ namespace ColorVision.Copilot
                 PluginsEnabledSource = layer.HasPluginsEnabledOverride
                     ? source
                     : current.PluginsEnabledSource,
+                ConfiguredErrorOnToolCollisions = layer.HasErrorOnToolCollisionsOverride
+                    ? layer.ErrorOnToolCollisions
+                    : current.ConfiguredErrorOnToolCollisions,
+                HasErrorOnToolCollisionsOverride = current.HasErrorOnToolCollisionsOverride
+                    || layer.HasErrorOnToolCollisionsOverride,
+                ErrorOnToolCollisionsSource = layer.HasErrorOnToolCollisionsOverride
+                    ? source
+                    : current.ErrorOnToolCollisionsSource,
                 ConfiguredMentionsV2Enabled = layer.HasMentionsV2EnabledOverride
                     ? layer.MentionsV2Enabled
                     : current.ConfiguredMentionsV2Enabled,
@@ -1847,6 +1874,7 @@ namespace ColorVision.Copilot
                 || layer.HasShellToolEnabledOverride
                 || layer.HasHooksEnabledOverride
                 || layer.HasPluginsEnabledOverride
+                || layer.HasErrorOnToolCollisionsOverride
                 || layer.HasMentionsV2EnabledOverride
                 || layer.HasSkillMcpDependencyInstallEnabledOverride
                 || layer.ShellEnvironmentPolicyLayer.HasAssignment
@@ -2153,6 +2181,7 @@ namespace ColorVision.Copilot
             var shellToolEnabled = true;
             var hooksEnabled = true;
             var pluginsEnabled = true;
+            var errorOnToolCollisions = false;
             var mentionsV2Enabled = true;
             var skillMcpDependencyInstallEnabled = true;
             var goalsEnabled = true;
@@ -2210,6 +2239,7 @@ namespace ColorVision.Copilot
             var hasShellToolEnabledOverride = false;
             var hasHooksEnabledOverride = false;
             var hasPluginsEnabledOverride = false;
+            var hasErrorOnToolCollisionsOverride = false;
             var hasMentionsV2EnabledOverride = false;
             var hasSkillMcpDependencyInstallEnabledOverride = false;
             var hasGoalsEnabledOverride = false;
@@ -2491,6 +2521,18 @@ namespace ColorVision.Copilot
                         continue;
                     }
                     hasPluginsEnabledOverride = true;
+                    continue;
+                }
+
+                if (string.Equals(assignment.Key, ErrorOnToolCollisionsKey, StringComparison.Ordinal))
+                {
+                    if (!TryParseTomlBoolean(
+                        assignment.Value,
+                        out errorOnToolCollisions))
+                    {
+                        continue;
+                    }
+                    hasErrorOnToolCollisionsOverride = true;
                     continue;
                 }
 
@@ -2997,6 +3039,8 @@ namespace ColorVision.Copilot
                 HasHooksEnabledOverride = hasHooksEnabledOverride,
                 PluginsEnabled = pluginsEnabled,
                 HasPluginsEnabledOverride = hasPluginsEnabledOverride,
+                ErrorOnToolCollisions = errorOnToolCollisions,
+                HasErrorOnToolCollisionsOverride = hasErrorOnToolCollisionsOverride,
                 MentionsV2Enabled = mentionsV2Enabled,
                 HasMentionsV2EnabledOverride = hasMentionsV2EnabledOverride,
                 SkillMcpDependencyInstallEnabled = skillMcpDependencyInstallEnabled,
@@ -3075,6 +3119,7 @@ namespace ColorVision.Copilot
                 || hasShellToolEnabledOverride
                 || hasHooksEnabledOverride
                 || hasPluginsEnabledOverride
+                || hasErrorOnToolCollisionsOverride
                 || hasMentionsV2EnabledOverride
                 || hasSkillMcpDependencyInstallEnabledOverride
                 || shellEnvironmentPolicyLayer.HasAssignment
@@ -3234,6 +3279,7 @@ namespace ColorVision.Copilot
             var lines = NormalizeLines(source);
             var inRootTable = true;
             var inFeaturesTable = false;
+            var inToolRegistryTable = false;
             var inAgentsTable = false;
             var inAutoReviewTable = false;
             var inExperimentalRequestUserInputTable = false;
@@ -3248,6 +3294,7 @@ namespace ColorVision.Copilot
                 {
                     inRootTable = false;
                     inFeaturesTable = IsExactTableHeader(line, "features");
+                    inToolRegistryTable = IsExactTableHeader(line, "features.tool_registry");
                     inAgentsTable = IsExactTableHeader(line, "agents");
                     inAutoReviewTable = IsExactTableHeader(line, "auto_review");
                     inExperimentalRequestUserInputTable = IsExactTableHeader(
@@ -3282,6 +3329,9 @@ namespace ColorVision.Copilot
                         LegacyWebSearchRequestFeatureKey => LegacyWebSearchRequestKey,
                         _ => string.Empty,
                     }
+                        : inToolRegistryTable
+                            && string.Equals(parsedKey, ErrorOnToolCollisionsTableKey, StringComparison.Ordinal)
+                                ? ErrorOnToolCollisionsKey
                         : inAgentsTable
                             ? parsedKey switch
                             {
@@ -3329,6 +3379,7 @@ namespace ColorVision.Copilot
                     && !string.Equals(key, ShellToolEnabledKey, StringComparison.Ordinal)
                     && !string.Equals(key, HooksEnabledKey, StringComparison.Ordinal)
                     && !string.Equals(key, PluginsEnabledKey, StringComparison.Ordinal)
+                    && !string.Equals(key, ErrorOnToolCollisionsKey, StringComparison.Ordinal)
                     && !string.Equals(key, MentionsV2EnabledKey, StringComparison.Ordinal)
                     && !string.Equals(key, SkillMcpDependencyInstallEnabledKey, StringComparison.Ordinal)
                     && !string.Equals(key, GoalsEnabledKey, StringComparison.Ordinal)
@@ -4267,6 +4318,10 @@ namespace ColorVision.Copilot
             public bool PluginsEnabled { get; init; } = true;
 
             public bool HasPluginsEnabledOverride { get; init; }
+
+            public bool ErrorOnToolCollisions { get; init; }
+
+            public bool HasErrorOnToolCollisionsOverride { get; init; }
 
             public bool MentionsV2Enabled { get; init; } = true;
 

@@ -81,6 +81,8 @@ namespace ColorVision.Copilot
 
         internal bool CodexPluginsEnabled { get; init; } = true;
 
+        internal bool CodexErrorOnToolCollisions { get; init; }
+
         internal bool CodexExtensionHooksEnabled => CodexHooksEnabled && CodexPluginsEnabled;
 
         internal CopilotCodexShellEnvironmentPolicy CodexShellEnvironmentPolicy { get; init; } =

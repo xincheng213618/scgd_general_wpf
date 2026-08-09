@@ -355,7 +355,7 @@ namespace ColorVision.Copilot
             };
         }
 
-        private static ICopilotTool[] MergeAvailableTools(
+        internal static ICopilotTool[] MergeAvailableTools(
             CopilotAgentRequest request,
             IReadOnlyList<ICopilotTool> builtInTools,
             IReadOnlyList<ICopilotTool> externalTools,
@@ -379,6 +379,8 @@ namespace ColorVision.Copilot
                     continue;
                 if (!names.Add(tool.Name))
                 {
+                    if (request.CodexErrorOnToolCollisions)
+                        throw new InvalidOperationException($"duplicate tool: functions.{tool.Name.Trim()}");
                     emit(CopilotAgentEvent.RuntimeDiagnostic($"MCP client skipped duplicate tool name {tool.Name}."));
                     continue;
                 }

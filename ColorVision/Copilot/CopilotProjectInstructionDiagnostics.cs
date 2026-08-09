@@ -373,6 +373,23 @@ namespace ColorVision.Copilot
             builder.AppendLine(effective.ConfiguredPluginsEnabled
                 ? "模块提供的 Copilot context 与 tool 可用，扩展 Hook 仍受 features.hooks 约束"
                 : "排除模块提供的 Copilot context、tool、Hook 与 checkpoint capability；不卸载主程序业务插件，不影响内置工具或外部 MCP");
+            builder.Append("Codex features.tool_registry.error_on_tool_collisions：")
+                .Append(effective.ConfiguredErrorOnToolCollisions ? "true" : "false");
+            if (effective.HasErrorOnToolCollisionsOverride)
+            {
+                builder.Append(" · 来源 ")
+                    .Append(effective.ErrorOnToolCollisionsSourceLabel.Length == 0
+                        ? "Codex config.toml features.tool_registry.error_on_tool_collisions"
+                        : effective.ErrorOnToolCollisionsSourceLabel)
+                    .Append(" 提交快照；");
+            }
+            else
+            {
+                builder.Append(" · 官方默认；");
+            }
+            builder.AppendLine(effective.ConfiguredErrorOnToolCollisions
+                ? "重复有效工具名会在模型请求前终止本轮"
+                : "保留先注册工具并诊断跳过重复项");
             builder.Append("Codex features.mentions_v2：")
                 .Append(effective.ConfiguredMentionsV2Enabled ? "true" : "false");
             if (effective.HasMentionsV2EnabledOverride)

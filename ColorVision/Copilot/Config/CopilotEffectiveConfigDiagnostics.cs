@@ -517,6 +517,7 @@ namespace ColorVision.Copilot
             AppendShellToolEnabled(builder, codexConfigOptions);
             AppendHooksEnabled(builder, codexConfigOptions);
             AppendPluginsEnabled(builder, codexConfigOptions);
+            AppendToolRegistryCollisionPolicy(builder, codexConfigOptions);
             AppendMentionsV2Enabled(builder, codexConfigOptions);
             AppendSkillMcpDependencyInstallEnabled(builder, codexConfigOptions);
             AppendShellEnvironmentPolicy(builder, codexConfigOptions);
@@ -904,6 +905,29 @@ namespace ColorVision.Copilot
             builder.AppendLine(codexConfigOptions.ConfiguredMentionsV2Enabled
                 ? " · @ 使用统一候选，合并 Skill、模板、菜单与工作区文件"
                 : " · @ 回退为旧版文件候选，不列出 Skill、模板或菜单；已有附件与已关联上下文不受影响");
+        }
+
+        private static void AppendToolRegistryCollisionPolicy(
+            StringBuilder builder,
+            CopilotProjectInstructionDiscoveryOptions codexConfigOptions)
+        {
+            builder.Append("- Codex features.tool_registry.error_on_tool_collisions：")
+                .Append(codexConfigOptions.ConfiguredErrorOnToolCollisions ? "true" : "false");
+            if (codexConfigOptions.HasErrorOnToolCollisionsOverride)
+            {
+                builder.Append(" · 来源 ")
+                    .Append(codexConfigOptions.ErrorOnToolCollisionsSourceLabel.Length == 0
+                        ? "Codex config.toml features.tool_registry.error_on_tool_collisions"
+                        : codexConfigOptions.ErrorOnToolCollisionsSourceLabel)
+                    .Append(" · 提交快照");
+            }
+            else
+            {
+                builder.Append(" · 官方默认");
+            }
+            builder.AppendLine(codexConfigOptions.ConfiguredErrorOnToolCollisions
+                ? " · 重复有效工具名会在模型请求前终止本轮"
+                : " · 保留先注册工具并诊断跳过重复项");
         }
 
         private static void AppendSkillMcpDependencyInstallEnabled(

@@ -595,6 +595,7 @@ namespace ColorVision.Copilot
                 CodexShellToolEnabled = parentRequest.CodexShellToolEnabled,
                 CodexHooksEnabled = parentRequest.CodexHooksEnabled,
                 CodexPluginsEnabled = parentRequest.CodexPluginsEnabled,
+                CodexErrorOnToolCollisions = parentRequest.CodexErrorOnToolCollisions,
                 CodexShellEnvironmentPolicy = parentRequest.CodexShellEnvironmentPolicy.CreateSnapshot(),
                 CodexExperimentalRequestUserInputEnabled = parentRequest.CodexExperimentalRequestUserInputEnabled,
                 CodexDefaultModeRequestUserInputEnabled = parentRequest.CodexDefaultModeRequestUserInputEnabled,

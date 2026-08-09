@@ -237,6 +237,8 @@ namespace ColorVision.Copilot
 
         internal bool CodexPluginsEnabled { get; init; } = true;
 
+        internal bool CodexErrorOnToolCollisions { get; init; }
+
         internal CopilotCodexShellEnvironmentPolicy CodexShellEnvironmentPolicy { get; init; } =
             CopilotCodexShellEnvironmentPolicy.Default;
 
@@ -452,6 +454,7 @@ namespace ColorVision.Copilot
                 CodexShellToolEnabled = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredShellToolEnabled,
                 CodexHooksEnabled = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredHooksEnabled,
                 CodexPluginsEnabled = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredPluginsEnabled,
+                CodexErrorOnToolCollisions = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredErrorOnToolCollisions,
                 CodexShellEnvironmentPolicy = hostContext.ProjectInstructionDiscoveryOptions
                     .ConfiguredShellEnvironmentPolicy.CreateSnapshot(),
                 CodexExperimentalRequestUserInputEnabled = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredExperimentalRequestUserInputEnabled,
@@ -558,6 +561,7 @@ namespace ColorVision.Copilot
                 CodexShellToolEnabled = plan.CodexShellToolEnabled,
                 CodexHooksEnabled = plan.CodexHooksEnabled,
                 CodexPluginsEnabled = plan.CodexPluginsEnabled,
+                CodexErrorOnToolCollisions = plan.CodexErrorOnToolCollisions,
                 CodexShellEnvironmentPolicy = plan.CodexShellEnvironmentPolicy.CreateSnapshot(),
                 CodexExperimentalRequestUserInputEnabled = plan.CodexExperimentalRequestUserInputEnabled,
                 CodexDefaultModeRequestUserInputEnabled = plan.CodexDefaultModeRequestUserInputEnabled,
