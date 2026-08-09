@@ -358,6 +358,10 @@ namespace ColorVision.Copilot
             {
                 builder.Append(" · 官方默认；");
             }
+            var synchronousHookCount = effective.ConfiguredCommandHooks.Count(
+                hook => hook.ExecutionMode == CopilotToolExecutionHookMode.Sync);
+            var asynchronousHookCount = effective.ConfiguredCommandHooks.Count(
+                hook => hook.ExecutionMode == CopilotToolExecutionHookMode.Async);
             if (effective.ConfiguredHooksEnabled)
             {
                 builder.Append(effective.ConfiguredPluginsEnabled
@@ -371,7 +375,11 @@ namespace ColorVision.Copilot
             }
             builder.Append("；已加载命令 Hook ")
                 .Append(effective.ConfiguredCommandHooks.Count)
-                .Append(" 个 / 来源文件 ")
+                .Append(" 个（同步 ")
+                .Append(synchronousHookCount)
+                .Append(" / 异步 ")
+                .Append(asynchronousHookCount)
+                .Append("） / 来源文件 ")
                 .Append(effective.AppliedHookFilePaths.Count)
                 .Append(" 个 / 配置问题 ")
                 .Append(effective.ConfiguredHookIssues.Count)

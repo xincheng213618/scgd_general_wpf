@@ -359,16 +359,38 @@ public sealed class CopilotCodexConfiguredCommandHookTests
                 [[hooks.PreToolUse.hooks]]
                 type = "command"
                 commandWindows = "inline-hook"
+                async = true
                 """);
 
             var options = CopilotProjectInstructionDiscoveryConfig.Load(codexHome);
+            var memoryReport = CopilotProjectInstructionDiagnostics.Format(
+                new CopilotProjectInstructionSnapshot(
+                    string.Empty,
+                    string.Empty,
+                    string.Empty,
+                    options,
+                    Array.Empty<CopilotProjectInstructionDocument>()),
+                hasActiveAgentRun: false);
+            var debugReport = CopilotEffectiveConfigDiagnostics.Format(
+                new CopilotEffectiveConfigDiagnosticContext
+                {
+                    Config = new CopilotConfig(),
+                    State = new CopilotChatState(),
+                    ComposerMode = CopilotAgentMode.Code,
+                    CodexConfigOptions = options,
+                });
 
             Assert.Equal(["json-hook", "inline-hook"], options.ConfiguredCommandHooks.Select(hook => hook.Command));
+            Assert.Equal(
+                [CopilotToolExecutionHookMode.Sync, CopilotToolExecutionHookMode.Async],
+                options.ConfiguredCommandHooks.Select(hook => hook.ExecutionMode));
             Assert.Equal([hooksPath, configPath], options.AppliedHookFilePaths);
             Assert.Contains(
                 options.ConfiguredHookIssues,
                 issue => issue.SourceFilePath == configPath
                     && issue.Message.Contains("both hooks.json and config.toml", StringComparison.Ordinal));
+            Assert.Contains("已加载命令 Hook 2 个（同步 1 / 异步 1）", memoryReport, StringComparison.Ordinal);
+            Assert.Contains("已加载命令 Hook 2 个（同步 1 / 异步 1）", debugReport, StringComparison.Ordinal);
         }
         finally
         {
