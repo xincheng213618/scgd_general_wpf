@@ -30,13 +30,31 @@ namespace ColorVision.Copilot
                         hookRuns,
                         async token =>
                         {
-                            var decision = await binding.Hook.BeforeExecuteAsync(
-                                context,
-                                token).ConfigureAwait(false);
+                            CopilotToolPreExecutionOutput? output = null;
+                            CopilotToolExecutionHookDecision decision;
+                            if (binding.Hook is ICopilotToolPreExecutionOutputHook outputHook)
+                            {
+                                output = await outputHook.BeforeExecuteWithOutputAsync(
+                                    context,
+                                    token).ConfigureAwait(false);
+                                decision = output?.Decision
+                                    ?? CopilotToolExecutionHookDecision.Proceed;
+                            }
+                            else
+                            {
+                                decision = await binding.Hook.BeforeExecuteAsync(
+                                    context,
+                                    token).ConfigureAwait(false);
+                            }
                             if (decision?.ShouldProceed == false)
                             {
                                 Log.Warn(
                                     $"Copilot async pre-tool hook control decision was ignored. Tool={context.Invocation.Tool.Name} CallId={context.Invocation.CallId} HookSource={binding.SourceId}");
+                            }
+                            if (output?.HasOutput == true)
+                            {
+                                Log.Warn(
+                                    $"Copilot async pre-tool hook output was ignored by the notification-only execution mode. Tool={context.Invocation.Tool.Name} CallId={context.Invocation.CallId} HookSource={binding.SourceId}");
                             }
                         });
                     continue;
@@ -62,12 +80,36 @@ namespace ColorVision.Copilot
                 }
 
                 CancellationTokenSource? hookCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-                Task<CopilotToolExecutionHookDecision>? hookTask = null;
+                Task? hookTask = null;
                 var hookStopwatch = Stopwatch.StartNew();
                 try
                 {
-                    hookTask = binding.Hook.BeforeExecuteAsync(context, hookCancellation.Token);
-                    var decision = await hookTask.WaitAsync(remaining, cancellationToken) ?? CopilotToolExecutionHookDecision.Proceed;
+                    CopilotToolPreExecutionOutput? output = null;
+                    CopilotToolExecutionHookDecision decision;
+                    if (binding.Hook is ICopilotToolPreExecutionOutputHook outputHook)
+                    {
+                        var outputTask = outputHook.BeforeExecuteWithOutputAsync(
+                            context,
+                            hookCancellation.Token);
+                        hookTask = outputTask;
+                        output = await outputTask.WaitAsync(remaining, cancellationToken);
+                        decision = output?.Decision
+                            ?? CopilotToolExecutionHookDecision.Proceed;
+                    }
+                    else
+                    {
+                        var decisionTask = binding.Hook.BeforeExecuteAsync(
+                            context,
+                            hookCancellation.Token);
+                        hookTask = decisionTask;
+                        decision = await decisionTask.WaitAsync(remaining, cancellationToken)
+                            ?? CopilotToolExecutionHookDecision.Proceed;
+                    }
+                    ApplyPreExecutionOutput(
+                        context.Invocation,
+                        output,
+                        binding.SourceId,
+                        hookEvents);
                     if (!decision.ShouldProceed)
                     {
                         RecordHookRun(
@@ -170,6 +212,13 @@ namespace ColorVision.Copilot
             Action<CopilotAgentEvent> onEvent,
             bool toolWasExecuted = false)
         {
+            foreach (var context in outcome.Invocation.PreToolAdditionalContexts)
+            {
+                outcome.AddModelAdditionalContext(
+                    context.Text,
+                    context.MaximumTokens,
+                    isPreToolUse: true);
+            }
             outcome.HookRuns = hookRuns;
             var hookEvents = new CopilotToolExecutionHookEventPublisher(
                 onEvent,
@@ -343,6 +392,26 @@ namespace ColorVision.Copilot
             await hook.AfterExecuteAsync(outcome, cancellationToken).ConfigureAwait(false);
         }
 
+        private static void ApplyPreExecutionOutput(
+            CopilotToolInvocation invocation,
+            CopilotToolPreExecutionOutput? output,
+            string sourceId,
+            CopilotToolExecutionHookEventPublisher hookEvents)
+        {
+            if (output == null)
+                return;
+
+            var systemMessage = CopilotApprovalRequestReason.Normalize(output.SystemMessage);
+            if (systemMessage.Length > 0)
+            {
+                hookEvents.Diagnostic(
+                    $"PreToolUse hook warning · {sourceId}: {systemMessage}");
+            }
+            invocation.AddPreToolAdditionalContext(
+                output.AdditionalContext,
+                output.AdditionalContextLimitTokens);
+        }
+
         private static CopilotToolExecutionHookState ApplyPostExecutionOutput(
             CopilotToolExecutionOutcome outcome,
             CopilotToolPostExecutionOutput? output,
@@ -467,6 +536,12 @@ namespace ColorVision.Copilot
             {
                 if (_onEvent != null)
                     Publish(CopilotAgentEvent.HookCompleted(_executionFactory(), hookRun));
+            }
+
+            public void Diagnostic(string message)
+            {
+                if (_onEvent != null)
+                    Publish(CopilotAgentEvent.RuntimeDiagnostic(message));
             }
 
             private void Publish(CopilotAgentEvent agentEvent)

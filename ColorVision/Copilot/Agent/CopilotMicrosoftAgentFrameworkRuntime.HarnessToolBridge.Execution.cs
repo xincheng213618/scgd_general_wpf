@@ -168,7 +168,7 @@ namespace ColorVision.Copilot
                 if (outcome.Result.DelegatedRunUsage != null)
                     _recordDelegatedRunUsage?.Invoke(outcome.Result.DelegatedRunUsage);
 
-                await EnqueuePostToolUseContextAsync(
+                await EnqueueHookAdditionalContextAsync(
                     outcome.ModelAdditionalContexts,
                     cancellationToken).ConfigureAwait(false);
 

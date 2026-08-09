@@ -8,6 +8,8 @@ namespace ColorVision.Copilot
 {
     public sealed class CopilotToolInvocation
     {
+        private readonly List<CopilotToolAdditionalContext> _preToolAdditionalContexts = [];
+
         public string CallId { get; init; } = string.Empty;
 
         public int Round { get; init; }
@@ -44,7 +46,32 @@ namespace ColorVision.Copilot
 
         internal IReadOnlyList<CopilotToolExecutionHookBinding> InitialHookBindings { get; init; } =
             Array.Empty<CopilotToolExecutionHookBinding>();
+
+        internal IReadOnlyList<CopilotToolAdditionalContext> PreToolAdditionalContexts
+        {
+            get
+            {
+                lock (_preToolAdditionalContexts)
+                    return _preToolAdditionalContexts.ToArray();
+            }
+        }
+
+        internal void AddPreToolAdditionalContext(string? context, int maximumTokens)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(maximumTokens);
+            if (string.IsNullOrWhiteSpace(context))
+                return;
+
+            lock (_preToolAdditionalContexts)
+            {
+                _preToolAdditionalContexts.Add(new CopilotToolAdditionalContext(
+                    context,
+                    maximumTokens));
+            }
+        }
     }
+
+    internal sealed record CopilotToolAdditionalContext(string Text, int MaximumTokens);
 
     internal static class CopilotToolInvocationContext
     {
@@ -80,8 +107,10 @@ namespace ColorVision.Copilot
     {
         internal const int DefaultAdditionalContextLimitTokens = 2_500;
         private const int MaximumModelFeedbackCharacters = 12_000;
-        private const string AdditionalContextTruncationMarker =
+        private const string PostToolAdditionalContextTruncationMarker =
             "\n...[PostToolUse additional context truncated]...\n";
+        private const string PreToolAdditionalContextTruncationMarker =
+            "\n...[PreToolUse additional context truncated]...\n";
         private CopilotToolResult? _modelVisibleResult;
         private readonly List<string> _modelAdditionalContexts = [];
 
@@ -144,7 +173,8 @@ namespace ColorVision.Copilot
 
         internal void AddModelAdditionalContext(
             string? context,
-            int maximumTokens = DefaultAdditionalContextLimitTokens)
+            int maximumTokens = DefaultAdditionalContextLimitTokens,
+            bool isPreToolUse = false)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(maximumTokens);
             var normalized = CopilotMcpAuditLogger.RedactText(context).Trim();
@@ -153,7 +183,12 @@ namespace ColorVision.Copilot
 
             var bounded = maximumTokens == 0
                 ? normalized
-                : BoundAdditionalContext(normalized, maximumTokens);
+                : BoundAdditionalContext(
+                    normalized,
+                    maximumTokens,
+                    isPreToolUse
+                        ? PreToolAdditionalContextTruncationMarker
+                        : PostToolAdditionalContextTruncationMarker);
             lock (_modelAdditionalContexts)
                 _modelAdditionalContexts.Add(bounded);
         }
@@ -169,7 +204,10 @@ namespace ColorVision.Copilot
             return value[..length];
         }
 
-        private static string BoundAdditionalContext(string value, int maximumTokens)
+        private static string BoundAdditionalContext(
+            string value,
+            int maximumTokens,
+            string truncationMarker)
         {
             var maximumWeight = (long)maximumTokens
                 * CopilotTokenEstimator.AsciiCharactersPerToken;
@@ -177,7 +215,7 @@ namespace ColorVision.Copilot
                 return value;
 
             var markerWeight = CopilotTokenEstimator.EstimateTextWeight(
-                AdditionalContextTruncationMarker);
+                truncationMarker);
             if (markerWeight >= maximumWeight)
             {
                 return value[..CopilotTokenEstimator.GetPrefixLengthWithinWeight(
@@ -209,7 +247,7 @@ namespace ColorVision.Copilot
                 tailStart++;
             }
             return value[..headLength]
-                + AdditionalContextTruncationMarker
+                + truncationMarker
                 + value[tailStart..];
         }
     }
@@ -353,6 +391,24 @@ namespace ColorVision.Copilot
         None,
         Blocked,
         Stopped,
+    }
+
+    internal sealed record CopilotToolPreExecutionOutput(
+        CopilotToolExecutionHookDecision Decision,
+        string SystemMessage = "",
+        string AdditionalContext = "",
+        int AdditionalContextLimitTokens = CopilotToolExecutionOutcome.DefaultAdditionalContextLimitTokens)
+    {
+        public bool HasOutput => !Decision.ShouldProceed
+            || !string.IsNullOrWhiteSpace(SystemMessage)
+            || !string.IsNullOrWhiteSpace(AdditionalContext);
+    }
+
+    internal interface ICopilotToolPreExecutionOutputHook
+    {
+        Task<CopilotToolPreExecutionOutput?> BeforeExecuteWithOutputAsync(
+            CopilotToolExecutionHookContext context,
+            CancellationToken cancellationToken);
     }
 
     internal sealed record CopilotToolPostExecutionOutput(

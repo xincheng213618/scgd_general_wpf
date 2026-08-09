@@ -561,6 +561,171 @@ public sealed class CopilotCodexConfiguredCommandHookTests
     }
 
     [Fact]
+    public async Task PreToolSystemMessageAndAdditionalContextAreRedactedAndBounded()
+    {
+        const string secret = "pre-hook-secret";
+        var workspace = CreateTemporaryDirectory();
+        try
+        {
+            var additionalContext = "start api_key=" + secret + " "
+                + new string('x', 2_000)
+                + " end";
+            var runner = new RecordingCommandHookRunner(new CopilotCodexCommandHookProcessResult(
+                0,
+                false,
+                JsonSerializer.Serialize(new
+                {
+                    systemMessage = "pre-tool warning; api_key=" + secret,
+                    hookSpecificOutput = new
+                    {
+                        hookEventName = "PreToolUse",
+                        additionalContext,
+                    },
+                }),
+                string.Empty));
+            var definition = CreateDefinition(
+                CopilotCodexConfiguredHookEvent.PreToolUse,
+                "^RecordingReadTool$") with
+            {
+                AdditionalContextLimitTokens = 64,
+            };
+            var events = new List<CopilotAgentEvent>();
+
+            var outcome = await CreateExecutor(runner).ExecuteAsync(
+                CreateInvocation(
+                    new RecordingReadTool(),
+                    CreateRequest(workspace, definition),
+                    "pre-context-call"),
+                events.Add,
+                CancellationToken.None);
+
+            Assert.True(outcome.Result.Success);
+            var context = Assert.Single(outcome.ModelAdditionalContexts);
+            Assert.StartsWith("start api_key=<redacted>", context, StringComparison.Ordinal);
+            Assert.EndsWith(" end", context, StringComparison.Ordinal);
+            Assert.Contains("PreToolUse additional context truncated", context, StringComparison.Ordinal);
+            Assert.DoesNotContain(secret, context, StringComparison.Ordinal);
+            Assert.True(CopilotTokenEstimator.EstimateTextWeight(context)
+                <= 64L * CopilotTokenEstimator.AsciiCharactersPerToken);
+            var warning = Assert.Single(events.Where(item =>
+                item.Type == CopilotAgentEventType.RuntimeDiagnostic
+                && item.Text.StartsWith("PreToolUse hook warning", StringComparison.Ordinal)));
+            Assert.Contains("api_key=<redacted>", warning.Text, StringComparison.Ordinal);
+            Assert.DoesNotContain(secret, warning.Text, StringComparison.Ordinal);
+        }
+        finally
+        {
+            Directory.Delete(workspace, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task PreToolAdditionalContextsPreserveConfiguredHandlerOrder()
+    {
+        var workspace = CreateTemporaryDirectory();
+        try
+        {
+            var runner = new RecordingCommandHookRunner(
+                new CopilotCodexCommandHookProcessResult(
+                    0,
+                    false,
+                    """
+                    {"hookSpecificOutput":{"hookEventName":"PreToolUse","additionalContext":"first context"}}
+                    """,
+                    string.Empty),
+                new CopilotCodexCommandHookProcessResult(
+                    0,
+                    false,
+                    """
+                    {"hookSpecificOutput":{"hookEventName":"PreToolUse","additionalContext":"second context"}}
+                    """,
+                    string.Empty));
+            var request = CreateRequest(
+                workspace,
+                CreateDefinition(CopilotCodexConfiguredHookEvent.PreToolUse, "^RecordingReadTool$", 0),
+                CreateDefinition(CopilotCodexConfiguredHookEvent.PreToolUse, "^RecordingReadTool$", 1));
+
+            var outcome = await CreateExecutor(runner).ExecuteAsync(
+                CreateInvocation(new RecordingReadTool(), request, "pre-context-order-call"),
+                _ => { },
+                CancellationToken.None);
+
+            Assert.True(outcome.Result.Success);
+            Assert.Equal(["first context", "second context"], outcome.ModelAdditionalContexts);
+        }
+        finally
+        {
+            Directory.Delete(workspace, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task PreToolBlockedDecisionRetainsAdditionalContextForTheModel()
+    {
+        var workspace = CreateTemporaryDirectory();
+        try
+        {
+            var runner = new RecordingCommandHookRunner(new CopilotCodexCommandHookProcessResult(
+                0,
+                false,
+                """
+                {"decision":"block","reason":"repository policy denied execution","hookSpecificOutput":{"hookEventName":"PreToolUse","additionalContext":"review the repository policy"}}
+                """,
+                string.Empty));
+            var tool = new RecordingReadTool();
+            var request = CreateRequest(
+                workspace,
+                CreateDefinition(CopilotCodexConfiguredHookEvent.PreToolUse, "^RecordingReadTool$"));
+
+            var outcome = await CreateExecutor(runner).ExecuteAsync(
+                CreateInvocation(tool, request, "pre-blocked-context-call"),
+                _ => { },
+                CancellationToken.None);
+
+            Assert.False(outcome.Result.Success);
+            Assert.Equal("configured_hook_denied", outcome.Result.FailureCode);
+            Assert.Equal(0, tool.ExecutionCount);
+            Assert.Equal(["review the repository policy"], outcome.ModelAdditionalContexts);
+        }
+        finally
+        {
+            Directory.Delete(workspace, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task PreToolInvalidDecisionDoesNotInjectAdditionalContext()
+    {
+        var workspace = CreateTemporaryDirectory();
+        try
+        {
+            var runner = new RecordingCommandHookRunner(new CopilotCodexCommandHookProcessResult(
+                0,
+                false,
+                """
+                {"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":42,"additionalContext":"must not be applied"}}
+                """,
+                string.Empty));
+            var request = CreateRequest(
+                workspace,
+                CreateDefinition(CopilotCodexConfiguredHookEvent.PreToolUse, "^RecordingReadTool$"));
+
+            var outcome = await CreateExecutor(runner).ExecuteAsync(
+                CreateInvocation(new RecordingReadTool(), request, "pre-invalid-context-call"),
+                _ => { },
+                CancellationToken.None);
+
+            Assert.False(outcome.Result.Success);
+            Assert.Equal("configured_hook_invalid_output", outcome.Result.FailureCode);
+            Assert.Empty(outcome.ModelAdditionalContexts);
+        }
+        finally
+        {
+            Directory.Delete(workspace, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task PreAndPostHooksRunOnlyInTheirDeclaredPhasesWhenPluginsAreDisabled()
     {
         var workspace = CreateTemporaryDirectory();
@@ -994,10 +1159,10 @@ public sealed class CopilotCodexConfiguredCommandHookTests
     }
 
     [Fact]
-    public void PostToolAdditionalContextMessagesUseDeveloperRoleAndPreserveOrder()
+    public void HookAdditionalContextMessagesUseDeveloperRoleAndPreserveOrder()
     {
         var messages = CopilotMicrosoftAgentFrameworkRuntime.HarnessToolBridge
-            .CreatePostToolUseContextMessages(["first context", " ", "second context"]);
+            .CreateHookAdditionalContextMessages(["first context", " ", "second context"]);
 
         Assert.Equal(2, messages.Count);
         Assert.All(messages, message => Assert.Equal("developer", message.Role.Value));

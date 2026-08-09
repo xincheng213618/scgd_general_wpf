@@ -105,6 +105,7 @@ namespace ColorVision.Copilot
 
     internal sealed class CopilotCodexCommandHook :
         ICopilotToolPermissionRequestHook,
+        ICopilotToolPreExecutionOutputHook,
         ICopilotToolPostExecutionOutputHook
     {
         private readonly CopilotCodexCommandHookDefinition _definition;
@@ -205,9 +206,19 @@ namespace ColorVision.Copilot
             CopilotToolExecutionHookContext context,
             CancellationToken cancellationToken)
         {
+            var output = await BeforeExecuteWithOutputAsync(
+                context,
+                cancellationToken).ConfigureAwait(false);
+            return output?.Decision ?? CopilotToolExecutionHookDecision.Proceed;
+        }
+
+        public async Task<CopilotToolPreExecutionOutput?> BeforeExecuteWithOutputAsync(
+            CopilotToolExecutionHookContext context,
+            CancellationToken cancellationToken)
+        {
             ArgumentNullException.ThrowIfNull(context);
             if (_definition.Event != CopilotCodexConfiguredHookEvent.PreToolUse)
-                return CopilotToolExecutionHookDecision.Proceed;
+                return null;
 
             var result = await RunAsync(
                 context.Invocation,
@@ -216,70 +227,116 @@ namespace ColorVision.Copilot
             var failure = GetProcessFailure(result, "PreToolUse");
             if (failure != null)
             {
-                return CopilotToolExecutionHookDecision.Deny(
-                    failure,
-                    "configured_hook_failed",
-                    CopilotToolFailureKind.Internal);
+                return CreatePreToolOutput(
+                    CopilotToolExecutionHookDecision.Deny(
+                        failure,
+                        "configured_hook_failed",
+                        CopilotToolFailureKind.Internal));
             }
             if (result.ExitCode == 2)
             {
-                return CopilotToolExecutionHookDecision.Deny(
-                    NormalizeReason(result.StandardError, "A configured PreToolUse hook denied this tool call."),
-                    "configured_hook_denied");
+                return CreatePreToolOutput(
+                    CopilotToolExecutionHookDecision.Deny(
+                        NormalizeReason(result.StandardError, "A configured PreToolUse hook denied this tool call."),
+                        "configured_hook_denied"));
             }
 
             if (!TryParseJsonOutput(result.StandardOutput, out var root, out var invalidJson))
             {
                 return invalidJson
-                    ? CopilotToolExecutionHookDecision.Deny(
-                        "A configured PreToolUse hook returned invalid JSON.",
-                        "configured_hook_invalid_output",
-                        CopilotToolFailureKind.Internal)
-                    : CopilotToolExecutionHookDecision.Proceed;
+                    ? CreatePreToolOutput(
+                        CopilotToolExecutionHookDecision.Deny(
+                            "A configured PreToolUse hook returned invalid JSON.",
+                            "configured_hook_invalid_output",
+                            CopilotToolFailureKind.Internal))
+                    : null;
             }
             using (root)
             {
-                if (TryReadStopDecision(root.RootElement, out var stopReason))
+                if (!TryReadOptionalString(
+                    root.RootElement,
+                    "systemMessage",
+                    out var systemMessage))
                 {
-                    return CopilotToolExecutionHookDecision.Deny(
-                        stopReason,
-                        "configured_hook_denied");
+                    return CreateInvalidPreToolOutput(
+                        string.Empty,
+                        "A configured PreToolUse hook returned an invalid systemMessage.");
                 }
-                if (!TryReadHookSpecificOutput(
+
+                var additionalContext = string.Empty;
+                var hasSpecificOutput = TryReadHookSpecificOutput(
                     root.RootElement,
                     "PreToolUse",
                     out var specific,
-                    out var specificError))
+                    out var specificError);
+                if (!hasSpecificOutput && specificError.Length > 0)
                 {
-                    return specificError.Length == 0
-                        ? CopilotToolExecutionHookDecision.Proceed
-                        : CopilotToolExecutionHookDecision.Deny(
-                            specificError,
-                            "configured_hook_invalid_output",
-                            CopilotToolFailureKind.Internal);
+                    return CreateInvalidPreToolOutput(
+                        systemMessage,
+                        specificError);
+                }
+                if (hasSpecificOutput
+                    && !TryReadOptionalString(
+                        specific,
+                        "additionalContext",
+                        out additionalContext))
+                {
+                    return CreateInvalidPreToolOutput(
+                        systemMessage,
+                        "A configured PreToolUse hook returned invalid additionalContext.");
+                }
+
+                if (TryReadStopDecision(root.RootElement, out var stopReason))
+                {
+                    return CreatePreToolOutput(
+                        CopilotToolExecutionHookDecision.Deny(
+                            stopReason,
+                            "configured_hook_denied"),
+                        systemMessage,
+                        additionalContext);
+                }
+                if (!hasSpecificOutput)
+                {
+                    var output = CreatePreToolOutput(
+                        CopilotToolExecutionHookDecision.Proceed,
+                        systemMessage,
+                        additionalContext);
+                    return output.HasOutput ? output : null;
                 }
                 if (specific.TryGetProperty("updatedInput", out var updatedInput)
                     && updatedInput.ValueKind is not (JsonValueKind.Null or JsonValueKind.Undefined))
                 {
-                    return CopilotToolExecutionHookDecision.Deny(
-                        "A configured PreToolUse hook requested an input rewrite that ColorVision cannot bind to the existing approval snapshot.",
-                        "configured_hook_input_rewrite_unsupported",
-                        CopilotToolFailureKind.Authorization);
+                    return CreatePreToolOutput(
+                        CopilotToolExecutionHookDecision.Deny(
+                            "A configured PreToolUse hook requested an input rewrite that ColorVision cannot bind to the existing approval snapshot.",
+                            "configured_hook_input_rewrite_unsupported",
+                            CopilotToolFailureKind.Authorization),
+                        systemMessage,
+                        additionalContext);
                 }
                 if (!specific.TryGetProperty("permissionDecision", out var permissionDecision)
                     || permissionDecision.ValueKind == JsonValueKind.Null)
                 {
-                    return CopilotToolExecutionHookDecision.Proceed;
+                    return CreatePreToolOutput(
+                        CopilotToolExecutionHookDecision.Proceed,
+                        systemMessage,
+                        additionalContext);
                 }
                 if (permissionDecision.ValueKind != JsonValueKind.String)
                 {
-                    return CopilotToolExecutionHookDecision.Deny(
-                        "A configured PreToolUse hook returned an invalid permissionDecision.",
-                        "configured_hook_invalid_output",
-                        CopilotToolFailureKind.Internal);
+                    return CreateInvalidPreToolOutput(
+                        systemMessage,
+                        "A configured PreToolUse hook returned an invalid permissionDecision.");
                 }
 
-                return permissionDecision.GetString() switch
+                var permissionDecisionValue = permissionDecision.GetString();
+                if (permissionDecisionValue is not ("deny" or "allow" or "ask"))
+                {
+                    return CreateInvalidPreToolOutput(
+                        systemMessage,
+                        "A configured PreToolUse hook returned an unsupported permissionDecision.");
+                }
+                var decision = permissionDecisionValue switch
                 {
                     "deny" => CopilotToolExecutionHookDecision.Deny(
                         NormalizeReason(
@@ -287,19 +344,37 @@ namespace ColorVision.Copilot
                             "A configured PreToolUse hook denied this tool call."),
                         "configured_hook_denied"),
                     "allow" => CopilotToolExecutionHookDecision.Proceed,
-                    "ask" => CopilotToolExecutionHookDecision.Deny(
+                    _ => CopilotToolExecutionHookDecision.Deny(
                         NormalizeReason(
                             ReadOptionalString(specific, "permissionDecisionReason"),
                             "A configured PreToolUse hook requested approval that is not bound to this tool invocation."),
                         "configured_hook_approval_required",
                         CopilotToolFailureKind.Authorization),
-                    _ => CopilotToolExecutionHookDecision.Deny(
-                        "A configured PreToolUse hook returned an unsupported permissionDecision.",
-                        "configured_hook_invalid_output",
-                        CopilotToolFailureKind.Internal),
                 };
+                return CreatePreToolOutput(
+                    decision,
+                    systemMessage,
+                    additionalContext);
             }
         }
+
+        private CopilotToolPreExecutionOutput CreateInvalidPreToolOutput(
+            string systemMessage,
+            string failureMessage) => CreatePreToolOutput(
+                CopilotToolExecutionHookDecision.Deny(
+                    failureMessage,
+                    "configured_hook_invalid_output",
+                    CopilotToolFailureKind.Internal),
+                systemMessage);
+
+        private CopilotToolPreExecutionOutput CreatePreToolOutput(
+            CopilotToolExecutionHookDecision decision,
+            string systemMessage = "",
+            string additionalContext = "") => new(
+                decision,
+                systemMessage,
+                additionalContext,
+                _definition.AdditionalContextLimitTokens);
 
         public async Task AfterExecuteAsync(
             CopilotToolExecutionOutcome outcome,

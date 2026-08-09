@@ -111,13 +111,13 @@ namespace ColorVision.Copilot
                 lock (_syncRoot)
                 {
                     if (_messageInjector != null || _messageInjectionSession != null)
-                        throw new InvalidOperationException("PostToolUse message injection is already attached.");
+                        throw new InvalidOperationException("Hook message injection is already attached.");
                     _messageInjector = messageInjector;
                     _messageInjectionSession = session;
                 }
             }
 
-            internal static IReadOnlyList<ChatMessage> CreatePostToolUseContextMessages(
+            internal static IReadOnlyList<ChatMessage> CreateHookAdditionalContextMessages(
                 IReadOnlyList<string> contexts)
             {
                 return (contexts ?? Array.Empty<string>())
@@ -126,11 +126,11 @@ namespace ColorVision.Copilot
                     .ToArray();
             }
 
-            private async Task EnqueuePostToolUseContextAsync(
+            private async Task EnqueueHookAdditionalContextAsync(
                 IReadOnlyList<string> contexts,
                 CancellationToken cancellationToken)
             {
-                var messages = CreatePostToolUseContextMessages(contexts);
+                var messages = CreateHookAdditionalContextMessages(contexts);
                 if (messages.Count == 0)
                     return;
 
@@ -144,7 +144,7 @@ namespace ColorVision.Copilot
                 if (messageInjector == null || session == null)
                 {
                     _emit(CopilotAgentEvent.RuntimeDiagnostic(
-                        "PostToolUse additional context could not be delivered because the Agent message-injection session was unavailable."));
+                        "Hook additional context could not be delivered because the Agent message-injection session was unavailable."));
                     return;
                 }
 
@@ -162,7 +162,7 @@ namespace ColorVision.Copilot
                 catch (Exception ex)
                 {
                     _emit(CopilotAgentEvent.RuntimeDiagnostic(
-                        $"PostToolUse additional context could not be delivered to the Agent. ErrorType={ex.GetType().Name}"));
+                        $"Hook additional context could not be delivered to the Agent. ErrorType={ex.GetType().Name}"));
                 }
             }
 
