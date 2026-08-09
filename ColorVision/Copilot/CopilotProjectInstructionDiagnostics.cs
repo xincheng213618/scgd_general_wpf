@@ -388,8 +388,8 @@ namespace ColorVision.Copilot
                 builder.Append(" · 官方默认；");
             }
             builder.AppendLine(effective.ConfiguredMentionsV2Enabled
-                ? "@ 统一列出模板、菜单与工作区文件"
-                : "@ 回退为旧版文件候选，不列出模板或菜单；已有附件与上下文不受影响");
+                ? "@ 统一列出 Skill、模板、菜单与工作区文件"
+                : "@ 回退为旧版文件候选，不列出 Skill、模板或菜单；已有附件与上下文不受影响");
             builder.Append("Codex shell_environment_policy：")
                 .Append(effective.ConfiguredShellEnvironmentPolicy.BuildRedactedSummary());
             if (effective.HasShellEnvironmentPolicyOverride)

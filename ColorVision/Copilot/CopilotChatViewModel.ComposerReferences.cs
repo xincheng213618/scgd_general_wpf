@@ -53,18 +53,18 @@ namespace ColorVision.Copilot
 
         public string ComposerReferenceHeader =>
             _currentCodexConfigOptions.ConfiguredMentionsV2Enabled
-                ? "@ 关联模板、菜单或文件"
+                ? "@ 关联 Skill、模板、菜单或文件"
                 : "@ 关联文件 · mentions_v2 已关闭";
 
         public string ComposerReferenceMenuHeader =>
             _currentCodexConfigOptions.ConfiguredMentionsV2Enabled
-                ? "关联模板、菜单或文件（@）"
+                ? "关联 Skill、模板、菜单或文件（@）"
                 : "关联文件（@ · mentions_v2 已关闭）";
 
         public string ComposerReferenceMenuToolTip =>
             _currentCodexConfigOptions.ConfiguredMentionsV2Enabled
                 ? "在当前光标位置插入 @ 并打开统一关联候选。"
-                : "在当前光标位置插入 @ 并打开旧版文件候选；features.mentions_v2=false 不列出模板或菜单。";
+                : "在当前光标位置插入 @ 并打开旧版文件候选；features.mentions_v2=false 不列出 Skill、模板或菜单。";
 
         public CopilotComposerReferenceItem? SelectedComposerReference
         {
@@ -98,6 +98,19 @@ namespace ColorVision.Copilot
             }
 
             var conversation = EnsureConversation();
+            if (reference.Kind == CopilotComposerReferenceKind.Skill)
+            {
+                if (reference.AgentSkillReference?.IsStructurallyValid() != true)
+                    return false;
+
+                InputText = CopilotComposerReferenceCatalog.CompleteSkillMention(
+                    InputText,
+                    mention,
+                    reference.AgentSkillReference.Name);
+                SetPendingAgentSkillReference(reference.AgentSkillReference);
+                return true;
+            }
+
             var associated = reference.Kind == CopilotComposerReferenceKind.File
                 ? AddResolvedFileAttachments([reference.Value], conversation) > 0
                     || conversation.Attachments.Any(item =>
@@ -173,7 +186,10 @@ namespace ColorVision.Copilot
             var immediateSuggestions = CopilotComposerReferenceCatalog.SearchImmediate(
                 mention.Query,
                 _activeDocumentPath,
-                _currentCodexConfigOptions.ConfiguredMentionsV2Enabled);
+                _currentCodexConfigOptions.ConfiguredMentionsV2Enabled,
+                _currentCodexConfigOptions.ConfiguredMentionsV2Enabled
+                    ? DiscoverComposerSkills()
+                    : Array.Empty<CopilotAgentSkillCatalogItem>());
             ApplyComposerReferenceSuggestions(immediateSuggestions, previousValue);
 
             if (!string.IsNullOrWhiteSpace(workspaceRoot))

@@ -239,11 +239,17 @@ namespace ColorVision.Copilot
 
         private void AgentSkillCatalog_CatalogChanged(object? sender, EventArgs e)
         {
-            if (Volatile.Read(ref _disposeState) == 1
-                || !(InputText ?? string.Empty).TrimStart().StartsWith('$'))
+            if (Volatile.Read(ref _disposeState) == 1)
             {
                 return;
             }
+
+            var input = InputText ?? string.Empty;
+            var refreshLocalCommands = input.TrimStart().StartsWith('$');
+            var refreshReferences = _currentCodexConfigOptions.ConfiguredMentionsV2Enabled
+                && CopilotComposerReferenceCatalog.TryParseMention(input, out _);
+            if (!refreshLocalCommands && !refreshReferences)
+                return;
 
             var dispatcher = Application.Current?.Dispatcher;
             if (dispatcher != null && !dispatcher.CheckAccess())
@@ -251,12 +257,20 @@ namespace ColorVision.Copilot
                 _ = dispatcher.BeginInvoke(() =>
                 {
                     if (Volatile.Read(ref _disposeState) == 0)
-                        RefreshLocalCommandSuggestions();
+                    {
+                        if (refreshLocalCommands)
+                            RefreshLocalCommandSuggestions();
+                        if (refreshReferences)
+                            RefreshComposerReferenceSuggestions();
+                    }
                 }, DispatcherPriority.Background);
                 return;
             }
 
-            RefreshLocalCommandSuggestions();
+            if (refreshLocalCommands)
+                RefreshLocalCommandSuggestions();
+            if (refreshReferences)
+                RefreshComposerReferenceSuggestions();
         }
     }
 }

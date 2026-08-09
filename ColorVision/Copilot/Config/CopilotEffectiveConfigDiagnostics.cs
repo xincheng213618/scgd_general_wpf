@@ -901,8 +901,8 @@ namespace ColorVision.Copilot
                 builder.Append(" · 官方默认");
             }
             builder.AppendLine(codexConfigOptions.ConfiguredMentionsV2Enabled
-                ? " · @ 使用统一候选，合并模板、菜单与工作区文件"
-                : " · @ 回退为旧版文件候选，不列出模板或菜单；已有附件与已关联上下文不受影响");
+                ? " · @ 使用统一候选，合并 Skill、模板、菜单与工作区文件"
+                : " · @ 回退为旧版文件候选，不列出 Skill、模板或菜单；已有附件与已关联上下文不受影响");
         }
 
         private static void AppendIncludePermissionsInstructions(
