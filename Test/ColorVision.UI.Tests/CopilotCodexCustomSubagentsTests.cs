@@ -318,6 +318,34 @@ public sealed class CopilotCodexCustomSubagentsTests
     }
 
     [Fact]
+    public void DisabledFastModeBlocksACustomAgentServiceTierOverride()
+    {
+        var request = CreateParentRequest(
+            fastModeEnabled: false,
+            new CopilotCodexCustomSubagentDefinition
+            {
+                Name = "reviewer",
+                Description = "Review evidence.",
+                DeveloperInstructions = "Review the evidence.",
+                ServiceTier = "fast",
+            });
+
+        var child = CopilotSubagentRunner.CreateChildRequest(
+            request,
+            CopilotSubagentRoleCatalog.Default.GetRequired(CopilotSubagentRoleCatalog.ExploreRoleId),
+            new CopilotSubagentRunRequest
+            {
+                RunId = "fast-mode-disabled",
+                Task = "Inspect bounded evidence.",
+                Agent = "reviewer",
+                RequestTokenBudget = 16_384,
+            });
+
+        Assert.False(child.CodexFastModeEnabled);
+        Assert.Equal(string.Empty, child.CodexServiceTier);
+    }
+
+    [Fact]
     public async Task UnknownOrInjectedAgentNamesAreRejectedBeforeRunnerStarts()
     {
         var runner = new RecordingSubagentRunner();
@@ -764,6 +792,11 @@ public sealed class CopilotCodexCustomSubagentsTests
     }
 
     private static CopilotAgentRequest CreateParentRequest(
+        params CopilotCodexCustomSubagentDefinition[] definitions) =>
+        CreateParentRequest(fastModeEnabled: true, definitions);
+
+    private static CopilotAgentRequest CreateParentRequest(
+        bool fastModeEnabled,
         params CopilotCodexCustomSubagentDefinition[] definitions) => new()
         {
             ConversationId = "custom-subagent-" + Guid.NewGuid().ToString("N"),
@@ -774,6 +807,7 @@ public sealed class CopilotCodexCustomSubagentsTests
             CodexReasoningEffort = CopilotCodexReasoningEffort.Medium,
             CodexReasoningSummary = CopilotCodexReasoningSummary.Concise,
             CodexModelSupportsReasoningSummaries = true,
+            CodexFastModeEnabled = fastModeEnabled,
             CodexServiceTier = "scale",
             CodexModelVerbosity = CopilotCodexModelVerbosity.Low,
             CodexSandboxMode = CopilotCodexSandboxMode.WorkspaceWrite,

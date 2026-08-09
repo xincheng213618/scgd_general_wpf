@@ -212,6 +212,7 @@ public sealed class CopilotExecutionScopeTests
             CodexReasoningEffort = CopilotCodexReasoningEffort.XHigh,
             CodexReasoningSummary = CopilotCodexReasoningSummary.Concise,
             CodexModelSupportsReasoningSummaries = false,
+            CodexFastModeEnabled = false,
             CodexServiceTier = "fast",
             CodexModelVerbosity = CopilotCodexModelVerbosity.High,
             Mode = CopilotAgentMode.Code,
@@ -253,7 +254,8 @@ public sealed class CopilotExecutionScopeTests
         Assert.Equal(parentRequest.CodexReasoningEffort, childRequest.CodexReasoningEffort);
         Assert.Equal(parentRequest.CodexReasoningSummary, childRequest.CodexReasoningSummary);
         Assert.Equal(parentRequest.CodexModelSupportsReasoningSummaries, childRequest.CodexModelSupportsReasoningSummaries);
-        Assert.Equal(parentRequest.CodexServiceTier, childRequest.CodexServiceTier);
+        Assert.False(childRequest.CodexFastModeEnabled);
+        Assert.Equal(string.Empty, childRequest.CodexServiceTier);
         Assert.Equal(parentRequest.CodexModelVerbosity, childRequest.CodexModelVerbosity);
 
         var finalizationRequest = Assert.IsType<CopilotAgentRequest>(
@@ -307,6 +309,7 @@ public sealed class CopilotExecutionScopeTests
         Assert.Equal(childRequest.CodexReasoningEffort, finalizationRequest.CodexReasoningEffort);
         Assert.Equal(childRequest.CodexReasoningSummary, finalizationRequest.CodexReasoningSummary);
         Assert.Equal(childRequest.CodexModelSupportsReasoningSummaries, finalizationRequest.CodexModelSupportsReasoningSummaries);
+        Assert.False(finalizationRequest.CodexFastModeEnabled);
         Assert.Equal(childRequest.CodexServiceTier, finalizationRequest.CodexServiceTier);
         Assert.Equal(childRequest.CodexModelVerbosity, finalizationRequest.CodexModelVerbosity);
         Assert.True(CopilotMicrosoftAgentFrameworkRuntime.CanUseMinimalDelegatedFinalizationInstructions(

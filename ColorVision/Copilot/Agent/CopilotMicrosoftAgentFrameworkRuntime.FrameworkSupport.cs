@@ -110,8 +110,9 @@ namespace ColorVision.Copilot
             var hasSummaryOverride = request.CodexReasoningSummary !=
                 CopilotCodexReasoningSummary.Unspecified;
             var hasReasoningSupportOverride = request.CodexModelSupportsReasoningSummaries.HasValue;
-            var serviceTier = CopilotCodexServiceTierSelection.GetRequestToken(
-                request.CodexServiceTier);
+            var serviceTier = request.CodexFastModeEnabled
+                ? CopilotCodexServiceTierSelection.GetRequestToken(request.CodexServiceTier)
+                : string.Empty;
             var hasVerbosityOverride = request.CodexModelVerbosity !=
                 CopilotCodexModelVerbosity.Unspecified;
             var safetyIdentifier = CopilotOpenAiSafetyIdentifier.GetCurrent();

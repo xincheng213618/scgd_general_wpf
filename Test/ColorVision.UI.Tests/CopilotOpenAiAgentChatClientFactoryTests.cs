@@ -299,6 +299,35 @@ public sealed class CopilotOpenAiAgentChatClientFactoryTests
         Assert.Equal("concise", root.GetProperty("reasoning").GetProperty("summary").GetString());
     }
 
+    [Fact]
+    public async Task OfficialOpenAiAgentDropsServiceTierWhenFastModeIsDisabled()
+    {
+        using var handler = new CapturingHandler(
+            HttpStatusCode.OK,
+            TextResponseStream,
+            "text/event-stream");
+        using var httpClient = new HttpClient(handler);
+        var profile = CreateProfile(
+            CopilotVendorType.OpenAI,
+            "https://api.openai.com/v1",
+            "gpt-5.5");
+        using var client = CopilotOpenAiAgentChatClientFactory.Create(profile, httpClient);
+        var request = new CopilotAgentRequest
+        {
+            Profile = profile,
+            CodexFastModeEnabled = false,
+            CodexServiceTier = "fast",
+        };
+
+        await client.GetStreamingResponseAsync(
+                [new ChatMessage(ChatRole.User, "Honor the fast mode gate.")],
+                CopilotMicrosoftAgentFrameworkRuntime.BuildChatOptions(request, []))
+            .ToChatResponseAsync();
+
+        using var payload = JsonDocument.Parse(handler.LastPayload);
+        Assert.False(payload.RootElement.TryGetProperty("service_tier", out _));
+    }
+
     [Theory]
     [InlineData(null, "minimal", "concise", "minimal", "concise")]
     [InlineData(null, "none", null, "none", null)]

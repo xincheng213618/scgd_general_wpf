@@ -525,6 +525,22 @@ namespace ColorVision.Copilot
             AppendIncludeEnvironmentContext(builder, codexConfigOptions);
             AppendIncludeSkillInstructions(builder, codexConfigOptions);
             AppendAgentsEnabled(builder, codexConfigOptions);
+            builder.Append("- Codex features.fast_mode：")
+                .Append(codexConfigOptions.ConfiguredFastModeEnabled ? "true" : "false");
+            if (codexConfigOptions.HasFastModeEnabledOverride)
+            {
+                builder.Append(" · 来源 ")
+                    .Append(codexConfigOptions.FastModeEnabledSourceLabel.Length == 0
+                        ? "Codex config.toml"
+                        : codexConfigOptions.FastModeEnabledSourceLabel);
+            }
+            else
+            {
+                builder.Append(" · Codex 稳定功能默认值");
+            }
+            builder.AppendLine(codexConfigOptions.ConfiguredFastModeEnabled
+                ? " · 请求快照 · 允许 service_tier"
+                : " · 请求快照 · 总闸门关闭，不发送任何 service_tier");
             builder.Append("- Codex service_tier：");
             if (!codexConfigOptions.HasServiceTierOverride)
             {
@@ -533,9 +549,10 @@ namespace ColorVision.Copilot
             else
             {
                 builder.Append(codexConfigOptions.ConfiguredServiceTier)
-                    .Append(" → 请求 ")
-                    .Append(CopilotCodexServiceTierSelection.GetRequestToken(
-                        codexConfigOptions.ConfiguredServiceTier))
+                    .Append(codexConfigOptions.ConfiguredFastModeEnabled
+                        ? " → 请求 " + CopilotCodexServiceTierSelection.GetRequestToken(
+                            codexConfigOptions.ConfiguredServiceTier)
+                        : " → 不发送（features.fast_mode=false）")
                     .Append(" · 来源 ")
                     .Append(codexConfigOptions.ServiceTierSourceLabel.Length == 0
                         ? "Codex config.toml"

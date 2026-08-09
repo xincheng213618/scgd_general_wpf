@@ -516,6 +516,13 @@ namespace ColorVision.Copilot
         public CopilotProjectInstructionConfigSources HideAgentReasoningSource { get; init; } =
             CopilotProjectInstructionConfigSources.None;
 
+        public bool ConfiguredFastModeEnabled { get; init; } = true;
+
+        public bool HasFastModeEnabledOverride { get; init; }
+
+        public CopilotProjectInstructionConfigSources FastModeEnabledSource { get; init; } =
+            CopilotProjectInstructionConfigSources.None;
+
         public string ConfiguredServiceTier { get; init; } = string.Empty;
 
         public bool HasServiceTierOverride { get; init; }
@@ -687,6 +694,7 @@ namespace ColorVision.Copilot
             || HasModelReasoningSummaryOverride
             || HasModelSupportsReasoningSummariesOverride
             || HasHideAgentReasoningOverride
+            || HasFastModeEnabledOverride
             || HasServiceTierOverride
             || HasModelVerbosityOverride
             || HasModelAutoCompactTokenLimitOverride
@@ -951,6 +959,15 @@ namespace ColorVision.Copilot
             _ => string.Empty,
         };
 
+        public string FastModeEnabledSourceLabel => FastModeEnabledSource switch
+        {
+            CopilotProjectInstructionConfigSources.CodexHome =>
+                "Codex Home config.toml features.fast_mode",
+            CopilotProjectInstructionConfigSources.TrustedProject =>
+                "受信项目 .codex/config.toml features.fast_mode",
+            _ => string.Empty,
+        };
+
         public string ModelVerbositySourceLabel => ModelVerbositySource switch
         {
             CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml model_verbosity",
@@ -1101,6 +1118,8 @@ namespace ColorVision.Copilot
         private const string ModelReasoningSummaryKey = "model_reasoning_summary";
         private const string ModelSupportsReasoningSummariesKey = "model_supports_reasoning_summaries";
         private const string HideAgentReasoningKey = "hide_agent_reasoning";
+        private const string FastModeEnabledKey = "features.fast_mode";
+        private const string FastModeEnabledFeatureKey = "fast_mode";
         private const string ServiceTierKey = "service_tier";
         private const string ModelVerbosityKey = "model_verbosity";
         private const string ModelAutoCompactTokenLimitKey = "model_auto_compact_token_limit";
@@ -1525,6 +1544,14 @@ namespace ColorVision.Copilot
                 HideAgentReasoningSource = layer.HasHideAgentReasoningOverride
                     ? source
                     : current.HideAgentReasoningSource,
+                ConfiguredFastModeEnabled = layer.HasFastModeEnabledOverride
+                    ? layer.FastModeEnabled
+                    : current.ConfiguredFastModeEnabled,
+                HasFastModeEnabledOverride = current.HasFastModeEnabledOverride
+                    || layer.HasFastModeEnabledOverride,
+                FastModeEnabledSource = layer.HasFastModeEnabledOverride
+                    ? source
+                    : current.FastModeEnabledSource,
                 ConfiguredServiceTier = layer.HasServiceTierOverride
                     ? layer.ServiceTier
                     : current.ConfiguredServiceTier,
@@ -1636,6 +1663,7 @@ namespace ColorVision.Copilot
                 || layer.HasModelReasoningSummaryOverride
                 || layer.HasModelSupportsReasoningSummariesOverride
                 || layer.HasHideAgentReasoningOverride
+                || layer.HasFastModeEnabledOverride
                 || layer.HasServiceTierOverride
                 || layer.HasModelVerbosityOverride
                 || layer.HasModelAutoCompactTokenLimitOverride
@@ -1933,6 +1961,7 @@ namespace ColorVision.Copilot
             var modelReasoningSummary = CopilotCodexReasoningSummary.Unspecified;
             var modelSupportsReasoningSummaries = false;
             var hideAgentReasoning = false;
+            var fastModeEnabled = true;
             var serviceTier = string.Empty;
             var modelVerbosity = CopilotCodexModelVerbosity.Unspecified;
             var modelAutoCompactTokenLimit = 0;
@@ -1983,6 +2012,7 @@ namespace ColorVision.Copilot
             var hasModelReasoningSummaryOverride = false;
             var hasModelSupportsReasoningSummariesOverride = false;
             var hasHideAgentReasoningOverride = false;
+            var hasFastModeEnabledOverride = false;
             var hasServiceTierOverride = false;
             var hasModelVerbosityOverride = false;
             var hasModelAutoCompactTokenLimitOverride = false;
@@ -2459,6 +2489,18 @@ namespace ColorVision.Copilot
                     continue;
                 }
 
+                if (string.Equals(assignment.Key, FastModeEnabledKey, StringComparison.Ordinal))
+                {
+                    if (!TryParseTomlBoolean(
+                        assignment.Value,
+                        out fastModeEnabled))
+                    {
+                        continue;
+                    }
+                    hasFastModeEnabledOverride = true;
+                    continue;
+                }
+
                 if (string.Equals(assignment.Key, ServiceTierKey, StringComparison.Ordinal))
                 {
                     if (!TryParseConfiguredText(
@@ -2682,6 +2724,8 @@ namespace ColorVision.Copilot
                 HasModelSupportsReasoningSummariesOverride = hasModelSupportsReasoningSummariesOverride,
                 HideAgentReasoning = hideAgentReasoning,
                 HasHideAgentReasoningOverride = hasHideAgentReasoningOverride,
+                FastModeEnabled = fastModeEnabled,
+                HasFastModeEnabledOverride = hasFastModeEnabledOverride,
                 ServiceTier = serviceTier,
                 HasServiceTierOverride = hasServiceTierOverride,
                 ModelVerbosity = modelVerbosity,
@@ -2728,6 +2772,7 @@ namespace ColorVision.Copilot
                 || hasModelReasoningSummaryOverride
                 || hasModelSupportsReasoningSummariesOverride
                 || hasHideAgentReasoningOverride
+                || hasFastModeEnabledOverride
                 || hasServiceTierOverride
                 || hasModelVerbosityOverride
                 || hasModelAutoCompactTokenLimitOverride
@@ -2895,6 +2940,7 @@ namespace ColorVision.Copilot
                     {
                         PreventIdleSleepFeatureKey => PreventIdleSleepKey,
                         ShellToolEnabledFeatureKey => ShellToolEnabledKey,
+                        FastModeEnabledFeatureKey => FastModeEnabledKey,
                         GoalsEnabledFeatureKey => GoalsEnabledKey,
                         DefaultModeRequestUserInputEnabledFeatureKey => DefaultModeRequestUserInputEnabledKey,
                         LegacyWebSearchFeatureKey => LegacyWebSearchKey,
@@ -2966,6 +3012,7 @@ namespace ColorVision.Copilot
                     && !string.Equals(key, ModelReasoningSummaryKey, StringComparison.Ordinal)
                     && !string.Equals(key, ModelSupportsReasoningSummariesKey, StringComparison.Ordinal)
                     && !string.Equals(key, HideAgentReasoningKey, StringComparison.Ordinal)
+                    && !string.Equals(key, FastModeEnabledKey, StringComparison.Ordinal)
                     && !string.Equals(key, ServiceTierKey, StringComparison.Ordinal)
                     && !string.Equals(key, ModelVerbosityKey, StringComparison.Ordinal)
                     && !string.Equals(key, ModelAutoCompactTokenLimitKey, StringComparison.Ordinal)
@@ -3951,6 +3998,10 @@ namespace ColorVision.Copilot
             public bool HideAgentReasoning { get; init; }
 
             public bool HasHideAgentReasoningOverride { get; init; }
+
+            public bool FastModeEnabled { get; init; } = true;
+
+            public bool HasFastModeEnabledOverride { get; init; }
 
             public string ServiceTier { get; init; } = string.Empty;
 

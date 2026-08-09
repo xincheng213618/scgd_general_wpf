@@ -543,9 +543,11 @@ namespace ColorVision.Copilot
                     : parentRequest.CodexReasoningSummary;
             var childSupportsReasoningSummaries = customSubagent?.SupportsReasoningSummaries
                 ?? parentRequest.CodexModelSupportsReasoningSummaries;
-            var childServiceTier = !string.IsNullOrWhiteSpace(customSubagent?.ServiceTier)
-                ? customSubagent.ServiceTier
-                : parentRequest.CodexServiceTier;
+            var childServiceTier = parentRequest.CodexFastModeEnabled
+                ? !string.IsNullOrWhiteSpace(customSubagent?.ServiceTier)
+                    ? customSubagent.ServiceTier
+                    : parentRequest.CodexServiceTier
+                : string.Empty;
             var childModelVerbosity = customSubagent != null
                 && customSubagent.ModelVerbosity != CopilotCodexModelVerbosity.Unspecified
                     ? customSubagent.ModelVerbosity
@@ -599,6 +601,7 @@ namespace ColorVision.Copilot
                 CodexReasoningEffort = childReasoningEffort,
                 CodexReasoningSummary = childReasoningSummary,
                 CodexModelSupportsReasoningSummaries = childSupportsReasoningSummaries,
+                CodexFastModeEnabled = parentRequest.CodexFastModeEnabled,
                 CodexServiceTier = childServiceTier,
                 CodexModelVerbosity = childModelVerbosity,
                 ProjectInstructions = projectInstructions,

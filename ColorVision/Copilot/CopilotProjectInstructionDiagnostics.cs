@@ -596,13 +596,27 @@ namespace ColorVision.Copilot
                         : effective.HideAgentReasoningSourceLabel)
                     .AppendLine(" 提交快照；同时作用于 Chat/Agent，仅隐藏用户可见 reasoning，不改变请求、Token 计量或运行事件");
             }
+            if (effective.HasFastModeEnabledOverride)
+            {
+                builder.Append("Codex features.fast_mode：")
+                    .Append(effective.ConfiguredFastModeEnabled ? "true" : "false")
+                    .Append(" · 来源 ")
+                    .Append(effective.FastModeEnabledSourceLabel.Length == 0
+                        ? "Codex config.toml"
+                        : effective.FastModeEnabledSourceLabel)
+                    .Append(effective.ConfiguredFastModeEnabled
+                        ? " 请求快照；允许 service_tier"
+                        : " 请求快照；总闸门关闭，不发送任何 service_tier")
+                    .AppendLine("；仅 Agent 官方 OpenAI Responses 生效");
+            }
             if (effective.HasServiceTierOverride)
             {
                 builder.Append("Codex service_tier：")
                     .Append(effective.ConfiguredServiceTier)
-                    .Append(" → 请求 ")
-                    .Append(CopilotCodexServiceTierSelection.GetRequestToken(
-                        effective.ConfiguredServiceTier))
+                    .Append(effective.ConfiguredFastModeEnabled
+                        ? " → 请求 " + CopilotCodexServiceTierSelection.GetRequestToken(
+                            effective.ConfiguredServiceTier)
+                        : " → 不发送（features.fast_mode=false）")
                     .Append(" · 来源 ")
                     .Append(effective.ServiceTierSourceLabel.Length == 0
                         ? "Codex config.toml"

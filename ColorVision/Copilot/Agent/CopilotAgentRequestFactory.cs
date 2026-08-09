@@ -287,6 +287,8 @@ namespace ColorVision.Copilot
 
         internal bool? CodexModelSupportsReasoningSummaries { get; init; }
 
+        internal bool CodexFastModeEnabled { get; init; } = true;
+
         internal string CodexServiceTier { get; init; } = string.Empty;
 
         internal CopilotCodexModelVerbosity CodexModelVerbosity { get; init; } =
@@ -481,6 +483,7 @@ namespace ColorVision.Copilot
                 CodexModelSupportsReasoningSummaries = hostContext.ProjectInstructionDiscoveryOptions.HasModelSupportsReasoningSummariesOverride
                     ? hostContext.ProjectInstructionDiscoveryOptions.ConfiguredModelSupportsReasoningSummaries
                     : null,
+                CodexFastModeEnabled = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredFastModeEnabled,
                 CodexServiceTier = hostContext.ProjectInstructionDiscoveryOptions.HasServiceTierOverride
                     ? hostContext.ProjectInstructionDiscoveryOptions.ConfiguredServiceTier
                     : string.Empty,
@@ -561,7 +564,10 @@ namespace ColorVision.Copilot
                 CodexReasoningEffort = plan.CodexReasoningEffort,
                 CodexReasoningSummary = plan.CodexReasoningSummary,
                 CodexModelSupportsReasoningSummaries = plan.CodexModelSupportsReasoningSummaries,
-                CodexServiceTier = plan.CodexServiceTier,
+                CodexFastModeEnabled = plan.CodexFastModeEnabled,
+                CodexServiceTier = plan.CodexFastModeEnabled
+                    ? plan.CodexServiceTier
+                    : string.Empty,
                 CodexModelVerbosity = plan.CodexModelVerbosity,
                 ProjectInstructions = plan.ProjectInstructions,
                 ReadableLocalFilePaths = plan.ReadableLocalFilePaths,

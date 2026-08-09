@@ -179,6 +179,7 @@ namespace ColorVision.Copilot
                 CodexReasoningEffort = explorationRequest.CodexReasoningEffort,
                 CodexReasoningSummary = explorationRequest.CodexReasoningSummary,
                 CodexModelSupportsReasoningSummaries = explorationRequest.CodexModelSupportsReasoningSummaries,
+                CodexFastModeEnabled = explorationRequest.CodexFastModeEnabled,
                 CodexServiceTier = explorationRequest.CodexServiceTier,
                 CodexModelVerbosity = explorationRequest.CodexModelVerbosity,
                 ProjectInstructions = preserveProjectInstructions

@@ -239,6 +239,12 @@ namespace ColorVision.Copilot
 
         public string CodexHideAgentReasoningSourceLabel { get; init; } = string.Empty;
 
+        public bool CodexFastModeEnabled { get; init; } = true;
+
+        public bool HasCodexFastModeEnabledOverride { get; init; }
+
+        public string CodexFastModeEnabledSourceLabel { get; init; } = string.Empty;
+
         public string CodexServiceTier { get; init; } = string.Empty;
 
         public bool HasCodexServiceTierOverride { get; init; }
@@ -814,13 +820,27 @@ namespace ColorVision.Copilot
                         : snapshot.CodexHideAgentReasoningSourceLabel.Trim())
                     .AppendLine(" 提交快照；同时作用于 Chat/Agent，仅改变用户可见输出，不改变请求、Token 计量或运行事件）");
             }
+            if (snapshot.HasCodexFastModeEnabledOverride)
+            {
+                builder.Append("快速服务等级总闸门：")
+                    .Append(snapshot.CodexFastModeEnabled ? "启用" : "关闭")
+                    .Append("（")
+                    .Append(string.IsNullOrWhiteSpace(snapshot.CodexFastModeEnabledSourceLabel)
+                        ? "Codex config.toml features.fast_mode"
+                        : snapshot.CodexFastModeEnabledSourceLabel.Trim())
+                    .Append(snapshot.CodexFastModeEnabled
+                        ? " 请求快照；允许 service_tier"
+                        : " 请求快照；不发送任何 service_tier")
+                    .AppendLine("；仅 Agent 官方 OpenAI Responses 生效）");
+            }
             if (snapshot.HasCodexServiceTierOverride)
             {
                 builder.Append("服务等级：")
                     .Append(snapshot.CodexServiceTier)
-                    .Append(" → 请求 ")
-                    .Append(CopilotCodexServiceTierSelection.GetRequestToken(
-                        snapshot.CodexServiceTier))
+                    .Append(snapshot.CodexFastModeEnabled
+                        ? " → 请求 " + CopilotCodexServiceTierSelection.GetRequestToken(
+                            snapshot.CodexServiceTier)
+                        : " → 不发送（features.fast_mode=false）")
                     .Append("（")
                     .Append(string.IsNullOrWhiteSpace(snapshot.CodexServiceTierSourceLabel)
                         ? "Codex config.toml"

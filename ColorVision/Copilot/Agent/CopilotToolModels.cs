@@ -127,6 +127,8 @@ namespace ColorVision.Copilot
 
         internal bool? CodexModelSupportsReasoningSummaries { get; init; }
 
+        internal bool CodexFastModeEnabled { get; init; } = true;
+
         internal string CodexServiceTier { get; init; } = string.Empty;
 
         internal CopilotCodexModelVerbosity CodexModelVerbosity { get; init; } =
