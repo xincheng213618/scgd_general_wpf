@@ -171,17 +171,6 @@ namespace ColorVision.ImageEditor
             };
         }
 
-        internal static string GetScopeDescription(ImageViewPropertyScope scope)
-        {
-            return scope switch
-            {
-                ImageViewPropertyScope.ImageMetadata => ColorVision.ImageEditor.Properties.Resources.ImageView_ScopeDesc_ImageMetadata,
-                ImageViewPropertyScope.ViewState => ColorVision.ImageEditor.Properties.Resources.ImageView_ScopeDesc_ViewState,
-                ImageViewPropertyScope.OpenerRuntime => ColorVision.ImageEditor.Properties.Resources.ImageView_ScopeDesc_OpenerRuntime,
-                _ => string.Empty,
-            };
-        }
-
         internal static int GetScopeSortOrder(ImageViewPropertyScope scope)
         {
             return scope switch
