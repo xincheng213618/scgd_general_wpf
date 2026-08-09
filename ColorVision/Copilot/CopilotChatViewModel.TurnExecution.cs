@@ -276,6 +276,15 @@ namespace ColorVision.Copilot
             var goalsEnabled = turnSnapshot.ProjectInstructionDiscoveryOptions.ConfiguredGoalsEnabled;
             CopilotUiDispatcher.Invoke(() =>
             {
+                if (hostedRun.IsAgent)
+                {
+                    assistantMessage.CaptureAppliedCodexSandboxMode(
+                        turnSnapshot.ProjectInstructionDiscoveryOptions.ConfiguredSandboxMode);
+                }
+                else
+                {
+                    assistantMessage.AppliedCodexSandboxMode = string.Empty;
+                }
                 CopilotConversationService.MarkTurnStarted(
                     Conversations,
                     conversation,
