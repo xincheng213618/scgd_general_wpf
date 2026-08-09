@@ -158,10 +158,14 @@ namespace ColorVision.Copilot
                     ResumeConversation(command, invocation.Arguments);
                     break;
                 case CopilotLocalCommandKind.ArchiveConversation:
-                    ArchiveCurrentConversation(command);
+                    RunUiOperation(
+                        () => ArchiveCurrentConversationAsync(command),
+                        "归档会话");
                     break;
                 case CopilotLocalCommandKind.DeleteConversation:
-                    DeleteCurrentConversation(command);
+                    RunUiOperation(
+                        () => DeleteCurrentConversationAsync(command),
+                        "删除会话");
                     break;
                 case CopilotLocalCommandKind.UnarchiveConversation:
                     UnarchiveConversation(command, invocation.Arguments);

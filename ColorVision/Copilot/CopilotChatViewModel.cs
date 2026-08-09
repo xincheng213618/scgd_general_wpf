@@ -97,6 +97,7 @@ namespace ColorVision.Copilot
         private bool _isExportingConversation;
         private bool _isInspectingGitDiff;
         private bool _isCompactingConversation;
+        private bool _isEndingConversation;
         private bool _isRetryingStatePersistence;
         private long _composerReferenceRefreshVersion;
         private int _selectedLocalCommandSuggestionIndex = -1;
@@ -264,7 +265,11 @@ namespace ColorVision.Copilot
                 conversation => RunUiOperation(() => ExportConversationAsync(conversation), "导出会话"),
                 CanExportConversation);
             RetryStatePersistenceCommand = new RelayCommand(_ => RunUiOperation(RetryStatePersistenceAsync, "重试保存会话"), _ => CanRetryStatePersistence());
-            DeleteConversationCommand = new RelayCommand<CopilotConversationRecord>(DeleteConversation, CanDeleteConversation);
+            DeleteConversationCommand = new RelayCommand<CopilotConversationRecord>(
+                conversation => RunUiOperation(
+                    () => DeleteConversationAsync(conversation),
+                    "删除会话"),
+                CanDeleteConversation);
             TogglePinConversationCommand = new RelayCommand<CopilotConversationRecord>(TogglePinConversation, conversation => !IsBusy && conversation != null);
             CopyPendingActionIdCommand = new RelayCommand<ConfirmableAction>(CopyPendingActionId, action => action != null);
             CopyPendingActionPayloadCommand = new RelayCommand<ConfirmableAction>(CopyPendingActionPayload, action => action != null);

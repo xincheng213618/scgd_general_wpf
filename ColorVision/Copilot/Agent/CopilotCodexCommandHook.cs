@@ -38,6 +38,13 @@ namespace ColorVision.Copilot
         public bool HasFailure => !string.IsNullOrWhiteSpace(FailureCode);
     }
 
+    internal sealed record CopilotCodexSessionEndOutput(
+        string FailureMessage = "",
+        string FailureCode = "")
+    {
+        public bool HasFailure => !string.IsNullOrWhiteSpace(FailureCode);
+    }
+
     internal sealed record CopilotCodexStopOutput(
         bool ShouldStop = false,
         string StopReason = "",
@@ -467,6 +474,35 @@ namespace ColorVision.Copilot
                 SystemMessage: systemMessage,
                 FailureMessage: failureMessage,
                 FailureCode: failureCode);
+
+        internal async Task<CopilotCodexSessionEndOutput?> OnSessionEndAsync(
+            CopilotAgentRequest request,
+            CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(request);
+            if (_definition.Event != CopilotCodexConfiguredHookEvent.SessionEnd)
+                return null;
+
+            var result = await RunAsync(
+                request,
+                BuildSessionEndInputJson(request),
+                cancellationToken).ConfigureAwait(false);
+            if (result.TimedOut)
+            {
+                return new CopilotCodexSessionEndOutput(
+                    "A configured SessionEnd hook exceeded its timeout.",
+                    "configured_hook_failed");
+            }
+            if (result.ExitCode == 0)
+                return new CopilotCodexSessionEndOutput();
+
+            var failure = CopilotApprovalRequestReason.Normalize(result.StandardError);
+            return new CopilotCodexSessionEndOutput(
+                failure.Length > 0
+                    ? failure
+                    : $"A configured SessionEnd hook exited with code {result.ExitCode}.",
+                "configured_hook_failed");
+        }
 
         internal async Task<CopilotCodexUserPromptSubmitOutput?> OnUserPromptSubmitAsync(
             CopilotAgentRequest request,
@@ -1599,6 +1635,19 @@ namespace ColorVision.Copilot
                 ["model"] = request.Profile?.Model ?? string.Empty,
                 ["permission_mode"] = ResolvePermissionMode(request),
                 ["source"] = source ?? string.Empty,
+            };
+            return JsonSerializer.Serialize(input) + Environment.NewLine;
+        }
+
+        private static string BuildSessionEndInputJson(CopilotAgentRequest request)
+        {
+            var input = new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["session_id"] = request.ConversationId,
+                ["transcript_path"] = null,
+                ["cwd"] = CopilotCodexCommandHookRunner.ResolveWorkingDirectory(request),
+                ["hook_event_name"] = "SessionEnd",
+                ["reason"] = "other",
             };
             return JsonSerializer.Serialize(input) + Environment.NewLine;
         }

@@ -59,6 +59,7 @@ namespace ColorVision.Copilot
         }
 
         private bool HasExclusiveLocalOperation => _isCompactingConversation
+            || _isEndingConversation
             || _fileAttachmentCts != null
             || _webPageAttachmentCts != null;
 

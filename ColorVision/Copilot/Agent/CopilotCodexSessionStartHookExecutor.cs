@@ -298,6 +298,13 @@ namespace ColorVision.Copilot
             }
         }
 
+        public void End(string conversationId)
+        {
+            var normalizedConversationId = NormalizeConversationId(conversationId);
+            lock (_gate)
+                _sessions.Remove(normalizedConversationId);
+        }
+
         public async Task<CopilotCodexSessionStartHookOutcome> RunBeforeTurnAsync(
             CopilotAgentRequest request,
             bool hasPersistedHistory,

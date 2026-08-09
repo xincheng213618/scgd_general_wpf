@@ -179,6 +179,8 @@ namespace ColorVision.Copilot
                         : "请修改历史搜索关键词";
                 if (_isCompactingConversation)
                     return "停止上下文压缩";
+                if (_isEndingConversation)
+                    return "正在结束会话并运行 SessionEnd Hook";
                 if (_fileAttachmentCts != null)
                     return "停止处理附件";
                 if (_webPageAttachmentCts != null)
@@ -533,7 +535,8 @@ namespace ColorVision.Copilot
         }
         private bool _isBusy;
 
-        public bool CanSwitchConversation => !IsBusy || IsAgentRequestActive;
+        public bool CanSwitchConversation => !_isEndingConversation
+            && (!IsBusy || IsAgentRequestActive);
 
         public bool CanSelectProfile => !IsBusy && Profiles.Count > 0;
 

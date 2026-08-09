@@ -17,6 +17,7 @@ namespace ColorVision.Copilot
         private readonly CopilotMicrosoftAgentFrameworkRuntime _agentRuntime;
         private readonly CopilotWorkspaceRollbackCoordinator _workspaceRollbackCoordinator;
         private readonly CopilotCodexSessionStartHookLifecycle _sessionStartHookLifecycle;
+        private readonly CopilotCodexSessionEndHookLifecycle _sessionEndHookLifecycle;
         private readonly CopilotCodexUserPromptSubmitHookExecutor _userPromptSubmitHookExecutor;
         private readonly CopilotCodexStopHookExecutor _stopHookExecutor;
 
@@ -24,6 +25,7 @@ namespace ColorVision.Copilot
             : this(
                 chatService,
                 new CopilotCodexSessionStartHookLifecycle(),
+                new CopilotCodexSessionEndHookLifecycle(),
                 new CopilotCodexUserPromptSubmitHookExecutor(),
                 new CopilotCodexStopHookExecutor())
         {
@@ -35,6 +37,7 @@ namespace ColorVision.Copilot
             : this(
                 chatService,
                 new CopilotCodexSessionStartHookLifecycle(),
+                new CopilotCodexSessionEndHookLifecycle(),
                 new CopilotCodexUserPromptSubmitHookExecutor(),
                 stopHookExecutor)
         {
@@ -46,6 +49,20 @@ namespace ColorVision.Copilot
             : this(
                 chatService,
                 sessionStartHookLifecycle,
+                new CopilotCodexSessionEndHookLifecycle(),
+                new CopilotCodexUserPromptSubmitHookExecutor(),
+                new CopilotCodexStopHookExecutor())
+        {
+        }
+
+        internal CopilotTurnRuntime(
+            CopilotChatService chatService,
+            CopilotCodexSessionStartHookLifecycle sessionStartHookLifecycle,
+            CopilotCodexSessionEndHookLifecycle sessionEndHookLifecycle)
+            : this(
+                chatService,
+                sessionStartHookLifecycle,
+                sessionEndHookLifecycle,
                 new CopilotCodexUserPromptSubmitHookExecutor(),
                 new CopilotCodexStopHookExecutor())
         {
@@ -54,6 +71,7 @@ namespace ColorVision.Copilot
         private CopilotTurnRuntime(
             CopilotChatService chatService,
             CopilotCodexSessionStartHookLifecycle sessionStartHookLifecycle,
+            CopilotCodexSessionEndHookLifecycle sessionEndHookLifecycle,
             CopilotCodexUserPromptSubmitHookExecutor userPromptSubmitHookExecutor,
             CopilotCodexStopHookExecutor stopHookExecutor)
         {
@@ -72,6 +90,8 @@ namespace ColorVision.Copilot
                 toolExecutor);
             _sessionStartHookLifecycle = sessionStartHookLifecycle
                 ?? throw new ArgumentNullException(nameof(sessionStartHookLifecycle));
+            _sessionEndHookLifecycle = sessionEndHookLifecycle
+                ?? throw new ArgumentNullException(nameof(sessionEndHookLifecycle));
             _userPromptSubmitHookExecutor = userPromptSubmitHookExecutor
                 ?? throw new ArgumentNullException(nameof(userPromptSubmitHookExecutor));
             _stopHookExecutor = stopHookExecutor
@@ -140,8 +160,11 @@ namespace ColorVision.Copilot
 
         public void QueueSessionStart(
             string conversationId,
-            CopilotCodexSessionStartSource source) =>
+            CopilotCodexSessionStartSource source)
+        {
+            _sessionEndHookLifecycle.Reopen(conversationId);
             _sessionStartHookLifecycle.Queue(conversationId, source);
+        }
 
         public Task<CopilotCodexSessionStartHookOutcome> RunSessionStartHooksAsync(
             CopilotAgentRequest request,
@@ -153,6 +176,25 @@ namespace ColorVision.Copilot
                 hasPersistedHistory,
                 onDiagnostic,
                 cancellationToken);
+
+        public async Task<CopilotCodexSessionEndHookOutcome> RunSessionEndHooksAsync(
+            CopilotAgentRequest request,
+            Action<string>? onDiagnostic,
+            CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(request);
+            try
+            {
+                return await _sessionEndHookLifecycle.EndAsync(
+                    request,
+                    onDiagnostic,
+                    cancellationToken).ConfigureAwait(false);
+            }
+            finally
+            {
+                _sessionStartHookLifecycle.End(request.ConversationId);
+            }
+        }
 
         public bool TryEnqueueBackgroundShellCommandCompletion(
             CopilotBackgroundShellCommandSnapshot snapshot) =>

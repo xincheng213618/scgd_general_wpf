@@ -102,7 +102,7 @@ namespace ColorVision.Copilot
             ConversationSearchRequested?.Invoke(this, EventArgs.Empty);
         }
 
-        private void ArchiveCurrentConversation(CopilotLocalCommand command)
+        private async Task ArchiveCurrentConversationAsync(CopilotLocalCommand command)
         {
             var conversation = SelectedConversation;
             if (conversation == null || conversation.IsArchived)
@@ -135,24 +135,39 @@ namespace ColorVision.Copilot
                 return;
             }
 
-            var archivedTitle = conversation.Title;
-            AcknowledgeCompletionNotices(conversation.Id);
-            conversation.IsArchived = true;
-            conversation.Touch();
-            conversation.RefreshSummary();
-            var activeConversations = CopilotConversationArchiveService.GetActive(Conversations);
-            var replacement = activeConversations.Count > 0
-                ? activeConversations[0]
-                : CreateConversation();
-            SelectConversation(replacement, persist: false, preferredProfileId: replacement.ProfileId);
-            RefreshCompactHistoryConversations();
-            RefreshFilteredConversations();
-            RefreshConversationBranchFamily();
-            PersistState(immediate: true);
-            ShowLocalCommandResult(
-                command,
-                $"已归档“{archivedTitle}”。内容仍保留，但已从常用会话列表和 /resume 中隐藏。\n\n"
-                + "使用 /archived 查看，或 /unarchive <会话 ID 或唯一完整标题> 恢复。");
+            _isEndingConversation = true;
+            CommandManager.InvalidateRequerySuggested();
+            try
+            {
+                var hookDiagnostics = await EndConversationSessionAsync(conversation);
+                if (!Conversations.Contains(conversation) || conversation.IsArchived)
+                    return;
+
+                var archivedTitle = conversation.Title;
+                AcknowledgeCompletionNotices(conversation.Id);
+                conversation.IsArchived = true;
+                conversation.Touch();
+                conversation.RefreshSummary();
+                var activeConversations = CopilotConversationArchiveService.GetActive(Conversations);
+                var replacement = activeConversations.Count > 0
+                    ? activeConversations[0]
+                    : CreateConversation();
+                SelectConversation(replacement, persist: false, preferredProfileId: replacement.ProfileId);
+                RefreshCompactHistoryConversations();
+                RefreshFilteredConversations();
+                RefreshConversationBranchFamily();
+                PersistState(immediate: true);
+                ShowLocalCommandResult(
+                    command,
+                    $"已归档“{archivedTitle}”。内容仍保留，但已从常用会话列表和 /resume 中隐藏。\n\n"
+                    + "使用 /archived 查看，或 /unarchive <会话 ID 或唯一完整标题> 恢复。"
+                    + FormatSessionEndHookDiagnostics(hookDiagnostics));
+            }
+            finally
+            {
+                _isEndingConversation = false;
+                CommandManager.InvalidateRequerySuggested();
+            }
         }
 
         private void UnarchiveConversation(CopilotLocalCommand command, string query)
@@ -178,6 +193,9 @@ namespace ColorVision.Copilot
             conversation.IsArchived = false;
             conversation.Touch();
             conversation.RefreshSummary();
+            _turnRuntime.QueueSessionStart(
+                conversation.Id,
+                CopilotCodexSessionStartSource.Resume);
             CopilotConversationService.MoveToPreferredIndex(Conversations, conversation);
             RefreshCompactHistoryConversations();
             RefreshFilteredConversations();

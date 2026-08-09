@@ -23,6 +23,7 @@ namespace ColorVision.Copilot
     internal enum CopilotCodexConfiguredHookEvent
     {
         SessionStart,
+        SessionEnd,
         PermissionRequest,
         PreToolUse,
         PostToolUse,
@@ -80,6 +81,9 @@ namespace ColorVision.Copilot
                 && Command.Length <= CopilotProjectInstructionDiscoveryConfig.MaximumHookCommandCharacters
                 && !Command.Contains('\0')
                 && TimeoutSeconds >= 1
+                && (Event != CopilotCodexConfiguredHookEvent.SessionEnd
+                    || (TimeoutSeconds <= CopilotProjectInstructionDiscoveryConfig.SessionEndMaximumHookTimeoutSeconds
+                        && ExecutionMode == CopilotToolExecutionHookMode.Sync))
                 && StatusMessage.Length <= CopilotProjectInstructionDiscoveryConfig.MaximumHookStatusMessageCharacters
                 && !StatusMessage.Contains('\0')
                 && Enum.IsDefined(ExecutionMode)
@@ -176,6 +180,8 @@ namespace ColorVision.Copilot
         internal const int MaximumConfiguredHookHandlers = 128;
         internal const int MaximumHookCommandCharacters = 16_384;
         internal const int MaximumHookStatusMessageCharacters = 512;
+        internal const int SessionEndDefaultHookTimeoutSeconds = 1;
+        internal const int SessionEndMaximumHookTimeoutSeconds = 3;
         private const int DefaultHookTimeoutSeconds = 600;
         private const string HooksFileName = "hooks.json";
 
@@ -316,7 +322,8 @@ namespace ColorVision.Copilot
                 if ((hookEvent is CopilotCodexConfiguredHookEvent.Stop
                         or CopilotCodexConfiguredHookEvent.SubagentStop
                         or CopilotCodexConfiguredHookEvent.PreCompact
-                        or CopilotCodexConfiguredHookEvent.PostCompact)
+                        or CopilotCodexConfiguredHookEvent.PostCompact
+                        or CopilotCodexConfiguredHookEvent.SessionEnd)
                     && completed.AdditionalContextLimitTokens.HasValue)
                 {
                     AddIssue(
@@ -328,6 +335,11 @@ namespace ColorVision.Copilot
                     AddIssue(
                         "Asynchronous UserPromptSubmit command hooks are parsed but skipped because their output cannot affect the submitted turn.");
                 }
+                AddSessionEndNormalizationIssues(
+                    hookEvent,
+                    completed.TimeoutSeconds,
+                    completed.IsAsync,
+                    AddIssue);
                 definitions.Add(definition!);
             }
 
@@ -739,7 +751,8 @@ namespace ColorVision.Copilot
                     if ((hookEvent is CopilotCodexConfiguredHookEvent.Stop
                             or CopilotCodexConfiguredHookEvent.SubagentStop
                             or CopilotCodexConfiguredHookEvent.PreCompact
-                            or CopilotCodexConfiguredHookEvent.PostCompact)
+                            or CopilotCodexConfiguredHookEvent.PostCompact
+                            or CopilotCodexConfiguredHookEvent.SessionEnd)
                         && handler.TryGetProperty("additionalContextLimit", out _))
                     {
                         issues.Add(new CopilotCodexConfiguredHookIssue(
@@ -754,6 +767,20 @@ namespace ColorVision.Copilot
                             sourceFilePath,
                             "Asynchronous UserPromptSubmit command hooks are parsed but skipped because their output cannot affect the submitted turn."));
                     }
+                    AddSessionEndNormalizationIssues(
+                        hookEvent,
+                        handler.TryGetProperty("timeout", out var sessionEndTimeoutElement)
+                            && sessionEndTimeoutElement.ValueKind == JsonValueKind.Number
+                            && sessionEndTimeoutElement.TryGetInt32(out var sessionEndTimeoutSeconds)
+                                ? sessionEndTimeoutSeconds
+                                : null,
+                        handler.TryGetProperty("async", out var sessionEndAsyncElement)
+                            && sessionEndAsyncElement.ValueKind is JsonValueKind.True or JsonValueKind.False
+                                ? sessionEndAsyncElement.ValueKind == JsonValueKind.True
+                                : null,
+                        message => issues.Add(new CopilotCodexConfiguredHookIssue(
+                            sourceFilePath,
+                            message)));
                     definitions.Add(definition!);
                 }
             }
@@ -883,9 +910,14 @@ namespace ColorVision.Copilot
                 error = $"Hook event '{hookEvent}' command timeout must be a non-negative integer.";
                 return false;
             }
-            var timeoutSeconds = Math.Max(
-                1,
-                configuredTimeoutSeconds ?? DefaultHookTimeoutSeconds);
+            var timeoutSeconds = hookEvent == CopilotCodexConfiguredHookEvent.SessionEnd
+                ? Math.Clamp(
+                    configuredTimeoutSeconds ?? SessionEndDefaultHookTimeoutSeconds,
+                    1,
+                    SessionEndMaximumHookTimeoutSeconds)
+                : Math.Max(
+                    1,
+                    configuredTimeoutSeconds ?? DefaultHookTimeoutSeconds);
 
             if (statusMessage.Length > MaximumHookStatusMessageCharacters
                 || statusMessage.Contains('\0'))
@@ -894,7 +926,9 @@ namespace ColorVision.Copilot
                 return false;
             }
 
-            var executionMode = configuredAsync == true
+            var executionMode = hookEvent == CopilotCodexConfiguredHookEvent.SessionEnd
+                ? CopilotToolExecutionHookMode.Sync
+                : configuredAsync == true
                 ? CopilotToolExecutionHookMode.Async
                 : CopilotToolExecutionHookMode.Sync;
             var additionalContextLimitTokens = configuredAdditionalContextLimitTokens
@@ -941,6 +975,7 @@ namespace ColorVision.Copilot
             hookEvent = value switch
             {
                 "SessionStart" => CopilotCodexConfiguredHookEvent.SessionStart,
+                "SessionEnd" => CopilotCodexConfiguredHookEvent.SessionEnd,
                 "PermissionRequest" => CopilotCodexConfiguredHookEvent.PermissionRequest,
                 "PreToolUse" => CopilotCodexConfiguredHookEvent.PreToolUse,
                 "PostToolUse" => CopilotCodexConfiguredHookEvent.PostToolUse,
@@ -952,9 +987,30 @@ namespace ColorVision.Copilot
                 "SubagentStop" => CopilotCodexConfiguredHookEvent.SubagentStop,
                 _ => default,
             };
-            return value is "SessionStart" or "PermissionRequest" or "PreToolUse" or "PostToolUse"
+            return value is "SessionStart" or "SessionEnd" or "PermissionRequest" or "PreToolUse" or "PostToolUse"
                 or "PreCompact" or "PostCompact" or "UserPromptSubmit" or "Stop"
                 or "SubagentStart" or "SubagentStop";
+        }
+
+        private static void AddSessionEndNormalizationIssues(
+            CopilotCodexConfiguredHookEvent hookEvent,
+            int? configuredTimeoutSeconds,
+            bool? configuredAsync,
+            Action<string> addIssue)
+        {
+            if (hookEvent != CopilotCodexConfiguredHookEvent.SessionEnd)
+                return;
+
+            if (configuredTimeoutSeconds > SessionEndMaximumHookTimeoutSeconds)
+            {
+                addIssue(
+                    $"SessionEnd command hook timeout was clamped to {SessionEndMaximumHookTimeoutSeconds} seconds so application shutdown remains bounded.");
+            }
+            if (configuredAsync == true)
+            {
+                addIssue(
+                    "Asynchronous SessionEnd command hooks run synchronously because the session is already closing.");
+            }
         }
 
         private static string ComputeHookFingerprint(

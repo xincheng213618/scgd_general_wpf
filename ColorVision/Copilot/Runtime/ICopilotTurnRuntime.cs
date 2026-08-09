@@ -25,6 +25,12 @@ namespace ColorVision.Copilot
             CancellationToken cancellationToken) =>
             Task.FromResult(CopilotCodexSessionStartHookOutcome.Continue);
 
+        Task<CopilotCodexSessionEndHookOutcome> RunSessionEndHooksAsync(
+            CopilotAgentRequest request,
+            Action<string>? onDiagnostic,
+            CancellationToken cancellationToken) =>
+            Task.FromResult(CopilotCodexSessionEndHookOutcome.NotRun);
+
         CopilotSteeringAdmissionResult EnqueueSteeringMessage(
             string taskId,
             string message);
