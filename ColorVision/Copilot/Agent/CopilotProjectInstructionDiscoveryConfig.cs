@@ -1299,6 +1299,8 @@ namespace ColorVision.Copilot
 
             var customSubagents = DiscoverCodexHomeCustomSubagents(
                 normalizedRoot,
+                globalSource,
+                globalConfigPath,
                 out var customSubagentDiscoveryIssues);
             options = options with
             {
@@ -1336,29 +1338,41 @@ namespace ColorVision.Copilot
                 workingDirectoryPath))
             {
                 var configPath = Path.Combine(directoryPath, ".codex", ConfigFileName);
-                if (!TryReadConfigSource(normalizedProjectRoot, configPath, out var projectSource)
-                    || !TryParseInstructionLayer(projectSource, out var projectLayer))
-                {
-                    continue;
-                }
-                projectLayer = ResolveCompactPromptFile(
-                    projectLayer,
-                    configPath,
-                    normalizedProjectRoot,
-                    allowOutsideRoot: false);
-                projectLayer = ResolveModelInstructionsFile(
-                    projectLayer,
-                    configPath,
-                    normalizedProjectRoot,
-                    allowOutsideRoot: false);
-                if (!HasApplicableOverrides(projectLayer, includeProjectRootMarkers: false))
+                if (!TryReadConfigSource(normalizedProjectRoot, configPath, out var projectSource))
                     continue;
 
-                options = ApplyLayer(
-                    options,
-                    projectLayer,
-                    CopilotProjectInstructionConfigSources.TrustedProject,
-                    includeProjectRootMarkers: false);
+                var hasInstructionAssignments = TryParseInstructionLayer(
+                    projectSource,
+                    out var projectLayer);
+                var hasCustomSubagentDeclarations = HasValidCustomSubagentDeclarations(projectSource);
+                var hasApplicableOverrides = false;
+
+                if (hasInstructionAssignments)
+                {
+                    projectLayer = ResolveCompactPromptFile(
+                        projectLayer,
+                        configPath,
+                        normalizedProjectRoot,
+                        allowOutsideRoot: false);
+                    projectLayer = ResolveModelInstructionsFile(
+                        projectLayer,
+                        configPath,
+                        normalizedProjectRoot,
+                        allowOutsideRoot: false);
+                    hasApplicableOverrides = HasApplicableOverrides(
+                        projectLayer,
+                        includeProjectRootMarkers: false);
+                    if (hasApplicableOverrides)
+                    {
+                        options = ApplyLayer(
+                            options,
+                            projectLayer,
+                            CopilotProjectInstructionConfigSources.TrustedProject,
+                        includeProjectRootMarkers: false);
+                    }
+                }
+                if (!hasApplicableOverrides && !hasCustomSubagentDeclarations)
+                    continue;
                 appliedConfigFilePaths.Add(Path.GetFullPath(configPath));
             }
 

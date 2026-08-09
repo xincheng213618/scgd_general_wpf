@@ -7,6 +7,191 @@ namespace ColorVision.UI.Tests;
 public sealed class CopilotCodexCustomSubagentsTests
 {
     [Fact]
+    public void ConfigDeclaredAgentResolvesRelativeRoleFileAndUsesFileMetadata()
+    {
+        var globalRoot = CreateTemporaryDirectory();
+        try
+        {
+            var agentsDirectory = Path.Combine(globalRoot, "agents");
+            Directory.CreateDirectory(agentsDirectory);
+            var roleFilePath = Path.Combine(agentsDirectory, "researcher.toml");
+            File.WriteAllText(
+                roleFilePath,
+                string.Join('\n',
+                [
+                    "name = \"reviewer\"",
+                    "description = \"Role-file review specialist\"",
+                    "model = \"review-model\"",
+                    "model_reasoning_effort = \"high\"",
+                ]));
+            File.WriteAllText(
+                Path.Combine(globalRoot, "config.toml"),
+                string.Join('\n',
+                [
+                    "[agents.researcher]",
+                    "description = \"Declaration fallback\"",
+                    "config_file = \"./agents/researcher.toml\"",
+                    "nickname_candidates = [\"Atlas\"]",
+                ]));
+
+            var options = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot);
+
+            var reviewer = Assert.Single(options.CustomSubagents);
+            Assert.Equal("reviewer", reviewer.Name);
+            Assert.Equal("Role-file review specialist", reviewer.Description);
+            Assert.Empty(reviewer.DeveloperInstructions);
+            Assert.Equal("review-model", reviewer.Model);
+            Assert.Equal(CopilotCodexReasoningEffort.High, reviewer.ReasoningEffort);
+            Assert.Equal(CopilotProjectInstructionConfigSources.CodexHome, reviewer.Source);
+            Assert.Equal(Path.GetFullPath(roleFilePath), reviewer.SourceFilePath);
+            Assert.True(reviewer.HasIgnoredSettings);
+            Assert.Empty(options.CustomSubagentDiscoveryIssues);
+        }
+        finally
+        {
+            Directory.Delete(globalRoot, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void DescriptionOnlyDeclaredAgentInheritsTheFixedRoleRuntimeInstructions()
+    {
+        var globalRoot = CreateTemporaryDirectory();
+        try
+        {
+            File.WriteAllText(
+                Path.Combine(globalRoot, "config.toml"),
+                "[agents.reviewer]\ndescription = \"Use the standard bounded reviewer.\"");
+
+            var options = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot);
+            var reviewer = Assert.Single(options.CustomSubagents);
+            var role = CopilotSubagentRoleCatalog.Default.GetRequired(
+                CopilotSubagentRoleCatalog.ExploreRoleId);
+            var child = CopilotSubagentRunner.CreateChildRequest(
+                CreateParentRequest(reviewer),
+                role,
+                new CopilotSubagentRunRequest
+                {
+                    Task = "Review bounded evidence.",
+                    Agent = "reviewer",
+                });
+
+            Assert.Equal("reviewer", reviewer.Name);
+            Assert.Equal("Use the standard bounded reviewer.", reviewer.Description);
+            Assert.Empty(reviewer.DeveloperInstructions);
+            Assert.Equal(role.RuntimeInstructions, child.RuntimeRoleInstructions);
+            Assert.DoesNotContain("Custom agent", child.RuntimeRoleInstructions, StringComparison.Ordinal);
+        }
+        finally
+        {
+            Directory.Delete(globalRoot, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void ProjectDeclaredAgentAppliesOnlyAfterTheExistingTrustGate()
+    {
+        var globalRoot = CreateTemporaryDirectory();
+        var projectRoot = CreateTemporaryDirectory();
+        try
+        {
+            var globalConfigPath = Path.Combine(globalRoot, "config.toml");
+            var globalAgentsDirectory = Path.Combine(globalRoot, "agents");
+            Directory.CreateDirectory(globalAgentsDirectory);
+            File.WriteAllText(
+                Path.Combine(globalAgentsDirectory, "reviewer.toml"),
+                string.Join('\n',
+                [
+                    "developer_instructions = \"Use the global review checklist.\"",
+                    "model = \"global-review-model\"",
+                ]));
+            File.WriteAllText(
+                globalConfigPath,
+                string.Join('\n',
+                [
+                    $"[projects.'{projectRoot}']",
+                    "trust_level = \"trusted\"",
+                    string.Empty,
+                    "[agents.reviewer]",
+                    "description = \"Global reviewer.\"",
+                    "config_file = \"./agents/reviewer.toml\"",
+                ]));
+            var projectConfigDirectory = Path.Combine(projectRoot, ".codex");
+            Directory.CreateDirectory(projectConfigDirectory);
+            File.WriteAllText(
+                Path.Combine(projectConfigDirectory, "config.toml"),
+                "[agents.reviewer]\ndescription = \"Trusted project reviewer.\"");
+
+            var trusted = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
+
+            var reviewer = Assert.Single(trusted.CustomSubagents);
+            Assert.Equal("Trusted project reviewer.", reviewer.Description);
+            Assert.Equal("Use the global review checklist.", reviewer.DeveloperInstructions);
+            Assert.Equal("global-review-model", reviewer.Model);
+            Assert.Equal(CopilotProjectInstructionConfigSources.TrustedProject, reviewer.Source);
+            Assert.Equal(
+                [Path.Combine(projectConfigDirectory, "config.toml")],
+                trusted.AppliedProjectConfigFilePaths,
+                StringComparer.OrdinalIgnoreCase);
+
+            File.WriteAllText(
+                globalConfigPath,
+                string.Join('\n',
+                [
+                    $"[projects.'{projectRoot}']",
+                    "trust_level = \"untrusted\"",
+                    string.Empty,
+                    "[agents.reviewer]",
+                    "description = \"Global reviewer.\"",
+                    "config_file = \"./agents/reviewer.toml\"",
+                ]));
+            var untrusted = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
+
+            var globalReviewer = Assert.Single(untrusted.CustomSubagents);
+            Assert.Equal("Global reviewer.", globalReviewer.Description);
+            Assert.Equal("global-review-model", globalReviewer.Model);
+            Assert.Equal(CopilotProjectInstructionConfigSources.CodexHome, globalReviewer.Source);
+            Assert.Empty(untrusted.AppliedProjectConfigFilePaths);
+        }
+        finally
+        {
+            Directory.Delete(globalRoot, recursive: true);
+            Directory.Delete(projectRoot, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void MissingDeclaredRoleFileProducesPathSafeDiscoveryDiagnostics()
+    {
+        var globalRoot = CreateTemporaryDirectory();
+        try
+        {
+            File.WriteAllText(
+                Path.Combine(globalRoot, "config.toml"),
+                string.Join('\n',
+                [
+                    "[agents.reviewer]",
+                    "description = \"Unavailable reviewer.\"",
+                    "config_file = \"./agents/missing.toml\"",
+                ]));
+
+            var options = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot);
+            var issue = Assert.Single(options.CustomSubagentDiscoveryIssues);
+            var report = CopilotCodexCustomSubagentDiagnostics.FormatDiscoveryIssues(
+                options.CustomSubagentDiscoveryIssues);
+
+            Assert.Empty(options.CustomSubagents);
+            Assert.Equal(CopilotCodexCustomSubagentDiscoveryIssueKind.UnreadableOrUnsafe, issue.Kind);
+            Assert.Equal("missing.toml", issue.FileName);
+            Assert.DoesNotContain(globalRoot, report, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            Directory.Delete(globalRoot, recursive: true);
+        }
+    }
+
+    [Fact]
     public void TrustedProjectAgentsOverrideCodexHomeWhileUntrustedProjectsAreIgnored()
     {
         var globalRoot = CreateTemporaryDirectory();

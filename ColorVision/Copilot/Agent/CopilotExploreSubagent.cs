@@ -705,7 +705,8 @@ namespace ColorVision.Copilot
             CopilotSubagentRoleDescriptor role,
             CopilotCodexCustomSubagentDefinition? customSubagent)
         {
-            if (customSubagent == null)
+            if (customSubagent == null
+                || string.IsNullOrWhiteSpace(customSubagent.DeveloperInstructions))
                 return role.RuntimeInstructions;
 
             return string.Join(Environment.NewLine, new[]
