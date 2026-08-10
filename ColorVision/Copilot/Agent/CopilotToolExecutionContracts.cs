@@ -121,6 +121,8 @@ namespace ColorVision.Copilot
         private CopilotToolResult? _modelVisibleResult;
         private readonly List<string> _modelAdditionalContexts = [];
 
+        internal string? FormattedModelResult { get; set; }
+
         public CopilotToolInvocation Invocation { get; init; } = null!;
 
         public CopilotToolResult Result { get; init; } = new();
@@ -149,6 +151,7 @@ namespace ColorVision.Copilot
             ModelObservation = _modelVisibleResult == null
                 ? null
                 : CopilotToolObservation.FromResult(_modelVisibleResult),
+            ModelToolResult = FormattedModelResult ?? string.Empty,
             Execution = Execution,
             SuppressModelOutput = EffectiveModelResult.SuppressModelOutput,
         };
@@ -174,6 +177,9 @@ namespace ColorVision.Copilot
                 Content = feedback,
                 FailureKind = original.FailureKind,
                 FailureCode = original.FailureCode,
+                ProcessOperation = original.ProcessOperation,
+                ProcessExitCode = original.ProcessExitCode,
+                ProcessTimedOut = original.ProcessTimedOut,
                 SuppressModelOutput = false,
             };
         }

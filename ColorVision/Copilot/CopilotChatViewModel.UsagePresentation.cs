@@ -215,7 +215,11 @@ namespace ColorVision.Copilot
                 ? $"{goal.TokensUsed:N0} / {goal.TokenBudget:N0} tokens"
                 : $"{goal.TokensUsed:N0} tokens";
             var elapsed = CopilotConversationGoalUsageText.FormatElapsedEnglish(goal.TimeUsedSeconds);
+            var score = CopilotConversationGoalScoreText.FormatEnglish(goal);
+            var progressReport = CopilotConversationGoalProgressReportText.FormatEnglishCompact(goal.LastProgressReport);
             return $"{state}, {goal.Objective.Length:N0} characters, {goal.TurnCount:N0} turn(s), {tokenProgress}, {elapsed} elapsed"
+                + (score.Length == 0 ? string.Empty : $", {score}")
+                + (progressReport.Length == 0 ? string.Empty : $", {progressReport}")
                 + (goal.IsActive ? " (completion constraint only)" : string.Empty);
         }
 

@@ -66,8 +66,27 @@ namespace ColorVision.Copilot
 
         public IReadOnlyList<CopilotHostedAgentRun> ScheduledRuns => _taskHost.ScheduledRuns;
 
-        public bool HasConversation(string conversationId) => _itemsByRunId.Values.Any(item =>
-            string.Equals(item.ConversationId, conversationId, StringComparison.Ordinal));
+        public bool HasContinuationForGoal(string conversationId, string goalId) =>
+            _itemsByRunId.Values.Any(item =>
+                string.Equals(item.ConversationId, conversationId, StringComparison.Ordinal)
+                && (!item.IsAutomaticGoalContinuation
+                    || string.Equals(item.GoalId, goalId, StringComparison.Ordinal)));
+
+        public int CancelAutomaticGoalContinuations(string conversationId)
+        {
+            var runIds = _itemsByRunId.Values
+                .Where(item => item.IsAutomaticGoalContinuation
+                    && string.Equals(item.ConversationId, conversationId, StringComparison.Ordinal))
+                .Select(item => item.RunId)
+                .ToArray();
+            var cancelledCount = 0;
+            foreach (var runId in runIds)
+            {
+                if (_taskHost.RequestCancel(runId))
+                    cancelledCount++;
+            }
+            return cancelledCount;
+        }
 
         public bool TryGet(string runId, out CopilotQueuedFollowUp? item) =>
             _itemsByRunId.TryGetValue(runId, out item);
@@ -389,6 +408,7 @@ namespace ColorVision.Copilot
             {
                 RunId = item.RunId,
                 ConversationId = item.ConversationId,
+                GoalId = item.GoalId,
                 Prompt = item.Prompt,
                 ComposerState = item.CreateComposerState(),
                 ProfileId = item.Profile.Id,

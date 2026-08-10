@@ -15,6 +15,8 @@ namespace ColorVision.Copilot
 
         public string ConversationId { get; set; } = string.Empty;
 
+        public string GoalId { get; set; } = string.Empty;
+
         public string Prompt { get; set; } = string.Empty;
 
         public CopilotComposerStash? ComposerState { get; set; }
@@ -27,11 +29,15 @@ namespace ColorVision.Copilot
 
         public bool ShouldSerializeComposerState() => ComposerState?.HasContent == true;
 
+        public bool ShouldSerializeGoalId() => !string.IsNullOrWhiteSpace(GoalId);
+
         public bool ShouldSerializeProfileId() => !string.IsNullOrWhiteSpace(ProfileId);
 
         public bool ShouldSerializeQueuedAtUtc() => QueuedAtUtc.HasValue;
 
         public bool ShouldSerializeResumeAfterRestart() => ResumeAfterRestart;
+
+        internal bool IsAutomaticGoalContinuation => !string.IsNullOrWhiteSpace(GoalId);
 
         internal bool TryGetNormalized(
             out string runId,
@@ -40,6 +46,7 @@ namespace ColorVision.Copilot
         {
             runId = (RunId ?? string.Empty).Trim();
             conversationId = (ConversationId ?? string.Empty).Trim();
+            var goalId = (GoalId ?? string.Empty).Trim();
             var prompt = string.IsNullOrWhiteSpace(ComposerState?.Text)
                 ? (Prompt ?? string.Empty).Trim()
                 : ComposerState.Text.Trim();
@@ -56,6 +63,7 @@ namespace ColorVision.Copilot
                 ComposerState?.AgentSkillReference);
             return runId.Length is > 0 and <= MaximumIdentifierCharacters
                 && conversationId.Length is > 0 and <= MaximumIdentifierCharacters
+                && goalId.Length <= MaximumIdentifierCharacters
                 && prompt.Length is > 0 and <= MaximumPromptCharacters
                 && attachments.Count <= MaximumAttachments
                 && attachments.All(attachment => attachment != null);
@@ -64,7 +72,8 @@ namespace ColorVision.Copilot
         internal bool CanResumeAfterRestart(CopilotComposerStash composerState)
         {
             var normalizedProfileId = (ProfileId ?? string.Empty).Trim();
-            return ResumeAfterRestart
+            return !IsAutomaticGoalContinuation
+                && ResumeAfterRestart
                 && normalizedProfileId.Length is > 0 and <= MaximumIdentifierCharacters
                 && composerState.RequestMode != CopilotAgentMode.Chat;
         }
@@ -122,6 +131,9 @@ namespace ColorVision.Copilot
                 {
                     continue;
                 }
+
+                if (record.IsAutomaticGoalContinuation)
+                    continue;
 
                 if (record.CanResumeAfterRestart(composerState)
                     && resumableRecords.Count < CopilotAgentTaskHost.DefaultMaxQueuedRuns)
@@ -215,6 +227,7 @@ namespace ColorVision.Copilot
             {
                 if (record == null
                     || !record.TryGetNormalized(out var runId, out var conversationId, out var composerState)
+                    || record.IsAutomaticGoalContinuation
                     || !seenRunIds.Add(runId)
                     || !conversationsById.TryGetValue(conversationId, out var conversation)
                     || conversation.Messages.Any(message => message != null

@@ -113,6 +113,7 @@ namespace ColorVision.Copilot
                     || !IsOptionalSkillReference(conversation.GetValue(nameof(CopilotConversationRecord.DraftAgentSkillReference), StringComparison.OrdinalIgnoreCase))
                     || !IsOptionalComposerStash(conversation.GetValue(nameof(CopilotConversationRecord.ComposerStash), StringComparison.OrdinalIgnoreCase))
                     || !IsOptionalPendingSteeringRecoveries(conversation.GetValue(nameof(CopilotConversationRecord.PendingSteeringRecoveries), StringComparison.OrdinalIgnoreCase))
+                    || !IsOptionalConversationActivity(conversation.GetValue(nameof(CopilotConversationRecord.AgentActivity), StringComparison.OrdinalIgnoreCase))
                     || !IsOptionalObject(conversation.GetValue(nameof(CopilotConversationRecord.BranchOrigin), StringComparison.OrdinalIgnoreCase))
                     || !IsOptionalBoolean(conversation.GetValue(nameof(CopilotConversationRecord.IsGoalContinuationDeferred), StringComparison.OrdinalIgnoreCase))
                     || !IsOptionalDate(conversation.GetValue(nameof(CopilotConversationRecord.RecencyAt), StringComparison.OrdinalIgnoreCase))
@@ -135,6 +136,7 @@ namespace ColorVision.Copilot
                     if (recoveryTokenItem is not JObject recovery
                         || !IsOptionalString(recovery.GetValue(nameof(CopilotQueuedFollowUpRecoveryRecord.RunId), StringComparison.OrdinalIgnoreCase))
                         || !IsOptionalString(recovery.GetValue(nameof(CopilotQueuedFollowUpRecoveryRecord.ConversationId), StringComparison.OrdinalIgnoreCase))
+                        || !IsOptionalString(recovery.GetValue(nameof(CopilotQueuedFollowUpRecoveryRecord.GoalId), StringComparison.OrdinalIgnoreCase))
                         || !IsOptionalString(recovery.GetValue(nameof(CopilotQueuedFollowUpRecoveryRecord.Prompt), StringComparison.OrdinalIgnoreCase))
                         || !IsOptionalString(recovery.GetValue(nameof(CopilotQueuedFollowUpRecoveryRecord.ProfileId), StringComparison.OrdinalIgnoreCase))
                         || !IsOptionalDate(recovery.GetValue(nameof(CopilotQueuedFollowUpRecoveryRecord.QueuedAtUtc), StringComparison.OrdinalIgnoreCase))
@@ -216,6 +218,17 @@ namespace ColorVision.Copilot
                 && IsOptionalString(record.GetValue(nameof(CopilotPendingSteeringRecoveryRecord.TaskId), StringComparison.OrdinalIgnoreCase))
                 && IsOptionalString(record.GetValue(nameof(CopilotPendingSteeringRecoveryRecord.Text), StringComparison.OrdinalIgnoreCase))
                 && IsOptionalDate(record.GetValue(nameof(CopilotPendingSteeringRecoveryRecord.AcceptedAtUtc), StringComparison.OrdinalIgnoreCase)));
+        }
+
+        private static bool IsOptionalConversationActivity(JToken? token)
+        {
+            if (token == null || token.Type == JTokenType.Null)
+                return true;
+            return token is JObject activity
+                && IsOptionalInteger(activity.GetValue(nameof(CopilotConversationActivity.SchemaVersion), StringComparison.OrdinalIgnoreCase))
+                && IsOptionalInteger(activity.GetValue(nameof(CopilotConversationActivity.State), StringComparison.OrdinalIgnoreCase))
+                && IsOptionalString(activity.GetValue(nameof(CopilotConversationActivity.SourceMessageId), StringComparison.OrdinalIgnoreCase))
+                && IsOptionalDate(activity.GetValue(nameof(CopilotConversationActivity.UpdatedAtUtc), StringComparison.OrdinalIgnoreCase));
         }
 
         private static bool IsOptionalDate(JToken? token) =>

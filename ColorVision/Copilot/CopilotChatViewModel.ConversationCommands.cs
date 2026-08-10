@@ -145,6 +145,7 @@ namespace ColorVision.Copilot
 
                 var archivedTitle = conversation.Title;
                 AcknowledgeCompletionNotices(conversation.Id);
+                conversation.ReplaceAgentActivity(null);
                 conversation.IsArchived = true;
                 conversation.Touch();
                 conversation.RefreshSummary();

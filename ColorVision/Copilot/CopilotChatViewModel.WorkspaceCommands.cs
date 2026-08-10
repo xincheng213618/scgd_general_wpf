@@ -178,13 +178,16 @@ namespace ColorVision.Copilot
                 return;
             }
 
+            var previousGoal = conversation.Goal;
             var result = CopilotConversationGoalCommand.Execute(
-                conversation.Goal,
+                previousGoal,
                 arguments,
                 DateTimeOffset.UtcNow);
             if (result.Changed)
             {
                 conversation.Goal = result.Goal;
+                if (ShouldCancelAutomaticGoalContinuations(previousGoal, result))
+                    _followUpQueue.CancelAutomaticGoalContinuations(conversation.Id);
                 UpdateConversationMetadata(conversation, touch: true);
                 PersistState();
                 RefreshComposerTokenEstimate();
@@ -200,6 +203,77 @@ namespace ColorVision.Copilot
                         result.Goal.Objective),
                     "执行持续目标");
             }
+        }
+
+        internal static bool ShouldCancelAutomaticGoalContinuations(
+            CopilotConversationGoal? previousGoal,
+            CopilotConversationGoalCommandResult result)
+        {
+            if (!result.Changed)
+                return false;
+
+            return result.StartsWork
+                || result.Goal?.IsActive != true
+                || !string.Equals(previousGoal?.Id, result.Goal.Id, StringComparison.Ordinal);
+        }
+
+        private bool CanPauseConversationGoal() =>
+            SelectedConversation?.CanPauseGoal == true;
+
+        private bool CanResumeConversationGoal() =>
+            !IsBusy && SelectedConversation?.CanResumeGoal == true;
+
+        private bool CanEditConversationGoal() =>
+            !IsBusy && SelectedConversation?.HasGoal == true;
+
+        private bool CanManageExistingConversationGoal() =>
+            SelectedConversation?.HasGoal == true;
+
+        private void ShowConversationGoalHistoryFromUi() =>
+            ManageConversationGoalFromUi("history");
+
+        private void PauseConversationGoalFromUi() =>
+            ManageConversationGoalFromUi("pause");
+
+        private void ResumeConversationGoalFromUi() =>
+            ManageConversationGoalFromUi("resume");
+
+        private void ClearConversationGoalFromUi() =>
+            ManageConversationGoalFromUi("clear");
+
+        private void EditConversationGoalFromUi()
+        {
+            var goal = SelectedConversation?.Goal;
+            if (goal?.IsStructurallyValid() != true || IsBusy)
+                return;
+
+            var window = new CopilotTextInputWindow(
+                "编辑持续目标",
+                "明确结果、约束和可验证完成条件。保存后会从新目标的首轮 Agent 工作重新开始。",
+                goal.Objective,
+                isMultiline: true,
+                maximumLength: CopilotConversationGoal.MaximumObjectiveCharacters)
+            {
+                Width = 720,
+                Height = 420,
+                Owner = Application.Current.GetActiveWindow(),
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            };
+
+            if (window.ShowDialog() != true || string.IsNullOrWhiteSpace(window.ResultText))
+                return;
+
+            ManageConversationGoalFromUi("edit " + window.ResultText);
+        }
+
+        private void ManageConversationGoalFromUi(string arguments)
+        {
+            var command = CopilotLocalCommandCatalog.FindExact("/goal");
+            if (command == null)
+                return;
+
+            ManageConversationGoal(command, arguments);
+            CommandManager.InvalidateRequerySuggested();
         }
 
         private async Task ShowGitDiffAsync(CopilotLocalCommand command, string scope)

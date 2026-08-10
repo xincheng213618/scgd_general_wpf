@@ -211,6 +211,9 @@ namespace ColorVision.Copilot
             var originalResultSummary = ResultSummary;
             var originalErrorMessage = ErrorMessage;
             var originalFailureCode = FailureCode;
+            var originalProcessOperation = ProcessOperation;
+            var originalProcessExitCode = ProcessExitCode;
+            var originalProcessTimedOut = ProcessTimedOut;
             var originalDelegatedRoleId = DelegatedRoleId;
             var originalDelegatedAgentName = DelegatedAgentName;
             var originalDelegatedRunId = DelegatedRunId;
@@ -431,6 +434,29 @@ namespace ColorVision.Copilot
                     : "Execution was interrupted before completion.";
                 changed = true;
             }
+
+            if (CopilotToolProcessEvidence.TryNormalizeForExecution(
+                    ToolName,
+                    State,
+                    FailureCode,
+                    ProcessOperation,
+                    ProcessExitCode,
+                    ProcessTimedOut,
+                    out var processEvidence))
+            {
+                ProcessOperation = processEvidence.Operation;
+                ProcessExitCode = processEvidence.ExitCode;
+                ProcessTimedOut = processEvidence.TimedOut;
+            }
+            else
+            {
+                ProcessOperation = string.Empty;
+                ProcessExitCode = null;
+                ProcessTimedOut = false;
+            }
+            changed |= !string.Equals(originalProcessOperation, ProcessOperation, StringComparison.Ordinal)
+                || originalProcessExitCode != ProcessExitCode
+                || originalProcessTimedOut != ProcessTimedOut;
 
             changed |= NormalizeWorkspaceRollbackAuthority(recoveredAtUtc);
             return changed;

@@ -1,104 +1,22 @@
-﻿<Window x:Class="ColorVision.Solution.Editor.AvalonEditor.AvalonEditWindow"
-	xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-	xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-	xmlns:avalonEdit="http://icsharpcode.net/sharpdevelop/avalonedit"
-	Title="Edit" Height="500" Width="700" Background="{DynamicResource GlobalBackground}" >
-    <Window.Resources>
-        <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource TextBox.Small}">
-            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
-            <Setter Property="VerticalAlignment" Value="Center"/>
-            <Setter Property="ToolTip" Value="{ Binding Text,RelativeSource={RelativeSource Self}}"/>
-        </Style>
-        <Style TargetType="{x:Type TextBlock}" >
-            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
-            <Setter Property="VerticalAlignment" Value="Center"/>
-        </Style>
-    </Window.Resources>
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
-        <ToolBar DockPanel.Dock="Top" Margin="5,0,5,0">
-            <ToolBar.Resources>
-                <Style TargetType="{x:Type Image}">
-                    <Style.Triggers>
-                        <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type ButtonBase}, AncestorLevel=1}, Path=IsEnabled}" Value="False">
-                            <Setter Property="Opacity" Value="0.30" />
-                        </DataTrigger>
-                    </Style.Triggers>
-                </Style>
-            </ToolBar.Resources>
-            <Button Click="openFileClick" Padding="3" Margin="2,0" Background="Transparent" BorderThickness="0">
-                <Viewbox>
-                    <Rectangle Fill="{StaticResource  DIOpen}" Width="16" Height="16"/>
-                </Viewbox>
-            </Button>
-            <Button Click="saveFileClick" Padding="3" Margin="2,0" Background="Transparent" BorderThickness="0">
-                <Viewbox>
-                    <Rectangle Fill="{DynamicResource DISave}" Width="16" Height="16"/>
-                </Viewbox>
-            </Button>
-            <Separator/>
-            <Button Command="Cut" Padding="3" Margin="2,0" Background="Transparent" BorderThickness="0">
-                <Viewbox>
-                    <Rectangle Fill="{DynamicResource DICut}" Width="16" Height="16"/>
-                </Viewbox>
-            </Button>
-            <Button Command="Copy"  Padding="3" Margin="2,0" Background="Transparent" BorderThickness="0">
-                <Viewbox>
-                    <Rectangle Fill="{DynamicResource DICopy}" Width="16" Height="16"/>
-                </Viewbox>
-            </Button>
-            <Button Command="Paste" Padding="3" Margin="2,0" Background="Transparent" BorderThickness="0">
-                <Viewbox>
-                    <Rectangle Fill="{DynamicResource DIPaste}" Width="16" Height="16"/>
-                </Viewbox>
-            </Button>
-            <Button Command="Delete" Padding="3" Margin="2,0" Background="Transparent" BorderThickness="0">
-                <Viewbox>
-                    <Rectangle Fill="{DynamicResource DIDelete}" Width="16" Height="16"/>
-                </Viewbox>
-            </Button>
-            <Separator/>
-            <Button Command="Undo" Padding="3" Margin="2,0" Background="Transparent" BorderThickness="0">
-                <Viewbox>
-                    <Rectangle Fill="{DynamicResource DIUndo}" Width="16" Height="16"/>
-                </Viewbox>
-            </Button>
-            <Button Command="Redo" Padding="3" Margin="2,0" Background="Transparent" BorderThickness="0">
-                <Viewbox>
-                    <Rectangle Fill="{DynamicResource DIRedo}" Width="16" Height="16"/>
-                </Viewbox>
-            </Button>
-            <Separator/>
-            <CheckBox IsChecked="{Binding ElementName=textEditor,Path=WordWrap}" Margin="2,0">
-                <Viewbox  Width="16" Height="16">
-                    <Rectangle Fill="{DynamicResource DIWordWrap}" Width="16" Height="16"/>
-                </Viewbox>
-            </CheckBox>
-            <CheckBox IsChecked="{Binding ElementName=textEditor,Path=ShowLineNumbers}"  Margin="2,0">
-                <TextBlock Width="16" TextAlignment="Center">#</TextBlock>
-            </CheckBox>
-            <CheckBox IsChecked="{Binding ElementName=textEditor,Path=Options.ShowEndOfLine}">
-                <TextBlock Width="16" TextAlignment="Center">¶</TextBlock>
-            </CheckBox>
-            <ComboBox Name="highlightingComboBox" Background="Transparent" BorderThickness="0"
-				SelectedItem="{Binding SyntaxHighlighting, ElementName=textEditor}"
-				ItemsSource="{Binding Source={x:Static avalonEdit:HighlightingManager.Instance}, Path=HighlightingDefinitions}"
-				SelectionChanged="HighlightingComboBox_SelectionChanged"/>
-        </ToolBar>
-        <Grid Grid.Row="1">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="1*"/>
-            </Grid.ColumnDefinitions>
-            <avalonEdit:TextEditor Name="textEditor" Background="Transparent" FontFamily="Consolas" ShowLineNumbers="True" FontSize="10pt" SyntaxHighlighting="C#" />
+<Window x:Class="ColorVision.Solution.Editor.AvalonEditor.AvalonEditWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:ColorVision.Solution.Editor.AvalonEditor"
+        xmlns:workspace="clr-namespace:ColorVision.Solution.Workspace"
+        Title="编辑"
+        Height="560"
+        Width="860"
+        MinHeight="320"
+        MinWidth="520"
+        Background="{DynamicResource GlobalBackground}">
+    <Window.CommandBindings>
+        <CommandBinding Command="Save"
+                        CanExecute="Save_CanExecute"
+                        Executed="Save_Executed"/>
+        <CommandBinding Command="{x:Static workspace:SolutionDocumentCommands.Reload}"
+                        CanExecute="Reload_CanExecute"
+                        Executed="Reload_Executed"/>
+    </Window.CommandBindings>
 
-        </Grid>
-        <StackPanel Grid.Row="2" Name="StatusBar"  Height="20" DockPanel.Dock="Bottom" Orientation="Horizontal">
-            <TextBlock Name="StatusText" Text="Ready" Margin="5 0 0 0" VerticalAlignment="Center" FontSize="12"/>
-        </StackPanel>
-
-    </Grid>
+    <local:AvalonEditControll x:Name="EditorControl"/>
 </Window>

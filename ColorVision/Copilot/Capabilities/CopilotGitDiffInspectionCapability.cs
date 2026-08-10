@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -31,6 +32,16 @@ namespace ColorVision.Copilot
         public string Revision { get; init; } = string.Empty;
 
         public string ResolvedRevision { get; init; } = string.Empty;
+
+        public IReadOnlyList<string> ChangedPaths { get; init; } = Array.Empty<string>();
+
+        public bool ChangedPathsComplete { get; init; }
+
+        internal bool IsStructurallyValid() =>
+            CopilotGitDiffResultProtocol.IsStructurallyValid(this);
+
+        internal CopilotGitDiffSnapshot CreateSnapshot() =>
+            CopilotGitDiffResultProtocol.CreateSnapshot(this);
     }
 
     internal sealed class CopilotGitDiffInspectionService
@@ -97,6 +108,8 @@ namespace ColorVision.Copilot
                 return Failure(CopilotToolFailureKind.NotFound, "Git could not be located.", "A trusted Git for Windows executable was not found.");
 
             var sections = new List<CopilotGitDiffSection>();
+            var changedPaths = new List<string>();
+            var changedPathsComplete = true;
             var resolvedRevision = string.Empty;
             var environmentVariables = request.CodexShellEnvironmentPolicy
                 .CreateEnvironmentVariables(request.ConversationId);
@@ -114,6 +127,23 @@ namespace ColorVision.Copilot
                     if (sectionResult.Failure != null)
                         return sectionResult.Failure;
                     sections.Add(sectionResult.Section!);
+                    changedPaths.AddRange(sectionResult.ChangedPaths);
+                    changedPathsComplete &= sectionResult.ChangedPathsComplete;
+                }
+
+                if (scope is "unstaged" or "both")
+                {
+                    var untrackedResult = await ExecuteUntrackedSectionAsync(
+                        gitExecutable,
+                        repositoryRoot,
+                        pathFilter,
+                        environmentVariables,
+                        cancellationToken);
+                    if (untrackedResult.Failure != null)
+                        return untrackedResult.Failure;
+                    sections.Add(untrackedResult.Section!);
+                    changedPaths.AddRange(untrackedResult.ChangedPaths);
+                    changedPathsComplete &= untrackedResult.ChangedPathsComplete;
                 }
             }
             else
@@ -130,7 +160,17 @@ namespace ColorVision.Copilot
                     return revisionResult.Failure;
                 resolvedRevision = revisionResult.ResolvedRevision;
                 sections.Add(revisionResult.Section!);
+                changedPaths.AddRange(revisionResult.ChangedPaths);
+                changedPathsComplete &= revisionResult.ChangedPathsComplete;
             }
+
+            var normalizedChangedPaths = changedPaths
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
+                .Take(CopilotGitDiffResultProtocol.MaxChangedPaths)
+                .ToArray();
+            changedPathsComplete &= normalizedChangedPaths.Length
+                == changedPaths.Distinct(StringComparer.OrdinalIgnoreCase).Count();
 
             var snapshot = new CopilotGitDiffSnapshot(
                 repositoryRoot,
@@ -144,17 +184,23 @@ namespace ColorVision.Copilot
                 Target = target,
                 Revision = revision,
                 ResolvedRevision = resolvedRevision,
+                ChangedPaths = normalizedChangedPaths,
+                ChangedPathsComplete = changedPathsComplete,
             };
             return new CopilotToolResult
             {
                 ToolName = "InspectGitDiff",
                 Success = true,
                 Summary = BuildSummary(snapshot),
-                Content = BuildContent(snapshot),
+                Content = CopilotGitDiffResultProtocol.Serialize(snapshot),
             };
         }
 
-        private async Task<(CopilotGitDiffSection? Section, CopilotToolResult? Failure)> ExecuteSectionAsync(
+        private async Task<(
+            CopilotGitDiffSection? Section,
+            IReadOnlyList<string> ChangedPaths,
+            bool ChangedPathsComplete,
+            CopilotToolResult? Failure)> ExecuteSectionAsync(
             string gitExecutable,
             string repositoryRoot,
             string pathFilter,
@@ -171,10 +217,21 @@ namespace ColorVision.Copilot
                 environmentVariables,
                 cancellationToken);
             if (execution.Failure != null)
-                return (null, execution.Failure);
+                return (null, Array.Empty<string>(), false, execution.Failure);
+
+            var changedPathResult = await ExecuteChangedPathsAsync(
+                gitExecutable,
+                repositoryRoot,
+                BuildChangedPathArguments(repositoryRoot, pathFilter, scope),
+                $"{scope} Git changed-path listing",
+                environmentVariables,
+                cancellationToken);
+            if (changedPathResult.Failure != null)
+                return (null, Array.Empty<string>(), false, changedPathResult.Failure);
 
             var rawPatch = execution.Result!.StandardOutput ?? string.Empty;
-            var runnerTruncated = rawPatch.Contains(ShellTruncationMarker, StringComparison.Ordinal);
+            var runnerTruncated = execution.Result.StandardOutputTruncated
+                || rawPatch.Contains(ShellTruncationMarker, StringComparison.Ordinal);
             var boundedPatch = BoundPatch(rawPatch, out var serviceTruncated);
             var truncated = runnerTruncated || serviceTruncated;
             return (new CopilotGitDiffSection(
@@ -182,10 +239,18 @@ namespace ColorVision.Copilot
                 !string.IsNullOrWhiteSpace(rawPatch),
                 !truncated,
                 truncated,
-                boundedPatch), null);
+                boundedPatch),
+                changedPathResult.Paths,
+                changedPathResult.Complete,
+                null);
         }
 
-        private async Task<(CopilotGitDiffSection? Section, string ResolvedRevision, CopilotToolResult? Failure)> ExecuteRevisionTargetAsync(
+        private async Task<(
+            CopilotGitDiffSection? Section,
+            string ResolvedRevision,
+            IReadOnlyList<string> ChangedPaths,
+            bool ChangedPathsComplete,
+            CopilotToolResult? Failure)> ExecuteRevisionTargetAsync(
             string gitExecutable,
             string repositoryRoot,
             string pathFilter,
@@ -203,10 +268,10 @@ namespace ColorVision.Copilot
                 environmentVariables,
                 cancellationToken);
             if (resolution.Failure != null)
-                return (null, string.Empty, resolution.Failure);
+                return (null, string.Empty, Array.Empty<string>(), false, resolution.Failure);
             if (!TryReadObjectId(resolution.Result!.StandardOutput, out var resolvedRevision))
             {
-                return (null, string.Empty, Failure(
+                return (null, string.Empty, Array.Empty<string>(), false, Failure(
                     CopilotToolFailureKind.Internal,
                     "Git returned an invalid resolved revision.",
                     "The fixed revision lookup did not return one hexadecimal object id."));
@@ -225,10 +290,10 @@ namespace ColorVision.Copilot
                     environmentVariables,
                     cancellationToken);
                 if (mergeBase.Failure != null)
-                    return (null, string.Empty, mergeBase.Failure);
+                    return (null, string.Empty, Array.Empty<string>(), false, mergeBase.Failure);
                 if (!TryReadObjectId(mergeBase.Result!.StandardOutput, out comparisonRevision))
                 {
-                    return (null, string.Empty, Failure(
+                    return (null, string.Empty, Array.Empty<string>(), false, Failure(
                         CopilotToolFailureKind.Internal,
                         "Git returned an invalid merge base.",
                         "The fixed merge-base lookup did not return one hexadecimal object id."));
@@ -258,10 +323,33 @@ namespace ColorVision.Copilot
                 environmentVariables,
                 cancellationToken);
             if (patch.Failure != null)
-                return (null, string.Empty, patch.Failure);
+                return (null, string.Empty, Array.Empty<string>(), false, patch.Failure);
+
+            var changedPathArguments = string.Equals(target, "base_branch", StringComparison.Ordinal)
+                ? BuildBaseBranchChangedPathArguments(repositoryRoot, pathFilter, comparisonRevision)
+                : BuildCommitChangedPathArguments(repositoryRoot, pathFilter, resolvedRevision);
+            var changedPathResult = await ExecuteChangedPathsAsync(
+                gitExecutable,
+                repositoryRoot,
+                changedPathArguments,
+                string.Equals(target, "base_branch", StringComparison.Ordinal)
+                    ? "base-branch Git changed-path listing"
+                    : "commit Git changed-path listing",
+                environmentVariables,
+                cancellationToken);
+            if (changedPathResult.Failure != null)
+            {
+                return (
+                    null,
+                    string.Empty,
+                    Array.Empty<string>(),
+                    false,
+                    changedPathResult.Failure);
+            }
 
             var rawPatch = patch.Result!.StandardOutput ?? string.Empty;
-            var runnerTruncated = rawPatch.Contains(ShellTruncationMarker, StringComparison.Ordinal);
+            var runnerTruncated = patch.Result.StandardOutputTruncated
+                || rawPatch.Contains(ShellTruncationMarker, StringComparison.Ordinal);
             var boundedPatch = BoundPatch(rawPatch, out var serviceTruncated);
             var truncated = runnerTruncated || serviceTruncated;
             return (new CopilotGitDiffSection(
@@ -269,7 +357,325 @@ namespace ColorVision.Copilot
                 !string.IsNullOrWhiteSpace(rawPatch),
                 !truncated,
                 truncated,
-                boundedPatch), resolvedRevision, null);
+                boundedPatch),
+                resolvedRevision,
+                changedPathResult.Paths,
+                changedPathResult.Complete,
+                null);
+        }
+
+        private async Task<(
+            CopilotGitDiffSection? Section,
+            IReadOnlyList<string> ChangedPaths,
+            bool ChangedPathsComplete,
+            CopilotToolResult? Failure)> ExecuteUntrackedSectionAsync(
+            string gitExecutable,
+            string repositoryRoot,
+            string pathFilter,
+            IReadOnlyDictionary<string, string> environmentVariables,
+            CancellationToken cancellationToken)
+        {
+            var changedPathResult = await ExecuteChangedPathsAsync(
+                gitExecutable,
+                repositoryRoot,
+                BuildUntrackedArguments(repositoryRoot, pathFilter),
+                "untracked Git changed-path listing",
+                environmentVariables,
+                cancellationToken);
+            if (changedPathResult.Failure != null)
+            {
+                return (
+                    null,
+                    Array.Empty<string>(),
+                    false,
+                    changedPathResult.Failure);
+            }
+
+            var patch = BuildUntrackedPatch(
+                repositoryRoot,
+                changedPathResult.Paths,
+                out var contentComplete);
+            if (!changedPathResult.Complete && !patch.Contains(PatchTruncationMarker, StringComparison.Ordinal))
+                patch += Environment.NewLine + PatchTruncationMarker + Environment.NewLine;
+            var boundedPatch = BoundPatch(patch, out var serviceTruncated);
+            var truncated = !changedPathResult.Complete || !contentComplete || serviceTruncated;
+            return (
+                new CopilotGitDiffSection(
+                    "untracked",
+                    !string.IsNullOrWhiteSpace(patch),
+                    !truncated,
+                    truncated,
+                    boundedPatch),
+                changedPathResult.Paths,
+                changedPathResult.Complete,
+                null);
+        }
+
+        private async Task<(
+            IReadOnlyList<string> Paths,
+            bool Complete,
+            CopilotToolResult? Failure)> ExecuteChangedPathsAsync(
+            string gitExecutable,
+            string repositoryRoot,
+            IReadOnlyList<string> arguments,
+            string operation,
+            IReadOnlyDictionary<string, string> environmentVariables,
+            CancellationToken cancellationToken)
+        {
+            var execution = await RunGitAsync(
+                gitExecutable,
+                repositoryRoot,
+                arguments,
+                operation,
+                CopilotToolFailureKind.Internal,
+                environmentVariables,
+                cancellationToken);
+            if (execution.Failure != null)
+                return (Array.Empty<string>(), false, execution.Failure);
+
+            var result = execution.Result!;
+            var paths = ParseChangedPaths(
+                repositoryRoot,
+                result.StandardOutput,
+                result.StandardOutputTruncated,
+                out var complete);
+            return (paths, complete, null);
+        }
+
+        private static IReadOnlyList<string> ParseChangedPaths(
+            string repositoryRoot,
+            string? output,
+            bool runnerTruncated,
+            out bool complete)
+        {
+            var value = output ?? string.Empty;
+            complete = !runnerTruncated
+                && !value.Contains(ShellTruncationMarker, StringComparison.Ordinal);
+            if (value.Length == 0)
+                return Array.Empty<string>();
+
+            if (!value.EndsWith('\0'))
+                complete = false;
+            var paths = new List<string>();
+            foreach (var rawPath in value.Split('\0', StringSplitOptions.RemoveEmptyEntries))
+            {
+                if (rawPath.Contains(ShellTruncationMarker, StringComparison.Ordinal)
+                    || !TryNormalizeChangedPath(repositoryRoot, rawPath, out var normalizedPath))
+                {
+                    complete = false;
+                    continue;
+                }
+                if (paths.Contains(normalizedPath, StringComparer.OrdinalIgnoreCase))
+                    continue;
+                if (paths.Count >= CopilotGitDiffResultProtocol.MaxChangedPaths)
+                {
+                    complete = false;
+                    continue;
+                }
+                paths.Add(normalizedPath);
+            }
+            return paths;
+        }
+
+        private static bool TryNormalizeChangedPath(
+            string repositoryRoot,
+            string path,
+            out string normalizedPath)
+        {
+            normalizedPath = (path ?? string.Empty).Replace('\\', '/');
+            if (!CopilotGitDiffResultProtocol.IsChangedPathStructurallyValid(normalizedPath))
+                return false;
+
+            try
+            {
+                var fullPath = Path.GetFullPath(
+                    normalizedPath.Replace('/', Path.DirectorySeparatorChar),
+                    repositoryRoot);
+                if (!CopilotWorkspaceSearchSupport.IsPathWithinRoots(fullPath, [repositoryRoot]))
+                    return false;
+                normalizedPath = CopilotGitProcessSupport.GetRepositoryRelativePath(
+                    repositoryRoot,
+                    fullPath);
+                return CopilotGitDiffResultProtocol.IsChangedPathStructurallyValid(normalizedPath);
+            }
+            catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
+            {
+                normalizedPath = string.Empty;
+                return false;
+            }
+        }
+
+        private static string BuildUntrackedPatch(
+            string repositoryRoot,
+            IReadOnlyList<string> paths,
+            out bool complete)
+        {
+            complete = true;
+            if (paths.Count == 0)
+                return string.Empty;
+
+            var builder = new StringBuilder();
+            foreach (var path in paths)
+            {
+                var displayPath = QuoteGitPath("b/" + path);
+                builder.Append("diff --git ")
+                    .Append(QuoteGitPath("a/" + path))
+                    .Append(' ')
+                    .AppendLine(displayPath);
+                builder.AppendLine("new file mode 100644");
+                builder.AppendLine("--- /dev/null");
+                builder.Append("+++ ").AppendLine(displayPath);
+
+                if (!CopilotWorkspaceSearchSupport.TryResolveExistingFileWithinRoots(
+                    path,
+                    [repositoryRoot],
+                    out var fullPath,
+                    out _))
+                {
+                    complete = false;
+                    builder.AppendLine("@@ -0,0 +1 @@");
+                    builder.AppendLine("+...<untracked file became unavailable during review>...");
+                    continue;
+                }
+
+                if (!TryReadBoundedFile(fullPath, out var bytes, out var fileComplete)
+                    || !TryDecodeText(bytes, out var text))
+                {
+                    complete &= fileComplete;
+                    builder.Append("Binary files /dev/null and ")
+                        .Append(displayPath)
+                        .AppendLine(" differ");
+                    continue;
+                }
+
+                complete &= fileComplete;
+                AppendNewFileHunk(builder, text, fileComplete);
+            }
+            return builder.ToString();
+        }
+
+        private static bool TryReadBoundedFile(
+            string path,
+            out byte[] bytes,
+            out bool complete)
+        {
+            const int maximumBytes = MaxPatchCharactersPerSection;
+            bytes = Array.Empty<byte>();
+            complete = false;
+            try
+            {
+                using var stream = new FileStream(
+                    path,
+                    FileMode.Open,
+                    FileAccess.Read,
+                    FileShare.ReadWrite | FileShare.Delete);
+                var buffer = new byte[maximumBytes + 1];
+                var count = 0;
+                while (count < buffer.Length)
+                {
+                    var read = stream.Read(buffer, count, buffer.Length - count);
+                    if (read == 0)
+                        break;
+                    count += read;
+                }
+                complete = count <= maximumBytes && stream.Position == stream.Length;
+                bytes = buffer[..Math.Min(count, maximumBytes)];
+                return true;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
+            {
+                return false;
+            }
+        }
+
+        private static bool TryDecodeText(byte[] bytes, out string text)
+        {
+            text = string.Empty;
+            if (bytes.Contains((byte)0)
+                && !(bytes.Length >= 2
+                    && ((bytes[0] == 0xff && bytes[1] == 0xfe)
+                        || (bytes[0] == 0xfe && bytes[1] == 0xff))))
+            {
+                return false;
+            }
+
+            try
+            {
+                Encoding encoding;
+                var offset = 0;
+                if (bytes.Length >= 3
+                    && bytes[0] == 0xef
+                    && bytes[1] == 0xbb
+                    && bytes[2] == 0xbf)
+                {
+                    encoding = new UTF8Encoding(false, true);
+                    offset = 3;
+                }
+                else if (bytes.Length >= 2 && bytes[0] == 0xff && bytes[1] == 0xfe)
+                {
+                    encoding = new UnicodeEncoding(false, true, true);
+                    offset = 2;
+                }
+                else if (bytes.Length >= 2 && bytes[0] == 0xfe && bytes[1] == 0xff)
+                {
+                    encoding = new UnicodeEncoding(true, true, true);
+                    offset = 2;
+                }
+                else
+                {
+                    encoding = new UTF8Encoding(false, true);
+                }
+
+                text = encoding.GetString(bytes, offset, bytes.Length - offset);
+                return !text.Any(character => char.IsControl(character)
+                    && character is not '\r' and not '\n' and not '\t');
+            }
+            catch (DecoderFallbackException)
+            {
+                text = string.Empty;
+                return false;
+            }
+        }
+
+        private static void AppendNewFileHunk(
+            StringBuilder builder,
+            string text,
+            bool complete)
+        {
+            var normalized = text
+                .Replace("\r\n", "\n", StringComparison.Ordinal)
+                .Replace('\r', '\n');
+            if (normalized.Length == 0 && complete)
+                return;
+            var endsWithNewLine = normalized.EndsWith('\n');
+            var lines = normalized.Split('\n').ToList();
+            if (endsWithNewLine)
+                lines.RemoveAt(lines.Count - 1);
+            if (!complete)
+                lines.Add("...<untracked file content truncated>...");
+            if (lines.Count == 0)
+                return;
+
+            builder.Append("@@ -0,0 +1,")
+                .Append(lines.Count)
+                .AppendLine(" @@");
+            foreach (var line in lines)
+                builder.Append('+').AppendLine(line);
+            if (!endsWithNewLine && complete)
+                builder.AppendLine("\\ No newline at end of file");
+        }
+
+        private static string QuoteGitPath(string path)
+        {
+            if (!path.Any(character => char.IsWhiteSpace(character) || character is '\\' or '"'))
+                return path;
+            return '"' + path
+                .Replace("\\", "\\\\", StringComparison.Ordinal)
+                .Replace("\"", "\\\"", StringComparison.Ordinal)
+                .Replace("\t", "\\t", StringComparison.Ordinal)
+                .Replace("\r", "\\r", StringComparison.Ordinal)
+                .Replace("\n", "\\n", StringComparison.Ordinal)
+                + '"';
         }
 
         private async Task<(CopilotShellProcessResult? Result, CopilotToolResult? Failure)> RunGitAsync(
@@ -351,6 +757,48 @@ namespace ColorVision.Copilot
             return arguments;
         }
 
+        private static List<string> BuildChangedPathArguments(
+            string repositoryRoot,
+            string pathFilter,
+            string scope)
+        {
+            var arguments = BuildCommonArguments(repositoryRoot);
+            arguments.AddRange(
+            [
+                "diff",
+                "--no-ext-diff",
+                "--no-textconv",
+                "--no-renames",
+                "--ignore-submodules=all",
+                "--name-only",
+                "-z",
+            ]);
+            if (string.Equals(scope, "staged", StringComparison.Ordinal))
+                arguments.Add("--cached");
+            arguments.Add("--");
+            if (!string.IsNullOrWhiteSpace(pathFilter))
+                arguments.Add(pathFilter);
+            return arguments;
+        }
+
+        private static List<string> BuildUntrackedArguments(
+            string repositoryRoot,
+            string pathFilter)
+        {
+            var arguments = BuildCommonArguments(repositoryRoot);
+            arguments.AddRange(
+            [
+                "ls-files",
+                "--others",
+                "--exclude-standard",
+                "-z",
+                "--",
+            ]);
+            if (!string.IsNullOrWhiteSpace(pathFilter))
+                arguments.Add(pathFilter);
+            return arguments;
+        }
+
         private static List<string> BuildRevisionResolveArguments(string repositoryRoot, string revision)
         {
             var arguments = BuildCommonArguments(repositoryRoot);
@@ -389,6 +837,30 @@ namespace ColorVision.Copilot
             return arguments;
         }
 
+        private static List<string> BuildBaseBranchChangedPathArguments(
+            string repositoryRoot,
+            string pathFilter,
+            string mergeBase)
+        {
+            var arguments = BuildCommonArguments(repositoryRoot);
+            arguments.AddRange(
+            [
+                "diff",
+                "--no-ext-diff",
+                "--no-textconv",
+                "--no-renames",
+                "--ignore-submodules=all",
+                "--name-only",
+                "-z",
+                mergeBase,
+                "HEAD",
+                "--",
+            ]);
+            if (!string.IsNullOrWhiteSpace(pathFilter))
+                arguments.Add(pathFilter);
+            return arguments;
+        }
+
         private static List<string> BuildCommitArguments(
             string repositoryRoot,
             string pathFilter,
@@ -405,6 +877,30 @@ namespace ColorVision.Copilot
                 "--ignore-submodules=all",
                 "--no-color",
                 "--unified=3",
+                resolvedRevision,
+                "--",
+            ]);
+            if (!string.IsNullOrWhiteSpace(pathFilter))
+                arguments.Add(pathFilter);
+            return arguments;
+        }
+
+        private static List<string> BuildCommitChangedPathArguments(
+            string repositoryRoot,
+            string pathFilter,
+            string resolvedRevision)
+        {
+            var arguments = BuildCommonArguments(repositoryRoot);
+            arguments.AddRange(
+            [
+                "show",
+                "--format=",
+                "--no-ext-diff",
+                "--no-textconv",
+                "--no-renames",
+                "--ignore-submodules=all",
+                "--name-only",
+                "-z",
                 resolvedRevision,
                 "--",
             ]);
@@ -630,40 +1126,15 @@ namespace ColorVision.Copilot
 
             var scopeLabel = snapshot.Scope switch
             {
-                "both" => "staged and unstaged",
+                "both" => "staged, unstaged, and untracked",
                 "staged" => "staged",
-                _ => "unstaged",
+                _ => "unstaged and untracked",
             };
             if (!snapshot.OutputComplete)
                 return $"Git returned a bounded, incomplete excerpt of the {scopeLabel} diff.";
             return snapshot.HasChanges
                 ? $"Git returned {scopeLabel} changes."
                 : $"Git found no {scopeLabel} changes.";
-        }
-
-        private static string BuildContent(CopilotGitDiffSnapshot snapshot)
-        {
-            var result = new Dictionary<string, object?>(StringComparer.Ordinal)
-            {
-                ["repository_root"] = snapshot.RepositoryRoot,
-                ["target"] = snapshot.Target,
-                ["revision"] = snapshot.Revision,
-                ["resolved_revision"] = snapshot.ResolvedRevision,
-                ["scope"] = snapshot.Scope,
-                ["path_filter"] = snapshot.PathFilter,
-                ["has_changes"] = snapshot.HasChanges,
-                ["output_complete"] = snapshot.OutputComplete,
-                ["patch_truncated"] = snapshot.PatchTruncated,
-                ["sections"] = snapshot.Sections.Select(section => new Dictionary<string, object?>(StringComparer.Ordinal)
-                {
-                    ["scope"] = section.Scope,
-                    ["has_changes"] = section.HasChanges,
-                    ["output_complete"] = section.OutputComplete,
-                    ["patch_truncated"] = section.PatchTruncated,
-                    ["patch"] = section.Patch,
-                }).ToArray(),
-            };
-            return $"[Git Diff Inspection]\nresult_json: {JsonSerializer.Serialize(result)}";
         }
 
         private static CopilotToolResult Failure(CopilotToolFailureKind kind, string summary, string error)

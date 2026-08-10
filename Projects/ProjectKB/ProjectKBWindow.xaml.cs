@@ -61,6 +61,8 @@ namespace ProjectKB
         private const double DefaultRestartServicesExpectedDurationMs = 15000;
         private const int CenterDistanceLcNeighborhoodVersion = 2;
         private const double LegacyLcNeighborhoodPaddingPixels = 300;
+        private static readonly Regex OutputDetailHeaderRegex = new(@"^\s*按键\s+\(PT\)\s+亮度\s+\(Lv\)\s+局部对比度\s+\(LC\)\s*$", RegexOptions.CultureInvariant);
+        private static readonly Regex OutputDetailRowRegex = new(@"^\s*(?<key>\[[^\]\r\n]+\])\s+(?<lv>\S+)\s+(?<lc>\S+%)\s*(?<result>Fail)?\s*$", RegexOptions.CultureInvariant);
         private readonly SemaphoreSlim _refreshGate = new(1, 1);
         private readonly FlowNodeExecutionRecorder _flowNodeExecutionRecorder = new();
         private readonly Dictionary<KBItem, DVRectangle> _keyVisuals = new();
@@ -79,6 +81,14 @@ namespace ProjectKB
         public ProjectKBWindow()
         {
             InitializeComponent();
+            outputText.CommandBindings.Add(new CommandBinding(
+                ApplicationCommands.Copy,
+                OutputText_Copy,
+                (s, e) =>
+                {
+                    e.CanExecute = !outputText.Selection.IsEmpty;
+                    e.Handled = true;
+                }));
             this.ApplyCaption(false);
             Config.SetWindow(this);
             this.Title += "-" + Assembly.GetAssembly(typeof(ProjectKBWindow))?.GetName().Version?.ToString() ?? "";
@@ -611,7 +621,9 @@ namespace ProjectKB
                     FlowStatus = FlowStatus.Ready,
                 };
 
-                RecipeManager.SetCurrentTemplate(FlowName);
+                KBRecipeConfig currentRecipe = RecipeManager.SetCurrentTemplate(FlowName);
+                CurrentFlowResult.RecipeSnapshot = KBRecipeSnapshot.Capture(FlowName, currentRecipe);
+                CurrentFlowResult.IsResultPayloadLoaded = true;
                 await Refresh(template);
 
                 if (!await PreProcessingAsync(FlowName, CurrentFlowResult.SN))
@@ -869,6 +881,7 @@ namespace ProjectKB
             KBItemMaster KBItemMaster = CurrentFlowResult ?? new KBItemMaster();
             KBItemMaster.Model = CurrentFlowResult?.Model ?? FlowName;
             KBItemMaster.SN = CurrentFlowResult?.SN ?? string.Empty;
+            KBRecipeConfig resultRecipe = KBItemMaster.RecipeSnapshot?.Recipe ?? RecipeConfig;
             KBItemMaster.CreateTime = DateTime.Now;
             KBItemMaster.FlowStatus = FlowStatus.Completed;
 
@@ -974,8 +987,8 @@ namespace ProjectKB
                 return;
             }
 
-            double keyLcNeighborhoodRadiusMm = RecipeConfig.KeyLcNeighborhoodRadiusMm;
-            double keyLcPixelsPerMillimeter = RecipeConfig.KeyLcPixelsPerMillimeter;
+            double keyLcNeighborhoodRadiusMm = resultRecipe.KeyLcNeighborhoodRadiusMm;
+            double keyLcPixelsPerMillimeter = resultRecipe.KeyLcPixelsPerMillimeter;
             double keyLcNeighborhoodRadiusPixels = GetLcNeighborhoodRadiusPixels(keyLcNeighborhoodRadiusMm, keyLcPixelsPerMillimeter);
             KBItemMaster.KeyLcNeighborhoodRadiusMm = keyLcNeighborhoodRadiusMm;
             KBItemMaster.KeyLcPixelsPerMillimeter = keyLcPixelsPerMillimeter;
@@ -984,16 +997,16 @@ namespace ProjectKB
 
             foreach (var item in KBItemMaster.Items)
             {
-                if (RecipeConfig.EnableKeyLvLimit)
+                if (resultRecipe.EnableKeyLvLimit)
                 {
-                    item.Result = item.Result && item.Lv >= RecipeConfig.MinKeyLv;
-                    item.Result = item.Result && item.Lv <= RecipeConfig.MaxKeyLv;
+                    item.Result = item.Result && item.Lv >= resultRecipe.MinKeyLv;
+                    item.Result = item.Result && item.Lv <= resultRecipe.MaxKeyLv;
                 }
 
-                if (RecipeConfig.EnableKeyLcLimit)
+                if (resultRecipe.EnableKeyLcLimit)
                 {
-                    item.Result = item.Result && item.Lc >= RecipeConfig.MinKeyLc / 100;
-                    item.Result = item.Result && item.Lc <= RecipeConfig.MaxKeyLc / 100;
+                    item.Result = item.Result && item.Lc >= resultRecipe.MinKeyLc / 100;
+                    item.Result = item.Result && item.Lc <= resultRecipe.MaxKeyLc / 100;
                 }
             }
 
@@ -1007,7 +1020,7 @@ namespace ProjectKB
             KBItemMaster.AvgLv = KBItemMaster.Items.Any() ? KBItemMaster.Items.Average(item => item.Lv) : 0;
 
             KBItemMaster.LvUniformity = KBItemMaster.MaxLv == 0 ? 0 : KBItemMaster.MinLv / KBItemMaster.MaxLv;
-            BacklightAutotuneService.Apply(KBItemMaster, RecipeConfig);
+            BacklightAutotuneService.Apply(KBItemMaster, resultRecipe);
             KBItemMaster.SN = SNtextBox.Text;
 
 
@@ -1015,28 +1028,28 @@ namespace ProjectKB
 
             KBItemMaster.Result = true;
 
-            if (RecipeConfig.EnableKeyLvLimit)
+            if (resultRecipe.EnableKeyLvLimit)
             {
-                KBItemMaster.Result = KBItemMaster.Result && BacklightAutotuneService.GetOriginalMinLv(KBItemMaster) >= RecipeConfig.MinKeyLv;
-                KBItemMaster.Result = KBItemMaster.Result && KBItemMaster.MaxLv <= RecipeConfig.MaxKeyLv;
+                KBItemMaster.Result = KBItemMaster.Result && BacklightAutotuneService.GetOriginalMinLv(KBItemMaster) >= resultRecipe.MinKeyLv;
+                KBItemMaster.Result = KBItemMaster.Result && KBItemMaster.MaxLv <= resultRecipe.MaxKeyLv;
             }
 
-            if (RecipeConfig.EnableAvgLvLimit)
+            if (resultRecipe.EnableAvgLvLimit)
             {
                 double originalAvgLv = BacklightAutotuneService.GetOriginalAvgLv(KBItemMaster);
-                KBItemMaster.Result = KBItemMaster.Result && originalAvgLv >= RecipeConfig.MinAvgLv;
-                KBItemMaster.Result = KBItemMaster.Result && originalAvgLv <= RecipeConfig.MaxAvgLv;
+                KBItemMaster.Result = KBItemMaster.Result && originalAvgLv >= resultRecipe.MinAvgLv;
+                KBItemMaster.Result = KBItemMaster.Result && originalAvgLv <= resultRecipe.MaxAvgLv;
             }
 
-            if (RecipeConfig.EnableUniformityLimit)
+            if (resultRecipe.EnableUniformityLimit)
             {
-                KBItemMaster.Result = KBItemMaster.Result && BacklightAutotuneService.GetOriginalLvUniformity(KBItemMaster) >= RecipeConfig.MinUniformity / 100;
+                KBItemMaster.Result = KBItemMaster.Result && BacklightAutotuneService.GetOriginalLvUniformity(KBItemMaster) >= resultRecipe.MinUniformity / 100;
             }
 
-            if (RecipeConfig.EnableKeyLcLimit)
+            if (resultRecipe.EnableKeyLcLimit)
             {
-                KBItemMaster.Result = KBItemMaster.Result && KBItemMaster.Items.Min(item => item.Lc) >= RecipeConfig.MinKeyLc / 100;
-                KBItemMaster.Result = KBItemMaster.Result && KBItemMaster.Items.Max(item => item.Lc) <= RecipeConfig.MaxKeyLc / 100;
+                KBItemMaster.Result = KBItemMaster.Result && KBItemMaster.Items.Min(item => item.Lc) >= resultRecipe.MinKeyLc / 100;
+                KBItemMaster.Result = KBItemMaster.Result && KBItemMaster.Items.Max(item => item.Lc) <= resultRecipe.MaxKeyLc / 100;
             }
 
             KBItemMaster.NbrFailPoints = KBItemMaster.Items.Count(item => !item.Result);
@@ -1275,12 +1288,13 @@ namespace ProjectKB
             outputText.Background = kmitemmaster.Result ? Brushes.Lime : Brushes.Red;
             outputText.Document.Blocks.Clear(); // 清除之前的内容
 
-            KBRecipeConfig recipe = GetRecipeConfig(kmitemmaster);
+            KBRecipeConfig? recipe = GetRecipeConfig(kmitemmaster);
             Brush normalTextBrush = kmitemmaster.Result ? Brushes.Black : Brushes.White;
 
             string outtext = string.Empty;
             outtext += $"机种 (Model):{kmitemmaster.Model}" + Environment.NewLine;
             outtext += $"SN:{kmitemmaster.SN}" + Environment.NewLine;
+            outtext += GetRecipeSnapshotDescription(kmitemmaster) + Environment.NewLine;
             outtext += $"LC邻域 (LC Neighborhood): {GetLcNeighborhoodDescription(kmitemmaster)}" + Environment.NewLine;
             outtext += $"按键明细 (Points of Interest): " + Environment.NewLine;
             outtext += $"{kmitemmaster.CreateTime:yyyy/MM/dd HH:mm:ss}" + Environment.NewLine;
@@ -1310,8 +1324,8 @@ namespace ProjectKB
             }
             outputText.Document.Blocks.Add(paragraph);
 
-            bool minLvFailure = recipe.EnableKeyLvLimit && BacklightAutotuneService.GetOriginalMinLv(kmitemmaster) < recipe.MinKeyLv;
-            bool maxLvFailure = recipe.EnableKeyLvLimit && kmitemmaster.MaxLv > recipe.MaxKeyLv;
+            bool minLvFailure = recipe?.EnableKeyLvLimit == true && BacklightAutotuneService.GetOriginalMinLv(kmitemmaster) < recipe.MinKeyLv;
+            bool maxLvFailure = recipe?.EnableKeyLvLimit == true && kmitemmaster.MaxLv > recipe.MaxKeyLv;
             Table summaryTable = CreateMetricTable(250, 16, 125, 45);
             TableRowGroup summaryRows = new();
             summaryTable.RowGroups.Add(summaryRows);
@@ -1331,9 +1345,9 @@ namespace ProjectKB
             criteriaTable.RowGroups.Add(criteriaRows);
             AppendCriteriaMetricRow(criteriaRows, "不合格点数", "Nbr Failed Points", kmitemmaster.NbrFailPoints.ToString(), string.Empty, kmitemmaster.NbrFailPoints > 0, normalTextBrush);
             double originalAvgLv = BacklightAutotuneService.GetOriginalAvgLv(kmitemmaster);
-            bool avgLvFailure = recipe.EnableAvgLvLimit && (originalAvgLv < recipe.MinAvgLv || originalAvgLv > recipe.MaxAvgLv);
+            bool avgLvFailure = recipe?.EnableAvgLvLimit == true && (originalAvgLv < recipe.MinAvgLv || originalAvgLv > recipe.MaxAvgLv);
             AppendCriteriaMetricRow(criteriaRows, "平均亮度", "Avg Lv", $"{kmitemmaster.AvgLv:F2} cd/m2", string.Empty, avgLvFailure, normalTextBrush);
-            bool uniformityFailure = recipe.EnableUniformityLimit && BacklightAutotuneService.GetOriginalLvUniformity(kmitemmaster) < recipe.MinUniformity / 100;
+            bool uniformityFailure = recipe?.EnableUniformityLimit == true && BacklightAutotuneService.GetOriginalLvUniformity(kmitemmaster) < recipe.MinUniformity / 100;
             AppendCriteriaMetricRow(criteriaRows, "亮度均匀性", "Lv Uniformity", $"{kmitemmaster.LvUniformity * 100:F2}%", string.Empty, uniformityFailure, normalTextBrush);
             AppendLocalContrastSummary(criteriaRows, kmitemmaster, recipe, normalTextBrush);
             outputText.Document.Blocks.Add(criteriaTable);
@@ -1358,12 +1372,21 @@ namespace ProjectKB
             outputText.Document.Blocks.Add(paragraph);
         }
 
-        private static KBRecipeConfig GetRecipeConfig(KBItemMaster kmitemmaster)
+        private static KBRecipeConfig? GetRecipeConfig(KBItemMaster kmitemmaster)
         {
-            RecipeManager recipeManager = RecipeManager.GetInstance();
-            return recipeManager.RecipeConfigs.TryGetValue(kmitemmaster.Model, out KBRecipeConfig? matchedRecipe)
-                ? matchedRecipe
-                : RecipeConfig;
+            return kmitemmaster.RecipeSnapshot?.Recipe;
+        }
+
+        private static string GetRecipeSnapshotDescription(KBItemMaster item)
+        {
+            KBRecipeSnapshot? snapshot = item.RecipeSnapshot;
+            if (snapshot == null)
+                return "Recipe快照 (Recipe Snapshot): 未记录，仅按当时保存的结果显示";
+
+            string name = string.IsNullOrWhiteSpace(snapshot.RecipeName) ? "未命名" : snapshot.RecipeName;
+            return snapshot.Origin == KBRecipeSnapshotOrigin.RebuiltFromCurrentRecipe
+                ? $"Recipe快照 (Recipe Snapshot): {name}（由当前关联Recipe重建）"
+                : $"Recipe快照 (Recipe Snapshot): {name}（运行时记录）";
         }
 
         private static void AppendOutputLine(Paragraph paragraph, string line, Brush normalTextBrush, bool highlightFailure = false)
@@ -1398,8 +1421,43 @@ namespace ProjectKB
             paragraph.Inlines.Add(run);
         }
 
-        private static bool IsKeyFailure(KBItem item, KBRecipeConfig recipe)
+        private void OutputText_Copy(object sender, ExecutedRoutedEventArgs e)
         {
+            string selectedText = outputText.Selection.Text;
+            if (string.IsNullOrEmpty(selectedText)) return;
+
+            ColorVision.Common.Clipboard.SetText(FormatOutputTextForClipboard(selectedText));
+            e.Handled = true;
+        }
+
+        public static string FormatOutputTextForClipboard(string selectedText)
+        {
+            ArgumentNullException.ThrowIfNull(selectedText);
+            if (selectedText.Length == 0) return string.Empty;
+
+            string[] lines = selectedText.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n').Split('\n');
+            for (int i = 0; i < lines.Length; i++)
+            {
+                if (OutputDetailHeaderRegex.IsMatch(lines[i]))
+                {
+                    lines[i] = "按键 (PT)\t亮度 (Lv)\t局部对比度 (LC)\t结果 (Result)";
+                    continue;
+                }
+
+                Match detailRow = OutputDetailRowRegex.Match(lines[i]);
+                if (!detailRow.Success) continue;
+
+                lines[i] = $"{detailRow.Groups["key"].Value}\t{detailRow.Groups["lv"].Value}\t{detailRow.Groups["lc"].Value}\t{detailRow.Groups["result"].Value}";
+            }
+
+            return string.Join(Environment.NewLine, lines);
+        }
+
+        private static bool IsKeyFailure(KBItem item, KBRecipeConfig? recipe)
+        {
+            if (recipe == null)
+                return false;
+
             if (recipe.EnableKeyLvLimit)
             {
                 if (item.Lv < recipe.MinKeyLv || item.Lv > recipe.MaxKeyLv)
@@ -1496,7 +1554,7 @@ namespace ProjectKB
             return string.Join(" ", text.Select(c => c.ToString()));
         }
 
-        private static void AppendLocalContrastSummary(TableRowGroup rowGroup, KBItemMaster kmitemmaster, KBRecipeConfig recipe, Brush normalTextBrush)
+        private static void AppendLocalContrastSummary(TableRowGroup rowGroup, KBItemMaster kmitemmaster, KBRecipeConfig? recipe, Brush normalTextBrush)
         {
             if (!kmitemmaster.Items.Any())
             {
@@ -1507,8 +1565,8 @@ namespace ProjectKB
             KBItem maxLcItem = kmitemmaster.Items.OrderByDescending(item => item.Lc).First();
             double minLcPercent = minLcItem.Lc * 100;
             double maxLcPercent = maxLcItem.Lc * 100;
-            bool minLcFailure = recipe.EnableKeyLcLimit && minLcPercent < recipe.MinKeyLc;
-            bool maxLcFailure = recipe.EnableKeyLcLimit && maxLcPercent > recipe.MaxKeyLc;
+            bool minLcFailure = recipe?.EnableKeyLcLimit == true && minLcPercent < recipe.MinKeyLc;
+            bool maxLcFailure = recipe?.EnableKeyLcLimit == true && maxLcPercent > recipe.MaxKeyLc;
 
             AppendCriteriaMetricRow(rowGroup, "最小局部对比度", "Min LC", $"{minLcPercent:F2}%", $"[{minLcItem.Name}]", minLcFailure, normalTextBrush);
             AppendCriteriaMetricRow(rowGroup, "最大局部对比度", "Max LC", $"{maxLcPercent:F2}%", $"[{maxLcItem.Name}]", maxLcFailure, normalTextBrush);
@@ -1543,6 +1601,16 @@ namespace ProjectKB
             if (listView.SelectedIndex > -1)
             {
                 var kBItem = ViewResluts[listView.SelectedIndex];
+                try
+                {
+                    ViewResultManager.LoadResultPayload(kBItem);
+                }
+                catch (Exception ex)
+                {
+                    log.Error($"读取 KB 历史结果失败，Id={kBItem.Id}", ex);
+                    MessageBox.Show(this, $"结果明细读取失败：{ex.Message}", "ProjectKB");
+                    return;
+                }
                 GenoutputText(kBItem);
 
                 _ = Task.Run(async () =>
@@ -1810,6 +1878,7 @@ namespace ProjectKB
             var contextMenu = new ContextMenu();
             contextMenu.Items.Add(new MenuItem() { Command = ApplicationCommands.Delete });
             contextMenu.Items.Add(new MenuItem() { Command = ApplicationCommands.Copy, Header = "复制" });
+            contextMenu.Items.Add(new MenuItem() { Command = ViewResultManager.SaveCommand, Header = "重新导出 CSV..." });
             contextMenu.Items.Add(new Separator());
             contextMenu.Items.Add(new MenuItem() { Command = openFolderCommand, Header = "OpenFolderAndSelectFile" });
             contextMenu.Items.Add(new MenuItem() { Command = flowExecutionAnalysisCommand, Header = "流程执行分析" });

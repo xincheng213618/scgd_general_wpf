@@ -79,26 +79,33 @@ namespace ColorVision.Copilot
                 .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
                 .Take(MaximumConversationSearchTerms)
                 .ToArray();
-            var activeConversations = CopilotConversationArchiveService.GetActive(Conversations);
+            foreach (var conversation in Conversations)
+                conversation.SetSearchMatchPreview(string.Empty);
+
+            IEnumerable<CopilotConversationRecord> candidates =
+                CopilotConversationArchiveService.GetActive(Conversations);
+            if (IsActivityViewOpen)
+            {
+                candidates = candidates
+                    .Where(conversation => conversation.HasAgentRunStatus)
+                    .OrderBy(GetConversationActivityPriority);
+            }
+
             CopilotConversationRecord[] matches;
             if (terms.Length == 0)
             {
-                foreach (var conversation in Conversations)
-                    conversation.SetSearchMatchPreview(string.Empty);
-                matches = activeConversations.ToArray();
+                matches = candidates.ToArray();
             }
             else
             {
                 var matchedConversations = new List<CopilotConversationRecord>();
-                foreach (var conversation in Conversations)
+                foreach (var conversation in candidates)
                 {
-                    if (conversation.IsArchived
-                        || !CopilotConversationSearchPreview.TryBuild(
+                    if (!CopilotConversationSearchPreview.TryBuild(
                             conversation,
                             terms,
                             out var preview))
                     {
-                        conversation.SetSearchMatchPreview(string.Empty);
                         continue;
                     }
 
@@ -113,8 +120,66 @@ namespace ColorVision.Copilot
                 FilteredConversations.Add(conversation);
 
             OnPropertyChanged(nameof(HasNoConversationSearchResults));
+            OnPropertyChanged(nameof(HasNoActivityConversations));
             OnPropertyChanged(nameof(SelectedConversation));
             RefreshConversationBranchFamily();
+            NotifyConversationActivitySummary();
+        }
+
+        private int GetConversationActivityPriority(CopilotConversationRecord conversation)
+        {
+            if (conversation.AgentActivity?.State == CopilotConversationActivityState.NeedsInput)
+                return 0;
+            if (string.Equals(ActiveHostedRun?.ConversationId, conversation.Id, StringComparison.Ordinal)
+                && (ActiveUserQuestion?.IsPending == true
+                    || _approvalCoordinator.HasPendingActionsForConversation(conversation.Id)))
+            {
+                return 0;
+            }
+
+            return conversation.AgentActivity?.State switch
+            {
+                CopilotConversationActivityState.Blocked => 1,
+                CopilotConversationActivityState.Ready => 2,
+                _ => 3,
+            };
+        }
+
+        private void NotifyConversationActivitySummary()
+        {
+            OnPropertyChanged(nameof(ActivityConversationCount));
+            OnPropertyChanged(nameof(ActivityConversationCountLabel));
+            OnPropertyChanged(nameof(HasConversationActivity));
+            OnPropertyChanged(nameof(HasUnreadConversationActivity));
+            OnPropertyChanged(nameof(HasNoActivityConversations));
+            CommandManager.InvalidateRequerySuggested();
+        }
+
+        private void RefreshConversationActivityView()
+        {
+            if (IsActivityViewOpen)
+                RefreshFilteredConversations();
+            else
+                NotifyConversationActivitySummary();
+        }
+
+        private void ToggleActivityView()
+        {
+            IsActivityViewOpen = !IsActivityViewOpen;
+        }
+
+        private void MarkAllActivityRead()
+        {
+            var changed = false;
+            foreach (var conversation in Conversations.Where(conversation => !conversation.IsArchived))
+                changed |= conversation.AcknowledgeAgentActivityByViewing();
+            if (!changed)
+                return;
+
+            ClearCompletedAgentRunNotice();
+            RefreshAgentRunNotice();
+            RefreshConversationActivityView();
+            PersistState(immediate: true);
         }
 
         private void RefreshConversationBranchFamily()
@@ -238,6 +303,7 @@ namespace ColorVision.Copilot
                 AgentTasks.Add(task);
 
             OnPropertyChanged(nameof(HasAgentTasks));
+            OnPropertyChanged(nameof(IsAgentTaskPanelVisible));
             OnPropertyChanged(nameof(AgentTaskCountLabel));
             OnPropertyChanged(nameof(IsAgentTaskListVisible));
             CommandManager.InvalidateRequerySuggested();
@@ -293,12 +359,15 @@ namespace ColorVision.Copilot
                 return;
 
             var selectedConversation = selection.SelectedConversation;
+            var activityAcknowledged = selectedConversation?.AcknowledgeAgentActivityByViewing() == true;
+            if (activityAcknowledged)
+                RefreshConversationActivityView();
             if (!selection.ConversationChanged)
             {
                 ApplySelectedProfileTransition(
                     selection.PreviousProfile,
                     selection.SelectedProfile);
-                var shouldPersistSameSelection = persist && selection.StateChanged;
+                var shouldPersistSameSelection = activityAcknowledged || (persist && selection.StateChanged);
                 if (selection.ConversationProfileChanged && selectedConversation != null)
                     selectedConversation.RefreshSummary();
                 if (selectedConversation != null
@@ -347,7 +416,7 @@ namespace ColorVision.Copilot
                 selection.SelectedProfile);
             OnComposerRequestModeChanged();
 
-            var shouldPersist = persist && selection.StateChanged;
+            var shouldPersist = activityAcknowledged || (persist && selection.StateChanged);
             if (selection.ConversationProfileChanged && selectedConversation != null)
                 selectedConversation.RefreshSummary();
 

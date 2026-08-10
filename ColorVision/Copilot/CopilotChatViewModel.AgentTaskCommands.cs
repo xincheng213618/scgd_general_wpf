@@ -516,6 +516,7 @@ namespace ColorVision.Copilot
                 PublishSelectedTaskEventJournal();
             PersistState();
             RefreshAgentTasks();
+            RefreshConversationActivityView();
             return true;
         }
 

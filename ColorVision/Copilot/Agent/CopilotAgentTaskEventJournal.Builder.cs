@@ -26,7 +26,48 @@ namespace ColorVision.Copilot
 
         public void RecordRunStarted()
         {
-            Append(CopilotAgentTaskEventType.RunStarted, RunId, "running", "Agent run started.");
+            RecordRunStarted(
+                Array.Empty<CopilotBackgroundShellCommandSnapshot>());
+        }
+
+        internal void RecordRunStarted(
+            IReadOnlyList<CopilotBackgroundShellCommandSnapshot>?
+                activeBackgroundCommands)
+        {
+            var relatedIds = CreateActiveBackgroundCommandRelatedIds(
+                activeBackgroundCommands,
+                nameof(activeBackgroundCommands));
+
+            Append(
+                CopilotAgentTaskEventType.RunStarted,
+                RunId,
+                "running",
+                relatedIds.Length == 0
+                    ? "Agent run started."
+                    : $"Agent run started with {relatedIds.Length} active application-managed background command(s).",
+                relatedIds: relatedIds);
+        }
+
+        internal void RecordValidationBackgroundCommandSnapshot(
+            string callId,
+            IReadOnlyList<CopilotBackgroundShellCommandSnapshot>?
+                activeBackgroundCommands)
+        {
+            if (string.IsNullOrWhiteSpace(callId))
+                throw new ArgumentException("Validation call ID cannot be empty.", nameof(callId));
+
+            var relatedIds = CreateActiveBackgroundCommandRelatedIds(
+                activeBackgroundCommands,
+                nameof(activeBackgroundCommands));
+            Append(
+                CopilotAgentTaskEventType.EvidenceCaptured,
+                CopilotAgentTaskEventIds.ForCall(callId),
+                CopilotAgentTaskEventJournal.ValidationBackgroundSnapshotState,
+                relatedIds.Length == 0
+                    ? "No active application-managed background commands were observed when workspace validation started."
+                    : $"Workspace validation started with {relatedIds.Length} active application-managed background command(s).",
+                "RunWorkspaceValidation",
+                relatedIds);
         }
 
         public void RecordRecovery(CopilotAgentRecoveryRequest recovery)
@@ -132,22 +173,16 @@ namespace ColorVision.Copilot
             CopilotBackgroundShellCommandSnapshot snapshot)
         {
             ArgumentNullException.ThrowIfNull(snapshot);
-            if (snapshot.State is CopilotBackgroundShellCommandState.Running
-                    or CopilotBackgroundShellCommandState.Stopped
-                || string.IsNullOrWhiteSpace(snapshot.Id))
+            var evidence =
+                CopilotBackgroundShellCommandEvidence.FromSnapshot(snapshot);
+            if (!evidence.IsStructurallyValid() || !evidence.IsTerminal)
             {
                 throw new ArgumentException(
                     "A terminal background command snapshot is required.",
                     nameof(snapshot));
             }
 
-            Append(
-                CopilotAgentTaskEventType.BackgroundCommandCompleted,
-                CopilotAgentTaskEventIds.ForBackgroundCommand(snapshot.Id),
-                snapshot.State.ToString().ToLowerInvariant(),
-                snapshot.ExitCode.HasValue
-                    ? $"An application-managed background command reached a terminal state with exit code {snapshot.ExitCode.Value}."
-                    : "An application-managed background command reached a terminal state.");
+            RecordBackgroundShellCommandCompletion(evidence);
         }
 
         internal void RecordBackgroundShellCommandOutput(
@@ -268,7 +303,14 @@ namespace ColorVision.Copilot
                 var subjectId = type is CopilotAgentTaskEventType.ApprovalRequested or CopilotAgentTaskEventType.ApprovalDenied
                     ? CopilotAgentTaskEventIds.ForApproval(execution.ApprovalActionId)
                     : callId;
-                var related = subjectId == callId ? Array.Empty<string>() : [callId];
+                var backgroundCommands = SelectBackgroundShellCommandEvidence(
+                    execution,
+                    agentEvent.ToolResult);
+                var related = (subjectId == callId
+                        ? Array.Empty<string>()
+                        : [callId])
+                    .Concat(backgroundCommands.Select(item =>
+                        CopilotAgentTaskEventIds.ForBackgroundCommand(item.Id)));
                 Append(
                     type,
                     subjectId,
@@ -278,6 +320,8 @@ namespace ColorVision.Copilot
                     related,
                     execution.CompletedAtUtc ?? (execution.StartedAtUtc == default ? null : execution.StartedAtUtc),
                     agentEvent.ToolResult?.Success == false ? agentEvent.ToolResult.FailureCode : string.Empty);
+                foreach (var backgroundCommand in backgroundCommands.Where(item => item.IsTerminal))
+                    RecordBackgroundShellCommandCompletion(backgroundCommand);
                 return;
             }
 
@@ -365,6 +409,63 @@ namespace ColorVision.Copilot
                         || item.RelatedIds.Contains(callSubjectId, StringComparer.Ordinal)));
         }
 
+        private void RecordBackgroundShellCommandCompletion(
+            CopilotBackgroundShellCommandEvidence evidence)
+        {
+            lock (_syncRoot)
+            {
+                var subjectId =
+                    CopilotAgentTaskEventIds.ForBackgroundCommand(evidence.Id);
+                if (_events.Any(item =>
+                        item.Type
+                            == CopilotAgentTaskEventType.BackgroundCommandCompleted
+                        && string.Equals(
+                            item.RunId,
+                            RunId,
+                            StringComparison.Ordinal)
+                        && string.Equals(
+                            item.SubjectId,
+                            subjectId,
+                            StringComparison.Ordinal)))
+                {
+                    return;
+                }
+
+                Append(
+                    CopilotAgentTaskEventType.BackgroundCommandCompleted,
+                    subjectId,
+                    evidence.State.ToString().ToLowerInvariant(),
+                    evidence.ExitCode.HasValue
+                        ? $"An application-managed background command reached a terminal state with exit code {evidence.ExitCode.Value}."
+                        : "An application-managed background command reached a terminal state.",
+                    exitCode: evidence.ExitCode);
+            }
+        }
+
+        private static CopilotBackgroundShellCommandEvidence[]
+            SelectBackgroundShellCommandEvidence(
+                CopilotToolExecutionInfo execution,
+                CopilotToolResult? result)
+        {
+            if (execution.State != CopilotToolExecutionState.Completed
+                || result?.Success != true
+                || !string.Equals(
+                    execution.ToolName,
+                    result.ToolName,
+                    StringComparison.Ordinal))
+            {
+                return Array.Empty<CopilotBackgroundShellCommandEvidence>();
+            }
+
+            return (result.BackgroundShellCommands
+                    ?? Array.Empty<CopilotBackgroundShellCommandEvidence>())
+                .Where(item => item.IsStructurallyValid())
+                .GroupBy(item => item.Id, StringComparer.Ordinal)
+                .Select(group => group.Last())
+                .Take(CopilotBackgroundShellCommandRegistry.MaximumRetainedCommands)
+                .ToArray();
+        }
+
         private void Append(
             CopilotAgentTaskEventType type,
             string subjectId,
@@ -373,7 +474,8 @@ namespace ColorVision.Copilot
             string toolName = "",
             IEnumerable<string>? relatedIds = null,
             DateTimeOffset? occurredAtUtc = null,
-            string failureCode = "")
+            string failureCode = "",
+            int? exitCode = null)
         {
             lock (_syncRoot)
             {
@@ -396,14 +498,130 @@ namespace ColorVision.Copilot
                     ToolName = SanitizeText(toolName, CopilotAgentTaskEventJournal.MaxToolNameLength, collapseWhitespace: true),
                     State = SanitizeText(state, CopilotAgentTaskEventJournal.MaxStateLength, collapseWhitespace: true),
                     FailureCode = CopilotToolFailureCode.Normalize(failureCode),
+                    ExitCode = exitCode,
                     Summary = SanitizeText(summary, CopilotAgentTaskEventJournal.MaxSummaryLength, collapseWhitespace: true),
                 };
                 if (!item.IsStructurallyValid())
                     throw new InvalidOperationException("Agent task event could not be normalized into a valid journal entry.");
                 _events.Add(item);
-                if (_events.Count > CopilotAgentTaskEventJournal.MaxEvents)
-                    _events.RemoveRange(0, _events.Count - CopilotAgentTaskEventJournal.MaxEvents);
+                TrimToCapacity();
             }
+        }
+
+        private void TrimToCapacity()
+        {
+            while (_events.Count > CopilotAgentTaskEventJournal.MaxEvents)
+            {
+                var index = _events.FindIndex(item =>
+                    item.Type
+                        == CopilotAgentTaskEventType.BackgroundCommandOutputObserved);
+                if (index < 0)
+                    index = FindOldestNonAuditSpineEvent();
+                _events.RemoveAt(index < 0 ? 0 : index);
+            }
+        }
+
+        private int FindOldestNonAuditSpineEvent()
+        {
+            var latestValidationSnapshot = _events.LastOrDefault(item =>
+                string.Equals(item.RunId, RunId, StringComparison.Ordinal)
+                && item.Type == CopilotAgentTaskEventType.EvidenceCaptured
+                && string.Equals(
+                    item.State,
+                    CopilotAgentTaskEventJournal.ValidationBackgroundSnapshotState,
+                    StringComparison.Ordinal)
+                && string.Equals(
+                    item.ToolName,
+                    "RunWorkspaceValidation",
+                    StringComparison.Ordinal));
+            var latestValidationStart = latestValidationSnapshot == null
+                ? null
+                : _events.FirstOrDefault(item =>
+                    item.Sequence == latestValidationSnapshot.Sequence + 1
+                    && string.Equals(item.RunId, RunId, StringComparison.Ordinal)
+                    && item.Type == CopilotAgentTaskEventType.ToolStarted
+                    && string.Equals(
+                        item.SubjectId,
+                        latestValidationSnapshot.SubjectId,
+                        StringComparison.Ordinal)
+                    && string.Equals(
+                        item.ToolName,
+                        "RunWorkspaceValidation",
+                        StringComparison.Ordinal));
+            var latestValidationCompletion = latestValidationStart == null
+                ? null
+                : _events.FirstOrDefault(item =>
+                    item.Sequence > latestValidationStart.Sequence
+                    && string.Equals(item.RunId, RunId, StringComparison.Ordinal)
+                    && item.Type == CopilotAgentTaskEventType.ToolCompleted
+                    && string.Equals(
+                        item.SubjectId,
+                        latestValidationStart.SubjectId,
+                        StringComparison.Ordinal)
+                    && string.Equals(
+                        item.ToolName,
+                        "RunWorkspaceValidation",
+                        StringComparison.Ordinal));
+            for (var index = 0; index < _events.Count; index++)
+            {
+                var item = _events[index];
+                if (item.Type == CopilotAgentTaskEventType.RunStarted
+                    && string.Equals(item.RunId, RunId, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                if (ReferenceEquals(item, latestValidationSnapshot)
+                    || ReferenceEquals(item, latestValidationStart)
+                    || ReferenceEquals(item, latestValidationCompletion))
+                {
+                    continue;
+                }
+
+                return index;
+            }
+
+            return -1;
+        }
+
+        private static string[] CreateActiveBackgroundCommandRelatedIds(
+            IReadOnlyList<CopilotBackgroundShellCommandSnapshot>?
+                activeBackgroundCommands,
+            string parameterName)
+        {
+            var snapshots = (activeBackgroundCommands
+                    ?? Array.Empty<CopilotBackgroundShellCommandSnapshot>())
+                .ToArray();
+            if (snapshots.Any(snapshot => snapshot?.IsActive != true))
+            {
+                throw new ArgumentException(
+                    "Only active background command snapshots can be captured.",
+                    parameterName);
+            }
+
+            var evidence = snapshots
+                .Select(CopilotBackgroundShellCommandEvidence.FromSnapshot)
+                .ToArray();
+            if (evidence.Any(item => !item.IsStructurallyValid()))
+            {
+                throw new ArgumentException(
+                    "Every active background command snapshot must be structurally valid.",
+                    parameterName);
+            }
+
+            var relatedIds = evidence
+                .Select(item =>
+                    CopilotAgentTaskEventIds.ForBackgroundCommand(item.Id))
+                .Distinct(StringComparer.Ordinal)
+                .ToArray();
+            if (relatedIds.Length > CopilotAgentTaskEventJournal.MaxRelatedIds)
+            {
+                throw new ArgumentException(
+                    "Too many active background commands were captured for one task event.",
+                    parameterName);
+            }
+
+            return relatedIds;
         }
 
         private static string NormalizeIdentifier(string? value, string fallback)

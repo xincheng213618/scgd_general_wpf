@@ -97,12 +97,15 @@ namespace ProjectKB
             SaveCommand = new RelayCommand(a => Save());
             _db = new SqlSugarClient(new ConnectionConfig
             {
-                ConnectionString = $"Data Source={SqliteDbPath}",
+                ConnectionString = $"Data Source={SqliteDbPath};Default Timeout=5",
                 DbType = DbType.Sqlite,
                 IsAutoCloseConnection = true
             });
+            _db.Ado.ExecuteCommand("PRAGMA busy_timeout = 5000;");
+            _db.Ado.ExecuteCommand("PRAGMA journal_mode = WAL;");
             // 确保表存在
             _db.CodeFirst.InitTables<KBItemMaster, KBProductionSession>();
+            KBResultPayloadStorage.EnsureSchema(_db);
             LoadAll(Config.Count);
         }
 
@@ -146,6 +149,18 @@ namespace ProjectKB
             {
                 if (ViewResluts[ViewReslutsSelectedIndex] is KBItemMaster kbItemMaster)
                 {
+                    try
+                    {
+                        LoadResultPayload(kbItemMaster);
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show(
+                            Application.Current.GetActiveWindow(),
+                            $"结果明细读取失败，无法重新导出：{ex.Message}",
+                            "ProjectKB");
+                        return;
+                    }
                     string invalidChars = new string(Path.GetInvalidFileNameChars()) + new string(Path.GetInvalidPathChars());
                     string regexPattern = $"[{Regex.Escape(invalidChars)}]";
                     string csvpath = Config.CsvSavePath + $"\\{Regex.Replace(kbItemMaster.Model, regexPattern, "")}_{kbItemMaster.CreateTime:yyyyMMdd}.csv";
@@ -179,18 +194,43 @@ namespace ProjectKB
         {
             if (item == null) return;
 
-            if (item.Id > 0)
+            bool isNew = item.Id <= 0;
+            bool savePayload = isNew || item.IsResultPayloadLoaded;
+            KBResultPayloadStorage.RunDatabaseMaintenance(() =>
             {
-                _db.Updateable(item).ExecuteCommand();
-                if (!ViewResluts.Any(x => ReferenceEquals(x, item) || x.Id == item.Id))
-                    AddViewResult(item);
-                return;
-            }
+                _db.Ado.BeginTran();
+                try
+                {
+                    if (isNew)
+                    {
+                        item.Id = _db.Insertable(item).ExecuteReturnIdentity();
+                    }
+                    else
+                    {
+                        _db.Updateable(item).ExecuteCommand();
+                    }
 
-            int id = _db.Insertable(item).ExecuteReturnIdentity();
-            item.Id = id; // 更新ID
+                    if (savePayload)
+                        KBResultPayloadStorage.SaveResult(_db, item);
+                    _db.Ado.CommitTran();
+                }
+                catch
+                {
+                    _db.Ado.RollbackTran();
+                    if (isNew)
+                        item.Id = 0;
+                    throw;
+                }
+            });
 
-            AddViewResult(item);
+            if (isNew || !ViewResluts.Any(x => ReferenceEquals(x, item) || x.Id == item.Id))
+                AddViewResult(item);
+        }
+
+        public void LoadResultPayload(KBItemMaster item)
+        {
+            ArgumentNullException.ThrowIfNull(item);
+            KBResultPayloadStorage.LoadResult(_db, item);
         }
 
         private void AddViewResult(KBItemMaster item)

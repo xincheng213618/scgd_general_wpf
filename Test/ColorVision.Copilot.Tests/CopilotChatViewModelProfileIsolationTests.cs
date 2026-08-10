@@ -110,6 +110,490 @@ public sealed class CopilotChatViewModelProfileIsolationTests
     }
 
     [Fact]
+    public void DeliveredSteeringRecoveryRecordIsCommittedWithTheNextCheckpoint()
+    {
+        var profile = CreateProfile("profile-a", "Profile A", "model-a");
+        var config = CreateConfig(profile, "steering-checkpoint-commit-test-token");
+        var conversation = CreateConversation(profile, "conversation-a", string.Empty);
+        var assistantMessage = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty);
+        conversation.Messages.Add(assistantMessage);
+        var steeringMessage = new CopilotSteeringMessageSnapshot(
+            "steering:checkpoint-commit",
+            "keep the current constraint");
+
+        using var solutionManagerScope = new IsolatedSolutionManagerScope();
+        var viewModel = CreateViewModel(
+            conversation,
+            config,
+            new GatedFailingTurnRuntime(),
+            new CopilotAgentTaskHost());
+        using var hostedRun = new CopilotHostedAgentRun(
+            conversation.Id,
+            CopilotAgentMode.Auto,
+            "run:checkpoint-commit");
+        try
+        {
+            Assert.True(CopilotSteeringRecovery.TrackPending(
+                conversation,
+                hostedRun.Id,
+                steeringMessage,
+                DateTimeOffset.UtcNow));
+            ApplyAgentEvents(
+                viewModel,
+                hostedRun,
+                conversation,
+                assistantMessage,
+                CopilotAgentEvent.SteeringDelivered([steeringMessage]));
+
+            Assert.Single(conversation.PendingSteeringRecoveries);
+
+            var taskLedger = new CopilotAgentTaskLedgerSnapshot
+            {
+                Mode = "execute",
+                Items =
+                [
+                    new CopilotAgentTaskItem
+                    {
+                        Id = 1,
+                        Title = "Persist steering",
+                        Description = "Commit delivered steering with the checkpoint.",
+                    },
+                ],
+            };
+            var staleCheckpoint = new CopilotAgentSessionCheckpoint
+            {
+                ProfileKey = "profile-a|model-a",
+                SerializedSessionJson = "{}",
+                UpdatedAtUtc = DateTimeOffset.UtcNow,
+            };
+            ApplyAgentEvents(
+                viewModel,
+                hostedRun,
+                conversation,
+                assistantMessage,
+                CopilotAgentEvent.CheckpointUpdated(staleCheckpoint, taskLedger));
+
+            Assert.Single(conversation.PendingSteeringRecoveries);
+
+            var checkpoint = new CopilotAgentSessionCheckpoint
+            {
+                ProfileKey = "profile-a|model-a",
+                SerializedSessionJson = "{}",
+                ConversationMemory =
+                [
+                    new CopilotRequestMessage("user", steeringMessage.Text)
+                    {
+                        IsSteering = true,
+                    },
+                ],
+                UpdatedAtUtc = staleCheckpoint.UpdatedAtUtc.AddSeconds(1),
+            };
+            ApplyAgentEvents(
+                viewModel,
+                hostedRun,
+                conversation,
+                assistantMessage,
+                CopilotAgentEvent.CheckpointUpdated(checkpoint, taskLedger));
+
+            Assert.Empty(conversation.PendingSteeringRecoveries);
+            Assert.Same(checkpoint, conversation.AgentSessionCheckpoint);
+        }
+        finally
+        {
+            hostedRun.Complete(error: null);
+            viewModel.Dispose();
+        }
+    }
+
+    [Fact]
+    public async Task PausedBoundGoalStillAccountsTheCompletedTurn()
+    {
+        var profile = CreateProfile("profile-a", "Profile A", "model-a");
+        var config = CreateConfig(profile, "paused-goal-accounting-test-token");
+        var conversation = CreateConversation(profile, "conversation-a", string.Empty);
+        var createdAt = new DateTimeOffset(2026, 8, 11, 12, 0, 0, TimeSpan.Zero);
+        var activeGoal = CopilotConversationGoal.Create("Finish the verified runtime slice", createdAt);
+        conversation.Goal = activeGoal.WithState(
+            CopilotConversationGoalState.Paused,
+            createdAt.AddMinutes(1),
+            "用户暂停");
+        var userMessage = new CopilotChatMessage(CopilotChatRole.User, activeGoal.Objective)
+        {
+            RequestMode = CopilotAgentMode.Auto,
+        };
+        var assistantMessage = new CopilotChatMessage(CopilotChatRole.Assistant, "Turn complete")
+        {
+            AgentStopReason = CopilotAgentStopReason.Completed,
+        };
+        conversation.Messages.Add(userMessage);
+        conversation.Messages.Add(assistantMessage);
+        var turnUsage = new CopilotTokenUsage(10, 5, 15);
+
+        using var solutionManagerScope = new IsolatedSolutionManagerScope();
+        var viewModel = CreateViewModel(
+            conversation,
+            config,
+            new GatedFailingTurnRuntime(),
+            new CopilotAgentTaskHost());
+        using var hostedRun = new CopilotHostedAgentRun(
+            conversation.Id,
+            CopilotAgentMode.Auto,
+            "run:paused-goal-accounting");
+        try
+        {
+            await ProcessGoalAfterTurnAsync(
+                viewModel,
+                hostedRun,
+                conversation,
+                profile,
+                userMessage,
+                assistantMessage,
+                activeGoal.Id,
+                turnUsage);
+
+            Assert.NotNull(conversation.Goal);
+            Assert.Equal(CopilotConversationGoalState.Paused, conversation.Goal.State);
+            Assert.Equal(1, conversation.Goal.TurnCount);
+            Assert.Equal(turnUsage.EffectiveTotalTokens, conversation.Goal.TokensUsed);
+            var iteration = Assert.Single(conversation.Goal.IterationLog);
+            Assert.False(iteration.Evaluated);
+            Assert.False(iteration.ContinuationCounted);
+        }
+        finally
+        {
+            hostedRun.Complete(error: null);
+            viewModel.Dispose();
+        }
+    }
+
+    [Fact]
+    public async Task PausingDuringGoalEvaluationAccountsEvaluationUsageWithoutApplyingItsVerdict()
+    {
+        var profile = CreateProfile("profile-a", "Profile A", "model-a");
+        var config = CreateConfig(profile, "paused-goal-evaluation-test-token");
+        var conversation = CreateConversation(profile, "conversation-a", string.Empty);
+        var createdAt = new DateTimeOffset(2026, 8, 11, 12, 0, 0, TimeSpan.Zero);
+        var activeGoal = CopilotConversationGoal.Create("Finish the verified runtime slice", createdAt);
+        conversation.Goal = activeGoal;
+        var userMessage = new CopilotChatMessage(CopilotChatRole.User, activeGoal.Objective)
+        {
+            RequestMode = CopilotAgentMode.Auto,
+        };
+        var assistantMessage = new CopilotChatMessage(CopilotChatRole.Assistant, "Turn complete")
+        {
+            AgentStopReason = CopilotAgentStopReason.Completed,
+        };
+        conversation.Messages.Add(userMessage);
+        conversation.Messages.Add(assistantMessage);
+        var turnUsage = new CopilotTokenUsage(10, 5, 15);
+        var evaluationUsage = new CopilotTokenUsage(3, 2, 5);
+        var evaluator = new GatedGoalCompletionEvaluator(evaluationUsage);
+
+        using var solutionManagerScope = new IsolatedSolutionManagerScope();
+        var viewModel = CreateViewModel(
+            conversation,
+            config,
+            new GatedFailingTurnRuntime(),
+            new CopilotAgentTaskHost());
+        var evaluatorField = typeof(CopilotChatViewModel).GetField(
+            "_goalCompletionEvaluator",
+            BindingFlags.Instance | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("Goal completion evaluator field was not found.");
+        evaluatorField.SetValue(viewModel, evaluator);
+        conversation.Goal = activeGoal;
+        using var hostedRun = new CopilotHostedAgentRun(
+            conversation.Id,
+            CopilotAgentMode.Auto,
+            "run:paused-goal-evaluation");
+        try
+        {
+            var processing = ProcessGoalAfterTurnAsync(
+                viewModel,
+                hostedRun,
+                conversation,
+                profile,
+                userMessage,
+                assistantMessage,
+                activeGoal.Id,
+                turnUsage);
+            await evaluator.Entered.WaitAsync(TestTimeout);
+            conversation.Goal = activeGoal.WithState(
+                CopilotConversationGoalState.Paused,
+                createdAt.AddMinutes(1),
+                "用户暂停");
+            evaluator.Release();
+            await processing;
+
+            Assert.NotNull(conversation.Goal);
+            Assert.Equal(CopilotConversationGoalState.Paused, conversation.Goal.State);
+            Assert.Equal(1, conversation.Goal.TurnCount);
+            Assert.Equal(0, conversation.Goal.EvaluationCount);
+            Assert.Equal(
+                turnUsage.Add(evaluationUsage).EffectiveTotalTokens,
+                conversation.Goal.TokensUsed);
+            var iteration = Assert.Single(conversation.Goal.IterationLog);
+            Assert.False(iteration.Evaluated);
+            Assert.False(iteration.ContinuationCounted);
+        }
+        finally
+        {
+            evaluator.Release();
+            hostedRun.Complete(error: null);
+            viewModel.Dispose();
+        }
+    }
+
+    [Fact]
+    public async Task CancellingGoalEvaluationAfterCompletedTurnPreservesAccountingAndPausesGoal()
+    {
+        var profile = CreateProfile("profile-a", "Profile A", "model-a");
+        var config = CreateConfig(profile, "cancelled-goal-evaluation-test-token");
+        var conversation = CreateConversation(profile, "conversation-a", string.Empty);
+        var createdAt = new DateTimeOffset(2026, 8, 11, 12, 0, 0, TimeSpan.Zero);
+        var activeGoal = CopilotConversationGoal.Create("Finish the verified runtime slice", createdAt);
+        conversation.Goal = activeGoal;
+        var userMessage = new CopilotChatMessage(CopilotChatRole.User, activeGoal.Objective)
+        {
+            RequestMode = CopilotAgentMode.Auto,
+        };
+        var assistantMessage = new CopilotChatMessage(CopilotChatRole.Assistant, "Turn complete")
+        {
+            AgentStopReason = CopilotAgentStopReason.Completed,
+        };
+        conversation.Messages.Add(userMessage);
+        conversation.Messages.Add(assistantMessage);
+        var turnUsage = new CopilotTokenUsage(10, 5, 15);
+        var evaluator = new GatedGoalCompletionEvaluator(CopilotTokenUsage.Empty);
+
+        using var solutionManagerScope = new IsolatedSolutionManagerScope();
+        var viewModel = CreateViewModel(
+            conversation,
+            config,
+            new GatedFailingTurnRuntime(),
+            new CopilotAgentTaskHost());
+        var evaluatorField = typeof(CopilotChatViewModel).GetField(
+            "_goalCompletionEvaluator",
+            BindingFlags.Instance | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("Goal completion evaluator field was not found.");
+        evaluatorField.SetValue(viewModel, evaluator);
+        conversation.Goal = activeGoal;
+        using var hostedRun = new CopilotHostedAgentRun(
+            conversation.Id,
+            CopilotAgentMode.Auto,
+            "run:cancelled-goal-evaluation");
+        try
+        {
+            var processing = ProcessGoalAfterTurnAsync(
+                viewModel,
+                hostedRun,
+                conversation,
+                profile,
+                userMessage,
+                assistantMessage,
+                activeGoal.Id,
+                turnUsage);
+            await evaluator.Entered.WaitAsync(TestTimeout);
+
+            Assert.True(hostedRun.TryRequestCancel());
+            await processing;
+
+            Assert.NotNull(conversation.Goal);
+            Assert.Equal(CopilotConversationGoalState.Paused, conversation.Goal.State);
+            Assert.Equal(1, conversation.Goal.TurnCount);
+            Assert.Equal(0, conversation.Goal.EvaluationCount);
+            Assert.Equal(turnUsage.EffectiveTotalTokens, conversation.Goal.TokensUsed);
+            var iteration = Assert.Single(conversation.Goal.IterationLog);
+            Assert.False(iteration.Evaluated);
+            Assert.False(iteration.ContinuationCounted);
+            Assert.Equal(CopilotAgentStopReason.Completed, assistantMessage.AgentStopReason);
+            Assert.False(assistantMessage.WasResponseInterrupted);
+        }
+        finally
+        {
+            evaluator.Release();
+            hostedRun.Complete(error: null);
+            viewModel.Dispose();
+        }
+    }
+
+    [Fact]
+    public async Task CancellationObservedWithEvaluationResultRetainsItsUsageWithoutApplyingVerdict()
+    {
+        var profile = CreateProfile("profile-a", "Profile A", "model-a");
+        var config = CreateConfig(profile, "late-cancelled-goal-evaluation-test-token");
+        var conversation = CreateConversation(profile, "conversation-a", string.Empty);
+        var createdAt = new DateTimeOffset(2026, 8, 11, 12, 0, 0, TimeSpan.Zero);
+        var activeGoal = CopilotConversationGoal.Create("Finish the verified runtime slice", createdAt);
+        conversation.Goal = activeGoal;
+        var userMessage = new CopilotChatMessage(CopilotChatRole.User, activeGoal.Objective)
+        {
+            RequestMode = CopilotAgentMode.Auto,
+        };
+        var assistantMessage = new CopilotChatMessage(CopilotChatRole.Assistant, "Turn complete")
+        {
+            AgentStopReason = CopilotAgentStopReason.Completed,
+        };
+        conversation.Messages.Add(userMessage);
+        conversation.Messages.Add(assistantMessage);
+        var turnUsage = new CopilotTokenUsage(10, 5, 15);
+        var evaluationUsage = new CopilotTokenUsage(3, 2, 5);
+
+        using var solutionManagerScope = new IsolatedSolutionManagerScope();
+        using var hostedRun = new CopilotHostedAgentRun(
+            conversation.Id,
+            CopilotAgentMode.Auto,
+            "run:late-cancelled-goal-evaluation");
+        var evaluator = new CancellingGoalCompletionEvaluator(
+            () => Assert.True(hostedRun.TryRequestCancel()),
+            evaluationUsage);
+        var viewModel = CreateViewModel(
+            conversation,
+            config,
+            new GatedFailingTurnRuntime(),
+            new CopilotAgentTaskHost());
+        var evaluatorField = typeof(CopilotChatViewModel).GetField(
+            "_goalCompletionEvaluator",
+            BindingFlags.Instance | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("Goal completion evaluator field was not found.");
+        evaluatorField.SetValue(viewModel, evaluator);
+        conversation.Goal = activeGoal;
+        try
+        {
+            await ProcessGoalAfterTurnAsync(
+                viewModel,
+                hostedRun,
+                conversation,
+                profile,
+                userMessage,
+                assistantMessage,
+                activeGoal.Id,
+                turnUsage);
+
+            Assert.NotNull(conversation.Goal);
+            Assert.Equal(CopilotConversationGoalState.Paused, conversation.Goal.State);
+            Assert.Equal(1, conversation.Goal.TurnCount);
+            Assert.Equal(0, conversation.Goal.EvaluationCount);
+            Assert.Equal(
+                turnUsage.Add(evaluationUsage).EffectiveTotalTokens,
+                conversation.Goal.TokensUsed);
+            var iteration = Assert.Single(conversation.Goal.IterationLog);
+            Assert.False(iteration.Evaluated);
+            Assert.False(iteration.ContinuationCounted);
+            Assert.Equal(CopilotAgentStopReason.Completed, assistantMessage.AgentStopReason);
+            Assert.False(assistantMessage.WasResponseInterrupted);
+        }
+        finally
+        {
+            hostedRun.Complete(error: null);
+            viewModel.Dispose();
+        }
+    }
+
+    [Fact]
+    public async Task CancellationBeforeGoalContinuationCommitPausesGoalAndRemovesAutomaticWork()
+    {
+        var profile = CreateProfile("profile-a", "Profile A", "model-a");
+        var config = CreateConfig(profile, "cancelled-goal-continuation-test-token");
+        var conversation = CreateConversation(profile, "conversation-a", string.Empty);
+        var createdAt = new DateTimeOffset(2026, 8, 11, 12, 0, 0, TimeSpan.Zero);
+        var turnUsage = new CopilotTokenUsage(10, 5, 15);
+        var continuedGoal = CopilotConversationGoal.Create(
+                "Finish the verified runtime slice",
+                createdAt)
+            .WithTurnOutcome(
+                CopilotConversationGoalState.Active,
+                turnUsage,
+                elapsedSeconds: 2,
+                evaluated: true,
+                continued: true,
+                "More verified work remains.",
+                createdAt.AddMinutes(1));
+        conversation.Goal = continuedGoal;
+        var assistantMessage = new CopilotChatMessage(CopilotChatRole.Assistant, "Turn complete")
+        {
+            AgentStopReason = CopilotAgentStopReason.Completed,
+        };
+
+        using var solutionManagerScope = new IsolatedSolutionManagerScope();
+        var taskHost = new CopilotAgentTaskHost();
+        var viewModel = CreateViewModel(
+            conversation,
+            config,
+            new GatedFailingTurnRuntime(),
+            taskHost);
+        conversation.Goal = continuedGoal;
+        var activeStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseActive = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var hostedRun = taskHost.Start(
+            conversation.Id,
+            CopilotAgentMode.Auto,
+            async _ =>
+            {
+                activeStarted.TrySetResult();
+                await releaseActive.Task;
+            });
+        try
+        {
+            await activeStarted.Task.WaitAsync(TestTimeout);
+            var completedTurnSnapshot = new CopilotAgentHostContextSnapshot("", "", []);
+            var completedTurnRuntimeConfig = new CopilotTurnRuntimeConfigSnapshot(
+                new CopilotAgentDefaultsConfig(),
+                []);
+            Assert.True(TryQueueGoalContinuation(
+                viewModel,
+                hostedRun,
+                conversation,
+                assistantMessage,
+                profile,
+                completedTurnSnapshot,
+                completedTurnRuntimeConfig,
+                continuedGoal.Id,
+                "More verified work remains."));
+            Assert.Single(taskHost.QueuedRuns);
+
+            Assert.True(taskHost.RequestCancel(hostedRun.Id));
+
+            var queued = TryQueueGoalContinuation(
+                viewModel,
+                hostedRun,
+                conversation,
+                assistantMessage,
+                profile,
+                completedTurnSnapshot,
+                completedTurnRuntimeConfig,
+                continuedGoal.Id,
+                "More verified work remains.");
+
+            Assert.False(queued);
+            Assert.Empty(taskHost.QueuedRuns);
+            Assert.NotNull(conversation.Goal);
+            Assert.Equal(CopilotConversationGoalState.Paused, conversation.Goal.State);
+            Assert.Equal(continuedGoal.TurnCount, conversation.Goal.TurnCount);
+            Assert.Equal(continuedGoal.EvaluationCount, conversation.Goal.EvaluationCount);
+            Assert.Equal(continuedGoal.TokensUsed, conversation.Goal.TokensUsed);
+            Assert.Equal(continuedGoal.IterationLog.Count, conversation.Goal.IterationLog.Count);
+            Assert.Contains(
+                "continuation queueing cancelled",
+                assistantMessage.ExecutionContent,
+                StringComparison.Ordinal);
+        }
+        finally
+        {
+            foreach (var queuedRun in taskHost.QueuedRuns.ToArray())
+                taskHost.RequestCancel(queuedRun.Id);
+            releaseActive.TrySetResult();
+            try
+            {
+                await hostedRun.Completion.WaitAsync(TestTimeout);
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            viewModel.Dispose();
+        }
+    }
+
+    [Fact]
     public void PromptHistorySearchUsesAnOverlayAndRestoresTheCompleteComposerDraft()
     {
         var profile = CreateProfile("profile-a", "Profile A", "model-a");
@@ -301,6 +785,80 @@ public sealed class CopilotChatViewModelProfileIsolationTests
             taskHost);
     }
 
+    private static void ApplyAgentEvents(
+        CopilotChatViewModel viewModel,
+        CopilotHostedAgentRun hostedRun,
+        CopilotConversationRecord conversation,
+        CopilotChatMessage assistantMessage,
+        params CopilotAgentEvent[] agentEvents)
+    {
+        var method = typeof(CopilotChatViewModel).GetMethod(
+            "ApplyAgentEvents",
+            BindingFlags.Instance | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("ApplyAgentEvents was not found.");
+        method.Invoke(
+            viewModel,
+            [hostedRun, conversation, assistantMessage, agentEvents]);
+    }
+
+    private static async Task ProcessGoalAfterTurnAsync(
+        CopilotChatViewModel viewModel,
+        CopilotHostedAgentRun hostedRun,
+        CopilotConversationRecord conversation,
+        CopilotProfileConfig profile,
+        CopilotChatMessage userMessage,
+        CopilotChatMessage assistantMessage,
+        string boundGoalId,
+        CopilotTokenUsage turnUsage)
+    {
+        var method = typeof(CopilotChatViewModel).GetMethod(
+            "ProcessGoalAfterTurnAsync",
+            BindingFlags.Instance | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("ProcessGoalAfterTurnAsync was not found.");
+        var task = (Task?)method.Invoke(
+            viewModel,
+            [
+                hostedRun,
+                conversation,
+                profile,
+                userMessage,
+                assistantMessage,
+                boundGoalId,
+                turnUsage,
+            ]);
+        Assert.NotNull(task);
+        await task;
+    }
+
+    private static bool TryQueueGoalContinuation(
+        CopilotChatViewModel viewModel,
+        CopilotHostedAgentRun hostedRun,
+        CopilotConversationRecord conversation,
+        CopilotChatMessage assistantMessage,
+        CopilotProfileConfig profile,
+        CopilotAgentHostContextSnapshot completedTurnSnapshot,
+        CopilotTurnRuntimeConfigSnapshot completedTurnRuntimeConfig,
+        string goalId,
+        string reason)
+    {
+        var method = typeof(CopilotChatViewModel).GetMethod(
+            "TryQueueGoalContinuation",
+            BindingFlags.Instance | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("TryQueueGoalContinuation was not found.");
+        return Assert.IsType<bool>(method.Invoke(
+            viewModel,
+            [
+                hostedRun,
+                conversation,
+                assistantMessage,
+                profile,
+                completedTurnSnapshot,
+                completedTurnRuntimeConfig,
+                goalId,
+                reason,
+            ]));
+    }
+
     private static async Task CompleteAndDisposeAsync(
         CopilotChatViewModel viewModel,
         GatedFailingTurnRuntime runtime,
@@ -395,6 +953,50 @@ public sealed class CopilotChatViewModelProfileIsolationTests
         }
 
         public int CleanupOrphanedAttachments(CopilotChatState value) => 0;
+    }
+
+    private sealed class GatedGoalCompletionEvaluator(CopilotTokenUsage usage) : ICopilotGoalCompletionEvaluator
+    {
+        private readonly TaskCompletionSource _entered = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource _release = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public Task Entered => _entered.Task;
+
+        public async Task<CopilotGoalEvaluationResult> EvaluateAsync(
+            CopilotProfileConfig profile,
+            CopilotConversationGoal goal,
+            IReadOnlyList<CopilotRequestMessage> transcript,
+            CopilotGoalTurnEvidence turnEvidence,
+            CancellationToken cancellationToken)
+        {
+            _entered.TrySetResult();
+            await _release.Task.WaitAsync(cancellationToken);
+            return new CopilotGoalEvaluationResult(
+                CopilotGoalEvaluationVerdict.Continue,
+                "More verified work remains.",
+                usage);
+        }
+
+        public void Release() => _release.TrySetResult();
+    }
+
+    private sealed class CancellingGoalCompletionEvaluator(
+        Action requestCancellation,
+        CopilotTokenUsage usage) : ICopilotGoalCompletionEvaluator
+    {
+        public Task<CopilotGoalEvaluationResult> EvaluateAsync(
+            CopilotProfileConfig profile,
+            CopilotConversationGoal goal,
+            IReadOnlyList<CopilotRequestMessage> transcript,
+            CopilotGoalTurnEvidence turnEvidence,
+            CancellationToken cancellationToken)
+        {
+            requestCancellation();
+            return Task.FromResult(new CopilotGoalEvaluationResult(
+                CopilotGoalEvaluationVerdict.Continue,
+                "More verified work remains.",
+                usage));
+        }
     }
 
     private sealed class IsolatedSolutionManagerScope : IDisposable

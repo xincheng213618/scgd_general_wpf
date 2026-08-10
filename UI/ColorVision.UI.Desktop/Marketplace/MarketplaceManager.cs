@@ -270,7 +270,7 @@ namespace ColorVision.UI.Desktop.Marketplace
                 await detailConcurrency.WaitAsync(cancellationToken);
                 try
                 {
-                    MarketplacePluginDetail? detail = await client.GetPluginDetailAsync(plugin.PackageName!, forceRefreshDetails, cancellationToken);
+                    MarketplacePluginDetail? detail = await client.GetPluginUpdateMetadataAsync(plugin.PackageName!, forceRefreshDetails, cancellationToken);
                     MarketplacePluginVersionInfo? candidate = PluginUpdateCompatibility.SelectLatestCompatibleVersion(plugin.AssemblyVersion, detail, hostVersion);
                     return new PluginPlanCandidate(plugin, candidate, detail != null);
                 }
@@ -439,7 +439,7 @@ namespace ColorVision.UI.Desktop.Marketplace
             Version? hostVersion = PluginUpdateCompatibility.GetCurrentHostVersion();
             MarketplacePluginDetail? detail = hostVersion == null
                 ? null
-                : await MarketplaceClient.GetInstance().GetPluginDetailAsync(SearchName, cancellationToken);
+                : await MarketplaceClient.GetInstance().GetPluginUpdateMetadataAsync(SearchName, cancellationToken: cancellationToken);
             MarketplacePluginVersionInfo? candidate = hostVersion == null
                 ? null
                 : PluginUpdateCompatibility.SelectLatestCompatibleVersion(installedVersion: null, detail, hostVersion);

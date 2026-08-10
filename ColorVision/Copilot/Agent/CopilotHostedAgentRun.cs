@@ -9,9 +9,14 @@ namespace ColorVision.Copilot
 {
     public sealed class CopilotHostedAgentRun : IDisposable
     {
+        private const int MaximumTrackedDeliveredSteeringMessages = 16;
         private readonly CopilotNonBlockingCancellationSource _cancellation = new();
         private readonly TaskCompletionSource<object?> _completion = new(TaskCreationOptions.RunContinuationsAsynchronously);
         private readonly CancellationToken _cancellationToken;
+        private readonly object _steeringCheckpointSyncRoot = new();
+        private readonly Dictionary<string, CopilotSteeringMessageSnapshot> _deliveredSteeringAwaitingCheckpoint =
+            new(StringComparer.Ordinal);
+        private CopilotAgentSessionCheckpoint? _deliveredSteeringCheckpointBaseline;
         private int _agentStopReason;
         private int _automaticFollowUpDispatchSuppressed;
         private int _checkpointReady;
@@ -140,6 +145,59 @@ namespace ColorVision.Copilot
                 {
                     return;
                 }
+            }
+        }
+
+        internal void RecordDeliveredSteeringAwaitingCheckpoint(
+            IEnumerable<CopilotSteeringMessageSnapshot>? messages,
+            CopilotAgentSessionCheckpoint? checkpointBaseline)
+        {
+            var delivered = CopilotSteeringMessagePolicy.SelectForRecovery(messages);
+            if (delivered.Count == 0)
+                return;
+
+            lock (_steeringCheckpointSyncRoot)
+            {
+                var wasEmpty = _deliveredSteeringAwaitingCheckpoint.Count == 0;
+                foreach (var message in delivered)
+                {
+                    if (_deliveredSteeringAwaitingCheckpoint.Count
+                        >= MaximumTrackedDeliveredSteeringMessages)
+                    {
+                        break;
+                    }
+
+                    _deliveredSteeringAwaitingCheckpoint.TryAdd(message.MessageId, message);
+                }
+                if (wasEmpty && _deliveredSteeringAwaitingCheckpoint.Count > 0)
+                    _deliveredSteeringCheckpointBaseline = checkpointBaseline;
+            }
+        }
+
+        internal (CopilotAgentSessionCheckpoint? BaselineCheckpoint, IReadOnlyList<CopilotSteeringMessageSnapshot> Messages)
+            GetDeliveredSteeringAwaitingCheckpoint()
+        {
+            lock (_steeringCheckpointSyncRoot)
+            {
+                return (
+                    _deliveredSteeringCheckpointBaseline,
+                    _deliveredSteeringAwaitingCheckpoint.Values.ToArray());
+            }
+        }
+
+        internal (CopilotAgentSessionCheckpoint? BaselineCheckpoint, IReadOnlyList<CopilotSteeringMessageSnapshot> Messages)
+            TakeDeliveredSteeringAwaitingCheckpoint()
+        {
+            lock (_steeringCheckpointSyncRoot)
+            {
+                if (_deliveredSteeringAwaitingCheckpoint.Count == 0)
+                    return (null, Array.Empty<CopilotSteeringMessageSnapshot>());
+
+                var messages = _deliveredSteeringAwaitingCheckpoint.Values.ToArray();
+                var checkpointBaseline = _deliveredSteeringCheckpointBaseline;
+                _deliveredSteeringAwaitingCheckpoint.Clear();
+                _deliveredSteeringCheckpointBaseline = null;
+                return (checkpointBaseline, messages);
             }
         }
 

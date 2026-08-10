@@ -246,14 +246,17 @@ namespace ProjectKB
             Dictionary<DateTime, int> dailyTargets = sessions
                 .GroupBy(item => item.StartTime.Date)
                 .ToDictionary(group => group.Key, group => group.Sum(item => Math.Max(0, item.TargetProduction)));
-            IEnumerable<DateTime> dailyKeys = results.Select(item => item.CreateTime.Date)
+            Dictionary<DateTime, List<KBItemMaster>> resultsByDate = results
+                .GroupBy(item => item.CreateTime.Date)
+                .ToDictionary(group => group.Key, group => group.ToList());
+            IEnumerable<DateTime> dailyKeys = resultsByDate.Keys
                 .Concat(dailyTargets.Keys)
                 .Distinct()
                 .OrderByDescending(date => date);
             List<KBDailyProductionRow> dailyRows = dailyKeys
                 .Select(date =>
                 {
-                    ProductionMetrics metrics = CalculateMetrics(results.Where(item => item.CreateTime.Date == date));
+                    ProductionMetrics metrics = CalculateMetrics(resultsByDate.GetValueOrDefault(date) ?? []);
                     int target = dailyTargets.GetValueOrDefault(date);
                     return new KBDailyProductionRow
                     {
@@ -270,12 +273,14 @@ namespace ProjectKB
                 })
                 .ToList();
 
+            Dictionary<int, List<KBItemMaster>> resultsBySession = results
+                .Where(item => item.ProductionSessionId > 0)
+                .GroupBy(item => item.ProductionSessionId!.Value)
+                .ToDictionary(group => group.Key, group => group.ToList());
             var sessionRows = new List<KBProductionSessionRow>();
             foreach (KBProductionSession session in sessions.OrderByDescending(item => item.StartTime))
             {
-                List<KBItemMaster> sessionResults = results
-                    .Where(item => item.ProductionSessionId == session.Id)
-                    .ToList();
+                List<KBItemMaster> sessionResults = resultsBySession.GetValueOrDefault(session.Id) ?? [];
                 ProductionMetrics metrics = CalculateMetrics(sessionResults);
                 sessionRows.Add(CreateSessionRow(session, metrics));
             }
@@ -461,6 +466,9 @@ namespace ProjectKB
                 db.Ado.ExecuteCommand("CREATE INDEX IF NOT EXISTS \"IX_KBItemMaster_Model\" ON \"KBItemMaster\" (\"Model\");");
                 db.Ado.ExecuteCommand("CREATE INDEX IF NOT EXISTS \"IX_KBItemMaster_SN\" ON \"KBItemMaster\" (\"SN\");");
                 db.Ado.ExecuteCommand("CREATE INDEX IF NOT EXISTS \"IX_KBItemMaster_Result\" ON \"KBItemMaster\" (\"Result\");");
+                db.Ado.ExecuteCommand(
+                    "CREATE INDEX IF NOT EXISTS \"IX_KBItemMaster_StatisticsCover\" ON \"KBItemMaster\" " +
+                    "(\"CreateTime\", \"Id\", \"ProductionSessionId\", \"FlowStatus\", \"Result\", \"RunTime\", \"Model\", \"SN\");");
                 _schemaInitialized = true;
             }
         }
@@ -528,6 +536,7 @@ namespace ProjectKB
             return db.Queryable<KBItemMaster>()
                 .Where(item => item.Model != string.Empty)
                 .Select(item => item.Model)
+                .Distinct()
                 .ToList()
                 .Where(model => !string.IsNullOrWhiteSpace(model))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
@@ -539,13 +548,15 @@ namespace ProjectKB
         {
             InitializeSchema();
             using SqlSugarClient db = CreateClient();
-            return db.Queryable<KBItemMaster>()
-                .Where(item => item.SN != string.Empty)
-                .OrderBy(item => item.Id, OrderByType.Desc)
-                .Select(item => item.SN)
-                .ToList()
-                .Where(sn => !string.IsNullOrWhiteSpace(sn))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
+            System.Data.DataTable table = db.Ado.GetDataTable(
+                "SELECT MIN(TRIM(\"SN\")) AS \"Value\" " +
+                "FROM \"KBItemMaster\" " +
+                "WHERE \"SN\" IS NOT NULL AND TRIM(\"SN\") <> '' " +
+                "GROUP BY TRIM(\"SN\") COLLATE NOCASE " +
+                "ORDER BY MAX(\"Id\") DESC;");
+            return table.Rows.Cast<System.Data.DataRow>()
+                .Select(row => Convert.ToString(row["Value"]) ?? string.Empty)
+                .Where(sn => sn.Length > 0)
                 .ToList();
         }
 
@@ -554,7 +565,17 @@ namespace ProjectKB
             ValidateQuery(query);
             InitializeSchema();
             using SqlSugarClient db = CreateClient();
-            List<KBItemMaster> results = ApplyResultFilters(db.Queryable<KBItemMaster>(), query).ToList();
+            List<KBItemMaster> results = ApplyResultFilters(db.Queryable<KBItemMaster>(), query)
+                .Select(item => new KBItemMaster
+                {
+                    Id = item.Id,
+                    ProductionSessionId = item.ProductionSessionId,
+                    FlowStatus = item.FlowStatus,
+                    Result = item.Result,
+                    RunTime = item.RunTime,
+                    CreateTime = item.CreateTime,
+                })
+                .ToList();
 
             ISugarQueryable<KBProductionSession> sessionQuery = db.Queryable<KBProductionSession>()
                 .Where(item => item.StartTime >= query.From && item.StartTime < query.ToExclusive);
@@ -607,7 +628,7 @@ namespace ProjectKB
         {
             return new SqlSugarClient(new ConnectionConfig
             {
-                ConnectionString = $"Data Source={DatabasePath}",
+                ConnectionString = $"Data Source={DatabasePath};Default Timeout=5",
                 DbType = DbType.Sqlite,
                 IsAutoCloseConnection = true,
                 InitKeyType = InitKeyType.Attribute
@@ -629,7 +650,8 @@ namespace ProjectKB
             ISugarQueryable<KBItemMaster> resultQuery,
             KBProductionQuery query)
         {
-            resultQuery = resultQuery.Where(item => item.CreateTime >= query.From && item.CreateTime < query.ToExclusive);
+            if (query.PeriodMode != KBProductionPeriodMode.All || query.From != DateTime.MinValue || query.ToExclusive != DateTime.MaxValue)
+                resultQuery = resultQuery.Where(item => item.CreateTime >= query.From && item.CreateTime < query.ToExclusive);
             if (!string.IsNullOrWhiteSpace(query.Model))
             {
                 string model = query.Model.Trim();

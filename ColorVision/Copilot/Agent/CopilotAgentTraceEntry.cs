@@ -11,7 +11,7 @@ namespace ColorVision.Copilot
 {
     public sealed partial class CopilotAgentTraceEntry : ViewModelBase
     {
-        public const int CurrentSchemaVersion = 17;
+        public const int CurrentSchemaVersion = 18;
         private const int MaxSummaryLength = 800;
         private const int MaxDelegatedAnswerLength = 20_000;
         internal const int MaxPersistedHookRuns = 64;
@@ -50,6 +50,12 @@ namespace ColorVision.Copilot
         public CopilotToolFailureKind FailureKind { get; set; }
 
         public string FailureCode { get; set; } = string.Empty;
+
+        public string ProcessOperation { get; set; } = string.Empty;
+
+        public int? ProcessExitCode { get; set; }
+
+        public bool ProcessTimedOut { get; set; }
 
         public bool RetryEligible { get; set; }
 
@@ -180,6 +186,12 @@ namespace ColorVision.Copilot
         public bool ShouldSerializeWorkspaceChangedFiles() => WorkspaceChangedFiles?.Count > 0;
 
         public bool ShouldSerializeFailureCode() => !string.IsNullOrWhiteSpace(FailureCode);
+
+        public bool ShouldSerializeProcessOperation() => !string.IsNullOrWhiteSpace(ProcessOperation);
+
+        public bool ShouldSerializeProcessExitCode() => ProcessExitCode.HasValue;
+
+        public bool ShouldSerializeProcessTimedOut() => ProcessTimedOut;
 
         public bool ShouldSerializeRetryEligible() => RetryEligible;
 
@@ -513,6 +525,27 @@ namespace ColorVision.Copilot
                 entry.ResultSummary = Sanitize(summary);
                 entry.ErrorMessage = result.Success ? string.Empty : Sanitize(result.ErrorMessage);
                 entry.FailureCode = result.Success ? string.Empty : CopilotToolFailureCode.Normalize(result.FailureCode);
+                if (CopilotToolProcessEvidence.TryNormalizeForResult(
+                        result.ToolName,
+                        result.Success,
+                        result.FailureCode,
+                        result.ProcessOperation,
+                        result.ProcessExitCode,
+                        result.ProcessTimedOut,
+                        out var processEvidence)
+                    && CopilotToolProcessEvidence.TryNormalizeForExecution(
+                        execution.ToolName,
+                        execution.State,
+                        entry.FailureCode,
+                        processEvidence.Operation,
+                        processEvidence.ExitCode,
+                        processEvidence.TimedOut,
+                        out processEvidence))
+                {
+                    entry.ProcessOperation = processEvidence.Operation;
+                    entry.ProcessExitCode = processEvidence.ExitCode;
+                    entry.ProcessTimedOut = processEvidence.TimedOut;
+                }
                 if (result.DelegatedRunUsage != null)
                 {
                     var reportedUsage = result.DelegatedRunUsage.Usage;

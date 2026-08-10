@@ -96,11 +96,16 @@ public sealed class CopilotCodexGoalsFeatureTests
     public void DisabledFeatureKeepsOnlyInspectionAndSafeShutdownCommandsAvailable()
     {
         Assert.True(CopilotConversationGoalFeaturePolicy.CanManageWhileDisabled(null));
+        Assert.True(CopilotConversationGoalFeaturePolicy.CanManageWhileDisabled("history"));
         Assert.True(CopilotConversationGoalFeaturePolicy.CanManageWhileDisabled("pause"));
         Assert.True(CopilotConversationGoalFeaturePolicy.CanManageWhileDisabled("CLEAR"));
         Assert.False(CopilotConversationGoalFeaturePolicy.CanManageWhileDisabled("resume"));
         Assert.False(CopilotConversationGoalFeaturePolicy.CanManageWhileDisabled("edit a new objective"));
         Assert.False(CopilotConversationGoalFeaturePolicy.CanManageWhileDisabled("a new objective"));
+
+        var command = CopilotLocalCommandCatalog.FindExact("/goal");
+        Assert.NotNull(command);
+        Assert.Contains(command.Arguments!, argument => argument.Value == "history");
     }
 
     [Fact]

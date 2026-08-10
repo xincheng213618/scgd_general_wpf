@@ -9,6 +9,8 @@ namespace ColorVision.Copilot
         CopilotPreparedTurnRequest? PreparedChatRequest,
         bool ReviewEntered,
         CopilotWorkspaceReviewTargetContext? ReviewTarget,
+        CopilotCodeReviewSnapshot? PendingCodeReviewSnapshot,
+        CopilotCodeReviewSnapshot? CodeReviewSnapshot,
         string ReviewText,
         bool ReviewTextTruncated,
         bool ReviewExited,
@@ -33,6 +35,8 @@ namespace ColorVision.Copilot
     {
         public bool ChatRequestPrepared => PreparedChatRequest.HasValue;
 
+        public bool CodeReviewSnapshotExpected => PendingCodeReviewSnapshot != null;
+
         public static CopilotTurnEventState Create(
             CopilotAgentMode mode,
             string turnId = CopilotTurnStartedEvent.DefaultTurnId)
@@ -46,6 +50,8 @@ namespace ColorVision.Copilot
                 false,
                 null,
                 false,
+                null,
+                null,
                 null,
                 string.Empty,
                 false,
@@ -99,6 +105,7 @@ namespace ColorVision.Copilot
                 CopilotTurnReviewEnteredEvent reviewEntered => ReduceReviewEntered(state, reviewEntered),
                 CopilotTurnReviewExitedEvent reviewExited => ReduceReviewExited(state, reviewExited),
                 CopilotTurnAgentEvent agent => ReduceAgentEvent(state, agent),
+                CopilotTurnCodeReviewSnapshotUpdatedEvent codeReview => ReduceCodeReviewSnapshotUpdated(state, codeReview),
                 CopilotTurnWorkspaceDiffUpdatedEvent workspaceDiff => ReduceWorkspaceDiffUpdated(state, workspaceDiff),
                 CopilotTurnPlanUpdatedEvent plan => ReducePlanUpdated(state, plan),
                 CopilotTurnTokenUsageUpdatedEvent tokenUsage => ReduceTokenUsageUpdated(state, tokenUsage),
@@ -207,6 +214,8 @@ namespace ColorVision.Copilot
                 throw new InvalidOperationException("Copilot Agent emitted an event after its completed item.");
             if (state.WorkspaceDiffExpected)
                 throw new InvalidOperationException("Copilot Agent emitted another event before its workspace diff update.");
+            if (state.CodeReviewSnapshotExpected)
+                throw new InvalidOperationException("Copilot Review emitted another event before its code review snapshot update.");
             if (agent.Event == null)
                 throw new InvalidOperationException("Copilot Agent event has no payload.");
 
@@ -224,10 +233,20 @@ namespace ColorVision.Copilot
             var workspaceDiffExpected = agent.Event.Type == CopilotAgentEventType.ToolResult
                 && agent.Event.ToolResult?.Success == true
                 && agent.Event.ToolResult.WorkspaceMutation != null;
+            CopilotCodeReviewSnapshot? pendingCodeReviewSnapshot = null;
+            if (state.Mode == CopilotAgentMode.Review)
+            {
+                CopilotTurnCodeReviewSnapshotCapture.TryCaptureUpdate(
+                    state.ReviewTarget!,
+                    state.CodeReviewSnapshot,
+                    agent.Event,
+                    out pendingCodeReviewSnapshot);
+            }
             return state with
             {
                 AgentCompleted = agent.Event.Type == CopilotAgentEventType.Completed,
                 WorkspaceDiffExpected = workspaceDiffExpected,
+                PendingCodeReviewSnapshot = pendingCodeReviewSnapshot,
                 AnswerLifecycle = answerLifecycle,
                 BudgetLifecycle = budgetLifecycle,
                 CheckpointLifecycle = checkpointLifecycle,
@@ -236,6 +255,33 @@ namespace ColorVision.Copilot
                 UserQuestionLifecycle = userQuestionLifecycle,
                 SteeringLifecycle = steeringLifecycle,
                 ApprovalLifecycle = approvalLifecycle,
+            };
+        }
+
+        private static CopilotTurnEventState ReduceCodeReviewSnapshotUpdated(
+            CopilotTurnEventState state,
+            CopilotTurnCodeReviewSnapshotUpdatedEvent codeReview)
+        {
+            RequireReviewMode(state, codeReview);
+            if (!state.ReviewEntered)
+                throw new InvalidOperationException("Copilot Review emitted a code review snapshot before entering review mode.");
+            if (state.ReviewExited)
+                throw new InvalidOperationException("Copilot Review emitted a code review snapshot after exiting review mode.");
+            if (!state.CodeReviewSnapshotExpected)
+                throw new InvalidOperationException("Copilot Review emitted a code review snapshot without a matching Git diff result or findings submission.");
+            if (codeReview.Snapshot?.IsStructurallyValid() != true
+                || !CopilotTurnCodeReviewSnapshotCapture.MatchesTarget(
+                    state.ReviewTarget!,
+                    codeReview.Snapshot)
+                || codeReview.Snapshot != state.PendingCodeReviewSnapshot)
+            {
+                throw new InvalidOperationException("Copilot Review emitted an invalid or mismatched code review snapshot.");
+            }
+
+            return state with
+            {
+                PendingCodeReviewSnapshot = null,
+                CodeReviewSnapshot = codeReview.Snapshot.CreateSnapshot(),
             };
         }
 
@@ -426,10 +472,12 @@ namespace ColorVision.Copilot
                         "Copilot chat turn completed with a request snapshot that did not match its prepared request.");
                 }
             }
-            if (state.Mode != CopilotAgentMode.Chat && !state.AgentCompleted)
-                throw new InvalidOperationException("Copilot Agent turn completed before its completed item was emitted.");
             if (state.WorkspaceDiffExpected)
                 throw new InvalidOperationException("Copilot Agent turn completed before its workspace diff update.");
+            if (state.CodeReviewSnapshotExpected)
+                throw new InvalidOperationException("Copilot Review turn completed before its code review snapshot update.");
+            if (state.Mode != CopilotAgentMode.Chat && !state.AgentCompleted)
+                throw new InvalidOperationException("Copilot Agent turn completed before its completed item was emitted.");
             if (state.Mode != CopilotAgentMode.Chat)
             {
                 var agentRunResult = result.AgentRunResult
@@ -449,6 +497,14 @@ namespace ColorVision.Copilot
                 && string.IsNullOrWhiteSpace(state.ReviewText))
             {
                 throw new InvalidOperationException("Copilot Review completed without final review text.");
+            }
+            if (state.Mode == CopilotAgentMode.Review
+                && result.AgentRunResult?.StopReason == CopilotAgentStopReason.Completed
+                && state.CodeReviewSnapshot != null
+                && !state.CodeReviewSnapshot.HasFindingsSubmission())
+            {
+                throw new InvalidOperationException(
+                    "Copilot Review completed before submitting structured findings for its latest Git diff.");
             }
         }
 

@@ -38,6 +38,11 @@ namespace ColorVision.Copilot
             var taskEventJournalBuilder = new CopilotAgentTaskEventJournalBuilder(
                 requestedCheckpoint?.TaskEventJournal,
                 baseExecutionScope.RunId);
+            var runStartBackgroundShellCommandSnapshots =
+                (_backgroundShellCommandSnapshotProvider(request.ConversationId)
+                    ?? Array.Empty<CopilotBackgroundShellCommandSnapshot>())
+                .Where(snapshot => snapshot?.IsActive == true)
+                .ToArray();
             var answerText = new StringBuilder();
             var emit = CreateEventEmitter(agentEvent =>
             {
@@ -60,10 +65,29 @@ namespace ColorVision.Copilot
                     var remaining = CopilotAgentSessionCheckpoint.MaxConversationMemoryContentLength - answerText.Length;
                     answerText.Append(agentEvent.Text.AsSpan(0, Math.Min(agentEvent.Text.Length, remaining)));
                 }
+                if (agentEvent.Type == CopilotAgentEventType.ToolStarted
+                    && agentEvent.ToolExecution != null
+                    && string.Equals(
+                        agentEvent.ToolExecution.ToolName,
+                        "RunWorkspaceValidation",
+                        StringComparison.Ordinal))
+                {
+                    var activeBackgroundCommands =
+                        (_backgroundShellCommandSnapshotProvider(
+                                request.ConversationId)
+                            ?? Array.Empty<CopilotBackgroundShellCommandSnapshot>())
+                        .Where(snapshot => snapshot?.IsActive == true)
+                        .ToArray();
+                    taskEventJournalBuilder
+                        .RecordValidationBackgroundCommandSnapshot(
+                            agentEvent.ToolExecution.CallId,
+                            activeBackgroundCommands);
+                }
                 taskEventJournalBuilder.Observe(agentEvent);
                 onEvent(agentEvent);
             });
-            taskEventJournalBuilder.RecordRunStarted();
+            taskEventJournalBuilder.RecordRunStarted(
+                runStartBackgroundShellCommandSnapshots);
             var capabilitySnapshot = _capabilityCatalog.GetSnapshot(request.CodexPluginsEnabled);
             var finalAnswerRecovery = NormalizeFinalAnswerRecoveryRequest(
                 request.Recovery,
@@ -115,9 +139,10 @@ namespace ColorVision.Copilot
                         StringComparison.OrdinalIgnoreCase));
             var backgroundShellCommandSnapshots =
                 hasBackgroundShellObservationTool
-                    ? CopilotBackgroundShellCommandRegistry.Shared.GetSnapshots(
+                    ? (_backgroundShellCommandSnapshotProvider(
                             request.ConversationId)
-                        .Where(snapshot => snapshot.IsActive)
+                            ?? Array.Empty<CopilotBackgroundShellCommandSnapshot>())
+                        .Where(snapshot => snapshot?.IsActive == true)
                         .ToArray()
                     : Array.Empty<CopilotBackgroundShellCommandSnapshot>();
             var environmentContext = CopilotAgentEnvironmentContext.Capture(request);

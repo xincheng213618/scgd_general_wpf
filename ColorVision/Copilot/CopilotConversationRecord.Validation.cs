@@ -206,6 +206,11 @@ namespace ColorVision.Copilot
                     changed = true;
                 }
             }
+            if (AgentActivity != null && !HasValidAgentActivitySource())
+            {
+                AgentActivity = null;
+                changed = true;
+            }
             var lastAssistantMessage = Messages.LastOrDefault(message =>
                 !message.IsUser
                 && !message.WasResponseInterrupted);

@@ -1,4 +1,7 @@
 using ColorVision.Copilot;
+using Microsoft.Extensions.AI;
+using Newtonsoft.Json.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 
@@ -244,6 +247,396 @@ public sealed class CopilotAgentTaskEventJournalIntegrityTests
     }
 
     [Fact]
+    public void BackgroundCompletionKeepsStructuredExitCodeAndAcceptsLegacyMissingField()
+    {
+        var completedAtUtc = new DateTimeOffset(2026, 8, 10, 10, 0, 0, TimeSpan.Zero);
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordRunStarted();
+        journal.RecordBackgroundShellCommandCompletion(new CopilotBackgroundShellCommandSnapshot(
+            "background-command",
+            "conversation",
+            "task",
+            CopilotShellKind.PowerShell,
+            @"C:\workspace",
+            "private command",
+            new string('a', 64),
+            completedAtUtc.AddMinutes(-1),
+            completedAtUtc,
+            ProcessId: 42,
+            ProcessTreeContained: true,
+            State: CopilotBackgroundShellCommandState.Failed,
+            ExitCode: 23,
+            StandardOutput: string.Empty,
+            StandardError: string.Empty));
+        journal.RecordStop(CopilotAgentStopReason.Completed);
+        var snapshot = journal.Snapshot();
+        var completion = Assert.Single(
+            snapshot.Events,
+            item => item.Type == CopilotAgentTaskEventType.BackgroundCommandCompleted);
+
+        Assert.Equal(23, completion.ExitCode);
+        Assert.True(snapshot.IsStructurallyValid());
+
+        var legacyJson = JObject.FromObject(snapshot);
+        foreach (var item in Assert.IsType<JArray>(legacyJson[nameof(CopilotAgentTaskEventJournalSnapshot.Events)]))
+            Assert.IsType<JObject>(item).Remove(nameof(CopilotAgentTaskEvent.ExitCode));
+        var legacy = legacyJson.ToObject<CopilotAgentTaskEventJournalSnapshot>();
+
+        Assert.NotNull(legacy);
+        Assert.True(legacy.IsStructurallyValid());
+        Assert.Null(Assert.Single(
+            legacy.Events,
+            item => item.Type == CopilotAgentTaskEventType.BackgroundCommandCompleted).ExitCode);
+
+        var invalidToolEvent = new CopilotAgentTaskEvent
+        {
+            Sequence = completion.Sequence,
+            Id = completion.Id,
+            Type = CopilotAgentTaskEventType.ToolCompleted,
+            OccurredAtUtc = completion.OccurredAtUtc,
+            RunId = completion.RunId,
+            SubjectId = completion.SubjectId,
+            RelatedIds = completion.RelatedIds,
+            ToolName = "RunShellCommand",
+            State = CopilotToolExecutionState.Completed.ToString(),
+            ExitCode = 0,
+            Summary = "Tool completed.",
+        };
+        Assert.False(invalidToolEvent.IsStructurallyValid());
+
+        var contradictoryCompletion = new CopilotAgentTaskEvent
+        {
+            Sequence = completion.Sequence,
+            Id = completion.Id,
+            Type = CopilotAgentTaskEventType.BackgroundCommandCompleted,
+            OccurredAtUtc = completion.OccurredAtUtc,
+            RunId = completion.RunId,
+            SubjectId = completion.SubjectId,
+            RelatedIds = completion.RelatedIds,
+            State = "completed",
+            ExitCode = 23,
+            Summary = "Background command completed.",
+        };
+        Assert.False(contradictoryCompletion.IsStructurallyValid());
+    }
+
+    [Fact]
+    public void BackgroundToolResultsLinkHashedCommandAndRecordTerminalStateOnce()
+    {
+        const string backgroundId = "bg:private-background-command-id";
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordRunStarted();
+        journal.Observe(CopilotAgentEvent.ToolStarted(CreateExecution(
+            "start-background-call",
+            toolName: "StartBackgroundShellCommand")));
+        journal.Observe(CopilotAgentEvent.FromToolResult(
+            new CopilotToolResult
+            {
+                ToolName = "StartBackgroundShellCommand",
+                Success = true,
+                Summary = "Background command started.",
+                BackgroundShellCommands =
+                [
+                    new CopilotBackgroundShellCommandEvidence(
+                        backgroundId,
+                        CopilotBackgroundShellCommandState.Running,
+                        ExitCode: null),
+                ],
+            },
+            CreateExecution(
+                "start-background-call",
+                CopilotToolExecutionState.Completed,
+                completedAtUtc: DateTimeOffset.UtcNow,
+                toolName: "StartBackgroundShellCommand")));
+        journal.Observe(CopilotAgentEvent.ToolStarted(CreateExecution(
+            "stop-background-call",
+            toolName: "StopBackgroundShellCommand")));
+        var stoppedResult = new CopilotToolResult
+        {
+            ToolName = "StopBackgroundShellCommand",
+            Success = true,
+            Summary = "Background command stopped.",
+            BackgroundShellCommands =
+            [
+                new CopilotBackgroundShellCommandEvidence(
+                    backgroundId,
+                    CopilotBackgroundShellCommandState.Stopped,
+                    ExitCode: null),
+            ],
+        };
+        journal.Observe(CopilotAgentEvent.FromToolResult(
+            stoppedResult,
+            CreateExecution(
+                "stop-background-call",
+                CopilotToolExecutionState.Completed,
+                completedAtUtc: DateTimeOffset.UtcNow,
+                toolName: "StopBackgroundShellCommand")));
+        journal.Observe(CopilotAgentEvent.FromToolResult(
+            stoppedResult,
+            CreateExecution(
+                "duplicate-stop-observation",
+                CopilotToolExecutionState.Completed,
+                completedAtUtc: DateTimeOffset.UtcNow,
+                toolName: "StopBackgroundShellCommand")));
+        journal.RecordStop(CopilotAgentStopReason.Completed);
+
+        var snapshot = journal.Snapshot();
+        var expectedSubject =
+            CopilotAgentTaskEventIds.ForBackgroundCommand(backgroundId);
+        var startCompleted = Assert.Single(snapshot.Events, item =>
+            item.Type == CopilotAgentTaskEventType.ToolCompleted
+            && string.Equals(
+                item.ToolName,
+                "StartBackgroundShellCommand",
+                StringComparison.Ordinal));
+        Assert.Contains(expectedSubject, startCompleted.RelatedIds);
+        Assert.DoesNotContain(backgroundId, startCompleted.RelatedIds);
+        var terminal = Assert.Single(snapshot.Events, item =>
+            item.Type
+                == CopilotAgentTaskEventType.BackgroundCommandCompleted);
+        Assert.Equal(expectedSubject, terminal.SubjectId);
+        Assert.Equal("stopped", terminal.State);
+        Assert.Null(terminal.ExitCode);
+        Assert.True(snapshot.IsStructurallyValid());
+    }
+
+    [Fact]
+    public void RunStartLinksHashedActiveBackgroundCommandsWithoutRawIds()
+    {
+        const string backgroundId = "bg:private-inherited-background-id";
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+
+        journal.RecordRunStarted(
+        [
+            CreateBackgroundCommandSnapshot(backgroundId),
+        ]);
+        journal.RecordStop(CopilotAgentStopReason.Completed);
+
+        var snapshot = journal.Snapshot();
+        var runStarted = Assert.Single(snapshot.Events, item =>
+            item.Type == CopilotAgentTaskEventType.RunStarted);
+        var expectedSubject =
+            CopilotAgentTaskEventIds.ForBackgroundCommand(backgroundId);
+        Assert.Equal([expectedSubject], runStarted.RelatedIds);
+        Assert.Contains(
+            "1 active application-managed background command",
+            runStarted.Summary,
+            StringComparison.Ordinal);
+        Assert.DoesNotContain(
+            backgroundId,
+            JsonSerializer.Serialize(snapshot),
+            StringComparison.Ordinal);
+        Assert.True(snapshot.IsStructurallyValid());
+    }
+
+    [Fact]
+    public async Task AgentRuntimeCapturesActiveBackgroundCommandAtRunStart()
+    {
+        const string conversationId = "runtime-background-conversation";
+        const string backgroundId = "bg:private-runtime-background-id";
+        var snapshotRequests = new List<string?>();
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry(Array.Empty<ICopilotTool>()),
+            new CopilotAgentContextBuilder(),
+            new CopilotToolExecutor(),
+            _ => new SingleResponseChatClient(),
+            new EmptyExternalToolProvider(),
+            new CopilotCapabilityCatalog(),
+            new CopilotCodexStopHookExecutor(),
+            requestedConversationId =>
+            {
+                snapshotRequests.Add(requestedConversationId);
+                return
+                [
+                    CreateBackgroundCommandSnapshot(backgroundId),
+                ];
+            });
+        var request = new CopilotAgentRequest
+        {
+            ConversationId = conversationId,
+            TaskId = "runtime-background-task",
+            WorkspacePath = System.IO.Path.GetTempPath(),
+            UserText = "Report the current task state.",
+            TaskIntentText = "Report the current task state.",
+            Profile = CreateProfile(),
+            Mode = CopilotAgentMode.Chat,
+            HarnessFeatures = CopilotAgentHarnessFeatures.None,
+            CodexApprovalPolicy = CopilotCodexApprovalPolicy.CreateScalar(
+                CopilotCodexApprovalPolicyMode.Untrusted),
+            RunBudgetOverride = new CopilotAgentRunBudgetOverride
+            {
+                RequestTokenBudget = 16_384,
+                MaxToolCalls = 1,
+                MaxAgentPasses = 1,
+                TotalDuration = TimeSpan.FromSeconds(30),
+            },
+        };
+
+        var result = await runtime.RunAsync(
+            request,
+            _ => { },
+            CancellationToken.None);
+
+        Assert.Equal(CopilotAgentStopReason.Completed, result.StopReason);
+        Assert.Equal([conversationId], snapshotRequests);
+        var runStarted = Assert.Single(result.TaskEventJournal.Events, item =>
+            item.Type == CopilotAgentTaskEventType.RunStarted
+            && string.Equals(
+                item.RunId,
+                result.TaskEventJournal.Events[^1].RunId,
+                StringComparison.Ordinal));
+        Assert.Equal(
+            [CopilotAgentTaskEventIds.ForBackgroundCommand(backgroundId)],
+            runStarted.RelatedIds);
+        Assert.DoesNotContain(
+            backgroundId,
+            JsonSerializer.Serialize(result.TaskEventJournal),
+            StringComparison.Ordinal);
+        Assert.DoesNotContain(
+            backgroundId,
+            result.PreparedUserMessageContent,
+            StringComparison.Ordinal);
+        Assert.True(result.TaskEventJournal.IsStructurallyValid());
+    }
+
+    [Fact]
+    public void ValidationSnapshotAndAuditSpineSurviveBackgroundOutputRollOver()
+    {
+        const string backgroundId = "bg:private-validation-rollover-id";
+        const string validationCallId = "validation-rollover-call";
+        var activeBackgroundCommand =
+            CreateBackgroundCommandSnapshot(backgroundId);
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordRunStarted([activeBackgroundCommand]);
+        journal.RecordValidationBackgroundCommandSnapshot(
+            validationCallId,
+            [activeBackgroundCommand]);
+        journal.Observe(CopilotAgentEvent.ToolStarted(CreateExecution(
+            validationCallId,
+            toolName: "RunWorkspaceValidation")));
+        journal.Observe(CopilotAgentEvent.FromToolResult(
+            new CopilotToolResult
+            {
+                ToolName = "RunWorkspaceValidation",
+                Success = true,
+                Summary = "Workspace validation completed.",
+                ProcessOperation = "test",
+                ProcessExitCode = 0,
+            },
+            CreateExecution(
+                validationCallId,
+                CopilotToolExecutionState.Completed,
+                completedAtUtc: DateTimeOffset.UtcNow,
+                toolName: "RunWorkspaceValidation")));
+        for (var index = 0;
+            index < CopilotAgentTaskEventJournal.MaxEvents + 32;
+            index++)
+        {
+            journal.RecordBackgroundShellCommandOutput(
+                CreateBackgroundOutputEvent(backgroundId, index));
+        }
+        journal.RecordStop(CopilotAgentStopReason.Completed);
+
+        var snapshot = journal.Snapshot();
+        var validationSubject =
+            CopilotAgentTaskEventIds.ForCall(validationCallId);
+        var expectedBackgroundSubject =
+            CopilotAgentTaskEventIds.ForBackgroundCommand(backgroundId);
+
+        Assert.Equal(CopilotAgentTaskEventJournal.MaxEvents, snapshot.Events.Count);
+        Assert.Contains(snapshot.Events, item =>
+            item.Type == CopilotAgentTaskEventType.RunStarted
+            && string.Equals(item.RunId, journal.RunId, StringComparison.Ordinal));
+        var validationSnapshot = Assert.Single(snapshot.Events, item =>
+            item.Type == CopilotAgentTaskEventType.EvidenceCaptured
+            && string.Equals(
+                item.State,
+                CopilotAgentTaskEventJournal.ValidationBackgroundSnapshotState,
+                StringComparison.Ordinal));
+        Assert.Equal(validationSubject, validationSnapshot.SubjectId);
+        Assert.Equal([expectedBackgroundSubject], validationSnapshot.RelatedIds);
+        Assert.Contains(snapshot.Events, item =>
+            item.Type == CopilotAgentTaskEventType.ToolStarted
+            && string.Equals(item.SubjectId, validationSubject, StringComparison.Ordinal));
+        Assert.Contains(snapshot.Events, item =>
+            item.Type == CopilotAgentTaskEventType.ToolCompleted
+            && string.Equals(item.SubjectId, validationSubject, StringComparison.Ordinal));
+        Assert.DoesNotContain(
+            backgroundId,
+            JsonSerializer.Serialize(snapshot),
+            StringComparison.Ordinal);
+        Assert.True(snapshot.IsStructurallyValid());
+    }
+
+    [Fact]
+    public async Task AgentRuntimeCapturesActiveBackgroundCommandsWhenValidationStarts()
+    {
+        const string conversationId = "runtime-validation-conversation";
+        const string backgroundId = "bg:private-runtime-validation-id";
+        var snapshotRequests = new List<string?>();
+        var chatClient = new ValidationCallingChatClient();
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry([new ValidationProbeTool()]),
+            new CopilotAgentContextBuilder(),
+            new CopilotToolExecutor(),
+            _ => chatClient,
+            new EmptyExternalToolProvider(),
+            new CopilotCapabilityCatalog(),
+            new CopilotCodexStopHookExecutor(),
+            requestedConversationId =>
+            {
+                snapshotRequests.Add(requestedConversationId);
+                return snapshotRequests.Count == 1
+                    ? Array.Empty<CopilotBackgroundShellCommandSnapshot>()
+                    : [CreateBackgroundCommandSnapshot(backgroundId)];
+            });
+        var request = new CopilotAgentRequest
+        {
+            ConversationId = conversationId,
+            TaskId = "runtime-validation-task",
+            WorkspacePath = System.IO.Path.GetTempPath(),
+            UserText = "Run the bounded workspace validation probe.",
+            TaskIntentText = "Run the bounded workspace validation probe.",
+            Profile = CreateProfile(),
+            Mode = CopilotAgentMode.Code,
+            HarnessFeatures = CopilotAgentHarnessFeatures.None,
+            CodexApprovalPolicy = CopilotCodexApprovalPolicy.CreateScalar(
+                CopilotCodexApprovalPolicyMode.Untrusted),
+            RunBudgetOverride = new CopilotAgentRunBudgetOverride
+            {
+                RequestTokenBudget = 16_384,
+                MaxToolCalls = 1,
+                MaxAgentPasses = 1,
+                TotalDuration = TimeSpan.FromSeconds(30),
+            },
+        };
+
+        var result = await runtime.RunAsync(
+            request,
+            _ => { },
+            CancellationToken.None);
+
+        Assert.Equal(CopilotAgentStopReason.Completed, result.StopReason);
+        Assert.Equal(2, chatClient.CallCount);
+        Assert.Equal([conversationId, conversationId], snapshotRequests);
+        var validationSnapshot = Assert.Single(result.TaskEventJournal.Events, item =>
+            item.Type == CopilotAgentTaskEventType.EvidenceCaptured
+            && string.Equals(
+                item.State,
+                CopilotAgentTaskEventJournal.ValidationBackgroundSnapshotState,
+                StringComparison.Ordinal));
+        Assert.Equal("RunWorkspaceValidation", validationSnapshot.ToolName);
+        Assert.Equal(
+            [CopilotAgentTaskEventIds.ForBackgroundCommand(backgroundId)],
+            validationSnapshot.RelatedIds);
+        Assert.DoesNotContain(
+            backgroundId,
+            JsonSerializer.Serialize(result.TaskEventJournal),
+            StringComparison.Ordinal);
+        Assert.True(result.TaskEventJournal.IsStructurallyValid());
+    }
+
+    [Fact]
     public void ApprovalDenialIsTerminalWithoutSyntheticToolCompletion()
     {
         var journal = new CopilotAgentTaskEventJournalBuilder();
@@ -344,6 +737,47 @@ public sealed class CopilotAgentTaskEventJournalIntegrityTests
         Assert.Equal(CopilotAgentStopReason.Interrupted, assistant.AgentStopReason);
     }
 
+    private static CopilotBackgroundShellCommandSnapshot
+        CreateBackgroundCommandSnapshot(string backgroundId)
+    {
+        return new CopilotBackgroundShellCommandSnapshot(
+            backgroundId,
+            "conversation",
+            "task",
+            CopilotShellKind.PowerShell,
+            @"C:\workspace",
+            "private command",
+            new string('a', 64),
+            DateTimeOffset.UtcNow.AddMinutes(-1),
+            CompletedAtUtc: null,
+            ProcessId: 42,
+            ProcessTreeContained: true,
+            State: CopilotBackgroundShellCommandState.Running,
+            ExitCode: null,
+            StandardOutput: string.Empty,
+            StandardError: string.Empty);
+    }
+
+    private static CopilotBackgroundShellOutputMonitorEventArgs
+        CreateBackgroundOutputEvent(string backgroundId, int index)
+    {
+        var startedAtUtc = DateTimeOffset.UtcNow.AddMinutes(-1);
+        return new CopilotBackgroundShellOutputMonitorEventArgs(
+            new CopilotBackgroundShellOutputMonitorSnapshot(
+                $"monitor-{index}",
+                "conversation",
+                backgroundId,
+                CopilotBackgroundShellOutputStream.StandardOutput,
+                "private monitor description",
+                startedAtUtc,
+                startedAtUtc.AddHours(1),
+                CopilotBackgroundShellOutputMonitorState.Running,
+                PublishedEvents: index,
+                SuppressedEvents: 0),
+            $"private output {index}",
+            suppressedEvents: 0);
+    }
+
     private static CopilotToolExecutionInfo CreateExecution(
         string callId,
         CopilotToolExecutionState state = CopilotToolExecutionState.Running,
@@ -410,5 +844,161 @@ public sealed class CopilotAgentTaskEventJournalIntegrityTests
             Model = "test-model",
             MaxTokens = 4_096,
         };
+    }
+
+    private sealed class EmptyExternalToolProvider :
+        ICopilotExternalToolProvider
+    {
+        public Task<CopilotExternalToolLease> DiscoverAsync(
+            CopilotAgentRequest request,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return Task.FromResult(new CopilotExternalToolLease());
+        }
+    }
+
+    private sealed class SingleResponseChatClient : IChatClient
+    {
+        private const string Response =
+            "The current task state has been recorded with bounded structured evidence.";
+
+        public Task<ChatResponse> GetResponseAsync(
+            IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null,
+            CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return Task.FromResult(new ChatResponse(
+                new ChatMessage(ChatRole.Assistant, Response))
+            {
+                FinishReason = ChatFinishReason.Stop,
+            });
+        }
+
+        public async IAsyncEnumerable<ChatResponseUpdate>
+            GetStreamingResponseAsync(
+                IEnumerable<ChatMessage> messages,
+                ChatOptions? options = null,
+                [EnumeratorCancellation]
+                CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            await Task.CompletedTask;
+            yield return new ChatResponseUpdate(
+                ChatRole.Assistant,
+                Response)
+            {
+                FinishReason = ChatFinishReason.Stop,
+            };
+        }
+
+        public object? GetService(
+            Type serviceType,
+            object? serviceKey = null) => null;
+
+        public void Dispose()
+        {
+        }
+    }
+
+    private sealed class ValidationProbeTool : ICopilotAgentDrivenTool
+    {
+        public string Name => "RunWorkspaceValidation";
+
+        public string Description =>
+            "Returns deterministic validation evidence for runtime journal tests.";
+
+        public bool CanHandle(CopilotAgentRequest request) => true;
+
+        public bool IsAvailable(CopilotAgentRequest request) => true;
+
+        public Task<CopilotToolResult> ExecuteAsync(
+            CopilotAgentRequest request,
+            CopilotAgentToolInput toolInput,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return Task.FromResult(new CopilotToolResult
+            {
+                ToolName = Name,
+                Success = true,
+                Summary = "Validation probe completed.",
+                ProcessOperation = "test",
+                ProcessExitCode = 0,
+            });
+        }
+    }
+
+    private sealed class ValidationCallingChatClient : IChatClient
+    {
+        private int _callCount;
+
+        public int CallCount => Volatile.Read(ref _callCount);
+
+        public Task<ChatResponse> GetResponseAsync(
+            IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null,
+            CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var call = Interlocked.Increment(ref _callCount);
+            return Task.FromResult(call == 1
+                ? new ChatResponse(new ChatMessage(
+                    ChatRole.Assistant,
+                    [CreateValidationCall()]))
+                {
+                    FinishReason = ChatFinishReason.ToolCalls,
+                }
+                : new ChatResponse(new ChatMessage(
+                    ChatRole.Assistant,
+                    "Validation probe finished."))
+                {
+                    FinishReason = ChatFinishReason.Stop,
+                });
+        }
+
+        public async IAsyncEnumerable<ChatResponseUpdate>
+            GetStreamingResponseAsync(
+                IEnumerable<ChatMessage> messages,
+                ChatOptions? options = null,
+                [EnumeratorCancellation]
+                CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var call = Interlocked.Increment(ref _callCount);
+            await Task.CompletedTask;
+            if (call == 1)
+            {
+                yield return new ChatResponseUpdate(
+                    ChatRole.Assistant,
+                    [CreateValidationCall()])
+                {
+                    FinishReason = ChatFinishReason.ToolCalls,
+                };
+                yield break;
+            }
+
+            yield return new ChatResponseUpdate(
+                ChatRole.Assistant,
+                "Validation probe finished.")
+            {
+                FinishReason = ChatFinishReason.Stop,
+            };
+        }
+
+        public object? GetService(
+            Type serviceType,
+            object? serviceKey = null) => null;
+
+        public void Dispose()
+        {
+        }
+
+        private static FunctionCallContent CreateValidationCall() =>
+            new(
+                "runtime-validation-call",
+                "colorvision_run_workspace_validation",
+                new Dictionary<string, object?>());
     }
 }

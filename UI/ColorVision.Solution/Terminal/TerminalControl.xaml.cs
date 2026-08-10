@@ -34,7 +34,7 @@ namespace ColorVision.Solution.Terminal
         private ConPtyTerminal? _terminal;
         private TerminalScreenBuffer _screenBuffer = new(DefaultTerminalColumns, DefaultTerminalRows);
         private readonly object _outputLock = new();
-        private readonly Queue<string> _pendingOutput = new();
+        private readonly Queue<(int SessionId, string Text)> _pendingOutput = new();
         private int _flushQueued;
         private TerminalLifecycleState _terminalState = TerminalLifecycleState.Exited;
         private bool _disposed;
@@ -174,11 +174,15 @@ namespace ColorVision.Solution.Terminal
             }
         }
 
-        public void StartShell(string? workingDirectory = null)
+        public void StartShell(string? workingDirectory = null, string? startupCommand = null)
         {
             if (_disposed)
                 return;
 
+            // StartShell may be called by RunScript before the newly-created dock panel reaches
+            // Loaded. Mark this as the initial shell so the queued Loaded callback cannot restart
+            // the shell and clear the first script's output.
+            MarkInitialShellStarted();
             StopShell(TerminalLifecycleState.Killed);
             ResetTrackedInput();
 
@@ -186,21 +190,23 @@ namespace ColorVision.Solution.Terminal
             _terminalCols = terminalSize.cols;
             _terminalRows = terminalSize.rows;
             _screenBuffer = new TerminalScreenBuffer(_terminalCols, _terminalRows);
-            ClearOutput();
+            int sessionId = ++_terminalSessionId;
+            ClearOutput(sessionId);
 
             workingDirectory ??= GetDefaultWorkingDirectory();
 
             string commandLine;
             if (_currentShell == "cmd")
-                commandLine = "cmd.exe";
+                commandLine = startupCommand == null ? "cmd.exe" : $"cmd.exe /K {startupCommand}";
             else
-                commandLine = "powershell.exe -NoLogo -NoExit";
+                commandLine = startupCommand == null
+                    ? "powershell.exe -NoLogo -NoExit"
+                    : $"powershell.exe -NoLogo -NoExit -EncodedCommand {Convert.ToBase64String(Encoding.Unicode.GetBytes(startupCommand))}";
 
             try
             {
                 SetTerminalState(TerminalLifecycleState.Starting);
                 _terminal = new ConPtyTerminal();
-                int sessionId = ++_terminalSessionId;
                 _outputReceivedHandler = text => OnConPtyOutput(sessionId, text);
                 _processExitedHandler = exitCode => OnConPtyExited(sessionId, exitCode);
                 _terminal.OutputReceived += _outputReceivedHandler;
@@ -295,36 +301,77 @@ namespace ColorVision.Solution.Terminal
                 return;
             }
 
-            var ext = Path.GetExtension(filePath).ToLowerInvariant();
-            var dir = Path.GetDirectoryName(filePath) ?? "";
-            string command;
+            string fullPath = Path.GetFullPath(filePath);
+            string dir = Path.GetDirectoryName(fullPath) ?? "";
+            string command = BuildScriptStartupCommand(fullPath, _currentShell);
 
-            if (_currentShell == "cmd")
+            // Script execution starts a fresh interactive shell with the script as its startup
+            // command. This is reliable even before a newly-created ConPTY prompt is ready and
+            // leaves the shell open for inspection and follow-up commands.
+            StartShell(dir, command);
+        }
+
+        internal static string BuildScriptStartupCommand(string filePath, string shell)
+        {
+            string powerShellCommand = BuildPowerShellScriptCommand(filePath);
+            if (!string.Equals(shell, "cmd", StringComparison.OrdinalIgnoreCase))
+                return powerShellCommand;
+
+            string encodedPowerShellCommand = Convert.ToBase64String(Encoding.Unicode.GetBytes(powerShellCommand));
+            return $"powershell.exe -NoLogo -NoProfile -EncodedCommand {encodedPowerShellCommand}";
+        }
+
+        private static string BuildPowerShellScriptCommand(string filePath)
+        {
+            string encodedPath = Convert.ToBase64String(Encoding.Unicode.GetBytes(filePath));
+            string loadPath = "$scriptPath = [System.Text.Encoding]::Unicode.GetString(" +
+                $"[System.Convert]::FromBase64String('{encodedPath}')); ";
+            string extension = Path.GetExtension(filePath).ToLowerInvariant();
+            string invocation = extension switch
             {
-                command = ext switch
-                {
-                    ".py" or ".pyw" => $"cd /d \"{dir}\" && python \"{filePath}\"",
-                    ".bat" or ".cmd" => $"cd /d \"{dir}\" && \"{filePath}\"",
-                    ".sh" => $"cd /d \"{dir}\" && bash \"{filePath}\"",
-                    ".js" => $"cd /d \"{dir}\" && node \"{filePath}\"",
-                    ".ps1" => $"powershell -ExecutionPolicy Bypass -File \"{filePath}\"",
-                    _ => $"\"{filePath}\""
-                };
+                ".py" or ".pyw" => "& python -- $scriptPath",
+                ".ps1" => "& powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File $scriptPath",
+                ".sh" => "& bash -- $scriptPath",
+                ".js" => "& node -- $scriptPath",
+                _ => "& $scriptPath",
+            };
+
+            string invokeAndCaptureResult;
+            if (extension is ".bat" or ".cmd")
+            {
+                // cmd.exe reparses its /C payload, including percent expansion inside quoted
+                // paths. Expand one fixed environment-variable reference instead: cmd performs
+                // only one expansion pass, so metacharacters in the variable value stay literal.
+                invokeAndCaptureResult =
+                    "$scriptPathVariableExisted = Test-Path -LiteralPath Env:COLORVISION_SCRIPT_PATH; " +
+                    "$previousScriptPathVariable = $env:COLORVISION_SCRIPT_PATH; " +
+                    "try { " +
+                    "$env:COLORVISION_SCRIPT_PATH = $scriptPath; " +
+                    "$batchProcess = Start-Process -FilePath $env:ComSpec " +
+                    "-ArgumentList '/D /V:OFF /S /C \"\"%COLORVISION_SCRIPT_PATH%\"\"' " +
+                    "-NoNewWindow -Wait -PassThru -ErrorAction Stop; " +
+                    "$scriptExitCode = $batchProcess.ExitCode; $scriptSucceeded = $scriptExitCode -eq 0; " +
+                    "} catch { " +
+                    "Write-Error $_; $scriptSucceeded = $false; $scriptExitCode = 1; " +
+                    "} finally { " +
+                    "if ($scriptPathVariableExisted) { $env:COLORVISION_SCRIPT_PATH = $previousScriptPathVariable } " +
+                    "else { Remove-Item -LiteralPath Env:COLORVISION_SCRIPT_PATH -ErrorAction SilentlyContinue } " +
+                    "}";
             }
             else
             {
-                command = ext switch
-                {
-                    ".py" or ".pyw" => $"cd \"{dir}\"; python \"{filePath}\"",
-                    ".ps1" => $"cd \"{dir}\"; & \"{filePath}\"",
-                    ".bat" or ".cmd" => $"cd \"{dir}\"; cmd /c \"{filePath}\"",
-                    ".sh" => $"cd \"{dir}\"; bash \"{filePath}\"",
-                    ".js" => $"cd \"{dir}\"; node \"{filePath}\"",
-                    _ => $"& \"{filePath}\""
-                };
+                invokeAndCaptureResult = invocation
+                    + "; $scriptSucceeded = $?; $scriptExitCode = $LASTEXITCODE";
             }
 
-            SendCommand(command);
+            return loadPath
+                + "Write-Host ('▶ ' + $scriptPath); "
+                + "$global:LASTEXITCODE = $null; "
+                + invokeAndCaptureResult
+                + "; "
+                + "if ($null -eq $scriptExitCode) { $scriptExitCode = if ($scriptSucceeded) { 0 } else { 1 } }; "
+                + "if (-not $scriptSucceeded -and $scriptExitCode -eq 0) { $scriptExitCode = 1 }; "
+                + "Write-Host (\"`n[进程已结束，退出代码: {0}]\" -f $scriptExitCode)";
         }
 
         public void SendCtrlC()
@@ -341,7 +388,7 @@ namespace ColorVision.Solution.Terminal
             // Queue raw VT100 output for processing by TerminalScreenBuffer
             lock (_outputLock)
             {
-                _pendingOutput.Enqueue(text);
+                _pendingOutput.Enqueue((sessionId, text));
             }
             QueueOutputFlush(sessionId);
         }
@@ -381,14 +428,20 @@ namespace ColorVision.Solution.Terminal
             {
                 Interlocked.Exchange(ref _flushQueued, 0);
 
-                if (_disposed || sessionId != _terminalSessionId)
+                if (_disposed)
                     return;
 
-                FlushPendingOutput();
+                if (sessionId != _terminalSessionId)
+                {
+                    QueueOutputFlush(_terminalSessionId);
+                    return;
+                }
+
+                FlushPendingOutput(sessionId);
             });
         }
 
-        private void FlushPendingOutput()
+        private void FlushPendingOutput(int sessionId)
         {
             string rawText;
             lock (_outputLock)
@@ -396,9 +449,16 @@ namespace ColorVision.Solution.Terminal
                 if (_pendingOutput.Count == 0) return;
                 var sb = new StringBuilder();
                 while (_pendingOutput.Count > 0)
-                    sb.Append(_pendingOutput.Dequeue());
+                {
+                    var pendingOutput = _pendingOutput.Dequeue();
+                    if (pendingOutput.SessionId == sessionId)
+                        sb.Append(pendingOutput.Text);
+                }
                 rawText = sb.ToString();
             }
+
+            if (rawText.Length == 0)
+                return;
 
             _screenBuffer.Write(rawText);
             RenderBuffer();
@@ -438,6 +498,11 @@ namespace ColorVision.Solution.Terminal
 
         private void ClearOutput()
         {
+            ClearOutput(_terminalSessionId);
+        }
+
+        private void ClearOutput(int sessionId)
+        {
             lock (_outputLock)
             {
                 _pendingOutput.Clear();
@@ -445,6 +510,9 @@ namespace ColorVision.Solution.Terminal
             _screenBuffer.Clear();
             Dispatcher.BeginInvoke(() =>
             {
+                if (_disposed || sessionId != _terminalSessionId)
+                    return;
+
                 TerminalDisplay.UpdateContent(new List<TerminalLine>(), 0, 0);
                 TerminalScrollViewer.ScrollToHome();
             });

@@ -367,9 +367,22 @@ namespace ColorVision.Copilot
                 }
             }
 
+            if (toolWasExecuted)
+                AddChangedPathProjectInstructions(outcome);
             outcome.HookRuns = hookRuns.ToArray();
+            if (string.Equals(outcome.Execution.ToolName, "InspectGitDiff", StringComparison.OrdinalIgnoreCase))
+            {
+                outcome.FormattedModelResult = CopilotFrameworkToolResultFormatter.Format(
+                    outcome,
+                    outcome.Invocation.AgentRequest.ToolOutputTokenLimitOverride);
+            }
+            RecordReviewEvidence(outcome);
             CopilotToolExecutionAuditLogger.Record(outcome);
-            onEvent(CopilotAgentEvent.FromToolResult(outcome.Result, outcome.Execution, outcome.HookRuns));
+            onEvent(CopilotAgentEvent.FromToolResult(
+                outcome.Result,
+                outcome.Execution,
+                outcome.HookRuns,
+                outcome.FormattedModelResult));
             return outcome;
         }
 

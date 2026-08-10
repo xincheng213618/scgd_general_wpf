@@ -31,7 +31,7 @@ namespace ColorVision.UI.Desktop.Marketplace
                 if (!IsCompatibleWithHostVersion(requiresVersion, hostVersion))
                     continue;
 
-                return CopyWithEffectiveHostRequirement(versionInfo, requiresVersion);
+                return CopyWithEffectiveHostRequirement(versionInfo, requiresVersion, detail.Changelog);
             }
 
             bool latestVersionHasDetailedMetadata = versions.Any(version =>
@@ -62,13 +62,16 @@ namespace ColorVision.UI.Desktop.Marketplace
                 && hostVersion >= requiredVersion;
         }
 
-        private static MarketplacePluginVersionInfo CopyWithEffectiveHostRequirement(MarketplacePluginVersionInfo versionInfo, string? requiresVersion)
+        private static MarketplacePluginVersionInfo CopyWithEffectiveHostRequirement(
+            MarketplacePluginVersionInfo versionInfo,
+            string? requiresVersion,
+            string? fallbackChangeLog)
         {
             return new MarketplacePluginVersionInfo
             {
                 Version = versionInfo.Version,
                 RequiresVersion = requiresVersion,
-                ChangeLog = versionInfo.ChangeLog,
+                ChangeLog = versionInfo.ChangeLog ?? fallbackChangeLog,
                 FileSize = versionInfo.FileSize,
                 FileHash = versionInfo.FileHash,
                 DownloadCount = versionInfo.DownloadCount,

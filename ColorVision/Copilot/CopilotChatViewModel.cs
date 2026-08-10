@@ -86,6 +86,7 @@ namespace ColorVision.Copilot
         private string _promptHistorySearchConversationId = string.Empty;
         private string _promptHistorySearchQuery = string.Empty;
         private CopilotPromptHistorySearchScope _promptHistorySearchScope;
+        private bool _isActivityViewOpen;
         private bool _isComposerReferenceMentionActive;
         private bool _isComposerReferenceSearchPending;
         private bool _isPromptHistorySearchOpen;
@@ -235,6 +236,25 @@ namespace ColorVision.Copilot
                 _ => SelectedConversation != null);
             ShowUsageDiagnosticsCommand = new RelayCommand(_ => ShowUsageDiagnosticsFromUi());
             ClearConversationSearchCommand = new RelayCommand(_ => ConversationSearchText = string.Empty, _ => HasConversationSearchQuery);
+            ToggleActivityViewCommand = new RelayCommand(_ => ToggleActivityView());
+            MarkAllActivityReadCommand = new RelayCommand(
+                _ => MarkAllActivityRead(),
+                _ => HasUnreadConversationActivity);
+            ShowConversationGoalHistoryCommand = new RelayCommand(
+                _ => ShowConversationGoalHistoryFromUi(),
+                _ => CanManageExistingConversationGoal());
+            PauseConversationGoalCommand = new RelayCommand(
+                _ => PauseConversationGoalFromUi(),
+                _ => CanPauseConversationGoal());
+            ResumeConversationGoalCommand = new RelayCommand(
+                _ => ResumeConversationGoalFromUi(),
+                _ => CanResumeConversationGoal());
+            EditConversationGoalCommand = new RelayCommand(
+                _ => EditConversationGoalFromUi(),
+                _ => CanEditConversationGoal());
+            ClearConversationGoalCommand = new RelayCommand(
+                _ => ClearConversationGoalFromUi(),
+                _ => CanManageExistingConversationGoal());
             OpenConversationFindCommand = new RelayCommand(_ => OpenConversationFind(), _ => SelectedConversation != null);
             CloseConversationFindCommand = new RelayCommand(_ => CloseConversationFind(), _ => IsConversationFindOpen);
             FindPreviousConversationMatchCommand = new RelayCommand(_ => MoveConversationFind(previous: true), _ => HasConversationFindMatches);
@@ -251,6 +271,7 @@ namespace ColorVision.Copilot
             PasteImageAttachmentCommand = new RelayCommand(_ => PasteImageAttachment(), _ => !IsBusy);
             AttachCurrentLiveContextCommand = new RelayCommand(_ => AttachCurrentLiveContext(), _ => CanAttachCurrentLiveContext);
             CopyMessageCommand = new RelayCommand<CopilotChatMessage>(CopyMessage, message => !string.IsNullOrWhiteSpace(message?.Content));
+            OpenCodeReviewPaneCommand = new RelayCommand<CopilotChatMessage>(OpenCodeReviewPane, CanOpenCodeReviewPane);
             CopyLatestResponseCommand = new RelayCommand(
                 _ => CopyAssistantResponse(CopilotLocalCommandCatalog.FindExact("/copy")!, string.Empty),
                 _ => Volatile.Read(ref _disposeState) == 0 && SelectedConversation != null);

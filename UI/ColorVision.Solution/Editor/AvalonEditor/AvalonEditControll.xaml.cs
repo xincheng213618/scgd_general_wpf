@@ -1,96 +1,119 @@
-﻿#pragma warning disable
-using ICSharpCode.AvalonEdit.CodeCompletion;
+using ColorVision.Solution.Terminal;
+using ColorVision.Solution.Workspace;
 using ICSharpCode.AvalonEdit.Folding;
 using ICSharpCode.AvalonEdit.Highlighting;
 using ICSharpCode.AvalonEdit.Search;
 using Microsoft.Win32;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using System.Diagnostics;
 using System.IO;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
-using ColorVision.Solution.Workspace;
 
 namespace ColorVision.Solution.Editor.AvalonEditor
 {
     /// <summary>
-    /// AvalonEditControll.xaml 的交互逻辑
+    /// Workspace text editor with file-aware syntax highlighting and Python execution.
     /// </summary>
     public partial class AvalonEditControll : UserControl, IDisposable, IEditorDocumentContent, IResourcePathAwareDocumentContent, IReloadableEditorDocumentContent
     {
+        public static RoutedUICommand RunPythonCommand { get; } = new(
+            "运行 Python",
+            nameof(RunPythonCommand),
+            typeof(AvalonEditControll));
+
         private DispatcherTimer? _foldingUpdateTimer;
+        private AvalonEditorThemeController? _themeController;
+        private FoldingManager? _foldingManager;
+        private object? _foldingStrategy;
+        private string? _currentFileName;
+        private bool _isUpdatingHighlightingSelection;
+        private bool _isFormatted;
         private bool _isDirty;
         private bool _disposed;
 
+        public string OriginalText { get; private set; } = string.Empty;
+
         public bool IsDirty => _isDirty;
-        public bool CanSave => !string.IsNullOrWhiteSpace(currentFileName);
+        public bool CanSave => !string.IsNullOrWhiteSpace(_currentFileName);
         public event EventHandler? DocumentStateChanged;
 
         public AvalonEditControll()
         {
             InitializeComponent();
-            textEditor.TextChanged += TextEditor_TextChanged;
+            InitializeEditor();
         }
+
         public AvalonEditControll(string currentFileName)
+            : this()
         {
-            InitializeComponent();
+            OpenFile(currentFileName);
+        }
 
-            this.SetValue(TextOptions.TextFormattingModeProperty, TextFormattingMode.Display);
+        public bool OpenFile(string currentFileName)
+        {
+            if (string.IsNullOrWhiteSpace(currentFileName) || !File.Exists(currentFileName))
+                return false;
 
-            textEditor.TextArea.TextEntering += textEditor_TextArea_TextEntering;
-            textEditor.TextArea.TextEntered += textEditor_TextArea_TextEntered;
+            _currentFileName = Path.GetFullPath(currentFileName);
+            return ReloadFromDisk();
+        }
+
+        private void InitializeEditor()
+        {
+            SetValue(TextOptions.TextFormattingModeProperty, TextFormattingMode.Display);
             textEditor.TextArea.Caret.PositionChanged += Caret_PositionChanged;
-
+            textEditor.TextChanged += TextEditor_TextChanged;
+            UndoButton.CommandTarget = textEditor.TextArea;
+            RedoButton.CommandTarget = textEditor.TextArea;
             SearchPanel.Install(textEditor);
+
+            _themeController = new AvalonEditorThemeController(textEditor);
+            SetSyntaxHighlighting(null);
 
             _foldingUpdateTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
             _foldingUpdateTimer.Tick += FoldingUpdateTimer_Tick;
             _foldingUpdateTimer.Start();
 
-            this.currentFileName = currentFileName;
-
-            ReloadFromDisk();
-            textEditor.TextChanged += TextEditor_TextChanged;
+            AddHandler(
+                Keyboard.PreviewKeyDownEvent,
+                new KeyEventHandler(AvalonEditControll_PreviewKeyDown),
+                handledEventsToo: true);
+            UpdateDocumentMetadata();
+            UpdateRunButtonVisibility();
         }
 
-
-
-        private void UserControl_Initialized(object sender, EventArgs e)
+        public void SetJsonText(string text)
         {
-
-        }
-        bool isFormatted = false;
-        public string OriginalText;
-
-        public void SetJsonText(string Text)
-        {
-            OriginalText = Text;
+            OriginalText = text;
             try
             {
-                var parsedJson = JToken.Parse(Text);
-                isFormatted = Text.Contains("\n") || Text.Contains("\t");
+                var parsedJson = JToken.Parse(text);
+                _isFormatted = text.Contains('\n') || text.Contains('\t');
                 textEditor.Text = parsedJson.ToString(Formatting.Indented);
             }
             catch (JsonReaderException)
             {
-                textEditor.Text = Text;
+                textEditor.Text = text;
             }
-            textEditor.SyntaxHighlighting = HighlightingManager.Instance.GetDefinitionByExtension("Json");
+
+            SetSyntaxHighlighting(HighlightingManager.Instance.GetDefinition("Json"));
             textEditor.Document.UndoStack.MarkAsOriginalFile();
             SetDirty(false);
+            UpdateDocumentMetadata();
         }
+
         public string GetJsonText()
         {
-            string Text = textEditor.Text;
+            string text = textEditor.Text;
             try
             {
-                var parsedJson = JToken.Parse(Text);
-
-                return parsedJson.ToString(isFormatted ? Formatting.Indented : Formatting.None);
+                var parsedJson = JToken.Parse(text);
+                return parsedJson.ToString(_isFormatted ? Formatting.Indented : Formatting.None);
             }
             catch (JsonReaderException)
             {
@@ -103,25 +126,19 @@ namespace ColorVision.Solution.Editor.AvalonEditor
             if (textEditor.Document == null || textEditor.Document.LineCount == 0)
                 return;
 
-            var targetLineNumber = Math.Clamp(lineNumber, 1, textEditor.Document.LineCount);
+            int targetLineNumber = Math.Clamp(lineNumber, 1, textEditor.Document.LineCount);
             var targetLine = textEditor.Document.GetLineByNumber(targetLineNumber);
-            var targetColumn = Math.Clamp(columnNumber, 1, targetLine.Length + 1);
+            int targetColumn = Math.Clamp(columnNumber, 1, targetLine.Length + 1);
             textEditor.TextArea.Caret.Offset = targetLine.Offset + targetColumn - 1;
             textEditor.ScrollToLine(targetLineNumber);
             textEditor.Focus();
         }
 
-
-        string currentFileName;
-
-        void openFileClick(object sender, RoutedEventArgs e)
+        private void openFileClick(object sender, RoutedEventArgs e)
         {
-            OpenFileDialog dlg = new OpenFileDialog();
-            dlg.CheckFileExists = true;
-            if (dlg.ShowDialog() ?? false)
-            {
-                ResourceOpenService.Instance.TryOpenWithFeedback(dlg.FileName);
-            }
+            var dialog = new OpenFileDialog { CheckFileExists = true };
+            if (dialog.ShowDialog() ?? false)
+                ResourceOpenService.Instance.TryOpenWithFeedback(dialog.FileName);
         }
 
         public bool Save()
@@ -129,7 +146,7 @@ namespace ColorVision.Solution.Editor.AvalonEditor
             if (!CanSave)
                 return false;
 
-            textEditor.Save(currentFileName);
+            textEditor.Save(_currentFileName!);
             textEditor.Document.UndoStack.MarkAsOriginalFile();
             SetDirty(false);
             return true;
@@ -140,19 +157,21 @@ namespace ColorVision.Solution.Editor.AvalonEditor
             if (string.IsNullOrWhiteSpace(resourcePath) || !File.Exists(resourcePath))
                 return false;
 
-            currentFileName = Path.GetFullPath(resourcePath);
-            textEditor.SyntaxHighlighting = HighlightingManager.Instance.GetDefinitionByExtension(Path.GetExtension(currentFileName))
-                ?? HighlightingManager.Instance.GetDefinitionByExtension(".Json");
+            _currentFileName = Path.GetFullPath(resourcePath);
+            ApplyFileSyntaxHighlighting();
+            UpdateRunButtonVisibility();
             return true;
         }
 
         public bool ReloadFromDisk()
         {
-            if (!File.Exists(currentFileName))
+            if (string.IsNullOrWhiteSpace(_currentFileName) || !File.Exists(_currentFileName))
                 return false;
 
-            string text = File.ReadAllText(currentFileName);
-            if (text.Length < 10000)
+            textEditor.Load(_currentFileName);
+            string text = textEditor.Text;
+            OriginalText = text;
+            if (IsJsonDocument(_currentFileName) && text.Length < 10000)
             {
                 try
                 {
@@ -168,165 +187,182 @@ namespace ColorVision.Solution.Editor.AvalonEditor
                 textEditor.Text = text;
             }
 
-            textEditor.SyntaxHighlighting = HighlightingManager.Instance.GetDefinitionByExtension(Path.GetExtension(currentFileName))
-                ?? HighlightingManager.Instance.GetDefinitionByExtension(".Json");
-            textEditor.TextArea.IndentationStrategy = new ICSharpCode.AvalonEdit.Indentation.DefaultIndentationStrategy();
+            ApplyFileSyntaxHighlighting();
             textEditor.Document.UndoStack.MarkAsOriginalFile();
             SetDirty(false);
+            UpdateDocumentMetadata();
+            UpdateRunButtonVisibility();
             return true;
         }
 
-
-        CompletionWindow completionWindow;
-
-        void textEditor_TextArea_TextEntered(object sender, TextCompositionEventArgs e)
+        private void ApplyFileSyntaxHighlighting()
         {
-            if (e.Text == ".")
+            SetSyntaxHighlighting(GetHighlightingDefinition(_currentFileName));
+        }
+
+        internal static IHighlightingDefinition? GetHighlightingDefinition(string? filePath)
+        {
+            string extension = Path.GetExtension(filePath ?? string.Empty);
+            return extension.ToLowerInvariant() switch
             {
-                // open code completion after the user has pressed dot:
-                completionWindow = new CompletionWindow(textEditor.TextArea);
-                // provide AvalonEdit with the data:
-                IList<ICompletionData> data = completionWindow.CompletionList.CompletionData;
-                completionWindow.Show();
-                completionWindow.Closed += delegate {
-                    completionWindow = null;
-                };
+                ".cvproj" => HighlightingManager.Instance.GetDefinition("Json"),
+                ".csproj" or ".fsproj" or ".vbproj" => HighlightingManager.Instance.GetDefinition("XML"),
+                _ => HighlightingManager.Instance.GetDefinitionByExtension(extension),
+            };
+        }
+
+        private static bool IsJsonDocument(string filePath)
+        {
+            string extension = Path.GetExtension(filePath);
+            return extension.Equals(".json", StringComparison.OrdinalIgnoreCase)
+                || extension.Equals(".cvproj", StringComparison.OrdinalIgnoreCase);
+        }
+
+        internal static bool IsPythonDocument(string? filePath)
+        {
+            string extension = Path.GetExtension(filePath ?? string.Empty);
+            return extension.Equals(".py", StringComparison.OrdinalIgnoreCase)
+                || extension.Equals(".pyw", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private void SetSyntaxHighlighting(IHighlightingDefinition? highlightingDefinition, bool updateSelection = true)
+        {
+            _themeController?.SetHighlighting(highlightingDefinition);
+            ConfigureFolding(highlightingDefinition);
+
+            if (updateSelection)
+            {
+                _isUpdatingHighlightingSelection = true;
+                highlightingComboBox.SelectedItem = highlightingDefinition;
+                _isUpdatingHighlightingSelection = false;
+            }
+
+            highlightingComboBox.Text = highlightingDefinition?.Name ?? "纯文本";
+        }
+
+        private void HighlightingComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_isUpdatingHighlightingSelection)
+                return;
+
+            SetSyntaxHighlighting(highlightingComboBox.SelectedItem as IHighlightingDefinition, updateSelection: false);
+        }
+
+        private void ConfigureFolding(IHighlightingDefinition? highlightingDefinition)
+        {
+            switch (highlightingDefinition?.Name)
+            {
+                case "XML":
+                    _foldingStrategy = new XmlFoldingStrategy();
+                    textEditor.TextArea.IndentationStrategy = new ICSharpCode.AvalonEdit.Indentation.DefaultIndentationStrategy();
+                    break;
+                case "C#":
+                case "C++":
+                case "PHP":
+                case "Java":
+                    _foldingStrategy = new BraceFoldingStrategy();
+                    textEditor.TextArea.IndentationStrategy = new ICSharpCode.AvalonEdit.Indentation.CSharp.CSharpIndentationStrategy(textEditor.Options);
+                    break;
+                default:
+                    _foldingStrategy = null;
+                    textEditor.TextArea.IndentationStrategy = new ICSharpCode.AvalonEdit.Indentation.DefaultIndentationStrategy();
+                    break;
+            }
+
+            if (_foldingStrategy != null)
+            {
+                _foldingManager ??= FoldingManager.Install(textEditor.TextArea);
+                UpdateFoldings();
+            }
+            else if (_foldingManager != null)
+            {
+                FoldingManager.Uninstall(_foldingManager);
+                _foldingManager = null;
             }
         }
+
+        private void UpdateFoldings()
+        {
+            if (_foldingManager == null)
+                return;
+
+            if (_foldingStrategy is BraceFoldingStrategy braceFoldingStrategy)
+                braceFoldingStrategy.UpdateFoldings(_foldingManager, textEditor.Document);
+            else if (_foldingStrategy is XmlFoldingStrategy xmlFoldingStrategy)
+                xmlFoldingStrategy.UpdateFoldings(_foldingManager, textEditor.Document);
+        }
+
+        private void UpdateRunButtonVisibility()
+        {
+            RunPythonButton.Visibility = IsPythonDocument(_currentFileName)
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+            CommandManager.InvalidateRequerySuggested();
+        }
+
+        private void RunPython_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+        {
+            e.CanExecute = CanSave && IsPythonDocument(_currentFileName);
+            e.Handled = true;
+        }
+
+        private void RunPython_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            RunCurrentPythonDocument();
+
+            e.Handled = true;
+        }
+
+        private void AvalonEditControll_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key != Key.F5 || Keyboard.Modifiers != ModifierKeys.None
+                || !CanSave || !IsPythonDocument(_currentFileName))
+            {
+                return;
+            }
+
+            RunCurrentPythonDocument();
+            e.Handled = true;
+        }
+
+        private void RunCurrentPythonDocument()
+        {
+            if ((!IsDirty || EditorDocumentService.TrySaveDocument(this)) && _currentFileName != null)
+                TerminalService.GetInstance().RunScript(_currentFileName);
+        }
+
+        private void UpdateDocumentMetadata()
+        {
+            EncodingText.Text = GetEncodingLabel(textEditor.Encoding);
+            LineEndingText.Text = GetLineEndingLabel(textEditor.Text);
+        }
+
+        internal static string GetEncodingLabel(Encoding? encoding)
+        {
+            encoding ??= Encoding.UTF8;
+            return encoding.CodePage switch
+            {
+                65001 => "UTF-8",
+                1200 => "UTF-16 LE",
+                1201 => "UTF-16 BE",
+                _ => encoding.WebName.ToUpperInvariant(),
+            };
+        }
+
+        internal static string GetLineEndingLabel(string text)
+        {
+            if (text.Contains("\r\n", StringComparison.Ordinal))
+                return "CRLF";
+            if (text.Contains('\n'))
+                return "LF";
+            if (text.Contains('\r'))
+                return "CR";
+            return "—";
+        }
+
         private void Caret_PositionChanged(object? sender, EventArgs e)
         {
             StatusText.Text = $"{Properties.Resources.Line}:{textEditor.TextArea.Caret.Line} {Properties.Resources.Column}:{textEditor.TextArea.Caret.Column}";
-        }
-
-        void textEditor_TextArea_TextEntering(object sender, TextCompositionEventArgs e)
-        {
-            if (e.Text.Length > 0 && completionWindow != null)
-            {
-                if (!char.IsLetterOrDigit(e.Text[0]))
-                {
-                    // Whenever a non-letter is typed while the completion window is open,
-                    // insert the currently selected element.
-                    completionWindow.CompletionList.RequestInsertion(e);
-                }
-            }
-            // do not set e.Handled=true - we still want to insert the character that was typed
-        }
-
-        #region Folding
-        FoldingManager? foldingManager;
-        object? foldingStrategy;
-
-        void HighlightingComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (textEditor.SyntaxHighlighting == null)
-            {
-                foldingStrategy = null;
-            }
-            else
-            {
-                switch (textEditor.SyntaxHighlighting.Name)
-                {
-                    case "XML":
-                        foldingStrategy = new XmlFoldingStrategy();
-                        textEditor.TextArea.IndentationStrategy = new ICSharpCode.AvalonEdit.Indentation.DefaultIndentationStrategy();
-                        break;
-                    case "C#":
-                    case "C++":
-                    case "PHP":
-                    case "Java":
-                        textEditor.TextArea.IndentationStrategy = new ICSharpCode.AvalonEdit.Indentation.CSharp.CSharpIndentationStrategy(textEditor.Options);
-                        foldingStrategy = new BraceFoldingStrategy();
-                        break;
-                    default:
-                        textEditor.TextArea.IndentationStrategy = new ICSharpCode.AvalonEdit.Indentation.DefaultIndentationStrategy();
-                        foldingStrategy = null;
-                        break;
-                }
-            }
-            if (foldingStrategy != null)
-            {
-                if (foldingManager == null)
-                    foldingManager = FoldingManager.Install(textEditor.TextArea);
-                UpdateFoldings();
-            }
-            else
-            {
-                if (foldingManager != null)
-                {
-                    FoldingManager.Uninstall(foldingManager);
-                    foldingManager = null;
-                }
-            }
-        }
-
-        void UpdateFoldings()
-        {
-            if (foldingStrategy is BraceFoldingStrategy)
-            {
-                ((BraceFoldingStrategy)foldingStrategy).UpdateFoldings(foldingManager, textEditor.Document);
-            }
-            if (foldingStrategy is XmlFoldingStrategy)
-            {
-                ((XmlFoldingStrategy)foldingStrategy).UpdateFoldings(foldingManager, textEditor.Document);
-            }
-        }
-        #endregion
-
-        public void Dispose()
-        {
-            if (_disposed)
-                return;
-            _disposed = true;
-
-            _foldingUpdateTimer?.Stop();
-            if (_foldingUpdateTimer != null)
-                _foldingUpdateTimer.Tick -= FoldingUpdateTimer_Tick;
-            _foldingUpdateTimer = null;
-            completionWindow?.Close();
-            completionWindow = null;
-            textEditor.TextChanged -= TextEditor_TextChanged;
-            textEditor.TextArea.TextEntering -= textEditor_TextArea_TextEntering;
-            textEditor.TextArea.TextEntered -= textEditor_TextArea_TextEntered;
-            textEditor.TextArea.Caret.PositionChanged -= Caret_PositionChanged;
-            if (foldingManager != null)
-            {
-                FoldingManager.Uninstall(foldingManager);
-                foldingManager = null;
-            }
-            textEditor.Clear();
-            textEditor.Document = null;
-            DocumentStateChanged = null;
-            GC.SuppressFinalize(this);
-        }
-
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-            if (!Save())
-                return;
-
-            // 1. 查找 Python 路径（Windows 下）
-            string pythonPath = GetPythonPath();
-
-            if (pythonPath == null)
-            {
-                Console.WriteLine("没有找到 Python 环境。");
-                return;
-            }
-
-            // 2. 要执行的 Python 文件路径
-            string pythonFile = currentFileName; // 修改为你的文件路径
-
-            // 3. 构造启动参数，让 cmd 窗口弹出并执行 python 文件
-            ProcessStartInfo psi = new ProcessStartInfo
-            {
-                FileName = "cmd.exe",
-                Arguments = $"/k \"{pythonPath} \"{pythonFile}\"\"",
-                UseShellExecute = true,          // 让窗口弹出
-                CreateNoWindow = false           // 让窗口显示
-                                                 // 不需要重定向输出
-            };
-
-            Process.Start(psi); // 直接启动，不需要捕获输出
         }
 
         private void TextEditor_TextChanged(object? sender, EventArgs e)
@@ -343,36 +379,40 @@ namespace ColorVision.Solution.Editor.AvalonEditor
         {
             if (_isDirty == value)
                 return;
+
             _isDirty = value;
             DocumentStateChanged?.Invoke(this, EventArgs.Empty);
         }
 
-        // 自动查找 Python 路径
-        static string GetPythonPath()
+        public void Dispose()
         {
-            try
+            if (_disposed)
+                return;
+
+            _disposed = true;
+            _foldingUpdateTimer?.Stop();
+            if (_foldingUpdateTimer != null)
+                _foldingUpdateTimer.Tick -= FoldingUpdateTimer_Tick;
+            _foldingUpdateTimer = null;
+
+            _themeController?.Dispose();
+            _themeController = null;
+            RemoveHandler(
+                Keyboard.PreviewKeyDownEvent,
+                new KeyEventHandler(AvalonEditControll_PreviewKeyDown));
+            textEditor.TextChanged -= TextEditor_TextChanged;
+            textEditor.TextArea.Caret.PositionChanged -= Caret_PositionChanged;
+
+            if (_foldingManager != null)
             {
-                ProcessStartInfo psi = new ProcessStartInfo
-                {
-                    FileName = "cmd",
-                    Arguments = "/c where python",
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true,
-                    CreateNoWindow = true
-                };
-                using (Process process = Process.Start(psi))
-                {
-                    string result = process.StandardOutput.ReadToEnd();
-                    process.WaitForExit();
-                    if (!string.IsNullOrEmpty(result))
-                    {
-                        // 返回第一行路径
-                        return result.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries)[0];
-                    }
-                }
+                FoldingManager.Uninstall(_foldingManager);
+                _foldingManager = null;
             }
-            catch { }
-            return null;
+
+            textEditor.Clear();
+            textEditor.Document = null;
+            DocumentStateChanged = null;
+            GC.SuppressFinalize(this);
         }
     }
 }

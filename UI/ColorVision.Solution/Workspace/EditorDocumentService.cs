@@ -86,6 +86,28 @@ namespace ColorVision.Solution.Workspace
             return GetActiveSession()?.TrySave(showError: true) == true;
         }
 
+        public static bool TrySaveDocument(IEditorDocumentContent content)
+        {
+            EditorDocumentSession? session = _sessions.Values.FirstOrDefault(
+                candidate => ReferenceEquals(candidate.Content, content));
+            if (session != null)
+                return session.TrySave(showError: true);
+
+            try
+            {
+                return content.Save();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    $"保存文件失败。\n\n{ex.Message}",
+                    "保存失败",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+                return false;
+            }
+        }
+
         public static bool CanReloadActiveDocument()
         {
             return GetActiveSession()?.CanReload == true;
@@ -532,8 +554,28 @@ namespace ColorVision.Solution.Workspace
 
             private void ResourceWatcher_Renamed(object sender, RenamedEventArgs e)
             {
-                ScheduleExternalResourceCheck(e.FullPath);
-                ScheduleExternalResourceCheck(e.OldFullPath);
+                string normalizedOldPath = NormalizeResourcePath(e.OldFullPath);
+                string normalizedNewPath = NormalizeResourcePath(e.FullPath);
+                if (!string.Equals(normalizedOldPath, ResourcePath, StringComparison.OrdinalIgnoreCase))
+                {
+                    ScheduleExternalResourceCheck(e.FullPath);
+                    ScheduleExternalResourceCheck(e.OldFullPath);
+                    return;
+                }
+
+                Application.Current?.Dispatcher.BeginInvoke(() =>
+                {
+                    if (_isClosed
+                        || !string.Equals(normalizedOldPath, ResourcePath, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return;
+                    }
+
+                    if (File.Exists(normalizedNewPath))
+                        NotifyResourceRenamed(normalizedOldPath, normalizedNewPath);
+                    else
+                        ScheduleExternalResourceCheck(normalizedOldPath);
+                });
             }
 
             private void ScheduleExternalResourceCheck(string changedPath)

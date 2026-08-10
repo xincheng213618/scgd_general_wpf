@@ -467,6 +467,7 @@ namespace ColorVision.Copilot
             CopilotTurnAnswerLifecycleState? reviewAnswer = reviewTarget != null
                 ? CopilotTurnAnswerLifecycleState.Empty
                 : null;
+            CopilotCodeReviewSnapshot? codeReviewSnapshot = null;
             var workspaceDiff = new CopilotTurnWorkspaceDiffAccumulator(agentRequest.WorkspacePath);
             var turnPlan = new CopilotTurnPlanAccumulator();
             void PublishAgentEvent(CopilotAgentEvent agentEvent)
@@ -474,6 +475,16 @@ namespace ColorVision.Copilot
                 if (reviewAnswer.HasValue)
                     reviewAnswer = reviewAnswer.Value.Observe(agentEvent);
                 eventSink.OnAgentEvent(agentEvent);
+                if (reviewTarget != null
+                    && CopilotTurnCodeReviewSnapshotCapture.TryCaptureUpdate(
+                        reviewTarget,
+                        codeReviewSnapshot,
+                        agentEvent,
+                        out var updatedCodeReviewSnapshot))
+                {
+                    codeReviewSnapshot = updatedCodeReviewSnapshot;
+                    eventSink.OnCodeReviewSnapshotUpdated(updatedCodeReviewSnapshot);
+                }
                 if (agentEvent.Type == CopilotAgentEventType.BudgetUpdated
                     && agentEvent.Budget != null)
                 {

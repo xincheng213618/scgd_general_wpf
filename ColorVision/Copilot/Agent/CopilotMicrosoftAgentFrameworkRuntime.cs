@@ -51,6 +51,8 @@ namespace ColorVision.Copilot
         private readonly object _steeringSyncRoot = new();
         private ActiveSteeringContext? _activeSteeringContext;
         private readonly CopilotCodexStopHookExecutor _stopHookExecutor;
+        private readonly Func<string?, IReadOnlyList<CopilotBackgroundShellCommandSnapshot>>
+            _backgroundShellCommandSnapshotProvider;
 
         public CopilotMicrosoftAgentFrameworkRuntime(CopilotToolRegistry toolRegistry, CopilotAgentContextBuilder contextBuilder)
             : this(toolRegistry, contextBuilder, new CopilotToolExecutor(), CreateChatClient)
@@ -109,7 +111,9 @@ namespace ColorVision.Copilot
             Func<CopilotProfileConfig, IChatClient> chatClientFactory,
             ICopilotExternalToolProvider externalToolProvider,
             CopilotCapabilityCatalog? capabilityCatalog,
-            CopilotCodexStopHookExecutor stopHookExecutor)
+            CopilotCodexStopHookExecutor stopHookExecutor,
+            Func<string?, IReadOnlyList<CopilotBackgroundShellCommandSnapshot>>?
+                backgroundShellCommandSnapshotProvider = null)
             : this(
                 toolRegistry,
                 contextBuilder,
@@ -120,7 +124,9 @@ namespace ColorVision.Copilot
                 skillUsageStore: null,
                 automaticApprovalReviewer: new CopilotAutomaticApprovalReviewer(),
                 automaticApprovalOverrideStore: null,
-                stopHookExecutor: stopHookExecutor)
+                stopHookExecutor: stopHookExecutor,
+                backgroundShellCommandSnapshotProvider:
+                    backgroundShellCommandSnapshotProvider)
         {
         }
 
@@ -134,7 +140,9 @@ namespace ColorVision.Copilot
             CopilotAgentSkillUsageStore? skillUsageStore,
             ICopilotAutomaticApprovalReviewer automaticApprovalReviewer,
             CopilotAutomaticApprovalOverrideStore? automaticApprovalOverrideStore = null,
-            CopilotCodexStopHookExecutor? stopHookExecutor = null)
+            CopilotCodexStopHookExecutor? stopHookExecutor = null,
+            Func<string?, IReadOnlyList<CopilotBackgroundShellCommandSnapshot>>?
+                backgroundShellCommandSnapshotProvider = null)
         {
             _toolRegistry = toolRegistry ?? throw new ArgumentNullException(nameof(toolRegistry));
             _contextBuilder = contextBuilder ?? throw new ArgumentNullException(nameof(contextBuilder));
@@ -149,6 +157,10 @@ namespace ColorVision.Copilot
             _automaticApprovalOverrideStore = automaticApprovalOverrideStore
                 ?? CopilotAutomaticApprovalOverrideStore.Shared;
             _stopHookExecutor = stopHookExecutor ?? new CopilotCodexStopHookExecutor();
+            _backgroundShellCommandSnapshotProvider =
+                backgroundShellCommandSnapshotProvider
+                ?? (conversationId => CopilotBackgroundShellCommandRegistry.Shared
+                    .GetSnapshots(conversationId));
         }
 
 

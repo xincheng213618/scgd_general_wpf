@@ -41,6 +41,8 @@ namespace ColorVision.Copilot
 
         public CopilotToolExecutionInfo? ToolExecution { get; init; }
 
+        internal string ModelToolResult { get; init; } = string.Empty;
+
         public IReadOnlyList<CopilotToolExecutionHookRun> ToolExecutionHookRuns { get; init; } =
             Array.Empty<CopilotToolExecutionHookRun>();
 
@@ -146,6 +148,15 @@ namespace ColorVision.Copilot
             CopilotToolExecutionInfo? execution = null,
             IReadOnlyList<CopilotToolExecutionHookRun>? hookRuns = null)
         {
+            return FromToolResult(result, execution, hookRuns, string.Empty);
+        }
+
+        internal static CopilotAgentEvent FromToolResult(
+            CopilotToolResult result,
+            CopilotToolExecutionInfo? execution,
+            IReadOnlyList<CopilotToolExecutionHookRun>? hookRuns,
+            string? modelToolResult)
+        {
             return new CopilotAgentEvent
             {
                 Type = CopilotAgentEventType.ToolResult,
@@ -153,6 +164,7 @@ namespace ColorVision.Copilot
                 ToolResult = result,
                 ToolExecution = execution,
                 ToolExecutionHookRuns = hookRuns?.ToArray() ?? Array.Empty<CopilotToolExecutionHookRun>(),
+                ModelToolResult = modelToolResult ?? string.Empty,
             };
         }
 

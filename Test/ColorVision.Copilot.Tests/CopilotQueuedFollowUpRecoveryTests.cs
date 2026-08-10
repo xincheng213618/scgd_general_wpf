@@ -1,4 +1,5 @@
 using ColorVision.Copilot;
+using Newtonsoft.Json.Linq;
 
 namespace ColorVision.Copilot.Tests;
 
@@ -28,6 +29,33 @@ public sealed class CopilotQueuedFollowUpRecoveryTests
         Assert.Same(durable, retained);
         Assert.Equal("legacy draft", conversation.DraftText);
         Assert.Equal(1, state.RecoveredQueuedFollowUpCount);
+        Assert.Equal(0, state.ResumedQueuedFollowUpCount);
+    }
+
+    [Fact]
+    public void StartupDropsAutomaticGoalContinuationInsteadOfRestoringItAsUserDraft()
+    {
+        var createdAt = new DateTimeOffset(2026, 8, 11, 9, 0, 0, TimeSpan.Zero);
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        conversation.Goal = CopilotConversationGoal.Create("持续迭代 Copilot", createdAt);
+        var automaticDocument = JObject.FromObject(CreateRecovery(
+            "goal-run-1",
+            conversation.Id,
+            "internal automatic continuation"));
+        automaticDocument[nameof(CopilotQueuedFollowUp.GoalId)] = conversation.Goal.Id;
+        var automatic = automaticDocument.ToObject<CopilotQueuedFollowUpRecoveryRecord>();
+        Assert.NotNull(automatic);
+        var state = new CopilotChatState
+        {
+            Conversations = [conversation],
+            QueuedFollowUpRecoveries = [automatic],
+        };
+
+        Assert.True(CopilotQueuedFollowUpRecovery.PrepareForRestartDispatch(state));
+
+        Assert.Empty(state.QueuedFollowUpRecoveries);
+        Assert.Empty(conversation.DraftText);
+        Assert.Equal(0, state.RecoveredQueuedFollowUpCount);
         Assert.Equal(0, state.ResumedQueuedFollowUpCount);
     }
 
@@ -97,6 +125,28 @@ public sealed class CopilotQueuedFollowUpRecoveryTests
         Assert.Empty(conversation.DraftText);
         Assert.Equal(0, state.RecoveredQueuedFollowUpCount);
         Assert.Empty(state.QueuedFollowUpRecoveries);
+    }
+
+    [Fact]
+    public void AutomaticGoalContinuationIsNeverRestoredToTheUserDraft()
+    {
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        var automatic = CreateRecovery(
+            "goal-run-1",
+            conversation.Id,
+            "internal automatic continuation");
+        automatic.GoalId = "goal-1";
+        var state = new CopilotChatState
+        {
+            Conversations = [conversation],
+            QueuedFollowUpRecoveries = [automatic],
+        };
+
+        Assert.True(CopilotQueuedFollowUpRecovery.RestoreRecordToDraft(state, automatic.RunId));
+
+        Assert.Empty(conversation.DraftText);
+        Assert.Empty(state.QueuedFollowUpRecoveries);
+        Assert.Equal(0, state.RecoveredQueuedFollowUpCount);
     }
 
     [Fact]

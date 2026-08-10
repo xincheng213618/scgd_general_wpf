@@ -46,6 +46,37 @@ namespace ColorVision.Copilot
             }
         }
 
+        private bool CanOpenCodeReviewPane(CopilotChatMessage? message) =>
+            Volatile.Read(ref _disposeState) == 0
+            && message?.IsUser == false
+            && message.RequestMode == CopilotAgentMode.Review
+            && message.HasCodeReviewSnapshot
+            && SelectedConversation?.Messages.Contains(message) == true;
+
+        private void OpenCodeReviewPane(CopilotChatMessage? message)
+        {
+            if (!CanOpenCodeReviewPane(message))
+                return;
+
+            try
+            {
+                var window = new CopilotCodeReviewWindow(message!);
+                var owner = Application.Current.GetActiveWindow();
+                if (owner != null)
+                    window.Owner = owner;
+                window.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    Application.Current.GetActiveWindow(),
+                    "无法打开代码审查详情：" + CopilotUserFacingErrorFormatter.Sanitize(ex.Message),
+                    "ColorVision",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
+        }
+
         private static bool TrySetClipboardText(string text, out string errorMessage)
         {
             try

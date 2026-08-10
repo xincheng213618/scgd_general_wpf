@@ -59,6 +59,7 @@ namespace ColorVision.Copilot
         {
             _approvalCoordinator.RefreshPendingActions(SelectedConversation?.Id);
 
+            RefreshConversationRunStatuses();
             OnPropertyChanged(nameof(HasPendingActions));
             OnPropertyChanged(nameof(HasPendingActionPanel));
             OnPropertyChanged(nameof(PendingActionPanelTitle));

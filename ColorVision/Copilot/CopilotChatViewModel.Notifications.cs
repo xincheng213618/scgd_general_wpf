@@ -60,6 +60,7 @@ namespace ColorVision.Copilot
 
         private void NotifyUserQuestionStateChanged()
         {
+            RefreshConversationRunStatuses();
             OnPropertyChanged(nameof(IsAnsweringUserQuestion));
             OnPropertyChanged(nameof(CanSubmitUserQuestionAnswer));
             OnPropertyChanged(nameof(CanSteerCurrentRun));
@@ -73,11 +74,16 @@ namespace ColorVision.Copilot
         private void RefreshConversationRunStatuses()
         {
             var activeRun = ActiveHostedRun;
+            var activeNeedsInput = activeRun?.IsAgent == true
+                && (ActiveUserQuestion?.IsPending == true
+                    || _approvalCoordinator.HasPendingActionsForConversation(activeRun.ConversationId));
             CopilotAgentRunStatusSynchronizer.Refresh(
                 Conversations,
                 activeRun?.IsAgent == true ? activeRun.ConversationId : null,
                 activeRun?.IsAgent == true ? activeRun.State : null,
+                activeNeedsInput,
                 _taskHost.QueuedRuns.Where(run => run.IsAgent).Select(run => run.ConversationId).ToArray());
+            RefreshConversationActivityView();
         }
 
         private void RefreshAgentRunNotice()
@@ -146,6 +152,16 @@ namespace ColorVision.Copilot
         {
             var conversation = Conversations.FirstOrDefault(item =>
                 string.Equals(item.Id, run.ConversationId, StringComparison.Ordinal));
+            var activity = CopilotAgentRunActivityPolicy.CreateCompletionActivity(run, conversation);
+            var isSelectedConversation = conversation != null
+                && string.Equals(conversation.Id, SelectedConversation?.Id, StringComparison.Ordinal);
+            var visibleActivity = activity?.State == CopilotConversationActivityState.NeedsInput
+                    || !isSelectedConversation
+                ? activity
+                : null;
+            if (conversation?.ReplaceAgentActivity(visibleActivity) == true)
+                PersistState(immediate: true);
+
             var notice = CopilotAgentRunCompletionNoticePolicy.Create(
                 run,
                 conversation,

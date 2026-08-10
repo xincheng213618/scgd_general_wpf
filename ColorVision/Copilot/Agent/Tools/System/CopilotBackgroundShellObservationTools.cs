@@ -108,6 +108,9 @@ namespace ColorVision.Copilot
                 Content = CopilotBackgroundShellCommandFormatter.FormatToolSnapshots(
                     snapshots,
                     includeOutput),
+                BackgroundShellCommands = snapshots
+                    .Select(CopilotBackgroundShellCommandEvidence.FromSnapshot)
+                    .ToArray(),
             });
         }
 
@@ -315,6 +318,10 @@ namespace ColorVision.Copilot
                             : "reached the archive end."
                         : "more archived output is available."),
                 Content = formatted,
+                BackgroundShellCommands =
+                [
+                    CopilotBackgroundShellCommandEvidence.FromSnapshot(snapshot),
+                ],
             });
         }
 

@@ -207,6 +207,8 @@ namespace ColorVision.Copilot
                     ErrorMessage = $"The command did not finish within {execution.TimeoutSeconds} seconds; inspect the captured shell output.",
                     FailureKind = CopilotToolFailureKind.Transient,
                     FailureCode = TimedOutFailureCode,
+                    ProcessOperation = CopilotToolProcessEvidence.ShellOperation,
+                    ProcessTimedOut = true,
                 };
             }
 
@@ -228,6 +230,8 @@ namespace ColorVision.Copilot
                     : $"The command returned exit code {processResult.ExitCode}; inspect the captured shell output.",
                 FailureKind = succeeded ? CopilotToolFailureKind.None : CopilotToolFailureKind.Unspecified,
                 FailureCode = succeeded ? string.Empty : NonzeroExitFailureCode,
+                ProcessOperation = CopilotToolProcessEvidence.ShellOperation,
+                ProcessExitCode = processResult.ExitCode,
             };
         }
 

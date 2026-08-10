@@ -21,6 +21,7 @@ namespace ColorVision.Solution.Terminal
         private SafeFileHandle? _pipeOutRead;
         private IntPtr _hProcess;
         private IntPtr _hThread;
+        private IntPtr _hJob;
         private Thread? _readThread;
         private FileStream? _writerStream;
         private volatile bool _disposed;
@@ -64,6 +65,7 @@ namespace ColorVision.Solution.Terminal
             outWrite.Dispose();
 
             // 3. Create the child process attached to the pseudo console
+            CreateKillOnCloseJob();
             var attrSize = IntPtr.Zero;
             InitializeProcThreadAttributeList(IntPtr.Zero, 1, 0, ref attrSize);
 
@@ -92,9 +94,9 @@ namespace ColorVision.Solution.Terminal
                 };
 
                 if (!CreateProcessW(
-                        null, commandLine,
-                        IntPtr.Zero, IntPtr.Zero, false,
-                        EXTENDED_STARTUPINFO_PRESENT,
+                         null, commandLine,
+                         IntPtr.Zero, IntPtr.Zero, false,
+                         EXTENDED_STARTUPINFO_PRESENT | CREATE_SUSPENDED,
                         IntPtr.Zero, workingDirectory,
                         ref si, out var pi))
                     throw new InvalidOperationException(
@@ -102,6 +104,14 @@ namespace ColorVision.Solution.Terminal
 
                 _hProcess = pi.hProcess;
                 _hThread = pi.hThread;
+
+                if (!AssignProcessToJobObject(_hJob, _hProcess))
+                    throw new InvalidOperationException(
+                        $"AssignProcessToJobObject failed: {Marshal.GetLastWin32Error()}");
+
+                if (ResumeThread(_hThread) == uint.MaxValue)
+                    throw new InvalidOperationException(
+                        $"ResumeThread failed: {Marshal.GetLastWin32Error()}");
             }
             finally
             {
@@ -147,8 +157,44 @@ namespace ColorVision.Solution.Terminal
 
         public void Kill()
         {
+            if (_hJob != IntPtr.Zero)
+            {
+                if (!TerminateJobObject(_hJob, 1))
+                    log.Debug($"TerminateJobObject failed: {Marshal.GetLastWin32Error()}");
+            }
+
             if (_hProcess != IntPtr.Zero && IsRunning)
                 TerminateProcess(_hProcess, 1);
+
+            if (_hProcess != IntPtr.Zero)
+                WaitForSingleObject(_hProcess, 2000);
+        }
+
+        private void CreateKillOnCloseJob()
+        {
+            _hJob = CreateJobObject(IntPtr.Zero, null);
+            if (_hJob == IntPtr.Zero)
+                throw new InvalidOperationException(
+                    $"CreateJobObject failed: {Marshal.GetLastWin32Error()}");
+
+            var jobInfo = new JOBOBJECT_EXTENDED_LIMIT_INFORMATION
+            {
+                BasicLimitInformation = new JOBOBJECT_BASIC_LIMIT_INFORMATION
+                {
+                    LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE,
+                },
+            };
+            if (!SetInformationJobObject(
+                    _hJob,
+                    JobObjectExtendedLimitInformation,
+                    ref jobInfo,
+                    (uint)Marshal.SizeOf<JOBOBJECT_EXTENDED_LIMIT_INFORMATION>()))
+            {
+                int error = Marshal.GetLastWin32Error();
+                CloseHandle(_hJob);
+                _hJob = IntPtr.Zero;
+                throw new InvalidOperationException($"SetInformationJobObject failed: {error}");
+            }
         }
 
         private void ReadLoop()
@@ -198,6 +244,11 @@ namespace ColorVision.Solution.Terminal
             if (_disposed) return;
             _disposed = true;
 
+            // Terminate the whole shell/script process tree before ClosePseudoConsole. On older
+            // Windows versions ClosePseudoConsole can otherwise wait for surviving clients and
+            // block the UI thread during a repeated Run or application shutdown.
+            Kill();
+
             try { _writerStream?.Dispose(); } catch { }
             _writerStream = null;
             try { _pipeInWrite?.Dispose(); } catch { }
@@ -226,11 +277,19 @@ namespace ColorVision.Solution.Terminal
                 CloseHandle(_hProcess);
                 _hProcess = IntPtr.Zero;
             }
+            if (_hJob != IntPtr.Zero)
+            {
+                CloseHandle(_hJob);
+                _hJob = IntPtr.Zero;
+            }
         }
 
         #region Win32 P/Invoke
 
         private const uint EXTENDED_STARTUPINFO_PRESENT = 0x00080000;
+        private const uint CREATE_SUSPENDED = 0x00000004;
+        private const uint JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE = 0x00002000;
+        private const int JobObjectExtendedLimitInformation = 9;
         private const uint WAIT_OBJECT_0 = 0;
         private static readonly IntPtr PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE =
             (IntPtr)0x00020016;
@@ -272,6 +331,42 @@ namespace ColorVision.Solution.Terminal
             public uint dwProcessId, dwThreadId;
         }
 
+        [StructLayout(LayoutKind.Sequential)]
+        private struct JOBOBJECT_BASIC_LIMIT_INFORMATION
+        {
+            public long PerProcessUserTimeLimit;
+            public long PerJobUserTimeLimit;
+            public uint LimitFlags;
+            public UIntPtr MinimumWorkingSetSize;
+            public UIntPtr MaximumWorkingSetSize;
+            public uint ActiveProcessLimit;
+            public UIntPtr Affinity;
+            public uint PriorityClass;
+            public uint SchedulingClass;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct IO_COUNTERS
+        {
+            public ulong ReadOperationCount;
+            public ulong WriteOperationCount;
+            public ulong OtherOperationCount;
+            public ulong ReadTransferCount;
+            public ulong WriteTransferCount;
+            public ulong OtherTransferCount;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct JOBOBJECT_EXTENDED_LIMIT_INFORMATION
+        {
+            public JOBOBJECT_BASIC_LIMIT_INFORMATION BasicLimitInformation;
+            public IO_COUNTERS IoInfo;
+            public UIntPtr ProcessMemoryLimit;
+            public UIntPtr JobMemoryLimit;
+            public UIntPtr PeakProcessMemoryUsed;
+            public UIntPtr PeakJobMemoryUsed;
+        }
+
         [DllImport("kernel32.dll", SetLastError = true)]
         private static extern bool CreatePipe(
             out SafeFileHandle hReadPipe, out SafeFileHandle hWritePipe,
@@ -310,6 +405,27 @@ namespace ColorVision.Solution.Terminal
             IntPtr lpEnvironment, string lpCurrentDirectory,
             ref STARTUPINFOEX lpStartupInfo,
             out PROCESS_INFORMATION lpProcessInformation);
+
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        private static extern IntPtr CreateJobObject(
+            IntPtr lpJobAttributes,
+            string? lpName);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool SetInformationJobObject(
+            IntPtr hJob,
+            int jobObjectInfoClass,
+            ref JOBOBJECT_EXTENDED_LIMIT_INFORMATION lpJobObjectInfo,
+            uint cbJobObjectInfoLength);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool AssignProcessToJobObject(IntPtr hJob, IntPtr hProcess);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool TerminateJobObject(IntPtr hJob, uint uExitCode);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern uint ResumeThread(IntPtr hThread);
 
         [DllImport("kernel32.dll")]
         private static extern uint WaitForSingleObject(IntPtr hHandle, uint dwMilliseconds);

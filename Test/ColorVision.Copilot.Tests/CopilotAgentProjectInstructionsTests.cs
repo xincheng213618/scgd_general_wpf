@@ -2621,6 +2621,36 @@ public sealed class CopilotAgentProjectInstructionsTests
     }
 
     [Fact]
+    public void ExplicitTargetLoadsItsNestedInstructionsWithoutAnActiveDocument()
+    {
+        string root = CreateTemporaryDirectory();
+        string nested = Path.Combine(root, "src", "feature");
+        Directory.CreateDirectory(nested);
+        string targetDocument = Path.Combine(nested, "Feature.cs");
+        File.WriteAllText(targetDocument, "namespace Feature;");
+        try
+        {
+            string rootInstructions = Path.Combine(root, "AGENTS.md");
+            string nestedInstructions = Path.Combine(nested, "AGENTS.md");
+            File.WriteAllText(rootInstructions, "# Root instructions");
+            File.WriteAllText(nestedInstructions, "# Feature instructions");
+
+            var documents = CopilotAgentProjectInstructions.Discover(
+                [root],
+                activeDocumentPath: null,
+                [targetDocument]);
+
+            Assert.Equal(2, documents.Count);
+            Assert.Equal(rootInstructions, documents[0].Path, ignoreCase: true);
+            Assert.Equal(nestedInstructions, documents[1].Path, ignoreCase: true);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public void DocumentLimitRetainsTheMostSpecificInstructions()
     {
         string root = CreateTemporaryDirectory();

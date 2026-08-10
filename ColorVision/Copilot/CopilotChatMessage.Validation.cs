@@ -275,6 +275,7 @@ namespace ColorVision.Copilot
                 changed = true;
             }
 
+            changed |= EnsureCodeReviewSnapshotValid();
             changed |= EnsureWorkspaceDiffValid();
 
             OnResponseTimelineChanged();

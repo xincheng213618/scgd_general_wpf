@@ -211,6 +211,9 @@ namespace ColorVision.Copilot
         string ReviewText,
         bool ReviewTextTruncated) : CopilotTurnEvent;
 
+    internal sealed record CopilotTurnCodeReviewSnapshotUpdatedEvent(
+        CopilotCodeReviewSnapshot Snapshot) : CopilotTurnEvent;
+
     internal sealed record CopilotTurnWorkspaceDiffUpdatedEvent(
         CopilotTurnWorkspaceDiffSnapshot Snapshot) : CopilotTurnEvent;
 
@@ -399,6 +402,14 @@ namespace ColorVision.Copilot
 
         public void OnAgentEvent(CopilotAgentEvent agentEvent) =>
             _publish(new CopilotTurnAgentEvent(agentEvent));
+
+        public void OnCodeReviewSnapshotUpdated(CopilotCodeReviewSnapshot snapshot)
+        {
+            ArgumentNullException.ThrowIfNull(snapshot);
+            if (!snapshot.IsStructurallyValid())
+                throw new ArgumentException("Code review snapshot is invalid.", nameof(snapshot));
+            _publish(new CopilotTurnCodeReviewSnapshotUpdatedEvent(snapshot.CreateSnapshot()));
+        }
 
         public void OnWorkspaceDiffUpdated(CopilotTurnWorkspaceDiffSnapshot snapshot)
         {

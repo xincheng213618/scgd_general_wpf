@@ -22,6 +22,7 @@ namespace ColorVision.Copilot
             SteeringMessages = 1 << 11,
             ProviderRetry = 1 << 12,
             ProviderConnectionRecovery = 1 << 13,
+            ModelToolResult = 1 << 14,
         }
 
         public static void Validate(CopilotAgentEvent agentEvent)
@@ -30,6 +31,7 @@ namespace ColorVision.Copilot
             if (!Enum.IsDefined(agentEvent.Type))
                 throw new InvalidOperationException("Copilot Agent emitted an unsupported event type.");
             if (agentEvent.Text == null
+                || agentEvent.ModelToolResult == null
                 || agentEvent.ToolExecutionHookRuns == null
                 || agentEvent.SteeringMessages == null)
             {
@@ -45,6 +47,8 @@ namespace ColorVision.Copilot
             }
 
             ValidateText(agentEvent);
+            if (agentEvent.ModelToolResult.Length > CopilotCodeReviewSnapshot.MaximumModelObservationCharacters)
+                throw new InvalidOperationException("Copilot Agent model tool result exceeds its protocol limit.");
             ValidateCorrelatedPayload(agentEvent);
         }
 
@@ -79,6 +83,8 @@ namespace ColorVision.Copilot
                 payload |= PayloadKind.ProviderRetry;
             if (agentEvent.ProviderConnectionRecovery != null)
                 payload |= PayloadKind.ProviderConnectionRecovery;
+            if (agentEvent.ModelToolResult.Length > 0)
+                payload |= PayloadKind.ModelToolResult;
             return payload;
         }
 
@@ -104,7 +110,7 @@ namespace ColorVision.Copilot
                 CopilotAgentEventType.ToolResult =>
                     (PayloadKind.ToolResult | PayloadKind.ToolExecution,
                         text | PayloadKind.ToolResult | PayloadKind.ToolExecution
-                            | PayloadKind.ToolExecutionHookRuns),
+                            | PayloadKind.ToolExecutionHookRuns | PayloadKind.ModelToolResult),
                 CopilotAgentEventType.ReasoningDelta or CopilotAgentEventType.AnswerDelta =>
                     (text, text),
                 CopilotAgentEventType.AnswerReset

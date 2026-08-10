@@ -21,6 +21,7 @@ public sealed class CopilotChatViewModelContractTests
         "AttachCurrentLiveContextCommand",
         "BranchConversationCommand",
         "CancelMessageEditCommand",
+        "ClearConversationGoalCommand",
         "ClearConversationSearchCommand",
         "CloseConversationFindCommand",
         "CompactConversationCommand",
@@ -35,12 +36,14 @@ public sealed class CopilotChatViewModelContractTests
         "DeleteQueuedFollowUpCommand",
         "DismissAgentTaskCommand",
         "DismissLocalCommandResultCommand",
+        "EditConversationGoalCommand",
         "EditMessageCommand",
         "EditQueuedFollowUpCommand",
         "ExecuteApprovedPlanCommand",
         "ExportConversationCommand",
         "FindNextConversationMatchCommand",
         "FindPreviousConversationMatchCommand",
+        "MarkAllActivityReadCommand",
         "MoveQueuedFollowUpDownCommand",
         "MoveQueuedFollowUpUpCommand",
         "NewChatCommand",
@@ -48,11 +51,13 @@ public sealed class CopilotChatViewModelContractTests
         "OpenAgentTaskCommand",
         "OpenAttachmentCommand",
         "OpenBranchOriginCommand",
+        "OpenCodeReviewPaneCommand",
         "OpenCompletionNoticeCommand",
         "OpenConversationFindCommand",
         "OpenSettingsCommand",
         "OpenWorkspaceChangeFileCommand",
         "PasteImageAttachmentCommand",
+        "PauseConversationGoalCommand",
         "PrimaryActionCommand",
         "QueueFollowUpCommand",
         "RefreshMessageCommand",
@@ -61,6 +66,7 @@ public sealed class CopilotChatViewModelContractTests
         "RenameConversationCommand",
         "RequestWorkspaceRollbackCommand",
         "ResumeAgentTaskCommand",
+        "ResumeConversationGoalCommand",
         "RetryMessageCommand",
         "RetryStatePersistenceCommand",
         "SelectComposerReferenceCommand",
@@ -70,9 +76,11 @@ public sealed class CopilotChatViewModelContractTests
         "SendQueuedFollowUpNowCommand",
         "SetComposerAccessModeCommand",
         "ShowContextDiagnosticsCommand",
+        "ShowConversationGoalHistoryCommand",
         "ShowUsageDiagnosticsCommand",
         "SteerCommand",
         "SubmitUserQuestionAnswerCommand",
+        "ToggleActivityViewCommand",
         "ToggleAgentTaskPanelCommand",
         "TogglePinConversationCommand",
     ];
@@ -197,6 +205,17 @@ public sealed class CopilotChatViewModelContractTests
             Assert.Contains(methods, method =>
                 string.Equals(method.Name, methodName, StringComparison.Ordinal));
         }
+    }
+
+    [Fact]
+    public void ShortcutHelpExposesTheActivityViewGesture()
+    {
+        var shortcut = Assert.Single(
+            CopilotKeyboardShortcutHelp.Entries,
+            entry => string.Equals(entry.Keys, "Ctrl+Alt+U", StringComparison.Ordinal));
+
+        Assert.Equal("全局", shortcut.Scope);
+        Assert.Contains("活动视图", shortcut.Action, StringComparison.Ordinal);
     }
 
     [Fact]

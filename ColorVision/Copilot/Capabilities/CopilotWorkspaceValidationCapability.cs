@@ -193,6 +193,8 @@ namespace ColorVision.Copilot
                     ErrorMessage = $"dotnet {task} did not finish within {timeoutSeconds} seconds; inspect the captured validation output.",
                     FailureKind = CopilotToolFailureKind.Transient,
                     FailureCode = ValidationTimedOutFailureCode,
+                    ProcessOperation = task,
+                    ProcessTimedOut = true,
                 };
             }
 
@@ -210,6 +212,8 @@ namespace ColorVision.Copilot
                     : $"dotnet {task} returned exit code {processResult.ExitCode}; inspect the captured validation output.",
                 FailureKind = passed ? CopilotToolFailureKind.None : CopilotToolFailureKind.Validation,
                 FailureCode = passed ? string.Empty : ValidationFailedFailureCode,
+                ProcessOperation = task,
+                ProcessExitCode = processResult.ExitCode,
             };
         }
 

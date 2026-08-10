@@ -109,6 +109,53 @@ public class CopilotChatStateSnapshotTests
     }
 
     [Fact]
+    public void StateStoreRoundTripsAutomaticGoalContinuationIdentity()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        try
+        {
+            var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+            conversation.Goal = CopilotConversationGoal.Create(
+                "持续迭代 Copilot",
+                new DateTimeOffset(2026, 8, 11, 9, 0, 0, TimeSpan.Zero));
+            var state = new CopilotChatState
+            {
+                ActiveConversationId = conversation.Id,
+                ActiveProfileId = "profile",
+                Conversations = [conversation],
+                QueuedFollowUpRecoveries =
+                [
+                    new CopilotQueuedFollowUpRecoveryRecord
+                    {
+                        RunId = "goal-run-1",
+                        ConversationId = conversation.Id,
+                        GoalId = conversation.Goal.Id,
+                        ProfileId = "profile",
+                        ComposerState = CopilotComposerStash.Capture(
+                            "internal automatic continuation",
+                            31,
+                            CopilotAgentMode.Auto,
+                            Array.Empty<CopilotAttachmentItem>()),
+                    },
+                ],
+            };
+            var store = new CopilotChatStateStore(root);
+
+            store.Save(state);
+            var loaded = store.Load();
+
+            var queued = Assert.Single(loaded.QueuedFollowUpRecoveries);
+            Assert.Equal(conversation.Goal.Id, queued.GoalId);
+            Assert.False(queued.ResumeAfterRestart);
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+                Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public void CapturePlanKeepsTheStartedConversationSetAndCapturedChunks()
     {
         var firstConversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
@@ -195,10 +242,76 @@ public class CopilotChatStateSnapshotTests
             state.Conversations,
             state.ActiveConversationId,
             CopilotHostedRunState.Running,
+            activeNeedsInput: false,
             Array.Empty<string>());
 
         Assert.Equal("运行中", activeConversation.AgentRunStatusLabel);
         Assert.Empty(duplicateConversation.AgentRunStatusLabel);
+    }
+
+    [Theory]
+    [InlineData(CopilotHostedRunState.Running, false, "运行中")]
+    [InlineData(CopilotHostedRunState.Running, true, "需要输入")]
+    [InlineData(CopilotHostedRunState.PauseRequested, true, "暂停中")]
+    [InlineData(CopilotHostedRunState.CancelRequested, true, "取消中")]
+    [InlineData(CopilotHostedRunState.Completed, true, "")]
+    public void AgentRunStatusPrioritizesExplicitControlTransitionsOverAttention(
+        CopilotHostedRunState state,
+        bool needsInput,
+        string expected)
+    {
+        Assert.Equal(expected, CopilotAgentRunStatusSynchronizer.FormatActiveState(state, needsInput));
+    }
+
+    [Fact]
+    public void ConversationActivityRoundTripsAndUsesViewingAcknowledgementRules()
+    {
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        conversation.Messages.Add(new CopilotChatMessage(CopilotChatRole.User, "Question")
+        {
+            RequestMode = CopilotAgentMode.Auto,
+        });
+        var assistant = new CopilotChatMessage(CopilotChatRole.Assistant, "Answer")
+        {
+            AgentStopReason = CopilotAgentStopReason.Completed,
+            RequestMode = CopilotAgentMode.Auto,
+        };
+        conversation.Messages.Add(assistant);
+        var updatedAtUtc = new DateTimeOffset(2026, 8, 10, 9, 30, 0, TimeSpan.Zero);
+        Assert.True(conversation.ReplaceAgentActivity(CopilotConversationActivity.Create(
+            CopilotConversationActivityState.Ready,
+            assistant.Id,
+            updatedAtUtc)));
+
+        string json = JsonConvert.SerializeObject(conversation, SerializerSettings);
+        var restored = JsonConvert.DeserializeObject<CopilotConversationRecord>(json);
+
+        Assert.NotNull(restored);
+        var restoredActivity = Assert.IsType<CopilotConversationActivity>(restored.AgentActivity);
+        Assert.Equal(CopilotConversationActivityState.Ready, restoredActivity.State);
+        Assert.Equal(updatedAtUtc, restoredActivity.UpdatedAtUtc);
+        Assert.Equal("待查看", restored.AgentRunStatusLabel);
+        Assert.True(restored.AcknowledgeAgentActivityByViewing());
+        Assert.Null(restored.AgentActivity);
+        Assert.Empty(restored.AgentRunStatusLabel);
+
+        var restoredAssistant = restored.Messages.Last(message => !message.IsUser);
+        restored.ReplaceAgentActivity(CopilotConversationActivity.Create(
+            CopilotConversationActivityState.NeedsInput,
+            restoredAssistant.Id,
+            updatedAtUtc.AddMinutes(1)));
+        Assert.False(restored.AcknowledgeAgentActivityByViewing());
+        Assert.Equal("需要输入", restored.AgentRunStatusLabel);
+
+        var branch = CopilotConversationBranchService.CreateBranch(restored, restoredAssistant);
+        Assert.Null(branch.AgentActivity);
+
+        restored.AgentActivity = CopilotConversationActivity.Create(
+            CopilotConversationActivityState.Blocked,
+            "missing-message",
+            updatedAtUtc.AddMinutes(2));
+        Assert.True(restored.EnsureValid());
+        Assert.Null(restored.AgentActivity);
     }
 
     [Fact]

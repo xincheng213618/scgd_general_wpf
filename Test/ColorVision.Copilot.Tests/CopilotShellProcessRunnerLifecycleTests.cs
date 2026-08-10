@@ -71,6 +71,7 @@ public sealed class CopilotShellProcessRunnerLifecycleTests
     {
         var workspace = CreateTemporaryDirectory();
         var markerPath = Path.Combine(workspace, "must-not-exist.txt");
+        var releaseMarkerPath = markerPath + ".release";
         try
         {
             var result = await RunDetachedMarkerCommandAsync(
@@ -78,14 +79,15 @@ public sealed class CopilotShellProcessRunnerLifecycleTests
                 markerPath,
                 keepRootAlive: true,
                 preserveDescendants: true,
-                timeout: TimeSpan.FromMilliseconds(500));
+                timeout: TimeSpan.FromSeconds(5),
+                releaseMarkerPath: releaseMarkerPath);
 
             Assert.True(result.TimedOut);
             Assert.True(result.ProcessTreeContained);
             Assert.True(File.Exists(GetLaunchMarkerPath(markerPath)));
-            await Task.Delay(TimeSpan.FromSeconds(2));
+            File.WriteAllText(releaseMarkerPath, "release");
             Assert.False(
-                File.Exists(markerPath),
+                await WaitForFileAsync(markerPath, TimeSpan.FromSeconds(2)),
                 "A detached descendant survived after the hook process timed out.");
         }
         finally
@@ -111,14 +113,14 @@ public sealed class CopilotShellProcessRunnerLifecycleTests
                     keepRootAlive: true,
                     preserveDescendants: true,
                     timeout: TimeSpan.FromSeconds(5),
-                    cancellationSource.Token,
-                    chunk =>
+                    standardOutputReceived: chunk =>
                     {
                         if (!chunk.Contains("child-launched", StringComparison.Ordinal))
                             return;
                         launchObserved.TrySetResult();
                         cancellationSource.Cancel();
-                    }));
+                    },
+                    cancellationToken: cancellationSource.Token));
 
             await launchObserved.Task.WaitAsync(TimeSpan.FromSeconds(5));
             Assert.True(File.Exists(GetLaunchMarkerPath(markerPath)));
@@ -139,15 +141,20 @@ public sealed class CopilotShellProcessRunnerLifecycleTests
         bool keepRootAlive,
         bool preserveDescendants,
         TimeSpan timeout,
-        CancellationToken cancellationToken = default,
-        Action<string>? standardOutputReceived = null)
+        Action<string>? standardOutputReceived = null,
+        string? releaseMarkerPath = null,
+        CancellationToken cancellationToken = default)
     {
         var executable = CopilotShellCommandService.FindTrustedShellExecutable(
             CopilotShellKind.PowerShell);
         Assert.False(string.IsNullOrWhiteSpace(executable));
 
-        var childScript = "Start-Sleep -Milliseconds 1000; "
-            + $"[System.IO.File]::WriteAllText({QuotePowerShellLiteral(markerPath)}, 'done')";
+        var childScript = string.IsNullOrWhiteSpace(releaseMarkerPath)
+            ? "Start-Sleep -Milliseconds 1000; "
+                + $"[System.IO.File]::WriteAllText({QuotePowerShellLiteral(markerPath)}, 'done')"
+            : $"while (-not [System.IO.File]::Exists({QuotePowerShellLiteral(releaseMarkerPath)})) "
+                + "{ Start-Sleep -Milliseconds 25 }; "
+                + $"[System.IO.File]::WriteAllText({QuotePowerShellLiteral(markerPath)}, 'done')";
         var encodedChildScript = Convert.ToBase64String(Encoding.Unicode.GetBytes(childScript));
         var command = "Start-Process -WindowStyle Hidden "
             + $"-FilePath {QuotePowerShellLiteral(executable!)} "

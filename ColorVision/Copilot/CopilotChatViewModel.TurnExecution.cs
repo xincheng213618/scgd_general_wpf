@@ -332,7 +332,9 @@ namespace ColorVision.Copilot
                 {
                     CopilotUiDispatcher.Invoke(() =>
                         TryQueueGoalContinuation(
+                            hostedRun,
                             conversation,
+                            assistantMessage,
                             requestProfile,
                             turnSnapshot,
                             runtimeConfigSnapshot,
@@ -345,6 +347,11 @@ namespace ColorVision.Copilot
             {
                 hostedRun.SuppressAutomaticFollowUpDispatch();
                 var controlIntent = hostedRun.RunControl?.Intent ?? CopilotAgentControlIntent.None;
+                ResolveDeliveredSteeringAtTerminal(
+                    hostedRun,
+                    conversation,
+                    checkpoint: null,
+                    discard: controlIntent == CopilotAgentControlIntent.Cancel);
                 CopilotHostedTurnCompletion.CompleteCancellation(conversation, assistantMessage, controlIntent);
                 if (!goalOutcomeRecorded)
                 {
@@ -363,6 +370,11 @@ namespace ColorVision.Copilot
             catch (Exception ex)
             {
                 hostedRun.SuppressAutomaticFollowUpDispatch();
+                ResolveDeliveredSteeringAtTerminal(
+                    hostedRun,
+                    conversation,
+                    checkpoint: null,
+                    discard: false);
                 CopilotHostedTurnCompletion.CompleteFailure(conversation, assistantMessage, ex.Message, requestProfile.ApiKey);
                 if (!goalOutcomeRecorded)
                 {
@@ -562,6 +574,11 @@ namespace ColorVision.Copilot
                                     hostedRun.RecordProviderRetry(agent.Event.ProviderRetry);
                                 eventBuffer?.Enqueue(agent.Event);
                                 break;
+                            case CopilotTurnCodeReviewSnapshotUpdatedEvent codeReview:
+                                ApplyCodeReviewSnapshotUpdatedOnUiThread(
+                                    assistantMessage,
+                                    codeReview.Snapshot);
+                                break;
                             case CopilotTurnWorkspaceDiffUpdatedEvent workspaceDiff:
                                 ApplyWorkspaceDiffUpdatedOnUiThread(assistantMessage, workspaceDiff.Snapshot);
                                 break;
@@ -661,6 +678,11 @@ namespace ColorVision.Copilot
             assistantMessage.AgentBlockers = agentResult.Blockers;
             conversation.UpdateLatestAgentTaskEventJournal(agentResult.TaskEventJournal);
             conversation.AgentSessionCheckpoint = agentResult.SessionCheckpoint;
+            ResolveDeliveredSteeringAtTerminal(
+                hostedRun,
+                conversation,
+                agentResult.SessionCheckpoint,
+                discard: agentResult.StopReason == CopilotAgentStopReason.Cancelled);
             if (string.IsNullOrWhiteSpace(assistantMessage.Content))
             {
                 CopilotAssistantMessagePresenter.SetFallbackContent(assistantMessage, agentResult.StopReason switch

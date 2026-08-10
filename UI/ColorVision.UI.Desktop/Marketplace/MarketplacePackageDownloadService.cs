@@ -68,7 +68,7 @@ namespace ColorVision.UI.Desktop.Marketplace
 
         public Task<MarketplacePluginDetail?> GetPluginDetailAsync(string pluginId, CancellationToken cancellationToken = default)
         {
-            return _client.GetPluginDetailAsync(pluginId, cancellationToken);
+            return _client.GetPluginUpdateMetadataAsync(pluginId, cancellationToken: cancellationToken);
         }
 
         public string GetDownloadUrl(string pluginId, string version)

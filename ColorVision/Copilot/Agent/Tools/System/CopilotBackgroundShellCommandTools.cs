@@ -121,6 +121,10 @@ namespace ColorVision.Copilot
                 Content = CopilotBackgroundShellCommandFormatter.FormatToolSnapshot(
                     snapshot,
                     includeOutput: false),
+                BackgroundShellCommands =
+                [
+                    CopilotBackgroundShellCommandEvidence.FromSnapshot(snapshot),
+                ],
             };
         }
 
@@ -320,6 +324,11 @@ namespace ColorVision.Copilot
                 Content = CopilotBackgroundShellCommandFormatter.FormatToolSnapshot(
                     result.Snapshot,
                     includeOutput: true),
+                BackgroundShellCommands =
+                [
+                    CopilotBackgroundShellCommandEvidence.FromSnapshot(
+                        result.Snapshot),
+                ],
             };
         }
 

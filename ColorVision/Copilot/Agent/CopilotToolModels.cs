@@ -163,6 +163,10 @@ namespace ColorVision.Copilot
 
         public IReadOnlyList<CopilotProjectInstructionDocument> ProjectInstructions { get; init; } = Array.Empty<CopilotProjectInstructionDocument>();
 
+        internal CopilotReviewProjectInstructionContext? ReviewProjectInstructionContext { get; init; }
+
+        internal CopilotReviewEvidenceContext? ReviewEvidenceContext { get; init; }
+
         public IReadOnlyList<string> ReadableLocalFilePaths { get; init; } = Array.Empty<string>();
 
         public IReadOnlyList<string> ReadableLocalDirectoryPaths { get; init; } = Array.Empty<string>();
@@ -300,6 +304,37 @@ namespace ColorVision.Copilot
         public bool WasTruncated { get; init; }
     }
 
+    internal readonly record struct CopilotBackgroundShellCommandEvidence(
+        string Id,
+        CopilotBackgroundShellCommandState State,
+        int? ExitCode)
+    {
+        private const int MaximumIdCharacters = 128;
+
+        public bool IsTerminal => State != CopilotBackgroundShellCommandState.Running;
+
+        public bool IsStructurallyValid()
+        {
+            return Id != null
+                && Id.Length is > 0 and <= MaximumIdCharacters
+                && string.Equals(Id, Id.Trim(), StringComparison.Ordinal)
+                && Id.All(character => !char.IsControl(character))
+                && Enum.IsDefined(State)
+                && (State != CopilotBackgroundShellCommandState.Running || !ExitCode.HasValue)
+                && (State != CopilotBackgroundShellCommandState.Completed || ExitCode is null or 0);
+        }
+
+        public static CopilotBackgroundShellCommandEvidence FromSnapshot(
+            CopilotBackgroundShellCommandSnapshot snapshot)
+        {
+            ArgumentNullException.ThrowIfNull(snapshot);
+            return new CopilotBackgroundShellCommandEvidence(
+                snapshot.Id?.Trim() ?? string.Empty,
+                snapshot.State,
+                snapshot.ExitCode);
+        }
+    }
+
     public sealed class CopilotToolResult
     {
         public string ToolName { get; init; } = string.Empty;
@@ -315,6 +350,12 @@ namespace ColorVision.Copilot
         public CopilotToolFailureKind FailureKind { get; init; }
 
         public string FailureCode { get; init; } = string.Empty;
+
+        public string ProcessOperation { get; init; } = string.Empty;
+
+        public int? ProcessExitCode { get; init; }
+
+        public bool ProcessTimedOut { get; init; }
 
         public CopilotToolApprovalInfo? Approval { get; init; }
 
@@ -335,6 +376,9 @@ namespace ColorVision.Copilot
         public string ObservationProgressSignature { get; init; } = string.Empty;
 
         internal CopilotWorkspaceMutationSnapshot? WorkspaceMutation { get; init; }
+
+        internal IReadOnlyList<CopilotBackgroundShellCommandEvidence> BackgroundShellCommands { get; init; } =
+            Array.Empty<CopilotBackgroundShellCommandEvidence>();
 
         internal bool SuppressModelOutput { get; init; }
     }
@@ -408,6 +452,12 @@ namespace ColorVision.Copilot
 
         public string FailureCode { get; init; } = string.Empty;
 
+        public string ProcessOperation { get; init; } = string.Empty;
+
+        public int? ProcessExitCode { get; init; }
+
+        public bool ProcessTimedOut { get; init; }
+
         public CopilotToolApprovalInfo? Approval { get; init; }
 
         public IReadOnlyList<string> SuggestedReadableLocalFilePaths { get; init; } = Array.Empty<string>();
@@ -424,6 +474,14 @@ namespace ColorVision.Copilot
 
         public static CopilotToolObservation FromResult(CopilotToolResult? result)
         {
+            CopilotToolProcessEvidence.TryNormalizeForResult(
+                result?.ToolName,
+                result?.Success ?? false,
+                result?.FailureCode,
+                result?.ProcessOperation,
+                result?.ProcessExitCode,
+                result?.ProcessTimedOut ?? false,
+                out var processEvidence);
             return new CopilotToolObservation
             {
                 Success = result?.Success ?? false,
@@ -432,6 +490,9 @@ namespace ColorVision.Copilot
                 ErrorMessage = result?.ErrorMessage ?? string.Empty,
                 FailureKind = result?.FailureKind ?? CopilotToolFailureKind.None,
                 FailureCode = result?.Success == false ? CopilotToolFailureCode.Normalize(result.FailureCode) : string.Empty,
+                ProcessOperation = processEvidence.Operation,
+                ProcessExitCode = processEvidence.ExitCode,
+                ProcessTimedOut = processEvidence.TimedOut,
                 Approval = result?.Approval,
                 SuggestedReadableLocalFilePaths = result?.SuggestedReadableLocalFilePaths ?? Array.Empty<string>(),
                 AttemptedLocalFilePaths = result?.AttemptedLocalFilePaths ?? Array.Empty<string>(),
@@ -452,6 +513,8 @@ namespace ColorVision.Copilot
         public CopilotToolObservation Observation { get; init; } = new();
 
         internal CopilotToolObservation? ModelObservation { get; init; }
+
+        internal string ModelToolResult { get; init; } = string.Empty;
 
         internal CopilotToolObservation EffectiveModelObservation =>
             ModelObservation ?? Observation ?? new CopilotToolObservation();

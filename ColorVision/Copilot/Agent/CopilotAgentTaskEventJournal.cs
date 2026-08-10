@@ -56,6 +56,8 @@ namespace ColorVision.Copilot
 
         public string FailureCode { get; init; } = string.Empty;
 
+        public int? ExitCode { get; init; }
+
         public string Summary { get; init; } = string.Empty;
 
         public bool IsStructurallyValid()
@@ -72,7 +74,18 @@ namespace ColorVision.Copilot
                 && IsOptionalBounded(ToolName, CopilotAgentTaskEventJournal.MaxToolNameLength)
                 && IsOptionalBounded(State, CopilotAgentTaskEventJournal.MaxStateLength)
                 && string.Equals(FailureCode, CopilotToolFailureCode.Normalize(FailureCode), StringComparison.Ordinal)
+                && HasValidBackgroundCompletionMetadata()
                 && IsOptionalBounded(Summary, CopilotAgentTaskEventJournal.MaxSummaryLength);
+        }
+
+        private bool HasValidBackgroundCompletionMetadata()
+        {
+            if (Type != CopilotAgentTaskEventType.BackgroundCommandCompleted)
+                return !ExitCode.HasValue;
+
+            var state = (State ?? string.Empty).Trim().ToLowerInvariant();
+            return state is "completed" or "failed" or "stopped" or "expired"
+                && (state != "completed" || ExitCode is null or 0);
         }
 
         private static bool IsIdentifier(string? value)
@@ -203,6 +216,8 @@ namespace ColorVision.Copilot
         public const int MaxSummaryLength = 320;
         public const int MaxQueryLimit = 100;
         internal const int MaxAttemptedToolRecoveryPromptBytes = 32 * 1_024;
+        internal const string ValidationBackgroundSnapshotState =
+            "validation_background_snapshot";
 
         private const string AttemptedToolRecoveryHeading = "# Persisted attempted tool calls";
         private const string AttemptedToolRecoveryGuidance =

@@ -1,3 +1,4 @@
+using ColorVision.Copilot;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,14 +11,6 @@ namespace ColorVision.FloatingBall
         Blocked,
         Ready,
         Running,
-    }
-
-    internal enum DesktopPetCopilotCompletionKind
-    {
-        Ready,
-        Blocked,
-        Paused,
-        Cancelled,
     }
 
     internal sealed record DesktopPetCopilotActivity(
@@ -91,23 +84,23 @@ namespace ColorVision.FloatingBall
 
         public void RecordCompletion(
             string? conversationId,
-            DesktopPetCopilotCompletionKind completionKind,
+            CopilotConversationActivityState completionState,
             DateTimeOffset? updatedAtUtc = null)
         {
             var normalizedId = NormalizeConversationId(conversationId);
             if (normalizedId.Length == 0)
                 return;
 
-            if (completionKind == DesktopPetCopilotCompletionKind.Cancelled)
+            if (completionState == CopilotConversationActivityState.None)
             {
                 _activities.Remove(normalizedId);
                 return;
             }
 
-            var kind = completionKind switch
+            var kind = completionState switch
             {
-                DesktopPetCopilotCompletionKind.Blocked => DesktopPetCopilotActivityKind.Blocked,
-                DesktopPetCopilotCompletionKind.Paused => DesktopPetCopilotActivityKind.NeedsInput,
+                CopilotConversationActivityState.Blocked => DesktopPetCopilotActivityKind.Blocked,
+                CopilotConversationActivityState.NeedsInput => DesktopPetCopilotActivityKind.NeedsInput,
                 _ => DesktopPetCopilotActivityKind.Ready,
             };
             Upsert(normalizedId, kind, updatedAtUtc ?? DateTimeOffset.UtcNow);

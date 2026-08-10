@@ -1,4 +1,5 @@
 using ColorVision.Copilot;
+using Newtonsoft.Json.Linq;
 
 namespace ColorVision.Copilot.Tests;
 
@@ -41,6 +42,125 @@ public sealed class CopilotQueuedFollowUpCoordinatorTests
         finally
         {
             if (queuedItem != null)
+                busyHost.Host.RequestCancel(queuedItem.RunId);
+            await busyHost.CompleteAsync();
+        }
+    }
+
+    [Fact]
+    public async Task AutomaticGoalContinuationPersistsItsGoalIdentity()
+    {
+        var state = new CopilotChatState();
+        var busyHost = await StartBusyHostAsync("conversation-1");
+        var queue = new CopilotQueuedFollowUpCoordinator(state, busyHost.Host);
+        ForwardHostChanges(busyHost.Host, queue);
+        CopilotQueuedFollowUp? queuedItem = null;
+
+        try
+        {
+            Assert.True(queue.TrySchedule(
+                CreateRequest("conversation-1", "continue goal", goalId: "goal-1"),
+                runNext: false,
+                static (_, _) => Task.CompletedTask,
+                out queuedItem,
+                out _));
+
+            var recovery = Assert.Single(state.QueuedFollowUpRecoveries);
+            var recoveryDocument = JObject.FromObject(recovery);
+            Assert.Equal("goal-1", recoveryDocument[nameof(CopilotQueuedFollowUp.GoalId)]?.Value<string>());
+            Assert.False(recovery.ResumeAfterRestart);
+        }
+        finally
+        {
+            if (queuedItem != null)
+                busyHost.Host.RequestCancel(queuedItem.RunId);
+            await busyHost.CompleteAsync();
+        }
+    }
+
+    [Fact]
+    public async Task GoalContinuationLookupMatchesGoalIdentityAndKeepsUserFollowUpsEligible()
+    {
+        var state = new CopilotChatState();
+        var busyHost = await StartBusyHostAsync("conversation-1");
+        var queue = new CopilotQueuedFollowUpCoordinator(state, busyHost.Host);
+        ForwardHostChanges(busyHost.Host, queue);
+
+        try
+        {
+            Assert.True(queue.TrySchedule(
+                CreateRequest("conversation-1", "continue old goal", goalId: "goal-old"),
+                runNext: false,
+                static (_, _) => Task.CompletedTask,
+                out _,
+                out _));
+
+            Assert.True(queue.HasContinuationForGoal("conversation-1", "goal-old"));
+            Assert.False(queue.HasContinuationForGoal("conversation-1", "goal-new"));
+
+            Assert.True(queue.TrySchedule(
+                CreateRequest("conversation-1", "user queued follow-up"),
+                runNext: false,
+                static (_, _) => Task.CompletedTask,
+                out _,
+                out _));
+
+            Assert.True(queue.HasContinuationForGoal("conversation-1", "goal-new"));
+        }
+        finally
+        {
+            foreach (var queuedItem in queue.Items.ToArray())
+                busyHost.Host.RequestCancel(queuedItem.RunId);
+            await busyHost.CompleteAsync();
+        }
+    }
+
+    [Fact]
+    public async Task CancellingAutomaticGoalContinuationsPreservesUserAndOtherConversationWork()
+    {
+        var state = new CopilotChatState();
+        var busyHost = await StartBusyHostAsync("conversation-1");
+        var queue = new CopilotQueuedFollowUpCoordinator(state, busyHost.Host);
+        ForwardHostChanges(busyHost.Host, queue);
+
+        try
+        {
+            Assert.True(queue.TrySchedule(
+                CreateRequest("conversation-1", "automatic target", goalId: "goal-1"),
+                runNext: false,
+                static (_, _) => Task.CompletedTask,
+                out var automaticTarget,
+                out _));
+            Assert.True(queue.TrySchedule(
+                CreateRequest("conversation-1", "user target"),
+                runNext: false,
+                static (_, _) => Task.CompletedTask,
+                out var userTarget,
+                out _));
+            var automaticOther = CreateRequest(
+                "conversation-2",
+                "automatic other",
+                goalId: "goal-2").Create("restored-run-other");
+            var otherRecovery = CreateRecovery(automaticOther.RunId, automaticOther.ConversationId);
+            otherRecovery.GoalId = automaticOther.GoalId;
+            state.QueuedFollowUpRecoveries.Add(otherRecovery);
+            Assert.True(queue.TryRestore(
+                automaticOther,
+                static (_, _) => Task.CompletedTask));
+
+            Assert.Equal(1, queue.CancelAutomaticGoalContinuations("conversation-1"));
+
+            Assert.Equal(
+                [userTarget!.RunId, automaticOther.RunId],
+                queue.Items.Select(item => item.RunId));
+            Assert.Equal(
+                [userTarget.RunId, automaticOther.RunId],
+                state.QueuedFollowUpRecoveries.Select(record => record.RunId));
+            Assert.DoesNotContain(queue.Items, item => item.RunId == automaticTarget!.RunId);
+        }
+        finally
+        {
+            foreach (var queuedItem in queue.Items.ToArray())
                 busyHost.Host.RequestCancel(queuedItem.RunId);
             await busyHost.CompleteAsync();
         }
@@ -203,7 +323,10 @@ public sealed class CopilotQueuedFollowUpCoordinatorTests
         Assert.False(queue.RemoveRecoveriesForConversation("conversation-a"));
     }
 
-    private static CopilotQueuedFollowUpRequest CreateRequest(string conversationId, string prompt) => new(
+    private static CopilotQueuedFollowUpRequest CreateRequest(
+        string conversationId,
+        string prompt,
+        string goalId = "") => new(
         conversationId,
         "Conversation",
         prompt,
@@ -212,7 +335,8 @@ public sealed class CopilotQueuedFollowUpCoordinatorTests
         new CopilotAgentHostContextSnapshot("", "", []),
         AgentSkillReference: null,
         new CopilotTurnRuntimeConfigSnapshot(new CopilotAgentDefaultsConfig(), []),
-        WorkspaceReviewTarget: null);
+        WorkspaceReviewTarget: null,
+        GoalId: goalId);
 
     private static CopilotQueuedFollowUpRecoveryRecord CreateRecovery(
         string runId,

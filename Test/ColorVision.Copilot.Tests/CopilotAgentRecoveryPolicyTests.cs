@@ -93,6 +93,10 @@ public sealed class CopilotAgentRecoveryPolicyTests
         var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
         conversation.AgentSessionCheckpoint = checkpoint;
         conversation.Messages.Add(message);
+        conversation.ReplaceAgentActivity(CopilotConversationActivity.Create(
+            CopilotConversationActivityState.Blocked,
+            message.Id,
+            DateTimeOffset.UtcNow));
         var task = Assert.Single(CopilotAgentTaskIndex.Build([conversation]));
         Assert.Equal(CopilotAgentTaskAttentionKind.IncompleteOutput, task.AttentionKind);
         Assert.True(task.CanResume);
@@ -100,6 +104,8 @@ public sealed class CopilotAgentRecoveryPolicyTests
         Assert.Equal(message.AgentRecoveryToolTip, task.RecoveryToolTip);
         Assert.Contains("最终回答恢复项", task.DismissConfirmationText, StringComparison.Ordinal);
         Assert.Contains("原任务终态和审计证据仍保留", task.DismissToolTip, StringComparison.Ordinal);
+        Assert.True(CopilotAgentTaskIndex.Dismiss(task));
+        Assert.Null(conversation.AgentActivity);
     }
 
     [Fact]

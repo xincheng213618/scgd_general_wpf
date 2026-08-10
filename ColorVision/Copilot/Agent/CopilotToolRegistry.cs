@@ -188,6 +188,7 @@ namespace ColorVision.Copilot
                 new CopilotInspectTcpPortTool(),
                 new CopilotInspectGitWorkingTreeTool(),
                 new CopilotInspectGitDiffTool(),
+                new CopilotSubmitCodeReviewFindingsTool(),
                 new CopilotShellCommandTool(),
                 new CopilotReadShellCommandOutputTool(),
                 new CopilotStartBackgroundShellCommandTool(),

@@ -126,15 +126,26 @@ namespace ColorVision.Copilot
                     .Where(tool => string.Equals(tool.Name, "InspectGitDiff", StringComparison.OrdinalIgnoreCase))
                     .Select(tool => tool.Name)
                     .ToArray();
+                var reviewFindingsTools = availableTools
+                    .Where(tool => string.Equals(tool.Name, "SubmitCodeReviewFindings", StringComparison.OrdinalIgnoreCase))
+                    .Select(tool => tool.Name)
+                    .ToArray();
                 if (gitWorkingTreeTools.Length > 0 || gitDiffTools.Length > 0)
                 {
+                    var reviewGroups = new List<IEnumerable<string>>
+                    {
+                        gitWorkingTreeTools,
+                        gitDiffTools,
+                    };
+                    if (needsValidation)
+                        reviewGroups.Add(workspaceValidationTools);
+                    if (reviewFindingsTools.Length > 0)
+                        reviewGroups.Add(reviewFindingsTools);
                     return Required(
                         needsValidation
                             ? CopilotAgentExecutionRequirement.GitReviewAndWorkspaceValidation
                             : CopilotAgentExecutionRequirement.GitReviewEvidence,
-                        needsValidation
-                            ? [gitWorkingTreeTools, gitDiffTools, workspaceValidationTools]
-                            : [gitWorkingTreeTools, gitDiffTools],
+                        reviewGroups,
                         prerequisiteToolGroups,
                         attachedFilePaths,
                         requiredLocalFilePaths,

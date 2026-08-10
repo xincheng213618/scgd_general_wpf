@@ -42,6 +42,52 @@ namespace ColorVision.Copilot
 
         public ObservableCollection<CopilotConversationRecord> FilteredConversations { get; } = new();
 
+        public bool IsActivityViewOpen
+        {
+            get => _isActivityViewOpen;
+            private set
+            {
+                if (!SetProperty(ref _isActivityViewOpen, value))
+                    return;
+
+                OnPropertyChanged(nameof(IsConversationListViewOpen));
+                OnPropertyChanged(nameof(ConversationSidebarTitle));
+                OnPropertyChanged(nameof(ConversationSearchPlaceholder));
+                OnPropertyChanged(nameof(ActivityViewToggleToolTip));
+                OnPropertyChanged(nameof(IsAgentTaskPanelVisible));
+                RefreshFilteredConversations();
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+
+        public bool IsConversationListViewOpen => !IsActivityViewOpen;
+
+        public string ConversationSidebarTitle => IsActivityViewOpen
+            ? "活动"
+            : ColorVision.Properties.Resources.CopilotConversations;
+
+        public string ConversationSearchPlaceholder => IsActivityViewOpen ? "搜索活动" : "搜索会话";
+
+        public string ActivityViewToggleToolTip => IsActivityViewOpen
+            ? "返回全部会话 (Ctrl+Alt+U)"
+            : "打开活动视图 (Ctrl+Alt+U)";
+
+        public int ActivityConversationCount => Conversations.Count(conversation =>
+            !conversation.IsArchived && conversation.HasAgentRunStatus);
+
+        public string ActivityConversationCountLabel =>
+            ActivityConversationCount.ToString(System.Globalization.CultureInfo.CurrentCulture);
+
+        public bool HasConversationActivity => ActivityConversationCount > 0;
+
+        public bool HasUnreadConversationActivity => Conversations.Any(conversation =>
+            !conversation.IsArchived
+            && conversation.AgentActivity?.IsAcknowledgedByViewing == true);
+
+        public bool HasNoActivityConversations => IsActivityViewOpen
+            && !HasConversationSearchQuery
+            && FilteredConversations.Count == 0;
+
         public IReadOnlyList<CopilotConversationBranchFamilyMember> ConversationBranchFamily { get; private set; } =
             Array.Empty<CopilotConversationBranchFamilyMember>();
 
@@ -53,6 +99,8 @@ namespace ColorVision.Copilot
         public ObservableCollection<CopilotAgentTaskSummary> AgentTasks { get; } = new();
 
         public bool HasAgentTasks => AgentTasks.Count > 0;
+
+        public bool IsAgentTaskPanelVisible => HasAgentTasks && !IsActivityViewOpen;
 
         public string AgentTaskCountLabel => AgentTasks.Count.ToString(System.Globalization.CultureInfo.CurrentCulture);
 
@@ -278,6 +326,20 @@ namespace ColorVision.Copilot
 
         public ICommand ClearConversationSearchCommand { get; }
 
+        public ICommand ToggleActivityViewCommand { get; }
+
+        public ICommand MarkAllActivityReadCommand { get; }
+
+        public ICommand ShowConversationGoalHistoryCommand { get; }
+
+        public ICommand PauseConversationGoalCommand { get; }
+
+        public ICommand ResumeConversationGoalCommand { get; }
+
+        public ICommand EditConversationGoalCommand { get; }
+
+        public ICommand ClearConversationGoalCommand { get; }
+
         public ICommand OpenConversationFindCommand { get; }
 
         public ICommand CloseConversationFindCommand { get; }
@@ -309,6 +371,8 @@ namespace ColorVision.Copilot
             : "添加附件";
 
         public ICommand CopyMessageCommand { get; }
+
+        public ICommand OpenCodeReviewPaneCommand { get; }
 
         public ICommand CopyLatestResponseCommand { get; }
 

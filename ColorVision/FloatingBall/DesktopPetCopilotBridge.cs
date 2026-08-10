@@ -114,11 +114,11 @@ namespace ColorVision.FloatingBall
 
         private void HandleCompletedRun(CopilotHostedAgentRun run)
         {
-            var completionKind = ResolveCompletionKind(run);
-            _activityTracker.RecordCompletion(run.ConversationId, completionKind);
+            var completionState = CopilotAgentRunActivityPolicy.ResolveCompletionState(run);
+            _activityTracker.RecordCompletion(run.ConversationId, completionState);
             ReconcileAndApply();
 
-            if (completionKind is DesktopPetCopilotCompletionKind.Cancelled or DesktopPetCopilotCompletionKind.Paused
+            if (completionState is CopilotConversationActivityState.None or CopilotConversationActivityState.NeedsInput
                 || !DesktopPetConfig.Instance.ShowCopilotNotifications)
             {
                 return;
@@ -126,46 +126,12 @@ namespace ColorVision.FloatingBall
 
             _desktopPetService.Notify(
                 "Copilot",
-                completionKind == DesktopPetCopilotCompletionKind.Blocked
+                completionState == CopilotConversationActivityState.Blocked
                     ? "任务执行失败，点击宠物打开 Copilot 查看详情。"
                     : "任务已经完成，点击宠物打开 Copilot 查看结果。",
-                completionKind == DesktopPetCopilotCompletionKind.Blocked
+                completionState == CopilotConversationActivityState.Blocked
                     ? DesktopPetNotificationKind.Error
                     : DesktopPetNotificationKind.Success);
-        }
-
-        internal static DesktopPetCopilotCompletionKind ResolveCompletionKind(CopilotHostedAgentRun run)
-        {
-            ArgumentNullException.ThrowIfNull(run);
-            if (!run.Completion.IsCompleted)
-                throw new InvalidOperationException("The desktop pet can classify a Copilot run only after it completes.");
-
-            if (run.Completion.IsCanceled)
-            {
-                return run.RunControl?.Intent == CopilotAgentControlIntent.Pause
-                    ? DesktopPetCopilotCompletionKind.Paused
-                    : DesktopPetCopilotCompletionKind.Cancelled;
-            }
-
-            if (run.Completion.IsFaulted)
-                return DesktopPetCopilotCompletionKind.Blocked;
-
-            return run.AgentStopReason switch
-            {
-                CopilotAgentStopReason.AwaitingUser or CopilotAgentStopReason.Paused
-                    => DesktopPetCopilotCompletionKind.Paused,
-                CopilotAgentStopReason.Cancelled
-                    => DesktopPetCopilotCompletionKind.Cancelled,
-                CopilotAgentStopReason.ApprovalDenied
-                    or CopilotAgentStopReason.BudgetExhausted
-                    or CopilotAgentStopReason.TaskPassLimit
-                    or CopilotAgentStopReason.Blocked
-                    or CopilotAgentStopReason.IncompleteOutput
-                    or CopilotAgentStopReason.ProviderFailure
-                    or CopilotAgentStopReason.Interrupted
-                    => DesktopPetCopilotCompletionKind.Blocked,
-                _ => DesktopPetCopilotCompletionKind.Ready,
-            };
         }
 
         private void ReconcileAndApply(IReadOnlyList<ConfirmableAction>? pendingActions = null)

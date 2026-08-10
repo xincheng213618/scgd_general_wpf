@@ -225,6 +225,10 @@ namespace ColorVision.Copilot
 
         public string ConfiguredDeveloperInstructions { get; init; } = string.Empty;
 
+        internal string GlobalInstructionRootPath { get; init; } = string.Empty;
+
+        internal CopilotProjectInstructionDiscoveryOptions? ProjectInstructionDiscoveryOptions { get; init; }
+
         internal CopilotCodexWebSearchMode CodexWebSearchMode { get; init; } =
             CopilotCodexWebSearchMode.Unspecified;
 
@@ -464,6 +468,8 @@ namespace ColorVision.Copilot
                 TrustedProjectRootPaths = trustedProjectRootPaths,
                 ActiveDocumentPath = hostContext.ActiveDocumentPath,
                 ConfiguredDeveloperInstructions = hostContext.ProjectInstructionDiscoveryOptions.DeveloperInstructions,
+                GlobalInstructionRootPath = hostContext.GlobalInstructionRootPath,
+                ProjectInstructionDiscoveryOptions = hostContext.ProjectInstructionDiscoveryOptions,
                 CodexWebSearchMode = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredWebSearchMode,
                 CodexSandboxMode = codexSandboxMode,
                 CodexShellToolEnabled = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredShellToolEnabled,
@@ -636,6 +642,16 @@ namespace ColorVision.Copilot
                     : string.Empty,
                 CodexModelVerbosity = plan.CodexModelVerbosity,
                 ProjectInstructions = plan.ProjectInstructions,
+                ReviewProjectInstructionContext = plan.Mode == CopilotAgentMode.Review
+                    && plan.ProjectInstructionDiscoveryOptions != null
+                        ? new CopilotReviewProjectInstructionContext(
+                            plan.GlobalInstructionRootPath,
+                            plan.ProjectInstructionDiscoveryOptions,
+                            plan.ProjectInstructions)
+                        : null,
+                ReviewEvidenceContext = plan.Mode == CopilotAgentMode.Review
+                    ? new CopilotReviewEvidenceContext()
+                    : null,
                 ReadableLocalFilePaths = plan.ReadableLocalFilePaths,
                 ReadableLocalDirectoryPaths = plan.ReadableLocalDirectoryPaths,
                 WritableLocalRootPaths = plan.WritableLocalRootPaths,

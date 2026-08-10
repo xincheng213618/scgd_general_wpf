@@ -5,18 +5,13 @@ namespace ColorVision.Copilot.Tests;
 
 public sealed class DesktopPetCopilotActivityTrackerTests
 {
-    private const int CompletionReady = (int)DesktopPetCopilotCompletionKind.Ready;
-    private const int CompletionBlocked = (int)DesktopPetCopilotCompletionKind.Blocked;
-    private const int CompletionPaused = (int)DesktopPetCopilotCompletionKind.Paused;
-    private const int CompletionCancelled = (int)DesktopPetCopilotCompletionKind.Cancelled;
-
     [Fact]
     public void ActivitiesFollowCodexNeedsInputBlockedReadyRunningPriority()
     {
         var tracker = new DesktopPetCopilotActivityTracker();
         var now = DateTimeOffset.Parse("2026-07-25T12:00:00Z");
-        tracker.RecordCompletion("ready-chat", DesktopPetCopilotCompletionKind.Ready, now.AddMinutes(1));
-        tracker.RecordCompletion("blocked-chat", DesktopPetCopilotCompletionKind.Blocked, now);
+        tracker.RecordCompletion("ready-chat", CopilotConversationActivityState.Ready, now.AddMinutes(1));
+        tracker.RecordCompletion("blocked-chat", CopilotConversationActivityState.Blocked, now);
         tracker.ReconcileActive("running-chat", needsInput: false, now.AddMinutes(2));
 
         Assert.Equal(
@@ -37,7 +32,7 @@ public sealed class DesktopPetCopilotActivityTrackerTests
         var tracker = new DesktopPetCopilotActivityTracker();
         tracker.ReconcileActive("active-chat", needsInput: false);
 
-        tracker.RecordCompletion("cancelled-queued-chat", DesktopPetCopilotCompletionKind.Cancelled);
+        tracker.RecordCompletion("cancelled-queued-chat", CopilotConversationActivityState.None);
         tracker.ReconcileActive("active-chat", needsInput: false);
 
         var primary = Assert.Single(tracker.Snapshot());
@@ -50,7 +45,7 @@ public sealed class DesktopPetCopilotActivityTrackerTests
     {
         var tracker = new DesktopPetCopilotActivityTracker();
         tracker.ReconcileActive("running-chat", needsInput: false);
-        tracker.RecordCompletion("ready-chat", DesktopPetCopilotCompletionKind.Ready);
+        tracker.RecordCompletion("ready-chat", CopilotConversationActivityState.Ready);
 
         Assert.Equal("ready-chat", tracker.Snapshot()[0].ConversationId);
         Assert.True(tracker.MarkViewed("ready-chat"));
@@ -64,7 +59,7 @@ public sealed class DesktopPetCopilotActivityTrackerTests
     public void PausedConversationRemainsVisibleWithoutAnActiveRun()
     {
         var tracker = new DesktopPetCopilotActivityTracker();
-        tracker.RecordCompletion("paused-chat", DesktopPetCopilotCompletionKind.Paused);
+        tracker.RecordCompletion("paused-chat", CopilotConversationActivityState.NeedsInput);
 
         tracker.ReconcileActive(null, needsInput: false);
 
@@ -74,15 +69,15 @@ public sealed class DesktopPetCopilotActivityTrackerTests
     }
 
     [Theory]
-    [InlineData(false, false, CopilotAgentControlIntent.None, CompletionReady)]
-    [InlineData(true, false, CopilotAgentControlIntent.None, CompletionBlocked)]
-    [InlineData(false, true, CopilotAgentControlIntent.Cancel, CompletionCancelled)]
-    [InlineData(false, true, CopilotAgentControlIntent.Pause, CompletionPaused)]
+    [InlineData(false, false, CopilotAgentControlIntent.None, CopilotConversationActivityState.Ready)]
+    [InlineData(true, false, CopilotAgentControlIntent.None, CopilotConversationActivityState.Blocked)]
+    [InlineData(false, true, CopilotAgentControlIntent.Cancel, CopilotConversationActivityState.None)]
+    [InlineData(false, true, CopilotAgentControlIntent.Pause, CopilotConversationActivityState.NeedsInput)]
     public void CompletedRunMapsToPetActivity(
         bool faulted,
         bool cancelled,
         CopilotAgentControlIntent controlIntent,
-        int expectedValue)
+        CopilotConversationActivityState expected)
     {
         var run = new CopilotHostedAgentRun("conversation", CopilotAgentMode.Auto);
         Assert.True(run.TryStart());
@@ -101,26 +96,26 @@ public sealed class DesktopPetCopilotActivityTrackerTests
             Assert.True(run.Completion.IsCanceled);
 
         Assert.Equal(
-            (DesktopPetCopilotCompletionKind)expectedValue,
-            DesktopPetCopilotBridge.ResolveCompletionKind(run));
+            expected,
+            CopilotAgentRunActivityPolicy.ResolveCompletionState(run));
     }
 
     [Theory]
-    [InlineData(CopilotAgentStopReason.None, CompletionReady)]
-    [InlineData(CopilotAgentStopReason.Completed, CompletionReady)]
-    [InlineData(CopilotAgentStopReason.AwaitingUser, CompletionPaused)]
-    [InlineData(CopilotAgentStopReason.Paused, CompletionPaused)]
-    [InlineData(CopilotAgentStopReason.Cancelled, CompletionCancelled)]
-    [InlineData(CopilotAgentStopReason.ApprovalDenied, CompletionBlocked)]
-    [InlineData(CopilotAgentStopReason.BudgetExhausted, CompletionBlocked)]
-    [InlineData(CopilotAgentStopReason.TaskPassLimit, CompletionBlocked)]
-    [InlineData(CopilotAgentStopReason.Blocked, CompletionBlocked)]
-    [InlineData(CopilotAgentStopReason.IncompleteOutput, CompletionBlocked)]
-    [InlineData(CopilotAgentStopReason.ProviderFailure, CompletionBlocked)]
-    [InlineData(CopilotAgentStopReason.Interrupted, CompletionBlocked)]
+    [InlineData(CopilotAgentStopReason.None, CopilotConversationActivityState.Ready)]
+    [InlineData(CopilotAgentStopReason.Completed, CopilotConversationActivityState.Ready)]
+    [InlineData(CopilotAgentStopReason.AwaitingUser, CopilotConversationActivityState.NeedsInput)]
+    [InlineData(CopilotAgentStopReason.Paused, CopilotConversationActivityState.NeedsInput)]
+    [InlineData(CopilotAgentStopReason.Cancelled, CopilotConversationActivityState.None)]
+    [InlineData(CopilotAgentStopReason.ApprovalDenied, CopilotConversationActivityState.Blocked)]
+    [InlineData(CopilotAgentStopReason.BudgetExhausted, CopilotConversationActivityState.Blocked)]
+    [InlineData(CopilotAgentStopReason.TaskPassLimit, CopilotConversationActivityState.Blocked)]
+    [InlineData(CopilotAgentStopReason.Blocked, CopilotConversationActivityState.Blocked)]
+    [InlineData(CopilotAgentStopReason.IncompleteOutput, CopilotConversationActivityState.Blocked)]
+    [InlineData(CopilotAgentStopReason.ProviderFailure, CopilotConversationActivityState.Blocked)]
+    [InlineData(CopilotAgentStopReason.Interrupted, CopilotConversationActivityState.Blocked)]
     public void StructuredAgentStopReasonMapsToPetActivity(
         CopilotAgentStopReason stopReason,
-        int expectedValue)
+        CopilotConversationActivityState expected)
     {
         var run = new CopilotHostedAgentRun("conversation", CopilotAgentMode.Auto);
         Assert.True(run.TryStart());
@@ -130,7 +125,26 @@ public sealed class DesktopPetCopilotActivityTrackerTests
 
         Assert.Equal(stopReason, run.AgentStopReason);
         Assert.Equal(
-            (DesktopPetCopilotCompletionKind)expectedValue,
-            DesktopPetCopilotBridge.ResolveCompletionKind(run));
+            expected,
+            CopilotAgentRunActivityPolicy.ResolveCompletionState(run));
+    }
+
+    [Fact]
+    public void InterruptedFinalAnswerIsBlockedEvenWhenTheRunReportedCompleted()
+    {
+        var run = new CopilotHostedAgentRun("conversation", CopilotAgentMode.Auto);
+        Assert.True(run.TryStart());
+        run.SetAgentStopReason(CopilotAgentStopReason.Completed);
+        run.Complete(error: null);
+        var assistant = new CopilotChatMessage(CopilotChatRole.Assistant, "Partial result")
+        {
+            AgentStopReason = CopilotAgentStopReason.Completed,
+            WasResponseInterrupted = true,
+        };
+
+        Assert.True(assistant.HasRecoverableFinalAnswer);
+        Assert.Equal(
+            CopilotConversationActivityState.Blocked,
+            CopilotAgentRunActivityPolicy.ResolveCompletionState(run, assistant));
     }
 }

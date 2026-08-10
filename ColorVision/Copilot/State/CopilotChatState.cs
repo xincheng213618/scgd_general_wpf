@@ -7,7 +7,7 @@ namespace ColorVision.Copilot
 {
     public sealed class CopilotChatState
     {
-        public const int CurrentSchemaVersion = 38;
+        public const int CurrentSchemaVersion = 39;
 
         public int SchemaVersion { get; set; } = CurrentSchemaVersion;
 

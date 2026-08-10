@@ -46,6 +46,24 @@ public sealed class PluginUpdateCompatibilityTests
         Assert.Equal("1.4.10.80", selected.RequiresVersion);
     }
 
+    [Fact]
+    public void DetailLevelChangelogIsPreservedWhenCompactVersionOmitsDuplicateDocument()
+    {
+        MarketplacePluginDetail detail = new()
+        {
+            Changelog = "Compact update notes",
+            Versions = [new MarketplacePluginVersionInfo { Version = "2.0.0.0" }],
+        };
+
+        MarketplacePluginVersionInfo? selected = PluginUpdateCompatibility.SelectLatestCompatibleVersion(
+            new Version(1, 0, 0, 0),
+            detail,
+            new Version(1, 4, 12, 27));
+
+        Assert.NotNull(selected);
+        Assert.Equal("Compact update notes", selected.ChangeLog);
+    }
+
     [Theory]
     [InlineData("invalid")]
     [InlineData("1.5.0.0")]
