@@ -36,7 +36,6 @@ Scripts\release.bat
 | 外部编译产物 | `py Scripts\package_cvxp.py --src-dir C:\path\to\MyPlugin\bin\x64\Release\net10.0-windows` |
 
 插件和项目包默认上传，并在上传流程结束后删除本地 `.cvxp`。构建和上传前会先校验 `manifest.json` 的插件 ID、DLL 路径和文件大小；需要在 CI 或发布前单独检查时使用 `--validate-only`。校验通过后，打包再读取 `Scripts/shared_files.json`，剔除宿主已共享文件和 `.pdb`，生成 `.cvxp`。仓库内 `Plugins/`、`Projects/` 的默认打包路径会先将该集合与当前 Release x64 宿主输出比较；发生双向漂移就拒绝打包。外部 `--src-dir` 和显式 `--shared-files` 仍保留离线兼容行为。
-
 `Scripts/shared_files.json` 与 `SDK/ColorVision.PluginKit/scripts/shared_files.json` 是同一份派生集合的两个消费镜像，不要手工编辑。生成器一次扫描后同步两份文件；集合未变化时不会仅因 `generated_at` 重写。CI 和主程序发布都会基于刚构建的宿主输出执行 `--check`，因此宿主文件集合变化必须先刷新并提交两份镜像。
 
 存在清单时，`manifest.id` 是唯一的发布身份：它决定服务器目录、`.cvxp` 文件名前缀、包内根目录和最终的 `Plugins/<id>/` 安装目录；`dllpath` 只决定用于读取版本并启动插件的主 DLL。因此第三方插件不需要让项目名、程序集名和插件 ID 完全相同。

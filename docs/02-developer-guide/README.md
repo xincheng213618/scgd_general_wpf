@@ -15,6 +15,7 @@
 | 新增 Flow 节点或扩展点 | [扩展点](../04-api-reference/extensions/README.md)、[Flow 节点扩展](../04-api-reference/extensions/flow-node.md) |
 | 维护插件市场后端 | [插件市场后端](./backend/README.md) |
 | 维护 Copilot Agent 或工具执行链 | [Copilot Agent Runtime](./core-concepts/copilot-agent-runtime.md) |
+| 维护 Copilot 对话 UI 或状态 | [Copilot ViewModel 维护地图](./core-concepts/copilot-view-model-architecture.md) |
 | 维护本地 MCP 集成 | [ColorVision MCP](./core-concepts/colorvision-mcp.md) |
 
 ## 开发前确认
