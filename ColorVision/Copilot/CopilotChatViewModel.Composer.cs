@@ -188,10 +188,10 @@ namespace ColorVision.Copilot
                 return;
 
             _pendingAgentSkillReference = normalized;
-            if (!synchronizeDraft || _selectedConversation == null)
+            if (!synchronizeDraft || SelectedConversation == null)
                 return;
 
-            _selectedConversation.DraftAgentSkillReference = normalized?.CreateSnapshot();
+            SelectedConversation.DraftAgentSkillReference = normalized?.CreateSnapshot();
             _statePersistenceCoordinator.RequestSave();
         }
 

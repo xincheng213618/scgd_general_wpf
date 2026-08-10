@@ -162,13 +162,13 @@ namespace ColorVision.Copilot
             CopilotBackgroundShellCommandRegistry.Shared.OutputMonitorEvent -= BackgroundShellCommandRegistry_OutputMonitorEvent;
 
             Conversations.CollectionChanged -= Conversations_CollectionChanged;
-            if (_selectedConversation != null)
+            if (SelectedConversation != null)
             {
-                _selectedConversation.Attachments.CollectionChanged -= Attachments_CollectionChanged;
-                _selectedConversation.Messages.CollectionChanged -= Messages_CollectionChanged;
+                SelectedConversation.Attachments.CollectionChanged -= Attachments_CollectionChanged;
+                SelectedConversation.Messages.CollectionChanged -= Messages_CollectionChanged;
             }
-            if (_selectedProfile != null)
-                _selectedProfile.PropertyChanged -= SelectedProfile_PropertyChanged;
+            if (SelectedProfile != null)
+                SelectedProfile.PropertyChanged -= SelectedProfile_PropertyChanged;
 
             _conversationSearchDebounceTimer.Stop();
             _conversationSearchDebounceTimer.Tick -= ConversationSearchDebounceTimer_Tick;

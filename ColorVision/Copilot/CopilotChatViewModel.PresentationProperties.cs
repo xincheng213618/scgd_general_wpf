@@ -26,7 +26,7 @@ namespace ColorVision.Copilot
 {
     public partial class CopilotChatViewModel : ViewModelBase, IDisposable
     {
-        public ObservableCollection<CopilotConversationRecord> Conversations => _state.Conversations;
+        public ObservableCollection<CopilotConversationRecord> Conversations => _conversationSession.Conversations;
 
         public event EventHandler? ConversationSearchRequested;
 

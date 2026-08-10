@@ -43,6 +43,7 @@ namespace ColorVision.Copilot
         private readonly CopilotConfig _config;
         private readonly ICopilotChatStateStore _stateStore;
         private readonly CopilotChatStatePersistenceCoordinator _statePersistenceCoordinator;
+        private readonly CopilotConversationSession _conversationSession;
         private readonly CopilotQueuedFollowUpCoordinator _followUpQueue;
         private readonly ObservableCollection<CopilotChatMessage> _emptyMessages = new();
         private readonly ObservableCollection<CopilotAttachmentItem> _emptyAttachments = new();
@@ -60,8 +61,6 @@ namespace ColorVision.Copilot
         private CopilotNonBlockingCancellationSource? _composerReferenceRefreshCts;
         private CopilotLiveContext? _currentLiveContext;
         private CopilotChatState _state = new();
-        private CopilotConversationRecord? _selectedConversation;
-        private CopilotProfileConfig? _selectedProfile;
         private CopilotAgentMode? _pendingRequestModeOverride;
         private CopilotWorkspaceReviewTargetContext? _pendingWorkspaceReviewTarget;
         private CopilotAgentRecoveryRequest? _pendingAgentRecoveryRequest;
@@ -115,17 +114,50 @@ namespace ColorVision.Copilot
         }
 
         public CopilotChatViewModel(CopilotChatService chatService, ICopilotChatStateStore stateStore)
+            : this(
+                chatService ?? throw new ArgumentNullException(nameof(chatService)),
+                stateStore ?? throw new ArgumentNullException(nameof(stateStore)),
+                CopilotConfig.Instance,
+                new CopilotTurnRuntime(chatService),
+                CopilotAgentTaskHost.Shared,
+                persistConfigChanges: true)
         {
-            _chatService = chatService ?? throw new ArgumentNullException(nameof(chatService));
+        }
+
+        internal CopilotChatViewModel(
+            CopilotChatService chatService,
+            ICopilotChatStateStore stateStore,
+            CopilotConfig config,
+            ICopilotTurnRuntime turnRuntime,
+            CopilotAgentTaskHost taskHost)
+            : this(
+                chatService ?? throw new ArgumentNullException(nameof(chatService)),
+                stateStore ?? throw new ArgumentNullException(nameof(stateStore)),
+                config ?? throw new ArgumentNullException(nameof(config)),
+                turnRuntime ?? throw new ArgumentNullException(nameof(turnRuntime)),
+                taskHost ?? throw new ArgumentNullException(nameof(taskHost)),
+                persistConfigChanges: false)
+        {
+        }
+
+        private CopilotChatViewModel(
+            CopilotChatService chatService,
+            ICopilotChatStateStore stateStore,
+            CopilotConfig config,
+            ICopilotTurnRuntime turnRuntime,
+            CopilotAgentTaskHost taskHost,
+            bool persistConfigChanges)
+        {
+            _chatService = chatService;
             _conversationTitleCoordinator = new CopilotConversationTitleCoordinator(
                 new CopilotConversationTitleGenerator(_chatService),
                 ApplyGeneratedConversationTitleAsync);
             _goalCompletionEvaluator = new CopilotGoalCompletionEvaluator(_chatService);
-            _turnRuntime = new CopilotTurnRuntime(_chatService);
-            _taskHost = CopilotAgentTaskHost.Shared;
+            _turnRuntime = turnRuntime;
+            _taskHost = taskHost;
             _localGitDiffService = new CopilotLocalGitDiffService();
-            _config = CopilotConfig.Instance;
-            _stateStore = stateStore ?? throw new ArgumentNullException(nameof(stateStore));
+            _config = config;
+            _stateStore = stateStore;
             _statePersistenceCoordinator = new CopilotChatStatePersistenceCoordinator(
                 _stateStore,
                 () => _state,
@@ -156,7 +188,7 @@ namespace ColorVision.Copilot
             CopilotMcpConfirmationStore.Instance.ActionStatusChanged += ConfirmationStore_ActionStatusChanged;
             CopilotAgentSkillCatalog.CatalogChanged -= AgentSkillCatalog_CatalogChanged;
             CopilotAgentSkillCatalog.CatalogChanged += AgentSkillCatalog_CatalogChanged;
-            if (_config.EnsureInitialized())
+            if (_config.EnsureInitialized() && persistConfigChanges)
                 PersistConfig();
 
             _state = _stateStore.Load();
@@ -166,6 +198,7 @@ namespace ColorVision.Copilot
                 _state,
                 DateTimeOffset.UtcNow);
             _stateStore.CleanupOrphanedAttachments(_state);
+            _conversationSession = new CopilotConversationSession(_state, _config);
             _followUpQueue = new CopilotQueuedFollowUpCoordinator(_state, _taskHost);
             _followUpQueue.Changed += FollowUpQueue_Changed;
             WeakEventManager<CopilotAgentTaskHost, CopilotAgentTaskHostChangedEventArgs>.RemoveHandler(_taskHost, nameof(CopilotAgentTaskHost.Changed), TaskHost_Changed);

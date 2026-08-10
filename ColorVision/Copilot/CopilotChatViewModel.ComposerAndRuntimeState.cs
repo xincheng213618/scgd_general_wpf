@@ -212,7 +212,7 @@ namespace ColorVision.Copilot
 
         public CopilotConversationRecord? SelectedConversation
         {
-            get => _selectedConversation;
+            get => _conversationSession.SelectedConversation;
             set => SelectConversation(value, persist: true);
         }
 
@@ -249,7 +249,7 @@ namespace ColorVision.Copilot
 
         public CopilotProfileConfig? SelectedProfile
         {
-            get => _selectedProfile;
+            get => _conversationSession.SelectedProfile;
             set => SelectProfile(value, syncConversation: true, persist: true);
         }
 

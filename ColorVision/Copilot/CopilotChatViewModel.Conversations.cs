@@ -264,7 +264,8 @@ namespace ColorVision.Copilot
 
         private void SelectConversation(CopilotConversationRecord? conversation, bool persist, string? preferredProfileId = null)
         {
-            if (conversation?.IsArchived == true)
+            if (conversation?.IsArchived == true
+                || (conversation != null && !Conversations.Contains(conversation)))
                 return;
 
             if (IsPromptHistorySearchOpen)
@@ -273,28 +274,45 @@ namespace ColorVision.Copilot
             if (conversation != null && HasConversationSearchQuery && !FilteredConversations.Contains(conversation))
                 ConversationSearchText = string.Empty;
 
-            if (ReferenceEquals(_selectedConversation, conversation))
+            var previousConversation = SelectedConversation;
+            var conversationChanged = !ReferenceEquals(previousConversation, conversation);
+            if (conversationChanged && IsEditingMessage)
+                CancelMessageEdit();
+
+            if (conversationChanged && previousConversation != null)
             {
-                if (!string.IsNullOrWhiteSpace(preferredProfileId))
+                previousConversation.Attachments.CollectionChanged -= Attachments_CollectionChanged;
+                previousConversation.Messages.CollectionChanged -= Messages_CollectionChanged;
+                CopilotConversationFindSession.ClearHighlights(previousConversation.Messages);
+            }
+
+            var selection = _conversationSession.SelectConversation(
+                conversation,
+                preferredProfileId);
+            if (!selection.IsAccepted)
+                return;
+
+            var selectedConversation = selection.SelectedConversation;
+            if (!selection.ConversationChanged)
+            {
+                ApplySelectedProfileTransition(
+                    selection.PreviousProfile,
+                    selection.SelectedProfile);
+                var shouldPersistSameSelection = persist && selection.StateChanged;
+                if (selection.ConversationProfileChanged && selectedConversation != null)
+                    selectedConversation.RefreshSummary();
+                if (selectedConversation != null
+                    && EnsureAssistantHeaders(selectedConversation, selection.SelectedProfile))
                 {
-                    var preferredProfile = ResolveProfile(preferredProfileId) ?? ResolveProfile(_selectedConversation?.ProfileId);
-                    SelectProfile(preferredProfile, syncConversation: true, persist: false);
+                    shouldPersistSameSelection = true;
                 }
                 RefreshConversationFind();
+                RefreshComposerTokenEstimate();
+                if (shouldPersistSameSelection)
+                    PersistState();
                 return;
             }
 
-            if (IsEditingMessage)
-                CancelMessageEdit();
-
-            if (_selectedConversation != null)
-                _selectedConversation.Attachments.CollectionChanged -= Attachments_CollectionChanged;
-
-            if (_selectedConversation != null)
-                _selectedConversation.Messages.CollectionChanged -= Messages_CollectionChanged;
-
-            CopilotConversationFindSession.ClearHighlights(_selectedConversation?.Messages);
-            _selectedConversation = conversation;
             _pendingAgentSkillReference = null;
             _pendingRequestModeOverride = conversation?.DraftRequestMode is { } restoredMode
                 && restoredMode != CopilotAgentMode.Auto
@@ -306,15 +324,15 @@ namespace ColorVision.Copilot
                     : null;
             _promptHistoryNavigator.Reset();
             DismissLocalCommandResult();
-            if (_selectedConversation != null)
-                _selectedConversation.Attachments.CollectionChanged += Attachments_CollectionChanged;
+            if (selectedConversation != null)
+            {
+                selectedConversation.Attachments.CollectionChanged += Attachments_CollectionChanged;
+                selectedConversation.Messages.CollectionChanged += Messages_CollectionChanged;
+            }
 
-            if (_selectedConversation != null)
-                _selectedConversation.Messages.CollectionChanged += Messages_CollectionChanged;
-
-            InputText = _selectedConversation?.DraftText ?? string.Empty;
+            InputText = selectedConversation?.DraftText ?? string.Empty;
             SetPendingAgentSkillReference(
-                _selectedConversation?.DraftAgentSkillReference,
+                selectedConversation?.DraftAgentSkillReference,
                 synchronizeDraft: false);
 
             OnPropertyChanged(nameof(SelectedConversation));
@@ -334,26 +352,17 @@ namespace ColorVision.Copilot
             RefreshCompletionNotice();
             PublishSelectedTaskEventJournal();
 
-            _state.ActiveConversationId = conversation?.Id ?? string.Empty;
-
-            var profile = ResolveProfile(preferredProfileId)
-                ?? ResolveProfile(conversation?.ProfileId)
-                ?? ResolveProfile(_state.ActiveProfileId)
-                ?? _config.GetPreferredDefaultProfile();
-
-            SelectProfile(profile, syncConversation: false, persist: false);
+            ApplySelectedProfileTransition(
+                selection.PreviousProfile,
+                selection.SelectedProfile);
             OnComposerRequestModeChanged();
 
-            var shouldPersist = persist;
+            var shouldPersist = persist && selection.StateChanged;
+            if (selection.ConversationProfileChanged && selectedConversation != null)
+                selectedConversation.RefreshSummary();
 
-            if (conversation != null && profile != null)
-            {
-                conversation.ProfileId = profile.Id;
-                conversation.ProfileDisplayName = profile.DisplayLabel;
-                conversation.RefreshSummary();
-            }
-
-            if (conversation != null && EnsureAssistantHeaders(conversation, profile))
+            if (selectedConversation != null
+                && EnsureAssistantHeaders(selectedConversation, selection.SelectedProfile))
                 shouldPersist = true;
 
             InvalidateChatAttachmentTokenEstimate();
@@ -368,7 +377,7 @@ namespace ColorVision.Copilot
 
         private void UpdateSelectedConversationDraft(string draftText)
         {
-            var conversation = _selectedConversation;
+            var conversation = SelectedConversation;
             if (conversation == null || string.Equals(conversation.DraftText, draftText, StringComparison.Ordinal))
                 return;
 
@@ -384,32 +393,27 @@ namespace ColorVision.Copilot
 
         private void SelectProfile(CopilotProfileConfig? profile, bool syncConversation, bool persist)
         {
-            if (ReferenceEquals(_selectedProfile, profile))
+            var selection = _conversationSession.SelectProfile(
+                profile,
+                synchronizeConversation: syncConversation);
+            if (!selection.Changed)
                 return;
 
-            if (_selectedProfile != null)
-                _selectedProfile.PropertyChanged -= SelectedProfile_PropertyChanged;
-
-            _selectedProfile = profile;
-            if (_selectedProfile != null)
-                _selectedProfile.PropertyChanged += SelectedProfile_PropertyChanged;
-
-            OnPropertyChanged(nameof(SelectedProfile));
-            OnPropertyChanged(nameof(SelectedProfileToolTip));
-            RefreshSelectedProfileReasoningState();
-
-            _state.ActiveProfileId = profile?.Id ?? string.Empty;
-
-            var shouldPersist = persist;
-
-            if (syncConversation && SelectedConversation != null && profile != null)
+            ApplySelectedProfileTransition(
+                selection.PreviousProfile,
+                selection.SelectedProfile);
+            var shouldPersist = persist && selection.StateChanged;
+            if (selection.ConversationProfileChanged
+                && selection.SelectedConversation != null)
             {
-                SelectedConversation.ProfileId = profile.Id;
-                SelectedConversation.ProfileDisplayName = profile.DisplayLabel;
-                SelectedConversation.RefreshSummary();
+                selection.SelectedConversation.RefreshSummary();
 
-                if (EnsureAssistantHeaders(SelectedConversation, profile))
+                if (EnsureAssistantHeaders(
+                    selection.SelectedConversation,
+                    selection.SelectedProfile))
+                {
                     shouldPersist = true;
+                }
             }
 
             if (shouldPersist)
@@ -418,8 +422,40 @@ namespace ColorVision.Copilot
             RefreshComposerTokenEstimate();
         }
 
+        private void ApplySelectedProfileTransition(
+            CopilotProfileConfig? previousProfile,
+            CopilotProfileConfig? selectedProfile)
+        {
+            if (ReferenceEquals(previousProfile, selectedProfile))
+                return;
+
+            if (previousProfile != null)
+                previousProfile.PropertyChanged -= SelectedProfile_PropertyChanged;
+            if (selectedProfile != null)
+                selectedProfile.PropertyChanged += SelectedProfile_PropertyChanged;
+
+            OnPropertyChanged(nameof(SelectedProfile));
+            OnPropertyChanged(nameof(SelectedProfileToolTip));
+            RefreshSelectedProfileReasoningState();
+        }
+
         private void SelectedProfile_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
+            if (e.PropertyName == nameof(CopilotProfileConfig.DisplayLabel)
+                && sender is CopilotProfileConfig profile
+                && ReferenceEquals(profile, SelectedProfile)
+                && SelectedConversation is { } conversation
+                && string.Equals(conversation.ProfileId, profile.Id, StringComparison.Ordinal)
+                && !string.Equals(
+                    conversation.ProfileDisplayName,
+                    profile.DisplayLabel,
+                    StringComparison.Ordinal))
+            {
+                conversation.ProfileDisplayName = profile.DisplayLabel;
+                UpdateConversationMetadata(conversation, touch: false);
+                _statePersistenceCoordinator.RequestSave();
+            }
+
             if (e.PropertyName is nameof(CopilotProfileConfig.ReasoningMode)
                 or nameof(CopilotProfileConfig.ReasoningLabel)
                 or nameof(CopilotProfileConfig.VendorType)
@@ -446,16 +482,13 @@ namespace ColorVision.Copilot
             if (SelectedConversation != null)
                 return SelectedConversation;
 
-            var conversation = CreateConversation();
+            var conversation = _conversationSession.CreateConversation();
             SelectConversation(conversation, persist: false);
             return conversation;
         }
 
-        private CopilotConversationRecord CreateConversation()
-        {
-            var profile = SelectedProfile ?? ResolveProfile(_state.ActiveProfileId) ?? _config.GetPreferredDefaultProfile();
-            return CopilotConversationService.Create(Conversations, profile);
-        }
+        private CopilotConversationRecord CreateConversation() =>
+            _conversationSession.CreateConversation();
 
         private static CopilotProfileConfig CreateConversationRequestProfile(
             CopilotProfileConfig profile,
@@ -495,12 +528,6 @@ namespace ColorVision.Copilot
         {
             if (touch)
                 conversation.Touch();
-
-            if (SelectedProfile != null)
-            {
-                conversation.ProfileId = SelectedProfile.Id;
-                conversation.ProfileDisplayName = SelectedProfile.DisplayLabel;
-            }
 
             conversation.RefreshSummary();
             RefreshFilteredConversations();
