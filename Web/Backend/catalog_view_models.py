@@ -399,8 +399,11 @@ def build_plugin_detail_api_result(
             {
                 "version": pkg["version"],
                 "requiresVersion": info["requires"],
-                "changeLog": changelog,
-                "changeLogHtml": changelog_html,
+                # The same complete changelog is already present at the plugin
+                # level. Keep the legacy fields without duplicating a large
+                # document once for every package version.
+                "changeLog": None,
+                "changeLogHtml": None,
                 "fileSize": pkg["size"],
                 "fileHash": pkg.get("fileHash"),
                 "hashPending": bool(pkg.get("hashPending")),
@@ -414,8 +417,8 @@ def build_plugin_detail_api_result(
             {
                 "version": pkg["version"],
                 "requiresVersion": info["requires"],
-                "changeLog": changelog,
-                "changeLogHtml": changelog_html,
+                "changeLog": None,
+                "changeLogHtml": None,
                 "fileSize": pkg["size"],
                 "fileHash": pkg.get("fileHash"),
                 "hashPending": bool(pkg.get("hashPending")),
@@ -424,6 +427,38 @@ def build_plugin_detail_api_result(
                 "source": pkg.get("source", "archive"),
             }
             for pkg in info["historical_packages"]
+        ],
+    }
+
+
+def build_plugin_update_metadata_api_result(info: PluginItem) -> dict[str, Any]:
+    """Build the bounded plugin projection used by desktop update checks."""
+
+    def build_version(pkg: dict[str, Any], default_source: str) -> dict[str, Any]:
+        return {
+            "version": pkg["version"],
+            "requiresVersion": info["requires"],
+            "fileSize": pkg["size"],
+            "fileHash": pkg.get("fileHash"),
+            "hashPending": bool(pkg.get("hashPending")),
+            "downloadCount": 0,
+            "createdAt": pkg["modified"],
+            "source": pkg.get("source", default_source),
+        }
+
+    return {
+        "pluginId": info["id"],
+        "latestVersion": info["version"],
+        "requiresVersion": info["requires"],
+        # Keep release notes once at the plugin level. The full detail response
+        # repeats the same document for every package version and can grow to
+        # many megabytes for long-lived plugins.
+        "changelog": info["changelog"],
+        "versions": [
+            build_version(pkg, "current") for pkg in info["current_packages"]
+        ],
+        "archivedVersions": [
+            build_version(pkg, "archive") for pkg in info["historical_packages"]
         ],
     }
 

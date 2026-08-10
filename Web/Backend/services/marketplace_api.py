@@ -12,6 +12,7 @@ from catalog_view_models import (
     ALLOWED_CATALOG_SORT_ORDERS,
     build_plugin_detail_api_result,
     build_plugin_search_api_result,
+    build_plugin_update_metadata_api_result,
     collect_catalog_categories,
     normalize_catalog_sort_name,
 )
@@ -106,6 +107,8 @@ class MarketplaceCatalogService:
         self,
         plugin_id: str,
         request_context: RequestContext,
+        *,
+        view: str = "full",
     ) -> dict[str, Any] | None:
         info = self._data.get_plugin_info(
             plugin_id,
@@ -113,6 +116,8 @@ class MarketplaceCatalogService:
         )
         if not info:
             return None
+        if view == "update":
+            return build_plugin_update_metadata_api_result(info)
         return build_plugin_detail_api_result(
             info,
             icon_url_builder=self.icon_url,

@@ -614,6 +614,41 @@ class MarketplaceAppTests(unittest.TestCase):
         self.assertIn("richer detail", payload["changelog"])
         self.assertEqual(payload["versions"][0]["source"], "current")
         self.assertEqual(payload["archivedVersions"][0]["source"], "archive")
+        self.assertIsNone(payload["versions"][0]["changeLog"])
+        self.assertIsNone(payload["archivedVersions"][0]["changeLogHtml"])
+
+    def test_plugin_update_view_omits_repeated_documents_but_keeps_package_metadata(self):
+        self._create_plugin_archive_with_metadata(
+            "CompactUpdatePlugin",
+            "1.2.3",
+            manifest_text=(
+                '{"id":"CompactUpdatePlugin","name":"Compact Update Plugin",'
+                '"requires":"1.4.12.0"}'
+            ),
+            readme_text="# Large readme that update checks do not need",
+            changelog_text="## 1.2.3\n- compact release notes",
+        )
+
+        response = self.client.get("/api/plugins/CompactUpdatePlugin?view=update")
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertEqual(
+            set(payload),
+            {
+                "pluginId",
+                "latestVersion",
+                "requiresVersion",
+                "changelog",
+                "versions",
+                "archivedVersions",
+            },
+        )
+        self.assertEqual(payload["requiresVersion"], "1.4.12.0")
+        self.assertIn("compact release notes", payload["changelog"])
+        self.assertTrue(payload["versions"][0]["fileHash"])
+        self.assertNotIn("changeLog", payload["versions"][0])
+        self.assertNotIn("readme", payload)
 
     def test_plugin_detail_reuses_cached_package_hashes_when_detail_cache_is_cleared(self):
         self._create_plugin_archive_with_metadata(

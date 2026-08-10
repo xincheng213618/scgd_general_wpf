@@ -126,7 +126,11 @@ def register_marketplace_api_routes(app, ctx: MarketplaceApiRouteContext) -> Non
         """Get detailed plugin information."""
         if not ctx.services.storage.is_safe_id(plugin_id):
             abort(400, description="Invalid plugin_id")
-        info = ctx.services.catalog.detail(plugin_id, ctx.request_context_factory())
+        info = ctx.services.catalog.detail(
+            plugin_id,
+            ctx.request_context_factory(),
+            view=request.args.get("view", "full").strip().lower(),
+        )
         if not info:
             return jsonify({"error": "Plugin not found"}), 404
         return jsonify(info)
