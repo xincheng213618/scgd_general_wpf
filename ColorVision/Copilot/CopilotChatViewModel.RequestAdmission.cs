@@ -28,7 +28,7 @@ namespace ColorVision.Copilot
     {
         private CopilotAgentMode ResolveComposerRequestMode()
         {
-            return _pendingRequestModeOverride ?? CopilotAgentMode.Auto;
+            return _composerSession.RequestMode;
         }
 
         private static string FormatComposerRequestMode(CopilotAgentMode mode) => mode switch
@@ -86,94 +86,27 @@ namespace ColorVision.Copilot
             LocalCommandResultText = GetRequestAdmissionText(admission) + "。请求没有发送，请稍后重试。";
         }
 
-        private CopilotAgentMode ConsumeRequestModeOverride()
-        {
-            var mode = ResolveComposerRequestMode();
-            _pendingRequestModeOverride = null;
-            if (SelectedConversation != null)
-                SelectedConversation.DraftRequestMode = CopilotAgentMode.Auto;
-            OnComposerRequestModeChanged();
-            return mode;
-        }
-
         private void SetPendingRequestModeOverride(CopilotAgentMode mode)
         {
-            var normalized = Enum.IsDefined(mode) ? mode : CopilotAgentMode.Auto;
-            var clearedReviewTarget = false;
-            if (normalized != CopilotAgentMode.Review)
-            {
-                clearedReviewTarget = _pendingWorkspaceReviewTarget != null;
-                _pendingWorkspaceReviewTarget = null;
-                if (SelectedConversation?.DraftWorkspaceReviewTarget != null)
-                {
-                    SelectedConversation.DraftWorkspaceReviewTarget = null;
-                    clearedReviewTarget = true;
-                }
-            }
-            _pendingRequestModeOverride = normalized == CopilotAgentMode.Auto ? null : normalized;
-            if (SelectedConversation != null
-                && SelectedConversation.DraftRequestMode != normalized)
-            {
-                SelectedConversation.DraftRequestMode = normalized;
-                _statePersistenceCoordinator.RequestSave();
-            }
-            else if (clearedReviewTarget)
-            {
-                _statePersistenceCoordinator.RequestSave();
-            }
+            _composerSession.SetRequestMode(mode);
+            SynchronizeSelectedConversationComposerDraft();
             OnComposerRequestModeChanged();
         }
 
         private void ClearPendingRequestModeOverride()
         {
-            var changed = _pendingRequestModeOverride != null
-                || _pendingWorkspaceReviewTarget != null;
-            _pendingRequestModeOverride = null;
-            _pendingWorkspaceReviewTarget = null;
-            if (SelectedConversation?.DraftWorkspaceReviewTarget != null)
-            {
-                SelectedConversation.DraftWorkspaceReviewTarget = null;
-                changed = true;
-            }
-            if (SelectedConversation?.DraftRequestMode != CopilotAgentMode.Auto)
-            {
-                SelectedConversation!.DraftRequestMode = CopilotAgentMode.Auto;
-                changed = true;
-            }
-            if (!changed)
+            var sessionChanged = _composerSession.SetRequestMode(CopilotAgentMode.Auto);
+            var draftChanged = SynchronizeSelectedConversationComposerDraft();
+            if (!sessionChanged && !draftChanged)
                 return;
 
-            _statePersistenceCoordinator.RequestSave();
             OnComposerRequestModeChanged();
         }
 
         private void SetPendingWorkspaceReviewTarget(CopilotWorkspaceReviewTargetContext? target)
         {
-            _pendingWorkspaceReviewTarget = target?.IsStructurallyValid() == true
-                ? target.CreateSnapshot()
-                : null;
-            if (SelectedConversation != null)
-            {
-                SelectedConversation.DraftWorkspaceReviewTarget =
-                    _pendingWorkspaceReviewTarget?.CreateSnapshot();
-                _statePersistenceCoordinator.RequestSave();
-            }
-        }
-
-        private CopilotWorkspaceReviewTargetContext? ConsumePendingWorkspaceReviewTarget(
-            CopilotAgentMode requestMode)
-        {
-            var target = requestMode == CopilotAgentMode.Review
-                && _pendingWorkspaceReviewTarget?.IsStructurallyValid() == true
-                    ? _pendingWorkspaceReviewTarget.CreateSnapshot()
-                    : null;
-            _pendingWorkspaceReviewTarget = null;
-            if (SelectedConversation?.DraftWorkspaceReviewTarget != null)
-            {
-                SelectedConversation.DraftWorkspaceReviewTarget = null;
-                _statePersistenceCoordinator.RequestSave();
-            }
-            return target;
+            if (_composerSession.SetWorkspaceReviewTarget(target))
+                SynchronizeSelectedConversationComposerDraft();
         }
 
         private void OnComposerRequestModeChanged()

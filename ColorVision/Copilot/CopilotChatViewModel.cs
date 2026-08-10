@@ -44,6 +44,7 @@ namespace ColorVision.Copilot
         private readonly ICopilotChatStateStore _stateStore;
         private readonly CopilotChatStatePersistenceCoordinator _statePersistenceCoordinator;
         private readonly CopilotConversationSession _conversationSession;
+        private readonly CopilotComposerSession _composerSession = new();
         private readonly CopilotQueuedFollowUpCoordinator _followUpQueue;
         private readonly ObservableCollection<CopilotChatMessage> _emptyMessages = new();
         private readonly ObservableCollection<CopilotAttachmentItem> _emptyAttachments = new();
@@ -61,8 +62,6 @@ namespace ColorVision.Copilot
         private CopilotNonBlockingCancellationSource? _composerReferenceRefreshCts;
         private CopilotLiveContext? _currentLiveContext;
         private CopilotChatState _state = new();
-        private CopilotAgentMode? _pendingRequestModeOverride;
-        private CopilotWorkspaceReviewTargetContext? _pendingWorkspaceReviewTarget;
         private CopilotAgentRecoveryRequest? _pendingAgentRecoveryRequest;
         private string _activeDocumentPath = string.Empty;
         private CopilotProjectInstructionDiscoveryOptions _currentCodexConfigOptions =
@@ -85,7 +84,7 @@ namespace ColorVision.Copilot
         private string _conversationSearchText = string.Empty;
         private string _composerReferenceSessionKey = string.Empty;
         private string _promptHistorySearchConversationId = string.Empty;
-        private string _promptHistorySearchDraft = string.Empty;
+        private string _promptHistorySearchQuery = string.Empty;
         private CopilotPromptHistorySearchScope _promptHistorySearchScope;
         private bool _isComposerReferenceMentionActive;
         private bool _isComposerReferenceSearchPending;

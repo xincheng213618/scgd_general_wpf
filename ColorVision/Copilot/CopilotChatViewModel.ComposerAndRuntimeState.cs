@@ -356,30 +356,52 @@ namespace ColorVision.Copilot
 
         public string InputText
         {
-            get => _inputText;
+            get => IsPromptHistorySearchOpen
+                ? _promptHistorySearchQuery
+                : _composerSession.Text;
             set
             {
                 var normalizedValue = value ?? string.Empty;
-                if (SetProperty(ref _inputText, normalizedValue))
+                if (IsPromptHistorySearchOpen)
                 {
-                    RefreshPendingAgentSkillReference(normalizedValue);
-                    if (!_isApplyingPromptHistory)
-                        _promptHistoryNavigator.Reset();
-                    if (IsPromptHistorySearchOpen)
-                        RefreshPromptHistorySearchResults();
-                    else
-                        UpdateSelectedConversationDraft(normalizedValue);
-                    OnPropertyChanged(nameof(IsInputEmpty));
-                    RefreshLocalCommandSuggestions();
-                    OnPropertyChanged(nameof(CanSubmitUserQuestionAnswer));
-                    OnPropertyChanged(nameof(CanSteerCurrentRun));
-                    OnPropertyChanged(nameof(CanQueueCurrentRunFollowUp));
-                    RefreshComposerReferenceSuggestions();
-                    RefreshComposerTokenEstimate();
-                    NotifyPromptHistoryPrefixCompletionChanged();
-                    CommandManager.InvalidateRequerySuggested();
+                    if (string.Equals(
+                        _promptHistorySearchQuery,
+                        normalizedValue,
+                        StringComparison.Ordinal))
+                    {
+                        return;
+                    }
+
+                    _promptHistorySearchQuery = normalizedValue;
+                    NotifyComposerTextChanged(synchronizeDraft: false);
+                    return;
                 }
+
+                if (!_composerSession.SetText(normalizedValue))
+                    return;
+
+                NotifyComposerTextChanged(synchronizeDraft: !IsPromptHistorySearchOpen);
             }
+        }
+
+        private void NotifyComposerTextChanged(bool synchronizeDraft)
+        {
+            OnPropertyChanged(nameof(InputText));
+            if (!_isApplyingPromptHistory)
+                _promptHistoryNavigator.Reset();
+            if (IsPromptHistorySearchOpen)
+                RefreshPromptHistorySearchResults();
+            else if (synchronizeDraft)
+                SynchronizeSelectedConversationComposerDraft();
+            OnPropertyChanged(nameof(IsInputEmpty));
+            RefreshLocalCommandSuggestions();
+            OnPropertyChanged(nameof(CanSubmitUserQuestionAnswer));
+            OnPropertyChanged(nameof(CanSteerCurrentRun));
+            OnPropertyChanged(nameof(CanQueueCurrentRunFollowUp));
+            RefreshComposerReferenceSuggestions();
+            RefreshComposerTokenEstimate();
+            NotifyPromptHistoryPrefixCompletionChanged();
+            CommandManager.InvalidateRequerySuggested();
         }
 
         public int ComposerMaximumCharacters => CopilotConversationHistoryWindow.MaximumContentCharacterLimit;

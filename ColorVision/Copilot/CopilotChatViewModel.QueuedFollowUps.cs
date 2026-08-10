@@ -47,7 +47,8 @@ namespace ColorVision.Copilot
 
         private bool TryQueueCurrentRunFollowUp(bool runNext, bool cancelActiveRun)
         {
-            var prompt = (InputText ?? string.Empty).Trim();
+            var composerCapture = _composerSession.Capture();
+            var prompt = composerCapture.Text.Trim();
             var activeRun = ActiveHostedRun;
             var conversation = SelectedConversation;
             var profile = SelectedProfile;
@@ -71,15 +72,16 @@ namespace ColorVision.Copilot
                 ReportRequestAdmissionFailure(preflightAdmission);
                 return false;
             }
-            var agentSkillReference = ResolvePendingAgentSkillReference(prompt);
+            var agentSkillReference = composerCapture.AgentSkillReference;
+            var capturedAttachments = conversation.Attachments.ToArray();
             var initialSubmissionContext = CaptureHostedTurnSnapshot(
                 conversation,
-                attachmentOverride: conversation.Attachments);
+                attachmentOverride: capturedAttachments);
             if (!TryResolveProjectTrustForSubmission(
                 initialSubmissionContext,
                 () => CaptureHostedTurnSnapshot(
                     conversation,
-                    attachmentOverride: conversation.Attachments),
+                    attachmentOverride: capturedAttachments),
                 out var submissionContext))
             {
                 return false;
@@ -131,9 +133,13 @@ namespace ColorVision.Copilot
             }
 
             DismissLocalCommandResult();
-            ConsumeComposerAttachments(conversation);
-            InputText = string.Empty;
-            ClearPendingRequestModeOverride();
+            if (_composerSession.CommitScheduled(composerCapture.Token))
+            {
+                SynchronizeSelectedConversationComposerDraft();
+                ConsumeCapturedComposerAttachments(conversation, capturedAttachments);
+                NotifyComposerTextChanged(synchronizeDraft: false);
+                OnComposerRequestModeChanged();
+            }
             if (cancelActiveRun)
             {
                 var activeConversation = Conversations.FirstOrDefault(candidate =>
@@ -275,17 +281,9 @@ namespace ColorVision.Copilot
 
             if (ReferenceEquals(preparedTurn.Conversation, SelectedConversation))
             {
-                _pendingRequestModeOverride = preparedTurn.Conversation.DraftRequestMode == CopilotAgentMode.Auto
-                    ? null
-                    : preparedTurn.Conversation.DraftRequestMode;
-                _pendingWorkspaceReviewTarget = _pendingRequestModeOverride == CopilotAgentMode.Review
-                    && preparedTurn.Conversation.DraftWorkspaceReviewTarget?.IsStructurallyValid() == true
-                        ? preparedTurn.Conversation.DraftWorkspaceReviewTarget.CreateSnapshot()
-                        : null;
-                InputText = preparedTurn.Conversation.DraftText;
-                SetPendingAgentSkillReference(
-                    preparedTurn.Conversation.DraftAgentSkillReference,
-                    synchronizeDraft: false);
+                _composerSession.Load(preparedTurn.Conversation);
+                SynchronizeSelectedConversationComposerDraft();
+                NotifyComposerTextChanged(synchronizeDraft: false);
                 UpdateAttachmentsState(preparedTurn.Conversation);
                 OnComposerRequestModeChanged();
             }
@@ -363,7 +361,7 @@ namespace ColorVision.Copilot
 
             var composerState = queuedFollowUp.CreateComposerState();
             var previousMode = ResolveComposerRequestMode();
-            var previousReviewTarget = _pendingWorkspaceReviewTarget?.CreateSnapshot();
+            var previousReviewTarget = _composerSession.WorkspaceReviewTarget;
             foreach (var attachment in composerState.CreateAttachmentSnapshots())
                 conversation.Attachments.Add(attachment);
             SetPendingRequestModeOverride(composerState.RequestMode);
@@ -541,17 +539,9 @@ namespace ColorVision.Copilot
             if (conversation == null)
                 return;
 
-            _pendingRequestModeOverride = conversation.DraftRequestMode == CopilotAgentMode.Auto
-                ? null
-                : conversation.DraftRequestMode;
-            _pendingWorkspaceReviewTarget = _pendingRequestModeOverride == CopilotAgentMode.Review
-                && conversation.DraftWorkspaceReviewTarget?.IsStructurallyValid() == true
-                    ? conversation.DraftWorkspaceReviewTarget.CreateSnapshot()
-                    : null;
-            InputText = conversation.DraftText;
-            SetPendingAgentSkillReference(
-                conversation.DraftAgentSkillReference,
-                synchronizeDraft: false);
+            _composerSession.Load(conversation);
+            SynchronizeSelectedConversationComposerDraft();
+            NotifyComposerTextChanged(synchronizeDraft: false);
             UpdateAttachmentsState(conversation);
             OnComposerRequestModeChanged();
         }

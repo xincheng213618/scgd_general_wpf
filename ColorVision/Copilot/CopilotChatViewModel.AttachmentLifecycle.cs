@@ -39,13 +39,19 @@ namespace ColorVision.Copilot
             OnActiveDocumentStateChanged();
         }
 
-        private void ConsumeComposerAttachments(CopilotConversationRecord conversation)
+        private void ConsumeCapturedComposerAttachments(
+            CopilotConversationRecord conversation,
+            IReadOnlyList<CopilotAttachmentItem> capturedAttachments)
         {
-            if (conversation.Attachments.Count == 0)
+            if (capturedAttachments.Count == 0 || conversation.Attachments.Count == 0)
                 return;
 
-            conversation.Attachments.Clear();
-            UpdateAttachmentsState(conversation);
+            if (CopilotComposerAttachmentService.RemoveCapturedByReference(
+                    conversation.Attachments,
+                    capturedAttachments) > 0)
+            {
+                UpdateAttachmentsState(conversation);
+            }
         }
 
         private bool AttachExternalContextSnapshot(

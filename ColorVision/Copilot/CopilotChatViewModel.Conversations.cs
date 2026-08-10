@@ -313,15 +313,6 @@ namespace ColorVision.Copilot
                 return;
             }
 
-            _pendingAgentSkillReference = null;
-            _pendingRequestModeOverride = conversation?.DraftRequestMode is { } restoredMode
-                && restoredMode != CopilotAgentMode.Auto
-                    ? restoredMode
-                    : null;
-            _pendingWorkspaceReviewTarget = _pendingRequestModeOverride == CopilotAgentMode.Review
-                && conversation?.DraftWorkspaceReviewTarget?.IsStructurallyValid() == true
-                    ? conversation.DraftWorkspaceReviewTarget.CreateSnapshot()
-                    : null;
             _promptHistoryNavigator.Reset();
             DismissLocalCommandResult();
             if (selectedConversation != null)
@@ -330,10 +321,9 @@ namespace ColorVision.Copilot
                 selectedConversation.Messages.CollectionChanged += Messages_CollectionChanged;
             }
 
-            InputText = selectedConversation?.DraftText ?? string.Empty;
-            SetPendingAgentSkillReference(
-                selectedConversation?.DraftAgentSkillReference,
-                synchronizeDraft: false);
+            _composerSession.Load(selectedConversation);
+            SynchronizeSelectedConversationComposerDraft();
+            NotifyComposerTextChanged(synchronizeDraft: false);
 
             OnPropertyChanged(nameof(SelectedConversation));
             OnPropertyChanged(nameof(Messages));
@@ -375,20 +365,64 @@ namespace ColorVision.Copilot
                 PersistState();
         }
 
-        private void UpdateSelectedConversationDraft(string draftText)
+        private bool SynchronizeSelectedConversationComposerDraft()
         {
             var conversation = SelectedConversation;
-            if (conversation == null || string.Equals(conversation.DraftText, draftText, StringComparison.Ordinal))
-                return;
+            if (conversation == null)
+                return false;
 
             var hadDraft = conversation.HasDraft;
-            conversation.DraftText = draftText;
+            var textChanged = !string.Equals(
+                conversation.DraftText,
+                _composerSession.Text,
+                StringComparison.Ordinal);
+            var changed = textChanged;
+            if (textChanged)
+                conversation.DraftText = _composerSession.Text;
+
+            if (conversation.DraftRequestMode != _composerSession.RequestMode)
+            {
+                conversation.DraftRequestMode = _composerSession.RequestMode;
+                changed = true;
+            }
+
+            var reviewTarget = _composerSession.WorkspaceReviewTarget;
+            if (!ReviewTargetsEqual(conversation.DraftWorkspaceReviewTarget, reviewTarget))
+            {
+                conversation.DraftWorkspaceReviewTarget = reviewTarget;
+                changed = true;
+            }
+
+            var skillReference = _composerSession.AgentSkillReference;
+            if (!SkillReferencesEqual(conversation.DraftAgentSkillReference, skillReference))
+            {
+                conversation.DraftAgentSkillReference = skillReference;
+                changed = true;
+            }
+
+            if (!changed)
+                return false;
+
             if (hadDraft != conversation.HasDraft)
                 RefreshCompactHistoryConversations();
-            if (HasConversationSearchQuery)
+            if (textChanged && HasConversationSearchQuery)
                 RefreshFilteredConversations();
 
             _statePersistenceCoordinator.RequestSave();
+            return true;
+        }
+
+        private static bool ReviewTargetsEqual(
+            CopilotWorkspaceReviewTargetContext? left,
+            CopilotWorkspaceReviewTargetContext? right)
+        {
+            if (ReferenceEquals(left, right))
+                return true;
+            if (left == null || right == null)
+                return false;
+
+            return left.Target == right.Target
+                && string.Equals(left.Revision, right.Revision, StringComparison.Ordinal);
         }
 
         private void SelectProfile(CopilotProfileConfig? profile, bool syncConversation, bool persist)

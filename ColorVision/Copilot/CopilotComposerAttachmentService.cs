@@ -84,6 +84,26 @@ namespace ColorVision.Copilot
                 imageCount);
         }
 
+        public static int RemoveCapturedByReference(
+            IList<CopilotAttachmentItem> currentAttachments,
+            IReadOnlyList<CopilotAttachmentItem> capturedAttachments)
+        {
+            ArgumentNullException.ThrowIfNull(currentAttachments);
+            ArgumentNullException.ThrowIfNull(capturedAttachments);
+
+            var removedCount = 0;
+            for (var index = currentAttachments.Count - 1; index >= 0; index--)
+            {
+                var attachment = currentAttachments[index];
+                if (!capturedAttachments.Any(captured => ReferenceEquals(captured, attachment)))
+                    continue;
+
+                currentAttachments.RemoveAt(index);
+                removedCount++;
+            }
+            return removedCount;
+        }
+
         private static string? TryNormalizeFilePath(string filePath)
         {
             try

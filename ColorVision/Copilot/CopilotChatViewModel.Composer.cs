@@ -49,9 +49,6 @@ namespace ColorVision.Copilot
             PersistConfig();
             RefreshSelectedProfileReasoningState();
         }
-        private string _inputText = string.Empty;
-        private CopilotAgentSkillReference? _pendingAgentSkillReference;
-
         public string InputPlaceholder => IsPromptHistorySearchOpen
             ? $"搜索{PromptHistorySearchScopeLabel}的可见历史请求"
             : IsEditingMessage
@@ -168,37 +165,19 @@ namespace ColorVision.Copilot
             return !command.RequiresMoreInputAfterCompletion;
         }
 
-        private void RefreshPendingAgentSkillReference(string text)
+        private void SetPendingAgentSkillReference(CopilotAgentSkillReference? reference)
         {
-            if (_pendingAgentSkillReference != null
-                && !_pendingAgentSkillReference.IsExplicitlyInvokedBy(text))
-            {
-                SetPendingAgentSkillReference(null);
-            }
-        }
-
-        private void SetPendingAgentSkillReference(
-            CopilotAgentSkillReference? reference,
-            bool synchronizeDraft = true)
-        {
-            var normalized = reference?.IsStructurallyValid() == true
-                ? reference.CreateSnapshot()
-                : null;
-            if (SkillReferencesEqual(_pendingAgentSkillReference, normalized))
+            if (!_composerSession.SetAgentSkillReference(reference))
                 return;
 
-            _pendingAgentSkillReference = normalized;
-            if (!synchronizeDraft || SelectedConversation == null)
-                return;
-
-            SelectedConversation.DraftAgentSkillReference = normalized?.CreateSnapshot();
-            _statePersistenceCoordinator.RequestSave();
+            SynchronizeSelectedConversationComposerDraft();
         }
 
         private CopilotAgentSkillReference? ResolvePendingAgentSkillReference(string text)
         {
-            return _pendingAgentSkillReference?.IsExplicitlyInvokedBy(text) == true
-                ? _pendingAgentSkillReference.CreateSnapshot()
+            var reference = _composerSession.AgentSkillReference;
+            return reference?.IsExplicitlyInvokedBy(text) == true
+                ? reference
                 : null;
         }
 

@@ -519,11 +519,15 @@ namespace ColorVision.Copilot
             return true;
         }
 
-        private CopilotAgentRecoveryRequest? ConsumePendingAgentRecoveryRequest()
+        private CopilotAgentRecoveryRequest? CapturePendingAgentRecoveryRequest()
         {
-            var recovery = _pendingAgentRecoveryRequest;
-            _pendingAgentRecoveryRequest = null;
-            return recovery;
+            return _pendingAgentRecoveryRequest;
+        }
+
+        private void CommitPendingAgentRecoveryRequest(CopilotAgentRecoveryRequest? captured)
+        {
+            if (ReferenceEquals(_pendingAgentRecoveryRequest, captured))
+                _pendingAgentRecoveryRequest = null;
         }
     }
 }

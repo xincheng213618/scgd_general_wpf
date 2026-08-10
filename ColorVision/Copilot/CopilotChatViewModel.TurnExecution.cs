@@ -40,7 +40,8 @@ namespace ColorVision.Copilot
             }
 
             var isDirectSubmission = directPrompt != null;
-            var prompt = (directPrompt ?? InputText ?? string.Empty).Trim();
+            var composerCapture = isDirectSubmission ? null : _composerSession.Capture();
+            var prompt = (directPrompt ?? composerCapture!.Text).Trim();
             var modelPrompt = (directRequestContent ?? prompt).Trim();
             if (string.IsNullOrWhiteSpace(prompt))
                 return;
@@ -55,7 +56,9 @@ namespace ColorVision.Copilot
                 }
             }
 
-            var requestMode = directMode ?? ResolveComposerRequestMode();
+            var requestMode = directMode
+                ?? composerCapture?.RequestMode
+                ?? CopilotAgentMode.Auto;
             if (!CanScheduleComposerRequest(requestMode))
                 return;
 
@@ -101,7 +104,7 @@ namespace ColorVision.Copilot
             }
             var agentSkillReference = isDirectSubmission
                 ? null
-                : ResolvePendingAgentSkillReference(prompt);
+                : composerCapture?.AgentSkillReference;
             if (!TryPrepareExplicitSkillMcpDependencies(
                 prompt,
                 agentSkillReference,
@@ -144,12 +147,10 @@ namespace ColorVision.Copilot
 
             conversation.ProfileId = requestProfile.Id;
             conversation.ProfileDisplayName = requestProfile.DisplayLabel;
-            var recoveryRequest = isDirectSubmission ? null : ConsumePendingAgentRecoveryRequest();
-            if (!isDirectSubmission)
-                requestMode = ConsumeRequestModeOverride();
+            var recoveryRequest = isDirectSubmission ? null : CapturePendingAgentRecoveryRequest();
             var workspaceReviewTarget = isDirectSubmission
                 ? null
-                : ConsumePendingWorkspaceReviewTarget(requestMode);
+                : composerCapture?.WorkspaceReviewTarget;
             if (workspaceReviewTarget == null
                 && isReplacingTurn
                 && requestMode == CopilotAgentMode.Review
@@ -212,31 +213,29 @@ namespace ColorVision.Copilot
                         conversation.Messages.Insert(replacedUserIndex + 1, replacedAssistantMessage);
                     conversation.AgentSessionCheckpoint = previousCheckpoint;
                 }
-                if (!isDirectSubmission)
-                {
-                    _pendingAgentRecoveryRequest = recoveryRequest;
-                    SetPendingRequestModeOverride(requestMode);
-                    SetPendingWorkspaceReviewTarget(workspaceReviewTarget);
-                }
                 UpdateConversationMetadata(conversation, touch: true);
                 PersistState();
                 ReportRequestAdmissionFailure(admission);
-                if (!isDirectSubmission)
-                    OnComposerRequestModeChanged();
                 return;
             }
 
             if (automaticCompaction != CopilotAutomaticCompactionOutcome.Applied)
                 DismissLocalCommandResult();
+            if (!isDirectSubmission)
+                CommitPendingAgentRecoveryRequest(recoveryRequest);
             if (!isDirectSubmission && isReplacingTurn)
             {
                 _composerDraftBeforeMessageEdit = null;
                 SetMessageEditState(string.Empty, string.Empty);
             }
-            if (!isDirectSubmission)
+            if (!isDirectSubmission
+                && composerCapture != null
+                && _composerSession.CommitScheduled(composerCapture.Token))
             {
-                ConsumeComposerAttachments(conversation);
-                InputText = string.Empty;
+                SynchronizeSelectedConversationComposerDraft();
+                ConsumeCapturedComposerAttachments(conversation, requestAttachments);
+                NotifyComposerTextChanged(synchronizeDraft: false);
+                OnComposerRequestModeChanged();
             }
             await AwaitHostedRunCompletionAsync(hostedRun);
             if (!hostedRun.HasStarted)

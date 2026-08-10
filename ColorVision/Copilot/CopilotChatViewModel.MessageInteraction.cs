@@ -300,12 +300,13 @@ namespace ColorVision.Copilot
                     return;
             }
 
+            var composerCapture = _composerSession.Capture();
             _composerDraftBeforeMessageEdit = new CopilotComposerDraftSnapshot(
-                conversation.Id,
-                InputText,
-                ResolveComposerRequestMode(),
-                _pendingWorkspaceReviewTarget?.CreateSnapshot(),
-                _pendingAgentSkillReference?.CreateSnapshot(),
+                composerCapture.ConversationId,
+                composerCapture.Text,
+                composerCapture.RequestMode,
+                composerCapture.WorkspaceReviewTarget,
+                composerCapture.AgentSkillReference,
                 conversation.Attachments.Select(attachment => attachment.CreateSnapshot()).ToArray());
             var messageAttachments = (userMessage.AttachmentSnapshotCaptured
                     ? userMessage.Attachments
