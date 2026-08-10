@@ -196,9 +196,9 @@ namespace ColorVision.Copilot
 
         public ObservableCollection<CopilotPromptHistorySearchItem> PromptHistorySearchResults => _promptHistorySearchResults;
 
-        public ObservableCollection<ConfirmableAction> PendingActions => _pendingActions;
+        public ObservableCollection<ConfirmableAction> PendingActions => _approvalCoordinator.PendingActions;
 
-        public bool HasPendingActions => _pendingActions.Count > 0;
+        public bool HasPendingActions => PendingActions.Count > 0;
 
         public bool HasPendingActionFeedback => !string.IsNullOrWhiteSpace(PendingActionFeedbackText);
 
@@ -208,7 +208,7 @@ namespace ColorVision.Copilot
         {
             get
             {
-                var count = _pendingActions.Count;
+                var count = PendingActions.Count;
                 if (count == 0)
                     return "受保护操作";
 
@@ -222,16 +222,16 @@ namespace ColorVision.Copilot
         {
             get
             {
-                if (_pendingActions.Count == 0)
+                if (PendingActions.Count == 0)
                     return "当前没有等待确认的受保护操作。";
 
-                var nextDeadline = _pendingActions
+                var nextDeadline = PendingActions
                     .OrderBy(action => action.ExpiresAt)
                     .FirstOrDefault()?.ReviewDeadlineLabel ?? string.Empty;
 
-                var actionBehavior = _pendingActions.Any(action => action.ResumesAgentOnApproval)
+                var actionBehavior = PendingActions.Any(action => action.ResumesAgentOnApproval)
                     ? "批准后，Agent 将在同一任务中继续执行。"
-                    : _pendingActions.Any(action => action.ExecuteOnApproval)
+                    : PendingActions.Any(action => action.ExecuteOnApproval)
                         ? "批准后将立即在应用内执行；是否保存仍由你决定。"
                         : "外部 MCP 操作批准后，调用方仍需提交 confirm_action。";
                 return string.IsNullOrWhiteSpace(nextDeadline) ? actionBehavior : $"{actionBehavior} 最近一项{nextDeadline}。";
@@ -242,10 +242,10 @@ namespace ColorVision.Copilot
         {
             get
             {
-                if (_pendingActions.Count == 0)
+                if (PendingActions.Count == 0)
                     return PendingActionPanelSummary;
 
-                return string.Join(Environment.NewLine, _pendingActions.Select(action =>
+                return string.Join(Environment.NewLine, PendingActions.Select(action =>
                     $"{action.Title}｜来源：{action.RequesterLabel}｜任务：{action.TaskScopeLabel}｜风险：{action.RiskDisplayLabel}｜{action.ReviewDeadlineLabel}"));
             }
         }

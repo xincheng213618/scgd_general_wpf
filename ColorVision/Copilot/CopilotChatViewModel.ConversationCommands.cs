@@ -211,9 +211,7 @@ namespace ColorVision.Copilot
             return CopilotConversationRetentionPolicy.Evaluate(
                 conversation,
                 hasScheduledRun: _taskHost.FindRunByConversationId(conversationId) != null,
-                hasPendingApproval: CopilotMcpConfirmationStore.Instance
-                    .GetPendingActionsForConversation(conversationId)
-                    .Count > 0,
+                hasPendingApproval: _approvalCoordinator.HasPendingActionsForConversation(conversationId),
                 hasQueuedFollowUp: QueuedFollowUps.Any(item => string.Equals(
                     item.ConversationId,
                     conversationId,

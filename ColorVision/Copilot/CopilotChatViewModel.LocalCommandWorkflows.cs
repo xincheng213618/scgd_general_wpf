@@ -320,7 +320,7 @@ namespace ColorVision.Copilot
             string arguments)
         {
             RefreshPendingActions();
-            var reviewableActions = _pendingActions.Where(CanReviewPendingAction).ToArray();
+            var reviewableActions = PendingActions.Where(CanReviewPendingAction).ToArray();
             if (reviewableActions.Length == 0)
             {
                 var conversation = SelectedConversation;

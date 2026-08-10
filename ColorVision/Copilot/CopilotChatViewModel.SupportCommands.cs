@@ -158,7 +158,7 @@ namespace ColorVision.Copilot
                 CapabilityCatalogRevision = capabilitySnapshot.Revision,
                 Capabilities = capabilitySnapshot.Capabilities,
                 ExternalMcpServers = _config.ExternalMcpServers,
-                PendingApprovals = CopilotMcpConfirmationStore.Instance.PendingCount,
+                PendingApprovals = _approvalCoordinator.TotalPendingCount,
             });
         }
 

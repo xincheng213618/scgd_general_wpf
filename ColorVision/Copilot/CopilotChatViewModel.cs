@@ -45,10 +45,10 @@ namespace ColorVision.Copilot
         private readonly CopilotChatStatePersistenceCoordinator _statePersistenceCoordinator;
         private readonly CopilotConversationSession _conversationSession;
         private readonly CopilotComposerSession _composerSession = new();
+        private readonly CopilotApprovalCoordinator _approvalCoordinator;
         private readonly CopilotQueuedFollowUpCoordinator _followUpQueue;
         private readonly ObservableCollection<CopilotChatMessage> _emptyMessages = new();
         private readonly ObservableCollection<CopilotAttachmentItem> _emptyAttachments = new();
-        private readonly ObservableCollection<ConfirmableAction> _pendingActions = new();
         private readonly ObservableCollection<CopilotComposerReferenceItem> _composerReferenceSuggestions = new();
         private readonly ObservableCollection<CopilotPromptHistorySearchItem> _promptHistorySearchResults = new();
         private readonly CopilotCompletionNoticeCenter _completionNoticeCenter = new();
@@ -181,10 +181,6 @@ namespace ColorVision.Copilot
             WorkspaceManager.ContentIdSelected += WorkspaceManager_ContentIdSelected;
             CopilotLiveContextRegistry.CurrentChanged -= CopilotLiveContextRegistry_CurrentChanged;
             CopilotLiveContextRegistry.CurrentChanged += CopilotLiveContextRegistry_CurrentChanged;
-            CopilotMcpConfirmationStore.Instance.ActionsChanged -= ConfirmationStore_ActionsChanged;
-            CopilotMcpConfirmationStore.Instance.ActionsChanged += ConfirmationStore_ActionsChanged;
-            CopilotMcpConfirmationStore.Instance.ActionStatusChanged -= ConfirmationStore_ActionStatusChanged;
-            CopilotMcpConfirmationStore.Instance.ActionStatusChanged += ConfirmationStore_ActionStatusChanged;
             CopilotAgentSkillCatalog.CatalogChanged -= AgentSkillCatalog_CatalogChanged;
             CopilotAgentSkillCatalog.CatalogChanged += AgentSkillCatalog_CatalogChanged;
             if (_config.EnsureInitialized() && persistConfigChanges)
@@ -198,6 +194,11 @@ namespace ColorVision.Copilot
                 DateTimeOffset.UtcNow);
             _stateStore.CleanupOrphanedAttachments(_state);
             _conversationSession = new CopilotConversationSession(_state, _config);
+            _approvalCoordinator = new CopilotApprovalCoordinator(
+                CopilotMcpConfirmationStore.Instance,
+                _state);
+            _approvalCoordinator.PendingActionsInvalidated += ApprovalCoordinator_PendingActionsInvalidated;
+            _approvalCoordinator.ActionTransitioned += ApprovalCoordinator_ActionTransitioned;
             _followUpQueue = new CopilotQueuedFollowUpCoordinator(_state, _taskHost);
             _followUpQueue.Changed += FollowUpQueue_Changed;
             WeakEventManager<CopilotAgentTaskHost, CopilotAgentTaskHostChangedEventArgs>.RemoveHandler(_taskHost, nameof(CopilotAgentTaskHost.Changed), TaskHost_Changed);

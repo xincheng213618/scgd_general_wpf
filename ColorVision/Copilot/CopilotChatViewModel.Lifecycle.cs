@@ -154,8 +154,9 @@ namespace ColorVision.Copilot
                 Application.Current.Exit -= Application_Exit;
             WorkspaceManager.ContentIdSelected -= WorkspaceManager_ContentIdSelected;
             CopilotLiveContextRegistry.CurrentChanged -= CopilotLiveContextRegistry_CurrentChanged;
-            CopilotMcpConfirmationStore.Instance.ActionsChanged -= ConfirmationStore_ActionsChanged;
-            CopilotMcpConfirmationStore.Instance.ActionStatusChanged -= ConfirmationStore_ActionStatusChanged;
+            _approvalCoordinator.PendingActionsInvalidated -= ApprovalCoordinator_PendingActionsInvalidated;
+            _approvalCoordinator.ActionTransitioned -= ApprovalCoordinator_ActionTransitioned;
+            _approvalCoordinator.Dispose();
             CopilotAgentSkillCatalog.CatalogChanged -= AgentSkillCatalog_CatalogChanged;
             WeakEventManager<CopilotAgentTaskHost, CopilotAgentTaskHostChangedEventArgs>.RemoveHandler(_taskHost, nameof(CopilotAgentTaskHost.Changed), TaskHost_Changed);
             CopilotBackgroundShellCommandRegistry.Shared.CommandCompleted -= BackgroundShellCommandRegistry_CommandCompleted;

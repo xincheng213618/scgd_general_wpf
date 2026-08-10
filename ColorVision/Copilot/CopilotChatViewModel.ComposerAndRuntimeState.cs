@@ -576,7 +576,7 @@ namespace ColorVision.Copilot
         {
             get
             {
-                var pendingCount = CopilotMcpConfirmationStore.Instance.PendingCount;
+                var pendingCount = _approvalCoordinator.TotalPendingCount;
                 if (pendingCount > 0)
                     return pendingCount == 1 ? "等待确认" : $"等待确认 {pendingCount}";
 

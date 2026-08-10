@@ -120,7 +120,7 @@ namespace ColorVision.Copilot
                 McpListenerEnabled = _config.McpEnabled,
                 McpListenerRunning = CopilotMcpServer.Instance.IsRunning,
                 EnabledExternalMcpServers = _config.ExternalMcpServers.Count(server => server?.Enabled == true),
-                PendingApprovals = CopilotMcpConfirmationStore.Instance.PendingCount,
+                PendingApprovals = _approvalCoordinator.TotalPendingCount,
             });
         }
 
@@ -215,7 +215,7 @@ namespace ColorVision.Copilot
                 RecentHookFailureCount = recentHookFailureCount,
                 TrackedSkillCount = skillUsage.Entries.Count,
                 ExplicitOnlySkillCount = skillUsage.HistoricalExplicitOnlySkills.Count,
-                PendingApprovals = CopilotMcpConfirmationStore.Instance.PendingCount,
+                PendingApprovals = _approvalCoordinator.TotalPendingCount,
             });
         }
 
@@ -543,7 +543,7 @@ namespace ColorVision.Copilot
                 Endpoint = _config.McpEndpoint,
                 Enabled = _config.McpEnabled,
                 Running = server.IsRunning,
-                PendingActions = CopilotMcpConfirmationStore.Instance.PendingCount,
+                PendingActions = _approvalCoordinator.TotalPendingCount,
                 RecentEntries = CopilotMcpAuditLogger.GetRecentEntries(verbose ? 20 : 8),
                 LastError = CopilotMcpAuditLogger.GetLastError(),
                 StatusMessage = server.LastStatusMessage,

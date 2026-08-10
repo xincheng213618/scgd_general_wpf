@@ -127,6 +127,8 @@ namespace ColorVision.Copilot
 
         public ObservableCollection<ConfirmableAction> PendingActions { get; } = new();
 
+        public int TotalPendingCount => _store.PendingCount;
+
         public CopilotApprovalPendingProjection RefreshPendingActions(string? conversationId)
         {
             var actions = _store.GetPendingActionsForConversation(conversationId);
