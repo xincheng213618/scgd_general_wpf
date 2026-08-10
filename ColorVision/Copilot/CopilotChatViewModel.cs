@@ -398,12 +398,6 @@ namespace ColorVision.Copilot
             CopilotAgentSkillReference? AgentSkillReference,
             IReadOnlyList<CopilotAttachmentItem> Attachments);
 
-        private sealed record CopilotPreparedQueuedFollowUpTurn(
-            CopilotConversationRecord Conversation,
-            CopilotChatMessage UserMessage,
-            CopilotChatMessage AssistantMessage,
-            CopilotAgentHostContextSnapshot TurnSnapshot);
-
         private sealed record CopilotGoalEvaluationContext(
             CopilotConversationGoal Goal,
             IReadOnlyList<CopilotRequestMessage> Transcript,

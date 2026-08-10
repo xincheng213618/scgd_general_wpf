@@ -189,17 +189,20 @@ namespace ColorVision.Copilot
             UpdateConversationMetadata(conversation, touch: true);
             PersistState();
 
+            var preparedTurn = new CopilotPreparedHostedTurn(
+                conversation,
+                requestProfile,
+                userMessage,
+                assistantMessage,
+                turnSnapshot,
+                runtimeConfigSnapshot,
+                refreshExternalContext: true,
+                isAutomaticGoalContinuation: false);
+
             if (!_taskHost.TrySchedule(
-                conversation.Id,
-                userMessage.RequestMode,
-                run => ExecuteHostedTurnAsync(
-                    run,
-                    conversation,
-                    requestProfile,
-                    userMessage,
-                    assistantMessage,
-                    turnSnapshot,
-                    runtimeConfigSnapshot),
+                preparedTurn.ConversationId,
+                preparedTurn.Mode,
+                run => ExecuteHostedPreparedTurnAsync(run, preparedTurn),
                 out var hostedRun,
                 out var admission)
                 || hostedRun == null)
@@ -263,36 +266,17 @@ namespace ColorVision.Copilot
             RefreshAgentTasks();
         }
 
-        private Task ExecuteHostedTurnAsync(
-            CopilotHostedAgentRun hostedRun,
-            CopilotConversationRecord conversation,
-            CopilotProfileConfig requestProfile,
-            CopilotChatMessage userMessage,
-            CopilotChatMessage assistantMessage,
-            CopilotAgentHostContextSnapshot turnSnapshot,
-            CopilotTurnRuntimeConfigSnapshot runtimeConfigSnapshot) =>
-            ExecuteHostedPreparedTurnAsync(
-                hostedRun,
-                conversation,
-                requestProfile,
-                userMessage,
-                assistantMessage,
-                turnSnapshot,
-                runtimeConfigSnapshot,
-                refreshExternalContext: true,
-                isAutomaticGoalContinuation: false);
-
         private async Task ExecuteHostedPreparedTurnAsync(
             CopilotHostedAgentRun hostedRun,
-            CopilotConversationRecord conversation,
-            CopilotProfileConfig requestProfile,
-            CopilotChatMessage userMessage,
-            CopilotChatMessage assistantMessage,
-            CopilotAgentHostContextSnapshot turnSnapshot,
-            CopilotTurnRuntimeConfigSnapshot runtimeConfigSnapshot,
-            bool refreshExternalContext,
-            bool isAutomaticGoalContinuation)
+            CopilotPreparedHostedTurn preparedTurn)
         {
+            preparedTurn.ValidateHostedRun(hostedRun);
+            var conversation = preparedTurn.Conversation;
+            var requestProfile = preparedTurn.RequestProfile;
+            var userMessage = preparedTurn.UserMessage;
+            var assistantMessage = preparedTurn.AssistantMessage;
+            var turnSnapshot = preparedTurn.HostContext;
+            var runtimeConfigSnapshot = preparedTurn.RuntimeConfig;
             using var sleepPrevention = CopilotActiveTurnSleepPrevention.Acquire(
                 turnSnapshot.ProjectInstructionDiscoveryOptions);
             var goalsEnabled = turnSnapshot.ProjectInstructionDiscoveryOptions.ConfiguredGoalsEnabled;
@@ -313,7 +297,7 @@ namespace ColorVision.Copilot
                     DateTime.Now);
 
                 if (goalsEnabled
-                    && conversation.TryBeginGoalTurn(hostedRun.IsAgent, isAutomaticGoalContinuation))
+                    && conversation.TryBeginGoalTurn(hostedRun.IsAgent, preparedTurn.IsAutomaticGoalContinuation))
                 {
                     CopilotAssistantMessagePresenter.AppendExecutionTrace(
                         assistantMessage,
@@ -329,15 +313,7 @@ namespace ColorVision.Copilot
             var goalOutcomeRecorded = false;
             try
             {
-                var usage = await RunConversationTurnAsync(
-                    hostedRun,
-                    conversation,
-                    requestProfile,
-                    userMessage,
-                    assistantMessage,
-                    turnSnapshot,
-                    runtimeConfigSnapshot,
-                    refreshExternalContext);
+                var usage = await RunConversationTurnAsync(hostedRun, preparedTurn);
                 CopilotHostedTurnCompletion.PrepareTerminalEvidence(assistantMessage);
                 var goalResult = await ProcessGoalAfterTurnAsync(
                     hostedRun,
@@ -450,14 +426,14 @@ namespace ColorVision.Copilot
 
         private async Task<CopilotTokenUsage> RunConversationTurnAsync(
             CopilotHostedAgentRun hostedRun,
-            CopilotConversationRecord conversation,
-            CopilotProfileConfig requestProfile,
-            CopilotChatMessage userMessage,
-            CopilotChatMessage assistantMessage,
-            CopilotAgentHostContextSnapshot turnSnapshot,
-            CopilotTurnRuntimeConfigSnapshot runtimeConfigSnapshot,
-            bool refreshExternalContext)
+            CopilotPreparedHostedTurn preparedTurn)
         {
+            var conversation = preparedTurn.Conversation;
+            var requestProfile = preparedTurn.RequestProfile;
+            var userMessage = preparedTurn.UserMessage;
+            var assistantMessage = preparedTurn.AssistantMessage;
+            var turnSnapshot = preparedTurn.HostContext;
+            var runtimeConfigSnapshot = preparedTurn.RuntimeConfig;
             var cancellationToken = hostedRun.CancellationToken;
             if (hostedRun.IsAgent)
             {
@@ -511,7 +487,7 @@ namespace ColorVision.Copilot
                 userMessage.Content,
                 userMessage.RequestContent,
                 userMessage.ChatAttachmentContextCaptured,
-                refreshExternalContext,
+                preparedTurn.RefreshExternalContext,
                 turnSnapshot,
                 ResolveConversationHistoryLimits(
                     requestProfile,

@@ -192,7 +192,7 @@ namespace ColorVision.Copilot
         {
             var preparedTurn = CopilotUiDispatcher.Invoke(
                 () => PrepareQueuedFollowUpTurn(queuedFollowUp),
-                fallback: null as CopilotPreparedQueuedFollowUpTurn);
+                fallback: null as CopilotPreparedHostedTurn);
             if (preparedTurn == null)
             {
                 if (queuedFollowUp.IsAutomaticGoalContinuation)
@@ -222,19 +222,10 @@ namespace ColorVision.Copilot
             if (!recoveryCommitted)
                 throw new OperationCanceledException("The Copilot UI shut down before the queued follow-up could be committed.");
 
-            await ExecuteHostedPreparedTurnAsync(
-                hostedRun,
-                preparedTurn.Conversation,
-                queuedFollowUp.Profile,
-                preparedTurn.UserMessage,
-                preparedTurn.AssistantMessage,
-                preparedTurn.TurnSnapshot,
-                queuedFollowUp.RuntimeConfigSnapshot,
-                refreshExternalContext: true,
-                isAutomaticGoalContinuation: queuedFollowUp.IsAutomaticGoalContinuation).ConfigureAwait(false);
+            await ExecuteHostedPreparedTurnAsync(hostedRun, preparedTurn).ConfigureAwait(false);
         }
 
-        private CopilotPreparedQueuedFollowUpTurn? PrepareQueuedFollowUpTurn(CopilotQueuedFollowUp queuedFollowUp)
+        private CopilotPreparedHostedTurn? PrepareQueuedFollowUpTurn(CopilotQueuedFollowUp queuedFollowUp)
         {
             RemoveQueuedFollowUp(queuedFollowUp.RunId, removeRecoveryRecord: false);
             var conversation = Conversations.FirstOrDefault(candidate =>
@@ -267,12 +258,20 @@ namespace ColorVision.Copilot
             conversation.Messages.Add(assistantMessage);
             UpdateConversationMetadata(conversation, touch: true);
             PersistState(immediate: true);
-            return new CopilotPreparedQueuedFollowUpTurn(conversation, userMessage, assistantMessage, turnSnapshot);
+            return new CopilotPreparedHostedTurn(
+                conversation,
+                queuedFollowUp.Profile,
+                userMessage,
+                assistantMessage,
+                turnSnapshot,
+                queuedFollowUp.RuntimeConfigSnapshot,
+                refreshExternalContext: true,
+                isAutomaticGoalContinuation: queuedFollowUp.IsAutomaticGoalContinuation);
         }
 
         private void RollbackUnpersistedQueuedFollowUp(
             CopilotQueuedFollowUp queuedFollowUp,
-            CopilotPreparedQueuedFollowUpTurn preparedTurn)
+            CopilotPreparedHostedTurn preparedTurn)
         {
             preparedTurn.Conversation.Messages.Remove(preparedTurn.AssistantMessage);
             preparedTurn.Conversation.Messages.Remove(preparedTurn.UserMessage);

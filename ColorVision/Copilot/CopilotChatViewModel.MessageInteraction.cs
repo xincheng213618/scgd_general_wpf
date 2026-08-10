@@ -561,8 +561,7 @@ namespace ColorVision.Copilot
                 return;
             }
 
-            await ExecuteHostedPreparedTurnAsync(
-                hostedRun,
+            var preparedTurn = new CopilotPreparedHostedTurn(
                 conversation,
                 requestProfile,
                 userMessage,
@@ -571,6 +570,7 @@ namespace ColorVision.Copilot
                 runtimeConfigSnapshot,
                 refreshExternalContext,
                 isAutomaticGoalContinuation: false);
+            await ExecuteHostedPreparedTurnAsync(hostedRun, preparedTurn);
         }
 
         private bool TryResolveLatestTurn(CopilotChatMessage? message, out CopilotConversationRecord conversation, out CopilotChatMessage userMessage, out CopilotChatMessage? assistantMessage)
