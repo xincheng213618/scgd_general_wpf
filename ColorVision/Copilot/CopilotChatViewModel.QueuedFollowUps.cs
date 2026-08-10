@@ -63,7 +63,7 @@ namespace ColorVision.Copilot
                 return true;
             if (recognizedLocalCommand)
                 return false;
-            var preflightAdmission = _taskHost.EvaluateFollowUpAdmission(
+            var preflightAdmission = _followUpQueue.EvaluateAdmission(
                 conversation.Id,
                 activeRun.Mode);
             if (!preflightAdmission.IsAllowed)
@@ -109,54 +109,26 @@ namespace ColorVision.Copilot
             }
             var runtimeConfigSnapshot = CaptureTurnRuntimeConfigSnapshot();
 
-            var itemReady = new TaskCompletionSource<CopilotQueuedFollowUp>(TaskCreationOptions.RunContinuationsAsynchronously);
-            async Task ExecuteFollowUpAsync(CopilotHostedAgentRun run)
-            {
-                var queuedItem = await itemReady.Task.ConfigureAwait(false);
-                await ExecuteQueuedFollowUpAsync(run, queuedItem).ConfigureAwait(false);
-            }
-
-            CopilotHostedAgentRun? queuedRun;
-            CopilotRequestAdmissionResult admission;
-            var scheduled = runNext
-                ? _taskHost.TryScheduleFollowUpNext(
-                    conversation.Id,
-                    activeRun.Mode,
-                    ExecuteFollowUpAsync,
-                    out queuedRun,
-                    out admission)
-                : _taskHost.TryScheduleFollowUp(
-                    conversation.Id,
-                    activeRun.Mode,
-                    ExecuteFollowUpAsync,
-                    out queuedRun,
-                    out admission);
-            if (!scheduled || queuedRun == null)
-            {
-                ReportRequestAdmissionFailure(admission);
-                return false;
-            }
-
-            var queuedFollowUp = new CopilotQueuedFollowUp(
-                queuedRun.Id,
+            var queueRequest = new CopilotQueuedFollowUpRequest(
                 conversation.Id,
                 conversation.Title,
                 prompt,
                 activeRun.Mode,
                 requestProfile,
                 submissionContext,
-                agentSkillReference: agentSkillReference,
-                runtimeConfigSnapshot: runtimeConfigSnapshot,
-                workspaceReviewTarget: ResolveQueuedFollowUpReviewTarget(
-                    conversation,
-                    activeRun.Mode));
-            _queuedFollowUpsByRunId.Add(queuedRun.Id, queuedFollowUp);
-            QueuedFollowUps.Add(queuedFollowUp);
-            AddQueuedFollowUpRecovery(queuedFollowUp);
-            itemReady.SetResult(queuedFollowUp);
-            RefreshQueuedFollowUpPositions();
-            if (runNext)
-                SynchronizeQueuedFollowUpRecoveryOrder();
+                agentSkillReference,
+                runtimeConfigSnapshot,
+                ResolveQueuedFollowUpReviewTarget(conversation, activeRun.Mode));
+            if (!_followUpQueue.TrySchedule(
+                queueRequest,
+                runNext,
+                ExecuteQueuedFollowUpAsync,
+                out _,
+                out var admission))
+            {
+                ReportRequestAdmissionFailure(admission);
+                return false;
+            }
 
             DismissLocalCommandResult();
             ConsumeComposerAttachments(conversation);
@@ -236,7 +208,7 @@ namespace ColorVision.Copilot
             var recoveryCommitted = CopilotUiDispatcher.Invoke(
                 () =>
                 {
-                    RemoveQueuedFollowUpRecovery(queuedFollowUp.RunId);
+                    _followUpQueue.RemoveRecovery(queuedFollowUp.RunId);
                     PersistState(immediate: true);
                     return true;
                 },
@@ -266,7 +238,7 @@ namespace ColorVision.Copilot
                 && (conversation.Goal?.IsActive != true
                     || !string.Equals(conversation.Goal.Id, queuedFollowUp.GoalId, StringComparison.Ordinal)))
             {
-                RemoveQueuedFollowUpRecovery(queuedFollowUp.RunId);
+                _followUpQueue.RemoveRecovery(queuedFollowUp.RunId);
                 PersistState(immediate: true);
                 return null;
             }
@@ -298,7 +270,7 @@ namespace ColorVision.Copilot
         {
             preparedTurn.Conversation.Messages.Remove(preparedTurn.AssistantMessage);
             preparedTurn.Conversation.Messages.Remove(preparedTurn.UserMessage);
-            CopilotQueuedFollowUpRecovery.RestoreRecordToDraft(_state, queuedFollowUp.RunId);
+            _followUpQueue.RestoreRecoveryToDraft(queuedFollowUp.RunId);
             UpdateConversationMetadata(preparedTurn.Conversation, touch: true);
 
             if (ReferenceEquals(preparedTurn.Conversation, SelectedConversation))
@@ -327,7 +299,7 @@ namespace ColorVision.Copilot
         {
             return queuedFollowUp != null
                 && (ActiveHostedRun == null || ActiveHostedRun.CanRequestCancel)
-                && _taskHost.GetQueuePosition(queuedFollowUp.RunId) > 0;
+                && _followUpQueue.GetQueuePosition(queuedFollowUp.RunId) > 0;
         }
 
         private void SendQueuedFollowUpNow(CopilotQueuedFollowUp? queuedFollowUp)
@@ -344,12 +316,10 @@ namespace ColorVision.Copilot
             }
 
             if (activeRun == null)
-                return _taskHost.TryStartQueuedRun(queuedFollowUp.RunId);
-            if (!_taskHost.PromoteQueuedRun(queuedFollowUp.RunId))
+                return _followUpQueue.TryStart(queuedFollowUp.RunId);
+            if (!_followUpQueue.TryPromote(queuedFollowUp.RunId))
                 return false;
 
-            RefreshQueuedFollowUpPositions();
-            SynchronizeQueuedFollowUpRecoveryOrder();
             PersistState(immediate: true);
             _taskHost.RequestCancel(activeRun.Id);
             return true;
@@ -401,7 +371,7 @@ namespace ColorVision.Copilot
             InputText = composerState.Text;
             SetPendingAgentSkillReference(composerState.AgentSkillReference);
             UpdateAttachmentsState(conversation);
-            if (!_taskHost.RequestCancel(queuedFollowUp.RunId))
+            if (!_followUpQueue.RequestCancel(queuedFollowUp.RunId))
             {
                 conversation.Attachments.Clear();
                 SetPendingRequestModeOverride(previousMode);
@@ -429,10 +399,8 @@ namespace ColorVision.Copilot
 
         private bool TryMoveQueuedFollowUp(CopilotQueuedFollowUp? queuedFollowUp, int offset)
         {
-            if (queuedFollowUp == null || !_taskHost.MoveQueuedRun(queuedFollowUp.RunId, offset))
+            if (queuedFollowUp == null || !_followUpQueue.TryMove(queuedFollowUp.RunId, offset))
                 return false;
-            RefreshQueuedFollowUpPositions();
-            SynchronizeQueuedFollowUpRecoveryOrder();
             PersistState(immediate: true);
             return true;
         }
@@ -447,7 +415,7 @@ namespace ColorVision.Copilot
             out bool pausedGoal)
         {
             pausedGoal = false;
-            if (queuedFollowUp == null || !_taskHost.RequestCancel(queuedFollowUp.RunId))
+            if (queuedFollowUp == null || !_followUpQueue.RequestCancel(queuedFollowUp.RunId))
                 return false;
 
             if (!queuedFollowUp.IsAutomaticGoalContinuation)
@@ -471,46 +439,18 @@ namespace ColorVision.Copilot
 
         private void RemoveQueuedFollowUp(string runId, bool removeRecoveryRecord = true)
         {
-            var shouldRemoveRecoveryRecord = removeRecoveryRecord && !_isApplicationShutdown;
-            var changed = false;
-            if (_queuedFollowUpsByRunId.Remove(runId, out var queuedFollowUp))
-            {
-                QueuedFollowUps.Remove(queuedFollowUp);
-                OnQueuedFollowUpsChanged();
-                changed = true;
-            }
-            if (shouldRemoveRecoveryRecord)
-                changed |= RemoveQueuedFollowUpRecovery(runId);
-            if (changed && shouldRemoveRecoveryRecord)
+            var result = _followUpQueue.Remove(runId, removeRecoveryRecord);
+            if (result.RecoveryChanged)
                 PersistState(immediate: true);
-        }
-
-        private void AddQueuedFollowUpRecovery(CopilotQueuedFollowUp queuedFollowUp)
-        {
-            _state.QueuedFollowUpRecoveries ??= new ObservableCollection<CopilotQueuedFollowUpRecoveryRecord>();
-            _state.QueuedFollowUpRecoveries.Add(new CopilotQueuedFollowUpRecoveryRecord
-            {
-                RunId = queuedFollowUp.RunId,
-                ConversationId = queuedFollowUp.ConversationId,
-                Prompt = queuedFollowUp.Prompt,
-                ComposerState = queuedFollowUp.CreateComposerState(),
-                ProfileId = queuedFollowUp.Profile.Id,
-                QueuedAtUtc = queuedFollowUp.QueuedAtUtc,
-                ResumeAfterRestart = !queuedFollowUp.IsAutomaticGoalContinuation,
-            });
         }
 
         private void RestoreDurableQueuedFollowUps()
         {
-            var records = (_state.QueuedFollowUpRecoveries
-                ?? new ObservableCollection<CopilotQueuedFollowUpRecoveryRecord>())
-                .Where(record => record?.ResumeAfterRestart == true)
-                .Take(_taskHost.MaxQueuedRuns)
-                .ToArray();
-            if (records.Length == 0)
+            var records = _followUpQueue.GetResumableRecoveries();
+            if (records.Count == 0)
                 return;
 
-            var hostWasIdle = _taskHost.ScheduledRuns.Count == 0;
+            var hostWasIdle = _followUpQueue.ScheduledRuns.Count == 0;
             var firstAutoDispatchRunId = string.Empty;
             var restoredCount = 0;
             var restoredDraftCount = 0;
@@ -530,7 +470,7 @@ namespace ColorVision.Copilot
                 var profile = _config.FindProfile(record.ProfileId);
                 if (conversation == null || profile == null)
                 {
-                    if (CopilotQueuedFollowUpRecovery.RestoreRecordToDraft(_state, runId))
+                    if (_followUpQueue.RestoreRecoveryToDraft(runId))
                         restoredDraftCount++;
                     continue;
                 }
@@ -543,7 +483,7 @@ namespace ColorVision.Copilot
                     submissionContext.PrimaryTrustedProjectRootPath,
                     submissionContext.ProjectInstructionDiscoveryOptions))
                 {
-                    if (CopilotQueuedFollowUpRecovery.RestoreRecordToDraft(_state, runId))
+                    if (_followUpQueue.RestoreRecoveryToDraft(runId))
                         restoredDraftCount++;
                     continue;
                 }
@@ -565,28 +505,15 @@ namespace ColorVision.Copilot
                     runtimeConfigSnapshot: CaptureTurnRuntimeConfigSnapshot(),
                     workspaceReviewTarget: composerState.WorkspaceReviewTarget,
                     queuedAtUtc: record.QueuedAtUtc);
-                var itemReady = new TaskCompletionSource<CopilotQueuedFollowUp>(
-                    TaskCreationOptions.RunContinuationsAsynchronously);
-                if (!_taskHost.TryRestoreQueuedFollowUp(
-                    runId,
-                    conversationId,
-                    composerState.RequestMode,
-                    record.QueuedAtUtc,
-                    async run =>
-                    {
-                        var queuedItem = await itemReady.Task.ConfigureAwait(false);
-                        await ExecuteQueuedFollowUpAsync(run, queuedItem).ConfigureAwait(false);
-                    },
-                    out _))
+                if (!_followUpQueue.TryRestore(
+                    queuedFollowUp,
+                    ExecuteQueuedFollowUpAsync))
                 {
-                    if (CopilotQueuedFollowUpRecovery.RestoreRecordToDraft(_state, runId))
+                    if (_followUpQueue.RestoreRecoveryToDraft(runId))
                         restoredDraftCount++;
                     continue;
                 }
 
-                _queuedFollowUpsByRunId.Add(runId, queuedFollowUp);
-                QueuedFollowUps.Add(queuedFollowUp);
-                itemReady.SetResult(queuedFollowUp);
                 if (firstAutoDispatchRunId.Length == 0
                     && CopilotQueuedFollowUpRecovery.CanAutoDispatch(conversation))
                 {
@@ -595,17 +522,16 @@ namespace ColorVision.Copilot
                 restoredCount++;
             }
 
-            _state.ResumedQueuedFollowUpCount = restoredCount;
-            _state.RecoveredQueuedFollowUpCount += restoredDraftCount;
+            _followUpQueue.RecordStartupRecovery(restoredCount, restoredDraftCount);
             if (restoredDraftCount > 0)
                 SynchronizeSelectedDraftAfterQueuedRecovery();
-            RefreshQueuedFollowUpPositions();
+            _followUpQueue.RefreshPositions();
             PersistState(immediate: true);
             if (hostWasIdle
                 && firstAutoDispatchRunId.Length > 0
                 && _taskHost.ActiveRun == null)
             {
-                _taskHost.TryStartQueuedRun(firstAutoDispatchRunId);
+                _followUpQueue.TryStart(firstAutoDispatchRunId);
             }
         }
 
@@ -644,68 +570,7 @@ namespace ColorVision.Copilot
                 ?.CreateSnapshot();
         }
 
-        private bool RemoveQueuedFollowUpRecovery(string runId)
-        {
-            if (_state.QueuedFollowUpRecoveries == null)
-                return false;
-
-            var changed = false;
-            for (var index = _state.QueuedFollowUpRecoveries.Count - 1; index >= 0; index--)
-            {
-                if (!string.Equals(_state.QueuedFollowUpRecoveries[index]?.RunId, runId, StringComparison.Ordinal))
-                    continue;
-
-                _state.QueuedFollowUpRecoveries.RemoveAt(index);
-                changed = true;
-            }
-            return changed;
-        }
-
-        private void SynchronizeQueuedFollowUpRecoveryOrder()
-        {
-            if (_state.QueuedFollowUpRecoveries == null || _state.QueuedFollowUpRecoveries.Count < 2)
-                return;
-
-            var positions = _taskHost.ScheduledRuns
-                .Select((run, index) => new { run.Id, Position = index })
-                .ToDictionary(item => item.Id, item => item.Position, StringComparer.Ordinal);
-            var ordered = _state.QueuedFollowUpRecoveries
-                .Select((record, index) => new { Record = record, OriginalPosition = index })
-                .OrderBy(item => positions.TryGetValue(item.Record.RunId, out var position) ? position : int.MaxValue)
-                .ThenBy(item => item.OriginalPosition)
-                .Select(item => item.Record)
-                .ToArray();
-            if (ordered.SequenceEqual(_state.QueuedFollowUpRecoveries))
-                return;
-
-            _state.QueuedFollowUpRecoveries.Clear();
-            foreach (var record in ordered)
-                _state.QueuedFollowUpRecoveries.Add(record);
-        }
-
-        private void RefreshQueuedFollowUpPositions()
-        {
-            var queuedRuns = _taskHost.QueuedRuns;
-            var positions = queuedRuns
-                .Select((run, index) => new { run.Id, Position = index + 1 })
-                .ToDictionary(item => item.Id, item => item.Position, StringComparer.Ordinal);
-            var ordered = QueuedFollowUps
-                .Where(item => positions.ContainsKey(item.RunId))
-                .OrderBy(item => positions[item.RunId])
-                .ToArray();
-
-            for (var targetIndex = 0; targetIndex < ordered.Length; targetIndex++)
-            {
-                var currentIndex = QueuedFollowUps.IndexOf(ordered[targetIndex]);
-                if (currentIndex != targetIndex)
-                    QueuedFollowUps.Move(currentIndex, targetIndex);
-            }
-            foreach (var item in ordered)
-                item.UpdateQueuePosition(positions[item.RunId], queuedRuns.Count);
-            OnQueuedFollowUpsChanged();
-        }
-
-        private void OnQueuedFollowUpsChanged()
+        private void FollowUpQueue_Changed(object? sender, EventArgs e)
         {
             OnPropertyChanged(nameof(HasQueuedFollowUps));
             OnPropertyChanged(nameof(QueuedFollowUpCountLabel));

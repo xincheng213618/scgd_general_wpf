@@ -350,19 +350,7 @@ namespace ColorVision.Copilot
 
         private void RemoveQueuedFollowUpRecoveryRecords(string conversationId)
         {
-            if (_state.QueuedFollowUpRecoveries == null)
-                return;
-
-            for (var index = _state.QueuedFollowUpRecoveries.Count - 1; index >= 0; index--)
-            {
-                if (string.Equals(
-                    _state.QueuedFollowUpRecoveries[index]?.ConversationId,
-                    conversationId,
-                    StringComparison.Ordinal))
-                {
-                    _state.QueuedFollowUpRecoveries.RemoveAt(index);
-                }
-            }
+            _followUpQueue.RemoveRecoveriesForConversation(conversationId);
         }
 
         private void TogglePinConversation(CopilotConversationRecord? conversation)

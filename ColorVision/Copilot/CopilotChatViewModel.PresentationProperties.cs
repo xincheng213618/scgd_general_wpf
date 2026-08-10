@@ -101,7 +101,7 @@ namespace ColorVision.Copilot
         public Thickness AssistantActionsMargin =>
             CopilotCompactMessageLayout.Resolve(UseCompactMessageLayout).AssistantActionsMargin;
 
-        public ObservableCollection<CopilotQueuedFollowUp> QueuedFollowUps { get; } = new();
+        public ObservableCollection<CopilotQueuedFollowUp> QueuedFollowUps => _followUpQueue.Items;
 
         public bool HasQueuedFollowUps => QueuedFollowUps.Count > 0;
 

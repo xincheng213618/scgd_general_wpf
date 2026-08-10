@@ -483,8 +483,7 @@ namespace ColorVision.Copilot
                 return false;
             }
 
-            if (_queuedFollowUpsByRunId.Values.Any(item =>
-                string.Equals(item.ConversationId, conversation.Id, StringComparison.Ordinal)))
+            if (_followUpQueue.HasConversation(conversation.Id))
             {
                 return true;
             }
@@ -498,19 +497,23 @@ namespace ColorVision.Copilot
             var submissionContext = CopilotGoalContinuationContext.Capture(
                 completedTurnSnapshot,
                 conversation);
-            var itemReady = new TaskCompletionSource<CopilotQueuedFollowUp>(
-                TaskCreationOptions.RunContinuationsAsynchronously);
-            if (!_taskHost.TryScheduleFollowUp(
+            var queueRequest = new CopilotQueuedFollowUpRequest(
                 conversation.Id,
+                conversation.Title,
+                prompt,
                 CopilotAgentMode.Auto,
-                async run =>
-                {
-                    var queuedItem = await itemReady.Task.ConfigureAwait(false);
-                    await ExecuteQueuedFollowUpAsync(run, queuedItem).ConfigureAwait(false);
-                },
-                out var queuedRun,
-                out var admission)
-                || queuedRun == null)
+                requestProfileSnapshot,
+                submissionContext,
+                AgentSkillReference: null,
+                RuntimeConfigSnapshot: completedTurnRuntimeConfig,
+                WorkspaceReviewTarget: null,
+                GoalId: goalId);
+            if (!_followUpQueue.TrySchedule(
+                queueRequest,
+                runNext: false,
+                ExecuteQueuedFollowUpAsync,
+                out _,
+                out var admission))
             {
                 var pauseReason = "无法排入下一轮持续目标任务："
                     + GetRequestAdmissionText(admission)
@@ -523,21 +526,6 @@ namespace ColorVision.Copilot
                 return false;
             }
 
-            var queuedFollowUp = new CopilotQueuedFollowUp(
-                queuedRun.Id,
-                conversation.Id,
-                conversation.Title,
-                prompt,
-                CopilotAgentMode.Auto,
-                requestProfileSnapshot,
-                submissionContext,
-                goalId,
-                runtimeConfigSnapshot: completedTurnRuntimeConfig);
-            _queuedFollowUpsByRunId.Add(queuedRun.Id, queuedFollowUp);
-            QueuedFollowUps.Add(queuedFollowUp);
-            AddQueuedFollowUpRecovery(queuedFollowUp);
-            itemReady.SetResult(queuedFollowUp);
-            RefreshQueuedFollowUpPositions();
             PersistState(immediate: true);
             return true;
         }

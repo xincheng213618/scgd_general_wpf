@@ -271,7 +271,7 @@ namespace ColorVision.Copilot
             var pausedGoal = false;
             var outcome = CopilotTaskStopRequestOutcome.NotFound;
             if (run.State == CopilotHostedRunState.Queued
-                && _queuedFollowUpsByRunId.TryGetValue(run.RunId, out var queuedFollowUp)
+                && _followUpQueue.TryGet(run.RunId, out var queuedFollowUp)
                 && TryDeleteQueuedFollowUp(queuedFollowUp, out pausedGoal))
             {
                 outcome = CopilotTaskStopRequestOutcome.CancelRequested;

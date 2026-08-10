@@ -145,13 +145,7 @@ namespace ColorVision.Copilot
 
             if (Conversations
                 .SelectMany(conversation => conversation.EnumerateReferencedAttachments())
-                .Concat((_state.QueuedFollowUpRecoveries
-                        ?? new ObservableCollection<CopilotQueuedFollowUpRecoveryRecord>())
-                    .Where(recovery => recovery != null)
-                    .SelectMany(recovery => recovery.EnumerateReferencedAttachments()))
-                .Concat(QueuedFollowUps
-                    .Where(followUp => followUp != null)
-                    .SelectMany(followUp => followUp.SubmissionContext.Attachments))
+                .Concat(_followUpQueue.EnumerateReferencedAttachments())
                 .Any(candidate => candidate.IsStoredImageFile
                     && string.Equals(candidate.Value, attachment.Value, StringComparison.OrdinalIgnoreCase)))
             {

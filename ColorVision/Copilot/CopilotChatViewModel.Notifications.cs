@@ -35,13 +35,9 @@ namespace ColorVision.Copilot
                 CaptureCompletedAgentRunNotice(e.Run);
                 RefreshAgentTasks();
             }
-            if (e.Kind == CopilotAgentTaskHostChangeKind.Started)
-            {
-                RemoveQueuedFollowUp(e.Run.Id, removeRecoveryRecord: false);
-            }
-            else if (e.Kind == CopilotAgentTaskHostChangeKind.Completed)
-                RemoveQueuedFollowUp(e.Run.Id, removeRecoveryRecord: true);
-            RefreshQueuedFollowUpPositions();
+            var queueChange = _followUpQueue.HandleTaskHostChanged(e);
+            if (queueChange.RecoveryChanged)
+                PersistState(immediate: true);
             NotifyHostedRunStateChanged();
             CommandManager.InvalidateRequerySuggested();
         }
