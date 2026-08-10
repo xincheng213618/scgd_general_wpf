@@ -53,7 +53,7 @@ namespace ProjectKB
             if (_selectedRecipeRow == null) return;
 
             _recipeManager.ApplyDefaultTo(_selectedRecipeRow.Config);
-            RefreshSelectedStatus();
+            RefreshSelectedRecipeEditor();
         }
 
         private void Close_Click(object sender, RoutedEventArgs e)
@@ -75,12 +75,29 @@ namespace ProjectKB
             if (_selectedRecipeRow == null || CopySourceComboBox.SelectedItem is not RecipeEditorItem sourceRow) return;
 
             _recipeManager.CopyRecipe(sourceRow.Config, _selectedRecipeRow.Config);
-            RefreshSelectedStatus();
+            RefreshSelectedRecipeEditor();
         }
 
         private void ApplyDefault_Click(object sender, RoutedEventArgs e)
         {
             Reset_Click(sender, e);
+        }
+
+        private void ApplyDefaultToAll_Click(object sender, RoutedEventArgs e)
+        {
+            if (_recipeRows.Count == 0) return;
+
+            MessageBoxResult result = MessageBox.Show(
+                this,
+                $"确定将当前初始值应用到全部 {_recipeRows.Count} 个模板吗？\n此操作会覆盖各模板当前的Recipe参数。",
+                "全部应用初始值",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning,
+                MessageBoxResult.No);
+            if (result != MessageBoxResult.Yes) return;
+
+            _recipeManager.ApplyDefaultToAll();
+            RefreshRecipeRows();
         }
 
         private void SetDefault_Click(object sender, RoutedEventArgs e)
@@ -161,20 +178,26 @@ namespace ProjectKB
             _observedRecipeConfig = row.Config;
             _observedRecipeConfig.PropertyChanged += RecipeConfig_PropertyChanged;
 
-            EditStackPanel.Children.Clear();
-            EditStackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(row.Config));
-
             foreach (RecipeEditorItem item in _recipeRows)
             {
                 item.IsCurrentTemplate = string.Equals(item.TemplateName, GetCurrentTemplateName(), StringComparison.OrdinalIgnoreCase);
             }
 
             CopySourceComboBox.SelectedItem = _recipeRows.FirstOrDefault(item => item != row && item.HasLimit) ?? _recipeRows.FirstOrDefault(item => item != row);
-            RefreshSelectedStatus();
+            RefreshSelectedRecipeEditor();
         }
 
         private void RecipeConfig_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
+            RefreshSelectedStatus();
+        }
+
+        private void RefreshSelectedRecipeEditor()
+        {
+            EditStackPanel.Children.Clear();
+            if (_selectedRecipeRow == null) return;
+
+            EditStackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(_selectedRecipeRow.Config));
             RefreshSelectedStatus();
         }
 

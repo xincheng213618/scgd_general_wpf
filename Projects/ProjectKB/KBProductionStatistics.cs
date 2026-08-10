@@ -4,6 +4,75 @@ using SqlSugar;
 
 namespace ProjectKB
 {
+    public enum KBProductionPeriodMode
+    {
+        Day,
+        Week,
+        Month,
+        All
+    }
+
+    public readonly record struct KBProductionPeriodRange(DateTime From, DateTime ToExclusive)
+    {
+        public string ToDisplayText(KBProductionPeriodMode mode)
+        {
+            return mode switch
+            {
+                KBProductionPeriodMode.All => "全部记录",
+                KBProductionPeriodMode.Week => $"{From:yyyy/MM/dd} - {ToExclusive.AddDays(-1):MM/dd}",
+                KBProductionPeriodMode.Month => From.ToString("yyyy/MM"),
+                _ => From.ToString("yyyy/MM/dd"),
+            };
+        }
+    }
+
+    public static class KBProductionPeriod
+    {
+        public static KBProductionPeriodRange GetRange(KBProductionPeriodMode mode, DateTime anchor)
+        {
+            DateTime day = anchor.Date;
+            return mode switch
+            {
+                KBProductionPeriodMode.All => new KBProductionPeriodRange(DateTime.MinValue, DateTime.MaxValue),
+                KBProductionPeriodMode.Week => CreateWeekRange(day),
+                KBProductionPeriodMode.Month => new KBProductionPeriodRange(
+                    new DateTime(day.Year, day.Month, 1),
+                    new DateTime(day.Year, day.Month, 1).AddMonths(1)),
+                _ => new KBProductionPeriodRange(day, day.AddDays(1)),
+            };
+        }
+
+        public static DateTime ShiftAnchor(KBProductionPeriodMode mode, DateTime anchor, int offset)
+        {
+            return mode switch
+            {
+                KBProductionPeriodMode.All => anchor.Date,
+                KBProductionPeriodMode.Week => anchor.Date.AddDays(checked(offset * 7)),
+                KBProductionPeriodMode.Month => anchor.Date.AddMonths(offset),
+                _ => anchor.Date.AddDays(offset),
+            };
+        }
+
+        private static KBProductionPeriodRange CreateWeekRange(DateTime day)
+        {
+            int daysAfterMonday = ((int)day.DayOfWeek - (int)DayOfWeek.Monday + 7) % 7;
+            DateTime monday = day.AddDays(-daysAfterMonday);
+            return new KBProductionPeriodRange(monday, monday.AddDays(7));
+        }
+    }
+
+    public sealed class KBProductionQuery
+    {
+        public DateTime From { get; init; } = DateTime.Today;
+        public DateTime ToExclusive { get; init; } = DateTime.Today.AddDays(1);
+        public KBProductionPeriodMode PeriodMode { get; init; } = KBProductionPeriodMode.Day;
+        public string? Model { get; init; }
+        public string? SN { get; init; }
+        public bool? Result { get; init; }
+        public int PageNumber { get; init; } = 1;
+        public int PageSize { get; init; } = 1000;
+    }
+
     [SugarTable("KBProductionSession")]
     public sealed class KBProductionSession : EntityBase
     {
@@ -39,11 +108,36 @@ namespace ProjectKB
         public IReadOnlyList<KBHourlyProductionRow> HourlyRows { get; init; } = [];
         public IReadOnlyList<KBDailyProductionRow> DailyRows { get; init; } = [];
         public IReadOnlyList<KBProductionSessionRow> SessionRows { get; init; } = [];
+        public IReadOnlyList<KBProductionTrendPoint> TrendRows { get; init; } = [];
 
         public string GoodRateText => $"{GoodRate:P2}";
         public string AverageCtText => KBProductionStatisticsCalculator.FormatMilliseconds(AverageCtMilliseconds);
         public string MinimumCtText => KBProductionStatisticsCalculator.FormatMilliseconds(MinimumCtMilliseconds);
         public string MaximumCtText => KBProductionStatisticsCalculator.FormatMilliseconds(MaximumCtMilliseconds);
+    }
+
+    public sealed class KBProductionTrendPoint
+    {
+        public DateTime Time { get; init; }
+        public string Label { get; init; } = string.Empty;
+        public int ProductionCount { get; init; }
+        public double AverageCtMilliseconds { get; init; }
+    }
+
+    public sealed class KBProductionRecordRow
+    {
+        public int Id { get; set; }
+        public string SN { get; set; } = string.Empty;
+        public string Model { get; set; } = string.Empty;
+        public DateTime CreateTime { get; set; }
+        public FlowStatus FlowStatus { get; set; }
+        public bool Result { get; set; }
+        public long RunTimeMilliseconds { get; set; }
+        public int NbrFailPoints { get; set; }
+        public string Msg { get; set; } = string.Empty;
+
+        public string ResultText => Result ? "PASS" : "FAIL";
+        public string CycleTimeText => KBProductionStatisticsCalculator.FormatMilliseconds(RunTimeMilliseconds);
     }
 
     public sealed class KBHourlyProductionRow
@@ -110,7 +204,8 @@ namespace ProjectKB
             IEnumerable<KBProductionSession> sourceSessions,
             DateTime from,
             DateTime toExclusive,
-            DateTime now)
+            DateTime now,
+            KBProductionPeriodMode periodMode)
         {
             ArgumentNullException.ThrowIfNull(sourceResults);
             ArgumentNullException.ThrowIfNull(sourceSessions);
@@ -227,7 +322,8 @@ namespace ProjectKB
                 SessionRows = sessionRows
                     .OrderByDescending(item => item.StartTime)
                     .ThenByDescending(item => item.SessionId)
-                    .ToList()
+                    .ToList(),
+                TrendRows = BuildTrendRows(results, periodMode)
             };
         }
 
@@ -282,6 +378,45 @@ namespace ProjectKB
             return item.FlowStatus is FlowStatus.Failed or FlowStatus.OverTime or FlowStatus.Canceled;
         }
 
+        private static List<KBProductionTrendPoint> BuildTrendRows(
+            IEnumerable<KBItemMaster> source,
+            KBProductionPeriodMode periodMode)
+        {
+            List<KBItemMaster> completed = source
+                .Where(item => item.FlowStatus == FlowStatus.Completed)
+                .OrderBy(item => item.CreateTime)
+                .ThenBy(item => item.Id)
+                .ToList();
+            if (periodMode == KBProductionPeriodMode.All)
+            {
+                return completed
+                    .GroupBy(item => new DateTime(item.CreateTime.Year, item.CreateTime.Month, 1))
+                    .OrderBy(group => group.Key)
+                    .Select(group =>
+                    {
+                        ProductionMetrics metrics = CalculateMetrics(group);
+                        return new KBProductionTrendPoint
+                        {
+                            Time = group.Key,
+                            Label = group.Key.ToString("yyyy/MM"),
+                            ProductionCount = metrics.ProductionCount,
+                            AverageCtMilliseconds = metrics.AverageCtMilliseconds
+                        };
+                    })
+                    .ToList();
+            }
+
+            return completed.Select(item => new KBProductionTrendPoint
+            {
+                Time = item.CreateTime,
+                Label = periodMode == KBProductionPeriodMode.Day
+                    ? item.CreateTime.ToString("HH:mm:ss")
+                    : item.CreateTime.ToString("MM/dd HH:mm:ss"),
+                ProductionCount = 1,
+                AverageCtMilliseconds = Math.Max(0, item.RunTime)
+            }).ToList();
+        }
+
         private sealed record ProductionMetrics(
             int ProductionCount,
             int GoodCount,
@@ -322,6 +457,10 @@ namespace ProjectKB
 
                 using SqlSugarClient db = CreateClient();
                 db.CodeFirst.InitTables<KBItemMaster, KBProductionSession>();
+                db.Ado.ExecuteCommand("CREATE INDEX IF NOT EXISTS \"IX_KBItemMaster_CreateTime\" ON \"KBItemMaster\" (\"CreateTime\");");
+                db.Ado.ExecuteCommand("CREATE INDEX IF NOT EXISTS \"IX_KBItemMaster_Model\" ON \"KBItemMaster\" (\"Model\");");
+                db.Ado.ExecuteCommand("CREATE INDEX IF NOT EXISTS \"IX_KBItemMaster_SN\" ON \"KBItemMaster\" (\"SN\");");
+                db.Ado.ExecuteCommand("CREATE INDEX IF NOT EXISTS \"IX_KBItemMaster_Result\" ON \"KBItemMaster\" (\"Result\");");
                 _schemaInitialized = true;
             }
         }
@@ -396,23 +535,72 @@ namespace ProjectKB
                 .ToList();
         }
 
-        public KBProductionStatistics QueryStatistics(DateTime from, DateTime toExclusive, string? model, DateTime now)
+        public IReadOnlyList<string> QuerySerialNumbers()
         {
             InitializeSchema();
             using SqlSugarClient db = CreateClient();
-            ISugarQueryable<KBItemMaster> resultQuery = db.Queryable<KBItemMaster>()
-                .Where(item => item.CreateTime >= from && item.CreateTime < toExclusive);
-            if (!string.IsNullOrWhiteSpace(model))
-                resultQuery = resultQuery.Where(item => item.Model == model);
-
-            List<KBItemMaster> results = resultQuery.ToList();
-            List<KBProductionSession> sessions = db.Queryable<KBProductionSession>()
-                .Where(item => item.StartTime >= from && item.StartTime < toExclusive)
+            return db.Queryable<KBItemMaster>()
+                .Where(item => item.SN != string.Empty)
+                .OrderBy(item => item.Id, OrderByType.Desc)
+                .Select(item => item.SN)
                 .ToList()
-                .Where(item => string.IsNullOrWhiteSpace(model)
-                    || string.Equals(item.Model, model, StringComparison.OrdinalIgnoreCase))
+                .Where(sn => !string.IsNullOrWhiteSpace(sn))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
-            return KBProductionStatisticsCalculator.Calculate(results, sessions, from, toExclusive, now);
+        }
+
+        public KBProductionStatistics QueryStatistics(KBProductionQuery query, DateTime now)
+        {
+            ValidateQuery(query);
+            InitializeSchema();
+            using SqlSugarClient db = CreateClient();
+            List<KBItemMaster> results = ApplyResultFilters(db.Queryable<KBItemMaster>(), query).ToList();
+
+            ISugarQueryable<KBProductionSession> sessionQuery = db.Queryable<KBProductionSession>()
+                .Where(item => item.StartTime >= query.From && item.StartTime < query.ToExclusive);
+            if (!string.IsNullOrWhiteSpace(query.Model))
+            {
+                string model = query.Model.Trim();
+                sessionQuery = sessionQuery.Where(item => item.Model.Contains(model));
+            }
+
+            return KBProductionStatisticsCalculator.Calculate(
+                results,
+                sessionQuery.ToList(),
+                query.From,
+                query.ToExclusive,
+                now,
+                query.PeriodMode);
+        }
+
+        public IReadOnlyList<KBProductionRecordRow> QueryRecords(KBProductionQuery query)
+        {
+            ValidateQuery(query);
+            InitializeSchema();
+            using SqlSugarClient db = CreateClient();
+            return ApplyResultFilters(db.Queryable<KBItemMaster>(), query)
+                .OrderBy(item => item.Id, OrderByType.Desc)
+                .Select(item => new KBProductionRecordRow
+                {
+                    Id = item.Id,
+                    SN = item.SN,
+                    Model = item.Model,
+                    CreateTime = item.CreateTime,
+                    FlowStatus = item.FlowStatus,
+                    Result = item.Result,
+                    RunTimeMilliseconds = item.RunTime,
+                    NbrFailPoints = item.NbrFailPoints,
+                    Msg = item.Msg
+                })
+                .ToPageList(query.PageNumber, query.PageSize);
+        }
+
+        public int QueryRecordCount(KBProductionQuery query)
+        {
+            ValidateQuery(query);
+            InitializeSchema();
+            using SqlSugarClient db = CreateClient();
+            return ApplyResultFilters(db.Queryable<KBItemMaster>(), query).Count();
         }
 
         private SqlSugarClient CreateClient()
@@ -437,6 +625,65 @@ namespace ProjectKB
                 && session.TargetProduction == Math.Max(0, summary.TargetProduction);
         }
 
+        private static ISugarQueryable<KBItemMaster> ApplyResultFilters(
+            ISugarQueryable<KBItemMaster> resultQuery,
+            KBProductionQuery query)
+        {
+            resultQuery = resultQuery.Where(item => item.CreateTime >= query.From && item.CreateTime < query.ToExclusive);
+            if (!string.IsNullOrWhiteSpace(query.Model))
+            {
+                string model = query.Model.Trim();
+                resultQuery = resultQuery.Where(item => item.Model.Contains(model));
+            }
+            if (!string.IsNullOrWhiteSpace(query.SN))
+            {
+                string sn = query.SN.Trim();
+                resultQuery = resultQuery.Where(item => item.SN.Contains(sn));
+            }
+            if (query.Result.HasValue)
+            {
+                bool result = query.Result.Value;
+                resultQuery = resultQuery.Where(item => item.Result == result);
+            }
+            return resultQuery;
+        }
+
+        private static void ValidateQuery(KBProductionQuery query)
+        {
+            ArgumentNullException.ThrowIfNull(query);
+            if (query.ToExclusive <= query.From)
+                throw new ArgumentOutOfRangeException(nameof(query), "结束时间必须晚于开始时间。");
+            if (query.PageNumber <= 0)
+                throw new ArgumentOutOfRangeException(nameof(query), query.PageNumber, "页码必须大于零。");
+            if (query.PageSize <= 0)
+                throw new ArgumentOutOfRangeException(nameof(query), query.PageSize, "每页数量必须大于零。");
+        }
+
         private static string Normalize(string? value) => value?.Trim() ?? string.Empty;
+    }
+
+    internal static class KBProductionSuggestionFilter
+    {
+        public static IReadOnlyList<string> Filter(IEnumerable<string> suggestions, string? text, int limit)
+        {
+            ArgumentNullException.ThrowIfNull(suggestions);
+            if (limit <= 0)
+                return [];
+
+            string filter = text?.Trim() ?? string.Empty;
+            IEnumerable<string> candidates = suggestions
+                .Where(item => !string.IsNullOrWhiteSpace(item))
+                .Select(item => item.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase);
+            if (filter.Length == 0)
+                return candidates.Take(limit).ToList();
+
+            return candidates
+                .Where(item => item.Contains(filter, StringComparison.OrdinalIgnoreCase))
+                .OrderByDescending(item => item.StartsWith(filter, StringComparison.OrdinalIgnoreCase))
+                .ThenBy(item => item, StringComparer.OrdinalIgnoreCase)
+                .Take(limit)
+                .ToList();
+        }
     }
 }

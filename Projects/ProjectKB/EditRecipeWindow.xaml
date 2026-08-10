@@ -83,20 +83,24 @@
                 </Grid>
 
                 <Grid Grid.Row="1" Margin="0,10,0,10">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="复制自" Margin="0,0,8,0"/>
                     <ComboBox x:Name="CopySourceComboBox" Grid.Column="1" DisplayMemberPath="TemplateName" MinWidth="200"/>
                     <Button Grid.Column="2" Content="复制到选中" Style="{StaticResource RecipeButton}" Click="CopyFrom_Click"/>
-                    <Button Grid.Column="3" Content="应用初始值" Style="{StaticResource RecipeButton}" Click="ApplyDefault_Click"/>
-                    <Button Grid.Column="4" Content="选中设为初始值" Style="{StaticResource RecipeButton}" Click="SetDefault_Click"/>
-                    <Button Grid.Column="5" Content="编辑初始值" Style="{StaticResource RecipeButton}" Click="EditDefault_Click"/>
+                    <WrapPanel Grid.Row="1" Grid.ColumnSpan="3" HorizontalAlignment="Right" Margin="0,8,0,0">
+                        <Button Content="应用初始值" ToolTip="将初始值应用到当前选中的模板" Style="{StaticResource RecipeButton}" Click="ApplyDefault_Click"/>
+                        <Button Content="全部应用初始值" ToolTip="将初始值应用到全部模板" Style="{StaticResource RecipeButton}" Click="ApplyDefaultToAll_Click"/>
+                        <Button Content="选中设为初始值" Style="{StaticResource RecipeButton}" Click="SetDefault_Click"/>
+                        <Button Content="编辑初始值" Style="{StaticResource RecipeButton}" Click="EditDefault_Click"/>
+                    </WrapPanel>
                 </Grid>
 
                 <Border Grid.Row="2" Background="{DynamicResource  SecondaryRegionBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="5">

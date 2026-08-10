@@ -7,7 +7,7 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<UseWPF>true</UseWPF>
 		<ApplicationIcon>Assets\ProjectKB.ico</ApplicationIcon>
-		<VersionPrefix>1.4.6.2</VersionPrefix>
+		<VersionPrefix>1.4.6.4</VersionPrefix>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -32,6 +32,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="NModbus" Version="3.0.83" />
+		<PackageReference Include="ScottPlot.WPF" Version="5.0.56" />
 	</ItemGroup>
 
 	<ItemGroup>
