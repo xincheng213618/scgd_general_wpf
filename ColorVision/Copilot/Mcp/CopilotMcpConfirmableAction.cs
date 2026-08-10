@@ -12,7 +12,7 @@ namespace ColorVision.Copilot.Mcp
 {
 
 
-    internal sealed partial class CopilotMcpConfirmationStore
+    internal sealed partial class CopilotMcpConfirmationStore : ICopilotApprovalStore
     {
         public const int MaximumActiveActions = 64;
         public const int MaximumRetainedActions = 256;
@@ -246,6 +246,45 @@ namespace ColorVision.Copilot.Mcp
                     .OrderBy(action => action.ExpiresAt)
                     .ToArray();
             }
+        }
+
+        public CopilotApprovalEligibility ValidateForReview(
+            string actionId,
+            CopilotConfirmationReviewContext reviewContext)
+        {
+            var action = Find(actionId);
+            if (action == null)
+            {
+                return CopilotApprovalEligibility.Denied(
+                    CopilotApprovalEligibilityReason.ActionNotFound,
+                    "The action id was not found.");
+            }
+
+            if (ExpireIfNeeded(action))
+            {
+                return CopilotApprovalEligibility.Denied(
+                    CopilotApprovalEligibilityReason.ActionExpired,
+                    "The action has expired.");
+            }
+
+            lock (_syncRoot)
+            {
+                if (!ValidateReviewContextNoLock(action, reviewContext, out var message))
+                {
+                    return CopilotApprovalEligibility.Denied(
+                        CopilotApprovalEligibilityReason.ContextMismatch,
+                        message);
+                }
+
+                if (action.Status != ConfirmableActionStatus.Pending)
+                {
+                    return CopilotApprovalEligibility.Denied(
+                        CopilotApprovalEligibilityReason.ActionNotPending,
+                        $"The action is {action.StatusLabel}.");
+                }
+            }
+
+            return CopilotApprovalEligibility.Allowed;
         }
 
         public bool Approve(

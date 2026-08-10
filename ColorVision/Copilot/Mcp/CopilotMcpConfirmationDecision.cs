@@ -43,7 +43,7 @@ namespace ColorVision.Copilot.Mcp
         }
 
         public static async Task<CopilotConfirmationApprovalResult> ApproveAsync(
-            CopilotMcpConfirmationStore store,
+            ICopilotApprovalStore store,
             ConfirmableAction action,
             CopilotConfirmationReviewContext reviewContext,
             CancellationToken cancellationToken)
