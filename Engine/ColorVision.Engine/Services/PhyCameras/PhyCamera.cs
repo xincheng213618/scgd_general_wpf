@@ -47,6 +47,7 @@ namespace ColorVision.Engine.Services.PhyCameras
     public class PhyCamera : ServiceBase,ITreeViewItem, IUploadMsg
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(PhyCamera));
+        private readonly CalibrationUploadRunner _calibrationUploadRunner = new();
 
         public ConfigPhyCamera Config { get; set; }
 
@@ -117,7 +118,8 @@ namespace ColorVision.Engine.Services.PhyCameras
             CopyConfigCommand = new RelayCommand(a => Common.Clipboard.SetText(Config.ToJsonN()));
             ContentInit();
 
-            UploadCalibrationCommand = new RelayCommand(a => UploadCalibration(a));
+            UploadCalibrationCommand = new RelayCommand(a => UploadCalibration(a), a => !_calibrationUploadRunner.IsRunning);
+            _calibrationUploadRunner.RunningStateChanged += (_, _) => RaiseUploadCalibrationCommandCanExecuteChanged();
 
             CalibrationParam.LoadResourceParams(CalibrationParams, SysResourceModel.Id);
 
@@ -974,28 +976,16 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         public void UploadCalibration(object sender)
         {
-            string DesPath = Path.Combine(Config.FileServerCfg.FileBasePath, Code, "cfg");
-            if (!Directory.Exists(DesPath))
+            if (_calibrationUploadRunner.IsRunning)
             {
-                try
-                {
-                    Directory.CreateDirectory(DesPath);
-                }
-                catch (Exception ex)
-                {
-                    log.Error(ex);
-                    MessageBox.Show(ex.Message);
-                    return;
-                }
+                ShowCalibrationUploadBusy();
+                return;
             }
 
-
-            UploadList.Clear();
+            string DesPath = Path.Combine(Config.FileServerCfg.FileBasePath, Code, "cfg");
             UploadWindow uploadwindow = new UploadWindow(Properties.Resources.CalibrationFileFilter) { WindowStartupLocation = WindowStartupLocation.CenterScreen };
             uploadwindow.OnUpload += async (s, e) =>
             {
-                UploadMsg uploadMsg = new UploadMsg(this);
-                uploadMsg.Show();
                 string uploadfilepath = e.UploadFilePath;
                 await UploadDataAsync(DesPath, uploadfilepath);
             };
@@ -1012,24 +1002,75 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         public async Task UploadDataAsync(string DesPath, string UploadFilePath)
         {
-            try
+            bool started = await _calibrationUploadRunner.TryRunAsync(async () =>
             {
-                await Task.Run(() => UploadDataCoreAsync(DesPath, UploadFilePath));
-            }
-            catch (Exception ex)
-            {
-                log.Error(ex);
-                Msg = ex.Message;
-                Application.Current.Dispatcher.Invoke(() =>
+                try
                 {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message, Properties.Resources.CalibrationFileManagement);
-                    UploadClosed?.Invoke(this, EventArgs.Empty);
-                });
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        UploadList.Clear();
+                        UploadMsg uploadMsg = new UploadMsg(this);
+                        uploadMsg.Show();
+                    });
+                    await Task.Run(() => UploadDataCoreAsync(DesPath, UploadFilePath));
+                }
+                catch (Exception ex)
+                {
+                    log.Error(ex);
+                    Msg = ex.Message;
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message, Properties.Resources.CalibrationFileManagement);
+                        UploadClosed?.Invoke(this, EventArgs.Empty);
+                    });
+                }
+            });
+
+            if (!started)
+            {
+                ShowCalibrationUploadBusy();
+            }
+        }
+
+        private static void ShowCalibrationUploadBusy()
+        {
+            Application.Current.Dispatcher.Invoke(() =>
+                MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.AlreadySentPleaseWait, Properties.Resources.CalibrationFileManagement));
+        }
+
+        internal void RaiseUploadCalibrationCommandCanExecuteChanged()
+        {
+            RaiseCanExecuteChangedOnUiThread(() =>
+            {
+                try
+                {
+                    UploadCalibrationCommand.RaiseCanExecuteChanged();
+                }
+                catch (Exception ex)
+                {
+                    log.Error("Failed to update calibration upload command state.", ex);
+                }
+            });
+        }
+
+        internal static void RaiseCanExecuteChangedOnUiThread(Action raiseCanExecuteChanged)
+        {
+            ArgumentNullException.ThrowIfNull(raiseCanExecuteChanged);
+
+            var dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher is null || dispatcher.CheckAccess())
+            {
+                raiseCanExecuteChanged();
+            }
+            else if (!dispatcher.HasShutdownStarted && !dispatcher.HasShutdownFinished)
+            {
+                dispatcher.Invoke(raiseCanExecuteChanged);
             }
         }
 
         private async Task UploadDataCoreAsync(string DesPath, string UploadFilePath)
         {
+            Directory.CreateDirectory(DesPath);
             Msg = Properties.Resources.ExtractingFilePleaseWait;
             await Task.Delay(10);
             if (File.Exists(UploadFilePath))

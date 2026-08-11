@@ -34,6 +34,8 @@ namespace ColorVision.Common.MVVM
         public void Execute(object? parameter) => execute(parameter);
 
         public void RaiseExecute(object parameter) => execute(parameter);
+
+        public void RaiseCanExecuteChanged() => CommandManager.InvalidateRequerySuggested();
     }
 
 
