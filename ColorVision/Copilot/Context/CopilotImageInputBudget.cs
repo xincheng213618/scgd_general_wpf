@@ -77,7 +77,7 @@ namespace ColorVision.Copilot
             cancellationToken.ThrowIfCancellationRequested();
             using var resized = decoded.Resize(
                 new SKImageInfo(preparedWidth, preparedHeight, SKColorType.Bgra8888, SKAlphaType.Premul),
-                new SKSamplingOptions(SKCubicResampler.Mitchell));
+                SKFilterQuality.High);
             if (resized == null)
                 throw new InvalidOperationException($"图片“{label}”无法缩放到安全输入尺寸。");
 

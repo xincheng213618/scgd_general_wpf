@@ -19,7 +19,6 @@
 		<PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.10" />
 		<PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.142" />
 		<PackageReference Include="MQTTnet" Version="5.2.0.1603" />
-		<PackageReference Include="NPOI" Version="2.8.0" />
 		<PackageReference Include="OpenCvSharp4" Version="4.13.0.20260627" />
 		<PackageReference Include="OpenCvSharp4.runtime.win" Version="4.13.0.20260627" />
 		<PackageReference Include="OpenCvSharp4.WpfExtensions" Version="4.13.0.20260627" />
