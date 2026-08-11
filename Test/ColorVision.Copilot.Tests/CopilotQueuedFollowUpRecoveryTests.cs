@@ -60,6 +60,33 @@ public sealed class CopilotQueuedFollowUpRecoveryTests
     }
 
     [Fact]
+    public void StartupRetainsExplicitGoalStartForTheMatchingActiveGoal()
+    {
+        var createdAt = new DateTimeOffset(2026, 8, 11, 9, 30, 0, TimeSpan.Zero);
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        conversation.Goal = CopilotConversationGoal.Create("持续迭代 Copilot", createdAt);
+        var explicitStart = CreateRecovery(
+            "goal-start-1",
+            conversation.Id,
+            conversation.Goal.Objective);
+        explicitStart.GoalId = conversation.Goal.Id;
+        explicitStart.AutomaticGoalContinuation = false;
+        explicitStart.ProfileId = "profile";
+        explicitStart.ResumeAfterRestart = true;
+        var state = new CopilotChatState
+        {
+            Conversations = [conversation],
+            QueuedFollowUpRecoveries = [explicitStart],
+        };
+
+        Assert.False(CopilotQueuedFollowUpRecovery.PrepareForRestartDispatch(state));
+
+        Assert.Same(explicitStart, Assert.Single(state.QueuedFollowUpRecoveries));
+        Assert.Empty(conversation.DraftText);
+        Assert.Equal(0, state.RecoveredQueuedFollowUpCount);
+    }
+
+    [Fact]
     public void StartupDropsDurableRecordAfterItsUserMessageWasPersisted()
     {
         var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");

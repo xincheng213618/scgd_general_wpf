@@ -170,11 +170,12 @@ namespace ColorVision.Copilot
             if (IsBusy
                 && normalizedArguments.Length > 0
                 && !string.Equals(normalizedArguments, "pause", StringComparison.OrdinalIgnoreCase)
-                && !string.Equals(normalizedArguments, "clear", StringComparison.OrdinalIgnoreCase))
+                && !string.Equals(normalizedArguments, "clear", StringComparison.OrdinalIgnoreCase)
+                && !IsGoalEditArguments(normalizedArguments))
             {
                 ShowLocalCommandResult(
                     command,
-                    "当前 Agent 任务运行中；此时可以查看、暂停或清除持续目标。请在当前轮结束后再设置、编辑或恢复目标。");
+                    "当前 Agent 任务运行中；此时可以查看、编辑、暂停或清除持续目标。请在当前轮结束后再设置或恢复目标。");
                 return;
             }
 
@@ -186,11 +187,27 @@ namespace ColorVision.Copilot
             if (result.Changed)
             {
                 conversation.Goal = result.Goal;
-                if (ShouldCancelAutomaticGoalContinuations(previousGoal, result))
-                    _followUpQueue.CancelAutomaticGoalContinuations(conversation.Id);
+                if (ShouldCancelGoalWork(previousGoal, result))
+                    _followUpQueue.CancelGoalWork(conversation.Id);
                 UpdateConversationMetadata(conversation, touch: true);
                 PersistState();
                 RefreshComposerTokenEstimate();
+            }
+
+            if (result.StartsWork
+                && result.Goal?.IsActive == true
+                && TryHandleActiveConversationGoalStart(
+                    conversation,
+                    result.Goal,
+                    out var goalStartQueued,
+                    out var goalStartMessage))
+            {
+                ShowLocalCommandResult(
+                    command,
+                    goalStartQueued
+                        ? result.Message + Environment.NewLine + goalStartMessage
+                        : goalStartMessage);
+                return;
             }
 
             ShowLocalCommandResult(command, result.Message);
@@ -205,7 +222,143 @@ namespace ColorVision.Copilot
             }
         }
 
-        internal static bool ShouldCancelAutomaticGoalContinuations(
+        private bool TryHandleActiveConversationGoalStart(
+            CopilotConversationRecord conversation,
+            CopilotConversationGoal goal,
+            out bool queued,
+            out string message)
+        {
+            queued = false;
+            message = string.Empty;
+            var activeRun = ActiveHostedRun;
+            if (activeRun?.IsAgent != true
+                || !string.Equals(activeRun.ConversationId, conversation.Id, StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            var admission = _followUpQueue.EvaluateAdmission(
+                conversation.Id,
+                CopilotAgentMode.Auto);
+            if (admission.Reason == CopilotRequestAdmissionReason.NoActiveRun)
+                return false;
+            if (!admission.IsAllowed)
+            {
+                message = PauseGoalAfterStartQueueFailure(
+                    conversation,
+                    goal,
+                    "无法把编辑后的目标排到当前任务之后：" + GetRequestAdmissionText(admission));
+                return true;
+            }
+
+            var profile = SelectedProfile;
+            if (profile?.IsConfigured != true)
+            {
+                OpenSettings();
+                message = PauseGoalAfterStartQueueFailure(
+                    conversation,
+                    goal,
+                    "当前模型配置不可用，编辑后的目标首轮工作没有进入队列");
+                return true;
+            }
+
+            var initialContext = CaptureHostedTurnSnapshot(
+                conversation,
+                attachmentOverride: Array.Empty<CopilotAttachmentItem>());
+            if (!TryResolveProjectTrustForSubmission(
+                initialContext,
+                () => CaptureHostedTurnSnapshot(
+                    conversation,
+                    attachmentOverride: Array.Empty<CopilotAttachmentItem>()),
+                out var submissionContext))
+            {
+                message = PauseGoalAfterStartQueueFailure(
+                    conversation,
+                    goal,
+                    "项目工作区尚未获得本轮所需的信任确认，编辑后的目标首轮工作没有进入队列");
+                return true;
+            }
+
+            var requestProfile = CreateConversationRequestProfile(
+                profile,
+                conversation,
+                CopilotAgentMode.Auto,
+                submissionContext.ProjectInstructionDiscoveryOptions);
+            if (!TryValidatePromptBudget(
+                goal.Objective,
+                CopilotAgentMode.Auto,
+                requestProfile,
+                submissionContext.ProjectInstructionDiscoveryOptions))
+            {
+                message = PauseGoalAfterStartQueueFailure(
+                    conversation,
+                    goal,
+                    "编辑后的目标没有通过请求上下文预算校验，首轮工作没有进入队列");
+                return true;
+            }
+
+            var queueRequest = new CopilotQueuedFollowUpRequest(
+                conversation.Id,
+                conversation.Title,
+                goal.Objective,
+                CopilotAgentMode.Auto,
+                requestProfile,
+                submissionContext,
+                AgentSkillReference: null,
+                RuntimeConfigSnapshot: CaptureTurnRuntimeConfigSnapshot(),
+                WorkspaceReviewTarget: null,
+                GoalId: goal.Id,
+                AutomaticGoalContinuation: false);
+            if (!_followUpQueue.TrySchedule(
+                queueRequest,
+                runNext: true,
+                ExecuteQueuedFollowUpAsync,
+                out _,
+                out admission))
+            {
+                if (admission.Reason == CopilotRequestAdmissionReason.NoActiveRun)
+                    return false;
+                message = PauseGoalAfterStartQueueFailure(
+                    conversation,
+                    goal,
+                    "无法把编辑后的目标排到当前任务之后：" + GetRequestAdmissionText(admission));
+                return true;
+            }
+
+            queued = true;
+            message = "当前 Agent 任务会先完成收尾；编辑后的目标已绑定新目标标识，并排为下一轮工作。";
+            PersistState(immediate: true);
+            return true;
+        }
+
+        private string PauseGoalAfterStartQueueFailure(
+            CopilotConversationRecord conversation,
+            CopilotConversationGoal goal,
+            string reason)
+        {
+            var normalizedReason = reason.TrimEnd('。') + "。目标已暂停，避免静默丢失首轮工作。";
+            if (conversation.Goal?.IsActive == true
+                && string.Equals(conversation.Goal.Id, goal.Id, StringComparison.Ordinal))
+            {
+                conversation.Goal = goal.WithState(
+                    CopilotConversationGoalState.Paused,
+                    DateTimeOffset.UtcNow,
+                    normalizedReason);
+                UpdateConversationMetadata(conversation, touch: true);
+                PersistState(immediate: true);
+                RefreshComposerTokenEstimate();
+            }
+            return normalizedReason + Environment.NewLine + goal.Objective;
+        }
+
+        private static bool IsGoalEditArguments(string arguments) =>
+            string.Equals(arguments, "edit", StringComparison.OrdinalIgnoreCase)
+            || arguments.StartsWith("edit ", StringComparison.OrdinalIgnoreCase)
+            || arguments.StartsWith("edit\t", StringComparison.OrdinalIgnoreCase)
+            || arguments.StartsWith("edit\r", StringComparison.OrdinalIgnoreCase)
+            || arguments.StartsWith("edit\n", StringComparison.OrdinalIgnoreCase);
+
+        internal static bool ShouldCancelGoalWork(
             CopilotConversationGoal? previousGoal,
             CopilotConversationGoalCommandResult result)
         {
@@ -224,7 +377,7 @@ namespace ColorVision.Copilot
             !IsBusy && SelectedConversation?.CanResumeGoal == true;
 
         private bool CanEditConversationGoal() =>
-            !IsBusy && SelectedConversation?.HasGoal == true;
+            SelectedConversation?.HasGoal == true;
 
         private bool CanManageExistingConversationGoal() =>
             SelectedConversation?.HasGoal == true;
@@ -244,7 +397,7 @@ namespace ColorVision.Copilot
         private void EditConversationGoalFromUi()
         {
             var goal = SelectedConversation?.Goal;
-            if (goal?.IsStructurallyValid() != true || IsBusy)
+            if (goal?.IsStructurallyValid() != true)
                 return;
 
             var window = new CopilotTextInputWindow(

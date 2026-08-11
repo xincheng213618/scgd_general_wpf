@@ -255,6 +255,7 @@ namespace ColorVision.Copilot
                 mode,
                 operation,
                 runNext: false,
+                isLocalCommand: false,
                 out run,
                 out admission);
         }
@@ -271,8 +272,79 @@ namespace ColorVision.Copilot
                 mode,
                 operation,
                 runNext: true,
+                isLocalCommand: false,
                 out run,
                 out admission);
+        }
+
+        internal bool TryScheduleLocalCommandFollowUp(
+            string conversationId,
+            CopilotAgentMode mode,
+            Func<CopilotHostedAgentRun, Task> operation,
+            bool runNext,
+            out CopilotHostedAgentRun? run,
+            out CopilotRequestAdmissionResult admission)
+        {
+            return TryScheduleFollowUp(
+                conversationId,
+                mode,
+                operation,
+                runNext,
+                isLocalCommand: true,
+                out run,
+                out admission);
+        }
+
+        internal CopilotRequestAdmissionResult EvaluateQueuedCommandSuccessorAdmission(
+            string queuedCommandRunId,
+            string? conversationId)
+        {
+            var normalizedRunId = (queuedCommandRunId ?? string.Empty).Trim();
+            var normalizedConversationId = (conversationId ?? string.Empty).Trim();
+            if (normalizedConversationId.Length == 0)
+                return new CopilotRequestAdmissionResult(CopilotRequestAdmissionReason.MissingConversation);
+            if (normalizedRunId.Length == 0)
+                return new CopilotRequestAdmissionResult(CopilotRequestAdmissionReason.NoActiveRun);
+
+            lock (_gate)
+                return EvaluateQueuedCommandSuccessorAdmissionNoLock(normalizedRunId, normalizedConversationId);
+        }
+
+        internal bool TryScheduleQueuedCommandSuccessor(
+            string queuedCommandRunId,
+            string conversationId,
+            CopilotAgentMode mode,
+            Func<CopilotHostedAgentRun, Task> operation,
+            out CopilotHostedAgentRun? run,
+            out CopilotRequestAdmissionResult admission)
+        {
+            var normalizedRunId = (queuedCommandRunId ?? string.Empty).Trim();
+            var normalizedConversationId = (conversationId ?? string.Empty).Trim();
+            if (normalizedConversationId.Length == 0)
+                throw new ArgumentException("A conversation ID is required.", nameof(conversationId));
+            ArgumentNullException.ThrowIfNull(operation);
+
+            lock (_gate)
+            {
+                admission = normalizedRunId.Length == 0
+                    ? new CopilotRequestAdmissionResult(CopilotRequestAdmissionReason.NoActiveRun)
+                    : EvaluateQueuedCommandSuccessorAdmissionNoLock(normalizedRunId, normalizedConversationId);
+                if (!admission.IsAllowed)
+                {
+                    run = null;
+                    return false;
+                }
+
+                run = new CopilotHostedAgentRun(normalizedConversationId, mode);
+                _queuedWorkItems.AddFirst(new HostedRunWorkItem(
+                    run,
+                    operation,
+                    QueuedRunDispatchPolicy.Always,
+                    normalizedRunId));
+            }
+
+            Publish(CopilotAgentTaskHostChangeKind.Queued, run);
+            return true;
         }
 
         internal bool TryRestoreQueuedFollowUp(
@@ -281,6 +353,39 @@ namespace ColorVision.Copilot
             CopilotAgentMode mode,
             DateTimeOffset? enqueuedAtUtc,
             Func<CopilotHostedAgentRun, Task> operation,
+            out CopilotHostedAgentRun? run) =>
+            TryRestoreQueuedFollowUp(
+                runId,
+                conversationId,
+                mode,
+                enqueuedAtUtc,
+                operation,
+                isLocalCommand: false,
+                out run);
+
+        internal bool TryRestoreQueuedLocalCommand(
+            string runId,
+            string conversationId,
+            CopilotAgentMode mode,
+            DateTimeOffset? enqueuedAtUtc,
+            Func<CopilotHostedAgentRun, Task> operation,
+            out CopilotHostedAgentRun? run) =>
+            TryRestoreQueuedFollowUp(
+                runId,
+                conversationId,
+                mode,
+                enqueuedAtUtc,
+                operation,
+                isLocalCommand: true,
+                out run);
+
+        private bool TryRestoreQueuedFollowUp(
+            string runId,
+            string conversationId,
+            CopilotAgentMode mode,
+            DateTimeOffset? enqueuedAtUtc,
+            Func<CopilotHostedAgentRun, Task> operation,
+            bool isLocalCommand,
             out CopilotHostedAgentRun? run)
         {
             var normalizedRunId = (runId ?? string.Empty).Trim();
@@ -315,7 +420,8 @@ namespace ColorVision.Copilot
                     normalizedConversationId,
                     mode,
                     normalizedRunId,
-                    enqueuedAtUtc);
+                    enqueuedAtUtc,
+                    isQueuedLocalCommand: isLocalCommand);
                 _queuedWorkItems.AddLast(new HostedRunWorkItem(
                     run,
                     operation,
@@ -333,6 +439,7 @@ namespace ColorVision.Copilot
             CopilotAgentMode mode,
             Func<CopilotHostedAgentRun, Task> operation,
             bool runNext,
+            bool isLocalCommand,
             out CopilotHostedAgentRun? run,
             out CopilotRequestAdmissionResult admission)
         {
@@ -350,7 +457,10 @@ namespace ColorVision.Copilot
                     return false;
                 }
 
-                run = new CopilotHostedAgentRun(normalizedConversationId, mode);
+                run = new CopilotHostedAgentRun(
+                    normalizedConversationId,
+                    mode,
+                    isQueuedLocalCommand: isLocalCommand);
                 var workItem = new HostedRunWorkItem(
                     run,
                     operation,
@@ -413,6 +523,37 @@ namespace ColorVision.Copilot
             return new CopilotRequestAdmissionResult(_queuedWorkItems.Count < MaxQueuedRuns
                 ? CopilotRequestAdmissionReason.Allowed
                 : CopilotRequestAdmissionReason.QueueFull);
+        }
+
+        private CopilotRequestAdmissionResult EvaluateQueuedCommandSuccessorAdmissionNoLock(
+            string normalizedRunId,
+            string normalizedConversationId)
+        {
+            if (_isShutdown)
+                return new CopilotRequestAdmissionResult(CopilotRequestAdmissionReason.HostShutdown);
+            if (_activeWorkItem == null
+                || !_activeWorkItem.Run.IsQueuedLocalCommand
+                || !string.Equals(_activeWorkItem.Run.Id, normalizedRunId, StringComparison.Ordinal))
+            {
+                return new CopilotRequestAdmissionResult(CopilotRequestAdmissionReason.NoActiveRun);
+            }
+            if (!string.Equals(
+                    _activeWorkItem.Run.ConversationId,
+                    normalizedConversationId,
+                    StringComparison.Ordinal))
+            {
+                return new CopilotRequestAdmissionResult(CopilotRequestAdmissionReason.FollowUpConversationMismatch);
+            }
+            if (_queuedWorkItems.Count >= MaxQueuedRuns)
+                return new CopilotRequestAdmissionResult(CopilotRequestAdmissionReason.QueueFull);
+            if (_queuedWorkItems.Any(item => string.Equals(
+                    item.QueuedCommandOriginRunId,
+                    normalizedRunId,
+                    StringComparison.Ordinal)))
+            {
+                return new CopilotRequestAdmissionResult(CopilotRequestAdmissionReason.ConversationAlreadyScheduled);
+            }
+            return new CopilotRequestAdmissionResult(CopilotRequestAdmissionReason.Allowed);
         }
 
         public int Shutdown()
@@ -765,6 +906,7 @@ namespace ColorVision.Copilot
         private sealed record HostedRunWorkItem(
             CopilotHostedAgentRun Run,
             Func<CopilotHostedAgentRun, Task> Operation,
-            QueuedRunDispatchPolicy DispatchPolicy);
+            QueuedRunDispatchPolicy DispatchPolicy,
+            string QueuedCommandOriginRunId = "");
     }
 }

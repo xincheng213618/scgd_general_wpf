@@ -543,18 +543,40 @@ namespace ColorVision.Copilot
             conversation.AgentSessionCheckpoint = null;
             PersistState();
 
-            var hostedRun = _taskHost.Start(
-                conversation.Id,
-                userMessage.RequestMode,
-                run => ExecuteHostedRetryAsync(
-                    run,
-                    conversation,
-                    requestProfile,
-                    userMessage,
-                    assistantMessage,
-                    turnSnapshot,
-                    runtimeConfigSnapshot,
-                    refreshExternalContext));
+            Task ExecuteAsync(CopilotHostedAgentRun run) => ExecuteHostedRetryAsync(
+                run,
+                conversation,
+                requestProfile,
+                userMessage,
+                assistantMessage,
+                turnSnapshot,
+                runtimeConfigSnapshot,
+                refreshExternalContext);
+            var queuedCommandExecution = _queuedLocalCommandExecution;
+            CopilotHostedAgentRun? hostedRun;
+            if (queuedCommandExecution == null)
+            {
+                hostedRun = _taskHost.Start(
+                    conversation.Id,
+                    userMessage.RequestMode,
+                    ExecuteAsync);
+            }
+            else if (!_taskHost.TryScheduleQueuedCommandSuccessor(
+                         queuedCommandExecution.HostedRun.Id,
+                         conversation.Id,
+                         userMessage.RequestMode,
+                         ExecuteAsync,
+                         out hostedRun,
+                         out var admission)
+                     || hostedRun == null)
+            {
+                ReportRequestAdmissionFailure(admission);
+                return;
+            }
+            else
+            {
+                return;
+            }
             await AwaitHostedRunCompletionAsync(hostedRun);
         }
 

@@ -502,7 +502,7 @@ public sealed class CopilotChatViewModelApprovalCoordinatorTests
     }
 
     [Fact]
-    public void GoalLifecycleResetsOnlyAutomaticWorkThatNoLongerMatches()
+    public void GoalLifecycleResetsOnlyBoundWorkThatNoLongerMatches()
     {
         var now = new DateTimeOffset(2026, 8, 11, 10, 0, 0, TimeSpan.Zero);
         var active = CopilotConversationGoal.Create("持续完善 Copilot", now);
@@ -521,12 +521,12 @@ public sealed class CopilotChatViewModelApprovalCoordinatorTests
             now: now.AddMinutes(1));
         var budgetLimited = CopilotConversationGoalCommand.Execute(used, "budget 500", now.AddMinutes(2));
 
-        Assert.True(CopilotChatViewModel.ShouldCancelAutomaticGoalContinuations(active, paused));
-        Assert.True(CopilotChatViewModel.ShouldCancelAutomaticGoalContinuations(active, cleared));
-        Assert.True(CopilotChatViewModel.ShouldCancelAutomaticGoalContinuations(active, edited));
-        Assert.True(CopilotChatViewModel.ShouldCancelAutomaticGoalContinuations(paused.Goal, resumed));
-        Assert.False(CopilotChatViewModel.ShouldCancelAutomaticGoalContinuations(active, budgeted));
-        Assert.True(CopilotChatViewModel.ShouldCancelAutomaticGoalContinuations(used, budgetLimited));
+        Assert.True(CopilotChatViewModel.ShouldCancelGoalWork(active, paused));
+        Assert.True(CopilotChatViewModel.ShouldCancelGoalWork(active, cleared));
+        Assert.True(CopilotChatViewModel.ShouldCancelGoalWork(active, edited));
+        Assert.True(CopilotChatViewModel.ShouldCancelGoalWork(paused.Goal, resumed));
+        Assert.False(CopilotChatViewModel.ShouldCancelGoalWork(active, budgeted));
+        Assert.True(CopilotChatViewModel.ShouldCancelGoalWork(used, budgetLimited));
     }
 
     private static CopilotConversationRecord CreateConversationWithAssistant(

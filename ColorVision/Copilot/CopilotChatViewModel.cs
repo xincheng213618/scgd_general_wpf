@@ -101,6 +101,7 @@ namespace ColorVision.Copilot
         private long _composerReferenceRefreshVersion;
         private int _selectedLocalCommandSuggestionIndex = -1;
         private CopilotPromptHistorySearchItem? _selectedPromptHistorySearchResult;
+        private QueuedLocalCommandExecutionContext? _queuedLocalCommandExecution;
         private int _disposeState;
 
         public CopilotChatViewModel()

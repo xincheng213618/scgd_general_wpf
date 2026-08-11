@@ -695,7 +695,7 @@ namespace ColorVision.Copilot
 
         private void RunUiOperation(Func<Task> operation, string operationName, Action<string>? onError = null)
         {
-            CopilotUiTaskObserver.Run(
+            var observedOperation = CopilotUiTaskObserver.ObserveAsync(
                 operation,
                 operationName,
                 onError ?? (message =>
@@ -703,6 +703,9 @@ namespace ColorVision.Copilot
                     LocalCommandResultTitle = operationName + " · 失败";
                     LocalCommandResultText = message;
                 }));
+            var queuedCommandExecution = _queuedLocalCommandExecution;
+            if (queuedCommandExecution != null)
+                queuedCommandExecution.TrackOperation(observedOperation);
         }
     }
 }

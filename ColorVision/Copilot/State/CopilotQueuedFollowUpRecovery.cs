@@ -17,6 +17,11 @@ namespace ColorVision.Copilot
 
         public string GoalId { get; set; } = string.Empty;
 
+        // Null preserves the legacy contract where every GoalId meant automatic continuation.
+        public bool? AutomaticGoalContinuation { get; set; }
+
+        public bool IsLocalCommand { get; set; }
+
         public string Prompt { get; set; } = string.Empty;
 
         public CopilotComposerStash? ComposerState { get; set; }
@@ -31,13 +36,20 @@ namespace ColorVision.Copilot
 
         public bool ShouldSerializeGoalId() => !string.IsNullOrWhiteSpace(GoalId);
 
+        public bool ShouldSerializeAutomaticGoalContinuation() => AutomaticGoalContinuation.HasValue;
+
+        public bool ShouldSerializeIsLocalCommand() => IsLocalCommand;
+
         public bool ShouldSerializeProfileId() => !string.IsNullOrWhiteSpace(ProfileId);
 
         public bool ShouldSerializeQueuedAtUtc() => QueuedAtUtc.HasValue;
 
         public bool ShouldSerializeResumeAfterRestart() => ResumeAfterRestart;
 
-        internal bool IsAutomaticGoalContinuation => !string.IsNullOrWhiteSpace(GoalId);
+        internal bool IsGoalBound => !string.IsNullOrWhiteSpace(GoalId);
+
+        internal bool IsAutomaticGoalContinuation => IsGoalBound
+            && (AutomaticGoalContinuation ?? true);
 
         internal bool TryGetNormalized(
             out string runId,
@@ -314,29 +326,9 @@ namespace ColorVision.Copilot
             CopilotConversationRecord conversation,
             IEnumerable<CopilotComposerStash> recoveries)
         {
-            var identities = conversation.Attachments
-                .Where(attachment => attachment != null)
-                .Select(BuildAttachmentIdentity)
-                .ToHashSet(StringComparer.Ordinal);
-            foreach (var attachment in recoveries
-                .SelectMany(recovery => recovery.CreateAttachmentSnapshots()))
-            {
-                if (identities.Add(BuildAttachmentIdentity(attachment)))
-                    conversation.Attachments.Add(attachment);
-            }
-        }
-
-        private static string BuildAttachmentIdentity(CopilotAttachmentItem attachment)
-        {
-            if (!string.IsNullOrWhiteSpace(attachment.Id))
-                return "id:" + attachment.Id.Trim();
-
-            return string.Join(
-                "\0",
-                (int)attachment.Type,
-                attachment.Title,
-                attachment.Value,
-                attachment.Source);
+            CopilotComposerAttachmentService.RestoreDistinctSnapshots(
+                conversation.Attachments,
+                recoveries.SelectMany(recovery => recovery.CreateAttachmentSnapshots()));
         }
 
         private static string FormatMode(CopilotAgentMode mode) => mode switch

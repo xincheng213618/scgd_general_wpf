@@ -459,12 +459,17 @@ namespace ColorVision.Copilot
                 : string.Empty;
 
 
-        private CopilotHostedAgentRun? ActiveHostedRun => _taskHost.ActiveRun;
+        private CopilotHostedAgentRun? ActiveHostedRun => _taskHost.ActiveRun is { IsQueuedLocalCommand: false } run
+            ? run
+            : null;
 
         private CopilotHostedRunInteraction ActiveHostedRunInteraction =>
             CopilotHostedRunInteractionPolicy.Evaluate(ActiveHostedRun?.State ?? CopilotHostedRunState.Completed);
 
-        private CopilotHostedAgentRun? SelectedHostedRun => _taskHost.FindRunByConversationId(SelectedConversation?.Id);
+        private CopilotHostedAgentRun? SelectedHostedRun =>
+            _taskHost.FindRunByConversationId(SelectedConversation?.Id) is { IsQueuedLocalCommand: false } run
+                ? run
+                : null;
 
         private bool IsAgentRequestActive => ActiveHostedRun?.IsAgent == true;
 

@@ -17,7 +17,9 @@ namespace ColorVision.Copilot
         CopilotTurnRuntimeConfigSnapshot RuntimeConfigSnapshot,
         CopilotWorkspaceReviewTargetContext? WorkspaceReviewTarget,
         string GoalId = "",
-        DateTimeOffset? QueuedAtUtc = null)
+        DateTimeOffset? QueuedAtUtc = null,
+        bool? AutomaticGoalContinuation = null,
+        bool IsLocalCommand = false)
     {
         public CopilotQueuedFollowUp Create(string runId) => new(
             runId,
@@ -31,7 +33,9 @@ namespace ColorVision.Copilot
             AgentSkillReference,
             RuntimeConfigSnapshot,
             WorkspaceReviewTarget,
-            QueuedAtUtc);
+            QueuedAtUtc,
+            AutomaticGoalContinuation,
+            IsLocalCommand);
     }
 
     internal readonly record struct CopilotQueuedFollowUpRemovalResult(
@@ -76,6 +80,22 @@ namespace ColorVision.Copilot
         {
             var runIds = _itemsByRunId.Values
                 .Where(item => item.IsAutomaticGoalContinuation
+                    && string.Equals(item.ConversationId, conversationId, StringComparison.Ordinal))
+                .Select(item => item.RunId)
+                .ToArray();
+            var cancelledCount = 0;
+            foreach (var runId in runIds)
+            {
+                if (_taskHost.RequestCancel(runId))
+                    cancelledCount++;
+            }
+            return cancelledCount;
+        }
+
+        public int CancelGoalWork(string conversationId)
+        {
+            var runIds = _itemsByRunId.Values
+                .Where(item => item.IsGoalBound
                     && string.Equals(item.ConversationId, conversationId, StringComparison.Ordinal))
                 .Select(item => item.RunId)
                 .ToArray();
@@ -154,19 +174,35 @@ namespace ColorVision.Copilot
             }
 
             CopilotHostedAgentRun? queuedRun;
-            var scheduled = runNext
-                ? _taskHost.TryScheduleFollowUpNext(
+            bool scheduled;
+            if (request.IsLocalCommand)
+            {
+                scheduled = _taskHost.TryScheduleLocalCommandFollowUp(
                     request.ConversationId,
                     request.Mode,
                     ExecuteAsync,
+                    runNext,
                     out queuedRun,
-                    out admission)
-                : _taskHost.TryScheduleFollowUp(
+                    out admission);
+            }
+            else if (runNext)
+            {
+                scheduled = _taskHost.TryScheduleFollowUpNext(
                     request.ConversationId,
                     request.Mode,
                     ExecuteAsync,
                     out queuedRun,
                     out admission);
+            }
+            else
+            {
+                scheduled = _taskHost.TryScheduleFollowUp(
+                    request.ConversationId,
+                    request.Mode,
+                    ExecuteAsync,
+                    out queuedRun,
+                    out admission);
+            }
             if (!scheduled || queuedRun == null)
             {
                 item = null;
@@ -201,17 +237,29 @@ namespace ColorVision.Copilot
 
             var itemReady = new TaskCompletionSource<CopilotQueuedFollowUp>(
                 TaskCreationOptions.RunContinuationsAsynchronously);
-            if (!_taskHost.TryRestoreQueuedFollowUp(
-                item.RunId,
-                item.ConversationId,
-                item.Mode,
-                item.QueuedAtUtc,
-                async run =>
-                {
-                    var queuedItem = await itemReady.Task.ConfigureAwait(false);
-                    await executeAsync(run, queuedItem).ConfigureAwait(false);
-                },
-                out var restoredRun))
+            async Task ExecuteAsync(CopilotHostedAgentRun run)
+            {
+                var queuedItem = await itemReady.Task.ConfigureAwait(false);
+                await executeAsync(run, queuedItem).ConfigureAwait(false);
+            }
+
+            CopilotHostedAgentRun? restoredRun;
+            var restored = item.IsLocalCommand
+                ? _taskHost.TryRestoreQueuedLocalCommand(
+                    item.RunId,
+                    item.ConversationId,
+                    item.Mode,
+                    item.QueuedAtUtc,
+                    ExecuteAsync,
+                    out restoredRun)
+                : _taskHost.TryRestoreQueuedFollowUp(
+                    item.RunId,
+                    item.ConversationId,
+                    item.Mode,
+                    item.QueuedAtUtc,
+                    ExecuteAsync,
+                    out restoredRun);
+            if (!restored)
             {
                 return false;
             }
@@ -318,6 +366,24 @@ namespace ColorVision.Copilot
             return changed;
         }
 
+        public bool MarkRecoveryDispatching(string runId)
+        {
+            var changed = false;
+            foreach (var recovery in _state.QueuedFollowUpRecoveries)
+            {
+                if (recovery == null
+                    || !string.Equals(recovery.RunId, runId, StringComparison.Ordinal)
+                    || !recovery.ResumeAfterRestart)
+                {
+                    continue;
+                }
+
+                recovery.ResumeAfterRestart = false;
+                changed = true;
+            }
+            return changed;
+        }
+
         public bool PreserveForRestart()
         {
             var knownRunIds = _state.QueuedFollowUpRecoveries
@@ -409,6 +475,10 @@ namespace ColorVision.Copilot
                 RunId = item.RunId,
                 ConversationId = item.ConversationId,
                 GoalId = item.GoalId,
+                AutomaticGoalContinuation = item.IsGoalBound
+                    ? item.IsAutomaticGoalContinuation
+                    : null,
+                IsLocalCommand = item.IsLocalCommand,
                 Prompt = item.Prompt,
                 ComposerState = item.CreateComposerState(),
                 ProfileId = item.Profile.Id,

@@ -55,7 +55,7 @@ namespace ColorVision.Copilot
         {
             return Volatile.Read(ref _disposeState) == 0
                 && !HasExclusiveLocalOperation
-                && _taskHost.EvaluateRequestAdmission(conversationId, mode).IsAllowed;
+                && EvaluateConversationRequestAdmission(conversationId, mode).IsAllowed;
         }
 
         private bool HasExclusiveLocalOperation => _isCompactingConversation
@@ -64,7 +64,19 @@ namespace ColorVision.Copilot
             || _webPageAttachmentCts != null;
 
         private CopilotRequestAdmissionResult EvaluateComposerRequestAdmission(CopilotAgentMode mode) =>
-            _taskHost.EvaluateRequestAdmission(SelectedConversation?.Id, mode);
+            EvaluateConversationRequestAdmission(SelectedConversation?.Id, mode);
+
+        private CopilotRequestAdmissionResult EvaluateConversationRequestAdmission(
+            string? conversationId,
+            CopilotAgentMode mode)
+        {
+            var queuedCommandExecution = _queuedLocalCommandExecution;
+            return queuedCommandExecution == null
+                ? _taskHost.EvaluateRequestAdmission(conversationId, mode)
+                : _taskHost.EvaluateQueuedCommandSuccessorAdmission(
+                    queuedCommandExecution.HostedRun.Id,
+                    conversationId);
+        }
 
         private string GetRequestAdmissionText(CopilotRequestAdmissionResult admission) => admission.Reason switch
         {

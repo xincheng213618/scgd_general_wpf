@@ -40,6 +40,7 @@ namespace ColorVision.Copilot
             }
 
             var isDirectSubmission = directPrompt != null;
+            var queuedCommandExecution = _queuedLocalCommandExecution;
             var composerCapture = isDirectSubmission ? null : _composerSession.Capture();
             var prompt = (directPrompt ?? composerCapture!.Text).Trim();
             var modelPrompt = (directRequestContent ?? prompt).Trim();
@@ -71,7 +72,10 @@ namespace ColorVision.Copilot
 
             var requestAttachments = isDirectSubmission
                 ? Array.Empty<CopilotAttachmentItem>()
-                : Attachments.ToArray();
+                : queuedCommandExecution?.QueuedFollowUp.SubmissionContext.Attachments
+                    .Select(attachment => attachment.CreateSnapshot())
+                    .ToArray()
+                    ?? Attachments.ToArray();
             if (!TryValidateComposerAttachments(requestAttachments))
                 return;
 
@@ -199,12 +203,23 @@ namespace ColorVision.Copilot
                 refreshExternalContext: true,
                 isAutomaticGoalContinuation: false);
 
-            if (!_taskHost.TrySchedule(
-                preparedTurn.ConversationId,
-                preparedTurn.Mode,
-                run => ExecuteHostedPreparedTurnAsync(run, preparedTurn),
-                out var hostedRun,
-                out var admission)
+            CopilotHostedAgentRun? hostedRun;
+            CopilotRequestAdmissionResult admission;
+            var scheduled = queuedCommandExecution == null
+                ? _taskHost.TrySchedule(
+                    preparedTurn.ConversationId,
+                    preparedTurn.Mode,
+                    run => ExecuteHostedPreparedTurnAsync(run, preparedTurn),
+                    out hostedRun,
+                    out admission)
+                : _taskHost.TryScheduleQueuedCommandSuccessor(
+                    queuedCommandExecution.HostedRun.Id,
+                    preparedTurn.ConversationId,
+                    preparedTurn.Mode,
+                    run => ExecuteHostedPreparedTurnAsync(run, preparedTurn),
+                    out hostedRun,
+                    out admission);
+            if (!scheduled
                 || hostedRun == null)
             {
                 conversation.Messages.Remove(assistantMessage);
@@ -221,6 +236,11 @@ namespace ColorVision.Copilot
                 ReportRequestAdmissionFailure(admission);
                 return;
             }
+            if (queuedCommandExecution != null)
+            {
+                if (!isDirectSubmission)
+                    queuedCommandExecution.QueuedAttachmentsConsumedBySuccessor = true;
+            }
 
             if (automaticCompaction != CopilotAutomaticCompactionOutcome.Applied)
                 DismissLocalCommandResult();
@@ -235,11 +255,16 @@ namespace ColorVision.Copilot
                 && composerCapture != null
                 && _composerSession.CommitScheduled(composerCapture.Token))
             {
+                if (queuedCommandExecution != null)
+                    queuedCommandExecution.ComposerRestoreToken = _composerSession.Capture().Token;
                 SynchronizeSelectedConversationComposerDraft();
-                ConsumeCapturedComposerAttachments(conversation, requestAttachments);
+                if (queuedCommandExecution == null)
+                    ConsumeCapturedComposerAttachments(conversation, requestAttachments);
                 NotifyComposerTextChanged(synchronizeDraft: false);
                 OnComposerRequestModeChanged();
             }
+            if (queuedCommandExecution != null)
+                return;
             await AwaitHostedRunCompletionAsync(hostedRun);
             if (!hostedRun.HasStarted)
                 FinalizeCancelledQueuedRun(conversation, assistantMessage);

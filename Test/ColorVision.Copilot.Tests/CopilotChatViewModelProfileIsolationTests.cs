@@ -594,6 +594,178 @@ public sealed class CopilotChatViewModelProfileIsolationTests
     }
 
     [Fact]
+    public async Task EditingGoalDuringActiveTurnQueuesOnlyTheLatestGoalAsNextWork()
+    {
+        var profile = CreateProfile("profile-a", "Profile A", "model-a");
+        var config = CreateConfig(profile, "running-goal-edit-test-token");
+        var conversation = CreateConversation(profile, "conversation-a", string.Empty);
+        var originalGoal = CopilotConversationGoal.Create(
+            "Finish the original runtime objective",
+            new DateTimeOffset(2026, 8, 11, 13, 0, 0, TimeSpan.Zero));
+        conversation.Goal = originalGoal;
+        var runtime = new GatedFailingTurnRuntime();
+        var taskHost = new CopilotAgentTaskHost();
+        var activeStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseActive = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        using var solutionManagerScope = new IsolatedSolutionManagerScope();
+        var viewModel = CreateViewModel(conversation, config, runtime, taskHost);
+        var activeRun = taskHost.Start(
+            conversation.Id,
+            CopilotAgentMode.Auto,
+            async _ =>
+            {
+                activeStarted.TrySetResult();
+                await releaseActive.Task;
+            });
+        try
+        {
+            await activeStarted.Task.WaitAsync(TestTimeout);
+
+            Assert.True(viewModel.EditConversationGoalCommand.CanExecute(null));
+
+            viewModel.InputText = "/goal edit Finish the revised runtime objective";
+            viewModel.SendCommand.Execute(null);
+
+            var firstEditedGoal = Assert.IsType<CopilotConversationGoal>(conversation.Goal);
+            Assert.NotEqual(originalGoal.Id, firstEditedGoal.Id);
+            Assert.Equal("Finish the revised runtime objective", firstEditedGoal.Objective);
+            var firstQueued = Assert.Single(viewModel.QueuedFollowUps);
+            Assert.Equal(firstEditedGoal.Id, firstQueued.GoalId);
+            Assert.Equal(firstEditedGoal.Objective, firstQueued.Prompt);
+            Assert.True(firstQueued.IsGoalBound);
+            Assert.False(firstQueued.IsAutomaticGoalContinuation);
+
+            viewModel.InputText = "/goal edit Finish the latest runtime objective";
+            viewModel.SendCommand.Execute(null);
+
+            var latestGoal = Assert.IsType<CopilotConversationGoal>(conversation.Goal);
+            Assert.NotEqual(firstEditedGoal.Id, latestGoal.Id);
+            Assert.Equal("Finish the latest runtime objective", latestGoal.Objective);
+            var latestQueued = Assert.Single(viewModel.QueuedFollowUps);
+            Assert.NotEqual(firstQueued.RunId, latestQueued.RunId);
+            Assert.Equal(latestGoal.Id, latestQueued.GoalId);
+            Assert.Equal(latestGoal.Objective, latestQueued.Prompt);
+            Assert.True(latestQueued.IsGoalBound);
+            Assert.False(latestQueued.IsAutomaticGoalContinuation);
+            Assert.Single(taskHost.QueuedRuns);
+        }
+        finally
+        {
+            foreach (var queuedRun in taskHost.QueuedRuns.ToArray())
+                taskHost.RequestCancel(queuedRun.Id);
+            releaseActive.TrySetResult();
+            await activeRun.Completion.WaitAsync(TestTimeout);
+            viewModel.Dispose();
+        }
+    }
+
+    [Fact]
+    public async Task EditingGoalDuringActiveTurnPausesItWhenTheFollowUpQueueIsFull()
+    {
+        var profile = CreateProfile("profile-a", "Profile A", "model-a");
+        var config = CreateConfig(profile, "running-goal-edit-full-queue-test-token");
+        var conversation = CreateConversation(profile, "conversation-a", string.Empty);
+        conversation.Goal = CopilotConversationGoal.Create(
+            "Finish the original runtime objective",
+            new DateTimeOffset(2026, 8, 11, 13, 30, 0, TimeSpan.Zero));
+        var taskHost = new CopilotAgentTaskHost();
+        var activeStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseActive = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        using var solutionManagerScope = new IsolatedSolutionManagerScope();
+        var viewModel = CreateViewModel(
+            conversation,
+            config,
+            new GatedFailingTurnRuntime(),
+            taskHost);
+        var activeRun = taskHost.Start(
+            conversation.Id,
+            CopilotAgentMode.Auto,
+            async _ =>
+            {
+                activeStarted.TrySetResult();
+                await releaseActive.Task;
+            });
+        try
+        {
+            await activeStarted.Task.WaitAsync(TestTimeout);
+            for (var index = 0; index < taskHost.MaxQueuedRuns; index++)
+            {
+                Assert.True(taskHost.TryScheduleFollowUp(
+                    conversation.Id,
+                    CopilotAgentMode.Auto,
+                    static _ => Task.CompletedTask,
+                    out _,
+                    out _));
+            }
+
+            viewModel.InputText = "/goal edit Finish the revised runtime objective";
+            viewModel.SendCommand.Execute(null);
+
+            var editedGoal = Assert.IsType<CopilotConversationGoal>(conversation.Goal);
+            Assert.Equal("Finish the revised runtime objective", editedGoal.Objective);
+            Assert.Equal(CopilotConversationGoalState.Paused, editedGoal.State);
+            Assert.Empty(viewModel.QueuedFollowUps);
+            Assert.Contains("队列已满", viewModel.LocalCommandResultText, StringComparison.Ordinal);
+            Assert.Contains("目标已暂停", viewModel.LocalCommandResultText, StringComparison.Ordinal);
+        }
+        finally
+        {
+            foreach (var queuedRun in taskHost.QueuedRuns.ToArray())
+                taskHost.RequestCancel(queuedRun.Id);
+            releaseActive.TrySetResult();
+            await activeRun.Completion.WaitAsync(TestTimeout);
+            viewModel.Dispose();
+        }
+    }
+
+    [Fact]
+    public async Task SupersededExplicitGoalStartExitsWithoutRunningAgainstTheNewGoal()
+    {
+        var profile = CreateProfile("profile-a", "Profile A", "model-a");
+        var config = CreateConfig(profile, "superseded-goal-start-test-token");
+        var conversation = CreateConversation(profile, "conversation-a", string.Empty);
+        conversation.Goal = CopilotConversationGoal.Create(
+            "Finish the latest runtime objective",
+            new DateTimeOffset(2026, 8, 11, 14, 0, 0, TimeSpan.Zero));
+        var runtime = new GatedFailingTurnRuntime();
+        var queuedFollowUp = new CopilotQueuedFollowUp(
+            "superseded-goal-run",
+            conversation.Id,
+            conversation.Title,
+            "Finish the superseded runtime objective",
+            CopilotAgentMode.Auto,
+            profile,
+            new CopilotAgentHostContextSnapshot("", "", []),
+            goalId: "superseded-goal-id",
+            automaticGoalContinuation: false);
+
+        using var solutionManagerScope = new IsolatedSolutionManagerScope();
+        using var viewModel = CreateViewModel(
+            conversation,
+            config,
+            runtime,
+            new CopilotAgentTaskHost());
+        using var hostedRun = new CopilotHostedAgentRun(
+            conversation.Id,
+            CopilotAgentMode.Auto);
+        var executeMethod = typeof(CopilotChatViewModel).GetMethod(
+            "ExecuteQueuedFollowUpAsync",
+            BindingFlags.Instance | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("ExecuteQueuedFollowUpAsync was not found.");
+
+        var execution = Assert.IsAssignableFrom<Task>(executeMethod.Invoke(
+            viewModel,
+            [hostedRun, queuedFollowUp]));
+        await execution.WaitAsync(TestTimeout);
+
+        Assert.False(runtime.Entered.IsCompleted);
+        Assert.Equal("Finish the latest runtime objective", conversation.Goal.Objective);
+        Assert.Empty(conversation.Messages);
+    }
+
+    [Fact]
     public void PromptHistorySearchUsesAnOverlayAndRestoresTheCompleteComposerDraft()
     {
         var profile = CreateProfile("profile-a", "Profile A", "model-a");
@@ -745,6 +917,477 @@ public sealed class CopilotChatViewModelProfileIsolationTests
                 taskHost.Changed -= onHostChanged;
             await CompleteAndDisposeAsync(viewModel, runtime, taskHost, activeRun);
         }
+    }
+
+    [Fact]
+    public async Task ActiveComposerSuggestsSlashCommandsThatCanRunFromTheNextTurn()
+    {
+        var profile = CreateProfile("profile-a", "Profile A", "model-a");
+        var config = CreateConfig(profile, "queued-command-completion-test-token");
+        var conversation = CreateConversation(profile, "conversation-a", string.Empty);
+        var taskHost = new CopilotAgentTaskHost();
+        var activeStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseActive = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var solutionManagerScope = new IsolatedSolutionManagerScope();
+        using var viewModel = CreateViewModel(
+            conversation,
+            config,
+            new GatedFailingTurnRuntime(),
+            taskHost);
+        var activeRun = taskHost.Start(
+            conversation.Id,
+            CopilotAgentMode.Auto,
+            async _ =>
+            {
+                activeStarted.TrySetResult();
+                await releaseActive.Task;
+            });
+
+        try
+        {
+            await activeStarted.Task.WaitAsync(TestTimeout);
+            viewModel.InputText = "/pl";
+
+            Assert.Contains(
+                viewModel.LocalCommandSuggestions,
+                command => command.Name == "/plan");
+            Assert.Contains("排到下一轮", viewModel.LocalCommandSuggestionHeader, StringComparison.Ordinal);
+        }
+        finally
+        {
+            releaseActive.TrySetResult();
+            await activeRun.Completion.WaitAsync(TestTimeout);
+        }
+    }
+
+    [Fact]
+    public async Task QueueActionDefersSlashCommandAndPreservesNewerComposerDraft()
+    {
+        var profile = CreateProfile("profile-a", "Profile A", "model-a");
+        var config = CreateConfig(profile, "queued-status-command-test-token");
+        var conversation = CreateConversation(profile, "conversation-a", string.Empty);
+        var queuedAttachment = CopilotAttachmentItem.CreateContext("queued command attachment");
+        var newerAttachment = CopilotAttachmentItem.CreateContext("newer draft attachment");
+        conversation.Attachments.Add(queuedAttachment);
+        var taskHost = new CopilotAgentTaskHost();
+        var activeStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseActive = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var solutionManagerScope = new IsolatedSolutionManagerScope();
+        var viewModel = CreateViewModel(conversation, config, new GatedFailingTurnRuntime(), taskHost);
+        var activeRun = taskHost.Start(
+            conversation.Id,
+            CopilotAgentMode.Auto,
+            async _ =>
+            {
+                activeStarted.TrySetResult();
+                await releaseActive.Task;
+            });
+
+        try
+        {
+            await activeStarted.Task.WaitAsync(TestTimeout);
+            viewModel.InputText = "/status";
+
+            Assert.True(viewModel.QueueFollowUpCommand.CanExecute(null));
+            viewModel.QueueFollowUpCommand.Execute(null);
+
+            var queuedItem = Assert.Single(viewModel.QueuedFollowUps);
+            var queuedRun = Assert.Single(taskHost.QueuedRuns);
+            Assert.True(queuedItem.IsLocalCommand);
+            Assert.False(queuedRun.IsAgent);
+            Assert.Equal(string.Empty, viewModel.LocalCommandResultTitle);
+            Assert.DoesNotContain(queuedAttachment, conversation.Attachments);
+            Assert.Empty(conversation.Messages);
+
+            viewModel.InputText = "newer draft";
+            conversation.Attachments.Add(newerAttachment);
+            releaseActive.TrySetResult();
+            await activeRun.Completion.WaitAsync(TestTimeout);
+            await queuedRun.Completion.WaitAsync(TestTimeout);
+
+            Assert.Contains("/status", viewModel.LocalCommandResultTitle, StringComparison.Ordinal);
+            Assert.Equal("newer draft", viewModel.InputText);
+            Assert.Equal("newer draft", conversation.DraftText);
+            Assert.Contains(conversation.Attachments, attachment => attachment.Id == queuedAttachment.Id);
+            Assert.Contains(newerAttachment, conversation.Attachments);
+            Assert.Empty(conversation.Messages);
+            Assert.Empty(viewModel.QueuedFollowUps);
+        }
+        finally
+        {
+            releaseActive.TrySetResult();
+            viewModel.Dispose();
+        }
+    }
+
+    [Fact]
+    public async Task QueuedSlashCommandRunsInItsOriginConversationAndRestoresLaterSelection()
+    {
+        var profileA = CreateProfile("profile-a", "Profile A", "model-a");
+        var profileB = CreateProfile("profile-b", "Profile B", "model-b");
+        var config = new CopilotConfig
+        {
+            SchemaVersion = CopilotConfig.CurrentSchemaVersion,
+            McpBearerToken = "queued-command-conversation-binding-test-token",
+            Profiles = new ObservableCollection<CopilotProfileConfig> { profileA, profileB },
+        };
+        var conversationA = CreateConversation(profileA, "conversation-a", string.Empty);
+        var conversationB = CreateConversation(profileB, "conversation-b", "conversation B draft");
+        var state = new CopilotChatState
+        {
+            ActiveConversationId = conversationA.Id,
+            ActiveProfileId = profileA.Id,
+            Conversations = new ObservableCollection<CopilotConversationRecord>
+            {
+                conversationA,
+                conversationB,
+            },
+        };
+        var taskHost = new CopilotAgentTaskHost();
+        var activeStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseActive = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var solutionManagerScope = new IsolatedSolutionManagerScope();
+        using var viewModel = new CopilotChatViewModel(
+            new CopilotChatService(),
+            new InMemoryStateStore(state),
+            config,
+            new GatedFailingTurnRuntime(),
+            taskHost);
+        var activeRun = taskHost.Start(
+            conversationA.Id,
+            CopilotAgentMode.Auto,
+            async _ =>
+            {
+                activeStarted.TrySetResult();
+                await releaseActive.Task;
+            });
+
+        try
+        {
+            await activeStarted.Task.WaitAsync(TestTimeout);
+            viewModel.InputText = "/status";
+            viewModel.QueueFollowUpCommand.Execute(null);
+            var queuedRun = Assert.Single(taskHost.QueuedRuns);
+
+            Assert.True(viewModel.SelectConversationCommand.CanExecute(conversationB));
+            viewModel.SelectConversationCommand.Execute(conversationB);
+            Assert.Same(conversationB, viewModel.SelectedConversation);
+
+            releaseActive.TrySetResult();
+            await activeRun.Completion.WaitAsync(TestTimeout);
+            await queuedRun.Completion.WaitAsync(TestTimeout);
+
+            Assert.Contains("/status", viewModel.LocalCommandResultTitle, StringComparison.Ordinal);
+            Assert.Same(conversationB, viewModel.SelectedConversation);
+            Assert.Same(profileB, viewModel.SelectedProfile);
+            Assert.Equal("conversation B draft", viewModel.InputText);
+            Assert.Empty(conversationA.Messages);
+            Assert.Empty(conversationB.Messages);
+        }
+        finally
+        {
+            releaseActive.TrySetResult();
+            if (!activeRun.Completion.IsCompleted)
+                await activeRun.Completion.WaitAsync(TestTimeout);
+        }
+    }
+
+    [Fact]
+    public async Task QueuedPlanCommandStartsBeforeLaterFollowUpWithoutConsumingNewerDraft()
+    {
+        var profile = CreateProfile("profile-a", "Profile A", "model-a");
+        var config = CreateConfig(profile, "queued-plan-command-test-token");
+        var conversation = CreateConversation(profile, "conversation-a", string.Empty);
+        var planAttachment = CopilotAttachmentItem.CreateContext("plan command attachment");
+        var newerAttachment = CopilotAttachmentItem.CreateContext("newer draft attachment");
+        conversation.Attachments.Add(planAttachment);
+        var runtime = new GatedFailingTurnRuntime();
+        var taskHost = new CopilotAgentTaskHost();
+        var activeStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseActive = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var solutionManagerScope = new IsolatedSolutionManagerScope();
+        var viewModel = CreateViewModel(conversation, config, runtime, taskHost);
+        var activeRun = taskHost.Start(
+            conversation.Id,
+            CopilotAgentMode.Auto,
+            async _ =>
+            {
+                activeStarted.TrySetResult();
+                await releaseActive.Task;
+            });
+        CopilotHostedAgentRun? planRun = null;
+        CopilotQueuedFollowUp? laterFollowUp = null;
+
+        try
+        {
+            await activeStarted.Task.WaitAsync(TestTimeout);
+            viewModel.InputText = "/plan inspect the deferred command path";
+            viewModel.QueueFollowUpCommand.Execute(null);
+            var commandItem = Assert.Single(viewModel.QueuedFollowUps);
+            Assert.True(commandItem.IsLocalCommand);
+
+            viewModel.InputText = "run after the plan";
+            viewModel.QueueFollowUpCommand.Execute(null);
+            laterFollowUp = Assert.Single(viewModel.QueuedFollowUps, item => !item.IsLocalCommand);
+            viewModel.InputText = "newer draft";
+            conversation.Attachments.Add(newerAttachment);
+
+            releaseActive.TrySetResult();
+            var request = await runtime.Entered.WaitAsync(TestTimeout);
+            planRun = taskHost.ActiveRun;
+
+            Assert.NotNull(planRun);
+            Assert.Equal(CopilotAgentMode.Plan, request.Mode);
+            Assert.Equal("inspect the deferred command path", request.UserText);
+            Assert.Equal(1, taskHost.GetQueuePosition(laterFollowUp.RunId));
+            Assert.Equal("newer draft", viewModel.InputText);
+            Assert.Equal("newer draft", conversation.DraftText);
+            Assert.Contains(request.HostContext.Attachments, attachment => attachment.Id == planAttachment.Id);
+            Assert.DoesNotContain(conversation.Attachments, attachment => attachment.Id == planAttachment.Id);
+            Assert.Contains(newerAttachment, conversation.Attachments);
+            Assert.DoesNotContain(
+                conversation.Messages,
+                message => message.IsUser && string.Equals(message.Content, "/plan inspect the deferred command path", StringComparison.Ordinal));
+            Assert.Contains(
+                conversation.Messages,
+                message => message.IsUser && string.Equals(message.Content, "inspect the deferred command path", StringComparison.Ordinal));
+        }
+        finally
+        {
+            runtime.Release();
+            if (planRun != null && !planRun.Completion.IsCompleted)
+            {
+                try
+                {
+                    await planRun.Completion.WaitAsync(TestTimeout);
+                }
+                catch
+                {
+                }
+            }
+            if (laterFollowUp != null)
+                taskHost.RequestCancel(laterFollowUp.RunId);
+            releaseActive.TrySetResult();
+            if (!activeRun.Completion.IsCompleted)
+                await activeRun.Completion.WaitAsync(TestTimeout);
+            viewModel.Dispose();
+        }
+    }
+
+    [Fact]
+    public async Task QueuedRetryCommandSchedulesTheRetryWithoutSendingItsSlashText()
+    {
+        var profile = CreateProfile("profile-a", "Profile A", "model-a");
+        var config = CreateConfig(profile, "queued-retry-command-test-token");
+        var conversation = CreateConversation(profile, "conversation-a", string.Empty);
+        conversation.Messages.Add(new CopilotChatMessage(CopilotChatRole.User, "retry this request")
+        {
+            RequestMode = CopilotAgentMode.Auto,
+        });
+        conversation.Messages.Add(new CopilotChatMessage(CopilotChatRole.Assistant, "old answer")
+        {
+            AgentStopReason = CopilotAgentStopReason.Completed,
+        });
+        var runtime = new GatedFailingTurnRuntime();
+        var taskHost = new CopilotAgentTaskHost();
+        var activeStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseActive = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var solutionManagerScope = new IsolatedSolutionManagerScope();
+        using var viewModel = CreateViewModel(conversation, config, runtime, taskHost);
+        var activeRun = taskHost.Start(
+            conversation.Id,
+            CopilotAgentMode.Auto,
+            async _ =>
+            {
+                activeStarted.TrySetResult();
+                await releaseActive.Task;
+            });
+        CopilotHostedAgentRun? retryRun = null;
+
+        try
+        {
+            await activeStarted.Task.WaitAsync(TestTimeout);
+            viewModel.InputText = "/retry";
+            viewModel.QueueFollowUpCommand.Execute(null);
+            var commandRun = Assert.Single(taskHost.QueuedRuns);
+            viewModel.InputText = "newer draft";
+
+            releaseActive.TrySetResult();
+            var request = await runtime.Entered.WaitAsync(TestTimeout);
+            retryRun = taskHost.ActiveRun;
+
+            Assert.NotNull(retryRun);
+            Assert.True(retryRun.IsAgent);
+            Assert.Equal("retry this request", request.UserText);
+            Assert.Equal(CopilotAgentMode.Auto, request.Mode);
+            Assert.Equal("newer draft", viewModel.InputText);
+            Assert.DoesNotContain(
+                conversation.Messages,
+                message => message.IsUser && string.Equals(message.Content, "/retry", StringComparison.Ordinal));
+            await commandRun.Completion.WaitAsync(TestTimeout);
+        }
+        finally
+        {
+            runtime.Release();
+            if (retryRun != null && !retryRun.Completion.IsCompleted)
+            {
+                try
+                {
+                    await retryRun.Completion.WaitAsync(TestTimeout);
+                }
+                catch
+                {
+                }
+            }
+            releaseActive.TrySetResult();
+            if (!activeRun.Completion.IsCompleted)
+                await activeRun.Completion.WaitAsync(TestTimeout);
+        }
+    }
+
+    [Fact]
+    public async Task UnknownQueuedSlashCommandReportsLocallyWithoutCreatingAgentMessages()
+    {
+        var profile = CreateProfile("profile-a", "Profile A", "model-a");
+        var config = CreateConfig(profile, "queued-unknown-command-test-token");
+        var conversation = CreateConversation(profile, "conversation-a", string.Empty);
+        var taskHost = new CopilotAgentTaskHost();
+        var activeStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseActive = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var solutionManagerScope = new IsolatedSolutionManagerScope();
+        using var viewModel = CreateViewModel(
+            conversation,
+            config,
+            new GatedFailingTurnRuntime(),
+            taskHost);
+        var activeRun = taskHost.Start(
+            conversation.Id,
+            CopilotAgentMode.Auto,
+            async _ =>
+            {
+                activeStarted.TrySetResult();
+                await releaseActive.Task;
+            });
+
+        await activeStarted.Task.WaitAsync(TestTimeout);
+        viewModel.InputText = "/command-that-does-not-exist";
+        viewModel.QueueFollowUpCommand.Execute(null);
+        var queuedRun = Assert.Single(taskHost.QueuedRuns);
+
+        releaseActive.TrySetResult();
+        await activeRun.Completion.WaitAsync(TestTimeout);
+        await queuedRun.Completion.WaitAsync(TestTimeout);
+
+        Assert.NotEqual(string.Empty, viewModel.LocalCommandResultTitle);
+        Assert.Empty(conversation.Messages);
+    }
+
+    [Fact]
+    public async Task QueuedStopCommandDoesNotCancelItsDispatcherOrBlockTheNextFollowUp()
+    {
+        var profile = CreateProfile("profile-a", "Profile A", "model-a");
+        var config = CreateConfig(profile, "queued-stop-command-test-token");
+        var conversation = CreateConversation(profile, "conversation-a", string.Empty);
+        var runtime = new GatedFailingTurnRuntime();
+        var taskHost = new CopilotAgentTaskHost();
+        var activeStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseActive = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var solutionManagerScope = new IsolatedSolutionManagerScope();
+        using var viewModel = CreateViewModel(conversation, config, runtime, taskHost);
+        var activeRun = taskHost.Start(
+            conversation.Id,
+            CopilotAgentMode.Auto,
+            async _ =>
+            {
+                activeStarted.TrySetResult();
+                await releaseActive.Task;
+            });
+        CopilotHostedAgentRun? followUpRun = null;
+
+        try
+        {
+            await activeStarted.Task.WaitAsync(TestTimeout);
+            viewModel.InputText = "/stop";
+            viewModel.QueueFollowUpCommand.Execute(null);
+            viewModel.InputText = "run after queued stop";
+            viewModel.QueueFollowUpCommand.Execute(null);
+
+            releaseActive.TrySetResult();
+            var request = await runtime.Entered.WaitAsync(TestTimeout);
+            followUpRun = taskHost.ActiveRun;
+
+            Assert.Equal("run after queued stop", request.UserText);
+            Assert.Contains("没有正在运行的任务", viewModel.LocalCommandResultText, StringComparison.Ordinal);
+        }
+        finally
+        {
+            runtime.Release();
+            if (followUpRun != null && !followUpRun.Completion.IsCompleted)
+            {
+                try
+                {
+                    await followUpRun.Completion.WaitAsync(TestTimeout);
+                }
+                catch
+                {
+                }
+            }
+            releaseActive.TrySetResult();
+            if (!activeRun.Completion.IsCompleted)
+                await activeRun.Completion.WaitAsync(TestTimeout);
+        }
+    }
+
+    [Fact]
+    public async Task RestartedQueuedSlashCommandKeepsItsKindAndExecutesLocally()
+    {
+        var profile = CreateProfile("profile-a", "Profile A", "model-a");
+        var config = CreateConfig(profile, "restarted-queued-command-test-token");
+        var conversation = CreateConversation(profile, "conversation-a", string.Empty);
+        var state = new CopilotChatState
+        {
+            ActiveConversationId = conversation.Id,
+            ActiveProfileId = profile.Id,
+            Conversations = new ObservableCollection<CopilotConversationRecord> { conversation },
+            QueuedFollowUpRecoveries =
+            [
+                new CopilotQueuedFollowUpRecoveryRecord
+                {
+                    RunId = "queued-command-restart",
+                    ConversationId = conversation.Id,
+                    Prompt = "/status",
+                    ComposerState = CopilotComposerStash.Capture(
+                        "/status",
+                        "/status".Length,
+                        CopilotAgentMode.Auto,
+                        []),
+                    ProfileId = profile.Id,
+                    QueuedAtUtc = new DateTimeOffset(2026, 8, 11, 16, 0, 0, TimeSpan.Zero),
+                    ResumeAfterRestart = true,
+                    IsLocalCommand = true,
+                },
+            ],
+        };
+        var taskHost = new CopilotAgentTaskHost();
+        using var solutionManagerScope = new IsolatedSolutionManagerScope();
+        using var viewModel = new CopilotChatViewModel(
+            new CopilotChatService(),
+            new InMemoryStateStore(state),
+            config,
+            new GatedFailingTurnRuntime(),
+            taskHost);
+        var restoredRun = taskHost.ActiveRun ?? taskHost.QueuedRuns.SingleOrDefault();
+
+        if (restoredRun != null)
+        {
+            Assert.False(restoredRun.IsAgent);
+            Assert.Null(restoredRun.RunControl);
+            await restoredRun.Completion.WaitAsync(TestTimeout);
+        }
+
+        Assert.Contains("/status", viewModel.LocalCommandResultTitle, StringComparison.Ordinal);
+        Assert.Empty(conversation.Messages);
+        Assert.Empty(state.QueuedFollowUpRecoveries);
     }
 
     private static CopilotConfig CreateConfig(CopilotProfileConfig profile, string bearerToken) => new()

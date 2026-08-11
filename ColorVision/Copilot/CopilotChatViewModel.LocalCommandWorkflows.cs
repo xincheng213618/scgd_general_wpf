@@ -26,13 +26,14 @@ namespace ColorVision.Copilot
 {
     public partial class CopilotChatViewModel
     {
-        private bool TryExecuteLocalCommand(string prompt)
+        private bool TryExecuteLocalCommand(string prompt, bool clearComposer = true)
         {
             var invocation = CopilotLocalCommandCatalog.Parse(prompt);
             if (invocation == null)
                 return false;
 
-            InputText = string.Empty;
+            if (clearComposer)
+                InputText = string.Empty;
             var command = invocation.Command;
             switch (command.Kind)
             {
@@ -498,13 +499,15 @@ namespace ColorVision.Copilot
                     }
                     ShowLocalCommandResult(
                         command,
-                        $"已把原 #{originalPosition:N0} 提升为下一项，并请求停止当前任务；该请求会在当前任务收尾后开始。");
+                        _queuedLocalCommandExecution != null
+                            ? $"已把原 #{originalPosition:N0} 提升为下一项；该请求会在本命令收尾后开始。"
+                            : $"已把原 #{originalPosition:N0} 提升为下一项，并请求停止当前任务；该请求会在当前任务收尾后开始。");
                     break;
                 case CopilotQueuedFollowUpCommandAction.Edit:
                     if (!TryEditQueuedFollowUp(queuedFollowUp))
                     {
-                        var reason = queuedFollowUp.IsAutomaticGoalContinuation
-                            ? "自动持续目标续作不能转成手动草稿；可用 delete 取消并暂停目标。"
+                        var reason = queuedFollowUp.IsGoalBound
+                            ? "持续目标工作不能转成脱离目标的手动草稿；可用 delete 取消并暂停目标。"
                             : "请先退出消息编辑，并清空当前草稿、附件及目标会话草稿。";
                         ShowLocalCommandResult(command, $"无法编辑 #{originalPosition:N0}。{reason}");
                         return;

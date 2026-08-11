@@ -222,6 +222,126 @@ public sealed class CopilotAgentTaskHostQueueDispatchTests
     }
 
     [Fact]
+    public async Task QueuedCommandSuccessorRunsBeforeExistingFollowUp()
+    {
+        var host = new CopilotAgentTaskHost();
+        var activeStarted = NewSignal();
+        var releaseActive = NewSignal();
+        var commandStarted = NewSignal();
+        var releaseCommand = NewSignal();
+        var successorStarted = NewSignal();
+        var laterFollowUpStarted = NewSignal();
+        var executionOrder = new List<string>();
+        var activeRun = host.Start(
+            "conversation",
+            CopilotAgentMode.Auto,
+            async _ =>
+            {
+                activeStarted.TrySetResult();
+                await releaseActive.Task;
+            });
+        await activeStarted.Task.WaitAsync(TestTimeout);
+
+        Assert.True(host.TryScheduleLocalCommandFollowUp(
+            "conversation",
+            CopilotAgentMode.Auto,
+            async commandRun =>
+            {
+                executionOrder.Add("command");
+                commandStarted.TrySetResult();
+                Assert.False(host.TryScheduleQueuedCommandSuccessor(
+                    commandRun.Id,
+                    "another-conversation",
+                    CopilotAgentMode.Plan,
+                    _ => Task.CompletedTask,
+                    out _,
+                    out var mismatchedAdmission));
+                Assert.Equal(
+                    CopilotRequestAdmissionReason.FollowUpConversationMismatch,
+                    mismatchedAdmission.Reason);
+                Assert.True(host.TryScheduleQueuedCommandSuccessor(
+                    commandRun.Id,
+                    "conversation",
+                    CopilotAgentMode.Plan,
+                    _ =>
+                    {
+                        executionOrder.Add("successor");
+                        successorStarted.TrySetResult();
+                        return Task.CompletedTask;
+                    },
+                    out _,
+                    out var admission));
+                Assert.True(admission.IsAllowed);
+                await releaseCommand.Task;
+            },
+            runNext: false,
+            out var commandRun,
+            out _));
+        Assert.False(commandRun!.IsAgent);
+        Assert.Null(commandRun.RunControl);
+        Assert.True(host.TryScheduleFollowUp(
+            "conversation",
+            CopilotAgentMode.Auto,
+            _ =>
+            {
+                executionOrder.Add("later");
+                laterFollowUpStarted.TrySetResult();
+                return Task.CompletedTask;
+            },
+            out var laterFollowUpRun,
+            out _));
+
+        releaseActive.TrySetResult();
+        await commandStarted.Task.WaitAsync(TestTimeout);
+
+        Assert.False(successorStarted.Task.IsCompleted);
+        Assert.Equal(2, host.QueuedCount);
+        releaseCommand.TrySetResult();
+
+        await laterFollowUpStarted.Task.WaitAsync(TestTimeout);
+        await activeRun.Completion.WaitAsync(TestTimeout);
+        await commandRun!.Completion.WaitAsync(TestTimeout);
+        await laterFollowUpRun!.Completion.WaitAsync(TestTimeout);
+        Assert.Equal(["command", "successor", "later"], executionOrder);
+    }
+
+    [Fact]
+    public async Task QueuedCommandSuccessorRejectsAnOrdinaryActiveRun()
+    {
+        var host = new CopilotAgentTaskHost();
+        var activeStarted = NewSignal();
+        var releaseActive = NewSignal();
+        var activeRun = host.Start(
+            "conversation",
+            CopilotAgentMode.Auto,
+            async _ =>
+            {
+                activeStarted.TrySetResult();
+                await releaseActive.Task;
+            });
+
+        try
+        {
+            await activeStarted.Task.WaitAsync(TestTimeout);
+
+            Assert.False(host.TryScheduleQueuedCommandSuccessor(
+                activeRun.Id,
+                "conversation",
+                CopilotAgentMode.Plan,
+                _ => Task.CompletedTask,
+                out var successor,
+                out var admission));
+            Assert.Null(successor);
+            Assert.Equal(CopilotRequestAdmissionReason.NoActiveRun, admission.Reason);
+        }
+        finally
+        {
+            releaseActive.TrySetResult();
+            await activeRun.Completion.WaitAsync(TestTimeout);
+        }
+    }
+
+    [Fact]
     public async Task RestoredQueueKeepsStableIdsAndDispatchesInOrderWhenWoken()
     {
         var host = new CopilotAgentTaskHost();

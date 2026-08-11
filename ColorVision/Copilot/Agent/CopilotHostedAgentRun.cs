@@ -31,7 +31,8 @@ namespace ColorVision.Copilot
             string conversationId,
             CopilotAgentMode mode,
             string? runId = null,
-            DateTimeOffset? enqueuedAtUtc = null)
+            DateTimeOffset? enqueuedAtUtc = null,
+            bool isQueuedLocalCommand = false)
         {
             var normalizedRunId = (runId ?? string.Empty).Trim();
             Id = normalizedRunId.Length == 0
@@ -39,6 +40,7 @@ namespace ColorVision.Copilot
                 : normalizedRunId;
             ConversationId = conversationId;
             Mode = mode;
+            IsQueuedLocalCommand = isQueuedLocalCommand;
             EnqueuedAtUtc = enqueuedAtUtc ?? DateTimeOffset.UtcNow;
             RunControl = IsAgent ? new CopilotAgentRunControl() : null;
             _cancellationToken = _cancellation.Token;
@@ -56,7 +58,9 @@ namespace ColorVision.Copilot
 
         public bool HasStarted => StartedAtUtc.HasValue;
 
-        public bool IsAgent => Mode != CopilotAgentMode.Chat;
+        public bool IsAgent => Mode != CopilotAgentMode.Chat && !IsQueuedLocalCommand;
+
+        internal bool IsQueuedLocalCommand { get; }
 
         public bool IsCheckpointReady => Volatile.Read(ref _checkpointReady) == 1;
 

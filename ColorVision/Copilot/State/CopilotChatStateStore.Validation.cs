@@ -137,6 +137,8 @@ namespace ColorVision.Copilot
                         || !IsOptionalString(recovery.GetValue(nameof(CopilotQueuedFollowUpRecoveryRecord.RunId), StringComparison.OrdinalIgnoreCase))
                         || !IsOptionalString(recovery.GetValue(nameof(CopilotQueuedFollowUpRecoveryRecord.ConversationId), StringComparison.OrdinalIgnoreCase))
                         || !IsOptionalString(recovery.GetValue(nameof(CopilotQueuedFollowUpRecoveryRecord.GoalId), StringComparison.OrdinalIgnoreCase))
+                        || !IsOptionalBoolean(recovery.GetValue(nameof(CopilotQueuedFollowUpRecoveryRecord.AutomaticGoalContinuation), StringComparison.OrdinalIgnoreCase))
+                        || !IsOptionalBoolean(recovery.GetValue(nameof(CopilotQueuedFollowUpRecoveryRecord.IsLocalCommand), StringComparison.OrdinalIgnoreCase))
                         || !IsOptionalString(recovery.GetValue(nameof(CopilotQueuedFollowUpRecoveryRecord.Prompt), StringComparison.OrdinalIgnoreCase))
                         || !IsOptionalString(recovery.GetValue(nameof(CopilotQueuedFollowUpRecoveryRecord.ProfileId), StringComparison.OrdinalIgnoreCase))
                         || !IsOptionalDate(recovery.GetValue(nameof(CopilotQueuedFollowUpRecoveryRecord.QueuedAtUtc), StringComparison.OrdinalIgnoreCase))

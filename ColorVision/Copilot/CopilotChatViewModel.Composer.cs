@@ -114,7 +114,7 @@ namespace ColorVision.Copilot
 
         public string LocalCommandSuggestionHeader => ResolveLocalCommandComposerContext()
             == CopilotLocalCommandComposerContext.ActiveRun
-                ? "运行中可用命令或 Skill"
+                ? "运行中命令或 Skill · 不可立即执行的命令可排到下一轮"
                 : "/ 或 $ 命令";
 
         public bool HasLocalCommandSuggestions => LocalCommandSuggestions.Count > 0;

@@ -49,6 +49,7 @@ namespace ColorVision.Copilot
         {
             var composerCapture = _composerSession.Capture();
             var prompt = composerCapture.Text.Trim();
+            var isLocalCommand = IsQueuedLocalCommandInput(prompt);
             var activeRun = ActiveHostedRun;
             var conversation = SelectedConversation;
             var profile = SelectedProfile;
@@ -60,10 +61,6 @@ namespace ColorVision.Copilot
             {
                 return false;
             }
-            if (TryHandleComposerLocalCommandDuringRun(prompt, out var recognizedLocalCommand))
-                return true;
-            if (recognizedLocalCommand)
-                return false;
             var preflightAdmission = _followUpQueue.EvaluateAdmission(
                 conversation.Id,
                 activeRun.Mode);
@@ -77,12 +74,17 @@ namespace ColorVision.Copilot
             var initialSubmissionContext = CaptureHostedTurnSnapshot(
                 conversation,
                 attachmentOverride: capturedAttachments);
-            if (!TryResolveProjectTrustForSubmission(
-                initialSubmissionContext,
-                () => CaptureHostedTurnSnapshot(
-                    conversation,
-                    attachmentOverride: capturedAttachments),
-                out var submissionContext))
+            CopilotAgentHostContextSnapshot submissionContext;
+            if (isLocalCommand)
+            {
+                submissionContext = initialSubmissionContext;
+            }
+            else if (!TryResolveProjectTrustForSubmission(
+                         initialSubmissionContext,
+                         () => CaptureHostedTurnSnapshot(
+                             conversation,
+                             attachmentOverride: capturedAttachments),
+                         out submissionContext))
             {
                 return false;
             }
@@ -92,20 +94,19 @@ namespace ColorVision.Copilot
                 activeRun.Mode,
                 submissionContext.ProjectInstructionDiscoveryOptions);
             if (!TryValidateComposerCharacterLimit(prompt)
-                || !TryValidatePromptBudget(
-                    prompt,
-                    activeRun.Mode,
-                    requestProfile,
-                    submissionContext.ProjectInstructionDiscoveryOptions)
-                || !TryValidateComposerAttachments(submissionContext.Attachments))
-            {
-                return false;
-            }
-            if (!TryPrepareExplicitSkillMcpDependencies(
-                prompt,
-                agentSkillReference,
-                submissionContext.ProjectInstructionDiscoveryOptions,
-                conversation.Id))
+                || !TryValidateComposerAttachments(submissionContext.Attachments)
+                || !isLocalCommand
+                    && !TryValidatePromptBudget(
+                        prompt,
+                        activeRun.Mode,
+                        requestProfile,
+                        submissionContext.ProjectInstructionDiscoveryOptions)
+                || !isLocalCommand
+                    && !TryPrepareExplicitSkillMcpDependencies(
+                        prompt,
+                        agentSkillReference,
+                        submissionContext.ProjectInstructionDiscoveryOptions,
+                        conversation.Id))
             {
                 return false;
             }
@@ -120,7 +121,8 @@ namespace ColorVision.Copilot
                 submissionContext,
                 agentSkillReference,
                 runtimeConfigSnapshot,
-                ResolveQueuedFollowUpReviewTarget(conversation, activeRun.Mode));
+                ResolveQueuedFollowUpReviewTarget(conversation, activeRun.Mode),
+                IsLocalCommand: isLocalCommand);
             if (!_followUpQueue.TrySchedule(
                 queueRequest,
                 runNext,
@@ -159,6 +161,12 @@ namespace ColorVision.Copilot
             return true;
         }
 
+        private static bool IsQueuedLocalCommandInput(string prompt)
+        {
+            var normalized = (prompt ?? string.Empty).TrimStart();
+            return normalized.Length > 0 && normalized[0] == '/';
+        }
+
         private bool TryHandleComposerLocalCommandDuringRun(
             string prompt,
             out bool recognized)
@@ -190,12 +198,18 @@ namespace ColorVision.Copilot
 
         private async Task ExecuteQueuedFollowUpAsync(CopilotHostedAgentRun hostedRun, CopilotQueuedFollowUp queuedFollowUp)
         {
+            if (queuedFollowUp.IsLocalCommand)
+            {
+                await ExecuteQueuedLocalCommandAsync(hostedRun, queuedFollowUp).ConfigureAwait(false);
+                return;
+            }
+
             var preparedTurn = CopilotUiDispatcher.Invoke(
                 () => PrepareQueuedFollowUpTurn(queuedFollowUp),
                 fallback: null as CopilotPreparedHostedTurn);
             if (preparedTurn == null)
             {
-                if (queuedFollowUp.IsAutomaticGoalContinuation)
+                if (queuedFollowUp.IsGoalBound)
                     return;
                 throw new InvalidOperationException("The queued Copilot follow-up could not be prepared on the UI thread.");
             }
@@ -225,13 +239,222 @@ namespace ColorVision.Copilot
             await ExecuteHostedPreparedTurnAsync(hostedRun, preparedTurn).ConfigureAwait(false);
         }
 
+        private async Task ExecuteQueuedLocalCommandAsync(
+            CopilotHostedAgentRun hostedRun,
+            CopilotQueuedFollowUp queuedFollowUp)
+        {
+            var recoveryPrepared = CopilotUiDispatcher.Invoke(
+                () =>
+                {
+                    RemoveQueuedFollowUp(queuedFollowUp.RunId, removeRecoveryRecord: false);
+                    _followUpQueue.MarkRecoveryDispatching(queuedFollowUp.RunId);
+                    PersistState(immediate: true);
+                    return true;
+                },
+                fallback: false);
+            if (!recoveryPrepared)
+                throw new OperationCanceledException("The Copilot UI shut down before the queued command could be prepared.");
+
+            try
+            {
+                await _statePersistenceCoordinator.FlushAsync().ConfigureAwait(false);
+            }
+            catch
+            {
+                CopilotUiDispatcher.Invoke(() =>
+                {
+                    _followUpQueue.RestoreRecoveryToDraft(queuedFollowUp.RunId);
+                    PersistState(immediate: true);
+                });
+                throw;
+            }
+
+            QueuedLocalCommandExecutionContext? executionContext;
+            try
+            {
+                executionContext = CopilotUiDispatcher.Invoke(
+                    () => BeginQueuedLocalCommandExecution(hostedRun, queuedFollowUp),
+                    fallback: null as QueuedLocalCommandExecutionContext);
+                if (executionContext == null)
+                    throw new OperationCanceledException("The Copilot UI shut down before the queued command could be executed.");
+            }
+            catch
+            {
+                CopilotUiDispatcher.Invoke(() =>
+                {
+                    _followUpQueue.RestoreRecoveryToDraft(queuedFollowUp.RunId);
+                    PersistState(immediate: true);
+                });
+                throw;
+            }
+
+            try
+            {
+                await executionContext.DrainOperationsAsync().ConfigureAwait(false);
+            }
+            finally
+            {
+                CopilotUiDispatcher.Invoke(() => CompleteQueuedLocalCommandExecution(executionContext));
+            }
+        }
+
+        private QueuedLocalCommandExecutionContext BeginQueuedLocalCommandExecution(
+            CopilotHostedAgentRun hostedRun,
+            CopilotQueuedFollowUp queuedFollowUp)
+        {
+            var conversation = Conversations.FirstOrDefault(candidate => string.Equals(
+                candidate.Id,
+                queuedFollowUp.ConversationId,
+                StringComparison.Ordinal))
+                ?? throw new InvalidOperationException("The conversation for the queued Copilot command no longer exists.");
+            var previouslySelectedConversation = SelectedConversation;
+            QueuedLocalCommandExecutionContext? context = null;
+            IsBusy = false;
+
+            try
+            {
+                if (!ReferenceEquals(conversation, SelectedConversation))
+                {
+                    SelectConversation(
+                        conversation,
+                        persist: true,
+                        preferredProfileId: queuedFollowUp.Profile.Id);
+                }
+                if (!ReferenceEquals(conversation, SelectedConversation))
+                    throw new InvalidOperationException("The queued Copilot command conversation could not be selected.");
+
+                var composerCapture = _composerSession.Capture();
+                var composerBeforeCommand = CopilotComposerStash.Capture(
+                    composerCapture.Text,
+                    composerCapture.Text.Length,
+                    composerCapture.RequestMode,
+                    conversation.Attachments,
+                    composerCapture.WorkspaceReviewTarget,
+                    composerCapture.AgentSkillReference);
+                var createdContext = new QueuedLocalCommandExecutionContext(
+                    hostedRun,
+                    queuedFollowUp,
+                    conversation,
+                    previouslySelectedConversation,
+                    composerBeforeCommand);
+                context = createdContext;
+                _queuedLocalCommandExecution = createdContext;
+
+                try
+                {
+                    var handled = TryExecuteLocalCommand(queuedFollowUp.Prompt, clearComposer: false)
+                        || TryReportCommandInputRecovery(queuedFollowUp.Prompt);
+                    if (!handled)
+                    {
+                        LocalCommandResultTitle = "排队命令无法执行";
+                        LocalCommandResultText = "该斜杠命令在轮到执行时无法识别；它没有作为普通提示词发送给 Agent。请检查命令名称后重试。";
+                    }
+                }
+                catch (Exception exception)
+                {
+                    LocalCommandResultTitle = "排队命令执行失败";
+                    LocalCommandResultText = CopilotUserFacingErrorFormatter.Sanitize(exception.Message);
+                }
+                return createdContext;
+            }
+            catch
+            {
+                if (ReferenceEquals(_queuedLocalCommandExecution, context))
+                    _queuedLocalCommandExecution = null;
+                throw;
+            }
+            finally
+            {
+                IsBusy = _taskHost.IsActive;
+            }
+        }
+
+        private void CompleteQueuedLocalCommandExecution(QueuedLocalCommandExecutionContext context)
+        {
+            if (!ReferenceEquals(_queuedLocalCommandExecution, context))
+                return;
+
+            try
+            {
+                RestoreUnusedQueuedCommandAttachments(context);
+                if (context.CommandComposerWasCommitted)
+                    RestoreComposerAfterQueuedCommandSuccessor(context);
+
+                var commandResultTitle = LocalCommandResultTitle;
+                var commandResultText = LocalCommandResultText;
+                if (context.PreviouslySelectedConversation != null
+                    && !ReferenceEquals(context.PreviouslySelectedConversation, context.Conversation)
+                    && ReferenceEquals(SelectedConversation, context.Conversation)
+                    && Conversations.Contains(context.PreviouslySelectedConversation))
+                {
+                    SelectConversation(
+                        context.PreviouslySelectedConversation,
+                        persist: true,
+                        preferredProfileId: context.PreviouslySelectedConversation.ProfileId);
+                    if (!string.IsNullOrWhiteSpace(commandResultText))
+                    {
+                        LocalCommandResultTitle = commandResultTitle;
+                        LocalCommandResultText = commandResultText;
+                    }
+                }
+            }
+            finally
+            {
+                _queuedLocalCommandExecution = null;
+                _followUpQueue.RemoveRecovery(context.QueuedFollowUp.RunId);
+                PersistState(immediate: true);
+                IsBusy = _taskHost.IsActive;
+            }
+        }
+
+        private void RestoreUnusedQueuedCommandAttachments(QueuedLocalCommandExecutionContext context)
+        {
+            if (context.QueuedAttachmentsConsumedBySuccessor
+                || !Conversations.Contains(context.Conversation))
+                return;
+
+            var restoredCount = CopilotComposerAttachmentService.RestoreDistinctSnapshots(
+                context.Conversation.Attachments,
+                context.QueuedFollowUp.SubmissionContext.Attachments.Select(attachment => attachment.CreateSnapshot()));
+            if (restoredCount == 0)
+                return;
+
+            UpdateAttachmentsState(context.Conversation);
+        }
+
+        private void RestoreComposerAfterQueuedCommandSuccessor(QueuedLocalCommandExecutionContext context)
+        {
+            if (context.ComposerRestoreToken is not { } restoreToken)
+                return;
+            if (!Conversations.Contains(context.Conversation))
+                return;
+            if (ReferenceEquals(SelectedConversation, context.Conversation)
+                && _composerSession.Capture().Token != restoreToken)
+            {
+                return;
+            }
+
+            var stash = context.ComposerBeforeCommand;
+            context.Conversation.DraftText = stash.Text;
+            context.Conversation.DraftRequestMode = stash.RequestMode;
+            context.Conversation.DraftWorkspaceReviewTarget = stash.WorkspaceReviewTarget?.CreateSnapshot();
+            context.Conversation.DraftAgentSkillReference = stash.AgentSkillReference?.CreateSnapshot();
+            if (!ReferenceEquals(SelectedConversation, context.Conversation))
+                return;
+
+            _composerSession.Load(context.Conversation);
+            SynchronizeSelectedConversationComposerDraft();
+            NotifyComposerTextChanged(synchronizeDraft: false);
+            OnComposerRequestModeChanged();
+        }
+
         private CopilotPreparedHostedTurn? PrepareQueuedFollowUpTurn(CopilotQueuedFollowUp queuedFollowUp)
         {
             RemoveQueuedFollowUp(queuedFollowUp.RunId, removeRecoveryRecord: false);
             var conversation = Conversations.FirstOrDefault(candidate =>
                 string.Equals(candidate.Id, queuedFollowUp.ConversationId, StringComparison.Ordinal))
                 ?? throw new InvalidOperationException("The conversation for the queued Copilot follow-up no longer exists.");
-            if (queuedFollowUp.IsAutomaticGoalContinuation
+            if (queuedFollowUp.IsGoalBound
                 && (conversation.Goal?.IsActive != true
                     || !string.Equals(conversation.Goal.Id, queuedFollowUp.GoalId, StringComparison.Ordinal)))
             {
@@ -312,6 +535,13 @@ namespace ColorVision.Copilot
                 return false;
             }
 
+            if (_queuedLocalCommandExecution != null)
+            {
+                if (!_followUpQueue.TryPromote(queuedFollowUp.RunId))
+                    return false;
+                PersistState(immediate: true);
+                return true;
+            }
             if (activeRun == null)
                 return _followUpQueue.TryStart(queuedFollowUp.RunId);
             if (!_followUpQueue.TryPromote(queuedFollowUp.RunId))
@@ -325,7 +555,7 @@ namespace ColorVision.Copilot
         private bool CanEditQueuedFollowUp(CopilotQueuedFollowUp? queuedFollowUp)
         {
             if (queuedFollowUp == null
-                || queuedFollowUp.IsAutomaticGoalContinuation
+                || queuedFollowUp.IsGoalBound
                 || IsEditingMessage
                 || !IsInputEmpty)
             {
@@ -415,7 +645,7 @@ namespace ColorVision.Copilot
             if (queuedFollowUp == null || !_followUpQueue.RequestCancel(queuedFollowUp.RunId))
                 return false;
 
-            if (!queuedFollowUp.IsAutomaticGoalContinuation)
+            if (!queuedFollowUp.IsGoalBound)
                 return true;
 
             var conversation = Conversations.FirstOrDefault(item =>
@@ -472,13 +702,22 @@ namespace ColorVision.Copilot
                     continue;
                 }
 
+                if (record.IsGoalBound
+                    && (conversation.Goal?.IsActive != true
+                        || !string.Equals(conversation.Goal.Id, record.GoalId, StringComparison.Ordinal)))
+                {
+                    _followUpQueue.RemoveRecovery(runId);
+                    continue;
+                }
+
                 var attachments = composerState.CreateAttachmentSnapshots();
                 var submissionContext = CaptureHostedTurnSnapshot(
                     conversation,
                     attachmentOverride: attachments);
-                if (CopilotCodexProjectTrustPersistence.RequiresDecision(
-                    submissionContext.PrimaryTrustedProjectRootPath,
-                    submissionContext.ProjectInstructionDiscoveryOptions))
+                if (!record.IsLocalCommand
+                    && CopilotCodexProjectTrustPersistence.RequiresDecision(
+                        submissionContext.PrimaryTrustedProjectRootPath,
+                        submissionContext.ProjectInstructionDiscoveryOptions))
                 {
                     if (_followUpQueue.RestoreRecoveryToDraft(runId))
                         restoredDraftCount++;
@@ -498,10 +737,13 @@ namespace ColorVision.Copilot
                     composerState.RequestMode,
                     requestProfile,
                     submissionContext,
+                    goalId: record.GoalId,
                     agentSkillReference: composerState.AgentSkillReference,
                     runtimeConfigSnapshot: CaptureTurnRuntimeConfigSnapshot(),
                     workspaceReviewTarget: composerState.WorkspaceReviewTarget,
-                    queuedAtUtc: record.QueuedAtUtc);
+                    queuedAtUtc: record.QueuedAtUtc,
+                    automaticGoalContinuation: record.IsAutomaticGoalContinuation,
+                    isLocalCommand: record.IsLocalCommand);
                 if (!_followUpQueue.TryRestore(
                     queuedFollowUp,
                     ExecuteQueuedFollowUpAsync))
@@ -565,6 +807,66 @@ namespace ColorVision.Copilot
             OnPropertyChanged(nameof(QueuedFollowUpCountLabel));
             OnPropertyChanged(nameof(CanQueueCurrentRunFollowUp));
             CommandManager.InvalidateRequerySuggested();
+        }
+
+        private sealed class QueuedLocalCommandExecutionContext
+        {
+            private readonly object _operationGate = new();
+            private readonly List<Task> _operations = new();
+            private int _drainedOperationCount;
+
+            public QueuedLocalCommandExecutionContext(
+                CopilotHostedAgentRun hostedRun,
+                CopilotQueuedFollowUp queuedFollowUp,
+                CopilotConversationRecord conversation,
+                CopilotConversationRecord? previouslySelectedConversation,
+                CopilotComposerStash composerBeforeCommand)
+            {
+                HostedRun = hostedRun;
+                QueuedFollowUp = queuedFollowUp;
+                Conversation = conversation;
+                PreviouslySelectedConversation = previouslySelectedConversation;
+                ComposerBeforeCommand = composerBeforeCommand;
+            }
+
+            public CopilotHostedAgentRun HostedRun { get; }
+
+            public CopilotQueuedFollowUp QueuedFollowUp { get; }
+
+            public CopilotConversationRecord Conversation { get; }
+
+            public CopilotConversationRecord? PreviouslySelectedConversation { get; }
+
+            public CopilotComposerStash ComposerBeforeCommand { get; }
+
+            public bool QueuedAttachmentsConsumedBySuccessor { get; set; }
+
+            public CopilotComposerCaptureToken? ComposerRestoreToken { get; set; }
+
+            public bool CommandComposerWasCommitted => ComposerRestoreToken.HasValue;
+
+            public void TrackOperation(Task operation)
+            {
+                ArgumentNullException.ThrowIfNull(operation);
+                lock (_operationGate)
+                    _operations.Add(operation);
+            }
+
+            public async Task DrainOperationsAsync()
+            {
+                while (true)
+                {
+                    Task[] pending;
+                    lock (_operationGate)
+                    {
+                        if (_drainedOperationCount >= _operations.Count)
+                            return;
+                        pending = _operations.Skip(_drainedOperationCount).ToArray();
+                        _drainedOperationCount = _operations.Count;
+                    }
+                    await Task.WhenAll(pending).ConfigureAwait(false);
+                }
+            }
         }
 
     }

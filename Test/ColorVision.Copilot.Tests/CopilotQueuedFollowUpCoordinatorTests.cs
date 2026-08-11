@@ -48,6 +48,38 @@ public sealed class CopilotQueuedFollowUpCoordinatorTests
     }
 
     [Fact]
+    public async Task LocalCommandRecoveryPersistsItsExecutionKind()
+    {
+        var state = new CopilotChatState();
+        var busyHost = await StartBusyHostAsync("conversation-1");
+        var queue = new CopilotQueuedFollowUpCoordinator(state, busyHost.Host);
+        ForwardHostChanges(busyHost.Host, queue);
+        CopilotQueuedFollowUp? queuedItem = null;
+
+        try
+        {
+            Assert.True(queue.TrySchedule(
+                CreateRequest("conversation-1", "/status", isLocalCommand: true),
+                runNext: false,
+                static (_, _) => Task.CompletedTask,
+                out queuedItem,
+                out _));
+
+            Assert.True(queuedItem!.IsLocalCommand);
+            var recovery = Assert.Single(state.QueuedFollowUpRecoveries);
+            Assert.True(recovery.IsLocalCommand);
+            Assert.True(recovery.ResumeAfterRestart);
+            Assert.True(JObject.FromObject(recovery)[nameof(CopilotQueuedFollowUpRecoveryRecord.IsLocalCommand)]?.Value<bool>());
+        }
+        finally
+        {
+            if (queuedItem != null)
+                busyHost.Host.RequestCancel(queuedItem.RunId);
+            await busyHost.CompleteAsync();
+        }
+    }
+
+    [Fact]
     public async Task AutomaticGoalContinuationPersistsItsGoalIdentity()
     {
         var state = new CopilotChatState();
@@ -69,6 +101,44 @@ public sealed class CopilotQueuedFollowUpCoordinatorTests
             var recoveryDocument = JObject.FromObject(recovery);
             Assert.Equal("goal-1", recoveryDocument[nameof(CopilotQueuedFollowUp.GoalId)]?.Value<string>());
             Assert.False(recovery.ResumeAfterRestart);
+        }
+        finally
+        {
+            if (queuedItem != null)
+                busyHost.Host.RequestCancel(queuedItem.RunId);
+            await busyHost.CompleteAsync();
+        }
+    }
+
+    [Fact]
+    public async Task ExplicitGoalStartIsGoalBoundAndRemainsDurableAcrossRestart()
+    {
+        var state = new CopilotChatState();
+        var busyHost = await StartBusyHostAsync("conversation-1");
+        var queue = new CopilotQueuedFollowUpCoordinator(state, busyHost.Host);
+        ForwardHostChanges(busyHost.Host, queue);
+        CopilotQueuedFollowUp? queuedItem = null;
+
+        try
+        {
+            Assert.True(queue.TrySchedule(
+                CreateRequest(
+                    "conversation-1",
+                    "start revised goal",
+                    goalId: "goal-1",
+                    automaticGoalContinuation: false),
+                runNext: true,
+                static (_, _) => Task.CompletedTask,
+                out queuedItem,
+                out _));
+
+            Assert.NotNull(queuedItem);
+            Assert.True(queuedItem.IsGoalBound);
+            Assert.False(queuedItem.IsAutomaticGoalContinuation);
+            var recovery = Assert.Single(state.QueuedFollowUpRecoveries);
+            Assert.Equal("goal-1", recovery.GoalId);
+            Assert.False(recovery.AutomaticGoalContinuation);
+            Assert.True(recovery.ResumeAfterRestart);
         }
         finally
         {
@@ -326,7 +396,9 @@ public sealed class CopilotQueuedFollowUpCoordinatorTests
     private static CopilotQueuedFollowUpRequest CreateRequest(
         string conversationId,
         string prompt,
-        string goalId = "") => new(
+        string goalId = "",
+        bool? automaticGoalContinuation = null,
+        bool isLocalCommand = false) => new(
         conversationId,
         "Conversation",
         prompt,
@@ -336,7 +408,9 @@ public sealed class CopilotQueuedFollowUpCoordinatorTests
         AgentSkillReference: null,
         new CopilotTurnRuntimeConfigSnapshot(new CopilotAgentDefaultsConfig(), []),
         WorkspaceReviewTarget: null,
-        GoalId: goalId);
+        GoalId: goalId,
+        AutomaticGoalContinuation: automaticGoalContinuation,
+        IsLocalCommand: isLocalCommand);
 
     private static CopilotQueuedFollowUpRecoveryRecord CreateRecovery(
         string runId,
