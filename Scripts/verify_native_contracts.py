@@ -1,7 +1,11 @@
 import argparse
 import hashlib
+import json
+import os
 import re
+import shutil
 import struct
+import subprocess
 import sys
 import zipfile
 from dataclasses import dataclass
@@ -27,6 +31,18 @@ CUDA_DYNAMIC_MANAGED_EXPORTS = frozenset({
 CUDA_ALLOWED_BINARY_ONLY_EXPORTS = frozenset({"NvOptimusEnablementCuda"})
 AMD64_MACHINE = 0x8664
 DEFAULT_WINDOWS_X64_PACK = 8
+CUDA_EXPORT_SOURCE = "cuda_export.cpp"
+EXPECTED_DLLIMPORT_NAMED_ARGUMENTS = frozenset({"EntryPoint", "CallingConvention"})
+DEFAULT_MSBUILD_CANDIDATES = (
+    Path(r"C:\Program Files\Microsoft Visual Studio\18\Insiders\MSBuild\Current\Bin\amd64\MSBuild.exe"),
+    Path(r"C:\Program Files\Microsoft Visual Studio\18\Insiders\MSBuild\Current\Bin\MSBuild.exe"),
+    Path(r"C:\Program Files\Microsoft Visual Studio\2022\Preview\MSBuild\Current\Bin\amd64\MSBuild.exe"),
+    Path(r"C:\Program Files\Microsoft Visual Studio\2022\Preview\MSBuild\Current\Bin\MSBuild.exe"),
+    Path(r"C:\Program Files\Microsoft Visual Studio\2022\BuildTools\MSBuild\Current\Bin\amd64\MSBuild.exe"),
+    Path(r"C:\Program Files\Microsoft Visual Studio\2022\Enterprise\MSBuild\Current\Bin\amd64\MSBuild.exe"),
+    Path(r"C:\Program Files\Microsoft Visual Studio\2022\Professional\MSBuild\Current\Bin\amd64\MSBuild.exe"),
+    Path(r"C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\amd64\MSBuild.exe"),
+)
 
 
 @dataclass(frozen=True)
@@ -735,6 +751,42 @@ def _read_const_string(source: str, code: str, name: str, context: str) -> str:
     return value
 
 
+def _read_dllimport_named_arguments(arguments: str, method_name: str) -> dict[str, str]:
+    parts = _split_top_level(arguments)
+    if not parts or parts[0] != "LibPath":
+        raise NativeContractError(f"CUDA DllImport {method_name} must reference OpenCVCuda.LibPath.")
+
+    named_arguments: dict[str, str] = {}
+    for part in parts[1:]:
+        match = re.fullmatch(
+            r"(?P<name>[A-Za-z_]\w*)\s*=\s*(?P<value>.+)",
+            part,
+            flags=re.DOTALL,
+        )
+        if not match:
+            raise NativeContractError(
+                f"CUDA DllImport {method_name} contains an unsupported argument: {part!r}."
+            )
+        name = match.group("name")
+        if name not in EXPECTED_DLLIMPORT_NAMED_ARGUMENTS:
+            raise NativeContractError(
+                f"CUDA DllImport {method_name} contains an unsupported named argument: {name}."
+            )
+        if name in named_arguments:
+            raise NativeContractError(
+                f"CUDA DllImport {method_name} contains a duplicate named argument: {name}."
+            )
+        named_arguments[name] = match.group("value").strip()
+
+    if set(named_arguments) != EXPECTED_DLLIMPORT_NAMED_ARGUMENTS:
+        raise NativeContractError(
+            f"CUDA DllImport {method_name} named arguments drifted: "
+            f"expected={sorted(EXPECTED_DLLIMPORT_NAMED_ARGUMENTS)!r}, "
+            f"found={sorted(named_arguments)!r}."
+        )
+    return named_arguments
+
+
 def read_managed_import_contract(source: str) -> tuple[str, dict[str, AbiFunction]]:
     _reject_contract_preprocessor_mutation(source, "OpenCVCuda")
     _reject_csharp_type_aliases(source, "OpenCVCuda")
@@ -765,38 +817,21 @@ def read_managed_import_contract(source: str) -> tuple[str, dict[str, AbiFunctio
 
     functions: dict[str, AbiFunction] = {}
     for declaration in declarations:
-        arguments = declaration.group("arguments")
+        arguments = _original_group(source, declaration, "arguments")
         return_type = declaration.group("return")
         method_name = declaration.group("method")
         parameters = declaration.group("parameters")
-        argument_parts = _split_top_level(arguments)
-        if not argument_parts or argument_parts[0].strip() != "LibPath":
-            raise NativeContractError(f"CUDA DllImport {method_name} must reference OpenCVCuda.LibPath.")
-        convention_match = re.search(
-            r"\bCallingConvention\s*=\s*CallingConvention\.([A-Za-z_]+)", arguments
-        )
-        if not convention_match or convention_match.group(1) != "Cdecl":
+        named_arguments = _read_dllimport_named_arguments(arguments, method_name)
+        if named_arguments["CallingConvention"] != "CallingConvention.Cdecl":
             raise NativeContractError(f"CUDA DllImport {method_name} is not declared Cdecl.")
-        charset_match = re.search(r"\bCharSet\s*=\s*CharSet\.([A-Za-z_]+)", arguments)
-        if charset_match and charset_match.group(1) != "Ansi":
-            raise NativeContractError(
-                f"CUDA DllImport {method_name} must use ANSI string marshalling for const char*."
-            )
-        entry_point_match = re.search(
-            r'\bEntryPoint\s*=\s*"(?P<value>[^"]*)"', arguments
+        entry_point_match = re.fullmatch(
+            r'"(?P<value>[A-Za-z_]\w*)"', named_arguments["EntryPoint"]
         )
-        if entry_point_match:
-            argument_start = declaration.start("arguments")
-            export_name = source[
-                argument_start + entry_point_match.start("value"):
-                argument_start + entry_point_match.end("value")
-            ]
-            if not re.fullmatch(r"[A-Za-z_]\w*", export_name):
-                raise NativeContractError(
-                    f"CUDA DllImport {method_name} has an invalid EntryPoint literal."
-                )
-        else:
-            export_name = method_name
+        if not entry_point_match:
+            raise NativeContractError(
+                f"CUDA DllImport {method_name} has an invalid EntryPoint literal."
+            )
+        export_name = entry_point_match.group("value")
         if export_name in functions:
             raise NativeContractError(f"Duplicate CUDA DllImport entry point: {export_name}.")
         functions[export_name] = AbiFunction(
@@ -1262,7 +1297,189 @@ def validate_cuda_package_binding(project_path: Path) -> None:
         raise NativeContractError(f"Unexpected opencv_cuda.dll Link path: {link_path!r}.")
 
 
-def validate_cuda_native_export_build(project_path: Path) -> None:
+def _resolve_vs_msbuild_path() -> Path:
+    configured_path = os.environ.get("COLORVISION_MSBUILD_PATH")
+    if configured_path:
+        candidate = Path(configured_path)
+        if candidate.is_file():
+            return candidate
+        raise NativeContractError(
+            f"Configured Visual Studio MSBuild does not exist: {candidate}."
+        )
+
+    discovered_path = shutil.which("MSBuild.exe") or shutil.which("msbuild")
+    if discovered_path:
+        return Path(discovered_path)
+    for candidate in DEFAULT_MSBUILD_CANDIDATES:
+        if candidate.is_file():
+            return candidate
+    raise NativeContractError(
+        "Visual Studio MSBuild is required to evaluate the Release|x64 CUDA build contract. "
+        "dotnet msbuild cannot evaluate this vcxproj."
+    )
+
+
+def _read_evaluated_cuda_build_items(
+    project_path: Path,
+    *,
+    msbuild_path: str | Path | None = None,
+) -> dict[str, list[dict[str, str]]]:
+    executable = Path(msbuild_path) if msbuild_path is not None else _resolve_vs_msbuild_path()
+    command = [
+        str(executable),
+        str(project_path),
+        "-nologo",
+        "-p:Configuration=Release",
+        "-p:Platform=x64",
+        "-t:AddCudaCompileMetadata",
+        "-getItem:_CudaCompileHostDefinition",
+        "-getItem:ClCompile",
+        "-getItem:CudaCompile",
+    ]
+    try:
+        result = subprocess.run(
+            command,
+            cwd=project_path.parent,
+            capture_output=True,
+            text=True,
+            errors="replace",
+            check=False,
+        )
+    except OSError as exc:
+        raise NativeContractError(
+            f"Could not run Visual Studio MSBuild for CUDA contract evaluation: {exc}"
+        ) from exc
+    if result.returncode != 0:
+        diagnostic = (result.stderr or result.stdout).strip()
+        raise NativeContractError(
+            "Visual Studio MSBuild could not evaluate the Release|x64 CUDA contract"
+            + (f": {diagnostic}" if diagnostic else ".")
+        )
+    try:
+        payload = json.loads(result.stdout)
+        items = payload["Items"]
+    except (json.JSONDecodeError, KeyError, TypeError) as exc:
+        raise NativeContractError(
+            "Visual Studio MSBuild returned an invalid evaluated CUDA contract payload."
+        ) from exc
+    if not isinstance(items, dict):
+        raise NativeContractError(
+            "Visual Studio MSBuild evaluated CUDA contract payload does not contain an item map."
+        )
+    result_items: dict[str, list[dict[str, str]]] = {}
+    for item_type in ("_CudaCompileHostDefinition", "ClCompile", "CudaCompile"):
+        values = items.get(item_type)
+        if not isinstance(values, list) or any(not isinstance(value, dict) for value in values):
+            raise NativeContractError(
+                f"Visual Studio MSBuild did not return a valid {item_type} item list."
+            )
+        result_items[item_type] = values
+    return result_items
+
+
+def _validate_export_definition(metadata: dict[str, str], context: str, field: str) -> None:
+    value = metadata.get(field)
+    if not isinstance(value, str):
+        raise NativeContractError(f"{context} is missing evaluated {field} metadata.")
+    export_definitions = [
+        token
+        for token in (part.strip() for part in value.split(";"))
+        if token.split("=", 1)[0].casefold() == "opencvcuda_exports"
+    ]
+    if export_definitions != ["OPENCVCUDA_EXPORTS"]:
+        raise NativeContractError(
+            f"{context} must contain exactly one evaluated OPENCVCUDA_EXPORTS definition; "
+            f"found={export_definitions!r}."
+        )
+
+
+def _validate_evaluated_cuda_native_export_build(
+    project_path: Path,
+    *,
+    msbuild_path: str | Path | None = None,
+) -> None:
+    evaluated = _read_evaluated_cuda_build_items(project_path, msbuild_path=msbuild_path)
+    host_definitions = evaluated["_CudaCompileHostDefinition"]
+    if len(host_definitions) != 1:
+        raise NativeContractError(
+            "Release|x64 CUDA host compilation must have exactly one evaluated ClCompile definition."
+        )
+    host_definition = host_definitions[0]
+    if host_definition.get("CallingConvention") != "Cdecl":
+        raise NativeContractError(
+            "Release|x64 evaluated ClCompile CallingConvention must be Cdecl; "
+            f"found={host_definition.get('CallingConvention')!r}."
+        )
+    if host_definition.get("StructMemberAlignment") != "Default":
+        raise NativeContractError(
+            "Release|x64 evaluated ClCompile StructMemberAlignment must be Default; "
+            f"found={host_definition.get('StructMemberAlignment')!r}."
+        )
+    _validate_export_definition(
+        host_definition,
+        "Release|x64 evaluated ClCompile",
+        "PreprocessorDefinitions",
+    )
+
+    expected_source = (project_path.parent / CUDA_EXPORT_SOURCE).resolve()
+    if not expected_source.is_file():
+        raise NativeContractError(f"CUDA export source does not exist: {expected_source}.")
+    expected_source_key = os.path.normcase(str(expected_source))
+    cuda_target_items = [
+        item
+        for item in evaluated["CudaCompile"]
+        if os.path.normcase(str(Path(item.get("FullPath", "")).resolve())) == expected_source_key
+    ]
+    cl_target_items = [
+        item
+        for item in evaluated["ClCompile"]
+        if os.path.normcase(str(Path(item.get("FullPath", "")).resolve())) == expected_source_key
+    ]
+    if len(cuda_target_items) != 1 or cl_target_items:
+        raise NativeContractError(
+            "cuda_export.cpp must be exactly one evaluated CudaCompile item and must not be ClCompile; "
+            f"CudaCompile={len(cuda_target_items)}, ClCompile={len(cl_target_items)}."
+        )
+    cuda_target = cuda_target_items[0]
+    if Path(cuda_target.get("Identity", "")).name.casefold() != CUDA_EXPORT_SOURCE.casefold():
+        raise NativeContractError(
+            f"Evaluated CUDA export target identity drifted: {cuda_target.get('Identity')!r}."
+        )
+    if cuda_target.get("ExcludedFromBuild", "").casefold() not in {"", "false"}:
+        raise NativeContractError("cuda_export.cpp must not be excluded from the Release|x64 build.")
+    if cuda_target.get("UseHostDefines", "").casefold() != "true":
+        raise NativeContractError(
+            "Release|x64 evaluated CudaCompile UseHostDefines must be true for cuda_export.cpp."
+        )
+    _validate_export_definition(
+        cuda_target,
+        "Release|x64 evaluated cuda_export.cpp CudaCompile",
+        "Defines",
+    )
+
+    for item in evaluated["ClCompile"]:
+        identity = item.get("Identity", "<unknown>")
+        if item.get("CallingConvention") != "Cdecl":
+            raise NativeContractError(
+                f"Release|x64 evaluated ClCompile {identity} CallingConvention must be Cdecl."
+            )
+        if item.get("StructMemberAlignment") != "Default":
+            raise NativeContractError(
+                f"Release|x64 evaluated ClCompile {identity} StructMemberAlignment must be Default."
+            )
+        _validate_export_definition(
+            item,
+            f"Release|x64 evaluated ClCompile {identity}",
+            "PreprocessorDefinitions",
+        )
+
+
+def validate_cuda_native_export_build(
+    project_path: Path,
+    *,
+    msbuild_path: str | Path | None = None,
+    require_evaluated: bool = True,
+) -> None:
     try:
         root = ElementTree.parse(project_path).getroot()
     except (ElementTree.ParseError, OSError) as exc:
@@ -1357,6 +1574,96 @@ def validate_cuda_native_export_build(project_path: Path) -> None:
             "opencv_cuda Release|x64 preprocessor definitions drifted: "
             f"expected={expected_release_definitions!r}, found={definitions!r}."
         )
+    calling_convention_elements = [
+        child
+        for child in release_compile_elements[0]
+        if child.tag.rsplit("}", 1)[-1] == "CallingConvention"
+    ]
+    if len(calling_convention_elements) > 1:
+        raise NativeContractError(
+            "opencv_cuda Release|x64 ClCompile must not duplicate CallingConvention."
+        )
+    calling_convention = (
+        (calling_convention_elements[0].text or "").strip()
+        if calling_convention_elements
+        else None
+    )
+    if calling_convention and calling_convention != "Cdecl":
+        raise NativeContractError(
+            "opencv_cuda Release|x64 ClCompile CallingConvention must be Cdecl when explicit; "
+            f"found={calling_convention!r}."
+        )
+    struct_alignment_elements = [
+        child
+        for child in release_compile_elements[0]
+        if child.tag.rsplit("}", 1)[-1] == "StructMemberAlignment"
+    ]
+    if len(struct_alignment_elements) > 1:
+        raise NativeContractError(
+            "opencv_cuda Release|x64 ClCompile must not duplicate StructMemberAlignment."
+        )
+    struct_alignment = (
+        (struct_alignment_elements[0].text or "").strip()
+        if struct_alignment_elements
+        else None
+    )
+    if struct_alignment and struct_alignment != "Default":
+        raise NativeContractError(
+            "opencv_cuda Release|x64 ClCompile StructMemberAlignment must be Default when explicit; "
+            f"found={struct_alignment!r}."
+        )
+
+    release_cuda_elements = [
+        child for child in release_groups[0]
+        if child.tag.rsplit("}", 1)[-1] == "CudaCompile"
+    ]
+    if len(release_cuda_elements) != 1:
+        raise NativeContractError("opencv_cuda Release|x64 must define one CudaCompile contract.")
+    use_host_defines_elements = [
+        child
+        for child in release_cuda_elements[0]
+        if child.tag.rsplit("}", 1)[-1] == "UseHostDefines"
+    ]
+    if len(use_host_defines_elements) > 1:
+        raise NativeContractError(
+            "opencv_cuda Release|x64 CudaCompile must not duplicate UseHostDefines."
+        )
+    use_host_defines = (
+        (use_host_defines_elements[0].text or "").strip()
+        if use_host_defines_elements
+        else None
+    )
+    if use_host_defines and use_host_defines.casefold() != "true":
+        raise NativeContractError(
+            "opencv_cuda Release|x64 CudaCompile UseHostDefines must be true when explicit."
+        )
+
+    cuda_source_items = []
+    cl_source_items = []
+    for element in root.iter():
+        item_type = element.tag.rsplit("}", 1)[-1]
+        include = (element.attrib.get("Include") or "").replace("\\", "/")
+        if Path(include).name.casefold() != CUDA_EXPORT_SOURCE.casefold():
+            continue
+        if item_type == "CudaCompile":
+            cuda_source_items.append(element)
+        elif item_type == "ClCompile":
+            cl_source_items.append(element)
+    if len(cuda_source_items) != 1 or cl_source_items:
+        raise NativeContractError(
+            "cuda_export.cpp must be exactly one CudaCompile item and must not be ClCompile; "
+            f"CudaCompile={len(cuda_source_items)}, ClCompile={len(cl_source_items)}."
+        )
+    if (cuda_source_items[0].attrib.get("Condition") or "").strip():
+        raise NativeContractError("cuda_export.cpp CudaCompile item must not be conditional.")
+    source_path = project_path.parent / Path(
+        (cuda_source_items[0].attrib.get("Include") or "").replace("\\", "/")
+    )
+    if not source_path.is_file():
+        raise NativeContractError(f"CUDA export source does not exist: {source_path.resolve()}.")
+
+    if require_evaluated:
+        _validate_evaluated_cuda_native_export_build(project_path, msbuild_path=msbuild_path)
 
 
 def _sha256(data: bytes) -> str:
@@ -1413,6 +1720,7 @@ def validate_native_contracts(
     *,
     runtime_files: tuple[str | Path, ...] = (),
     package_files: tuple[str | Path, ...] = (),
+    require_evaluated_native_build: bool = True,
 ) -> NativeContractReport:
     root = Path(repository_root).resolve()
     header_path = root / CUDA_HEADER
@@ -1447,7 +1755,10 @@ def validate_native_contracts(
     validate_cuda_export_sets(header_exports, managed_exports, binary_exports)
 
     validate_cuda_package_binding(project_path)
-    validate_cuda_native_export_build(native_project_path)
+    validate_cuda_native_export_build(
+        native_project_path,
+        require_evaluated=require_evaluated_native_build,
+    )
     tracked_hash = _sha256(tracked_bytes)
     verified_runtime_files: list[Path] = []
     for runtime_file in runtime_files:
@@ -1506,6 +1817,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--runtime", action="append", type=Path, default=[])
     parser.add_argument("--package", action="append", type=Path, default=[])
     parser.add_argument("--package-directory", action="append", type=Path, default=[])
+    parser.add_argument(
+        "--static-native-project-only",
+        action="store_true",
+        help=(
+            "Run the portable XML/source layer without claiming VS/CUDA evaluated metadata proof. "
+            "Release validation must not use this option."
+        ),
+    )
     return parser.parse_args()
 
 
@@ -1519,6 +1838,7 @@ def main() -> int:
             args.repository_root,
             runtime_files=tuple(args.runtime),
             package_files=tuple(packages),
+            require_evaluated_native_build=not args.static_native_project_only,
         )
     except NativeContractError as exc:
         print(f"Native contract verification failed: {exc}", file=sys.stderr)
@@ -1531,6 +1851,11 @@ def main() -> int:
         f"Static ABI: {len(report.abi_functions)} function signatures; "
         f"HImage AMD64 size {report.himage_size} bytes"
     )
+    if args.static_native_project_only:
+        print(
+            "Portable native-project checks passed; Release|x64 evaluated MSBuild metadata "
+            "was not verified."
+        )
     for path in report.runtime_files:
         print(f"Verified runtime copy: {path}")
     for path in report.package_files:

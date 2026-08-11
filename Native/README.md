@@ -27,12 +27,19 @@ name and P/Invoke signatures, the AMD64 `HImage` field/pack/offset/size contract
 callback delegates. `HImage` uses an explicit native `pack(push, 8)` scope and managed `Pack = 8`;
 the native build also asserts standard layout, one-byte `bool`, size, and every x64 offset. The
 export build branch must expand `COLORVISIONCORE_API` to `__declspec(dllexport)`, and Release|x64
-must define `OPENCVCUDA_EXPORTS`. The checker also reads the tracked PE export table directly. It never loads the
-DLL, so it does not require a GPU, CUDA Toolkit, `dumpbin`, or another Python package:
+must define `OPENCVCUDA_EXPORTS`. The checker also reads the tracked PE export table directly and
+never loads the DLL. Its default release mode additionally asks Visual Studio MSBuild to evaluate
+the real Release|x64 `ClCompile`/`CudaCompile` items, including CUDA host definitions; this does not
+invoke `nvcc` or require a GPU, but it does fail closed when the matching CUDA BuildCustomizations
+are unavailable:
 
 ```powershell
 python Scripts/verify_native_contracts.py
 ```
+
+The ordinary Windows CI runner uses `--static-native-project-only`. That portable layer still
+checks the source, project XML, PE exports and propagated package bytes, and prints that evaluated
+MSBuild metadata was not verified; it is not a substitute for the default release-runner gate.
 
 PE export metadata does not contain C parameter types. The checker therefore combines a strict
 source-side static ABI contract with exact reviewed-DLL byte propagation; it does not claim to

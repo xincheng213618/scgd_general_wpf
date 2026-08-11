@@ -1,3 +1,4 @@
+import shutil
 import tempfile
 import unittest
 import zipfile
@@ -49,7 +50,7 @@ class SourceContractTests(unittest.TestCase):
     def test_rejects_non_cdecl_cuda_import(self) -> None:
         source = '''
             private const string LibPath = "opencv_cuda.dll";
-            [DllImport(LibPath, EntryPoint = "CM_Fusion")]
+            [DllImport(LibPath, EntryPoint = "CM_Fusion", CallingConvention = CallingConvention.StdCall)]
             private static extern int CM_FusionNative(string value);
         '''
 
@@ -93,8 +94,10 @@ class SourceContractTests(unittest.TestCase):
                 prefix="cuda-native-project-mutation-"
             ) as directory:
                 self.assertEqual(1, project_source.count(old))
-                project = Path(directory) / "opencv_cuda.vcxproj"
-                project.write_text(project_source.replace(old, new, 1), encoding="utf-8")
+                project = self._write_native_project_fixture(
+                    directory,
+                    project_source.replace(old, new, 1),
+                )
                 with self.assertRaises(NativeContractError):
                     validate_cuda_native_export_build(project)
 
@@ -111,10 +114,175 @@ class SourceContractTests(unittest.TestCase):
             + project_source[release_end:]
         )
         with tempfile.TemporaryDirectory(prefix="cuda-native-project-ancestor-mutation-") as directory:
-            project = Path(directory) / "opencv_cuda.vcxproj"
-            project.write_text(conditional_ancestor, encoding="utf-8")
+            project = self._write_native_project_fixture(directory, conditional_ancestor)
             with self.assertRaises(NativeContractError):
                 validate_cuda_native_export_build(project)
+
+    def test_rejects_release_x64_static_metadata_mutations(self) -> None:
+        project_source = (REPO_ROOT / "Native/opencv_cuda/opencv_cuda.vcxproj").read_text(
+            encoding="utf-8-sig"
+        )
+        release_marker = '<ItemDefinitionGroup Condition="\'$(Configuration)|$(Platform)\'==\'Release|x64\'">'
+        release_start = project_source.index(release_marker)
+        release_end = project_source.index("</ItemDefinitionGroup>", release_start) + len(
+            "</ItemDefinitionGroup>"
+        )
+        release_group = project_source[release_start:release_end]
+        mutations = (
+            (
+                "cuda-host-defines",
+                "<CudaCompile>",
+                "<CudaCompile><UseHostDefines>false</UseHostDefines>",
+                "UseHostDefines",
+            ),
+            (
+                "calling-convention",
+                "<ClCompile>",
+                "<ClCompile><CallingConvention>StdCall</CallingConvention>",
+                "CallingConvention",
+            ),
+            (
+                "struct-alignment",
+                "<ClCompile>",
+                "<ClCompile><StructMemberAlignment>1Byte</StructMemberAlignment>",
+                "StructMemberAlignment",
+            ),
+        )
+        for name, old, new, diagnostic in mutations:
+            with self.subTest(name=name), tempfile.TemporaryDirectory(
+                prefix="cuda-evaluated-project-mutation-"
+            ) as directory:
+                self.assertEqual(1, release_group.count(old))
+                mutated_group = release_group.replace(old, new, 1)
+                mutated_source = (
+                    project_source[:release_start]
+                    + mutated_group
+                    + project_source[release_end:]
+                )
+                project = self._write_native_project_fixture(directory, mutated_source)
+                with self.assertRaisesRegex(NativeContractError, diagnostic):
+                    validate_cuda_native_export_build(project, require_evaluated=False)
+
+    def test_rejects_release_x64_evaluated_import_mutations_when_available(self) -> None:
+        try:
+            validate_cuda_native_export_build(
+                REPO_ROOT / "Native/opencv_cuda/opencv_cuda.vcxproj"
+            )
+        except NativeContractError as exc:
+            if any(
+                marker in str(exc)
+                for marker in (
+                    "Visual Studio MSBuild is required",
+                    "Could not run Visual Studio MSBuild",
+                    "MSBuild could not evaluate",
+                )
+            ):
+                self.skipTest(
+                    "VS/CUDA BuildCustomizations are unavailable; portable checks do not claim "
+                    f"evaluated metadata proof: {exc}"
+                )
+            raise
+
+        project_source = (REPO_ROOT / "Native/opencv_cuda/opencv_cuda.vcxproj").read_text(
+            encoding="utf-8-sig"
+        ).replace(
+            "</Project>",
+            '<Import Project="evaluation-mutation.targets" />\n</Project>',
+            1,
+        )
+        mutations = (
+            (
+                "cuda-host-defines",
+                """<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Target Name="MutateCudaMetadata" BeforeTargets="AddCudaCompileMetadata">
+    <ItemGroup><CudaCompile Update="cuda_export.cpp"><UseHostDefines>false</UseHostDefines></CudaCompile></ItemGroup>
+  </Target>
+</Project>""",
+                "UseHostDefines",
+            ),
+            (
+                "calling-convention",
+                """<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemDefinitionGroup><ClCompile><CallingConvention>StdCall</CallingConvention></ClCompile></ItemDefinitionGroup>
+</Project>""",
+                "CallingConvention",
+            ),
+            (
+                "struct-alignment",
+                """<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemDefinitionGroup><ClCompile><StructMemberAlignment>1Byte</StructMemberAlignment></ClCompile></ItemDefinitionGroup>
+</Project>""",
+                "StructMemberAlignment",
+            ),
+        )
+        for name, mutation_target, diagnostic in mutations:
+            with self.subTest(name=name), tempfile.TemporaryDirectory(
+                prefix="cuda-evaluated-import-mutation-"
+            ) as directory:
+                project = self._write_native_project_fixture(
+                    directory,
+                    project_source,
+                    evaluation_target=mutation_target,
+                )
+                validate_cuda_native_export_build(project, require_evaluated=False)
+                with self.assertRaisesRegex(NativeContractError, diagnostic):
+                    validate_cuda_native_export_build(project)
+
+    def test_current_release_x64_evaluated_metadata_is_healthy_when_available(self) -> None:
+        try:
+            validate_cuda_native_export_build(
+                REPO_ROOT / "Native/opencv_cuda/opencv_cuda.vcxproj"
+            )
+        except NativeContractError as exc:
+            if any(
+                marker in str(exc)
+                for marker in (
+                    "Visual Studio MSBuild is required",
+                    "Could not run Visual Studio MSBuild",
+                    "MSBuild could not evaluate",
+                )
+            ):
+                self.skipTest(
+                    "VS/CUDA BuildCustomizations are unavailable; portable checks do not claim "
+                    f"evaluated metadata proof: {exc}"
+                )
+            raise
+
+    @staticmethod
+    def _write_native_project_fixture(
+        directory: str,
+        project_source: str,
+        *,
+        evaluation_target: str | None = None,
+    ) -> Path:
+        fixture_root = Path(directory)
+        project = fixture_root / "Native/opencv_cuda/opencv_cuda.vcxproj"
+        project.parent.mkdir(parents=True)
+        project.write_text(project_source, encoding="utf-8")
+        fixture_files = (
+            "Directory.Build.props",
+            "Native/opencv_cuda/cuda_export.cpp",
+            "Native/opencv_cuda/dllmain.cpp",
+            "Native/opencv_cuda/native_log.cpp",
+            "Native/opencv_cuda/pch.cpp",
+            "Native/include/include.props",
+            "packages/CUDA.props",
+            "packages/OpenCV.Release.x64.props",
+            "packages/nlohmann.props",
+            "packages/NativeCopy.props",
+            "packages/NativeCopy.targets",
+            "packages/spdlog.props",
+        )
+        for relative_path in fixture_files:
+            destination = fixture_root / relative_path
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(REPO_ROOT / relative_path, destination)
+        if evaluation_target is not None:
+            (project.parent / "evaluation-mutation.targets").write_text(
+                evaluation_target,
+                encoding="utf-8",
+            )
+        return project
 
 
 class StaticAbiMutationTests(unittest.TestCase):
@@ -160,6 +328,50 @@ class StaticAbiMutationTests(unittest.TestCase):
 
         with self.assertRaisesRegex(NativeContractError, "OpenCVCuda.LibPath drift"):
             self._validate(managed=mutated)
+
+    def test_rejects_unreviewed_or_malformed_dllimport_named_arguments(self) -> None:
+        original = (
+            '[DllImport(LibPath, EntryPoint = "M_FreeHImageData", '
+            'CallingConvention = CallingConvention.Cdecl)]'
+        )
+        mutations = (
+            (
+                "fully-qualified-charset",
+                original[:-2]
+                + ", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]",
+                "unsupported named argument: CharSet",
+            ),
+            (
+                "numeric-charset-cast",
+                original[:-2] + ", CharSet = (CharSet)3)]",
+                "unsupported named argument: CharSet",
+            ),
+            (
+                "preserve-sig-false",
+                original[:-2] + ", PreserveSig = false)]",
+                "unsupported named argument: PreserveSig",
+            ),
+            (
+                "unknown-named-argument",
+                original[:-2] + ", SetLastError = true)]",
+                "unsupported named argument: SetLastError",
+            ),
+            (
+                "duplicate-entry-point",
+                original[:-2] + ', EntryPoint = "M_FreeHImageData")]',
+                "duplicate named argument: EntryPoint",
+            ),
+            (
+                "duplicate-calling-convention",
+                original[:-2] + ", CallingConvention = CallingConvention.Cdecl)]",
+                "duplicate named argument: CallingConvention",
+            ),
+        )
+        for name, replacement, diagnostic in mutations:
+            with self.subTest(name=name):
+                mutated = self._replace_once(self.managed, original, replacement)
+                with self.assertRaisesRegex(NativeContractError, diagnostic):
+                    self._validate(managed=mutated)
 
     def test_rejects_native_himage_field_order_mutation(self) -> None:
         mutated = self._replace_once(
@@ -599,7 +811,11 @@ class FullZipContractIntegrationTests(unittest.TestCase):
         self._write_cuda((REPO_ROOT / CUDA_TRACKED_DLL).read_bytes())
 
         create_full_zip(self.version_directory, self.full_zip)
-        report = validate_native_contracts(REPO_ROOT, package_files=(self.full_zip,))
+        report = validate_native_contracts(
+            REPO_ROOT,
+            package_files=(self.full_zip,),
+            require_evaluated_native_build=False,
+        )
 
         self.assertEqual((self.full_zip.resolve(),), report.package_files)
 
@@ -609,7 +825,11 @@ class FullZipContractIntegrationTests(unittest.TestCase):
         create_full_zip(self.version_directory, self.full_zip)
 
         with self.assertRaisesRegex(NativeContractError, "differs from tracked DLL"):
-            validate_native_contracts(REPO_ROOT, package_files=(self.full_zip,))
+            validate_native_contracts(
+                REPO_ROOT,
+                package_files=(self.full_zip,),
+                require_evaluated_native_build=False,
+            )
 
     def _write_cuda(self, content: bytes) -> None:
         path = self.version_directory / Path(CUDA_PACKAGE_MEMBER)
@@ -626,7 +846,7 @@ class RepositoryNativeContractTests(unittest.TestCase):
         self._temporary_directory.cleanup()
 
     def test_current_repository_contract_is_complete(self) -> None:
-        report = validate_native_contracts(REPO_ROOT)
+        report = validate_native_contracts(REPO_ROOT, require_evaluated_native_build=False)
 
         self.assertEqual(AMD64_MACHINE, read_pe_exports(report.tracked_dll.read_bytes())[0])
         self.assertEqual(10, len(report.exports))
@@ -644,6 +864,7 @@ class RepositoryNativeContractTests(unittest.TestCase):
             REPO_ROOT,
             runtime_files=(runtime_path,),
             package_files=(package_path,),
+            require_evaluated_native_build=False,
         )
 
         self.assertEqual((runtime_path.resolve(),), report.runtime_files)
@@ -655,7 +876,11 @@ class RepositoryNativeContractTests(unittest.TestCase):
             archive.writestr(CUDA_PACKAGE_MEMBER, b"stale DLL")
 
         with self.assertRaisesRegex(NativeContractError, "differs from tracked DLL"):
-            validate_native_contracts(REPO_ROOT, package_files=(package_path,))
+            validate_native_contracts(
+                REPO_ROOT,
+                package_files=(package_path,),
+                require_evaluated_native_build=False,
+            )
 
     def test_rejects_package_that_omits_cuda(self) -> None:
         package_path = self.root / "ColorVision.Core.test.nupkg"
@@ -663,7 +888,11 @@ class RepositoryNativeContractTests(unittest.TestCase):
             archive.writestr("README.md", "missing native runtime")
 
         with self.assertRaisesRegex(NativeContractError, "must contain exactly one"):
-            validate_native_contracts(REPO_ROOT, package_files=(package_path,))
+            validate_native_contracts(
+                REPO_ROOT,
+                package_files=(package_path,),
+                require_evaluated_native_build=False,
+            )
 
 
 if __name__ == "__main__":
