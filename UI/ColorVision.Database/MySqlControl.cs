@@ -5,12 +5,148 @@ using MySqlConnector;
 using SqlSugar;
 using System;
 using System.IO;
+using System.Runtime.ExceptionServices;
 using System.Threading.Tasks;
 using System.Windows;
 
 
 namespace ColorVision.Database
 {
+
+    public enum BatchExecutionStage
+    {
+        CreateExecutor,
+        PrepareBatch,
+        BeginTransaction,
+        ExecuteStatement,
+        CommitTransaction,
+        DisposeExecutor
+    }
+
+    public sealed class BatchExecuteNonQueryException : InvalidOperationException
+    {
+        internal BatchExecuteNonQueryException(
+            BatchExecutionStage stage,
+            int? statementIndex,
+            Exception primaryException,
+            Exception? rollbackException)
+            : base(CreateMessage(stage, statementIndex, primaryException, rollbackException))
+        {
+            Stage = stage;
+            StatementIndex = statementIndex;
+            FailureType = GetFailureType(primaryException);
+            ErrorCode = GetErrorCode(primaryException);
+            if (rollbackException != null)
+            {
+                RollbackFailureType = GetFailureType(rollbackException);
+                RollbackErrorCode = GetErrorCode(rollbackException);
+            }
+        }
+
+        public BatchExecutionStage Stage { get; }
+
+        /// <summary>
+        /// Gets the one-based index of the failed non-empty SQL statement.
+        /// </summary>
+        public int? StatementIndex { get; }
+
+        public string FailureType { get; }
+
+        public int ErrorCode { get; }
+
+        public string? RollbackFailureType { get; }
+
+        public int? RollbackErrorCode { get; }
+
+        public string? DisposeFailureType { get; private set; }
+
+        public int? DisposeErrorCode { get; private set; }
+
+        internal void RecordDisposeFailure(Exception exception)
+        {
+            DisposeFailureType = GetFailureType(exception);
+            DisposeErrorCode = GetErrorCode(exception);
+        }
+
+        internal string GetDiagnosticSummary()
+        {
+            string statement = StatementIndex.HasValue ? $"; StatementIndex={StatementIndex.Value}" : string.Empty;
+            string rollback = RollbackFailureType == null ? string.Empty : $"; RollbackFailureType={RollbackFailureType}; RollbackErrorCode={RollbackErrorCode}";
+            string dispose = DisposeFailureType == null ? string.Empty : $"; DisposeFailureType={DisposeFailureType}; DisposeErrorCode={DisposeErrorCode}";
+            return $"Stage={Stage}{statement}; FailureType={FailureType}; ErrorCode={ErrorCode}{rollback}{dispose}";
+        }
+
+        private static string CreateMessage(BatchExecutionStage stage, int? statementIndex, Exception primaryException, Exception? rollbackException)
+        {
+            string statement = statementIndex.HasValue ? $"; StatementIndex={statementIndex.Value}" : string.Empty;
+            string rollback = rollbackException == null
+                ? string.Empty
+                : $"; RollbackFailureType={GetFailureType(rollbackException)}; RollbackErrorCode={GetErrorCode(rollbackException)}";
+            return $"SQL batch failed. Stage={stage}{statement}; FailureType={GetFailureType(primaryException)}; ErrorCode={GetErrorCode(primaryException)}{rollback}.";
+        }
+
+        internal static string GetFailureType(Exception exception)
+        {
+            return exception.GetType().Name;
+        }
+
+        internal static int GetErrorCode(Exception exception)
+        {
+            return exception is MySqlException mySqlException ? mySqlException.Number : exception.HResult;
+        }
+    }
+
+    internal sealed class BatchCommittedCleanupWarning
+    {
+        public BatchCommittedCleanupWarning(Exception exception)
+        {
+            Stage = BatchExecutionStage.DisposeExecutor;
+            FailureType = BatchExecuteNonQueryException.GetFailureType(exception);
+            ErrorCode = BatchExecuteNonQueryException.GetErrorCode(exception);
+        }
+
+        public BatchExecutionStage Stage { get; }
+
+        public string FailureType { get; }
+
+        public int ErrorCode { get; }
+
+        public string GetDiagnosticSummary()
+        {
+            return $"Stage={Stage}; FailureType={FailureType}; ErrorCode={ErrorCode}";
+        }
+    }
+
+    internal interface IBatchSqlExecutor : IDisposable
+    {
+        void BeginTransaction();
+
+        int ExecuteNonQuery(string sql);
+
+        void CommitTransaction();
+
+        void RollbackTransaction();
+    }
+
+    internal sealed class SqlSugarBatchSqlExecutor : IBatchSqlExecutor
+    {
+        private readonly SqlSugarClient _db = new(new ConnectionConfig
+        {
+            ConnectionString = MySqlControl.GetConnectionString(),
+            DbType = SqlSugar.DbType.MySql,
+            IsAutoCloseConnection = true
+        });
+
+        public void BeginTransaction() => _db.Ado.BeginTran();
+
+        public int ExecuteNonQuery(string sql) => _db.Ado.ExecuteCommand(sql);
+
+        public void CommitTransaction() => _db.Ado.CommitTran();
+
+        public void RollbackTransaction() => _db.Ado.RollbackTran();
+
+        public void Dispose() => _db.Dispose();
+    }
 
     public class MySqlControl: ViewModelBase, IDisposable
     {
@@ -222,32 +358,176 @@ namespace ColorVision.Database
             }
         }
 
-        public static  int BatchExecuteNonQuery(string sqlBatch)
+        /// <summary>
+        /// Executes a SQL batch and returns the affected-row count only after commit succeeds.
+        /// MySQL statements that implicitly commit, including DDL, are not made rollback-safe by this transaction wrapper.
+        /// A disposal failure after commit is logged as a cleanup warning and does not change the committed success result.
+        /// </summary>
+        public static int BatchExecuteNonQuery(string sqlBatch)
         {
-            var statements = sqlBatch.Split(';', StringSplitOptions.RemoveEmptyEntries);
-            int totalCount = 0;
-            using var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+            return BatchExecuteNonQuery(sqlBatch, static () => new SqlSugarBatchSqlExecutor());
+        }
+
+        internal static int BatchExecuteNonQuery(string sqlBatch, Func<IBatchSqlExecutor> executorFactory)
+        {
+            int affectedRows = BatchExecuteNonQuery(sqlBatch, executorFactory, out BatchCommittedCleanupWarning? cleanupWarning);
+            if (cleanupWarning != null)
+            {
+                LogBatchCleanupWarning(cleanupWarning);
+            }
+
+            LogBatchSuccess(affectedRows);
+            return affectedRows;
+        }
+
+        internal static int BatchExecuteNonQuery(
+            string sqlBatch,
+            Func<IBatchSqlExecutor> executorFactory,
+            out BatchCommittedCleanupWarning? cleanupWarning)
+        {
+            ArgumentNullException.ThrowIfNull(sqlBatch);
+            ArgumentNullException.ThrowIfNull(executorFactory);
+            cleanupWarning = null;
+
+            IBatchSqlExecutor executor;
             try
             {
-                DB.Ado.BeginTran();
+                executor = executorFactory() ?? throw new InvalidOperationException("The batch SQL executor factory returned null.");
+            }
+            catch (Exception ex)
+            {
+                var createException = new BatchExecuteNonQueryException(BatchExecutionStage.CreateExecutor, null, ex, null);
+                LogBatchFailure(createException);
+                throw createException;
+            }
+
+            int affectedRows = 0;
+            BatchExecuteNonQueryException? primaryException = null;
+            try
+            {
+                affectedRows = ExecuteBatch(sqlBatch, executor);
+            }
+            catch (BatchExecuteNonQueryException ex)
+            {
+                primaryException = ex;
+            }
+
+            Exception? disposeException = null;
+            try
+            {
+                executor.Dispose();
+            }
+            catch (Exception ex)
+            {
+                disposeException = ex;
+            }
+
+            if (primaryException != null)
+            {
+                if (disposeException != null)
+                {
+                    primaryException.RecordDisposeFailure(disposeException);
+                    LogBatchFailure(primaryException);
+                }
+
+                ExceptionDispatchInfo.Capture(primaryException).Throw();
+            }
+
+            if (disposeException != null)
+                cleanupWarning = new BatchCommittedCleanupWarning(disposeException);
+
+            return affectedRows;
+        }
+
+        private static int ExecuteBatch(string sqlBatch, IBatchSqlExecutor executor)
+        {
+            int totalCount = 0;
+            int executedStatementCount = 0;
+            int? statementIndex = null;
+            BatchExecutionStage stage = BatchExecutionStage.PrepareBatch;
+            try
+            {
+                var statements = sqlBatch.Split(separator, StringSplitOptions.RemoveEmptyEntries);
+                stage = BatchExecutionStage.BeginTransaction;
+                executor.BeginTransaction();
                 foreach (var sql in statements)
                 {
                     var trimmedSql = sql.Trim();
                     if (string.IsNullOrEmpty(trimmedSql))
                         continue;
-                    int count = DB.Ado.ExecuteCommand(trimmedSql);
+
+                    stage = BatchExecutionStage.ExecuteStatement;
+                    statementIndex = executedStatementCount + 1;
+                    int count = executor.ExecuteNonQuery(trimmedSql);
                     totalCount += count;
-                    log.Info($"SQL执行成功。受影响的行数: {count} 执行的SQL语句: {trimmedSql}");
+                    executedStatementCount++;
                 }
-                DB.Ado.CommitTran();
+
+                stage = BatchExecutionStage.CommitTransaction;
+                statementIndex = null;
+                executor.CommitTransaction();
             }
             catch (Exception ex)
             {
-                DB.Ado.RollbackTran();
-                log.Error($"SQL批量执行失败: {ex.Message}");
+                Exception? rollbackException = null;
+                if (stage != BatchExecutionStage.PrepareBatch)
+                {
+                    try
+                    {
+                        executor.RollbackTransaction();
+                    }
+                    catch (Exception rollbackEx)
+                    {
+                        rollbackException = rollbackEx;
+                    }
+                }
+
+                var batchException = new BatchExecuteNonQueryException(
+                    stage,
+                    statementIndex,
+                    ex,
+                    rollbackException);
+                LogBatchFailure(batchException);
+                throw batchException;
             }
-            log.Info($"总共受影响的行数: {totalCount}");
+
             return totalCount;
+        }
+
+        private static void LogBatchFailure(BatchExecuteNonQueryException exception)
+        {
+            try
+            {
+                log.Error("SQL批量执行失败。" + exception.GetDiagnosticSummary());
+            }
+            catch
+            {
+                // Logging must never replace the transaction failure contract.
+            }
+        }
+
+        private static void LogBatchCleanupWarning(BatchCommittedCleanupWarning warning)
+        {
+            try
+            {
+                log.Warn("SQL批量执行已提交，但执行器资源释放失败；提交结果保持成功。" + warning.GetDiagnosticSummary());
+            }
+            catch
+            {
+                // Logging must never turn a committed transaction into a reported failure.
+            }
+        }
+
+        private static void LogBatchSuccess(int affectedRows)
+        {
+            try
+            {
+                log.Info($"总共受影响的行数: {affectedRows}");
+            }
+            catch
+            {
+                // Logging must never turn a committed transaction into a reported failure.
+            }
         }
 
 
