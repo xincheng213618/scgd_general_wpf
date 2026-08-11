@@ -1222,7 +1222,6 @@ namespace ProjectKB
             sb.AppendLine($"型号: {modelName}");
             sb.AppendLine($"系列号: {kmitemmaster.SN}");
             sb.AppendLine($"测量设置: {GetSummaryMeasurementSetting(kmitemmaster)}");
-            sb.AppendLine($"LC邻域: {GetLcNeighborhoodDescription(kmitemmaster)}");
             sb.AppendLine($"关注点: {kmitemmaster.KBTemplate}");
             sb.AppendLine($"{kmitemmaster.CreateTime:yyyy/M/d HH:mm:ss}");
             sb.AppendLine();
@@ -1295,7 +1294,6 @@ namespace ProjectKB
             outtext += $"机种 (Model):{kmitemmaster.Model}" + Environment.NewLine;
             outtext += $"SN:{kmitemmaster.SN}" + Environment.NewLine;
             outtext += GetRecipeSnapshotDescription(kmitemmaster) + Environment.NewLine;
-            outtext += $"LC邻域 (LC Neighborhood): {GetLcNeighborhoodDescription(kmitemmaster)}" + Environment.NewLine;
             outtext += $"按键明细 (Points of Interest): " + Environment.NewLine;
             outtext += $"{kmitemmaster.CreateTime:yyyy/MM/dd HH:mm:ss}" + Environment.NewLine;
 
