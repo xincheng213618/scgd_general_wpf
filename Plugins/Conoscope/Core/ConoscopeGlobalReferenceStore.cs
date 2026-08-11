@@ -11,6 +11,7 @@ namespace Conoscope.Core
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ConoscopeGlobalReferenceStore));
         private readonly ConoscopeConfig config;
+        private readonly Action<ConoscopeConfig> saveConfig;
 
         private Mat? colorDifferenceReferenceUMat;
         private Mat? colorDifferenceReferenceVMat;
@@ -18,8 +19,14 @@ namespace Conoscope.Core
         private Mat? contrastWhiteReferenceYMat;
 
         public ConoscopeGlobalReferenceStore(ConoscopeConfig config)
+            : this(config, SaveCurrentConfig)
         {
-            this.config = config;
+        }
+
+        internal ConoscopeGlobalReferenceStore(ConoscopeConfig config, Action<ConoscopeConfig> saveConfig)
+        {
+            this.config = config ?? throw new ArgumentNullException(nameof(config));
+            this.saveConfig = saveConfig ?? throw new ArgumentNullException(nameof(saveConfig));
             LoadPersistedReferences();
         }
 
@@ -215,9 +222,16 @@ namespace Conoscope.Core
             }
         }
 
-        private static void SaveConfig()
+        private void SaveConfig()
         {
-            ConfigService.Instance.Save<ConoscopeConfig>();
+            saveConfig(config);
+        }
+
+        private static void SaveCurrentConfig(ConoscopeConfig config)
+        {
+            ConoscopeConfig current = ConfigService.Instance.GetRequiredService<ConoscopeConfig>();
+            if (ReferenceEquals(current, config))
+                ConfigService.Instance.Save<ConoscopeConfig>();
         }
     }
 }

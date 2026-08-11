@@ -21,7 +21,8 @@ namespace Conoscope
                     return;
                 }
 
-                ConoscopeExportService.ExportAngleModeToCsv(filePath!, channel, CreateExportContext(), ConoscopeManager.GetInstance().Config.ExportDecimalPlaces);
+                using ConoscopeExportContext context = CreateExportContext();
+                ConoscopeExportService.ExportAngleModeToCsv(filePath!, channel, context, context.DecimalPlaces);
                 OnExportSuccess(filePath!);
             }
             catch (Exception ex)
@@ -40,7 +41,8 @@ namespace Conoscope
                     return;
                 }
 
-                ConoscopeExportService.ExportCircleModeToCsv(filePath!, channel, CreateExportContext(), ConoscopeManager.GetInstance().Config.ExportDecimalPlaces);
+                using ConoscopeExportContext context = CreateExportContext();
+                ConoscopeExportService.ExportCircleModeToCsv(filePath!, channel, context, context.DecimalPlaces);
                 OnExportSuccess(filePath!);
             }
             catch (Exception ex)
@@ -206,34 +208,47 @@ namespace Conoscope
                 throw new InvalidOperationException(Properties.Resources.XYZDataNotLoaded);
             }
 
-            double pixelsPerDegree = currentPixelsPerDegree > 0
-                ? currentPixelsPerDegree
-                : CurrentModelProfile.GetConoscopeCoefficient(YMat.Width, YMat.Height);
-
-            return new ConoscopeExportContext
+            ConoscopeRuntimeSnapshot runtime = ConoscopeManager.GetInstance().CaptureRuntimeSnapshot();
+            try
             {
-                ModelName = ConoscopeConfig.CurrentModel.ToString(),
-                ImageWidth = YMat.Width,
-                ImageHeight = YMat.Height,
-                Center = currentImageCenter,
-                MaxAngle = MaxAngle,
-                PixelsPerDegree = pixelsPerDegree,
-                ReadXyz = (ix, iy) =>
+                ConoscopeConfig config = runtime.Config;
+                ConoscopeGlobalReferenceStore references = runtime.GlobalReferences;
+                double pixelsPerDegree = currentPixelsPerDegree > 0
+                    ? currentPixelsPerDegree
+                    : config.CurrentModelProfile.GetConoscopeCoefficient(YMat.Width, YMat.Height);
+
+                return new ConoscopeExportContext
                 {
-                    ExtractXYZValues(ix, iy, out double X, out double Y, out double Z);
-                    return new ConoscopeXyzValue(X, Y, Z);
-                },
-                ReadColorDifference = (ix, iy) =>
-                {
-                    ExtractXYZValues(ix, iy, out double X, out double Y, out double Z);
-                    return GetColorDifferenceValue(ix, iy, X, Y, Z);
-                },
-                ReadContrast = (ix, iy) =>
-                {
-                    ExtractXYZValues(ix, iy, out _, out double Y, out _);
-                    return GetContrastValue(ix, iy, Y);
-                }
-            };
+                    ModelName = config.CurrentModel.ToString(),
+                    ImageWidth = YMat.Width,
+                    ImageHeight = YMat.Height,
+                    Center = currentImageCenter,
+                    MaxAngle = config.CurrentModelProfile.MaxAngle,
+                    PixelsPerDegree = pixelsPerDegree,
+                    DecimalPlaces = config.ExportDecimalPlaces,
+                    ReadXyz = (ix, iy) =>
+                    {
+                        ExtractXYZValues(ix, iy, out double X, out double Y, out double Z);
+                        return new ConoscopeXyzValue(X, Y, Z);
+                    },
+                    ReadColorDifference = (ix, iy) =>
+                    {
+                        ExtractXYZValues(ix, iy, out double X, out double Y, out double Z);
+                        return GetColorDifferenceValue(ix, iy, X, Y, Z, references);
+                    },
+                    ReadContrast = (ix, iy) =>
+                    {
+                        ExtractXYZValues(ix, iy, out _, out double Y, out _);
+                        return GetContrastValue(ix, iy, Y, references);
+                    },
+                    Lifetime = runtime
+                };
+            }
+            catch
+            {
+                runtime.Dispose();
+                throw;
+            }
         }
 
         public void AdvancedExport()
@@ -306,7 +321,7 @@ namespace Conoscope
                 }
 
                 string outputFolder = folderDialog.SelectedPath;
-                ConoscopeExportContext exportContext = CreateExportContext();
+                using ConoscopeExportContext exportContext = CreateExportContext();
 
                 if (settings.ExportAzimuth)
                 {
@@ -466,7 +481,8 @@ namespace Conoscope
                     return;
                 }
 
-                exportAction(filePath, channel, CreateExportContext(), angle, exportOptions);
+                using ConoscopeExportContext exportContext = CreateExportContext();
+                exportAction(filePath, channel, exportContext, angle, exportOptions);
                 MessageBox.Show(CompositeFormatCache.Format(successMessageResource, angle), Properties.Resources.TitleSuccess, MessageBoxButton.OK, MessageBoxImage.Information);
 
                 ConoscopeConfig exportConfig = ConoscopeManager.GetInstance().Config;

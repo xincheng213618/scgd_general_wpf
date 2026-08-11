@@ -58,8 +58,13 @@ namespace Conoscope
 
         private bool EnsureContrastReferenceReady()
         {
+            return EnsureContrastReferenceReady(GlobalReferences);
+        }
+
+        private bool EnsureContrastReferenceReady(ConoscopeGlobalReferenceStore references)
+        {
             ContrastReferenceKind requiredReferenceKind = GetRequiredContrastReferenceKind();
-            OpenCvSharp.Mat? referenceYMat = GlobalReferences.GetContrastReferenceYMat(requiredReferenceKind);
+            OpenCvSharp.Mat? referenceYMat = references.GetContrastReferenceYMat(requiredReferenceKind);
             if (referenceYMat == null)
             {
                 MessageBox.Show(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgSaveContrastReferenceRequired, GetContrastReferenceKindText(requiredReferenceKind)), Properties.Resources.TitleContrastCalc, MessageBoxButton.OK, MessageBoxImage.Warning);
@@ -94,19 +99,29 @@ namespace Conoscope
 
         private OpenCvSharp.Mat? CreateContrastMat()
         {
-            if (YMat == null || !EnsureContrastReferenceReady())
+            if (YMat == null)
             {
                 return null;
             }
 
+            using ConoscopeRuntimeSnapshot runtime = ConoscopeManager.GetInstance().CaptureRuntimeSnapshot();
+            ConoscopeGlobalReferenceStore references = runtime.GlobalReferences;
+            if (!EnsureContrastReferenceReady(references))
+                return null;
+
             ContrastReferenceKind referenceKind = GetRequiredContrastReferenceKind();
-            return ConoscopeColorimetry.CreateContrastMat(YMat, GlobalReferences.GetContrastReferenceYMat(referenceKind)!, referenceKind);
+            return ConoscopeColorimetry.CreateContrastMat(YMat, references.GetContrastReferenceYMat(referenceKind)!, referenceKind);
         }
 
         private double GetContrastValue(int ix, int iy, double currentY)
         {
+            return GetContrastValue(ix, iy, currentY, GlobalReferences);
+        }
+
+        private double GetContrastValue(int ix, int iy, double currentY, ConoscopeGlobalReferenceStore references)
+        {
             ContrastReferenceKind referenceKind = GetRequiredContrastReferenceKind();
-            OpenCvSharp.Mat? referenceYMat = GlobalReferences.GetContrastReferenceYMat(referenceKind);
+            OpenCvSharp.Mat? referenceYMat = references.GetContrastReferenceYMat(referenceKind);
             if (referenceYMat == null || YMat == null)
             {
                 return double.NaN;
@@ -134,7 +149,8 @@ namespace Conoscope
                 return;
             }
 
-            GlobalReferences.SaveContrastReference(referenceKind, YMat, Filename);
+            using ConoscopeRuntimeSnapshot runtime = ConoscopeManager.GetInstance().CaptureRuntimeSnapshot();
+            runtime.GlobalReferences.SaveContrastReference(referenceKind, YMat, Filename);
             ConoscopeModuleService.RefreshAllReferenceState();
         }
 

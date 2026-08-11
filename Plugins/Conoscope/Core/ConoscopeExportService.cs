@@ -16,7 +16,7 @@ namespace Conoscope.Core
         public int DecimalPlaces { get; init; } = 4;
     }
 
-    public sealed class ConoscopeExportContext
+    public sealed class ConoscopeExportContext : IDisposable
     {
         public required string ModelName { get; init; }
         public required int ImageWidth { get; init; }
@@ -24,9 +24,13 @@ namespace Conoscope.Core
         public required Point Center { get; init; }
         public required double MaxAngle { get; init; }
         public required double PixelsPerDegree { get; init; }
+        public int DecimalPlaces { get; init; } = 4;
         public required Func<int, int, ConoscopeXyzValue> ReadXyz { get; init; }
         public Func<int, int, double>? ReadColorDifference { get; init; }
         public Func<int, int, double>? ReadContrast { get; init; }
+        internal IDisposable? Lifetime { get; init; }
+
+        public void Dispose() => Lifetime?.Dispose();
     }
 
     public static class ConoscopeExportService

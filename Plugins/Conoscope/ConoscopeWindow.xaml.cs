@@ -42,6 +42,7 @@ namespace Conoscope
     public partial class ConoscopeWindow : Window, IDisposable
     {
         public static ConoscopeWindow? Instance { get; private set; }
+        private ConoscopeConfig? subscribedConoscopeConfig;
 
         private ThemeChangedHandler? themeChangedHandler;
         private bool isUpdatingModelSelection;
@@ -77,10 +78,8 @@ namespace Conoscope
             InitializeModelSelector();
             InitializeRibbonControls();
 
-            ConoscopeManager.GetInstance().Config.ModelTypeChanged -= ConoscopeConfig_ModelTypeChanged;
-            ConoscopeManager.GetInstance().Config.ModelTypeChanged += ConoscopeConfig_ModelTypeChanged;
-            ConoscopeManager.GetInstance().Config.PropertyChanged -= ConoscopeConfig_PropertyChanged;
-            ConoscopeManager.GetInstance().Config.PropertyChanged += ConoscopeConfig_PropertyChanged;
+            ConoscopeManager.GetInstance().ConfigurationChanged += ConoscopeManager_ConfigurationChanged;
+            BindConoscopeConfig(ConoscopeManager.GetInstance().Config);
             ServiceManager.GetInstance().ServiceChanged -= ServiceManager_ServiceChanged;
             ServiceManager.GetInstance().ServiceChanged += ServiceManager_ServiceChanged;
             RefreshWindowModelState();
@@ -100,6 +99,27 @@ namespace Conoscope
         private ConoscopeConfig ConoscopeConfig => ConoscopeManager.GetInstance().Config;
         private ConoscopeConfig RenderingConfig => ConoscopeConfig;
         private ConoscopeConfig PreprocessConfig => ConoscopeConfig;
+
+        private void ConoscopeManager_ConfigurationChanged(object? sender, RuntimeConfigChangedEventArgs<ConoscopeConfig> e)
+        {
+            BindConoscopeConfig(e.Current);
+        }
+
+        private void BindConoscopeConfig(ConoscopeConfig config)
+        {
+            if (ReferenceEquals(subscribedConoscopeConfig, config))
+                return;
+
+            if (subscribedConoscopeConfig != null)
+            {
+                subscribedConoscopeConfig.ModelTypeChanged -= ConoscopeConfig_ModelTypeChanged;
+                subscribedConoscopeConfig.PropertyChanged -= ConoscopeConfig_PropertyChanged;
+            }
+
+            subscribedConoscopeConfig = config;
+            subscribedConoscopeConfig.ModelTypeChanged += ConoscopeConfig_ModelTypeChanged;
+            subscribedConoscopeConfig.PropertyChanged += ConoscopeConfig_PropertyChanged;
+        }
 
         public void OpenConoscope(string filename, string? exposureSummary = null, bool preferReuseActiveView = false)
         {
@@ -413,8 +433,13 @@ namespace Conoscope
 
         public void Dispose()
         {
-            ConoscopeManager.GetInstance().Config.ModelTypeChanged -= ConoscopeConfig_ModelTypeChanged;
-            ConoscopeManager.GetInstance().Config.PropertyChanged -= ConoscopeConfig_PropertyChanged;
+            ConoscopeManager.GetInstance().ConfigurationChanged -= ConoscopeManager_ConfigurationChanged;
+            if (subscribedConoscopeConfig != null)
+            {
+                subscribedConoscopeConfig.ModelTypeChanged -= ConoscopeConfig_ModelTypeChanged;
+                subscribedConoscopeConfig.PropertyChanged -= ConoscopeConfig_PropertyChanged;
+                subscribedConoscopeConfig = null;
+            }
             ServiceManager.GetInstance().ServiceChanged -= ServiceManager_ServiceChanged;
             DetachActiveViewControlView();
             operationProgressTimer.Stop();

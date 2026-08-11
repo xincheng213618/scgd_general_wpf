@@ -158,13 +158,25 @@ namespace Conoscope.MVS
 
         public int Count { get => _Count; set { _Count = value; OnPropertyChanged(); } }
         private int _Count;
+        private Core.ConoscopeConfig subscribedConoscopeConfig;
 
         public MVSViewManager() 
         {
             Config = MVSViewWindowConfig.Instance;
             Config.EnsureSelectedGratingDiameter();
             EditMVSViewConfigCommand = new RelayCommand(a => EditMVSViewConfig());
-            Core.ConoscopeManager.GetInstance().Config.ModelTypeChanged += ConoscopeConfig_ModelTypeChanged;
+            Core.ConoscopeManager manager = Core.ConoscopeManager.GetInstance();
+            subscribedConoscopeConfig = manager.Config;
+            subscribedConoscopeConfig.ModelTypeChanged += ConoscopeConfig_ModelTypeChanged;
+            manager.ConfigurationChanged += ConoscopeManager_ConfigurationChanged;
+        }
+
+        private void ConoscopeManager_ConfigurationChanged(object? sender, RuntimeConfigChangedEventArgs<Core.ConoscopeConfig> e)
+        {
+            subscribedConoscopeConfig.ModelTypeChanged -= ConoscopeConfig_ModelTypeChanged;
+            subscribedConoscopeConfig = e.Current;
+            subscribedConoscopeConfig.ModelTypeChanged += ConoscopeConfig_ModelTypeChanged;
+            OnPropertyChanged(nameof(CurrentModelProfile));
         }
 
         private void ConoscopeConfig_ModelTypeChanged(object? sender, Core.ConoscopeModelType e)

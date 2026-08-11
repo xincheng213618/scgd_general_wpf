@@ -60,7 +60,8 @@ namespace Conoscope
 
             using OpenCvSharp.Mat referenceUMat = ConoscopeColorimetry.CreateChannelMat(XMat, YMat, ZMat, ExportChannel.CieU);
             using OpenCvSharp.Mat referenceVMat = ConoscopeColorimetry.CreateChannelMat(XMat, YMat, ZMat, ExportChannel.CieV);
-            GlobalReferences.SaveColorDifferenceReference(referenceUMat, referenceVMat, Filename);
+            using ConoscopeRuntimeSnapshot runtime = ConoscopeManager.GetInstance().CaptureRuntimeSnapshot();
+            runtime.GlobalReferences.SaveColorDifferenceReference(referenceUMat, referenceVMat, Filename);
 
             ApplyColorDifferenceReferenceMode(ColorDifferenceReferenceMode.ReferenceImage, refreshDisplay: false);
             ConoscopeModuleService.RefreshAllReferenceState();
@@ -182,8 +183,10 @@ namespace Conoscope
             ColorDifferenceReferenceMode mode = GetSelectedColorDifferenceReferenceMode();
             if (mode == ColorDifferenceReferenceMode.ReferenceImage)
             {
-                if (!EnsureColorDifferenceReferenceReady()) return null;
-                return ConoscopeColorimetry.CreateColorDifferenceMat(XMat, YMat, ZMat, GlobalReferences.ColorDifferenceReferenceUMat!, GlobalReferences.ColorDifferenceReferenceVMat!);
+                using ConoscopeRuntimeSnapshot runtime = ConoscopeManager.GetInstance().CaptureRuntimeSnapshot();
+                ConoscopeGlobalReferenceStore references = runtime.GlobalReferences;
+                if (!EnsureColorDifferenceReferenceReady(references)) return null;
+                return ConoscopeColorimetry.CreateColorDifferenceMat(XMat, YMat, ZMat, references.ColorDifferenceReferenceUMat!, references.ColorDifferenceReferenceVMat!);
             }
 
             ConoscopeUvReference? reference = TryResolvePointColorDifferenceReference();
@@ -214,15 +217,20 @@ namespace Conoscope
 
         private bool EnsureColorDifferenceReferenceReady()
         {
+            return EnsureColorDifferenceReferenceReady(GlobalReferences);
+        }
+
+        private bool EnsureColorDifferenceReferenceReady(ConoscopeGlobalReferenceStore references)
+        {
             ColorDifferenceReferenceMode mode = GetSelectedColorDifferenceReferenceMode();
-            if (mode == ColorDifferenceReferenceMode.ReferenceImage && !GlobalReferences.HasColorDifferenceReference)
+            if (mode == ColorDifferenceReferenceMode.ReferenceImage && !references.HasColorDifferenceReference)
             {
                 MessageBox.Show(Properties.Resources.MsgGlobalColorDifferenceReferenceRequired, Properties.Resources.PanelColorDiff, MessageBoxButton.OK, MessageBoxImage.Warning);
                 return false;
             }
 
-            if (mode == ColorDifferenceReferenceMode.ReferenceImage && XMat != null && GlobalReferences.ColorDifferenceReferenceUMat != null
-                && (XMat.Width != GlobalReferences.ColorDifferenceReferenceUMat.Width || XMat.Height != GlobalReferences.ColorDifferenceReferenceUMat.Height))
+            if (mode == ColorDifferenceReferenceMode.ReferenceImage && XMat != null && references.ColorDifferenceReferenceUMat != null
+                && (XMat.Width != references.ColorDifferenceReferenceUMat.Width || XMat.Height != references.ColorDifferenceReferenceUMat.Height))
             {
                 MessageBox.Show(Properties.Resources.MsgImageSizeMismatch, Properties.Resources.PanelColorDiff, MessageBoxButton.OK, MessageBoxImage.Warning);
                 return false;
@@ -259,18 +267,23 @@ namespace Conoscope
 
         private double GetColorDifferenceValue(int ix, int iy, double X, double Y, double Z)
         {
+            return GetColorDifferenceValue(ix, iy, X, Y, Z, GlobalReferences);
+        }
+
+        private double GetColorDifferenceValue(int ix, int iy, double X, double Y, double Z, ConoscopeGlobalReferenceStore references)
+        {
             ColorDifferenceReferenceMode mode = GetSelectedColorDifferenceReferenceMode();
 
             if (mode == ColorDifferenceReferenceMode.ReferenceImage)
             {
-                if (GlobalReferences.ColorDifferenceReferenceUMat == null || GlobalReferences.ColorDifferenceReferenceVMat == null)
+                if (references.ColorDifferenceReferenceUMat == null || references.ColorDifferenceReferenceVMat == null)
                 {
                     return 0;
                 }
 
-                int sx = ConoscopeNumericHelper.ClampToInt(ix, 0, GlobalReferences.ColorDifferenceReferenceUMat.Width - 1);
-                int sy = ConoscopeNumericHelper.ClampToInt(iy, 0, GlobalReferences.ColorDifferenceReferenceUMat.Height - 1);
-                return ConoscopeColorimetry.CalculateColorDifference(X, Y, Z, GlobalReferences.ColorDifferenceReferenceUMat.At<float>(sy, sx), GlobalReferences.ColorDifferenceReferenceVMat.At<float>(sy, sx));
+                int sx = ConoscopeNumericHelper.ClampToInt(ix, 0, references.ColorDifferenceReferenceUMat.Width - 1);
+                int sy = ConoscopeNumericHelper.ClampToInt(iy, 0, references.ColorDifferenceReferenceUMat.Height - 1);
+                return ConoscopeColorimetry.CalculateColorDifference(X, Y, Z, references.ColorDifferenceReferenceUMat.At<float>(sy, sx), references.ColorDifferenceReferenceVMat.At<float>(sy, sx));
             }
 
             ConoscopeUvReference? reference = TryResolvePointColorDifferenceReference();
