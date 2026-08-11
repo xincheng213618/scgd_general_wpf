@@ -194,7 +194,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
             if (filePath.Equals(ImageView.Config.FilePath, StringComparison.OrdinalIgnoreCase) && ImageView.ViewBitmapSource != null)
                 return;
 
-            ImageView.Clear();
+            // Keep the current bitmap available while the selected file becomes readable.
             _ = OpenSelectedImageAsync(filePath, requestVersion);
         }
 

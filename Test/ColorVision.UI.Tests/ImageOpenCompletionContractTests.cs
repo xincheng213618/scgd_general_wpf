@@ -1,3 +1,4 @@
+using ColorVision.FileIO;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Tif;
 using System.IO;
@@ -120,6 +121,89 @@ public sealed class ImageOpenCompletionContractTests
 
             if (File.Exists(filePath))
                 File.Delete(filePath);
+        }
+    }
+
+    [Fact]
+    public async Task OpenCvRaw_WithMatchingSizeAndFormat_ReusesBitmapAndPreservesViewport()
+    {
+        string firstFilePath = Path.Combine(
+            Path.GetTempPath(),
+            $"{nameof(ImageOpenCompletionContractTests)}-{Guid.NewGuid():N}-first.cvraw");
+        string secondFilePath = Path.Combine(
+            Path.GetTempPath(),
+            $"{nameof(ImageOpenCompletionContractTests)}-{Guid.NewGuid():N}-second.cvraw");
+        ImageView? imageView = null;
+        EventHandler<ImageViewImageSourceLoadedEventArgs>? loadedHandler = null;
+        TaskCompletionSource firstLoad = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource secondLoad = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        WriteableBitmap? firstBitmap = null;
+        int completionCount = 0;
+        Matrix expectedViewport = new(2, 0, 0, 2, 17, 23);
+
+        try
+        {
+            WriteCvRaw(firstFilePath, 10);
+            WriteCvRaw(secondFilePath, 200);
+
+            WpfTestHost.Invoke(() =>
+            {
+                EnsureImageViewTestResources();
+                imageView = new ImageView();
+                // Toolbar regeneration requires a loaded visual tree and is unrelated to this image-open contract.
+                imageView.IEditorToolFactory.IEditorTools.Clear();
+                loadedHandler = (_, _) =>
+                {
+                    completionCount++;
+                    if (completionCount == 1)
+                        firstLoad.TrySetResult();
+                    else if (completionCount == 2)
+                        secondLoad.TrySetResult();
+                };
+                imageView.ImageSourceLoaded += loadedHandler;
+                imageView.OpenImage(firstFilePath);
+            });
+
+            await firstLoad.Task.WaitAsync(TimeSpan.FromSeconds(10));
+
+            WpfTestHost.Invoke(() =>
+            {
+                firstBitmap = Assert.IsType<WriteableBitmap>(imageView!.ViewBitmapSource);
+                imageView.Zoombox1.ContentMatrix = expectedViewport;
+                imageView.OpenImage(secondFilePath);
+            });
+
+            await secondLoad.Task.WaitAsync(TimeSpan.FromSeconds(10));
+
+            WpfTestHost.Invoke(() =>
+            {
+                WriteableBitmap secondBitmap = Assert.IsType<WriteableBitmap>(imageView!.ViewBitmapSource);
+                byte[] pixel = new byte[1];
+                secondBitmap.CopyPixels(new Int32Rect(0, 0, 1, 1), pixel, 1, 0);
+
+                Assert.Same(firstBitmap, secondBitmap);
+                Assert.Equal(expectedViewport, imageView.Zoombox1.ContentMatrix);
+                Assert.Equal(200, pixel[0]);
+                Assert.Equal(secondFilePath, imageView.Config.GetProperties<string>(ImageViewPropertyKeys.FilePath));
+                Assert.Equal(2, completionCount);
+            });
+        }
+        finally
+        {
+            if (imageView != null)
+            {
+                WpfTestHost.Invoke(() =>
+                {
+                    if (loadedHandler != null)
+                        imageView.ImageSourceLoaded -= loadedHandler;
+                    imageView.Dispose();
+                });
+            }
+
+            if (File.Exists(firstFilePath))
+                File.Delete(firstFilePath);
+            if (File.Exists(secondFilePath))
+                File.Delete(secondFilePath);
         }
     }
 
@@ -263,6 +347,23 @@ public sealed class ImageOpenCompletionContractTests
 
         using FileStream stream = new(filePath, FileMode.CreateNew, FileAccess.Write, FileShare.None);
         encoder.Save(stream);
+    }
+
+    private static void WriteCvRaw(string filePath, byte value)
+    {
+        using CVCIEFile file = new()
+        {
+            Version = 1,
+            FileExtType = CVType.Raw,
+            Rows = 3,
+            Cols = 2,
+            Bpp = 8,
+            Channels = 1,
+            Gain = 1,
+            Exp = [1f],
+            Data = Enumerable.Repeat(value, 6).ToArray(),
+        };
+        Assert.True(CVFileUtil.WriteCIEFile(filePath, file));
     }
 
     private static void EnsureImageViewTestResources()

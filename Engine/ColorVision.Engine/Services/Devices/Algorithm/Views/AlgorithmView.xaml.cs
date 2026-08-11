@@ -246,7 +246,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             if (AlgorithmResultImageDimensions.TryReadExistingSourceImage(result, out int width, out int height))
             {
                 CacheResultImageDimensions(result, width, height);
-                ImageView.Clear();
+                // The result handler may reuse the current bitmap when it opens a compatible CVRAW file.
                 return;
             }
 

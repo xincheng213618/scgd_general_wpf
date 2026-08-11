@@ -218,13 +218,13 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
 
             if (filePath.Equals(ImageView.Config.FilePath, StringComparison.OrdinalIgnoreCase) && ImageView.ImageShow.Source != null) return;
 
-            ImageView.Clear();
             if (IsDisposed || requestId != Volatile.Read(ref _imageRequestId)) return;
             if (!File.Exists(filePath))
             {
                 ShowPlaceholderOrClear(imgFrameInfo);
                 return;
             }
+            // CVRawOpen reuses a compatible WriteableBitmap and keeps the current viewport.
             ImageView.OpenImage(filePath);
         }
 

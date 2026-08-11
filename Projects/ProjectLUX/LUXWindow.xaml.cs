@@ -720,7 +720,6 @@ namespace ProjectLUX
             if (sender is not ListView listView) return;
 
             int requestId = Interlocked.Increment(ref _resultImageRequestId);
-            ImageView.Clear();
             if (listView.SelectedItem is ProjectLUXReuslt result)
             {
                 listView.ScrollIntoView(result);
@@ -745,9 +744,10 @@ namespace ProjectLUX
 
                 _ = Task.Run(() =>
                 {
-                    if (_isDisposed || requestId != Volatile.Read(ref _resultImageRequestId) || !File.Exists(result.FileName))
+                    if (_isDisposed || requestId != Volatile.Read(ref _resultImageRequestId))
                         return;
 
+                    bool fileExists = File.Exists(result.FileName);
                     _ = Application.Current.Dispatcher.BeginInvoke(() =>
                     {
                         if (_isDisposed ||
@@ -755,6 +755,13 @@ namespace ProjectLUX
                             !ReferenceEquals(listView1.SelectedItem, result))
                             return;
 
+                        if (!fileExists || !File.Exists(result.FileName))
+                        {
+                            ImageView.Clear();
+                            return;
+                        }
+
+                        // Preserve the current bitmap so compatible CVRAW results keep the viewport.
                         ImageView.OpenImage(result.FileName);
                         ImageView.ImageShow.Clear();
 
@@ -787,6 +794,10 @@ namespace ProjectLUX
                     });
                 });
 
+            }
+            else
+            {
+                ImageView.Clear();
             }
         }
 
