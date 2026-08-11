@@ -45,6 +45,8 @@ namespace ColorVision.Engine.MQTT
     /// </summary>
     public partial class MQTTConnect : Window
     {
+        private MQTTControl.MqttConfigOwnerIdentity _configOwner = null!;
+
         public MQTTConnect()
         {
             InitializeComponent();
@@ -75,7 +77,7 @@ namespace ColorVision.Engine.MQTT
                 MQTTConfig.Name = MQTTConfig.Host +"_" +MQTTConfig.Port;
             }
             MQTTConfigs.Remove(MQTTConfig);
-            Task.Run(() => MQTTControl.GetInstance().Connect(MQTTConfig));
+            Task.Run(() => MQTTControl.GetInstance().ConnectOwnedConfig(_configOwner, MQTTConfig));
             Close();
         }
 
@@ -93,12 +95,13 @@ namespace ColorVision.Engine.MQTT
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            MQTTConfig= MQTTSetting.Instance.MQTTConfig;
+            _configOwner = MQTTControl.GetInstance().CaptureCurrentConfigOwner();
+            MQTTConfig= _configOwner.Setting.MQTTConfig;
             GridMQTT.DataContext = MQTTConfig;
             MQTTConfigBackUp = new MQTTConfig();
             MQTTConfig.CopyTo(MQTTConfigBackUp);
 
-            MQTTConfigs = MQTTSetting.Instance.MQTTConfigs;
+            MQTTConfigs = _configOwner.Setting.MQTTConfigs;
             ListViewMQTT.ItemsSource = MQTTConfigs;
 
             MQTTConfigs.Insert(0, MQTTConfig);
@@ -113,7 +116,7 @@ namespace ColorVision.Engine.MQTT
         {
             Task.Run( async () =>
             {
-                bool IsConnect = await MQTTControl.GetInstance().TestConnect(MQTTConfig);
+                bool IsConnect = await MQTTControl.GetInstance().TestConnectOwnedConfig(_configOwner, MQTTConfig);
                 await Dispatcher.BeginInvoke(() =>
                 {
                     MessageBox1.Show(Application.Current.GetActiveWindow(), IsConnect ? ColorVision.Engine.Properties.Resources.Engine_Msg_ConnectSuccess : ColorVision.Engine.Properties.Resources.Engine_Msg_ConnectFailed, "ColorVision");
@@ -147,7 +150,7 @@ namespace ColorVision.Engine.MQTT
             {
                 MQTTConfig = MQTTConfigs[listView.SelectedIndex];
                 GridMQTT.DataContext = MQTTConfig;
-                MQTTSetting.Instance.MQTTConfig = MQTTConfig;
+                MQTTControl.GetInstance().TrySelectCurrentConfig(_configOwner, MQTTConfig);
             }
 
         }
