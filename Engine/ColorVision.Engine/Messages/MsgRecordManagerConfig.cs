@@ -3,6 +3,7 @@ using ColorVision.UI;
 using SqlSugar;
 using System;
 using System.ComponentModel;
+using System.IO;
 using ColorVision.Engine.Utilities;
 using ColorVision.Engine.Properties;
 
@@ -12,7 +13,7 @@ namespace ColorVision.Engine.Messages
     {
         public string DirectoryPath { get; set; } = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + $"\\ColorVision\\Config\\";
 
-        public string SqliteDbPath { get => DirectoryPath + "MsgRecords.db"; }
+        public string SqliteDbPath => Path.Combine(DirectoryPath, "MsgRecords.db");
 
         [LocalizedDisplayName(nameof(Resources.QueryCount)), Category("View")]
         public int Count { get => _Count; set { _Count = value; OnPropertyChanged(); } }

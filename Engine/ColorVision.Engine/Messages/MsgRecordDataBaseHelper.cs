@@ -3,6 +3,7 @@ using ColorVision.UI;
 using log4net;
 using SqlSugar;
 using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace ColorVision.Engine.Messages
@@ -11,9 +12,10 @@ namespace ColorVision.Engine.Messages
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(MsgRecordDataBaseHelper));
         private static readonly object InitLocker = new();
-        private static volatile bool _isInitialized;
+        private static readonly HashSet<string> InitializedDatabasePaths = new(StringComparer.OrdinalIgnoreCase);
 
         public static event EventHandler<MsgRecord> Inserted;
+        internal static event EventHandler<MsgRecordInsertedEventArgs>? InsertedForDatabase;
 
         private static SqlSugarClient CreateDb(string sqliteDbPath)
         {
@@ -25,26 +27,42 @@ namespace ColorVision.Engine.Messages
             });
         }
 
-        public static void EnsureDatabaseInitialized(MsgRecordManagerConfig config = null)
+        public static string EnsureDatabaseInitialized(MsgRecordManagerConfig? config = null)
         {
-            if (_isInitialized) return;
+            config ??= ConfigService.Instance.GetRequiredService<MsgRecordManagerConfig>();
+            return EnsureDatabaseInitialized(config.SqliteDbPath);
+        }
+
+        internal static string EnsureDatabaseInitialized(string sqliteDbPath)
+        {
+            string normalizedPath = NormalizeDatabasePath(sqliteDbPath);
 
             lock (InitLocker)
             {
-                if (_isInitialized) return;
+                if (InitializedDatabasePaths.Contains(normalizedPath) && File.Exists(normalizedPath))
+                    return normalizedPath;
 
-                config ??= ConfigService.Instance.GetRequiredService<MsgRecordManagerConfig>();
+                InitializedDatabasePaths.Remove(normalizedPath);
 
-                string directoryPath = Path.GetDirectoryName(config.SqliteDbPath);
+                string? directoryPath = Path.GetDirectoryName(normalizedPath);
                 if (!string.IsNullOrWhiteSpace(directoryPath) && !Directory.Exists(directoryPath))
                 {
                     Directory.CreateDirectory(directoryPath);
                 }
 
-                using var db = CreateDb(config.SqliteDbPath);
+                using var db = CreateDb(normalizedPath);
                 db.CodeFirst.InitTables<MsgRecord>();
-                _isInitialized = true;
+                InitializedDatabasePaths.Add(normalizedPath);
+                return normalizedPath;
             }
+        }
+
+        internal static string NormalizeDatabasePath(string sqliteDbPath)
+        {
+            if (string.IsNullOrWhiteSpace(sqliteDbPath))
+                throw new ArgumentException("SQLite database path cannot be empty.", nameof(sqliteDbPath));
+
+            return Path.GetFullPath(Environment.ExpandEnvironmentVariables(sqliteDbPath.Trim()));
         }
 
         public static void Insert(MsgRecord item)
@@ -53,24 +71,44 @@ namespace ColorVision.Engine.Messages
             {
                 if (item == null) return;
 
-                MsgRecordManagerConfig msgRecordManagerConfig = ConfigService.Instance.GetRequiredService<MsgRecordManagerConfig>();
-                EnsureDatabaseInitialized(msgRecordManagerConfig);
-
-                using var _db = CreateDb(msgRecordManagerConfig.SqliteDbPath);
-                int id = _db.Insertable(item).ExecuteReturnIdentity();
-                item.Id = id;
-                item.MsgRecordStateChanged += (s, e) =>
-                {
-                    using var db = CreateDb(msgRecordManagerConfig.SqliteDbPath);
-                    db.Updateable(item).ExecuteCommand();
-                };
+                MsgRecordManagerConfig configSnapshot = ConfigService.Instance.GetRequiredService<MsgRecordManagerConfig>();
+                Insert(item, configSnapshot);
             }
             catch (Exception ex)
             {
                 log.Error(ex);
                 return;
             }
+        }
+
+        internal static void Insert(MsgRecord item, MsgRecordManagerConfig configSnapshot)
+        {
+            ArgumentNullException.ThrowIfNull(item);
+            ArgumentNullException.ThrowIfNull(configSnapshot);
+
+            string databasePath = EnsureDatabaseInitialized(configSnapshot.SqliteDbPath);
+            using var db = CreateDb(databasePath);
+            item.Id = db.Insertable(item).ExecuteReturnIdentity();
+            item.MsgRecordStateChanged += (s, e) =>
+            {
+                using var updateDb = CreateDb(databasePath);
+                updateDb.Updateable(item).ExecuteCommand();
+            };
+
+            InsertedForDatabase?.Invoke(null, new MsgRecordInsertedEventArgs(databasePath, item));
             Inserted?.Invoke(null, item);
-        }           
+        }
+    }
+
+    internal sealed class MsgRecordInsertedEventArgs : EventArgs
+    {
+        public MsgRecordInsertedEventArgs(string databasePath, MsgRecord item)
+        {
+            DatabasePath = databasePath;
+            Item = item;
+        }
+
+        public string DatabasePath { get; }
+        public MsgRecord Item { get; }
     }
 }

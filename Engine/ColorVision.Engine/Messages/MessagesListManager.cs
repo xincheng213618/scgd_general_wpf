@@ -21,7 +21,8 @@ namespace ColorVision.Engine.Messages
 
         public ObservableCollection<MsgRecord> MsgRecords { get; set; } = new ObservableCollection<MsgRecord>();
 
-        public MsgRecordManagerConfig Config { get; set; }
+        private readonly RuntimeConfigOwner<MsgRecordManagerConfig> _configOwner;
+        public MsgRecordManagerConfig Config => _configOwner.Current;
 
         public RelayCommand EditConfigCommand { get; set; }
 
@@ -49,19 +50,30 @@ namespace ColorVision.Engine.Messages
         /// <summary>
         /// 创建短生命周期的数据库连接
         /// </summary>
-        private SqlSugarClient CreateDb()
+        private static SqlSugarClient CreateDb(string sqliteDbPath)
         {
             return new SqlSugarClient(new ConnectionConfig
             {
-                ConnectionString = $"Data Source={Config.SqliteDbPath}",
+                ConnectionString = $"Data Source={sqliteDbPath}",
                 DbType = DbType.Sqlite,
                 IsAutoCloseConnection = true
             });
         }
 
         public MessagesListManager()
+            : this(
+                () => ConfigService.Instance.GetRequiredService<MsgRecordManagerConfig>(),
+                ConfigService.Instance as IConfigReloadNotifier)
         {
-            Config = ConfigService.Instance.GetRequiredService<MsgRecordManagerConfig>();
+        }
+
+        internal MessagesListManager(
+            Func<MsgRecordManagerConfig> configFactory,
+            IConfigReloadNotifier? reloadNotifier,
+            bool registerDatabaseBrowser = true)
+        {
+            _configOwner = new RuntimeConfigOwner<MsgRecordManagerConfig>(configFactory, reloadNotifier);
+            _configOwner.ConfigurationChanged += ConfigOwner_ConfigurationChanged;
             EditConfigCommand = new RelayCommand(_ => EditConfig());
             MsgRecordsClearCommand = new RelayCommand(_ => MsgRecords.Clear());
             GenericQueryCommand = new RelayCommand(_ => GenericQuery());
@@ -80,10 +92,12 @@ namespace ColorVision.Engine.Messages
             ReloadCommand = new RelayCommand(_ => ReloadData());
 
             MsgRecordDataBaseHelper.EnsureDatabaseInitialized(Config);
+            if (registerDatabaseBrowser)
+            {
                 DatabaseBrowserProviderRegistry.Register(new SqliteDatabaseBrowserProvider(
                     "sqlite.msgrecords",
                     ColorVision.Engine.Properties.Resources.Engine_Msg_MessageRecord,
-                    () => Config.SqliteDbPath,
+                    () => MsgRecordDataBaseHelper.NormalizeDatabasePath(Config.SqliteDbPath),
                     dbPath => new SqlSugarClient(new ConnectionConfig
                     {
                         ConnectionString = $"Data Source={dbPath}",
@@ -91,6 +105,24 @@ namespace ColorVision.Engine.Messages
                         IsAutoCloseConnection = true,
                         InitKeyType = InitKeyType.Attribute
                     })));
+            }
+        }
+
+        public MsgRecordManagerConfig CaptureConfig() => _configOwner.Capture();
+
+        private void ConfigOwner_ConfigurationChanged(object? sender, RuntimeConfigChangedEventArgs<MsgRecordManagerConfig> e)
+        {
+            try
+            {
+                MsgRecordDataBaseHelper.EnsureDatabaseInitialized(e.Current);
+                OnPropertyChanged(nameof(Config));
+                ReloadData();
+            }
+            catch
+            {
+                // Config reload is shared by many participants. Keep this manager's
+                // previous visible data if the new database cannot be opened.
+            }
         }
 
         private bool _isListening;
@@ -99,7 +131,7 @@ namespace ColorVision.Engine.Messages
         {
             if (!_isListening)
             {
-                MsgRecordDataBaseHelper.Inserted += OnMsgRecordInserted;
+                MsgRecordDataBaseHelper.InsertedForDatabase += OnMsgRecordInserted;
                 _isListening = true;
             }
         }
@@ -108,19 +140,32 @@ namespace ColorVision.Engine.Messages
         {
             if (_isListening)
             {
-                MsgRecordDataBaseHelper.Inserted -= OnMsgRecordInserted;
+                MsgRecordDataBaseHelper.InsertedForDatabase -= OnMsgRecordInserted;
                 _isListening = false;
             }
         }
 
-        private void OnMsgRecordInserted(object sender, MsgRecord item)
+        private void OnMsgRecordInserted(object? sender, MsgRecordInsertedEventArgs e)
         {
+            MsgRecordManagerConfig config = CaptureConfig();
+            if (!string.Equals(
+                e.DatabasePath,
+                MsgRecordDataBaseHelper.NormalizeDatabasePath(config.SqliteDbPath),
+                StringComparison.OrdinalIgnoreCase))
+                return;
+
             Application.Current?.Dispatcher.BeginInvoke(new Action(() =>
             {
-                if (Config.OrderByType == OrderByType.Desc)
-                    MsgRecords.Insert(0, item);
+                if (!string.Equals(
+                    e.DatabasePath,
+                    MsgRecordDataBaseHelper.NormalizeDatabasePath(Config.SqliteDbPath),
+                    StringComparison.OrdinalIgnoreCase))
+                    return;
+
+                if (config.OrderByType == OrderByType.Desc)
+                    MsgRecords.Insert(0, e.Item);
                 else
-                    MsgRecords.Add(item);
+                    MsgRecords.Add(e.Item);
                 TotalCount++;
             }));
         }
@@ -133,7 +178,9 @@ namespace ColorVision.Engine.Messages
 
         private void RefreshTotalCount()
         {
-            using var db = CreateDb();
+            MsgRecordManagerConfig config = CaptureConfig();
+            string databasePath = MsgRecordDataBaseHelper.EnsureDatabaseInitialized(config);
+            using var db = CreateDb(databasePath);
             TotalCount = db.Queryable<MsgRecord>().Count();
         }
 
@@ -142,9 +189,16 @@ namespace ColorVision.Engine.Messages
         /// </summary>
         public void LoadAll(int count = 100)
         {
+            MsgRecordManagerConfig config = CaptureConfig();
+            LoadAll(config, count);
+        }
+
+        private void LoadAll(MsgRecordManagerConfig config, int count)
+        {
+            string databasePath = MsgRecordDataBaseHelper.EnsureDatabaseInitialized(config);
             MsgRecords.Clear();
-            using var db = CreateDb();
-            var query = db.Queryable<MsgRecord>().OrderBy(x => x.Id, Config.OrderByType);
+            using var db = CreateDb(databasePath);
+            var query = db.Queryable<MsgRecord>().OrderBy(x => x.Id, config.OrderByType);
             var dbList = count > 0 ? query.Take(count).ToList() : query.ToList();
             foreach (var dbItem in dbList)
             {
@@ -158,8 +212,10 @@ namespace ColorVision.Engine.Messages
         /// </summary>
         public void QueryWithFilter()
         {
+            MsgRecordManagerConfig config = CaptureConfig();
+            string databasePath = MsgRecordDataBaseHelper.EnsureDatabaseInitialized(config);
             MsgRecords.Clear();
-            using var db = CreateDb();
+            using var db = CreateDb(databasePath);
             var query = db.Queryable<MsgRecord>();
 
             if (!string.IsNullOrWhiteSpace(FilterServiceName))
@@ -171,9 +227,9 @@ namespace ColorVision.Engine.Messages
             if (FilterMsgRecordState.HasValue)
                 query = query.Where(x => x.MsgRecordState == FilterMsgRecordState.Value);
 
-            query = query.OrderBy(x => x.Id, Config.OrderByType);
+            query = query.OrderBy(x => x.Id, config.OrderByType);
 
-            var dbList = Config.Count > 0 ? query.Take(Config.Count).ToList() : query.ToList();
+            var dbList = config.Count > 0 ? query.Take(config.Count).ToList() : query.ToList();
             foreach (var dbItem in dbList)
             {
                 MsgRecords.Add(dbItem);
@@ -186,7 +242,9 @@ namespace ColorVision.Engine.Messages
         /// </summary>
         public void DeleteAllRecords()
         {
-            using (var db = CreateDb())
+            MsgRecordManagerConfig config = CaptureConfig();
+            string databasePath = MsgRecordDataBaseHelper.EnsureDatabaseInitialized(config);
+            using (var db = CreateDb(databasePath))
             {
                 db.Deleteable<MsgRecord>().ExecuteCommand();
             }
@@ -199,15 +257,17 @@ namespace ColorVision.Engine.Messages
         /// </summary>
         public void ResetDatabase()
         {
+            MsgRecordManagerConfig config = CaptureConfig();
+            string databasePath = MsgRecordDataBaseHelper.NormalizeDatabasePath(config.SqliteDbPath);
             Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
 
             // Force GC to release file handles held by disposed SQLite connections
             GC.Collect();
             GC.WaitForPendingFinalizers();
 
-            if (File.Exists(Config.SqliteDbPath))
-                File.Delete(Config.SqliteDbPath);
-            using (var db = CreateDb())
+            if (File.Exists(databasePath))
+                File.Delete(databasePath);
+            using (var db = CreateDb(databasePath))
             {
                 db.CodeFirst.InitTables<MsgRecord>();
             }
@@ -220,12 +280,15 @@ namespace ColorVision.Engine.Messages
         /// </summary>
         public void ReloadData()
         {
-            LoadAll(Config.Count);
+            MsgRecordManagerConfig config = CaptureConfig();
+            LoadAll(config, config.Count);
         }
 
         public void GenericQuery()
         {
-            var db = CreateDb();
+            MsgRecordManagerConfig config = CaptureConfig();
+            string databasePath = MsgRecordDataBaseHelper.EnsureDatabaseInitialized(config);
+            var db = CreateDb(databasePath);
             GenericQuery<MsgRecord> genericQuery = new GenericQuery<MsgRecord>(db, MsgRecords);
             GenericQueryWindow genericQueryWindow = new GenericQueryWindow(genericQuery) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
             try
@@ -241,6 +304,8 @@ namespace ColorVision.Engine.Messages
         public void Dispose()
         {
             StopListening();
+            _configOwner.ConfigurationChanged -= ConfigOwner_ConfigurationChanged;
+            _configOwner.Dispose();
             GC.SuppressFinalize(this);
         }
 
