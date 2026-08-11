@@ -4,6 +4,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Solution;
 using ColorVision.UI.Extension;
+using log4net;
 using Newtonsoft.Json;
 using SqlSugar;
 using System;
@@ -240,6 +241,8 @@ namespace ColorVision.Engine.Templates
 
     public class ITemplate<T> : ITemplate where T : ParamModBase, new() 
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(ITemplate<T>));
+
 
         public ObservableCollection<TemplateModel<T>> TemplateParams { get; set; } = new ObservableCollection<TemplateModel<T>>();
         public override int GetTemplateIndex(string templateName)
@@ -585,7 +588,14 @@ namespace ColorVision.Engine.Templates
                 {
                     if (MessageBox.Show(Application.Current.GetActiveWindow(), $"是否重置数据库{typeof(T)}相关项", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                     {
-                        MySqlControl.BatchExecuteNonQuery(mysqlCommand.GetRecover());
+                        try
+                        {
+                            MySqlControl.BatchExecuteNonQuery(mysqlCommand.GetRecover());
+                        }
+                        catch (BatchExecuteNonQueryException ex)
+                        {
+                            BatchSqlConsumer.ReportUiFailure(log, $"重置数据库{typeof(T)}相关项", ex);
+                        }
                     }
                 }
             }

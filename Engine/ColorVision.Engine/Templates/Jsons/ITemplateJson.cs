@@ -362,11 +362,14 @@ namespace ColorVision.Engine.Templates.Jsons
                     {
                         if (MessageBox.Show(Application.Current.GetActiveWindow(), $"是否重置数据库{typeof(T)}相关项", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                         {
-                            MySqlControl.BatchExecuteNonQuery(mysqlCommand.GetRecover());
-                            log.Warn($"数据库{typeof(T)}相关项已重置");
+                            BatchSqlConsumer.ExecuteAfterCommit(mysqlCommand.GetRecover(), () => log.Warn($"数据库{typeof(T)}相关项已重置"));
                         }
                     }
                 }
+            }
+            catch (BatchExecuteNonQueryException ex)
+            {
+                BatchSqlConsumer.ReportUiFailure(log, $"重置数据库{typeof(T)}相关项", ex);
             }
             catch (Exception ex)
             {
