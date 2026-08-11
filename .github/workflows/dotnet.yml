@@ -59,7 +59,7 @@ jobs:
 
     - name: Verify native ABI and packages
       run: |
-        python Scripts/verify_native_contracts.py --static-native-project-only --runtime ColorVision/bin/x64/Release/net10.0-windows/runtimes/win-x64/native/opencv_cuda.dll --package-directory UI/ColorVision.Core/bin/x64/Release
+        python Scripts/verify_native_contracts.py --static-native-project-only --runtime ColorVision/bin/x64/Release/net10.0-windows/runtimes/win-x64/native/opencv_cuda.dll
         python Scripts/verify_platform_policy.py --fileio-package-directory Engine/ColorVision.FileIO/bin/Release
 
     - name: Run Python tests

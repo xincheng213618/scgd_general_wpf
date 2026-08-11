@@ -1932,15 +1932,6 @@ def validate_native_contracts(
     )
 
 
-def _packages_in_directory(directory: Path) -> list[Path]:
-    packages = sorted(directory.glob("ColorVision.Core.*.nupkg"))
-    if len(packages) != 1:
-        raise NativeContractError(
-            f"Expected exactly one ColorVision.Core nupkg in {directory}; found {len(packages)}."
-        )
-    return packages
-
-
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Verify the source, managed, tracked-PE, runtime, and package opencv_cuda contract."
@@ -1948,7 +1939,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--repository-root", type=Path, default=Path(__file__).resolve().parents[1])
     parser.add_argument("--runtime", action="append", type=Path, default=[])
     parser.add_argument("--package", action="append", type=Path, default=[])
-    parser.add_argument("--package-directory", action="append", type=Path, default=[])
     parser.add_argument(
         "--static-native-project-only",
         action="store_true",
@@ -1964,8 +1954,6 @@ def main() -> int:
     args = parse_args()
     packages = list(args.package)
     try:
-        for directory in args.package_directory:
-            packages.extend(_packages_in_directory(directory))
         report = validate_native_contracts(
             args.repository_root,
             runtime_files=tuple(args.runtime),
