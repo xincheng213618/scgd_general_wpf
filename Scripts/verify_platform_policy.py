@@ -10,6 +10,7 @@ from xml.etree import ElementTree
 X64_ONLY_PROPS = (
     Path("Directory.Build.props"),
     Path("Plugins/Directory.Build.props"),
+    Path("src/ColorVisionSetup/Directory.Build.props"),
 )
 HOST_SOLUTIONS = (
     Path("build.sln"),
@@ -35,6 +36,10 @@ X64_NATIVE_PACKAGE_PROJECTS = (
     Path("Engine/cvColorVision/cvColorVision.csproj"),
 )
 FILEIO_PROJECT = Path("Engine/ColorVision.FileIO/ColorVision.FileIO.csproj")
+X64_PLATFORM_PROJECTS = (
+    Path("ColorVision/ColorVision.csproj"),
+    Path("UI/ColorVision.ImageEditor/ColorVision.ImageEditor.csproj"),
+)
 FILEIO_PACKAGE_ID = "ColorVision.FileIO"
 FILEIO_PACKAGE_FRAMEWORKS = ("net10.0", "net8.0", "net6.0", "net461")
 IMAGE_FILE_MACHINE_I386 = 0x014C
@@ -43,6 +48,7 @@ COMIMAGE_FLAGS_ILONLY = 0x00000001
 COMIMAGE_FLAGS_32BITREQUIRED = 0x00000002
 COMIMAGE_FLAGS_32BITPREFERRED = 0x00020000
 PLATFORM_POLICY_INITIAL_TARGETS = (
+    "ValidateColorVisionPlatformRole",
     "ValidateColorVisionHostPlatform",
     "ValidateColorVisionFileIOAnyCpuPackage",
 )
@@ -86,6 +92,51 @@ def validate_x64_only_props(path: Path) -> None:
     values = [(element.text or "").strip() for element in _elements_by_local_name(root, "Platforms")]
     if values != ["x64"]:
         raise PlatformPolicyError(f"{path} must declare exactly <Platforms>x64</Platforms>; found {values}.")
+    targets = [
+        (
+            (element.text or "").strip(),
+            _normalized_condition(element.attrib.get("Condition") or ""),
+        )
+        for element in _elements_by_local_name(root, "PlatformTarget")
+    ]
+    allowed_targets = [
+        [("x64", "")],
+        [("x64", _normalized_condition("'$(MSBuildProjectExtension)' == '.csproj'"))],
+    ]
+    if targets not in allowed_targets:
+        raise PlatformPolicyError(f"{path} must fix PlatformTarget=x64; found {targets}.")
+    platform_defaults = [
+        (
+            (element.text or "").strip(),
+            _normalized_condition(element.attrib.get("Condition") or ""),
+        )
+        for element in _elements_by_local_name(root, "Platform")
+    ]
+    allowed_platform_defaults = [
+        [("x64", _normalized_condition("'$(Platform)' == '' or '$(Platform)' == 'AnyCPU'"))],
+        [(
+            "x64",
+            _normalized_condition(
+                "'$(MSBuildProjectExtension)' == '.csproj' and "
+                "('$(Platform)' == '' or '$(Platform)' == 'AnyCPU')"
+            ),
+        )],
+    ]
+    if platform_defaults not in allowed_platform_defaults:
+        raise PlatformPolicyError(f"{path} must default implicit managed builds to Platform=x64.")
+    roles = [
+        (
+            (element.attrib.get("Include") or "").strip(),
+            _normalized_condition(element.attrib.get("Condition") or ""),
+        )
+        for element in _elements_by_local_name(root, "ColorVisionPlatformRole")
+    ]
+    allowed_roles = [
+        [("X64", "")],
+        [("X64", _normalized_condition("'$(MSBuildProjectExtension)' == '.csproj'"))],
+    ]
+    if roles not in allowed_roles:
+        raise PlatformPolicyError(f"{path} must declare exactly one X64 platform role; found {roles}.")
 
 
 def validate_host_solution(path: Path) -> None:
@@ -112,6 +163,59 @@ def validate_host_solution(path: Path) -> None:
             f"{path} solution configuration aliases drifted: "
             f"expected={sorted(HOST_SOLUTION_CONFIGURATIONS)}, actual={sorted(configurations)}."
         )
+    projects = {
+        match.group("guid").casefold(): match.group("project").replace("/", "\\").casefold()
+        for match in re.finditer(
+            r'^Project\([^\n]+\)\s*=\s*"[^"]+",\s*"(?P<project>[^"]+)",\s*"(?P<guid>\{[^}]+\})"',
+            text,
+            flags=re.MULTILINE,
+        )
+    }
+    active_configurations: dict[tuple[str, str], str] = {}
+    for match in re.finditer(
+        r"(?P<guid>\{[^}]+\})\.(?P<alias>(?:Debug|Release)\|(?:Any CPU|x64|x86))\.ActiveCfg\s*=\s*(?P<actual>[^\r\n]+)",
+        text,
+    ):
+        guid = match.group("guid").casefold()
+        alias = match.group("alias")
+        actual = match.group("actual").strip()
+        project = projects.get(guid)
+        if project is None:
+            raise PlatformPolicyError(f"{path} maps unknown project {match.group('guid')}.")
+        if project.endswith(".csproj"):
+            expected_platform = "Any CPU" if project == str(FILEIO_PROJECT).replace("/", "\\").casefold() else "x64"
+            expected = f"{alias.split('|', 1)[0]}|{expected_platform}"
+            if actual != expected:
+                raise PlatformPolicyError(
+                    f"{path} maps {project} alias {alias} to {actual}; expected {expected}."
+                )
+        active_configurations[(guid, alias)] = actual
+    managed_projects = {
+        guid: project
+        for guid, project in projects.items()
+        if project.endswith(".csproj")
+    }
+    missing_active_configurations = sorted(
+        f"{project} @ {alias}"
+        for guid, project in managed_projects.items()
+        for alias in HOST_SOLUTION_CONFIGURATIONS
+        if (guid, alias) not in active_configurations
+    )
+    if missing_active_configurations:
+        raise PlatformPolicyError(
+            f"{path} is missing managed ActiveCfg mappings: {missing_active_configurations}."
+        )
+    for match in re.finditer(
+        r"(?P<guid>\{[^}]+\})\.(?P<alias>(?:Debug|Release)\|(?:Any CPU|x64|x86))\.Build\.0\s*=\s*(?P<actual>[^\r\n]+)",
+        text,
+    ):
+        key = (match.group("guid").casefold(), match.group("alias"))
+        actual = match.group("actual").strip()
+        if active_configurations.get(key) != actual:
+            raise PlatformPolicyError(
+                f"{path} Build.0 mapping {match.group('guid')} {match.group('alias')}={actual} "
+                "does not match ActiveCfg."
+            )
 
 
 def validate_native_project(path: Path) -> None:
@@ -134,61 +238,213 @@ def validate_main_application(path: Path) -> None:
         raise PlatformPolicyError(f"{path} must target x64; found PlatformTarget values {targets}.")
 
 
-def validate_arm64_build_guard(path: Path) -> None:
+def validate_x64_project_platforms(path: Path) -> None:
     root = _read_xml(path)
-    _validate_policy_initial_targets(root, path)
+    platforms = [(element.text or "").strip() for element in _elements_by_local_name(root, "Platforms")]
+    if platforms != ["x64"]:
+        raise PlatformPolicyError(f"{path} must expose only the x64 project platform; found {platforms}.")
+
+
+def _target(root: ElementTree.Element, path: Path, name: str) -> ElementTree.Element:
     targets = [
         element
         for element in _elements_by_local_name(root, "Target")
-        if element.attrib.get("Name") == "ValidateColorVisionHostPlatform"
+        if element.attrib.get("Name") == name
     ]
     if len(targets) != 1:
-        raise PlatformPolicyError(f"{path} must define the ColorVision host platform guard.")
+        raise PlatformPolicyError(f"{path} must define {name} exactly once.")
     before_targets = {
         value.strip().casefold()
         for value in (targets[0].attrib.get("BeforeTargets") or "").split(";")
         if value.strip()
     }
     if before_targets != {"prepareforbuild", "pack"}:
-        raise PlatformPolicyError(f"{path} host guard must run before PrepareForBuild and Pack.")
-    expected_condition = _normalized_condition(
-        "$([System.String]::Copy('$(Platform);$(PlatformTarget);$(RuntimeIdentifier);"
-        "$(RuntimeIdentifiers)').ToLowerInvariant().Contains('arm64'))"
-    )
-    condition = _normalized_condition(targets[0].attrib.get("Condition") or "")
-    if condition != expected_condition:
-        raise PlatformPolicyError(f"{path} does not fail closed for every ARM64 architecture property.")
-    if len(list(_elements_by_local_name(targets[0], "Error"))) != 1:
-        raise PlatformPolicyError(f"{path} platform guard does not stop unsupported builds.")
+        raise PlatformPolicyError(f"{path} {name} must run before PrepareForBuild and Pack.")
+    return targets[0]
+
+
+def validate_platform_role_guard(path: Path) -> None:
+    root = _read_xml(path)
+    _validate_policy_initial_targets(root, path)
+    target = _target(root, path, "ValidateColorVisionPlatformRole")
+    errors = list(_elements_by_local_name(target, "Error"))
+    expected = {
+        _normalized_condition(
+            "'$(MSBuildProjectExtension)' == '.csproj' and "
+            "'$(MSBuildProjectFullPath)' == '$(_ColorVisionFileIOProjectPath)' and "
+            "'@(ColorVisionPlatformRole)' != 'AnyCPU'"
+        ),
+        _normalized_condition(
+            "'$(MSBuildProjectExtension)' == '.csproj' and "
+            "'$(MSBuildProjectFullPath)' != '$(_ColorVisionFileIOProjectPath)' and "
+            "'@(ColorVisionPlatformRole)' != 'X64'"
+        ),
+    }
+    actual = {
+        _normalized_condition(error.attrib.get("Condition") or "")
+        for error in errors
+    }
+    if actual != expected:
+        raise PlatformPolicyError(
+            f"{path} platform role guard must bind AnyCPU only to FileIO and X64 to every other project."
+        )
+
+
+def validate_x64_build_guard(path: Path) -> None:
+    root = _read_xml(path)
+    _validate_policy_initial_targets(root, path)
+    target = _target(root, path, "ValidateColorVisionHostPlatform")
+    if _normalized_condition(target.attrib.get("Condition") or "") != _normalized_condition(
+        "'@(ColorVisionPlatformRole)' == 'X64'"
+    ):
+        raise PlatformPolicyError(f"{path} x64 guard is not bound to the explicit X64 role.")
+    expected_error_conditions = {
+        _normalized_condition("'$(Platform)' != 'x64'"),
+        _normalized_condition("'$(PlatformTarget)' != 'x64'"),
+        _normalized_condition("'$(RuntimeIdentifier)' != '' and '$(RuntimeIdentifier)' != 'win-x64'"),
+        _normalized_condition("'$(RuntimeIdentifiers)' != '' and '@(_ColorVisionRequestedRuntimeIdentifier)' == ''"),
+        _normalized_condition("'@(_ColorVisionUnsupportedRuntimeIdentifier)' != ''"),
+    }
+    actual_error_conditions = {
+        _normalized_condition(element.attrib.get("Condition") or "")
+        for element in _elements_by_local_name(target, "Error")
+    }
+    if actual_error_conditions != expected_error_conditions:
+        raise PlatformPolicyError(f"{path} x64 guard does not fail closed for every platform and RID property.")
+    requested_rids = [
+        element
+        for element in _elements_by_local_name(target, "_ColorVisionRequestedRuntimeIdentifier")
+        if (element.attrib.get("Include") or "").strip() == "$(RuntimeIdentifiers)"
+    ]
+    unsupported_rids = [
+        element
+        for element in _elements_by_local_name(target, "_ColorVisionUnsupportedRuntimeIdentifier")
+        if (element.attrib.get("Include") or "").strip() == "@(_ColorVisionRequestedRuntimeIdentifier)"
+        and _normalized_condition(element.attrib.get("Condition") or "")
+        == _normalized_condition("'%(Identity)' != 'win-x64'")
+    ]
+    if len(requested_rids) != 1 or len(unsupported_rids) != 1:
+        raise PlatformPolicyError(f"{path} must split RuntimeIdentifiers and reject every non-win-x64 item.")
 
 
 def validate_fileio_anycpu_build_guard(path: Path) -> None:
     root = _read_xml(path)
     _validate_policy_initial_targets(root, path)
-    targets = [
+    target = _target(root, path, "ValidateColorVisionFileIOAnyCpuPackage")
+    if _normalized_condition(target.attrib.get("Condition") or "") != _normalized_condition(
+        "'@(ColorVisionPlatformRole)' == 'AnyCPU'"
+    ):
+        raise PlatformPolicyError(f"{path} FileIO guard is not bound to the explicit AnyCPU role.")
+    expected_error_conditions = {
+        _normalized_condition("'$(Platform)' != 'AnyCPU'"),
+        _normalized_condition("'$(PlatformTarget)' != 'AnyCPU'"),
+        _normalized_condition("'$(RuntimeIdentifier)' != '' or '$(RuntimeIdentifiers)' != ''"),
+    }
+    actual_error_conditions = {
+        _normalized_condition(element.attrib.get("Condition") or "")
+        for element in _elements_by_local_name(target, "Error")
+    }
+    if actual_error_conditions != expected_error_conditions:
+        raise PlatformPolicyError(f"{path} FileIO guard does not fail closed for architecture overrides.")
+
+
+def validate_fileio_project_reference_mapping(path: Path) -> None:
+    root = _read_xml(path)
+    path_properties = [
+        element
+        for element in _elements_by_local_name(root, "_ColorVisionFileIOProjectPath")
+        if (element.text or "").strip()
+        == "$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', 'Engine', 'ColorVision.FileIO', 'ColorVision.FileIO.csproj'))"
+    ]
+    if len(path_properties) != 1:
+        raise PlatformPolicyError(f"{path} must identify the unique FileIO project reference by normalized full path.")
+
+    expected_condition = _normalized_condition(
+        "'%(ProjectReference.FullPath)' == '$(_ColorVisionFileIOProjectPath)'"
+    )
+    expected_values = {
+        "%(ProjectReference.GlobalPropertiesToRemove)",
+        "Platform",
+        "PlatformTarget",
+        "RuntimeIdentifier",
+        "RuntimeIdentifiers",
+    }
+    target_contracts = {
+        "ConfigureColorVisionFileIOProjectReference": (
+            {"assignprojectconfiguration"},
+            set(),
+        ),
+        "ConfigureColorVisionFileIOAfterTransitiveReferences": (
+            {"_getprojectreferencetargetframeworkproperties"},
+            {"includetransitiveprojectreferences"},
+        ),
+    }
+    for target_name, (expected_before, expected_after) in target_contracts.items():
+        targets = [
+            element
+            for element in _elements_by_local_name(root, "Target")
+            if element.attrib.get("Name") == target_name
+        ]
+        if len(targets) != 1:
+            raise PlatformPolicyError(f"{path} must define {target_name} exactly once.")
+        target = targets[0]
+        before_targets = {
+            value.strip().casefold()
+            for value in (target.attrib.get("BeforeTargets") or "").split(";")
+            if value.strip()
+        }
+        after_targets = {
+            value.strip().casefold()
+            for value in (target.attrib.get("AfterTargets") or "").split(";")
+            if value.strip()
+        }
+        if (
+            before_targets != expected_before
+            or after_targets != expected_after
+            or _normalized_condition(target.attrib.get("Condition") or "")
+            != _normalized_condition("'@(ColorVisionPlatformRole)' == 'X64'")
+        ):
+            raise PlatformPolicyError(f"{path} {target_name} has unsafe project-reference ordering or scope.")
+
+        references = list(_elements_by_local_name(target, "ProjectReference"))
+        if (
+            len(references) != 1
+            or (references[0].attrib.get("Update") or "").strip() != "@(ProjectReference)"
+            or _normalized_condition(references[0].attrib.get("Condition") or "") != expected_condition
+        ):
+            raise PlatformPolicyError(f"{path} FileIO reference mapping must match only the normalized FileIO full path.")
+        removal_elements = list(_elements_by_local_name(references[0], "GlobalPropertiesToRemove"))
+        removal_values = {
+            value.strip()
+            for value in (removal_elements[0].text or "").split(";")
+            if value.strip()
+        } if len(removal_elements) == 1 else set()
+        if removal_values != expected_values:
+            raise PlatformPolicyError(f"{path} FileIO reference mapping must remove every architecture global property.")
+
+    coverage_targets = [
         element
         for element in _elements_by_local_name(root, "Target")
-        if element.attrib.get("Name") == "ValidateColorVisionFileIOAnyCpuPackage"
+        if element.attrib.get("Name") == "ExcludeColorVisionFileIOFromCoverageReferencePathMaps"
     ]
-    if len(targets) != 1:
-        raise PlatformPolicyError(f"{path} must define the FileIO AnyCPU package guard.")
-    before_targets = {
-        value.strip().casefold()
-        for value in (targets[0].attrib.get("BeforeTargets") or "").split(";")
-        if value.strip()
-    }
-    if before_targets != {"prepareforbuild", "pack"}:
-        raise PlatformPolicyError(f"{path} FileIO guard must run before PrepareForBuild and Pack.")
-    expected_condition = _normalized_condition(
-        "'$(MSBuildProjectName)' == 'ColorVision.FileIO' and "
-        "('$(PlatformTarget)' != 'AnyCPU' or '$(RuntimeIdentifier)' != '' "
-        "or '$(RuntimeIdentifiers)' != '')"
-    )
-    condition = _normalized_condition(targets[0].attrib.get("Condition") or "")
-    if condition != expected_condition:
-        raise PlatformPolicyError(f"{path} FileIO guard does not fail closed for architecture overrides.")
-    if len(list(_elements_by_local_name(targets[0], "Error"))) != 1:
-        raise PlatformPolicyError(f"{path} FileIO guard does not stop invalid package builds.")
+    if len(coverage_targets) != 1:
+        raise PlatformPolicyError(f"{path} must isolate FileIO from the coverage task that drops reference metadata.")
+    coverage_target = coverage_targets[0]
+    if (
+        {value.strip().casefold() for value in (coverage_target.attrib.get("BeforeTargets") or "").split(";") if value.strip()}
+        != {"mscoveragereferencedpathmaps"}
+        or _normalized_condition(coverage_target.attrib.get("Condition") or "")
+        != _normalized_condition("'@(ColorVisionPlatformRole)' == 'X64'")
+    ):
+        raise PlatformPolicyError(f"{path} FileIO coverage isolation has unsafe ordering or scope.")
+    exclusions = list(_elements_by_local_name(coverage_target, "AnnotatedProjects"))
+    if (
+        len(exclusions) != 1
+        or (exclusions[0].attrib.get("Remove") or "").strip() != "@(AnnotatedProjects)"
+        or _normalized_condition(exclusions[0].attrib.get("Condition") or "")
+        != _normalized_condition("'%(AnnotatedProjects.FullPath)' == '$(_ColorVisionFileIOProjectPath)'")
+    ):
+        raise PlatformPolicyError(f"{path} coverage isolation must exclude only the normalized FileIO path.")
 
 
 def validate_platform_policy_import(path: Path, expected_project: str) -> None:
@@ -240,6 +496,27 @@ def validate_no_arm64_project_declarations(repository_root: Path) -> None:
         )
 
 
+def validate_fileio_is_only_anycpu_role_declaration(repository_root: Path) -> None:
+    unexpected_declarations: list[Path] = []
+    for pattern in ("*.csproj", "*.props", "*.targets"):
+        for path in repository_root.rglob(pattern):
+            if any(part.casefold() in {"bin", "obj"} for part in path.parts):
+                continue
+            root = _read_xml(path)
+            if not any(
+                (element.attrib.get("Include") or "").strip().casefold() == "anycpu"
+                for element in _elements_by_local_name(root, "ColorVisionPlatformRole")
+            ):
+                continue
+            if path.relative_to(repository_root) != FILEIO_PROJECT:
+                unexpected_declarations.append(path.relative_to(repository_root))
+    if unexpected_declarations:
+        raise PlatformPolicyError(
+            "Only ColorVision.FileIO may declare the AnyCPU platform role: "
+            f"{sorted(map(str, unexpected_declarations))}."
+        )
+
+
 def validate_fileio_anycpu_project(path: Path) -> str:
     root = _read_xml(path)
 
@@ -248,8 +525,17 @@ def validate_fileio_anycpu_project(path: Path) -> str:
 
     if values("Platforms") != ["AnyCPU"]:
         raise PlatformPolicyError(f"{path} must expose only the AnyCPU project platform.")
+    if values("Platform") != ["AnyCPU"]:
+        raise PlatformPolicyError(f"{path} must fix the evaluated Platform to AnyCPU.")
     if values("PlatformTarget") != ["AnyCPU"]:
         raise PlatformPolicyError(f"{path} must compile every package asset with PlatformTarget=AnyCPU.")
+    roles = list(_elements_by_local_name(root, "ColorVisionPlatformRole"))
+    role_contract = [
+        ((element.attrib.get("Remove") or "").strip(), (element.attrib.get("Include") or "").strip())
+        for element in roles
+    ]
+    if role_contract != [("@(ColorVisionPlatformRole)", ""), ("", "AnyCPU")]:
+        raise PlatformPolicyError(f"{path} must replace the inherited X64 role with exactly one AnyCPU role.")
     if [value.casefold() for value in values("GeneratePackageOnBuild")] != ["true"]:
         raise PlatformPolicyError(f"{path} must keep its package-on-build behavior explicit.")
     if values("PackageId") != [FILEIO_PACKAGE_ID]:
@@ -468,17 +754,23 @@ def validate_platform_policy(repository_root: str | Path) -> tuple[Path, ...]:
 
     main_application = root / "ColorVision/ColorVision.csproj"
     validate_main_application(main_application)
-    checked.append(main_application)
+    for relative_path in X64_PLATFORM_PROJECTS:
+        path = root / relative_path
+        validate_x64_project_platforms(path)
+        checked.append(path)
 
     build_guard = root / PLATFORM_POLICY_TARGETS
-    validate_arm64_build_guard(build_guard)
+    validate_platform_role_guard(build_guard)
+    validate_x64_build_guard(build_guard)
     validate_fileio_anycpu_build_guard(build_guard)
+    validate_fileio_project_reference_mapping(build_guard)
     checked.append(build_guard)
     for relative_path, expected_project in PLATFORM_POLICY_IMPORTS.items():
         path = root / relative_path
         validate_platform_policy_import(path, expected_project)
         checked.append(path)
     validate_no_arm64_project_declarations(root)
+    validate_fileio_is_only_anycpu_role_declaration(root)
 
     fileio_project = root / FILEIO_PROJECT
     validate_fileio_anycpu_project(fileio_project)
@@ -542,7 +834,7 @@ def main() -> int:
             f"{len(verified_members)} target frameworks."
         )
     print(f"Verified the x64 release policy across {len(checked)} project, solution, and policy files.")
-    print("Any CPU and x86 solution entries are non-shipping developer aliases, not supported host targets.")
+    print("Any CPU and x86 solution aliases map managed projects to x64, except the FileIO AnyCPU package.")
     print("ARM64 remains unsupported until native, package, CI, installer, and device validation are complete.")
     return 0
 

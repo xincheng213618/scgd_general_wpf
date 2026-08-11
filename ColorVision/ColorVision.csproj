@@ -4,7 +4,7 @@
     <OutputType>WinExe</OutputType>
     <Nullable>warnings</Nullable>
     <UseWPF>true</UseWPF>
-    <Platforms>AnyCPU;x64</Platforms>
+    <Platforms>x64</Platforms>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <UseWindowsForms>True</UseWindowsForms>
     <ApplicationIcon>Assets\Image\ColorVision.ico</ApplicationIcon>

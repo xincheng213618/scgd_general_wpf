@@ -1,3 +1,4 @@
+import json
 import subprocess
 import struct
 import tempfile
@@ -9,31 +10,27 @@ from Scripts.verify_platform_policy import (
     COMIMAGE_FLAGS_32BITREQUIRED,
     PlatformPolicyError,
     _read_anycpu_dotnet_pe,
-    validate_arm64_build_guard,
     validate_fileio_anycpu_build_guard,
     validate_fileio_anycpu_project,
+    validate_fileio_is_only_anycpu_role_declaration,
     validate_fileio_package,
     validate_fileio_package_directory,
+    validate_fileio_project_reference_mapping,
     validate_host_solution,
     validate_native_project,
     validate_platform_policy_import,
     validate_platform_policy,
+    validate_platform_role_guard,
+    validate_x64_build_guard,
     validate_x64_only_props,
+    validate_x64_project_platforms,
 )
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 POLICY_INITIAL_TARGETS = (
-    "ValidateColorVisionHostPlatform;ValidateColorVisionFileIOAnyCpuPackage"
-)
-HOST_ARM64_CONDITION = (
-    "$([System.String]::Copy('$(Platform);$(PlatformTarget);$(RuntimeIdentifier);"
-    "$(RuntimeIdentifiers)').ToLowerInvariant().Contains('arm64'))"
-)
-FILEIO_ANYCPU_CONDITION = (
-    "'$(MSBuildProjectName)' == 'ColorVision.FileIO' and "
-    "('$(PlatformTarget)' != 'AnyCPU' or '$(RuntimeIdentifier)' != '' or "
-    "'$(RuntimeIdentifiers)' != '')"
+    "ValidateColorVisionPlatformRole;ValidateColorVisionHostPlatform;"
+    "ValidateColorVisionFileIOAnyCpuPackage"
 )
 
 
@@ -50,6 +47,8 @@ class PlatformPolicyTests(unittest.TestCase):
 
         self.assertIn((REPO_ROOT / "build.sln").resolve(), checked)
         self.assertIn((REPO_ROOT / "Native/opencv_cuda/opencv_cuda.vcxproj").resolve(), checked)
+        self.assertIn((REPO_ROOT / "src/ColorVisionSetup/Directory.Build.props").resolve(), checked)
+        self.assertIn((REPO_ROOT / "UI/ColorVision.ImageEditor/ColorVision.ImageEditor.csproj").resolve(), checked)
 
     def test_rejects_global_arm64_declaration(self) -> None:
         props = self.root / "Directory.Build.props"
@@ -58,12 +57,84 @@ class PlatformPolicyTests(unittest.TestCase):
         with self.assertRaisesRegex(PlatformPolicyError, "must declare exactly"):
             validate_x64_only_props(props)
 
+    def test_rejects_x64_props_without_fixed_target_or_role(self) -> None:
+        baseline = (
+            '<Project><PropertyGroup><Platforms>x64</Platforms>'
+            '<Platform Condition="\'$(Platform)\' == \'\' or \'$(Platform)\' == \'AnyCPU\'">x64</Platform>'
+            '<PlatformTarget>x64</PlatformTarget>'
+            '</PropertyGroup><ItemGroup><ColorVisionPlatformRole Include="X64" /></ItemGroup></Project>'
+        )
+        for name, old in (
+            ("target", "<PlatformTarget>x64</PlatformTarget>"),
+            ("role", '<ColorVisionPlatformRole Include="X64" />'),
+        ):
+            with self.subTest(name=name):
+                props = self.root / f"{name}.props"
+                props.write_text(baseline.replace(old, ""), encoding="utf-8")
+                with self.assertRaises(PlatformPolicyError):
+                    validate_x64_only_props(props)
+
     def test_rejects_arm64_solution_configuration(self) -> None:
         solution = self.root / "build.sln"
         solution.write_text("Release|ARM64 = Release|ARM64", encoding="utf-8")
 
         with self.assertRaisesRegex(PlatformPolicyError, "unsupported ARM64"):
             validate_host_solution(solution)
+
+    def test_rejects_solution_aliases_that_do_not_route_managed_projects_to_policy_platforms(self) -> None:
+        baseline = (REPO_ROOT / "build.sln").read_text(encoding="utf-8-sig")
+        mutations = (
+            (
+                "host-anycpu",
+                "{AD038578-6456-48BF-9379-151DCBE9DBF5}.Release|Any CPU.ActiveCfg = Release|x64",
+                "{AD038578-6456-48BF-9379-151DCBE9DBF5}.Release|Any CPU.ActiveCfg = Release|Any CPU",
+            ),
+            (
+                "fileio-x64",
+                "{8716CF0F-7104-1CCD-8D2A-EA9963ABC719}.Release|x64.ActiveCfg = Release|Any CPU",
+                "{8716CF0F-7104-1CCD-8D2A-EA9963ABC719}.Release|x64.ActiveCfg = Release|x64",
+            ),
+        )
+        for name, old, new in mutations:
+            with self.subTest(name=name):
+                self.assertIn(old, baseline)
+                solution = self.root / f"{name}.sln"
+                solution.write_text(baseline.replace(old, new, 1), encoding="utf-8")
+                with self.assertRaisesRegex(PlatformPolicyError, "maps"):
+                    validate_host_solution(solution)
+
+    def test_rejects_solution_when_active_and_build_mapping_are_both_removed(self) -> None:
+        baseline = (REPO_ROOT / "build.sln").read_text(encoding="utf-8-sig")
+        mapping = "{AD038578-6456-48BF-9379-151DCBE9DBF5}.Release|Any CPU"
+        active = f"\t\t{mapping}.ActiveCfg = Release|x64\n"
+        build = f"\t\t{mapping}.Build.0 = Release|x64\n"
+        self.assertIn(active, baseline)
+        self.assertIn(build, baseline)
+        solution = self.root / "missing-managed-mapping.sln"
+        solution.write_text(baseline.replace(active, "", 1).replace(build, "", 1), encoding="utf-8")
+
+        with self.assertRaisesRegex(PlatformPolicyError, "missing managed ActiveCfg"):
+            validate_host_solution(solution)
+
+    def test_fileio_is_the_only_allowed_anycpu_role_declaration(self) -> None:
+        project = self.root / "Other.csproj"
+        project.write_text(
+            '<Project><ItemGroup><ColorVisionPlatformRole Include="AnyCPU" /></ItemGroup></Project>',
+            encoding="utf-8",
+        )
+
+        with self.assertRaisesRegex(PlatformPolicyError, "Only ColorVision.FileIO"):
+            validate_fileio_is_only_anycpu_role_declaration(self.root)
+
+    def test_rejects_project_that_advertises_anycpu_alongside_x64(self) -> None:
+        project = self.root / "advertised-platforms.csproj"
+        project.write_text(
+            "<Project><PropertyGroup><Platforms>AnyCPU;x64</Platforms></PropertyGroup></Project>",
+            encoding="utf-8",
+        )
+
+        with self.assertRaisesRegex(PlatformPolicyError, "only the x64"):
+            validate_x64_project_platforms(project)
 
     def test_rejects_native_project_without_release_x64(self) -> None:
         project = self.root / "native.vcxproj"
@@ -77,46 +148,68 @@ class PlatformPolicyTests(unittest.TestCase):
             validate_native_project(project)
 
     def test_rejects_platform_guard_condition_contract_mutations(self) -> None:
+        baseline = (REPO_ROOT / "ColorVision.PlatformPolicy.targets").read_text(encoding="utf-8")
         mutations = (
-            ("platform", "$(Platform)", "$(Configuration)"),
-            ("platform-target", "$(PlatformTarget)", "$(Configuration)"),
-            ("runtime-identifier", "$(RuntimeIdentifier)", "$(Configuration)"),
-            ("runtime-identifiers", "$(RuntimeIdentifiers)", "$(Configuration)"),
+            (
+                "role",
+                '<Target Name="ValidateColorVisionHostPlatform" BeforeTargets="PrepareForBuild;Pack"\n\t\t\tCondition="\'@(ColorVisionPlatformRole)\' == \'X64\'">',
+                '<Target Name="ValidateColorVisionHostPlatform" BeforeTargets="PrepareForBuild;Pack"\n\t\t\tCondition="\'@(ColorVisionPlatformRole)\' != \'\'">',
+            ),
+            ("platform", "'$(Platform)' != 'x64'", "'$(Platform)' == ''"),
+            ("platform-target", "'$(PlatformTarget)' != 'x64'", "'$(PlatformTarget)' == ''"),
+            ("runtime-identifier", "'$(RuntimeIdentifier)' != 'win-x64'", "'$(RuntimeIdentifier)' != 'win-arm64'"),
+            ("runtime-identifiers", "'%(Identity)' != 'win-x64'", "'%(Identity)' != 'win-arm64'"),
+            ("runtime-item", 'Include="$(RuntimeIdentifiers)"', 'Include="$(RuntimeIdentifier)"'),
         )
         for name, old, new in mutations:
             with self.subTest(name=name):
                 targets = self.root / f"{name}.targets"
-                targets.write_text(
-                    f'<Project InitialTargets="{POLICY_INITIAL_TARGETS}">'
-                    '<Target Name="ValidateColorVisionHostPlatform" '
-                    'BeforeTargets="PrepareForBuild;Pack" '
-                    f'Condition="{HOST_ARM64_CONDITION.replace(old, new, 1)}">'
-                    '<Error Text="stop" /></Target></Project>',
-                    encoding="utf-8",
-                )
-                with self.assertRaisesRegex(PlatformPolicyError, "fail closed"):
-                    validate_arm64_build_guard(targets)
+                self.assertIn(old, baseline)
+                targets.write_text(baseline.replace(old, new, 1), encoding="utf-8")
+                with self.assertRaises(PlatformPolicyError):
+                    validate_x64_build_guard(targets)
 
     def test_rejects_platform_guard_without_fail_fast_error(self) -> None:
+        baseline = (REPO_ROOT / "ColorVision.PlatformPolicy.targets").read_text(encoding="utf-8")
+        removed = """\t\t<Error Condition="'$(Platform)' != 'x64'"
+\t\t\t   Text="ColorVision host runtime, official plugins, and project packages support x64 only: Platform must be x64." />
+"""
+        self.assertIn(removed, baseline)
         targets = self.root / "Directory.Build.targets"
-        targets.write_text(
-            f'<Project InitialTargets="{POLICY_INITIAL_TARGETS}">'
-            '<Target Name="ValidateColorVisionHostPlatform" '
-            'BeforeTargets="PrepareForBuild;Pack" '
-            f'Condition="{HOST_ARM64_CONDITION}" /></Project>',
-            encoding="utf-8",
-        )
+        targets.write_text(baseline.replace(removed, "", 1), encoding="utf-8")
 
-        with self.assertRaisesRegex(PlatformPolicyError, "does not stop"):
-            validate_arm64_build_guard(targets)
+        with self.assertRaisesRegex(PlatformPolicyError, "fail closed"):
+            validate_x64_build_guard(targets)
+
+    def test_rejects_platform_role_guard_mutations(self) -> None:
+        baseline = (REPO_ROOT / "ColorVision.PlatformPolicy.targets").read_text(encoding="utf-8")
+        for name, old, new in (
+            ("missing-x64", "'@(ColorVisionPlatformRole)' != 'X64'", "'@(ColorVisionPlatformRole)' == ''"),
+            ("missing-anycpu", "'@(ColorVisionPlatformRole)' != 'AnyCPU'", "'@(ColorVisionPlatformRole)' == ''"),
+            (
+                "anycpu-not-bound-to-fileio",
+                "'$(MSBuildProjectFullPath)' == '$(_ColorVisionFileIOProjectPath)'",
+                "'$(MSBuildProjectFullPath)' != ''",
+            ),
+            ("missing-project-kind", "'$(MSBuildProjectExtension)' == '.csproj' and ", ""),
+        ):
+            with self.subTest(name=name):
+                targets = self.root / f"role-{name}.targets"
+                targets.write_text(baseline.replace(old, new, 1), encoding="utf-8")
+                with self.assertRaisesRegex(PlatformPolicyError, "role guard"):
+                    validate_platform_role_guard(targets)
 
     def test_rejects_platform_policy_initial_target_mutations(self) -> None:
         mutations = (
             ("missing", None),
-            ("missing-host", "ValidateColorVisionFileIOAnyCpuPackage"),
+            (
+                "missing-host",
+                "ValidateColorVisionPlatformRole;ValidateColorVisionFileIOAnyCpuPackage",
+            ),
             (
                 "reordered",
-                "ValidateColorVisionFileIOAnyCpuPackage;ValidateColorVisionHostPlatform",
+                "ValidateColorVisionHostPlatform;ValidateColorVisionPlatformRole;"
+                "ValidateColorVisionFileIOAnyCpuPackage",
             ),
             ("extra", f"{POLICY_INITIAL_TARGETS};UnexpectedTarget"),
         )
@@ -128,28 +221,24 @@ class PlatformPolicyTests(unittest.TestCase):
                 )
                 targets.write_text(
                     f"<Project{initial_attribute}>"
-                    '<Target Name="ValidateColorVisionHostPlatform" '
-                    'BeforeTargets="PrepareForBuild;Pack" '
-                    f'Condition="{HOST_ARM64_CONDITION}">'
-                    '<Error Text="stop" /></Target></Project>',
+                    '<Target Name="ValidateColorVisionHostPlatform" BeforeTargets="PrepareForBuild;Pack" />'
+                    '</Project>',
                     encoding="utf-8",
                 )
                 with self.assertRaisesRegex(PlatformPolicyError, "initial targets"):
-                    validate_arm64_build_guard(targets)
+                    validate_x64_build_guard(targets)
 
     def test_rejects_host_guard_before_target_mutations(self) -> None:
+        baseline = (REPO_ROOT / "ColorVision.PlatformPolicy.targets").read_text(encoding="utf-8")
         for before_targets in ("", "PrepareForBuild", "Pack", "PrepareForBuild;Pack;Publish"):
             with self.subTest(before_targets=before_targets):
                 targets = self.root / f"before-{len(before_targets)}.targets"
-                targets.write_text(
-                    f'<Project InitialTargets="{POLICY_INITIAL_TARGETS}">'
-                    '<Target Name="ValidateColorVisionHostPlatform" '
-                    f'BeforeTargets="{before_targets}" Condition="{HOST_ARM64_CONDITION}">'
-                    '<Error Text="stop" /></Target></Project>',
-                    encoding="utf-8",
-                )
-                with self.assertRaisesRegex(PlatformPolicyError, "host guard must run"):
-                    validate_arm64_build_guard(targets)
+                old = '<Target Name="ValidateColorVisionHostPlatform" BeforeTargets="PrepareForBuild;Pack"'
+                new = f'<Target Name="ValidateColorVisionHostPlatform" BeforeTargets="{before_targets}"'
+                self.assertIn(old, baseline)
+                targets.write_text(baseline.replace(old, new, 1), encoding="utf-8")
+                with self.assertRaisesRegex(PlatformPolicyError, "must run"):
+                    validate_x64_build_guard(targets)
 
     def test_rejects_missing_platform_policy_imports_in_each_msbuild_subtree(self) -> None:
         importers = (
@@ -183,25 +272,81 @@ class PlatformPolicyTests(unittest.TestCase):
                     validate_platform_policy_import(path, expected_project)
 
     def test_rejects_fileio_build_guard_condition_mutations(self) -> None:
+        baseline = (REPO_ROOT / "ColorVision.PlatformPolicy.targets").read_text(encoding="utf-8")
         mutations = (
-            ("project-name", "'$(MSBuildProjectName)' == 'ColorVision.FileIO' and ", ""),
-            ("platform-target", "'$(PlatformTarget)' != 'AnyCPU' or ", ""),
-            ("runtime-identifier", "'$(RuntimeIdentifier)' != '' or ", ""),
-            ("runtime-identifiers", " or '$(RuntimeIdentifiers)' != ''", ""),
+            ("role", "'@(ColorVisionPlatformRole)' == 'AnyCPU'", "'@(ColorVisionPlatformRole)' != ''"),
+            ("platform", "'$(Platform)' != 'AnyCPU'", "'$(Platform)' == ''"),
+            ("platform-target", "'$(PlatformTarget)' != 'AnyCPU'", "'$(PlatformTarget)' == ''"),
+            (
+                "runtime-identifier",
+                "'$(RuntimeIdentifier)' != '' or '$(RuntimeIdentifiers)' != ''",
+                "'$(RuntimeIdentifier)' == '' or '$(RuntimeIdentifiers)' != ''",
+            ),
+            (
+                "runtime-identifiers",
+                "'$(RuntimeIdentifier)' != '' or '$(RuntimeIdentifiers)' != ''",
+                "'$(RuntimeIdentifier)' != '' or '$(RuntimeIdentifiers)' == ''",
+            ),
         )
         for name, old, new in mutations:
             with self.subTest(name=name):
                 targets = self.root / f"fileio-{name}.targets"
-                targets.write_text(
-                    f'<Project InitialTargets="{POLICY_INITIAL_TARGETS}">'
-                    '<Target Name="ValidateColorVisionFileIOAnyCpuPackage" '
-                    'BeforeTargets="PrepareForBuild;Pack" '
-                    f'Condition="{FILEIO_ANYCPU_CONDITION.replace(old, new, 1)}">'
-                    '<Error Text="stop" /></Target></Project>',
-                    encoding="utf-8",
-                )
-                with self.assertRaisesRegex(PlatformPolicyError, "fail closed"):
+                self.assertIn(old, baseline)
+                targets.write_text(baseline.replace(old, new, 1), encoding="utf-8")
+                with self.assertRaises(PlatformPolicyError):
                     validate_fileio_anycpu_build_guard(targets)
+
+    def test_rejects_fileio_project_reference_mapping_mutations(self) -> None:
+        baseline = (REPO_ROOT / "ColorVision.PlatformPolicy.targets").read_text(encoding="utf-8")
+        mutations = (
+            (
+                "path",
+                "'Engine', 'ColorVision.FileIO', 'ColorVision.FileIO.csproj'",
+                "'Engine', 'ColorVision.FileIO', 'Other.csproj'",
+            ),
+            (
+                "role",
+                '<Target Name="ConfigureColorVisionFileIOProjectReference" BeforeTargets="AssignProjectConfiguration"\n\t\t\tCondition="\'@(ColorVisionPlatformRole)\' == \'X64\'">',
+                '<Target Name="ConfigureColorVisionFileIOProjectReference" BeforeTargets="AssignProjectConfiguration"\n\t\t\tCondition="\'@(ColorVisionPlatformRole)\' == \'AnyCPU\'">',
+            ),
+            (
+                "ordering",
+                '<Target Name="ConfigureColorVisionFileIOProjectReference" BeforeTargets="AssignProjectConfiguration"',
+                '<Target Name="ConfigureColorVisionFileIOProjectReference" BeforeTargets="ResolveProjectReferences"',
+            ),
+            (
+                "transitive-ordering",
+                'AfterTargets="IncludeTransitiveProjectReferences"',
+                'AfterTargets="PrepareProjectReferences"',
+            ),
+            (
+                "reference-match",
+                "'%(ProjectReference.FullPath)' == '$(_ColorVisionFileIOProjectPath)'",
+                "'%(ProjectReference.Filename)' == 'ColorVision.FileIO'",
+            ),
+            (
+                "runtime-identifiers",
+                ";RuntimeIdentifier;RuntimeIdentifiers</GlobalPropertiesToRemove>",
+                ";RuntimeIdentifier</GlobalPropertiesToRemove>",
+            ),
+            (
+                "coverage-ordering",
+                'BeforeTargets="MsCoverageReferencedPathMaps"',
+                'BeforeTargets="CoreCompile"',
+            ),
+            (
+                "coverage-match",
+                "'%(AnnotatedProjects.FullPath)' == '$(_ColorVisionFileIOProjectPath)'",
+                "'%(AnnotatedProjects.Filename)' == 'ColorVision.FileIO'",
+            ),
+        )
+        for name, old, new in mutations:
+            with self.subTest(name=name):
+                targets = self.root / f"fileio-reference-{name}.targets"
+                self.assertIn(old, baseline)
+                targets.write_text(baseline.replace(old, new, 1), encoding="utf-8")
+                with self.assertRaises(PlatformPolicyError):
+                    validate_fileio_project_reference_mapping(targets)
 
     def test_rejects_architecture_specific_fileio_package_project_mutations(self) -> None:
         baseline = (
@@ -211,12 +356,18 @@ class PlatformPolicyTests(unittest.TestCase):
             "<GeneratePackageOnBuild>True</GeneratePackageOnBuild>"
             "<PackageId>ColorVision.FileIO</PackageId>"
             "<Platforms>AnyCPU</Platforms>"
+            "<Platform>AnyCPU</Platform>"
             "<PlatformTarget>AnyCPU</PlatformTarget>"
-            "</PropertyGroup></Project>"
+            "</PropertyGroup><ItemGroup>"
+            '<ColorVisionPlatformRole Remove="@(ColorVisionPlatformRole)" />'
+            '<ColorVisionPlatformRole Include="AnyCPU" />'
+            "</ItemGroup></Project>"
         )
         mutations = (
             ("arm64-platform", "<Platforms>AnyCPU</Platforms>", "<Platforms>AnyCPU;ARM64</Platforms>"),
             ("missing-target", "<PlatformTarget>AnyCPU</PlatformTarget>", ""),
+            ("missing-platform", "<Platform>AnyCPU</Platform>", ""),
+            ("missing-role", '<ColorVisionPlatformRole Include="AnyCPU" />', ""),
             ("legacy-exception", "</PropertyGroup>", "<AllowStandaloneArm64Build>true</AllowStandaloneArm64Build></PropertyGroup>"),
         )
         for name, old, new in mutations:
@@ -228,53 +379,103 @@ class PlatformPolicyTests(unittest.TestCase):
 
 
 class EvaluatedPlatformPolicyTests(unittest.TestCase):
-    def test_official_host_plugin_and_project_arm64_builds_fail_before_prepare_for_build(self) -> None:
-        cases = (
-            ("host-platform", "ColorVision/ColorVision.csproj", "ARM64", None, None),
-            ("plugin-platform", "Plugins/SystemMonitor/SystemMonitor.csproj", "ARM64", None, None),
-            ("project-platform", "Projects/ProjectLUX/ProjectLUX.csproj", "arm64", None, None),
-            ("host-rid", "ColorVision/ColorVision.csproj", "x64", "win-arm64", None),
-            ("plugin-rid", "Plugins/SystemMonitor/SystemMonitor.csproj", "x64", "win-arm64", None),
-            ("project-rid", "Projects/ProjectLUX/ProjectLUX.csproj", "x64", "win-arm64", None),
-            ("linux-arm64-rid", "ColorVision/ColorVision.csproj", "x64", "linux-arm64", None),
-            (
-                "win10-arm64-rid",
-                "Plugins/SystemMonitor/SystemMonitor.csproj",
-                "x64",
-                "win10-arm64",
-                None,
-            ),
-            (
-                "spaced-runtime-identifiers",
-                "Projects/ProjectLUX/ProjectLUX.csproj",
-                "x64",
-                None,
-                " win-x64 ; win-arm64 ",
-            ),
+    OFFICIAL_PROJECTS = (
+        "ColorVision/ColorVision.csproj",
+        "Plugins/SystemMonitor/SystemMonitor.csproj",
+        "Projects/ProjectLUX/ProjectLUX.csproj",
+    )
+
+    def test_official_projects_fail_closed_for_every_non_x64_override(self) -> None:
+        overrides = (
+            ("platform-x86", "x86", None, None, None),
+            ("platform-anycpu", "AnyCPU", None, None, None),
+            ("platform-arm64", "ARM64", None, None, None),
+            ("platform-target-x86", "x64", "x86", None, None),
+            ("platform-target-anycpu", "x64", "AnyCPU", None, None),
+            ("rid-win-x86", "x64", None, "win-x86", None),
+            ("rid-linux-x64", "x64", None, "linux-x64", None),
+            ("mixed-rids", "x64", None, None, " win-x64 ; win-x86 "),
         )
-        for name, project, platform, runtime_identifier, runtime_identifiers in cases:
+        for project in self.OFFICIAL_PROJECTS:
+            for name, platform, platform_target, runtime_identifier, runtime_identifiers in overrides:
+                with self.subTest(project=project, name=name):
+                    result = self._prepare_for_build(
+                        project,
+                        platform,
+                        "net10.0-windows",
+                        platform_target=platform_target,
+                        runtime_identifier=runtime_identifier,
+                        runtime_identifiers=runtime_identifiers,
+                    )
+                    output = result.stdout + result.stderr
+                    self.assertNotEqual(0, result.returncode, output)
+                    self.assertIn("support x64 only", output)
+                    self.assertNotIn("MSB4057", output)
+
+    def test_official_project_default_and_design_time_properties_are_x64(self) -> None:
+        for project in self.OFFICIAL_PROJECTS:
+            with self.subTest(project=project, mode="default"):
+                properties = self._evaluated_properties(project)
+                self.assertEqual("x64", properties["Platform"])
+                self.assertEqual("x64", properties["PlatformTarget"])
+                self.assertEqual("x64", properties["Platforms"])
+            with self.subTest(project=project, mode="explicit-invalid-platform"):
+                properties = self._evaluated_properties(project, platform="x86")
+                self.assertEqual("x86", properties["Platform"])
+                self.assertEqual("x64", properties["PlatformTarget"])
+
+    def test_official_projects_x64_prepare_for_build_succeeds(self) -> None:
+        for project in self.OFFICIAL_PROJECTS:
+            with self.subTest(project=project):
+                result = self._prepare_for_build(project, "x64", "net10.0-windows")
+                self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+
+    def test_historical_setup_is_explicitly_x64_and_rejects_architecture_overrides(self) -> None:
+        project = "src/ColorVisionSetup/ColorVisionSetup.csproj"
+        properties = self._evaluated_properties(project)
+        self.assertEqual("x64", properties["Platform"])
+        self.assertEqual("x64", properties["PlatformTarget"])
+        self.assertEqual("x64", properties["Platforms"])
+
+        positive = self._prepare_historical_setup("x64")
+        self.assertEqual(0, positive.returncode, positive.stdout + positive.stderr)
+        for name, platform, platform_target in (
+            ("platform-anycpu", "AnyCPU", None),
+            ("platform-x86", "x86", None),
+            ("platform-target-anycpu", "x64", "AnyCPU"),
+            ("platform-target-x86", "x64", "x86"),
+        ):
             with self.subTest(name=name):
-                result = self._prepare_for_build(
-                    project,
-                    platform,
-                    "net10.0-windows",
-                    runtime_identifier=runtime_identifier,
-                    runtime_identifiers=runtime_identifiers,
-                )
+                result = self._prepare_historical_setup(platform, platform_target)
                 output = result.stdout + result.stderr
                 self.assertNotEqual(0, result.returncode, output)
                 self.assertIn("support x64 only", output)
-                self.assertNotIn("MSB4057", output)
 
-    def test_official_plugin_and_project_x64_prepare_for_build_succeeds(self) -> None:
-        cases = (
-            ("Plugins/SystemMonitor/SystemMonitor.csproj", "net10.0-windows"),
-            ("Projects/ProjectLUX/ProjectLUX.csproj", "net10.0-windows"),
+    def test_official_project_pack_no_build_fails_before_pack_for_invalid_platforms(self) -> None:
+        overrides = (
+            ("platform-x86", "x86", None, None, None),
+            ("platform-target-anycpu", "x64", "AnyCPU", None, None),
+            ("rid-linux-x64", "x64", None, "linux-x64", None),
+            ("mixed-rids", "x64", None, None, "win-x64;win-x86"),
         )
-        for project, framework in cases:
-            with self.subTest(project=project):
-                result = self._prepare_for_build(project, "x64", framework)
-                self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        with tempfile.TemporaryDirectory(prefix="x64-pack-no-build-tests-") as output_directory:
+            for project in self.OFFICIAL_PROJECTS:
+                for name, platform, platform_target, runtime_identifier, runtime_identifiers in overrides:
+                    with self.subTest(project=project, name=name):
+                        package_output = Path(output_directory) / project.replace("/", "-") / name
+                        package_output.mkdir(parents=True)
+                        result = self._pack_no_build(
+                            project,
+                            platform,
+                            package_output,
+                            platform_target=platform_target,
+                            runtime_identifier=runtime_identifier,
+                            runtime_identifiers=runtime_identifiers,
+                        )
+                        output = result.stdout + result.stderr
+                        self.assertNotEqual(0, result.returncode, output)
+                        self.assertIn("support x64 only", output)
+                        self.assertEqual([], list(package_output.iterdir()))
 
     def test_fileio_anycpu_prepare_for_build_succeeds(self) -> None:
         result = self._prepare_for_build(
@@ -284,17 +485,67 @@ class EvaluatedPlatformPolicyTests(unittest.TestCase):
         )
 
         self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        properties = self._evaluated_properties(
+            "Engine/ColorVision.FileIO/ColorVision.FileIO.csproj"
+        )
+        self.assertEqual("AnyCPU", properties["Platform"])
+        self.assertEqual("AnyCPU", properties["PlatformTarget"])
+
+    def test_x64_parent_maps_only_fileio_reference_to_its_anycpu_contract(self) -> None:
+        command = [
+            "dotnet",
+            "msbuild",
+            str(REPO_ROOT / "Engine/ColorVision.Engine/ColorVision.Engine.csproj"),
+            "-nologo",
+            "-t:ConfigureColorVisionFileIOProjectReference",
+            "-p:Configuration=Release",
+            "-p:Platform=x64",
+            "-getItem:ProjectReference",
+        ]
+        result = subprocess.run(
+            command,
+            cwd=REPO_ROOT,
+            capture_output=True,
+            text=True,
+            errors="replace",
+            check=False,
+        )
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        references = json.loads(result.stdout)["Items"]["ProjectReference"]
+        fileio_path = (REPO_ROOT / "Engine/ColorVision.FileIO/ColorVision.FileIO.csproj").resolve()
+        fileio_references = [
+            reference
+            for reference in references
+            if Path(reference["FullPath"]).resolve() == fileio_path
+        ]
+        self.assertEqual(1, len(fileio_references))
+        self.assertEqual(
+            {"Platform", "PlatformTarget", "RuntimeIdentifier", "RuntimeIdentifiers"},
+            {
+                value
+                for value in fileio_references[0]["GlobalPropertiesToRemove"].split(";")
+                if value
+            },
+        )
+        for reference in references:
+            if Path(reference["FullPath"]).resolve() != fileio_path:
+                removals = set(reference.get("GlobalPropertiesToRemove", "").split(";"))
+                self.assertNotIn("Platform", removals)
+                self.assertNotIn("PlatformTarget", removals)
 
     def test_fileio_architecture_overrides_fail_without_creating_a_package(self) -> None:
         with tempfile.TemporaryDirectory(prefix="fileio-invalid-package-tests-") as output_directory:
             cases = (
-                ("arm64-platform", "ARM64", None, None, None, "support x64 only"),
-                ("arm64-platform-target", "AnyCPU", "ARM64", None, None, "support x64 only"),
+                ("arm64-platform", "ARM64", None, None, None, "must remain an AnyCPU"),
+                ("x64-platform", "x64", None, None, None, "must remain an AnyCPU"),
+                ("x86-platform", "x86", None, None, None, "must remain an AnyCPU"),
+                ("arm64-platform-target", "AnyCPU", "ARM64", None, None, "must remain an AnyCPU"),
                 ("x64-platform-target", "AnyCPU", "x64", None, None, "must remain an AnyCPU"),
                 ("x86-platform-target", "AnyCPU", "x86", None, None, "must remain an AnyCPU"),
-                ("arm64-rid", "AnyCPU", None, "win-arm64", None, "support x64 only"),
+                ("arm64-rid", "AnyCPU", None, "win-arm64", None, "must remain an AnyCPU"),
                 ("x64-rid", "AnyCPU", None, "win-x64", None, "must remain an AnyCPU"),
                 ("x86-rid", "AnyCPU", None, "win-x86", None, "must remain an AnyCPU"),
+                ("linux-x64-rid", "AnyCPU", None, "linux-x64", None, "must remain an AnyCPU"),
                 (
                     "runtime-identifiers",
                     "AnyCPU",
@@ -319,36 +570,30 @@ class EvaluatedPlatformPolicyTests(unittest.TestCase):
                     self.assertIn(message, output)
                     self.assertEqual([], list(self._package_directory(case_output).iterdir()))
 
-    def test_fileio_arm64_pack_no_build_fails_without_creating_a_package(self) -> None:
-        with tempfile.TemporaryDirectory(prefix="fileio-arm64-no-build-pack-") as output_directory:
-            output_root = Path(output_directory)
-            package_output = self._package_directory(output_root)
-            package_output.mkdir()
-            result = subprocess.run(
-                [
-                    "dotnet",
-                    "pack",
-                    str(REPO_ROOT / "Engine/ColorVision.FileIO/ColorVision.FileIO.csproj"),
-                    "--no-build",
-                    "--no-restore",
-                    "-nologo",
-                    "-c",
-                    "Release",
-                    "-p:Platform=ARM64",
-                    f"-p:BaseOutputPath={output_root / 'bin'}\\",
-                    f"-p:PackageOutputPath={package_output}",
-                    "-verbosity:minimal",
-                ],
-                cwd=REPO_ROOT,
-                capture_output=True,
-                text=True,
-                errors="replace",
-                check=False,
-            )
-            output = result.stdout + result.stderr
-            self.assertNotEqual(0, result.returncode, output)
-            self.assertIn("support x64 only", output)
-            self.assertEqual([], list(package_output.iterdir()))
+    def test_fileio_invalid_pack_no_build_fails_without_creating_a_package(self) -> None:
+        overrides = (
+            ("platform-x64", "x64", None, None, None),
+            ("platform-target-x86", "AnyCPU", "x86", None, None),
+            ("rid-win-x64", "AnyCPU", None, "win-x64", None),
+            ("mixed-rids", "AnyCPU", None, None, "win-x64;win-x86"),
+        )
+        with tempfile.TemporaryDirectory(prefix="fileio-no-build-pack-") as output_directory:
+            for name, platform, platform_target, runtime_identifier, runtime_identifiers in overrides:
+                with self.subTest(name=name):
+                    package_output = Path(output_directory) / name
+                    package_output.mkdir()
+                    result = self._pack_no_build(
+                        "Engine/ColorVision.FileIO/ColorVision.FileIO.csproj",
+                        platform,
+                        package_output,
+                        platform_target=platform_target,
+                        runtime_identifier=runtime_identifier,
+                        runtime_identifiers=runtime_identifiers,
+                    )
+                    output = result.stdout + result.stderr
+                    self.assertNotEqual(0, result.returncode, output)
+                    self.assertIn("must remain an AnyCPU", output)
+                    self.assertEqual([], list(package_output.iterdir()))
 
     def test_fileio_package_has_stable_coordinates_and_anycpu_pe_assets(self) -> None:
         with tempfile.TemporaryDirectory(prefix="fileio-anycpu-package-tests-") as output_directory:
@@ -498,6 +743,95 @@ class EvaluatedPlatformPolicyTests(unittest.TestCase):
             "-p:Configuration=Release",
             f"-p:Platform={platform}",
             f"-p:TargetFramework={framework}",
+            "-verbosity:minimal",
+        ]
+        for name, value in (
+            ("PlatformTarget", platform_target),
+            ("RuntimeIdentifier", runtime_identifier),
+            ("RuntimeIdentifiers", runtime_identifiers),
+        ):
+            if value is not None:
+                command.append(EvaluatedPlatformPolicyTests._property_argument(name, value))
+        return subprocess.run(
+            command,
+            cwd=REPO_ROOT,
+            capture_output=True,
+            text=True,
+            errors="replace",
+            check=False,
+        )
+
+    @staticmethod
+    def _prepare_historical_setup(
+        platform: str,
+        platform_target: str | None = None,
+    ) -> subprocess.CompletedProcess[str]:
+        command = [
+            "dotnet",
+            "msbuild",
+            str(REPO_ROOT / "src/ColorVisionSetup/ColorVisionSetup.csproj"),
+            "-nologo",
+            "-t:PrepareForBuild",
+            "-p:Configuration=Release",
+            f"-p:Platform={platform}",
+            "-verbosity:minimal",
+        ]
+        if platform_target is not None:
+            command.append(f"-p:PlatformTarget={platform_target}")
+        return subprocess.run(
+            command,
+            cwd=REPO_ROOT,
+            capture_output=True,
+            text=True,
+            errors="replace",
+            check=False,
+        )
+
+    @staticmethod
+    def _evaluated_properties(project: str, *, platform: str | None = None) -> dict[str, str]:
+        command = [
+            "dotnet",
+            "msbuild",
+            str(REPO_ROOT / project),
+            "-nologo",
+            "-p:Configuration=Release",
+            "-getProperty:Platform,PlatformTarget,Platforms",
+        ]
+        if platform is not None:
+            command.append(f"-p:Platform={platform}")
+        result = subprocess.run(
+            command,
+            cwd=REPO_ROOT,
+            capture_output=True,
+            text=True,
+            errors="replace",
+            check=False,
+        )
+        if result.returncode != 0:
+            raise AssertionError(result.stdout + result.stderr)
+        return json.loads(result.stdout)["Properties"]
+
+    @staticmethod
+    def _pack_no_build(
+        project: str,
+        platform: str,
+        package_output: Path,
+        *,
+        platform_target: str | None = None,
+        runtime_identifier: str | None = None,
+        runtime_identifiers: str | None = None,
+    ) -> subprocess.CompletedProcess[str]:
+        command = [
+            "dotnet",
+            "pack",
+            str(REPO_ROOT / project),
+            "--no-build",
+            "--no-restore",
+            "-nologo",
+            "-c",
+            "Release",
+            f"-p:Platform={platform}",
+            f"-p:PackageOutputPath={package_output}",
             "-verbosity:minimal",
         ]
         for name, value in (

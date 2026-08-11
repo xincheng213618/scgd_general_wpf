@@ -1,14 +1,75 @@
-<Project InitialTargets="ValidateColorVisionHostPlatform;ValidateColorVisionFileIOAnyCpuPackage">
+<Project InitialTargets="ValidateColorVisionPlatformRole;ValidateColorVisionHostPlatform;ValidateColorVisionFileIOAnyCpuPackage">
+	<PropertyGroup>
+		<_ColorVisionFileIOProjectPath>$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', 'Engine', 'ColorVision.FileIO', 'ColorVision.FileIO.csproj'))</_ColorVisionFileIOProjectPath>
+	</PropertyGroup>
+
+	<Target Name="ConfigureColorVisionFileIOProjectReference" BeforeTargets="AssignProjectConfiguration"
+			Condition="'@(ColorVisionPlatformRole)' == 'X64'">
+		<ItemGroup>
+			<ProjectReference Update="@(ProjectReference)"
+						  Condition="'%(ProjectReference.FullPath)' == '$(_ColorVisionFileIOProjectPath)'">
+				<GlobalPropertiesToRemove>%(ProjectReference.GlobalPropertiesToRemove);Platform;PlatformTarget;RuntimeIdentifier;RuntimeIdentifiers</GlobalPropertiesToRemove>
+			</ProjectReference>
+		</ItemGroup>
+	</Target>
+
+	<Target Name="ConfigureColorVisionFileIOAfterTransitiveReferences"
+			AfterTargets="IncludeTransitiveProjectReferences"
+			BeforeTargets="_GetProjectReferenceTargetFrameworkProperties"
+			Condition="'@(ColorVisionPlatformRole)' == 'X64'">
+		<ItemGroup>
+			<ProjectReference Update="@(ProjectReference)"
+						  Condition="'%(ProjectReference.FullPath)' == '$(_ColorVisionFileIOProjectPath)'">
+				<GlobalPropertiesToRemove>%(ProjectReference.GlobalPropertiesToRemove);Platform;PlatformTarget;RuntimeIdentifier;RuntimeIdentifiers</GlobalPropertiesToRemove>
+			</ProjectReference>
+		</ItemGroup>
+	</Target>
+
+	<!-- Microsoft.CodeCoverage invokes AnnotatedProjects by path and drops ProjectReference metadata.
+	     Exclude only FileIO's coverage source-root lookup so it cannot inherit the caller's x64 globals. -->
+	<Target Name="ExcludeColorVisionFileIOFromCoverageReferencePathMaps"
+			BeforeTargets="MsCoverageReferencedPathMaps"
+			Condition="'@(ColorVisionPlatformRole)' == 'X64'">
+		<ItemGroup>
+			<AnnotatedProjects Remove="@(AnnotatedProjects)"
+						   Condition="'%(AnnotatedProjects.FullPath)' == '$(_ColorVisionFileIOProjectPath)'" />
+		</ItemGroup>
+	</Target>
+
+	<Target Name="ValidateColorVisionPlatformRole" BeforeTargets="PrepareForBuild;Pack">
+		<Error Condition="'$(MSBuildProjectExtension)' == '.csproj' and '$(MSBuildProjectFullPath)' == '$(_ColorVisionFileIOProjectPath)' and '@(ColorVisionPlatformRole)' != 'AnyCPU'"
+			   Text="ColorVision.FileIO must declare exactly one AnyCPU platform role." />
+		<Error Condition="'$(MSBuildProjectExtension)' == '.csproj' and '$(MSBuildProjectFullPath)' != '$(_ColorVisionFileIOProjectPath)' and '@(ColorVisionPlatformRole)' != 'X64'"
+			   Text="Every non-FileIO ColorVision project must declare exactly one X64 platform role." />
+	</Target>
+
 	<Target Name="ValidateColorVisionHostPlatform" BeforeTargets="PrepareForBuild;Pack"
-			Condition="$([System.String]::Copy('$(Platform);$(PlatformTarget);$(RuntimeIdentifier);$(RuntimeIdentifiers)').ToLowerInvariant().Contains('arm64'))">
-		<Error Text="ColorVision host runtime, official plugins, and project packages support x64 only. ARM64 requires a complete native/runtime/package validation lane." />
+			Condition="'@(ColorVisionPlatformRole)' == 'X64'">
+		<ItemGroup>
+			<_ColorVisionRequestedRuntimeIdentifier Include="$(RuntimeIdentifiers)"
+				Condition="'$(RuntimeIdentifiers)' != ''" />
+			<_ColorVisionUnsupportedRuntimeIdentifier Include="@(_ColorVisionRequestedRuntimeIdentifier)"
+				Condition="'%(Identity)' != 'win-x64'" />
+		</ItemGroup>
+		<Error Condition="'$(Platform)' != 'x64'"
+			   Text="ColorVision host runtime, official plugins, and project packages support x64 only: Platform must be x64." />
+		<Error Condition="'$(PlatformTarget)' != 'x64'"
+			   Text="ColorVision host runtime, official plugins, and project packages support x64 only: PlatformTarget must be x64." />
+		<Error Condition="'$(RuntimeIdentifier)' != '' and '$(RuntimeIdentifier)' != 'win-x64'"
+			   Text="ColorVision host runtime, official plugins, and project packages support x64 only: RuntimeIdentifier must be empty or win-x64." />
+		<Error Condition="'$(RuntimeIdentifiers)' != '' and '@(_ColorVisionRequestedRuntimeIdentifier)' == ''"
+			   Text="ColorVision host runtime, official plugins, and project packages support x64 only: RuntimeIdentifiers must be empty or contain only win-x64." />
+		<Error Condition="'@(_ColorVisionUnsupportedRuntimeIdentifier)' != ''"
+			   Text="ColorVision host runtime, official plugins, and project packages support x64 only: RuntimeIdentifiers contains unsupported entries '@(_ColorVisionUnsupportedRuntimeIdentifier)'." />
 	</Target>
 
 	<Target Name="ValidateColorVisionFileIOAnyCpuPackage" BeforeTargets="PrepareForBuild;Pack"
-			Condition="'$(MSBuildProjectName)' == 'ColorVision.FileIO'
-				and ('$(PlatformTarget)' != 'AnyCPU'
-					or '$(RuntimeIdentifier)' != ''
-					or '$(RuntimeIdentifiers)' != '')">
-		<Error Text="ColorVision.FileIO must remain an AnyCPU package: PlatformTarget must be AnyCPU and RID properties must be empty." />
+			Condition="'@(ColorVisionPlatformRole)' == 'AnyCPU'">
+		<Error Condition="'$(Platform)' != 'AnyCPU'"
+			   Text="ColorVision.FileIO must remain an AnyCPU package: Platform and PlatformTarget must be AnyCPU and RID properties must be empty." />
+		<Error Condition="'$(PlatformTarget)' != 'AnyCPU'"
+			   Text="ColorVision.FileIO must remain an AnyCPU package: Platform and PlatformTarget must be AnyCPU and RID properties must be empty." />
+		<Error Condition="'$(RuntimeIdentifier)' != '' or '$(RuntimeIdentifiers)' != ''"
+			   Text="ColorVision.FileIO must remain an AnyCPU package: Platform and PlatformTarget must be AnyCPU and RID properties must be empty." />
 	</Target>
 </Project>

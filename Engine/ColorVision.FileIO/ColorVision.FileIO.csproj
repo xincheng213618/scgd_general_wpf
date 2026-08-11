@@ -11,10 +11,13 @@
 	  <PackageId>ColorVision.FileIO</PackageId>
 	  <!-- 单一纯托管包坐标必须保持 AnyCPU，不能按宿主 Platform 产出架构绑定变体。 -->
 	  <Platforms>AnyCPU</Platforms>
+	  <Platform>AnyCPU</Platform>
 	  <PlatformTarget>AnyCPU</PlatformTarget>
   </PropertyGroup>
 
 	<ItemGroup>
+		<ColorVisionPlatformRole Remove="@(ColorVisionPlatformRole)" />
+		<ColorVisionPlatformRole Include="AnyCPU" />
 		<None Include="README.md">
 			<Pack>True</Pack>
 			<PackagePath>\</PackagePath>

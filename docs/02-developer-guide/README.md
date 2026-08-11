@@ -53,16 +53,16 @@ Scripts\release.bat
 
 ## 平台支持策略
 
-当前支持边界是 Windows x64。`build.sln`、主安装器、全量/增量更新包、官方插件包和
-`runtimes/win-x64/native` 资产均按 x64 验证。ARM64 目前不受支持；不要使用
-`-p:Platform=ARM64`、`-p:PlatformTarget=ARM64` 或任意包含 `arm64` 的 RID 生成宿主、插件或项目交付物。共享 MSBuild 策略会在初始化阶段以及 Build/Pack 入口 fail-fast。
+当前支持边界是 Windows x64。`build.sln`、主安装器、全量/增量更新包、官方插件包和 `runtimes/win-x64/native` 资产均按 x64 验证。
+宿主、官方插件和客户项目的 `Platform`/`PlatformTarget` 必须是 `x64`；RID 可以为空或为 `win-x64`，多 RID 只能包含 `win-x64`。
+x86、AnyCPU、ARM64、`win-x86`、`linux-x64` 和混合 RID 等显式覆盖都会由共享 MSBuild 策略在初始化阶段以及 Build/Pack 入口 fail-fast。
 
-`build.sln`、`scgd_general_wpf.sln` 和 `UI/UI.sln` 仍保留 `Any CPU`/`x86` 作为历史
-IDE 与独立维护别名：其中不少 managed 项实际映射到 x64，部分 x86 配置还混合 Win32
-native 项目。这些配置不进入 CI、安装器或发布脚本，不是受支持的宿主交付目标。
+`build.sln`、`scgd_general_wpf.sln` 和 `UI/UI.sln` 仍保留 `Any CPU`/`x86` 作为历史 IDE 与独立维护别名。
+除 `ColorVision.FileIO` 外，managed 项在这些别名下统一映射到 x64；x86 solution alias 中仍可能包含 Win32 native 维护配置。
+这些别名不代表新增交付平台，CI、安装器和发布脚本仍只接受 Release|x64。
 
-`ColorVision.FileIO` 是例外的独立纯托管 NuGet 包，但其规范产物固定为单一 AnyCPU
-程序集和同一包坐标，不接受 `PlatformTarget` 或 RID 覆盖，也不生成 x64/ARM64 变体。
+`ColorVision.FileIO` 是唯一例外的独立纯托管 NuGet 包。两个包含它的 solution 会把所有历史 alias 映射到 `Any CPU`。
+规范产物位于无架构目录的 `Engine/ColorVision.FileIO/bin/Release`，并固定为单一 AnyCPU 程序集和同一包坐标；它要求 `Platform=AnyCPU`、`PlatformTarget=AnyCPU` 且 RID 为空，不生成 x64/x86/ARM64 变体。
 发布门禁会核对 nupkg 坐标、全部 PE 资产和 CLR flags。AnyCPU 包可被不同架构进程消费，
 并不表示 ColorVision 桌面宿主或官方插件已经支持 ARM64。
 
