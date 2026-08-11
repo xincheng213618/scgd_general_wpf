@@ -82,10 +82,11 @@ export function PluginsPage() {
       <Card>
         <Form layout="inline" initialValues={query} onFinish={applyQuery}>
           <Form.Item name="keyword">
-            <Input prefix={<SearchOutlined />} placeholder="名称、ID、描述" allowClear />
+            <Input aria-label="搜索插件" prefix={<SearchOutlined />} placeholder="名称、ID、描述" allowClear />
           </Form.Item>
           <Form.Item name="category">
             <Select
+              aria-label="插件分类"
               allowClear
               placeholder="分类"
               style={{ width: 150 }}
@@ -93,10 +94,11 @@ export function PluginsPage() {
             />
           </Form.Item>
           <Form.Item name="author">
-            <Input placeholder="作者" allowClear />
+            <Input aria-label="插件作者" placeholder="作者" allowClear />
           </Form.Item>
           <Form.Item name="sort">
             <Select
+              aria-label="插件排序"
               style={{ width: 140 }}
               options={[
                 { label: '最近更新', value: 'updated' },
