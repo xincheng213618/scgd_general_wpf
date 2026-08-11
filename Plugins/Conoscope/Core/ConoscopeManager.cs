@@ -32,7 +32,7 @@ namespace Conoscope.Core
         }
     }
 
-    public class ConoscopeManager : ViewModelBase, IDisposable
+    public class ConoscopeManager : ViewModelBase, IConfigReloadParticipant, IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ConoscopeManager));
         private static readonly JsonSerializerSettings SnapshotSerializerSettings = CreateSnapshotSerializerSettings();
@@ -55,26 +55,26 @@ namespace Conoscope.Core
         public ConoscopeManager()
             : this(
                 () => ConfigService.Instance.GetRequiredService<ConoscopeConfig>(),
-                ConfigService.Instance as IConfigReloadNotifier,
                 config => new ConoscopeGlobalReferenceStore(config))
         {
         }
 
         internal ConoscopeManager(
             Func<ConoscopeConfig> configFactory,
-            IConfigReloadNotifier? reloadNotifier,
             Func<ConoscopeConfig, ConoscopeGlobalReferenceStore> globalReferenceFactory)
         {
             this.globalReferenceFactory = globalReferenceFactory ?? throw new ArgumentNullException(nameof(globalReferenceFactory));
             configOwner = new RuntimeConfigOwner<ConoscopeConfig>(
                 configFactory,
-                reloadNotifier,
                 ex => log.Error("重新加载 Conoscope 配置失败", ex),
                 CloneConfig);
             state = new RuntimeState(configOwner.Current, this.globalReferenceFactory(configOwner.Current), configOwner.Generation);
-            configOwner.ConfigurationChanged += ConfigOwner_ConfigurationChanged;
             EditConoscopeConfigCommand = new RelayCommand(a => EditConoscopeConfig());
         }
+
+        public string ConfigReloadName => nameof(ConoscopeManager);
+
+        public int ConfigReloadOrder => 200;
 
         public ConoscopeRuntimeSnapshot CaptureRuntimeSnapshot()
         {
@@ -93,49 +93,65 @@ namespace Conoscope.Core
             ConoscopeModuleService.RefreshAllConoscopeConfiguration();
         }
 
-        private void ConfigOwner_ConfigurationChanged(object? sender, RuntimeConfigChangedEventArgs<ConoscopeConfig> e)
+        public void BindCurrentConfig(IConfigService currentConfig)
         {
+            ArgumentNullException.ThrowIfNull(currentConfig);
+            using PreparedRuntimeConfig<ConoscopeConfig> preparedConfig = configOwner.PrepareCurrentConfig(currentConfig);
             ConoscopeGlobalReferenceStore nextReferences;
             try
             {
-                nextReferences = globalReferenceFactory(e.Current);
+                nextReferences = globalReferenceFactory(preparedConfig.Config);
             }
             catch (Exception ex)
             {
                 log.Error("切换 Conoscope 全局参考矩阵失败，保留旧运行态", ex);
+                throw;
+            }
+
+            RuntimeState? previous = null;
+            bool disposePrevious = false;
+            RuntimeConfigChangedEventArgs<ConoscopeConfig>? change = null;
+            bool committed;
+            try
+            {
+                committed = configOwner.Commit(preparedConfig, e =>
+                {
+                    lock (stateLocker)
+                    {
+                        previous = state;
+                        state = new RuntimeState(e.Current, nextReferences, e.Generation);
+                        previous.IsRetired = true;
+                        disposePrevious = previous.LeaseCount == 0;
+                        change = e;
+                    }
+                });
+            }
+            catch
+            {
+                nextReferences.Dispose();
+                throw;
+            }
+
+            if (!committed)
+            {
+                nextReferences.Dispose();
                 return;
             }
-
-            RuntimeState previous;
-            bool disposePrevious;
-            lock (stateLocker)
-            {
-                if (isDisposed)
-                {
-                    nextReferences.Dispose();
-                    return;
-                }
-
-                if (e.Generation <= state.Generation)
-                {
-                    nextReferences.Dispose();
-                    return;
-                }
-
-                previous = state;
-                state = new RuntimeState(e.Current, nextReferences, e.Generation);
-                previous.IsRetired = true;
-                disposePrevious = previous.LeaseCount == 0;
-            }
-
             if (disposePrevious)
-                previous.GlobalReferences.Dispose();
+                previous!.GlobalReferences.Dispose();
 
             OnPropertyChanged(nameof(Config));
             OnPropertyChanged(nameof(GlobalReferences));
-            NotifyConfigurationChanged(e);
-            ConoscopeModuleService.RefreshAllConoscopeConfiguration();
-            ConoscopeModuleService.RefreshAllReferenceState();
+            NotifyConfigurationChanged(change!);
+            try
+            {
+                ConoscopeModuleService.RefreshAllConoscopeConfiguration();
+                ConoscopeModuleService.RefreshAllReferenceState();
+            }
+            catch (Exception ex)
+            {
+                log.Error("刷新 Conoscope 配置视图失败", ex);
+            }
         }
 
         private void NotifyConfigurationChanged(RuntimeConfigChangedEventArgs<ConoscopeConfig> args)
@@ -143,6 +159,12 @@ namespace Conoscope.Core
             Delegate[] subscribers = ConfigurationChanged?.GetInvocationList() ?? [];
             foreach (Delegate subscriber in subscribers)
             {
+                lock (stateLocker)
+                {
+                    if (isDisposed || args.Generation != state.Generation)
+                        return;
+                }
+
                 try
                 {
                     ((EventHandler<RuntimeConfigChangedEventArgs<ConoscopeConfig>>)subscriber)(this, args);
@@ -182,7 +204,6 @@ namespace Conoscope.Core
                 disposeCurrent = current.LeaseCount == 0;
             }
 
-            configOwner.ConfigurationChanged -= ConfigOwner_ConfigurationChanged;
             configOwner.Dispose();
             if (disposeCurrent)
                 current.GlobalReferences.Dispose();

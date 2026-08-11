@@ -27,7 +27,15 @@ namespace Conoscope.Core
         {
             this.config = config ?? throw new ArgumentNullException(nameof(config));
             this.saveConfig = saveConfig ?? throw new ArgumentNullException(nameof(saveConfig));
-            LoadPersistedReferences();
+            try
+            {
+                LoadPersistedReferences();
+            }
+            catch
+            {
+                Dispose();
+                throw;
+            }
         }
 
         public Mat? ColorDifferenceReferenceUMat => colorDifferenceReferenceUMat;
@@ -160,10 +168,10 @@ namespace Conoscope.Core
                 ? null
                 : config.ContrastWhiteReferenceDisplayName;
 
-            TryLoadMat(config.ColorDifferenceReferenceUMatPath, ref colorDifferenceReferenceUMat, "色差 U");
-            TryLoadMat(config.ColorDifferenceReferenceVMatPath, ref colorDifferenceReferenceVMat, "色差 V");
-            TryLoadMat(config.ContrastBlackReferenceYMatPath, ref contrastBlackReferenceYMat, "黑场 Y");
-            TryLoadMat(config.ContrastWhiteReferenceYMatPath, ref contrastWhiteReferenceYMat, "白场 Y");
+            LoadConfiguredMat(config.ColorDifferenceReferenceUMatPath, ref colorDifferenceReferenceUMat, "色差 U", requireReadable: true);
+            LoadConfiguredMat(config.ColorDifferenceReferenceVMatPath, ref colorDifferenceReferenceVMat, "色差 V", requireReadable: true);
+            LoadConfiguredMat(config.ContrastBlackReferenceYMatPath, ref contrastBlackReferenceYMat, "黑场 Y", requireReadable: false);
+            LoadConfiguredMat(config.ContrastWhiteReferenceYMatPath, ref contrastWhiteReferenceYMat, "白场 Y", requireReadable: false);
         }
 
         private static string EnsurePersistedFilePath(string configuredPath, string defaultFileName)
@@ -181,12 +189,15 @@ namespace Conoscope.Core
             return Path.Combine(root, defaultFileName);
         }
 
-        private void TryLoadMat(string filePath, ref Mat? target, string label)
+        private void LoadConfiguredMat(string filePath, ref Mat? target, string label, bool requireReadable)
         {
-            if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
-            {
+            if (string.IsNullOrWhiteSpace(filePath))
                 return;
-            }
+
+            if (!File.Exists(filePath) && requireReadable)
+                throw new FileNotFoundException($"配置的 {label} 参考矩阵不存在。", filePath);
+            if (!File.Exists(filePath))
+                return;
 
             try
             {
@@ -195,7 +206,10 @@ namespace Conoscope.Core
             }
             catch (Exception ex)
             {
-                log.Warn($"加载 {label} 参考矩阵失败: {ex.Message}", ex);
+                log.Error($"加载 {label} 参考矩阵失败: {ex.Message}", ex);
+                if (!requireReadable)
+                    return;
+                throw new InvalidDataException($"无法读取配置的 {label} 参考矩阵: {filePath}", ex);
             }
         }
 
