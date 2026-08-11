@@ -123,10 +123,9 @@ namespace ColorVision.Engine.Services
                 _msgTimers.Add(msg.MsgID, timer);
             }
 
-            Task.Run(() =>
-            {
-                MsgRecordDataBaseHelper.Insert(msgRecord);
-            });
+            string messageDatabasePath = MessagesListManager.GetInstance().CaptureDatabasePath();
+            Action insertMessageRecord = MsgRecordDataBaseHelper.CreateInsertAction(msgRecord, messageDatabasePath);
+            _ = Task.Run(insertMessageRecord);
 
             timer.Start();
             _ = MQTTControl.PublishAsyncClient(SendTopic, json, false);

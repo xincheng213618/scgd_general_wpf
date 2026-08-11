@@ -71,8 +71,8 @@ namespace ColorVision.Engine.Messages
             {
                 if (item == null) return;
 
-                MsgRecordManagerConfig configSnapshot = ConfigService.Instance.GetRequiredService<MsgRecordManagerConfig>();
-                Insert(item, configSnapshot);
+                string databasePath = MessagesListManager.GetInstance().CaptureDatabasePath();
+                Insert(item, databasePath);
             }
             catch (Exception ex)
             {
@@ -86,7 +86,20 @@ namespace ColorVision.Engine.Messages
             ArgumentNullException.ThrowIfNull(item);
             ArgumentNullException.ThrowIfNull(configSnapshot);
 
-            string databasePath = EnsureDatabaseInitialized(configSnapshot.SqliteDbPath);
+            Insert(item, EnsureDatabaseInitialized(configSnapshot.SqliteDbPath));
+        }
+
+        internal static Action CreateInsertAction(MsgRecord item, string databasePath)
+        {
+            ArgumentNullException.ThrowIfNull(item);
+            string capturedPath = NormalizeDatabasePath(databasePath);
+            return () => Insert(item, capturedPath);
+        }
+
+        internal static void Insert(MsgRecord item, string databasePath)
+        {
+            ArgumentNullException.ThrowIfNull(item);
+            databasePath = EnsureDatabaseInitialized(databasePath);
             using var db = CreateDb(databasePath);
             item.Id = db.Insertable(item).ExecuteReturnIdentity();
             item.MsgRecordStateChanged += (s, e) =>

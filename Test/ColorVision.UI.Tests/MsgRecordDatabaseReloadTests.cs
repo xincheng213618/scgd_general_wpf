@@ -29,7 +29,7 @@ public sealed class MsgRecordDatabaseReloadTests : IDisposable
         current = configB;
         notifier.RaiseConfigsReloaded();
 
-        Assert.Same(configB, manager.Config);
+        Assert.Equal(configB.DirectoryPath, manager.Config.DirectoryPath);
         Assert.Empty(manager.MsgRecords);
         Assert.True(File.Exists(configB.SqliteDbPath));
         Assert.Equal(0, CountRows(configB.SqliteDbPath));
@@ -56,6 +56,59 @@ public sealed class MsgRecordDatabaseReloadTests : IDisposable
 
         Assert.Equal(first, second, ignoreCase: true);
         Assert.True(File.Exists(first));
+    }
+
+    [Fact]
+    public void FailedDatabasePreparationKeepsConfigRowsAndPathOnA()
+    {
+        WpfTestHost.Invoke(() => { });
+        Directory.CreateDirectory(_tempRoot);
+        MsgRecordManagerConfig configA = CreateConfig("A-failure");
+        MsgRecordDataBaseHelper.Insert(new MsgRecord(), configA);
+        string blockedParent = Path.Combine(_tempRoot, "blocked-parent");
+        File.WriteAllText(blockedParent, "not a directory");
+        var configB = new MsgRecordManagerConfig { DirectoryPath = Path.Combine(blockedParent, "B") };
+        var notifier = new TestConfigReloadNotifier();
+        MsgRecordManagerConfig current = configA;
+
+        using var manager = new MessagesListManager(() => current, notifier, registerDatabaseBrowser: false);
+        manager.LoadAll();
+        string activePathA = manager.CaptureDatabasePath();
+
+        current = configB;
+        Exception? reloadException = Record.Exception(notifier.RaiseConfigsReloaded);
+
+        Assert.Null(reloadException);
+        Assert.Equal(configA.DirectoryPath, manager.Config.DirectoryPath);
+        Assert.Equal(Path.GetFullPath(configA.SqliteDbPath), activePathA, ignoreCase: true);
+        Assert.Equal(activePathA, manager.CaptureDatabasePath(), ignoreCase: true);
+        Assert.Single(manager.MsgRecords);
+        Assert.Equal(1, manager.TotalCount);
+        Assert.False(File.Exists(configB.SqliteDbPath));
+    }
+
+    [Fact]
+    public void QueuedInsertKeepsCapturedDatabaseAAfterReloadToB()
+    {
+        WpfTestHost.Invoke(() => { });
+        Directory.CreateDirectory(_tempRoot);
+        MsgRecordManagerConfig configA = CreateConfig("A-queued");
+        MsgRecordManagerConfig configB = CreateConfig("B-queued");
+        var notifier = new TestConfigReloadNotifier();
+        MsgRecordManagerConfig current = configA;
+
+        using var manager = new MessagesListManager(() => current, notifier, registerDatabaseBrowser: false);
+        string queuedPath = manager.CaptureDatabasePath();
+        Action queuedInsert = MsgRecordDataBaseHelper.CreateInsertAction(new MsgRecord(), queuedPath);
+
+        current = configB;
+        notifier.RaiseConfigsReloaded();
+        queuedInsert();
+
+        Assert.Equal(Path.GetFullPath(configA.SqliteDbPath), queuedPath, ignoreCase: true);
+        Assert.Equal(Path.GetFullPath(configB.SqliteDbPath), manager.CaptureDatabasePath(), ignoreCase: true);
+        Assert.Equal(1, CountRows(configA.SqliteDbPath));
+        Assert.Equal(0, CountRows(configB.SqliteDbPath));
     }
 
     private MsgRecordManagerConfig CreateConfig(string name)
