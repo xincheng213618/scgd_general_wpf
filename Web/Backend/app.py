@@ -151,6 +151,15 @@ if __name__ == "__main__":
     if args.debug:
         CONFIG["debug"] = True
 
+    is_debug = CONFIG.get("debug", False)
+    if not is_debug:
+        try:
+            from services.runtime_logging import install_runtime_logging
+            runtime_log_path = install_runtime_logging(STORAGE)
+            print(f"[runtime] Persistent log: {runtime_log_path}")
+        except Exception as exc:
+            print(f"[runtime] Persistent logging unavailable: {exc}")
+
     try:
         from services.app_latest_version_cache import (
             warm_latest_version_cache,
@@ -175,7 +184,6 @@ if __name__ == "__main__":
 
     scheduler_enabled = CONFIG.get("scheduler_enabled", True)
     is_reloader = _os.environ.get("WERKZEUG_RUN_MAIN") == "true"
-    is_debug = CONFIG.get("debug", False)
     if scheduler_enabled and (not is_debug or is_reloader):
         _scheduler = SchedulerThread(_cache, lambda: STORAGE, lambda: CONFIG, get_db)
         _scheduler.start()

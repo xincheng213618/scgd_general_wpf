@@ -441,7 +441,7 @@ try {
     Invoke-NativeCommand -FilePath $nodeExe -ArgumentList @('scripts/check-dashboard-bundle.mjs', $stagedDistPath) -WorkingDirectory $frontendPath
 
     if (-not $skipTests) {
-        Invoke-NativeCommand -FilePath $pythonExe -ArgumentList @('-m', 'unittest', 'test_access_analytics', 'test_frontend_spa', 'test_http_compression', 'test_page_contexts', 'test_copilot_config_api', 'test_spectrum_api') -WorkingDirectory $backendPath
+        Invoke-NativeCommand -FilePath $pythonExe -ArgumentList @('-m', 'unittest', 'test_access_analytics', 'test_frontend_spa', 'test_http_compression', 'test_runtime_logging', 'test_page_contexts', 'test_copilot_config_api', 'test_spectrum_api') -WorkingDirectory $backendPath
     }
 
     $listenerBeforeRestart = Get-WebListener
@@ -467,6 +467,22 @@ try {
     $newPid = [int]$listenerAfterRestart.OwningProcess
     $readiness = Wait-WebReady
     $baseUrl = "http://127.0.0.1:$port"
+    $runtimeLogPath = Join-Path $storagePath 'Logs\Web\ColorVisionWeb.log'
+    $runtimeLogDeadline = (Get-Date).AddSeconds(20)
+    $runtimeLogVerified = $false
+    do {
+        if (Test-Path -LiteralPath $runtimeLogPath -PathType Leaf) {
+            $runtimeLogTail = ((Get-Content -LiteralPath $runtimeLogPath -Tail 200) -join "`n")
+            $runtimeLogVerified = $runtimeLogTail.Contains("process_start pid=$newPid ")
+        }
+        if (-not $runtimeLogVerified) {
+            Start-Sleep -Milliseconds 500
+        }
+    } while (-not $runtimeLogVerified -and (Get-Date) -lt $runtimeLogDeadline)
+    if (-not $runtimeLogVerified) {
+        throw "Runtime log did not record the new Web process $newPid."
+    }
+    $runtimeLogBytes = (Get-Item -LiteralPath $runtimeLogPath).Length
     $compactHomeBytes = Get-ResponseSize -Uri "$baseUrl/api/site/home?view=compact"
     $compactReleaseBytes = Get-ResponseSize -Uri "$baseUrl/api/site/releases?view=compact&page=1&page_size=20"
     $compactChangelogBytes = Get-ResponseSize -Uri "$baseUrl/api/site/changelog?view=compact&page=1&page_size=20"
@@ -504,6 +520,9 @@ try {
         new_pid = $newPid
         health = $readiness.health.status
         ready = [bool]$readiness.ready.ready
+        runtime_log_verified = $runtimeLogVerified
+        runtime_log_bytes = $runtimeLogBytes
+        runtime_log_path = $runtimeLogPath
         compact_home_bytes = $compactHomeBytes
         compact_releases_bytes = $compactReleaseBytes
         compact_changelog_bytes = $compactChangelogBytes

@@ -52,3 +52,8 @@ host uses a different layout. Each deployment preserves the production config,
 SQLite database, and previous frontend build under
 `D:\ColorVision\web-deploy-backups`, then appends the result to
 `D:\ColorVision\web-deploy-history.jsonl`.
+
+Production stdout, stderr, startup diagnostics, and background-thread errors are
+captured under `D:\ColorVision\Logs\Web\ColorVisionWeb.log`. The runtime keeps
+five rotated 10 MB backups, and NAS deployment verifies that the new process ID
+appears in the active log before reporting success.
