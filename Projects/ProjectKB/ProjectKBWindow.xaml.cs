@@ -1703,13 +1703,15 @@ namespace ProjectKB
             }
         }
 
-        private static Pen CreateDefaultKeyPen(KBItem item, KBItem? darkestKey, KBItem? brightestKey)
+        internal static Pen CreateDefaultKeyPen(KBItem item, KBItem? darkestKey, KBItem? brightestKey)
         {
-            if (!item.Result) return new Pen(Brushes.Gray, 10);
+            if (!item.Result) return new Pen(Brushes.Red, 10);
             if (ReferenceEquals(item, darkestKey)) return new Pen(Brushes.Violet, 10);
             if (ReferenceEquals(item, brightestKey)) return new Pen(Brushes.White, 10);
-            return new Pen(Brushes.Red, 5);
+            return new Pen(Brushes.Gray, 5);
         }
+
+        internal static Pen CreateSelectedKeyPen() => new(Brushes.Lime, 12);
 
         private void ImageCanvas_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
@@ -1755,7 +1757,7 @@ namespace ProjectKB
                 }
             }
 
-            selectedVisual.Pen = new Pen(Brushes.Lime, 12);
+            selectedVisual.Pen = CreateSelectedKeyPen();
             selectedVisual.Render();
 
             Pen circlePen = new(Brushes.DeepSkyBlue, 5) { DashStyle = DashStyles.Dash };
