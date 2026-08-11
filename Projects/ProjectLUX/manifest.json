@@ -2,8 +2,8 @@
   "manifest_version": 1,
   "Id": "ProjectLUX",
   "name": "ProjectLUX",
-  "version": "1.1.5.3",
+  "version": "1.1.5.4",
   "description": "",
   "dllpath": "ProjectLUX.dll",
-  "requires": "1.4.12.30"
+  "requires": "1.4.12.36"
 }
