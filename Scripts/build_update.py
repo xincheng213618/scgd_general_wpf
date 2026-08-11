@@ -4,14 +4,14 @@ import filecmp
 import re
 import zipfile
 import time
+from dataclasses import dataclass
+from pathlib import Path
 from pathlib import PurePosixPath
 
 try:
-    from .backend_client import upload_file_to_folder
     from .service_host_runtime import REQUIRED_SERVICE_HOST_RUNTIME_PATHS, validate_service_host_runtime
     from .verify_native_contracts import NativeContractError, validate_native_contracts
 except ImportError:
-    from backend_client import upload_file_to_folder
     from service_host_runtime import REQUIRED_SERVICE_HOST_RUNTIME_PATHS, validate_service_host_runtime
     from verify_native_contracts import NativeContractError, validate_native_contracts
 
@@ -25,6 +25,13 @@ FULL_RELEASE_ZIP_RE = re.compile(
     r'^ColorVision-\[(\d+)\.(\d+)\.(\d+)\.(\d+)]\.zip$',
     re.IGNORECASE,
 )
+
+
+@dataclass(frozen=True)
+class PreparedUpdateRelease:
+    version: str
+    full_zip: Path
+    incremental_zip: Path | None
 # ----------------------
 # 动态路径计算（去除用户名硬编码）
 # ----------------------
@@ -60,10 +67,6 @@ def is_shell_extension_file(path_value: str) -> bool:
 def is_root_service_host_file(path_value: str) -> bool:
     normalized = normalize_archive_relative_path(path_value).lower()
     return '/' not in normalized and os.path.basename(normalized).startswith('colorvisionservicehost.')
-
-
-def upload_file(file_path, folder_name):
-    return upload_file_to_folder(file_path, folder_name)
 
 
 def get_file_version_from_pefile(file_path):
@@ -287,30 +290,31 @@ def make_incremental_zip(old_zip, new_version_dir, incremental_zip):
         return
 
     old_version_dir = f'temp_old_version_{os.getpid()}_{int(time.time())}'
-    with zipfile.ZipFile(old_zip, 'r') as zipf:
-        zipf.extractall(old_version_dir)
+    try:
+        with zipfile.ZipFile(old_zip, 'r') as zipf:
+            zipf.extractall(old_version_dir)
 
-    old_files = get_all_files(old_version_dir, include_shell_extension=False)
-    new_files = get_all_files(new_version_dir, include_shell_extension=False)
-    old_files_dict = {os.path.relpath(file, old_version_dir): file for file in old_files}
-    new_files_dict = {os.path.relpath(file, new_version_dir): file for file in new_files}
-    files_to_zip = {}
+        old_files = get_all_files(old_version_dir, include_shell_extension=False)
+        new_files = get_all_files(new_version_dir, include_shell_extension=False)
+        old_files_dict = {os.path.relpath(file, old_version_dir): file for file in old_files}
+        new_files_dict = {os.path.relpath(file, new_version_dir): file for file in new_files}
+        files_to_zip = {}
 
-    for rel_path, new_file in new_files_dict.items():
-        old_file = old_files_dict.get(rel_path)
-        if not old_file or not filecmp.cmp(old_file, new_file, shallow=False):
-            files_to_zip[rel_path] = new_file
+        for rel_path, new_file in new_files_dict.items():
+            old_file = old_files_dict.get(rel_path)
+            if not old_file or not filecmp.cmp(old_file, new_file, shallow=False):
+                files_to_zip[rel_path] = new_file
 
-    service_host_prefix = f'ServiceHost{os.sep}'.lower()
-    for rel_path, new_file in new_files_dict.items():
-        if rel_path.lower().startswith(service_host_prefix):
-            files_to_zip[rel_path] = new_file
+        service_host_prefix = f'ServiceHost{os.sep}'.lower()
+        for rel_path, new_file in new_files_dict.items():
+            if rel_path.lower().startswith(service_host_prefix):
+                files_to_zip[rel_path] = new_file
 
-    with zipfile.ZipFile(str(incremental_zip), 'w', zipfile.ZIP_DEFLATED) as zipf:
-        for rel_path, file in sorted(files_to_zip.items()):
-            zipf.write(str(file), str(rel_path))
-
-    remove_directory_best_effort(old_version_dir)
+        with zipfile.ZipFile(str(incremental_zip), 'w', zipfile.ZIP_DEFLATED) as zipf:
+            for rel_path, file in sorted(files_to_zip.items()):
+                zipf.write(str(file), str(rel_path))
+    finally:
+        remove_directory_best_effort(old_version_dir)
 
 
 def find_incremental_baseline(directory, version):
@@ -341,51 +345,90 @@ def find_incremental_baseline(directory, version):
     return min(baseline_candidates, key=lambda item: item[0])[1]
 
 
-def main() -> int:
-    version = get_file_version(exe_path)
+def validate_zip_archive(package_path: str | Path) -> None:
+    normalized_names: set[str] = set()
+    with zipfile.ZipFile(package_path, 'r') as archive:
+        for name in archive.namelist():
+            normalized = normalize_archive_relative_path(name).casefold()
+            if normalized in normalized_names:
+                raise ValueError(f'Archive contains a duplicate normalized path: {name}')
+            normalized_names.add(normalized)
+        bad_member = archive.testzip()
+        if bad_member is not None:
+            raise ValueError(f'Archive CRC validation failed: {bad_member}')
+
+
+def prepare_update_release(
+    expected_version: str | None = None,
+    *,
+    version_directory: str | Path | None = None,
+    executable_path: str | Path | None = None,
+    release_history_directory: str | Path | None = None,
+    release_update_directory: str | Path | None = None,
+) -> PreparedUpdateRelease | None:
+    version_directory = Path(version_directory or new_version_dir)
+    executable_path = executable_path or exe_path
+    release_history_directory = Path(release_history_directory or history_dir)
+    release_update_directory = Path(release_update_directory or update_dir)
+    version = get_file_version(str(executable_path))
     if not version:
-        print(f"无法从 {exe_path} 读取版本号，终止。")
-        return 1
+        print(f"无法从 {executable_path} 读取版本号，终止。")
+        return None
+    if expected_version is not None and version != expected_version:
+        print(f"更新包版本 {version} 与已准备安装器版本 {expected_version} 不一致，终止。")
+        return None
 
     try:
-        validate_service_host_runtime(new_version_dir)
+        validate_service_host_runtime(version_directory)
     except FileNotFoundError as exc:
         print(str(exc))
-        return 1
+        return None
 
     print("打包版本: " + version)
 
     # 创建目录
-    create_directory_if_not_exists(history_dir)
-    create_directory_if_not_exists(update_dir)
+    create_directory_if_not_exists(release_history_directory)
+    create_directory_if_not_exists(release_update_directory)
 
     print("创建全量包")
-    full_zip = os.path.join(history_dir, f'ColorVision-[{version}].zip')
-    pending_full_zip = f'{full_zip}.pending'
+    full_zip = release_history_directory / f'ColorVision-[{version}].zip'
+    pending_full_zip = Path(f'{full_zip}.pending')
     try:
-        create_full_zip(new_version_dir, pending_full_zip)
+        create_full_zip(version_directory, pending_full_zip)
         contract = validate_native_contracts(base_path, package_files=(pending_full_zip,))
+        validate_zip_archive(pending_full_zip)
         os.replace(pending_full_zip, full_zip)
     except NativeContractError as exc:
         print(f"全量包 CUDA 原生契约校验失败: {exc}")
-        return 1
-    except OSError as exc:
+        return None
+    except (OSError, ValueError, zipfile.BadZipFile) as exc:
         print(f"全量包生成或原子晋升失败: {exc}")
-        return 1
+        return None
     finally:
         remove_file_best_effort(pending_full_zip)
     print(f"全量包 CUDA 校验通过: SHA256 {contract.sha256}")
 
-    old_zip = find_incremental_baseline(history_dir, version)
+    old_zip = find_incremental_baseline(str(release_history_directory), version)
     print(f"Incremental baseline: {old_zip or 'none (full installer only)'}")
-    incremental_zip = os.path.join(update_dir, f'ColorVision-Update-[{version}].cvx')
+    incremental_zip: Path | None = None
     if old_zip:
+        incremental_zip = release_update_directory / f'ColorVision-Update-[{version}].cvx'
+        pending_incremental_zip = Path(f'{incremental_zip}.pending')
         print(f"创建增量包: {incremental_zip}")
-        make_incremental_zip(old_zip, new_version_dir, incremental_zip)
-        if not upload_file(incremental_zip, "ColorVision/Update"):
-            print("增量包上传失败，终止发布。")
-            return 1
-    return 0
+        try:
+            make_incremental_zip(old_zip, str(version_directory), str(pending_incremental_zip))
+            validate_zip_archive(pending_incremental_zip)
+            os.replace(pending_incremental_zip, incremental_zip)
+        except (OSError, ValueError, zipfile.BadZipFile) as exc:
+            print(f"增量包生成或原子晋升失败: {exc}")
+            return None
+        finally:
+            remove_file_best_effort(pending_incremental_zip)
+    return PreparedUpdateRelease(version, full_zip, incremental_zip)
+
+
+def main() -> int:
+    return 0 if prepare_update_release() is not None else 1
 
 
 if __name__ == "__main__":

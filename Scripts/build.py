@@ -4,7 +4,8 @@ import os
 import re
 import shutil
 import subprocess
-from dataclasses import dataclass
+import tempfile
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any, Callable
 from xml.etree import ElementTree
@@ -24,15 +25,17 @@ try:
         upload_file as backend_upload_file,
     )
     from .service_host_runtime import (
+        InstallerFileEntry,
         REQUIRED_SERVICE_HOST_RUNTIME_PATHS,
-        installer_contains_relative_path,
-        read_installer_source_paths,
+        normalize_installer_path,
+        read_installer_file_entries,
         validate_service_host_runtime,
     )
     from .generate_shared_files import DEFAULT_OUTPUT_FILES as SHARED_FILES_MANIFESTS, check_manifest
     from .build_update import get_file_version
     from .verify_native_contracts import (
         CUDA_PACKAGE_MEMBER,
+        CUDA_TRACKED_DLL,
         NativeContractError,
         validate_native_contracts,
     )
@@ -51,15 +54,17 @@ except ImportError:
         upload_file as backend_upload_file,
     )
     from service_host_runtime import (
+        InstallerFileEntry,
         REQUIRED_SERVICE_HOST_RUNTIME_PATHS,
-        installer_contains_relative_path,
-        read_installer_source_paths,
+        normalize_installer_path,
+        read_installer_file_entries,
         validate_service_host_runtime,
     )
     from generate_shared_files import DEFAULT_OUTPUT_FILES as SHARED_FILES_MANIFESTS, check_manifest
     from build_update import get_file_version
     from verify_native_contracts import (
         CUDA_PACKAGE_MEMBER,
+        CUDA_TRACKED_DLL,
         NativeContractError,
         validate_native_contracts,
     )
@@ -101,6 +106,13 @@ class ProjectConfig:
     advanced_installer_path: Path
     aip_path: Path
     setup_files_dir: Path
+    changelog_src: Path
+
+
+@dataclass(frozen=True)
+class PreparedPrimaryRelease:
+    version: str
+    installer_file: Path
     changelog_src: Path
 
 
@@ -182,55 +194,199 @@ def ensure_runtime_copy_integrity(
     )
 
 
+def _installer_entries_by_target(entries: tuple[InstallerFileEntry, ...]) -> dict[str, list[InstallerFileEntry]]:
+    result: dict[str, list[InstallerFileEntry]] = {}
+    for entry in entries:
+        key = normalize_installer_path(entry.target_path).casefold()
+        result.setdefault(key, []).append(entry)
+    return result
+
+
+def _require_unique_installer_target(
+    entries_by_target: dict[str, list[InstallerFileEntry]],
+    relative_path: str,
+) -> InstallerFileEntry:
+    matches = entries_by_target.get(normalize_installer_path(relative_path).casefold(), [])
+    if len(matches) != 1:
+        raise ValueError(
+            f"Advanced Installer target must have exactly one file entry: {relative_path} (found {len(matches)})"
+        )
+    return matches[0]
+
+
 def validate_installer_runtime_dlls(
+    solution_root: str | Path,
     runtime_directory: str | Path,
     aip_path: str | Path,
     *,
     report: Callable[[str], None] = print,
 ) -> bool:
-    runtime_path = Path(runtime_directory)
+    root_path = Path(solution_root).resolve()
+    runtime_path = Path(runtime_directory).resolve()
     if not runtime_path.is_dir():
         report(f"Release runtime directory does not exist: {runtime_path}")
         return False
 
     try:
-        installer_source_paths = read_installer_source_paths(aip_path)
+        installer_entries = read_installer_file_entries(aip_path)
         validate_service_host_runtime(runtime_path)
-    except (ElementTree.ParseError, OSError) as exc:
+        entries_by_target = _installer_entries_by_target(installer_entries)
+        ambiguous_targets = sorted(
+            entries[0].target_path
+            for entries in entries_by_target.values()
+            if len(entries) != 1
+        )
+        if ambiguous_targets:
+            raise ValueError(
+                "Advanced Installer contains duplicate case/slash-normalized targets: "
+                + ", ".join(ambiguous_targets)
+            )
+
+        required_targets = [
+            file_path.name
+            for file_path in runtime_path.glob("*.dll")
+            if file_path.is_file()
+        ]
+        required_targets.extend(REQUIRED_SERVICE_HOST_RUNTIME_PATHS)
+        required_targets.append(CUDA_PACKAGE_MEMBER)
+        required_entries = [
+            _require_unique_installer_target(entries_by_target, relative_path)
+            for relative_path in required_targets
+        ]
+        missing_sources = sorted(
+            str(entry.source_path)
+            for entry in required_entries
+            if not entry.source_path.is_file()
+        )
+        if missing_sources:
+            raise FileNotFoundError("Advanced Installer source files do not exist: " + ", ".join(missing_sources))
+
+        cuda_entry = _require_unique_installer_target(entries_by_target, CUDA_PACKAGE_MEMBER)
+        cuda_named_entries = [
+            entry
+            for entry in installer_entries
+            if Path(entry.target_path).name.casefold() == "opencv_cuda.dll"
+            or entry.source_path.name.casefold() == "opencv_cuda.dll"
+        ]
+        if len(cuda_named_entries) != 1 or cuda_named_entries[0] != cuda_entry:
+            raise ValueError(
+                "Advanced Installer must contain exactly one opencv_cuda.dll source and target entry "
+                f"(found {len(cuda_named_entries)})."
+            )
+
+        cuda_runtime_path = runtime_path.joinpath(*Path(CUDA_PACKAGE_MEMBER).parts)
+        tracked_cuda_path = root_path / CUDA_TRACKED_DLL
+        if not cuda_runtime_path.is_file():
+            raise FileNotFoundError(f"Release runtime is missing required native DLL: {CUDA_PACKAGE_MEMBER}")
+        if not tracked_cuda_path.is_file():
+            raise FileNotFoundError(f"Tracked CUDA DLL does not exist: {tracked_cuda_path}")
+        if not files_match(tracked_cuda_path, cuda_runtime_path):
+            raise ValueError(f"Release CUDA runtime differs from tracked DLL: {cuda_runtime_path}")
+        if not files_match(tracked_cuda_path, cuda_entry.source_path):
+            raise ValueError(
+                "Advanced Installer CUDA source differs from tracked/runtime DLL: "
+                f"{cuda_entry.source_path}"
+            )
+    except (ElementTree.ParseError, OSError, ValueError) as exc:
         report(f"Could not validate Advanced Installer runtime: {exc}")
         return False
 
-    installer_sources = {
-        source_path.rsplit("/", 1)[-1]
-        for source_path in installer_source_paths
-    }
-    missing_dlls = sorted(
-        file_path.name
-        for file_path in runtime_path.glob("*.dll")
-        if file_path.is_file() and file_path.name.casefold() not in installer_sources
+    report(
+        "Verified pre-build Advanced Installer source files and target mappings; "
+        "opencv_cuda.dll source bytes match the tracked/runtime DLL."
     )
-    if missing_dlls:
-        report("Advanced Installer does not include runtime DLLs: " + ", ".join(missing_dlls))
+    return True
+
+
+def validate_built_installer_cuda(
+    installer_file: str | Path,
+    solution_root: str | Path,
+    runtime_directory: str | Path,
+    *,
+    command_runner: Callable[..., Any] = subprocess.run,
+    msiexec_path: str | Path | None = None,
+    report: Callable[[str], None] = print,
+) -> bool:
+    installer_path = Path(installer_file).resolve()
+    tracked_path = Path(solution_root).resolve() / CUDA_TRACKED_DLL
+    runtime_path = Path(runtime_directory).resolve().joinpath(*Path(CUDA_PACKAGE_MEMBER).parts)
+    if installer_path.suffix.casefold() != ".exe" or not installer_path.is_file():
+        report(f"Built Advanced Installer EXE does not exist: {installer_path}")
+        return False
+    if not tracked_path.is_file() or not runtime_path.is_file():
+        report(f"Tracked/runtime CUDA input is missing: {tracked_path} / {runtime_path}")
+        return False
+    if not files_match(tracked_path, runtime_path):
+        report(f"Release CUDA runtime differs from tracked DLL: {runtime_path}")
         return False
 
-    missing_service_host_paths = [
-        relative_path
-        for relative_path in REQUIRED_SERVICE_HOST_RUNTIME_PATHS
-        if not installer_contains_relative_path(installer_source_paths, relative_path)
-    ]
-    if missing_service_host_paths:
-        report("Advanced Installer does not include ServiceHost runtime files: " + ", ".join(missing_service_host_paths))
+    resolved_msiexec = Path(msiexec_path).resolve() if msiexec_path else None
+    if resolved_msiexec is None:
+        discovered_msiexec = shutil.which("msiexec.exe")
+        if not discovered_msiexec:
+            report("Could not verify built installer: msiexec.exe was not found.")
+            return False
+        resolved_msiexec = Path(discovered_msiexec).resolve()
+    if not resolved_msiexec.is_file():
+        report(f"Could not verify built installer: msiexec.exe does not exist: {resolved_msiexec}")
         return False
 
-    cuda_runtime_path = runtime_path / Path(CUDA_PACKAGE_MEMBER)
-    if not cuda_runtime_path.is_file():
-        report(f"Release runtime is missing required native DLL: {CUDA_PACKAGE_MEMBER}")
-        return False
-    if not installer_contains_relative_path(installer_source_paths, CUDA_PACKAGE_MEMBER):
-        report(f"Advanced Installer does not include required native DLL: {CUDA_PACKAGE_MEMBER}")
+    try:
+        with tempfile.TemporaryDirectory(prefix="colorvision-installer-contract-") as temp_dir_name:
+            temp_dir = Path(temp_dir_name)
+            msi_directory = temp_dir / "msi"
+            image_directory = temp_dir / "image"
+            msi_directory.mkdir()
+            image_directory.mkdir()
+
+            extraction_environment = os.environ.copy()
+            # The setup EXE requests elevation for installation, but /extract only writes the caller-owned temp directory.
+            extraction_environment["__COMPAT_LAYER"] = "RunAsInvoker"
+            command_runner(
+                [str(installer_path), "/extract", str(msi_directory)],
+                check=True,
+                env=extraction_environment,
+            )
+            msi_files = sorted(
+                path for path in msi_directory.rglob("*")
+                if path.is_file() and path.suffix.casefold() == ".msi"
+            )
+            if len(msi_files) != 1:
+                raise ValueError(f"installer extraction produced {len(msi_files)} MSI files; expected exactly one")
+
+            command_runner(
+                [str(resolved_msiexec), "/a", str(msi_files[0]), "/qn", f"TARGETDIR={image_directory}"],
+                check=True,
+            )
+            cuda_files = sorted(
+                path for path in image_directory.rglob("*")
+                if path.is_file() and path.name.casefold() == "opencv_cuda.dll"
+            )
+            if len(cuda_files) != 1:
+                raise ValueError(
+                    f"administrative installer image contains {len(cuda_files)} opencv_cuda.dll files; expected exactly one"
+                )
+            installed_cuda = cuda_files[0]
+            installed_relative = normalize_installer_path(installed_cuda.relative_to(image_directory).as_posix())
+            expected_suffix = normalize_installer_path(CUDA_PACKAGE_MEMBER).casefold()
+            if not (
+                installed_relative.casefold() == expected_suffix
+                or installed_relative.casefold().endswith("/" + expected_suffix)
+            ):
+                raise ValueError(
+                    "installer opencv_cuda.dll target is not under runtimes/win-x64/native: "
+                    f"{installed_relative}"
+                )
+            if not files_match(tracked_path, installed_cuda):
+                raise ValueError(f"installer opencv_cuda.dll differs from tracked/runtime DLL: {installed_cuda}")
+    except (OSError, subprocess.CalledProcessError, ValueError) as exc:
+        report(f"Could not verify built installer payload: {exc}")
         return False
 
-    report("Verified root runtime DLLs, CUDA runtime, and complete ServiceHost runtime in Advanced Installer.")
+    report(
+        "Verified final installer payload: exactly one runtimes/win-x64/native/opencv_cuda.dll "
+        f"with SHA256 {sha256_file(tracked_path)}."
+    )
     return True
 
 
@@ -304,7 +460,7 @@ def rebuild_project(msbuild_path: Path, solution_path: Path, advanced_installer_
             return False
         if not validate_shared_files_manifests(runtime_directory):
             return False
-        if not validate_installer_runtime_dlls(runtime_directory, aip_path):
+        if not validate_installer_runtime_dlls(solution_path.parent, runtime_directory, aip_path):
             return False
 
         print(f"Running Advanced Installer: {advanced_installer_path} /rebuild {aip_path}")
@@ -384,6 +540,7 @@ def publish_primary_release(
     changelog_src: str | Path,
     remote_settings: RemoteUploadSettings,
     *,
+    incremental_file: str | Path | None = None,
     upload_func: Callable[[str | Path, RemoteUploadSettings], bool] = upload_file,
     upload_content_func: Callable[[str | bytes, str, RemoteUploadSettings], bool] = backend_upload_content,
 ) -> bool:
@@ -401,8 +558,19 @@ def publish_primary_release(
 
     print(f"Uploading primary release package: {latest_file.name}")
     if not upload_func(latest_file, remote_settings):
-        print("Primary release package upload failed; CHANGELOG.md and LATEST_RELEASE will not be updated.")
+        print("Primary release package upload failed; update, CHANGELOG.md and LATEST_RELEASE will not be updated.")
         return False
+
+    if incremental_file is not None:
+        update_file = Path(incremental_file)
+        update_settings = replace(
+            remote_settings,
+            folder_name=remote_settings.folder_name.rstrip("/") + "/Update",
+        )
+        print(f"Uploading incremental update package: {update_file.name}")
+        if not upload_func(update_file, update_settings):
+            print("Incremental update upload failed; CHANGELOG.md and LATEST_RELEASE will not be updated.")
+            return False
 
     print(f"Uploading release changelog: {changelog_src.name}")
     if not upload_func(changelog_src, remote_settings):
@@ -450,7 +618,7 @@ def build_projects(base_path: Path) -> dict[str, ProjectConfig]:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Build and publish the ColorVision installer")
+    parser = argparse.ArgumentParser(description="Prepare and publish the complete ColorVision release")
     parser.add_argument("--project", default=DEFAULT_PROJECT_NAME, help="Project name to build")
     parser.add_argument("--upload-url", default=None, help="Backend base URL for remote uploads")
     parser.add_argument("--upload-folder", default=os.environ.get("COLORVISION_UPLOAD_FOLDER", DEFAULT_UPLOAD_FOLDER), help="Remote folder path used by the backend upload endpoint")
@@ -463,28 +631,15 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def main() -> int:
-    args = parse_args()
-    script_path = Path(__file__).resolve().parent
-    base_path = script_path.parent
-    projects = build_projects(base_path)
-
-    if args.project not in projects:
-        print(f"Unknown project: {args.project}")
-        print(f"Available projects: {', '.join(sorted(projects))}")
-        return 2
-
-    project = projects[args.project]
-    setup_files_dir = project.setup_files_dir
+def build_remote_settings(args: argparse.Namespace) -> RemoteUploadSettings:
     if getattr(args, "upload_use_system_proxy", False):
         os.environ["COLORVISION_UPLOAD_USE_SYSTEM_PROXY"] = "1"
-
     upload_url = resolve_upload_base_url(args.upload_url)
     upload_username, upload_password = resolve_upload_credentials(
         args.upload_user,
         args.upload_password,
     )
-    remote_settings = RemoteUploadSettings(
+    return RemoteUploadSettings(
         base_url=upload_url,
         folder_name=args.upload_folder,
         username=upload_username,
@@ -495,61 +650,51 @@ def main() -> int:
         max_retries=max(args.upload_retries, 1),
     )
 
-    if not remote_settings.username or not remote_settings.password:
-        print(
-            "Remote upload requires Basic Auth credentials. "
-            "Set COLORVISION_UPLOAD_USERNAME and COLORVISION_UPLOAD_PASSWORD."
-        )
-        return 2
 
-    if not preflight_remote_upload(remote_settings):
-        print("Remote upload preflight failed; aborting before build/upload.")
-        return 2
-
+def prepare_primary_release(project: ProjectConfig) -> PreparedPrimaryRelease | None:
     if not rebuild_project(
         project.msbuild_path,
         project.solution_path,
         project.advanced_installer_path,
         project.aip_path,
     ):
-        return 1
+        return None
 
-    runtime_executable = (
-        project.solution_path.parent
-        / "ColorVision"
-        / "bin"
-        / "x64"
-        / "Release"
-        / "net10.0-windows"
-        / "ColorVision.exe"
-    )
+    runtime_directory = project.solution_path.parent / "ColorVision" / "bin" / "x64" / "Release" / "net10.0-windows"
+    runtime_executable = runtime_directory / "ColorVision.exe"
     built_version = get_file_version(runtime_executable)
     if not built_version:
         print(f"Could not read FileVersion from the built executable: {runtime_executable}")
-        return 1
+        return None
 
     latest_version = extract_version_from_filename(built_version)
     if not latest_version:
         print(f"Built executable has an invalid FileVersion: {built_version!r}")
-        return 1
+        return None
 
-    latest_file = get_installer_for_version(setup_files_dir, latest_version)
-    print(setup_files_dir)
+    latest_file = get_installer_for_version(project.setup_files_dir, latest_version)
+    print(project.setup_files_dir)
     print(f"Built FileVersion: {latest_version}")
     print(f"installer_file: {latest_file}")
 
     if not latest_file or not latest_file.exists():
         print(f"No installer file matches the built FileVersion {latest_version}.")
-        return 1
-
-    if not publish_primary_release(
-        latest_version,
+        return None
+    if not validate_built_installer_cuda(
         latest_file,
-        project.changelog_src,
-        remote_settings,
+        project.solution_path.parent,
+        runtime_directory,
     ):
-        return 1
-    return 0
+        return None
+    return PreparedPrimaryRelease(latest_version, latest_file, project.changelog_src)
+
+
+def main() -> int:
+    try:
+        from .release import main as release_main
+    except ImportError:
+        from release import main as release_main
+    return release_main()
 
 
 if __name__ == "__main__":

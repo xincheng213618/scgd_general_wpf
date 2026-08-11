@@ -3,8 +3,5 @@ setlocal
 
 cd /d "%~dp0.."
 
-python Scripts\build.py
-if errorlevel 1 exit /b %errorlevel%
-
-python Scripts\build_update.py
+python Scripts\release.py
 if errorlevel 1 exit /b %errorlevel%

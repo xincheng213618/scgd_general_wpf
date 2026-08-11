@@ -6,7 +6,7 @@
 
 | 场景 | 使用入口 | 说明 |
 | --- | --- | --- |
-| 主程序正式发布 | `Scripts\release.bat` | 唯一正常入口，会通过后端 HTTP 接口上传主包和 `CHANGELOG.md`，最后更新 `LATEST_RELEASE`，随后上传增量包并生成全量 zip |
+| 主程序正式发布 | `Scripts\release.bat` | 唯一正常入口；先完成安装包、全量包、增量包及全部本地门禁，再按安全顺序上传，最后更新 `LATEST_RELEASE` |
 | 发布插件包 | `Scripts\package_plugin.bat <PluginName>` | 面向 `Plugins/<PluginName>/`，上传成功后删除本地 `.cvxp` |
 | 发布项目包 | `Scripts\package_project.bat <ProjectName>` | 面向 `Projects/<ProjectName>/`，上传成功后删除本地 `.cvxp` |
 | 发布 Spectrum 独立包和插件包 | `Scripts\Spectrum.bat --release-notes "<说明>"` | 同时维护独立更新源和 ColorVision 插件更新源，完整远程验收后才删除本地 `.cvxp` |
@@ -15,7 +15,7 @@
 | 刷新两份共享文件表 | `py Scripts\generate_shared_files.py` | 从当前 Release x64 宿主输出一次扫描，同时更新仓库与 Plugin Kit 镜像 |
 | 校验共享文件表 | `py Scripts\generate_shared_files.py --check` | 只比较 `shared_files` 集合，忽略时间戳、顺序和重复项 |
 
-`build.py` 和 `build_update.py` 是 `release.bat` 的内部步骤。正式发布不要绕过 `release.bat` 单独跑它们；`build_update.py` 没有安全的 `--help` 查询模式，直接执行会进入增量包生成和上传流程。
+`release.py`、`build.py` 和 `build_update.py` 是 `release.bat` 的内部步骤。正式发布不要绕过 `release.bat` 单独跑它们；单独执行 `build_update.py` 只生成并校验本地全量包/增量包，不上传，不能视为完成发布。
 
 ## 正式发布
 
@@ -25,7 +25,7 @@
 Scripts\release.bat
 ```
 
-发布成功时，控制台应依次看到主包上传、`CHANGELOG.md` 上传、`LATEST_RELEASE` 更新和增量包上传成功。后端 HTTP 接口是唯一发布通道，不再同步企业微信 WeDrive 或百度云；任一元数据上传失败都会阻止版本号更新。本地安装包、全量 zip、增量包是正常构建产物，不代表“本地-only 发布”。其中桌面 `History` 目录用于生成增量差分，不是额外分发渠道。客户端会合并启动检查和手动检查中同时进行的 `LATEST_RELEASE` 读取，但这不改变发布脚本的上传顺序或成功判定。发布失败时先修复失败原因，再重新走 `release.bat`。
+正式入口分为两个阶段。第一阶段构建安装包、全量 zip 和可用的增量包，并完成所有本地门禁；这之前不会发生任何上传。第二阶段依次上传安装包、增量包（若有）、`CHANGELOG.md`，最后才写 `LATEST_RELEASE`。因此增量包或变更日志上传失败不会把客户端 latest 提前到不可完整下载的版本。后端 HTTP 接口是唯一发布通道，不再同步企业微信 WeDrive 或百度云。本地安装包、全量 zip、增量包是正常构建产物，不代表完成发布；桌面 `History` 目录用于生成增量差分，不是额外分发渠道。发布失败时修复原因后重新走 `release.bat`，残留 `.pending` 文件会先清理，已经验证的旧包不会被失败的重试覆盖。安装包门禁分两层：构建前解析 AIP 的 `File -> Component -> Directory` 映射，要求必需源文件真实存在、目标唯一，拒绝大小写或斜杠归一化后碰撞，并要求 AIP 源、仓库跟踪文件和运行时 `opencv_cuda.dll` 字节一致；Advanced Installer 构建后再提取 EXE 中唯一 MSI，通过 `msiexec /a` 生成管理安装映像，要求最终映像中只有一个目标后缀为 `runtimes/win-x64/native/opencv_cuda.dll` 的文件且字节一致。提取工具缺失、提取失败或结果不唯一都会阻止发布；构建前 AIP 文本检查不能替代最终安装器校验。
 
 ## 插件和项目包
 
@@ -74,7 +74,7 @@ $env:COLORVISION_UPLOAD_USE_SYSTEM_PROXY = "1"
 | `package_plugin.bat` | 是 | 仓库内插件打包快捷入口 |
 | `package_project.bat` | 是 | 仓库内项目包打包快捷入口 |
 | `clear-bin.ps1`、`clear-artifacts.ps1` | 是 | 清理本地构建产物 |
-| `build.py`、`build_update.py` | 否 | `release.bat` 内部构建、上传和增量更新步骤 |
+| `release.py`、`build.py`、`build_update.py` | 否 | 两阶段发布编排、安装器门禁及本地更新包准备；全部本地门禁通过后才上传，`LATEST_RELEASE` 最后写入 |
 | `backend_client.py` | 否 | 统一处理上传认证、预检、重试、流式上传和路径编码 |
 | `generate_shared_files.py` | 宿主输出集合变化时 | 同步生成两份共享文件清单，或用 `--check` 做集合门禁 |
 | `build_spectrum.py` | 特殊 | Spectrum 独立 ZIP + 插件 `.cvxp` 双通道构建、签名、发布和远程验收 |
