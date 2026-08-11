@@ -26,9 +26,8 @@ namespace Spectrum.License
     }
 
     /// <summary>
-    /// 许可证助手类 - 包含许可证生成和验证的核心逻辑
+    /// 许可证助手类 - 包含许可证解析和验证的核心逻辑
     /// 这是从 ColorVision.UI.ACE.License 类中提取的核心功能
-    /// 注意: 简单许可证方法已弃用，请使用增强型许可证方法
     /// </summary>
     public static class LicenseHelper
     {
@@ -36,11 +35,6 @@ namespace Spectrum.License
         /// RSA 公钥（用于验证许可证签名）
         /// </summary>
         private const string PublicKeyXml = "<RSAKeyValue><Modulus>5sf/agoe+/hryIfvt7v6o9aNldWSkUoPkW6se8VbEo7B4JBT0vIUQqku635RU+0vhaF/IJ7TQw6pYerHacA83XYBy90KEN4twOBs1Gy3XfEBcjYheQO919Hif1gENzqzQEg47G36VdmWzmhjreq2YQQQN+p/ezIbYtrPXGNU4fE=</Modulus><Exponent>AQAB</Exponent></RSAKeyValue>";
-
-        /// <summary>
-        /// RSA 私钥（仅用于许可证生成，不应包含在客户端应用程序中）
-        /// </summary>
-        private const string PrivateKeyXml = "<RSAKeyValue><Modulus>5sf/agoe+/hryIfvt7v6o9aNldWSkUoPkW6se8VbEo7B4JBT0vIUQqku635RU+0vhaF/IJ7TQw6pYerHacA83XYBy90KEN4twOBs1Gy3XfEBcjYheQO919Hif1gENzqzQEg47G36VdmWzmhjreq2YQQQN+p/ezIbYtrPXGNU4fE=</Modulus><Exponent>AQAB</Exponent><P>/OfgYc6H7sSiFUrwkTVtQEyuSm309+Whwuvuul/3zLkNJlvorGC2D5ksTz3Q0XFehHWgWNc0jQ3MRyKp2EHxgw==</P><Q>6ZrTQbe25FVr92pxAlBeO1iONdbLRM+/VmuwrZVgeHvu++8ChAidQT13rcVfqvLDuGq5/q2bgQgmraqdgRNIew==</Q><DP>0sEQ1bDcyncGcyQOMZQKRSkhnVjgaaztDpi6Sooq4GndsXep/+xgC8Ojjy1+VOtazpuPUjmUy28SKr2SOGtLrQ==</DP><DQ>b7mMsDGdVzdDm+Fciy7E4r1HxpgkP5TcfgijR2HZ8cXUVsnI+jzkeP9c7c8oIipZUSo6KoP9i4jKduTSz5jZYQ==</DQ><InverseQ>2kXWXpMpHplGwG/eHR17tVNyfaxjl2Hu2QWnlg5Jf/vLDMcA9MspGS5mS5uCNTTPh34T9PEtmCdA5L5i8kakwg==</InverseQ><D>EmVOzr0PyzX6IXn0ecjaKcUodBEaJcqpgwY3aYZJxCjs+2GFzQLO6qFhxBPFl9MIPrao04jVfjrk9ZEpZByWvUmq79tlzpBjeZW2wcjeUrZYK0/b0D7NRelf6InSJaOb9QKw/hhSPsl3x+nXPyhUFfz6q8bThGDSriC/eb3aSyE=</D></RSAKeyValue>";
 
         /// <summary>
         /// 获取机器码（基于机器名的十六进制编码）
@@ -58,86 +52,6 @@ namespace Spectrum.License
 
             return reg.ToString();
         }
-
-
-
-        /// <summary>
-        /// 使用 RSA 私钥对文本进行签名
-        /// </summary>
-        /// <param name="text">要签名的文本</param>
-        /// <param name="privateKey">RSA 私钥（XML 格式）</param>
-        /// <returns>Base64 编码的签名字符串</returns>
-        private static string SignData(string text, string privateKey)
-        {
-            if (string.IsNullOrWhiteSpace(text))
-            {
-                throw new ArgumentNullException(nameof(text), "待签名文本不能为空");
-            }
-
-            if (string.IsNullOrWhiteSpace(privateKey))
-            {
-                throw new ArgumentNullException(nameof(privateKey), "私钥不能为空");
-            }
-
-            using (RSACryptoServiceProvider rsa = new RSACryptoServiceProvider())
-            {
-                rsa.FromXmlString(privateKey);
-                byte[] dataBytes = Encoding.UTF8.GetBytes(text);
-                // 使用 SHA256 替代已弃用的 MD5
-                byte[] signatureBytes = rsa.SignData(dataBytes, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
-                return Convert.ToBase64String(signatureBytes);
-            }
-        }
-
-        /// <summary>
-        /// 创建增强型许可证
-        /// </summary>
-        /// <param name="machineCode">机器码</param>
-        /// <param name="licensee">被许可人（客户名称）</param>
-        /// <param name="deviceMode">设备型号</param>
-        /// <param name="expiryDate">过期日期</param>
-        /// <param name="issuingAuthority">签发机构</param>
-        /// <returns>Base64 编码的 JSON 许可证字符串</returns>
-        public static string CreateEnhancedLicense(
-            string machineCode,
-            string licensee,
-            string deviceMode,
-            DateTime expiryDate,
-            string issuingAuthority = "ColorVision")
-        {
-            if (string.IsNullOrWhiteSpace(machineCode))
-            {
-                throw new ArgumentNullException(nameof(machineCode), "机器码不能为空");
-            }
-
-            if (string.IsNullOrWhiteSpace(licensee))
-            {
-                throw new ArgumentNullException(nameof(licensee), "被许可人不能为空");
-            }
-
-            // 创建增强许可证对象
-            var enhancedLicense = new EnhancedLicenseModel
-            {
-                LicenseeSignature = machineCode,
-                Licensee = licensee,
-                DeviceMode = deviceMode,
-                IssuingAuthority = issuingAuthority,
-                IssueDateDateTime = DateTime.Now,
-                ExpiryDateTime = expiryDate
-            };
-
-            // 生成授权签名（对机器码+过期时间戳进行签名）
-            string dataToSign = $"{machineCode}:{enhancedLicense.ExpiryDate}";
-            enhancedLicense.AuthoritySignature = SignData(dataToSign, PrivateKeyXml);
-
-            // 序列化为JSON
-            string jsonLicense = JsonConvert.SerializeObject(enhancedLicense, Formatting.None);
-
-            // Base64 编码
-            byte[] jsonBytes = Encoding.UTF8.GetBytes(jsonLicense);
-            return Convert.ToBase64String(jsonBytes);
-        }
-
         /// <summary>
         /// 验证增强型许可证
         /// </summary>
