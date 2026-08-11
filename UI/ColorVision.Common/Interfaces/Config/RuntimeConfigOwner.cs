@@ -18,6 +18,38 @@ namespace ColorVision.UI
     }
 
     /// <summary>
+    /// A validated candidate generation. Disposing an uncommitted candidate releases
+    /// the owner's prepare lease without publishing it.
+    /// </summary>
+    public sealed class PreparedRuntimeConfig<TConfig> : IDisposable where TConfig : class, IConfig
+    {
+        private RuntimeConfigOwner<TConfig>? _owner;
+
+        internal PreparedRuntimeConfig(
+            RuntimeConfigOwner<TConfig> owner,
+            long generation,
+            TConfig config,
+            int prepareThreadId)
+        {
+            _owner = owner;
+            Generation = generation;
+            Config = config;
+            PrepareThreadId = prepareThreadId;
+        }
+
+        public long Generation { get; }
+        public TConfig Config { get; }
+        internal int PrepareThreadId { get; }
+
+        internal bool IsOwnedBy(RuntimeConfigOwner<TConfig> owner) => ReferenceEquals(_owner, owner);
+
+        public void Dispose()
+        {
+            Interlocked.Exchange(ref _owner, null)?.ReleasePrepared(this);
+        }
+    }
+
+    /// <summary>
     /// Owns the current runtime configuration generation. Capture creates a
     /// detached task snapshot; later edits or reloads cannot mutate that task.
     /// </summary>
@@ -47,12 +79,12 @@ namespace ColorVision.UI
     }
 
     /// <summary>
-    /// Adapts the existing reload notification to a small injectable owner. A
-    /// reload first resolves and validates a detachable snapshot, then commits
-    /// only if no newer generation has already won. Subscriber failures are
-    /// isolated so this owner cannot interrupt the process-wide reload event.
+    /// Owns a process-lifetime configuration binding. A reload first resolves and
+    /// validates a detachable snapshot, then commits only if no newer generation
+    /// has already won. It does not subscribe to the legacy reload event; the
+    /// process coordinator is its only automatic binding source.
     /// </summary>
-    public sealed class RuntimeConfigOwner<TConfig> : IRuntimeConfigOwner<TConfig>, IDisposable where TConfig : class, IConfig
+    public sealed class RuntimeConfigOwner<TConfig> : IRuntimeConfigOwner<TConfig>, IConfigReloadParticipant, IDisposable where TConfig : class, IConfig
     {
         private static readonly JsonSerializerOptions DefaultSnapshotOptions = new()
         {
@@ -63,7 +95,6 @@ namespace ColorVision.UI
         private readonly object _sync = new();
         private readonly Func<TConfig> _configFactory;
         private readonly Func<TConfig, TConfig> _snapshotFactory;
-        private readonly IConfigReloadNotifier? _reloadNotifier;
         private readonly Action<Exception>? _reloadErrorHandler;
         private readonly Dictionary<int, int> _reloadThreads = [];
         private RuntimeState _state;
@@ -73,21 +104,22 @@ namespace ColorVision.UI
 
         public RuntimeConfigOwner(
             Func<TConfig> configFactory,
-            IConfigReloadNotifier? reloadNotifier = null,
             Action<Exception>? reloadErrorHandler = null,
-            Func<TConfig, TConfig>? snapshotFactory = null)
+            Func<TConfig, TConfig>? snapshotFactory = null,
+            string? configReloadName = null,
+            int configReloadOrder = 0)
         {
             _configFactory = configFactory ?? throw new ArgumentNullException(nameof(configFactory));
-            _reloadNotifier = reloadNotifier;
             _reloadErrorHandler = reloadErrorHandler;
             _snapshotFactory = snapshotFactory ?? CreateDefaultSnapshot;
+            ConfigReloadName = string.IsNullOrWhiteSpace(configReloadName)
+                ? $"{typeof(TConfig).Name} runtime owner"
+                : configReloadName;
+            ConfigReloadOrder = configReloadOrder;
 
             TConfig initial = _configFactory() ?? throw new InvalidOperationException($"The {typeof(TConfig).Name} factory returned null.");
             _ = CreateSnapshot(initial);
             _state = new RuntimeState(initial, 0);
-
-            if (_reloadNotifier != null)
-                _reloadNotifier.ConfigsReloaded += ReloadNotifier_ConfigsReloaded;
         }
 
         public TConfig Current => Volatile.Read(ref _state).Config;
@@ -95,11 +127,20 @@ namespace ColorVision.UI
 
         public event EventHandler<RuntimeConfigChangedEventArgs<TConfig>>? ConfigurationChanged;
 
+        public string ConfigReloadName { get; }
+
+        public int ConfigReloadOrder { get; }
+
         public TConfig Capture() => CaptureSnapshot().Config;
 
         public RuntimeConfigSnapshot<TConfig> CaptureSnapshot()
         {
-            RuntimeState state = Volatile.Read(ref _state);
+            RuntimeState state;
+            lock (_sync)
+            {
+                ObjectDisposedException.ThrowIf(_isDisposed, this);
+                state = _state;
+            }
             TConfig snapshot = _snapshotFactory(state.Config)
                 ?? throw new InvalidOperationException($"The {typeof(TConfig).Name} snapshot factory returned null.");
             return new RuntimeConfigSnapshot<TConfig>(state.Generation, snapshot);
@@ -112,16 +153,47 @@ namespace ColorVision.UI
                 ?? throw new InvalidOperationException($"The {typeof(TConfig).Name} snapshot factory returned null.");
         }
 
-        private void ReloadNotifier_ConfigsReloaded(object? sender, EventArgs e) => Reload();
-
         public bool Reload()
         {
+            try
+            {
+                using PreparedRuntimeConfig<TConfig> prepared = Prepare(_configFactory);
+                return Commit(prepared);
+            }
+            catch (Exception ex)
+            {
+                ReportReloadError(ex);
+                return false;
+            }
+        }
+
+        public void BindCurrentConfig(IConfigService currentConfig)
+        {
+            ArgumentNullException.ThrowIfNull(currentConfig);
+            using PreparedRuntimeConfig<TConfig> prepared = PrepareCurrentConfig(currentConfig);
+            _ = Commit(prepared);
+        }
+
+        public PreparedRuntimeConfig<TConfig> PrepareCurrentConfig(IConfigService currentConfig)
+        {
+            ArgumentNullException.ThrowIfNull(currentConfig);
+            return Prepare(() => currentConfig.GetRequiredService<TConfig>());
+        }
+
+        public PreparedRuntimeConfig<TConfig> Prepare(TConfig candidate)
+        {
+            ArgumentNullException.ThrowIfNull(candidate);
+            return Prepare(() => candidate);
+        }
+
+        private PreparedRuntimeConfig<TConfig> Prepare(Func<TConfig> candidateFactory)
+        {
+            ArgumentNullException.ThrowIfNull(candidateFactory);
             int threadId = Environment.CurrentManagedThreadId;
             long requestedGeneration;
             lock (_sync)
             {
-                if (_isDisposed)
-                    return false;
+                ObjectDisposedException.ThrowIf(_isDisposed, this);
 
                 requestedGeneration = ++_nextGeneration;
                 _activeReloads++;
@@ -131,45 +203,45 @@ namespace ColorVision.UI
 
             try
             {
-                PreparedReload prepared;
-                try
-                {
-                    prepared = PrepareReload(requestedGeneration);
-                }
-                catch (Exception ex)
-                {
-                    ReportReloadError(ex);
-                    return false;
-                }
-                return CommitReload(prepared);
+                TConfig candidate = candidateFactory()
+                    ?? throw new InvalidOperationException($"The {typeof(TConfig).Name} factory returned null.");
+                _ = CreateSnapshot(candidate);
+                return new PreparedRuntimeConfig<TConfig>(this, requestedGeneration, candidate, threadId);
             }
-            finally
+            catch
             {
                 EndReload(threadId);
+                throw;
             }
         }
 
-        private PreparedReload PrepareReload(long requestedGeneration)
+        public bool Commit(PreparedRuntimeConfig<TConfig> prepared)
         {
-            TConfig candidate = _configFactory()
-                ?? throw new InvalidOperationException($"The {typeof(TConfig).Name} factory returned null.");
-            _ = CreateSnapshot(candidate);
-            return new PreparedReload(requestedGeneration, candidate);
+            return Commit(prepared, null);
         }
 
-        private bool CommitReload(PreparedReload prepared)
+        public bool Commit(
+            PreparedRuntimeConfig<TConfig> prepared,
+            Action<RuntimeConfigChangedEventArgs<TConfig>>? commitAction)
         {
+            ArgumentNullException.ThrowIfNull(prepared);
+            if (!prepared.IsOwnedBy(this))
+                throw new InvalidOperationException("The prepared configuration does not belong to this owner or was already released.");
+
             RuntimeState previous;
+            RuntimeConfigChangedEventArgs<TConfig> args;
             lock (_sync)
             {
                 if (_isDisposed || prepared.Generation <= _state.Generation)
                     return false;
 
                 previous = _state;
+                args = new RuntimeConfigChangedEventArgs<TConfig>(previous.Config, prepared.Config, prepared.Generation);
+                commitAction?.Invoke(args);
                 Volatile.Write(ref _state, new RuntimeState(prepared.Config, prepared.Generation));
             }
 
-            NotifySubscribers(new RuntimeConfigChangedEventArgs<TConfig>(previous.Config, prepared.Config, prepared.Generation));
+            NotifySubscribers(args);
             return true;
         }
 
@@ -180,7 +252,7 @@ namespace ColorVision.UI
             {
                 lock (_sync)
                 {
-                    if (_isDisposed)
+                    if (_isDisposed || args.Generation != _state.Generation)
                         return;
                 }
 
@@ -215,6 +287,11 @@ namespace ColorVision.UI
             }
         }
 
+        internal void ReleasePrepared(PreparedRuntimeConfig<TConfig> prepared)
+        {
+            EndReload(prepared.PrepareThreadId);
+        }
+
         private void EndReload(int threadId)
         {
             lock (_sync)
@@ -242,9 +319,6 @@ namespace ColorVision.UI
                 _isDisposed = true;
                 calledFromReload = _reloadThreads.ContainsKey(Environment.CurrentManagedThreadId);
             }
-
-            if (_reloadNotifier != null)
-                _reloadNotifier.ConfigsReloaded -= ReloadNotifier_ConfigsReloaded;
 
             if (calledFromReload)
                 return;
@@ -276,16 +350,5 @@ namespace ColorVision.UI
             public long Generation { get; }
         }
 
-        private sealed class PreparedReload
-        {
-            public PreparedReload(long generation, TConfig config)
-            {
-                Generation = generation;
-                Config = config;
-            }
-
-            public long Generation { get; }
-            public TConfig Config { get; }
-        }
     }
 }

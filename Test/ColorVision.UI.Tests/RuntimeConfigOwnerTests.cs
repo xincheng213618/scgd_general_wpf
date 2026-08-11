@@ -1,5 +1,7 @@
 using System.Collections.Concurrent;
+using System.IO;
 using System.Threading;
+using Newtonsoft.Json.Linq;
 
 namespace ColorVision.UI.Tests;
 
@@ -8,12 +10,11 @@ public sealed class RuntimeConfigOwnerTests
     [Fact]
     public void CaptureReturnsDetachedGenerationSnapshot()
     {
-        var notifier = new TestConfigReloadNotifier();
         var configA = new SavePathConfig { SavePath = "A" };
         var configB = new SavePathConfig { SavePath = "B" };
         SavePathConfig current = configA;
 
-        using var owner = CreateOwner(() => current, notifier);
+        using var owner = CreateOwner(() => current);
         RuntimeConfigSnapshot<SavePathConfig> runningTask = owner.CaptureSnapshot();
 
         configA.SavePath = "A-mutated";
@@ -21,7 +22,7 @@ public sealed class RuntimeConfigOwnerTests
         Assert.Equal("A-mutated", owner.Current.SavePath);
 
         current = configB;
-        notifier.RaiseConfigsReloaded();
+        owner.BindCurrentConfig(new TestConfigService(configB));
         configB.SavePath = "B-mutated";
 
         Assert.Equal(0, runningTask.Generation);
@@ -35,7 +36,6 @@ public sealed class RuntimeConfigOwnerTests
     [Fact]
     public void ReloadFailuresAndSubscriberFailuresAreIsolated()
     {
-        var notifier = new TestConfigReloadNotifier();
         var configA = new SavePathConfig { SavePath = "A" };
         var configB = new SavePathConfig { SavePath = "B" };
         SavePathConfig current = configA;
@@ -44,7 +44,6 @@ public sealed class RuntimeConfigOwnerTests
 
         using var owner = CreateOwner(
             () => current,
-            notifier,
             _ =>
             {
                 Interlocked.Increment(ref errorCount);
@@ -54,7 +53,8 @@ public sealed class RuntimeConfigOwnerTests
         owner.ConfigurationChanged += (_, _) => Interlocked.Increment(ref successfulSubscriberCount);
 
         current = configB;
-        Exception? notificationException = Record.Exception(notifier.RaiseConfigsReloaded);
+        Exception? notificationException = Record.Exception(
+            () => owner.BindCurrentConfig(new TestConfigService(configB)));
 
         Assert.Null(notificationException);
         Assert.Equal(1, owner.Generation);
@@ -158,27 +158,93 @@ public sealed class RuntimeConfigOwnerTests
         Assert.NotEqual("B", owner.Current.SavePath);
     }
 
+    [Fact]
+    public void ConfigHandlerImportBindsOwnerOnceWithoutLegacyDoubleReload()
+    {
+        string rootDirectory = Path.Combine(Path.GetTempPath(), $"RuntimeConfigOwner-{Guid.NewGuid():N}");
+        string backupDirectory = Path.Combine(rootDirectory, "Backup");
+        string officialPath = Path.Combine(rootDirectory, "ColorVisionConfig.json");
+        string importPath = Path.Combine(rootDirectory, "generation-b.cvsettings");
+        Directory.CreateDirectory(backupDirectory);
+
+        try
+        {
+            WriteConfig(officialPath, "A");
+            WriteConfig(importPath, "B");
+            var handler = new ConfigHandler
+            {
+                ConfigFilePath = officialPath,
+                BackupFolderPath = backupDirectory,
+                ConfigDIFileName = "RuntimeOwner",
+                IsAutoSave = false,
+            };
+            Assert.True(handler.LoadConfigsWithResult().Succeeded);
+
+            using var owner = CreateOwner(() => handler.GetRequiredService<SavePathConfig>());
+            int notifications = 0;
+            owner.ConfigurationChanged += (_, _) => notifications++;
+
+            ConfigReloadResult initialBind = handler.RegisterReloadParticipants(owner);
+            ConfigReloadResult imported = handler.ImportConfigsWithResult(importPath);
+
+            Assert.True(initialBind.Succeeded, initialBind.BuildFailureSummary());
+            Assert.True(imported.Succeeded, imported.BuildFailureSummary());
+            Assert.Equal(1, initialBind.AttemptedParticipantCount);
+            Assert.Equal(1, imported.AttemptedParticipantCount);
+            Assert.Equal(0, imported.AttemptedLegacySubscriberCount);
+            Assert.Equal(2, owner.Generation);
+            Assert.Equal(2, notifications);
+            Assert.Equal("B", owner.Current.SavePath);
+            Assert.Same(handler.GetRequiredService<SavePathConfig>(), owner.Current);
+        }
+        finally
+        {
+            if (Directory.Exists(rootDirectory))
+                Directory.Delete(rootDirectory, recursive: true);
+        }
+    }
+
+    private static void WriteConfig(string path, string savePath)
+    {
+        var root = new JObject
+        {
+            [nameof(SavePathConfig)] = JObject.FromObject(new SavePathConfig { SavePath = savePath }),
+        };
+        File.WriteAllText(path, root.ToString());
+    }
+
     private static RuntimeConfigOwner<SavePathConfig> CreateOwner(
         Func<SavePathConfig> configFactory,
-        IConfigReloadNotifier? notifier = null,
         Action<Exception>? reloadErrorHandler = null)
     {
         return new RuntimeConfigOwner<SavePathConfig>(
             configFactory,
-            notifier,
             reloadErrorHandler,
             config => new SavePathConfig { SavePath = config.SavePath });
     }
 
-    private sealed class SavePathConfig : IConfig
+    public sealed class SavePathConfig : IConfig
     {
         public string SavePath { get; set; } = string.Empty;
     }
 
-    private sealed class TestConfigReloadNotifier : IConfigReloadNotifier
+    private sealed class TestConfigService : IConfigService
     {
-        public event EventHandler? ConfigsReloaded;
+        private readonly SavePathConfig config;
 
-        public void RaiseConfigsReloaded() => ConfigsReloaded?.Invoke(this, EventArgs.Empty);
+        public TestConfigService(SavePathConfig config)
+        {
+            this.config = config;
+        }
+
+        public IConfig GetRequiredService(Type type) => type == typeof(SavePathConfig)
+            ? config
+            : throw new InvalidOperationException(type.FullName);
+
+        public T GetRequiredService<T>() where T : IConfig => (T)GetRequiredService(typeof(T));
+
+        public void SaveConfigs() { }
+        public void LoadConfigs() { }
+        public void Save<T>() where T : IConfig { }
     }
 }
