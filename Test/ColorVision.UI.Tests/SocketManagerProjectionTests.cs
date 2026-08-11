@@ -80,7 +80,7 @@ public sealed class SocketManagerProjectionTests
     private static SocketManager CreateProjectionManager(bool isServerEnabled)
     {
         var manager = (SocketManager)RuntimeHelpers.GetUninitializedObject(typeof(SocketManager));
-        manager.Config = new SocketConfig { IsServerEnabled = isServerEnabled };
+        manager.SetConfigReference(new SocketConfig { IsServerEnabled = isServerEnabled });
         return manager;
     }
 

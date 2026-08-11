@@ -1,5 +1,6 @@
 using ColorVision.Common.MVVM;
 using ColorVision.UI;
+using System.ComponentModel;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Shapes;
@@ -8,24 +9,34 @@ namespace ColorVision.SocketProtocol
 {
     public class SocketStatusBarProvider : IStatusBarProviderUpdatable
     {
+        private readonly SocketManager _manager;
+
         public event EventHandler StatusBarItemsChanged;
 
         public SocketStatusBarProvider()
         {
-            SocketConfig.Instance.ServerEnabledChanged += (s, e) =>
+            _manager = SocketManager.GetInstance();
+            _manager.PropertyChanged += Manager_PropertyChanged;
+        }
+
+        private void Manager_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (string.IsNullOrEmpty(e.PropertyName)
+                || e.PropertyName == nameof(SocketManager.Config)
+                || e.PropertyName == nameof(SocketManager.ServerState)
+                || e.PropertyName == nameof(SocketManager.IsConnect))
+            {
                 StatusBarItemsChanged?.Invoke(this, EventArgs.Empty);
-            SocketManager.GetInstance().SocketConnectChanged += (s, e) =>
-                StatusBarItemsChanged?.Invoke(this, EventArgs.Empty);
+            }
         }
 
         public IEnumerable<StatusBarMeta> GetStatusBarIconMetadata()
         {
-            var config = SocketConfig.Instance;
-            if (!config.IsServerEnabled)
+            SocketConfig config = _manager.Config;
+            if (!_manager.HasUsableConfig || !config.IsServerEnabled)
                 return Array.Empty<StatusBarMeta>();
 
-            var manager = SocketManager.GetInstance();
-            bool isConnected = manager.IsConnect;
+            bool isConnected = _manager.IsConnect;
 
             RelayCommand editCommand = new RelayCommand(a =>
                 new SocketManagerWindow { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
@@ -41,7 +52,7 @@ namespace ColorVision.SocketProtocol
                     Alignment = StatusBarAlignment.Right,
                     Order = 998,
                     IconContent = CreateSocketIcon(isConnected),
-                    Source = manager,
+                    Source = _manager,
                     Command = editCommand,
                 }
             };

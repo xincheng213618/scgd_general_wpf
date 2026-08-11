@@ -7,17 +7,15 @@ namespace ColorVision.SocketProtocol
     public class SocketInitializer : InitializerBase
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(SocketInitializer));
-        private readonly SocketConfig? _config;
         private readonly Func<SocketManager>? _getManager;
 
         public SocketInitializer()
         {
         }
 
-        internal SocketInitializer(SocketConfig config, Func<SocketManager> getManager)
+        internal SocketInitializer(Func<SocketManager> getManager)
         {
-            _config = config;
-            _getManager = getManager;
+            _getManager = getManager ?? throw new ArgumentNullException(nameof(getManager));
         }
 
         public override string Name => nameof(SocketInitializer);
@@ -25,24 +23,11 @@ namespace ColorVision.SocketProtocol
 
         public override Task InitializeAsync()
         {
-            SocketConfig config = _config ?? SocketConfig.Instance;
             Func<SocketManager> getManager = _getManager ?? SocketManager.GetInstance;
-            if (config.IsServerEnabled)
-            {
+            SocketManager manager = getManager();
+            if (manager.Config.IsServerEnabled)
                 log.Info("启动通讯协议");
-                getManager().StartServer();
-            }
-            config.ServerEnabledChanged += (s, e) =>
-            {
-                if (e)
-                {
-                    getManager().StartServer();
-                }
-                else
-                {
-                    getManager().StopServer();
-                }
-            };
+            manager.InitializeServer();
             return Task.CompletedTask;
         }
     }

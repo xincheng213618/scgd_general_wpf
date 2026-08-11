@@ -541,7 +541,7 @@ public sealed class SocketShutdownTests
             IsServerEnabled = true
         };
         SocketManager manager = CreateManager(tracker, factory, config: config);
-        var initializer = new SocketInitializer(config, () => manager);
+        var initializer = new SocketInitializer(() => manager);
 
         await initializer.InitializeAsync();
         Assert.True(factory.First.Started.Wait(TestTimeout));
@@ -583,7 +583,7 @@ public sealed class SocketShutdownTests
             IsServerEnabled = true
         };
         SocketManager manager = CreateManager(tracker, factory, config: config);
-        var initializer = new SocketInitializer(config, () => manager);
+        var initializer = new SocketInitializer(() => manager);
 
         await initializer.InitializeAsync();
         Assert.True(factory.First.Started.Wait(TestTimeout));
@@ -616,7 +616,7 @@ public sealed class SocketShutdownTests
             IsServerEnabled = true
         };
         SocketManager manager = CreateManager(tracker, factory, config: config);
-        var initializer = new SocketInitializer(config, () => manager);
+        var initializer = new SocketInitializer(() => manager);
 
         await initializer.InitializeAsync();
         Assert.True(factory.First.Started.Wait(TestTimeout));

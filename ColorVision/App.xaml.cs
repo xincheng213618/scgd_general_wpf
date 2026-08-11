@@ -5,6 +5,7 @@ using ColorVision.Core;
 using ColorVision.Engine.MQTT;
 using ColorVision.Properties;
 using ColorVision.Recovery;
+using ColorVision.SocketProtocol;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Desktop.LanRemote;
@@ -327,6 +328,14 @@ namespace ColorVision
             }
 
             _moduleCatalog.Seal();
+
+            // Socket dispatchers discover plugin handlers when the manager is constructed, so
+            // register this process owner only after plugin loading has completed. The initializer
+            // remains the boundary that actually starts the listener.
+            SocketManager socketManager = SocketManager.GetInstance();
+            ConfigReloadResult socketConfigBinding = configHandler.RegisterReloadParticipants(socketManager);
+            foreach (ConfigReloadFailure failure in socketConfigBinding.Failures)
+                log.Error($"Initial configuration binding failed for '{failure.OwnerName}'.", failure.Exception);
 
             //这里的代码是因为WPF中引用了WinForm的控件，所以需要先初始化
             System.Windows.Forms.Application.EnableVisualStyles();

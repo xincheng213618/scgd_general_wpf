@@ -19,7 +19,7 @@ namespace ColorVision.SocketProtocol
     /// Socket连接管理器
     /// 负责管理TCP服务器、客户端连接和消息分发
     /// </summary>
-    public class SocketManager:ViewModelBase
+    public class SocketManager:ViewModelBase, IConfigReloadParticipant
     {
         private static ILog log = LogManager.GetLogger(typeof(SocketManager));
         private static readonly SocketManagerApplicationLifetime ApplicationLifetime = new();
@@ -34,6 +34,10 @@ namespace ColorVision.SocketProtocol
 
         private readonly SocketWorkerTracker _workerTracker;
         private readonly SocketServerLifecycle _serverLifecycle;
+        private readonly object _configBindingLock = new();
+        private SocketConfig _config = null!;
+        private volatile bool _hasUsableConfig = true;
+        private bool _serverInitialized;
         private long _appliedTransitionSequence;
         private int _firewallRefreshVersion;
         private int _shutdownStarted;
@@ -41,7 +45,13 @@ namespace ColorVision.SocketProtocol
         /// <summary>
         /// Socket配置信息
         /// </summary>
-        public SocketConfig Config { get; set; }
+        public SocketConfig Config => Volatile.Read(ref _config);
+
+        public string ConfigReloadName => nameof(SocketManager);
+
+        public int ConfigReloadOrder => 350;
+
+        internal bool HasUsableConfig => _hasUsableConfig;
 
         /// <summary>
         /// 编辑配置命令
@@ -92,7 +102,8 @@ namespace ColorVision.SocketProtocol
             bool refreshNetworkAccessStatus,
             Action<Action>? queueShutdownWork = null)
         {
-            Config = config;
+            ArgumentNullException.ThrowIfNull(config);
+            SetConfigReference(config);
             _workerTracker = workerTracker;
             JsonDispatcher = jsonDispatcher;
             TextDispatcher = textDispatcher;
@@ -108,14 +119,198 @@ namespace ColorVision.SocketProtocol
                 queueShutdownWork);
             EditCommand = new RelayCommand(a => new PropertyEditorWindow(Config) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
             AllowFirewallRuleCommand = new RelayCommand(a => _ = AllowFirewallRuleAsync(a?.ToString()));
-            Config.PropertyChanged += (_, _) =>
-            {
-                NotifyServerStatusChanged();
-            };
+            AttachConfig(config);
             TcpClients.CollectionChanged += (_, _) => OnPropertyChanged(nameof(ClientCountText));
             ServerState = Config.IsServerEnabled ? SocketServerState.Stopped : SocketServerState.Disabled;
             if (refreshNetworkAccessStatus)
                 RefreshNetworkAccessStatus();
+        }
+
+        public void BindCurrentConfig(IConfigService currentConfig)
+        {
+            ArgumentNullException.ThrowIfNull(currentConfig);
+
+            SocketConfig nextConfig;
+            try
+            {
+                nextConfig = currentConfig.GetRequiredService<SocketConfig>();
+            }
+            catch (Exception exception)
+            {
+                FailClosedAfterConfigResolutionFailure(exception);
+                return;
+            }
+
+            RunOnUiThread(() => BindCurrentConfigCore(nextConfig));
+        }
+
+        private void BindCurrentConfigCore(SocketConfig nextConfig)
+        {
+            var failures = new List<Exception>();
+            bool shouldTransition;
+            bool sameConfig;
+            lock (_configBindingLock)
+            {
+                if (Volatile.Read(ref _shutdownStarted) != 0)
+                    throw new InvalidOperationException("SocketManager cannot bind configuration after application shutdown has started.");
+
+                SocketConfig previousConfig = Config;
+                sameConfig = ReferenceEquals(previousConfig, nextConfig);
+                if (sameConfig && _hasUsableConfig)
+                    return;
+
+                if (!sameConfig)
+                    DetachConfig(previousConfig);
+
+                SetConfigReference(nextConfig);
+                _hasUsableConfig = true;
+                AttachConfig(nextConfig);
+                shouldTransition = _serverInitialized;
+            }
+
+            if (shouldTransition && Volatile.Read(ref _shutdownStarted) == 0)
+            {
+                if (!sameConfig)
+                    TryConfigTransition(() => _serverLifecycle.Stop(nextConfig.IsServerEnabled), failures);
+
+                bool shouldStart;
+                lock (_configBindingLock)
+                {
+                    shouldStart = Volatile.Read(ref _shutdownStarted) == 0
+                        && _hasUsableConfig
+                        && ReferenceEquals(Config, nextConfig)
+                        && nextConfig.IsServerEnabled;
+                }
+                if (shouldStart)
+                {
+                    TryConfigTransition(
+                        () => _serverLifecycle.Start(SocketServerSettings.Capture(nextConfig)),
+                        failures);
+                }
+            }
+
+            TryConfigTransition(PublishConfigChanged, failures);
+            ThrowConfigTransitionFailures(failures);
+        }
+
+        private void FailClosedAfterConfigResolutionFailure(Exception resolutionFailure)
+        {
+            var failures = new List<Exception> { resolutionFailure };
+            RunOnUiThread(() =>
+            {
+                bool shouldStop = false;
+                lock (_configBindingLock)
+                {
+                    if (Volatile.Read(ref _shutdownStarted) == 0)
+                    {
+                        if (_hasUsableConfig)
+                            DetachConfig(Config);
+                        _hasUsableConfig = false;
+                        shouldStop = _serverInitialized;
+                    }
+                }
+
+                if (shouldStop && Volatile.Read(ref _shutdownStarted) == 0)
+                    TryConfigTransition(() => _serverLifecycle.Stop(isServerEnabled: false), failures);
+
+                TryConfigTransition(PublishConfigChanged, failures);
+            });
+            ThrowConfigTransitionFailures(failures);
+        }
+
+        private static void TryConfigTransition(Action action, List<Exception> failures)
+        {
+            try
+            {
+                action();
+            }
+            catch (Exception exception)
+            {
+                failures.Add(exception);
+            }
+        }
+
+        private static void TryConfigTransition(Func<bool> transition, List<Exception> failures) =>
+            TryConfigTransition(() => _ = transition(), failures);
+
+        private static void ThrowConfigTransitionFailures(List<Exception> failures)
+        {
+            if (failures.Count != 0)
+            {
+                throw new AggregateException(
+                    "Socket runtime configuration could not be fully rebound.",
+                    failures);
+            }
+        }
+
+        private void AttachConfig(SocketConfig config)
+        {
+            config.PropertyChanged += CurrentConfig_PropertyChanged;
+            config.ServerEnabledChanged += CurrentConfig_ServerEnabledChanged;
+        }
+
+        private void DetachConfig(SocketConfig config)
+        {
+            config.PropertyChanged -= CurrentConfig_PropertyChanged;
+            config.ServerEnabledChanged -= CurrentConfig_ServerEnabledChanged;
+        }
+
+        private void CurrentConfig_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            RunOnUiThread(() =>
+            {
+                bool shouldNotify;
+                lock (_configBindingLock)
+                {
+                    shouldNotify = Volatile.Read(ref _shutdownStarted) == 0
+                        && _hasUsableConfig
+                        && ReferenceEquals(sender, Config);
+                }
+                if (shouldNotify)
+                    NotifyServerStatusChanged();
+            });
+        }
+
+        private void CurrentConfig_ServerEnabledChanged(object? sender, bool isEnabled)
+        {
+            RunOnUiThread(() => CurrentConfig_ServerEnabledChangedCore(sender, isEnabled));
+        }
+
+        private void CurrentConfig_ServerEnabledChangedCore(object? sender, bool isEnabled)
+        {
+            bool transitionAccepted = true;
+            SocketConfig currentConfig;
+            lock (_configBindingLock)
+            {
+                if (Volatile.Read(ref _shutdownStarted) != 0
+                    || !_hasUsableConfig
+                    || !_serverInitialized
+                    || !ReferenceEquals(sender, Config))
+                {
+                    return;
+                }
+                currentConfig = Config;
+            }
+
+            if (isEnabled)
+                transitionAccepted = _serverLifecycle.Start(SocketServerSettings.Capture(currentConfig));
+            else
+                transitionAccepted = _serverLifecycle.Stop(isServerEnabled: false);
+            if (!transitionAccepted)
+                NotifyServerStatusChanged();
+        }
+
+        private void PublishConfigChanged()
+        {
+            OnPropertyChanged(nameof(Config));
+            OnPropertyChanged(nameof(HasUsableConfig));
+            NotifyServerStatusChanged();
+        }
+
+        internal void SetConfigReference(SocketConfig config)
+        {
+            ArgumentNullException.ThrowIfNull(config);
+            Volatile.Write(ref _config, config);
         }
 
         /// <summary>
@@ -149,7 +344,7 @@ namespace ColorVision.SocketProtocol
             {
                 if (ServerState == SocketServerState.Error)
                     return Properties.Resources.OpenFailed;
-                if (!Config.IsServerEnabled)
+                if (!_hasUsableConfig || !Config.IsServerEnabled)
                     return Properties.Resources.Disabled;
 
                 return ServerState switch
@@ -163,7 +358,9 @@ namespace ColorVision.SocketProtocol
             }
         }
 
-        public string EnabledStatusText => Config.IsServerEnabled ? Properties.Resources.Enabled : Properties.Resources.Disabled;
+        public string EnabledStatusText => _hasUsableConfig && Config.IsServerEnabled
+            ? Properties.Resources.Enabled
+            : Properties.Resources.Disabled;
 
         public string OpenStatusText
         {
@@ -171,7 +368,7 @@ namespace ColorVision.SocketProtocol
             {
                 if (ServerState == SocketServerState.Error)
                     return Properties.Resources.OpenFailed;
-                if (!Config.IsServerEnabled)
+                if (!_hasUsableConfig || !Config.IsServerEnabled)
                     return Properties.Resources.Stopped;
 
                 return IsConnect
@@ -503,7 +700,38 @@ namespace ColorVision.SocketProtocol
         /// </summary>
         public void StartServer()
         {
-            if (!_serverLifecycle.Start(SocketServerSettings.Capture(Config)))
+            bool transitionAccepted = true;
+            SocketConfig currentConfig;
+            lock (_configBindingLock)
+            {
+                if (Volatile.Read(ref _shutdownStarted) != 0)
+                    return;
+                _serverInitialized = true;
+                if (!_hasUsableConfig)
+                    return;
+                currentConfig = Config;
+            }
+            transitionAccepted = _serverLifecycle.Start(SocketServerSettings.Capture(currentConfig));
+            if (!transitionAccepted)
+                NotifyServerStatusChanged();
+        }
+
+        internal void InitializeServer()
+        {
+            bool transitionAccepted = true;
+            bool shouldStart;
+            SocketConfig currentConfig;
+            lock (_configBindingLock)
+            {
+                _serverInitialized = true;
+                currentConfig = Config;
+                shouldStart = Volatile.Read(ref _shutdownStarted) == 0
+                    && _hasUsableConfig
+                    && currentConfig.IsServerEnabled;
+            }
+            if (shouldStart)
+                transitionAccepted = _serverLifecycle.Start(SocketServerSettings.Capture(currentConfig));
+            if (shouldStart && !transitionAccepted)
                 NotifyServerStatusChanged();
         }
 
@@ -512,14 +740,66 @@ namespace ColorVision.SocketProtocol
         /// </summary>
         public void StopServer()
         {
-            if (!_serverLifecycle.Stop(Config.IsServerEnabled))
+            bool transitionAccepted = true;
+            bool targetEnabled;
+            lock (_configBindingLock)
+            {
+                if (Volatile.Read(ref _shutdownStarted) != 0)
+                    return;
+                targetEnabled = _hasUsableConfig && Config.IsServerEnabled;
+            }
+            transitionAccepted = _serverLifecycle.Stop(targetEnabled);
+            if (!transitionAccepted)
                 NotifyServerStatusChanged();
         }
 
         internal void BeginShutdown()
         {
-            Interlocked.Exchange(ref _shutdownStarted, 1);
-            _serverLifecycle.BeginShutdown();
+            if (Interlocked.Exchange(ref _shutdownStarted, 1) == 0)
+            {
+                _serverLifecycle.BeginShutdown();
+                DetachConfigWithoutBlockingShutdown();
+            }
+            else
+            {
+                _serverLifecycle.BeginShutdown();
+            }
+        }
+
+        private void DetachConfigWithoutBlockingShutdown()
+        {
+            if (Monitor.TryEnter(_configBindingLock))
+            {
+                try
+                {
+                    DetachConfig(Config);
+                    _hasUsableConfig = false;
+                }
+                finally
+                {
+                    Monitor.Exit(_configBindingLock);
+                }
+                return;
+            }
+
+            try
+            {
+                ThreadPool.QueueUserWorkItem(_ =>
+                {
+                    lock (_configBindingLock)
+                    {
+                        if (Volatile.Read(ref _shutdownStarted) != 0)
+                        {
+                            DetachConfig(Config);
+                            _hasUsableConfig = false;
+                        }
+                    }
+                });
+            }
+            catch
+            {
+                // The terminal flag and lifecycle shutdown still reject every later callback.
+            }
         }
 
         internal bool Shutdown(TimeSpan timeout) => Shutdown(SocketShutdownDeadline.Start(timeout));
@@ -577,8 +857,19 @@ namespace ColorVision.SocketProtocol
 
         public void CheckUpdate()
         {
-            if (!_serverLifecycle.StartInline(SocketServerSettings.Capture(Config)))
-                NotifyServerStatusChanged();
+            RunOnUiThread(() =>
+            {
+                SocketConfig currentConfig;
+                lock (_configBindingLock)
+                {
+                    if (Volatile.Read(ref _shutdownStarted) != 0 || !_hasUsableConfig)
+                        return;
+                    currentConfig = Config;
+                }
+
+                if (!_serverLifecycle.StartInline(SocketServerSettings.Capture(currentConfig)))
+                    NotifyServerStatusChanged();
+            });
         }
 
         private string BuildOpenFailureMessage(SocketServerSettings settings, Exception exception)
