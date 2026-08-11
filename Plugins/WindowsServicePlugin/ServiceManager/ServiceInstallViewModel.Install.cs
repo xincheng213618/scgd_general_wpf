@@ -20,24 +20,24 @@ namespace WindowsServicePlugin.ServiceManager
 
         private async Task ExecuteInstallAsync()
         {
-            string basePath = Config.BaseLocation;
-            bool hasAnyComponentChecked = InstallServiceChecked || InstallMySqlChecked || InstallMqttChecked || InstallVc2013Checked;
-            bool needsBasePath = InstallServiceChecked || InstallMySqlChecked || InstallMqttChecked || BackupBeforeInstall || BackupServiceBeforeInstall || AutoUpdateDatabase;
-            if (needsBasePath && string.IsNullOrEmpty(basePath))
-            {
-                MessageBox.Show("请先设置安装根目录", "安装", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            if (!hasAnyComponentChecked)
-            {
-                MessageBox.Show("请先勾选要安装的组件", "安装", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
             SetBusy(true, "正在执行安装...");
             try
             {
+                string basePath = Config.BaseLocation;
+                bool hasAnyComponentChecked = InstallServiceChecked || InstallMySqlChecked || InstallMqttChecked || InstallVc2013Checked;
+                bool needsBasePath = InstallServiceChecked || InstallMySqlChecked || InstallMqttChecked || BackupBeforeInstall || BackupServiceBeforeInstall || AutoUpdateDatabase;
+                if (needsBasePath && string.IsNullOrEmpty(basePath))
+                {
+                    MessageBox.Show("请先设置安装根目录", "安装", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                if (!hasAnyComponentChecked)
+                {
+                    MessageBox.Show("请先勾选要安装的组件", "安装", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
                 await Task.Run(() =>
                 {
                     try
@@ -308,72 +308,78 @@ namespace WindowsServicePlugin.ServiceManager
                 return;
 
             SetBusy(true, "正在解析安装包...");
-            await Task.Run(() =>
+            try
             {
-                try
+                await Task.Run(() =>
                 {
-                    if (IsFullServicePackageZip(zipFile))
+                    try
                     {
+                        if (IsFullServicePackageZip(zipFile))
+                        {
+                            Application.Current?.Dispatcher.Invoke(() =>
+                            {
+                                ServicePackagePath = zipFile;
+                                InstallServiceChecked = true;
+                                MySqlPackagePath = string.Empty;
+                                InstallMySqlChecked = false;
+                                MqttInstallerPath = string.Empty;
+                                InstallMqttChecked = false;
+                                log.Info($"已识别完整服务包: {ServicePackagePath}");
+                            });
+                            log.Info("安装包解析完成：当前包仅包含 CVWindowsService 服务主体");
+                            return;
+                        }
+
+                        string packDir = Path.Combine(Directory.GetParent(zipFile)!.FullName, Path.GetFileNameWithoutExtension(zipFile));
+                        if (Directory.Exists(packDir))
+                            Directory.Delete(packDir, true);
+
+                        ZipFile.ExtractToDirectory(zipFile, packDir);
+                        log.Info($"解压完成: {packDir}");
+
+                        // 自动识别包内内容，配置路径并勾选
+                        string mysqlZip = Path.Combine(packDir, "mysql-5.7.37-winx64.zip");
+                        string mqttInstaller = Path.Combine(packDir, "mosquitto-2.0.18-install-windows-x64.exe");
+                        string serviceZip = FindServicePackageZip(packDir);
+                        bool hasSvc = !string.IsNullOrWhiteSpace(serviceZip) && File.Exists(serviceZip);
+
                         Application.Current?.Dispatcher.Invoke(() =>
                         {
-                            ServicePackagePath = zipFile;
-                            InstallServiceChecked = true;
-                            MySqlPackagePath = string.Empty;
-                            InstallMySqlChecked = false;
-                            MqttInstallerPath = string.Empty;
-                            InstallMqttChecked = false;
-                            log.Info($"已识别完整服务包: {ServicePackagePath}");
+                            ServicePackagePath = hasSvc ? serviceZip : string.Empty;
+                            InstallServiceChecked = hasSvc;
+                            MySqlPackagePath = File.Exists(mysqlZip) ? mysqlZip : string.Empty;
+                            InstallMySqlChecked = File.Exists(mysqlZip);
+                            MqttInstallerPath = File.Exists(mqttInstaller) ? mqttInstaller : string.Empty;
+                            InstallMqttChecked = File.Exists(mqttInstaller);
+
+                            if (hasSvc)
+                            {
+                                log.Info($"已应用服务包路径: {ServicePackagePath}");
+                            }
+                            if (File.Exists(mysqlZip))
+                            {
+                                log.Info($"已应用 MySQL 包路径: {MySqlPackagePath}");
+                            }
+                            if (File.Exists(mqttInstaller))
+                            {
+                                log.Info($"已应用 MQTT 包路径: {MqttInstallerPath}");
+                            }
                         });
-                        log.Info("安装包解析完成：当前包仅包含 CVWindowsService 服务主体");
-                        return;
+
+                        log.Info($"检测到组件: 服务={hasSvc}, MySQL={File.Exists(mysqlZip)}, MQTT={File.Exists(mqttInstaller)}");
+                        log.Info("一键安装包解析完成，pack目录将在安装成功后清理");
                     }
-
-                    string packDir = Path.Combine(Directory.GetParent(zipFile)!.FullName, Path.GetFileNameWithoutExtension(zipFile));
-                    if (Directory.Exists(packDir))
-                        Directory.Delete(packDir, true);
-
-                    ZipFile.ExtractToDirectory(zipFile, packDir);
-                    log.Info($"解压完成: {packDir}");
-
-                    // 自动识别包内内容，配置路径并勾选
-                    string mysqlZip = Path.Combine(packDir, "mysql-5.7.37-winx64.zip");
-                    string mqttInstaller = Path.Combine(packDir, "mosquitto-2.0.18-install-windows-x64.exe");
-                    string serviceZip = FindServicePackageZip(packDir);
-                    bool hasSvc = !string.IsNullOrWhiteSpace(serviceZip) && File.Exists(serviceZip);
-
-                    Application.Current?.Dispatcher.Invoke(() =>
+                    catch (Exception ex)
                     {
-                        ServicePackagePath = hasSvc ? serviceZip : string.Empty;
-                        InstallServiceChecked = hasSvc;
-                        MySqlPackagePath = File.Exists(mysqlZip) ? mysqlZip : string.Empty;
-                        InstallMySqlChecked = File.Exists(mysqlZip);
-                        MqttInstallerPath = File.Exists(mqttInstaller) ? mqttInstaller : string.Empty;
-                        InstallMqttChecked = File.Exists(mqttInstaller);
+                        log.Info($"解析一键安装包失败: {ex.Message}");
+                    }
+                });
+            }
+            finally
+            {
+                SetBusy(false);
+            }
 
-                        if (hasSvc)
-                        {
-                            log.Info($"已应用服务包路径: {ServicePackagePath}");
-                        }
-                        if (File.Exists(mysqlZip))
-                        {
-                            log.Info($"已应用 MySQL 包路径: {MySqlPackagePath}");
-                        }
-                        if (File.Exists(mqttInstaller))
-                        {
-                            log.Info($"已应用 MQTT 包路径: {MqttInstallerPath}");
-                        }
-                    });
-
-                    log.Info($"检测到组件: 服务={hasSvc}, MySQL={File.Exists(mysqlZip)}, MQTT={File.Exists(mqttInstaller)}");
-                    log.Info("一键安装包解析完成，pack目录将在安装成功后清理");
-                }
-                catch (Exception ex)
-                {
-                    log.Info($"解析一键安装包失败: {ex.Message}");
-                }
-            });
-
-            SetBusy(false);
         }
 
         private async Task DownloadServicePackageAsync()

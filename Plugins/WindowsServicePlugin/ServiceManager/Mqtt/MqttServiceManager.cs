@@ -9,7 +9,13 @@ namespace WindowsServicePlugin.ServiceManager
         public MqttServiceConfig Config { get; private set; } = MqttServiceConfig.Instance;
 
         public MqttServiceManager()
+            : this(MqttServiceConfig.Instance)
         {
+        }
+
+        internal MqttServiceManager(MqttServiceConfig config)
+        {
+            Config = config ?? throw new ArgumentNullException(nameof(config));
             MigrateFromLegacySettings();
         }
 

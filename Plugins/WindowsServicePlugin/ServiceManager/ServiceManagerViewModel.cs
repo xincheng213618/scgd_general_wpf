@@ -24,8 +24,9 @@ namespace WindowsServicePlugin.ServiceManager
         public static ServiceManagerViewModel Instance { get; } = new ServiceManagerViewModel();
 
         private readonly RuntimeConfigOwner<ServiceManagerConfig> configOwner;
+        private readonly ServiceConfigurationLeaseGate configurationGate;
         private ServiceManagerConfig _config;
-        private ServiceManagerConfig? pendingConfig;
+        private ServiceManagerOperationLease? mainOperationLease;
         public ServiceManagerConfig Config => _config;
 
         public ObservableCollection<ServiceEntry> Services { get; set; } = [];
@@ -87,8 +88,12 @@ namespace WindowsServicePlugin.ServiceManager
                 ConfigService.Instance as IConfigReloadNotifier,
                 ex => log.Error("重新加载服务管理器配置失败", ex));
             _config = configOwner.Current;
-            MySqlManager = new MySqlServiceManager(_config, ConfigService.Instance.GetRequiredService<MySqlServiceConfig>());
-            MqttManager = new MqttServiceManager();
+            MySqlServiceConfig mySqlConfig = ConfigService.Instance.GetRequiredService<MySqlServiceConfig>();
+            MqttServiceConfig mqttConfig = ConfigService.Instance.GetRequiredService<MqttServiceConfig>();
+            configurationGate = new ServiceConfigurationLeaseGate(
+                new ServiceConfigurationGeneration(configOwner.Generation, _config, mySqlConfig, mqttConfig));
+            MySqlManager = new MySqlServiceManager(_config, mySqlConfig);
+            MqttManager = new MqttServiceManager(mqttConfig);
             configOwner.ConfigurationChanged += ConfigOwner_ConfigurationChanged;
 
             // Commands
@@ -118,8 +123,8 @@ namespace WindowsServicePlugin.ServiceManager
             MySqlBrowseSqlScriptCommand = new RelayCommand(a => BrowseSqlScriptPath());
             MySqlResetDatabaseCommand = new RelayCommand(a => _ = ResetDatabaseAsync(), a => !IsBusy && MySqlManager.Config.IsRunning);
             MySqlBrowseCommand = new RelayCommand(a => BrowseMySqlPath());
-            MySqlApplyRootPasswordCommand = new RelayCommand(a => _ = Task.Run(() => DoApplyRootPassword()), a => !IsBusy);
-            MySqlCreateOrUpdateUserCommand = new RelayCommand(a => _ = Task.Run(() => DoCreateOrUpdateUser()), a => !IsBusy && MySqlManager.Config.IsRunning);
+            MySqlApplyRootPasswordCommand = new RelayCommand(a => _ = RunBackgroundOperationAsync("正在应用 MySQL root 密码...", DoApplyRootPassword), a => !IsBusy);
+            MySqlCreateOrUpdateUserCommand = new RelayCommand(a => _ = RunBackgroundOperationAsync("正在创建或更新 MySQL 业务用户...", DoCreateOrUpdateUser), a => !IsBusy && MySqlManager.Config.IsRunning);
             MySqlGenerateRandomRootPasswordCommand = new RelayCommand(a => GenerateRandomRootPassword());
 
             Initialize();
@@ -127,32 +132,97 @@ namespace WindowsServicePlugin.ServiceManager
 
         private void ConfigOwner_ConfigurationChanged(object? sender, RuntimeConfigChangedEventArgs<ServiceManagerConfig> e)
         {
-            void ApplyOrDefer()
-            {
-                if (IsBusy)
-                {
-                    pendingConfig = e.Current;
-                    return;
-                }
-
-                ApplyConfiguration(e.Current);
-            }
+            ServiceConfigurationGeneration prepared = new(
+                e.Generation,
+                e.Current,
+                ConfigService.Instance.GetRequiredService<MySqlServiceConfig>(),
+                ConfigService.Instance.GetRequiredService<MqttServiceConfig>());
 
             var dispatcher = Application.Current?.Dispatcher;
             if (dispatcher == null || dispatcher.CheckAccess())
-                ApplyOrDefer();
+                PublishConfiguration(prepared);
             else
-                dispatcher.Invoke(ApplyOrDefer);
+                dispatcher.Invoke(() => PublishConfiguration(prepared));
         }
 
-        private void ApplyConfiguration(ServiceManagerConfig config)
+        private void PublishConfiguration(ServiceConfigurationGeneration candidate)
         {
-            _config = config;
-            pendingConfig = null;
-            MySqlManager.RebindConfiguration(config, ConfigService.Instance.GetRequiredService<MySqlServiceConfig>());
-            MqttManager.RebindConfiguration(ConfigService.Instance.GetRequiredService<MqttServiceConfig>());
-            OnPropertyChanged(nameof(Config));
-            RefreshAll();
+            ServiceConfigurationGeneration? transition = configurationGate.QueueOrBeginTransition(candidate);
+            if (transition != null)
+                ApplyStartedTransitions(transition);
+        }
+
+        private void ApplyStartedTransitions(ServiceConfigurationGeneration candidate)
+        {
+            ServiceConfigurationGeneration? transition = candidate;
+            while (transition != null)
+            {
+                bool applied = false;
+                try
+                {
+                    ApplyConfiguration(transition);
+                    applied = true;
+                }
+                catch (Exception ex)
+                {
+                    log.Error("应用服务管理器配置失败，保留上一代运行态", ex);
+                }
+
+                transition = configurationGate.CompleteTransition(transition, applied);
+            }
+        }
+
+        private void ApplyConfiguration(ServiceConfigurationGeneration candidate)
+        {
+            ServiceConfigurationGeneration previous = configurationGate.Active;
+            try
+            {
+                MySqlManager.RebindConfiguration(candidate.ServiceManager, candidate.MySql);
+                MqttManager.RebindConfiguration(candidate.Mqtt);
+                _config = candidate.ServiceManager;
+                OnPropertyChanged(nameof(Config));
+                RefreshAll();
+            }
+            catch
+            {
+                MySqlManager.RebindConfiguration(previous.ServiceManager, previous.MySql);
+                MqttManager.RebindConfiguration(previous.Mqtt);
+                _config = previous.ServiceManager;
+                OnPropertyChanged(nameof(Config));
+                throw;
+            }
+        }
+
+        internal ServiceManagerOperationLease BeginOperation()
+        {
+            return new ServiceManagerOperationLease(this, configurationGate.BeginOperation());
+        }
+
+        internal void ReleaseOperation()
+        {
+            ServiceConfigurationGeneration? next = configurationGate.ReleaseOperation();
+
+            if (next == null)
+                return;
+
+            var dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher == null || dispatcher.CheckAccess())
+                ApplyStartedTransitions(next);
+            else
+                dispatcher.Invoke(() => ApplyStartedTransitions(next));
+        }
+
+        private async Task RunBackgroundOperationAsync(string text, Action action)
+        {
+            SetBusy(true, text);
+            try
+            {
+                await Task.Run(action);
+            }
+            finally
+            {
+                SetBusy(false);
+            }
         }
 
         private void Initialize()
@@ -236,11 +306,19 @@ namespace WindowsServicePlugin.ServiceManager
         {
             void SetBusyCore()
             {
+                if (busy && mainOperationLease == null)
+                    mainOperationLease = BeginOperation();
+
                 IsBusy = busy;
                 ProgressText = text;
                 if (!busy) Progress = 0;
-                if (!busy && pendingConfig != null)
-                    ApplyConfiguration(pendingConfig);
+
+                if (!busy)
+                {
+                    ServiceManagerOperationLease? completedLease = mainOperationLease;
+                    mainOperationLease = null;
+                    completedLease?.Dispose();
+                }
             }
 
             var dispatcher = Application.Current?.Dispatcher;
@@ -261,6 +339,8 @@ namespace WindowsServicePlugin.ServiceManager
 
         public void Dispose()
         {
+            mainOperationLease?.Dispose();
+            mainOperationLease = null;
             configOwner.ConfigurationChanged -= ConfigOwner_ConfigurationChanged;
             configOwner.Dispose();
             GC.SuppressFinalize(this);

@@ -23,6 +23,7 @@ namespace WindowsServicePlugin.ServiceManager
 
         protected override void OnClosed(EventArgs e)
         {
+            ViewModel.Dispose();
             _logBinder?.Dispose();
             _logBinder = null;
             base.OnClosed(e);

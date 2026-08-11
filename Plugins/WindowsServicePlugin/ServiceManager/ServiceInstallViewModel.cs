@@ -14,11 +14,11 @@ namespace WindowsServicePlugin.ServiceManager
     ///   - ServiceInstallViewModel.Backup.cs    备份与恢复
     ///   - ServiceInstallViewModel.Install.cs   安装编排
     /// </summary>
-    public partial class ServiceInstallViewModel : ViewModelBase
+    public partial class ServiceInstallViewModel : ViewModelBase, IDisposable
     {
         private readonly ILog log = LogManager.GetLogger(typeof(ServiceInstallViewModel));
-        private readonly ServiceManagerConfig _config = ServiceManagerConfig.Instance;
-        public ServiceManagerConfig Config => _config;
+        private ServiceManagerOperationLease? operationLease;
+        public ServiceManagerConfig Config => operationLease?.Snapshot.ServiceManager ?? ServiceManagerViewModel.Instance.Config;
 
         public bool IsBusy { get => _isBusy; set { _isBusy = value; OnPropertyChanged(); } }
         private bool _isBusy;
@@ -113,10 +113,10 @@ namespace WindowsServicePlugin.ServiceManager
             SelectMySqlZipCommand = new RelayCommand(a => SelectMySqlZip());
             SelectMqttInstallerCommand = new RelayCommand(a => SelectMqttInstaller());
             SelectVc2013InstallerCommand = new RelayCommand(a => SelectVc2013Installer());
-            BackupNowCommand = new RelayCommand(a => _ = Task.Run(() => DoBackupNow()), a => !IsBusy);
-            RestoreBackupCommand = new RelayCommand(a => _ = Task.Run(() => DoRestoreBackup()), a => !IsBusy);
-            BackupServiceNowCommand = new RelayCommand(a => _ = Task.Run(() => DoBackupServiceNow()), a => !IsBusy);
-            RestoreServiceBackupCommand = new RelayCommand(a => _ = Task.Run(() => DoRestoreServiceBackup()), a => !IsBusy);
+            BackupNowCommand = new RelayCommand(a => _ = RunBackgroundInstallOperationAsync("正在备份数据库...", () => DoBackupNow()), a => !IsBusy);
+            RestoreBackupCommand = new RelayCommand(a => _ = RunBackgroundInstallOperationAsync("正在恢复数据库...", DoRestoreBackup), a => !IsBusy);
+            BackupServiceNowCommand = new RelayCommand(a => _ = RunBackgroundInstallOperationAsync("正在备份服务文件...", DoBackupServiceNow), a => !IsBusy);
+            RestoreServiceBackupCommand = new RelayCommand(a => _ = RunBackgroundInstallOperationAsync("正在恢复服务文件...", DoRestoreServiceBackup), a => !IsBusy);
             DoInstallCommand = new RelayCommand(a => _ = ExecuteInstallAsync(), a => !IsBusy);
             OneKeyInstallAllCommand = new RelayCommand(a => _ = OneKeyInstallAllAsync(), a => !IsBusy);
             DownloadServicePackageCommand = new RelayCommand(a => _ = DownloadServicePackageAsync(), a => !IsBusy);
@@ -228,15 +228,40 @@ namespace WindowsServicePlugin.ServiceManager
 
         private void SetBusy(bool busy, string text = "")
         {
-            Application.Current?.Dispatcher.Invoke(() =>
+            void SetBusyCore()
             {
+                if (busy && operationLease == null)
+                    operationLease = ServiceManagerViewModel.Instance.BeginOperation();
+
                 IsBusy = busy;
                 ProgressText = text;
                 if (!busy)
                 {
                     Progress = 0;
+                    ServiceManagerOperationLease? completedLease = operationLease;
+                    operationLease = null;
+                    completedLease?.Dispose();
                 }
-            });
+            }
+
+            var dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher == null || dispatcher.CheckAccess())
+                SetBusyCore();
+            else
+                dispatcher.Invoke(SetBusyCore);
+        }
+
+        private async Task RunBackgroundInstallOperationAsync(string text, Action action)
+        {
+            SetBusy(true, text);
+            try
+            {
+                await Task.Run(action);
+            }
+            finally
+            {
+                SetBusy(false);
+            }
         }
 
         private void SetProgress(double value, string text)
@@ -250,5 +275,15 @@ namespace WindowsServicePlugin.ServiceManager
         }
 
         #endregion
+
+        public void Dispose()
+        {
+            if (!IsBusy)
+            {
+                operationLease?.Dispose();
+                operationLease = null;
+            }
+            GC.SuppressFinalize(this);
+        }
     }
 }
