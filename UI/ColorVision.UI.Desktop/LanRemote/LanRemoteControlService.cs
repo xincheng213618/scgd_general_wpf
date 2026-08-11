@@ -18,7 +18,7 @@ using System.Windows;
 
 namespace ColorVision.UI.Desktop.LanRemote
 {
-    public sealed class LanRemoteControlService : IDisposable
+    public sealed class LanRemoteControlService : IDisposable, IConfigReloadParticipant
     {
         private const int MaxRequestBytes = 256 * 1024;
         private static readonly ILog Log = LogManager.GetLogger(typeof(LanRemoteControlService));
@@ -30,48 +30,147 @@ namespace ColorVision.UI.Desktop.LanRemote
         private TcpListener? _listener;
         private Task? _acceptLoopTask;
         private int _runningPort;
-        private readonly OperationsSecureHostService _operationsHost;
+        private bool _isRunning;
+        private string _lastStatusMessage = "局域网控制已关闭。";
+        private DateTime? _startedAt;
+        private readonly Func<IPAddress, int, TcpListener> _listenerFactory;
+        private readonly Func<ILanRemoteOperationsHost> _operationsHostFactory;
+        private readonly Func<IReadOnlyList<string>> _localAddressProvider;
+        private readonly Action? _requestSnapshotCaptured;
+        private readonly Func<CancellationTokenSource> _cancellationTokenSourceFactory;
+        private ILanRemoteOperationsHost? _operationsHost;
+        private LanRemoteRuntimeSnapshot _runtimeSnapshot = new();
+        private bool _runtimeTransitionInProgress;
 
         private LanRemoteControlService()
+            : this(
+                (address, port) => new TcpListener(address, port),
+                () => new LanRemoteOperationsHost(new OperationsSecureHostService()),
+                GetLocalIpAddresses)
         {
-            _operationsHost = new OperationsSecureHostService();
-            _operationsHost.StateChanged += (_, _) => PublishStateChanged();
+        }
+
+        internal LanRemoteControlService(
+            Func<IPAddress, int, TcpListener> listenerFactory,
+            Func<ILanRemoteOperationsHost> operationsHostFactory,
+            Func<IReadOnlyList<string>> localAddressProvider,
+            Action? requestSnapshotCaptured = null,
+            Func<CancellationTokenSource>? cancellationTokenSourceFactory = null)
+        {
+            _listenerFactory = listenerFactory ?? throw new ArgumentNullException(nameof(listenerFactory));
+            _operationsHostFactory = operationsHostFactory ?? throw new ArgumentNullException(nameof(operationsHostFactory));
+            _localAddressProvider = localAddressProvider ?? throw new ArgumentNullException(nameof(localAddressProvider));
+            _requestSnapshotCaptured = requestSnapshotCaptured;
+            _cancellationTokenSourceFactory = cancellationTokenSourceFactory ?? (() => new CancellationTokenSource());
         }
 
         public static LanRemoteControlService Instance => LazyInstance.Value;
 
         public event EventHandler? StateChanged;
 
-        public bool IsRunning { get; private set; }
+        public bool IsRunning => GetCurrentRuntimeSnapshot().IsRunning;
 
-        public string LastStatusMessage { get; private set; } = "局域网控制已关闭。";
+        public string LastStatusMessage => GetCurrentRuntimeSnapshot().StatusMessage;
 
-        public DateTime? StartedAt { get; private set; }
+        public DateTime? StartedAt => GetCurrentRuntimeSnapshot().StartedAt;
 
-        public OperationsSecureHostService OperationsHost => _operationsHost;
+        public OperationsSecureHostService OperationsHost
+        {
+            get
+            {
+                lock (_syncRoot)
+                {
+                    return _operationsHost?.PublicService
+                        ?? throw new InvalidOperationException("The secure Operations host has not been initialized by BindCurrentConfig.");
+                }
+            }
+        }
+
+        public string ConfigReloadName => nameof(LanRemoteControlService);
+
+        public int ConfigReloadOrder => 300;
 
         public void ApplyConfig()
         {
-            var config = LanRemoteControlConfig.Instance;
-            if (config.EnsureInitialized())
-                ConfigHandler.GetInstance().Save<LanRemoteControlConfig>();
+            ApplyCurrentConfig(ConfigHandler.GetInstance(), throwOnStartFailure: false);
+        }
+
+        public void BindCurrentConfig(IConfigService currentConfig)
+        {
+            ApplyCurrentConfig(currentConfig, throwOnStartFailure: true);
+        }
+
+        private void ApplyCurrentConfig(IConfigService currentConfig, bool throwOnStartFailure)
+        {
+            ArgumentNullException.ThrowIfNull(currentConfig);
+
+            LanRemoteRuntimeSettings settings;
+            try
+            {
+                var config = currentConfig.GetRequiredService<LanRemoteControlConfig>();
+                if (config.EnsureInitialized())
+                    currentConfig.Save<LanRemoteControlConfig>();
+
+                settings = new LanRemoteRuntimeSettings
+                {
+                    Enabled = config.IsEnabled,
+                    Port = config.Port,
+                    SecurePort = config.SecurePort,
+                    Host = ResolvePreferredLanAddress(config.PreferredHost, _localAddressProvider()),
+                    PairingToken = config.PairingToken,
+                };
+            }
+            catch (Exception ex)
+            {
+                const string statusMessage = "局域网控制配置绑定失败，服务已安全关闭。";
+                lock (_syncRoot)
+                {
+                    StopNoLock(statusMessage, settings: new LanRemoteRuntimeSettings());
+                }
+                Log.Error(statusMessage, ex);
+                if (throwOnStartFailure)
+                    throw new InvalidOperationException(statusMessage, ex);
+                return;
+            }
 
             lock (_syncRoot)
             {
-                if (!config.IsEnabled)
+                try
                 {
-                    StopNoLock("局域网控制已关闭。");
+                    // SettingsControl expects the Operations owner after the initial bind even when LAN control is disabled.
+                    // Constructing it here keeps certificate/APPDATA work and any failure inside participant isolation.
+                    GetOrCreateOperationsHostNoLock();
+                }
+                catch (Exception ex)
+                {
+                    string statusMessage = $"局域网控制启动失败：安全通道初始化失败：{ex.Message}";
+                    StopNoLock(statusMessage, settings: settings);
+                    Log.Error(statusMessage, ex);
+                    if (throwOnStartFailure)
+                        throw new InvalidOperationException(statusMessage, ex);
                     return;
                 }
 
-                if (IsRunning && _runningPort == config.Port && _operationsHost.RunningPort == config.SecurePort)
+                if (!settings.Enabled)
                 {
-                    LastStatusMessage = $"局域网控制运行中：{GetBaseUrl()}";
+                    StopNoLock("局域网控制已关闭。", settings: settings);
+                    return;
+                }
+
+                if (_isRunning
+                    && _runningPort == settings.Port
+                    && _operationsHost is { IsRunning: true } operationsHost
+                    && operationsHost.RunningPort == settings.SecurePort)
+                {
+                    _lastStatusMessage = $"局域网控制运行中：{GetBaseUrl(settings)}";
+                    PublishRuntimeSnapshotNoLock(settings);
                     PublishStateChanged();
                     return;
                 }
 
-                StartNoLock(config.Port);
+                StartNoLock(settings);
+                if (throwOnStartFailure && !_isRunning)
+                    throw new InvalidOperationException(_lastStatusMessage);
             }
         }
 
@@ -85,27 +184,28 @@ namespace ColorVision.UI.Desktop.LanRemote
 
         public string GetConnectionUrl()
         {
-            var config = LanRemoteControlConfig.Instance;
-            config.EnsureInitialized();
-            return BuildConnectionUrl(GetPreferredLanAddress(), config.Port, config.PairingToken);
+            LanRemoteRuntimeSettings settings = GetCurrentRuntimeSnapshot().Settings;
+            return BuildConnectionUrl(settings.Host, settings.Port, settings.PairingToken);
         }
 
         public string GetBaseUrl()
         {
-            var config = LanRemoteControlConfig.Instance;
-            return $"http://{GetPreferredLanAddress()}:{config.Port}";
+            return GetBaseUrl(GetCurrentRuntimeSnapshot().Settings);
         }
 
         public string GetSecureBaseUrl()
         {
-            var config = LanRemoteControlConfig.Instance;
-            return $"https://{GetPreferredLanAddress()}:{config.SecurePort}";
+            return GetSecureBaseUrl(GetCurrentRuntimeSnapshot().Settings);
         }
 
         public string CreateSecurePairingPayload()
         {
-            OperationsPairingChallenge challenge = _operationsHost.CreatePairingChallenge(GetSecureBaseUrl());
-            return _operationsHost.Pairing.BuildQrPayload(challenge);
+            lock (_syncRoot)
+            {
+                LanRemoteRuntimeSettings settings = GetCurrentRuntimeSnapshot().Settings;
+                return (_operationsHost ?? throw new InvalidOperationException("The secure Operations host has not been initialized."))
+                    .CreatePairingPayload(GetSecureBaseUrl(settings));
+            }
         }
 
         public static IReadOnlyList<string> GetLocalIpAddresses()
@@ -116,51 +216,107 @@ namespace ColorVision.UI.Desktop.LanRemote
                 .ToList();
         }
 
-        private void StartNoLock(int port)
+        private void StartNoLock(LanRemoteRuntimeSettings settings)
         {
-            StopNoLock("局域网控制正在重启。", publish: false);
+            _runtimeTransitionInProgress = true;
+            StopResourcesNoLock();
+            _lastStatusMessage = "局域网控制正在重启。";
+            _runningPort = settings.Port;
+            _startedAt = DateTime.Now;
+            PublishRuntimeSnapshotNoLock(settings);
 
             try
             {
-                _cts = new CancellationTokenSource();
-                _listener = new TcpListener(IPAddress.Any, port);
+                _cts = _cancellationTokenSourceFactory()
+                    ?? throw new InvalidOperationException("The cancellation-token-source factory returned null.");
+                _listener = _listenerFactory(IPAddress.Any, settings.Port);
                 _listener.Server.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
                 _listener.Start();
 
-                _runningPort = port;
-                StartedAt = DateTime.Now;
-                IsRunning = true;
-                LastStatusMessage = $"局域网控制运行中：{GetBaseUrl()}";
-                Log.Info(LastStatusMessage);
-                _acceptLoopTask = Task.Run(() => AcceptLoopAsync(_cts.Token));
-                _operationsHost.Start(LanRemoteControlConfig.Instance.SecurePort, BuildStatusPayload);
+                ILanRemoteOperationsHost operationsHost = _operationsHost
+                    ?? throw new InvalidOperationException("The secure Operations host has not been initialized.");
+                operationsHost.Start(
+                    settings.SecurePort,
+                    () => BuildStatusPayload(GetCurrentRuntimeSnapshot()));
+                if (!operationsHost.IsRunning || operationsHost.RunningPort != settings.SecurePort)
+                {
+                    string operationsStatus = string.IsNullOrWhiteSpace(operationsHost.LastStatusMessage)
+                        ? "安全通道未进入运行状态。"
+                        : operationsHost.LastStatusMessage;
+                    throw new InvalidOperationException(
+                        $"安全通道启动失败，预期端口 {settings.SecurePort}，实际端口 {operationsHost.RunningPort}：{operationsStatus}");
+                }
+
+                _isRunning = true;
+                _lastStatusMessage = $"局域网控制运行中：{GetBaseUrl(settings)}";
+                PublishRuntimeSnapshotNoLock(settings);
+                Log.Info(_lastStatusMessage);
+                CancellationToken cancellationToken = _cts.Token;
+                _acceptLoopTask = Task.Run(() => AcceptLoopAsync(cancellationToken));
             }
             catch (SocketException ex)
             {
-                StopNoLock($"局域网控制启动失败，端口 {port} 不可用：{ex.Message}", publish: false);
-                Log.Error(LastStatusMessage, ex);
+                StopResourcesNoLock();
+                _lastStatusMessage = $"局域网控制启动失败，端口 {settings.Port} 不可用：{ex.Message}";
+                Log.Error(_lastStatusMessage, ex);
             }
             catch (Exception ex)
             {
-                StopNoLock($"局域网控制启动失败：{ex.Message}", publish: false);
-                Log.Error(LastStatusMessage, ex);
+                StopResourcesNoLock();
+                _lastStatusMessage = $"局域网控制启动失败：{ex.Message}";
+                Log.Error(_lastStatusMessage, ex);
             }
             finally
             {
+                _runtimeTransitionInProgress = false;
+                PublishRuntimeSnapshotNoLock(settings);
                 PublishStateChanged();
             }
         }
 
-        private void StopNoLock(string statusMessage, bool publish = true)
+        private void StopNoLock(
+            string statusMessage,
+            bool publish = true,
+            LanRemoteRuntimeSettings? settings = null)
+        {
+            _runtimeTransitionInProgress = true;
+            StopResourcesNoLock();
+            _lastStatusMessage = statusMessage;
+            _runtimeTransitionInProgress = false;
+
+            PublishRuntimeSnapshotNoLock(settings ?? GetCurrentRuntimeSnapshot().Settings);
+
+            if (publish)
+                PublishStateChanged();
+        }
+
+        private void StopResourcesNoLock()
         {
             try
             {
                 _cts?.Cancel();
-                _listener?.Stop();
-                _operationsHost.Stop();
             }
-            catch
+            catch (Exception ex)
             {
+                Log.Warn("局域网控制取消运行任务失败，继续关闭监听器。", ex);
+            }
+
+            try
+            {
+                _listener?.Stop();
+            }
+            catch (Exception ex)
+            {
+                Log.Warn("局域网控制关闭 HTTP 监听器失败，继续关闭安全通道。", ex);
+            }
+
+            try
+            {
+                _operationsHost?.Stop();
+            }
+            catch (Exception ex)
+            {
+                Log.Warn("局域网控制关闭安全通道失败。", ex);
             }
             finally
             {
@@ -169,13 +325,9 @@ namespace ColorVision.UI.Desktop.LanRemote
                 _cts = null;
                 _acceptLoopTask = null;
                 _runningPort = 0;
-                IsRunning = false;
-                StartedAt = null;
-                LastStatusMessage = statusMessage;
+                _isRunning = false;
+                _startedAt = null;
             }
-
-            if (publish)
-                PublishStateChanged();
         }
 
         private async Task AcceptLoopAsync(CancellationToken cancellationToken)
@@ -189,7 +341,12 @@ namespace ColorVision.UI.Desktop.LanRemote
                         return;
 
                     client = await _listener.AcceptTcpClientAsync(cancellationToken);
-                    _ = Task.Run(() => HandleClientAsync(client, cancellationToken), cancellationToken);
+                    // The handler owns the accepted socket even if the listener token is cancelled
+                    // between AcceptTcpClientAsync and Task.Run. A cancelled Task.Run token can skip
+                    // the delegate entirely and leak the socket.
+                    TcpClient acceptedClient = client;
+                    client = null;
+                    _ = Task.Run(() => HandleClientAsync(acceptedClient, cancellationToken), CancellationToken.None);
                 }
                 catch (OperationCanceledException)
                 {
@@ -219,9 +376,11 @@ namespace ColorVision.UI.Desktop.LanRemote
                 var stream = client.GetStream();
                 var callerSource = client.Client.RemoteEndPoint?.ToString() ?? string.Empty;
                 LanHttpRequest? request = await ReadRequestAsync(stream, callerSource, linkedCts.Token);
+                LanRemoteRuntimeSnapshot runtimeSnapshot = GetCurrentRuntimeSnapshot();
+                _requestSnapshotCaptured?.Invoke();
                 LanHttpResponse response = request == null
                     ? PlainText(400, "Invalid HTTP request.")
-                    : HandleRequest(request);
+                    : HandleRequest(request, runtimeSnapshot);
 
                 await WriteResponseAsync(stream, response, linkedCts.Token);
             }
@@ -234,25 +393,27 @@ namespace ColorVision.UI.Desktop.LanRemote
             }
         }
 
-        private LanHttpResponse HandleRequest(LanHttpRequest request)
+        private static LanHttpResponse HandleRequest(LanHttpRequest request, LanRemoteRuntimeSnapshot runtimeSnapshot)
         {
+            LanRemoteRuntimeSettings settings = runtimeSnapshot.Settings;
+
             if (string.Equals(request.Method, "OPTIONS", StringComparison.OrdinalIgnoreCase))
                 return new LanHttpResponse { StatusCode = 204 };
 
             if (request.Path == "/" || request.Path.Equals("/mobile", StringComparison.OrdinalIgnoreCase))
-                return Html(200, BuildMobilePage(request));
+                return Html(200, BuildMobilePage(request, settings));
 
             if (request.Path.Equals("/api/status", StringComparison.OrdinalIgnoreCase))
             {
-                if (!IsTokenValid(request))
+                if (!IsTokenValid(request, settings))
                     return Json(401, new { ok = false, error = "unauthorized" });
 
-                return Json(200, BuildStatusPayload());
+                return Json(200, BuildStatusPayload(runtimeSnapshot));
             }
 
             if (request.Path.Equals("/api/logs", StringComparison.OrdinalIgnoreCase))
             {
-                if (!IsTokenValid(request))
+                if (!IsTokenValid(request, settings))
                     return Json(401, new { ok = false, error = "unauthorized" });
 
                 int count = 40;
@@ -272,10 +433,10 @@ namespace ColorVision.UI.Desktop.LanRemote
 
             if (request.Path.Equals("/api/command", StringComparison.OrdinalIgnoreCase))
             {
-                if (!IsTokenValid(request))
+                if (!IsTokenValid(request, settings))
                     return Json(401, new { ok = false, error = "unauthorized" });
 
-                return HandleCommandRequest(request);
+                return HandleCommandRequest(request, runtimeSnapshot);
             }
 
             if (request.Path.Equals("/favicon.ico", StringComparison.OrdinalIgnoreCase))
@@ -284,13 +445,13 @@ namespace ColorVision.UI.Desktop.LanRemote
             return PlainText(404, "Not Found");
         }
 
-        private string BuildMobilePage(LanHttpRequest request)
+        private static string BuildMobilePage(LanHttpRequest request, LanRemoteRuntimeSettings settings)
         {
-            bool authorized = IsTokenValid(request);
+            bool authorized = IsTokenValid(request, settings);
             string statusText = authorized ? "已连接到电脑端" : "二维码已失效，请在电脑端重新生成。";
             string token = EscapeJavaScript(GetTokenFromRequest(request) ?? string.Empty);
             string machineName = EscapeHtml(Environment.MachineName);
-            string endpoint = EscapeHtml(GetBaseUrl());
+            string endpoint = EscapeHtml(GetBaseUrl(settings));
 
             return $$"""
 <!doctype html>
@@ -458,13 +619,15 @@ refreshStatus();
 """;
         }
 
-        private object BuildStatusPayload()
+        private static object BuildStatusPayload(LanRemoteRuntimeSnapshot runtimeSnapshot)
         {
+            LanRemoteRuntimeSettings settings = runtimeSnapshot.Settings;
             using Process process = Process.GetCurrentProcess();
             DateTime now = DateTime.Now;
             MainWindowSnapshot window = GetMainWindowSnapshot();
-            string selectedAddress = GetPreferredLanAddress();
+            string selectedAddress = settings.Host;
             IReadOnlyList<string> addresses = GetLocalIpAddresses();
+            LanRemoteOperationsHostStatus operationsStatus = runtimeSnapshot.OperationsStatus;
 
             return new
             {
@@ -473,24 +636,26 @@ refreshStatus();
                 machine = Environment.MachineName,
                 user = Environment.UserName,
                 version = Assembly.GetEntryAssembly()?.GetName().Version?.ToString() ?? string.Empty,
-                endpoint = GetBaseUrl(),
+                endpoint = GetBaseUrl(settings),
                 selectedAddress,
                 addresses,
-                port = _runningPort > 0 ? _runningPort : LanRemoteControlConfig.Instance.Port,
-                isRunning = IsRunning,
-                statusMessage = LastStatusMessage,
+                port = runtimeSnapshot.RunningPort > 0 ? runtimeSnapshot.RunningPort : settings.Port,
+                isRunning = runtimeSnapshot.IsRunning,
+                statusMessage = runtimeSnapshot.StatusMessage,
                 secureOperations = new
                 {
-                    isRunning = _operationsHost.IsRunning,
-                    endpoint = GetSecureBaseUrl(),
-                    pairedDeviceCount = _operationsHost.Registry.GetAll().Count(item => item.IsActive),
-                    relayConfigured = _operationsHost.Relay.IsConfigured,
-                    relayRunning = _operationsHost.Relay.IsRunning,
-                    relayLastHeartbeatAt = _operationsHost.Relay.LastHeartbeatAt,
-                    relayStatus = _operationsHost.Relay.LastStatusMessage,
+                    isRunning = operationsStatus.IsRunning,
+                    endpoint = GetSecureBaseUrl(settings),
+                    pairedDeviceCount = operationsStatus.PairedDeviceCount,
+                    relayConfigured = operationsStatus.RelayConfigured,
+                    relayRunning = operationsStatus.RelayRunning,
+                    relayLastHeartbeatAt = operationsStatus.RelayLastHeartbeatAt,
+                    relayStatus = operationsStatus.RelayStatus,
                 },
-                startedAt = StartedAt?.ToString("yyyy-MM-dd HH:mm:ss") ?? string.Empty,
-                uptimeSeconds = StartedAt.HasValue ? Math.Max(0, (int)(now - StartedAt.Value).TotalSeconds) : 0,
+                startedAt = runtimeSnapshot.StartedAt?.ToString("yyyy-MM-dd HH:mm:ss") ?? string.Empty,
+                uptimeSeconds = runtimeSnapshot.StartedAt.HasValue
+                    ? Math.Max(0, (int)(now - runtimeSnapshot.StartedAt.Value).TotalSeconds)
+                    : 0,
                 serverTime = now.ToString("yyyy-MM-dd HH:mm:ss"),
                 os = Environment.OSVersion.VersionString,
                 process = new
@@ -510,7 +675,7 @@ refreshStatus();
             };
         }
 
-        private LanHttpResponse HandleCommandRequest(LanHttpRequest request)
+        private static LanHttpResponse HandleCommandRequest(LanHttpRequest request, LanRemoteRuntimeSnapshot runtimeSnapshot)
         {
             string action = GetCommandAction(request);
             if (string.IsNullOrWhiteSpace(action))
@@ -539,7 +704,7 @@ refreshStatus();
                     ok = true,
                     action,
                     message,
-                    status = BuildStatusPayload()
+                    status = BuildStatusPayload(runtimeSnapshot)
                 });
             }
             catch (Exception ex)
@@ -689,10 +854,10 @@ refreshStatus();
             }
         }
 
-        private static bool IsTokenValid(LanHttpRequest request)
+        private static bool IsTokenValid(LanHttpRequest request, LanRemoteRuntimeSettings settings)
         {
             string? token = GetTokenFromRequest(request);
-            string expected = LanRemoteControlConfig.Instance.PairingToken;
+            string expected = settings.PairingToken;
             if (string.IsNullOrWhiteSpace(token) || string.IsNullOrWhiteSpace(expected))
                 return false;
 
@@ -865,10 +1030,78 @@ refreshStatus();
             };
         }
 
-        private string GetPreferredLanAddress()
+        private LanRemoteRuntimeSnapshot GetCurrentRuntimeSnapshot()
         {
-            var addresses = GetLocalIpAddresses();
-            string preferredHost = LanRemoteControlConfig.Instance.PreferredHost;
+            return Volatile.Read(ref _runtimeSnapshot);
+        }
+
+        private ILanRemoteOperationsHost GetOrCreateOperationsHostNoLock()
+        {
+            if (_operationsHost != null)
+                return _operationsHost;
+
+            ILanRemoteOperationsHost operationsHost = _operationsHostFactory()
+                ?? throw new InvalidOperationException("The secure Operations host factory returned null.");
+            try
+            {
+                operationsHost.StateChanged += OperationsHost_StateChanged;
+                _operationsHost = operationsHost;
+                return operationsHost;
+            }
+            catch
+            {
+                try
+                {
+                    operationsHost.Stop();
+                }
+                catch (Exception cleanupException)
+                {
+                    Log.Warn("安全通道事件绑定失败后清理新实例失败。", cleanupException);
+                }
+                throw;
+            }
+        }
+
+        private void PublishRuntimeSnapshotNoLock(LanRemoteRuntimeSettings settings)
+        {
+            LanRemoteOperationsHostStatus operationsStatus;
+            try
+            {
+                operationsStatus = _operationsHost?.CaptureStatus() ?? new LanRemoteOperationsHostStatus();
+            }
+            catch (Exception ex)
+            {
+                operationsStatus = new LanRemoteOperationsHostStatus
+                {
+                    RelayStatus = $"Unable to capture secure Operations status: {ex.Message}",
+                };
+            }
+
+            Volatile.Write(ref _runtimeSnapshot, new LanRemoteRuntimeSnapshot
+            {
+                Settings = settings,
+                IsRunning = _isRunning,
+                RunningPort = _runningPort,
+                StatusMessage = _lastStatusMessage,
+                StartedAt = _startedAt,
+                OperationsStatus = operationsStatus,
+            });
+        }
+
+        private static string GetBaseUrl(LanRemoteRuntimeSettings settings)
+        {
+            return $"http://{settings.Host}:{settings.Port}";
+        }
+
+        private static string GetSecureBaseUrl(LanRemoteRuntimeSettings settings)
+        {
+            return $"https://{settings.Host}:{settings.SecurePort}";
+        }
+
+        private static string ResolvePreferredLanAddress(
+            string preferredHost,
+            IReadOnlyList<string> addresses)
+        {
             if (!string.IsNullOrWhiteSpace(preferredHost)
                 && addresses.Contains(preferredHost, StringComparer.Ordinal))
             {
@@ -1099,9 +1332,26 @@ refreshStatus();
             StateChanged?.Invoke(this, EventArgs.Empty);
         }
 
+        private void OperationsHost_StateChanged(object? sender, EventArgs e)
+        {
+            lock (_syncRoot)
+            {
+                if (_runtimeTransitionInProgress)
+                    return;
+
+                PublishRuntimeSnapshotNoLock(GetCurrentRuntimeSnapshot().Settings);
+            }
+            PublishStateChanged();
+        }
+
         public void Dispose()
         {
-            Stop();
+            lock (_syncRoot)
+            {
+                if (_operationsHost != null)
+                    _operationsHost.StateChanged -= OperationsHost_StateChanged;
+                StopNoLock("局域网控制已关闭。");
+            }
         }
 
         private sealed class LanHttpRequest
