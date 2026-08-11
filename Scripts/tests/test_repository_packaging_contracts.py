@@ -13,6 +13,12 @@ SHARED_FILES_PATHS = (
 )
 MANIFEST_ROOTS = ("Plugins", "Projects")
 PACKAGE_ID_PATTERN = re.compile(r"^[A-Za-z][A-Za-z0-9._-]{0,63}$")
+NPOI_RUNTIME_FILES = {
+    "NPOI.Core.dll",
+    "NPOI.OOXML.dll",
+    "NPOI.OpenXml4Net.dll",
+    "NPOI.OpenXmlFormats.dll",
+}
 
 
 class SharedFilesContractTests(unittest.TestCase):
@@ -23,6 +29,15 @@ class SharedFilesContractTests(unittest.TestCase):
             load_shared_files_manifest(repository_path),
             load_shared_files_manifest(sdk_path),
         )
+
+    def test_project_owned_npoi_runtime_is_not_host_shared(self) -> None:
+        for relative_path in SHARED_FILES_PATHS:
+            manifest_path = REPO_ROOT / relative_path
+            with self.subTest(manifest=relative_path.as_posix()):
+                self.assertTrue(
+                    NPOI_RUNTIME_FILES.isdisjoint(load_shared_files_manifest(manifest_path)),
+                    f"{manifest_path} must not strip the ProjectARVRPro-owned NPOI runtime",
+                )
 
 
 class RepositoryManifestContractTests(unittest.TestCase):

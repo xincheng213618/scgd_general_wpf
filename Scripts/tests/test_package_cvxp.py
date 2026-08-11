@@ -107,6 +107,37 @@ class PackageCvxManifestValidationTests(unittest.TestCase):
             self.assertIn("company.plugin/DifferentAssembly.dll", archive.namelist())
             self.assertFalse(any(name.startswith("ProjectName/") for name in archive.namelist()))
 
+    def test_project_owned_npoi_runtime_is_packaged_and_not_reported_as_stripped(self) -> None:
+        plugin_root = Path(self._temp_directory.name) / "plugin"
+        output_dir = Path(self._temp_directory.name) / "output"
+        plugin_root.mkdir()
+        output_dir.mkdir()
+        (plugin_root / "manifest.json").write_text(json.dumps({
+            "id": "ProjectARVRPro",
+            "dllpath": "ProjectARVRPro.dll",
+        }), encoding="utf-8")
+
+        npoi_runtime_files = {
+            "NPOI.Core.dll",
+            "NPOI.OOXML.dll",
+            "NPOI.OpenXml4Net.dll",
+            "NPOI.OpenXmlFormats.dll",
+        }
+        for file_name in npoi_runtime_files | {"ProjectARVRPro.dll", "Host.Shared.dll"}:
+            (output_dir / file_name).write_bytes(file_name.encode("ascii"))
+
+        package_path = Path(self._temp_directory.name) / "ProjectARVRPro.cvxp"
+        package_plugin(output_dir, plugin_root, {"Host.Shared.dll"}, package_path, "ProjectARVRPro")
+
+        with zipfile.ZipFile(package_path) as archive:
+            entries = set(archive.namelist())
+            stripped_files = set(json.loads(archive.read("ProjectARVRPro/stripped_files.json")))
+
+        self.assertEqual({"Host.Shared.dll"}, stripped_files)
+        for file_name in npoi_runtime_files:
+            self.assertIn(f"ProjectARVRPro/{file_name}", entries)
+            self.assertNotIn(file_name, stripped_files)
+
     def test_invalid_json_is_rejected_before_packaging(self) -> None:
         self.manifest_path.write_text('{"id": "broken",}', encoding="utf-8")
 
