@@ -1501,6 +1501,15 @@ namespace ColorVision.ImageEditor.Properties {
         }
         
         /// <summary>
+        ///   查找类似 一键还原 的本地化字符串。
+        /// </summary>
+        public static string RestoreOriginalImage {
+            get {
+                return ResourceManager.GetString("RestoreOriginalImage", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 图像旋转 的本地化字符串。
         /// </summary>
         public static string Rotate {
