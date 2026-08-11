@@ -3,7 +3,7 @@
 		<AssemblyOriginatorKeyFile>$(MSBuildThisFileDirectory)ColorVision.snk</AssemblyOriginatorKeyFile>
 		<SignAssembly Condition="Exists('$(AssemblyOriginatorKeyFile)')">True</SignAssembly>
 		<SignAssembly Condition="!Exists('$(AssemblyOriginatorKeyFile)')">False</SignAssembly>
-		<!-- PLATFORM_SUPPORT_POLICY: ColorVision 宿主、官方插件和发布包当前仅支持 x64。 -->
+		<!-- PLATFORM_SUPPORT_POLICY: ColorVision 宿主运行时、官方插件和客户项目交付包当前仅支持 x64。 -->
 		<Platforms>x64</Platforms>
 		<PackageTags>ColorVision</PackageTags>
 		<EnableNETAnalyzers>true</EnableNETAnalyzers>

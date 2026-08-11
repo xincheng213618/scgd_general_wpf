@@ -1,6 +1,3 @@
 <Project>
-	<Target Name="ValidateColorVisionHostPlatform" BeforeTargets="PrepareForBuild"
-			Condition="'$(Platform)' == 'ARM64' and '$(AllowStandaloneArm64Build)' != 'true'">
-		<Error Text="ColorVision host, official plugins, and release packages support x64 only. ARM64 requires a complete native/runtime/package validation lane." />
-	</Target>
+	<Import Project="$(MSBuildThisFileDirectory)ColorVision.PlatformPolicy.targets" />
 </Project>

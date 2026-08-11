@@ -8,9 +8,10 @@
 	  <SymbolPackageFormat>snupkg</SymbolPackageFormat>
 	  <PackageProjectUrl>https://github.com/xincheng213618/scgd_general_wpf</PackageProjectUrl>
 	  <PackageReadmeFile>README.md</PackageReadmeFile>
-	  <Platforms>x64;ARM64;x86;AnyCPU</Platforms>
-	  <!-- 独立纯托管包的显式例外；不表示 ColorVision 宿主支持 ARM64。 -->
-	  <AllowStandaloneArm64Build>true</AllowStandaloneArm64Build>
+	  <PackageId>ColorVision.FileIO</PackageId>
+	  <!-- 单一纯托管包坐标必须保持 AnyCPU，不能按宿主 Platform 产出架构绑定变体。 -->
+	  <Platforms>AnyCPU</Platforms>
+	  <PlatformTarget>AnyCPU</PlatformTarget>
   </PropertyGroup>
 
 	<ItemGroup>

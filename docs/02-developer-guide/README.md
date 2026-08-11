@@ -21,7 +21,7 @@
 ## 开发前确认
 
 - 当前主线是 Windows WPF，目标框架以 `net10.0-windows` 为主。
-- ColorVision 桌面宿主、官方插件和发布包当前仅支持 x64。
+- ColorVision 桌面宿主运行时、官方插件和客户项目交付包当前仅支持 x64。
 - 根目录存在 `ColorVision.snk` 时构建会启用强名称签名。
 - 插件和项目包运行时进入主程序输出目录的 `Plugins/<Name>/`。
 - 修改公开行为时，同步更新对应 README 或 `docs/` 页面。
@@ -55,8 +55,16 @@ Scripts\release.bat
 
 当前支持边界是 Windows x64。`build.sln`、主安装器、全量/增量更新包、官方插件包和
 `runtimes/win-x64/native` 资产均按 x64 验证。ARM64 目前不受支持；不要使用
-`-p:Platform=ARM64` 生成宿主或插件交付物。个别不含本地依赖的纯托管库可以在自身
-项目文件中显式声明更多平台，但这不代表 ColorVision 宿主支持这些平台。
+`-p:Platform=ARM64`、`-p:PlatformTarget=ARM64` 或任意包含 `arm64` 的 RID 生成宿主、插件或项目交付物。共享 MSBuild 策略会在初始化阶段以及 Build/Pack 入口 fail-fast。
+
+`build.sln`、`scgd_general_wpf.sln` 和 `UI/UI.sln` 仍保留 `Any CPU`/`x86` 作为历史
+IDE 与独立维护别名：其中不少 managed 项实际映射到 x64，部分 x86 配置还混合 Win32
+native 项目。这些配置不进入 CI、安装器或发布脚本，不是受支持的宿主交付目标。
+
+`ColorVision.FileIO` 是例外的独立纯托管 NuGet 包，但其规范产物固定为单一 AnyCPU
+程序集和同一包坐标，不接受 `PlatformTarget` 或 RID 覆盖，也不生成 x64/ARM64 变体。
+发布门禁会核对 nupkg 坐标、全部 PE 资产和 CLR flags。AnyCPU 包可被不同架构进程消费，
+并不表示 ColorVision 桌面宿主或官方插件已经支持 ARM64。
 
 ```powershell
 python Scripts\verify_platform_policy.py

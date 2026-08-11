@@ -1,0 +1,14 @@
+<Project InitialTargets="ValidateColorVisionHostPlatform;ValidateColorVisionFileIOAnyCpuPackage">
+	<Target Name="ValidateColorVisionHostPlatform" BeforeTargets="PrepareForBuild;Pack"
+			Condition="$([System.String]::Copy('$(Platform);$(PlatformTarget);$(RuntimeIdentifier);$(RuntimeIdentifiers)').ToLowerInvariant().Contains('arm64'))">
+		<Error Text="ColorVision host runtime, official plugins, and project packages support x64 only. ARM64 requires a complete native/runtime/package validation lane." />
+	</Target>
+
+	<Target Name="ValidateColorVisionFileIOAnyCpuPackage" BeforeTargets="PrepareForBuild;Pack"
+			Condition="'$(MSBuildProjectName)' == 'ColorVision.FileIO'
+				and ('$(PlatformTarget)' != 'AnyCPU'
+					or '$(RuntimeIdentifier)' != ''
+					or '$(RuntimeIdentifiers)' != '')">
+		<Error Text="ColorVision.FileIO must remain an AnyCPU package: PlatformTarget must be AnyCPU and RID properties must be empty." />
+	</Target>
+</Project>

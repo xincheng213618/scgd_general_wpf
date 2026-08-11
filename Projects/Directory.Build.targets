@@ -1,3 +1,4 @@
 <Project>
+  <Import Project="$(MSBuildThisFileDirectory)..\ColorVision.PlatformPolicy.targets" />
   <Import Project="$(MSBuildThisFileDirectory)..\PluginProject.PackageIcon.targets" />
 </Project>
